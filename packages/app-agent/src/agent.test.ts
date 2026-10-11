@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   configure: vi.fn(),
   prepareSandbox: vi.fn(),
   writeAgentSchema: vi.fn(),
+  writeAgentToken: vi.fn(),
   renewSandbox: vi.fn(),
   deleteSandbox: vi.fn(),
   sleep: vi.fn(),
@@ -14,6 +15,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("./sandbox", () => ({
   prepareSandbox: mocks.prepareSandbox,
   writeAgentSchema: mocks.writeAgentSchema,
+  writeAgentToken: mocks.writeAgentToken,
   agentSchemaPath: "/workspace/tailorkit.schema.json",
   renewSandbox: mocks.renewSandbox,
   deleteSandbox: mocks.deleteSandbox,
@@ -51,6 +53,7 @@ describe("app agent workflow", () => {
   it("names the Drive directly from appId and streams only the supplied messages", async () => {
     expect(await appAgent(input)).toEqual({ messages: input.messages });
     expect(mocks.prepareSandbox).toHaveBeenCalledWith("app-app-123", sandboxName);
+    expect(mocks.writeAgentToken).toHaveBeenCalledWith(sandboxName, input.agentToken);
     expect(mocks.stream.mock.lastCall?.[0]).toMatchObject({
       messages: input.messages,
       writable: mocks.writable,

@@ -4,6 +4,8 @@ import path from "node:path";
 import { loadTailorKitConfig } from "@tailorkit/app/config/loader";
 import { createTailorKitClient } from "@tailorkit/core/server";
 import { z } from "zod";
+import { getAgentAuth } from "./agent-auth";
+import { createCliClient } from "./client";
 import { normalizeHostUrl } from "./utils/url";
 
 interface AuthOptions {
@@ -113,7 +115,10 @@ const writeAuthStore = async (store: AuthStore): Promise<void> => {
   await chmod(authStorePath, 0o600);
 };
 
+/** Choose the JWT platform route when supplied, otherwise the configured host. */
 export const resolveHostUrl = async (options: AuthOptions): Promise<string> => {
+  const agent = getAgentAuth();
+  if (agent) return agent.platformUrl;
   if (options.host !== undefined) {
     let url: URL;
     try {
@@ -185,15 +190,20 @@ export const removeDeployToken = async (hostUrl: string): Promise<boolean> => {
   return true;
 };
 
+/** Prefer explicit JWT authorization without reading or changing stored host sessions. */
 export const getDeployToken = async (hostUrl: string): Promise<StoredHostAuth | undefined> => {
+  const agent = getAgentAuth();
+  if (agent) return { deployToken: agent.token, scope: agent.scope };
   const store = await readAuthStore();
   return store.hosts?.[hostUrl];
 };
 
+/** Verify a supplied JWT, or use the existing host approval flow for a CLI session. */
 export const runLogin = async (
   options: LoginOptions,
   onUserCode: (details: { expiresAt: Date; hostUrl: string; userCode: string }) => void,
 ): Promise<{ hostUrl: string; scope: NamedScope }> => {
+  if (getAgentAuth()) return runWhoami(options);
   const hostUrl = await resolveHostUrl(options);
   const client = createTailorKitClient({ url: hostUrl });
   const startResult = await client.cliAuth.start({});
@@ -243,6 +253,7 @@ export const runLogin = async (
   throw new Error("Timed out waiting for CLI login approval.");
 };
 
+/** Verify the selected credential at its authority and persist only normal CLI sessions. */
 export const runWhoami = async (
   options: AuthOptions,
 ): Promise<{ hostUrl: string; scope: NamedScope }> => {
@@ -253,10 +264,7 @@ export const runWhoami = async (
     throw new NotLoggedInError(hostUrl);
   }
 
-  const client = createTailorKitClient({
-    headers: { authorization: `Bearer ${auth.deployToken}` },
-    url: hostUrl,
-  });
+  const client = createCliClient({ token: auth.deployToken, url: hostUrl });
   let result: CliAuthVerifyResult;
   try {
     const verifyResult = await client.cliAuth.verifyToken({});
@@ -272,15 +280,18 @@ export const runWhoami = async (
       "code" in error &&
       error.code === "UNAUTHORIZED"
     ) {
+      if (getAgentAuth())
+        throw new Error("Agent authorization expired or revoked. Start a new agent turn.");
       throw new NotLoggedInError(hostUrl);
     }
     throw error;
   }
 
-  await saveDeployToken(hostUrl, {
-    deployToken: auth.deployToken,
-    scope: result.scope,
-  });
+  if (!getAgentAuth())
+    await saveDeployToken(hostUrl, {
+      deployToken: auth.deployToken,
+      scope: result.scope,
+    });
 
   return {
     hostUrl,
@@ -288,12 +299,13 @@ export const runWhoami = async (
   };
 };
 
+/** Remove a stored host session; environment/file JWTs remain managed by their caller. */
 export const runLogout = async (
   options: AuthOptions,
 ): Promise<{ hostUrl: string; removed: boolean }> => {
   const hostUrl = await resolveHostUrl(options);
   return {
     hostUrl,
-    removed: await removeDeployToken(hostUrl),
+    removed: getAgentAuth() ? false : await removeDeployToken(hostUrl),
   };
 };

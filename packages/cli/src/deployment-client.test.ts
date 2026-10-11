@@ -1,5 +1,9 @@
+import { mkdtemp, writeFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { SignJWT } from "jose";
 import { afterEach, expect, it, vi } from "vite-plus/test";
+import { createCliClient } from "./client";
 import { createDeploymentClient, getAgentAuth } from "./deployment-client";
 
 const now = Math.floor(Date.now() / 1000);
@@ -7,7 +11,7 @@ const scope = { name: "user", value: { userId: "one" } };
 async function token(overrides = {}) {
   return new SignJWT({
     iss: "tailorkit-agent",
-    aud: "tailorkit-platform-deploy",
+    aud: "tailorkit-platform-cli",
     projectId: "project",
     appId: "app-one",
     scope,
@@ -28,8 +32,7 @@ it("uses existing platform deployment endpoints and scope from the agent JWT", a
   const jwt = await token();
   vi.stubEnv("TAILORKIT_AGENT_TOKEN", jwt);
   const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(async () => Response.json({}));
-  const agent = getAgentAuth()!;
-  const client = createDeploymentClient("http://localhost:1", jwt, agent);
+  const client = createDeploymentClient("http://localhost:1", jwt);
   await client.deployments.create({
     appId: "app-one",
     assets: [
@@ -50,11 +53,11 @@ it("uses existing platform deployment endpoints and scope from the agent JWT", a
   ]);
   for (const request of requests) {
     expect(request.headers.get("authorization")).toBe(`Bearer ${jwt}`);
+    expect(request.redirect).toBe("error");
     expect(await request.json()).toMatchObject({ scope });
   }
-  await expect(client.apps.create({ name: "App", description: null })).rejects.toThrow(
-    "authorized existing app",
-  );
+  await client.apps.create({ name: "App", description: null });
+  expect((fetch.mock.lastCall![0] as Request).url).toBe("https://platform.test/api/platform/apps");
 });
 
 it.each([
@@ -65,6 +68,8 @@ it.each([
   { platformUrl: "https://platform.test/api/platform?query=1" },
   { aud: "different" },
   { scope: null },
+  { platformUrl: "http://platform.test/api/platform" },
+  { platformUrl: "http://localhost.evil.test/api/platform" },
 ])("rejects malformed or expired agent authorization %j", async (overrides) => {
   vi.stubEnv("TAILORKIT_AGENT_TOKEN", await token(overrides));
   expect(getAgentAuth).toThrow(/agent authorization/i);
@@ -87,11 +92,97 @@ it("retains actionable platform authentication errors", async () => {
   );
   const agent = getAgentAuth()!;
   await expect(
-    createDeploymentClient("http://localhost:1", agent.token, agent).deployments.publish({
+    createDeploymentClient("http://localhost:1", agent.token).deployments.publish({
       deploymentId: "deployment-one",
     }),
   ).rejects.toMatchObject({
     code: "UNAUTHORIZED",
     message: "Agent authorization revoked.",
   });
+});
+
+it.each([
+  "https://platform.test/api/platform",
+  "http://localhost/api/platform",
+  "http://127.0.0.1/api/platform",
+  "http://[::1]/api/platform",
+])("allows secure or loopback destinations: %s", async (platformUrl) => {
+  vi.stubEnv("TAILORKIT_AGENT_TOKEN", await token({ platformUrl }));
+  expect(getAgentAuth()!.platformUrl).toBe(platformUrl);
+});
+
+it("rejects insecure routing before creating a client or sending requests", async () => {
+  vi.stubEnv(
+    "TAILORKIT_AGENT_TOKEN",
+    await token({ platformUrl: "http://platform.test/api/platform" }),
+  );
+  const fetch = vi.spyOn(globalThis, "fetch");
+  expect(() => createDeploymentClient("http://localhost:1", "stored-token")).toThrow(
+    "Invalid agent authorization",
+  );
+  expect(fetch).not.toHaveBeenCalled();
+});
+
+it("routes every authenticated CLI surface through existing platform endpoints for JWTs", async () => {
+  const jwt = await token();
+  vi.stubEnv("TAILORKIT_AGENT_TOKEN", jwt);
+  const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+    const request = input as Request;
+    expect(request.headers.get("authorization")).toBe(`Bearer ${jwt}`);
+    expect(request.redirect).toBe("error");
+    if (request.url.endsWith("/app-agent/chat"))
+      return new Response(
+        'data: {"type":"start","messageId":"one"}\n\ndata: {"type":"finish"}\n\n',
+        { headers: { "content-type": "text/event-stream" } },
+      );
+    return Response.json({ scope });
+  });
+  const client = createCliClient({ url: "http://localhost:1", token: "stored-session" });
+  await client.cliAuth.verifyToken({});
+  await client.apps.list({ page: 1, pageSize: 100 });
+  await client.apps.create({ name: "App", description: null });
+  await client.preview.start({ appId: "app-one" });
+  await client.preview.stop({ sessionId: "session-one" });
+  const chunks = [];
+  for await (const chunk of await client.appAgent.chat({
+    appId: "app-one",
+    hostUrl: "http://localhost:1",
+    schema: {},
+    messages: [{ id: "user", role: "user", parts: [{ type: "text", text: "Build" }] }],
+  }))
+    chunks.push(chunk);
+  expect(chunks).toEqual([{ type: "start", messageId: "one" }, { type: "finish" }]);
+  expect(fetch.mock.calls.map(([input]) => (input as Request).url)).toEqual([
+    "https://platform.test/api/platform/cli-auth/verify-token",
+    "https://platform.test/api/platform/apps/list",
+    "https://platform.test/api/platform/apps",
+    "https://platform.test/api/platform/preview/start",
+    "https://platform.test/api/platform/preview/session-one/stop",
+    "https://platform.test/api/platform/app-agent/chat",
+  ]);
+  expect(() => client.apps.list({ scopes: ["other"] })).toThrow("Requested scope");
+});
+
+it("discovers file authorization for all commands, with environment-token precedence", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-agent-auth-"));
+  try {
+    const jwt = await token();
+    const file = path.join(root, "token");
+    await writeFile(file, jwt, { mode: 0o600 });
+    vi.stubEnv("TAILORKIT_AGENT_TOKEN_FILE", file);
+    expect(getAgentAuth()!.token).toBe(jwt);
+    const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json({ scope }));
+    await createCliClient({
+      url: "http://localhost:1",
+      token: "stored-session",
+    }).cliAuth.verifyToken({});
+    expect((fetch.mock.lastCall![0] as Request).headers.get("authorization")).toBe(`Bearer ${jwt}`);
+    vi.stubEnv("TAILORKIT_AGENT_TOKEN", "");
+    expect(getAgentAuth).toThrow("Invalid agent authorization");
+    vi.stubEnv("TAILORKIT_AGENT_TOKEN", undefined);
+    vi.stubEnv("TAILORKIT_AGENT_TOKEN_FILE", path.join(root, "missing"));
+    expect(getAgentAuth).toThrow("Unable to read agent authorization file");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });

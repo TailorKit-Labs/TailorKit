@@ -3,7 +3,7 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { readUIMessageStream } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import type { Context } from "../context";
-import { verifyAgentToken } from "@tailorkit/api-utils/agent-token";
+import { issueAgentToken, verifyAgentToken } from "@tailorkit/api-utils/agent-token";
 import { env } from "#env";
 import { canonicalizeScope } from "../scope";
 
@@ -331,4 +331,26 @@ describe("platform app chat", () => {
     expect(cancelStream).toHaveBeenCalledOnce();
     expect(cancelRun).not.toHaveBeenCalled();
   });
+});
+
+it("accepts a JWT-authenticated agent turn without extending its original deadline", async () => {
+  const jwt = await issueAgentToken(
+    { projectId: context.project.id, appId: "app-one", cliTokenId: "cli-one", scope: scope.scope },
+    env.AUTH_SECRET!,
+    env.OPENAPI_SERVER_URL!,
+  );
+  const agentToken = {
+    ...(await verifyAgentToken(jwt, env.AUTH_SECRET!, env.OPENAPI_SERVER_URL!)),
+    token: jwt,
+  };
+  const events = await call(
+    appAgentRouter.chat,
+    { body: { ...input.body, deployToken: jwt } },
+    { context: { ...context, agentToken } },
+  );
+  for await (const _ of events) {
+    /* consume */
+  }
+  expect(mocks.start.mock.lastCall![1][0].agentToken).toBe(jwt);
+  expect(mocks.token).not.toHaveBeenCalled();
 });

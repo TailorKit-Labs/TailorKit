@@ -2,7 +2,7 @@ import { runAgentTUI } from "@ai-sdk/tui";
 import { asyncIteratorToUnproxiedDataStream } from "@orpc/client";
 import type { TailorKitRouterClient } from "@tailorkit/core/server";
 import type { ChatTransport, UIMessage } from "ai";
-import { fetchSchemaFromHost, type TailorKitSchemaFile } from "./generator/types";
+import { fetchSchemaFromHost, readSchemaFile, type TailorKitSchemaFile } from "./generator/types";
 
 const schemaFetchTimeoutMs = 10_000;
 
@@ -10,9 +10,10 @@ interface AgentTuiOptions {
   client: Pick<TailorKitRouterClient, "appAgent">;
   hostUrl: string;
   appId: string;
+  schemaPath?: string;
 }
 
-export async function openAgentTui({ client, hostUrl, appId }: AgentTuiOptions) {
+export async function openAgentTui({ client, hostUrl, appId, schemaPath }: AgentTuiOptions) {
   const transport: ChatTransport<UIMessage> = {
     async sendMessages({ messages, abortSignal }) {
       const timeoutSignal = AbortSignal.timeout(schemaFetchTimeoutMs);
@@ -22,7 +23,10 @@ export async function openAgentTui({ client, hostUrl, appId }: AgentTuiOptions) 
       let schema: TailorKitSchemaFile;
       try {
         schemaSignal.throwIfAborted();
-        schema = await fetchSchemaFromHost(hostUrl, schemaSignal);
+        schema =
+          schemaPath !== undefined
+            ? await readSchemaFile(schemaPath)
+            : await fetchSchemaFromHost(hostUrl, schemaSignal);
         schemaSignal.throwIfAborted();
       } catch (error) {
         abortSignal?.throwIfAborted();
@@ -31,9 +35,14 @@ export async function openAgentTui({ client, hostUrl, appId }: AgentTuiOptions) 
           : error instanceof Error
             ? error.message
             : String(error);
-        throw new Error(`Unable to fetch the host schema from ${hostUrl}: ${detail}`, {
-          cause: error,
-        });
+        throw new Error(
+          schemaPath !== undefined
+            ? `Unable to load the host schema snapshot ${schemaPath}: ${detail}`
+            : `Unable to fetch the host schema from ${hostUrl}: ${detail}`,
+          {
+            cause: error,
+          },
+        );
       }
       const chunks = await client.appAgent.chat(
         {

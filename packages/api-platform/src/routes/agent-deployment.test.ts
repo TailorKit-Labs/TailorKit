@@ -30,10 +30,15 @@ vi.mock("@tailorkit/auth", () => ({ auth: { api: { verifyApiKey: mocks.apiKey } 
 vi.mock("@tailorkit/storage", () => ({ getStorage: () => mocks.storage }));
 vi.mock("@tailorkit/kv", () => ({ getKV: () => null }));
 
-const { createContext } = await import("../context");
+const { createContext, contextErrorResponse } = await import("../context");
 const { appRouter } = await import("./apps");
 const { deploymentRouter } = await import("./deployments");
-const handler = new OpenAPIHandler({ apps: appRouter, deployments: deploymentRouter });
+const { cliAuthRouter } = await import("./cli-auth");
+const handler = new OpenAPIHandler({
+  apps: appRouter,
+  deployments: deploymentRouter,
+  cliAuth: cliAuthRouter,
+});
 const projectId = "22222222-2222-4222-8222-222222222222";
 const organizationId = "11111111-1111-4111-8111-111111111111";
 const tokenSecret = "issued-cli-token";
@@ -59,7 +64,8 @@ async function post(path: string, body: unknown = {}) {
   try {
     context = await createContext({ request: input });
   } catch (error) {
-    return { status: 401, body: { code: (error as { code: string }).code } };
+    const response = contextErrorResponse(error);
+    return { status: response.status, body: await response.json() };
   }
   const result = await handler.handle(input, { prefix: "/api/platform", context });
   if (!result.response) throw new Error("Expected HTTP response");
@@ -167,7 +173,7 @@ it.each(["expired", "revoked", "invalid", "malformed-scope"])(
   },
 );
 
-it("cannot change scope, create an app, or call host-only routes", async () => {
+it("cannot change the authorized scope", async () => {
   expect(
     await post("/deployments", {
       ...deploymentInput(authorizedAppId),
@@ -176,18 +182,11 @@ it("cannot change scope, create an app, or call host-only routes", async () => {
         value: { userId: "user-two" },
       },
     }),
-  ).toMatchObject({ status: 404, body: { code: "NOT_FOUND" } });
-  expect(await post("/apps", { name: "App", description: null, scope: scope.scope })).toMatchObject(
-    { status: 403, body: { code: "FORBIDDEN" } },
-  );
-  expect(await post(`/apps/${authorizedAppId}/lookup`, { scopes: [scope.scope] })).toMatchObject({
-    status: 403,
-    body: { code: "FORBIDDEN" },
-  });
+  ).toMatchObject({ status: 403, body: { code: "FORBIDDEN" } });
 });
 
-it("rejects access to other apps even when their scope matches", async () => {
-  for (const appId of [sameScopeAppId, otherScopeAppId, otherProjectAppId]) {
+it("rejects apps outside the scope or project", async () => {
+  for (const appId of [otherScopeAppId, otherProjectAppId]) {
     expect(await post("/deployments", deploymentInput(appId))).toMatchObject({
       status: 404,
       body: { code: "NOT_FOUND" },
@@ -233,4 +232,53 @@ it("publishes a verified upload to the authorized app", async () => {
   expect(selectedApp?.currentDeploymentId).toBe(created.body.deployment.id);
   const otherApp = await database.db.query.app.findFirst({ where: { id: otherScopeAppId } });
   expect(otherApp?.currentDeploymentId).toBeNull();
+});
+
+it("uses the same CLI permissions for verification, listing, app creation, and deployment", async () => {
+  expect(await post("/cli-auth/verify-token", { deployToken: jwt })).toMatchObject({
+    status: 200,
+    body: { scope: scope.scope },
+  });
+  expect(await post("/apps/list", { scopes: [scope.scope] })).toMatchObject({ status: 200 });
+  const created = await post("/apps", { name: "New app", description: null, scope: scope.scope });
+  expect(created).toMatchObject({ status: 200, body: { scope: scope.scope } });
+  expect((await post(`/apps/${sameScopeAppId}/lookup`, { scopes: [scope.scope] })).status).toBe(
+    200,
+  );
+  expect((await post("/deployments", deploymentInput(sameScopeAppId))).status).toBe(200);
+  expect((await post("/deployments", deploymentInput(created.body.id))).status).toBe(200);
+});
+
+it("reports database outages as 503 rather than rejecting a valid JWT", async () => {
+  vi.spyOn(database.db.query.cliToken, "findFirst").mockRejectedValueOnce(
+    new Error("database unavailable"),
+  );
+  expect(await post("/deployments", deploymentInput(authorizedAppId))).toEqual({
+    status: 503,
+    body: { code: "SERVICE_UNAVAILABLE", message: "Platform is temporarily unavailable." },
+  });
+});
+
+it("maps missing credentials to 401 and unavailable dependencies to 503", () => {
+  expect(contextErrorResponse(new Error("storage unavailable")).status).toBe(503);
+});
+
+it("keeps runtime-only metadata private from CLI credentials", async () => {
+  const { getRuntimeBundle } = await import("./runtime");
+  const input = request(`/apps/${authorizedAppId}/runtime`);
+  const context = await createContext({ request: input });
+  const result = await new OpenAPIHandler({ runtime: getRuntimeBundle }).handle(input, {
+    prefix: "/api/platform",
+    context,
+  });
+  expect(result.response!.status).toBe(403);
+});
+
+it("validates all supplied scope selectors rather than accepting an authorized decoy", async () => {
+  expect(
+    await post("/apps/list", {
+      scope: scope.scope,
+      scopes: [{ name: "user", value: { userId: "user-two" } }],
+    }),
+  ).toMatchObject({ status: 403, body: { code: "FORBIDDEN" } });
 });

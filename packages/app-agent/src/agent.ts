@@ -9,6 +9,7 @@ import {
   prepareSandbox,
   renewSandbox,
   writeAgentSchema,
+  writeAgentToken,
 } from "./sandbox";
 import { quote } from "./tools/utils";
 import instructions from "./instructions.md?raw";
@@ -20,7 +21,7 @@ export interface AppAgentInput {
   hostUrl: string;
   /** Optional serialized host schema for generation without contacting the host. */
   schema?: Record<string, unknown>;
-  /** One-hour agent JWT; supplied only to the deployment tool. */
+  /** One-hour JWT used by authenticated CLI commands in the ephemeral sandbox. */
   agentToken: string;
   messages: ModelMessage[];
   /** Serializable AI Gateway model ID. */
@@ -47,6 +48,7 @@ export async function appAgent({
 
   try {
     await prepareSandbox(`app-${appId}`, sandboxName);
+    await writeAgentToken(sandboxName, agentToken);
     if (schema !== undefined) await writeAgentSchema(sandboxName, schema);
     const schemaArgument = schema !== undefined ? ` --schema ${agentSchemaPath}` : "";
     const hostInstructions = [

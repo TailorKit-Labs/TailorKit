@@ -1,14 +1,17 @@
-import { createTailorKitClient, type TailorKitRouterClient } from "@tailorkit/core/server";
+import { type TailorKitRouterClient } from "@tailorkit/core/server";
+import { createCliClient } from "./client";
+import { normalizeHostUrl } from "./utils/url";
 import { autocomplete, cancel, isCancel, log, spinner, text } from "@clack/prompts";
 import { getDeployToken, NotLoggedInError, resolveHostUrl, runWhoami } from "./auth";
 
 interface AgentOptions {
   appId?: string;
   host?: string;
+  schemaPath?: string;
   onLoginRequired?: () => Promise<unknown>;
 }
 
-async function chooseApp(client: TailorKitRouterClient): Promise<string | undefined> {
+async function chooseApp(client: Pick<TailorKitRouterClient, "apps">): Promise<string | undefined> {
   const loading = spinner();
   const apps: Awaited<ReturnType<TailorKitRouterClient["apps"]["list"]>>["items"] = [];
   loading.start("Finding apps");
@@ -75,7 +78,8 @@ export async function runAgentCommand(options: AgentOptions) {
     throw new Error("Missing TailorKit host URL. Use tailorkit agent --host <url>.");
   }
   let appId = options.appId;
-  const hostUrl = await resolveHostUrl(options);
+  const hostUrl = normalizeHostUrl(options.host);
+  const authUrl = await resolveHostUrl(options);
   try {
     await runWhoami(options);
   } catch (error) {
@@ -83,17 +87,14 @@ export async function runAgentCommand(options: AgentOptions) {
     await options.onLoginRequired();
     await runWhoami(options);
   }
-  const auth = await getDeployToken(hostUrl);
+  const auth = await getDeployToken(authUrl);
   if (!auth) throw new NotLoggedInError(hostUrl);
-  const client = createTailorKitClient({
-    url: hostUrl,
-    headers: { authorization: `Bearer ${auth.deployToken}` },
-  });
+  const client = createCliClient({ url: authUrl, token: auth.deployToken });
   if (!appId) {
     appId = await chooseApp(client);
     if (!appId) return;
   }
   log.info(`App: ${appId}`);
   const { openAgentTui } = await import("./agent-tui");
-  await openAgentTui({ client, hostUrl, appId });
+  await openAgentTui({ client, hostUrl, appId, schemaPath: options.schemaPath });
 }

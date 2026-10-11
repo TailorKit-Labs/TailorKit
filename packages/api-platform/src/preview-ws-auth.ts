@@ -3,7 +3,11 @@ import { db } from "@tailorkit/db";
 import { env } from "#env";
 import { getKV } from "@tailorkit/kv";
 import { previewViewerTokenExpiresAt } from "./preview-token";
-import { endPreviewSession, ensurePreviewDeveloperGrace } from "./preview-lifecycle";
+import {
+  endPreviewSession,
+  ensurePreviewDeveloperGrace,
+  previewCliCredentialActive,
+} from "./preview-lifecycle";
 import type { PreviewWebSocketContext } from "./preview-ws";
 
 export async function authorizePreviewSocket(
@@ -30,7 +34,7 @@ export async function authorizePreviewSocket(
     const viewerTokenExpiresAt = previewViewerTokenExpiresAt(sessionId, token);
     return viewerTokenExpiresAt === null ? null : { sessionId, role, viewerTokenExpiresAt };
   }
-  if (!session.cliToken || session.cliToken.revokedAt || session.cliToken.expiresAt <= new Date()) {
+  if (!(await previewCliCredentialActive(kv, session))) {
     await endPreviewSession(kv, sessionId);
     return null;
   }

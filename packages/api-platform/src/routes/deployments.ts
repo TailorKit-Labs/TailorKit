@@ -20,13 +20,7 @@ import type { Scope } from "@tailorkit/db/schema/scope";
 import { and, eq } from "drizzle-orm";
 import z from "zod";
 import { paginatedOutput, paginationQuery } from "../pagination";
-import {
-  o,
-  protectedRouter,
-  deploymentWriteRouter,
-  requireApp,
-  requireAppInScopes,
-} from "../procedures";
+import { o, cliRouter, requireApp, requireAppInScopes } from "../procedures";
 import { setSpanAttributes } from "@tailorkit/observability";
 import { createPublicId } from "../public-id";
 import type { Context } from "../context";
@@ -253,9 +247,6 @@ const requireDeployment = o.middleware(
       !deploymentWithApp ||
       !deploymentApp ||
       deploymentApp.projectId !== context.project.id ||
-      (context.agentToken &&
-        (deploymentApp.id !== context.agentToken.appId ||
-          !requestedScopes.every((scope) => scopeMatches(scope, context.agentToken!.scope)))) ||
       !scopeMatchesApp
     ) {
       throw new ORPCError("NOT_FOUND", { message: "Deployment not found." });
@@ -278,7 +269,7 @@ function hexToBase64(hex: string): string {
   return Buffer.from(bytes).toString("base64");
 }
 
-const listAppDeployments = protectedRouter
+const listAppDeployments = cliRouter
   .meta(
     openapi({
       path: "/deployments/list",
@@ -317,7 +308,7 @@ const listAppDeployments = protectedRouter
     };
   });
 
-const getAppDeployment = protectedRouter
+const getAppDeployment = cliRouter
   .meta(
     openapi({
       path: "/deployments/{deploymentId}/lookup",
@@ -339,7 +330,7 @@ const getAppDeployment = protectedRouter
   )
   .handler(({ context }) => ({ body: context.deployment }));
 
-const createAppDeployment = deploymentWriteRouter
+const createAppDeployment = cliRouter
   .meta(
     openapi({
       path: "/deployments",
@@ -518,7 +509,7 @@ const createAppDeployment = deploymentWriteRouter
     };
   });
 
-const publishAppDeployment = deploymentWriteRouter
+const publishAppDeployment = cliRouter
   .meta(
     openapi({
       path: "/deployments/{deploymentId}",

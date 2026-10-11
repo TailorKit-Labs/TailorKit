@@ -48,3 +48,22 @@ it.each([
     .sign(createHmac("sha256", secret).update("tailorkit-agent-deploy-v1").digest());
   await expect(verifyAgentToken(jwt, secret, url)).rejects.toThrow();
 });
+
+it.each([
+  "http://platform.test/api/platform",
+  "http://localhost.evil.test/api/platform",
+  "http://192.168.1.1/api/platform",
+])("refuses to issue JWTs for insecure destinations: %s", async (platformUrl) => {
+  await expect(issueAgentToken(identity, secret, platformUrl)).rejects.toThrow(
+    "Invalid agent platform URL",
+  );
+});
+
+it.each([
+  "http://localhost/api/platform",
+  "http://127.0.0.1/api/platform",
+  "http://[::1]/api/platform",
+])("supports loopback development: %s", async (platformUrl) => {
+  const jwt = await issueAgentToken(identity, secret, platformUrl);
+  expect((await verifyAgentToken(jwt, secret, platformUrl)).platformUrl).toBe(platformUrl);
+});

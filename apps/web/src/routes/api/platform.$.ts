@@ -1,6 +1,6 @@
 import { handlePublicRuntimeRequest } from "@tailorkit/api-platform/routes/runtime";
-import { onError, ORPCError } from "@orpc/server";
-import { createContext } from "@tailorkit/api-platform/context";
+import { onError } from "@orpc/server";
+import { createContext, contextErrorResponse } from "@tailorkit/api-platform/context";
 import { platformRouter } from "@tailorkit/api-platform";
 import { RateLimitHandlerPlugin } from "@tailorkit/api-utils/rate-limiting";
 import { createFileRoute } from "@tanstack/react-router";
@@ -35,12 +35,7 @@ async function handle({ request }: { request: Request }) {
   const context = await createContext({ request }).catch((error) => {
     recordException(error, { "tailorkit.adapter": "orpc-openapi" });
     console.error("OpenAPI authorization failed", sanitizeErrorForLog(error));
-    if (error instanceof ORPCError)
-      throw Response.json(
-        { code: error.code, message: error.message },
-        { status: error.code === "SERVICE_UNAVAILABLE" ? 503 : 401 },
-      );
-    throw new Response("Unauthorized", { status: 401 });
+    throw contextErrorResponse(error);
   });
 
   const rpcResult = await handler.handle(request, {

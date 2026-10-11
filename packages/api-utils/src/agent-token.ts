@@ -3,7 +3,7 @@ import { jwtVerify, SignJWT } from "jose";
 import { z } from "zod";
 
 const issuer = "tailorkit-agent";
-const audience = "tailorkit-platform-deploy";
+const audience = "tailorkit-platform-cli";
 const lifetimeSeconds = 60 * 60;
 
 const identitySchema = z.object({
@@ -27,7 +27,14 @@ function signingKey(secret: string) {
 
 function normalizePlatformUrl(value: string) {
   const url = new URL(value);
-  if (!/^https?:$/u.test(url.protocol) || url.username || url.password || url.search || url.hash)
+  const loopback = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+  if (
+    (url.protocol !== "https:" && !(url.protocol === "http:" && loopback)) ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash
+  )
     throw new Error("Invalid agent platform URL.");
   return url.href.replace(/\/$/u, "");
 }

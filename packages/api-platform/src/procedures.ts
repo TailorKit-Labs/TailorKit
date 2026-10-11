@@ -42,11 +42,36 @@ export const o = os.$context<Context>().meta(
   }),
 );
 
-export const deploymentWriteRouter = o
+const authenticatedRouter = o
   .use(devDelayMiddleware)
   .use(ratelimitMiddleware(rateLimiter, ({ context }) => context.organization.id));
 
-export const protectedRouter = deploymentWriteRouter.use(async ({ context, next }) => {
+/** Existing CLI operations accept either credential with the same project/scope boundary. */
+export const cliRouter = authenticatedRouter.use(async ({ context, next }, input) => {
+  if (context.agentToken) {
+    const body = (input as { body?: { scope?: unknown; scopes?: unknown } })?.body;
+    if (body?.scope !== undefined || body?.scopes !== undefined) {
+      try {
+        const scopes = [
+          ...(body.scope !== undefined ? [canonicalizeScope(body.scope)] : []),
+          ...(body.scopes !== undefined ? canonicalizeScopes(body.scopes) : []),
+        ];
+        if (
+          !scopes.length ||
+          scopes.some(({ scope }) => !scopeMatches(scope, context.agentToken!.scope))
+        )
+          throw new Error("Scope not authorized");
+      } catch {
+        throw new ORPCError("FORBIDDEN", {
+          message: "Requested scope is not authorized by the agent token.",
+        });
+      }
+    }
+  }
+  return next();
+});
+
+export const protectedRouter = authenticatedRouter.use(async ({ context, next }) => {
   if (context.agentToken) throw new ORPCError("FORBIDDEN");
   return next();
 });
@@ -62,12 +87,6 @@ export const requireApp = o.middleware(
     const app = await findAppInScopes(context.project.id, input.appId, [
       canonicalizeScope(input.scope),
     ]);
-
-    if (
-      context.agentToken &&
-      (app.id !== context.agentToken.appId || !scopeMatches(input.scope, context.agentToken.scope))
-    )
-      throw new ORPCError("NOT_FOUND");
 
     return next({ context: { ...context, app } });
   },

@@ -408,7 +408,7 @@ it.each(["client", "server"])("accepts %s code exactly at the 3 MiB limit", asyn
 async function agentJwt(exp = Math.floor(Date.now() / 1000) + 3600) {
   return new SignJWT({
     iss: "tailorkit-agent",
-    aud: "tailorkit-platform-deploy",
+    aud: "tailorkit-platform-cli",
     projectId: "project",
     appId: "authorized-app",
     scope: { name: "user", value: { userId: "one" } },
@@ -420,14 +420,14 @@ async function agentJwt(exp = Math.floor(Date.now() / 1000) + 3600) {
     .sign(new TextEncoder().encode("test-only-key"));
 }
 
-it("agent JWT deployment overrides stored login and the config app without contacting the host", async () => {
+it("agent JWT deployment uses shared authentication and the configured app without host requests", async () => {
   const jwt = await agentJwt();
   vi.stubEnv("TAILORKIT_AGENT_TOKEN", jwt);
   vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
     const request = input instanceof Request ? input : undefined;
     if (request?.url === "https://platform.example/api/platform/deployments") {
       expect(await request.json()).toMatchObject({
-        appId: "authorized-app",
+        appId: "app-one",
         scope: {
           name: "user",
           value: { userId: "one" },
@@ -448,12 +448,12 @@ it("agent JWT deployment overrides stored login and the config app without conta
   });
   const onLoginRequired = vi.fn();
   expect(await runDeploy({ cwd: root, onLoginRequired })).toMatchObject({
-    appId: "authorized-app",
+    appId: "app-one",
     status: "published",
     createdApp: false,
   });
-  expect(mocks.whoami).not.toHaveBeenCalled();
-  expect(mocks.token).not.toHaveBeenCalled();
+  expect(mocks.whoami).toHaveBeenCalled();
+  expect(mocks.token).toHaveBeenCalled();
   expect(mocks.client).not.toHaveBeenCalled();
   expect(onLoginRequired).not.toHaveBeenCalled();
 });
@@ -465,12 +465,4 @@ it("fails expired agent authorization before build without falling back to login
   expect(mocks.build).not.toHaveBeenCalled();
   expect(mocks.whoami).not.toHaveBeenCalled();
   expect(onLoginRequired).not.toHaveBeenCalled();
-});
-
-it("rejects an explicit app that conflicts with the agent grant", async () => {
-  vi.stubEnv("TAILORKIT_AGENT_TOKEN", await agentJwt());
-  await expect(runDeploy({ cwd: root, appId: "other-app" })).rejects.toThrow(
-    "does not match agent authorization",
-  );
-  expect(mocks.build).not.toHaveBeenCalled();
 });

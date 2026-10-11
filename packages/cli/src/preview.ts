@@ -11,7 +11,7 @@ import type {
   PreviewBuildManifest,
   PreviewWebSocketClient,
 } from "@tailorkit/client-platform/preview";
-import { createTailorKitClient } from "@tailorkit/core/server";
+import { createCliClient } from "./client";
 import pc from "picocolors";
 import { z } from "zod";
 import { getDeployToken, runWhoami } from "./auth";
@@ -182,8 +182,8 @@ export async function runPreview(options: PreviewOptions): Promise<void> {
       await (watcher as { close: () => Promise<void> | void }).close();
     }
   };
-  const client = createTailorKitClient({
-    headers: { authorization: `Bearer ${stored.deployToken}` },
+  const client = createCliClient({
+    token: stored.deployToken,
     url: auth.hostUrl,
   });
   const result = await client.preview
@@ -197,9 +197,9 @@ export async function runPreview(options: PreviewOptions): Promise<void> {
     await closeWatcher();
     throw new Error("Unable to start preview session.");
   }
-  const cleanupClient = createTailorKitClient({
+  const cleanupClient = createCliClient({
     fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(5000) }),
-    headers: { authorization: `Bearer ${stored.deployToken}` },
+    token: stored.deployToken,
     url: auth.hostUrl,
   });
   const stop = async () => {
@@ -395,7 +395,7 @@ export async function runPreview(options: PreviewOptions): Promise<void> {
   };
   process.once("SIGINT", handleSignal);
   process.once("SIGTERM", handleSignal);
-  const shareUrl = new URL(auth.hostUrl);
+  const shareUrl = new URL(loaded.config.host ?? auth.hostUrl);
   shareUrl.pathname = `${shareUrl.pathname.replace(/\/+$/u, "")}/preview/${data.shareId}`;
   log.info(pc.green(`Host preview: ${shareUrl.href}`));
   log.info(pc.dim(`Uploading built app assets from ${root}`));

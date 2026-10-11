@@ -368,6 +368,7 @@ cli
 
 cli
   .command("agent", "Chat with the TailorKit app agent")
+  .option("--schema <path>", "Host schema snapshot for generation without host access")
   .option("--host <url>", "TailorKit host API URL (required)")
   .option("--app <id>", "App ID (otherwise prompts to select or create an app)")
   .action(async (options: Record<string, unknown>) => {
@@ -375,6 +376,7 @@ cli
       const { runAgentCommand } = await import("./agent");
       await runAgentCommand({
         appId: options.app as string | undefined,
+        schemaPath: options.schema as string | undefined,
         host: options.host as string | undefined,
         onLoginRequired: () =>
           loginWithApproval({
