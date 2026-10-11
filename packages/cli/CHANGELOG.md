@@ -1,5 +1,26 @@
 # @tailorkit/cli
 
+## 0.1.0-beta.28
+
+### Patch Changes
+
+- a0ffa4f: Send the host URL and a fresh schema snapshot with each CLI agent turn so the remote agent can scaffold and generate bindings against an undeployed local host. Add `--schema <path>` to init and generate for generation from a serialized JSON schema file. Agent workflows require a host URL and accept an optional schema; host-only runs continue fetching the schema normally.
+- Updated dependencies [a0ffa4f]
+  - @tailorkit/client-platform@0.1.0-beta.28
+  - @tailorkit/core@0.1.0-beta.28
+  - @tailorkit/app@0.1.0-beta.28
+
+## 0.1.0-beta.27
+
+### Patch Changes
+
+- be8bce2: Require an explicit --host URL for the agent command instead of reading or writing tailorkit.config.ts. Keep --app optional for selecting an existing remote app, remove --cwd from the agent command, and support --host for login, logout, and whoami.
+- Updated dependencies [21761f2]
+- Updated dependencies [4685874]
+  - @tailorkit/core@0.1.0-beta.27
+  - @tailorkit/app@0.1.0-beta.27
+  - @tailorkit/client-platform@0.1.0-beta.27
+
 ## 0.1.0-beta.26
 
 ### Patch Changes

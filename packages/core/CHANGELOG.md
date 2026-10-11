@@ -1,5 +1,25 @@
 # @tailorkit/core
 
+## 0.1.0-beta.28
+
+### Patch Changes
+
+- a0ffa4f: Send the host URL and a fresh schema snapshot with each CLI agent turn so the remote agent can scaffold and generate bindings against an undeployed local host. Add `--schema <path>` to init and generate for generation from a serialized JSON schema file. Agent workflows require a host URL and accept an optional schema; host-only runs continue fetching the schema normally.
+- Updated dependencies [a0ffa4f]
+  - @tailorkit/client-platform@0.1.0-beta.28
+
+## 0.1.0-beta.27
+
+### Minor Changes
+
+- 21761f2: Require an absolute public HTTP(S) `baseUrl` when creating a server. Relative paths and omitted URLs are rejected, and backend sessions and server tool verification always use the configured public origin.
+
+  Move authentication exclusively to `.handler(request, { authenticate })` and remove the server's `assetsBaseUrl` option. Update host integrations to pass authentication on every handler call; client-side asset URL fallbacks remain available through `createClient`.
+
+### Patch Changes
+
+- @tailorkit/client-platform@0.1.0-beta.27
+
 ## 0.1.0-beta.26
 
 ### Minor Changes
