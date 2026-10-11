@@ -9,15 +9,24 @@ import type { RefObject } from "react";
 import type { Scope } from "@tailorkit/db/schema/scope";
 import { Badge } from "@tailorkit/ui/badge";
 import { CardFrame } from "@tailorkit/ui/card";
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@tailorkit/ui/empty";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@tailorkit/ui/empty";
 import { Input } from "@tailorkit/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@tailorkit/ui/table";
 import { DateAgo } from "@tailorkit/ui/date";
 import { AppLogo } from "#components/apps/app-logo";
 import { renderSortableHeader } from "#components/members/member-table-utils";
 import { PageLayout } from "#components/page-layout";
+import { ProjectKeyEnv } from "#components/project-key-env";
 import { orpc } from "#lib/orpc";
 import { dataTableFeatures } from "#lib/table";
+import { getProjectApiKey } from "#utils/project-api-key-memory";
 
 const appsPageSize = 25;
 
@@ -242,6 +251,7 @@ function AppsIndexPage() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState("");
   const normalizedSearch = search.trim();
+  const projectApiKey = getProjectApiKey(orgSlug, projectSlug);
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } = useInfiniteQuery(
     appsListQueryOptions({
       appsList: orpc.apps.list,
@@ -303,6 +313,16 @@ function AppsIndexPage() {
               : "Apps deployed to this project will appear here."}
           </EmptyDescription>
         </EmptyHeader>
+        {!normalizedSearch && projectApiKey ? (
+          <EmptyContent className="w-full max-w-lg text-left">
+            <p className="text-muted-foreground text-sm">
+              Add this project key to your backend's .env file to get started.
+            </p>
+            <div className="w-full">
+              <ProjectKeyEnv key={projectApiKey} apiKey={projectApiKey} />
+            </div>
+          </EmptyContent>
+        ) : null}
       </Empty>
     );
   } else {
