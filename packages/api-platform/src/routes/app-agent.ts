@@ -63,6 +63,8 @@ const chat = cliRouter
     } catch {
       throw new ORPCError("BAD_REQUEST", { message: "Invalid agent messages." });
     }
+    // JWTs carry the same project/scope permissions as CLI sessions, not an app-only grant.
+    // Reuse the credential across authorized app selections without extending its expiry.
     const run = await start(appAgent, [
       {
         appId: app.id,

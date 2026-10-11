@@ -333,7 +333,8 @@ describe("platform app chat", () => {
   });
 });
 
-it("accepts a JWT-authenticated agent turn without extending its original deadline", async () => {
+it("accepts another app in the JWT scope without extending the original deadline", async () => {
+  mocks.app.mockResolvedValue({ id: "app-two" });
   const jwt = await issueAgentToken(
     { projectId: context.project.id, appId: "app-one", cliTokenId: "cli-one", scope: scope.scope },
     env.AUTH_SECRET!,
@@ -351,6 +352,6 @@ it("accepts a JWT-authenticated agent turn without extending its original deadli
   for await (const _ of events) {
     /* consume */
   }
-  expect(mocks.start.mock.lastCall![1][0].agentToken).toBe(jwt);
+  expect(mocks.start.mock.lastCall![1][0]).toMatchObject({ appId: "app-two", agentToken: jwt });
   expect(mocks.token).not.toHaveBeenCalled();
 });
