@@ -16,7 +16,7 @@ import { findAppInScopes, o, protectedRouter } from "../procedures";
 import { authenticateCli } from "../cli-token";
 import { canonicalizeScope } from "../scope";
 
-const APP_AGENT_MODEL = "openai/gpt-6.1-sol";
+export const APP_AGENT_MODEL = "openai/gpt-6.1-sol";
 
 const chunkSchema = asSchema(uiMessageChunkSchema);
 

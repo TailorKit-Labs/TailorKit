@@ -12,6 +12,10 @@
     "./workflows": {
       "types": "./dist/workflows.d.mts",
       "import": "./dist/workflows.mjs"
+    },
+    "./mcp": {
+      "types": "./dist/mcp.d.mts",
+      "import": "./dist/mcp.mjs"
     }
   },
   "scripts": {
@@ -21,6 +25,7 @@
   },
   "dependencies": {
     "@ai-sdk/workflow": "2.0.58",
+    "@modelcontextprotocol/sdk": "1.32.1",
     "@vercel/sandbox": "3.5.1",
     "ai": "catalog:",
     "workflow": "5.0.1",

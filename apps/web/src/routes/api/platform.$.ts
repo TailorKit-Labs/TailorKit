@@ -1,4 +1,5 @@
 import { handlePublicRuntimeRequest } from "@tailorkit/api-platform/routes/runtime";
+import { handlePlatformAppAgentMcpRequest } from "@tailorkit/api-platform/app-agent-mcp";
 import { onError } from "@orpc/server";
 import { createContext } from "@tailorkit/api-platform/context";
 import { platformRouter } from "@tailorkit/api-platform";
@@ -28,6 +29,10 @@ async function handle({ request }: { request: Request }) {
     "tailorkit.adapter": "orpc-openapi",
     "tailorkit.package": "apps-web",
   });
+
+  if (new URL(request.url).pathname === "/api/platform/app-agent/mcp") {
+    return handlePlatformAppAgentMcpRequest(request);
+  }
 
   const publicResponse = handlePublicRuntimeRequest(request);
   if (publicResponse) return publicResponse;
