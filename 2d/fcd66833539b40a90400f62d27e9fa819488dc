@@ -1,0 +1,18 @@
+.agents/skills/better-auth-best-practices/SKILL.md
+  h_18044dd1b61a81 8-18,28-31,48-50,58-69,75,79-80,124,181-182
+.agents/skills/better-auth-security-best-practices/SKILL.md
+  h_18044dd1b61a81 1-432
+skills-lock.json
+  h_18044dd1b61a81 12-19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2dfcd66833539b40a90400f62d27e9fa819488dc",
+  "prompts": {},
+  "humans": {
+    "h_18044dd1b61a81": {
+      "author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
