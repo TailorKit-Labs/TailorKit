@@ -6,7 +6,7 @@ import { setSpanAttributes } from "@tailorkit/observability";
 import type { Context } from "./context";
 import { db } from "@tailorkit/db";
 import { type Scope } from "@tailorkit/db/schema/scope";
-import { canonicalizeScope, canonicalizeScopes } from "./scope";
+import { canonicalizeScope, canonicalizeScopes, scopeMatches } from "./scope";
 
 const rateLimiter = createRateLimiter({ maxRequests: 100, window: 1000 });
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
@@ -42,13 +42,14 @@ export const o = os.$context<Context>().meta(
   }),
 );
 
-export const protectedRouter = o
-  .use(async ({ context, next }) => {
-    if (context.cliToken) throw new ORPCError("FORBIDDEN");
-    return next();
-  })
+export const deploymentWriteRouter = o
   .use(devDelayMiddleware)
   .use(ratelimitMiddleware(rateLimiter, ({ context }) => context.organization.id));
+
+export const protectedRouter = deploymentWriteRouter.use(async ({ context, next }) => {
+  if (context.agentToken) throw new ORPCError("FORBIDDEN");
+  return next();
+});
 
 export const requireApp = o.middleware(
   async ({ context, next }, input: { appId: string; scope: Scope }) => {
@@ -61,6 +62,12 @@ export const requireApp = o.middleware(
     const app = await findAppInScopes(context.project.id, input.appId, [
       canonicalizeScope(input.scope),
     ]);
+
+    if (
+      context.agentToken &&
+      (app.id !== context.agentToken.appId || !scopeMatches(input.scope, context.agentToken.scope))
+    )
+      throw new ORPCError("NOT_FOUND");
 
     return next({ context: { ...context, app } });
   },

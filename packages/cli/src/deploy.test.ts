@@ -1,3 +1,4 @@
+import { SignJWT } from "jose";
 import { createHash } from "node:crypto";
 import { gunzipSync } from "node:zlib";
 import {
@@ -32,11 +33,11 @@ vi.mock("@tailorkit/app/builder", () => ({
   tailorkitUploadManifestSchema,
   getClientSourceFiles,
 }));
-vi.mock("./deployment-client", () => ({ createDeploymentClient: mocks.client }));
+vi.mock("@tailorkit/core/server", () => ({ createTailorKitClient: mocks.client }));
 vi.mock("./auth", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./auth")>()),
-  getDeploymentToken: mocks.token,
-  runDeployWhoami: mocks.whoami,
+  getDeployToken: mocks.token,
+  runWhoami: mocks.whoami,
 }));
 const { runDeploy } = await import("./deploy");
 let root: string;
@@ -79,27 +80,6 @@ afterEach(async () => {
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
   await rm(root, { recursive: true, force: true });
-});
-
-it("pins an explicit existing app instead of using or replacing the config's app identity", async () => {
-  vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 200 }));
-  await runDeploy({ cwd: root, appId: "selected-app" });
-  expect(mocks.create.mock.calls[0]![0].appId).toBe("selected-app");
-  mocks.create.mockRejectedValue({ code: "NOT_FOUND", message: "App not found." });
-  const onMissingAppId = vi.fn();
-  await expect(runDeploy({ cwd: root, appId: "selected-app", onMissingAppId })).rejects.toThrow(
-    "requested deployment app was not found",
-  );
-  expect(onMissingAppId).not.toHaveBeenCalled();
-});
-
-it("does not start browser login for an expired headless token", async () => {
-  vi.stubEnv("TAILORKIT_DEPLOY_TOKEN", "expired-token");
-  mocks.whoami.mockRejectedValue(new NotLoggedInError("https://host.example"));
-  const onLoginRequired = vi.fn();
-  await expect(runDeploy({ cwd: root, onLoginRequired })).rejects.toThrow("Not logged in");
-  expect(onLoginRequired).not.toHaveBeenCalled();
-  expect(mocks.build).not.toHaveBeenCalled();
 });
 
 it("uploads gzip server and client code with metadata matching the stored bytes", async () => {
@@ -317,7 +297,6 @@ it.each(["missing", "expired"])(
       expect(mocks.build).not.toHaveBeenCalled();
       expect(mocks.create).not.toHaveBeenCalled();
       mocks.token.mockResolvedValue({ deployToken: "new-token" });
-      mocks.whoami.mockResolvedValue({ hostUrl: "https://host.example" });
       return { hostUrl: "https://host.example" };
     });
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 200 }));
@@ -330,7 +309,10 @@ it.each(["missing", "expired"])(
     );
     expect(onLoginRequired).toHaveBeenCalledOnce();
     expect(mocks.token).toHaveBeenCalledWith("https://host.example");
-    expect(mocks.client).toHaveBeenCalledWith("new-token");
+    expect(mocks.client).toHaveBeenCalledWith({
+      headers: { authorization: "Bearer new-token" },
+      url: "https://host.example",
+    });
     expect(mocks.publish).toHaveBeenCalledOnce();
   },
 );
@@ -421,4 +403,74 @@ it.each(["client", "server"])("accepts %s code exactly at the 3 MiB limit", asyn
     expect.objectContaining({ path: `${kind}/${kind}.js`, size }),
   );
   expect(mocks.publish).toHaveBeenCalledOnce();
+});
+
+async function agentJwt(exp = Math.floor(Date.now() / 1000) + 3600) {
+  return new SignJWT({
+    iss: "tailorkit-agent",
+    aud: "tailorkit-platform-deploy",
+    projectId: "project",
+    appId: "authorized-app",
+    scope: { name: "user", value: { userId: "one" } },
+    platformUrl: "https://platform.example/api/platform",
+    iat: Math.floor(Date.now() / 1000),
+    exp,
+  })
+    .setProtectedHeader({ alg: "HS256", typ: "tailorkit-agent+jwt" })
+    .sign(new TextEncoder().encode("test-only-key"));
+}
+
+it("agent JWT deployment overrides stored login and the config app without contacting the host", async () => {
+  const jwt = await agentJwt();
+  vi.stubEnv("TAILORKIT_AGENT_TOKEN", jwt);
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+    const request = input instanceof Request ? input : undefined;
+    if (request?.url === "https://platform.example/api/platform/deployments") {
+      expect(await request.json()).toMatchObject({
+        appId: "authorized-app",
+        scope: {
+          name: "user",
+          value: { userId: "one" },
+        },
+      });
+      expect(request.headers.get("authorization")).toBe(`Bearer ${jwt}`);
+      return Response.json({
+        deployment: { id: "deployment" },
+        assets: [{ uploadUrl: "https://uploads.example/client" }],
+        server: { uploadUrl: "https://uploads.example/server" },
+      });
+    }
+    if (request?.url === "https://platform.example/api/platform/deployments/deployment")
+      return Response.json({ id: "deployment", status: "published" });
+    if (typeof input === "string" && input.startsWith("https://uploads.example/"))
+      return new Response(null, { status: 200 });
+    throw new Error("Unexpected host or platform request");
+  });
+  const onLoginRequired = vi.fn();
+  expect(await runDeploy({ cwd: root, onLoginRequired })).toMatchObject({
+    appId: "authorized-app",
+    status: "published",
+    createdApp: false,
+  });
+  expect(mocks.whoami).not.toHaveBeenCalled();
+  expect(mocks.token).not.toHaveBeenCalled();
+  expect(mocks.client).not.toHaveBeenCalled();
+  expect(onLoginRequired).not.toHaveBeenCalled();
+});
+
+it("fails expired agent authorization before build without falling back to login", async () => {
+  vi.stubEnv("TAILORKIT_AGENT_TOKEN", await agentJwt(Math.floor(Date.now() / 1000) - 1));
+  const onLoginRequired = vi.fn();
+  await expect(runDeploy({ cwd: root, onLoginRequired })).rejects.toThrow(/agent authorization/i);
+  expect(mocks.build).not.toHaveBeenCalled();
+  expect(mocks.whoami).not.toHaveBeenCalled();
+  expect(onLoginRequired).not.toHaveBeenCalled();
+});
+
+it("rejects an explicit app that conflicts with the agent grant", async () => {
+  vi.stubEnv("TAILORKIT_AGENT_TOKEN", await agentJwt());
+  await expect(runDeploy({ cwd: root, appId: "other-app" })).rejects.toThrow(
+    "does not match agent authorization",
+  );
+  expect(mocks.build).not.toHaveBeenCalled();
 });

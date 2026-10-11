@@ -9,8 +9,7 @@ vi.mock("./utils", async (original) => ({
 const context = {
   sandboxName: "sandbox-one",
   appId: "selected-app",
-  deployToken: "private-token",
-  platformUrl: "https://platform.test/api/platform",
+  agentToken: "private-token",
 };
 
 beforeEach(() => {
@@ -41,18 +40,17 @@ it("pins the authorized app and injects credentials only into the deploy process
       "--no-interactive",
     ],
     env: {
-      TAILORKIT_DEPLOY_TOKEN: context.deployToken,
-      TAILORKIT_PLATFORM_URL: context.platformUrl,
+      TAILORKIT_AGENT_TOKEN: context.agentToken,
     },
   });
-  expect(command.args.join(" ")).not.toContain(context.deployToken);
+  expect(command.args.join(" ")).not.toContain(context.agentToken);
 });
 
 it("returns failures for the agent to address and redacts echoed credentials", async () => {
   mocks.runCommand.mockResolvedValue({
     exitCode: 1,
-    stdout: async () => context.deployToken,
-    stderr: async () => `Rejected ${context.deployToken}`,
+    stdout: async () => context.agentToken,
+    stderr: async () => `Rejected ${context.agentToken}`,
   });
   expect(
     await deployTool.execute!({}, { context, toolCallId: "deploy-one", messages: [] }),
@@ -64,7 +62,7 @@ it("returns failures for the agent to address and redacts echoed credentials", a
 });
 
 it("redacts credentials from command transport failures", async () => {
-  mocks.runCommand.mockRejectedValue(new Error(`Command failed: ${context.deployToken}`));
+  mocks.runCommand.mockRejectedValue(new Error(`Command failed: ${context.agentToken}`));
   expect(
     await deployTool.execute!({}, { context, toolCallId: "deploy-one", messages: [] }),
   ).toEqual({

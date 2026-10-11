@@ -16,6 +16,7 @@ import { env } from "#env";
 import { findAppInScopes, o, protectedRouter } from "../procedures";
 import { authenticateCli } from "../cli-token";
 import { canonicalizeScope } from "../scope";
+import { issueAgentToken } from "@tailorkit/api-utils/agent-token";
 
 const APP_AGENT_MODEL = "openai/gpt-6.1-sol";
 
@@ -71,8 +72,16 @@ const chat = protectedRouter
         appId: app.id,
         hostUrl: input.body.hostUrl,
         schema: input.body.schema,
-        deployToken: input.body.deployToken,
-        platformUrl: env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform",
+        agentToken: await issueAgentToken(
+          {
+            projectId: context.project.id,
+            appId: app.id,
+            cliTokenId: token.id,
+            scope: token.scope,
+          },
+          env.AUTH_SECRET!,
+          env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform",
+        ),
         messages,
         model: APP_AGENT_MODEL,
       },

@@ -6,7 +6,9 @@ import { getStorage } from "@tailorkit/storage";
 import type { Storage } from "@tailorkit/storage";
 import { auth } from "@tailorkit/auth";
 import { db } from "@tailorkit/db";
-import { authenticateCliToken } from "./cli-token";
+import { verifyAgentToken, type AgentToken } from "@tailorkit/api-utils/agent-token";
+import { ORPCError } from "@orpc/server";
+import { canonicalizeScope } from "./scope";
 import { initializeObservability, setSpanAttributes, withSpan } from "@tailorkit/observability";
 
 export interface Context {
@@ -15,22 +17,8 @@ export interface Context {
   storage: Storage;
   /** Internal metadata-only access; not a project host credential. */
   runtimeService?: boolean;
-  /** Present only for the dedicated CLI HTTP surface. */
-  cliToken?: Awaited<ReturnType<typeof authenticateCliToken>>;
-}
-
-export async function createCliContext({ request }: { request: Request }): Promise<Context> {
-  await initializeObservability("tailorkit-web");
-  const [scheme, secret] = request.headers.get("authorization")?.split(" ") ?? [];
-  if (scheme !== "Bearer" || !secret) throw new Error("Missing CLI deploy token");
-  const cliToken = await authenticateCliToken(secret);
-  const project = await db.query.project.findFirst({
-    where: { id: cliToken.projectId },
-    with: { organization: true },
-  });
-  const storage = getStorage();
-  if (!project?.organization || !storage) throw new Error("CLI project unavailable");
-  return { project, organization: project.organization, storage, cliToken };
+  /** Restricted to deployment writes for one authorized app. */
+  agentToken?: AgentToken;
 }
 
 export async function createContext({ request }: { request: Request }): Promise<Context> {
@@ -54,7 +42,35 @@ export async function createContext({ request }: { request: Request }): Promise<
     const runtimeProject = await runtimeProjectAccess(request, env.APP_RUNTIME_SERVICE_TOKEN);
     let projectId: string;
 
-    if (runtimeProject) {
+    let agentToken: AgentToken | undefined;
+    if (key.split(".").length === 3) {
+      if (!env.AUTH_SECRET) throw new ORPCError("SERVICE_UNAVAILABLE");
+      try {
+        agentToken = await verifyAgentToken(
+          key,
+          env.AUTH_SECRET,
+          env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform",
+        );
+        const source = await db.query.cliToken.findFirst({
+          where: { id: agentToken.cliTokenId, projectId: agentToken.projectId },
+        });
+        const scope = canonicalizeScope(agentToken.scope);
+        // Source expiry cannot shorten an already authorized run. Revocation still applies.
+        if (
+          !source ||
+          source.revokedAt ||
+          source.scopeKey !== scope.scopeKey ||
+          canonicalizeScope(source.scope).scopeKey !== scope.scopeKey
+        )
+          throw new Error("Agent authorization revoked.");
+        agentToken = { ...agentToken, scope: scope.scope };
+      } catch {
+        throw new ORPCError("UNAUTHORIZED", {
+          message: "Invalid, expired, or revoked agent token. Start a new agent turn.",
+        });
+      }
+      projectId = agentToken.projectId;
+    } else if (runtimeProject) {
       projectId = runtimeProject;
     } else {
       const apiKey = await auth.api.verifyApiKey({ body: { configId: "project-host", key } });
@@ -89,6 +105,7 @@ export async function createContext({ request }: { request: Request }): Promise<
       organization: project.organization,
       storage,
       runtimeService: Boolean(runtimeProject),
+      agentToken,
     };
   });
 }

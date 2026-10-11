@@ -20,18 +20,23 @@ Without `--schema`, init and generate fetch the schema from the configured host.
 The snapshot provides types and bindings; remote runtime calls to a local host
 still require network connectivity.
 
-`tailorkit deploy` verifies the existing CLI login and creates and publishes the
-deployment directly through the TailorKit platform. A logged-in local host does
-not need to be reachable during deployment. Login still requires the host to
-approve the identity and scope; issued tokens expire after 12 hours.
+`tailorkit deploy` continues to authenticate through the configured host using
+its existing CLI login. Login and CLI token storage are unchanged.
 
-For headless deployments, provide `TAILORKIT_DEPLOY_TOKEN` and use
-`--no-interactive` to fail instead of prompting for login, app creation, or a type
+The app agent receives a separate, signed JWT after the platform authorizes the
+agent request forwarded by the host. It lasts one hour from issuance and includes
+the platform API URL, project, scope, selected app, and initiating CLI credential
+identity. CLI approval does not currently record a user subject ID.
+
+The deployment tool passes this JWT through `TAILORKIT_AGENT_TOKEN` only to the
+deployment subprocess. When present, it overrides stored CLI credentials and
+routes deployment requests directly to the existing platform endpoints. The
+platform verifies the JWT and restricts it to creating and publishing deployments
+for the selected app. Expired or invalid JWTs fail without prompting for login.
+Start another agent turn to obtain a fresh JWT. Revoking the initiating CLI
+credential also revokes agent access; its normal expiry does not shorten the JWT.
+
+`--no-interactive` fails instead of prompting for login, app creation, or a type
 check override. `--app-id <id>` pins deployment to an existing app and never
-creates a replacement. `TAILORKIT_PLATFORM_URL` overrides the default platform
-API URL (`https://tailorkit.dev/api/platform`). Environment tokens are never
-saved to the CLI credential store.
-
-The app agent uses its approved login through a dedicated deploy tool after
-completing and verifying app changes. Credentials are supplied only to the
-deployment process, never to the model prompt or persistent workspace.
+creates a replacement. The JWT is never written to the CLI credential store,
+model prompt, or persistent workspace.

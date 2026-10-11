@@ -20,7 +20,13 @@ import type { Scope } from "@tailorkit/db/schema/scope";
 import { and, eq } from "drizzle-orm";
 import z from "zod";
 import { paginatedOutput, paginationQuery } from "../pagination";
-import { o, protectedRouter, requireApp, requireAppInScopes } from "../procedures";
+import {
+  o,
+  protectedRouter,
+  deploymentWriteRouter,
+  requireApp,
+  requireAppInScopes,
+} from "../procedures";
 import { setSpanAttributes } from "@tailorkit/observability";
 import { createPublicId } from "../public-id";
 import type { Context } from "../context";
@@ -68,7 +74,7 @@ const createDeploymentLogoInput = z.object({
   contentType: logoContentType,
 });
 
-export const createDeploymentInput = z
+const createDeploymentInput = z
   .object({
     appId: z.string(),
     assets: z.tuple([createDeploymentAssetInput]),
@@ -102,15 +108,6 @@ const deploymentLogoUpload = deploymentAssetUpload.extend({
 const deploymentLogoUploads = z.object({
   dark: deploymentLogoUpload.optional(),
   light: deploymentLogoUpload.optional(),
-});
-
-export const createDeploymentOutput = z.object({
-  body: z.object({
-    assets: z.array(deploymentAssetUpload),
-    server: deploymentAssetUpload.optional(),
-    deployment: AppDeployment,
-    logos: deploymentLogoUploads.optional(),
-  }),
 });
 
 function isNotFound(error: unknown) {
@@ -256,6 +253,9 @@ const requireDeployment = o.middleware(
       !deploymentWithApp ||
       !deploymentApp ||
       deploymentApp.projectId !== context.project.id ||
+      (context.agentToken &&
+        (deploymentApp.id !== context.agentToken.appId ||
+          !requestedScopes.every((scope) => scopeMatches(scope, context.agentToken!.scope)))) ||
       !scopeMatchesApp
     ) {
       throw new ORPCError("NOT_FOUND", { message: "Deployment not found." });
@@ -339,7 +339,7 @@ const getAppDeployment = protectedRouter
   )
   .handler(({ context }) => ({ body: context.deployment }));
 
-const createAppDeployment = protectedRouter
+const createAppDeployment = deploymentWriteRouter
   .meta(
     openapi({
       path: "/deployments",
@@ -351,7 +351,16 @@ const createAppDeployment = protectedRouter
       body: createDeploymentInput,
     }),
   )
-  .output(createDeploymentOutput)
+  .output(
+    z.object({
+      body: z.object({
+        assets: z.array(deploymentAssetUpload),
+        server: deploymentAssetUpload.optional(),
+        deployment: AppDeployment,
+        logos: deploymentLogoUploads.optional(),
+      }),
+    }),
+  )
   .use(requireApp.adaptInput(({ body: { appId, scope } }) => ({ appId, scope })))
   .handler(async ({ context, input }) => {
     const deploymentId = crypto.randomUUID();
@@ -509,7 +518,7 @@ const createAppDeployment = protectedRouter
     };
   });
 
-const publishAppDeployment = protectedRouter
+const publishAppDeployment = deploymentWriteRouter
   .meta(
     openapi({
       path: "/deployments/{deploymentId}",

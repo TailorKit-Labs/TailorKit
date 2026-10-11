@@ -39,10 +39,15 @@
       "development": "./src/app-auth.ts",
       "types": "./dist/app-auth.d.mts",
       "default": "./dist/app-auth.mjs"
+    },
+    "./agent-token": {
+      "development": "./src/agent-token.ts",
+      "types": "./dist/agent-token.d.mts",
+      "default": "./dist/agent-token.mjs"
     }
   },
   "scripts": {
-    "build": "vp pack src/rate-limiting.ts src/hashing.ts src/dev-delay.ts src/app-asset-url.ts src/app-auth.ts --format esm --dts --clean",
+    "build": "vp pack src/rate-limiting.ts src/hashing.ts src/dev-delay.ts src/app-asset-url.ts src/app-auth.ts src/agent-token.ts --format esm --dts --clean",
     "check-types": "tsc --noEmit",
     "test": "vp test run"
   },

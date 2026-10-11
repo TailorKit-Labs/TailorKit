@@ -3,6 +3,8 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { readUIMessageStream } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import type { Context } from "../context";
+import { verifyAgentToken } from "@tailorkit/api-utils/agent-token";
+import { env } from "#env";
 import { canonicalizeScope } from "../scope";
 
 const mocks = vi.hoisted(() => ({
@@ -83,9 +85,18 @@ describe("platform app chat", () => {
     expect(events).toContainEqual({ type: "text-delta", id: "text-1", delta: "Hello" });
     expect(events.at(-1)).toEqual({ type: "finish" });
     const first = mocks.start.mock.lastCall![1][0];
-    expect(first).toMatchObject({
-      deployToken: input.body.deployToken,
-      platformUrl: "https://tailorkit.dev/api/platform",
+    expect(first).not.toHaveProperty("deployToken");
+    expect(
+      await verifyAgentToken(
+        first.agentToken,
+        env.AUTH_SECRET!,
+        env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform",
+      ),
+    ).toMatchObject({
+      projectId: context.project.id,
+      appId: "app-one",
+      cliTokenId: "cli-one",
+      scope: scope.scope,
     });
     expect(first.hostUrl).toBe(input.body.hostUrl);
     expect(first.schema).toBeUndefined();

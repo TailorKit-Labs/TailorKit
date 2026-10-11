@@ -1,4 +1,5 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
+import { issueAgentToken } from "@tailorkit/api-utils/agent-token";
 import { hashSecret } from "@tailorkit/api-utils/hashing";
 import { app, appDeployment } from "@tailorkit/db/schema/apps";
 import { cliToken } from "@tailorkit/db/schema/cli-auth";
@@ -29,20 +30,23 @@ vi.mock("@tailorkit/auth", () => ({ auth: { api: { verifyApiKey: mocks.apiKey } 
 vi.mock("@tailorkit/storage", () => ({ getStorage: () => mocks.storage }));
 vi.mock("@tailorkit/kv", () => ({ getKV: () => null }));
 
-const { createCliContext } = await import("../context");
-const { cliRouter } = await import("./cli");
+const { createContext } = await import("../context");
+const { appRouter } = await import("./apps");
 const { deploymentRouter } = await import("./deployments");
-const handler = new OpenAPIHandler({ cli: cliRouter, deployments: deploymentRouter });
+const handler = new OpenAPIHandler({ apps: appRouter, deployments: deploymentRouter });
 const projectId = "22222222-2222-4222-8222-222222222222";
 const organizationId = "11111111-1111-4111-8111-111111111111";
 const tokenSecret = "issued-cli-token";
 const scope = canonicalizeScope({ name: "user", value: { userId: "user-one" } });
 let database: Awaited<ReturnType<typeof createTestDb>>;
+let jwt: string;
+let sourceTokenId: string;
 let authorizedAppId: string;
+let sameScopeAppId: string;
 let otherScopeAppId: string;
 let otherProjectAppId: string;
 
-function request(path: string, body: unknown = {}, secret = tokenSecret) {
+function request(path: string, body: unknown = {}, secret = jwt) {
   return new Request(`https://platform.test/api/platform${path}`, {
     method: "POST",
     headers: { authorization: `Bearer ${secret}`, "content-type": "application/json" },
@@ -51,13 +55,19 @@ function request(path: string, body: unknown = {}, secret = tokenSecret) {
 }
 async function post(path: string, body: unknown = {}) {
   const input = request(path, body);
-  const context = await createCliContext({ request: input });
+  let context;
+  try {
+    context = await createContext({ request: input });
+  } catch (error) {
+    return { status: 401, body: { code: (error as { code: string }).code } };
+  }
   const result = await handler.handle(input, { prefix: "/api/platform", context });
   if (!result.response) throw new Error("Expected HTTP response");
   return { status: result.response.status, body: await result.response.json() };
 }
 const deploymentInput = (appId: string) => ({
   appId,
+  scope: scope.scope,
   assets: [
     {
       checksum: "a".repeat(64),
@@ -86,16 +96,21 @@ beforeEach(async () => {
     { id: projectId, organizationId, name: "Project", slug: "project" },
     { id: otherProjectId, organizationId, name: "Other", slug: "other" },
   ]);
-  await db.insert(cliToken).values({
-    projectId,
-    ...scope,
-    tokenHash: hashSecret(tokenSecret, env.AUTH_SECRET!),
-    expiresAt: new Date(Date.now() + 3_600_000),
-  });
+  const [source] = await db
+    .insert(cliToken)
+    .values({
+      projectId,
+      ...scope,
+      tokenHash: hashSecret(tokenSecret, env.AUTH_SECRET!),
+      expiresAt: new Date(Date.now() + 3_600_000),
+    })
+    .returning();
+  sourceTokenId = source!.id;
   const apps = await db
     .insert(app)
     .values([
       { projectId, ...scope, name: "Allowed", publicId: "app000000001" },
+      { projectId, ...scope, name: "Same scope", publicId: "app000000004" },
       {
         projectId,
         ...canonicalizeScope({ name: "user", value: { userId: "user-two" } }),
@@ -106,75 +121,101 @@ beforeEach(async () => {
     ])
     .returning();
   authorizedAppId = apps[0]!.id;
-  otherScopeAppId = apps[1]!.id;
-  otherProjectAppId = apps[2]!.id;
+  sameScopeAppId = apps[1]!.id;
+  otherScopeAppId = apps[2]!.id;
+  otherProjectAppId = apps[3]!.id;
+  jwt = await issueAgentToken(
+    { projectId, appId: authorizedAppId, cliTokenId: sourceTokenId, scope: scope.scope },
+    env.AUTH_SECRET!,
+    env.OPENAPI_SERVER_URL!,
+  );
   mocks.storage.createUploadUrl.mockResolvedValue({ uploadUrl: "https://uploads.test/client.js" });
 });
 afterEach(async () => {
   vi.restoreAllMocks();
+  vi.useRealTimers();
   await database.client.close();
 });
 
-it("derives project and scope from the CLI token without a host key", async () => {
-  expect(await post("/cli/verify")).toEqual({
-    status: 200,
-    body: { projectId, scope: scope.scope },
-  });
-  expect(mocks.apiKey).not.toHaveBeenCalled();
-  const createdApp = await post("/cli/apps", { name: "New app", description: null });
-  expect(createdApp.status).toBe(200);
-  expect(createdApp.body).toMatchObject({ projectId, scope: scope.scope });
-  const created = await post("/cli/deployments", deploymentInput(authorizedAppId));
+it("deploys with an agent JWT through the existing endpoint without a host key", async () => {
+  const created = await post("/deployments", deploymentInput(authorizedAppId));
   expect(created.status).toBe(200);
   expect(created.body.deployment).toMatchObject({ appId: authorizedAppId, status: "uploading" });
+  expect(mocks.apiKey).not.toHaveBeenCalled();
+});
+
+it("keeps the one-hour grant valid after the source CLI token expires", async () => {
+  await database.db.update(cliToken).set({ expiresAt: new Date(0) });
+  expect((await post("/deployments", deploymentInput(authorizedAppId))).status).toBe(200);
 });
 
 it.each(["expired", "revoked", "invalid", "malformed-scope"])(
-  "rejects %s tokens",
+  "rejects %s agent credentials",
   async (state) => {
-    if (state === "expired") await database.db.update(cliToken).set({ expiresAt: new Date(0) });
+    if (state === "expired") {
+      vi.useFakeTimers();
+      vi.advanceTimersByTime(3600_000);
+    }
     if (state === "revoked") await database.db.update(cliToken).set({ revokedAt: new Date() });
     if (state === "malformed-scope")
       await database.db.update(cliToken).set({ scopeKey: "0".repeat(32) });
-    await expect(
-      createCliContext({
-        request: request("/cli/verify", {}, state === "invalid" ? "bad" : tokenSecret),
-      }),
-    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    if (state === "invalid") jwt = jwt.slice(0, jwt.lastIndexOf(".") + 1) + "invalid";
+    expect(await post("/deployments", deploymentInput(authorizedAppId))).toMatchObject({
+      status: 401,
+      body: { code: "UNAUTHORIZED" },
+    });
   },
 );
 
-it("cannot choose a different scope or access host project-key routes", async () => {
+it("cannot change scope, create an app, or call host-only routes", async () => {
   expect(
-    await post("/cli/deployments", {
+    await post("/deployments", {
       ...deploymentInput(authorizedAppId),
-      scope: { name: "user", value: { userId: "user-two" } },
+      scope: {
+        name: "user",
+        value: { userId: "user-two" },
+      },
     }),
-  ).toMatchObject({ status: 400, body: { code: "BAD_REQUEST" } });
-  expect(
-    await post("/deployments", { ...deploymentInput(authorizedAppId), scope: scope.scope }),
-  ).toMatchObject({ status: 403, body: { code: "FORBIDDEN" } });
+  ).toMatchObject({ status: 404, body: { code: "NOT_FOUND" } });
+  expect(await post("/apps", { name: "App", description: null, scope: scope.scope })).toMatchObject(
+    { status: 403, body: { code: "FORBIDDEN" } },
+  );
+  expect(await post(`/apps/${authorizedAppId}/lookup`, { scopes: [scope.scope] })).toMatchObject({
+    status: 403,
+    body: { code: "FORBIDDEN" },
+  });
 });
 
-it("hides apps and deployments outside the token's scope or project", async () => {
-  for (const appId of [otherScopeAppId, otherProjectAppId]) {
-    expect(await post("/cli/deployments", deploymentInput(appId))).toMatchObject({
+it("rejects access to other apps even when their scope matches", async () => {
+  for (const appId of [sameScopeAppId, otherScopeAppId, otherProjectAppId]) {
+    expect(await post("/deployments", deploymentInput(appId))).toMatchObject({
       status: 404,
       body: { code: "NOT_FOUND" },
     });
     const [deployment] = await database.db
       .insert(appDeployment)
-      .values({ appId, publicId: appId.slice(0, 12), status: "uploading" })
+      .values({
+        appId,
+        publicId: appId.slice(0, 12),
+        status: "uploading",
+      })
       .returning();
-    expect(await post(`/cli/deployments/${deployment!.id}`, {})).toMatchObject({
+    expect(await post(`/deployments/${deployment!.id}`, { scope: scope.scope })).toMatchObject({
       status: 404,
       body: { code: "NOT_FOUND" },
     });
   }
 });
 
+it("keeps ordinary CLI tokens on the host authentication path", async () => {
+  await expect(
+    createContext({ request: request("/deployments", {}, tokenSecret) }),
+  ).rejects.toThrow("Invalid API key");
+  expect(mocks.apiKey).toHaveBeenCalled();
+});
+
 it("publishes a verified upload to the authorized app", async () => {
-  const created = await post("/cli/deployments", deploymentInput(authorizedAppId));
+  const created = await post("/deployments", deploymentInput(authorizedAppId));
   mocks.storage.head.mockResolvedValue({
     contentLength: 10,
     contentType: "application/javascript",
@@ -183,7 +224,10 @@ it("publishes a verified upload to the authorized app", async () => {
   });
   mocks.storage.createDownloadUrl.mockResolvedValue({ url: "https://uploads.test/client.js" });
   vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("client-code"));
-  const published = await post(`/cli/deployments/${created.body.deployment.id}`, { rollout: true });
+  const published = await post(`/deployments/${created.body.deployment.id}`, {
+    rollout: true,
+    scope: scope.scope,
+  });
   expect(published).toMatchObject({ status: 200, body: { status: "published" } });
   const selectedApp = await database.db.query.app.findFirst({ where: { id: authorizedAppId } });
   expect(selectedApp?.currentDeploymentId).toBe(created.body.deployment.id);

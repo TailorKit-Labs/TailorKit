@@ -20,9 +20,8 @@ export interface AppAgentInput {
   hostUrl: string;
   /** Optional serialized host schema for generation without contacting the host. */
   schema?: Record<string, unknown>;
-  /** Approved CLI credential; supplied only to the deployment tool. */
-  deployToken: string;
-  platformUrl: string;
+  /** One-hour agent JWT; supplied only to the deployment tool. */
+  agentToken: string;
   messages: ModelMessage[];
   /** Serializable AI Gateway model ID. */
   model: string;
@@ -41,8 +40,7 @@ export async function appAgent({
   appId,
   hostUrl,
   schema,
-  deployToken,
-  platformUrl,
+  agentToken,
 }: AppAgentInput) {
   "use workflow";
   const sandboxName = `app-agent-${getWorkflowMetadata().workflowRunId}`;
@@ -74,7 +72,7 @@ export async function appAgent({
         ls: lsTool,
       },
       toolsContext: {
-        deploy: { ...context, appId, deployToken, platformUrl },
+        deploy: { ...context, appId, agentToken },
         read: context,
         write: context,
         edit: context,
