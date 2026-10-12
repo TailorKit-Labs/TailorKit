@@ -17,10 +17,15 @@ export type AnyComponentDefinition = ComponentDefinition<
   boolean | undefined
 >;
 
-export type ComponentRenderer<TComponent extends AnyComponentDefinition, TNode> = (args: {
-  props: ComponentProps<TComponent>;
-  children?: TComponent extends { children: true } ? TNode : never;
-}) => TNode;
+export type ComponentRenderer<TComponent extends AnyComponentDefinition, TNode> = (
+  args: {
+    props: ComponentProps<TComponent>;
+  } & ("children" extends keyof TComponent
+    ? TComponent extends { children?: true }
+      ? { children?: TNode }
+      : {}
+    : {}),
+) => TNode;
 
 export type ComponentRenderers<
   TComponents extends Record<string, AnyComponentDefinition>,
