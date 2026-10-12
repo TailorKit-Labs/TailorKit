@@ -8,6 +8,8 @@ import {
   sandboxIdleTimeoutMs,
   writeAgentSchema,
   agentSchemaPath,
+  agentTokenPath,
+  writeAgentToken,
 } from "./sandbox";
 
 const mocks = vi.hoisted(() => ({
@@ -17,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   delete: vi.fn(),
   extend: vi.fn(),
   writeFiles: vi.fn(),
+  runCommand: vi.fn(),
 }));
 vi.mock("workflow", () => ({ FatalError: class extends Error {} }));
 vi.mock("@vercel/sandbox", () => ({
@@ -42,7 +45,11 @@ beforeEach(() => {
     name: sandboxName,
     status: "running",
     expiresAt: new Date(sandboxIdleTimeoutMs),
-    currentSession: () => ({ extendTimeout: mocks.extend, writeFiles: mocks.writeFiles }),
+    currentSession: () => ({
+      extendTimeout: mocks.extend,
+      writeFiles: mocks.writeFiles,
+      runCommand: mocks.runCommand,
+    }),
     delete: mocks.delete,
   });
 });
@@ -57,6 +64,7 @@ describe("sandbox ownership and sliding timeout", () => {
       persistent: false,
       timeout: sandboxIdleTimeoutMs,
       mounts: { "/workspace": expect.objectContaining({ name: "app-123" }) },
+      env: { TAILORKIT_AGENT_TOKEN_FILE: agentTokenPath },
     });
     expect(mocks.delete).not.toHaveBeenCalled();
   });
@@ -119,4 +127,18 @@ describe("sandbox ownership and sliding timeout", () => {
     mocks.get.mockRejectedValue(new APIError(new Response(null, { status: 404 })));
     await expect(deleteSandbox(sandboxName)).resolves.toBeUndefined();
   });
+});
+
+it("keeps the authorization file off the Drive and restricts its permissions", async () => {
+  mocks.runCommand.mockResolvedValue({ exitCode: 0 });
+  await writeAgentToken(sandboxName, "private-token");
+  expect(mocks.writeFiles).toHaveBeenCalledWith([
+    { path: "/tmp/tailorkit-agent.token", content: Buffer.from("private-token") },
+  ]);
+  expect(mocks.runCommand).toHaveBeenCalledWith({
+    cmd: "chmod",
+    args: ["600", agentTokenPath],
+    timeoutMs: 30_000,
+  });
+  expect(JSON.stringify(mocks.runCommand.mock.calls)).not.toContain("private-token");
 });

@@ -158,6 +158,11 @@ cli
 
 cli
   .command("deploy", "Build and deploy the TailorKit app")
+  .option("--app-id <id>", "Deploy to this existing app")
+  .option(
+    "--no-interactive",
+    "Fail instead of prompting for login, app creation, or type check overrides",
+  )
   .option("--cwd <path>", "Working directory", { default: "." })
   .option("--config <path>", "Path to tailorkit config")
   .option("--out-dir <path>", "Build output directory")
@@ -168,6 +173,7 @@ cli
     try {
       deploySpinner.start("Building and deploying app");
       const result = await runDeploy({
+        appId: options.appId as string | undefined,
         configPath: options.config as string | undefined,
         cwd: String(options.cwd ?? "."),
         mode: options.mode as string | undefined,
@@ -228,6 +234,9 @@ cli
 
           return shouldUpload === true;
         },
+        ...(options.interactive === false
+          ? { onLoginRequired: undefined, onMissingAppId: undefined, onTypecheckFailed: undefined }
+          : {}),
         outDir: options.outDir as string | undefined,
       });
       deploySpinner.stop("Deployed app.");
@@ -359,6 +368,7 @@ cli
 
 cli
   .command("agent", "Chat with the TailorKit app agent")
+  .option("--schema <path>", "Host schema snapshot for generation without host access")
   .option("--host <url>", "TailorKit host API URL (required)")
   .option("--app <id>", "App ID (otherwise prompts to select or create an app)")
   .action(async (options: Record<string, unknown>) => {
@@ -366,6 +376,7 @@ cli
       const { runAgentCommand } = await import("./agent");
       await runAgentCommand({
         appId: options.app as string | undefined,
+        schemaPath: options.schema as string | undefined,
         host: options.host as string | undefined,
         onLoginRequired: () =>
           loginWithApproval({

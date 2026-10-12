@@ -1,3 +1,4 @@
+import { previewCliCredentialActive } from "./preview-lifecycle";
 import { asyncIteratorObject, ORPCError, os } from "@orpc/server";
 import type { RouterClient } from "@orpc/server";
 import { db } from "@tailorkit/db";
@@ -91,10 +92,7 @@ const requireRole = async (
       message: "Preview storage is unavailable: configure KV.",
     });
   }
-  if (
-    role === "uploader" &&
-    (!session.cliToken || session.cliToken.revokedAt || session.cliToken.expiresAt <= new Date())
-  ) {
+  if (role === "uploader" && !(await previewCliCredentialActive(kv, session))) {
     await endPreviewSession(kv, context.sessionId);
     throw new ORPCError("UNAUTHORIZED", { message: "Preview CLI token is unavailable." });
   }

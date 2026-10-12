@@ -51,3 +51,26 @@ export async function ensurePreviewDeveloperGrace(
   await endPreviewSession(kv, sessionId);
   return false;
 }
+
+const agentAuthorizationKey = (sessionId: string) => `preview:agent-authorization:${sessionId}`;
+
+/** Bind a preview to the JWT deadline without persisting the bearer credential. */
+export async function recordPreviewAgentAuthorization(kv: KV, sessionId: string, expiresAt: Date) {
+  await kv.set(agentAuthorizationKey(sessionId), String(expiresAt.getTime()), {
+    ttl: Math.max(1, Math.ceil((expiresAt.getTime() - Date.now()) / 1000)),
+  });
+}
+
+/** Revocation applies to both auth methods; a JWT-authorized preview has its own expiry. */
+export async function previewCliCredentialActive(
+  kv: KV,
+  session: {
+    id: string;
+    cliToken: { revokedAt: Date | null; expiresAt: Date } | null;
+  },
+) {
+  if (!session.cliToken || session.cliToken.revokedAt) return false;
+  if (session.cliToken.expiresAt > new Date()) return true;
+  const deadline = await kv.get(agentAuthorizationKey(session.id));
+  return deadline !== null && Number(deadline) > Date.now();
+}

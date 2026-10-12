@@ -6,7 +6,7 @@ import { App, app, AppDeployment } from "@tailorkit/db/schema/apps";
 import { eq } from "drizzle-orm";
 import z from "zod";
 import { paginatedOutput, paginationQuery } from "../pagination";
-import { o, protectedRouter, requireApp, requireAppInScopes } from "../procedures";
+import { o, cliRouter, requireApp, requireAppInScopes } from "../procedures";
 import { createPublicId } from "../public-id";
 import { withAppAssetUrl } from "../asset-url";
 import { canonicalizeScope, canonicalizeScopes, scopeSchema, scopesSchema } from "../scope";
@@ -34,7 +34,7 @@ async function createUniqueAppPublicId(projectId: string) {
   throw new ORPCError("BAD_REQUEST", { message: "Failed to create app id." });
 }
 
-const listApps = protectedRouter
+const listApps = cliRouter
   .meta(
     openapi({
       path: "/apps/list",
@@ -86,7 +86,7 @@ const listApps = protectedRouter
     };
   });
 
-const getApp = protectedRouter
+const getApp = cliRouter
   .meta(
     openapi({
       path: "/apps/{appId}/lookup",
@@ -107,7 +107,7 @@ const getApp = protectedRouter
     body: withAppAssetUrl(context.app, context.organization.publicId, context.project.id),
   }));
 
-const createApp = protectedRouter
+const createApp = cliRouter
   .meta(
     openapi({
       path: "/apps",
@@ -147,7 +147,7 @@ const createApp = protectedRouter
     };
   });
 
-const deleteApp = protectedRouter
+const deleteApp = cliRouter
   .meta(
     openapi({
       path: "/apps/{appId}",
@@ -168,7 +168,7 @@ const deleteApp = protectedRouter
     return { body: { id: context.app.id } };
   });
 
-const updateApp = protectedRouter
+const updateApp = cliRouter
   .meta(
     openapi({
       path: "/apps/{appId}",
@@ -207,7 +207,7 @@ const updateApp = protectedRouter
     };
   });
 
-const deploy = protectedRouter
+const deploy = cliRouter
   .meta(
     openapi({
       path: "/apps/{appId}/deploy",

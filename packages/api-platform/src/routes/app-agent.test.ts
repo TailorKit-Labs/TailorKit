@@ -3,6 +3,8 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { readUIMessageStream } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import type { Context } from "../context";
+import { issueAgentToken, verifyAgentToken } from "@tailorkit/api-utils/agent-token";
+import { env } from "#env";
 import { canonicalizeScope } from "../scope";
 
 const mocks = vi.hoisted(() => ({
@@ -83,6 +85,19 @@ describe("platform app chat", () => {
     expect(events).toContainEqual({ type: "text-delta", id: "text-1", delta: "Hello" });
     expect(events.at(-1)).toEqual({ type: "finish" });
     const first = mocks.start.mock.lastCall![1][0];
+    expect(first).not.toHaveProperty("deployToken");
+    expect(
+      await verifyAgentToken(
+        first.agentToken,
+        env.AUTH_SECRET!,
+        env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform",
+      ),
+    ).toMatchObject({
+      projectId: context.project.id,
+      appId: "app-one",
+      cliTokenId: "cli-one",
+      scope: scope.scope,
+    });
     expect(first.hostUrl).toBe(input.body.hostUrl);
     expect(first.schema).toBeUndefined();
     expect(first.messages).toEqual([{ role: "user", content: [{ type: "text", text: "Build" }] }]);
@@ -316,4 +331,27 @@ describe("platform app chat", () => {
     expect(cancelStream).toHaveBeenCalledOnce();
     expect(cancelRun).not.toHaveBeenCalled();
   });
+});
+
+it("accepts another app in the JWT scope without extending the original deadline", async () => {
+  mocks.app.mockResolvedValue({ id: "app-two" });
+  const jwt = await issueAgentToken(
+    { projectId: context.project.id, appId: "app-one", cliTokenId: "cli-one", scope: scope.scope },
+    env.AUTH_SECRET!,
+    env.OPENAPI_SERVER_URL!,
+  );
+  const agentToken = {
+    ...(await verifyAgentToken(jwt, env.AUTH_SECRET!, env.OPENAPI_SERVER_URL!)),
+    token: jwt,
+  };
+  const events = await call(
+    appAgentRouter.chat,
+    { body: { ...input.body, deployToken: jwt } },
+    { context: { ...context, agentToken } },
+  );
+  for await (const _ of events) {
+    /* consume */
+  }
+  expect(mocks.start.mock.lastCall![1][0]).toMatchObject({ appId: "app-two", agentToken: jwt });
+  expect(mocks.token).not.toHaveBeenCalled();
 });

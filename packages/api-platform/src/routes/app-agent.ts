@@ -12,9 +12,11 @@ import {
 } from "ai";
 import { start } from "workflow/api";
 import { z } from "zod";
-import { findAppInScopes, o, protectedRouter } from "../procedures";
-import { authenticateCli } from "../cli-token";
+import { env } from "#env";
+import { findAppInScopes, o, cliRouter } from "../procedures";
+import { authenticateCliRequest } from "../cli-token";
 import { canonicalizeScope } from "../scope";
+import { issueAgentToken } from "@tailorkit/api-utils/agent-token";
 
 const APP_AGENT_MODEL = "openai/gpt-6.1-sol";
 
@@ -44,16 +46,12 @@ const agentChatSchema = z.object({
   messages: agentMessagesSchema,
 });
 
-const chat = protectedRouter
+const chat = cliRouter
   .meta(openapi({ path: "/chat", method: "POST", outputStructure: "compact" }))
   .input(z.object({ body: agentChatSchema.extend({ deployToken: z.string().min(1) }) }))
   .output(eventIterator(agentChunkSchema))
   .handler(async ({ context, input, signal }) => {
-    const token = await authenticateCli(
-      context.project.id,
-      input.body.deployToken,
-      context.runtimeService,
-    );
+    const token = await authenticateCliRequest(context, input.body.deployToken);
     const app = await findAppInScopes(context.project.id, input.body.appId, [
       canonicalizeScope(token.scope),
     ]);
@@ -65,11 +63,25 @@ const chat = protectedRouter
     } catch {
       throw new ORPCError("BAD_REQUEST", { message: "Invalid agent messages." });
     }
+    // JWTs carry the same project/scope permissions as CLI sessions, not an app-only grant.
+    // Reuse the credential across authorized app selections without extending its expiry.
     const run = await start(appAgent, [
       {
         appId: app.id,
         hostUrl: input.body.hostUrl,
         schema: input.body.schema,
+        agentToken:
+          context.agentToken?.token ??
+          (await issueAgentToken(
+            {
+              projectId: context.project.id,
+              appId: app.id,
+              cliTokenId: token.id,
+              scope: token.scope,
+            },
+            env.AUTH_SECRET!,
+            env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform",
+          )),
         messages,
         model: APP_AGENT_MODEL,
       },

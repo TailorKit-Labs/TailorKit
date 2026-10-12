@@ -6,7 +6,7 @@ import { setSpanAttributes } from "@tailorkit/observability";
 import type { Context } from "./context";
 import { db } from "@tailorkit/db";
 import { type Scope } from "@tailorkit/db/schema/scope";
-import { canonicalizeScope, canonicalizeScopes } from "./scope";
+import { canonicalizeScope, canonicalizeScopes, scopeMatches } from "./scope";
 
 const rateLimiter = createRateLimiter({ maxRequests: 100, window: 1000 });
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
@@ -42,9 +42,39 @@ export const o = os.$context<Context>().meta(
   }),
 );
 
-export const protectedRouter = o
+const authenticatedRouter = o
   .use(devDelayMiddleware)
   .use(ratelimitMiddleware(rateLimiter, ({ context }) => context.organization.id));
+
+/** Existing CLI operations accept either credential with the same project/scope boundary. */
+export const cliRouter = authenticatedRouter.use(async ({ context, next }, input) => {
+  if (context.agentToken) {
+    const body = (input as { body?: { scope?: unknown; scopes?: unknown } })?.body;
+    if (body?.scope !== undefined || body?.scopes !== undefined) {
+      try {
+        const scopes = [
+          ...(body.scope !== undefined ? [canonicalizeScope(body.scope)] : []),
+          ...(body.scopes !== undefined ? canonicalizeScopes(body.scopes) : []),
+        ];
+        if (
+          !scopes.length ||
+          scopes.some(({ scope }) => !scopeMatches(scope, context.agentToken!.scope))
+        )
+          throw new Error("Scope not authorized");
+      } catch {
+        throw new ORPCError("FORBIDDEN", {
+          message: "Requested scope is not authorized by the agent token.",
+        });
+      }
+    }
+  }
+  return next();
+});
+
+export const protectedRouter = authenticatedRouter.use(async ({ context, next }) => {
+  if (context.agentToken) throw new ORPCError("FORBIDDEN");
+  return next();
+});
 
 export const requireApp = o.middleware(
   async ({ context, next }, input: { appId: string; scope: Scope }) => {
