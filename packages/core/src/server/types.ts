@@ -165,9 +165,12 @@ export interface TailorKitServer<
   TTools extends ContractTools = Record<never, never>,
   TScopes = TailorKitScopes,
 > {
-  /** MCP 2026-07-28 endpoint for callers whose identity is already authenticated. */
+  /** Prepare direct platform MCP HTTP configuration for a server-side client. */
   mcp: {
-    handler: (request: Request, context: TailorKitHostContext<TScopes>) => Promise<Response>;
+    transport: (options: TailorKitHostContext<TScopes>) => Promise<{
+      url: string;
+      headers: Record<string, string>;
+    }>;
   };
   handler: (
     request: Request,

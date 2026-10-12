@@ -68,6 +68,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
+    "@modelcontextprotocol/client": "2.3.1",
     "@tailorkit/config": "workspace:*",
     "@types/node": "catalog:",
     "tsx": "catalog:",

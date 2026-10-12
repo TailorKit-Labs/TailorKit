@@ -30,14 +30,18 @@ The create tool's schema advertises the authorized scope names as an enum.
 ```ts
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 
+const { url: platformMcpUrl, headers } = await tailorkit.mcp.transport({
+  scopes,
+  subjectId,
+});
 const client = new Client(
   { name: "host-agent", version: "1.0.0" },
   { versionNegotiation: { mode: { pin: "2026-07-28" } } },
 );
 await client.connect(
-  new StreamableHTTPClientTransport(new URL(hostMcpUrl), {
-    // Supply credentials accepted by your host's authenticate() implementation.
-    requestInit: { headers: { authorization: `Bearer ${hostAccessToken}` } },
+  new StreamableHTTPClientTransport(new URL(platformMcpUrl), {
+    // URL and headers from await tailorkit.mcp.transport({ scopes, subjectId }).
+    requestInit: { headers },
   }),
 );
 const result = await client.callTool(

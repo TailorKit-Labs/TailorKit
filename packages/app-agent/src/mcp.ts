@@ -1,23 +1,8 @@
-import {
-  createMcpHandler,
-  McpServer,
-  readRequestBody,
-  type ServerContext,
-} from "@modelcontextprotocol/server";
+import { createMcpHandler, McpServer, type ServerContext } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 const promptSchema = z.string().trim().min(1).max(32_000);
 
-/** Bound the host envelope, which includes a schema snapshot as well as the MCP message. */
-export async function readAppAgentMcpBody(
-  request: Request,
-): Promise<{ response: Response; body?: never } | { body: unknown; response?: never }> {
-  if (request.headers.get("content-type")?.split(";")[0]?.trim() !== "application/json")
-    return { response: new Response("Expected application/json", { status: 415 }) };
-  const body = await readRequestBody(request, 8 * 1024 * 1024);
-  if (body.tooLarge) return { response: new Response("MCP request too large", { status: 413 }) };
-  return { body: JSON.parse(body.text) as unknown };
-}
 const editSchema = z.strictObject({ appId: z.string().min(1), prompt: promptSchema });
 const createSchema = z.strictObject({
   name: z.string().trim().min(1).max(127),

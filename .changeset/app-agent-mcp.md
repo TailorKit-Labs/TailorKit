@@ -3,7 +3,7 @@
 "tailorkit": minor
 ---
 
-Expose app-agent MCP through `server.mcp.handler(request, { scopes, subjectId? })`
-and the authenticated host `/mcp` route. Relay the host schema and caller identity
-to the platform's native MCP 2026-07-28 endpoint with request-scoped SSE progress.
-Provide list, create, and edit tools, with create/edit launching app agents.
+Expose direct platform MCP access through
+`server.mcp.transport({ scopes, subjectId? })`, which returns a URL and headers for
+any HTTP MCP client. Provide list, create, and edit tools using MCP 2026-07-28
+with request-scoped SSE progress, with create/edit launching app agents.

@@ -55,7 +55,8 @@ const context = { project: { id: "project" }, organization: { id: "org" } } as C
 const identity = { scopes: { org: scope.scope.value }, subjectId: "user" };
 const app = { id: "internal-app", publicId: "public-app", scope: scope.scope };
 
-function request(name: string, args: Record<string, unknown> = {}, overrides = {}) {
+function request(name: string, args: Record<string, unknown> = {}, overrides = {}, headers = {}) {
+  const context = { ...identity, hostUrl: "https://host.test/api/tailorkit", ...overrides };
   return new Request("https://platform.test/api/platform/app-agent/mcp", {
     method: "POST",
     headers: {
@@ -64,27 +65,23 @@ function request(name: string, args: Record<string, unknown> = {}, overrides = {
       "mcp-protocol-version": "2026-07-28",
       "mcp-method": "tools/call",
       "mcp-name": name,
+      "x-tailorkit-context": Buffer.from(JSON.stringify(context), "utf8").toString("base64url"),
+      ...headers,
     },
     body: JSON.stringify({
-      ...identity,
-      hostUrl: "https://host.test/api/tailorkit",
-      schema: {},
-      message: {
-        jsonrpc: "2.0",
-        id: 1,
-        method: "tools/call",
-        params: {
-          name,
-          arguments: args,
-          _meta: {
-            "io.modelcontextprotocol/protocolVersion": "2026-07-28",
-            "io.modelcontextprotocol/clientInfo": { name: "test", version: "1" },
-            "io.modelcontextprotocol/clientCapabilities": {},
-            progressToken: "progress",
-          },
+      jsonrpc: "2.0",
+      id: 1,
+      method: "tools/call",
+      params: {
+        name,
+        arguments: args,
+        _meta: {
+          "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+          "io.modelcontextprotocol/clientInfo": { name: "test", version: "1" },
+          "io.modelcontextprotocol/clientCapabilities": {},
+          progressToken: "progress",
         },
       },
-      ...overrides,
     }),
   });
 }
@@ -133,7 +130,6 @@ describe("platform MCP endpoint", () => {
     expect(input).toMatchObject({
       appId: app.id,
       hostUrl: "https://host.test/api/tailorkit",
-      schema: {},
       messages: [{ role: "user", content: "Change it" }],
     });
     expect(
@@ -144,6 +140,7 @@ describe("platform MCP endpoint", () => {
       cliTokenId: "grant",
       scope: scope.scope,
     });
+    expect(input.schema).toBeUndefined();
     expect(mocks.start.mock.lastCall![2].attributes).toMatchObject({
       "tailorkit.subjectId": "user",
     });
@@ -204,6 +201,44 @@ describe("platform MCP endpoint", () => {
       ).toBe(400);
     }
     expect(mocks.list).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed/oversized context headers and cross-origin requests", async () => {
+    for (const encoded of ["", "not+base64", "eyJ9=", "x".repeat(8193), "_w"]) {
+      expect(
+        (
+          await handleAppAgentMcpRequest(
+            request("list_apps", {}, {}, { "x-tailorkit-context": encoded }),
+            context,
+          )
+        ).status,
+      ).toBe(400);
+    }
+    const unexpected = await handleAppAgentMcpRequest(
+      request("list_apps", {}, { schema: {} }),
+      context,
+    );
+    expect(unexpected.status).toBe(400);
+    const origin = await handleAppAgentMcpRequest(
+      request("list_apps", {}, {}, { origin: "https://other.test" }),
+      context,
+    );
+    expect(origin.status).toBe(403);
+    expect(mocks.list).not.toHaveBeenCalled();
+  });
+
+  it("keeps header context authoritative when tool arguments try to inject scopes", async () => {
+    const response = await handleAppAgentMcpRequest(
+      request("edit_app", {
+        appId: "public-app",
+        prompt: "Change",
+        scopes: { org: { tenant: "other" } },
+        subjectId: "other-user",
+      }),
+      context,
+    );
+    expect(await response.text()).toContain('"isError":true');
+    expect(mocks.start).not.toHaveBeenCalled();
   });
 
   it("cancels the workflow and deletes its sandbox when the response closes", async () => {

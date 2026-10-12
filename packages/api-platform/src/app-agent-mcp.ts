@@ -1,11 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { createModelCallToUIChunkTransform } from "@ai-sdk/workflow";
 import { call, ORPCError } from "@orpc/server";
-import {
-  createAppAgentMcp,
-  readAppAgentMcpBody,
-  type AppAgentMcpExecution,
-} from "@tailorkit/app-agent/mcp";
+import { createAppAgentMcp, type AppAgentMcpExecution } from "@tailorkit/app-agent/mcp";
 import { appAgent, deleteSandbox } from "@tailorkit/app-agent/workflows";
 import { issueAgentToken } from "@tailorkit/api-utils/agent-token";
 import { hashSecret } from "@tailorkit/api-utils/hashing";
@@ -20,15 +16,13 @@ import { findAppInScopes, protectedRouter } from "./procedures";
 import { canonicalizeScope, canonicalizeScopes, scopeValueSchema } from "./scope";
 import { appRouter } from "./routes/apps";
 
-const requestSchema = z.strictObject({
+const contextSchema = z.strictObject({
   scopes: z.record(z.string(), scopeValueSchema),
   subjectId: z.string().min(1).max(256).optional(),
   hostUrl: z.url({ protocol: /^https?$/u }),
-  schema: z.record(z.string(), z.unknown()),
-  message: z.unknown(),
 });
 
-/** Host-only envelope. Project keys authenticate the host; scopes authorize its caller. */
+/** Standard MCP endpoint. Host project keys authenticate caller context carried in headers. */
 export async function handleAppAgentMcpRequest(
   request: Request,
   context: Context,
@@ -37,12 +31,17 @@ export async function handleAppAgentMcpRequest(
     return new Response("Forbidden", { status: 403 });
   if (request.method !== "POST")
     return new Response("Method not allowed", { status: 405, headers: { allow: "POST" } });
-  let input: z.infer<typeof requestSchema>;
+  let input: z.infer<typeof contextSchema>;
   let scopes: ReturnType<typeof canonicalizeScopes>;
   try {
-    const parsed = await readAppAgentMcpBody(request);
-    if (parsed.response) return parsed.response;
-    input = requestSchema.parse(parsed.body);
+    const encoded = request.headers.get("x-tailorkit-context");
+    if (!encoded || encoded.length > 8192 || !/^[A-Za-z0-9_-]+$/u.test(encoded))
+      throw new Error("Invalid MCP context header");
+    const bytes = Buffer.from(encoded, "base64url");
+    if (bytes.toString("base64url") !== encoded) throw new Error("Invalid MCP context encoding");
+    input = contextSchema.parse(
+      JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)),
+    );
     scopes = canonicalizeScopes(
       Object.entries(input.scopes).map(([name, value]) => ({ name, value })),
     );
@@ -52,7 +51,7 @@ export async function handleAppAgentMcpRequest(
     const origin = request.headers.get("origin");
     if (origin && origin !== host.origin) return new Response("Forbidden origin", { status: 403 });
   } catch {
-    return new Response("Invalid MCP host request", { status: 400 });
+    return new Response("Invalid MCP context header", { status: 400 });
   }
   const authorizedScopes = scopes.map(({ scope }) => scope);
 
@@ -94,7 +93,6 @@ export async function handleAppAgentMcpRequest(
           {
             appId: app.id,
             hostUrl: input.hostUrl,
-            schema: input.schema,
             agentToken,
             model: "openai/gpt-6.1-sol",
             messages: [{ role: "user", content: prompt }],
@@ -164,16 +162,7 @@ export async function handleAppAgentMcpRequest(
     },
     authorizedScopes.map(({ name }) => name),
   );
-  const headers = new Headers(request.headers);
-  headers.delete("content-length");
-  const response = await handler.fetch(
-    new Request(request.url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(input.message),
-      signal: request.signal,
-    }),
-  );
+  const response = await handler.fetch(request);
   response.headers.set("cache-control", "no-store");
   response.headers.set("x-accel-buffering", "no");
   return response;

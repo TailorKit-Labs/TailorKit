@@ -9,7 +9,7 @@ import type {
 } from "../schema/index";
 import { createTailorKitSchema } from "../schema/schema";
 import { normalizeBaseUrl } from "./base-url";
-import { createMcpRelay } from "./mcp";
+import { createMcpTransport } from "./mcp";
 import { handleCliAuthApprovalPage } from "./cli-auth-page";
 import { handlePreviewConsent, readPreviewGrantIds } from "./preview-consent";
 import { createContext } from "./context";
@@ -84,13 +84,11 @@ export function createTailorKitServer<const TOptions extends TailorKitServerInpu
     options.$internal?.platformHeaders ??
     (options.projectKey ? { authorization: `Bearer ${options.projectKey}` } : undefined);
   const rpcHandler = new RPCHandler(tailorkitRouter);
-  const mcp = createMcpRelay({
+  const mcp = createMcpTransport({
     hostUrl: publicOrigin + basePath,
     platformUrl: platformBaseUrl,
-    platformFetch: options.$internal?.platformFetch,
     platformHeaders,
     scopeSchemas,
-    schema: () => schema.serialize(options.schemaSerializer),
   });
 
   // oxlint-disable-next-line complexity -- request dispatch is intentionally centralized here.
@@ -117,11 +115,6 @@ export function createTailorKitServer<const TOptions extends TailorKitServerInpu
       };
     };
     const url = new URL(request.url);
-    if (url.pathname === `${basePath}/mcp`) {
-      const identity = await authenticate({ request });
-      if (!identity) return new Response("Unauthorized", { status: 401 });
-      return mcp.handler(request, identity);
-    }
     const previewPrefix = `${basePath}/preview/`;
     if (url.pathname === `${basePath}/backend/session`) {
       return handleBackendSession(

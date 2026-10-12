@@ -78,8 +78,8 @@ export function createServer<const T extends TailorKitContract>(
     ...server,
     contract,
     mcp: {
-      handler(request: Request, context: TailorKitHostContext<Partial<ContractScopes<T>>>) {
-        return server.mcp.handler(request, context);
+      transport(options: TailorKitHostContext<Partial<ContractScopes<T>>>) {
+        return server.mcp.transport(options);
       },
     },
     async handler(
