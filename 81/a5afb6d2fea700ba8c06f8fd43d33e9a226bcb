@@ -1,0 +1,19 @@
+.github/workflows/ci.yml
+  s_109b9869ca3fd4::t_a777e0d2f68bd1 44-45,84-85,115-116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "81a5afb6d2fea700ba8c06f8fd43d33e9a226bcb",
+  "prompts": {},
+  "sessions": {
+    "s_109b9869ca3fd4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12e6f-0b67-7601-a555-bed53c57145f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
