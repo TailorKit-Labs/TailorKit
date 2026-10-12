@@ -1,0 +1,68 @@
+import { randomUUID } from "node:crypto";
+import { Drive, Sandbox } from "@vercel/sandbox";
+
+const drivePrefix = "app-";
+
+export class AppAgentWorkspaceBusyError extends Error {
+  constructor() {
+    super("The app workspace is currently being edited. Try again when the agent finishes.");
+    this.name = "AppAgentWorkspaceBusyError";
+  }
+}
+
+async function findAppDrive(appId: string) {
+  const name = `${drivePrefix}${appId}`;
+  const { drives } = await Drive.list({ namePrefix: name, limit: 1 });
+  return drives.find((drive) => drive.name === name) ?? null;
+}
+
+export async function hasAppAgentWorkspace(appId: string): Promise<boolean> {
+  return Boolean(await findAppDrive(appId));
+}
+
+/** Export the persistent app-agent workspace as a source archive. */
+export async function exportAppAgentWorkspace(appId: string): Promise<Buffer | null> {
+  const drive = await findAppDrive(appId);
+  if (!drive) return null;
+  if (drive.currentSandboxName) throw new AppAgentWorkspaceBusyError();
+
+  const sandbox = await Sandbox.create({
+    name: `app-source-export-${randomUUID()}`,
+    image: "vercel/sandbox/universal",
+    region: drive.region,
+    persistent: false,
+    timeout: 120_000,
+    mounts: { "/workspace": drive.snapshot() },
+  });
+
+  try {
+    const result = await sandbox.runCommand({
+      cmd: "tar",
+      args: [
+        "--exclude=node_modules",
+        "--exclude=.git",
+        "--exclude=.tailorkit",
+        "--exclude=.env",
+        "--exclude=.env.*",
+        "-czf",
+        "/tmp/app-source.tar.gz",
+        "-C",
+        "/workspace/app",
+        ".",
+      ],
+      timeoutMs: 60_000,
+    });
+
+    if (result.exitCode !== 0) {
+      throw new Error("Could not package the app-agent workspace.");
+    }
+
+    const archive = await sandbox.readFileToBuffer({ path: "/tmp/app-source.tar.gz" });
+    if (!archive) throw new Error("The app-agent source archive could not be read.");
+    return archive;
+  } finally {
+    await sandbox.delete({ deleteOrphanSnapshots: true }).catch((error: unknown) => {
+      console.warn("App source export sandbox cleanup failed", error);
+    });
+  }
+}

@@ -1,9 +1,9 @@
 /* oxlint-disable react/no-unstable-nested-components */
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { flexRender, useTable } from "@tanstack/react-table";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
-import { ArrowLeftIcon, RocketIcon } from "lucide-react";
+import { ArrowLeftIcon, DownloadIcon, RocketIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Badge } from "@tailorkit/ui/badge";
 import { Button } from "@tailorkit/ui/button";
@@ -150,6 +150,14 @@ function DeploymentsTable({
 
 function AppPage() {
   const { appId, orgSlug, projectSlug } = Route.useParams();
+  const sourceExportUrl = `/api/apps/${encodeURIComponent(appId)}/source?${new URLSearchParams({ orgSlug, projectSlug })}`;
+  const { data: sourceExportAvailable } = useQuery({
+    queryKey: ["app-source-export", appId, orgSlug, projectSlug],
+    queryFn: async () => {
+      const response = await fetch(sourceExportUrl, { method: "HEAD" });
+      return response.ok;
+    },
+  });
   const { data: app } = useSuspenseQuery(
     orpc.apps.get.queryOptions({ input: { appId, orgSlug, projectSlug } }),
   );
@@ -157,14 +165,22 @@ function AppPage() {
   return (
     <PageLayout
       actions={
-        <Button
-          render={<Link params={{ orgSlug, projectSlug }} to="/$orgSlug/$projectSlug/apps" />}
-          size="sm"
-          variant="outline"
-        >
-          <ArrowLeftIcon />
-          Back to apps
-        </Button>
+        <div className="flex items-center gap-2">
+          {sourceExportAvailable ? (
+            <Button render={<a download href={sourceExportUrl} />} size="sm" variant="outline">
+              <DownloadIcon />
+              Export source
+            </Button>
+          ) : null}
+          <Button
+            render={<Link params={{ orgSlug, projectSlug }} to="/$orgSlug/$projectSlug/apps" />}
+            size="sm"
+            variant="outline"
+          >
+            <ArrowLeftIcon />
+            Back to apps
+          </Button>
+        </div>
       }
       description={app.description || "App and deployment details."}
       title={
