@@ -49,7 +49,7 @@ export function ProjectKeyEnv({ apiKey }: { apiKey: string }) {
         <InputGroup className="bg-muted">
           <InputGroupInput
             aria-label="Project API key"
-            className="min-w-0 font-mono text-xs sm:text-sm"
+            className="min-w-0 font-mono text-xs sm:text-sm [&_input]:ps-0!"
             readOnly
             type={showApiKey ? "text" : "password"}
             value={apiKey}
