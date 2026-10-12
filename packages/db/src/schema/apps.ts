@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   index,
   integer,
   jsonb,
@@ -33,6 +34,7 @@ export const app = pgTable(
 
     name: text("name").notNull(),
     description: text("description"),
+    createdByAgent: boolean("created_by_agent").notNull().default(false),
 
     currentDeploymentId: uuid("current_deployment_id").references(
       (): AnyPgColumn => appDeployment.id,
