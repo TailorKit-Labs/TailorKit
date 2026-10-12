@@ -11,6 +11,7 @@ import { createToolVerifier } from "./tool-auth";
 import type {
   TailorKitServerBaseOptions,
   TailorKitHandlerOptions,
+  TailorKitHostContext,
   TailorKitServerInputOptions,
 } from "./types";
 
@@ -76,6 +77,11 @@ export function createServer<const T extends TailorKitContract>(
   return {
     ...server,
     contract,
+    mcp: {
+      handler(request: Request, context: TailorKitHostContext<Partial<ContractScopes<T>>>) {
+        return server.mcp.handler(request, context);
+      },
+    },
     async handler(
       request: Request,
       handlerOptions: TailorKitHandlerOptions<Partial<ContractScopes<T>>>,

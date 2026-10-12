@@ -1,4 +1,5 @@
 import { handlePublicRuntimeRequest } from "@tailorkit/api-platform/routes/runtime";
+import { handleAppAgentMcpRequest } from "@tailorkit/api-platform/app-agent-mcp";
 import { onError } from "@orpc/server";
 import { createContext, contextErrorResponse } from "@tailorkit/api-platform/context";
 import { platformRouter } from "@tailorkit/api-platform";
@@ -37,6 +38,10 @@ async function handle({ request }: { request: Request }) {
     console.error("OpenAPI authorization failed", sanitizeErrorForLog(error));
     throw contextErrorResponse(error);
   });
+
+  if (new URL(request.url).pathname === "/api/platform/app-agent/mcp") {
+    return handleAppAgentMcpRequest(request, context);
+  }
 
   const rpcResult = await handler.handle(request, {
     context,

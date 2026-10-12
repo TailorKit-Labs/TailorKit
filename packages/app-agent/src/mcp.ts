@@ -1,0 +1,129 @@
+import {
+  createMcpHandler,
+  McpServer,
+  readRequestBody,
+  type ServerContext,
+} from "@modelcontextprotocol/server";
+import { z } from "zod";
+
+const promptSchema = z.string().trim().min(1).max(32_000);
+
+/** Bound the host envelope, which includes a schema snapshot as well as the MCP message. */
+export async function readAppAgentMcpBody(
+  request: Request,
+): Promise<{ response: Response; body?: never } | { body: unknown; response?: never }> {
+  if (request.headers.get("content-type")?.split(";")[0]?.trim() !== "application/json")
+    return { response: new Response("Expected application/json", { status: 415 }) };
+  const body = await readRequestBody(request, 8 * 1024 * 1024);
+  if (body.tooLarge) return { response: new Response("MCP request too large", { status: 413 }) };
+  return { body: JSON.parse(body.text) as unknown };
+}
+const editSchema = z.strictObject({ appId: z.string().min(1), prompt: promptSchema });
+const createSchema = z.strictObject({
+  name: z.string().trim().min(1).max(127),
+  description: z.string().trim().max(255).optional(),
+  scope: z.string().min(1).describe("Name of one scope authorized by the host."),
+  prompt: promptSchema,
+});
+
+export interface AppAgentMcpExecution {
+  signal: AbortSignal;
+  /** Stream agent events through the MCP request's progress notifications. */
+  onProgress: (event: Record<string, unknown>) => Promise<void>;
+}
+
+/** Implementations receive authorization from the host, never from tool arguments. */
+export interface AppAgentMcpBackend {
+  listApps: (input: { page: number; pageSize: number }) => Promise<Record<string, unknown>>;
+  createApp: (
+    input: z.infer<typeof createSchema>,
+    execution: AppAgentMcpExecution,
+  ) => Promise<Record<string, unknown>>;
+  editApp: (
+    input: z.infer<typeof editSchema>,
+    execution: AppAgentMcpExecution,
+  ) => Promise<Record<string, unknown>>;
+}
+
+function execution(context: ServerContext): AppAgentMcpExecution {
+  let progress = 0;
+  const progressToken = context.mcpReq._meta?.progressToken;
+  return {
+    signal: context.mcpReq.signal,
+    async onProgress(event) {
+      context.mcpReq.signal.throwIfAborted();
+      if (progressToken === undefined) return;
+      await context.mcpReq.notify({
+        method: "notifications/progress",
+        params: { progressToken, progress: ++progress, message: JSON.stringify(event) },
+      });
+    },
+  };
+}
+
+function result(value: Record<string, unknown>) {
+  return {
+    content: [{ type: "text" as const, text: JSON.stringify(value) }],
+    structuredContent: value,
+  };
+}
+
+/** MCP 2026-07-28 only: stateless HTTP, request-scoped SSE, no legacy sessions. */
+export function createAppAgentMcp(backend: AppAgentMcpBackend, scopeNames: readonly string[]) {
+  if (!scopeNames.length) throw new Error("At least one host scope is required.");
+  const authorizedCreateSchema = createSchema.extend({
+    scope: z
+      .enum(scopeNames)
+      .describe("Name of the host-authorized scope in which to create the app."),
+  });
+  return createMcpHandler(
+    () => {
+      const server = new McpServer({ name: "tailorkit-app-agent", version: "1.0.0" });
+      server.registerTool(
+        "list_apps",
+        {
+          description:
+            "List apps in the host-authorized scopes so you can choose an app for an agent to edit. This is a read-only lookup; it does not create an agent. create_app and edit_app each create an app agent to do their task.",
+          inputSchema: z.strictObject({
+            page: z.number().int().min(1).default(1),
+            pageSize: z.number().int().min(1).max(100).default(100),
+          }),
+          annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+        },
+        async (input) => result(await backend.listApps(input)),
+      );
+      server.registerTool(
+        "create_app",
+        {
+          description:
+            "Create a new app and create an autonomous app agent to build and deploy it from your prompt. The agent writes code, runs commands, and publishes the app. Wait for the streamed agent progress and final result. Each call starts a new agent; do not automatically retry a disconnected call.",
+          inputSchema: authorizedCreateSchema,
+          annotations: {
+            readOnlyHint: false,
+            destructiveHint: false,
+            idempotentHint: false,
+            openWorldHint: true,
+          },
+        },
+        async (input, context) => result(await backend.createApp(input, execution(context))),
+      );
+      server.registerTool(
+        "edit_app",
+        {
+          description:
+            "Create an autonomous app agent to edit and deploy an existing app from your prompt. The agent writes code, runs commands, and publishes the changes. Wait for the streamed agent progress and final result. Each call starts a new agent; do not automatically retry a disconnected call.",
+          inputSchema: editSchema,
+          annotations: {
+            readOnlyHint: false,
+            destructiveHint: true,
+            idempotentHint: false,
+            openWorldHint: true,
+          },
+        },
+        async (input, context) => result(await backend.editApp(input, execution(context))),
+      );
+      return server;
+    },
+    { legacy: "reject", responseMode: "sse" },
+  );
+}
