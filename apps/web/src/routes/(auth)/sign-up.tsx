@@ -57,6 +57,7 @@ function RouteComponent() {
   const [detailsError, setDetailsError] = useState<string | null>(null);
   const [socialError, setSocialError] = useState<string | null>(null);
   const [socialPending, setSocialPending] = useState<"github" | "google" | null>(null);
+  const socialAuthPending = socialPending !== null;
 
   const transition = (nextStep: Step, nextEmail?: string) => {
     setVisible(false);
@@ -172,7 +173,7 @@ function RouteComponent() {
                               type="button"
                               variant="outline"
                               className="w-full"
-                              disabled={socialPending !== null && socialPending !== "github"}
+                              disabled={socialAuthPending && socialPending !== "github"}
                               loading={socialPending === "github"}
                               onClick={() => void signUpWithSocial("github")}
                             >
@@ -185,7 +186,7 @@ function RouteComponent() {
                               type="button"
                               variant="outline"
                               className="w-full"
-                              disabled={socialPending !== null && socialPending !== "google"}
+                              disabled={socialAuthPending && socialPending !== "google"}
                               loading={socialPending === "google"}
                               onClick={() => void signUpWithSocial("google")}
                             >
@@ -210,12 +211,15 @@ function RouteComponent() {
                           type="email"
                           placeholder="you@example.com"
                           autoFocus
+                          disabled={socialAuthPending}
                         />
                       )}
                     </emailForm.AppField>
 
                     <emailForm.AppForm>
-                      <emailForm.SubmitButton className="w-full">Continue</emailForm.SubmitButton>
+                      <emailForm.SubmitButton className="w-full" disabled={socialAuthPending}>
+                        Continue
+                      </emailForm.SubmitButton>
                     </emailForm.AppForm>
                   </CardPanel>
                 </form>

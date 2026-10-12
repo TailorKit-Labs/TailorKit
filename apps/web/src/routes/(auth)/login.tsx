@@ -59,6 +59,7 @@ function RouteComponent() {
   const [socialPending, setSocialPending] = useState<"github" | "google" | null>(null);
   const [passkeyError, setPasskeyError] = useState<string | null>(null);
   const [passkeyPending, setPasskeyPending] = useState(false);
+  const authPending = socialPending !== null || passkeyPending;
 
   const transition = (nextStep: Step, nextEmail?: string) => {
     setVisible(false);
@@ -223,7 +224,7 @@ function RouteComponent() {
                           type="button"
                           variant="outline"
                           className="w-full"
-                          disabled={socialPending !== null && socialPending !== "github"}
+                          disabled={authPending && socialPending !== "github"}
                           loading={socialPending === "github"}
                           onClick={() => void signInWithSocial("github")}
                         >
@@ -236,7 +237,7 @@ function RouteComponent() {
                           type="button"
                           variant="outline"
                           className="w-full"
-                          disabled={socialPending !== null && socialPending !== "google"}
+                          disabled={authPending && socialPending !== "google"}
                           loading={socialPending === "google"}
                           onClick={() => void signInWithSocial("google")}
                         >
@@ -248,6 +249,7 @@ function RouteComponent() {
                         type="button"
                         variant="outline"
                         className="w-full"
+                        disabled={authPending && !passkeyPending}
                         loading={passkeyPending}
                         onClick={() => void signInWithPasskey()}
                       >
@@ -264,12 +266,19 @@ function RouteComponent() {
 
                     <emailForm.AppField name="email">
                       {(field) => (
-                        <field.TextField label="Email" type="email" placeholder="you@example.com" />
+                        <field.TextField
+                          disabled={authPending}
+                          label="Email"
+                          type="email"
+                          placeholder="you@example.com"
+                        />
                       )}
                     </emailForm.AppField>
 
                     <emailForm.AppForm>
-                      <emailForm.SubmitButton className="w-full">Continue</emailForm.SubmitButton>
+                      <emailForm.SubmitButton className="w-full" disabled={authPending}>
+                        Continue
+                      </emailForm.SubmitButton>
                     </emailForm.AppForm>
                   </CardPanel>
                 </form>
