@@ -1,0 +1,32 @@
+packages/db/src/schema/apps.ts
+  s_59d5299eaf8aa9::t_66273827ee10fd 3
+  s_59d5299eaf8aa9::t_c6083f975e512c 37
+packages/api-platform/src/app-agent-mcp.test.ts
+  s_59d5299eaf8aa9::t_18fa61dcc1a3b7 31-32,90,160,165
+packages/api-platform/src/app-agent-mcp.ts
+  s_59d5299eaf8aa9::t_57f22067d48e52 154,156,161
+  s_59d5299eaf8aa9::t_ca473e0c9a01d1 18,159-160,162
+packages/db/src/migrations/20261012235152_legal_shadow_king/snapshot.json
+  s_59d5299eaf8aa9::t_0afdd8d5d71561 1-3602
+packages/api-platform/src/routes/apps.ts
+  s_59d5299eaf8aa9::t_eb5e842bb99191 111-146,154,157
+  s_59d5299eaf8aa9::t_6707f0fbc5fbaa 13
+packages/db/src/migrations/20261012235152_legal_shadow_king/migration.sql
+  s_59d5299eaf8aa9::t_0afdd8d5d71561 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4ed74aacea1a0cb9e439fa8832cf87a8c38eadcd",
+  "prompts": {},
+  "sessions": {
+    "s_59d5299eaf8aa9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13286-b177-7f83-a583-89d958b6c1d3",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
