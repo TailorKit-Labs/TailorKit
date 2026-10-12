@@ -3,11 +3,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { flexRender, useTable } from "@tanstack/react-table";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
-import { AppWindowIcon, SearchIcon } from "lucide-react";
+import { AppWindowIcon, ArrowUpRightIcon, SearchIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { RefObject } from "react";
 import type { Scope } from "@tailorkit/db/schema/scope";
 import { Badge } from "@tailorkit/ui/badge";
+import { Button } from "@tailorkit/ui/button";
 import { CardFrame } from "@tailorkit/ui/card";
 import {
   Empty,
@@ -299,6 +300,8 @@ function AppsIndexPage() {
         Loading apps...
       </CardFrame>
     );
+  } else if (apps.length === 0 && !normalizedSearch && projectApiKey) {
+    content = <ProjectKeyEnv key={projectApiKey} apiKey={projectApiKey} />;
   } else if (apps.length === 0) {
     content = (
       <Empty className="mx-auto w-full rounded-lg border">
@@ -313,14 +316,22 @@ function AppsIndexPage() {
               : "Apps deployed to this project will appear here."}
           </EmptyDescription>
         </EmptyHeader>
-        {!normalizedSearch && projectApiKey ? (
-          <EmptyContent className="w-full max-w-lg text-left">
-            <p className="text-muted-foreground text-sm">
-              Add this project key to your backend's .env file to get started.
-            </p>
-            <div className="w-full">
-              <ProjectKeyEnv key={projectApiKey} apiKey={projectApiKey} />
-            </div>
+        {!normalizedSearch ? (
+          <EmptyContent>
+            <Button
+              render={
+                <a
+                  href="https://tailorkit.dev/docs/installation"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                />
+              }
+              size="sm"
+              variant="outline"
+            >
+              Installation guide
+              <ArrowUpRightIcon aria-hidden="true" />
+            </Button>
           </EmptyContent>
         ) : null}
       </Empty>
