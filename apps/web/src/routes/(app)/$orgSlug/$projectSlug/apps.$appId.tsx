@@ -1,12 +1,13 @@
 /* oxlint-disable react/no-unstable-nested-components */
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { flexRender, useTable } from "@tanstack/react-table";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
 import { ArrowLeftIcon, DownloadIcon, RocketIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Badge } from "@tailorkit/ui/badge";
 import { Button } from "@tailorkit/ui/button";
+import { toastManager } from "@tailorkit/ui/toast";
 import {
   CardFrame,
   CardFrameDescription,
@@ -19,7 +20,7 @@ import { DateAgo } from "@tailorkit/ui/date";
 import { AppLogo } from "#components/apps/app-logo";
 import { renderSortableHeader } from "#components/members/member-table-utils";
 import { PageLayout } from "#components/page-layout";
-import { orpc } from "#lib/orpc";
+import { client, orpc } from "#lib/orpc";
 import { dataTableFeatures } from "#lib/table";
 
 export const Route = createFileRoute("/(app)/$orgSlug/$projectSlug/apps/$appId")({
@@ -150,12 +151,27 @@ function DeploymentsTable({
 
 function AppPage() {
   const { appId, orgSlug, projectSlug } = Route.useParams();
-  const sourceExportUrl = `/api/apps/${encodeURIComponent(appId)}/source?${new URLSearchParams({ orgSlug, projectSlug })}`;
-  const { data: sourceExportAvailable } = useQuery({
-    queryKey: ["app-source-export", appId, orgSlug, projectSlug],
-    queryFn: async () => {
-      const response = await fetch(sourceExportUrl, { method: "HEAD" });
-      return response.ok;
+  const sourceExportInput = { appId, orgSlug, projectSlug };
+  const { data: sourceExportStatus } = useQuery(
+    orpc.apps.sourceExportStatus.queryOptions({ input: sourceExportInput }),
+  );
+  const sourceExportMutation = useMutation({
+    mutationFn: () => client.apps.exportSource(sourceExportInput),
+    onError: (error: unknown) => {
+      toastManager.add({
+        title: "Source export failed",
+        description: error instanceof Error ? error.message : "Unable to export app source.",
+        type: "error",
+      });
+    },
+    onSuccess: ({ archive, fileName }) => {
+      const downloadUrl = URL.createObjectURL(archive);
+      const link = document.createElement("a");
+      link.download = fileName;
+      link.href = downloadUrl;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
+      toastManager.add({ title: "Source export downloaded", type: "success" });
     },
   });
   const { data: app } = useSuspenseQuery(
@@ -166,10 +182,15 @@ function AppPage() {
     <PageLayout
       actions={
         <div className="flex items-center gap-2">
-          {sourceExportAvailable ? (
-            <Button render={<a download href={sourceExportUrl} />} size="sm" variant="outline">
+          {sourceExportStatus === "available" ? (
+            <Button
+              disabled={sourceExportMutation.isPending}
+              onClick={() => sourceExportMutation.mutate()}
+              size="sm"
+              variant="outline"
+            >
               <DownloadIcon />
-              Export source
+              {sourceExportMutation.isPending ? "Preparing export..." : "Export source"}
             </Button>
           ) : null}
           <Button

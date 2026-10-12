@@ -1,7 +1,13 @@
 import { ORPCError } from "@orpc/server";
 import { withAppAssetUrl } from "@tailorkit/api-utils/app-asset-url";
+import {
+  AppAgentWorkspaceBusyError,
+  exportAppAgentWorkspace,
+  getAppAgentWorkspaceStatus,
+} from "@tailorkit/app-agent/source-export";
 import { db } from "@tailorkit/db";
 import { app, appDeployment } from "@tailorkit/db/schema/apps";
+import { evaluateBooleanFlag } from "@tailorkit/flags";
 import { and, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import z from "zod";
 import { protectedProcedure, requireProject } from "../procedures";
@@ -43,6 +49,17 @@ async function getProjectApp(projectId: string, appId: string) {
       },
     })) ?? null
   );
+}
+
+async function getSourceExportApp(projectId: string, appId: string) {
+  const selectedApp = await getProjectApp(projectId, appId);
+  if (!selectedApp) {
+    throw new ORPCError("NOT_FOUND", { message: "App not found." });
+  }
+
+  const enabled = await evaluateBooleanFlag("app-source-export", false);
+
+  return { app: selectedApp, enabled };
 }
 
 export const appsRouter = {
@@ -184,5 +201,58 @@ export const appsRouter = {
         context.org.publicId,
         context.project.id,
       );
+    }),
+
+  sourceExportStatus: protectedProcedure
+    .input(appInput)
+    .use(requireProject())
+    .handler(async ({ context, input }) => {
+      const { app: selectedApp, enabled } = await getSourceExportApp(
+        context.project.id,
+        input.appId,
+      );
+      if (!enabled) return "disabled" as const;
+      return getAppAgentWorkspaceStatus(selectedApp.id);
+    }),
+
+  exportSource: protectedProcedure
+    .input(appInput)
+    .use(requireProject())
+    .handler(async ({ context, input }) => {
+      const { app: selectedApp, enabled } = await getSourceExportApp(
+        context.project.id,
+        input.appId,
+      );
+      if (!enabled) {
+        throw new ORPCError("NOT_FOUND", { message: "App source export is unavailable." });
+      }
+
+      const workspaceStatus = await getAppAgentWorkspaceStatus(selectedApp.id);
+      if (workspaceStatus === "busy") {
+        throw new ORPCError("CONFLICT", {
+          message:
+            "The app workspace is currently being edited. Try again when the agent finishes.",
+        });
+      }
+      if (workspaceStatus === "missing") {
+        throw new ORPCError("NOT_FOUND", { message: "App source export is unavailable." });
+      }
+
+      try {
+        const archive = await exportAppAgentWorkspace(selectedApp.id);
+        if (!archive) {
+          throw new ORPCError("NOT_FOUND", { message: "App source export is unavailable." });
+        }
+
+        return {
+          archive: new Blob([Uint8Array.from(archive)], { type: "application/gzip" }),
+          fileName: `tailorkit-app-${selectedApp.id}-source.tar.gz`,
+        };
+      } catch (error) {
+        if (error instanceof AppAgentWorkspaceBusyError) {
+          throw new ORPCError("CONFLICT", { message: error.message });
+        }
+        throw error;
+      }
     }),
 };
