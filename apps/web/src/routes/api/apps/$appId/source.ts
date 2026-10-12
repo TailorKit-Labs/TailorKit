@@ -8,6 +8,7 @@ import {
   hasAppAgentWorkspace,
 } from "@tailorkit/app-agent/source-export";
 import { createFileRoute } from "@tanstack/react-router";
+import { env } from "../../../../env";
 
 function response(status: number) {
   return new Response(null, {
@@ -32,12 +33,20 @@ async function handle({ request, params }: { request: Request; params: { appId: 
 
   try {
     const context = await createContext({ request });
+    const distinctId = context.user?.id;
+    if (!distinctId) return response(401);
+
     const app = await call(
       appRouter.apps.get,
       { appId: params.appId, orgSlug, projectSlug },
       { context },
     );
-    const enabled = await evaluateBooleanFlag("app-source-export", false);
+    const enabled = await evaluateBooleanFlag("app-source-export", {
+      defaultValue: false,
+      distinctId,
+      host: env.VITE_POSTHOG_HOST,
+      projectApiKey: env.VITE_POSTHOG_PROJECT_TOKEN,
+    });
     if (!enabled || !(await hasAppAgentWorkspace(app.id))) return response(404);
 
     if (request.method === "HEAD") return response(204);
