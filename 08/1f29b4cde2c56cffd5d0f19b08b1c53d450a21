@@ -1,0 +1,59 @@
+packages/core/src/server/handler.ts
+  s_109b9869ca3fd4::t_9515a04bc6d3fb 12,87
+packages/api-platform/src/app-agent-mcp.ts
+  s_109b9869ca3fd4::t_ebff43c402f990 19,34,42
+  s_109b9869ca3fd4::t_9515a04bc6d3fb 25,37-41,54,165
+  s_109b9869ca3fd4::t_d276930fb38415 4,43-44
+packages/core/src/server/contract.ts
+  s_109b9869ca3fd4::t_9515a04bc6d3fb 81-82
+packages/core/README.md
+  s_109b9869ca3fd4::t_7f252df0cb962a 7-11,14-22,25-34
+packages/api-platform/README.md
+  s_109b9869ca3fd4::t_7f252df0cb962a 5-29
+packages/api-platform/src/app-agent-mcp.test.ts
+  s_109b9869ca3fd4::t_7c9d8d228bfe95 58-59,68-69,72-82,143,206-207,221,226-230,240-242
+  s_109b9869ca3fd4::t_d276930fb38415 208-220,222-225,231-239
+  s_109b9869ca3fd4::t_1036de3d22ca49 243
+packages/core/src/server/mcp.ts
+  s_109b9869ca3fd4::t_9515a04bc6d3fb 4,6-7,14-19,25,43-49
+  s_109b9869ca3fd4::t_d276930fb38415 20-24,26-33
+  s_109b9869ca3fd4::t_8a7b949a64198b 34-38
+packages/core/src/server/types.ts
+  s_109b9869ca3fd4::t_9515a04bc6d3fb 168,170-173
+packages/app-agent/README.md
+  s_109b9869ca3fd4::t_2783015d82e5de 33-36
+  s_109b9869ca3fd4::t_7f252df0cb962a 42
+  s_109b9869ca3fd4::t_f0d52c5551588e 43-44
+packages/app-agent/src/mcp.ts
+  s_109b9869ca3fd4::t_d276930fb38415 1
+packages/core/src/server/mcp.test.ts
+  s_109b9869ca3fd4::t_c2553966d0199d 4-5,7,13,16-17,20-22,25,27-28,31-33,38-39,45-56,59-62,67-69,72-74,78-79,86-87,92-93,98,101-103,107-108,114-115,120,124
+  s_109b9869ca3fd4::t_d276930fb38415 8-12,34-37,40-42,64,80-83,88-91,94-97,105-106,109-111,116-119,121-123
+  s_109b9869ca3fd4::t_ebbf1f7f285628 112-113
+packages/api-platform/src/mcp.integration.test.ts
+  s_109b9869ca3fd4::t_21e442ebe6be60 1-17,19-27,36-69
+  s_109b9869ca3fd4::t_ebff43c402f990 28-35
+  s_109b9869ca3fd4::t_c757843161b7fa 18
+.changeset/app-agent-mcp.md
+  s_109b9869ca3fd4::t_7f252df0cb962a 6-9
+packages/api-platform/package.json
+  s_109b9869ca3fd4::t_40c4deb09eb608 71
+pnpm-lock.yaml
+  s_109b9869ca3fd4::t_b9742f0925a5de 892-894
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "081f29b4cde2c56cffd5d0f19b08b1c53d450a21",
+  "prompts": {},
+  "sessions": {
+    "s_109b9869ca3fd4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12e6f-0b67-7601-a555-bed53c57145f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
