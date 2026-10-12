@@ -9,6 +9,7 @@ import type {
 } from "../schema/index";
 import { createTailorKitSchema } from "../schema/schema";
 import { normalizeBaseUrl } from "./base-url";
+import { createMcpTransport } from "./mcp";
 import { handleCliAuthApprovalPage } from "./cli-auth-page";
 import { handlePreviewConsent, readPreviewGrantIds } from "./preview-consent";
 import { createContext } from "./context";
@@ -83,6 +84,12 @@ export function createTailorKitServer<const TOptions extends TailorKitServerInpu
     options.$internal?.platformHeaders ??
     (options.projectKey ? { authorization: `Bearer ${options.projectKey}` } : undefined);
   const rpcHandler = new RPCHandler(tailorkitRouter);
+  const mcp = createMcpTransport({
+    hostUrl: publicOrigin + basePath,
+    platformUrl: platformBaseUrl,
+    platformHeaders,
+    scopeSchemas,
+  });
 
   // oxlint-disable-next-line complexity -- request dispatch is intentionally centralized here.
   const handler = async (
@@ -319,6 +326,7 @@ export function createTailorKitServer<const TOptions extends TailorKitServerInpu
 
   return {
     $internal: { platformBaseUrl, router: tailorkitRouter, schema },
+    mcp,
     handler,
   };
 }

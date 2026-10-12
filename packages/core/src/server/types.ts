@@ -165,6 +165,13 @@ export interface TailorKitServer<
   TTools extends ContractTools = Record<never, never>,
   TScopes = TailorKitScopes,
 > {
+  /** Prepare direct platform MCP HTTP configuration for a server-side client. */
+  mcp: {
+    transport: (options: TailorKitHostContext<TScopes>) => Promise<{
+      url: string;
+      headers: Record<string, string>;
+    }>;
+  };
   handler: (
     request: Request,
     options: TailorKitHandlerOptions<TScopes>,

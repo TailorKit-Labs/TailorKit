@@ -41,6 +41,8 @@ jobs:
         run: vp install --frozen-lockfile
 
       - name: Set up Turborepo Remote Cache
+        # Cache availability must not prevent the verification steps from running.
+        continue-on-error: true
         if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
         uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
         with:
@@ -79,6 +81,8 @@ jobs:
         run: vp install --frozen-lockfile
 
       - name: Set up Turborepo Remote Cache
+        # Cache availability must not prevent the verification steps from running.
+        continue-on-error: true
         if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
         uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
         with:
@@ -108,6 +112,8 @@ jobs:
         run: vp install --frozen-lockfile
 
       - name: Set up Turborepo Remote Cache
+        # Cache availability must not prevent the verification steps from running.
+        continue-on-error: true
         if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
         uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
         with:
