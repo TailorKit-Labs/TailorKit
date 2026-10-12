@@ -121,10 +121,11 @@ function createReactTailorKitClient<
       children,
       ...props
     }: Record<string, unknown> & { children?: ReactNode }) {
-      return (renderer as ComponentRenderer<ComponentDefinition & { children: true }, ReactNode>)({
+      const rendererArgs = {
         props: props as ComponentProps<ComponentDefinition>,
-        children,
-      });
+        ...(children === undefined ? {} : { children }),
+      };
+      return (renderer as (args: typeof rendererArgs) => ReactNode)(rendererArgs);
     };
   });
   const clientConfig = createTailorKitClientConfig({ ...options, components: wrappedComponents });
