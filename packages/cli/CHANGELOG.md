@@ -1,5 +1,15 @@
 # @tailorkit/cli
 
+## 0.1.0-beta.29
+
+### Patch Changes
+
+- 108aaa9: Let the app agent publish through existing platform endpoints using a one-hour JWT as an alternative to CLI sessions across authenticated commands, using the same project/scope permissions and existing platform endpoints. Preserve normal session-token login, storage, and host routing. Require secure platform URLs, distinguish service failures from auth rejection, and add headless deployment and explicit app selection.
+- Updated dependencies [3567f94]
+  - @tailorkit/core@0.1.0-beta.29
+  - @tailorkit/app@0.1.0-beta.29
+  - @tailorkit/client-platform@0.1.0-beta.29
+
 ## 0.1.0-beta.28
 
 ### Patch Changes
