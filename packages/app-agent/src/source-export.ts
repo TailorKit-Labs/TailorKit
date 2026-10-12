@@ -16,8 +16,12 @@ async function findAppDrive(appId: string) {
   return drives.find((drive) => drive.name === name) ?? null;
 }
 
-export async function hasAppAgentWorkspace(appId: string): Promise<boolean> {
-  return Boolean(await findAppDrive(appId));
+export async function getAppAgentWorkspaceStatus(
+  appId: string,
+): Promise<"missing" | "busy" | "available"> {
+  const drive = await findAppDrive(appId);
+  if (!drive) return "missing";
+  return drive.currentSandboxName ? "busy" : "available";
 }
 
 /** Export the persistent app-agent workspace as a source archive. */

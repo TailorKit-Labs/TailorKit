@@ -5,7 +5,7 @@ import { evaluateBooleanFlag } from "@tailorkit/flags";
 import {
   AppAgentWorkspaceBusyError,
   exportAppAgentWorkspace,
-  hasAppAgentWorkspace,
+  getAppAgentWorkspaceStatus,
 } from "@tailorkit/app-agent/source-export";
 import { createFileRoute } from "@tanstack/react-router";
 import { env } from "../../../../env";
@@ -47,7 +47,11 @@ async function handle({ request, params }: { request: Request; params: { appId: 
       host: env.VITE_POSTHOG_HOST,
       projectApiKey: env.VITE_POSTHOG_PROJECT_TOKEN,
     });
-    if (!enabled || !(await hasAppAgentWorkspace(app.id))) return response(404);
+    if (!enabled) return response(404);
+
+    const workspaceStatus = await getAppAgentWorkspaceStatus(app.id);
+    if (workspaceStatus === "busy") return response(409);
+    if (workspaceStatus === "missing") return response(404);
 
     if (request.method === "HEAD") return response(204);
 
