@@ -280,6 +280,7 @@ function AppsIndexPage() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const apps = data?.pages.flatMap((page) => page.items) ?? [];
+  const isEmptyProject = !isPending && !normalizedSearch && apps.length === 0;
   const searchControl = (
     <div className="relative w-full sm:w-72">
       <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -351,8 +352,12 @@ function AppsIndexPage() {
 
   return (
     <PageLayout
-      actions={searchControl}
-      description="Apps uploaded to this project through TailorKit."
+      actions={isEmptyProject ? undefined : searchControl}
+      description={
+        isEmptyProject
+          ? "No apps yet. Set up TailorKit to deploy your first app."
+          : "Apps uploaded to this project through TailorKit."
+      }
       title="Apps"
     >
       {content}
