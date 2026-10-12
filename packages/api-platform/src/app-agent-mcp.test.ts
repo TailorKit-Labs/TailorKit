@@ -296,6 +296,55 @@ describe("platform MCP endpoint", () => {
     expect(mocks.revoke).toHaveBeenCalledOnce();
   });
 
+  it("cancels an unfinished agent after a stream failure while the request stays active", async () => {
+    const input = request("edit_app", { appId: "public-app", prompt: "Change" });
+    mocks.start.mockResolvedValueOnce({
+      runId: "run",
+      cancel: mocks.cancel,
+      readable: new ReadableStream({
+        start(controller) {
+          controller.error(new Error("Agent stream failed"));
+        },
+      }),
+      returnValue: new Promise(() => {}),
+    });
+    const response = await handleAppAgentMcpRequest(input, context);
+    expect(await response.text()).toContain("Agent stream failed");
+    expect(input.signal.aborted).toBe(false);
+    expect(mocks.cancel).toHaveBeenCalledOnce();
+    expect(mocks.cleanup).toHaveBeenCalledWith("app-agent-run");
+    expect(mocks.revoke).toHaveBeenCalledOnce();
+  });
+
+  it("still deletes the sandbox and revokes the grant when workflow cancellation fails", async () => {
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    mocks.cancel.mockRejectedValueOnce(new Error("Cancellation unavailable"));
+    mocks.start.mockResolvedValueOnce({
+      runId: "run",
+      cancel: mocks.cancel,
+      readable: new ReadableStream({
+        start(controller) {
+          controller.error(new Error("Agent stream failed"));
+        },
+      }),
+      returnValue: new Promise(() => {}),
+    });
+    try {
+      const response = await handleAppAgentMcpRequest(
+        request("edit_app", { appId: "public-app", prompt: "Change" }),
+        context,
+      );
+      const events = await response.text();
+      expect(events).toContain("Agent stream failed");
+      expect(events).not.toContain("Cancellation unavailable");
+      expect(warning).toHaveBeenCalledOnce();
+      expect(mocks.cleanup).toHaveBeenCalledWith("app-agent-run");
+      expect(mocks.revoke).toHaveBeenCalledOnce();
+    } finally {
+      warning.mockRestore();
+    }
+  });
+
   it("surfaces setup failures without waiting for an unopened model stream", async () => {
     mocks.start.mockResolvedValueOnce({
       runId: "run",

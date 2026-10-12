@@ -26,6 +26,9 @@ The returned URL points directly to TailorKit's platform MCP endpoint. The
 headers contain the configured project credential and an encoded caller context.
 These plain values also work with other HTTP MCP clients. Keep them server-side,
 create them for the authenticated caller, and do not share them across users.
+The headers carry the project secret; they are not a restricted credential that
+can be delegated to a browser or an untrusted client. Scopes describe the trusted
+host's caller context for this request.
 No host `/mcp` route or proxy handler is mounted.
 
 The helper includes the configured host URL so the builder agent can fetch the

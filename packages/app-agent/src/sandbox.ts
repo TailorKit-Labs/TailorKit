@@ -84,7 +84,7 @@ export async function renewSandbox(name: string) {
   await getSandbox(name);
 }
 
-/** Called only in the workflow's final cleanup. Its Drive survives. */
+/** Best-effort cleanup after a workflow finishes or its MCP request ends. Its Drive survives. */
 export async function deleteSandbox(name: string) {
   "use step";
   try {

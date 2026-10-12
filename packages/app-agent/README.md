@@ -56,8 +56,11 @@ const result = await client.callTool(
 
 The [current transport specification](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http)
 explicitly does **not** support resumable SSE or `Last-Event-ID`. Closing a stream
-cancels the request and the platform stops its agent run, deletes the ephemeral
-sandbox, and revokes its grant. Successful calls wait for workflow cleanup before
+cancels the request and the platform attempts to stop its agent run and delete
+the ephemeral sandbox, then revokes its grant. Stream and progress failures use
+the same cleanup. If sandbox deletion fails, its idle timeout releases it;
+process interruption can leave cleanup to the grant expiry and sandbox timeout.
+Successful calls wait for workflow cleanup before
 the terminal result. A cancelled create may leave an app installation, and
 published changes are not rolled back. Use `list_apps` to inspect the app before
 starting a deliberate new call.

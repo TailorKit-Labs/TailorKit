@@ -7,6 +7,7 @@ import { issueAgentToken } from "@tailorkit/api-utils/agent-token";
 import { hashSecret } from "@tailorkit/api-utils/hashing";
 import { db } from "@tailorkit/db";
 import { cliToken } from "@tailorkit/db/schema/cli-auth";
+import { sanitizeErrorForLog } from "@tailorkit/observability";
 import { eq } from "drizzle-orm";
 import { start, type Run } from "workflow/api";
 import { z } from "zod";
@@ -120,10 +121,19 @@ export async function handleAppAgentMcpRequest(
     } finally {
       controller.abort();
       try {
-        if (run && !finished && execution.signal.aborted) {
+        if (run && !finished) {
           // Hard run cancellation doesn't execute workflow finally blocks.
-          await run.cancel({ cancelReason: "MCP response stream closed" });
-          await deleteSandbox(`app-agent-${run.runId}`);
+          try {
+            await run.cancel({ cancelReason: "MCP request ended before its agent completed" });
+          } catch (error) {
+            // Preserve the request failure and still release resources if cancellation fails.
+            console.warn("App agent MCP cancellation failed", {
+              runId: run.runId,
+              error: sanitizeErrorForLog(error),
+            });
+          } finally {
+            await deleteSandbox(`app-agent-${run.runId}`);
+          }
         }
       } finally {
         await db.update(cliToken).set({ revokedAt: new Date() }).where(eq(cliToken.id, grant.id));
