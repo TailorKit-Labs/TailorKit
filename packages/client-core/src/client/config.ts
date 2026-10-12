@@ -20,7 +20,11 @@ export type AnyComponentDefinition = ComponentDefinition<
 export type ComponentRenderer<TComponent extends AnyComponentDefinition, TNode> = (
   args: {
     props: ComponentProps<TComponent>;
-  } & (TComponent extends { children: true } ? { children?: TNode } : {}),
+  } & ("children" extends keyof TComponent
+    ? TComponent extends { children?: true }
+      ? { children?: TNode }
+      : {}
+    : {}),
 ) => TNode;
 
 export type ComponentRenderers<
