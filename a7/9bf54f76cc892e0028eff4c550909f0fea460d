@@ -1,0 +1,24 @@
+packages/react/src/tailorkit.tsx
+  s_9d79b70b6eff2a::t_52ed741f0bf8bf 124,126-128
+.changeset/bright-children-renderers.md
+  s_9d79b70b6eff2a::t_52ed741f0bf8bf 1-6
+packages/client-core/src/client/config.ts
+  s_9d79b70b6eff2a::t_52ed741f0bf8bf 20-22,24
+  s_9d79b70b6eff2a::t_28598cccca84c0 23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a79bf54f76cc892e0028eff4c550909f0fea460d",
+  "prompts": {},
+  "sessions": {
+    "s_9d79b70b6eff2a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12fc8-3200-7053-8c8a-eb72a53cc84e",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
