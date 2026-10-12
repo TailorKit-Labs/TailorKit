@@ -1,0 +1,39 @@
+SECURITY.md
+  s_034b571101caa7::t_8416cf393a819c 8
+packages/sandbox/package.json
+  s_034b571101caa7::t_8416cf393a819c 7
+docs/docs.json
+  s_034b571101caa7::t_8416cf393a819c 59
+packages/cli/package.json
+  s_034b571101caa7::t_8416cf393a819c 7
+packages/tailorkit/package.json
+  s_034b571101caa7::t_8416cf393a819c 7
+packages/client-platform/package.json
+  s_034b571101caa7::t_8416cf393a819c 7
+packages/core/package.json
+  s_034b571101caa7::t_8416cf393a819c 7
+packages/client-core/package.json
+  s_034b571101caa7::t_8416cf393a819c 7
+packages/react/package.json
+  s_034b571101caa7::t_8416cf393a819c 7
+packages/app/package.json
+  s_034b571101caa7::t_8416cf393a819c 7
+docs/installation.mdx
+  s_034b571101caa7::t_8416cf393a819c 844
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9cf1bd3948dc9ded793dcbaeb3f561c3b01372d6",
+  "prompts": {},
+  "sessions": {
+    "s_034b571101caa7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12efb-dd8f-7d00-97e1-bc2de6e1e234",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
