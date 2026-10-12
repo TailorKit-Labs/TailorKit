@@ -13,6 +13,7 @@ export const o = os.$context<Context>().errors({
   UNAUTHORIZED: {},
   NOT_FOUND: {},
   FORBIDDEN: {},
+  CONFLICT: {},
   BAD_REQUEST: {},
   TOO_MANY_REQUESTS: {},
 });
