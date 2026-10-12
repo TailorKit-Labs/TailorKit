@@ -1,5 +1,18 @@
 # @tailorkit/core
 
+## 0.1.0-beta.29
+
+### Minor Changes
+
+- 3567f94: Expose direct platform MCP access through
+  `server.mcp.transport({ scopes, subjectId? })`, which returns a URL and headers for
+  any HTTP MCP client. Provide list, create, and edit tools using MCP 2026-07-28
+  with request-scoped SSE progress, with create/edit launching app agents.
+
+### Patch Changes
+
+- @tailorkit/client-platform@0.1.0-beta.29
+
 ## 0.1.0-beta.28
 
 ### Patch Changes
