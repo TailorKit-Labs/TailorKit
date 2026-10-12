@@ -67,7 +67,9 @@ export async function getSandbox(name: string) {
       throw new FatalError("App agent sandbox is no longer running.");
     }
     const extension = Date.now() + sandboxIdleTimeoutMs - expiresAt;
-    if (extension > 0) {
+    // The Sandbox API rejects extensions shorter than one second. Near the
+    // 15-minute boundary, clock and request latency can produce a smaller top-up.
+    if (extension >= 1_000) {
       // Session methods cannot auto-resume a stopped VM and remount its Drive.
       await sandbox.currentSession().extendTimeout(extension);
     }
