@@ -12,7 +12,7 @@ export class AppAgentWorkspaceBusyError extends Error {
 
 async function findAppDrive(appId: string) {
   const name = `${drivePrefix}${appId}`;
-  const { drives } = await Drive.list({ namePrefix: name, limit: 1 });
+  const { drives } = await Drive.list({ limit: 1, namePrefix: name, sortBy: "name" });
   return drives.find((drive) => drive.name === name) ?? null;
 }
 

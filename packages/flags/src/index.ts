@@ -1,4 +1,6 @@
-import { flagsClient } from "@vercel/flags-core";
+import { createClient } from "@vercel/flags-core";
+
+const flagsClient = createClient();
 
 export type FlagEntities = {
   user: {
