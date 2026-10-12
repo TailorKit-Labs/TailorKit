@@ -2,6 +2,7 @@ import { ORPCError } from "@orpc/server";
 import { hashSecret } from "@tailorkit/api-utils/hashing";
 import { db } from "@tailorkit/db";
 import { env } from "#env";
+import type { Context } from "./context";
 import { canonicalizeScope } from "./scope";
 
 export async function authenticateCli(
@@ -27,4 +28,18 @@ export async function authenticateCli(
     throw new ORPCError("UNAUTHORIZED", { message: "Invalid CLI deploy token." });
   }
   return { ...token, scope: scope.scope, scopeKey: scope.scopeKey };
+}
+
+/** Authenticate either the existing host-forwarded CLI token or a verified JWT context. */
+export async function authenticateCliRequest(context: Context, token: string) {
+  if (!context.agentToken)
+    return authenticateCli(context.project.id, token, context.runtimeService);
+  const agent = context.agentToken;
+  if (token !== agent.token || context.runtimeService) throw new ORPCError("UNAUTHORIZED");
+  return {
+    id: agent.cliTokenId,
+    projectId: agent.projectId,
+    ...canonicalizeScope(agent.scope),
+    expiresAt: new Date(agent.exp * 1000),
+  };
 }

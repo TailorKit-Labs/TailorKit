@@ -1,3 +1,4 @@
+import { SignJWT } from "jose";
 import { createHash } from "node:crypto";
 import { gunzipSync } from "node:zlib";
 import {
@@ -76,6 +77,7 @@ beforeEach(async () => {
   mocks.publish.mockResolvedValue({ id: "deployment", status: "published" });
 });
 afterEach(async () => {
+  vi.unstubAllEnvs();
   vi.restoreAllMocks();
   await rm(root, { recursive: true, force: true });
 });
@@ -401,4 +403,66 @@ it.each(["client", "server"])("accepts %s code exactly at the 3 MiB limit", asyn
     expect.objectContaining({ path: `${kind}/${kind}.js`, size }),
   );
   expect(mocks.publish).toHaveBeenCalledOnce();
+});
+
+async function agentJwt(exp = Math.floor(Date.now() / 1000) + 3600) {
+  return new SignJWT({
+    iss: "tailorkit-agent",
+    aud: "tailorkit-platform-cli",
+    projectId: "project",
+    appId: "authorized-app",
+    scope: { name: "user", value: { userId: "one" } },
+    platformUrl: "https://platform.example/api/platform",
+    iat: Math.floor(Date.now() / 1000),
+    exp,
+  })
+    .setProtectedHeader({ alg: "HS256", typ: "tailorkit-agent+jwt" })
+    .sign(new TextEncoder().encode("test-only-key"));
+}
+
+it("agent JWT deployment uses shared authentication and the configured app without host requests", async () => {
+  const jwt = await agentJwt();
+  vi.stubEnv("TAILORKIT_AGENT_TOKEN", jwt);
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+    const request = input instanceof Request ? input : undefined;
+    if (request?.url === "https://platform.example/api/platform/deployments") {
+      expect(await request.json()).toMatchObject({
+        appId: "app-one",
+        scope: {
+          name: "user",
+          value: { userId: "one" },
+        },
+      });
+      expect(request.headers.get("authorization")).toBe(`Bearer ${jwt}`);
+      return Response.json({
+        deployment: { id: "deployment" },
+        assets: [{ uploadUrl: "https://uploads.example/client" }],
+        server: { uploadUrl: "https://uploads.example/server" },
+      });
+    }
+    if (request?.url === "https://platform.example/api/platform/deployments/deployment")
+      return Response.json({ id: "deployment", status: "published" });
+    if (typeof input === "string" && input.startsWith("https://uploads.example/"))
+      return new Response(null, { status: 200 });
+    throw new Error("Unexpected host or platform request");
+  });
+  const onLoginRequired = vi.fn();
+  expect(await runDeploy({ cwd: root, onLoginRequired })).toMatchObject({
+    appId: "app-one",
+    status: "published",
+    createdApp: false,
+  });
+  expect(mocks.whoami).toHaveBeenCalled();
+  expect(mocks.token).toHaveBeenCalled();
+  expect(mocks.client).not.toHaveBeenCalled();
+  expect(onLoginRequired).not.toHaveBeenCalled();
+});
+
+it("fails expired agent authorization before build without falling back to login", async () => {
+  vi.stubEnv("TAILORKIT_AGENT_TOKEN", await agentJwt(Math.floor(Date.now() / 1000) - 1));
+  const onLoginRequired = vi.fn();
+  await expect(runDeploy({ cwd: root, onLoginRequired })).rejects.toThrow(/agent authorization/i);
+  expect(mocks.build).not.toHaveBeenCalled();
+  expect(mocks.whoami).not.toHaveBeenCalled();
+  expect(onLoginRequired).not.toHaveBeenCalled();
 });

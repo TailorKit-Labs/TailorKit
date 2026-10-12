@@ -2,12 +2,14 @@ import { WorkflowAgent, type ModelCallStreamPart } from "@ai-sdk/workflow";
 import { stepCountIs, type ModelMessage } from "ai";
 import { getWorkflowMetadata, getWritable, sleep } from "workflow";
 import { bashTool, editTool, globTool, grepTool, lsTool, readTool, writeTool } from "./tools";
+import { deployTool } from "./tools/deploy";
 import {
   agentSchemaPath,
   deleteSandbox,
   prepareSandbox,
   renewSandbox,
   writeAgentSchema,
+  writeAgentToken,
 } from "./sandbox";
 import { quote } from "./tools/utils";
 import instructions from "./instructions.md?raw";
@@ -19,6 +21,8 @@ export interface AppAgentInput {
   hostUrl: string;
   /** Optional serialized host schema for generation without contacting the host. */
   schema?: Record<string, unknown>;
+  /** One-hour JWT used by authenticated CLI commands in the ephemeral sandbox. */
+  agentToken: string;
   messages: ModelMessage[];
   /** Serializable AI Gateway model ID. */
   model: string;
@@ -31,12 +35,20 @@ async function keepSandboxAlive(sandboxName: string, finished: Promise<boolean>)
 }
 
 /** One editing turn. The Drive's exclusive mount rejects concurrent writers. */
-export async function appAgent({ messages, model, appId, hostUrl, schema }: AppAgentInput) {
+export async function appAgent({
+  messages,
+  model,
+  appId,
+  hostUrl,
+  schema,
+  agentToken,
+}: AppAgentInput) {
   "use workflow";
   const sandboxName = `app-agent-${getWorkflowMetadata().workflowRunId}`;
 
   try {
     await prepareSandbox(`app-${appId}`, sandboxName);
+    await writeAgentToken(sandboxName, agentToken);
     if (schema !== undefined) await writeAgentSchema(sandboxName, schema);
     const schemaArgument = schema !== undefined ? ` --schema ${agentSchemaPath}` : "";
     const hostInstructions = [
@@ -52,6 +64,7 @@ export async function appAgent({ messages, model, appId, hostUrl, schema }: AppA
       model,
       instructions: `${instructions.trim()}\n\n## Host and generation commands\n\n${hostInstructions}`,
       tools: {
+        deploy: deployTool,
         read: readTool,
         write: writeTool,
         edit: editTool,
@@ -61,6 +74,7 @@ export async function appAgent({ messages, model, appId, hostUrl, schema }: AppA
         ls: lsTool,
       },
       toolsContext: {
+        deploy: { ...context, appId, agentToken },
         read: context,
         write: context,
         edit: context,

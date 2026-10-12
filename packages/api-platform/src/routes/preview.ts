@@ -11,10 +11,10 @@ import { and, count, eq, lt } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import z from "zod";
 import { createPreviewBuildStore } from "../preview-build-store";
-import { ensurePreviewDeveloperGrace } from "../preview-lifecycle";
-import { o, protectedRouter } from "../procedures";
+import { ensurePreviewDeveloperGrace, recordPreviewAgentAuthorization } from "../preview-lifecycle";
+import { o, cliRouter } from "../procedures";
 import { previewGrantRoutes } from "./preview-grants";
-import { authenticateCli } from "../cli-token";
+import { authenticateCliRequest } from "../cli-token";
 
 const previewSessionLifetimeMs = 8 * 60 * 60 * 1000;
 const firstConnectionGraceMs = 2 * 60 * 1000;
@@ -33,7 +33,7 @@ function createSecret(): string {
   return randomBytes(32).toString("base64url");
 }
 
-const startPreview = protectedRouter
+const startPreview = cliRouter
   .meta(openapi({ path: "/start", method: "POST" }))
   .input(
     z.object({
@@ -63,11 +63,7 @@ const startPreview = protectedRouter
       });
     }
     const now = new Date();
-    const token = await authenticateCli(
-      context.project.id,
-      input.body.deployToken,
-      context.runtimeService,
-    );
+    const token = await authenticateCliRequest(context, input.body.deployToken);
 
     const previewApp = await db.query.app.findFirst({
       where: {
@@ -109,7 +105,9 @@ const startPreview = protectedRouter
 
     const tunnelToken = createSecret();
     const shareId = createSecret();
-    const expiresAt = new Date(now.getTime() + previewSessionLifetimeMs);
+    const expiresAt = context.agentToken
+      ? new Date(context.agentToken.exp * 1000)
+      : new Date(now.getTime() + previewSessionLifetimeMs);
     const started = await db
       .transaction(async (tx) => {
         // Serialize starts in this project so concurrent app starts cannot exceed the scope cap.
@@ -203,6 +201,8 @@ const startPreview = protectedRouter
     if (!started.session) {
       throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Failed to create preview." });
     }
+    if (context.agentToken)
+      await recordPreviewAgentAuthorization(kv, started.session.id, expiresAt);
     const builds = createPreviewBuildStore(kv);
     for (const ended of [...started.expiredSessions, ...started.replacedSessions]) {
       try {
@@ -226,7 +226,7 @@ const startPreview = protectedRouter
     };
   });
 
-const stopPreview = protectedRouter
+const stopPreview = cliRouter
   .meta(openapi({ path: "/{sessionId}/stop", method: "POST" }))
   .input(
     z.object({
@@ -236,11 +236,7 @@ const stopPreview = protectedRouter
   )
   .output(z.object({ body: z.object({}) }))
   .handler(async ({ context, input }) => {
-    const token = await authenticateCli(
-      context.project.id,
-      input.body.deployToken,
-      context.runtimeService,
-    );
+    const token = await authenticateCliRequest(context, input.body.deployToken);
 
     const [endedSession] = await db
       .update(previewSession)

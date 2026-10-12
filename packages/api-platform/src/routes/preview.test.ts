@@ -1,4 +1,5 @@
 /* oxlint-disable require-await, typescript/no-non-null-assertion -- the in-memory KV fake implements Promise methods. */
+import { issueAgentToken, verifyAgentToken } from "@tailorkit/api-utils/agent-token";
 import { call } from "@orpc/server";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { RateLimitHandlerPlugin } from "@tailorkit/api-utils/rate-limiting";
@@ -529,5 +530,40 @@ describe("platform preview lifecycle and grants", () => {
       code: "CONFLICT",
       message: "This scope already has 5 active previews.",
     });
+  });
+
+  it("supports JWT preview authorization through source expiry, bounded by the JWT deadline", async () => {
+    const jwt = await issueAgentToken(
+      { projectId, appId: "authapp00001", cliTokenId: tokenId, scope: authorScope },
+      authSecret!,
+      env.OPENAPI_SERVER_URL!,
+    );
+    const agentToken = {
+      ...(await verifyAgentToken(jwt, authSecret!, env.OPENAPI_SERVER_URL!)),
+      token: jwt,
+    };
+    const handler = new OpenAPIHandler({ preview: previewRouter });
+    const response = await handler.handle(
+      new Request("https://platform.test/api/platform/preview/start", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ appId: "authapp00001", deployToken: jwt }),
+      }),
+      { prefix: "/api/platform", context: { ...context, agentToken } },
+    );
+    expect(response.response!.status).toBe(200);
+    const started = await response.response!.json();
+    expect(new Date(started.expiresAt).getTime()).toBe(agentToken.exp * 1000);
+    await db
+      .update(cliToken)
+      .set({ expiresAt: new Date(0) })
+      .where(eq(cliToken.id, tokenId));
+    expect(
+      await authorizePreviewSocket(started.sessionId, started.tunnelToken, "uploader"),
+    ).toMatchObject({ sessionId: started.sessionId, role: "uploader" });
+    await db.update(cliToken).set({ revokedAt: new Date() }).where(eq(cliToken.id, tokenId));
+    expect(
+      await authorizePreviewSocket(started.sessionId, started.tunnelToken, "uploader"),
+    ).toBeNull();
   });
 });

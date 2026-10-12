@@ -9,9 +9,9 @@ import { gzip } from "node:zlib";
 import type { TailorKitUploadManifest } from "@tailorkit/app/builder";
 import type { LoadedTailorKitConfig } from "@tailorkit/app/config/loader";
 import { loadTailorKitConfig } from "@tailorkit/app/config/loader";
-import { createTailorKitClient } from "@tailorkit/core/server";
 import type { z } from "zod";
 import { getDeployToken, NotLoggedInError, runWhoami } from "./auth";
+import { createDeploymentClient, getAgentAuth } from "./deployment-client";
 import { readAppName, writeAppIdToConfig } from "./app-link";
 
 export interface TypecheckFailure {
@@ -21,6 +21,7 @@ export interface TypecheckFailure {
 }
 
 interface DeployOptions {
+  appId?: string;
   configPath?: string;
   cwd: string;
   mode?: string;
@@ -230,7 +231,8 @@ const typecheckAppEntries = async (
 // eslint-disable-next-line complexity
 export const runDeploy = async (options: DeployOptions): Promise<DeployResult> => {
   const loaded = await loadTailorKitConfig(options.configPath, options.cwd);
-  let appId = loaded.config.appId;
+  const agent = getAgentAuth();
+  let appId = options.appId ?? loaded.config.appId ?? agent?.appId;
   let createdApp = false;
 
   const auth = await runWhoami(options).catch((error: unknown) => {
@@ -308,12 +310,10 @@ export const runDeploy = async (options: DeployOptions): Promise<DeployResult> =
     throw new Error(`Compressed deployment asset exceeds ${maxDeploymentBytes} bytes.`);
   }
 
-  const client = createTailorKitClient({
-    headers: { authorization: `Bearer ${storedAuth.deployToken}` },
-    url: auth.hostUrl,
-  });
+  const client = createDeploymentClient(auth.hostUrl, storedAuth.deployToken);
 
   const createLinkedApp = async (reason: "missing" | "not-found"): Promise<string> => {
+    if (options.appId) throw new Error("The requested deployment app was not found.");
     const appName = await readAppName(loaded.root);
     const shouldCreateApp = await options.onMissingAppId?.({
       appName,

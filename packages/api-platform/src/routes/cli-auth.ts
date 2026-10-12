@@ -7,9 +7,9 @@ import { env } from "#env";
 import { and, eq, gt } from "drizzle-orm";
 import { randomBytes, randomInt } from "node:crypto";
 import z from "zod";
-import { o, protectedRouter } from "../procedures";
+import { o, protectedRouter, cliRouter } from "../procedures";
 import { canonicalizeScope, scopeSchema } from "../scope";
-import { authenticateCli } from "../cli-token";
+import { authenticateCliRequest } from "../cli-token";
 
 const deviceCodeBytes = 32;
 const deployTokenBytes = 32;
@@ -297,7 +297,7 @@ const pollCliAuth = protectedRouter
     };
   });
 
-const verifyCliAuthToken = protectedRouter
+const verifyCliAuthToken = cliRouter
   .meta(
     openapi({
       path: "/verify-token",
@@ -307,11 +307,7 @@ const verifyCliAuthToken = protectedRouter
   .input(z.object({ body: z.object({ deployToken: z.string().min(1) }) }))
   .output(z.object({ body: z.object({ scope: scopeSchema }) }))
   .handler(async ({ context, input }) => {
-    const token = await authenticateCli(
-      context.project.id,
-      input.body.deployToken,
-      context.runtimeService,
-    );
+    const token = await authenticateCliRequest(context, input.body.deployToken);
 
     await db.update(cliToken).set({ lastUsedAt: new Date() }).where(eq(cliToken.id, token.id));
 

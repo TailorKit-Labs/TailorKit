@@ -1,3 +1,4 @@
+import { SignJWT } from "jose";
 import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import type * as nodeOs from "node:os";
@@ -50,6 +51,8 @@ describe("auth store", () => {
 
   afterEach(async () => {
     vi.useRealTimers();
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
     vi.doUnmock("node:os");
 
     await Promise.all(
@@ -371,5 +374,58 @@ describe("auth store", () => {
     await expect(readFile(filePath, "utf-8").then(JSON.parse)).resolves.toEqual({
       hosts: { "https://example.com": { deployToken: "deploy-token" } },
     });
+  });
+
+  it("JWT login and whoami use platform verification without reading or modifying stored sessions", async () => {
+    const home = await createTemporaryHome();
+    const now = Math.floor(Date.now() / 1000);
+    const scope = { name: "user", value: { userId: "one" } };
+    const jwt = await new SignJWT({
+      iss: "tailorkit-agent",
+      aud: "tailorkit-platform-cli",
+      projectId: "project",
+      appId: "app",
+      platformUrl: "https://platform.test/api/platform",
+      scope,
+      iat: now,
+      exp: now + 3600,
+    })
+      .setProtectedHeader({ alg: "HS256", typ: "tailorkit-agent+jwt" })
+      .sign(new TextEncoder().encode("test-only-signing-secret"));
+    vi.stubEnv("TAILORKIT_AGENT_TOKEN", jwt);
+    const stored = await writeAuthStoreFixture(home, {
+      hosts: { "http://localhost:1": { deployToken: "existing-token" } },
+    });
+    const original = await readFile(stored, "utf8");
+    const { runLogin, runWhoami, runLogout } = await loadAuthModule(home);
+    const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const request = input as Request;
+      expect(request.url).toBe("https://platform.test/api/platform/cli-auth/verify-token");
+      expect(request.headers.get("authorization")).toBe(`Bearer ${jwt}`);
+      expect(await request.json()).toEqual({ deployToken: jwt });
+      return Response.json({ scope });
+    });
+    const onCode = vi.fn();
+    expect(await runLogin({ host: "http://localhost:1" }, onCode)).toEqual({
+      hostUrl: "https://platform.test/api/platform",
+      scope,
+    });
+    expect(onCode).not.toHaveBeenCalled();
+    await runWhoami({ host: "http://localhost:1" });
+    expect(fetch).toHaveBeenCalledTimes(2);
+    fetch.mockResolvedValueOnce(
+      Response.json(
+        { code: "SERVICE_UNAVAILABLE", message: "Platform is temporarily unavailable." },
+        { status: 503 },
+      ),
+    );
+    await expect(runWhoami({ host: "http://localhost:1" })).rejects.toMatchObject({
+      code: "SERVICE_UNAVAILABLE",
+    });
+    expect(onCode).not.toHaveBeenCalled();
+    expect(await runLogout({ host: "http://localhost:1" })).toMatchObject({ removed: false });
+    expect(await readFile(stored, "utf8")).toBe(original);
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
   });
 });

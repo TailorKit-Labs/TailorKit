@@ -1,6 +1,21 @@
 import { APIError, Drive, Sandbox } from "@vercel/sandbox";
 import { FatalError } from "workflow";
 
+export const agentTokenPath = "/tmp/tailorkit-agent.token";
+
+/** Provision ephemeral CLI authorization without putting the bearer in command arguments. */
+export async function writeAgentToken(sandboxName: string, token: string) {
+  "use step";
+  const session = (await getSandbox(sandboxName)).currentSession();
+  await session.writeFiles([{ path: agentTokenPath, content: Buffer.from(token, "utf8") }]);
+  const result = await session.runCommand({
+    cmd: "chmod",
+    args: ["600", agentTokenPath],
+    timeoutMs: 30_000,
+  });
+  if (result.exitCode !== 0) throw new FatalError("Could not secure agent authorization file.");
+}
+
 export const agentSchemaPath = "/workspace/tailorkit.schema.json";
 
 export async function writeAgentSchema(sandboxName: string, schema: Record<string, unknown>) {
@@ -33,6 +48,7 @@ export async function prepareSandbox(driveName: string, sandboxName: string) {
       persistent: false,
       timeout: sandboxIdleTimeoutMs,
       mounts: { "/workspace": drive },
+      env: { TAILORKIT_AGENT_TOKEN_FILE: agentTokenPath },
     });
   } catch (error) {
     // Mount conflicts end the workflow instead of turning into waiting retries.
