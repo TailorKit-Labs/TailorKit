@@ -1,0 +1,19 @@
+docs/installation.mdx
+  s_7d7bfa670adbba::t_428cd6c3713a34 111,124-136,157,182,195-207,230,260,276-290,328,568,584-588
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "71f286a865fac3ac178d5cefa5c370e134a9a14a",
+  "prompts": {},
+  "sessions": {
+    "s_7d7bfa670adbba": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12fa0-ea17-71f0-bfcc-34ad4971ab2f",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
