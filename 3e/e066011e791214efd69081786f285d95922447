@@ -1,0 +1,19 @@
+packages/app-agent/src/sandbox.ts
+  s_977a3b327beb0c::t_a19c6062d96f0c 70-72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3ee066011e791214efd69081786f285d95922447",
+  "prompts": {},
+  "sessions": {
+    "s_977a3b327beb0c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12f81-c828-7382-8e8a-01d02a677577",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
