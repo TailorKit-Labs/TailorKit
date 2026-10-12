@@ -28,10 +28,8 @@ vi.mock("@tailorkit/db", () => ({
   },
 }));
 vi.mock("./routes/apps", () => ({
-  appRouter: {
-    list: os.handler(mocks.list),
-    create: os.handler(mocks.create),
-  },
+  appRouter: { list: os.handler(mocks.list) },
+  createAppRecord: mocks.create,
 }));
 vi.mock("@tailorkit/app-agent/workflows", () => ({
   appAgent: vi.fn(),
@@ -89,7 +87,7 @@ function request(name: string, args: Record<string, unknown> = {}, overrides = {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.app.mockResolvedValue(app);
-  mocks.create.mockResolvedValue({ body: app });
+  mocks.create.mockResolvedValue(app);
   mocks.list.mockResolvedValue({ body: { items: [app], pagination: { hasMore: false } } });
   mocks.start.mockResolvedValue({
     runId: "run",
@@ -159,11 +157,12 @@ describe("platform MCP endpoint", () => {
       context,
     );
     await response.text();
-    expect(mocks.create.mock.lastCall![0].input.body).toEqual({
+    expect(mocks.create.mock.lastCall![1]).toEqual({
       name: "Todo",
       description: null,
       scope: scope.scope,
     });
+    expect(mocks.create.mock.lastCall![2]).toBe(true);
     expect(mocks.start).toHaveBeenCalledOnce();
   });
 
