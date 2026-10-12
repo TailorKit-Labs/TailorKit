@@ -3,21 +3,31 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { flexRender, useTable } from "@tanstack/react-table";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
-import { AppWindowIcon, SearchIcon } from "lucide-react";
+import { AppWindowIcon, ArrowUpRightIcon, SearchIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { RefObject } from "react";
 import type { Scope } from "@tailorkit/db/schema/scope";
 import { Badge } from "@tailorkit/ui/badge";
+import { Button } from "@tailorkit/ui/button";
 import { CardFrame } from "@tailorkit/ui/card";
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@tailorkit/ui/empty";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@tailorkit/ui/empty";
 import { Input } from "@tailorkit/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@tailorkit/ui/table";
 import { DateAgo } from "@tailorkit/ui/date";
 import { AppLogo } from "#components/apps/app-logo";
 import { renderSortableHeader } from "#components/members/member-table-utils";
 import { PageLayout } from "#components/page-layout";
+import { ProjectKeyEnv } from "#components/project-key-env";
 import { orpc } from "#lib/orpc";
 import { dataTableFeatures } from "#lib/table";
+import { getProjectApiKey } from "#utils/project-api-key-memory";
 
 const appsPageSize = 25;
 
@@ -242,6 +252,7 @@ function AppsIndexPage() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState("");
   const normalizedSearch = search.trim();
+  const projectApiKey = getProjectApiKey(orgSlug, projectSlug);
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } = useInfiniteQuery(
     appsListQueryOptions({
       appsList: orpc.apps.list,
@@ -269,6 +280,7 @@ function AppsIndexPage() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const apps = data?.pages.flatMap((page) => page.items) ?? [];
+  const isEmptyProject = !isPending && !normalizedSearch && apps.length === 0;
   const searchControl = (
     <div className="relative w-full sm:w-72">
       <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -289,6 +301,8 @@ function AppsIndexPage() {
         Loading apps...
       </CardFrame>
     );
+  } else if (apps.length === 0 && !normalizedSearch && projectApiKey) {
+    content = <ProjectKeyEnv key={projectApiKey} apiKey={projectApiKey} />;
   } else if (apps.length === 0) {
     content = (
       <Empty className="mx-auto w-full rounded-lg border">
@@ -303,6 +317,24 @@ function AppsIndexPage() {
               : "Apps deployed to this project will appear here."}
           </EmptyDescription>
         </EmptyHeader>
+        {!normalizedSearch ? (
+          <EmptyContent>
+            <Button
+              render={
+                <a
+                  href="https://tailorkit.dev/docs/installation"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                />
+              }
+              size="sm"
+              variant="outline"
+            >
+              Installation guide
+              <ArrowUpRightIcon aria-hidden="true" />
+            </Button>
+          </EmptyContent>
+        ) : null}
       </Empty>
     );
   } else {
@@ -320,8 +352,12 @@ function AppsIndexPage() {
 
   return (
     <PageLayout
-      actions={searchControl}
-      description="Apps uploaded to this project through TailorKit."
+      actions={isEmptyProject ? undefined : searchControl}
+      description={
+        isEmptyProject
+          ? "No apps yet. Set up TailorKit to deploy your first app."
+          : "Apps uploaded to this project through TailorKit."
+      }
       title="Apps"
     >
       {content}
