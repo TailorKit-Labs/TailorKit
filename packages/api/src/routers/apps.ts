@@ -51,13 +51,17 @@ async function getProjectApp(projectId: string, appId: string) {
   );
 }
 
-async function getSourceExportApp(projectId: string, appId: string) {
+async function getSourceExportApp(
+  projectId: string,
+  appId: string,
+  user: { id: string; email: string },
+) {
   const selectedApp = await getProjectApp(projectId, appId);
   if (!selectedApp) {
     throw new ORPCError("NOT_FOUND", { message: "App not found." });
   }
 
-  const enabled = await evaluateBooleanFlag("app-source-export", false);
+  const enabled = await evaluateBooleanFlag("app-source-export", false, { user });
 
   return { app: selectedApp, enabled };
 }
@@ -210,6 +214,7 @@ export const appsRouter = {
       const { app: selectedApp, enabled } = await getSourceExportApp(
         context.project.id,
         input.appId,
+        context.user,
       );
       if (!enabled) return "disabled" as const;
       return getAppAgentWorkspaceStatus(selectedApp.id);
@@ -222,6 +227,7 @@ export const appsRouter = {
       const { app: selectedApp, enabled } = await getSourceExportApp(
         context.project.id,
         input.appId,
+        context.user,
       );
       if (!enabled) {
         throw new ORPCError("NOT_FOUND", { message: "App source export is unavailable." });
