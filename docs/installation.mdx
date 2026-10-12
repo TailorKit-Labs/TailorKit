@@ -108,6 +108,7 @@ in the server file.
 
 ```ts src/lib/tailorkit.ts
 import { tool, defineContract } from "tailorkit";
+import type { Component } from "tailorkit";
 import { primitives } from "tailorkit/zod";
 import { z } from "zod";
 
@@ -120,7 +121,19 @@ const Button = {
     onClick: {},
   },
   children: true,
-};
+} as const satisfies Component;
+
+const Input = {
+  fields: z.object({
+    value: z.string(),
+  }),
+  callbacks: {
+    onValueChange: {
+      input: z.object({ value: z.string() }),
+    },
+  },
+  children: true,
+} as const satisfies Component;
 
 export const contract = defineContract({
   // Values form the installation key: userId + teamId scopes installs per user per team.
@@ -141,6 +154,7 @@ export const contract = defineContract({
       },
     }),
     Button,
+    Input,
   },
 
   // Views share page data with apps, which can provide UI for each view.
@@ -165,6 +179,7 @@ export const contract = defineContract({
 
 ```ts src/lib/tailorkit.ts
 import { tool, defineContract } from "tailorkit";
+import type { Component } from "tailorkit";
 import { primitives } from "tailorkit/arktype";
 import { type } from "arktype";
 
@@ -177,7 +192,19 @@ const Button = {
     onClick: {},
   },
   children: true,
-};
+} as const satisfies Component;
+
+const Input = {
+  fields: type({
+    value: "string",
+  }),
+  callbacks: {
+    onValueChange: {
+      input: type({ value: "string" }),
+    },
+  },
+  children: true,
+} as const satisfies Component;
 
 export const contract = defineContract({
   // Values form the installation key: userId + teamId scopes installs per user per team.
@@ -200,6 +227,7 @@ export const contract = defineContract({
       },
     }),
     Button,
+    Input,
   },
 
   // Views share page data with apps, which can provide UI for each view.
@@ -229,6 +257,7 @@ converter only in the server file. The browser only requires Standard Schema val
 
 ```ts src/lib/tailorkit.ts
 import { tool, defineContract } from "tailorkit";
+import type { Component } from "tailorkit";
 import { primitives } from "tailorkit/valibot";
 import * as v from "valibot";
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
@@ -244,7 +273,21 @@ const Button = {
     onClick: {},
   },
   children: true,
-};
+} as const satisfies Component;
+
+const Input = {
+  fields: toStandardJsonSchema(
+    v.object({
+      value: v.string(),
+    }),
+  ),
+  callbacks: {
+    onValueChange: {
+      input: toStandardJsonSchema(v.object({ value: v.string() })),
+    },
+  },
+  children: true,
+} as const satisfies Component;
 
 export const contract = defineContract({
   // Values form the installation key: userId + teamId scopes installs per user per team.
@@ -282,6 +325,7 @@ export const contract = defineContract({
       ]),
     ),
     Button,
+    Input,
   },
 
   // Views are URL-like paths for your product's context; apps can provide UI for each.
@@ -521,6 +565,7 @@ Create `tailorkit-client.tsx` in your frontend, wherever you keep client-side ut
 "use client";
 
 import { Button } from "@/components/button";
+import { Input } from "@/components/input";
 import { contract } from "@/lib/tailorkit";
 import { createClient, primitives } from "tailorkit/react";
 
@@ -535,6 +580,11 @@ export const tailorKitClient = createClient({
       <Button variant={props.variant} onClick={props.onClick}>
         {children}
       </Button>
+    ),
+    Input: ({ props: { onValueChange, ...rest }, children }) => (
+      <Input onChange={(event) => onValueChange({ value: event.target.value })} {...rest}>
+        {children}
+      </Input>
     ),
   },
 });
