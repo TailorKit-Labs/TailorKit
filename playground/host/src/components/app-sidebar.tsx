@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Button } from "@tailorkit/ui/button";
+import type { TailorKitApp } from "tailorkit/react";
 import {
   Sidebar,
   SidebarContent,
@@ -11,15 +12,31 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@tailorkit/ui/sidebar";
-import { CheckSquare2, CircleDot, LayoutDashboard, LogOut } from "lucide-react";
+import { Blocks, CheckSquare2, CircleDot, LayoutDashboard, LogOut } from "lucide-react";
 import type { DemoSession } from "@playground/shared/auth";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Overview", to: "/" },
-  { icon: CircleDot, label: "Issues", to: "/issues/" },
+  { icon: CircleDot, label: "Issues", to: "/issues" },
 ] as const;
 
-export function AppSidebar({ session, signOut }: { session: DemoSession; signOut: () => void }) {
+export function AppSidebar({
+  apps,
+  appsError,
+  appsPending,
+  onSelectApp,
+  selectedApp,
+  session,
+  signOut,
+}: {
+  apps: TailorKitApp[] | undefined;
+  appsError: Error | null;
+  appsPending: boolean;
+  onSelectApp: (app: TailorKitApp) => void;
+  selectedApp: TailorKitApp | null;
+  session: DemoSession;
+  signOut: () => void;
+}) {
   return (
     <Sidebar>
       <SidebarHeader>
@@ -53,6 +70,31 @@ export function AppSidebar({ session, signOut }: { session: DemoSession; signOut
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
+          </SidebarMenu>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Apps</SidebarGroupLabel>
+          <SidebarMenu>
+            {apps?.map((app) => (
+              <SidebarMenuItem key={app.id}>
+                <SidebarMenuButton
+                  isActive={selectedApp?.id === app.id}
+                  onClick={() => onSelectApp(app)}
+                >
+                  <Blocks aria-hidden="true" />
+                  <span>{app.name ?? "App"}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+            {appsPending ? (
+              <li className="px-2 py-1 text-muted-foreground text-xs">Loading apps…</li>
+            ) : null}
+            {appsError ? (
+              <li className="px-2 py-1 text-muted-foreground text-xs">Unable to load apps</li>
+            ) : null}
+            {!appsPending && !appsError && apps?.length === 0 ? (
+              <li className="px-2 py-1 text-muted-foreground text-xs">No apps installed</li>
+            ) : null}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>

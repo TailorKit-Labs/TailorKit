@@ -28,7 +28,7 @@ function OverviewPage() {
             A quick look at what your team is working on.
           </p>
         </div>
-        <Button render={<Link to="/issues/" />}>
+        <Button render={<Link to="/issues" />}>
           <Plus aria-hidden="true" />
           View issues
         </Button>
@@ -54,7 +54,7 @@ function OverviewPage() {
             <CardTitle>Recently updated</CardTitle>
             <CardDescription className="mt-1">The latest work across your team.</CardDescription>
           </div>
-          <Button render={<Link to="/issues/" />} size="sm" variant="ghost">
+          <Button render={<Link to="/issues" />} size="sm" variant="ghost">
             All issues
           </Button>
         </CardHeader>

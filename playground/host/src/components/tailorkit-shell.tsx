@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { Button } from "@tailorkit/ui/button";
+import {
+  Sheet,
+  SheetDescription,
+  SheetHeader,
+  SheetPanel,
+  SheetPopup,
+  SheetTitle,
+} from "@tailorkit/ui/sheet";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@tailorkit/ui/sidebar";
 import type { TailorKitApp } from "tailorkit/react";
 import type { ReactNode } from "react";
@@ -15,7 +22,7 @@ import {
 } from "#lib/tailorkit-client";
 
 function ShellContent({ children, session }: { children: ReactNode; session: DemoSession }) {
-  const { data: apps } = useApps();
+  const { data: apps, error: appsError, isPending: appsPending } = useApps();
   const [selectedApp, setSelectedApp] = useState<TailorKitApp | null>(null);
   useViewContext("/", {
     context: {
@@ -32,41 +39,42 @@ function ShellContent({ children, session }: { children: ReactNode; session: Dem
 
   return (
     <SidebarProvider>
-      <AppSidebar session={session} signOut={() => void signOut()} />
+      <AppSidebar
+        apps={apps}
+        appsError={appsError}
+        appsPending={appsPending}
+        onSelectApp={setSelectedApp}
+        selectedApp={selectedApp}
+        session={session}
+        signOut={() => void signOut()}
+      />
       <SidebarInset>
         <header className="flex h-14 items-center gap-3 border-b px-5">
           <SidebarTrigger />
           <div className="min-w-0 flex-1">
             <p className="truncate font-medium text-sm">{session.team.name}</p>
           </div>
-          <div className="flex items-center gap-2">
-            {apps?.map((app) => (
-              <Button
-                key={app.id}
-                onClick={() => setSelectedApp(selectedApp?.id === app.id ? null : app)}
-                size="sm"
-                variant={selectedApp?.id === app.id ? "secondary" : "outline"}
-              >
-                {app.name ?? "App"}
-              </Button>
-            ))}
-          </div>
         </header>
         <main className="mx-auto w-full max-w-6xl flex-1 p-6 md:p-10">{children}</main>
       </SidebarInset>
-      {selectedApp ? (
-        <aside className="fixed inset-y-4 right-4 z-40 flex w-[min(400px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border bg-background shadow-xl">
-          <header className="flex h-12 items-center justify-between border-b px-4">
-            <span className="truncate font-medium text-sm">{selectedApp.name ?? "App"}</span>
-            <Button onClick={() => setSelectedApp(null)} size="sm" variant="ghost">
-              Close
-            </Button>
-          </header>
-          <div className="min-h-0 flex-1 overflow-auto p-4">
-            <RenderSlot app={selectedApp} slot="panel" />
-          </div>
-        </aside>
-      ) : null}
+      <Sheet
+        onOpenChange={(open) => {
+          if (!open) setSelectedApp(null);
+        }}
+        open={selectedApp !== null}
+      >
+        {selectedApp ? (
+          <SheetPopup side="right">
+            <SheetHeader>
+              <SheetTitle>{selectedApp.name ?? "App"}</SheetTitle>
+              <SheetDescription>App panel</SheetDescription>
+            </SheetHeader>
+            <SheetPanel>
+              <RenderSlot app={selectedApp} slot="panel" />
+            </SheetPanel>
+          </SheetPopup>
+        ) : null}
+      </Sheet>
     </SidebarProvider>
   );
 }
