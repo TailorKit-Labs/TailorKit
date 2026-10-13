@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import type * as clackpromptsModule from "@clack/prompts";
+import { select } from "@clack/prompts";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
 import type * as generatorModule from "./generator";
@@ -10,17 +11,19 @@ import { runInit } from "./init";
 
 vi.mock("./generator", async (importOriginal) => ({
   ...(await importOriginal<typeof generatorModule>()),
-  resolveTemplatePackageVersions: async () =>
-    await {
-      oxfmt: "0.71.0",
-      oxlint: "1.86.0",
-      preact: "11.0.0",
-      tailorkit: "0.1.0-beta.16",
-      typescript: "6.0.3",
-    },
+  // oxlint-disable-next-line require-await -- The mock keeps the asynchronous API contract.
+  resolveTemplatePackageVersions: async () => ({
+    preact: "11.0.0",
+    tailorkit: "0.1.0-beta.16",
+    typescript: "6.0.3",
+    vite: "8.0.0",
+    vitePlus: "1.0.0",
+  }),
 }));
 vi.mock("@clack/prompts", async (importOriginal) => ({
   ...(await importOriginal<typeof clackpromptsModule>()),
+  // oxlint-disable-next-line require-await -- The mock keeps the asynchronous API contract.
+  select: vi.fn(async () => "vite-plus"),
   spinner: () => ({ start: vi.fn(), stop: vi.fn() }),
 }));
 
@@ -39,12 +42,11 @@ const initOptions = async () => {
   directories.push(cwd);
   return {
     cwd,
-    formatting: false,
     host: "https://host.test/api/tailorkit",
     install: false,
-    linting: false,
     name: "example",
     packageManager: "pnpm",
+    tooling: "vite" as const,
   };
 };
 
@@ -164,3 +166,47 @@ it.each(["{", "null", "{}", '{"version":2,"components":{}}'])(
     await expect(stat(path.join(options.cwd, options.name))).rejects.toThrow();
   }
 );
+
+it("recommends Vite+ and offers build-only Vite in one tooling prompt", async () => {
+  const options = await initOptions();
+  await writeFile(
+    path.join(options.cwd, "schema.json"),
+    JSON.stringify({
+      components: {},
+      slots: { page: { views: ["/"] } },
+      tools: {},
+      version: 1,
+      views: { "/": { context: { type: "object" } } },
+    })
+  );
+  const directory = await runInit({
+    ...options,
+    schemaPath: "schema.json",
+    tooling: undefined,
+  });
+  expect(select).toHaveBeenCalledWith(
+    expect.objectContaining({
+      initialValue: "vite-plus",
+      options: [
+        expect.objectContaining({
+          label: "Vite+ (recommended)",
+          value: "vite-plus",
+        }),
+        expect.objectContaining({ label: "Vite (build only)", value: "vite" }),
+      ],
+    })
+  );
+  const pkg = JSON.parse(
+    await readFile(path.join(directory, "package.json"), "utf-8")
+  );
+  expect(pkg.scripts.build).toBe("vp build");
+  expect(pkg.scripts.check).toBe("vp check");
+});
+
+it("rejects unsupported tooling before creating the app", async () => {
+  const options = await initOptions();
+  await expect(runInit({ ...options, tooling: "other" })).rejects.toThrow(
+    "--tooling must be"
+  );
+  await expect(stat(path.join(options.cwd, options.name))).rejects.toThrow();
+});

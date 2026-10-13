@@ -1,6 +1,6 @@
 {
   "name": "@tailorkit/app",
-  "version": "0.1.0-beta.29",
+  "version": "0.1.0-beta.30",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -15,18 +15,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    },
-    "./config": {
-      "types": "./dist/config/index.d.ts",
-      "import": "./dist/config.js"
-    },
-    "./config/loader": {
-      "types": "./dist/config/loader.d.ts",
-      "import": "./dist/config-loader.js"
-    },
-    "./builder": {
-      "types": "./dist/builder/index.d.ts",
-      "import": "./dist/builder.js"
     },
     "./client": {
       "types": "./dist/client.d.ts",
@@ -57,20 +45,18 @@
     "@nanostores/preact": "1.1.0",
     "@orpc/client": "catalog:",
     "@orpc/contract": "catalog:",
-    "cosmiconfig": "^10.0.1",
     "drizzle-orm": "catalog:",
     "nanostores": "1.5.4",
-    "vite": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@tailorkit/asset-delivery": "workspace:*",
     "@tailorkit/config": "workspace:*",
     "@types/node": "catalog:",
     "happy-dom": "^20.14.5",
     "preact": "^11.0.0",
     "tsup": "^8.5.1",
     "typescript": "catalog:",
+    "vite": "catalog:",
     "vite-plus": "catalog:"
   },
   "peerDependencies": {

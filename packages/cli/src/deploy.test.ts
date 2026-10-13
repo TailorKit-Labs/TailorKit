@@ -5,7 +5,6 @@ import {
   rm,
   writeFile,
   rename,
-  symlink,
   readFile,
   readdir,
 } from "node:fs/promises";
@@ -16,10 +15,9 @@ import { gunzipSync } from "node:zlib";
 import { SignJWT } from "jose";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 
-import { getClientSourceFiles } from "../../app/src/builder/file-routes";
-import { tailorkitUploadManifestSchema } from "../../app/src/builder/upload-manifest";
 import type * as authModule from "./auth";
 import { NotLoggedInError } from "./auth";
+import { linkTestDependencies } from "./test-utils";
 
 const mocks = vi.hoisted(() => ({
   build: vi.fn(),
@@ -30,14 +28,10 @@ const mocks = vi.hoisted(() => ({
   token: vi.fn(),
   whoami: vi.fn(),
 }));
-vi.mock("@tailorkit/app/config/loader", () => ({
+vi.mock("@tailorkit/vite/config/loader", () => ({
   loadTailorKitConfig: mocks.load,
 }));
-vi.mock("@tailorkit/app/builder", () => ({
-  buildApp: mocks.build,
-  getClientSourceFiles,
-  tailorkitUploadManifestSchema,
-}));
+vi.mock("./build", () => ({ buildProject: mocks.build }));
 vi.mock("@tailorkit/core/server", () => ({
   createTailorKitClient: mocks.client,
 }));
@@ -77,6 +71,7 @@ beforeEach(async () => {
       ],
     })
   );
+  mocks.build.mockResolvedValue({ outDir: path.join(root, ".tailorkit") });
   mocks.load.mockResolvedValue({
     config: { appId: "app-one", server: {} },
     filepath: path.join(root, "tailorkit.config.ts"),
@@ -229,14 +224,7 @@ it("preserves client-only deployment uploads", async () => {
 });
 
 it("typechecks the server entry even when the client does not import it", async () => {
-  await symlink(
-    path.resolve(
-      import.meta.dirname,
-      "../../app/test/fixtures/backend-todo/node_modules"
-    ),
-    path.join(root, "node_modules"),
-    "dir"
-  );
+  await linkTestDependencies(root);
   await mkdir(path.join(root, "src"));
   await writeFile(path.join(root, "src/root.tsx"), "export default {};\n");
   await writeFile(
@@ -258,14 +246,7 @@ it("typechecks the server entry even when the client does not import it", async 
 });
 
 it("typechecks file route roots, layouts and views without a manual client entry", async () => {
-  await symlink(
-    path.resolve(
-      import.meta.dirname,
-      "../../app/test/fixtures/backend-todo/node_modules"
-    ),
-    path.join(root, "node_modules"),
-    "dir"
-  );
+  await linkTestDependencies(root);
   await mkdir(path.join(root, "src/slots/panel"), { recursive: true });
   await writeFile(path.join(root, "src/server.ts"), "export default {};\n");
   const sources = [
@@ -331,7 +312,7 @@ it("does not publish when the server upload fails", async () => {
   expect(mocks.publish).not.toHaveBeenCalled();
 });
 
-it.each(["config", "option"])(
+it.each(["vite config", "option"])(
   "uploads all artifacts from a custom %s output directory",
   async (mode) => {
     await writeFile(
@@ -339,10 +320,10 @@ it.each(["config", "option"])(
       "new-backend-code"
     );
     await rename(path.join(root, ".tailorkit"), path.join(root, "output"));
+    mocks.build.mockResolvedValue({ outDir: path.join(root, "output") });
     mocks.load.mockResolvedValue({
       config: {
         appId: "app-one",
-        build: { outDir: mode === "config" ? "output" : ".tailorkit" },
         server: {},
       },
       filepath: path.join(root, "tailorkit.config.ts"),

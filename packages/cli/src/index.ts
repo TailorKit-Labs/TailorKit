@@ -291,29 +291,6 @@ cli
   });
 
 cli
-  .command("build", "Build the TailorKit app")
-  .option("--cwd <path>", "Working directory", { default: "." })
-  .option("--config <path>", "Path to tailorkit config")
-  .option("--out-dir <path>", "Build output directory")
-  .option("--mode <mode>", "Vite mode")
-  .action(async (options: Record<string, unknown>) => {
-    intro(pc.bold("TailorKit"));
-    try {
-      const { buildApp } = await import("@tailorkit/app/builder");
-      await buildApp({
-        configPath: options.config as string | undefined,
-        cwd: String(options.cwd ?? "."),
-        mode: options.mode as string | undefined,
-        outDir: options.outDir as string | undefined,
-      });
-      outro("Built app.");
-    } catch (error) {
-      log.error(error instanceof Error ? error.message : String(error));
-      process.exit(1);
-    }
-  });
-
-cli
   .command("db <command>", "Generate database migrations with db generate")
   .option("--cwd <path>", "Working directory", { default: "." })
   .option("--config <path>", "Path to tailorkit config")
@@ -326,7 +303,7 @@ cli
           `Unknown database command: ${command}. Use tailorkit db generate.`
         );
       }
-      const { generateAppMigrations } = await import("@tailorkit/app/builder");
+      const { generateAppMigrations } = await import("@tailorkit/vite/builder");
       const directory = await generateAppMigrations({
         configPath: options.config as string | undefined,
         cwd: String(options.cwd ?? "."),
@@ -374,8 +351,7 @@ cli
   .option("--name <name>", "Package name")
   .option("--host <url>", "TailorKit host URL")
   .option("--package-manager <pm>", "Package manager: bun, yarn, pnpm, or npm")
-  .option("--lint", "Add oxlint (use --no-lint to skip)")
-  .option("--format", "Add oxfmt (use --no-format to skip)")
+  .option("--tooling <tooling>", "Tooling: vite-plus (recommended) or vite")
   .option(
     "--install",
     "Install dependencies after scaffolding (use --no-install to skip)"
@@ -390,13 +366,12 @@ cli
           cwd,
           directory,
           force: options.force as boolean | undefined,
-          formatting: options.format as boolean | undefined,
           host: options.host as string | undefined,
           install: options.install as boolean | undefined,
-          linting: options.lint as boolean | undefined,
           name: options.name as string | undefined,
           packageManager: options.packageManager as string | undefined,
           schemaPath: options.schema as string | undefined,
+          tooling: options.tooling as string | undefined,
         });
         outro(`Created app at ${pc.cyan(targetDirectory)}.`);
       } catch (error) {

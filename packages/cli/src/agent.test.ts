@@ -41,7 +41,7 @@ vi.mock("@clack/prompts", () => ({
   spinner: () => ({ start: vi.fn(), stop: vi.fn() }),
   text: mocks.text,
 }));
-vi.mock("@tailorkit/app/config/loader", () => ({
+vi.mock("@tailorkit/vite/config/loader", () => ({
   loadTailorKitConfig: mocks.load,
 }));
 vi.mock("./auth", async (importOriginal) => ({

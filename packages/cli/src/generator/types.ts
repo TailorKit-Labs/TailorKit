@@ -1,12 +1,12 @@
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { loadTailorKitConfig } from "@tailorkit/app/config/loader";
 import {
   SerializedComponent as SerializedComponentSchema,
   TailorKitSchemaSpec,
 } from "@tailorkit/core/spec";
 import { isViewAncestor } from "@tailorkit/core/views";
+import { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
 
 interface JsonSchema {
   additionalProperties?: boolean | JsonSchema;

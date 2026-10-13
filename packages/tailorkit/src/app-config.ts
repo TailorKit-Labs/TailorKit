@@ -1,1 +1,1 @@
-export * from "@tailorkit/app/config";
+export * from "@tailorkit/vite/config";

@@ -19,6 +19,11 @@ import { CreateOrgDialog } from "#components/create-org-dialog";
 import { isOrgCreationManaged } from "#lib/org-creation";
 import { orpc } from "#lib/orpc";
 
+interface SwitchableOrganization {
+  name: string;
+  slug: string;
+}
+
 interface OrgSwitcherProps {
   orgSlug: string;
 }
@@ -41,11 +46,11 @@ export const OrgSwitcher = ({ orgSlug }: OrgSwitcherProps) => {
   };
 
   return (
-    <Combobox
-      isItemEqualToValue={(a, b) => a.slug === b.slug}
-      itemToStringLabel={(org: (typeof orgs)[number] | null) => org.name}
+    <Combobox<SwitchableOrganization>
+      isItemEqualToValue={(a, b) => a?.slug === b?.slug}
+      itemToStringLabel={(org: SwitchableOrganization) => org.name}
       items={orgs ?? []}
-      onValueChange={(org: (typeof orgs)[number] | null) => {
+      onValueChange={(org: SwitchableOrganization | null) => {
         if (org) {
           navigate({
             params: { orgSlug: org.slug },
@@ -61,7 +66,7 @@ export const OrgSwitcher = ({ orgSlug }: OrgSwitcherProps) => {
         }
       >
         <ComboboxValue>
-          {(org: (typeof orgs)[number] | null) =>
+          {(org: SwitchableOrganization | null) =>
             org ? (
               <div className="flex items-center gap-2 truncate">
                 <Avatar className="size-6 rounded-md">
@@ -91,7 +96,7 @@ export const OrgSwitcher = ({ orgSlug }: OrgSwitcherProps) => {
         </div>
         <ComboboxEmpty>No organisations found.</ComboboxEmpty>
         <ComboboxList>
-          {(org: (typeof orgs)[number] | null) => (
+          {(org: SwitchableOrganization) => (
             <ComboboxItem key={org.slug} value={org}>
               <Avatar className="mr-2 size-5 rounded-sm">
                 <AvatarFallback className="bg-input rounded-sm text-[10px]">

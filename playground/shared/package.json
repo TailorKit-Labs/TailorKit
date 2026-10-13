@@ -1,7 +1,6 @@
 {
   "name": "@playground/shared",
   "private": true,
-  "license": "BUSL-1.1",
   "type": "module",
   "exports": {
     "./auth": "./src/auth.ts",

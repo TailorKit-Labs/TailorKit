@@ -11,16 +11,12 @@ export default defineConfig({
     __PREACT_VERSION__: JSON.stringify(preactPackageJson.version),
   },
   entry: {
-    builder: "src/builder/index.ts",
     client: "src/client.ts",
     "client-connection": "src/client/connection.ts",
-    config: "src/config/index.ts",
-    "config-loader": "src/config/loader.ts",
     index: "src/index.ts",
     protocol: "src/protocol.ts",
     server: "src/server.ts",
   },
   format: ["esm"],
-  noExternal: [/^@tailorkit\/asset-delivery(?:\/|$)/u],
   target: "node20",
 });

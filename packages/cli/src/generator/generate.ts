@@ -9,8 +9,7 @@ import {
   rootTemplate,
   defaultViewTemplate,
   gitignoreTemplate,
-  oxfmtConfigTemplate,
-  oxlintConfigTemplate,
+  viteConfigTemplate,
   packageJsonTemplate,
   tailorkitConfigTemplate,
   tsconfigTemplate,
@@ -35,16 +34,15 @@ const requireValue = <T>(value: T | null | undefined): T => {
 export interface GenerateAppOptions {
   targetDirectory: string;
   force: boolean;
-  formatting: boolean;
   hostUrl: string;
   schema: TailorKitSchemaFile;
-  linting: boolean;
+  tooling: "vite-plus" | "vite";
   packageName: string;
   packageVersions: {
     drizzleKit?: string;
     drizzleOrm?: string;
-    oxfmt: string;
-    oxlint: string;
+    vite: string;
+    vitePlus?: string;
     preact: string;
     tailorkit: string;
     typescript: string;
@@ -108,10 +106,9 @@ export const generateApp = async (
   const {
     targetDirectory,
     force,
-    formatting,
     hostUrl,
     schema,
-    linting,
+    tooling,
     packageName,
     packageVersions,
     useWorkspaceDependencies,
@@ -147,35 +144,22 @@ export const generateApp = async (
     ? "workspace:*"
     : packageVersions.tailorkit;
 
-  const checkParts: string[] = [];
-  const fixParts: string[] = [];
-  if (linting) {
-    checkParts.push("pnpm run lint");
-    fixParts.push("pnpm run lint:fix");
-  }
-  if (formatting) {
-    checkParts.push("pnpm run format");
-    fixParts.push("pnpm run format:fix");
-  }
-
   const templateData = {
-    checkScript: checkParts.join(" && "),
     drizzleKitVersion: packageVersions.drizzleKit ?? TEMPLATE_DRIZZLE_VERSION,
     drizzleOrmVersion: packageVersions.drizzleOrm ?? TEMPLATE_DRIZZLE_VERSION,
-    fixScript: fixParts.join(" && "),
-    formatting,
     hostUrl,
-    linting,
     multiple: schema.slots?.[slotName]?.multiple === true,
-    oxfmtVersion: packageVersions.oxfmt,
-    oxlintVersion: packageVersions.oxlint,
     packageName,
     preactVersion: packageVersions.preact,
     slotName: JSON.stringify(slotName),
     tailorkitVersion,
+    tooling,
     typescriptVersion: packageVersions.typescript,
     useBox,
     viewPath: JSON.stringify(viewPath),
+    vitePlus: tooling === "vite-plus",
+    vitePlusVersion: packageVersions.vitePlus ?? "1.0.0",
+    viteVersion: packageVersions.vite,
     zodVersion: packageVersions.zod ?? "^4.0.0",
   };
 
@@ -190,16 +174,7 @@ export const generateApp = async (
     { dest: "logo-dark.svg", template: logoDarkTemplate },
     { dest: "logo-light.svg", template: logoLightTemplate },
     { dest: ".gitignore", template: gitignoreTemplate },
-    {
-      condition: linting,
-      dest: "oxlint.config.ts",
-      template: oxlintConfigTemplate,
-    },
-    {
-      condition: formatting,
-      dest: "oxfmt.config.ts",
-      template: oxfmtConfigTemplate,
-    },
+    { dest: "vite.config.ts", template: viteConfigTemplate },
     { dest: path.join("src", "root.tsx"), template: rootTemplate },
     { dest: viewFile, template: defaultViewTemplate },
     { dest: path.join("src", "server.ts"), template: serverTemplate },

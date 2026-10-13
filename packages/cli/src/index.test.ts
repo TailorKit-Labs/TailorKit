@@ -111,6 +111,7 @@ it("passes --schema through init while retaining the required host", async () =>
     install: false,
     name: "app",
     schema: "host.json",
+    tooling: "vite",
   });
   expect(mocks.init).toHaveBeenCalledWith(
     expect.objectContaining({
@@ -120,6 +121,7 @@ it("passes --schema through init while retaining the required host", async () =>
       install: false,
       name: "app",
       schemaPath: "host.json",
+      tooling: "vite",
     })
   );
 });

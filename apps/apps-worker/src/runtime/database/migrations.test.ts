@@ -21,7 +21,7 @@ const migration = (id: string, file: string): AppMigration => {
 };
 const initial = migration(
   "20261001000000_init",
-  "../../../../../packages/app/test/fixtures/backend-todo/src/db/migrations/20261001062220_init/migration.sql"
+  "../../tests/fixtures/todos-init.sql"
 );
 const priority = migration(
   "20261001000001_priority",

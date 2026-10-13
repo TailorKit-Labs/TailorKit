@@ -19,12 +19,10 @@ const mocks = vi.hoisted(() => ({
   whoami: vi.fn(),
 }));
 
-vi.mock("@tailorkit/app/config/loader", () => ({
+vi.mock("@tailorkit/vite/config/loader", () => ({
   loadTailorKitConfig: mocks.load,
 }));
-vi.mock("@tailorkit/app/builder", () => ({
-  buildApp: mocks.build,
-}));
+vi.mock("./build", () => ({ buildProject: mocks.build }));
 vi.mock("@tailorkit/core/server", () => ({
   createTailorKitClient: mocks.client,
 }));
@@ -54,7 +52,11 @@ beforeEach(() => {
     SIGTERM: process.listeners("SIGTERM"),
   };
   vi.resetAllMocks();
-  mocks.build.mockResolvedValue({ close: mocks.close });
+  // oxlint-disable-next-line require-await -- The mock keeps the asynchronous API contract.
+  mocks.build.mockImplementation(async (options) => ({
+    outDir: path.resolve(options.cwd, options.outDir ?? ".tailorkit"),
+    result: { close: mocks.close },
+  }));
   mocks.close.mockImplementation(async () => {});
   mocks.client.mockReturnValue({
     preview: { start: mocks.start, stop: mocks.stop },

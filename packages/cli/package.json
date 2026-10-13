@@ -1,6 +1,6 @@
 {
   "name": "@tailorkit/cli",
-  "version": "0.1.0-beta.29",
+  "version": "0.1.0-beta.30",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -31,9 +31,9 @@
     "@ai-sdk/tui": "1.0.128",
     "@clack/prompts": "^1.8.1",
     "@orpc/client": "catalog:",
-    "@tailorkit/app": "workspace:*",
     "@tailorkit/client-platform": "workspace:*",
     "@tailorkit/core": "workspace:*",
+    "@tailorkit/vite": "workspace:*",
     "ai": "catalog:",
     "cac": "^7.0.0",
     "jose": "6.2.12",
@@ -43,8 +43,10 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@tailorkit/app": "workspace:*",
     "@tailorkit/config": "workspace:*",
     "@types/node": "catalog:",
+    "preact": "^11.0.0",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   }

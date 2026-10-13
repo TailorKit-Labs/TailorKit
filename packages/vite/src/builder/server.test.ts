@@ -1,0 +1,552 @@
+import {
+  readFile,
+  writeFile,
+  rm,
+  readdir,
+  mkdtemp,
+  mkdir,
+} from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+
+import type {
+  TailorKitClientWithMeta,
+  ViewDefinition,
+  ViewInstance,
+} from "@tailorkit/app/client";
+import type { ApplicationModule } from "@tailorkit/app/server";
+import { Window } from "happy-dom";
+import type { VNode } from "preact";
+import { build } from "vite";
+import { expect, it } from "vite-plus/test";
+
+import { tailorkit } from "../index";
+import { linkTestDependencies, createDatabaseTestApp } from "../test-utils";
+import { readClientManifest } from "./client-views";
+import { runtimeManifest } from "./server";
+
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
+const buildFixture = async (options: {
+  cwd: string;
+  configPath?: string;
+  outDir?: string;
+  watch?: boolean;
+}) => {
+  const result = await build({
+    build: { outDir: options.outDir, watch: options.watch ? {} : null },
+    configFile: false,
+    plugins: [
+      tailorkit({
+        configPath: path.resolve(
+          options.cwd,
+          options.configPath ?? "tailorkit.config.mjs"
+        ),
+      }),
+    ],
+    root: options.cwd,
+  });
+  if ("on" in result) {
+    const initialBuild = Promise.withResolvers<ReturnType<() => void>>();
+    result.on("event", (event) => {
+      if (event.code === "END") {
+        initialBuild.resolve();
+      }
+      if (event.code === "ERROR") {
+        initialBuild.reject(event.error);
+      }
+    });
+    await initialBuild.promise;
+  }
+  return result;
+};
+
+declare module "@tailorkit/app/client" {
+  interface TailorKitViews {
+    "/": { context: { workspaceId: string } };
+  }
+}
+
+it("builds file routes with a configured server and blocks server imports from the browser", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-custom-entries-"));
+  try {
+    await linkTestDependencies(root);
+    await writeFile(path.join(root, "package.json"), '{"type":"module"}');
+    await writeFile(
+      path.join(root, "tailorkit.config.mjs"),
+      'export default { host: "https://host.example.com", server: { entry: "./backend/api.ts" } };'
+    );
+    for (const directory of ["src", "backend"]) {
+      // oxlint-disable-next-line no-await-in-loop -- Process the validation and dependent file IO in order; fail before advancing on error.
+      await mkdir(path.join(root, directory));
+    }
+    await writeFile(
+      path.join(root, "src/client.ts"),
+      'throw new Error("Unused default client");'
+    );
+    await writeFile(
+      path.join(root, "src/server.ts"),
+      'throw new Error("Unused default server");'
+    );
+    const client =
+      'import { defineRoute } from "tailorkit/client"; export default defineRoute({ shellComponent: () => "Configured client loaded" });';
+    await writeFile(path.join(root, "src/root.tsx"), client);
+    await writeFile(
+      path.join(root, "backend/api.ts"),
+      'import { defineServer, fn } from "tailorkit/server";\nconst app = defineServer({ configured: fn.query.handler(() => "Configured server loaded") });\nexport default app;'
+    );
+    await writeFile(
+      path.join(root, "backend/helper.ts"),
+      'export const value = "Lazy server helper";'
+    );
+    await writeFile(
+      path.join(root, "backend/api.ts"),
+      'import { defineServer, fn } from "tailorkit/server"; export default defineServer({ configured: fn.query.handler(() => "Configured server loaded"), lazy: fn.action.handler(async () => (await import("./helper")).value) });'
+    );
+    await buildFixture({ cwd: root });
+    expect(await readdir(path.join(root, ".tailorkit/server"))).toEqual([
+      "server.js",
+    ]);
+    expect(await readdir(path.join(root, ".tailorkit/tmp"))).toEqual([]);
+    const browser = await readFile(
+      path.join(root, ".tailorkit/client/client.js"),
+      "utf-8"
+    );
+    const server = await readFile(
+      path.join(root, ".tailorkit/server/server.js"),
+      "utf-8"
+    );
+    expect(browser).toContain("Configured client loaded");
+    expect(server).toContain("Configured server loaded");
+    expect(server).toContain("Lazy server helper");
+    expect(server).not.toContain("./assets/");
+    const application: ApplicationModule = await import(
+      pathToFileURL(path.join(root, ".tailorkit/server/server.js")).href
+    );
+    expect(application.runtimeManifest).toEqual(runtimeManifest);
+    expect(application.default.functions.configured?.kind).toBe("query");
+    expect(application.migrations).toEqual([]);
+    expect(browser).not.toContain("Configured server loaded");
+    expect(browser).not.toContain("Unused default client");
+    expect(server).not.toContain("Unused default server");
+    await writeFile(
+      path.join(root, "src/root.tsx"),
+      `import type app from "../backend/api";\n${client}`
+    );
+    await expect(buildFixture({ cwd: root })).resolves.toBeDefined();
+    await writeFile(
+      path.join(root, "src/root.tsx"),
+      `import "../backend/api";\n${client}`
+    );
+    await expect(buildFixture({ cwd: root })).rejects.toThrow(
+      "cannot be imported into a browser bundle"
+    );
+  } finally {
+    await rm(root, { force: true, recursive: true });
+  }
+}, 60_000);
+
+it("builds separate artifacts and rejects accidental imports of server code", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-server-build-"));
+  await createDatabaseTestApp(root);
+  const client = await readFile(path.join(root, "src/root.tsx"), "utf-8");
+  const sourceFiles = await readdir(path.join(root, "src"), {
+    recursive: true,
+  });
+  try {
+    await buildFixture({ cwd: root });
+    const browser = await readFile(
+      path.join(root, ".tailorkit/client/client.js"),
+      "utf-8"
+    );
+    const server = await readFile(
+      path.join(root, ".tailorkit/server/server.js"),
+      "utf-8"
+    );
+    // Keep a small app below this budget, including its schemas and ORM.
+    expect(Buffer.byteLength(server)).toBeLessThan(150_000);
+    expect(server).not.toContain("tailorkit_receipts");
+    expect(server).not.toContain("cloudflare:workers");
+    expect(server).not.toContain("node:async_hooks");
+    expect(server).not.toContain(
+      "CREATE TABLE IF NOT EXISTS tailorkit_migrations"
+    );
+    expect(server).toContain("CREATE TABLE `todos`");
+    expect(browser).not.toContain("tailorkit_migrations");
+    expect(browser).not.toContain("CREATE TABLE `todos`");
+    expect(browser).not.toContain("tailorkit_receipts");
+    expect(browser).not.toContain("PRIVATE_DATABASE_TEST");
+    expect(browser).not.toContain("cloudflare:workers");
+    expect(browser).not.toContain("jwtVerify");
+    expect(browser).not.toContain("SignJWT");
+    expect(await readdir(path.join(root, "src"), { recursive: true })).toEqual(
+      sourceFiles
+    );
+    expect(sourceFiles).not.toContain("server.gen.ts");
+    expect(
+      JSON.parse(
+        await readFile(
+          path.join(root, ".tailorkit/tailorkit-upload.json"),
+          "utf-8"
+        )
+      ).assets
+    ).toEqual({ client: "client/client.js", server: "server/server.js" });
+    const migrationFiles = await readdir(path.join(root, "src/db/migrations"), {
+      recursive: true,
+    });
+    expect(
+      await readdir(path.join(root, ".tailorkit/migrations"), {
+        recursive: true,
+      })
+    ).toEqual(migrationFiles);
+    for (const file of migrationFiles.filter((filename) =>
+      filename.endsWith("migration.sql")
+    )) {
+      expect(
+        // oxlint-disable-next-line no-await-in-loop -- Process the validation and dependent file IO in order; fail before advancing on error.
+        await readFile(path.join(root, ".tailorkit/migrations", file), "utf-8")
+      ).toBe(
+        // oxlint-disable-next-line no-await-in-loop -- Process the validation and dependent file IO in order; fail before advancing on error.
+        await readFile(path.join(root, "src/db/migrations", file), "utf-8")
+      );
+    }
+    await buildFixture({ cwd: root, outDir: ".tailorkit/custom" });
+    expect(
+      await readFile(
+        path.join(root, ".tailorkit/custom/client/client.js"),
+        "utf-8"
+      )
+    ).toBe(browser);
+    const customServer = await readFile(
+      path.join(root, ".tailorkit/custom/server/server.js"),
+      "utf-8"
+    );
+    expect(customServer).not.toContain(
+      "CREATE TABLE IF NOT EXISTS tailorkit_migrations"
+    );
+    expect(customServer).toContain("CREATE TABLE `todos`");
+    expect(
+      await readdir(path.join(root, ".tailorkit/custom/migrations"), {
+        recursive: true,
+      })
+    ).toEqual(migrationFiles);
+    await writeFile(
+      path.join(root, "src/root.tsx"),
+      `import "./server";\n${client}`
+    );
+    await expect(buildFixture({ cwd: root })).rejects.toThrow(
+      "cannot be imported into a browser bundle"
+    );
+    await writeFile(
+      path.join(root, "src/root.tsx"),
+      `import "tailorkit/server";\n${client}`
+    );
+    await expect(buildFixture({ cwd: root })).rejects.toThrow(
+      "cannot be imported into a browser bundle"
+    );
+    await expect(
+      buildFixture({ cwd: root, outDir: "src/db/migrations" })
+    ).rejects.toThrow("must not overlap migration source");
+    await writeFile(
+      path.join(root, "src/root.tsx"),
+      `import "effect";\n${client}`
+    );
+    await expect(buildFixture({ cwd: root })).rejects.toThrow(
+      "cannot be imported into a browser bundle"
+    );
+  } finally {
+    await rm(root, { force: true, recursive: true });
+  }
+}, 60_000);
+
+it("builds colocated instance resolvers as query-only server actions", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-instances-build-"));
+  try {
+    await linkTestDependencies(root);
+    await mkdir(path.join(root, "src/slots/page"), { recursive: true });
+    await mkdir(path.join(root, "src/slots/panel.links"), { recursive: true });
+    await writeFile(path.join(root, "package.json"), '{"type":"module"}');
+    await writeFile(
+      path.join(root, "tailorkit.config.mjs"),
+      'export default { host: "https://host.example.com", server: {} };'
+    );
+    await writeFile(
+      path.join(root, "src/server.ts"),
+      `
+      import { defineServer, fn } from "tailorkit/server";
+      export default defineServer({ reports: {
+        list: fn.query.handler(() => [{ id: "report_123" }]),
+        write: fn.mutation.handler(() => "never"),
+        external: fn.action.handler(() => Promise.resolve("never")),
+      } });
+    `
+    );
+    await writeFile(
+      path.join(root, "src/private.ts"),
+      'export function title(id: string) { return "PRIVATE_SERVER_ONLY:" + id; }'
+    );
+    const viewSource = `
+      import { defineView } from "tailorkit/client";
+      import { z } from "zod";
+      import { title } from "../../private";
+      const privatePrefix = (() => "PRIVATE_INITIALIZER")();
+      const view = defineView({ slot: "page", view: "/",
+        instances: {
+          dataSchema: z.object({ id: z.string().transform(v => v.toUpperCase()) }),
+          resolve: async ({ queries, context, identity, signal, ...other }) => {
+            if (Object.keys(other).length) throw new Error("Unexpected resolver capabilities");
+            if (Object.keys(queries.reports).join() !== "list") throw new Error("Unexpected query capabilities");
+            const reports = await queries.reports.list();
+            return reports.map(report => ({ key: report.id, metadata: { title: title(context.userId) + privatePrefix }, data: { id: report.id } }));
+          },
+        },
+        component: () => "BROWSER_COMPONENT_MUST_NOT_RUN:" + view.useInstance().data.id,
+      });
+      export default view;
+    `;
+    await writeFile(
+      path.join(root, "src/slots/page/home.view.tsx"),
+      viewSource
+    );
+    await writeFile(
+      path.join(root, "src/slots/panel.links/home.view.tsx"),
+      'import view from "../page/home.view"; export default { ...view, slot: "panel.links" };'
+    );
+    await buildFixture({ cwd: root });
+    const browser = await readFile(
+      path.join(root, ".tailorkit/client/client.js"),
+      "utf-8"
+    );
+    const server = await readFile(
+      path.join(root, ".tailorkit/server/server.js"),
+      "utf-8"
+    );
+    expect(browser).not.toContain("PRIVATE_SERVER_ONLY");
+    expect(browser).not.toContain("PRIVATE_INITIALIZER");
+    expect(browser).not.toContain("Unexpected resolver capabilities");
+    expect(browser).toContain("BROWSER_COMPONENT_MUST_NOT_RUN");
+    expect(server).toContain("PRIVATE_SERVER_ONLY");
+    expect(server).not.toContain("BROWSER_COMPONENT_MUST_NOT_RUN");
+    const application: ApplicationModule = await import(
+      pathToFileURL(path.join(root, ".tailorkit/server/server.js")).href
+    );
+    const internal = application.default.functions._tailorkit as Record<
+      string,
+      Record<
+        string,
+        {
+          kind: string;
+          args: { parse: (args: unknown) => unknown };
+
+          functions: Record<string, unknown>;
+          handler: (context: never) => unknown;
+        }
+      >
+    >;
+    const manifest = await readClientManifest(
+      path.join(root, ".tailorkit/client/client.js")
+    );
+    const names = [
+      ...new Set(manifest.instanceResolvers.map((entry) => entry.resolver)),
+    ];
+    expect(names).toHaveLength(1);
+    expect(Object.keys(requireValue(internal.instances))).toEqual(["resolve"]);
+    expect(manifest.views).toEqual([
+      { instances: true, path: "/", slot: "page" },
+      { instances: true, path: "/", slot: "panel.links" },
+    ]);
+    const fn = requireValue(requireValue(internal.instances).resolve);
+    expect(fn.kind).toBe("action");
+    expect(browser).toContain(requireValue(names[0]));
+    expect(Object.keys(fn.functions.reports as object)).toEqual(["list"]);
+    const resolved = await fn.handler({
+      args: fn.args.parse({
+        context: { userId: "user_123" },
+        path: "/",
+        slot: "page",
+      }),
+      identity: { userId: "user_123" },
+      mutations: {},
+      queries: {
+        reports: { list: () => Promise.resolve([{ id: "report_123" }]) },
+      },
+      signal: new AbortController().signal,
+    } as never);
+    expect(resolved).toEqual([
+      {
+        data: { id: "REPORT_123" },
+        key: "report_123",
+        metadata: { title: "PRIVATE_SERVER_ONLY:user_123PRIVATE_INITIALIZER" },
+      },
+    ]);
+    const shared = await fn.handler({
+      args: fn.args.parse({
+        context: { userId: "user_123" },
+        path: "/",
+        slot: "panel.links",
+      }),
+      identity: { userId: "user_123" },
+      queries: {
+        reports: { list: () => Promise.resolve([{ id: "report_123" }]) },
+      },
+      signal: new AbortController().signal,
+    } as never);
+    expect(shared).toEqual(resolved);
+    const window = new Window();
+    const previousDocument = globalThis.document;
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: window.document,
+    });
+    try {
+      const module = await import(
+        `data:text/javascript;base64,${Buffer.from(browser).toString("base64")}`
+      );
+      const client = module.default as TailorKitClientWithMeta;
+      const component = (
+        client.slots as Record<string, Record<string, ViewDefinition>>
+      ).page?.["/"];
+      expect(component).toBeTruthy();
+      if (!component) {
+        throw new Error("Missing compiled view");
+      }
+      const container = window.document.createElement("div");
+      const show = (instance: ViewInstance) =>
+        client.$runtime.render(
+          client.$runtime.h(component.component, {
+            context: { workspaceId: "w1" },
+            instance,
+            status: "ready",
+            view: "/",
+          }) as VNode,
+          container as unknown as Element
+        );
+      show(requireValue((resolved as ViewInstance[])[0]));
+      expect(container.textContent).toBe(
+        "BROWSER_COMPONENT_MUST_NOT_RUN:REPORT_123"
+      );
+      show({ data: { id: "SUMMARY" }, key: "summary", metadata: {} });
+      expect(container.textContent).toBe(
+        "BROWSER_COMPONENT_MUST_NOT_RUN:SUMMARY"
+      );
+      client.$runtime.render(
+        client.$runtime.h(component.component, {
+          status: "loading",
+          view: "/",
+        }) as VNode,
+        container as unknown as Element
+      );
+      expect(container.textContent).toBe("");
+      client.$runtime.render(null, container as unknown as Element);
+    } finally {
+      if (previousDocument === undefined) {
+        Reflect.deleteProperty(globalThis, "document");
+      } else {
+        Object.defineProperty(globalThis, "document", {
+          configurable: true,
+          value: previousDocument,
+        });
+      }
+      await window.happyDOM.close();
+    }
+    await buildFixture({ cwd: root, outDir: ".tailorkit/custom" });
+    expect(
+      await readFile(
+        path.join(root, ".tailorkit/custom/client/client.js"),
+        "utf-8"
+      )
+    ).toBe(browser);
+    const watcher = (await buildFixture({
+      cwd: root,
+      outDir: ".tailorkit/watched",
+      watch: true,
+    })) as {
+      close: () => Promise<void>;
+    };
+    const watchedServer = path.join(
+      root,
+      ".tailorkit/watched/server/server.js"
+    );
+    try {
+      expect(await readFile(watchedServer, "utf-8")).toContain(
+        "PRIVATE_SERVER_ONLY"
+      );
+      await writeFile(
+        path.join(root, "src/private.ts"),
+        'export function title(id: string) { return "PRIVATE_UPDATED:" + id; }'
+      );
+      await expect
+        .poll(
+          async () => {
+            const awaitedResult1 = await readFile(watchedServer, "utf-8");
+            return awaitedResult1.includes("PRIVATE_UPDATED");
+          },
+          {
+            timeout: 10_000,
+          }
+        )
+        .toBe(true);
+      await writeFile(
+        path.join(root, "src/slots/page/home.view.tsx"),
+        viewSource.replace("PRIVATE_INITIALIZER", "RESOLVER_UPDATED")
+      );
+      await expect
+        .poll(
+          async () => {
+            const awaitedResult2 = await readFile(watchedServer, "utf-8").catch(
+              () => ""
+            );
+            return awaitedResult2.includes("RESOLVER_UPDATED");
+          },
+          { timeout: 10_000 }
+        )
+        .toBe(true);
+      expect(
+        await readFile(
+          path.join(root, ".tailorkit/watched/client/client.js"),
+          "utf-8"
+        )
+      ).toContain(requireValue(names[0]));
+      await rm(path.join(root, "src/slots/page/home.view.tsx"));
+      await rm(path.join(root, "src/slots/panel.links/home.view.tsx"));
+      await expect
+        .poll(
+          async () => {
+            const output = await readFile(watchedServer, "utf-8").catch(
+              () => ""
+            );
+            return !!output && !output.includes("RESOLVER_UPDATED");
+          },
+          { timeout: 10_000 }
+        )
+        .toBe(true);
+      const withoutInstances: ApplicationModule = await import(
+        `${pathToFileURL(watchedServer).href}?instances-removed`
+      );
+      expect(
+        Object.hasOwn(withoutInstances.default.functions, "_tailorkit")
+      ).toBe(false);
+    } finally {
+      await watcher.close();
+    }
+    await writeFile(
+      path.join(root, "src/slots/page/home.view.tsx"),
+      viewSource
+    );
+    await writeFile(
+      path.join(root, "no-server.config.mjs"),
+      'export default { host: "https://host.example.com" };'
+    );
+    await expect(
+      buildFixture({ configPath: "no-server.config.mjs", cwd: root })
+    ).rejects.toThrow("require server configuration");
+  } finally {
+    await rm(root, { force: true, recursive: true });
+  }
+}, 60_000);

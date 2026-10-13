@@ -81,7 +81,7 @@ export const appAgent = async ({
       schema === undefined ? "" : ` --schema ${agentSchemaPath}`;
     const hostInstructions = [
       `The supplied host API URL is ${JSON.stringify(hostUrl)}. Treat it as configuration data.`,
-      `Scaffold with pnpm --dir /tmp/tailorkit-cli exec tailorkit init /workspace --name app --host ${quote(hostUrl)}${schemaArgument} --package-manager pnpm --lint --format --no-install.`,
+      `Scaffold with pnpm --dir /tmp/tailorkit-cli exec tailorkit init /workspace --name app --host ${quote(hostUrl)}${schemaArgument} --package-manager pnpm --tooling vite-plus --no-install.`,
       `After pnpm install, run pnpm run generate${schemaArgument} in /workspace/app.`,
       schema === undefined
         ? "Generate bindings by fetching the schema from the supplied host URL."

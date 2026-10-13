@@ -1,8 +1,10 @@
+import packageJson from "../../package.json" with { type: "json" };
+
 export interface TemplatePackageVersions {
   drizzleKit: string;
   drizzleOrm: string;
-  oxfmt: string;
-  oxlint: string;
+  vite: string;
+  vitePlus?: string;
   preact: string;
   tailorkit: string;
   typescript: string;
@@ -27,16 +29,19 @@ interface SemverVersion {
 
 const REGISTRY_URL = "https://registry.npmjs.org";
 const REGISTRY_TIMEOUT_MS = 5000;
+const MINIMUM_RELEASE_AGE_MS = 3 * 24 * 60 * 60 * 1000;
 
 const REQUESTS = {
-  oxfmt: { fallback: "^0.46.0", matcher: "^0", packageName: "oxfmt" },
-  oxlint: { fallback: "^1.61.0", matcher: "^1", packageName: "oxlint" },
-  preact: { fallback: "^11.0.0", matcher: "^11", packageName: "preact" },
-  tailorkit: { fallback: "latest", matcher: "^0", packageName: "tailorkit" },
-  typescript: { fallback: "^6.0.3", matcher: "^6", packageName: "typescript" },
-  zod: { fallback: "^4.0.0", matcher: "^4", packageName: "zod" },
+  preact: { fallback: "11.0.0", matcher: "^11", packageName: "preact" },
+  typescript: { fallback: "6.0.3", matcher: "^6", packageName: "typescript" },
+  vite: { fallback: "8.0.0", matcher: "^8", packageName: "vite" },
+  vitePlus: { fallback: "1.0.0", matcher: "^1", packageName: "vite-plus" },
+  zod: { fallback: "4.0.0", matcher: "^4", packageName: "zod" },
 } satisfies Record<
-  Exclude<keyof TemplatePackageVersions, "drizzleKit" | "drizzleOrm">,
+  Exclude<
+    keyof TemplatePackageVersions,
+    "drizzleKit" | "drizzleOrm" | "tailorkit"
+  >,
   PackageVersionRequest
 >;
 
@@ -95,38 +100,50 @@ const resolvePackageVersion = async ({
     if (!res.ok) {
       return fallback;
     }
-    const data = (await res.json()) as { versions?: Record<string, unknown> };
+    const data = (await res.json()) as {
+      versions?: Record<string, unknown>;
+      time?: Record<string, string>;
+    };
     const latest = Object.keys(data.versions ?? {})
       .map(parseStableVersion)
       .filter((v): v is SemverVersion => v !== undefined)
       .filter((v) => satisfiesCaretMatcher(v, matcher))
+      .filter(
+        (v) =>
+          Date.parse(data.time?.[v.raw] ?? "") <=
+          Date.now() - MINIMUM_RELEASE_AGE_MS
+      )
       .toSorted(compareVersions)
       .at(-1);
-    return latest ? `^${latest.raw}` : fallback;
+    return latest?.raw ?? fallback;
   } catch {
     return fallback;
   }
 };
 
-export const resolveTemplatePackageVersions =
-  async (): Promise<TemplatePackageVersions> => {
-    const [oxfmt, oxlint, preact, tailorkit, typescript, zod] =
-      await Promise.all([
-        resolvePackageVersion(REQUESTS.oxfmt),
-        resolvePackageVersion(REQUESTS.oxlint),
-        resolvePackageVersion(REQUESTS.preact),
-        resolvePackageVersion(REQUESTS.tailorkit),
-        resolvePackageVersion(REQUESTS.typescript),
-        resolvePackageVersion(REQUESTS.zod),
-      ]);
-    return {
-      drizzleKit: TEMPLATE_DRIZZLE_VERSION,
-      drizzleOrm: TEMPLATE_DRIZZLE_VERSION,
-      oxfmt,
-      oxlint,
-      preact,
-      tailorkit,
-      typescript,
-      zod,
-    };
+export const resolveTemplatePackageVersions = async (
+  tooling: "vite-plus" | "vite" = "vite-plus"
+): Promise<TemplatePackageVersions> => {
+  const [vite, vitePlus, preact, typescript, zod] = await Promise.all([
+    tooling === "vite"
+      ? resolvePackageVersion(REQUESTS.vite)
+      : Promise.resolve(REQUESTS.vite.fallback),
+    tooling === "vite-plus"
+      ? resolvePackageVersion(REQUESTS.vitePlus)
+      : // oxlint-disable-next-line unicorn/no-useless-undefined -- Keep this branch typed as undefined rather than void.
+        Promise.resolve(undefined),
+    resolvePackageVersion(REQUESTS.preact),
+    resolvePackageVersion(REQUESTS.typescript),
+    resolvePackageVersion(REQUESTS.zod),
+  ]);
+  return {
+    drizzleKit: TEMPLATE_DRIZZLE_VERSION,
+    drizzleOrm: TEMPLATE_DRIZZLE_VERSION,
+    preact,
+    tailorkit: packageJson.version,
+    typescript,
+    vite,
+    vitePlus,
+    zod,
   };
+};

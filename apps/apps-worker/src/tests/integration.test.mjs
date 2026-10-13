@@ -17,7 +17,7 @@ import { createClient, createApi, reference } from "@tailorkit/app/client";
 import { build } from "vite";
 import { it } from "vite-plus/test";
 
-import { readAppMigrations } from "../../../../packages/app/src/builder/migrations.ts";
+import { createTestBackend } from "./backend";
 
 const bundleImplementation = (version) =>
   `import { env } from "cloudflare:workers";
@@ -226,18 +226,25 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
 
   const checkRpc = async () => {
     const repo = path.resolve(import.meta.dirname, "../../../..");
-    const { migrations } = await readAppMigrations(
-      path.join(
-        repo,
-        "packages/app/test/fixtures/backend-todo/src/db/migrations"
-      )
+    const backend = path.join(state, "backend");
+    await createTestBackend(backend);
+    const sql = await readFile(
+      new URL("fixtures/todos-init.sql", import.meta.url),
+      "utf-8"
     );
+    const migrations = [
+      {
+        hash: createHash("sha256").update(sql).digest("hex"),
+        id: "20261001062220_init",
+        statements: sql.split("--> statement-breakpoint"),
+      },
+    ];
 
     const entry = path.join(state, "fixture.ts");
 
     const publishRpc = async (history, deploymentId) => {
       // Use the same migration bootstrap bundled into production server artifacts.
-      const setup = `import app from ${JSON.stringify(path.join(repo, "packages/app/test/fixtures/backend-todo/src/server.ts"))};
+      const setup = `import app from ${JSON.stringify(path.join(backend, "server.ts"))};
 import { defineServer, action, query, table, text, integer, AppError } from ${JSON.stringify(path.join(repo, "packages/app/dist/server.js"))};
 import { env } from "cloudflare:workers";
 

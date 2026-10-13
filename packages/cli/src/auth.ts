@@ -2,8 +2,8 @@ import { chmod, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 
-import { loadTailorKitConfig } from "@tailorkit/app/config/loader";
 import { createTailorKitClient } from "@tailorkit/core/server";
+import { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
 import { z } from "zod";
 
 import { getAgentAuth } from "./agent-auth";

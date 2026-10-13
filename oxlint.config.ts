@@ -16,10 +16,10 @@ export default defineConfig({
       // Only centralized environment modules may read the host environment.
       files: [
         "packages/env/src/index.ts",
-        "packages/app/src/builder/env.ts",
+        "packages/vite/src/builder/env.ts",
         "packages/cli/src/env.ts",
         "playground/shared/src/env.ts",
-        "playground/host/src/env.ts",
+        "playground/tanstack-start/src/env.ts",
       ],
       rules: {
         "no-restricted-properties": "off",

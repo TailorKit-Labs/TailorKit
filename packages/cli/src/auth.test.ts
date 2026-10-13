@@ -11,8 +11,8 @@ import { tmpdir } from "node:os";
 import type * as nodeOs from "node:os";
 import path from "node:path";
 
-import { loadTailorKitConfig } from "@tailorkit/app/config/loader";
 import { createTailorKitClient } from "@tailorkit/core/server";
+import { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
 import { SignJWT } from "jose";
 import {
   afterEach,
@@ -24,7 +24,7 @@ import {
 } from "vite-plus/test";
 import { z } from "zod";
 
-vi.mock("@tailorkit/app/config/loader", () => ({
+vi.mock("@tailorkit/vite/config/loader", () => ({
   loadTailorKitConfig: vi.fn(),
 }));
 

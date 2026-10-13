@@ -19,7 +19,7 @@ export default defineConfig({
     rollupOptions: {
       external: [
         /^node:/u,
-        /^@tailorkit\/app(?:\/|$)/u,
+        /^@tailorkit\/vite(?:\/|$)/u,
         "@clack/prompts",
         "@ai-sdk/tui",
         "@standard-schema/spec",
@@ -47,7 +47,4 @@ export default defineConfig({
     __TAILORKIT_VERSION__: JSON.stringify(packageJson.version),
   },
   plugins: [liquidRawPlugin()],
-  ssr: {
-    noExternal: ["cosmiconfig"],
-  },
 });

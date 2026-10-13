@@ -84,6 +84,31 @@ For `/customers/details`, the order is app root → slot root → slot layout �
 
 Each mounted slot instance has its own shell, provider, and layout state. Two separate host mounts do not share provider state. A provider is disposed when its slot mount is removed.
 
-## Build and preview
+## Build tooling
 
-File routing is the app client entry point. Build and deploy discover the same roots, layouts, and views. Preview watches route additions, renames, removals, and source edits. Generated entries live only in the build output and are cleaned up after builds or when the watcher closes.
+Run `tailorkit init` to create an app. Choose **Vite+ (recommended)** for building, linting, formatting, and testing, or **Vite (build only)** for a minimal setup. For non-interactive setup, pass `--tooling vite-plus` or `--tooling vite`.
+
+Build tooling lives in the separate [`@tailorkit/vite`](../vite/README.md) package. Both options generate `vite.config.ts` with the TailorKit plugin. Vite+ apps use:
+
+```ts
+import { defineConfig, lazyPlugins } from "vite-plus";
+import { tailorkit } from "tailorkit/vite";
+
+export default defineConfig({
+  plugins: lazyPlugins(() => [tailorkit()]),
+  lint: { ignorePatterns: ["src/tailorkit.gen.ts", ".tailorkit/**"] },
+  fmt: { ignorePatterns: ["src/tailorkit.gen.ts", ".tailorkit/**"] },
+});
+```
+
+Vite apps import `defineConfig` from `vite` and use `plugins: [tailorkit()]`. They do not install linting, formatting, or test tooling.
+
+Run your package manager's `build` script to build either setup. Vite+ apps also include `check`, `fix`, `format`, and `test` scripts. A global Vite+ installation is not required.
+
+Add aliases, compile-time constants, and custom Vite plugins to `vite.config.ts`. Custom plugins, aliases, and constants also apply to the private server build. Set `build.outDir` to change the output directory; the default is `.tailorkit`. The plugin owns the client entry and the deployable bundle filenames.
+
+The plugin discovers file routes, extracts private instance resolvers, bundles the backend and migrations, copies logos, and writes `tailorkit-upload.json`. `tailorkit deploy` builds using the same Vite configuration before uploading. Keep host, app ID, logos, and backend settings in `tailorkit.config.ts`.
+
+For builds outside the app's directory, pass `tailorkit({ cwd: appDirectory })`. To use a different TailorKit configuration file, pass `configPath` to the plugin.
+
+File routing is the app client entry point. Generated entries live in the build output and are cleaned up after builds or when a build watcher closes.

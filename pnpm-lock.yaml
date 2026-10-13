@@ -733,25 +733,16 @@ importers:
       '@orpc/contract':
         specifier: 'catalog:'
         version: 2.0.0-beta.40
-      cosmiconfig:
-        specifier: ^10.0.1
-        version: 10.0.1
       drizzle-orm:
         specifier: 'catalog:'
         version: 1.0.0-rc.4-5d5b77c(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(@upstash/redis@1.39.0)(arktype@2.2.7)(effect@4.0.0)(pg@8.23.1)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5)
       nanostores:
         specifier: 1.5.4
         version: 1.5.4
-      vite:
-        specifier: 'catalog:'
-        version: '@voidzero-dev/vite-plus-core@1.0.0(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.23.15)(typescript@7.0.2)(yaml@2.9.1)'
       zod:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@tailorkit/asset-delivery':
-        specifier: workspace:*
-        version: link:../asset-delivery
       '@tailorkit/config':
         specifier: workspace:*
         version: link:../config
@@ -770,6 +761,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
+      vite:
+        specifier: 'catalog:'
+        version: '@voidzero-dev/vite-plus-core@1.0.0(@types/node@26.6.4)(esbuild@0.27.7)(jiti@2.7.0)(tsx@4.23.15)(typescript@7.0.2)(yaml@2.9.1)'
       vite-plus:
         specifier: 'catalog:'
         version: 1.0.0(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/ui@5.0.1)(esbuild@0.27.7)(happy-dom@20.14.5)(jiti@2.7.0)(tsx@4.23.15)(typescript@7.0.2)(yaml@2.9.1)
@@ -810,34 +804,6 @@ importers:
       vite-plus:
         specifier: 'catalog:'
         version: 1.0.0(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/ui@5.0.1)(esbuild@0.28.2)(happy-dom@20.14.5)(jiti@2.7.0)(tsx@4.23.15)(typescript@7.0.2)(yaml@2.9.1)
-
-  packages/app/test/fixtures/backend-todo:
-    dependencies:
-      preact:
-        specifier: ^11.0.0
-        version: 11.0.0
-      tailorkit:
-        specifier: workspace:*
-        version: link:../../../../tailorkit
-      zod:
-        specifier: 'catalog:'
-        version: 4.6.5
-    devDependencies:
-      '@tailorkit/cli':
-        specifier: workspace:*
-        version: link:../../../../cli
-      '@types/node':
-        specifier: 'catalog:'
-        version: 26.6.4
-      drizzle-kit:
-        specifier: 'catalog:'
-        version: 1.0.0-rc.4-5d5b77c
-      drizzle-orm:
-        specifier: 'catalog:'
-        version: 1.0.0-rc.4-5d5b77c(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(@upstash/redis@1.39.0)(arktype@2.2.7)(effect@4.0.0)(pg@8.23.1)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5)
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
 
   packages/asset-delivery:
     dependencies:
@@ -936,15 +902,15 @@ importers:
       '@orpc/client':
         specifier: 'catalog:'
         version: 2.0.0-beta.40
-      '@tailorkit/app':
-        specifier: workspace:*
-        version: link:../app
       '@tailorkit/client-platform':
         specifier: workspace:*
         version: link:../client-platform
       '@tailorkit/core':
         specifier: workspace:*
         version: link:../core
+      '@tailorkit/vite':
+        specifier: workspace:*
+        version: link:../vite
       ai:
         specifier: 'catalog:'
         version: 7.0.127(zod@4.6.5)
@@ -967,12 +933,18 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
+      '@tailorkit/app':
+        specifier: workspace:*
+        version: link:../app
       '@tailorkit/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.4
+      preact:
+        specifier: ^11.0.0
+        version: 11.0.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1423,6 +1395,9 @@ importers:
       '@tailorkit/react':
         specifier: workspace:*
         version: link:../react
+      '@tailorkit/vite':
+        specifier: workspace:*
+        version: link:../vite
       arktype:
         specifier: '>=2.1.0'
         version: 2.2.7
@@ -1519,6 +1494,49 @@ importers:
         specifier: 'catalog:'
         version: 7.0.2
 
+  packages/vite:
+    dependencies:
+      '@tailorkit/app':
+        specifier: workspace:*
+        version: link:../app
+      cosmiconfig:
+        specifier: ^10.0.1
+        version: 10.0.1
+      vite:
+        specifier: npm:@voidzero-dev/vite-plus-core@1.0.0
+        version: '@voidzero-dev/vite-plus-core@1.0.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(typescript@7.0.2)(yaml@2.9.1)'
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+    devDependencies:
+      '@tailorkit/asset-delivery':
+        specifier: workspace:*
+        version: link:../asset-delivery
+      '@tailorkit/config':
+        specifier: workspace:*
+        version: link:../config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.6.4
+      drizzle-kit:
+        specifier: 'catalog:'
+        version: 1.0.0-rc.4-5d5b77c
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 1.0.0-rc.4-5d5b77c(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(@upstash/redis@1.39.0)(arktype@2.2.7)(effect@4.0.0)(pg@8.23.1)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5)
+      happy-dom:
+        specifier: ^20.14.5
+        version: 20.14.5
+      preact:
+        specifier: ^11.0.0
+        version: 11.0.0
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vite-plus:
+        specifier: 'catalog:'
+        version: 1.0.0(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/ui@5.0.1)(esbuild@0.28.2)(happy-dom@20.14.5)(jiti@2.7.0)(tsx@4.23.15)(typescript@7.0.2)(yaml@2.9.1)
+
   playground/apps/todo:
     dependencies:
       preact:
@@ -1534,8 +1552,51 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
+      vite:
+        specifier: 'catalog:'
+        version: '@voidzero-dev/vite-plus-core@1.0.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(typescript@7.0.2)(yaml@2.9.1)'
+      vite-plus:
+        specifier: 'catalog:'
+        version: 1.0.0(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/ui@5.0.1)(esbuild@0.28.2)(happy-dom@20.14.5)(jiti@2.7.0)(tsx@4.23.15)(typescript@7.0.2)(yaml@2.9.1)
 
-  playground/host:
+  playground/shared:
+    dependencies:
+      '@tailorkit/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@valibot/to-json-schema':
+        specifier: ^1.8.0
+        version: 1.8.0(valibot@1.5.0(typescript@7.0.2))
+      arktype:
+        specifier: ^2.2.7
+        version: 2.2.7
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 1.0.0-rc.4-5d5b77c(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(@upstash/redis@1.39.0)(arktype@2.2.7)(effect@4.0.0)(pg@8.23.1)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5)
+      tailorkit:
+        specifier: workspace:*
+        version: link:../../packages/tailorkit
+      valibot:
+        specifier: ^1.5.0
+        version: 1.5.0(typescript@7.0.2)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.6.4
+      drizzle-kit:
+        specifier: 'catalog:'
+        version: 1.0.0-rc.4-5d5b77c
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.15
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+
+  playground/tanstack-start:
     dependencies:
       '@playground/shared':
         specifier: workspace:*
@@ -1592,43 +1653,6 @@ importers:
       vite-plus:
         specifier: 'catalog:'
         version: 1.0.0(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/ui@5.0.1)(esbuild@0.28.2)(happy-dom@20.14.5)(jiti@2.7.0)(tsx@4.23.15)(typescript@7.0.2)(yaml@2.9.1)
-
-  playground/shared:
-    dependencies:
-      '@tailorkit/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@valibot/to-json-schema':
-        specifier: ^1.8.0
-        version: 1.8.0(valibot@1.5.0(typescript@7.0.2))
-      arktype:
-        specifier: ^2.2.7
-        version: 2.2.7
-      drizzle-orm:
-        specifier: 'catalog:'
-        version: 1.0.0-rc.4-5d5b77c(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(@upstash/redis@1.39.0)(arktype@2.2.7)(effect@4.0.0)(pg@8.23.1)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5)
-      tailorkit:
-        specifier: workspace:*
-        version: link:../../packages/tailorkit
-      valibot:
-        specifier: ^1.5.0
-        version: 1.5.0(typescript@7.0.2)
-      zod:
-        specifier: 'catalog:'
-        version: 4.6.5
-    devDependencies:
-      '@types/node':
-        specifier: 'catalog:'
-        version: 26.6.4
-      drizzle-kit:
-        specifier: 'catalog:'
-        version: 1.0.0-rc.4-5d5b77c
-      tsx:
-        specifier: 'catalog:'
-        version: 4.23.15
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
 
 packages:
 
@@ -10069,10 +10093,6 @@ packages:
     engines: {node: ^22 || ^24 || >=26}
     hasBin: true
 
-  nanostores@1.5.3:
-    resolution: {integrity: sha512-rQLB6eV4f2AW/n3L0JmwCROpaisYy9EDEADvEFSd1C/qG8hB6O5TPlh9A791JRbJr4CnMQBzptDcvD9OR1+6WA==}
-    engines: {node: ^20.0.0 || >=22.0.0}
-
   nanostores@1.5.4:
     resolution: {integrity: sha512-4UXY7OAJEK0Y6V3SudBU7cXjAzTDc189R78dDOh0Xbm19gpKYto6WizSg58LJf12lTsRxKSLGyE117OiLpM4DQ==}
     engines: {node: ^20.0.0 || >=22.0.0}
@@ -13186,20 +13206,6 @@ snapshots:
       better-auth: 1.7.7(@opentelemetry/api@1.9.1)(drizzle-kit@1.0.0-rc.4-5d5b77c)(drizzle-orm@1.0.0-rc.4-5d5b77c(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(@upstash/redis@1.39.0)(arktype@2.2.7)(effect@4.0.0)(pg@8.23.1)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5))(next@16.3.8(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(pg@8.23.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(solid-js@1.9.15)(vitest@5.0.1)
       better-call: 1.4.0(zod@4.6.5)
       zod: 4.6.5
-
-  '@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(@opentelemetry/api@1.9.1)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3)':
-    dependencies:
-      '@better-auth/utils': 0.4.2
-      '@better-fetch/fetch': 1.3.2
-      '@opentelemetry/semantic-conventions': 1.43.0
-      '@standard-schema/spec': 1.1.0
-      better-call: 1.4.0(zod@4.6.5)
-      jose: 6.2.12
-      kysely: 0.29.5
-      nanostores: 1.5.3
-      zod: 4.6.5
-    optionalDependencies:
-      '@opentelemetry/api': 1.9.1
 
   '@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(@opentelemetry/api@1.9.1)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.4)':
     dependencies:
@@ -18735,7 +18741,7 @@ snapshots:
 
   better-auth@1.7.7(@opentelemetry/api@1.9.1)(@tanstack/react-start@1.168.60(@voidzero-dev/vite-plus-core@1.0.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(typescript@7.0.2)(yaml@2.9.1))(crossws@0.4.12(srvx@1.0.4))(esbuild@0.28.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rolldown@1.2.8)(rollup@4.63.2)(supports-color@8.1.1))(drizzle-kit@1.0.0-rc.4-5d5b77c)(drizzle-orm@1.0.0-rc.4-5d5b77c(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(@upstash/redis@1.39.0)(arktype@2.2.7)(effect@4.0.0)(pg@8.23.1)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5))(next@16.3.8(@babel/core@7.29.7(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(pg@8.23.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(solid-js@1.9.15)(vitest@5.0.1):
     dependencies:
-      '@better-auth/core': 1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(@opentelemetry/api@1.9.1)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3)
+      '@better-auth/core': 1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(@opentelemetry/api@1.9.1)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.4)
       '@better-auth/drizzle-adapter': 1.7.7(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(@opentelemetry/api@1.9.1)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.4))(@better-auth/utils@0.4.2)(drizzle-orm@1.0.0-rc.4-5d5b77c(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(@upstash/redis@1.39.0)(arktype@2.2.7)(effect@4.0.0)(pg@8.23.1)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5))
       '@better-auth/kysely-adapter': 1.7.7(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(@opentelemetry/api@1.9.1)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.4))(@better-auth/utils@0.4.2)(kysely@0.29.5)
       '@better-auth/memory-adapter': 1.7.7(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(@opentelemetry/api@1.9.1)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.4))(@better-auth/utils@0.4.2)
@@ -18750,7 +18756,7 @@ snapshots:
       defu: 6.1.7
       jose: 6.2.12
       kysely: 0.29.5
-      nanostores: 1.5.3
+      nanostores: 1.5.4
       zod: 4.6.5
     optionalDependencies:
       '@tanstack/react-start': 1.168.60(@voidzero-dev/vite-plus-core@1.0.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(typescript@7.0.2)(yaml@2.9.1))(crossws@0.4.12(srvx@1.0.4))(esbuild@0.28.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rolldown@1.2.8)(rollup@4.63.2)(supports-color@8.1.1)
@@ -18767,7 +18773,7 @@ snapshots:
 
   better-auth@1.7.7(@opentelemetry/api@1.9.1)(drizzle-kit@1.0.0-rc.4-5d5b77c)(drizzle-orm@1.0.0-rc.4-5d5b77c(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(@upstash/redis@1.39.0)(arktype@2.2.7)(effect@4.0.0)(pg@8.23.1)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5))(next@16.3.8(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(pg@8.23.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(solid-js@1.9.15)(vitest@5.0.1):
     dependencies:
-      '@better-auth/core': 1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(@opentelemetry/api@1.9.1)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3)
+      '@better-auth/core': 1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(@opentelemetry/api@1.9.1)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.4)
       '@better-auth/drizzle-adapter': 1.7.7(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(@opentelemetry/api@1.9.1)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.4))(@better-auth/utils@0.4.2)(drizzle-orm@1.0.0-rc.4-5d5b77c(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(@upstash/redis@1.39.0)(arktype@2.2.7)(effect@4.0.0)(pg@8.23.1)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5))
       '@better-auth/kysely-adapter': 1.7.7(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(@opentelemetry/api@1.9.1)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.4))(@better-auth/utils@0.4.2)(kysely@0.29.5)
       '@better-auth/memory-adapter': 1.7.7(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(@opentelemetry/api@1.9.1)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.4))(@better-auth/utils@0.4.2)
@@ -18782,7 +18788,7 @@ snapshots:
       defu: 6.1.7
       jose: 6.2.12
       kysely: 0.29.5
-      nanostores: 1.5.3
+      nanostores: 1.5.4
       zod: 4.6.5
     optionalDependencies:
       drizzle-kit: 1.0.0-rc.4-5d5b77c
@@ -22076,8 +22082,6 @@ snapshots:
   nanoid@5.1.6: {}
 
   nanoid@6.0.1: {}
-
-  nanostores@1.5.3: {}
 
   nanostores@1.5.4: {}
 

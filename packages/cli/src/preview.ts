@@ -3,7 +3,6 @@ import { readFile, readdir, realpath } from "node:fs/promises";
 import path from "node:path";
 
 import { log } from "@clack/prompts";
-import { loadTailorKitConfig } from "@tailorkit/app/config/loader";
 import {
   createPreviewWebSocketClient,
   previewBuildManifestSchema,
@@ -12,10 +11,12 @@ import type {
   PreviewBuildManifest,
   PreviewWebSocketClient,
 } from "@tailorkit/client-platform/preview";
+import { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
 import pc from "picocolors";
 import { z } from "zod";
 
 import { getDeployToken, runWhoami } from "./auth";
+import { buildProject } from "./build";
 import { createCliClient } from "./client";
 
 const chunkBytes = 256 * 1024;
@@ -201,11 +202,11 @@ export const runPreview = async (options: PreviewOptions): Promise<void> => {
   if (!stored?.deployToken) {
     throw new Error("Not logged in. Run tailorkit login first.");
   }
-
-  const { buildApp } = await import("@tailorkit/app/builder");
-
-  const watcher = await buildApp({ ...options, watch: true });
-
+  const { result: watcher, outDir } = await buildProject({
+    ...options,
+    cwd: loaded.root,
+    watch: true,
+  });
   const closeWatcher = async (): Promise<void> => {
     if (watcher && typeof watcher === "object" && "close" in watcher) {
       await (watcher as { close: () => Promise<void> | void }).close();
@@ -251,12 +252,6 @@ export const runPreview = async (options: PreviewOptions): Promise<void> => {
       log.warn(`Unable to end preview session: ${errorMessage(error)}`);
     }
   };
-
-  const outDir = path.resolve(
-    loaded.root,
-    options.outDir ?? loaded.config.build?.outDir ?? ".tailorkit"
-  );
-
   let root: string;
 
   let latest: Snapshot;
