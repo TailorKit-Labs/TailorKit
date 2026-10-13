@@ -119,7 +119,7 @@ it("builds file routes with extracted instances and discovers additions, renames
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-file-build-"));
   try {
     await symlink(
-      path.resolve(import.meta.dirname, "../../../../examples/apps/backend-todo/node_modules"),
+      path.resolve(import.meta.dirname, "../../test/fixtures/backend-todo/node_modules"),
       path.join(root, "node_modules"),
       "dir",
     );
@@ -200,7 +200,7 @@ it("resolves the client runtime from the app when build output is outside the pr
   const output = await mkdtemp(path.join(tmpdir(), "tailorkit-external-output-"));
   try {
     await symlink(
-      path.resolve(import.meta.dirname, "../../../../examples/apps/backend-todo/node_modules"),
+      path.resolve(import.meta.dirname, "../../test/fixtures/backend-todo/node_modules"),
       path.join(root, "node_modules"),
       "dir",
     );

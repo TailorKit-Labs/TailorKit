@@ -1,15 +1,9 @@
 {
-  "name": "backend-todo",
+  "name": "@tailorkit/test-fixture-backend-todo",
   "private": true,
-  "license": "Apache-2.0",
   "type": "module",
   "imports": {
     "#tailorkit": "./src/tailorkit.gen.ts"
-  },
-  "scripts": {
-    "build": "tailorkit build",
-    "db:generate": "tailorkit db generate",
-    "check-types": "tsc --noEmit"
   },
   "dependencies": {
     "preact": "^11.0.0",
