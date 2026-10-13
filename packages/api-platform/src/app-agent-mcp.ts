@@ -95,7 +95,7 @@ export async function handleAppAgentMcpRequest(
             appId: app.id,
             hostUrl: input.hostUrl,
             agentToken,
-            model: "openai/gpt-6.1-sol",
+            model: "xiaomi/mimo-v2.6-pro",
             messages: [{ role: "user", content: prompt }],
           },
         ],
