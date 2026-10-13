@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as IssuesRouteImport } from './routes/issues'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ApiAuthRouteImport } from './routes/api/auth'
+import { Route as IssuesIndexRouteImport } from './routes/issues.index'
 import { Route as IssuesIssueIdRouteImport } from './routes/issues.$issueId'
 import { Route as ApiPlaygroundTodosRouteImport } from './routes/api/playground/todos'
 import { Route as ApiTailorkitSplatRouteImport } from './routes/api/tailorkit.$'
@@ -37,6 +38,11 @@ const ApiAuthRoute = ApiAuthRouteImport.update({
   path: '/api/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const IssuesIndexRoute = IssuesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => IssuesRoute,
+} as any)
 const IssuesIssueIdRoute = IssuesIssueIdRouteImport.update({
   id: '/$issueId',
   path: '/$issueId',
@@ -59,15 +65,16 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/api/auth': typeof ApiAuthRoute
   '/issues/$issueId': typeof IssuesIssueIdRoute
+  '/issues/': typeof IssuesIndexRoute
   '/api/playground/todos': typeof ApiPlaygroundTodosRoute
   '/api/tailorkit/$': typeof ApiTailorkitSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/issues': typeof IssuesRouteWithChildren
   '/login': typeof LoginRoute
   '/api/auth': typeof ApiAuthRoute
   '/issues/$issueId': typeof IssuesIssueIdRoute
+  '/issues': typeof IssuesIndexRoute
   '/api/playground/todos': typeof ApiPlaygroundTodosRoute
   '/api/tailorkit/$': typeof ApiTailorkitSplatRoute
 }
@@ -78,6 +85,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/api/auth': typeof ApiAuthRoute
   '/issues/$issueId': typeof IssuesIssueIdRoute
+  '/issues/': typeof IssuesIndexRoute
   '/api/playground/todos': typeof ApiPlaygroundTodosRoute
   '/api/tailorkit/$': typeof ApiTailorkitSplatRoute
 }
@@ -89,15 +97,16 @@ export interface FileRouteTypes {
     | '/login'
     | '/api/auth'
     | '/issues/$issueId'
+    | '/issues/'
     | '/api/playground/todos'
     | '/api/tailorkit/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/issues'
     | '/login'
     | '/api/auth'
     | '/issues/$issueId'
+    | '/issues'
     | '/api/playground/todos'
     | '/api/tailorkit/$'
   id:
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/api/auth'
     | '/issues/$issueId'
+    | '/issues/'
     | '/api/playground/todos'
     | '/api/tailorkit/$'
   fileRoutesById: FileRoutesById
@@ -150,6 +160,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/issues/': {
+      id: '/issues/'
+      path: '/'
+      fullPath: '/issues/'
+      preLoaderRoute: typeof IssuesIndexRouteImport
+      parentRoute: typeof IssuesRoute
+    }
     '/issues/$issueId': {
       id: '/issues/$issueId'
       path: '/$issueId'
@@ -176,10 +193,12 @@ declare module '@tanstack/react-router' {
 
 interface IssuesRouteChildren {
   IssuesIssueIdRoute: typeof IssuesIssueIdRoute
+  IssuesIndexRoute: typeof IssuesIndexRoute
 }
 
 const IssuesRouteChildren: IssuesRouteChildren = {
   IssuesIssueIdRoute: IssuesIssueIdRoute,
+  IssuesIndexRoute: IssuesIndexRoute,
 }
 
 const IssuesRouteWithChildren =

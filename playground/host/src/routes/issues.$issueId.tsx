@@ -27,7 +27,7 @@ function IssueDetailPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-      <Button className="-ml-3 w-fit" render={<Link to="/issues" />} variant="ghost">
+      <Button className="-ml-3 w-fit" render={<Link to="/issues/" />} variant="ghost">
         <ArrowLeft aria-hidden="true" />
         All issues
       </Button>

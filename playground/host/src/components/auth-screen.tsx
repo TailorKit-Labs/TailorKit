@@ -41,6 +41,7 @@ export function AuthScreen({ choices }: { choices: SignInChoice[] }) {
                 loading={pending === key}
                 onClick={() => void signIn(choice)}
                 variant="outline"
+                className="h-auto min-h-16 w-full justify-start py-2 text-left whitespace-normal"
               >
                 <span className="flex size-8 items-center justify-center rounded-full bg-muted font-medium text-xs">
                   {choice.avatar}

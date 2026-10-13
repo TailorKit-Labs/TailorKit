@@ -16,7 +16,7 @@ import type { DemoSession } from "@playground/shared/auth";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Overview", to: "/" },
-  { icon: CircleDot, label: "Issues", to: "/issues" },
+  { icon: CircleDot, label: "Issues", to: "/issues/" },
 ] as const;
 
 export function AppSidebar({ session, signOut }: { session: DemoSession; signOut: () => void }) {
