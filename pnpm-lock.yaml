@@ -911,6 +911,9 @@ importers:
       '@tailorkit/core':
         specifier: workspace:*
         version: link:../core
+      '@tailorkit/vite':
+        specifier: workspace:*
+        version: link:../vite
       ai:
         specifier: 'catalog:'
         version: 7.0.137(zod@4.6.5)

@@ -34,6 +34,7 @@
     "@tailorkit/app": "workspace:*",
     "@tailorkit/client-platform": "workspace:*",
     "@tailorkit/core": "workspace:*",
+    "@tailorkit/vite": "workspace:*",
     "ai": "catalog:",
     "cac": "^7.0.1",
     "jose": "6.2.12",

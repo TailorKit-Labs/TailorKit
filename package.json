@@ -42,5 +42,12 @@
     "ultracite": "7.12.4",
     "vite-plus": "catalog:"
   },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.12.1",
+      "onFail": "download"
+    }
+  },
   "packageManager": "pnpm@12.12.1"
 }
