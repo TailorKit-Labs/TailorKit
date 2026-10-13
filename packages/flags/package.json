@@ -1,0 +1,26 @@
+{
+  "name": "@tailorkit/flags",
+  "version": "0.0.0",
+  "private": true,
+  "license": "BUSL-1.1",
+  "type": "module",
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "build": "vp pack src/index.ts --format esm --dts --clean",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@vercel/flags-core": "1.10.0"
+  },
+  "devDependencies": {
+    "@tailorkit/config": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}
