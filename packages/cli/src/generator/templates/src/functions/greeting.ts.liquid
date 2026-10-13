@@ -1,8 +1,8 @@
-import { tk } from "tailorkit/server";
+import { fn } from "tailorkit/server";
 import { db } from "../db";
 import { z } from "zod";
 
-export const greeting = tk.query
+export const greeting = fn.query
   .database(db)
   .input(z.object({ name: z.string() }))
   .handler(({ input }) => `Hello, ${input.name}!`);

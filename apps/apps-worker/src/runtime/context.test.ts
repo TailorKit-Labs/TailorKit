@@ -4,7 +4,7 @@ import { Effect } from "effect";
 import { installFetchGuard } from "./context";
 import { createExecution } from "./execution";
 import { defineServer } from "@tailorkit/app/server";
-import { tk } from "@tailorkit/app/server";
+import { fn } from "@tailorkit/app/server";
 
 const nativeFetch = globalThis.fetch;
 afterEach(() => {
@@ -26,11 +26,11 @@ function setup() {
   installFetchGuard();
   // Like an SDK: capture fetch once, then use it from nested async helpers.
   const captured = globalThis.fetch;
-  const read = tk.query.handler(() => {
+  const read = fn.query.handler(() => {
     fetch(endpoint);
     return null;
   });
-  const write = tk.mutation.handler(() => {
+  const write = fn.mutation.handler(() => {
     fetch(endpoint);
     return null;
   });
@@ -39,18 +39,18 @@ function setup() {
   const app = defineServer({
     read,
     write,
-    nested: tk.action.functions({ read, write }).handler(async ({ queries, mutations }) => {
+    nested: fn.action.functions({ read, write }).handler(async ({ queries, mutations }) => {
       await expect(queries.read()).rejects.toThrow("only available inside actions");
       await expect(mutations.write()).rejects.toThrow("only available inside actions");
       const response = await captured(endpoint);
       return response.text();
     }),
-    run: tk.action.handler(async () => {
+    run: fn.action.handler(async () => {
       await Promise.resolve();
       const response = await captured(endpoint);
       return response.text();
     }),
-    ended: tk.action.handler(() => {
+    ended: fn.action.handler(() => {
       detached = new Promise<void>((resolve) => {
         release = resolve;
       }).then(() => captured(endpoint));

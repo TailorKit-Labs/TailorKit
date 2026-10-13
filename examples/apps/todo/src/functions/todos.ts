@@ -1,12 +1,12 @@
-import { AppError, eq, tk } from "tailorkit/server";
+import { AppError, eq, fn } from "tailorkit/server";
 import { z } from "zod";
 import { db as database, todoId, todos, todoText } from "../db";
 
-export const list = tk.query
+export const list = fn.query
   .database(database)
   .handler(({ db }) => db.query.todos.findMany({ orderBy: { id: "asc" }, limit: 1000 }).sync());
 
-export const add = tk.mutation
+export const add = fn.mutation
   .database(database)
   .input(z.object({ text: todoText }))
   .handler(({ db, input }) => {
@@ -19,7 +19,7 @@ export const add = tk.mutation
     return todo;
   });
 
-export const update = tk.mutation
+export const update = fn.mutation
   .database(database)
   .input(todoId.extend({ text: todoText }))
   .handler(({ db, input }) => {
@@ -33,7 +33,7 @@ export const update = tk.mutation
     return todo;
   });
 
-export const toggle = tk.mutation
+export const toggle = fn.mutation
   .database(database)
   .input(todoId)
   .handler(({ db, input }) => {
@@ -43,7 +43,7 @@ export const toggle = tk.mutation
     return null;
   });
 
-export const remove = tk.mutation
+export const remove = fn.mutation
   .database(database)
   .input(todoId)
   .handler(({ db, input }) => {

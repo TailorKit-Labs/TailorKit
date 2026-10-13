@@ -1,9 +1,9 @@
 import { expect, it, vi } from "vite-plus/test";
-import { defineServer, tk } from "@tailorkit/app/server";
+import { defineServer, fn } from "@tailorkit/app/server";
 import { createApplicationExecution } from "./bundle";
 
 const application = {
-  default: defineServer({ value: tk.query.handler(() => "ready") }),
+  default: defineServer({ value: fn.query.handler(() => "ready") }),
   migrations: [],
   runtimeManifest: { apiVersion: 1, requires: ["database", "actions"] },
 };
