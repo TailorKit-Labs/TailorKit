@@ -1,13 +1,13 @@
 /* oxlint-disable require-await -- These negative type cases intentionally return promises from database handlers. */
 import { z } from "zod";
-import { tk } from "./builder";
+import { fn } from "./builder";
 import { defineServer } from "./functions";
 import { createApi } from "../client/reference";
 import type { Client } from "../client/connection";
 import { useAction, useMutation, useQuery } from "../preact";
 
 const functions = {
-  read: tk.query
+  read: fn.query
     .input(z.object({ raw: z.string().transform(Number) }))
     .output(z.string().transform(Number))
     .handler(({ input, db }) => {
@@ -16,26 +16,26 @@ const functions = {
       void db.insert;
       return String(value);
     }),
-  write: tk.mutation.input(z.object({ value: z.number() })).handler(({ input }) => input.value),
-  list: tk.query.handler(({ input }) => {
+  write: fn.mutation.input(z.object({ value: z.number() })).handler(({ input }) => input.value),
+  list: fn.query.handler(({ input }) => {
     const absent: undefined = input;
     void absent;
     // @ts-expect-error No input schema means there are no input properties.
     void input.value;
     return [1, 2];
   }),
-  saveWithoutSchemas: tk.mutation.handler(({ input }) => {
+  saveWithoutSchemas: fn.mutation.handler(({ input }) => {
     const absent: undefined = input;
     void absent;
     return { saved: true };
   }),
-  actionWithoutSchemas: tk.action.handler(({ input }) => {
+  actionWithoutSchemas: fn.action.handler(({ input }) => {
     const absent: undefined = input;
     void absent;
     return Promise.resolve({ completed: true });
   }),
 };
-const save = tk.action
+const save = fn.action
   .functions(functions)
   .input(z.object({ value: z.number() }))
   .output(z.number())
@@ -74,13 +74,13 @@ client.query(refs.read);
 // @ts-expect-error Imperative inputs are inferred from the reference, not widened by arguments.
 client.query(refs.read, { raw: 3 });
 // @ts-expect-error Async database handlers cannot escape the synchronous transaction.
-tk.mutation.handler(async () => 1);
+fn.mutation.handler(async () => 1);
 // @ts-expect-error Async queries are not allowed.
-tk.query.handler(async () => 1);
+fn.query.handler(async () => 1);
 // @ts-expect-error Output schemas constrain handler results before output transformations.
-tk.query.output(z.number()).handler(() => "wrong");
+fn.query.output(z.number()).handler(() => "wrong");
 // @ts-expect-error Only actions can call other functions.
-tk.query.functions(functions);
+fn.query.functions(functions);
 const query = useQuery(refs.read, { raw: "3" });
 const data: number | undefined = query.data;
 void data;
@@ -102,7 +102,7 @@ useMutation(refs.saveWithoutSchemas).mutate({});
 // @ts-expect-error No-input actions do not accept objects.
 useAction(refs.actionWithoutSchemas).execute({});
 // @ts-expect-error Output schemas also constrain async action results.
-tk.action.output(z.number()).handler(async () => "wrong");
+fn.action.output(z.number()).handler(async () => "wrong");
 // @ts-expect-error Required query inputs cannot be omitted.
 useQuery(refs.read);
 // @ts-expect-error Mutation functions cannot be subscribed as queries.

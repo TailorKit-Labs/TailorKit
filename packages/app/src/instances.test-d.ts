@@ -1,15 +1,15 @@
 import { z } from "zod";
 import { defineView } from "./views";
-import { defineServer, tk } from "./server";
+import { defineServer, fn } from "./server";
 
 const server = defineServer({
   reports: {
-    list: tk.query
+    list: fn.query
       .input(z.object({ userId: z.string() }))
       .handler(({ input }) => [{ id: input.userId }]),
-    count: tk.query.handler(() => 1),
-    write: tk.mutation.handler(() => null),
-    fetch: tk.action.handler(() => Promise.resolve(null)),
+    count: fn.query.handler(() => 1),
+    write: fn.mutation.handler(() => null),
+    fetch: fn.action.handler(() => Promise.resolve(null)),
   },
 });
 type ServerFunctions = typeof server.functions;

@@ -1,8 +1,8 @@
 # Todo
 
-This example stores todos in the app backend's installation-scoped SQLite database using `tailorkit/server`. The view subscribes to the `list` query, so committed add, edit, toggle and delete mutations update every active client. Text edits stay in a local draft until **Save** is clicked. Arguments are validated with Zod, and todo rows are inferred from the database schema.
+This example stores todos in the app backend's installation-scoped SQLite database using `tailorkit/fn`. The view subscribes to the `list` query, so committed add, edit, toggle and delete mutations update every active client. Text edits stay in a local draft until **Save** is clicked. Arguments are validated with Zod, and todo rows are inferred from the database schema.
 
-`src/slots/` contains the UI, `src/functions/` contains `tk.query`, `tk.mutation` and `tk.action` definitions, and `src/db/schema.ts` defines the SQLite table and validation schemas. `src/server.ts` registers the functions. `src/root.tsx` exports `defineRoute({ shellComponent: Shell })` with a `ClientProvider` wrapper to keep the backend client across view changes in each mounted slot. The UI uses `useQuery`, `useMutation` and `useAction` for live data, pending state and errors, with no manual subscriptions or cleanup.
+`src/slots/` contains the UI, `src/functions/` contains `fn.query`, `fn.mutation` and `fn.action` definitions, and `src/db/schema.ts` defines the SQLite table and validation schemas. `src/server.ts` registers the functions. `src/root.tsx` exports `defineRoute({ shellComponent: Shell })` with a `ClientProvider` wrapper to keep the backend client across view changes in each mounted slot. The UI uses `useQuery`, `useMutation` and `useAction` for live data, pending state and errors, with no manual subscriptions or cleanup.
 
 **Import a sample todo** demonstrates an async action: it fetches a todo from JSONPlaceholder, validates the response and calls the `add` mutation. External calls run in actions; queries and mutations use synchronous database handlers.
 
@@ -18,4 +18,4 @@ Builds check `src/db/schema.ts` against the latest saved migration snapshot and 
 
 `src/db/relations.ts` calls Drizzle's `defineRelations(schema)` and is the place to add relationships between tables. `src/db/index.ts` exports `db = defineDatabase({ relations })` and re-exports the schema. The relations object already includes the tables, so `defineDatabase` needs no separate schema import.
 
-Pass this definition to `tk.query.database(db)` or `tk.mutation.database(db)` (or the `database` option on `query`/`mutation`). Handlers receive typed `db.query` access alongside the existing select/insert/update/delete builders. Relational queries use `.sync()`, for example `db.query.todos.findMany({ orderBy: { id: "asc" }, limit: 1000 }).sync()`. Queries and mutations remain synchronous; actions call them through their function collections.
+Pass this definition to `fn.query.database(db)` or `fn.mutation.database(db)` (or the `database` option on `query`/`mutation`). Handlers receive typed `db.query` access alongside the existing select/insert/update/delete builders. Relational queries use `.sync()`, for example `db.query.todos.findMany({ orderBy: { id: "asc" }, limit: 1000 }).sync()`. Queries and mutations remain synchronous; actions call them through their function collections.

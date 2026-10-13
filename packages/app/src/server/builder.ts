@@ -105,7 +105,7 @@ class FunctionBuilder<
   }
 }
 
-export const tk = Object.freeze({
+export const fn = Object.freeze({
   query: new FunctionBuilder("query", z.undefined(), undefined, {}),
   mutation: new FunctionBuilder("mutation", z.undefined(), undefined, {}),
   action: new FunctionBuilder("action", z.undefined(), undefined, {}),

@@ -1,4 +1,4 @@
-import { boolean, table, text } from "tailorkit/server";
+import { boolean, table, text } from "tailorkit/fn";
 import { z } from "zod";
 
 export const todos = table("todos", {

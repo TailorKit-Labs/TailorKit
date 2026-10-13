@@ -1,8 +1,8 @@
 # Backend todo
 
-A small app using `tailorkit/server`: SQLite tables, typed queries/mutations/actions, and direct WebSocket subscriptions supplied with JWTs by the host bridge. Its UI reuses TailorKit's existing remote `Box`, `Flex` and `Button` components.
+A small app using `tailorkit/fn`: SQLite tables, typed queries/mutations/actions, and direct WebSocket subscriptions supplied with JWTs by the host bridge. Its UI reuses TailorKit's existing remote `Box`, `Flex` and `Button` components.
 
-Backend functions live in `src/functions/` and use the chained `tk` API. `src/db/schema.ts` defines tables, `src/server.ts` registers functions, and `src/slots/` uses `useQuery`, `useMutation` and `useAction`. `src/root.tsx` installs `ClientProvider`, which owns the connection and cleans up subscriptions automatically.
+Backend functions live in `src/functions/` and use the chained `fn` API. `src/db/schema.ts` defines tables, `src/server.ts` registers functions, and `src/slots/` uses `useQuery`, `useMutation` and `useAction`. `src/root.tsx` installs `ClientProvider`, which owns the connection and cleans up subscriptions automatically.
 
 `src/slots/page/home.view.tsx` infers the `page` slot from its directory and also defines an `instances` resolver. It runs on the server, calls the registered `list` query, and returns an “All todos” instance plus each todo's stable key, title metadata, and validated `{ todoId }` data. The view reads `view.useInstance()` to display all todos or the selected task.
 
@@ -34,4 +34,4 @@ Builds check `src/db/schema.ts` against the latest saved migration snapshot and 
 
 `src/db/relations.ts` calls Drizzle's `defineRelations(schema)` and is the place to add relationships between tables. `src/db/index.ts` exports `db = defineDatabase({ relations })` and re-exports the schema. The relations object already includes the tables, so `defineDatabase` needs no separate schema import.
 
-Pass this definition to `tk.query.database(db)` or `tk.mutation.database(db)` (or the `database` option on `query`/`mutation`). Handlers receive typed `db.query` access alongside the existing select/insert/update/delete builders. Relational queries use `.sync()`, for example `db.query.todos.findMany({ orderBy: { id: "asc" }, limit: 1000 }).sync()`. Queries and mutations remain synchronous; actions call them through their function collections.
+Pass this definition to `fn.query.database(db)` or `fn.mutation.database(db)` (or the `database` option on `query`/`mutation`). Handlers receive typed `db.query` access alongside the existing select/insert/update/delete builders. Relational queries use `.sync()`, for example `db.query.todos.findMany({ orderBy: { id: "asc" }, limit: 1000 }).sync()`. Queries and mutations remain synchronous; actions call them through their function collections.

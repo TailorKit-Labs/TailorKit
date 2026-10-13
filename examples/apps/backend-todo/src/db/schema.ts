@@ -1,4 +1,4 @@
-import { boolean, table, text } from "tailorkit/server";
+import { boolean, table, text } from "tailorkit/fn";
 
 export const todos = table("todos", {
   id: text().primaryKey(),

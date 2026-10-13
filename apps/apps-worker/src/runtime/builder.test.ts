@@ -1,6 +1,6 @@
 import { expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
-import { tk } from "@tailorkit/app/server";
+import { fn } from "@tailorkit/app/server";
 import { defineServer } from "@tailorkit/app/server";
 import { createExecution, invocationSchema } from "./execution";
 import { createActionExecution } from "./actions";
@@ -31,7 +31,7 @@ const persistence: Persistence = {
 
 it("validates and transforms fluent inputs and outputs through the real execution path", () => {
   const app = defineServer({
-    transformed: tk.query
+    transformed: fn.query
       .input(z.object({ value: z.string().transform(Number) }))
       .output(z.string().transform(Number))
       .handler(({ input, identity: viewer }) => {
@@ -39,12 +39,12 @@ it("validates and transforms fluent inputs and outputs through the real executio
         expect(input.value).toBe(4);
         return String(input.value + 1);
       }),
-    empty: tk.query.handler(({ input }) => {
+    empty: fn.query.handler(({ input }) => {
       expect(input).toBeUndefined();
       return { inferred: "no schema needed" };
     }),
-    nullable: tk.query.input(z.null()).handler(({ input }) => input),
-    invalid: tk.query.output(z.number().min(10)).handler(() => 1),
+    nullable: fn.query.input(z.null()).handler(({ input }) => input),
+    invalid: fn.query.output(z.number().min(10)).handler(() => 1),
   });
   const execute = createExecution(app, persistence);
   expect(execute.query({ name: "transformed", args: { value: "4" } }, identity).value).toBe(5);
@@ -71,8 +71,8 @@ it("validates and transforms fluent inputs and outputs through the real executio
 });
 
 it("keeps builders immutable and provides typed action calls using registered functions", async () => {
-  const functions = { read: tk.query.output(z.string().transform(Number)).handler(() => "4") };
-  const base = tk.action.functions(functions).output(z.number());
+  const functions = { read: fn.query.output(z.string().transform(Number)).handler(() => "4") };
+  const base = fn.action.functions(functions).output(z.number());
   const save = base.input(z.number()).handler(async ({ input, queries, signal }) => {
     expect(signal.aborted).toBe(false);
     return input + (await queries.read());
@@ -92,16 +92,16 @@ it("keeps builders immutable and provides typed action calls using registered fu
 
 it("uses undefined input and infers returns for mutations and async actions without schemas", async () => {
   const functions = {
-    save: tk.mutation.handler(({ input }) => {
+    save: fn.mutation.handler(({ input }) => {
       expect(input).toBeUndefined();
       return { saved: true };
     }),
-    read: tk.query.handler(({ input }) => {
+    read: fn.query.handler(({ input }) => {
       expect(input).toBeUndefined();
       return [1, 2];
     }),
   };
-  const perform = tk.action.functions(functions).handler(async ({ input, queries, mutations }) => {
+  const perform = fn.action.functions(functions).handler(async ({ input, queries, mutations }) => {
     expect(input).toBeUndefined();
     return { rows: await queries.read(), saved: await mutations.save() };
   });
@@ -130,10 +130,10 @@ it("uses undefined input and infers returns for mutations and async actions with
 
 it("validates optional output schemas for synchronous and async actions", async () => {
   const app = defineServer({
-    valid: tk.action.output(z.number().min(10)).handler(() => 10),
-    invalid: tk.action.output(z.number().min(10)).handler(() => 1),
-    invalidAsync: tk.action.output(z.number().min(10)).handler(() => Promise.resolve(1)),
-    transformed: tk.action.output(z.string().transform(Number)).handler(() => Promise.resolve("4")),
+    valid: fn.action.output(z.number().min(10)).handler(() => 10),
+    invalid: fn.action.output(z.number().min(10)).handler(() => 1),
+    invalidAsync: fn.action.output(z.number().min(10)).handler(() => Promise.resolve(1)),
+    transformed: fn.action.output(z.string().transform(Number)).handler(() => Promise.resolve("4")),
   });
   const run = actionRunner(app, { query: vi.fn(), mutate: vi.fn() });
   expect(await run({ name: "valid" }, identity)).toBe(10);

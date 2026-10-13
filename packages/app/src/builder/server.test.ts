@@ -32,7 +32,7 @@ it("builds file routes with a configured server and blocks server imports from t
     await writeFile(path.join(root, "src/root.tsx"), client);
     await writeFile(
       path.join(root, "backend/api.ts"),
-      'import { defineServer, tk } from "tailorkit/server";\nconst app = defineServer({ configured: tk.query.handler(() => "Configured server loaded") });\nexport default app;',
+      'import { defineServer, fn } from "tailorkit/fn";\nconst app = defineServer({ configured: fn.query.handler(() => "Configured server loaded") });\nexport default app;',
     );
     await writeFile(
       path.join(root, "backend/helper.ts"),
@@ -40,7 +40,7 @@ it("builds file routes with a configured server and blocks server imports from t
     );
     await writeFile(
       path.join(root, "backend/api.ts"),
-      'import { defineServer, tk } from "tailorkit/server"; export default defineServer({ configured: tk.query.handler(() => "Configured server loaded"), lazy: tk.action.handler(async () => (await import("./helper")).value) });',
+      'import { defineServer, fn } from "tailorkit/fn"; export default defineServer({ configured: fn.query.handler(() => "Configured server loaded"), lazy: fn.action.handler(async () => (await import("./helper")).value) });',
     );
     await buildApp({ cwd: root });
     expect(await readdir(path.join(root, ".tailorkit/server"))).toEqual(["server.js"]);
@@ -128,7 +128,7 @@ it("builds separate artifacts and rejects accidental imports of server code", as
     await expect(buildApp({ cwd: root })).rejects.toThrow(
       "cannot be imported into a browser bundle",
     );
-    await writeFile(path.join(root, "src/root.tsx"), `import "tailorkit/server";\n${client}`);
+    await writeFile(path.join(root, "src/root.tsx"), `import "tailorkit/fn";\n${client}`);
     await expect(buildApp({ cwd: root })).rejects.toThrow(
       "cannot be imported into a browser bundle",
     );
@@ -163,11 +163,11 @@ it("builds colocated instance resolvers as query-only server actions", async () 
     await writeFile(
       path.join(root, "src/server.ts"),
       `
-      import { defineServer, tk } from "tailorkit/server";
+      import { defineServer, fn } from "tailorkit/fn";
       export default defineServer({ reports: {
-        list: tk.query.handler(() => [{ id: "report_123" }]),
-        write: tk.mutation.handler(() => "never"),
-        external: tk.action.handler(() => Promise.resolve("never")),
+        list: fn.query.handler(() => [{ id: "report_123" }]),
+        write: fn.mutation.handler(() => "never"),
+        external: fn.action.handler(() => Promise.resolve("never")),
       } });
     `,
     );

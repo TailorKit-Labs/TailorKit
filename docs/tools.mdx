@@ -140,7 +140,7 @@ The app's own query, mutation, and action API continues to work independently.
 
 ```ts
 import type {} from "./tailorkit.gen";
-import { action } from "tailorkit/server";
+import { action } from "tailorkit/fn";
 import { z } from "zod";
 
 export const readCustomer = action({

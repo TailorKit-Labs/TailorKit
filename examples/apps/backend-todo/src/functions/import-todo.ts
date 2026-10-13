@@ -1,9 +1,9 @@
 import type {} from "../tailorkit.gen";
-import { AppError, tk } from "tailorkit/server";
+import { AppError, fn } from "tailorkit/fn";
 import { z } from "zod";
 import * as todos from "./todos";
 
-export const importTodo = tk.action
+export const importTodo = fn.action
   .functions(todos)
   .input(z.object({ url: z.url() }))
   .handler(async ({ input, queries, mutations, tools, signal }) => {
