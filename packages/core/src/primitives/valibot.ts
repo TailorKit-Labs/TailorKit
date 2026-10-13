@@ -1,13 +1,18 @@
 import * as v from "valibot";
-import type { ComponentDefinition } from "../schema/index";
-import { primitiveDefinitions, primitiveNames } from "./definition";
+
+import type { ComponentDefinition } from "#schema/index";
+
+import { primitiveDefinitions, mapPrimitiveDefinitions } from "./definition";
 import type { PrimitiveName, PrimitivePropDefinition } from "./definition";
 import { resolveTheme } from "./theme";
 import type { TailorKitTheme } from "./theme";
 
 type Schema = v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>;
-type Shape = Record<string, Schema>;
-type PrimitiveComponents = Record<PrimitiveName, ComponentDefinition & { children: true }>;
+type FieldValidators = Record<string, Schema>;
+type PrimitiveComponents = Record<
+  PrimitiveName,
+  ComponentDefinition & { children: true }
+>;
 
 const tokenPicklist = (tokens: Record<string, string> | undefined): Schema => {
   const keys = Object.keys(tokens ?? {});
@@ -17,44 +22,48 @@ const tokenPicklist = (tokens: Record<string, string> | undefined): Schema => {
   return v.picklist(keys);
 };
 
-const responsive = <T extends Schema>(schema: T, theme: TailorKitTheme): Schema => {
-  const shape: Shape = {};
+const responsive = (schema: Schema, theme: TailorKitTheme): Schema => {
+  const fields: FieldValidators = {};
   for (const key of Object.keys(theme.breakpoints ?? {})) {
-    shape[key] = v.optional(schema);
+    fields[key] = v.optional(schema);
   }
-  return v.union([schema, v.strictObject(shape as v.ObjectEntries)]);
+  return v.union([schema, v.strictObject(fields)]);
 };
 
-const optionalResponsive = <T extends Schema>(schema: T, theme: TailorKitTheme): Schema =>
+const optionalResponsive = (schema: Schema, theme: TailorKitTheme): Schema =>
   v.optional(responsive(schema, theme));
 
-const propSchema = (definition: PrimitivePropDefinition, theme: TailorKitTheme): Schema => {
+const propSchema = (
+  definition: PrimitivePropDefinition,
+  theme: TailorKitTheme
+): Schema => {
   const schema =
     definition.kind === "token"
       ? tokenPicklist(theme.tokens?.[definition.token])
       : v.picklist(definition.values);
-  return definition.responsive === false ? v.optional(schema) : optionalResponsive(schema, theme);
+  return definition.responsive === false
+    ? v.optional(schema)
+    : optionalResponsive(schema, theme);
 };
 
-const primitiveShape = (name: PrimitiveName, theme: TailorKitTheme): Shape =>
+const primitiveFields = (
+  name: PrimitiveName,
+  theme: TailorKitTheme
+): FieldValidators =>
   Object.fromEntries(
     Object.entries(primitiveDefinitions[name]).map(([propName, definition]) => [
       propName,
+      // oxlint-disable-next-line typescript/no-unsafe-argument -- Object.entries erases the schema registry value type; these definitions were created and validated by the contract builder.
       propSchema(definition, theme),
-    ]),
+    ])
   );
 
 export const primitives = (theme: TailorKitTheme = {}): PrimitiveComponents => {
   const resolvedTheme = resolveTheme(theme);
-  const components = {} as PrimitiveComponents;
-  for (const name of primitiveNames) {
-    components[name] = {
-      callbacks: {},
-      fields: v.strictObject(
-        primitiveShape(name, resolvedTheme) as v.ObjectEntries,
-      ) as unknown as ComponentDefinition["fields"],
-      children: true,
-    };
-  }
+  const components = mapPrimitiveDefinitions((name) => ({
+    callbacks: {},
+    children: true as const,
+    fields: v.strictObject(primitiveFields(name, resolvedTheme)),
+  }));
   return components;
 };

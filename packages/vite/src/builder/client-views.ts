@@ -1,7 +1,9 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+
+import { z } from "zod";
+
 import { tailorkitUploadManifestSchema } from "./upload-manifest";
-import type { InstanceRegistration } from "./instances";
 
 // Inspect the developer's bundled client in a short-lived build process, never on the platform.
 const inspectClient = `
@@ -22,41 +24,39 @@ process.stdout.write("\\nTAILORKIT_VIEWS=" + JSON.stringify({ views, instanceRes
 process.exit(0);
 `;
 
-export async function readClientViews(filename: string) {
-  return (await readClientManifest(filename)).views.filter((view) => !view.disabled);
-}
-
-export async function readClientManifest(filename: string) {
+export const readClientManifest = async (filename: string) => {
   try {
+    // oxlint-disable-next-line typescript/strict-void-return -- Node explicitly supports promisify(execFile); its ChildProcess return is intentionally ignored by the callback-to-Promise adapter.
     const { stdout } = await promisify(execFile)(
       process.execPath,
       ["--input-type=module", "--eval", inspectClient, filename],
-      { timeout: 10_000, maxBuffer: 2 * 1024 * 1024 },
+      { maxBuffer: 2 * 1024 * 1024, timeout: 10_000 }
     );
     const result = stdout.slice(
-      stdout.lastIndexOf("\nTAILORKIT_VIEWS=") + "\nTAILORKIT_VIEWS=".length,
+      stdout.lastIndexOf("\nTAILORKIT_VIEWS=") + "\nTAILORKIT_VIEWS=".length
     );
-    const manifest = JSON.parse(result) as { views: unknown; instanceResolvers: unknown };
-    const views = tailorkitUploadManifestSchema.shape.views.unwrap().parse(manifest.views);
-    if (
-      !Array.isArray(manifest.instanceResolvers) ||
-      manifest.instanceResolvers.some(
-        (ref) =>
-          !ref ||
-          typeof ref !== "object" ||
-          typeof ref.slot !== "string" ||
-          typeof ref.path !== "string" ||
-          typeof ref.resolver !== "string" ||
-          !/^i[0-9a-f]{24}$/u.test(ref.resolver),
-      )
-    ) {
-      throw new Error("Invalid instance resolver references");
-    }
-    return { views, instanceResolvers: manifest.instanceResolvers as InstanceRegistration[] };
+    const manifest = z
+      .object({
+        instanceResolvers: z.array(
+          z.object({
+            path: z.string(),
+            resolver: z.string().regex(/^i[0-9a-f]{24}$/u),
+            slot: z.string(),
+          })
+        ),
+        views: tailorkitUploadManifestSchema.shape.views.unwrap(),
+      })
+      .parse(JSON.parse(result));
+    return manifest;
   } catch (error) {
     throw new Error(
       "Unable to read app views during the build. Keep browser-only side effects inside components or effects. Check the default exports of your roots, layouts and .view.tsx files.",
-      { cause: error },
+      { cause: error }
     );
   }
-}
+};
+
+export const readClientViews = async (filename: string) => {
+  const awaitedResult1 = await readClientManifest(filename);
+  return awaitedResult1.views.filter((view) => !view.disabled);
+};

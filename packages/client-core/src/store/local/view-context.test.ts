@@ -1,41 +1,41 @@
 import { describe, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
+
 import { createViewContextStore } from "./view-context";
 
-function createStore() {
-  return createViewContextStore({
+const createStore = () =>
+  createViewContextStore({
     views: {
+      "/first": z.looseObject({}),
       "/home": z.looseObject({}),
       "/home/detail": z.looseObject({}),
-      "/first": z.looseObject({}),
       "/last": z.looseObject({}),
     },
   });
-}
 
 describe("view context store", () => {
   it("publishes nested view registration once after synchronous updates settle", async () => {
     const registry = createStore();
     const parent = Symbol("parent");
     const child = Symbol("child");
-    const listener = vi.fn();
+    const listener = vi.fn<Parameters<typeof registry.subscribe>[0]>();
     const stop = registry.subscribe(listener);
-    registry.register({ id: parent, view: "/home", context: { parent: true } });
+    registry.register({ context: { parent: true }, id: parent, view: "/home" });
     registry.register({
-      id: child,
-      view: "/home/detail",
       context: { child: true },
+      id: child,
       loading: true,
+      view: "/home/detail",
     });
     expect(registry.getSnapshot()).toBeNull();
     await Promise.resolve();
     expect(listener).toHaveBeenCalledOnce();
     expect(registry.getSnapshot()).toEqual({
-      view: "/home/detail",
       layers: [
-        { path: "/home", context: { parent: true }, status: "ready" },
-        { path: "/home/detail", context: undefined, status: "loading" },
+        { context: { parent: true }, path: "/home", status: "ready" },
+        { context: undefined, path: "/home/detail", status: "loading" },
       ],
+      view: "/home/detail",
     });
     expect(registry.state.get()).toBe(registry.getSnapshot());
     registry.unregister(child);
@@ -54,9 +54,13 @@ describe("view context store", () => {
       const other = createStore();
       const first = Symbol("first");
       const last = Symbol("last");
-      registry.register({ id: first, view: "/first", context: {} });
-      registry.register({ id: last, view: "/last", context: {} });
-      registry.register({ id: first, view: "/first", context: { updated: true } });
+      registry.register({ context: {}, id: first, view: "/first" });
+      registry.register({ context: {}, id: last, view: "/last" });
+      registry.register({
+        context: { updated: true },
+        id: first,
+        view: "/first",
+      });
       await Promise.resolve();
       expect(registry.getSnapshot()?.view).toBe("/last");
       expect(warning).toHaveBeenCalledOnce();

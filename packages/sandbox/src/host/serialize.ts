@@ -1,31 +1,37 @@
-export function readElementProps(element: Element): Record<string, unknown> {
-  const canonicalPropNames: Readonly<Record<string, string>> = {
-    bordercolor: "borderColor",
-    minheight: "minHeight",
-    minwidth: "minWidth",
-    textcolor: "textColor",
-  };
+import * as v from "valibot";
+
+import { RemotePropsSchema } from "#protocol";
+import type { RemoteProps } from "#protocol";
+
+export const readElementProps = (element: Element): RemoteProps => {
+  const canonicalPropNames = new Map<string, string>([
+    ["bordercolor", "borderColor"],
+    ["minheight", "minHeight"],
+    ["minwidth", "minWidth"],
+    ["textcolor", "textColor"],
+  ]);
+
   const callbackAttribute = "data-tailorkit-callbacks";
   const propsAttribute = "data-tailorkit-props";
   const typedProps = element.getAttribute(propsAttribute);
   if (typedProps !== null) {
     try {
-      const value = JSON.parse(typedProps) as unknown;
-      if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-        return value as Record<string, unknown>;
+      const parsed = v.safeParse(RemotePropsSchema, JSON.parse(typedProps));
+      if (parsed.success) {
+        return parsed.output;
       }
     } catch {
       // Fall through to the DOM attributes when the internal channel is malformed.
     }
   }
 
-  const props: Record<string, unknown> = {};
+  const props: RemoteProps = {};
   for (const attribute of element.attributes) {
     const name = attribute.name.toLowerCase();
     if (name === callbackAttribute || name === propsAttribute) {
       continue;
     }
-    props[canonicalPropNames[name] ?? attribute.name] = attribute.value;
+    props[canonicalPropNames.get(name) ?? attribute.name] = attribute.value;
   }
   return props;
-}
+};

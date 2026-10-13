@@ -11,6 +11,6 @@ export const dataTableFeatures = tableFeatures({
   columnSizingFeature,
   columnVisibilityFeature,
   rowSortingFeature,
-  sortedRowModel: createSortedRowModel(),
   sortFns: { datetime: sortFn_datetime },
+  sortedRowModel: createSortedRowModel(),
 });

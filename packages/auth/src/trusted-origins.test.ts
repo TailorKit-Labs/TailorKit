@@ -10,7 +10,11 @@ describe("AUTH_TRUSTED_ORIGINS preview pattern", () => {
     });
     const context = await auth.$context;
 
-    expect(context.isTrustedOrigin("https://tailorkit-feature-auth.vercel.app")).toBe(true);
-    expect(context.isTrustedOrigin("https://another-project-feature-auth.vercel.app")).toBe(false);
+    expect(
+      context.isTrustedOrigin("https://tailorkit-feature-auth.vercel.app")
+    ).toBe(true);
+    expect(
+      context.isTrustedOrigin("https://another-project-feature-auth.vercel.app")
+    ).toBe(false);
   });
 });

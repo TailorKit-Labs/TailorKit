@@ -1,0 +1,17 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "lint": {
+      "dependsOn": ["$TURBO_EXTENDS$", "@tailorkit/api-platform#build"]
+    },
+    "lint:fix": {
+      "dependsOn": ["$TURBO_EXTENDS$", "@tailorkit/api-platform#build"]
+    },
+    "check-types": {
+      "dependsOn": ["$TURBO_EXTENDS$", "@tailorkit/api-platform#build"]
+    },
+    "test": {
+      "dependsOn": ["$TURBO_EXTENDS$", "@tailorkit/api-platform#build"]
+    }
+  }
+}

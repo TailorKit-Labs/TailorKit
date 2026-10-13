@@ -1,26 +1,48 @@
 import { hashSecret } from "@tailorkit/api-utils/hashing";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vite-plus/test";
+
 import { canonicalizeScope } from "./scope";
 
-const mocks = vi.hoisted(() => ({
-  findToken: vi.fn(),
-  env: { AUTH_SECRET: "test-cli-token-secret" as string | undefined },
+const require = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+interface TestAuthEnv {
+  AUTH_SECRET: string | undefined;
+}
+const mocks = vi.hoisted(() => {
+  const env: TestAuthEnv = { AUTH_SECRET: "test-cli-token-secret" };
+  return { env, findToken: vi.fn() };
+});
+vi.mock("@tailorkit/db", () => ({
+  db: { query: { cliToken: { findFirst: mocks.findToken } } },
 }));
-vi.mock("@tailorkit/db", () => ({ db: { query: { cliToken: { findFirst: mocks.findToken } } } }));
 vi.mock("#env", () => ({ env: mocks.env }));
 const { authenticateCli } = await import("./cli-token");
-const canonical = canonicalizeScope({ name: "org", value: { tenant: "one", environment: "dev" } });
+const canonical = canonicalizeScope({
+  name: "org",
+  value: { environment: "dev", tenant: "one" },
+});
 
-function validToken() {
-  return {
-    id: "cli-one",
-    projectId: "project-one",
-    expiresAt: new Date(Date.now() + 60_000),
-    revokedAt: null,
-    scope: { name: "org", value: { tenant: "one", environment: "dev" } },
-    scopeKey: canonical.scopeKey,
-  };
-}
+const validToken = () => ({
+  expiresAt: new Date(Date.now() + 60_000),
+  id: "cli-one",
+  projectId: "project-one",
+  revokedAt: null,
+  scope: { name: "org", value: { environment: "dev", tenant: "one" } },
+  scopeKey: canonical.scopeKey,
+});
 beforeEach(() => {
   vi.clearAllMocks();
   vi.useFakeTimers();
@@ -36,7 +58,7 @@ describe("shared platform CLI token authentication", () => {
     expect(mocks.findToken).toHaveBeenCalledWith({
       where: {
         projectId: "project-one",
-        tokenHash: hashSecret("deploy-token", mocks.env.AUTH_SECRET!),
+        tokenHash: hashSecret("deploy-token", require(mocks.env.AUTH_SECRET)),
       },
     });
     expect(token).toEqual({
@@ -55,16 +77,20 @@ describe("shared platform CLI token authentication", () => {
     ["mismatched scope key", { scopeKey: "0".repeat(32) }],
   ])("rejects a %s token", async (_name, overrides) => {
     mocks.findToken.mockResolvedValueOnce(
-      overrides ? { ...validToken(), ...overrides } : undefined,
+      overrides ? { ...validToken(), ...overrides } : undefined
     );
-    await expect(authenticateCli("project-one", "deploy-token")).rejects.toMatchObject({
+    await expect(
+      authenticateCli("project-one", "deploy-token")
+    ).rejects.toMatchObject({
       code: "UNAUTHORIZED",
       message: "Invalid CLI deploy token.",
     });
   });
 
   it("rejects runtime credentials before reading tokens", async () => {
-    await expect(authenticateCli("project-one", "deploy-token", true)).rejects.toMatchObject({
+    await expect(
+      authenticateCli("project-one", "deploy-token", true)
+    ).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
     expect(mocks.findToken).not.toHaveBeenCalled();
@@ -72,7 +98,9 @@ describe("shared platform CLI token authentication", () => {
 
   it("reports missing auth configuration before reading tokens", async () => {
     mocks.env.AUTH_SECRET = undefined;
-    await expect(authenticateCli("project-one", "deploy-token")).rejects.toMatchObject({
+    await expect(
+      authenticateCli("project-one", "deploy-token")
+    ).rejects.toMatchObject({
       code: "SERVICE_UNAVAILABLE",
     });
     expect(mocks.findToken).not.toHaveBeenCalled();

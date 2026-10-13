@@ -1,21 +1,32 @@
-import path from "node:path";
-import { createRequire } from "node:module";
 import { readFile, realpath, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
+import path from "node:path";
+
 import { validateLogoAsset } from "@tailorkit/asset-delivery/logo-validation";
 import type { LogoContentType } from "@tailorkit/asset-delivery/logo-validation";
 import type { Plugin, PluginOption, ResolvedConfig } from "vite";
+import { z } from "zod";
+
+import { readClientManifest } from "./builder/client-views";
+import { getBuildEnvironment } from "./builder/env";
+import { createFileRouteEntry, fileRoutesPlugin } from "./builder/file-routes";
+import { instanceExtractionPlugin } from "./builder/instances";
+import type { InstanceModule } from "./builder/instances";
+import { buildServer, validateServerBuildOutput } from "./builder/server";
+import { createTailorKitUploadManifest } from "./builder/upload-manifest";
 import { loadTailorKitConfig } from "./config/loader";
 import type { LoadedTailorKitConfig } from "./config/loader";
 import { assertSupportedPreactVersion } from "./preact-version";
-import { readClientManifest } from "./builder/client-views";
-import { buildServer, validateServerBuildOutput } from "./builder/server";
-import { instanceExtractionPlugin } from "./builder/instances";
-import { createFileRouteEntry, fileRoutesPlugin } from "./builder/file-routes";
-import type { InstanceModule } from "./builder/instances";
 
-import { createTailorKitUploadManifest } from "./builder/upload-manifest";
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
 
 const preactPackageJson = "preact/package.json";
+
 const preactPackageJsonModuleId = "\0tailorkit-preact-package-json";
 
 export interface TailorKitPluginOptions {
@@ -23,8 +34,42 @@ export interface TailorKitPluginOptions {
   configPath?: string;
 }
 
+const flattenPlugins = async (option: PluginOption): Promise<Plugin[]> => {
+  const plugin = await option;
+  if (!(plugin !== undefined && plugin !== null && plugin !== false)) {
+    return [];
+  }
+  if (Array.isArray(plugin)) {
+    const awaitedResult1 = await Promise.all(plugin.map(flattenPlugins));
+    return awaitedResult1.flat();
+  }
+  return [plugin];
+};
+
+const getInstalledPreactVersion = (root: string): string => {
+  const require = createRequire(path.join(root, "package.json"));
+
+  try {
+    const packageJsonPath = require.resolve("preact/package.json");
+    const packageJson = z
+      .object({ version: z.string().optional() })
+      .parse(require(packageJsonPath));
+
+    if (packageJson.version !== undefined) {
+      return packageJson.version;
+    }
+  } catch (error) {
+    throw new Error(
+      `TailorKit requires Preact to build an app. Install preact@^11 and try again.`,
+      { cause: error }
+    );
+  }
+
+  throw new Error("Unable to read the installed Preact version.");
+};
+
 /** Build the app client, private backend, migrations and deployment manifest. */
-export function tailorkit(options: TailorKitPluginOptions = {}): Plugin[] {
+export const tailorkit = (options: TailorKitPluginOptions = {}): Plugin[] => {
   let loaded: LoadedTailorKitConfig;
   let serverEntry: string;
   let preactVersion: string;
@@ -38,30 +83,39 @@ export function tailorkit(options: TailorKitPluginOptions = {}): Plugin[] {
   let resolved: ResolvedConfig;
   let customPlugins: Plugin[] = [];
   const instanceModules = new Map<string, InstanceModule>();
-  async function cleanup() {
-    if (serverWatcher && "close" in serverWatcher) await serverWatcher.close();
+  const cleanup = async () => {
+    if (serverWatcher && "close" in serverWatcher) {
+      await serverWatcher.close();
+    }
     await fileEntry?.close();
-  }
+  };
   const writeBuildExtras = async (): Promise<void> => {
     const { views, instanceResolvers } = await readClientManifest(
-      path.join(clientOutDir, "client.js"),
+      path.join(clientOutDir, "client.js")
     );
-    const resolverNames = new Set(instanceResolvers.map((registration) => registration.resolver));
+    const resolverNames = new Set(
+      instanceResolvers.map((registration) => registration.resolver)
+    );
     const activeModules = [...instanceModules.values()]
       .map((module) => ({
         ...module,
         names: module.names.filter((name) => resolverNames.has(name)),
       }))
       .filter((module) => module.names.length)
-      .sort((a, b) => a.filename.localeCompare(b.filename));
+      .toSorted((a, b) => a.filename.localeCompare(b.filename));
     if (
-      activeModules.reduce((count, module) => count + module.names.length, 0) !== resolverNames.size
+      activeModules.reduce(
+        (count, module) => count + module.names.length,
+        0
+      ) !== resolverNames.size
     ) {
       throw new Error(
-        "Client references an instance resolver that was not extracted by the app build.",
+        "Client references an instance resolver that was not extracted by the app build."
       );
     }
-    if (serverWatcher && "close" in serverWatcher) await serverWatcher.close();
+    if (serverWatcher && "close" in serverWatcher) {
+      await serverWatcher.close();
+    }
     serverWatcher = await buildServer(
       loaded,
       watching,
@@ -69,125 +123,175 @@ export function tailorkit(options: TailorKitPluginOptions = {}): Plugin[] {
       activeModules,
       instanceResolvers,
       {
-        mode: resolved.mode,
-        resolve: resolved.resolve,
         define: resolved.define,
+        mode: resolved.mode,
         plugins: customPlugins,
-      },
+        resolve: resolved.resolve,
+      }
     );
-    const logoManifest: { dark?: string; light?: string } = {};
+    interface LogoManifest {
+      dark?: string;
+      light?: string;
+    }
+    const logoManifest: LogoManifest = {};
     for (const variant of ["light", "dark"] as const) {
       const configuredPath = loaded.config.logos?.[variant];
-      if (!configuredPath) {
+      if (
+        !(
+          configuredPath !== undefined &&
+          configuredPath !== null &&
+          configuredPath !== ""
+        )
+      ) {
         continue;
       }
       const extension = path.extname(configuredPath).toLowerCase().slice(1);
-      const contentType = { png: "image/png", svg: "image/svg+xml", webp: "image/webp" }[
-        extension
-      ] as LogoContentType | undefined;
+      const contentType = new Map<string, LogoContentType>([
+        ["png", "image/png"],
+        ["svg", "image/svg+xml"],
+        ["webp", "image/webp"],
+      ]).get(extension);
       if (!contentType) {
-        throw new Error(`The ${variant} logo must be an SVG, PNG, or WebP file.`);
+        throw new Error(
+          `The ${variant} logo must be an SVG, PNG, or WebP file.`
+        );
       }
+      // oxlint-disable-next-line no-await-in-loop -- Process the validation and dependent file IO in order; fail before advancing on error.
       const content = await readFile(path.resolve(loaded.root, configuredPath));
       validateLogoAsset(content, contentType);
       const filename = `logo-${variant}.${extension}`;
+      // oxlint-disable-next-line no-await-in-loop -- Process the validation and dependent file IO in order; fail before advancing on error.
       await writeFile(path.join(clientOutDir, filename), content);
       logoManifest[variant] = `client/${filename}`;
     }
-    await writeFile(path.join(clientOutDir, "views.json"), `${JSON.stringify(views)}\n`);
+    await writeFile(
+      path.join(clientOutDir, "views.json"),
+      `${JSON.stringify(views)}\n`
+    );
     await writeFile(
       path.join(resolvedOutDir, "tailorkit-upload.json"),
       `${JSON.stringify(createTailorKitUploadManifest(logoManifest, Boolean(loaded.config.server), views), null, 2)}\n`,
-      "utf-8",
+      "utf-8"
     );
   };
   const plugins: Plugin[] = [
     {
-      name: "tailorkit",
-      enforce: "pre",
-      async config(config) {
-        customPlugins = (await flattenPlugins(config.plugins ?? [])).filter(
-          (plugin) => !plugins.includes(plugin),
+      buildEnd: async (error) => {
+        if (error && !watching) {
+          await cleanup();
+        }
+      },
+      closeBundle: async () => {
+        if (!watching) {
+          await cleanup();
+        }
+      },
+      closeWatcher: cleanup,
+      config: async (config) => {
+        const awaitedResult2 = await flattenPlugins(config.plugins ?? []);
+        customPlugins = awaitedResult2.filter(
+          (plugin) => !plugins.includes(plugin)
         );
         watching = Boolean(config.build?.watch);
         outputDirectory = config.build?.outDir ?? ".tailorkit";
         return {
-          define: {
-            "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV ?? "production"),
-            ...config.define,
-          },
-          oxc: { jsx: { importSource: "preact" } },
           build: {
             emptyOutDir: true,
-            lib: { entry: "tailorkit:client-entry", fileName: "client", formats: ["es"] },
-            outDir: path.join(outputDirectory, "client"),
+            lib: {
+              entry: "tailorkit:client-entry",
+              fileName: "client",
+              formats: ["es"],
+            },
             minify: "oxc",
-            rollupOptions: {
+            outDir: path.join(outputDirectory, "client"),
+            rolldownOptions: {
               output: {
-                inlineDynamicImports: true,
                 comments: { annotation: false, jsdoc: false, legal: false },
+                inlineDynamicImports: true,
                 minify: true,
                 minifyInternalExports: true,
               },
             },
           },
+          define: {
+            "process.env.NODE_ENV": JSON.stringify(
+              getBuildEnvironment().NODE_ENV ?? "production"
+            ),
+            ...config.define,
+          },
+          oxc: { jsx: { importSource: "preact" } },
         };
       },
-      async configResolved(config) {
-        const root = config.configFile ? path.dirname(config.configFile) : config.root;
+      configResolved: async (config) => {
+        const root =
+          config.configFile !== undefined &&
+          config.configFile !== null &&
+          config.configFile !== ""
+            ? path.dirname(config.configFile)
+            : config.root;
         loaded = await loadTailorKitConfig(
-          path.resolve(root, options.configPath ?? "tailorkit.config.ts"),
+          path.resolve(root, options.configPath ?? "tailorkit.config.ts")
         );
         loaded.root = await realpath(root);
-        serverEntry = path.resolve(loaded.root, loaded.config.server?.entry ?? "src/server.ts");
+        serverEntry = path.resolve(
+          loaded.root,
+          loaded.config.server?.entry ?? "src/server.ts"
+        );
         preactVersion = getInstalledPreactVersion(loaded.root);
         assertSupportedPreactVersion(preactVersion);
         resolvedOutDir = path.resolve(loaded.root, outputDirectory);
         validateServerBuildOutput(loaded, resolvedOutDir);
         clientOutDir = path.join(resolvedOutDir, "client");
-        fileEntry = await createFileRouteEntry(loaded.root, resolvedOutDir, watching);
-        for (const build of [config.build, config.environments.client!.build]) {
+        fileEntry = await createFileRouteEntry(
+          loaded.root,
+          resolvedOutDir,
+          watching
+        );
+        for (const build of [
+          config.build,
+          requireValue(config.environments.client).build,
+        ]) {
           build.outDir = clientOutDir;
-          if (build.lib) build.lib.entry = fileEntry.entry;
+          if (build.lib !== false) {
+            build.lib.entry = fileEntry.entry;
+          }
         }
         resolved = config;
       },
-      async writeBundle() {
+      enforce: "pre",
+      name: "tailorkit",
+      writeBundle: async () => {
         await writeBuildExtras();
       },
-      async buildEnd(error) {
-        if (error && !watching) await cleanup();
-      },
-      async closeBundle() {
-        if (!watching) await cleanup();
-      },
-      closeWatcher: cleanup,
     },
     fileRoutesPlugin(() => loaded.root),
     instanceExtractionPlugin(
       () => loaded.root,
       () => Boolean(loaded.config.server),
-      instanceModules,
+      instanceModules
     ),
     {
-      name: "tailorkit-browser-server-boundary",
       enforce: "pre",
+      name: "tailorkit-browser-server-boundary",
       async resolveId(id, importer) {
         if (
           /^(?:@tailorkit\/app\/server$|tailorkit\/(?:server|app\/server)$|effect(?:\/|$))/u.test(
-            id,
+            id
           ) ||
-          (importer && path.resolve(path.dirname(importer), id) === serverEntry)
+          (importer !== undefined &&
+            importer !== null &&
+            importer !== "" &&
+            path.resolve(path.dirname(importer), id) === serverEntry)
         ) {
           throw new Error(
-            "App server implementations cannot be imported into a browser bundle. Import api from #tailorkit and server types with import type.",
+            "App server implementations cannot be imported into a browser bundle. Import api from #tailorkit and server types with import type."
           );
         }
-        if (importer) {
+        if (importer !== undefined && importer !== null && importer !== "") {
           const result = await this.resolve(id, importer, { skipSelf: true });
           if (result?.id.split("?")[0] === serverEntry) {
             throw new Error(
-              "App server implementations cannot be imported into a browser bundle. Import api from #tailorkit and server types with import type.",
+              "App server implementations cannot be imported into a browser bundle. Import api from #tailorkit and server types with import type."
             );
           }
         }
@@ -195,47 +299,21 @@ export function tailorkit(options: TailorKitPluginOptions = {}): Plugin[] {
       },
     },
     {
-      name: "tailorkit-preact-package-json",
       enforce: "pre",
-      resolveId(id) {
-        return id === preactPackageJson ? preactPackageJsonModuleId : null;
-      },
-      load(id) {
+      load: (id) => {
         if (id === preactPackageJsonModuleId) {
           const version = JSON.stringify(preactVersion);
           return `export const version = ${version}; export default { version: ${version} };`;
         }
         return null;
       },
+      name: "tailorkit-preact-package-json",
+      resolveId: (id) =>
+        id === preactPackageJson ? preactPackageJsonModuleId : null,
     },
   ];
-  for (const plugin of plugins) plugin.apply = "build";
-  return plugins;
-}
-
-async function flattenPlugins(option: PluginOption): Promise<Plugin[]> {
-  const plugin = await option;
-  if (!plugin) return [];
-  if (Array.isArray(plugin)) return (await Promise.all(plugin.map(flattenPlugins))).flat();
-  return [plugin];
-}
-
-function getInstalledPreactVersion(root: string): string {
-  const require = createRequire(path.join(root, "package.json"));
-
-  try {
-    const packageJsonPath = require.resolve("preact/package.json");
-    const packageJson = require(packageJsonPath) as { version?: unknown };
-
-    if (typeof packageJson.version === "string") {
-      return packageJson.version;
-    }
-  } catch (error) {
-    throw new Error(
-      `TailorKit requires Preact to build an app. Install preact@^11 and try again.`,
-      { cause: error },
-    );
+  for (const plugin of plugins) {
+    plugin.apply = "build";
   }
-
-  throw new Error("Unable to read the installed Preact version.");
-}
+  return plugins;
+};

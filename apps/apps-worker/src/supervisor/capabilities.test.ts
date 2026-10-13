@@ -1,21 +1,22 @@
-import { cancellationStream } from "../runtime/cancellation";
+/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { expect, it, vi } from "vite-plus/test";
 
+import { cancellationStream } from "../runtime/cancellation";
 import { ActionCapability } from "./actions";
 
-vi.mock("cloudflare:workers", () => ({ RpcTarget: function RpcTarget() {} }));
+vi.mock("cloudflare:workers", () => ({ RpcTarget: vi.fn() }));
 
-function setup() {
+const setup = () => {
   const controller = new AbortController();
   const notify = vi.fn(async (_tables: string[]) => {});
-  const lease = { signal: controller.signal, deadline: Date.now() + 30_000 };
+  const lease = { deadline: Date.now() + 30_000, signal: controller.signal };
   return {
-    controller,
-    notify,
-    lease,
     bridge: new ActionCapability(lease, notify),
+    controller,
+    lease,
+    notify,
   };
-}
+};
 
 it("reports committed tables even when the action is cancelled after committing", async () => {
   const { bridge, notify, controller } = setup();
@@ -26,22 +27,31 @@ it("reports committed tables even when the action is cancelled after committing"
   expect("runMutation" in bridge).toBe(false);
 });
 
-it.each(["cancelled", "expired"])("rejects %s outbound fetch", async (state) => {
-  const { bridge, controller, lease } = setup();
-  if (state === "cancelled") controller.abort();
-  else lease.deadline = Date.now();
-  const fetch = vi.fn();
-  vi.stubGlobal("fetch", fetch);
-  try {
-    await expect(
-      bridge.fetch(new Request("https://example.com"), cancellationStream(controller.signal)),
-    ).rejects.toThrow("Action has ended");
-    expect(fetch).not.toHaveBeenCalled();
-  } finally {
-    controller.abort();
-    vi.unstubAllGlobals();
+it.each(["cancelled", "expired"])(
+  "rejects %s outbound fetch",
+  async (state) => {
+    const { bridge, controller, lease } = setup();
+    if (state === "cancelled") {
+      controller.abort();
+    } else {
+      lease.deadline = Date.now();
+    }
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    try {
+      await expect(
+        bridge.fetch(
+          new Request("https://example.com"),
+          cancellationStream(controller.signal)
+        )
+      ).rejects.toThrow("Action has ended");
+      expect(fetch).not.toHaveBeenCalled();
+    } finally {
+      controller.abort();
+      vi.unstubAllGlobals();
+    }
   }
-});
+);
 
 it("keeps response bodies alive and propagates per-request cancellation", async () => {
   const { bridge, controller } = setup();
@@ -49,15 +59,16 @@ it("keeps response bodies alive and propagates per-request cancellation", async 
   let outgoing!: AbortSignal;
   vi.stubGlobal(
     "fetch",
-    vi.fn((_request, init) => {
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    vi.fn(async (_request, init) => {
       outgoing = init.signal;
-      return Promise.resolve(new Response("response body"));
-    }),
+      return new Response("response body");
+    })
   );
   try {
     const response = await bridge.fetch(
       new Request("https://example.com"),
-      cancellationStream(caller.signal),
+      cancellationStream(caller.signal)
     );
     expect(outgoing.aborted).toBe(false);
     expect(await response.text()).toBe("response body");
@@ -72,18 +83,21 @@ it("keeps response bodies alive and propagates per-request cancellation", async 
 
 it("validates redirect destinations before forwarding", async () => {
   const { bridge, controller } = setup();
-  const fetch = vi.fn(() =>
-    Promise.resolve(
-      new Response(null, { status: 302, headers: { location: "https://127.0.0.1/private" } }),
-    ),
+  const fetch = vi.fn(
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    async () =>
+      new Response(null, {
+        headers: { location: "https://127.0.0.1/private" },
+        status: 302,
+      })
   );
   vi.stubGlobal("fetch", fetch);
   try {
     await expect(
       bridge.fetch(
         new Request("https://example.com"),
-        cancellationStream(new AbortController().signal),
-      ),
+        cancellationStream(new AbortController().signal)
+      )
     ).rejects.toThrow("public HTTPS");
     expect(fetch).toHaveBeenCalledTimes(1);
   } finally {
@@ -92,23 +106,34 @@ it("validates redirect destinations before forwarding", async () => {
   }
 });
 
-it.each(["manual", "error"] as const)("respects redirect: %s", async (redirect) => {
-  const { bridge, controller } = setup();
-  const fetch = vi.fn(
-    async () =>
-      new Response(null, { status: 302, headers: { location: "https://example.com/final" } }),
-  );
-  vi.stubGlobal("fetch", fetch);
-  try {
-    const response = bridge.fetch(
-      new Request("https://example.com/start", { redirect }),
-      cancellationStream(new AbortController().signal),
+it.each(["manual", "error"] as const)(
+  "respects redirect: %s",
+  async (redirect) => {
+    const { bridge, controller } = setup();
+    const fetch = vi.fn(
+      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+      async () =>
+        new Response(null, {
+          headers: { location: "https://example.com/final" },
+          status: 302,
+        })
     );
-    if (redirect === "manual") expect((await response).status).toBe(302);
-    else await expect(response).rejects.toThrow("redirect");
-    expect(fetch).toHaveBeenCalledOnce();
-  } finally {
-    controller.abort();
-    vi.unstubAllGlobals();
+    vi.stubGlobal("fetch", fetch);
+    try {
+      const response = bridge.fetch(
+        new Request("https://example.com/start", { redirect }),
+        cancellationStream(new AbortController().signal)
+      );
+      if (redirect === "manual") {
+        const awaitedResult1 = await response;
+        expect(awaitedResult1.status).toBe(302);
+      } else {
+        await expect(response).rejects.toThrow("redirect");
+      }
+      expect(fetch).toHaveBeenCalledOnce();
+    } finally {
+      controller.abort();
+      vi.unstubAllGlobals();
+    }
   }
-});
+);

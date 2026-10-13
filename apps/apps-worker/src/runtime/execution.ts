@@ -1,19 +1,23 @@
-import { z } from "zod";
-import { inExecutionContext } from "./context";
-import { createActionExecution } from "./actions";
-import type { ActionServices } from "./actions";
-import { databaseScope } from "./database/driver";
-import type { Persistence } from "./database/driver";
-import type { AppDefinition, Identity } from "@tailorkit/app/server";
-import { prepareFunction, functionValue } from "./functions";
-import { AppError, appError, failedResult } from "./errors";
-import type { InvocationResult } from "./errors";
-import { Effect } from "effect";
-import { migrateDatabase } from "./database/migrations";
-import type { AppMigration } from "./database/migrations";
-
 import { invocationSchema } from "@tailorkit/app/protocol";
 import type { Invocation } from "@tailorkit/app/protocol";
+import type { AppDefinition, Identity } from "@tailorkit/app/server";
+import { Effect } from "effect";
+import { catch as catchEffect } from "effect/Effect";
+import { z } from "zod";
+
+import { createActionExecution } from "./actions";
+import type { ActionServices } from "./actions";
+import { inExecutionContext } from "./context";
+import { databaseScope } from "./database/driver";
+import type { Persistence } from "./database/driver";
+import { migrateDatabase } from "./database/migrations";
+import type { AppMigration } from "./database/migrations";
+import { AppError, appError, failedResult } from "./errors";
+import type { InvocationResult } from "./errors";
+import { prepareFunction, functionValue } from "./functions";
+
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 export { invocationSchema } from "@tailorkit/app/protocol";
 export type { Invocation } from "@tailorkit/app/protocol";
@@ -26,36 +30,54 @@ export interface MutationResult extends ExecutionResult {
   committed: boolean;
 }
 
-export function createExecution(
+export const createExecution = (
   app: AppDefinition,
   persistence: Persistence,
-  migrations: readonly AppMigration[] = [],
-) {
+  migrations: readonly AppMigration[] = []
+) => {
   migrateDatabase(persistence, migrations);
   persistence.execute(
     "CREATE TABLE IF NOT EXISTS tailorkit_receipts (id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, result TEXT NOT NULL)",
-    [],
+    []
   );
-  function execute(
+  const execute = (
     input: Invocation,
     identity: Identity,
     kind: "query" | "mutation",
-    tables?: Set<string>,
-  ): ExecutionResult {
+    tables?: Set<string>
+  ): ExecutionResult => {
     const { fn, args } = prepareFunction(app, input, identity, kind);
-    const scope = databaseScope(persistence, kind === "mutation", fn.database?.relations);
+    const scope = databaseScope(
+      persistence,
+      kind === "mutation",
+      fn.database?.relations
+    );
     try {
-      const value = inExecutionContext({ kind, active: true }, () =>
-        fn.handler({ args, db: scope.db, identity } as never),
+      // SAFETY: prepareFunction validated args using this registered function, and this transaction supplies its matching database capability.
+      const value = inExecutionContext({ active: true, kind }, () =>
+        fn.handler(
+          /* oxlint-disable typescript/no-unsafe-type-assertion -- prepareFunction validated args using this registered function, and this transaction supplies its matching database capability. */
+          { args, db: scope.db, identity } as never
+          /* oxlint-enable typescript/no-unsafe-type-assertion */
+        )
       );
-      if (value && typeof value === "object" && "then" in value) {
+      if (isObjectValue(value) && "then" in value) {
         // Revoke DB access before any continuation can run outside the transaction.
-        void Promise.resolve(value).catch(() => {});
+        void (async () => {
+          try {
+            return await Promise.resolve(value);
+          } catch {
+            /* Intentionally no action is needed. */
+          }
+
+          /* oxlint-disable-next-line unicorn/no-useless-undefined -- Missing results use the same undefined sentinel as the optional return type. */
+          return undefined;
+        })();
         throw new AppError("BAD_REQUEST", "App handlers must be synchronous");
       }
       const result = {
-        value: functionValue(fn, value),
         tables: [...(kind === "query" ? scope.reads : scope.writes)],
+        value: functionValue(fn, value),
       };
       return result;
     } finally {
@@ -64,12 +86,12 @@ export function createExecution(
       }
       scope.close();
     }
-  }
-  function mutate(
+  };
+  const mutate = (
     input: Invocation & { requestId: string },
     identity: Identity,
-    tables?: Set<string>,
-  ): MutationResult {
+    tables?: Set<string>
+  ): MutationResult => {
     if (identity.expiresAt <= Date.now()) {
       throw new AppError("UNAUTHORIZED", "App token expired");
     }
@@ -84,44 +106,49 @@ export function createExecution(
       ...(input.args === undefined ? ["undefined"] : []),
     ]);
     return persistence.transaction(() => {
-      const prior = persistence.execute(
+      const [prior] = persistence.execute(
         "SELECT fingerprint, result FROM tailorkit_receipts WHERE id = ?",
-        [input.requestId],
-      ).rows[0];
-      if (prior) {
+        [input.requestId]
+      ).rows;
+      if (prior !== undefined && prior !== null) {
         if (prior[0] !== fingerprint) {
           throw new AppError(
             "CONFLICT",
-            "Mutation ID was already used for different arguments or identity",
+            "Mutation ID was already used for different arguments or identity"
           );
         }
-        return { ...JSON.parse(String(prior[1])), committed: false };
+        const stored = z
+          .object({
+            tables: z.array(z.string()),
+            value: z.unknown().optional(),
+          })
+          .parse(JSON.parse(z.string().parse(prior[1])));
+        return { committed: false, tables: stored.tables, value: stored.value };
       }
       const result = execute(input, identity, "mutation", tables);
       persistence.execute(
         "INSERT INTO tailorkit_receipts (id, fingerprint, result) VALUES (?, ?, ?)",
-        [input.requestId, fingerprint, JSON.stringify(result)],
+        [input.requestId, fingerprint, JSON.stringify(result)]
       );
       return { ...result, committed: true };
     });
-  }
+  };
   const action = createActionExecution(app);
   return {
-    action(
+    action: (
       input: Invocation,
       identity: Identity,
       services: ActionServices,
-      signal: AbortSignal,
-    ): Effect.Effect<InvocationResult> {
-      return Effect.tryPromise({
-        try: () =>
-          action(
+      signal: AbortSignal
+    ): Effect.Effect<InvocationResult> =>
+      Effect.tryPromise({
+        catch: appError,
+        try: async () =>
+          await action(
             input,
             identity,
             {
               fetch: services.fetch,
-              tool: services.tool,
-              query: (call) => Promise.resolve().then(() => execute(call, identity, "query").value),
               mutate: async (call) => {
                 const result = mutate(call, identity);
                 if (result.committed && result.tables.length) {
@@ -129,31 +156,39 @@ export function createExecution(
                 }
                 return result.value;
               },
+              query: async (call) =>
+                await (async () => {
+                  await Promise.resolve();
+                  return execute(call, identity, "query").value;
+                })(),
+              tool: services.tool,
             },
-            signal,
+            signal
           ),
-        catch: appError,
       }).pipe(
         Effect.map((value) => ({
+          committed: false,
           result: { ok: true as const, value },
           tables: [],
-          committed: false,
         })),
-        Effect.catch((error) =>
-          Effect.succeed({ result: failedResult(error), tables: [], committed: false }),
-        ),
-      );
-    },
-    query: (input: Invocation, identity: Identity) => execute(input, identity, "query"),
-    mutate,
-    call(
+        // oxlint-disable-next-line promise/prefer-await-to-callbacks -- This is an Effect recovery operator or transport callback, not a Node-style completion callback.
+        catchEffect((err) =>
+          Effect.succeed({
+            committed: false,
+            result: failedResult(err),
+            tables: [],
+          })
+        )
+      ),
+    call: (
       kind: "query" | "mutation",
       input: Invocation & { requestId?: string },
-      identity: Identity,
-    ): Effect.Effect<InvocationResult> {
-      return Effect.suspend(() => {
+      identity: Identity
+    ): Effect.Effect<InvocationResult> =>
+      Effect.suspend(() => {
         const tables = new Set<string>();
         return Effect.try({
+          catch: appError,
           try: () => {
             const parsed = (
               kind === "mutation"
@@ -163,27 +198,35 @@ export function createExecution(
             if (!parsed.success) {
               throw new AppError("BAD_REQUEST", "Invalid database invocation");
             }
+            // SAFETY: kind selected the mutation schema above, which required a UUID requestId before parsed.data reaches this branch.
             const result =
               kind === "mutation"
-                ? mutate(parsed.data as Invocation & { requestId: string }, identity, tables)
+                ? mutate(
+                    /* oxlint-disable typescript/no-unsafe-type-assertion -- kind selected the mutation schema above, which required a UUID requestId before parsed.data reaches this branch. */
+                    parsed.data as Invocation & { requestId: string },
+                    /* oxlint-enable typescript/no-unsafe-type-assertion */
+                    identity,
+                    tables
+                  )
                 : execute(parsed.data, identity, kind, tables);
             return {
+              committed: "committed" in result && result.committed === true,
               result: { ok: true as const, value: result.value },
               tables: result.tables,
-              committed: "committed" in result && result.committed === true,
             };
           },
-          catch: appError,
         }).pipe(
-          Effect.catch((error) =>
+          catchEffect((err2) =>
             Effect.succeed({
-              result: failedResult(error),
-              tables: [...tables],
               committed: false,
-            }),
-          ),
+              result: failedResult(err2),
+              tables: [...tables],
+            })
+          )
         );
-      });
-    },
+      }),
+    mutate,
+    query: (input: Invocation, identity: Identity) =>
+      execute(input, identity, "query"),
   };
-}
+};

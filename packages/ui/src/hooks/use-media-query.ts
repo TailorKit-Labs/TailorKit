@@ -2,6 +2,12 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 
+const isNumberValue = <TValue>(value: TValue): value is TValue & number =>
+  typeof value === "number";
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 const BREAKPOINTS = {
   "2xl": 1536,
   "3xl": 1600,
@@ -14,20 +20,28 @@ const BREAKPOINTS = {
 
 type Breakpoint = keyof typeof BREAKPOINTS;
 
-type BreakpointQuery = Breakpoint | `max-${Breakpoint}` | `${Breakpoint}:max-${Breakpoint}`;
+const isBreakpoint = (value: string): value is Breakpoint =>
+  Object.hasOwn(BREAKPOINTS, value);
 
-function resolveMin(value: Breakpoint | number): string {
-  const px = typeof value === "number" ? value : BREAKPOINTS[value];
+type BreakpointQuery =
+  | Breakpoint
+  | `max-${Breakpoint}`
+  | `${Breakpoint}:max-${Breakpoint}`;
+
+const resolveMin = (value: Breakpoint | number): string => {
+  const px = isNumberValue(value) ? value : BREAKPOINTS[value];
   return `(min-width: ${px}px)`;
-}
+};
 
-function resolveMax(value: Breakpoint | number): string {
-  const px = typeof value === "number" ? value : BREAKPOINTS[value];
+const resolveMax = (value: Breakpoint | number): string => {
+  const px = isNumberValue(value) ? value : BREAKPOINTS[value];
   return `(max-width: ${px - 1}px)`;
-}
+};
 
-function parseQuery(query: BreakpointQuery | MediaQueryInput | string): string {
-  if (typeof query !== "string") {
+const parseQuery = (
+  query: BreakpointQuery | MediaQueryInput | (string & Record<never, never>)
+): string => {
+  if (!isStringValue(query)) {
     const parts: string[] = [];
     if (query.min !== undefined) {
       parts.push(resolveMin(query.min));
@@ -55,20 +69,18 @@ function parseQuery(query: BreakpointQuery | MediaQueryInput | string): string {
   for (const segment of query.split(":")) {
     if (segment.startsWith("max-")) {
       const bp = segment.slice(4);
-      if (bp in BREAKPOINTS) {
-        parts.push(resolveMax(bp as Breakpoint));
+      if (isBreakpoint(bp)) {
+        parts.push(resolveMax(bp));
       }
-    } else if (segment in BREAKPOINTS) {
-      parts.push(resolveMin(segment as Breakpoint));
+    } else if (isBreakpoint(segment)) {
+      parts.push(resolveMin(segment));
     }
   }
 
   return parts.length > 0 ? parts.join(" and ") : query;
-}
+};
 
-function getServerSnapshot(): boolean {
-  return false;
-}
+const getServerSnapshot = (): boolean => false;
 
 export interface MediaQueryInput {
   min?: Breakpoint | number;
@@ -77,19 +89,25 @@ export interface MediaQueryInput {
   pointer?: "coarse" | "fine";
 }
 
-export function useMediaQuery(query: BreakpointQuery | MediaQueryInput | string): boolean {
+export const useMediaQuery = (
+  query: BreakpointQuery | MediaQueryInput | (string & Record<never, never>)
+): boolean => {
   const mediaQuery = parseQuery(query);
 
   const subscribe = useCallback(
-    (callback: () => void) => {
+    (operation: () => void) => {
       if (typeof window === "undefined") {
-        return () => {};
+        return () => {
+          /* Intentionally no action is needed. */
+        };
       }
       const mql = window.matchMedia(mediaQuery);
-      mql.addEventListener("change", callback);
-      return () => mql.removeEventListener("change", callback);
+      mql.addEventListener("change", operation);
+      return () => {
+        mql.removeEventListener("change", operation);
+      };
     },
-    [mediaQuery],
+    [mediaQuery]
   );
 
   const getSnapshot = useCallback(() => {
@@ -100,8 +118,6 @@ export function useMediaQuery(query: BreakpointQuery | MediaQueryInput | string)
   }, [mediaQuery]);
 
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-}
+};
 
-export function useIsMobile(): boolean {
-  return useMediaQuery("max-md");
-}
+export const useIsMobile = (): boolean => useMediaQuery("max-md");

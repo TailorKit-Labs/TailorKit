@@ -1,5 +1,8 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
-import type { TailorKitSchemaSpec } from "../spec/index";
+
+import type { TailorKitScope } from "#server/types";
+import type { TailorKitSchemaSpec } from "#spec/index";
+
 import type { Schema, SchemaSerializer } from "./shared";
 import { serializeSchema } from "./shared";
 
@@ -12,31 +15,33 @@ export interface ContractTool<
   readonly $tailorkitToolDefinition: true;
   readonly kind: K;
   readonly definition: { input?: I; output?: O };
-  input<N extends Schema>(schema: N): ContractTool<K, N, O>;
-  output<N extends Schema>(schema: N): ContractTool<K, I, N>;
+  input: <N extends Schema>(schema: N) => ContractTool<K, N, O>;
+  output: <N extends Schema>(schema: N) => ContractTool<K, I, N>;
 }
 export interface ContractTools {
   [name: string]: ContractTool | ContractTools;
 }
-function build<K extends ToolKind, I extends Schema | undefined, O extends Schema | undefined>(
+const build = <
+  K extends ToolKind,
+  I extends Schema | undefined,
+  O extends Schema | undefined,
+>(
   kind: K,
   input?: I,
-  output?: O,
-): ContractTool<K, I, O> {
-  return {
-    $tailorkitToolDefinition: true,
-    kind,
-    definition: { input, output },
-    input: (schema) => build(kind, schema, output),
-    output: (schema) => build(kind, input, schema),
-  };
-}
+  output?: O
+): ContractTool<K, I, O> => ({
+  $tailorkitToolDefinition: true,
+  definition: { input, output },
+  input: (schema) => build(kind, schema, output),
+  kind,
+  output: (schema) => build(kind, input, schema),
+});
 export const tool = {
   client: () => build<"client", undefined, undefined>("client"),
   server: () => build<"server", undefined, undefined>("server"),
 };
 export type InferToolInput<T> =
-  T extends ContractTool<ToolKind, infer I, Schema | undefined>
+  T extends ContractTool<ToolKind, infer I>
     ? I extends Schema
       ? StandardSchemaV1.InferInput<I>
       : undefined
@@ -45,7 +50,7 @@ export type InferToolOutput<T> =
   T extends ContractTool<ToolKind, Schema | undefined, infer O>
     ? O extends Schema
       ? StandardSchemaV1.InferOutput<O>
-      : void
+      : ReturnType<() => void>
     : never;
 export interface ToolIdentity {
   readonly subjectId?: string;
@@ -53,7 +58,7 @@ export interface ToolIdentity {
   readonly appId: string;
   readonly projectId: string;
   readonly deploymentId: string;
-  readonly scope: { name: string; value: Record<string, unknown> };
+  readonly scope: { name: string; value: TailorKitScope };
   readonly expiresAt: number;
 }
 export interface ToolContext {
@@ -61,10 +66,15 @@ export interface ToolContext {
   readonly scope: ToolIdentity["scope"];
   readonly requestId: string;
 }
-export interface ToolImplementationTree {
+export interface ToolImplementationTree<TOutput = unknown> {
   [name: string]:
-    | { bivarianceHack(options: { input: never; context: ToolContext }): unknown }["bivarianceHack"]
-    | ToolImplementationTree;
+    | {
+        bivarianceHack: (options: {
+          input: never;
+          context: ToolContext;
+        }) => TOutput;
+      }["bivarianceHack"]
+    | ToolImplementationTree<TOutput>;
 }
 export type ToolImplementations<
   T extends ContractTools,
@@ -77,20 +87,35 @@ export type ToolImplementations<
           ? T[N]["kind"] extends K
             ? N
             : never
-          : keyof ToolImplementations<Extract<T[N], ContractTools>, K> extends never
+          : keyof ToolImplementations<
+                Extract<T[N], ContractTools>,
+                K
+              > extends never
             ? never
             : N
       ]: T[N] extends ContractTool<K, infer I, infer O>
         ? (options: {
-            input: I extends Schema ? StandardSchemaV1.InferOutput<I> : undefined;
+            input: I extends Schema
+              ? StandardSchemaV1.InferOutput<I>
+              : undefined;
             context: ToolContext;
           }) =>
-            | (O extends Schema ? StandardSchemaV1.InferInput<O> : void)
-            | Promise<O extends Schema ? StandardSchemaV1.InferInput<O> : void>
+            | (O extends Schema
+                ? StandardSchemaV1.InferInput<O>
+                : ReturnType<() => void>)
+            | Promise<
+                O extends Schema
+                  ? StandardSchemaV1.InferInput<O>
+                  : ReturnType<() => void>
+              >
         : ToolImplementations<Extract<T[N], ContractTools>, K>;
     };
 export interface ToolCallerTree {
-  [name: string]: ((input?: unknown) => Promise<unknown>) | ToolCallerTree;
+  [name: string]:
+    | ((
+        input?: StandardSchemaV1.InferInput<Schema>
+      ) => Promise<StandardSchemaV1.InferOutput<Schema>>)
+    | ToolCallerTree;
 }
 export type ToolCallers<
   T extends ContractTools,
@@ -114,53 +139,90 @@ export type ToolCallers<
           ) => Promise<InferToolOutput<T[N]>>
         : ToolCallers<Extract<T[N], ContractTools>, K>;
     };
-export function flattenTools(tools: ContractTools, prefix = ""): Map<string, ContractTool> {
+const isContractTool = (
+  value: ContractTool | ContractTools
+): value is ContractTool => value.$tailorkitToolDefinition === true;
+
+export const flattenTools = (
+  tools: ContractTools,
+  prefix = ""
+): Map<string, ContractTool> => {
   const result = new Map<string, ContractTool>();
   for (const [name, value] of Object.entries(tools)) {
     if (
       !/^[a-zA-Z][a-zA-Z0-9_]{0,63}$/u.test(name) ||
       ["constructor", "prototype", "__proto__"].includes(name)
-    )
+    ) {
       throw new Error(`Invalid tool name "${name}"`);
+    }
     const path = prefix + name;
-    if (value.$tailorkitToolDefinition === true) {
-      const leaf = value as ContractTool;
-      if (!["client", "server"].includes(leaf.kind) || !leaf.definition)
+    if (isContractTool(value)) {
+      const leaf = value;
+      if (
+        !["client", "server"].includes(leaf.kind) ||
+        !(leaf.definition !== undefined && leaf.definition !== null)
+      ) {
         throw new Error(`Invalid tool declaration "${path}"`);
+      }
       result.set(path, leaf);
-    } else
-      for (const [key, leaf] of flattenTools(value as ContractTools, path + "."))
+    } else {
+      for (const [key, leaf] of flattenTools(value, `${path}.`)) {
         result.set(key, leaf);
+      }
+    }
   }
   return result;
-}
-export function serializeTools(
+};
+export const serializeTools = (
   tools: ContractTools,
-  serializer?: SchemaSerializer,
-): TailorKitSchemaSpec["tools"] {
+  serializer?: SchemaSerializer
+): TailorKitSchemaSpec["tools"] => {
   const result: TailorKitSchemaSpec["tools"] = {};
   for (const [name, value] of Object.entries(tools)) {
-    if (!value) continue;
-    if (value.$tailorkitToolDefinition === true) {
-      const leaf = value as ContractTool;
+    if (!(value !== undefined && value !== null)) {
+      continue;
+    }
+    if (isContractTool(value)) {
+      const leaf = value;
       result[name] = {
-        kind: leaf.kind,
         input: serializeSchema(leaf.definition.input, serializer, "input"),
+        kind: leaf.kind,
         output: serializeSchema(leaf.definition.output, serializer),
       };
-    } else result[name] = serializeTools(value as ContractTools, serializer);
+    } else {
+      result[name] = serializeTools(value, serializer);
+    }
   }
   return result;
-}
-export async function validateToolValue(
-  schema: Schema | undefined,
-  value: unknown,
-): Promise<unknown> {
+};
+type ParsedToolValue<TSchema extends Schema | undefined> =
+  TSchema extends Schema ? StandardSchemaV1.InferOutput<TSchema> : undefined;
+
+export const validateToolValue = async <TSchema extends Schema | undefined>(
+  schema: TSchema,
+  // This is the parsing boundary; accepting unknown is required before Standard Schema validation.
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- Raw values are decoded here, not passed into domain handlers.
+  value: unknown
+): Promise<ParsedToolValue<TSchema>> => {
   if (!schema) {
-    if (value !== undefined) throw new Error("Tool expects no value");
-    return undefined;
+    if (value !== undefined) {
+      throw new Error("Tool expects no value");
+    }
+    // SAFETY: Without a schema, the only admitted value is undefined and the corresponding output branch is undefined.
+    return (
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- Without a schema, the only admitted value is undefined and the corresponding output branch is undefined. */
+      undefined as ParsedToolValue<TSchema>
+      /* oxlint-enable typescript/no-unsafe-type-assertion */
+    );
   }
   const result = await schema["~standard"].validate(value);
-  if (result.issues) throw new Error("Invalid tool payload");
-  return result.value;
-}
+  if (result.issues) {
+    throw new Error("Invalid tool payload");
+  }
+  // SAFETY: This exact schema produced result.value after reporting no validation issues.
+  return (
+    /* oxlint-disable typescript/no-unsafe-type-assertion -- This exact schema produced result.value after reporting no validation issues. */
+    result.value as ParsedToolValue<TSchema>
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
+  );
+};

@@ -1,19 +1,27 @@
+/* oxlint-disable typescript/no-unsafe-argument, typescript/no-unsafe-member-access, typescript/no-unsafe-assignment, typescript/no-unsafe-call -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 /* oxlint-disable require-await, require-unicode-regexp, unicorn/no-await-expression-member -- the in-memory KV fake mirrors async adapter methods. */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+
 import { test } from "vite-plus/test";
+
 import {
   createPreviewBuildStore,
   previewChunkBytes,
   previewMessageBytes,
 } from "./preview-build-store.ts";
 
-function fakeKV() {
+/** @returns {Parameters<typeof createPreviewBuildStore>[0] & {advance: (milliseconds: number) => void}} In-memory adapter and its deterministic clock. */
+const fakeKV = () => {
+  /** @type {Map<string, string>} */
   const data = new Map();
+  /** @type {Map<string, number>} */
   const expiries = new Map();
+  /** @type {Map<string, Set<(message: string) => void>>} */
   const listeners = new Map();
   let revision = 0;
   let now = 0;
+  /** @param {string} key Fixture entry to read. */
   const get = (key) => {
     const expiresAt = expiries.get(key);
     if (expiresAt !== undefined && expiresAt <= now) {
@@ -22,14 +30,20 @@ function fakeKV() {
     }
     return data.get(key) ?? null;
   };
+  /** @param {string} key Fixture entry. @param {string} value Stored bytes. @param {{ttl?: number} | undefined} options Expiry policy. */
   const set = (key, value, options) => {
     data.set(key, value);
-    if (options?.ttl) {
+    if (
+      options?.ttl !== undefined &&
+      options?.ttl !== 0 &&
+      !Number.isNaN(options?.ttl)
+    ) {
       expiries.set(key, now + options.ttl * 1000);
     } else {
       expiries.delete(key);
     }
   };
+  /** @param {string} key Fixture entry to remove. */
   const remove = (key) => {
     data.delete(key);
     expiries.delete(key);
@@ -38,15 +52,6 @@ function fakeKV() {
     advance: (milliseconds) => {
       now += milliseconds;
     },
-    get: async (key) => get(key),
-    getAndDelete: async (key) => {
-      const value = get(key);
-      remove(key);
-      return value;
-    },
-    set: async (key, value, options) => {
-      set(key, value, options);
-    },
     claimUpload: async (ownerKey, endedKey, expectedOwner, newOwner, ttl) => {
       if (get(endedKey) !== null || get(ownerKey) !== expectedOwner) {
         return false;
@@ -54,14 +59,24 @@ function fakeKV() {
       set(ownerKey, newOwner, { ttl });
       return true;
     },
+    delete: async (key) => {
+      remove(key);
+    },
+    get: async (key) => get(key),
+    getAndDelete: async (key) => {
+      const value = get(key);
+      remove(key);
+      return value;
+    },
+    increment: async () => (revision += 1),
     promoteIfOwnerAndNewer: async (
       key,
       ownerKey,
       endedKey,
       expectedOwner,
       value,
-      revision,
-      ttl,
+      revisionValue,
+      ttl
     ) => {
       if (get(endedKey) !== null) {
         return false;
@@ -70,42 +85,46 @@ function fakeKV() {
         return false;
       }
       const current = get(key);
-      if (current && JSON.parse(current).revision >= revision) {
+      if (
+        (current ?? "") !== "" &&
+        JSON.parse(current).revision >= revisionValue
+      ) {
         return false;
       }
       set(key, value, { ttl });
       remove(ownerKey);
       return true;
     },
-    delete: async (key) => {
-      remove(key);
-    },
-    increment: async () => ++revision,
     publish: async (channel, message) => {
       for (const listener of listeners.get(channel) ?? []) {
         listener(message);
       }
       return listeners.get(channel)?.size ?? 0;
     },
+    set: async (key, value, options) => {
+      set(key, value, options);
+    },
     subscribe: async (channel, listener) => {
-      const set = listeners.get(channel) ?? new Set();
-      set.add(listener);
-      listeners.set(channel, set);
+      const setValue = listeners.get(channel) ?? new Set();
+      setValue.add(listener);
+      listeners.set(channel, setValue);
       return async () => {
-        set.delete(listener);
+        setValue.delete(listener);
       };
     },
   };
-}
+};
 
+/** @param {Buffer} bytes Fixture bytes to hash. */
 const checksum = (bytes) => createHash("sha256").update(bytes).digest("hex");
+/** @param {[string, Buffer][]} files Named fixture assets. */
 const manifestFor = (files) => ({
   files: files.map(([path, bytes]) => ({
-    path,
-    contentType: "text/javascript",
-    size: bytes.length,
     chunks: Math.ceil(bytes.length / previewChunkBytes),
+    contentType: "text/javascript",
+    path,
     sha256: checksum(bytes),
+    size: bytes.length,
   })),
 });
 
@@ -118,23 +137,32 @@ test("only complete verified builds replace the current pointer", async () => {
     manifestFor([
       ["client.js", first],
       ["removed.js", Buffer.alloc(0)],
-    ]),
+    ])
   );
   await assert.rejects(store.commit("session", firstId), /incomplete/);
   assert.equal(await store.current("session"), null);
   await store.upload("session", firstId, 0, 0, first.toString("base64"));
   const committed = await store.commit("session", firstId);
   assert.equal(committed.revision, 1);
-  assert.equal(await store.chunk("session", firstId, 0, 0), first.toString("base64"));
+  assert.equal(
+    await store.chunk("session", firstId, 0, 0),
+    first.toString("base64")
+  );
 
   const second = Buffer.from("second");
-  const secondId = await store.begin("session", manifestFor([["client.js", second]]));
-  await assert.rejects(store.upload("session", secondId, 0, 0, first.toString("base64")), /size/);
+  const secondId = await store.begin(
+    "session",
+    manifestFor([["client.js", second]])
+  );
+  await assert.rejects(
+    store.upload("session", secondId, 0, 0, first.toString("base64")),
+    /size/
+  );
   await store.upload("session", secondId, 0, 0, second.toString("base64"));
   await store.commit("session", secondId);
   assert.deepEqual(
     (await store.current("session")).manifest.files.map((file) => file.path),
-    ["client.js"],
+    ["client.js"]
   );
   await store.end("session");
   assert.equal(await store.current("session"), null);
@@ -148,7 +176,10 @@ test("committed chunks remain readable after the upload TTL expires", async () =
   const kv = fakeKV();
   const store = createPreviewBuildStore(kv);
   const bytes = Buffer.from("export default 1");
-  const buildId = await store.begin("session", manifestFor([["client.js", bytes]]));
+  const buildId = await store.begin(
+    "session",
+    manifestFor([["client.js", bytes]])
+  );
   const base64 = bytes.toString("base64");
   await store.upload("session", buildId, 0, 0, base64);
   await store.commit("session", buildId);
@@ -162,12 +193,18 @@ test("a failed pointer write leaves a verified build retryable with the same rev
   const kv = fakeKV();
   const store = createPreviewBuildStore(kv);
   const first = Buffer.from("first");
-  const firstId = await store.begin("session", manifestFor([["client.js", first]]));
+  const firstId = await store.begin(
+    "session",
+    manifestFor([["client.js", first]])
+  );
   await store.upload("session", firstId, 0, 0, first.toString("base64"));
   await store.commit("session", firstId);
 
   const next = Buffer.from("next");
-  const nextId = await store.begin("session", manifestFor([["client.js", next]]));
+  const nextId = await store.begin(
+    "session",
+    manifestFor([["client.js", next]])
+  );
   await store.upload("session", nextId, 0, 0, next.toString("base64"));
   const write = kv.promoteIfOwnerAndNewer;
   let failPointer = true;
@@ -178,40 +215,60 @@ test("a failed pointer write leaves a verified build retryable with the same rev
     expectedOwner,
     value,
     revision,
-    ttl,
+    ttl
   ) => {
     if (key === "preview:current:session" && failPointer) {
       failPointer = false;
       throw new Error("pointer write failed");
     }
-    return write(key, ownerKey, endedKey, expectedOwner, value, revision, ttl);
+    return await write(
+      key,
+      ownerKey,
+      endedKey,
+      expectedOwner,
+      value,
+      revision,
+      ttl
+    );
   };
   await assert.rejects(store.commit("session", nextId), /pointer write failed/);
   assert.equal((await store.current("session")).buildId, firstId);
   assert.equal(await kv.get("preview:uploading:session"), nextId);
-  assert.equal(JSON.parse(await kv.get(`preview:build:session:${nextId}`)).state, "ready");
+  assert.equal(
+    JSON.parse(await kv.get(`preview:build:session:${nextId}`)).state,
+    "ready"
+  );
 
   const committed = await store.commit("session", nextId);
   assert.equal(committed.revision, 2);
   assert.equal((await store.current("session")).buildId, nextId);
-  assert.equal(await store.chunk("session", nextId, 0, 0), next.toString("base64"));
+  assert.equal(
+    await store.chunk("session", nextId, 0, 0),
+    next.toString("base64")
+  );
 });
 
 test("an older concurrent commit cannot replace a newer current revision", async () => {
   const kv = fakeKV();
   const store = createPreviewBuildStore(kv);
   const bytes = Buffer.from("same build");
-  const buildId = await store.begin("session", manifestFor([["client.js", bytes]]));
+  const buildId = await store.begin(
+    "session",
+    manifestFor([["client.js", bytes]])
+  );
   await store.upload("session", buildId, 0, 0, bytes.toString("base64"));
   const entered = Promise.withResolvers();
   const release = Promise.withResolvers();
   const write = kv.set;
   kv.set = async (key, value, options) => {
-    if (key === `preview:build:session:${buildId}` && JSON.parse(value).revision === 1) {
+    if (
+      key === `preview:build:session:${buildId}` &&
+      JSON.parse(value).revision === 1
+    ) {
       entered.resolve();
       await release.promise;
     }
-    return write(key, value, options);
+    await write(key, value, options);
   };
   const older = store.commit("session", buildId);
   await entered.promise;
@@ -231,8 +288,17 @@ test("a cancelled upload cannot promote after a replacement begin", async () => 
   await store.commit("session", oldId);
 
   const interrupted = Buffer.from("interrupted");
-  const interruptedId = await store.begin("session", manifestFor([["client.js", interrupted]]));
-  await store.upload("session", interruptedId, 0, 0, interrupted.toString("base64"));
+  const interruptedId = await store.begin(
+    "session",
+    manifestFor([["client.js", interrupted]])
+  );
+  await store.upload(
+    "session",
+    interruptedId,
+    0,
+    0,
+    interrupted.toString("base64")
+  );
   const entered = Promise.withResolvers();
   const release = Promise.withResolvers();
   const promote = kv.promoteIfOwnerAndNewer;
@@ -241,18 +307,30 @@ test("a cancelled upload cannot promote after a replacement begin", async () => 
       entered.resolve();
       await release.promise;
     }
-    return promote(...args);
+    return await promote(...args);
   };
   const pending = store.commit("session", interruptedId);
   await entered.promise;
   const replacement = Buffer.from("replacement");
-  const replacementId = await store.begin("session", manifestFor([["client.js", replacement]]));
+  const replacementId = await store.begin(
+    "session",
+    manifestFor([["client.js", replacement]])
+  );
   release.resolve();
   await assert.rejects(pending, /cancelled or superseded/);
   assert.equal((await store.current("session")).buildId, oldId);
   assert.equal(await kv.get(`preview:build:session:${interruptedId}`), null);
-  assert.equal(await kv.get(`preview:build:session:${interruptedId}:0:0`), null);
-  await store.upload("session", replacementId, 0, 0, replacement.toString("base64"));
+  assert.equal(
+    await kv.get(`preview:build:session:${interruptedId}:0:0`),
+    null
+  );
+  await store.upload(
+    "session",
+    replacementId,
+    0,
+    0,
+    replacement.toString("base64")
+  );
   await store.commit("session", replacementId);
   assert.equal((await store.current("session")).buildId, replacementId);
 });
@@ -261,7 +339,10 @@ test("an in-flight commit cannot restore a preview after session end", async () 
   const kv = fakeKV();
   const store = createPreviewBuildStore(kv);
   const bytes = Buffer.from("late build");
-  const buildId = await store.begin("session", manifestFor([["client.js", bytes]]));
+  const buildId = await store.begin(
+    "session",
+    manifestFor([["client.js", bytes]])
+  );
   await store.upload("session", buildId, 0, 0, bytes.toString("base64"));
   const entered = Promise.withResolvers();
   const release = Promise.withResolvers();
@@ -269,7 +350,7 @@ test("an in-flight commit cannot restore a preview after session end", async () 
   kv.promoteIfOwnerAndNewer = async (...args) => {
     entered.resolve();
     await release.promise;
-    return promote(...args);
+    return await promote(...args);
   };
   const pending = store.commit("session", buildId);
   await entered.promise;
@@ -278,7 +359,10 @@ test("an in-flight commit cannot restore a preview after session end", async () 
   await assert.rejects(pending, /cancelled or superseded/);
   assert.equal(await kv.get("preview:current:session"), null);
   assert.equal(await store.current("session"), null);
-  await assert.rejects(store.begin("session", manifestFor([["client.js", bytes]])), /ended/);
+  await assert.rejects(
+    store.begin("session", manifestFor([["client.js", bytes]])),
+    /ended/
+  );
 });
 
 test("reads builds committed before the retryable-state rollout", async () => {
@@ -287,10 +371,16 @@ test("reads builds committed before the retryable-state rollout", async () => {
   const bytes = Buffer.from("published before rollout");
   await kv.set(
     "preview:build:session:legacy",
-    JSON.stringify({ manifest: manifestFor([["client.js", bytes]]), state: "committed" }),
+    JSON.stringify({
+      manifest: manifestFor([["client.js", bytes]]),
+      state: "committed",
+    })
   );
   await kv.set("preview:build:session:legacy:0:0", bytes.toString("base64"));
-  assert.equal(await store.chunk("session", "legacy", 0, 0), bytes.toString("base64"));
+  assert.equal(
+    await store.chunk("session", "legacy", 0, 0),
+    bytes.toString("base64")
+  );
 });
 
 test("large aggregate builds use bounded chunks and messages", async () => {
@@ -304,14 +394,19 @@ test("large aggregate builds use bounded chunks and messages", async () => {
     for (
       let chunkIndex = 0;
       chunkIndex < Math.ceil(bytes.length / previewChunkBytes);
-      chunkIndex++
+      chunkIndex += 1
     ) {
       const base64 = bytes
-        .subarray(chunkIndex * previewChunkBytes, (chunkIndex + 1) * previewChunkBytes)
+        .subarray(
+          chunkIndex * previewChunkBytes,
+          (chunkIndex + 1) * previewChunkBytes
+        )
         .toString("base64");
       assert.ok(
-        Buffer.byteLength(JSON.stringify({ fileIndex, chunkIndex, base64 })) < previewMessageBytes,
+        Buffer.byteLength(JSON.stringify({ base64, chunkIndex, fileIndex })) <
+          previewMessageBytes
       );
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       await store.upload("session", id, fileIndex, chunkIndex, base64);
     }
   }
@@ -322,14 +417,32 @@ test("corrupt and missing chunks never become visible", async () => {
   const store = createPreviewBuildStore(fakeKV());
   const bytes = Buffer.alloc(previewChunkBytes + 3, 7);
   const id = await store.begin("session", manifestFor([["client.js", bytes]]));
-  await store.upload("session", id, 0, 0, bytes.subarray(0, previewChunkBytes).toString("base64"));
+  await store.upload(
+    "session",
+    id,
+    0,
+    0,
+    bytes.subarray(0, previewChunkBytes).toString("base64")
+  );
   await assert.rejects(store.commit("session", id), /incomplete/);
-  await store.upload("session", id, 0, 1, Buffer.from([1, 2, 3]).toString("base64"));
+  await store.upload(
+    "session",
+    id,
+    0,
+    1,
+    Buffer.from([1, 2, 3]).toString("base64")
+  );
   await assert.rejects(store.commit("session", id), /checksum/);
   assert.equal(await store.current("session"), null);
   await assert.rejects(
-    store.upload("session", id, 0, 1, bytes.subarray(previewChunkBytes).toString("base64")),
-    /Conflicting/,
+    store.upload(
+      "session",
+      id,
+      0,
+      1,
+      bytes.subarray(previewChunkBytes).toString("base64")
+    ),
+    /Conflicting/
   );
 });
 
@@ -343,25 +456,28 @@ test("begin replaces only the previous unfinished upload and removes its chunks"
     manifestFor([
       ["client.js", oldBytes],
       ["asset.js", extraBytes],
-    ]),
+    ])
   );
   await store.upload(
     "session",
     oldId,
     0,
     0,
-    oldBytes.subarray(0, previewChunkBytes).toString("base64"),
+    oldBytes.subarray(0, previewChunkBytes).toString("base64")
   );
   await store.upload(
     "session",
     oldId,
     0,
     1,
-    oldBytes.subarray(previewChunkBytes).toString("base64"),
+    oldBytes.subarray(previewChunkBytes).toString("base64")
   );
   await store.upload("session", oldId, 1, 0, extraBytes.toString("base64"));
   const nextBytes = Buffer.from("new build");
-  const nextId = await store.begin("session", manifestFor([["client.js", nextBytes]]));
+  const nextId = await store.begin(
+    "session",
+    manifestFor([["client.js", nextBytes]])
+  );
   assert.equal(await kv.get(`preview:build:session:${oldId}`), null);
   assert.equal(await kv.get(`preview:build:session:${oldId}:0:0`), null);
   assert.equal(await kv.get(`preview:build:session:${oldId}:0:1`), null);
@@ -369,14 +485,23 @@ test("begin replaces only the previous unfinished upload and removes its chunks"
   assert.equal(await kv.get("preview:uploading:session"), nextId);
   await assert.rejects(
     store.upload("session", oldId, 0, 0, oldBytes.toString("base64")),
-    /unavailable/,
+    /unavailable/
   );
   await assert.rejects(store.commit("session", oldId), /unavailable/);
   await store.upload("session", nextId, 0, 0, nextBytes.toString("base64"));
   await store.commit("session", nextId);
   assert.equal(await kv.get("preview:uploading:session"), null);
-  const abandonedId = await store.begin("session", manifestFor([["client.js", extraBytes]]));
-  await store.upload("session", abandonedId, 0, 0, extraBytes.toString("base64"));
+  const abandonedId = await store.begin(
+    "session",
+    manifestFor([["client.js", extraBytes]])
+  );
+  await store.upload(
+    "session",
+    abandonedId,
+    0,
+    0,
+    extraBytes.toString("base64")
+  );
   assert.equal((await store.current("session")).buildId, nextId);
   await store.end("session");
   assert.equal(await kv.get(`preview:build:session:${abandonedId}`), null);
@@ -387,12 +512,17 @@ test("revision subscription can be released", async () => {
   const kv = fakeKV();
   const store = createPreviewBuildStore(kv);
   const revisions = [];
-  const unsubscribe = await store.subscribe("session", (revision) => revisions.push(revision));
+  const unsubscribe = await store.subscribe("session", (revision) => {
+    revisions.push(revision);
+  });
   const empty = manifestFor([["client.js", Buffer.alloc(0)]]);
   await store.commit("session", await store.begin("session", empty));
   await store.end("session");
   assert.deepEqual(revisions, [1, null]);
   await unsubscribe();
-  await kv.publish("preview:revision:session", JSON.stringify({ revision: 2, buildId: "later" }));
+  await kv.publish(
+    "preview:revision:session",
+    JSON.stringify({ buildId: "later", revision: 2 })
+  );
   assert.deepEqual(revisions, [1, null]);
 });

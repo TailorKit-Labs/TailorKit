@@ -1,10 +1,11 @@
 import { z } from "zod";
+
 import { componentRecord } from "./component";
 import { viewRecord } from "./view";
 
 const toolLeaf = z.strictObject({
-  kind: z.enum(["client", "server"]),
   input: z.record(z.string(), z.unknown()).optional(),
+  kind: z.enum(["client", "server"]),
   output: z.record(z.string(), z.unknown()).optional(),
 });
 
@@ -13,34 +14,38 @@ interface ToolRecord {
 }
 
 const toolRecord: z.ZodType<ToolRecord> = z.lazy(() =>
-  z.record(z.string(), z.union([toolLeaf, toolRecord])),
+  z.record(z.string(), z.union([toolLeaf, toolRecord]))
 );
 
+// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
 export const TailorKitSchemaSpec = z
   .strictObject({
-    version: z.literal(1),
+    components: componentRecord,
+    scopes: z.record(z.string(), z.record(z.string(), z.unknown())).optional(),
     slots: z
       .record(
         z.string().min(1),
-        z.object({ views: z.array(z.string().startsWith("/")), multiple: z.boolean().optional() }),
+        z.object({
+          multiple: z.boolean().optional(),
+          views: z.array(z.string().startsWith("/")),
+        })
       )
       .default({}),
     tools: toolRecord.default({}),
-    scopes: z.record(z.string(), z.record(z.string(), z.unknown())).optional(),
-    components: componentRecord,
+    version: z.literal(1),
     views: viewRecord.default({}),
   })
   .superRefine((schema, ctx) => {
     for (const [name, slot] of Object.entries(schema.slots)) {
-      slot.views.forEach((view, index) => {
+      for (const [index, view] of slot.views.entries()) {
         if (!Object.hasOwn(schema.views, view)) {
           ctx.addIssue({
             code: "custom",
-            path: ["slots", name, "views", index],
             message: `Unknown view "${view}".`,
+            path: ["slots", name, "views", index],
           });
         }
-      });
+      }
     }
   });
 

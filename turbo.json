@@ -18,7 +18,12 @@
       ]
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/vite.config.ts"]
+    },
+    "lint:fix": {
+      "dependsOn": ["^build"],
+      "cache": false
     },
     "check-types": {
       "dependsOn": ["^build", "^check-types"]
@@ -41,19 +46,19 @@
     "generate": {
       "cache": false
     },
-    "//#quality": {
-      "dependsOn": ["//#lint", "//#format"]
+    "//#lint:root": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!apps/**",
+        "!packages/**",
+        "!playground/**"
+      ]
     },
-    "//#quality:fix": {
-      "dependsOn": ["//#lint:fix", "//#format:fix"]
-    },
-    "//#lint": {},
-    "//#lint:fix": {
+    "//#lint:root:fix": {
       "cache": false
     },
     "//#format": {},
     "//#format:fix": {
-      "dependsOn": ["//#lint:fix"],
       "cache": false
     },
     "db:push": {

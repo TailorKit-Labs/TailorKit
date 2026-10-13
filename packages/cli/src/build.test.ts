@@ -1,9 +1,18 @@
-import { linkTestDependencies } from "./test-utils";
-import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  realpath,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+
 import { expect, it } from "vite-plus/test";
+
 import { buildProject } from "./build";
+import { linkTestDependencies } from "./test-utils";
 
 it("builds the app's Vite config with custom plugins, aliases, constants and output", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-vite-config-"));
@@ -14,9 +23,12 @@ it("builds the app's Vite config with custom plugins, aliases, constants and out
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(
       path.join(root, "config/tailorkit.config.mjs"),
-      'export default { host: "https://host.test", server: {} };',
+      'export default { host: "https://host.test", server: {} };'
     );
-    await writeFile(path.join(root, "src/message.ts"), 'export const message = "CUSTOM_ALIAS";');
+    await writeFile(
+      path.join(root, "src/message.ts"),
+      'export const message = "CUSTOM_ALIAS";'
+    );
     await writeFile(
       path.join(root, "src/root.tsx"),
       `
@@ -24,7 +36,7 @@ it("builds the app's Vite config with custom plugins, aliases, constants and out
       import { message } from "@/message";
       import value from "virtual:example";
       export default defineRoute({ shellComponent: () => message + value + CUSTOM_CONSTANT });
-    `,
+    `
     );
     await writeFile(
       path.join(root, "src/server.ts"),
@@ -33,7 +45,7 @@ it("builds the app's Vite config with custom plugins, aliases, constants and out
       import { message } from "@/message";
       import value from "virtual:example";
       export default defineServer({ read: fn.query.handler(() => message + value + CUSTOM_CONSTANT) });
-    `,
+    `
     );
     await writeFile(
       path.join(root, "vite.config.mjs"),
@@ -49,24 +61,29 @@ it("builds the app's Vite config with custom plugins, aliases, constants and out
         define: { CUSTOM_CONSTANT: JSON.stringify("CUSTOM_DEFINE") },
         build: { outDir: "artifacts", sourcemap: true },
       };
-    `,
+    `
     );
     const { outDir } = await buildProject({ cwd: root });
     expect(outDir).toBe(path.join(await realpath(root), "artifacts"));
     for (const filename of ["client/client.js", "server/server.js"]) {
-      const source = await readFile(path.join(outDir, filename), "utf8");
+      // oxlint-disable-next-line no-await-in-loop -- Process the validation and dependent file IO in order; fail before advancing on error.
+      const source = await readFile(path.join(outDir, filename), "utf-8");
       expect(source).toContain("CUSTOM_ALIAS");
       expect(source).toContain("CUSTOM_PLUGIN");
       expect(source).toContain("CUSTOM_DEFINE");
     }
     expect(
-      JSON.parse(await readFile(path.join(outDir, "tailorkit-upload.json"), "utf8")),
+      JSON.parse(
+        await readFile(path.join(outDir, "tailorkit-upload.json"), "utf-8")
+      )
     ).toMatchObject({
       assets: { client: "client/client.js", server: "server/server.js" },
     });
-    expect(await readFile(path.join(outDir, "client/client.js.map"), "utf8")).toBeTruthy();
+    expect(
+      await readFile(path.join(outDir, "client/client.js.map"), "utf-8")
+    ).toBeTruthy();
   } finally {
-    await rm(root, { recursive: true, force: true });
+    await rm(root, { force: true, recursive: true });
   }
 }, 30_000);
 
@@ -76,8 +93,10 @@ it("requires the TailorKit plugin when deploying", async () => {
     await linkTestDependencies(root);
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(path.join(root, "vite.config.mjs"), "export default {};");
-    await expect(buildProject({ cwd: root })).rejects.toThrow("Add tailorkit()");
+    await expect(buildProject({ cwd: root })).rejects.toThrow(
+      "Add tailorkit()"
+    );
   } finally {
-    await rm(root, { recursive: true, force: true });
+    await rm(root, { force: true, recursive: true });
   }
 });

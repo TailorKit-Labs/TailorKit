@@ -4,14 +4,9 @@
 
 ### Minor Changes
 
-- 29f3e30: Move the complete build pipeline and configuration loading into `@tailorkit/vite`.
-  Build TailorKit apps with the public `tailorkit()` plugin from `tailorkit/vite`.
-  Init now offers Vite+ (recommended, with linting, formatting and testing) or Vite
-  (build only), with one `vite.config.ts` for app tooling. Deploy builds using the
-  app's Vite configuration and installation.
+- 29f3e30: Move the complete build pipeline and configuration loading into `@tailorkit/vite`. Build TailorKit apps with the public `tailorkit()` plugin from `tailorkit/vite`. Init now offers Vite+ (recommended, with linting, formatting and testing) or Vite (build only), with one `vite.config.ts` for app tooling. Deploy builds using the app's Vite configuration and installation.
 
-  Remove `tailorkit build`, `buildApp()`, the init lint/format flags, and build
-  settings in `tailorkit.config.ts`. Set `build.outDir` in `vite.config.ts` instead.
+  Remove `tailorkit build`, `buildApp()`, the init lint/format flags, and build settings in `tailorkit.config.ts`. Set `build.outDir` in `vite.config.ts` instead.
 
 ### Patch Changes
 
@@ -164,12 +159,8 @@
 
 ### Patch Changes
 
-- fc9538d: Allow the agent command to search existing apps or create a new app when appId is
-  omitted, then save the chosen app ID in the TailorKit config for future launches.
-- 6f969e3: Add `tailor agent` (also available as `tailorkit agent`), an AI SDK terminal chat
-  interface for the platform app agent. Relay messages through authenticated host
-  oRPC routes and the generated OpenAPI client. Keep conversation history in CLI
-  memory while remote code persists on the app's exclusively mounted Sandbox Drive.
+- fc9538d: Allow the agent command to search existing apps or create a new app when appId is omitted, then save the chosen app ID in the TailorKit config for future launches.
+- 6f969e3: Add `tailor agent` (also available as `tailorkit agent`), an AI SDK terminal chat interface for the platform app agent. Relay messages through authenticated host oRPC routes and the generated OpenAPI client. Keep conversation history in CLI memory while remote code persists on the app's exclusively mounted Sandbox Drive.
 - Updated dependencies [fc9538d]
 - Updated dependencies [6f969e3]
 - Updated dependencies [731e066]

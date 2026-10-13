@@ -1,6 +1,15 @@
 export const primitiveNames = ["Box", "Flex", "Grid", "Inline"] as const;
 
 export type PrimitiveName = (typeof primitiveNames)[number];
+export const mapPrimitiveDefinitions = <T>(
+  create: (name: PrimitiveName) => T
+): Record<PrimitiveName, T> => ({
+  Box: create("Box"),
+  Flex: create("Flex"),
+  Grid: create("Grid"),
+  Inline: create("Inline"),
+});
+
 export type TokenName =
   | "background"
   | "border"
@@ -71,11 +80,23 @@ export const primitiveDefinitions = {
   Box: boxProps,
   Flex: {
     ...boxProps,
-    align: { kind: "enum", responsive: true, values: ["start", "center", "end", "stretch"] },
+    align: {
+      kind: "enum",
+      responsive: true,
+      values: ["start", "center", "end", "stretch"],
+    },
     direction: { kind: "enum", responsive: true, values: ["row", "column"] },
     gap: { kind: "token", responsive: true, token: "space" },
-    justify: { kind: "enum", responsive: true, values: ["start", "center", "end", "between"] },
-    wrap: { kind: "enum", responsive: true, values: ["wrap", "nowrap", "wrap-reverse"] },
+    justify: {
+      kind: "enum",
+      responsive: true,
+      values: ["start", "center", "end", "between"],
+    },
+    wrap: {
+      kind: "enum",
+      responsive: true,
+      values: ["wrap", "nowrap", "wrap-reverse"],
+    },
   },
   Grid: {
     ...boxProps,

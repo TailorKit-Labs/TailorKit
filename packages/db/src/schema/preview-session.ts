@@ -10,24 +10,23 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { createSelectSchema } from "drizzle-orm/zod";
-import z from "zod";
+import type z from "zod";
+
 import { app } from "./apps";
 import { cliToken } from "./cli-auth";
 import { project } from "./project";
-import { scopeKeySchema, scopeSchema, type Scope } from "./scope";
+import { scopeKeySchema, scopeSchema } from "./scope";
+import type { Scope } from "./scope";
 
 /** The durable lifecycle of a local-development preview. */
-export const previewSessionStatus = pgEnum("preview_session_status", ["active", "ended"]);
+export const previewSessionStatus = pgEnum("preview_session_status", [
+  "active",
+  "ended",
+]);
 
 export const previewSession = pgTable(
   "preview_session",
   {
-    id: uuid("id")
-      .default(sql`pg_catalog.gen_random_uuid()`)
-      .primaryKey(),
-    projectId: uuid("project_id")
-      .notNull()
-      .references(() => project.id, { onDelete: "cascade" }),
     appId: uuid("app_id")
       .notNull()
       .references(() => app.id, { onDelete: "cascade" }),
@@ -40,40 +39,50 @@ export const previewSession = pgTable(
     cliTokenId: uuid("cli_token_id")
       .notNull()
       .references(() => cliToken.id, { onDelete: "restrict" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    endedAt: timestamp("ended_at"),
+    expiresAt: timestamp("expires_at").notNull(),
+    id: uuid("id")
+      .default(sql`pg_catalog.gen_random_uuid()`)
+      .primaryKey(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => project.id, { onDelete: "cascade" }),
+    scope: jsonb("scope_json").$type<Scope>().notNull(),
     /** A stable, host-defined authorization boundary (user, team, workspace, etc.). */
     scopeKey: text("scope_key").notNull(),
-    scope: jsonb("scope_json").$type<Scope>().notNull(),
-    /** Hash of the credential accepted by the tunnel WebSocket, never the raw credential. */
-    tunnelTokenHash: text("tunnel_token_hash").notNull(),
     /** Public invitation identifier; separate from the CLI upload credential. */
     shareId: text("share_id").notNull().unique(),
     status: previewSessionStatus("status").default("active").notNull(),
-    expiresAt: timestamp("expires_at").notNull(),
-    endedAt: timestamp("ended_at"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    /** Hash of the credential accepted by the tunnel WebSocket, never the raw credential. */
+    tunnelTokenHash: text("tunnel_token_hash").notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [
-    index("preview_session_project_id_status_idx").on(table.projectId, table.status),
+    index("preview_session_project_id_status_idx").on(
+      table.projectId,
+      table.status
+    ),
     index("preview_session_cli_token_id_idx").on(table.cliTokenId),
     index("preview_session_tunnel_token_hash_idx").on(table.tunnelTokenHash),
     index("preview_session_app_id_scope_key_status_idx").on(
       table.appId,
       table.scopeKey,
-      table.status,
+      table.status
     ),
     index("preview_session_expires_at_idx").on(table.expiresAt),
     uniqueIndex("preview_session_one_active_per_app_idx")
       .on(table.appId)
       .where(sql`${table.status} = 'active'`),
-  ],
+  ]
 );
 
+// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
 export const PreviewSession = createSelectSchema(previewSession, {
-  scopeKey: scopeKeySchema,
   scope: scopeSchema,
+  scopeKey: scopeKeySchema,
 });
 export type PreviewSession = z.output<typeof PreviewSession>;

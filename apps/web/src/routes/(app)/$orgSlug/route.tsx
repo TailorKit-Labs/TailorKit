@@ -1,27 +1,32 @@
 import { ORPCError } from "@orpc/client";
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 
-import { clearActiveOrg, getActiveOrg } from "#lib/active-org";
-
 import { NotFound } from "#components/not-found";
+import { clearActiveOrg, getActiveOrg } from "#lib/active-org";
 
 export const Route = createFileRoute("/(app)/$orgSlug")({
   errorComponent: NotFound,
-  notFoundComponent: NotFound,
   loader: async ({ context, params }) => {
-    const orgs = await context.queryClient.query(context.orpc.user.getOrgs.queryOptions());
+    const orgs = await context.queryClient.query(
+      context.orpc.user.getOrgs.queryOptions()
+    );
     if (!orgs.some((org) => org.slug === params.orgSlug)) {
       await clearActiveOrg();
+      // oxlint-disable-next-line typescript/only-throw-error -- TanStack Router intercepts its redirect and not-found response objects when they are thrown from route loaders.
       throw redirect({
-        to: orgs.length === 0 ? "/account/request-organization" : "/",
-        replace: true,
         reloadDocument: true,
+        replace: true,
+        to: orgs.length === 0 ? "/account/request-organization" : "/",
       });
     }
 
     const org = await context.queryClient
-      .query(context.orpc.user.getOrg.queryOptions({ input: { orgSlug: params.orgSlug } }))
-      .catch(async (error: unknown) => {
+      .query(
+        context.orpc.user.getOrg.queryOptions({
+          input: { orgSlug: params.orgSlug },
+        })
+      )
+      .catch(async (error: ErrorOptions["cause"]) => {
         if (
           !(error instanceof ORPCError) ||
           error.code !== "NOT_FOUND" ||
@@ -31,10 +36,13 @@ export const Route = createFileRoute("/(app)/$orgSlug")({
         }
 
         await clearActiveOrg();
-        throw redirect({ to: "/", replace: true, reloadDocument: true });
+        // oxlint-disable-next-line typescript/only-throw-error -- TanStack Router intercepts its redirect and not-found response objects when they are thrown from route loaders.
+        throw redirect({ reloadDocument: true, replace: true, to: "/" });
       });
-    if (!org) {
+    if (!(org !== undefined && org !== null)) {
+      // oxlint-disable-next-line typescript/only-throw-error -- TanStack Router intercepts its redirect and not-found response objects when they are thrown from route loaders.
       throw notFound();
     }
   },
+  notFoundComponent: NotFound,
 });

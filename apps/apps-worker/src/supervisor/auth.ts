@@ -1,39 +1,49 @@
-import { Effect } from "effect";
-import { AppError } from "../runtime/errors";
 import {
   APP_AUDIENCE,
   appRuntimeIssuer,
   appTokenVerifierEffect,
   parseAppPublicKeys,
 } from "@tailorkit/api-utils/app-auth";
+import { Effect } from "effect";
+
+import { AppError } from "../runtime/errors";
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
 
 interface RuntimeVerifierOptions {
   platformUrl: string;
   publicKeys: unknown;
 }
 
-export function createAppRuntimeVerifierEffect(options: RuntimeVerifierOptions) {
+export const createAppRuntimeVerifierEffect = (
+  options: RuntimeVerifierOptions
+) => {
   let verify: ReturnType<typeof appTokenVerifierEffect>;
   try {
     verify = appTokenVerifierEffect({
-      issuer: appRuntimeIssuer(options.platformUrl),
       audience: APP_AUDIENCE,
+      issuer: appRuntimeIssuer(options.platformUrl),
       publicKeys: parseAppPublicKeys(
-        typeof options.publicKeys === "string"
+        isStringValue(options.publicKeys)
           ? JSON.parse(options.publicKeys)
-          : options.publicKeys,
+          : options.publicKeys
       ),
     });
   } catch {
     return (_token: string) =>
-      Effect.fail(new AppError("UNAVAILABLE", "Invalid configured app public keys"));
+      Effect.fail(
+        new AppError("UNAVAILABLE", "Invalid configured app public keys")
+      );
   }
   return (token: string) => verify(token);
-}
+};
 
-let cached: { id: string; verify: ReturnType<typeof createAppRuntimeVerifierEffect> } | undefined;
+let cached:
+  | { id: string; verify: ReturnType<typeof createAppRuntimeVerifierEffect> }
+  | undefined;
 
-export function verifier(env: Env) {
+export const verifier = (env: Env) => {
   const id = JSON.stringify([env.PLATFORM_URL, env.APP_RUNTIME_PUBLIC_KEYS]);
 
   if (cached?.id !== id) {
@@ -47,4 +57,4 @@ export function verifier(env: Env) {
   }
 
   return cached.verify;
-}
+};

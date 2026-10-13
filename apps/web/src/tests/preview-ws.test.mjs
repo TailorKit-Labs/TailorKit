@@ -1,15 +1,18 @@
+/* oxlint-disable typescript/no-unsafe-return, typescript/no-unsafe-argument, typescript/no-unsafe-assignment, typescript/no-unsafe-call, typescript/no-unsafe-member-access -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { beforeEach, expect, it, vi } from "vite-plus/test";
 
 const mocks = vi.hoisted(() => ({
   authorize: vi.fn(),
-  message: vi.fn(),
   close: vi.fn(),
+  message: vi.fn(),
 }));
 
 vi.mock("@tailorkit/api-platform/preview-ws-auth", () => ({
   authorizePreviewSocket: mocks.authorize,
 }));
-vi.mock("@tailorkit/api-platform/preview-ws", () => ({ previewWebSocketRouter: {} }));
+vi.mock("@tailorkit/api-platform/preview-ws", () => ({
+  previewWebSocketRouter: {},
+}));
 vi.mock("@orpc/server/crossws", () => ({
   experimental_RPCHandler: class {
     handlers = mocks;
@@ -23,7 +26,7 @@ vi.mock("@orpc/server/crossws", () => ({
 }));
 vi.mock("crossws", () => ({ defineHooks: (handlers) => handlers }));
 
-const { Route } = await import("../routes/api/platform.preview.ws.ts");
+const { Route } = await import("#routes/api/platform.preview.ws.ts");
 const response = Route.options.server.handlers.GET();
 const socket = response.crossws;
 
@@ -32,7 +35,10 @@ it("returns an upgrade-required response for ordinary HTTP requests", () => {
   expect(response.crossws.open).toBeTypeOf("function");
   expect(response.crossws.message).toBeTypeOf("function");
 });
-const context = { sessionId: "11111111-1111-4111-8111-111111111111", role: "uploader" };
+const context = {
+  role: "uploader",
+  sessionId: "11111111-1111-4111-8111-111111111111",
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -41,11 +47,22 @@ beforeEach(() => {
 it("waits for authorization before handling an early message", async () => {
   let resolveAuthorization;
   mocks.authorize.mockReturnValueOnce(
-    new Promise((resolve) => {
-      resolveAuthorization = resolve;
-    }),
+    // oxlint-disable-next-line typescript/promise-function-async -- This fixture returns the original deferred or runtime Promise and installs its resolver synchronously.
+    (() => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers();
+      try {
+        resolveAuthorization = resolve;
+      } catch (error) {
+        rejectPending(error);
+      }
+      return pendingPromise;
+    })()
   );
-  const peer = { context: { ...context, token: "token" }, close: vi.fn() };
+  const peer = { close: vi.fn(), context: { ...context, token: "token" } };
   const message = { rawData: "{}" };
 
   const opening = socket.open(peer);
@@ -62,11 +79,22 @@ it("waits for authorization before handling an early message", async () => {
 it("closes an early message when authorization fails", async () => {
   let resolveAuthorization;
   mocks.authorize.mockReturnValueOnce(
-    new Promise((resolve) => {
-      resolveAuthorization = resolve;
-    }),
+    // oxlint-disable-next-line typescript/promise-function-async -- This fixture returns the original deferred or runtime Promise and installs its resolver synchronously.
+    (() => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers();
+      try {
+        resolveAuthorization = resolve;
+      } catch (error) {
+        rejectPending(error);
+      }
+      return pendingPromise;
+    })()
   );
-  const peer = { context: { ...context, token: "invalid" }, close: vi.fn() };
+  const peer = { close: vi.fn(), context: { ...context, token: "invalid" } };
 
   const opening = socket.open(peer);
   const handling = socket.message(peer, { rawData: "{}" });
@@ -79,11 +107,22 @@ it("closes an early message when authorization fails", async () => {
 it("closes a peer that sends multiple frames before authorization finishes", async () => {
   let resolveAuthorization;
   mocks.authorize.mockReturnValueOnce(
-    new Promise((resolve) => {
-      resolveAuthorization = resolve;
-    }),
+    // oxlint-disable-next-line typescript/promise-function-async -- This fixture returns the original deferred or runtime Promise and installs its resolver synchronously.
+    (() => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers();
+      try {
+        resolveAuthorization = resolve;
+      } catch (error) {
+        rejectPending(error);
+      }
+      return pendingPromise;
+    })()
   );
-  const peer = { context: { ...context, token: "token" }, close: vi.fn() };
+  const peer = { close: vi.fn(), context: { ...context, token: "token" } };
   const opening = socket.open(peer);
   const first = socket.message(peer, { rawData: "first" });
   const second = socket.message(peer, { rawData: "second" });
@@ -97,12 +136,15 @@ it("closes a peer that sends multiple frames before authorization finishes", asy
 
 it("handles multiple messages after authorization finishes", async () => {
   mocks.authorize.mockResolvedValueOnce(context);
-  const peer = { context: { ...context, token: "token" }, close: vi.fn() };
+  const peer = { close: vi.fn(), context: { ...context, token: "token" } };
   await socket.open(peer);
 
   const first = { rawData: "first" };
   const second = { rawData: "second" };
-  await Promise.all([socket.message(peer, first), socket.message(peer, second)]);
+  await Promise.all([
+    socket.message(peer, first),
+    socket.message(peer, second),
+  ]);
   expect(peer.close).not.toHaveBeenCalled();
   expect(mocks.message).toHaveBeenCalledTimes(2);
   expect(mocks.message).toHaveBeenNthCalledWith(1, peer, first, { context });

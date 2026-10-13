@@ -1,18 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
-import type { ReactNode } from "react";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { useStore } from "@tanstack/react-form";
-import { FolderIcon, FolderPlusIcon } from "lucide-react";
 import { Button } from "@tailorkit/ui/button";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@tailorkit/ui/empty";
 import {
   Dialog,
   DialogClose,
@@ -24,29 +10,76 @@ import {
   DialogPopup,
   DialogTrigger,
 } from "@tailorkit/ui/dialog";
-import { toastManager } from "@tailorkit/ui/toast";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@tailorkit/ui/empty";
 import { useAppForm } from "@tailorkit/ui/form";
+import { toastManager } from "@tailorkit/ui/toast";
+import { useSelector } from "@tanstack/react-form";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
+import {
+  useParams,
+  createFileRoute,
+  Link,
+  useNavigate,
+} from "@tanstack/react-router";
+import { FolderIcon, FolderPlusIcon } from "lucide-react";
+import { useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { z } from "zod";
-import { PageLayout } from "#components/page-layout";
+
 import { OrgSlugAvailabilityIndicator } from "#components/org-slug-availability-indicator";
+import { PageLayout } from "#components/page-layout";
 import { client, orpc } from "#lib/orpc";
 import { setProjectApiKey } from "#utils/project-api-key-memory";
 
-export const Route = createFileRoute("/(app)/$orgSlug/~/(org)/projects")({
-  loader: ({ context, params }) =>
-    context.queryClient.query(
-      context.orpc.project.list.queryOptions({ input: { orgSlug: params.orgSlug } }),
-    ),
-  component: ProjectsPage,
-});
+const getProjectSlugAvailability = (
+  slug: string,
+  existingProjectSlugs: ReadonlySet<string>
+): ProjectSlugAvailability => {
+  if (!slug) {
+    return { message: null, status: "idle" };
+  }
 
-function toSlug(name: string) {
-  return name
+  if (slug.length < 3) {
+    return {
+      message: "Slug must be at least 3 characters long.",
+      status: "unavailable",
+    };
+  }
+
+  if (slug.length > 64) {
+    return {
+      message: "Slug must be at most 64 characters long.",
+      status: "unavailable",
+    };
+  }
+
+  if (existingProjectSlugs.has(slug)) {
+    return {
+      message: "This project slug is already taken.",
+      status: "unavailable",
+    };
+  }
+
+  return { message: null, status: "available" };
+};
+
+const toSlug = (name: string) =>
+  name
     .toLowerCase()
     .trim()
     .replaceAll(/[^a-z0-9]+/gu, "-")
     .replaceAll(/^-+|-+$/gu, "");
-}
 
 const projectSchema = z.object({
   name: z.string().min(1, "Name is required."),
@@ -56,84 +89,58 @@ const projectSchema = z.object({
     .max(64, "Slug must be at most 64 characters long."),
 });
 
-type ProjectSlugAvailability =
-  | { status: "idle"; message: string | null }
-  | { status: "checking"; message: string | null }
-  | { status: "available"; message: null }
-  | { status: "unavailable"; message: string }
-  | { status: "error"; message: string };
-
-function getProjectSlugAvailability(
-  slug: string,
-  existingProjectSlugs: ReadonlySet<string>,
-): ProjectSlugAvailability {
-  if (!slug) {
-    return { status: "idle", message: null };
-  }
-
-  if (slug.length < 3) {
-    return { status: "unavailable", message: "Slug must be at least 3 characters long." };
-  }
-
-  if (slug.length > 64) {
-    return { status: "unavailable", message: "Slug must be at most 64 characters long." };
-  }
-
-  if (existingProjectSlugs.has(slug)) {
-    return { status: "unavailable", message: "This project slug is already taken." };
-  }
-
-  return { status: "available", message: null };
-}
-
-interface CreateProjectDialogProps {
-  children: ReactNode;
-  existingProjectSlugs: ReadonlySet<string>;
-  orgSlug: string;
-}
-
-function CreateProjectDialog({
+const CreateProjectDialog = ({
   children,
   existingProjectSlugs,
   orgSlug,
-}: CreateProjectDialogProps) {
+}: CreateProjectDialogProps) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [slugSubmitError, setSlugSubmitError] = useState<string | null>(null);
   const slugTouched = useRef(false);
 
   const createMutation = useMutation({
-    mutationFn: (input: { name: string; slug: string }) =>
-      client.project.create({
+    mutationFn: async (input: { name: string; slug: string }) =>
+      await client.project.create({
         name: input.name.trim(),
         orgSlug,
         slug: input.slug,
       }),
+    onError: (cause: unknown) => {
+      const message =
+        cause instanceof Error ? cause.message : "Failed to create project";
+      toastManager.add({ description: message, title: "Error", type: "error" });
+    },
     onSuccess: (project) => {
-      queryClient.invalidateQueries(orpc.project.list.queryOptions({ input: { orgSlug } }));
+      void queryClient.invalidateQueries(
+        orpc.project.list.queryOptions({ input: { orgSlug } })
+      );
       setProjectApiKey(orgSlug, project.slug, project.apiKey.key);
+
       form.reset();
       slugTouched.current = false;
-      navigate({
+      void navigate({
         params: { orgSlug, projectSlug: project.slug },
         to: "/$orgSlug/$projectSlug/apps",
       });
-    },
-    onError: (err: unknown) => {
-      const message = err instanceof Error ? err.message : "Failed to create project";
-      toastManager.add({ title: "Error", description: message, type: "error" });
     },
   });
 
   const form = useAppForm({
     defaultValues: { name: "", slug: "" },
     onSubmit: async ({ value }) => {
-      const submitAvailability = getProjectSlugAvailability(value.slug, existingProjectSlugs);
+      const submitAvailability = getProjectSlugAvailability(
+        value.slug,
+        existingProjectSlugs
+      );
       if (submitAvailability.status !== "available") {
-        setSlugSubmitError(submitAvailability.message ?? "This project slug is not available.");
+        setSlugSubmitError(
+          submitAvailability.message ?? "This project slug is not available."
+        );
         toastManager.add({
+          description:
+            submitAvailability.message ?? "This project slug is not available.",
           title: "Error",
-          description: submitAvailability.message ?? "This project slug is not available.",
           type: "error",
         });
         return;
@@ -148,22 +155,33 @@ function CreateProjectDialog({
     validators: { onSubmit: projectSchema },
   });
 
-  const slug = useStore(form.store, (state) => state.values.slug);
-  const slugAvailability = getProjectSlugAvailability(slug, existingProjectSlugs);
+  const slug = useSelector(form.store, (state) => state.values.slug);
+  const slugAvailability = getProjectSlugAvailability(
+    slug,
+    existingProjectSlugs
+  );
 
-  function resetForm() {
+  const resetForm = () => {
     slugTouched.current = false;
     setSlugSubmitError(null);
     form.reset();
-  }
+  };
 
   return (
-    <Dialog onOpenChange={(open) => !open && resetForm()}>
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) {
+          resetForm();
+        }
+      }}
+    >
       <DialogTrigger render={<span />}>{children}</DialogTrigger>
       <DialogPopup className="max-w-md">
         <DialogHeader>
           <DialogTitle>Create project</DialogTitle>
-          <DialogDescription>Projects keep work scoped inside this organisation.</DialogDescription>
+          <DialogDescription>
+            Projects keep work scoped inside this organisation.
+          </DialogDescription>
         </DialogHeader>
 
         <form
@@ -172,53 +190,57 @@ function CreateProjectDialog({
           onSubmit={(event) => {
             event.preventDefault();
             event.stopPropagation();
-            form.handleSubmit();
+            void form.handleSubmit();
           }}
         >
-          <DialogPanel className="flex flex-col gap-4">
-            <form.AppField name="name">
-              {(field) => (
-                <field.TextField
-                  autoComplete="off"
-                  label="Name"
-                  placeholder="Amazing project"
-                  type="text"
-                  onChange={(event) => {
-                    if (!slugTouched.current) {
-                      setSlugSubmitError(null);
-                      form.setFieldValue("slug", toSlug(event.target.value));
-                    }
-                  }}
-                />
-              )}
-            </form.AppField>
+          <DialogPanel>
+            <div className="flex flex-col gap-4">
+              <form.AppField name="name">
+                {(field) => (
+                  <field.TextField
+                    autoComplete="off"
+                    label="Name"
+                    placeholder="Amazing project"
+                    type="text"
+                    onChange={(event) => {
+                      if (!slugTouched.current) {
+                        setSlugSubmitError(null);
+                        form.setFieldValue("slug", toSlug(event.target.value));
+                      }
+                    }}
+                  />
+                )}
+              </form.AppField>
 
-            <form.AppField name="slug">
-              {(field) => (
-                <field.TextField
-                  autoComplete="off"
-                  description={`tailorkit.com/${orgSlug}/${field.state.value || "project-slug"}`}
-                  endAdornment={
-                    <OrgSlugAvailabilityIndicator
-                      availability={slugAvailability}
-                      submitError={slugSubmitError}
-                    />
-                  }
-                  label="Slug"
-                  placeholder="amazing-project"
-                  type="text"
-                  onChange={(event) => {
-                    slugTouched.current = true;
-                    setSlugSubmitError(null);
-                    field.handleChange(toSlug(event.target.value));
-                  }}
-                />
-              )}
-            </form.AppField>
+              <form.AppField name="slug">
+                {(field) => (
+                  <field.TextField
+                    autoComplete="off"
+                    description={`tailorkit.com/${orgSlug}/${field.state.value || "project-slug"}`}
+                    endAdornment={
+                      <OrgSlugAvailabilityIndicator
+                        availability={slugAvailability}
+                        submitError={slugSubmitError}
+                      />
+                    }
+                    label="Slug"
+                    placeholder="amazing-project"
+                    type="text"
+                    onChange={(event) => {
+                      slugTouched.current = true;
+                      setSlugSubmitError(null);
+                      field.handleChange(toSlug(event.target.value));
+                    }}
+                  />
+                )}
+              </form.AppField>
+            </div>
           </DialogPanel>
 
           <DialogFooter>
-            <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
+            <DialogClose
+              render={<Button size="sm" type="button" variant="ghost" />}
+            >
               Cancel
             </DialogClose>
             <form.AppForm>
@@ -231,19 +253,22 @@ function CreateProjectDialog({
       </DialogPopup>
     </Dialog>
   );
-}
+};
 
-function ProjectsPage() {
-  const { orgSlug } = Route.useParams();
+const ProjectsPage = () => {
+  const { orgSlug } = useParams({ from: "/(app)/$orgSlug/~/(org)/projects" });
   const { data: projects } = useSuspenseQuery(
-    orpc.project.list.queryOptions({ input: { orgSlug } }),
+    orpc.project.list.queryOptions({ input: { orgSlug } })
   );
   const existingProjectSlugs = new Set(projects.map((project) => project.slug));
 
   return (
     <PageLayout
       actions={
-        <CreateProjectDialog existingProjectSlugs={existingProjectSlugs} orgSlug={orgSlug}>
+        <CreateProjectDialog
+          existingProjectSlugs={existingProjectSlugs}
+          orgSlug={orgSlug}
+        >
           <Button size="sm">
             <FolderPlusIcon />
             New project
@@ -254,7 +279,7 @@ function ProjectsPage() {
       title="Projects"
     >
       {projects.length === 0 ? (
-        <Empty className="mx-auto w-full rounded-lg border">
+        <Empty className="mx-auto w-full">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <FolderPlusIcon />
@@ -265,7 +290,10 @@ function ProjectsPage() {
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <CreateProjectDialog existingProjectSlugs={existingProjectSlugs} orgSlug={orgSlug}>
+            <CreateProjectDialog
+              existingProjectSlugs={existingProjectSlugs}
+              orgSlug={orgSlug}
+            >
               <Button size="sm">
                 <FolderPlusIcon />
                 Create project
@@ -286,7 +314,7 @@ function ProjectsPage() {
                 <span className="flex size-7 items-center justify-center rounded-md bg-muted">
                   <FolderIcon className="size-3.5 text-muted-foreground" />
                 </span>
-                <span className="font-medium text-sm">{project.name}</span>
+                <span className="text-sm font-medium">{project.name}</span>
               </div>
             </Link>
           ))}
@@ -294,4 +322,27 @@ function ProjectsPage() {
       )}
     </PageLayout>
   );
+};
+
+export const Route = createFileRoute("/(app)/$orgSlug/~/(org)/projects")({
+  component: ProjectsPage,
+  loader: async ({ context, params }) =>
+    await context.queryClient.query(
+      context.orpc.project.list.queryOptions({
+        input: { orgSlug: params.orgSlug },
+      })
+    ),
+});
+
+type ProjectSlugAvailability =
+  | { status: "idle"; message: string | null }
+  | { status: "checking"; message: string | null }
+  | { status: "available"; message: null }
+  | { status: "unavailable"; message: string }
+  | { status: "error"; message: string };
+
+interface CreateProjectDialogProps {
+  children: ReactNode;
+  existingProjectSlugs: ReadonlySet<string>;
+  orgSlug: string;
 }

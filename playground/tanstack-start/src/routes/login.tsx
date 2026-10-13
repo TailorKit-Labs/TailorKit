@@ -1,12 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { useLoaderData, createFileRoute } from "@tanstack/react-router";
+
 import { AuthScreen } from "#components/auth-screen";
 import { loadSignInChoices } from "#lib/auth.functions";
 
-export const Route = createFileRoute("/login")({
-  loader: () => loadSignInChoices(),
-  component: LoginPage,
-});
+const LoginPage = () => (
+  <AuthScreen choices={useLoaderData({ from: "/login" })} />
+);
 
-function LoginPage() {
-  return <AuthScreen choices={Route.useLoaderData()} />;
-}
+export const Route = createFileRoute("/login")({
+  component: LoginPage,
+  loader: async () => await loadSignInChoices(),
+});

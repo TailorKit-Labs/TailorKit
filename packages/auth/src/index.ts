@@ -1,47 +1,68 @@
-import { createDb } from "@tailorkit/db";
-import * as schema from "@tailorkit/db/schema/auth";
-import { sendBetterAuthOtpEmail, sendOrganizationInvitationEmail } from "@tailorkit/email";
-import { getBaseUrl, getProductionUrl, getTrustedOrigins } from "@tailorkit/env";
-import { env } from "#env";
-import { getKV } from "@tailorkit/kv";
-import { initializeObservability } from "@tailorkit/observability";
-import type { SecondaryStorage } from "better-auth";
-import { betterAuth } from "better-auth/minimal";
-import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
-import { tanstackStartCookies } from "better-auth/tanstack-start";
-import { createAuthMiddleware } from "better-auth/api";
-import { deleteSessionCookie } from "better-auth/cookies";
-import { waitUntil as vercelWaitUntil } from "@vercel/functions";
-import { captcha, haveIBeenPwned } from "better-auth/plugins";
-import { checkBotId } from "botid/server";
-import { emailOTP } from "better-auth/plugins/email-otp";
-import { organization } from "better-auth/plugins/organization";
-import { oAuthProxy } from "better-auth/plugins/oauth-proxy";
-import { twoFactor } from "better-auth/plugins/two-factor";
-import { ac, roles } from "./lib/permissions";
 import { apiKey } from "@better-auth/api-key";
+import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import { dash } from "@better-auth/infra";
 import { passkey } from "@better-auth/passkey";
-import { initializePublicTeamId, publicTeamIdField } from "./lib/public-team-id";
+import { createDb } from "@tailorkit/db";
+import * as schema from "@tailorkit/db/schema/auth";
+import {
+  sendBetterAuthOtpEmail,
+  sendOrganizationInvitationEmail,
+} from "@tailorkit/email";
+import {
+  getBaseUrl,
+  getProductionUrl,
+  getTrustedOrigins,
+} from "@tailorkit/env";
+import { getKV } from "@tailorkit/kv";
+import { initializeObservability } from "@tailorkit/observability";
+import { waitUntil as vercelWaitUntil } from "@vercel/functions";
+import type { BetterAuthOptions, SecondaryStorage } from "better-auth";
+import { createAuthMiddleware } from "better-auth/api";
+import { deleteSessionCookie } from "better-auth/cookies";
+import { betterAuth } from "better-auth/minimal";
+import { captcha, haveIBeenPwned } from "better-auth/plugins";
+import { emailOTP } from "better-auth/plugins/email-otp";
+import { oAuthProxy } from "better-auth/plugins/oauth-proxy";
+import { organization } from "better-auth/plugins/organization";
+import { twoFactor } from "better-auth/plugins/two-factor";
+import { tanstackStartCookies } from "better-auth/tanstack-start";
+import { checkBotId } from "botid/server";
+
+import { env } from "#env";
+
 import { captchaEndpoints } from "./lib/captcha-endpoints";
+import { ac, roles } from "./lib/permissions";
+import {
+  initializePublicTeamId,
+  publicTeamIdField,
+} from "./lib/public-team-id";
 
 void initializeObservability("tailorkit-web");
 
-const noopWaitUntil = (promise: Promise<unknown>) => void promise;
+const noopWaitUntil = (promise: Promise<unknown>): void => {
+  void promise;
+};
 
 // Better Auth only challenges credential sign-ins by default. Intercept direct
 // and OAuth-proxy callbacks before their newly created sessions become usable,
 // then issue the same short-lived challenge used by the two-factor plugin.
 const enforceTwoFactorAfterSocialSignIn = createAuthMiddleware(async (ctx) => {
   if (ctx.path !== "/callback/:id" && ctx.path !== "/oauth-proxy-callback") {
-    return;
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
   }
 
-  const newSession = ctx.context.newSession;
-  const user = newSession?.user as { id: string; twoFactorEnabled?: boolean } | undefined;
+  const { newSession } = ctx.context;
+  const user = newSession?.user;
 
-  if (!newSession || !user?.twoFactorEnabled) {
-    return;
+  if (
+    !newSession ||
+    !user ||
+    !("twoFactorEnabled" in user) ||
+    user.twoFactorEnabled !== true
+  ) {
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
   }
 
   deleteSessionCookie(ctx, true);
@@ -49,7 +70,9 @@ const enforceTwoFactorAfterSocialSignIn = createAuthMiddleware(async (ctx) => {
   ctx.context.setNewSession(null);
 
   const maxAge = 600;
-  const twoFactorCookie = ctx.context.createAuthCookie("two_factor", { maxAge });
+  const twoFactorCookie = ctx.context.createAuthCookie("two_factor", {
+    maxAge,
+  });
   const identifier = `2fa-${crypto.randomUUID()}`;
   const expiresAt = new Date(Date.now() + maxAge * 1000);
 
@@ -67,7 +90,7 @@ const enforceTwoFactorAfterSocialSignIn = createAuthMiddleware(async (ctx) => {
     twoFactorCookie.name,
     identifier,
     ctx.context.secret,
-    twoFactorCookie.attributes,
+    twoFactorCookie.attributes
   );
 
   return ctx.redirect(new URL("/two-factor", getBaseUrl(env)).toString());
@@ -77,49 +100,61 @@ const createSecondaryStorage = (): SecondaryStorage | undefined => {
   const kv = getKV();
 
   if (!kv) {
-    return;
+    return undefined;
   }
 
   return {
-    delete: (key: string) => kv.delete(key),
-    get: (key: string) => kv.get(key),
-    getAndDelete: (key: string) => kv.getAndDelete(key),
-    increment: (key: string, ttl: number) => kv.increment(key, ttl),
-    set: (key: string, value: string, ttl?: number) => kv.set(key, value, { ttl }),
+    delete: async (key: string) => {
+      await kv.delete(key);
+    },
+    get: async (key: string) => await kv.get(key),
+    getAndDelete: async (key: string) => await kv.getAndDelete(key),
+    increment: async (key: string, ttl: number) => await kv.increment(key, ttl),
+    set: async (key: string, value: string, ttl?: number) => {
+      await kv.set(key, value, { ttl });
+    },
   };
 };
 
-const socialProviders = {
-  ...(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET
-    ? {
-        github: {
-          clientId: env.GITHUB_CLIENT_ID,
-          clientSecret: env.GITHUB_CLIENT_SECRET,
-          scope: ["user:email"],
-        },
-      }
-    : {}),
-  ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
-    ? {
-        google: {
-          clientId: env.GOOGLE_CLIENT_ID,
-          clientSecret: env.GOOGLE_CLIENT_SECRET,
-        },
-      }
-    : {}),
-};
-
-export function getSocialProviderAvailability() {
-  return {
-    github: "github" in socialProviders,
-    google: "google" in socialProviders,
+const socialProviders: NonNullable<BetterAuthOptions["socialProviders"]> = {};
+if (
+  env.GITHUB_CLIENT_ID !== undefined &&
+  env.GITHUB_CLIENT_ID !== null &&
+  env.GITHUB_CLIENT_ID !== "" &&
+  env.GITHUB_CLIENT_SECRET !== undefined &&
+  env.GITHUB_CLIENT_SECRET !== null &&
+  env.GITHUB_CLIENT_SECRET !== ""
+) {
+  socialProviders.github = {
+    clientId: env.GITHUB_CLIENT_ID,
+    clientSecret: env.GITHUB_CLIENT_SECRET,
+    scope: ["user:email"],
+  };
+}
+if (
+  env.GOOGLE_CLIENT_ID !== undefined &&
+  env.GOOGLE_CLIENT_ID !== null &&
+  env.GOOGLE_CLIENT_ID !== "" &&
+  env.GOOGLE_CLIENT_SECRET !== undefined &&
+  env.GOOGLE_CLIENT_SECRET !== null &&
+  env.GOOGLE_CLIENT_SECRET !== ""
+) {
+  socialProviders.google = {
+    clientId: env.GOOGLE_CLIENT_ID,
+    clientSecret: env.GOOGLE_CLIENT_SECRET,
   };
 }
 
-function buildAuth() {
+export const getSocialProviderAvailability = () => ({
+  github: "github" in socialProviders,
+  google: "google" in socialProviders,
+});
+
+const buildAuth = () => {
   const db = createDb();
 
-  const backgroundTaskHandler = env.VERCEL ? vercelWaitUntil : noopWaitUntil;
+  const backgroundTaskHandler =
+    env.VERCEL === true ? vercelWaitUntil : noopWaitUntil;
   const secondaryStorage = createSecondaryStorage();
   const productionUrl = getProductionUrl(env);
   const passkeyRpID =
@@ -128,18 +163,19 @@ function buildAuth() {
       : new URL(getBaseUrl(env)).hostname;
 
   return betterAuth({
-    appName: "TailorKit",
     account: {
-      encryptOAuthTokens: true,
       accountLinking: {
         allowDifferentEmails: true,
       },
+      encryptOAuthTokens: true,
     },
+
     advanced: {
       backgroundTasks: {
         handler: backgroundTaskHandler,
       },
-      cookiePrefix: env.VERCEL_TARGET_ENV === "production" ? "tailorkit" : "tailorkit-dev",
+      cookiePrefix:
+        env.VERCEL_TARGET_ENV === "production" ? "tailorkit" : "tailorkit-dev",
       database: {
         generateId: "uuid",
         joins: true,
@@ -148,41 +184,43 @@ function buildAuth() {
         ipAddressHeaders: ["x-vercel-forwarded-for", "x-forwarded-for"],
       },
     },
+
+    appName: "TailorKit",
+
     baseURL: getBaseUrl(env),
+
     database: drizzleAdapter(db, {
       provider: "pg",
       schema,
       transaction: true,
     }),
-    // Better Auth still resolves the session model through the DB adapter in
-    // some auth flows when secondaryStorage is configured.
-    session: {
-      storeSessionInDatabase: true,
-    },
-    secondaryStorage,
+
     emailAndPassword: {
       enabled: true,
-      requireEmailVerification: true,
       minPasswordLength: 12,
+      requireEmailVerification: true,
       revokeSessionsOnPasswordReset: true,
     },
+
     emailVerification: {
       sendOnSignUp: false,
     },
+
     hooks: {
       after: enforceTwoFactorAfterSocialSignIn,
     },
+
     onAPIError: {
       // Keep OAuth failures in the application instead of Better Auth's
       // development-oriented default error page.
       errorURL: "/auth/error",
     },
-    socialProviders,
+
     plugins: [
       captcha({
-        provider: "vercel-botid",
         checkBotId,
         endpoints: captchaEndpoints,
+        provider: "vercel-botid",
       }),
       haveIBeenPwned(),
       passkey({
@@ -198,20 +236,35 @@ function buildAuth() {
       emailOTP({
         expiresIn: 600,
         overrideDefaultEmailVerification: true,
-        sendVerificationOnSignUp: false,
-        sendVerificationOTP: ({ email, otp, type }) => {
+        // oxlint-disable-next-line eslint/require-await -- This asynchronous protocol method resolves synchronously but must preserve Promise results and rejected exceptions.
+        sendVerificationOTP: async ({ email, otp, type }) => {
           backgroundTaskHandler(sendBetterAuthOtpEmail({ email, otp, type }));
-          return Promise.resolve();
         },
+        sendVerificationOnSignUp: false,
         storeOTP: "hashed",
       }),
       organization({
         ac,
         allowUserToCreateOrganization: false,
-        roles,
         organizationHooks: {
-          beforeCreateOrganization: ({ organization }) =>
-            Promise.resolve(initializePublicTeamId(organization)),
+          // oxlint-disable-next-line eslint/require-await -- This asynchronous protocol method resolves synchronously but must preserve Promise results and rejected exceptions.
+          beforeCreateOrganization: async ({
+            organization: organizationValue,
+          }) => initializePublicTeamId(organizationValue),
+        },
+        roles,
+        schema: {
+          organization: {
+            additionalFields: {
+              publicId: publicTeamIdField,
+              slug: {
+                fieldName: "slug",
+                required: true,
+                type: "string",
+                unique: true,
+              },
+            },
+          },
         },
         sendInvitationEmail: async (data) => {
           await sendOrganizationInvitationEmail({
@@ -221,19 +274,6 @@ function buildAuth() {
             organizationName: data.organization.name,
             role: data.role,
           });
-        },
-        schema: {
-          organization: {
-            additionalFields: {
-              publicId: publicTeamIdField,
-              slug: {
-                type: "string",
-                fieldName: "slug",
-                unique: true,
-                required: true,
-              },
-            },
-          },
         },
       }),
       apiKey({
@@ -255,14 +295,21 @@ function buildAuth() {
               storage: "database" as const,
             }),
       }),
-      ...(env.BETTER_AUTH_API_KEY
+      ...(env.BETTER_AUTH_API_KEY !== undefined &&
+      env.BETTER_AUTH_API_KEY !== null &&
+      env.BETTER_AUTH_API_KEY !== ""
         ? [
             dash({
               apiKey: env.BETTER_AUTH_API_KEY,
             }),
           ]
         : []),
-      ...(productionUrl && env.OAUTH_PROXY_SECRET
+      ...(productionUrl !== undefined &&
+      productionUrl !== null &&
+      productionUrl !== "" &&
+      env.OAUTH_PROXY_SECRET !== undefined &&
+      env.OAUTH_PROXY_SECRET !== null &&
+      env.OAUTH_PROXY_SECRET !== ""
         ? [
             oAuthProxy({
               productionURL: productionUrl,
@@ -272,8 +319,21 @@ function buildAuth() {
         : []),
       tanstackStartCookies(),
     ],
+
+    secondaryStorage,
+
     secret: env.AUTH_SECRET,
+
+    // Better Auth still resolves the session model through the DB adapter in
+    // some auth flows when secondaryStorage is configured.
+    session: {
+      storeSessionInDatabase: true,
+    },
+
+    socialProviders,
+
     trustedOrigins: getTrustedOrigins(env),
+
     user: {
       additionalFields: {
         theme: {
@@ -285,11 +345,9 @@ function buildAuth() {
       },
     },
   });
-}
+};
 
-export function createAuth(): ReturnType<typeof buildAuth> {
-  return buildAuth();
-}
+export const createAuth = (): ReturnType<typeof buildAuth> => buildAuth();
 
 export const auth: ReturnType<typeof buildAuth> = createAuth();
 

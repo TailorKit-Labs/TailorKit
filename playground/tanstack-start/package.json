@@ -15,7 +15,9 @@
     "dev": "vp dev --port 5010",
     "build": "vp build",
     "preview": "vp preview",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "lint": "vp lint .",
+    "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
     "@playground/shared": "workspace:*",

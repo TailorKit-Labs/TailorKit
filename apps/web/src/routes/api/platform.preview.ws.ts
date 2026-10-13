@@ -1,10 +1,13 @@
 import { experimental_RPCHandler as RPCHandler } from "@orpc/server/crossws";
-import { authorizePreviewSocket } from "@tailorkit/api-platform/preview-ws-auth";
 import { previewWebSocketRouter } from "@tailorkit/api-platform/preview-ws";
 import type { PreviewWebSocketContext } from "@tailorkit/api-platform/preview-ws";
+import { authorizePreviewSocket } from "@tailorkit/api-platform/preview-ws-auth";
 import { createFileRoute } from "@tanstack/react-router";
 import { defineHooks } from "crossws";
 import { z } from "zod";
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
 
 const handler = new RPCHandler(previewWebSocketRouter);
 interface AuthorizationState {
@@ -14,65 +17,39 @@ interface AuthorizationState {
 }
 const authorizations = new WeakMap<object, AuthorizationState>();
 const upgradeSchema = z.object({
-  sessionId: z.uuid(),
   role: z.enum(["uploader", "viewer"]),
+  sessionId: z.uuid(),
   token: z.string().min(1),
 });
 
 const hooks = defineHooks({
-  upgrade(request) {
-    const url = new URL(request.url);
-    const token = request.headers.get("sec-websocket-protocol")?.split(",")[0]?.trim();
-    return {
-      context: {
-        sessionId: url.searchParams.get("session"),
-        role: url.searchParams.get("role"),
-        token,
-      },
-      protocol: token,
-    };
+  close: (peer) => {
+    void handler.close(peer);
+    authorizations.delete(peer);
   },
-  async open(peer) {
-    const parsed = upgradeSchema.safeParse(peer.context);
-    if (!parsed.success) {
-      return peer.close();
-    }
-    const { sessionId, role, token } = parsed.data;
-    const state: AuthorizationState = {
-      promise: authorizePreviewSocket(sessionId, token, role).catch(() => null),
-      context: undefined,
-      pendingMessage: false,
-    };
-    authorizations.set(peer, state);
-    const context = await state.promise;
-    if (authorizations.get(peer) !== state) {
-      return;
-    }
-    state.context = context;
-    if (!context) {
-      return peer.close();
-    }
-  },
-  async message(peer, message) {
+  message: async (peer, message) => {
     const state = authorizations.get(peer);
     if (!state) {
-      return peer.close();
+      peer.close();
+      return;
     }
     const payload = message.rawData;
     let size = Infinity;
-    if (typeof payload === "string") {
+    if (isStringValue(payload)) {
       size = Buffer.byteLength(payload);
     } else if (payload instanceof ArrayBuffer || ArrayBuffer.isView(payload)) {
       size = payload.byteLength;
     }
     if (size > 512 * 1024) {
       authorizations.delete(peer);
-      return peer.close();
+      peer.close();
+      return;
     }
     if (state.context === undefined) {
       if (state.pendingMessage) {
         authorizations.delete(peer);
-        return peer.close();
+        peer.close();
+        return;
       }
       state.pendingMessage = true;
       try {
@@ -84,15 +61,55 @@ const hooks = defineHooks({
     if (authorizations.get(peer) !== state) {
       return;
     }
-    const context = state.context;
+    const { context } = state;
     if (!context) {
-      return peer.close();
+      peer.close();
+      return;
     }
     await handler.message(peer, message, { context });
   },
-  close(peer) {
-    handler.close(peer);
-    authorizations.delete(peer);
+  open: async (peer) => {
+    const parsed = upgradeSchema.safeParse(peer.context);
+    if (!parsed.success) {
+      peer.close();
+      return;
+    }
+    const { sessionId, role, token } = parsed.data;
+    const state: AuthorizationState = {
+      context: undefined,
+      pendingMessage: false,
+      promise: (async () => {
+        try {
+          return await authorizePreviewSocket(sessionId, token, role);
+        } catch {
+          return null;
+        }
+      })(),
+    };
+    authorizations.set(peer, state);
+    const context = await state.promise;
+    if (authorizations.get(peer) !== state) {
+      return;
+    }
+    state.context = context;
+    if (!context) {
+      peer.close();
+    }
+  },
+  upgrade: (request) => {
+    const url = new URL(request.url);
+    const token = request.headers
+      .get("sec-websocket-protocol")
+      ?.split(",")[0]
+      ?.trim();
+    return {
+      context: {
+        role: url.searchParams.get("role"),
+        sessionId: url.searchParams.get("session"),
+        token,
+      },
+      protocol: token,
+    };
   },
 });
 
@@ -100,9 +117,12 @@ export const Route = createFileRoute("/api/platform/preview/ws")({
   server: {
     handlers: {
       GET: () =>
-        Object.assign(new Response("WebSocket upgrade is required.", { status: 426 }), {
-          crossws: hooks,
-        }),
+        Object.assign(
+          new Response("WebSocket upgrade is required.", { status: 426 }),
+          {
+            crossws: hooks,
+          }
+        ),
     },
   },
 });

@@ -1,8 +1,13 @@
 import { atom } from "nanostores";
+
+import type { AppError } from "#errors";
+import { appError } from "#errors";
+
 import type { Client } from "./connection";
 import type { Reference } from "./reference";
-import type { AppError } from "../errors";
-import { appError } from "../errors";
+
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 export interface QueryState<T> {
   data: T | undefined;
@@ -10,16 +15,27 @@ export interface QueryState<T> {
   status: "pending" | "success" | "error";
 }
 
-export const pendingQuery: QueryState<never> = { data: undefined, error: null, status: "pending" };
+export const pendingQuery: QueryState<never> = {
+  data: undefined,
+  error: null,
+  status: "pending",
+};
 
-export function serializeInput(input: unknown): string {
-  return JSON.stringify({ input, defined: input !== undefined }, (_key, value: unknown) => {
-    if (value && typeof value === "object" && !Array.isArray(value)) {
-      return Object.fromEntries(Object.entries(value).toSorted(([a], [b]) => a.localeCompare(b)));
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser, serializer, or runtime adapter handles arbitrary values before validating or encoding their domain representation.
+export const serializeInput = (input: unknown): string =>
+  JSON.stringify(
+    { defined: input !== undefined, input },
+    // Native JSON serialization supplies arbitrary values; this boundary only normalizes object key order.
+    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- These are serializer inputs, not unparsed domain-handler arguments.
+    (_key, value: unknown) => {
+      if (isObjectValue(value) && !Array.isArray(value)) {
+        return Object.fromEntries(
+          Object.entries(value).toSorted(([a], [b]) => a.localeCompare(b))
+        );
+      }
+      return value;
     }
-    return value;
-  });
-}
+  );
 
 interface Entry {
   observers: number;
@@ -38,7 +54,9 @@ export class QueryStore {
   constructor(
     client: Client,
     ownsClient: boolean,
-    errorHandler: (error: AppError) => void = () => {},
+    errorHandler: (error: AppError) => void = () => {
+      /* Intentionally no action is needed. */
+    }
   ) {
     this.client = client;
     this.ownsClient = ownsClient;
@@ -64,15 +82,25 @@ export class QueryStore {
         if (this.disposed || this.entries.get(key) !== current) {
           return;
         }
-        publish({ data: this.state.get().get(key)?.data as O | undefined, error, status: "error" });
+        // SAFETY: The entry is created and updated by this query reference's typed subscription; the shared cache erases its output generic.
+        publish({
+          data:
+            /* oxlint-disable typescript/no-unsafe-type-assertion -- The entry is created and updated by this query reference's typed subscription; the shared cache erases its output generic. */
+            this.state.get().get(key)?.data as O | undefined,
+          /* oxlint-enable typescript/no-unsafe-type-assertion */
+          error,
+          status: "error",
+        });
         this.onError(error);
       };
       try {
         current.stop = this.client.subscribe(
           ref,
           input,
-          (data) => publish({ data, error: null, status: "success" }),
-          { onError },
+          (data) => {
+            publish({ data, error: null, status: "success" });
+          },
+          { onError }
         );
       } catch (error) {
         onError(appError(error));

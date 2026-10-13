@@ -1,5 +1,4 @@
 import { createHmac } from "node:crypto";
 
-export function hashSecret(value: string, secret: string): string {
-  return createHmac("sha256", secret).update(value).digest("hex");
-}
+export const hashSecret = (value: string, secret: string): string =>
+  createHmac("sha256", secret).update(value).digest("hex");

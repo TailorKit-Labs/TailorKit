@@ -1,27 +1,45 @@
-import { type TailorKitRouterClient } from "@tailorkit/core/server";
+import {
+  autocomplete,
+  cancel,
+  isCancel,
+  log,
+  spinner,
+  text,
+} from "@clack/prompts";
+import type { TailorKitRouterClient } from "@tailorkit/core/server";
+
+import {
+  getDeployToken,
+  NotLoggedInError,
+  resolveHostUrl,
+  runWhoami,
+} from "./auth";
 import { createCliClient } from "./client";
 import { normalizeHostUrl } from "./utils/url";
-import { autocomplete, cancel, isCancel, log, spinner, text } from "@clack/prompts";
-import { getDeployToken, NotLoggedInError, resolveHostUrl, runWhoami } from "./auth";
 
 interface AgentOptions {
   appId?: string;
   host?: string;
   schemaPath?: string;
-  onLoginRequired?: () => Promise<unknown>;
+  onLoginRequired?: () => ReturnType<typeof runWhoami>;
 }
 
-async function chooseApp(client: Pick<TailorKitRouterClient, "apps">): Promise<string | undefined> {
+const chooseApp = async (
+  client: Pick<TailorKitRouterClient, "apps">
+): Promise<string | undefined> => {
   const loading = spinner();
-  const apps: Awaited<ReturnType<TailorKitRouterClient["apps"]["list"]>>["items"] = [];
+  const apps: Awaited<
+    ReturnType<TailorKitRouterClient["apps"]["list"]>
+  >["items"] = [];
   loading.start("Finding apps");
   try {
     let page = 1;
     let hasMore = true;
     while (hasMore) {
+      // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
       const result = await client.apps.list({ page, pageSize: 100 });
       apps.push(...result.items);
-      hasMore = result.pagination.hasMore;
+      ({ hasMore } = result.pagination);
       page += 1;
     }
     loading.stop(apps.length ? "Found apps." : "No apps found.");
@@ -31,70 +49,96 @@ async function chooseApp(client: Pick<TailorKitRouterClient, "apps">): Promise<s
   }
 
   const selection = await autocomplete<string | null>({
-    message: "Select an app or create a new one",
-    placeholder: "Search by name or app ID",
-    options: [
-      ...apps.map((app) => ({ value: app.id, label: app.name, hint: app.publicId })),
-      { value: null, label: "Create a new app" },
-    ],
     filter: (search, option) =>
       option.value === null ||
-      [option.label, option.hint, option.value].some((value) =>
-        value?.toLowerCase().includes(search.toLowerCase()),
+      [option.label, option.hint, option.value].some(
+        (value) => value?.toLowerCase().includes(search.toLowerCase()) === true
       ),
+    message: "Select an app or create a new one",
+    options: [
+      ...apps.map((app) => ({
+        hint: app.publicId,
+        label: app.name,
+        value: app.id,
+      })),
+      { label: "Create a new app", value: null },
+    ],
+    placeholder: "Search by name or app ID",
   });
   if (isCancel(selection)) {
     cancel("Agent cancelled.");
-    return;
+
+    return undefined;
   }
-  if (selection !== null) return selection;
+  if (selection !== null) {
+    return selection;
+  }
 
   const name = await text({
-    message: "App name",
     initialValue: "My app",
+    message: "App name",
     placeholder: "My app",
-    validate: (value) => (value?.trim() ? undefined : "Enter an app name."),
+    validate: (value) =>
+      (value?.trim() ?? "") === "" ? "Enter an app name." : undefined,
   });
   if (isCancel(name)) {
     cancel("Agent cancelled.");
-    return;
+
+    return undefined;
   }
   loading.start("Creating app");
   try {
-    const app = await client.apps.create({ name: name.trim(), description: null });
+    const app = await client.apps.create({
+      description: null,
+      name: name.trim(),
+    });
     loading.stop("Created app.");
     return app.id;
   } catch (error) {
     loading.stop("Unable to create app.");
     throw error;
   }
-}
+};
 
-export async function runAgentCommand(options: AgentOptions) {
+export const runAgentCommand = async (options: AgentOptions) => {
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
     throw new Error("tailorkit agent requires an interactive terminal.");
   }
-  if (!options.host?.trim()) {
-    throw new Error("Missing TailorKit host URL. Use tailorkit agent --host <url>.");
+  const host = options.host?.trim();
+  if (host === undefined || host === "") {
+    throw new Error(
+      "Missing TailorKit host URL. Use tailorkit agent --host <url>."
+    );
   }
-  let appId = options.appId;
-  const hostUrl = normalizeHostUrl(options.host);
+  let { appId } = options;
+  const hostUrl = normalizeHostUrl(host);
   const authUrl = await resolveHostUrl(options);
   try {
     await runWhoami(options);
   } catch (error) {
-    if (!(error instanceof NotLoggedInError) || !options.onLoginRequired) throw error;
+    if (!(error instanceof NotLoggedInError) || !options.onLoginRequired) {
+      throw error;
+    }
     await options.onLoginRequired();
     await runWhoami(options);
   }
   const auth = await getDeployToken(authUrl);
-  if (!auth) throw new NotLoggedInError(hostUrl);
-  const client = createCliClient({ url: authUrl, token: auth.deployToken });
-  if (!appId) {
+  if (!auth) {
+    throw new NotLoggedInError(hostUrl);
+  }
+  const client = createCliClient({ token: auth.deployToken, url: authUrl });
+  if (!(appId !== undefined && appId !== null && appId !== "")) {
     appId = await chooseApp(client);
-    if (!appId) return;
+    if (!(appId !== undefined && appId !== null && appId !== "")) {
+      return;
+    }
   }
   log.info(`App: ${appId}`);
   const { openAgentTui } = await import("./agent-tui");
-  await openAgentTui({ client, hostUrl, appId, schemaPath: options.schemaPath });
-}
+  await openAgentTui({
+    appId,
+    client,
+    hostUrl,
+    schemaPath: options.schemaPath,
+  });
+};

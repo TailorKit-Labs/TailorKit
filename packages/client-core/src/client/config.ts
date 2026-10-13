@@ -8,23 +8,41 @@ import type {
   TailorKitContract,
   ToolImplementations,
 } from "@tailorkit/core/schema";
+
+import type { RemoteComponentRegistry } from "#store/local/remote-view";
+
 import { createTailorKitFetchClient } from "./fetch-client";
-import type { TailorKitFetchClient, TailorKitCacheOptions } from "./fetch-client";
+import type {
+  TailorKitFetchClient,
+  TailorKitCacheOptions,
+} from "./fetch-client";
+
+const isFunctionValue = <TValue>(
+  value: TValue
+): value is Extract<TValue, CallableFunction> => typeof value === "function";
+
+type ClientToolTree = ToolImplementations<TailorKitContract["tools"], "client">;
+const isToolHandler = (
+  value: ClientToolTree[string]
+): value is Exclude<ClientToolTree[string], ClientToolTree> =>
+  typeof value === "function";
 
 export type AnyComponentDefinition = ComponentDefinition<
   Schema | undefined,
-  CallbackMap,
-  boolean | undefined
+  CallbackMap
 >;
 
-export type ComponentRenderer<TComponent extends AnyComponentDefinition, TNode> = (
+export type ComponentRenderer<
+  TComponent extends AnyComponentDefinition,
+  TNode,
+> = (
   args: {
     props: ComponentProps<TComponent>;
   } & ("children" extends keyof TComponent
     ? TComponent extends { children?: true }
       ? { children?: TNode }
-      : {}
-    : {}),
+      : unknown
+    : unknown)
 ) => TNode;
 
 export type ComponentRenderers<
@@ -45,7 +63,10 @@ const componentTagPrefix = "tailorkit-";
 
 export const toComponentTagName = (name: string): string =>
   `${componentTagPrefix}${name
-    .replaceAll(/([a-z0-9])([A-Z])/gu, "$1-$2")
+    .replaceAll(
+      /(?<lowercase>[a-z0-9])(?<uppercase>[A-Z])/gu,
+      "$<lowercase>-$<uppercase>"
+    )
     .replaceAll(/[\s_]+/gu, "-")
     .toLowerCase()}`;
 
@@ -57,74 +78,108 @@ export interface TailorKitClientConfig {
   readonly fetchClient?: TailorKitFetchClient;
   /** Clear cached app data and sessions after changing the host auth session. */
   readonly clearCache: () => void;
-  readonly components: Record<string, unknown>;
+  readonly components: RemoteComponentRegistry;
   readonly theme: TailorKitTheme;
 }
 
-export type SlotMultiple<TSlot> = TSlot extends { multiple: infer TMultiple extends boolean }
+export type SlotMultiple<TSlot> = TSlot extends {
+  multiple: infer TMultiple extends boolean;
+}
   ? TMultiple
   : TSlot extends { multiple?: infer TMultiple extends boolean }
     ? TMultiple | false
     : false;
 
 /** Build framework-independent client configuration after an adapter wraps its renderers. */
-export function createTailorKitClientConfig(options: {
+export const createTailorKitClientConfig = (options: {
   contract: TailorKitContract;
   tools?: ToolImplementations<TailorKitContract["tools"], "client">;
   assetsBaseUrl?: string | URL;
   baseUrl: string | URL;
-  components?: Record<string, unknown>;
+  components?: RemoteComponentRegistry;
   theme?: TailorKitTheme;
   cache?: TailorKitCacheOptions;
   fetch?: typeof fetch;
-}): TailorKitClientConfig {
+}): TailorKitClientConfig => {
   const declarations = flattenTools(options.contract.tools);
-  const visit = (tree: unknown, prefix = "") => {
-    if (!tree || typeof tree !== "object") return;
+  const visit = (tree: ClientToolTree | undefined, prefix = "") => {
+    if (!tree) {
+      return;
+    }
     for (const [name, value] of Object.entries(tree)) {
       const path = prefix + name;
-      if (typeof value === "function") {
-        if (declarations.get(path)?.kind !== "client")
+      if (isFunctionValue(value)) {
+        if (declarations.get(path)?.kind !== "client") {
           throw new Error(`Undeclared client tool "${path}"`);
-      } else visit(value, path + ".");
+        }
+      } else {
+        visit(value, `${path}.`);
+      }
     }
   };
   visit(options.tools);
   for (const [path, leaf] of declarations) {
-    if (leaf.kind !== "client") continue;
-    let value: unknown = options.tools;
-    for (const name of path.split("."))
+    if (leaf.kind !== "client") {
+      continue;
+    }
+    let value: ClientToolTree[string] | undefined = options.tools;
+    for (const name of path.split(".")) {
       value =
-        value && typeof value === "object" && Object.hasOwn(value, name)
-          ? (value as Record<string, unknown>)[name]
+        value && !isToolHandler(value) && Object.hasOwn(value, name)
+          ? value[name]
           : undefined;
-    if (typeof value !== "function") throw new Error(`Missing client tool "${path}"`);
+    }
+    if (!isFunctionValue(value)) {
+      throw new TypeError(`Missing client tool "${path}"`);
+    }
   }
   const fetchClient = createTailorKitFetchClient(options);
   return {
-    tools: options.tools,
-    baseUrl: options.baseUrl,
-    contract: options.contract,
     assetsBaseUrl: options.assetsBaseUrl,
-    fetchClient,
-    clearCache: () => fetchClient.clear(),
+    baseUrl: options.baseUrl,
+    clearCache: () => {
+      fetchClient.clear();
+    },
     components: options.components ?? {},
+    contract: options.contract,
+    fetchClient,
     theme: options.theme ?? {},
+    tools: options.tools,
   };
+};
+
+interface WrappedComponentRegistry<TRenderer> {
+  [name: string]: TRenderer;
 }
 
 /** Register schema names and their remote element aliases with the same wrapped renderer. */
-export function createComponentRegistry<T extends Record<string, unknown>, TRenderer>(
+export const createComponentRegistry = <
+  T extends RemoteComponentRegistry,
+  TRenderer,
+>(
   renderers: T,
-  wrap: (renderer: NonNullable<T[keyof T]>) => TRenderer,
-): Record<string, TRenderer> {
-  const components: Record<string, TRenderer> = {};
+  wrap: (renderer: NonNullable<T[keyof T]>) => TRenderer
+): WrappedComponentRegistry<TRenderer> => {
+  const components: WrappedComponentRegistry<TRenderer> = {};
   for (const [name, renderer] of Object.entries(renderers)) {
-    if (renderer) {
-      const component = wrap(renderer as NonNullable<T[keyof T]>);
+    if (
+      renderer !== undefined &&
+      renderer !== null &&
+      renderer !== false &&
+      renderer !== "" &&
+      renderer !== 0 &&
+      !Number.isNaN(renderer) &&
+      renderer !== 0n
+    ) {
+      // SAFETY: Object.entries returns own values from renderers, and the truthy check excludes nullish entries before wrapping.
+      const component = wrap(
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- Object.entries returns own values from renderers, and the truthy check excludes nullish entries before wrapping. */
+        renderer as NonNullable<T[keyof T]>
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
+      );
       components[name] = component;
       components[toComponentTagName(name)] = component;
     }
   }
   return components;
-}
+};

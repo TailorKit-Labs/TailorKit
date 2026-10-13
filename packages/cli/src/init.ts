@@ -2,8 +2,18 @@ import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
-import { CANCEL_SYMBOL, cancel, confirm, isCancel, select, spinner, text } from "@clack/prompts";
+
+import type { CANCEL_SYMBOL } from "@clack/prompts";
+import {
+  cancel,
+  confirm,
+  isCancel,
+  select,
+  spinner,
+  text,
+} from "@clack/prompts";
 import pc from "picocolors";
+
 import { generateApp, resolveTemplatePackageVersions } from "./generator";
 import { fetchSchemaFromHost, readSchemaFile } from "./generator/types";
 import { normalizeHostUrl } from "./utils/url";
@@ -24,7 +34,7 @@ const PACKAGE_MANAGERS = ["pnpm", "yarn", "npm", "bun"] as const;
 type PackageManager = (typeof PACKAGE_MANAGERS)[number];
 
 const isPackageManager = (value: string): value is PackageManager =>
-  PACKAGE_MANAGERS.includes(value as PackageManager);
+  PACKAGE_MANAGERS.some((manager) => manager === value);
 
 const normalizePackageName = (value: string): string =>
   value
@@ -33,19 +43,28 @@ const normalizePackageName = (value: string): string =>
     .replaceAll(/[^a-z0-9._/-]+/gu, "-")
     .replaceAll(/^-+|-+$/gu, "");
 
-const abortIfCancelled = <T>(value: T | typeof CANCEL_SYMBOL): T => {
-  if (isCancel(value)) {
+const isPromptValue = <T extends string | boolean>(
+  value: T | typeof CANCEL_SYMBOL
+): value is T => !isCancel(value);
+const abortIfCancelled = <T extends string | boolean>(
+  value: T | typeof CANCEL_SYMBOL
+): T => {
+  if (!isPromptValue(value)) {
     cancel("Init cancelled.");
     process.exit(0);
   }
-  return value as T;
+  return value;
 };
 
 const promptDirectory = (given: string | undefined, cwd: string): string =>
   path.resolve(cwd, given ?? ".");
 
-const promptPackageName = async (given: string | undefined, baseDir: string): Promise<string> => {
-  const defaultName = normalizePackageName(path.basename(baseDir)) || "tailorkit-app";
+const promptPackageName = async (
+  given: string | undefined,
+  baseDir: string
+): Promise<string> => {
+  const defaultName =
+    normalizePackageName(path.basename(baseDir)) || "tailorkit-app";
   if (given !== undefined) {
     return normalizePackageName(given);
   }
@@ -55,51 +74,61 @@ const promptPackageName = async (given: string | undefined, baseDir: string): Pr
       message: "Package name",
       placeholder: defaultName,
       validate: (value) =>
-        normalizePackageName(value ?? "").length === 0 ? "Enter a package name." : undefined,
-    }),
+        normalizePackageName(value ?? "").length === 0
+          ? "Enter a package name."
+          : undefined,
+    })
   );
   return normalizePackageName(answer);
 };
 
-const promptPackageManager = async (given: string | undefined): Promise<PackageManager> => {
+const promptPackageManager = async (
+  given: string | undefined
+): Promise<PackageManager> => {
   if (given !== undefined) {
     if (isPackageManager(given)) {
       return given;
     }
-    throw new Error(`--package-manager must be one of: ${PACKAGE_MANAGERS.join(", ")}.`);
+    throw new Error(
+      `--package-manager must be one of: ${PACKAGE_MANAGERS.join(", ")}.`
+    );
   }
   const answer = abortIfCancelled(
-    await select({
-      initialValue: "pnpm" as PackageManager,
+    await select<PackageManager>({
+      initialValue: "pnpm",
       message: "Package manager",
       options: PACKAGE_MANAGERS.map((value) => ({ label: value, value })),
-    }),
+    })
   );
-  return answer as PackageManager;
+  return answer;
 };
 
-const promptTooling = async (given: string | undefined): Promise<"vite-plus" | "vite"> => {
+const promptTooling = async (
+  given: string | undefined
+): Promise<"vite-plus" | "vite"> => {
   if (given !== undefined) {
-    if (given === "vite-plus" || given === "vite") return given;
+    if (given === "vite-plus" || given === "vite") {
+      return given;
+    }
     throw new Error("--tooling must be vite-plus or vite.");
   }
   return abortIfCancelled(
-    await select({
+    await select<"vite-plus" | "vite">({
       initialValue: "vite-plus",
       message: "App tooling",
       options: [
         {
-          value: "vite-plus" as const,
-          label: "Vite+ (recommended)",
           hint: "Build, lint, format and test",
+          label: "Vite+ (recommended)",
+          value: "vite-plus" as const,
         },
         {
-          value: "vite" as const,
-          label: "Vite (build only)",
           hint: "Minimal setup; bring your own tools",
+          label: "Vite (build only)",
+          value: "vite" as const,
         },
       ],
-    }),
+    })
   );
 };
 
@@ -128,7 +157,7 @@ const promptHostUrl = async (given: string | undefined): Promise<string> => {
       message: "Host URL",
       placeholder: defaultValue,
       validate: validateHostUrl,
-    }),
+    })
   );
   return normalizeHostUrl(answer);
 };
@@ -138,11 +167,14 @@ const promptInstall = async (given: boolean | undefined): Promise<boolean> => {
     return given;
   }
   return abortIfCancelled(
-    await confirm({ initialValue: true, message: "Install dependencies?" }),
-  ) as boolean;
+    await confirm({ initialValue: true, message: "Install dependencies?" })
+  );
 };
 
-const promptForce = async (targetDir: string, given: boolean): Promise<boolean> => {
+const promptForce = async (
+  targetDir: string,
+  given: boolean
+): Promise<boolean> => {
   if (given || !existsSync(targetDir)) {
     return given;
   }
@@ -150,18 +182,35 @@ const promptForce = async (targetDir: string, given: boolean): Promise<boolean> 
     await confirm({
       initialValue: false,
       message: `${pc.cyan(targetDir)} already exists. Overwrite matching files?`,
-    }),
-  ) as boolean;
+    })
+  );
 };
 
-const exec = (cmd: string, args: string[], cwd: string): Promise<number> =>
-  new Promise((resolve, reject) => {
-    const proc = spawn(cmd, args, { cwd, stdio: "inherit" });
-    proc.on("close", resolve);
-    proc.on("error", reject);
-  });
+const exec = async (
+  cmd: string,
+  args: string[],
+  cwd: string
+): Promise<number> =>
+  await (async () => {
+    const {
+      promise: pendingPromise,
+      resolve,
+      reject,
+    } = Promise.withResolvers<number>();
+    try {
+      const proc = spawn(cmd, args, { cwd, stdio: "inherit" });
+      proc.on("close", resolve);
+      proc.on("error", reject);
+    } catch (error) {
+      reject(error);
+    }
+    return await pendingPromise;
+  })();
 
-const runInstall = async (targetDir: string, packageManager: PackageManager): Promise<void> => {
+const runInstall = async (
+  targetDir: string,
+  packageManager: PackageManager
+): Promise<void> => {
   const s = spinner();
   s.start(`Installing dependencies with ${packageManager}`);
   const code = await exec(packageManager, ["install"], targetDir);
@@ -172,13 +221,18 @@ const runInstall = async (targetDir: string, packageManager: PackageManager): Pr
   s.stop("Installed dependencies.");
 };
 
-const runFormat = async (targetDir: string, packageManager: PackageManager): Promise<void> => {
+const runFormat = async (
+  targetDir: string,
+  packageManager: PackageManager
+): Promise<void> => {
   const s = spinner();
   s.start("Formatting project");
   const code = await exec(packageManager, ["run", "format:fix"], targetDir);
   if (code !== 0) {
     s.stop("Formatting failed.");
-    throw new Error(`${packageManager} run format:fix exited with code ${code}.`);
+    throw new Error(
+      `${packageManager} run format:fix exited with code ${code}.`
+    );
   }
   s.stop("Formatted project.");
 };
@@ -195,13 +249,17 @@ export const runInit = async (options: InitOptions): Promise<string> => {
   const install = await promptInstall(options.install);
 
   const s = spinner();
-  s.start(options.schemaPath !== undefined ? "Reading host schema" : "Fetching host schema");
+  s.start(
+    options.schemaPath === undefined
+      ? "Fetching host schema"
+      : "Reading host schema"
+  );
   let schema;
   try {
     schema =
-      options.schemaPath !== undefined
-        ? await readSchemaFile(path.resolve(options.cwd, options.schemaPath))
-        : await fetchSchemaFromHost(hostUrl);
+      options.schemaPath === undefined
+        ? await fetchSchemaFromHost(hostUrl)
+        : await readSchemaFile(path.resolve(options.cwd, options.schemaPath));
     s.stop("Loaded host schema.");
   } catch (error) {
     s.stop("Unable to load host schema.");
@@ -216,11 +274,11 @@ export const runInit = async (options: InitOptions): Promise<string> => {
   await generateApp({
     force,
     hostUrl,
-    tooling,
     packageName,
     packageVersions,
     schema,
     targetDirectory,
+    tooling,
   });
 
   if (install) {

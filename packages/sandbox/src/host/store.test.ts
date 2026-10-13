@@ -1,12 +1,20 @@
 import { describe, expect, it, vi } from "vite-plus/test";
-import type { RemoteNode } from "../protocol.js";
+
+import type { RemoteNode } from "#protocol";
+
 import { createRemoteUiStore } from "./store.js";
 
 const tree = {
   children: [
     {
+      callbacks: [
+        {
+          callback: "onClick",
+          event: "tailorkitcallbackonclick",
+          inputCount: 0,
+        },
+      ],
       children: [{ id: "text", kind: "text", text: "Save" }],
-      callbacks: [{ callback: "onClick", inputCount: 0, event: "tailorkitcallbackonclick" }],
       id: "tailorkit-button",
       kind: "element",
       props: { disabled: false },
@@ -31,7 +39,7 @@ describe("createRemoteUiStore", () => {
 
   it("applies patch batches without replacing the entire remote tree over the wire", () => {
     const store = createRemoteUiStore();
-    const listener = vi.fn();
+    const listener = vi.fn<Parameters<typeof store.subscribe>[0]>();
     store.subscribe(listener);
     store.setSnapshot(tree, 1);
 
@@ -39,7 +47,12 @@ describe("createRemoteUiStore", () => {
       data: {
         patches: [
           { nodeId: "text", op: "setText", text: "Saved" },
-          { name: "disabled", nodeId: "tailorkit-button", op: "setProp", value: true },
+          {
+            name: "disabled",
+            nodeId: "tailorkit-button",
+            op: "setProp",
+            value: true,
+          },
           { callbacks: [], nodeId: "tailorkit-button", op: "setCallbacks" },
         ],
         revision: 2,
@@ -52,8 +65,8 @@ describe("createRemoteUiStore", () => {
       children: [
         {
           callbacks: [],
-          props: { disabled: true },
           children: [{ text: "Saved" }],
+          props: { disabled: true },
         },
       ],
     });

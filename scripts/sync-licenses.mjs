@@ -1,11 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import { parsePackageManifest } from "./package-manifest.mjs";
+
 const root = path.resolve(import.meta.dirname, "..");
 const licensesDir = path.join(root, "licenses");
 const checkOnly = process.argv.includes("--check");
 
-function findPackageManifests(directory) {
+/** @param {string} directory @returns {string[]} */
+const findPackageManifests = (directory) => {
   const manifests = [];
 
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
@@ -30,11 +33,10 @@ function findPackageManifests(directory) {
   }
 
   return manifests;
-}
+};
 
-function relativeToRoot(filePath) {
-  return path.relative(root, filePath) || ".";
-}
+/** @param {string} filePath Path to display relative to the repository. */
+const relativeToRoot = (filePath) => path.relative(root, filePath) || ".";
 
 const errors = [];
 let licensedPackageCount = 0;
@@ -44,21 +46,22 @@ const packages = findPackageManifests(root)
 
 for (const manifestPath of packages) {
   const packageDirectory = path.dirname(manifestPath);
-  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
+  const manifest = parsePackageManifest(fs.readFileSync(manifestPath, "utf-8"));
   const packageLabel = manifest.name ?? relativeToRoot(packageDirectory);
 
   // Private playground examples do not require per-package license copies.
   if (
-    manifest.private &&
+    manifest.private === true &&
     manifest.license === undefined &&
     relativeToRoot(packageDirectory).startsWith(`playground${path.sep}`)
   ) {
     continue;
   }
 
+  // oxlint-disable-next-line anti-slop/no-runtime-typeof -- This JavaScript manifest parser checks that license is a nonempty string before interpreting it.
   if (typeof manifest.license !== "string" || manifest.license.length === 0) {
     errors.push(
-      `${packageLabel}: missing a string license field in ${relativeToRoot(manifestPath)}`,
+      `${packageLabel}: missing a string license field in ${relativeToRoot(manifestPath)}`
     );
     continue;
   }
@@ -67,20 +70,24 @@ for (const manifestPath of packages) {
   const targetPath = path.join(packageDirectory, "LICENSE.md");
 
   if (!fs.existsSync(sourcePath)) {
-    errors.push(`${packageLabel}: missing canonical license ${relativeToRoot(sourcePath)}`);
+    errors.push(
+      `${packageLabel}: missing canonical license ${relativeToRoot(sourcePath)}`
+    );
     continue;
   }
 
   licensedPackageCount += 1;
   const source = fs.readFileSync(sourcePath, "utf-8");
-  const target = fs.existsSync(targetPath) ? fs.readFileSync(targetPath, "utf-8") : null;
+  const target = fs.existsSync(targetPath)
+    ? fs.readFileSync(targetPath, "utf-8")
+    : null;
 
   if (checkOnly) {
     if (target === null) {
       errors.push(`${packageLabel}: missing ${relativeToRoot(targetPath)}`);
     } else if (target !== source) {
       errors.push(
-        `${packageLabel}: ${relativeToRoot(targetPath)} is out of sync with ${relativeToRoot(sourcePath)}`,
+        `${packageLabel}: ${relativeToRoot(targetPath)} is out of sync with ${relativeToRoot(sourcePath)}`
       );
     }
   } else if (target !== source) {

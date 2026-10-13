@@ -17,12 +17,14 @@
   "scripts": {
     "db:push": "node --import tsx scripts/prepare-db.ts && drizzle-kit push",
     "db:seed": "node --import tsx scripts/seed.ts",
-    "schema:export": "node --import tsx scripts/export-schema.ts"
+    "schema:export": "node --import tsx scripts/export-schema.ts",
+    "lint": "vp lint .",
+    "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
     "@tailorkit/core": "workspace:*",
     "@valibot/to-json-schema": "^1.8.0",
-    "arktype": "^2.2.7",
+    "arktype": "^2.2.8",
     "drizzle-orm": "catalog:",
     "tailorkit": "workspace:*",
     "valibot": "^1.5.0",

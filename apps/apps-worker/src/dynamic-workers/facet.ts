@@ -1,24 +1,31 @@
+import type { Invocation } from "@tailorkit/app/protocol";
+import type { Identity } from "@tailorkit/app/server";
 import { DurableObject } from "cloudflare:workers";
 import { Effect } from "effect";
-import { cancellationStream, abortable } from "../runtime/cancellation";
-import { createApplicationExecution } from "../runtime/bundle";
-import { installFetchGuard } from "../runtime/context";
-import type { Invocation } from "@tailorkit/app/protocol";
+
 import type { ActionCapability } from "../runtime/actions";
-import type { Identity } from "@tailorkit/app/server";
+import { createApplicationExecution } from "../runtime/bundle";
+import { cancellationStream, abortable } from "../runtime/cancellation";
+import { installFetchGuard } from "../runtime/context";
 
 installFetchGuard();
 
 export class AppFacet extends DurableObject<Record<string, never>> {
-  #execution = this.ctx.blockConcurrencyWhile(async () => {
+  readonly #execution = this.ctx.blockConcurrencyWhile(async () => {
     const application = await import("application.js");
     return createApplicationExecution(application, {
       execute: (sql, params) => {
-        const cursor = this.ctx.storage.sql.exec(sql, ...(params as SqlStorageValue[]));
+        // SAFETY: The database adapter supplies SQLite-compatible positional parameters; this boundary bridges the Workers SQL declaration.
+        const cursor = this.ctx.storage.sql.exec(
+          sql,
+          .../* oxlint-disable typescript/no-unsafe-type-assertion -- The database adapter supplies SQLite-compatible positional parameters; this boundary bridges the Workers SQL declaration. */
+          (params as SqlStorageValue[])
+          /* oxlint-enable typescript/no-unsafe-type-assertion */
+        );
         return {
+          changes: cursor.rowsWritten,
           columns: cursor.columnNames,
           rows: [...cursor.raw()],
-          changes: cursor.rowsWritten,
         };
       },
       transaction: (run) => this.ctx.storage.transactionSync(run),
@@ -39,38 +46,65 @@ export class AppFacet extends DurableObject<Record<string, never>> {
     input: Invocation,
     identity: Identity,
     capability: ActionCapability,
-    cancellation: ReadableStream,
+    cancellation: ReadableStream
   ) {
     const execution = await this.#execution;
     const controller = new AbortController();
     const reader = cancellation.getReader();
-    const cancel = () => controller.abort();
-    void reader.read().then(cancel, cancel);
-    return Effect.runPromise(
+    const cancel = () => {
+      controller.abort();
+    };
+    void (async () => {
+      try {
+        await reader.read();
+      } catch {
+        /* Either settlement cancels the action. */
+      }
+      cancel();
+    })();
+    return await Effect.runPromise(
       execution
         .action(
           input,
           identity,
           {
-            fetch: (input, init) => {
-              const request = new Request(input, init);
-              const signal = request.signal;
+            committed: async (tables) => {
+              await capability.committed(tables);
+            },
+            fetch: async (inputValue, init) => {
+              const request = new Request(inputValue, init);
+              const { signal } = request;
               signal.throwIfAborted();
               // Attached AbortSignals cannot be serialized by Workers RPC.
               const transferable = new Request(request.url, {
-                method: request.method,
-                headers: request.headers,
                 body: request.body,
+                headers: request.headers,
+                method: request.method,
                 redirect: request.redirect,
               });
-              return abortable(capability.fetch(transferable, cancellationStream(signal)), signal);
+              return await abortable(
+                capability.fetch(transferable, cancellationStream(signal)),
+                signal
+              );
             },
-            tool: (path, input) => capability.tool(path, input),
-            committed: (tables) => capability.committed(tables),
+            tool: async (path, inputValue2) =>
+              await capability.tool(path, inputValue2),
           },
-          controller.signal,
+          controller.signal
         )
-        .pipe(Effect.ensuring(Effect.promise(() => reader.cancel().catch(() => {})))),
+        .pipe(
+          Effect.ensuring(
+            Effect.promise(async () => {
+              await (async () => {
+                try {
+                  await reader.cancel();
+                } catch {
+                  /* Intentionally no action is needed. */
+                }
+              })();
+            })
+          )
+        )
     );
   }
 }

@@ -1,8 +1,8 @@
 import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
+import { RateLimitHandlerPlugin } from "@tailorkit/api-utils/rate-limiting";
 import { createContext } from "@tailorkit/api/context";
 import { appRouter } from "@tailorkit/api/routers/index";
-import { RateLimitHandlerPlugin } from "@tailorkit/api-utils/rate-limiting";
 import {
   initializeObservability,
   recordException,
@@ -13,15 +13,16 @@ import { createFileRoute } from "@tanstack/react-router";
 
 const rpcHandler = new RPCHandler(appRouter, {
   interceptors: [
-    onError((error) => {
-      recordException(error, { "tailorkit.adapter": "orpc-rpc" });
-      console.error("oRPC request failed", sanitizeErrorForLog(error));
+    // oxlint-disable-next-line promise/prefer-await-to-callbacks -- The oRPC error interceptor is a synchronous callback required by the adapter API.
+    onError((err) => {
+      recordException(err, { "tailorkit.adapter": "orpc-rpc" });
+      console.error("oRPC request failed", sanitizeErrorForLog(err));
     }),
   ],
   plugins: [new RateLimitHandlerPlugin()],
 });
 
-async function handle({ request }: { request: Request }) {
+const handle = async ({ request }: { request: Request }) => {
   await initializeObservability("tailorkit-web");
   setSpanAttributes({
     "tailorkit.adapter": "orpc-rpc",
@@ -37,7 +38,7 @@ async function handle({ request }: { request: Request }) {
   }
 
   return new Response("Not found", { status: 404 });
-}
+};
 
 export const Route = createFileRoute("/api/rpc/$")({
   server: {

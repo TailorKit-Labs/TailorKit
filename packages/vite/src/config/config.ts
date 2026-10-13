@@ -7,7 +7,7 @@ const logosConfigSchema = z.object({
 
 const tailorkitConfigSchema = z.strictObject({
   appId: z.string().min(1).optional(),
-  host: z.string().url(),
+  host: z.url(),
   logos: logosConfigSchema.optional(),
   server: z
     .strictObject({
@@ -75,5 +75,6 @@ export type ResolvedTailorKitConfig = z.output<typeof tailorkitConfigSchema>;
 
 export { tailorkitConfigSchema };
 
-export const defineConfig = (config: TailorKitConfig): TailorKitConfig => config;
+export const defineConfig = (config: TailorKitConfig): TailorKitConfig =>
+  config;
 export const defineTailorKitConfig = defineConfig;

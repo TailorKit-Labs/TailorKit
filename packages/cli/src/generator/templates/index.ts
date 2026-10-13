@@ -1,31 +1,14 @@
-import packageJsonTemplate from "./package.json.liquid";
-import tsconfigTemplate from "./tsconfig.json.liquid";
-import tailorkitConfigTemplate from "./tailorkit.config.ts.liquid";
-import gitignoreTemplate from "./.gitignore.liquid";
-import viteConfigTemplate from "./vite.config.ts.liquid";
-import rootTemplate from "./src/root.tsx.liquid";
-import defaultViewTemplate from "./src/slots/view.tsx.liquid";
-import serverTemplate from "./src/server.ts.liquid";
-import schemaTemplate from "./src/db/schema.ts.liquid";
-import databaseTemplate from "./src/db/index.ts.liquid";
-import relationsTemplate from "./src/db/relations.ts.liquid";
-import greetingTemplate from "./src/functions/greeting.ts.liquid";
-import logoDarkTemplate from "./logo-dark.svg.liquid";
-import logoLightTemplate from "./logo-light.svg.liquid";
-
-export {
-  packageJsonTemplate,
-  tsconfigTemplate,
-  tailorkitConfigTemplate,
-  gitignoreTemplate,
-  viteConfigTemplate,
-  rootTemplate,
-  defaultViewTemplate,
-  serverTemplate,
-  schemaTemplate,
-  databaseTemplate,
-  relationsTemplate,
-  greetingTemplate,
-  logoDarkTemplate,
-  logoLightTemplate,
-};
+export { default as gitignoreTemplate } from "./.gitignore.liquid";
+export { default as logoDarkTemplate } from "./logo-dark.svg.liquid";
+export { default as logoLightTemplate } from "./logo-light.svg.liquid";
+export { default as packageJsonTemplate } from "./package.json.liquid";
+export { default as databaseTemplate } from "./src/db/index.ts.liquid";
+export { default as relationsTemplate } from "./src/db/relations.ts.liquid";
+export { default as schemaTemplate } from "./src/db/schema.ts.liquid";
+export { default as greetingTemplate } from "./src/functions/greeting.ts.liquid";
+export { default as rootTemplate } from "./src/root.tsx.liquid";
+export { default as serverTemplate } from "./src/server.ts.liquid";
+export { default as defaultViewTemplate } from "./src/slots/view.tsx.liquid";
+export { default as tailorkitConfigTemplate } from "./tailorkit.config.ts.liquid";
+export { default as tsconfigTemplate } from "./tsconfig.json.liquid";
+export { default as viteConfigTemplate } from "./vite.config.ts.liquid";

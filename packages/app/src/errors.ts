@@ -1,3 +1,5 @@
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 export type ErrorCode =
   | "BAD_REQUEST"
   | "UNAUTHORIZED"
@@ -9,38 +11,49 @@ export type ErrorCode =
   | "INTERNAL_SERVER_ERROR";
 
 export class AppError extends Error {
-  constructor(
-    readonly code: ErrorCode,
-    message: string = code,
-  ) {
+  readonly code: ErrorCode;
+  constructor(code: ErrorCode, message: string = code) {
     super(message);
+    this.code = code;
+
     this.name = "AppError";
   }
 }
 
-export function appError(error: unknown): AppError {
-  if (error instanceof AppError) return error;
-  if (error instanceof Error && error.name === "AbortError")
+const isForwardableErrorCode = (
+  code: unknown
+): code is Exclude<ErrorCode, "INTERNAL_SERVER_ERROR"> =>
+  code === "BAD_REQUEST" ||
+  code === "UNAUTHORIZED" ||
+  code === "FORBIDDEN" ||
+  code === "NOT_FOUND" ||
+  code === "CONFLICT" ||
+  code === "INCOMPATIBLE_VERSION" ||
+  code === "UNAVAILABLE";
+
+export const appError = (cause: unknown): AppError => {
+  if (cause instanceof AppError) {
+    return cause;
+  }
+  if (cause instanceof Error && cause.name === "AbortError") {
     return new AppError("UNAVAILABLE", "App connection interrupted");
-  if (error && typeof error === "object" && "code" in error && error.code === "NETWORK_ERROR")
-    return new AppError("UNAVAILABLE", "App connection interrupted");
+  }
   if (
-    error &&
-    typeof error === "object" &&
-    "code" in error &&
-    [
-      "BAD_REQUEST",
-      "UNAUTHORIZED",
-      "FORBIDDEN",
-      "NOT_FOUND",
-      "CONFLICT",
-      "INCOMPATIBLE_VERSION",
-      "UNAVAILABLE",
-    ].includes(String(error.code))
-  )
+    isObjectValue(cause) &&
+    "code" in cause &&
+    cause.code === "NETWORK_ERROR"
+  ) {
+    return new AppError("UNAVAILABLE", "App connection interrupted");
+  }
+  if (
+    isObjectValue(cause) &&
+    "code" in cause &&
+    isForwardableErrorCode(cause.code)
+  ) {
     return new AppError(
-      error.code as ErrorCode,
-      "message" in error ? String(error.message) : String(error.code),
+      cause.code,
+      "message" in cause ? String(cause.message) : cause.code
     );
+  }
   return new AppError("INTERNAL_SERVER_ERROR", "App function failed");
-}
+};

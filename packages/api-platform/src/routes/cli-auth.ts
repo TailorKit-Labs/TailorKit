@@ -1,39 +1,48 @@
+import { randomBytes, randomInt } from "node:crypto";
+
 import { openapi } from "@orpc/openapi";
 import { ORPCError } from "@orpc/server";
 import { hashSecret } from "@tailorkit/api-utils/hashing";
 import { db } from "@tailorkit/db";
 import { cliAuthSession, cliToken } from "@tailorkit/db/schema/cli-auth";
-import { env } from "#env";
 import { and, eq, gt } from "drizzle-orm";
-import { randomBytes, randomInt } from "node:crypto";
-import z from "zod";
-import { o, protectedRouter, cliRouter } from "../procedures";
-import { canonicalizeScope, scopeSchema } from "../scope";
-import { authenticateCliRequest } from "../cli-token";
+import { z } from "zod";
+
+import { authenticateCliRequest } from "#cli-token";
+import { env } from "#env";
+import { o, protectedRouter, cliRouter } from "#procedures";
+import { canonicalizeScope, scopeSchema } from "#scope";
 
 const deviceCodeBytes = 32;
 const deployTokenBytes = 32;
 const userCodeLength = 9;
 const userCodeSections = 3;
-const authExpiresInMilliseconds = 5 * 60 * 1000; // 5 minutes
-const tokenExpiresInMilliseconds = 12 * 60 * 60 * 1000; // 12 hours
+// 5 minutes
+const authExpiresInMilliseconds = 5 * 60 * 1000;
+// 12 hours
+const tokenExpiresInMilliseconds = 12 * 60 * 60 * 1000;
 
 // Skip out some characters to avoid confusion with similar characters (e.g. 0/O, 1/I, etc.)
 const userCodeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
-function hashCliSecret(value: string): string {
-  if (!env.AUTH_SECRET) {
+const hashCliSecret = (value: string): string => {
+  if (
+    !(
+      env.AUTH_SECRET !== undefined &&
+      env.AUTH_SECRET !== null &&
+      env.AUTH_SECRET !== ""
+    )
+  ) {
     throw new Error("AUTH_SECRET is required for CLI auth secret hashing.");
   }
 
   return hashSecret(value, env.AUTH_SECRET);
-}
+};
 
-function generateSecret(bytes: number): string {
-  return randomBytes(bytes).toString("base64url");
-}
+const generateSecret = (bytes: number): string =>
+  randomBytes(bytes).toString("base64url");
 
-function generateUserCode(): string {
+const generateUserCode = (): string => {
   let code = "";
 
   for (let index = 0; index < userCodeLength; index += 1) {
@@ -48,18 +57,17 @@ function generateUserCode(): string {
   }
 
   return sections.join("-");
-}
+};
 
-function normalizeUserCode(userCode: string): string {
-  return userCode.trim().replaceAll("-", "").toUpperCase();
-}
+const normalizeUserCode = (userCode: string): string =>
+  userCode.trim().replaceAll("-", "").toUpperCase();
 
 const startCliAuth = protectedRouter
   .meta(
     openapi({
-      path: "/start",
       method: "POST",
-    }),
+      path: "/start",
+    })
   )
   .input(z.object({ body: z.object({}) }))
   .output(
@@ -69,7 +77,7 @@ const startCliAuth = protectedRouter
         expiresAt: z.date(),
         userCode: z.string(),
       }),
-    }),
+    })
   )
   .handler(async ({ context }) => {
     const deviceCode = generateSecret(deviceCodeBytes);
@@ -95,9 +103,9 @@ const startCliAuth = protectedRouter
 const approveCliAuth = protectedRouter
   .meta(
     openapi({
-      path: "/approve",
       method: "POST",
-    }),
+      path: "/approve",
+    })
   )
   .input(
     z.object({
@@ -105,7 +113,7 @@ const approveCliAuth = protectedRouter
         scope: scopeSchema,
         userCode: z.string().min(1),
       }),
-    }),
+    })
   )
   .output(z.object({ body: z.object({ id: z.string() }) }))
   .handler(async ({ context, input }) => {
@@ -113,22 +121,27 @@ const approveCliAuth = protectedRouter
     const [session] = await db
       .update(cliAuthSession)
       .set({
-        scopeKey: scope.scopeKey,
         scope: scope.scope,
+        scopeKey: scope.scopeKey,
         status: "approved",
       })
       .where(
         and(
           eq(cliAuthSession.projectId, context.project.id),
-          eq(cliAuthSession.userCodeHash, hashCliSecret(normalizeUserCode(input.body.userCode))),
+          eq(
+            cliAuthSession.userCodeHash,
+            hashCliSecret(normalizeUserCode(input.body.userCode))
+          ),
           eq(cliAuthSession.status, "pending"),
-          gt(cliAuthSession.expiresAt, new Date()),
-        ),
+          gt(cliAuthSession.expiresAt, new Date())
+        )
       )
       .returning({ id: cliAuthSession.id });
 
     if (!session) {
-      throw new ORPCError("NOT_FOUND", { message: "CLI auth session not found." });
+      throw new ORPCError("NOT_FOUND", {
+        message: "CLI auth session not found.",
+      });
     }
 
     return { body: session };
@@ -137,9 +150,9 @@ const approveCliAuth = protectedRouter
 const denyCliAuth = protectedRouter
   .meta(
     openapi({
-      path: "/deny",
       method: "POST",
-    }),
+      path: "/deny",
+    })
   )
   .input(z.object({ body: z.object({ userCode: z.string().min(1) }) }))
   .output(z.object({ body: z.object({ id: z.string() }) }))
@@ -150,15 +163,20 @@ const denyCliAuth = protectedRouter
       .where(
         and(
           eq(cliAuthSession.projectId, context.project.id),
-          eq(cliAuthSession.userCodeHash, hashCliSecret(normalizeUserCode(input.body.userCode))),
+          eq(
+            cliAuthSession.userCodeHash,
+            hashCliSecret(normalizeUserCode(input.body.userCode))
+          ),
           eq(cliAuthSession.status, "pending"),
-          gt(cliAuthSession.expiresAt, new Date()),
-        ),
+          gt(cliAuthSession.expiresAt, new Date())
+        )
       )
       .returning({ id: cliAuthSession.id });
 
     if (!session) {
-      throw new ORPCError("NOT_FOUND", { message: "CLI auth session not found." });
+      throw new ORPCError("NOT_FOUND", {
+        message: "CLI auth session not found.",
+      });
     }
 
     return { body: session };
@@ -167,9 +185,9 @@ const denyCliAuth = protectedRouter
 const pollCliAuth = protectedRouter
   .meta(
     openapi({
-      path: "/poll",
       method: "POST",
-    }),
+      path: "/poll",
+    })
   )
   .input(z.object({ body: z.object({ deviceCode: z.string().min(1) }) }))
   .output(
@@ -184,7 +202,7 @@ const pollCliAuth = protectedRouter
         }),
         z.object({ status: z.literal("expired") }),
       ]),
-    }),
+    })
   )
   .handler(async ({ context, input }) => {
     const deviceCodeHash = hashCliSecret(input.body.deviceCode);
@@ -197,7 +215,9 @@ const pollCliAuth = protectedRouter
     });
 
     if (!session) {
-      throw new ORPCError("NOT_FOUND", { message: "CLI auth session not found." });
+      throw new ORPCError("NOT_FOUND", {
+        message: "CLI auth session not found.",
+      });
     }
 
     await db
@@ -217,7 +237,14 @@ const pollCliAuth = protectedRouter
       return { body: { status: "pending" as const } };
     }
 
-    if (!session.scope || !session.scopeKey) {
+    if (
+      !session.scope ||
+      !(
+        session.scopeKey !== undefined &&
+        session.scopeKey !== null &&
+        session.scopeKey !== ""
+      )
+    ) {
       throw new ORPCError("BAD_REQUEST", {
         message: "Approved CLI auth session is missing scope.",
       });
@@ -245,8 +272,8 @@ const pollCliAuth = protectedRouter
             eq(cliAuthSession.id, session.id),
             eq(cliAuthSession.projectId, context.project.id),
             eq(cliAuthSession.status, "approved"),
-            gt(cliAuthSession.expiresAt, now),
-          ),
+            gt(cliAuthSession.expiresAt, now)
+          )
         )
         .returning();
 
@@ -254,7 +281,14 @@ const pollCliAuth = protectedRouter
         return null;
       }
 
-      if (!consumedSession.scope || !consumedSession.scopeKey) {
+      if (
+        !consumedSession.scope ||
+        !(
+          consumedSession.scopeKey !== undefined &&
+          consumedSession.scopeKey !== null &&
+          consumedSession.scopeKey !== ""
+        )
+      ) {
         throw new ORPCError("BAD_REQUEST", {
           message: "Approved CLI auth session is missing scope.",
         });
@@ -285,7 +319,9 @@ const pollCliAuth = protectedRouter
     });
 
     if (!deletedSession) {
-      throw new ORPCError("NOT_FOUND", { message: "CLI auth session not found." });
+      throw new ORPCError("NOT_FOUND", {
+        message: "CLI auth session not found.",
+      });
     }
 
     return {
@@ -300,16 +336,19 @@ const pollCliAuth = protectedRouter
 const verifyCliAuthToken = cliRouter
   .meta(
     openapi({
-      path: "/verify-token",
       method: "POST",
-    }),
+      path: "/verify-token",
+    })
   )
   .input(z.object({ body: z.object({ deployToken: z.string().min(1) }) }))
   .output(z.object({ body: z.object({ scope: scopeSchema }) }))
   .handler(async ({ context, input }) => {
     const token = await authenticateCliRequest(context, input.body.deployToken);
 
-    await db.update(cliToken).set({ lastUsedAt: new Date() }).where(eq(cliToken.id, token.id));
+    await db
+      .update(cliToken)
+      .set({ lastUsedAt: new Date() })
+      .where(eq(cliToken.id, token.id));
 
     return { body: { scope: token.scope } };
   });

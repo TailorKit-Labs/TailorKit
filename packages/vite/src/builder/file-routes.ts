@@ -1,35 +1,56 @@
-import { readdir, mkdir, mkdtemp, writeFile, rm } from "node:fs/promises";
 import { existsSync, watch } from "node:fs";
+import { readdir, mkdir, mkdtemp, writeFile, rm } from "node:fs/promises";
 import path from "node:path";
+
 import { parseSync } from "vite";
 import type { ESTree, Plugin } from "vite";
+
 import { createDefineViewMatcher } from "./define-view";
+
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 const clientRuntimeImport = "tailorkit:file-client-runtime";
 
-export function fileViewLocation(filename: string, root: string) {
-  const relative = path.relative(path.join(root, "src/slots"), filename).split(path.sep);
-  if (relative.length < 2 || relative[0] === ".." || !filename.endsWith(".view.tsx")) {
-    return;
-  }
-  const [slot, ...routeSegments] = relative;
-  if (!slot) {
-    return;
-  }
-  const basename = routeSegments.join("/").slice(0, -".view.tsx".length);
-  return { slot, path: routePath(basename, filename) };
-}
-
-function routePath(name: string, filename: string) {
+const routePath = (name: string, filename: string) => {
   const segments = name.split(/[./]/u);
   if (segments.some((segment) => !segment || segment === "..")) {
-    throw new Error(`${filename} has an empty route segment. Use route.nested-route.view.tsx.`);
+    throw new Error(
+      `${filename} has an empty route segment. Use route.nested-route.view.tsx.`
+    );
   }
   return `/${segments.join("/")}`;
-}
+};
+
+export const fileViewLocation = (filename: string, root: string) => {
+  const relative = path
+    .relative(path.join(root, "src/slots"), filename)
+    .split(path.sep);
+  if (
+    relative.length < 2 ||
+    relative[0] === ".." ||
+    !filename.endsWith(".view.tsx")
+  ) {
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
+  }
+  const [slot, ...routeSegments] = relative;
+  if (!(slot !== undefined && slot !== null && slot !== "")) {
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
+  }
+  const basename = routeSegments.join("/").slice(0, -".view.tsx".length);
+  return { path: routePath(basename, filename), slot };
+};
 
 /** Fill missing defineView options before instance extraction, on both build sides. */
-export function inferFileView(source: string, filename: string, root: string): string {
+export const inferFileView = (
+  initialSource: string,
+  filename: string,
+  root: string
+): string => {
+  let source = initialSource;
+
   const location = fileViewLocation(filename, root);
   if (!location) {
     return source;
@@ -41,12 +62,12 @@ export function inferFileView(source: string, filename: string, root: string): s
   }
   const isDefineViewCall = createDefineViewMatcher(parsed.program);
   const edits: { position: number; text: string }[] = [];
-  function visit(node: ESTree.Node) {
+  const visit = (node: ESTree.Node) => {
     if (isDefineViewCall(node)) {
-      const options = node.arguments[0];
+      const [options] = node.arguments;
       if (options?.type !== "ObjectExpression") {
         throw new Error(
-          `${filename}: file views require defineView with an inline options object.`,
+          `${filename}: file views require defineView with an inline options object.`
         );
       }
       const properties = new Set(
@@ -61,12 +82,12 @@ export function inferFileView(source: string, filename: string, root: string): s
             return [String(property.key.value)];
           }
           return [];
-        }),
+        })
       );
       // Defaults precede spreads, so an explicit view override is respected.
       const defaults = [
-        !properties.has("slot") ? `slot: ${JSON.stringify(slot)},` : "",
-        !properties.has("view") ? `view: ${JSON.stringify(viewPath)},` : "",
+        properties.has("slot") ? "" : `slot: ${JSON.stringify(slot)},`,
+        properties.has("view") ? "" : `view: ${JSON.stringify(viewPath)},`,
       ].join("");
       if (defaults) {
         edits.push({ position: options.start + 1, text: defaults });
@@ -75,65 +96,98 @@ export function inferFileView(source: string, filename: string, root: string): s
     for (const value of Object.values(node)) {
       const children = Array.isArray(value) ? value : [value];
       for (const child of children) {
-        if (child && typeof child === "object" && "type" in child) {
-          visit(child as ESTree.Node);
+        if (isObjectValue(child) && Boolean(child) && "type" in child) {
+          // SAFETY: These children come from the parsed ESTree AST, and only objects carrying a node type are visited.
+          visit(
+            /* oxlint-disable typescript/no-unsafe-type-assertion -- These children come from the parsed ESTree AST, and only objects carrying a node type are visited. */
+            child as ESTree.Node
+            /* oxlint-enable typescript/no-unsafe-type-assertion */
+          );
         }
       }
     }
-  }
+  };
   visit(parsed.program);
   for (const edit of edits.toSorted((a, b) => b.position - a.position)) {
-    source = source.slice(0, edit.position) + edit.text + source.slice(edit.position);
+    source =
+      source.slice(0, edit.position) + edit.text + source.slice(edit.position);
   }
   return source;
-}
+};
 
-export async function discoverFileRoutes(root: string) {
+export const discoverFileRoutes = async (root: string) => {
   const views: { filename: string; slot: string }[] = [];
   const roots: { filename: string; slot: string }[] = [];
   const layouts: { filename: string; slot: string; path: string }[] = [];
   const slotsDir = path.join(root, "src/slots");
-  async function scan(directory: string, slot?: string, prefix = "") {
-    const entries = await readdir(directory, { withFileTypes: true }).catch(
-      (error: NodeJS.ErrnoException) => {
-        if (error.code === "ENOENT") {
+  const scan = async (directory: string, slot?: string, prefix = "") => {
+    const entries = await (async () => {
+      try {
+        return await readdir(directory, { withFileTypes: true });
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          "code" in error &&
+          error.code === "ENOENT"
+        ) {
           return [];
         }
         throw error;
-      },
-    );
-    for (const entry of entries.toSorted((a, b) => a.name.localeCompare(b.name))) {
+      }
+    })();
+    for (const entry of entries.toSorted((a, b) =>
+      a.name.localeCompare(b.name)
+    )) {
       const filename = path.join(directory, entry.name);
       if (entry.isDirectory()) {
-        await scan(filename, slot ?? entry.name, slot ? `${prefix}${entry.name}/` : "");
-      } else if (entry.isFile() && slot) {
+        // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
+        await scan(
+          filename,
+          slot ?? entry.name,
+          slot !== undefined && slot !== null && slot !== ""
+            ? `${prefix}${entry.name}/`
+            : ""
+        );
+      } else if (
+        entry.isFile() &&
+        slot !== undefined &&
+        slot !== null &&
+        slot !== ""
+      ) {
         if (entry.name.endsWith(".view.tsx")) {
           fileViewLocation(filename, root);
           views.push({ filename, slot });
         } else if (entry.name === "root.tsx" && !prefix) {
           roots.push({ filename, slot });
-        } else if (entry.name === "layout.tsx" || entry.name.endsWith(".layout.tsx")) {
+        } else if (
+          entry.name === "layout.tsx" ||
+          entry.name.endsWith(".layout.tsx")
+        ) {
           const name =
             entry.name === "layout.tsx"
               ? prefix.replace(/\/$/u, "")
               : prefix + entry.name.slice(0, -".layout.tsx".length);
-          layouts.push({ filename, slot, path: name ? routePath(name, filename) : "/" });
+          layouts.push({
+            filename,
+            path: name ? routePath(name, filename) : "/",
+            slot,
+          });
         }
       }
     }
-  }
+  };
   await scan(slotsDir);
   const rootFile = path.join(root, "src/root.tsx");
   return {
+    layouts,
     root: existsSync(rootFile) ? { filename: rootFile } : undefined,
     roots,
-    layouts,
     views,
   };
-}
+};
 
 /** Root, layout, view and binding sources to check before deployment. */
-export async function getClientSourceFiles(root: string) {
+export const getClientSourceFiles = async (root: string) => {
   const discovered = await discoverFileRoutes(root);
   const bindings = path.join(root, "src/tailorkit.gen.ts");
   return [
@@ -143,34 +197,42 @@ export async function getClientSourceFiles(root: string) {
     ...discovered.views.map((module) => module.filename),
     ...(existsSync(bindings) ? [bindings] : []),
   ];
-}
+};
 
-async function fileClientSource(root: string) {
+const fileClientSource = async (root: string) => {
   const discovered = await discoverFileRoutes(root);
-  const imports = [`import { createFileClient } from ${JSON.stringify(clientRuntimeImport)};`];
+  const imports = [
+    `import { createFileClient } from ${JSON.stringify(clientRuntimeImport)};`,
+  ];
   let index = 0;
-  function module(entry: { filename: string }) {
-    const binding = `module${index++}`;
+  const module = (entry: { filename: string }) => {
+    const binding = `module${(index += 1) - 1}`;
     imports.push(`import ${binding} from ${JSON.stringify(entry.filename)};`);
     return `{ filename: ${JSON.stringify(path.relative(root, entry.filename))}, definition: ${binding}`;
-  }
-  const rootModule = discovered.root ? `${module(discovered.root)} }` : "undefined";
+  };
+  const rootModule = discovered.root
+    ? `${module(discovered.root)} }`
+    : "undefined";
   const roots = discovered.roots.map(
-    (entry) => `${module(entry)}, slot: ${JSON.stringify(entry.slot)} }`,
+    (entry) => `${module(entry)}, slot: ${JSON.stringify(entry.slot)} }`
   );
   const layouts = discovered.layouts.map(
     (entry) =>
-      `${module(entry)}, slot: ${JSON.stringify(entry.slot)}, path: ${JSON.stringify(entry.path)} }`,
+      `${module(entry)}, slot: ${JSON.stringify(entry.slot)}, path: ${JSON.stringify(entry.path)} }`
   );
   const views = discovered.views.map(
-    (entry) => `${module(entry)}, slot: ${JSON.stringify(entry.slot)} }`,
+    (entry) => `${module(entry)}, slot: ${JSON.stringify(entry.slot)} }`
   );
   return `${imports.join("\n")}\nexport default createFileClient({ root: ${rootModule}, roots: [${roots.join(",")}], layouts: [${layouts.join(",")}], views: [${views.join(",")}] });`;
-}
+};
 
 /** A generated entry in build output lets the bundler track imports normally.
  * Directory watching also covers routes that did not exist at the first build. */
-export async function createFileRouteEntry(root: string, output: string, watching: boolean) {
+export const createFileRouteEntry = async (
+  root: string,
+  output: string,
+  watching: boolean
+) => {
   let source = await fileClientSource(root);
   const temporaryRoot = path.join(output, "tmp");
   await mkdir(temporaryRoot, { recursive: true });
@@ -180,7 +242,7 @@ export async function createFileRouteEntry(root: string, output: string, watchin
   let pending = Promise.resolve();
   let closed = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
-  async function refresh() {
+  const refresh = async () => {
     if (closed) {
       return;
     }
@@ -196,20 +258,22 @@ export async function createFileRouteEntry(root: string, output: string, watchin
     }
     source = next;
     await writeFile(entry, next);
-  }
+  };
   const watcher = watching
     ? watch(path.join(root, "src"), { recursive: true }, () => {
         if (timer) {
           clearTimeout(timer);
         }
         timer = setTimeout(() => {
-          pending = pending.then(refresh);
+          pending = (async () => {
+            await pending;
+            await refresh();
+          })();
         }, 25);
       })
     : undefined;
   return {
-    entry,
-    async close() {
+    close: async () => {
       closed = true;
       if (timer) {
         clearTimeout(timer);
@@ -218,33 +282,33 @@ export async function createFileRouteEntry(root: string, output: string, watchin
       try {
         await pending;
       } finally {
-        await rm(directory, { recursive: true, force: true });
+        await rm(directory, { force: true, recursive: true });
       }
     },
+    entry,
   };
-}
+};
 
-export function fileRoutesPlugin(root: () => string): Plugin {
-  return {
-    name: "tailorkit-file-routes",
-    enforce: "pre",
-    async resolveId(id) {
-      if (id !== clientRuntimeImport) {
-        return;
-      }
-      // Resolve from the app even when its build output is outside the project.
-      const importer = path.join(root(), "src/root.tsx");
-      return (
-        (await this.resolve("tailorkit/client", importer, { skipSelf: true })) ??
-        this.resolve("@tailorkit/app/client", importer, { skipSelf: true })
-      );
-    },
-    transform(source, filename) {
-      if (!filename.endsWith(".view.tsx")) {
-        return;
-      }
-      const code = inferFileView(source, filename, root());
-      return code === source ? undefined : { code, map: null };
-    },
-  };
-}
+export const fileRoutesPlugin = (root: () => string): Plugin => ({
+  enforce: "pre",
+  name: "tailorkit-file-routes",
+  async resolveId(id) {
+    if (id !== clientRuntimeImport) {
+      /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+      return undefined;
+    }
+    // Resolve from the app even when its build output is outside the project.
+    const importer = path.join(root(), "src/root.tsx");
+    return await ((await this.resolve("tailorkit/client", importer, {
+      skipSelf: true,
+    })) ?? this.resolve("@tailorkit/app/client", importer, { skipSelf: true }));
+  },
+  transform: (source, filename) => {
+    if (!filename.endsWith(".view.tsx")) {
+      /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+      return undefined;
+    }
+    const code = inferFileView(source, filename, root());
+    return code === source ? undefined : { code, map: null };
+  },
+});

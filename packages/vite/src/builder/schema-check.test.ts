@@ -1,8 +1,22 @@
-import { linkTestDependencies, testSchema, generateTestMigrations } from "../test-utils";
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+
 import { expect, it } from "vite-plus/test";
+
+import {
+  linkTestDependencies,
+  testSchema,
+  generateTestMigrations,
+} from "#test-utils";
+
 import { checkAppSchema } from "./schema-check";
 
 it("checks schema drift without rewriting committed migrations and allows apps without tables", async () => {
@@ -15,40 +29,60 @@ it("checks schema drift without rewriting committed migrations and allows apps w
     const schema = testSchema;
     await writeFile(path.join(root, "src/db/schema.ts"), schema);
     await generateTestMigrations(root);
-    const files = (await readdir(migrations, { recursive: true })).filter(
-      (name) => name.endsWith(".sql") || name.endsWith(".json"),
+    const awaitedResult1 = await readdir(migrations, { recursive: true });
+    const files = awaitedResult1.filter(
+      (name) => name.endsWith(".sql") || name.endsWith(".json")
     );
     const contents = await Promise.all(
-      files.map((file) => readFile(path.join(migrations, file), "utf8")),
+      files.map(
+        async (file) => await readFile(path.join(migrations, file), "utf-8")
+      )
     );
     await expect(checkAppSchema(root, migrations)).resolves.toBeUndefined();
 
     await writeFile(
       path.join(root, "src/db/schema.ts"),
-      schema.replace("  id:", '  priority: text().notNull().default("normal"),\n  id:'),
+      schema.replace(
+        "  id:",
+        '  priority: text().notNull().default("normal"),\n  id:'
+      )
     );
     await expect(checkAppSchema(root, migrations)).rejects.toThrow(
-      "out of sync with src/db/schema.ts",
+      "out of sync with src/db/schema.ts"
     );
     expect(
-      await Promise.all(files.map((file) => readFile(path.join(migrations, file), "utf8"))),
+      await Promise.all(
+        files.map(
+          async (file) => await readFile(path.join(migrations, file), "utf-8")
+        )
+      )
     ).toEqual(contents);
+    const awaitedResult2 = await readdir(migrations, { recursive: true });
     expect(
-      (await readdir(migrations, { recursive: true })).filter(
-        (name) => name.endsWith(".sql") || name.endsWith(".json"),
-      ),
+      awaitedResult2.filter(
+        (name) => name.endsWith(".sql") || name.endsWith(".json")
+      )
     ).toEqual(files);
 
     await writeFile(path.join(root, "src/db/schema.ts"), schema);
-    await expect(checkAppSchema(root, path.join(root, "missing"))).rejects.toThrow(
-      "Run tailorkit db generate",
-    );
+    await expect(
+      checkAppSchema(root, path.join(root, "missing"))
+    ).rejects.toThrow("Run tailorkit db generate");
     await writeFile(path.join(root, "src/db/schema.ts"), "export {};\n");
-    await expect(checkAppSchema(root, path.join(root, "missing"))).resolves.toBeUndefined();
-    await expect(checkAppSchema(root, migrations)).rejects.toThrow("out of sync");
-    await writeFile(path.join(root, "src/db/schema.ts"), 'throw new Error("Broken schema");\n');
-    await expect(checkAppSchema(root, path.join(root, "missing"))).rejects.toThrow(/Drizzle Kit/u);
+    await expect(
+      checkAppSchema(root, path.join(root, "missing"))
+    ).resolves.toBeUndefined();
+    await expect(checkAppSchema(root, migrations)).rejects.toThrow(
+      "out of sync"
+    );
+    await writeFile(
+      path.join(root, "src/db/schema.ts"),
+      'throw new Error("Broken schema");\n'
+    );
+    await expect(
+      checkAppSchema(root, path.join(root, "missing"))
+    ).rejects.toThrow(/Drizzle Kit/u);
   } finally {
-    await rm(root, { recursive: true, force: true });
+    await rm(root, { force: true, recursive: true });
   }
 }, 60_000);

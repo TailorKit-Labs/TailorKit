@@ -11,37 +11,45 @@ const statement = {
 
   apiKey: ["create", "read", "update", "delete"],
   invitation: [...defaultStatements.invitation, "read"],
-  projectApiKey: ["create", "read", "update", "delete"],
   project: ["create", "share", "update", "delete"],
+  projectApiKey: ["create", "read", "update", "delete"],
 } as const;
 
 export const ac = createAccessControl(statement);
 
 const member = ac.newRole({
   apiKey: ["create", "read"],
-  projectApiKey: ["create", "read"],
   project: ["create"],
+  projectApiKey: ["create", "read"],
   ...memberAc.statements,
 });
 
 const admin = ac.newRole({
   apiKey: ["create", "read", "update", "delete"],
-  projectApiKey: ["create", "read", "update", "delete"],
+
   project: ["create", "update"],
+
+  projectApiKey: ["create", "read", "update", "delete"],
+
   ...adminAc.statements,
+
   invitation: [...adminAc.statements.invitation, "read"],
 });
 
 const owner = ac.newRole({
   apiKey: ["create", "read", "update", "delete"],
-  projectApiKey: ["create", "read", "update", "delete"],
+
   project: ["create", "update", "delete"],
+
+  projectApiKey: ["create", "read", "update", "delete"],
+
   ...ownerAc.statements,
+
   invitation: [...ownerAc.statements.invitation, "read"],
 });
 
 export const roles = {
-  member,
   admin,
+  member,
   owner,
 };

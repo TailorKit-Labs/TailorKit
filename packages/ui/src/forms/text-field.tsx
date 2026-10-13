@@ -1,12 +1,25 @@
 "use client";
 
-import type { InputProps } from "../components/input";
 import type { HTMLInputTypeAttribute, ReactNode } from "react";
 
-import { Field, FieldDescription, FieldError, FieldLabel } from "../components/field";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "#components/field";
+import type { InputProps } from "#components/input";
+import { Input } from "#components/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "#components/input-group";
+
 import { formatFieldErrors } from "./field-errors";
-import { Input } from "../components/input";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "../components/input-group";
+
+const hasText = (value: string | null | undefined): value is string =>
+  value !== undefined && value !== null && value.length > 0;
 
 const emptyErrors: unknown[] = [];
 
@@ -28,7 +41,7 @@ export interface TextFieldProps {
   value?: string;
 }
 
-export function TextField({
+export const TextField = ({
   autoComplete,
   autoFocus,
   description,
@@ -44,7 +57,7 @@ export function TextField({
   showDescriptionWhenError = false,
   type,
   value,
-}: TextFieldProps) {
+}: TextFieldProps) => {
   const errorMessage = formatFieldErrors(errors);
   const isError = errorMessage.length > 0;
 
@@ -52,11 +65,20 @@ export function TextField({
     <Field disabled={disabled} invalid={isError}>
       <div className="flex w-full items-center gap-2">
         <FieldLabel>
-          {label} {required && <span className="text-destructive-foreground">*</span>}
+          {label}{" "}
+          {required === true && (
+            <span className="text-destructive-foreground">*</span>
+          )}
         </FieldLabel>
-        {labelAction && <div className="ml-auto">{labelAction}</div>}
+        {Boolean(labelAction) && <div className="ml-auto">{labelAction}</div>}
       </div>
-      {endAdornment ? (
+      {endAdornment !== undefined &&
+      endAdornment !== null &&
+      endAdornment !== false &&
+      endAdornment !== "" &&
+      endAdornment !== 0 &&
+      !Number.isNaN(endAdornment) &&
+      endAdornment !== 0n ? (
         <InputGroup>
           <InputGroupInput
             aria-invalid={isError || undefined}
@@ -86,10 +108,10 @@ export function TextField({
           value={value ?? ""}
         />
       )}
-      {description && (!isError || showDescriptionWhenError) && (
+      {hasText(description) && (!isError || showDescriptionWhenError) && (
         <FieldDescription>{description}</FieldDescription>
       )}
       {isError && <FieldError>{errorMessage}</FieldError>}
     </Field>
   );
-}
+};

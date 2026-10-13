@@ -9,84 +9,110 @@ vi.stubGlobal("__PREACT_VERSION__", "11.0.0");
 const { defineView } = await import("./views");
 const roots: HTMLElement[] = [];
 afterEach(() => {
-  for (const root of roots.splice(0)) render(null, root);
+  for (const root of roots.splice(0)) {
+    render(null, root);
+  }
 });
 
-function root() {
+const root = () => {
   const element = document.createElement("div");
   roots.push(element);
   return element;
-}
+};
 
 it("supplies instance data and context, updates data, and resets component state when the key changes", async () => {
+  // SAFETY: This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input.
   const view = defineView({
-    slot: "page",
-    view: "/",
-    instances: { resolver: "compiled-resolver" } as never,
-    component: (): ComponentChild => {
+    // oxlint-disable-next-line func-name-matching -- The named function is a React-compatible test component supplied through a component property.
+    component: function ViewComponent(): ComponentChild {
       const instance = view.useInstance();
       const context = view.useContext();
+      // oxlint-disable-next-line react/hook-use-state -- The test reads the initial state without exposing a setter.
       const [initialKey] = useState(instance.key);
       return h(
         "span",
         {},
-        `${context.workspaceId}:${instance.key}:${JSON.stringify(instance.data)}:${initialKey}`,
+        `${context.workspaceId}:${instance.key}:${JSON.stringify(instance.data)}:${initialKey}`
       );
     },
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+    instances: { resolver: "compiled-resolver" } as never,
+    slot: "page",
+    view: "/",
   });
   const container = root();
-  const show = (key: string, data: unknown) =>
-    act(() =>
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This fixture must represent malformed input so the runtime validation boundary can be tested.
+  const show = async (key: string, data: unknown) => {
+    await act(() => {
       render(
         h(view.component, {
-          view: "/",
-          status: "ready",
           context: { workspaceId: "u1" },
-          instance: { key, metadata: {}, data },
+          instance: { data, key, metadata: {} },
+          status: "ready",
+          view: "/",
         }),
-        container,
-      ),
-    );
+        container
+      );
+    });
+  };
   await show("overview", { count: 1 });
   expect(container.textContent).toBe('u1:overview:{"count":1}:overview');
   await show("overview", { count: 2 });
   expect(container.textContent).toBe('u1:overview:{"count":2}:overview');
   await show("summary", null);
   expect(container.textContent).toBe("u1:summary:null:summary");
-  await act(() => render(h(view.component, { view: "/", status: "loading" }), container));
+  await act(() => {
+    render(h(view.component, { status: "loading", view: "/" }), container);
+  });
   expect(container.textContent).toBe("");
   await show("summary", { count: 3 });
   expect(container.textContent).toBe('u1:summary:{"count":3}:summary');
 });
 
 it("keeps ordinary views rendering without an instance", async () => {
-  const view = defineView({ slot: "navbar", view: "/", component: () => "ordinary" });
+  const view = defineView({
+    component: () => "ordinary",
+    slot: "navbar",
+    view: "/",
+  });
   const container = root();
-  await act(() =>
+  await act(() => {
     render(
-      h(view.component, { view: "/", status: "ready", context: { workspaceId: "w1" } }),
-      container,
-    ),
-  );
+      h(view.component, {
+        context: { workspaceId: "w1" },
+        status: "ready",
+        view: "/",
+      }),
+      container
+    );
+  });
   expect(container.textContent).toBe("ordinary");
 });
 
 it("reports missing instances and useInstance outside its view", () => {
+  // SAFETY: This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input.
   const view = defineView({
+    component: () => "never",
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+    instances: { resolver: "compiled-resolver" } as never,
     slot: "page",
     view: "/",
-    instances: { resolver: "compiled-resolver" } as never,
-    component: () => "never",
   });
-  expect(() =>
+  expect(() => {
     render(
-      h(view.component, { view: "/", status: "ready", context: { workspaceId: "w1" } }),
-      root(),
-    ),
-  ).toThrow("requires a selected instance");
-  function Outside() {
+      h(view.component, {
+        context: { workspaceId: "w1" },
+        status: "ready",
+        view: "/",
+      }),
+      root()
+    );
+  }).toThrow("requires a selected instance");
+  const Outside = () => {
     view.useInstance();
     return null;
-  }
-  expect(() => render(h(Outside, {}), root())).toThrow("View instance is only available");
+  };
+  expect(() => {
+    render(h(Outside, {}), root());
+  }).toThrow("View instance is only available");
 });

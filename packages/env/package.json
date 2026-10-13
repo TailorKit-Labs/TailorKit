@@ -22,7 +22,9 @@
   },
   "scripts": {
     "build": "vp pack src/index.ts --format esm --dts --clean",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "lint": "vp lint .",
+    "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
     "dotenv": "catalog:",

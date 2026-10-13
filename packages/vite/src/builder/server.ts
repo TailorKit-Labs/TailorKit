@@ -1,14 +1,56 @@
 import { mkdir, mkdtemp, writeFile, cp, rm } from "node:fs/promises";
 import path from "node:path";
+
+import type { RuntimeManifest } from "@tailorkit/app/server";
 import { build } from "vite";
 import type { UserConfig } from "vite";
-import type { LoadedTailorKitConfig } from "../config/loader";
-import { readAppMigrations } from "./migrations";
-import type { RuntimeManifest } from "@tailorkit/app/server";
-import { checkAppSchema } from "./schema-check";
+
+import type { LoadedTailorKitConfig } from "#config/loader";
+
 import { appDatabasePaths } from "./database-paths";
-import { instanceServerBindings, instanceServerImports, instanceServerPlugin } from "./instances";
+import { isMissingFile } from "./fs-errors";
+import {
+  instanceServerBindings,
+  instanceServerImports,
+  instanceServerPlugin,
+} from "./instances";
 import type { InstanceModule, InstanceRegistration } from "./instances";
+import { readAppMigrations } from "./migrations";
+import { checkAppSchema } from "./schema-check";
+
+const containsImplementation = (parent: string, child: string) => {
+  const relative = path.relative(parent, child);
+  return (
+    relative === "" ||
+    (!path.isAbsolute(relative) &&
+      relative !== ".." &&
+      !relative.startsWith(`..${path.sep}`))
+  );
+};
+
+const overlaps = (source: string, destination: string) => {
+  const contains = containsImplementation;
+  return contains(source, destination) || contains(destination, source);
+};
+
+/** Check before either build can empty an output directory. */
+export const validateServerBuildOutput = (
+  loaded: LoadedTailorKitConfig,
+  output: string
+) => {
+  if (!loaded.config.server) {
+    return;
+  }
+  const migrationsDirectory = appDatabasePaths(
+    loaded.root,
+    loaded.config.server.migrations
+  ).migrations;
+  for (const name of ["server", "client", "migrations", "tmp"]) {
+    if (overlaps(migrationsDirectory, path.join(output, name))) {
+      throw new Error("App build output must not overlap migration source");
+    }
+  }
+};
 
 /** Emitted by this SDK's builder; breaking interface changes increment apiVersion. */
 export const runtimeManifest = {
@@ -17,25 +59,29 @@ export const runtimeManifest = {
 } as const satisfies RuntimeManifest;
 
 /** Bundle the private app backend and migrations. */
-export async function buildServer(
+export const buildServer = async (
   loaded: LoadedTailorKitConfig,
   watch = false,
   buildOutDir?: string,
   instances: InstanceModule[] = [],
   registrations: InstanceRegistration[] = [],
-  viteConfig: UserConfig = {},
-) {
+  viteConfig: UserConfig = {}
+) => {
   const config = loaded.config.server;
   if (!config) {
-    return;
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
   }
   const output = buildOutDir ?? path.resolve(loaded.root, ".tailorkit");
   const directory = path.join(output, "server");
-  const migrationsDirectory = appDatabasePaths(loaded.root, config.migrations).migrations;
+  const migrationsDirectory = appDatabasePaths(
+    loaded.root,
+    config.migrations
+  ).migrations;
   const migrationsOutput = path.join(output, "migrations");
   const temporaryRoot = path.join(output, "tmp");
   validateServerBuildOutput(loaded, output);
-  await rm(directory, { recursive: true, force: true });
+  await rm(directory, { force: true, recursive: true });
   await mkdir(directory, { recursive: true });
   await mkdir(temporaryRoot, { recursive: true });
   const temporary = await mkdtemp(path.join(temporaryRoot, "server-"));
@@ -43,9 +89,19 @@ export async function buildServer(
   let watching = false;
   let ready: (() => void) | undefined;
   const initialBuild = watch
-    ? new Promise<void>((resolve) => {
-        ready = resolve;
-      })
+    ? (async () => {
+        const {
+          promise: pendingPromise,
+          resolve,
+          reject: rejectPending,
+        } = Promise.withResolvers<ReturnType<() => void>>();
+        try {
+          ready = resolve;
+        } catch (error) {
+          rejectPending(error);
+        }
+        await pendingPromise;
+      })()
     : undefined;
   try {
     await writeFile(
@@ -57,63 +113,14 @@ export async function buildServer(
       }
 export { default as migrations } from "tailorkit:migrations";
 export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
-`,
+`
     );
     const result = await build({
-      root: loaded.root,
-      configFile: false,
-      mode: viteConfig.mode,
-      resolve: viteConfig.resolve,
-      define: viteConfig.define,
-      plugins: [
-        ...(viteConfig.plugins ?? []),
-        instanceServerPlugin(loaded.root, instances),
-        {
-          name: "tailorkit-app-migrations",
-          closeWatcher: () => rm(temporary, { recursive: true, force: true }),
-          resolveId(id) {
-            if (id === "tailorkit:migrations") {
-              return "\0tailorkit:migrations";
-            }
-          },
-          async load(id) {
-            if (id !== "\0tailorkit:migrations") {
-              return;
-            }
-            const { migrations, files } = await readAppMigrations(
-              migrationsDirectory,
-              config.migrations === undefined,
-            );
-            await checkAppSchema(loaded.root, migrationsDirectory);
-            this.addWatchFile(appDatabasePaths(loaded.root).schema);
-            for (const file of files) {
-              this.addWatchFile(file);
-            }
-            await rm(migrationsOutput, { recursive: true, force: true });
-            await mkdir(migrationsOutput, { recursive: true });
-            await cp(migrationsDirectory, migrationsOutput, { recursive: true }).catch(
-              (error: unknown) => {
-                if (
-                  config.migrations === undefined &&
-                  (error as NodeJS.ErrnoException).code === "ENOENT"
-                ) {
-                  return;
-                }
-                throw error;
-              },
-            );
-            return `export default ${JSON.stringify(migrations)};`;
-          },
-        },
-      ],
       build: {
-        ssr: entry,
-        outDir: directory,
         emptyOutDir: false,
-        target: "es2022",
-        watch: watch ? {} : null,
         minify: "oxc",
-        rollupOptions: {
+        outDir: directory,
+        rolldownOptions: {
           external: [],
           output: {
             entryFileNames: "server.js",
@@ -122,7 +129,55 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
             minifyInternalExports: true,
           },
         },
+        ssr: entry,
+        target: "es2022",
+        watch: watch ? {} : null,
       },
+      configFile: false,
+      define: viteConfig.define,
+      mode: viteConfig.mode,
+      plugins: [
+        ...(viteConfig.plugins ?? []),
+        instanceServerPlugin(loaded.root, instances),
+        {
+          closeWatcher: async () => {
+            await rm(temporary, { force: true, recursive: true });
+          },
+          async load(id) {
+            if (id !== "\0tailorkit:migrations") {
+              /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+              return undefined;
+            }
+            const { migrations, files } = await readAppMigrations(
+              migrationsDirectory,
+              config.migrations === undefined
+            );
+            await checkAppSchema(loaded.root, migrationsDirectory);
+            this.addWatchFile(appDatabasePaths(loaded.root).schema);
+            for (const file of files) {
+              this.addWatchFile(file);
+            }
+            await rm(migrationsOutput, { force: true, recursive: true });
+            await mkdir(migrationsOutput, { recursive: true });
+            await cp(migrationsDirectory, migrationsOutput, {
+              recursive: true,
+            }).catch((error: ErrorOptions["cause"]) => {
+              if (config.migrations === undefined && isMissingFile(error)) {
+                return;
+              }
+              throw error;
+            });
+            return `export default ${JSON.stringify(migrations)};`;
+          },
+          name: "tailorkit-app-migrations",
+          resolveId: (id) =>
+            id === "tailorkit:migrations"
+              ? "\0tailorkit:migrations"
+              : undefined,
+        },
+      ],
+      resolve: viteConfig.resolve,
+      root: loaded.root,
       ssr: { noExternal: true },
     });
     watching = watch;
@@ -130,12 +185,26 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
       try {
         await Promise.race([
           initialBuild,
-          new Promise<never>((_, reject) =>
-            result.on("event", (event) => {
-              if (event.code === "ERROR") reject(event.error);
-              if (event.code === "END") ready?.();
-            }),
-          ),
+          (async () => {
+            const {
+              promise: pendingPromise,
+              resolve: _,
+              reject,
+            } = Promise.withResolvers<never>();
+            try {
+              result.on("event", (event) => {
+                if (event.code === "ERROR") {
+                  reject(event.error);
+                }
+                if (event.code === "END") {
+                  ready?.();
+                }
+              });
+            } catch (error) {
+              reject(error);
+            }
+            return await pendingPromise;
+          })(),
         ]);
       } catch (error) {
         await result.close();
@@ -144,31 +213,8 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
     }
     return result;
   } finally {
-    if (!watching) await rm(temporary, { recursive: true, force: true });
-  }
-}
-
-/** Check before either build can empty an output directory. */
-export function validateServerBuildOutput(loaded: LoadedTailorKitConfig, output: string) {
-  if (!loaded.config.server) return;
-  const migrationsDirectory = appDatabasePaths(
-    loaded.root,
-    loaded.config.server.migrations,
-  ).migrations;
-  for (const name of ["server", "client", "migrations", "tmp"]) {
-    if (overlaps(migrationsDirectory, path.join(output, name))) {
-      throw new Error("App build output must not overlap migration source");
+    if (!watching) {
+      await rm(temporary, { force: true, recursive: true });
     }
   }
-}
-
-function overlaps(source: string, destination: string) {
-  const contains = (parent: string, child: string) => {
-    const relative = path.relative(parent, child);
-    return (
-      relative === "" ||
-      (!path.isAbsolute(relative) && relative !== ".." && !relative.startsWith(`..${path.sep}`))
-    );
-  };
-  return contains(source, destination) || contains(destination, source);
-}
+};

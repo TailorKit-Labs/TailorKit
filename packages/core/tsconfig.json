@@ -2,6 +2,9 @@
   "extends": "@tailorkit/config/tsconfig.base.json",
   "compilerOptions": {
     "lib": ["ESNext", "DOM"],
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "paths": {
+      "#*": ["./src/*"]
+    }
   }
 }

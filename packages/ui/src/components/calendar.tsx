@@ -1,52 +1,69 @@
 "use client";
 
 import { DayPicker } from "@daypicker/react";
-import { ChevronLeftIcon, ChevronRightIcon, ChevronsUpDownIcon } from "lucide-react";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronsUpDownIcon,
+} from "lucide-react";
 import type * as React from "react";
+
 import { cn } from "#ui";
 
 const buttonClassNames =
   "relative flex size-(--cell-size) text-base sm:text-sm items-center justify-center rounded-lg text-foreground not-in-data-selected:hover:bg-accent disabled:pointer-events-none disabled:opacity-64 [&_svg:not([class*='opacity-'])]:opacity-80 [&_svg:not([class*='size-'])]:size-4.5 sm:[&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0";
 
-function CalendarChevron({
+const CalendarChevron = ({
   className,
   orientation,
   ...props
 }: {
   className?: string;
   orientation?: "left" | "right" | "up" | "down";
-}): React.ReactElement {
+}): React.ReactElement => {
   if (orientation === "left") {
     return (
-      <ChevronLeftIcon aria-hidden="true" className={cn(className, "rtl:rotate-180")} {...props} />
+      <ChevronLeftIcon
+        aria-hidden="true"
+        className={cn(className, "rtl:rotate-180")}
+        {...props}
+      />
     );
   }
 
   if (orientation === "right") {
     return (
-      <ChevronRightIcon aria-hidden="true" className={cn(className, "rtl:rotate-180")} {...props} />
+      <ChevronRightIcon
+        aria-hidden="true"
+        className={cn(className, "rtl:rotate-180")}
+        {...props}
+      />
     );
   }
 
-  return <ChevronsUpDownIcon aria-hidden="true" className={className} {...props} />;
-}
+  return (
+    <ChevronsUpDownIcon aria-hidden="true" className={className} {...props} />
+  );
+};
 
-export function Calendar({
+// SAFETY: The wrapper retains DayPicker's original mode and selection props while adding shared presentation defaults; its declared class keys come from DayPicker.
+export const Calendar = ({
   className,
   classNames,
   showOutsideDays = true,
   components: userComponents,
   mode = "single",
   ...props
-}: React.ComponentProps<typeof DayPicker>): React.ReactElement {
+}: React.ComponentProps<typeof DayPicker>): React.ReactElement => {
   const defaultClassNames = {
     button_next: buttonClassNames,
     button_previous: buttonClassNames,
-    caption_label: "text-base sm:text-sm font-medium flex items-center gap-2 h-full",
+    caption_label:
+      "text-base sm:text-sm font-medium flex items-center gap-2 h-full",
     day: "size-(--cell-size) text-sm py-px",
     day_button: cn(
       buttonClassNames,
-      "in-data-disabled:pointer-events-none in-[.range-middle]:rounded-none in-[.range-end:not(.range-start)]:rounded-s-none in-[.range-start:not(.range-end)]:rounded-e-none in-[.range-middle]:in-data-selected:bg-accent in-data-selected:bg-primary in-[.range-middle]:in-data-selected:text-foreground in-data-disabled:text-muted-foreground/72 in-data-outside:text-muted-foreground/72 in-data-selected:in-data-outside:text-primary-foreground in-data-selected:text-primary-foreground in-data-disabled:line-through outline-none in-[[data-selected]:not(.range-middle)]:transition-[border-radius,box-shadow] focus-visible:z-1 focus-visible:ring-[3px] focus-visible:ring-ring/50",
+      "outline-none focus-visible:z-1 focus-visible:ring-[3px] focus-visible:ring-ring/50 in-data-outside:text-muted-foreground/72 in-data-selected:bg-primary in-data-selected:text-primary-foreground in-data-selected:in-data-outside:text-primary-foreground in-data-disabled:pointer-events-none in-data-disabled:text-muted-foreground/72 in-data-disabled:line-through in-[.range-end:not(.range-start)]:rounded-s-none in-[.range-middle]:rounded-none in-[.range-middle]:in-data-selected:bg-accent in-[.range-middle]:in-data-selected:text-foreground in-[.range-start:not(.range-end)]:rounded-e-none in-[[data-selected]:not(.range-middle)]:transition-[border-radius,box-shadow]"
     ),
     dropdown: "absolute bg-popover inset-0 opacity-0",
     dropdown_root:
@@ -59,26 +76,38 @@ export function Calendar({
       "relative mx-(--cell-size) px-1 mb-1 flex h-(--cell-size) items-center justify-center z-2",
     months: "relative flex flex-col sm:flex-row gap-2",
     nav: "absolute top-0 flex w-full justify-between z-1",
-    outside: "text-muted-foreground data-selected:bg-accent/50 data-selected:text-muted-foreground",
+    outside:
+      "text-muted-foreground data-selected:bg-accent/50 data-selected:text-muted-foreground",
     range_end: "range-end",
     range_middle: "range-middle",
     range_start: "range-start",
     today:
       "*:after:pointer-events-none *:after:absolute *:after:bottom-1 *:after:start-1/2 *:after:z-1 *:after:size-[3px] *:after:-translate-x-1/2 *:after:rounded-full *:after:bg-primary [&[data-selected]:not(.range-middle)>*]:after:bg-background [&[data-disabled]>*]:after:bg-foreground/30",
-    week_number: "size-(--cell-size) p-0 text-xs font-medium text-muted-foreground/72",
-    weekday: "size-(--cell-size) p-0 text-xs font-medium text-muted-foreground/72",
+    week_number:
+      "size-(--cell-size) p-0 text-xs font-medium text-muted-foreground/72",
+    weekday:
+      "size-(--cell-size) p-0 text-xs font-medium text-muted-foreground/72",
   };
-  const mergedClassNames: typeof defaultClassNames = Object.keys(defaultClassNames).reduce(
-    (acc, key) => {
-      const userClass = classNames?.[key as keyof typeof classNames];
-      const baseClass = defaultClassNames[key as keyof typeof defaultClassNames];
-
-      acc[key as keyof typeof defaultClassNames] = userClass ? cn(baseClass, userClass) : baseClass;
-
-      return acc;
-    },
-    { ...defaultClassNames } as typeof defaultClassNames,
-  );
+  const mergedClassNames: typeof defaultClassNames = { ...defaultClassNames };
+  /* oxlint-disable typescript/no-unsafe-type-assertion -- The public generic API establishes this relationship; its runtime registry erases the type parameters. */
+  for (const key of Object.keys(
+    defaultClassNames
+  ) as (keyof typeof defaultClassNames)[]
+  /* oxlint-enable typescript/no-unsafe-type-assertion */
+  ) {
+    // SAFETY: The wrapper retains DayPicker's original mode and selection props while adding shared presentation defaults; its declared class keys come from DayPicker.
+    const userClass =
+      classNames?.[
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- The wrapper retains DayPicker's original mode and selection props while adding shared presentation defaults; its declared class keys come from DayPicker. */
+        key as keyof typeof classNames
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
+      ];
+    const baseClass = defaultClassNames[key];
+    mergedClassNames[key] =
+      userClass !== undefined && userClass !== null && userClass !== ""
+        ? cn(baseClass, userClass)
+        : baseClass;
+  }
 
   const defaultComponents = { Chevron: CalendarChevron };
 
@@ -87,18 +116,32 @@ export function Calendar({
     ...userComponents,
   };
 
+  // SAFETY: The wrapper retains DayPicker's original mode and selection props while adding shared presentation defaults; its declared class keys come from DayPicker.
   const dayPickerProps = {
-    className: cn("w-fit [--cell-size:--spacing(10)] sm:[--cell-size:--spacing(9)]", className),
+    className: cn(
+      "w-fit [--cell-size:--spacing(10)] sm:[--cell-size:--spacing(9)]",
+      className
+    ),
     classNames: mergedClassNames,
     components: mergedComponents,
     "data-slot": "calendar",
     formatters: {
-      formatMonthDropdown: (date: Date) => date.toLocaleString("default", { month: "short" }),
+      formatMonthDropdown: (date: Date) =>
+        date.toLocaleString("default", { month: "short" }),
     } as React.ComponentProps<typeof DayPicker>["formatters"],
     mode,
     showOutsideDays,
     ...props,
   };
 
-  return <DayPicker {...(dayPickerProps as React.ComponentProps<typeof DayPicker>)} />;
-}
+  // SAFETY: The wrapper retains DayPicker's original mode and selection props while adding shared presentation defaults; its declared class keys come from DayPicker.
+  return (
+    <DayPicker
+      {
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- The wrapper retains DayPicker's original mode and selection props while adding shared presentation defaults; its declared class keys come from DayPicker. */
+        ...(dayPickerProps as React.ComponentProps<typeof DayPicker>)
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
+      }
+    />
+  );
+};

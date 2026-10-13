@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
 import type { DemoSession } from "@playground/shared/auth";
+import { useEffect, useState } from "react";
+import { z } from "zod";
 
 export interface SignInChoice {
   userId: string;
@@ -16,51 +17,90 @@ export interface DemoAuthState {
   choices: SignInChoice[];
 }
 
-async function readAuth(): Promise<DemoAuthState> {
-  const response = await fetch("/api/auth", { credentials: "same-origin" });
-  if (!response.ok) throw new Error("Could not load the local demo session");
-  return (await response.json()) as DemoAuthState;
-}
+const authStateSchema = z.object({
+  choices: z.array(
+    z.object({
+      userId: z.string(),
+      userName: z.string(),
+      email: z.string(),
+      avatar: z.string(),
+      teamId: z.string(),
+      teamName: z.string(),
+      teamKey: z.string(),
+    })
+  ),
+  session: z
+    .object({
+      user: z.object({
+        id: z.string(),
+        name: z.string(),
+        email: z.string(),
+        avatar: z.string(),
+      }),
+      team: z.object({ id: z.string(), name: z.string(), key: z.string() }),
+    })
+    .nullable(),
+});
 
-export function useAuthSession() {
+const readAuth = async (): Promise<DemoAuthState> => {
+  const response = await fetch("/api/auth", { credentials: "same-origin" });
+  if (!response.ok) {
+    throw new Error("Could not load the local demo session");
+  }
+  return authStateSchema.parse(await response.json());
+};
+
+export const useAuthSession = () => {
   const [data, setData] = useState<DemoAuthState>();
-  const [error, setError] = useState<Error>();
+  const [err, setErr] = useState<Error>();
 
   useEffect(() => {
     let cancelled = false;
-    void readAuth().then(
-      (next) => {
-        if (!cancelled) setData(next);
-      },
-      (reason: unknown) => {
-        if (!cancelled) setError(reason instanceof Error ? reason : new Error(String(reason)));
-      },
-    );
+    void (async () => {
+      try {
+        const next = await readAuth();
+        if (!cancelled) {
+          setData(next);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setErr(error instanceof Error ? error : new Error(String(error)));
+        }
+      }
+    })();
     return () => {
       cancelled = true;
     };
   }, []);
 
-  return { data, error, isPending: data === undefined && error === undefined };
-}
+  return {
+    data,
+    error: err,
+    isPending: data === undefined && err === undefined,
+  };
+};
 
-export async function signInDemoUser(userId: string, teamId: string) {
+export const signInDemoUser = async (userId: string, teamId: string) => {
   const response = await fetch("/api/auth", {
-    body: JSON.stringify({ action: "sign-in", userId, teamId }),
+    body: JSON.stringify({ action: "sign-in", teamId, userId }),
     credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
     method: "POST",
   });
-  if (!response.ok) throw new Error("Could not start the local demo session");
-  return (await response.json()) as DemoAuthState;
-}
+  if (!response.ok) {
+    throw new Error("Could not start the local demo session");
+  }
+  return authStateSchema.parse(await response.json());
+};
 
-export async function signOutDemoUser() {
+export const signOutDemoUser = async () => {
   const response = await fetch("/api/auth", {
     body: JSON.stringify({ action: "sign-out" }),
     credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
     method: "POST",
   });
-  if (!response.ok) throw new Error("Could not end the local demo session");
-}
+  if (!response.ok) {
+    throw new Error("Could not end the local demo session");
+  }
+};

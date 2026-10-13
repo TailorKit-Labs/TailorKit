@@ -1,2 +1,10 @@
 @import "@tailorkit/ui/globals.css";
 @source "../node_modules/streamdown/dist/*.js";
+
+/* Google sign-in branding uses Google's four brand colors in both themes. */
+@theme {
+  --color-google-blue: #4285f4;
+  --color-google-green: #34a853;
+  --color-google-yellow: #fbbc05;
+  --color-google-red: #ea4335;
+}

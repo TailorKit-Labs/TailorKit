@@ -1,23 +1,29 @@
 import { createRemoteComponent } from "@tailorkit/app";
 import { describe, expect, it, vi } from "vite-plus/test";
+
 import { renderGeneratedTypes } from "./types";
+
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 describe("children-only components", () => {
   it("generates opt-in children and leaf component bindings", () => {
     const output = renderGeneratedTypes({
       components: {
         Card: { callbacks: {}, children: true },
-        Input: { callbacks: {}, children: false },
         Image: { callbacks: {}, children: false },
+        Input: { callbacks: {}, children: false },
       },
       views: {},
     });
-    expect(output).toContain('createRemoteComponent<CardProps, true>("Card", {\n  children: true,');
     expect(output).toContain(
-      'createRemoteComponent<InputProps, false>("Input", {\n  children: false,',
+      'createRemoteComponent<CardProps, true>("Card", {\n  children: true,'
     );
     expect(output).toContain(
-      'createRemoteComponent<ImageProps, false>("Image", {\n  children: false,',
+      'createRemoteComponent<InputProps, false>("Input", {\n  children: false,'
+    );
+    expect(output).toContain(
+      'createRemoteComponent<ImageProps, false>("Image", {\n  children: false,'
     );
   });
 
@@ -28,29 +34,39 @@ describe("children-only components", () => {
           Input: { callbacks: {} },
         },
         views: {},
-      }),
+      })
     ).toThrow();
   });
 
   it("preserves multiple children and nested remote components", () => {
-    const Card = createRemoteComponent<object, true>("Card", { children: true });
+    const Card = createRemoteComponent<object, true>("Card", {
+      children: true,
+    });
     const nested = Card({ children: "nested" });
     const children = ["first", 0, nested];
     const node = Card({ children });
-    expect(node).toMatchObject({ type: "tailorkit-card", props: { children } });
+    expect(node).toMatchObject({ props: { children }, type: "tailorkit-card" });
   });
 
   it("preserves callback dispatch alongside children", () => {
-    const onClick = vi.fn();
-    const Button = createRemoteComponent<{ onClick: () => void }, true>("Button", {
-      children: true,
-      callbacks: { onClick: 0 },
-    });
+    const onClick = vi.fn<() => void>();
+    const Button = createRemoteComponent<{ onClick: () => void }, true>(
+      "Button",
+      {
+        callbacks: { onClick: 0 },
+        children: true,
+      }
+    );
     const node = Button({ children: "Save", onClick });
-    expect(node).toMatchObject({ type: "tailorkit-button", props: { children: "Save" } });
-    if (!node || typeof node !== "object" || !("props" in node)) {
+    expect(node).toMatchObject({
+      props: { children: "Save" },
+      type: "tailorkit-button",
+    });
+    if (!isObjectValue(node) || !("props" in node)) {
       throw new Error("Expected a remote component node");
     }
+    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     const props = node.props as {
       ontailorkitcallbackonclick: (event: { detail: unknown[] }) => void;
     };
@@ -62,6 +78,9 @@ describe("children-only components", () => {
     const Leaf = createRemoteComponent<object>("Leaf");
     // @ts-expect-error exercise untyped callers that bypass the generated contract
     const node = Leaf({ children: "not allowed" });
-    expect(node).toMatchObject({ type: "tailorkit-leaf", props: { children: undefined } });
+    expect(node).toMatchObject({
+      props: { children: undefined },
+      type: "tailorkit-leaf",
+    });
   });
 });

@@ -13,6 +13,14 @@ export type {
   TailorKitProviderProps,
 } from "./tailorkit";
 export type { UseAppsOptions, UseAppsResult } from "./hooks/use-apps";
-export type { SlotItem, UseViewsOptions, UseViewsResult } from "./hooks/use-views";
-export type { UseViewContext, ViewOptions, ViewState } from "./hooks/use-view-context";
+export type {
+  SlotItem,
+  UseViewsOptions,
+  UseViewsResult,
+} from "./hooks/use-views";
+export type {
+  UseViewContext,
+  ViewOptions,
+  ViewState,
+} from "./hooks/use-view-context";
 export { primitives } from "./primitives";

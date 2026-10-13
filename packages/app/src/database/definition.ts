@@ -5,6 +5,6 @@ export interface DatabaseDefinition<R extends AnyRelations = AnyRelations> {
 }
 
 /** Configure the installation database with Drizzle relations, which also contain its tables. */
-export function defineDatabase<const R extends AnyRelations>(definition: DatabaseDefinition<R>) {
-  return Object.freeze({ relations: definition.relations });
-}
+export const defineDatabase = <const R extends AnyRelations>(
+  definition: DatabaseDefinition<R>
+) => Object.freeze({ relations: definition.relations });

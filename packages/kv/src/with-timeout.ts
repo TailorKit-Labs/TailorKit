@@ -1,21 +1,37 @@
-const DEFAULT_GET_TIMEOUT_MS = 5_000;
+const DEFAULT_GET_TIMEOUT_MS = 5000;
 
-export function withTimeout<T>(
+export const withTimeout = async <T>(
   promise: Promise<T>,
-  timeout: number | undefined = DEFAULT_GET_TIMEOUT_MS,
-): Promise<T> {
-  if (!Number.isSafeInteger(timeout) || timeout <= 0 || timeout > 2_147_483_647) {
-    return Promise.reject(new TypeError("KV timeout must be a positive integer."));
+  timeout: number | undefined = DEFAULT_GET_TIMEOUT_MS
+): Promise<T> => {
+  if (
+    !Number.isSafeInteger(timeout) ||
+    timeout <= 0 ||
+    timeout > 2_147_483_647
+  ) {
+    throw new TypeError("KV timeout must be a positive integer.");
   }
 
   let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`KV get timed out after ${timeout}ms.`)), timeout);
-  });
+  const timeoutPromise = (async () => {
+    const {
+      promise: pendingPromise,
+      resolve: _,
+      reject,
+    } = Promise.withResolvers<never>();
+    try {
+      timer = setTimeout(() => {
+        reject(new Error(`KV get timed out after ${timeout}ms.`));
+      }, timeout);
+    } catch (error) {
+      reject(error);
+    }
+    return await pendingPromise;
+  })();
 
-  return Promise.race([promise, timeoutPromise]).finally(() => {
+  return await Promise.race([promise, timeoutPromise]).finally(() => {
     if (timer) {
       clearTimeout(timer);
     }
   });
-}
+};

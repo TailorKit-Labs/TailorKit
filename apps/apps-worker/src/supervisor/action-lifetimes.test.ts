@@ -1,18 +1,23 @@
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
-import { createActionLeases, actionDestination, ActionCapability } from "./actions";
 import { abortable } from "../runtime/cancellation";
-vi.mock("cloudflare:workers", () => ({ RpcTarget: function RpcTarget() {} }));
+import {
+  createActionLeases,
+  actionDestination,
+  ActionCapability,
+} from "./actions";
+
+vi.mock("cloudflare:workers", () => ({ RpcTarget: vi.fn() }));
 
 const identity = {
-  subjectId: "user",
-  projectId: "project",
-  scope: { name: "org", value: { id: "tenant" } },
-  toolUrl: "https://host.test/api/tailorkit/tools/execute",
   appId: "app",
-  installationId: "install",
   deploymentId: "v1",
   expiresAt: Date.now() + 60_000,
+  installationId: "install",
+  projectId: "project",
+  scope: { name: "org", value: { id: "tenant" } },
+  subjectId: "user",
+  toolUrl: "https://host.test/api/tailorkit/tools/execute",
 };
 
 afterEach(() => {
@@ -35,7 +40,7 @@ it("expires actions on cancellation or token expiry", async () => {
   const leases = createActionLeases();
   const parent = new AbortController();
   const cancelled = leases.open(identity, parent.signal);
-  const waiting = abortable(new Promise(() => {}), cancelled.signal);
+  const waiting = abortable(Promise.withResolvers().promise, cancelled.signal);
   const assertion = expect(waiting).rejects.toBeDefined();
   parent.abort();
   await assertion;
@@ -47,7 +52,9 @@ it("expires actions on cancellation or token expiry", async () => {
   await vi.advanceTimersByTimeAsync(30_000);
   expect(expiry.signal.aborted).toBe(true);
   expiry.close();
-  expect(() => leases.open({ ...identity, expiresAt: Date.now() })).toThrow("token expired");
+  expect(() => leases.open({ ...identity, expiresAt: Date.now() })).toThrow(
+    "token expired"
+  );
 });
 
 it.each([
@@ -64,11 +71,15 @@ it.each([
   "https://host.internal",
   "https://user:password@example.com",
 ])("blocks action egress to %s", (url) => {
-  expect(() => actionDestination(new URL(url))).toThrow("public HTTPS");
+  expect(() => {
+    actionDestination(new URL(url));
+  }).toThrow("public HTTPS");
 });
 
 it("allows HTTPS Internet destinations", () => {
-  expect(() => actionDestination(new URL("https://api.example.com/path"))).not.toThrow();
+  expect(() => {
+    actionDestination(new URL("https://api.example.com/path"));
+  }).not.toThrow();
 });
 
 it("cancels all active actions on deployment replacement", () => {
@@ -86,26 +97,35 @@ it("cancels all active actions on deployment replacement", () => {
 });
 
 it("sends the verified app session directly to the product and rejects redirects", async () => {
-  const fetch = vi
-    .spyOn(globalThis, "fetch")
-    .mockResolvedValueOnce(
-      new Response(null, { status: 302, headers: { location: "https://attacker.test" } }),
-    );
+  const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+    new Response(null, {
+      headers: { location: "https://attacker.test" },
+      status: 302,
+    })
+  );
   const lease = createActionLeases().open(identity);
   const capability = new ActionCapability(lease, async () => {}, {
-    url: identity.toolUrl,
     token: "verified-app-credential",
+    url: identity.toolUrl,
   });
   try {
-    await expect(capability.tool("customers.read", { id: "customer" })).rejects.toBeDefined();
+    await expect(
+      capability.tool("customers.read", { id: "customer" })
+    ).rejects.toBeDefined();
     expect(fetch).toHaveBeenCalledOnce();
     expect(fetch.mock.calls[0]).toMatchObject([
       identity.toolUrl,
-      { redirect: "manual", headers: { authorization: "Bearer verified-app-credential" } },
+      {
+        headers: { authorization: "Bearer verified-app-credential" },
+        redirect: "manual",
+      },
     ]);
-    expect(JSON.parse(String(fetch.mock.calls[0]?.[1]?.body))).toMatchObject({
-      path: "customers.read",
+
+    expect(
+      await new Response(fetch.mock.calls[0]?.[1]?.body).json()
+    ).toMatchObject({
       input: { id: "customer" },
+      path: "customers.read",
     });
   } finally {
     lease.close();

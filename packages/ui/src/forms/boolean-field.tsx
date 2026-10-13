@@ -3,9 +3,15 @@
 import { useId } from "react";
 import type { ComponentProps } from "react";
 
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "#components/field";
+import { Switch } from "#components/switch";
+
 import { formatFieldErrors } from "./field-errors";
-import { Switch } from "../components/switch";
-import { Field, FieldDescription, FieldError, FieldLabel } from "../components/field";
 
 const emptyErrors: unknown[] = [];
 
@@ -20,7 +26,7 @@ export interface BooleanFieldProps {
   required?: boolean;
 }
 
-export function BooleanField({
+export const BooleanField = ({
   checked,
   description,
   disabled,
@@ -29,7 +35,7 @@ export function BooleanField({
   onBlur,
   onCheckedChange,
   required,
-}: BooleanFieldProps) {
+}: BooleanFieldProps) => {
   const id = useId();
   const errorMessage = formatFieldErrors(errors);
   const isError = errorMessage.length > 0;
@@ -45,11 +51,17 @@ export function BooleanField({
       />
       <div className="flex flex-col gap-1">
         <FieldLabel htmlFor={id}>
-          {label} {required && <span className="text-destructive-foreground">*</span>}
+          {label}{" "}
+          {required === true && (
+            <span className="text-destructive-foreground">*</span>
+          )}
         </FieldLabel>
-        {description && !isError && <FieldDescription>{description}</FieldDescription>}
+        {description !== undefined &&
+          description !== null &&
+          description !== "" &&
+          !isError && <FieldDescription>{description}</FieldDescription>}
         {isError && <FieldError>{errorMessage}</FieldError>}
       </div>
     </Field>
   );
-}
+};

@@ -1,3 +1,9 @@
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
+// Each view schema owns its field values; composition only merges checked object containers.
+// oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- A schema-agnostic composer cannot narrow arbitrary registered schema outputs.
+export type ViewContextValues = Record<string, unknown>;
+
 export type ViewStatus = "ready" | "loading" | "error";
 
 export interface ViewLayer {
@@ -12,7 +18,7 @@ export interface ActiveView {
 }
 
 /** Includes the requested path, followed by its parents through the root. */
-export function getViewHierarchy(path: string): string[] {
+export const getViewHierarchy = (path: string): string[] => {
   const hierarchy = [path];
   let current = path;
   while (current !== "/") {
@@ -21,27 +27,31 @@ export function getViewHierarchy(path: string): string[] {
     hierarchy.push(current);
   }
   return hierarchy;
-}
+};
 
-export function isViewAncestor(ancestor: string, path: string): boolean {
-  return ancestor === "/" || ancestor === path || path.startsWith(`${ancestor}/`);
-}
+export const isViewAncestor = (ancestor: string, path: string): boolean =>
+  ancestor === "/" || ancestor === path || path.startsWith(`${ancestor}/`);
 
-export function getViewDepth(path: string): number {
-  return path.split("/").filter(Boolean).length;
-}
+export const getViewDepth = (path: string): number =>
+  path.split("/").filter(Boolean).length;
 
 /** Context supplied to the selected view after combining its registered ancestors. */
+export interface ReadyViewProps {
+  view: string;
+  status: "ready";
+  context: ViewContextValues;
+}
+
 export type ResolvedViewProps =
-  | { view: string; status: "ready"; context: Record<string, unknown> }
+  | ReadyViewProps
   | { view: string; status: "loading" | "error"; context?: never };
 
-export function composeViewContext(
+export const composeViewContext = (
   selected: string,
-  request: { layers: readonly ViewLayer[]; declaredViews: readonly string[] },
-): ResolvedViewProps {
+  request: { layers: readonly ViewLayer[]; declaredViews: readonly string[] }
+): ResolvedViewProps => {
   let status: ViewStatus = "ready";
-  const context: Record<string, unknown> = {};
+  const context: ViewContextValues = {};
   for (const path of getViewHierarchy(selected).toReversed()) {
     const layer = request.layers.find((entry) => entry.path === path);
     if (!layer) {
@@ -60,7 +70,7 @@ export function composeViewContext(
     }
     if (
       layer.context === null ||
-      typeof layer.context !== "object" ||
+      !isObjectValue(layer.context) ||
       Array.isArray(layer.context)
     ) {
       status = "error";
@@ -71,16 +81,16 @@ export function composeViewContext(
         throw new Error(`Duplicate view context field "${key}".`);
       }
       Object.defineProperty(context, key, {
-        value,
-        enumerable: true,
         configurable: true,
+        enumerable: true,
+        value,
         writable: true,
       });
     }
   }
   const props: ResolvedViewProps =
     status === "ready"
-      ? { view: selected, status, context }
-      : { view: selected, status, context: undefined };
+      ? { context, status, view: selected }
+      : { context: undefined, status, view: selected };
   return props;
-}
+};

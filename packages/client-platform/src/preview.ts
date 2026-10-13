@@ -11,16 +11,11 @@ const base64 = z
   .max(4 * Math.ceil((256 * 1024) / 3))
   .regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u);
 const hasControlCharacters = (value: string) =>
+  // oxlint-disable-next-line typescript/no-misused-spread -- Spreading a string iterates Unicode code points, which this control-character check requires.
   [...value].some((character) => (character.codePointAt(0) ?? 0) < 32);
 
 export const previewFileManifestSchema = z.object({
-  path: z
-    .string()
-    .min(1)
-    .max(1024)
-    .refine((path) => new TextEncoder().encode(path).byteLength <= 1024, {
-      message: "Preview path exceeds 1024 UTF-8 bytes",
-    }),
+  chunks: z.number().int().min(0).max(4),
   contentType: z
     .string()
     .min(1)
@@ -28,13 +23,19 @@ export const previewFileManifestSchema = z.object({
     .refine((contentType) => !/[\r\n]/u.test(contentType), {
       message: "Invalid preview content type",
     }),
+  path: z
+    .string()
+    .min(1)
+    .max(1024)
+    .refine((path) => new TextEncoder().encode(path).byteLength <= 1024, {
+      message: "Preview path exceeds 1024 UTF-8 bytes",
+    }),
+  sha256: z.string().regex(/^[a-f0-9]{64}$/u),
   size: z
     .number()
     .int()
     .min(0)
     .max(1024 * 1024),
-  chunks: z.number().int().min(0).max(4),
-  sha256: z.string().regex(/^[a-f0-9]{64}$/u),
 });
 export const previewBuildManifestSchema = z
   .object({
@@ -42,11 +43,11 @@ export const previewBuildManifestSchema = z
     views: z
       .array(
         z.object({
-          slot: z.string().min(1).max(255),
-          path: z.string().startsWith("/").max(1024),
-          instances: z.literal(true).optional(),
           disabled: z.literal(true).optional(),
-        }),
+          instances: z.literal(true).optional(),
+          path: z.string().startsWith("/").max(1024),
+          slot: z.string().min(1).max(255),
+        })
       )
       .max(1000)
       .optional(),
@@ -58,7 +59,9 @@ export const previewBuildManifestSchema = z
       if (
         file.path.startsWith("/") ||
         file.path.includes("\\") ||
-        file.path.split("/").some((part) => !part || part === "." || part === "..") ||
+        file.path
+          .split("/")
+          .some((part) => !part || part === "." || part === "..") ||
         hasControlCharacters(file.path) ||
         paths.has(file.path)
       ) {
@@ -78,32 +81,41 @@ export const previewBuildManifestSchema = z
       paths.add(file.path);
       total += file.size;
     }
-    if (!paths.has("client.js")) context.addIssue({ code: "custom", message: "Missing client.js" });
-    if (total > 10 * 1024 * 1024)
-      context.addIssue({ code: "custom", message: "Preview build exceeds 10 MiB" });
+    if (!paths.has("client.js")) {
+      context.addIssue({ code: "custom", message: "Missing client.js" });
+    }
+    if (total > 10 * 1024 * 1024) {
+      context.addIssue({
+        code: "custom",
+        message: "Preview build exceeds 10 MiB",
+      });
+    }
   });
 export const previewEventSchema = z.discriminatedUnion("type", [
   z.object({
-    type: z.literal("begin"),
     buildId: identifier,
-    revision: z.number().int().positive(),
     manifest: previewBuildManifestSchema,
+    revision: z.number().int().positive(),
+    type: z.literal("begin"),
   }),
   z.object({
-    type: z.literal("chunk"),
-    revision: z.number().int().positive(),
-    fileIndex: z.number().int().min(0).max(99),
-    chunkIndex: z.number().int().min(0).max(3),
     base64,
+    chunkIndex: z.number().int().min(0).max(3),
+    fileIndex: z.number().int().min(0).max(99),
+    revision: z.number().int().positive(),
+    type: z.literal("chunk"),
   }),
-  z.object({ type: z.literal("complete"), revision: z.number().int().positive() }),
+  z.object({
+    revision: z.number().int().positive(),
+    type: z.literal("complete"),
+  }),
   z.object({ type: z.literal("ended") }),
 ]);
 export const previewMetadataSchema = z.object({
-  sessionId: z.uuid(),
   expiresAt: z.string().min(1),
-  websocketUrl: z.url(),
+  sessionId: z.uuid(),
   token: z.string().min(1),
+  websocketUrl: z.url(),
 });
 
 export type PreviewFileManifest = z.infer<typeof previewFileManifestSchema>;
@@ -112,42 +124,53 @@ export type PreviewEvent = z.infer<typeof previewEventSchema>;
 
 const beginInput = z.object({ manifest: previewBuildManifestSchema });
 const uploadInput = z.object({
-  buildId: identifier,
-  fileIndex: z.number().int().min(0).max(99),
-  chunkIndex: z.number().int().min(0).max(3),
   base64,
+  buildId: identifier,
+  chunkIndex: z.number().int().min(0).max(3),
+  fileIndex: z.number().int().min(0).max(99),
 });
 const buildIdOutput = z.object({ buildId: identifier });
 const acceptedOutput = z.object({ accepted: z.literal(true) });
 const commitOutput = z.object({ revision: z.number().int().positive() });
 
 export interface PreviewWebSocketClient {
-  beginBuild(input: z.input<typeof beginInput>): Promise<z.infer<typeof buildIdOutput>>;
-  uploadChunk(input: z.input<typeof uploadInput>): Promise<z.infer<typeof acceptedOutput>>;
-  commitBuild(input: { buildId: string }): Promise<z.infer<typeof commitOutput>>;
-  heartbeat(): Promise<z.infer<typeof acceptedOutput>>;
-  subscribe(): Promise<AsyncIterable<PreviewEvent>>;
+  beginBuild: (
+    input: z.input<typeof beginInput>
+  ) => Promise<z.infer<typeof buildIdOutput>>;
+  uploadChunk: (
+    input: z.input<typeof uploadInput>
+  ) => Promise<z.infer<typeof acceptedOutput>>;
+  commitBuild: (input: {
+    buildId: string;
+  }) => Promise<z.infer<typeof commitOutput>>;
+  heartbeat: () => Promise<z.infer<typeof acceptedOutput>>;
+  subscribe: () => Promise<AsyncIterable<PreviewEvent>>;
 }
 
 /** Validates every preview WebSocket request, response, and streamed event. */
-export function createPreviewWebSocketClient(websocket: WebSocket): PreviewWebSocketClient {
-  const rpc = createORPCClient(
-    new RPCLink({ connect: () => websocket }),
-  ) as unknown as PreviewWebSocketClient;
+export const createPreviewWebSocketClient = (
+  websocket: WebSocket
+): PreviewWebSocketClient => {
+  const rpc = createORPCClient<{
+    [K in keyof PreviewWebSocketClient]: PreviewWebSocketClient[K];
+  }>(new RPCLink({ connect: () => websocket }));
   return {
-    beginBuild: async (input) => buildIdOutput.parse(await rpc.beginBuild(beginInput.parse(input))),
-    uploadChunk: async (input) =>
-      acceptedOutput.parse(await rpc.uploadChunk(uploadInput.parse(input))),
+    beginBuild: async (input) =>
+      buildIdOutput.parse(await rpc.beginBuild(beginInput.parse(input))),
     commitBuild: async (input) =>
-      commitOutput.parse(await rpc.commitBuild({ buildId: identifier.parse(input.buildId) })),
+      commitOutput.parse(
+        await rpc.commitBuild({ buildId: identifier.parse(input.buildId) })
+      ),
     heartbeat: async () => acceptedOutput.parse(await rpc.heartbeat()),
     subscribe: async () => {
       const stream = await rpc.subscribe();
-      return (async function* () {
+      return (async function* subscribe() {
         for await (const value of stream) {
           yield previewEventSchema.parse(value);
         }
       })();
     },
+    uploadChunk: async (input) =>
+      acceptedOutput.parse(await rpc.uploadChunk(uploadInput.parse(input))),
   };
-}
+};

@@ -1,8 +1,11 @@
-import { linkTestDependencies, testSchema } from "../test-utils";
 import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+
 import { expect, it } from "vite-plus/test";
+
+import { linkTestDependencies, testSchema } from "#test-utils";
+
 import { generateAppMigrations } from "./generate-migrations";
 import { readAppMigrations } from "./migrations";
 
@@ -17,18 +20,23 @@ it.each([undefined, "history"])(
       await writeFile(path.join(root, "src/db/schema.ts"), testSchema);
       await writeFile(
         path.join(root, "tailorkit.config.mjs"),
-        `export default { host: "https://host.example.com", server: ${JSON.stringify(directory ? { migrations: directory } : {})} };`,
+        `export default { host: "https://host.example.com", server: ${JSON.stringify(directory !== undefined && directory !== null && directory !== "" ? { migrations: directory } : {})} };`
       );
-      const migrations = await generateAppMigrations({ cwd: root, name: "init" });
-      expect(migrations).toBe(path.join(root, directory ?? "src/db/migrations"));
+      const migrations = await generateAppMigrations({
+        cwd: root,
+        name: "init",
+      });
+      expect(migrations).toBe(
+        path.join(root, directory ?? "src/db/migrations")
+      );
       const generated = await readAppMigrations(migrations);
       expect(generated.migrations).toHaveLength(1);
       const history = await readdir(migrations);
       await generateAppMigrations({ cwd: root });
       expect(await readdir(migrations)).toEqual(history);
     } finally {
-      await rm(root, { recursive: true, force: true });
+      await rm(root, { force: true, recursive: true });
     }
   },
-  60_000,
+  60_000
 );

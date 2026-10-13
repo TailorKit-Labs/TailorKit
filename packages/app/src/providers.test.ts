@@ -14,15 +14,13 @@ it("keeps the app wrapper mounted across view changes and cleans it up on unmoun
   const root = document.createElement("div");
   const Context = createContext("missing");
   const mount = vi.fn();
-  const cleanup = vi.fn();
+  const cleanup = vi.fn<() => void>();
   const client = createFileClient({
-    roots: [],
     layouts: [],
-    views: [],
     root: {
-      filename: "src/root.tsx",
       definition: defineRoute({
-        shellComponent: ({ children }) => {
+        // oxlint-disable-next-line func-name-matching -- The named function is a React-compatible test component supplied through a component property.
+        shellComponent: function ShellComponent({ children }) {
           useEffect(() => {
             mount();
             return cleanup;
@@ -30,21 +28,26 @@ it("keeps the app wrapper mounted across view changes and cleans it up on unmoun
           return h(Context.Provider, { value: "shared" }, children);
         },
       }),
+      filename: "src/root.tsx",
     },
+    roots: [],
+    views: [],
   });
-  function First() {
-    return h("div", {}, `First: ${useContext(Context)}`);
-  }
-  function Second() {
-    return h("div", {}, `Second: ${useContext(Context)}`);
-  }
-  await act(() => client.$runtime.render(h(First, {}), root));
+  const First = () => h("div", {}, `First: ${useContext(Context)}`);
+  const Second = () => h("div", {}, `Second: ${useContext(Context)}`);
+  await act(() => {
+    client.$runtime.render(h(First, {}), root);
+  });
   expect(root.textContent).toBe("First: shared");
-  await act(() => client.$runtime.render(h(Second, {}), root));
+  await act(() => {
+    client.$runtime.render(h(Second, {}), root);
+  });
   expect(root.textContent).toBe("Second: shared");
   expect(mount).toHaveBeenCalledOnce();
   expect(cleanup).not.toHaveBeenCalled();
-  await act(() => client.$runtime.render(null, root));
+  await act(() => {
+    client.$runtime.render(null, root);
+  });
   expect(cleanup).toHaveBeenCalledOnce();
   expect(root.textContent).toBe("");
   await window.happyDOM.close();

@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -8,35 +7,47 @@ import {
   BreadcrumbSeparator,
 } from "@tailorkit/ui/breadcrumb";
 import { Link, useMatches } from "@tanstack/react-router";
+import { Fragment } from "react";
+import { z } from "zod";
+
+const hasText = (value: string | null | undefined): value is string =>
+  value !== undefined && value !== null && value.length > 0;
+
+const breadcrumbMetadata = z.object({ name: z.string().optional() });
 
 interface BreadcrumbSegment {
   href?: string;
   label: string;
 }
 
-const accountRouteLabels: Record<string, string> = {
-  "/(app)/account/invites": "Invites",
-  "/(app)/account/organizations": "Organisations",
-  "/(app)/account/profile/": "Profile",
-  "/(app)/account/security/": "Security",
-};
+const accountRouteLabels = new Map<string, string>([
+  ["/(app)/account/invites", "Invites"],
+  ["/(app)/account/organizations", "Organisations"],
+  ["/(app)/account/profile/", "Profile"],
+  ["/(app)/account/security/", "Security"],
+]);
 
-const settingsRouteLabels: Record<string, string> = {
-  "/(app)/$orgSlug/$projectSlug/settings/": "General",
-  "/(app)/$orgSlug/$projectSlug/settings/api-keys": "API Keys",
-  "/(app)/$orgSlug/~/(org)/settings/": "General",
-  "/(app)/$orgSlug/~/(org)/settings/members": "Members",
-};
+const settingsRouteLabels = new Map<string, string>([
+  ["/(app)/$orgSlug/$projectSlug/settings/", "General"],
+  ["/(app)/$orgSlug/$projectSlug/settings/api-keys", "API Keys"],
+  ["/(app)/$orgSlug/~/(org)/settings/", "General"],
+  ["/(app)/$orgSlug/~/(org)/settings/members", "Members"],
+]);
 
-function toLabel(segment: string) {
-  return segment
+const toLabel = (segment: string) =>
+  segment
     .split("-")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
-}
 
-function addOrgSegment(params: Record<string, string>, segments: BreadcrumbSegment[]) {
-  if (!("orgSlug" in params) || segments.some((s) => s.label === toLabel(params.orgSlug))) {
+const addOrgSegment = (
+  params: Record<string, string>,
+  segments: BreadcrumbSegment[]
+) => {
+  if (
+    !("orgSlug" in params) ||
+    segments.some((s) => s.label === toLabel(params.orgSlug))
+  ) {
     return;
   }
 
@@ -44,14 +55,17 @@ function addOrgSegment(params: Record<string, string>, segments: BreadcrumbSegme
     href: `/${params.orgSlug}/~/projects`,
     label: toLabel(params.orgSlug),
   });
-}
+};
 
-function addProjectSegment(
+const addProjectSegment = (
   id: string,
   params: Record<string, string>,
-  segments: BreadcrumbSegment[],
-) {
-  if (!("projectSlug" in params) || segments.some((s) => s.label === toLabel(params.projectSlug))) {
+  segments: BreadcrumbSegment[]
+) => {
+  if (
+    !("projectSlug" in params) ||
+    segments.some((s) => s.label === toLabel(params.projectSlug))
+  ) {
     return;
   }
 
@@ -60,14 +74,14 @@ function addProjectSegment(
     href: isLast ? undefined : `/${params.orgSlug}/${params.projectSlug}`,
     label: toLabel(params.projectSlug),
   });
-}
+};
 
-function addStaticSegments(
+const addStaticSegments = (
   id: string,
   params: Record<string, string>,
   segments: BreadcrumbSegment[],
-  loaderData: unknown,
-) {
+  loaderData: z.output<typeof breadcrumbMetadata> | undefined
+) => {
   if (id.includes("/account") && !segments.some((s) => s.label === "Account")) {
     segments.push({ href: "/account/profile", label: "Account" });
   }
@@ -83,15 +97,12 @@ function addStaticSegments(
     if (appsSegment) {
       appsSegment.href = `/${params.orgSlug}/${params.projectSlug}/apps`;
     } else {
-      segments.push({ href: `/${params.orgSlug}/${params.projectSlug}/apps`, label: "Apps" });
+      segments.push({
+        href: `/${params.orgSlug}/${params.projectSlug}/apps`,
+        label: "Apps",
+      });
     }
-    const appName =
-      typeof loaderData === "object" &&
-      loaderData !== null &&
-      "name" in loaderData &&
-      typeof loaderData.name === "string"
-        ? loaderData.name
-        : params.appId;
+    const appName = loaderData?.name ?? params.appId;
 
     segments.push({ label: appName });
   }
@@ -113,24 +124,24 @@ function addStaticSegments(
     segments.push({ href, label: "Settings" });
   }
 
-  const accountLabel = accountRouteLabels[id];
-  if (accountLabel) {
+  const accountLabel = accountRouteLabels.get(id);
+  if (hasText(accountLabel)) {
     segments.push({ label: accountLabel });
   }
 
-  const settingsLabel = settingsRouteLabels[id];
-  if (settingsLabel) {
+  const settingsLabel = settingsRouteLabels.get(id);
+  if (hasText(settingsLabel)) {
     segments.push({ label: settingsLabel });
   }
-}
+};
 
-export function NavBreadcrumb() {
+export const NavBreadcrumb = () => {
   const matches = useMatches();
   const segments: BreadcrumbSegment[] = [];
 
   for (const match of matches) {
     const id = match.routeId;
-    const params = match.params as Record<string, string>;
+    const params = z.record(z.string(), z.string()).parse(match.params);
 
     if (id === "__root__" || id === "/(app)" || id === "/(auth)") {
       continue;
@@ -138,7 +149,13 @@ export function NavBreadcrumb() {
 
     addOrgSegment(params, segments);
     addProjectSegment(id, params, segments);
-    addStaticSegments(id, params, segments, match.loaderData);
+    const metadata = breadcrumbMetadata.safeParse(match.loaderData);
+    addStaticSegments(
+      id,
+      params,
+      segments,
+      metadata.success ? metadata.data : undefined
+    );
   }
 
   if (segments.length === 0) {
@@ -151,8 +168,10 @@ export function NavBreadcrumb() {
         {segments.map((seg, i) => (
           <Fragment key={seg.label}>
             <BreadcrumbItem>
-              {seg.href ? (
-                <BreadcrumbLink render={<Link to={seg.href} />}>{seg.label}</BreadcrumbLink>
+              {hasText(seg.href) ? (
+                <BreadcrumbLink render={<Link to={seg.href} />}>
+                  {seg.label}
+                </BreadcrumbLink>
               ) : (
                 <BreadcrumbPage>{seg.label}</BreadcrumbPage>
               )}
@@ -163,4 +182,4 @@ export function NavBreadcrumb() {
       </BreadcrumbList>
     </Breadcrumb>
   );
-}
+};

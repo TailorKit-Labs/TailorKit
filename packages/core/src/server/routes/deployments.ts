@@ -1,12 +1,24 @@
+import { ORPCError } from "@orpc/server";
 import {
   deploymentsCreate,
   deploymentsGet,
   deploymentsList,
   deploymentsPublish,
 } from "@tailorkit/client-platform/client";
-import { ORPCError } from "@orpc/server";
 import { z } from "zod";
-import { getTailorKitScope, getTailorKitScopes, o, requireCliDeployToken } from "../procedures";
+
+import {
+  getTailorKitScope,
+  getTailorKitScopes,
+  o,
+  requireCliDeployToken,
+} from "#server/procedures";
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 const paginationInput = z.object({
   page: z.number().int().min(1).optional(),
@@ -21,7 +33,9 @@ const clientAssetInput = z.object({
   objectKey: z.literal("client.js"),
 });
 
-const serverAssetInput = clientAssetInput.extend({ objectKey: z.literal("server.js") });
+const serverAssetInput = clientAssetInput.extend({
+  objectKey: z.literal("server.js"),
+});
 
 const logoAssetInput = z.object({
   checksum: z.string(),
@@ -41,28 +55,30 @@ const deploymentLogosInput = z
   })
   .optional();
 
-const getErrorMessage = (error: unknown): string | undefined => {
-  if (error instanceof Error) {
-    return error.message;
+const getErrorMessage = (cause: unknown): string | undefined => {
+  if (cause instanceof Error) {
+    return cause.message;
   }
-  if (typeof error === "string") {
-    return error;
+  if (isStringValue(cause)) {
+    return cause;
   }
-  if (error && typeof error === "object" && "message" in error) {
-    const message = (error as { message?: unknown }).message;
-    return typeof message === "string" ? message : undefined;
+  if (isObjectValue(cause) && "message" in cause) {
+    const { message } = cause;
+    return isStringValue(message) ? message : undefined;
   }
+
+  return undefined;
 };
 
-const isNotFoundError = (error: unknown): boolean =>
-  getErrorMessage(error)?.toLowerCase().includes("not found") ?? false;
+const isNotFoundError = (cause: unknown): boolean =>
+  getErrorMessage(cause)?.toLowerCase().includes("not found") ?? false;
 
-const preservePlatformNotFound = (error: unknown): never => {
-  if (isNotFoundError(error)) {
+const preservePlatformNotFound = (cause: unknown): never => {
+  if (isNotFoundError(cause)) {
     throw new ORPCError("NOT_FOUND", { message: "App not found." });
   }
 
-  throw error;
+  throw cause;
 };
 
 export const deploymentRouter = {
@@ -72,20 +88,20 @@ export const deploymentRouter = {
       z.object({
         appId: z.string(),
         assets: deploymentAssetsInput,
+        logos: deploymentLogosInput,
+        server: serverAssetInput.optional(),
         views: z
           .array(
             z.object({
-              slot: z.string().min(1).max(255),
-              path: z.string().startsWith("/").max(1024),
-              instances: z.literal(true).optional(),
               disabled: z.literal(true).optional(),
-            }),
+              instances: z.literal(true).optional(),
+              path: z.string().startsWith("/").max(1024),
+              slot: z.string().min(1).max(255),
+            })
           )
           .max(1000)
           .optional(),
-        server: serverAssetInput.optional(),
-        logos: deploymentLogosInput,
-      }),
+      })
     )
     .handler(async ({ context, input }) => {
       try {
@@ -93,10 +109,10 @@ export const deploymentRouter = {
           body: {
             appId: input.appId,
             assets: input.assets,
-            views: input.views,
-            server: input.server,
             logos: input.logos,
             scope: getTailorKitScope(context),
+            server: input.server,
+            views: input.views,
           },
           client: context.platform,
           headers: context.platformHeaders,
@@ -104,10 +120,18 @@ export const deploymentRouter = {
       } catch (error) {
         preservePlatformNotFound(error);
       }
+
+      /* oxlint-disable-next-line unicorn/no-useless-undefined -- Missing results use the same undefined sentinel as the optional return type. */
+      return undefined;
     }),
   get: o
     .use(requireCliDeployToken)
-    .input(z.object({ deploymentId: z.string(), scopes: z.array(z.string()).optional() }))
+    .input(
+      z.object({
+        deploymentId: z.string(),
+        scopes: z.array(z.string()).optional(),
+      })
+    )
     .handler(
       async ({ context, input }) =>
         await deploymentsGet({
@@ -115,27 +139,27 @@ export const deploymentRouter = {
           client: context.platform,
           headers: context.platformHeaders,
           path: { deploymentId: input.deploymentId },
-        }),
+        })
     ),
   list: o
     .use(requireCliDeployToken)
     .input(
       z
         .object({ appId: z.string(), scopes: z.array(z.string()).optional() })
-        .merge(paginationInput),
+        .extend(paginationInput.shape)
     )
     .handler(
       async ({ context, input }) =>
         await deploymentsList({
-          client: context.platform,
-          headers: context.platformHeaders,
           body: {
             appId: input.appId,
             page: input.page,
             pageSize: input.pageSize,
             scopes: getTailorKitScopes(context, input.scopes),
           },
-        }),
+          client: context.platform,
+          headers: context.platformHeaders,
+        })
     ),
   publish: o
     .use(requireCliDeployToken)
@@ -143,15 +167,15 @@ export const deploymentRouter = {
       z.object({
         deploymentId: z.string(),
         rollout: z.boolean().optional(),
-      }),
+      })
     )
     .handler(
       async ({ context, input }) =>
         await deploymentsPublish({
-          body: { scope: getTailorKitScope(context), rollout: input.rollout },
+          body: { rollout: input.rollout, scope: getTailorKitScope(context) },
           client: context.platform,
           headers: context.platformHeaders,
           path: { deploymentId: input.deploymentId },
-        }),
+        })
     ),
 };

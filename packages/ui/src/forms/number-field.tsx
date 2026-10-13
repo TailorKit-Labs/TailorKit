@@ -1,17 +1,23 @@
 "use client";
 
-import type { NumberFieldProps as PrimitiveNumberFieldProps } from "../components/number-field";
 import type { ReactNode } from "react";
 
-import { Field, FieldDescription, FieldError, FieldLabel } from "../components/field";
-import { formatFieldErrors } from "./field-errors";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "#components/field";
+import type { NumberFieldProps as PrimitiveNumberFieldProps } from "#components/number-field";
 import {
   NumberField as PrimitiveNumberField,
   NumberFieldDecrement,
   NumberFieldGroup,
   NumberFieldIncrement,
   NumberFieldInput,
-} from "../components/number-field";
+} from "#components/number-field";
+
+import { formatFieldErrors } from "./field-errors";
 
 const emptyErrors: unknown[] = [];
 
@@ -28,7 +34,7 @@ export interface NumberFieldProps {
   value?: number | null;
 }
 
-export function NumberField({
+export const NumberField = ({
   description,
   disabled,
   errors = emptyErrors,
@@ -39,7 +45,7 @@ export function NumberField({
   placeholder,
   required,
   value,
-}: NumberFieldProps) {
+}: NumberFieldProps) => {
   const errorMessage = formatFieldErrors(errors);
   const isError = errorMessage.length > 0;
 
@@ -47,9 +53,12 @@ export function NumberField({
     <Field disabled={disabled}>
       <div className="flex w-full items-center gap-2">
         <FieldLabel>
-          {label} {required && <span className="text-destructive-foreground">*</span>}
+          {label}{" "}
+          {required === true && (
+            <span className="text-destructive-foreground">*</span>
+          )}
         </FieldLabel>
-        {labelAction && <div className="ml-auto">{labelAction}</div>}
+        {Boolean(labelAction) && <div className="ml-auto">{labelAction}</div>}
       </div>
       <PrimitiveNumberField
         disabled={disabled}
@@ -65,8 +74,12 @@ export function NumberField({
           <NumberFieldIncrement />
         </NumberFieldGroup>
       </PrimitiveNumberField>
-      {description && <FieldDescription>{description}</FieldDescription>}
+      {description !== undefined &&
+        description !== null &&
+        description !== "" && (
+          <FieldDescription>{description}</FieldDescription>
+        )}
       {isError && <FieldError>{errorMessage}</FieldError>}
     </Field>
   );
-}
+};

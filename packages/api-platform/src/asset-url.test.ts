@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+
 import { withAppAssetUrl } from "./asset-url";
 
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const env = vi.hoisted(() => ({
   ASSET_BASE_URL: undefined as string | undefined,
   ASSET_DOMAIN: "tailorkit.app",
@@ -23,109 +25,113 @@ describe("hosted asset URLs", () => {
 
   it("uses stable team, project, app and deployment identifiers", () => {
     const app = {
-      id: appId,
-      publicId: appPublicId,
       currentDeployment: {
-        id: deploymentId,
         appId,
-        publicId: deploymentPublicId,
-        status: "published" as const,
         clientEntryFileId: "55555555-5555-4555-8555-555555555555",
+        createdAt: new Date(),
+        errorMessage: null,
+        id: deploymentId,
         logoDarkPath: `logos/${"a".repeat(64)}.svg`,
         logoLightPath: `logos/${"b".repeat(64)}.webp`,
-        errorMessage: null,
+        publicId: deploymentPublicId,
         publishedAt: new Date(),
-        createdAt: new Date(),
+        status: "published" as const,
         updatedAt: new Date(),
       },
+      id: appId,
+      publicId: appPublicId,
     };
     expect(withAppAssetUrl(app, "abc123def45678", projectId).clientPath).toBe(
-      `https://abc123def45678.tailorkit.app/p/${projectId}/a/${appPublicId}/d/${deploymentPublicId}/client/client.js`,
+      `https://abc123def45678.tailorkit.app/p/${projectId}/a/${appPublicId}/d/${deploymentPublicId}/client/client.js`
     );
-    expect(withAppAssetUrl(app, "abc123def45678", projectId).logoPaths).toEqual({
-      dark: `https://abc123def45678.tailorkit.app/p/${projectId}/a/${appPublicId}/d/${deploymentPublicId}/logos/${"a".repeat(64)}.svg`,
-      light: `https://abc123def45678.tailorkit.app/p/${projectId}/a/${appPublicId}/d/${deploymentPublicId}/logos/${"b".repeat(64)}.webp`,
-    });
+    expect(withAppAssetUrl(app, "abc123def45678", projectId).logoPaths).toEqual(
+      {
+        dark: `https://abc123def45678.tailorkit.app/p/${projectId}/a/${appPublicId}/d/${deploymentPublicId}/logos/${"a".repeat(64)}.svg`,
+        light: `https://abc123def45678.tailorkit.app/p/${projectId}/a/${appPublicId}/d/${deploymentPublicId}/logos/${"b".repeat(64)}.webp`,
+      }
+    );
   });
 
   it("uses deployment URLs for content-addressed logos without duplicating stored files", () => {
     const logoHash = "b".repeat(64);
     const app = {
-      publicId: appPublicId,
       currentDeployment: {
-        publicId: deploymentPublicId,
-        status: "published" as const,
         clientEntryFileId: "55555555-5555-4555-8555-555555555555",
         logoDarkPath: `logos/${logoHash}.svg`,
         logoLightPath: null,
+        publicId: deploymentPublicId,
+        status: "published" as const,
       },
+      publicId: appPublicId,
     };
 
-    expect(withAppAssetUrl(app, "abc123def45678", projectId).logoPaths).toEqual({
-      dark: `https://abc123def45678.tailorkit.app/p/${projectId}/a/${appPublicId}/d/${deploymentPublicId}/logos/${logoHash}.svg`,
-    });
+    expect(withAppAssetUrl(app, "abc123def45678", projectId).logoPaths).toEqual(
+      {
+        dark: `https://abc123def45678.tailorkit.app/p/${projectId}/a/${appPublicId}/d/${deploymentPublicId}/logos/${logoHash}.svg`,
+      }
+    );
   });
 
   it("uses the same-origin Node route in local development", () => {
     env.NODE_ENV = "development";
     const app = {
-      publicId: appPublicId,
       currentDeployment: {
-        id: deploymentId,
         appId,
-        publicId: deploymentPublicId,
-        status: "published" as const,
         clientEntryFileId: "55555555-5555-4555-8555-555555555555",
-        errorMessage: null,
-        publishedAt: new Date(),
         createdAt: new Date(),
+        errorMessage: null,
+        id: deploymentId,
+        publicId: deploymentPublicId,
+        publishedAt: new Date(),
+        status: "published" as const,
         updatedAt: new Date(),
       },
+      publicId: appPublicId,
     };
     expect(withAppAssetUrl(app, "abc123def45678", projectId).clientPath).toBe(
-      `http://localhost:3000/api/assets/t/abc123def45678/p/${projectId}/a/${appPublicId}/d/${deploymentPublicId}/client/client.js`,
+      `http://localhost:3000/api/assets/t/abc123def45678/p/${projectId}/a/${appPublicId}/d/${deploymentPublicId}/client/client.js`
     );
   });
 
   it("supports the Node asset route in self-hosted production", () => {
     env.ASSET_BASE_URL = "https://tailorkit.example.com/api/assets/";
     const app = {
-      publicId: appPublicId,
       currentDeployment: {
-        id: deploymentId,
         appId,
-        publicId: deploymentPublicId,
-        status: "published" as const,
         clientEntryFileId: "55555555-5555-4555-8555-555555555555",
-        errorMessage: null,
-        publishedAt: new Date(),
         createdAt: new Date(),
+        errorMessage: null,
+        id: deploymentId,
+        publicId: deploymentPublicId,
+        publishedAt: new Date(),
+        status: "published" as const,
         updatedAt: new Date(),
       },
+      publicId: appPublicId,
     };
     expect(withAppAssetUrl(app, "abc123def45678", projectId).clientPath).toBe(
-      `https://tailorkit.example.com/api/assets/t/abc123def45678/p/${projectId}/a/${appPublicId}/d/${deploymentPublicId}/client/client.js`,
+      `https://tailorkit.example.com/api/assets/t/abc123def45678/p/${projectId}/a/${appPublicId}/d/${deploymentPublicId}/client/client.js`
     );
   });
 
   it("does not expose incomplete deployments", () => {
     const deployment = {
-      id: deploymentId,
       appId,
-      publicId: deploymentPublicId,
-      status: "uploading" as const,
       clientEntryFileId: null,
-      errorMessage: null,
-      publishedAt: null,
       createdAt: new Date(),
+      errorMessage: null,
+      id: deploymentId,
+      publicId: deploymentPublicId,
+      publishedAt: null,
+      status: "uploading" as const,
       updatedAt: new Date(),
     };
     expect(
       withAppAssetUrl(
         { currentDeployment: deployment, publicId: appPublicId },
         "abc123def45678",
-        projectId,
-      ).clientPath,
+        projectId
+      ).clientPath
     ).toBeUndefined();
   });
 });

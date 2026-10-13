@@ -11,11 +11,8 @@ import type {
   TailorKitClientConfig,
   TailorKitApp,
   SlotMultiple,
+  TailorKitCacheOptions,
 } from "@tailorkit/client-core";
-export type { TailorKitClientConfig } from "@tailorkit/client-core";
-import type { TailorKitCacheOptions } from "@tailorkit/client-core";
-import { createElement, useEffect, useMemo } from "react";
-import type { ReactNode } from "react";
 import type {
   TailorKitTheme,
   ComponentDefinition,
@@ -25,21 +22,29 @@ import type {
   TailorKitContract,
   ToolImplementations,
 } from "@tailorkit/core/schema";
-import type { primitives } from "./primitives";
+import { createElement, useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 
 import { TailorkitContext, useTailorkitContext } from "./components/context";
-import { useViewContext as useRootViewContext } from "./hooks/use-view-context";
-import type { UseViewContext, ViewName, ViewState } from "./hooks/use-view-context";
-import { useApps as useRootApps } from "./hooks/use-apps";
-import type { UseAppsOptions, UseAppsResult } from "./hooks/use-apps";
-import { useViews as useRootViews } from "./hooks/use-views";
-import type { UseViewsOptions, UseViewsResult } from "./hooks/use-views";
 import { RenderSlot as ReactRenderSlot } from "./components/render-slot";
 import type {
   ControlledRenderSlotProps,
   RenderSlotComponent,
   RenderSlotProps,
 } from "./components/render-slot";
+import { useApps as useRootApps } from "./hooks/use-apps";
+import type { UseAppsOptions, UseAppsResult } from "./hooks/use-apps";
+import { useViewContext as useRootViewContext } from "./hooks/use-view-context";
+import type {
+  UseViewContext,
+  ViewName,
+  ViewState,
+} from "./hooks/use-view-context";
+import { useViews as useRootViews } from "./hooks/use-views";
+import type { UseViewsOptions, UseViewsResult } from "./hooks/use-views";
+import type { primitives } from "./primitives";
+
+export type { TailorKitClientConfig } from "@tailorkit/client-core";
 
 export type { TailorKitApp } from "@tailorkit/client-core";
 
@@ -49,7 +54,10 @@ export interface TailorKitProviderProps {
 }
 
 export interface TailorKitInstance<
-  TViews extends Record<string, ViewDefinition> = Record<string, ViewDefinition>,
+  TViews extends Record<string, ViewDefinition> = Record<
+    string,
+    ViewDefinition
+  >,
   TSlots extends SlotDefinitions = SlotDefinitions,
   TScopeNames extends string = string,
 > extends TailorKitClientConfig {
@@ -59,49 +67,39 @@ export interface TailorKitInstance<
   readonly RenderSlot: RenderSlotComponent<TViews, TSlots>;
   readonly useApps: (options?: UseAppsOptions<TScopeNames>) => UseAppsResult;
   readonly useViews: <TSlot extends keyof TSlots & string>(
-    options: UseViewsOptions<TScopeNames, TSlot>,
+    options: UseViewsOptions<TScopeNames, TSlot>
   ) => UseViewsResult<SlotMultiple<TSlots[TSlot]>>;
   readonly useViewContext: UseViewContext<TViews>;
 }
 
 type PrimitiveRenderers = typeof primitives;
-type CustomComponentRenderers<TComponents extends Record<string, AnyComponentDefinition>> = {
-  [TName in Exclude<keyof TComponents, keyof PrimitiveRenderers>]?: ComponentRenderer<
-    TComponents[TName],
-    ReactNode
-  >;
+
+type CustomComponentRenderers<
+  TComponents extends Record<string, AnyComponentDefinition>,
+> = {
+  [
+    TName in Exclude<keyof TComponents, keyof PrimitiveRenderers>
+  ]?: ComponentRenderer<TComponents[TName], ReactNode>;
 };
 
-export function components<TComponents extends Record<string, AnyComponentDefinition>>(
+// SAFETY: The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary.
+export const components = <
+  TComponents extends Record<string, AnyComponentDefinition>,
+>(
   _contract: { components: TComponents },
-  customComponents: CustomComponentRenderers<TComponents>,
-): ComponentRenderers<TComponents, ReactNode> {
-  return customComponents as ComponentRenderers<TComponents, ReactNode>;
+  customComponents: CustomComponentRenderers<TComponents>
+): ComponentRenderers<TComponents, ReactNode> =>
+  /* oxlint-disable typescript/no-unsafe-type-assertion -- The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary. */
+  customComponents as ComponentRenderers<TComponents, ReactNode>;
+/* oxlint-enable typescript/no-unsafe-type-assertion */
+
+interface ReactComponentRenderArgs {
+  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
+  props: ComponentProps<ComponentDefinition>;
+  children?: ReactNode;
 }
 
-export function createClient<const TContract extends TailorKitContract>(
-  options: {
-    contract: TContract;
-    tools?: ToolImplementations<NoInfer<TContract["tools"]>, "client">;
-    baseUrl: string | URL;
-    assetsBaseUrl?: string | URL;
-    components?: CompleteComponentRenderers<NoInfer<TContract["components"]>, ReactNode>;
-    theme?: TailorKitTheme;
-    cache?: TailorKitCacheOptions;
-    fetch?: typeof fetch;
-  } & (keyof ToolImplementations<TContract["tools"], "client"> extends never
-    ? { tools?: ToolImplementations<TContract["tools"], "client"> }
-    : { tools: ToolImplementations<TContract["tools"], "client"> }),
-): TailorKitInstance<TContract["views"], TContract["slots"], keyof TContract["scopes"] & string> {
-  return createReactTailorKitClient<
-    TContract["components"],
-    TContract["views"],
-    TContract["slots"],
-    keyof TContract["scopes"] & string
-  >(options);
-}
-
-function createReactTailorKitClient<
+const createReactTailorKitClient = <
   TComponents extends Record<string, AnyComponentDefinition>,
   TViews extends Record<string, ViewDefinition> = Record<string, never>,
   TSlots extends SlotDefinitions = SlotDefinitions,
@@ -115,79 +113,137 @@ function createReactTailorKitClient<
   theme?: TailorKitTheme;
   cache?: TailorKitCacheOptions;
   fetch?: typeof fetch;
-}): TailorKitInstance<TViews, TSlots, TScopeNames> {
-  const wrappedComponents = createComponentRegistry(options.components ?? {}, (renderer) => {
-    return function TailorKitComponent({
-      children,
-      ...props
-    }: Record<string, unknown> & { children?: ReactNode }) {
-      const rendererArgs = {
-        props: props as ComponentProps<ComponentDefinition>,
-        ...(children === undefined ? {} : { children }),
-      };
-      return (renderer as (args: typeof rendererArgs) => ReactNode)(rendererArgs);
-    };
+}): TailorKitInstance<TViews, TSlots, TScopeNames> => {
+  const wrappedComponents = createComponentRegistry(
+    options.components ?? {},
+    (renderer) =>
+      // oxlint-disable-next-line typescript/promise-function-async -- Client components must render synchronously; ReactNode also permits Promise results for server components.
+      function TailorKitComponent({
+        children,
+        ...props
+      }: ReactComponentRenderArgs["props"] & { children?: ReactNode }) {
+        const rendererArgs: ReactComponentRenderArgs = { props };
+        if (children !== undefined) {
+          rendererArgs.children = children;
+        }
+        // SAFETY: The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary.
+        return (renderer as (args: typeof rendererArgs) => ReactNode)(
+          rendererArgs
+        );
+      }
+  );
+
+  const clientConfig = createTailorKitClientConfig({
+    ...options,
+    components: wrappedComponents,
   });
-  const clientConfig = createTailorKitClientConfig({ ...options, components: wrappedComponents });
+
+  const ClientRenderSlot = (props: RenderSlotProps<TSlots>) => {
+    // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
+    useTailorkitContext("RenderSlot", client);
+    // SAFETY: The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary.
+    return createElement(ReactRenderSlot, props as RenderSlotProps);
+  };
+
   const client: TailorKitInstance<TViews, TSlots, TScopeNames> = {
     ...clientConfig,
-    Provider: function TailorKitProvider({ children, apps }: TailorKitProviderProps) {
-      const store = useMemo(
-        () =>
-          createTailorKitStore({
-            baseUrl: client.baseUrl,
-            contract: client.contract,
-            tools: client.tools,
-            apps,
-            client: clientConfig.fetchClient,
-            assetsBaseUrl: client.assetsBaseUrl,
-          }),
-        [],
+    Provider: function Provider({ children, apps }: TailorKitProviderProps) {
+      // oxlint-disable-next-line react/hook-use-state -- The provider owns one immutable store; prop updates are applied through the store API.
+      const [store] = useState(() =>
+        createTailorKitStore({
+          apps,
+          assetsBaseUrl: client.assetsBaseUrl,
+          baseUrl: client.baseUrl,
+          client: clientConfig.fetchClient,
+          contract: client.contract,
+          tools: client.tools,
+        })
       );
       useEffect(() => {
         store.setProvidedApps(apps);
       }, [store, apps]);
-      useEffect(() => () => store.previews.dispose(), [store]);
-      const context = useMemo(() => ({ store, client }), [store]);
-      return createElement(TailorkitContext.Provider, { value: context }, children);
-    },
-    RenderSlot: Object.assign(
-      function ClientRenderSlot(props: RenderSlotProps<TSlots>) {
-        useTailorkitContext("RenderSlot", client);
-        return createElement(ReactRenderSlot, props as RenderSlotProps);
-      },
-      {
-        Controlled: function ClientControlledRenderSlot(
-          props: ControlledRenderSlotProps<TViews, TSlots>,
-        ) {
-          useTailorkitContext("RenderSlot.Controlled", client);
-          return createElement(
-            ReactRenderSlot.Controlled,
-            props as unknown as ControlledRenderSlotProps,
-          );
+      useEffect(
+        () => () => {
+          store.previews.dispose();
         },
+        [store]
+      );
+      const context = useMemo(() => ({ client, store }), [store]);
+      return createElement(
+        TailorkitContext.Provider,
+        { value: context },
+        children
+      );
+    },
+    RenderSlot: Object.assign(ClientRenderSlot, {
+      Controlled: function Controlled(
+        props: ControlledRenderSlotProps<TViews, TSlots>
+      ) {
+        useTailorkitContext("RenderSlot.Controlled", client);
+        // SAFETY: The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary.
+        return createElement(
+          ReactRenderSlot.Controlled,
+          /* oxlint-disable typescript/no-unsafe-type-assertion -- The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary. */
+          props as ControlledRenderSlotProps
+          /* oxlint-enable typescript/no-unsafe-type-assertion */
+        );
       },
-    ),
-    useApps: function useClientApps(options) {
+    }),
+    useApps: function useApps(optionsValue) {
       useTailorkitContext("useApps", client);
-      return useRootApps(options);
+      return useRootApps(optionsValue);
     },
-    useViews: function useClientViews<TSlot extends keyof TSlots & string>(
-      options: UseViewsOptions<TScopeNames, TSlot>,
-    ) {
-      useTailorkitContext("useViews", client);
-      return useRootViews(options) as UseViewsResult<SlotMultiple<TSlots[TSlot]>>;
-    },
-    useViewContext: function useClientViewContext<TView extends ViewName<TViews>>(
+    useViewContext: function useViewContext<TView extends ViewName<TViews>>(
       view: TView,
-      options: ViewState<TViews, NoInfer<TView>>,
+      optionsValue2: ViewState<TViews, NoInfer<TView>>
     ) {
       useTailorkitContext("useViewContext", client);
-      useRootViewContext<TViews, TView>(view, options);
+      useRootViewContext<TViews, TView>(view, optionsValue2);
+    },
+    useViews: function useViews<TSlot extends keyof TSlots & string>(
+      optionsValue3: UseViewsOptions<TScopeNames, TSlot>
+    ) {
+      useTailorkitContext("useViews", client);
+      // SAFETY: The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary.
+      return (
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary. */
+        useRootViews(optionsValue3) as UseViewsResult<
+          SlotMultiple<TSlots[TSlot]>
+        >
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
+      );
     },
   };
 
   return client;
-}
+};
+
+export const createClient = <const TContract extends TailorKitContract>(
+  options: {
+    contract: TContract;
+    tools?: ToolImplementations<NoInfer<TContract["tools"]>, "client">;
+    baseUrl: string | URL;
+    assetsBaseUrl?: string | URL;
+    components?: CompleteComponentRenderers<
+      NoInfer<TContract["components"]>,
+      ReactNode
+    >;
+    theme?: TailorKitTheme;
+    cache?: TailorKitCacheOptions;
+    fetch?: typeof fetch;
+  } & (keyof ToolImplementations<TContract["tools"], "client"> extends never
+    ? { tools?: ToolImplementations<TContract["tools"], "client"> }
+    : { tools: ToolImplementations<TContract["tools"], "client"> })
+): TailorKitInstance<
+  TContract["views"],
+  TContract["slots"],
+  keyof TContract["scopes"] & string
+> =>
+  createReactTailorKitClient<
+    TContract["components"],
+    TContract["views"],
+    TContract["slots"],
+    keyof TContract["scopes"] & string
+  >(options);
 
 export type { ViewOptions } from "./hooks/use-view-context";

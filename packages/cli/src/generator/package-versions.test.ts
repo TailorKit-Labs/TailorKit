@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from "vite-plus/test";
+
 import { resolveTemplatePackageVersions } from "./package-versions";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -6,10 +7,15 @@ afterEach(() => vi.unstubAllGlobals());
 it("resolves only stable Preact 11 releases from the registry", async () => {
   vi.stubGlobal(
     "fetch",
+    // oxlint-disable-next-line require-await -- The mock keeps the asynchronous API contract.
     vi.fn(async () => ({
-      ok: true,
+      // oxlint-disable-next-line require-await -- The mock keeps the asynchronous API contract.
       json: async () => ({
-        time: { "11.0.0": "2026-01-01", "11.1.0": "2026-01-02", "12.0.0": "2026-01-03" },
+        time: {
+          "11.0.0": "2026-01-01",
+          "11.1.0": "2026-01-02",
+          "12.0.0": "2026-01-03",
+        },
         versions: {
           "10.99.0": {},
           "11.0.0": {},
@@ -18,32 +24,41 @@ it("resolves only stable Preact 11 releases from the registry", async () => {
           "12.0.0": {},
         },
       }),
-    })),
+      ok: true,
+    }))
   );
-  expect((await resolveTemplatePackageVersions()).preact).toBe("11.1.0");
+  const awaitedResult1 = await resolveTemplatePackageVersions();
+  expect(awaitedResult1.preact).toBe("11.1.0");
 });
 
 it("falls back to Preact 11 when the registry is unavailable", async () => {
   vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
-  expect((await resolveTemplatePackageVersions()).preact).toBe("11.0.0");
+  const awaitedResult2 = await resolveTemplatePackageVersions();
+  expect(awaitedResult2.preact).toBe("11.0.0");
 });
 
 it("skips releases younger than three days", async () => {
   vi.stubGlobal(
     "fetch",
+    // oxlint-disable-next-line require-await -- The mock keeps the asynchronous API contract.
     vi.fn(async () => ({
-      ok: true,
+      // oxlint-disable-next-line require-await -- The mock keeps the asynchronous API contract.
       json: async () => ({
-        versions: { "8.0.0": {}, "8.1.0": {} },
         time: { "8.0.0": "2026-01-01", "8.1.0": new Date().toISOString() },
+        versions: { "8.0.0": {}, "8.1.0": {} },
       }),
-    })),
+      ok: true,
+    }))
   );
-  expect((await resolveTemplatePackageVersions("vite")).vite).toBe("8.0.0");
+  const awaitedResult3 = await resolveTemplatePackageVersions("vite");
+  expect(awaitedResult3.vite).toBe("8.0.0");
 });
 
 it("scaffolds against the CLI's SDK version", async () => {
   vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
-  const { default: packageJson } = await import("../../package.json", { with: { type: "json" } });
-  expect((await resolveTemplatePackageVersions()).tailorkit).toBe(packageJson.version);
+  const { default: packageJson } = await import("#package.json", {
+    with: { type: "json" },
+  });
+  const awaitedResult4 = await resolveTemplatePackageVersions();
+  expect(awaitedResult4.tailorkit).toBe(packageJson.version);
 });

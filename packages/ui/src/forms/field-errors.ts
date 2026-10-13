@@ -1,40 +1,44 @@
-export function formatFieldErrors(errors: unknown[] = []): string {
-  return errors
-    .flatMap((error) => {
-      if (typeof error === "string") {
-        return [error];
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
+export const formatFieldErrors = (issueors: unknown[] = []): string =>
+  issueors
+    .flatMap((issue) => {
+      if (isStringValue(issue)) {
+        return [issue];
       }
 
       if (
-        typeof error === "object" &&
-        error !== null &&
-        "message" in error &&
-        typeof error.message === "string"
+        isObjectValue(issue) &&
+        issue !== null &&
+        "message" in issue &&
+        isStringValue(issue.message)
       ) {
-        return [error.message];
+        return [issue.message];
       }
 
       if (
-        typeof error === "object" &&
-        error !== null &&
-        "issues" in error &&
-        Array.isArray(error.issues)
+        isObjectValue(issue) &&
+        issue !== null &&
+        "issues" in issue &&
+        Array.isArray(issue.issues)
       ) {
-        return [formatFieldErrors(error.issues)];
+        return [formatFieldErrors(issue.issues)];
       }
 
       if (
-        typeof error === "object" &&
-        error !== null &&
-        "errors" in error &&
-        Array.isArray(error.errors)
+        isObjectValue(issue) &&
+        issue !== null &&
+        "issueors" in issue &&
+        Array.isArray(issue.issueors)
       ) {
-        return [formatFieldErrors(error.errors)];
+        return [formatFieldErrors(issue.issueors)];
       }
 
-      return [String(error)];
+      return [String(issue)];
     })
-    .map((error) => error.trim())
+    .map((formattedMessage) => formattedMessage.trim())
     .filter(Boolean)
     .join(", ");
-}

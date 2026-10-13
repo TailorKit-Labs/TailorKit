@@ -1,9 +1,10 @@
 import { createElement } from "react";
+
 import { ChangeEmailTemplate } from "./better-auth/change-email";
 import { EmailVerificationTemplate } from "./better-auth/email-verification";
 import { ForgetPasswordTemplate } from "./better-auth/forget-password";
-import { SignInTemplate } from "./better-auth/sign-in";
 import type { BetterAuthTemplateProps } from "./better-auth/shared";
+import { SignInTemplate } from "./better-auth/sign-in";
 
 export type BetterAuthEmailType =
   | "change-email"
@@ -40,15 +41,23 @@ const emailConfig = {
   }
 >;
 
-export const betterAuthEmailSubjects = Object.fromEntries(
-  Object.entries(emailConfig).map(([type, value]) => [type, value.subject]),
-) as Record<BetterAuthEmailType, string>;
+// SAFETY: Object.entries enumerates this complete email configuration, and the projection retains each email type's subject.
+export const betterAuthEmailSubjects =
+  /* oxlint-disable typescript/no-unsafe-type-assertion -- Object.entries enumerates this complete email configuration, and the projection retains each email type's subject. */
+  Object.fromEntries(
+    Object.entries(emailConfig).map(([type, value]) => [type, value.subject])
+  ) as Record<BetterAuthEmailType, string>;
+/* oxlint-enable typescript/no-unsafe-type-assertion */
 
-export function BetterAuthOtpTemplate({ logoBaseUrl, otp, type }: BetterAuthOtpTemplateProps) {
+export const BetterAuthOtpTemplate = ({
+  logoBaseUrl,
+  otp,
+  type,
+}: BetterAuthOtpTemplateProps) => {
   const Template = emailConfig[type].component;
 
   return createElement(Template, { logoBaseUrl, otp });
-}
+};
 
 export { ChangeEmailTemplate } from "./better-auth/change-email";
 export { EmailVerificationTemplate } from "./better-auth/email-verification";

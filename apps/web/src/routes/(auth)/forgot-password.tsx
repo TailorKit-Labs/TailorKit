@@ -1,7 +1,5 @@
 "use client";
 
-import { ChevronLeftIcon } from "lucide-react";
-import { Fragment, useRef, useState } from "react";
 import { cn } from "@tailorkit/ui";
 import { Button } from "@tailorkit/ui/button";
 import {
@@ -14,34 +12,38 @@ import {
   CardTitle,
 } from "@tailorkit/ui/card";
 import { Field, FieldDescription, FieldError } from "@tailorkit/ui/field";
-import { Logo } from "@tailorkit/ui/logo";
-import { OTPField, OTPFieldInput, OTPFieldSeparator } from "@tailorkit/ui/otp-field";
-import { toastManager } from "@tailorkit/ui/toast";
 import { useAppForm } from "@tailorkit/ui/form";
-import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
+import { Logo } from "@tailorkit/ui/logo";
+import {
+  OTPField,
+  OTPFieldInput,
+  OTPFieldSeparator,
+} from "@tailorkit/ui/otp-field";
+import { toastManager } from "@tailorkit/ui/toast";
+import {
+  useNavigate,
+  createFileRoute,
+  Link,
+  useSearch,
+} from "@tanstack/react-router";
+import { ChevronLeftIcon } from "lucide-react";
+import { Fragment, useRef, useState } from "react";
 import { z } from "zod";
 
 import { authClient } from "#lib/auth-client";
-
-export const Route = createFileRoute("/(auth)/forgot-password")({
-  validateSearch: (search) => ({
-    email: search.email as string | undefined,
-    return_to: search.return_to as string | undefined,
-  }),
-  component: RouteComponent,
-});
+import { optionalAuthSearchString } from "#lib/auth-search";
 
 const OTP_LENGTH = 6;
 const SLOT_KEYS = Array.from({ length: OTP_LENGTH }, (_, i) => `slot-${i}`);
 
-type Step = "email" | "otp" | "reset";
-
-function RouteComponent() {
-  const { email: emailFromSearch, return_to } = useSearch({ from: "/(auth)/forgot-password" });
-  const navigate = Route.useNavigate();
+const RouteComponent = () => {
+  const { email: emailFromSearch, return_to } = useSearch({
+    from: "/(auth)/forgot-password",
+  });
+  const navigate = useNavigate({ from: "/forgot-password" });
   const [step, setStep] = useState<Step>("email");
   const [visible, setVisible] = useState(true);
-  const [email, setEmail] = useState(emailFromSearch || "");
+  const [email, setEmail] = useState(emailFromSearch ?? "");
   const [otp, setOtp] = useState("");
   const [otpInvalid, setOtpInvalid] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(0);
@@ -82,7 +84,7 @@ function RouteComponent() {
     });
     if (result.error) {
       toastManager.add({
-        description: result.error.message || "Failed to send code",
+        description: result.error.message ?? "Failed to send code",
         title: "Error",
         type: "error",
       });
@@ -93,7 +95,7 @@ function RouteComponent() {
   };
 
   const emailForm = useAppForm({
-    defaultValues: { email: emailFromSearch || "" },
+    defaultValues: { email: emailFromSearch ?? "" },
     onSubmit: async ({ value }) => {
       const sent = await sendOtp(value.email);
       if (sent) {
@@ -118,12 +120,15 @@ function RouteComponent() {
     });
     setVerifyingOtp(false);
     if (result.error) {
-      if (result.error.code === "INVALID_OTP" || result.error.code === "OTP_EXPIRED") {
+      if (
+        result.error.code === "INVALID_OTP" ||
+        result.error.code === "OTP_EXPIRED"
+      ) {
         setOtpInvalid(true);
         setOtp("");
       }
       toastManager.add({
-        description: result.error.message || "Failed to verify code",
+        description: result.error.message ?? "Failed to verify code",
         title: "Verification failed",
         type: "error",
       });
@@ -143,7 +148,7 @@ function RouteComponent() {
       });
       if (result.error) {
         toastManager.add({
-          description: result.error.message || "Failed to reset password",
+          description: result.error.message ?? "Failed to reset password",
           title: "Reset failed",
           type: "error",
         });
@@ -154,7 +159,7 @@ function RouteComponent() {
         title: "Password reset",
         type: "success",
       });
-      navigate({
+      void navigate({
         search: { email, return_to },
         to: "/login",
       });
@@ -162,7 +167,9 @@ function RouteComponent() {
     validators: {
       onSubmit: z
         .object({
-          confirmPassword: z.string().min(8, "Password must be at least 8 characters"),
+          confirmPassword: z
+            .string()
+            .min(8, "Password must be at least 8 characters"),
           password: z.string().min(8, "Password must be at least 8 characters"),
         })
         .refine((data) => data.password === data.confirmPassword, {
@@ -194,7 +201,7 @@ function RouteComponent() {
 
   const contentClass = cn(
     "transition-all duration-150",
-    visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1",
+    visible ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0"
   );
 
   const renderStep = () => {
@@ -204,25 +211,29 @@ function RouteComponent() {
           onSubmit={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            emailForm.handleSubmit();
+            void emailForm.handleSubmit();
           }}
         >
-          <CardPanel className="flex flex-col gap-4">
-            <emailForm.AppField name="email">
-              {(field) => (
-                <field.TextField
-                  label="Email"
-                  type="email"
-                  placeholder="you@example.com"
-                  autoFocus
-                />
-              )}
-            </emailForm.AppField>
+          <CardPanel>
+            <div className="flex flex-col gap-4">
+              <emailForm.AppField name="email">
+                {(field) => (
+                  <field.TextField
+                    label="Email"
+                    type="email"
+                    placeholder="you@example.com"
+                    autoFocus
+                  />
+                )}
+              </emailForm.AppField>
+            </div>
           </CardPanel>
 
           <emailForm.AppForm>
-            <CardFooter className="pt-4">
-              <emailForm.SubmitButton className="w-full">Send code</emailForm.SubmitButton>
+            <CardFooter>
+              <emailForm.SubmitButton className="w-full">
+                Send code
+              </emailForm.SubmitButton>
             </CardFooter>
           </emailForm.AppForm>
         </form>
@@ -232,63 +243,75 @@ function RouteComponent() {
     if (step === "otp") {
       return (
         <>
-          <CardPanel className="flex flex-col gap-6">
-            <div className="flex flex-col items-center gap-6">
-              <Field className="items-center gap-1.5">
-                <FieldDescription>Verification code</FieldDescription>
-                <OTPField
-                  length={OTP_LENGTH}
-                  value={otp}
-                  onValueChange={(value) => {
-                    setOtp(value);
-                    setOtpInvalid(false);
-                    if (value.length === OTP_LENGTH) {
-                      verifyOtp(value);
-                    }
-                  }}
-                  disabled={verifyingOtp}
-                  size="lg"
-                  className="gap-2.5"
-                >
-                  {SLOT_KEYS.map((key, index) => (
-                    <Fragment key={key}>
-                      <OTPFieldInput
-                        className="size-11 text-xl leading-11 sm:size-10 sm:text-lg sm:leading-10"
-                        aria-invalid={otpInvalid || undefined}
-                        aria-label={`Digit ${index + 1} of ${OTP_LENGTH}`}
-                      />
-                      {index === 2 && <OTPFieldSeparator />}
-                    </Fragment>
-                  ))}
-                </OTPField>
-                <FieldDescription>Sent to {email}</FieldDescription>
-                {otpInvalid && <FieldError>Invalid or expired code. Please try again.</FieldError>}
-                <Button
-                  variant="link"
-                  size="sm"
-                  type="button"
-                  onClick={async () => {
-                    setResending(true);
-                    await sendOtp(email);
-                    setResending(false);
-                    setOtp("");
-                    setOtpInvalid(false);
-                  }}
-                  disabled={resending || resendCountdown > 0}
-                  loading={resending}
-                  className="h-auto p-0 text-xs"
-                >
-                  {resendCountdown > 0 ? `Resend in ${resendCountdown}s` : "Resend code"}
-                </Button>
-              </Field>
+          <CardPanel>
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col items-center gap-6">
+                <Field className="items-center">
+                  <FieldDescription>Verification code</FieldDescription>
+                  <OTPField
+                    length={OTP_LENGTH}
+                    value={otp}
+                    onValueChange={(value) => {
+                      setOtp(value);
+                      setOtpInvalid(false);
+                      if (value.length === OTP_LENGTH) {
+                        void verifyOtp(value);
+                      }
+                    }}
+                    disabled={verifyingOtp}
+                    size="lg"
+                  >
+                    {SLOT_KEYS.map((key, index) => (
+                      <Fragment key={key}>
+                        <OTPFieldInput
+                          aria-invalid={otpInvalid || undefined}
+                          aria-label={`Digit ${index + 1} of ${OTP_LENGTH}`}
+                        />
+                        {index === 2 && <OTPFieldSeparator />}
+                      </Fragment>
+                    ))}
+                  </OTPField>
+                  <FieldDescription>Sent to {email}</FieldDescription>
+                  {otpInvalid && (
+                    <FieldError>
+                      Invalid or expired code. Please try again.
+                    </FieldError>
+                  )}
+                  <Button
+                    variant="link"
+                    size="sm"
+                    type="button"
+                    onClick={() => {
+                      void (async () => {
+                        setResending(true);
+                        await sendOtp(email);
+                        setResending(false);
+                        setOtp("");
+                        setOtpInvalid(false);
+                      })();
+                    }}
+                    disabled={resending || resendCountdown > 0}
+                    loading={resending}
+                    className="h-auto"
+                  >
+                    {resendCountdown > 0
+                      ? `Resend in ${resendCountdown}s`
+                      : "Resend code"}
+                  </Button>
+                </Field>
+              </div>
             </div>
           </CardPanel>
-          <CardFooter className="pt-4">
+          <CardFooter>
             <Button
               className="w-full"
               disabled={otp.length < OTP_LENGTH || verifyingOtp}
               loading={verifyingOtp}
-              onClick={() => verifyOtp(otp)}
+              onClick={() => {
+                void (async () => {
+                  await verifyOtp(otp);
+                })();
+              }}
             >
               Continue
             </Button>
@@ -302,24 +325,37 @@ function RouteComponent() {
         onSubmit={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          resetForm.handleSubmit();
+          void resetForm.handleSubmit();
         }}
       >
-        <CardPanel className="flex flex-col gap-4">
-          <resetForm.AppField name="password">
-            {(field) => (
-              <field.SecretTextField label="New password" placeholder="••••••••" autoFocus />
-            )}
-          </resetForm.AppField>
+        <CardPanel>
+          <div className="flex flex-col gap-4">
+            <resetForm.AppField name="password">
+              {(field) => (
+                <field.SecretTextField
+                  label="New password"
+                  placeholder="••••••••"
+                  autoFocus
+                />
+              )}
+            </resetForm.AppField>
 
-          <resetForm.AppField name="confirmPassword">
-            {(field) => <field.SecretTextField label="Confirm password" placeholder="••••••••" />}
-          </resetForm.AppField>
+            <resetForm.AppField name="confirmPassword">
+              {(field) => (
+                <field.SecretTextField
+                  label="Confirm password"
+                  placeholder="••••••••"
+                />
+              )}
+            </resetForm.AppField>
+          </div>
         </CardPanel>
 
         <resetForm.AppForm>
-          <CardFooter className="pt-4">
-            <resetForm.SubmitButton className="w-full">Reset password</resetForm.SubmitButton>
+          <CardFooter>
+            <resetForm.SubmitButton className="w-full">
+              Reset password
+            </resetForm.SubmitButton>
           </CardFooter>
         </resetForm.AppForm>
       </form>
@@ -329,16 +365,21 @@ function RouteComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12">
       <div className="flex w-full max-w-sm flex-col items-center gap-4">
-        <a className="flex items-center gap-2" href="https://tailorkit.dev/home">
+        <a
+          className="flex items-center gap-2"
+          href="https://tailorkit.dev/home"
+        >
           <Logo className="size-6" />
-          <span className="font-semibold text-lg">TailorKit</span>
+          <span className="text-lg font-semibold">TailorKit</span>
         </a>
         <CardFrame className="w-full">
           <Card>
             <div className={contentClass}>
               <CardHeader>
                 <CardTitle>{getTitle()}</CardTitle>
-                <p className="text-muted-foreground text-sm">{getDescription()}</p>
+                <p className="text-sm text-muted-foreground">
+                  {getDescription()}
+                </p>
               </CardHeader>
               {renderStep()}
             </div>
@@ -346,12 +387,18 @@ function RouteComponent() {
 
           <CardFrameFooter className="relative">
             {step === "email" ? (
-              <Button variant={"link"} render={<Link search={{ email, return_to }} to="/login" />}>
+              <Button
+                variant="link"
+                render={<Link search={{ email, return_to }} to="/login" />}
+              >
                 <ChevronLeftIcon />
                 Back to sign in
               </Button>
             ) : (
-              <Button variant={"link"} render={<Link search={{ email, return_to }} to="/login" />}>
+              <Button
+                variant="link"
+                render={<Link search={{ email, return_to }} to="/login" />}
+              >
                 <ChevronLeftIcon />
                 Use a different email
               </Button>
@@ -361,4 +408,14 @@ function RouteComponent() {
       </div>
     </div>
   );
-}
+};
+
+export const Route = createFileRoute("/(auth)/forgot-password")({
+  component: RouteComponent,
+  validateSearch: z.object({
+    email: optionalAuthSearchString,
+    return_to: optionalAuthSearchString,
+  }),
+});
+
+type Step = "email" | "otp" | "reset";

@@ -1,4 +1,6 @@
-import packageJson from "../../package.json" with { type: "json" };
+import { z } from "zod";
+
+import packageJson from "#package.json" with { type: "json" };
 
 export interface TemplatePackageVersions {
   drizzleKit: string;
@@ -32,13 +34,16 @@ const REGISTRY_TIMEOUT_MS = 5000;
 const MINIMUM_RELEASE_AGE_MS = 3 * 24 * 60 * 60 * 1000;
 
 const REQUESTS = {
-  vite: { fallback: "8.0.0", matcher: "^8", packageName: "vite" },
-  vitePlus: { fallback: "1.0.0", matcher: "^1", packageName: "vite-plus" },
   preact: { fallback: "11.0.0", matcher: "^11", packageName: "preact" },
   typescript: { fallback: "6.0.3", matcher: "^6", packageName: "typescript" },
+  vite: { fallback: "8.0.0", matcher: "^8", packageName: "vite" },
+  vitePlus: { fallback: "1.0.0", matcher: "^1", packageName: "vite-plus" },
   zod: { fallback: "4.0.0", matcher: "^4", packageName: "zod" },
 } satisfies Record<
-  Exclude<keyof TemplatePackageVersions, "drizzleKit" | "drizzleOrm" | "tailorkit">,
+  Exclude<
+    keyof TemplatePackageVersions,
+    "drizzleKit" | "drizzleOrm" | "tailorkit"
+  >,
   PackageVersionRequest
 >;
 
@@ -48,13 +53,17 @@ const parseStableVersion = (version: string): SemverVersion | undefined => {
     return undefined;
   }
   const { major, minor, patch } = match.groups;
-  if (!major || !minor || !patch) {
+  if (
+    !(major !== undefined && major !== null && major !== "") ||
+    !(minor !== undefined && minor !== null && minor !== "") ||
+    !(patch !== undefined && patch !== null && patch !== "")
+  ) {
     return undefined;
   }
   return {
-    major: Number.parseInt(major, 10),
-    minor: Number.parseInt(minor, 10),
-    patch: Number.parseInt(patch, 10),
+    major: Math.trunc(Number(major)),
+    minor: Math.trunc(Number(minor)),
+    patch: Math.trunc(Number(patch)),
     raw: version,
   };
 };
@@ -69,13 +78,22 @@ const compareVersions = (a: SemverVersion, b: SemverVersion): number => {
   return a.patch - b.patch;
 };
 
-const satisfiesCaretMatcher = (version: SemverVersion, matcher: string): boolean => {
+const satisfiesCaretMatcher = (
+  version: SemverVersion,
+  matcher: string
+): boolean => {
   const match = /^\^(?<major>\d+)(?:\.(?<minor>\d+))?/u.exec(matcher);
-  if (!match?.groups?.major) {
+  if (
+    !(
+      match?.groups?.major !== undefined &&
+      match?.groups?.major !== null &&
+      match?.groups?.major !== ""
+    )
+  ) {
     return false;
   }
-  const minMajor = Number.parseInt(match.groups.major, 10);
-  const minMinor = Number.parseInt(match.groups.minor ?? "0", 10);
+  const minMajor = Math.trunc(Number(match.groups.major));
+  const minMinor = Math.trunc(Number(match.groups.minor ?? "0"));
   return version.major === minMajor && version.minor >= minMinor;
 };
 
@@ -85,21 +103,30 @@ const resolvePackageVersion = async ({
   packageName,
 }: PackageVersionRequest): Promise<string> => {
   try {
-    const res = await fetch(`${REGISTRY_URL}/${encodeURIComponent(packageName)}`, {
-      signal: AbortSignal.timeout(REGISTRY_TIMEOUT_MS),
-    });
+    const res = await fetch(
+      `${REGISTRY_URL}/${encodeURIComponent(packageName)}`,
+      {
+        signal: AbortSignal.timeout(REGISTRY_TIMEOUT_MS),
+      }
+    );
     if (!res.ok) {
       return fallback;
     }
-    const data = (await res.json()) as {
-      versions?: Record<string, unknown>;
-      time?: Record<string, string>;
-    };
+    const data = z
+      .object({
+        time: z.record(z.string(), z.string()).optional(),
+        versions: z.record(z.string(), z.object({}).loose()).optional(),
+      })
+      .parse(await res.json());
     const latest = Object.keys(data.versions ?? {})
       .map(parseStableVersion)
       .filter((v): v is SemverVersion => v !== undefined)
       .filter((v) => satisfiesCaretMatcher(v, matcher))
-      .filter((v) => Date.parse(data.time?.[v.raw] ?? "") <= Date.now() - MINIMUM_RELEASE_AGE_MS)
+      .filter(
+        (v) =>
+          Date.parse(data.time?.[v.raw] ?? "") <=
+          Date.now() - MINIMUM_RELEASE_AGE_MS
+      )
       .toSorted(compareVersions)
       .at(-1);
     return latest?.raw ?? fallback;
@@ -109,13 +136,16 @@ const resolvePackageVersion = async ({
 };
 
 export const resolveTemplatePackageVersions = async (
-  tooling: "vite-plus" | "vite" = "vite-plus",
+  tooling: "vite-plus" | "vite" = "vite-plus"
 ): Promise<TemplatePackageVersions> => {
   const [vite, vitePlus, preact, typescript, zod] = await Promise.all([
     tooling === "vite"
       ? resolvePackageVersion(REQUESTS.vite)
       : Promise.resolve(REQUESTS.vite.fallback),
-    tooling === "vite-plus" ? resolvePackageVersion(REQUESTS.vitePlus) : Promise.resolve(undefined),
+    tooling === "vite-plus"
+      ? resolvePackageVersion(REQUESTS.vitePlus)
+      : // oxlint-disable-next-line unicorn/no-useless-undefined -- Keep this branch typed as undefined rather than void.
+        Promise.resolve(undefined),
     resolvePackageVersion(REQUESTS.preact),
     resolvePackageVersion(REQUESTS.typescript),
     resolvePackageVersion(REQUESTS.zod),
@@ -123,11 +153,11 @@ export const resolveTemplatePackageVersions = async (
   return {
     drizzleKit: TEMPLATE_DRIZZLE_VERSION,
     drizzleOrm: TEMPLATE_DRIZZLE_VERSION,
-    vite,
-    vitePlus,
     preact,
     tailorkit: packageJson.version,
     typescript,
+    vite,
+    vitePlus,
     zod,
   };
 };

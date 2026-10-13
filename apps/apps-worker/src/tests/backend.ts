@@ -2,12 +2,12 @@ import { mkdir, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 /** Disposable backend for worker database, action and tool integration tests. */
-export async function createTestBackend(root: string): Promise<void> {
+export const createTestBackend = async (root: string): Promise<void> => {
   await mkdir(path.join(root, "db"), { recursive: true });
   await symlink(
     path.resolve(import.meta.dirname, "../../node_modules"),
     path.join(root, "node_modules"),
-    "dir",
+    "dir"
   );
   await writeFile(path.join(root, "package.json"), '{"type":"module"}');
   await writeFile(
@@ -18,7 +18,7 @@ export const todos = table("todos", {
   text: text().notNull(),
   done: boolean().notNull().default(false),
 });
-`,
+`
   );
   await writeFile(
     path.join(root, "server.ts"),
@@ -51,6 +51,6 @@ const importTodo = fn.action.functions({ list, add })
     const text = await tools.echo(data.title);
     return mutations.add({ text });
   });
-export default defineServer({ list, add, importTodo });`,
+export default defineServer({ list, add, importTodo });`
   );
-}
+};

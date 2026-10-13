@@ -15,16 +15,22 @@ interface Scope {
   bindings: Map<string, Binding>;
 }
 type FunctionNode = ESTree.Function | ESTree.ArrowFunctionExpression;
-type ClassNode = Extract<ESTree.Node, { type: "ClassDeclaration" | "ClassExpression" }>;
+type ClassNode = Extract<
+  ESTree.Node,
+  { type: "ClassDeclaration" | "ClassExpression" }
+>;
 
-function createScope(parent?: Scope, functionScope = false): Scope {
-  return { parent, functionScope, bindings: new Map() };
-}
+const createScope = (parent?: Scope, functionScope = false): Scope => ({
+  bindings: new Map(),
+  functionScope,
+  parent,
+});
 
-function bindingNames(node: ESTree.Node | null | undefined): string[] {
+const bindingNames = (node: ESTree.Node | null | undefined): string[] => {
   if (!node) {
     return [];
   }
+  /* oxlint-disable typescript/switch-exhaustiveness-check -- This syntax visitor handles selected node kinds; other kinds use its generic traversal or default branch. */
   switch (node.type) {
     case "Identifier": {
       return [node.name];
@@ -40,7 +46,9 @@ function bindingNames(node: ESTree.Node | null | undefined): string[] {
     }
     case "ObjectPattern": {
       return node.properties.flatMap((property) =>
-        bindingNames(property.type === "Property" ? property.value : property.argument),
+        bindingNames(
+          property.type === "Property" ? property.value : property.argument
+        )
       );
     }
     case "TSParameterProperty": {
@@ -50,42 +58,57 @@ function bindingNames(node: ESTree.Node | null | undefined): string[] {
       return [];
     }
   }
-}
+  /* oxlint-enable typescript/switch-exhaustiveness-check */
+};
 
-function bind(node: ESTree.Node | null | undefined, scope: Scope) {
+const bind = (node: ESTree.Node | null | undefined, scope: Scope) => {
   for (const name of bindingNames(node)) {
     scope.bindings.set(name, "local");
   }
-}
+};
 
-function classScope(node: ClassNode, parent: Scope) {
+const classScope = (node: ClassNode, parent: Scope) => {
   if (node.type === "ClassDeclaration") {
     bind(node.id, parent);
   }
   const scope = createScope(parent);
   bind(node.id, scope);
   return scope;
-}
+};
 
-function resolve(scope: Scope | undefined, name: string): Binding | undefined {
+const resolve = (
+  scope: Scope | undefined,
+  name: string
+): Binding | undefined => {
   for (let current = scope; current; current = current.parent) {
     if (current.bindings.has(name)) {
       return current.bindings.get(name);
     }
   }
-}
 
-function childNodes(node: ESTree.Node): ESTree.Node[] {
-  return Object.values(node).flatMap((value) => {
+  return undefined;
+};
+
+const childNodes = (node: ESTree.Node): ESTree.Node[] =>
+  Object.values(node).flatMap((value) => {
     const children = Array.isArray(value) ? value : [value];
     return children.filter(
-      (child): child is ESTree.Node => !!child && typeof child === "object" && "type" in child,
+      (child): child is ESTree.Node =>
+        child !== undefined &&
+        child !== null &&
+        child !== false &&
+        child !== "" &&
+        child !== 0 &&
+        !Number.isNaN(child) &&
+        child !== 0n &&
+        typeof child === "object" &&
+        "type" in child
     );
   });
-}
 
-function bindImports(node: ESTree.ImportDeclaration, scope: Scope) {
-  const sdk = node.importKind !== "type" && clientImports.has(String(node.source.value));
+const bindImports = (node: ESTree.ImportDeclaration, scope: Scope) => {
+  const sdk =
+    node.importKind !== "type" && clientImports.has(node.source.value);
   for (const specifier of node.specifiers) {
     let binding: Binding = "local";
     if (sdk && specifier.type === "ImportNamespaceSpecifier") {
@@ -101,31 +124,13 @@ function bindImports(node: ESTree.ImportDeclaration, scope: Scope) {
     }
     scope.bindings.set(specifier.local.name, binding);
   }
-}
+};
 
 /** Resolve SDK import bindings, including declarations hoisted past a call. */
-function callScopes(program: ESTree.Program) {
+const callScopes = (program: ESTree.Program) => {
   const scopes = new WeakMap<ESTree.Node, Scope>();
-  function visitFunction(node: FunctionNode, scope: Scope) {
-    if (node.type === "FunctionDeclaration") {
-      bind(node.id, scope);
-    }
-    const parameters = createScope(scope, true);
-    if (node.type !== "ArrowFunctionExpression") {
-      bind(node.id, parameters);
-    }
-    for (const parameter of node.params) {
-      bind(parameter, parameters);
-    }
-    for (const parameter of node.params) {
-      visit(parameter, parameters);
-    }
-    // Body declarations do not shadow references in parameter defaults.
-    if (node.body) {
-      visit(node.body, createScope(parameters, true));
-    }
-  }
-  function bindVariables(node: ESTree.VariableDeclaration, scope: Scope) {
+
+  const bindVariables = (node: ESTree.VariableDeclaration, scope: Scope) => {
     let target = scope;
     if (node.kind === "var") {
       while (!target.functionScope && target.parent) {
@@ -135,9 +140,13 @@ function callScopes(program: ESTree.Program) {
     for (const declaration of node.declarations) {
       bind(declaration.id, target);
     }
-  }
-  function visit(node: ESTree.Node, scope: Scope) {
+  };
+
+  const visit = (node: ESTree.Node, initialScope: Scope) => {
+    let scope = initialScope;
+
     scopes.set(node, scope);
+    /* oxlint-disable typescript/switch-exhaustiveness-check -- This syntax visitor handles selected node kinds; other kinds use its generic traversal or default branch. */
     switch (node.type) {
       case "ImportDeclaration": {
         bindImports(node, scope);
@@ -150,6 +159,7 @@ function callScopes(program: ESTree.Program) {
       case "FunctionDeclaration":
       case "FunctionExpression":
       case "ArrowFunctionExpression": {
+        // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
         visitFunction(node, scope);
         return;
       }
@@ -192,16 +202,39 @@ function callScopes(program: ESTree.Program) {
         break;
       }
     }
+    /* oxlint-enable typescript/switch-exhaustiveness-check */
     for (const child of childNodes(node)) {
       visit(child, scope);
     }
-  }
+  };
+
+  const visitFunction = (node: FunctionNode, scope: Scope) => {
+    if (node.type === "FunctionDeclaration") {
+      bind(node.id, scope);
+    }
+    const parameters = createScope(scope, true);
+    if (node.type !== "ArrowFunctionExpression") {
+      bind(node.id, parameters);
+    }
+    for (const parameter of node.params) {
+      bind(parameter, parameters);
+    }
+    for (const parameter of node.params) {
+      visit(parameter, parameters);
+    }
+    // Body declarations do not shadow references in parameter defaults.
+    if (node.body) {
+      visit(node.body, createScope(parameters, true));
+    }
+  };
+
   visit(program, createScope(undefined, true));
+
   return scopes;
-}
+};
 
 /** Recognize the same SDK calls in route inference and instance extraction. */
-export function createDefineViewMatcher(program: ESTree.Program) {
+export const createDefineViewMatcher = (program: ESTree.Program) => {
   const scopes = callScopes(program);
   return (node: ESTree.Node): node is ESTree.CallExpression => {
     if (node.type !== "CallExpression") {
@@ -220,7 +253,9 @@ export function createDefineViewMatcher(program: ESTree.Program) {
       return false;
     }
     return callee.computed
-      ? callee.property.type === "Literal" && callee.property.value === "defineView"
-      : callee.property.type === "Identifier" && callee.property.name === "defineView";
+      ? callee.property.type === "Literal" &&
+          callee.property.value === "defineView"
+      : callee.property.type === "Identifier" &&
+          callee.property.name === "defineView";
   };
-}
+};

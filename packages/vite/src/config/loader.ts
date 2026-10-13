@@ -1,5 +1,7 @@
-import { cosmiconfig } from "cosmiconfig";
 import path from "node:path";
+
+import { cosmiconfig } from "cosmiconfig";
+
 import type { ResolvedTailorKitConfig } from "./config";
 import { tailorkitConfigSchema } from "./config";
 
@@ -10,12 +12,16 @@ export interface LoadedTailorKitConfig {
 }
 
 const explorer = cosmiconfig("tailorkit", {
-  searchPlaces: ["tailorkit.config.ts", "tailorkit.config.mjs", "tailorkit.config.js"],
+  searchPlaces: [
+    "tailorkit.config.ts",
+    "tailorkit.config.mjs",
+    "tailorkit.config.js",
+  ],
 });
 
 export const loadTailorKitConfig = async (
   configPath: string | undefined,
-  cwd = process.cwd(),
+  cwd = process.cwd()
 ): Promise<LoadedTailorKitConfig> => {
   const searchFrom = path.resolve(cwd);
   const result =

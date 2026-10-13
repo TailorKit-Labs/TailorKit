@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
 import { validateOrgSlug } from "@tailorkit/db/validate-org-slug";
+import { useEffect, useState } from "react";
+
 import { client } from "#lib/orpc";
 
 const ORG_SLUG_TAKEN_MESSAGE = "This organisation slug is already taken.";
@@ -12,7 +13,7 @@ export type OrgSlugAvailability =
   | { status: "unavailable"; message: string }
   | { status: "error"; message: string };
 
-export async function checkOrgSlugAvailability(slug: string) {
+export const checkOrgSlugAvailability = async (slug: string) => {
   const result = validateOrgSlug(slug);
   if (!result.valid) {
     return {
@@ -27,60 +28,71 @@ export async function checkOrgSlugAvailability(slug: string) {
     available: availability.available,
     message: availability.available ? null : ORG_SLUG_TAKEN_MESSAGE,
   };
-}
+};
 
-export function useOrgSlugAvailability(slug: string) {
+export const useOrgSlugAvailability = (slug: string) => {
   const [availability, setAvailability] = useState<OrgSlugAvailability>({
-    status: "idle",
     message: null,
+    status: "idle",
   });
 
+  const [checkedSlug, setCheckedSlug] = useState(slug);
+  if (checkedSlug !== slug) {
+    setCheckedSlug(slug);
+    setAvailability({ message: null, status: slug ? "checking" : "idle" });
+  }
   useEffect(() => {
     if (!slug) {
-      setAvailability({ status: "idle", message: null });
-      return;
+      /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+      return undefined;
     }
 
     let cancelled = false;
-    setAvailability({ status: "checking", message: null });
 
-    const timeout = window.setTimeout(async () => {
-      try {
-        const localResult = validateOrgSlug(slug);
-        if (!localResult.valid) {
+    const timeout = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const localResult = validateOrgSlug(slug);
+          if (!localResult.valid) {
+            if (cancelled) {
+              return;
+            }
+
+            setAvailability(
+              slug.length < 3
+                ? { message: null, status: "idle" }
+                : {
+                    message:
+                      localResult.reason ?? "This slug is not available.",
+                    status: "unavailable",
+                  }
+            );
+            return;
+          }
+
+          const result = await checkOrgSlugAvailability(slug);
           if (cancelled) {
             return;
           }
 
           setAvailability(
-            slug.length < 3
-              ? { status: "idle", message: null }
+            result.available
+              ? { message: null, status: "available" }
               : {
+                  message: result.message ?? ORG_SLUG_TAKEN_MESSAGE,
                   status: "unavailable",
-                  message: localResult.reason ?? "This slug is not available.",
-                },
+                }
           );
-          return;
+        } catch {
+          if (!cancelled) {
+            setAvailability({
+              message:
+                "Could not check this slug. Try again before creating the organisation.",
+              status: "error",
+            });
+          }
         }
-
-        const result = await checkOrgSlugAvailability(slug);
-        if (cancelled) {
-          return;
-        }
-
-        setAvailability(
-          result.available
-            ? { status: "available", message: null }
-            : { status: "unavailable", message: result.message ?? ORG_SLUG_TAKEN_MESSAGE },
-        );
-      } catch {
-        if (!cancelled) {
-          setAvailability({
-            status: "error",
-            message: "Could not check this slug. Try again before creating the organisation.",
-          });
-        }
-      }
+      })();
     }, ORG_SLUG_CHECK_DELAY_MS);
 
     return () => {
@@ -90,4 +102,4 @@ export function useOrgSlugAvailability(slug: string) {
   }, [slug]);
 
   return availability;
-}
+};

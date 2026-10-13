@@ -1,32 +1,48 @@
+/* oxlint-disable typescript/no-unsafe-return -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { describe, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
-import { createTailorKitServer } from "./handler";
+
+import { defineContract } from "#schema/contract";
+
 import { createServer } from "./contract";
-import { defineContract } from "../schema/contract";
+import { createTailorKitServer } from "./handler";
+
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
 
 const scopes = { org: z.object({ tenant: z.string().min(1) }) };
-function setup(
-  options: { projectKey?: string; platformHeaders?: () => Promise<Record<string, string>> } = {
-    projectKey: "host-key",
-  },
-) {
+const defaultSetupOptions = { projectKey: "host-key" };
+const setup = (
+  options: {
+    projectKey?: string;
+    platformHeaders?: () => Promise<Record<string, string>>;
+  } = defaultSetupOptions
+) => {
   const fetch = vi.fn();
   const server = createTailorKitServer({
-    baseUrl: "https://host.test/api/tailorkit",
-    projectKey: options.projectKey,
-    scopes,
-    components: {},
     $internal: {
       platformBaseUrl: "https://platform.test/api/platform/",
       platformFetch: fetch,
       platformHeaders: options.platformHeaders,
     },
+    baseUrl: "https://host.test/api/tailorkit",
+    components: {},
+    projectKey: options.projectKey,
+    scopes,
   });
-  return { server, fetch };
-}
-function context(headers: Record<string, string>) {
-  return JSON.parse(Buffer.from(headers["x-tailorkit-context"]!, "base64url").toString("utf8"));
-}
+  return { fetch, server };
+};
+const context = (headers: Record<string, string>) =>
+  JSON.parse(
+    Buffer.from(
+      requireValue(headers["x-tailorkit-context"]),
+      "base64url"
+    ).toString("utf-8")
+  );
 
 describe("MCP transport configuration", () => {
   it("returns a direct platform URL and headers from scopes and optional subjectId", async () => {
@@ -35,23 +51,27 @@ describe("MCP transport configuration", () => {
       scopes: { org: { tenant: "one" } },
       subjectId: "user-one",
     });
-    expect(transport.url).toBe("https://platform.test/api/platform/app-agent/mcp");
+    expect(transport.url).toBe(
+      "https://platform.test/api/platform/app-agent/mcp"
+    );
     expect(transport.headers.authorization).toBe("Bearer host-key");
     expect(context(transport.headers)).toEqual({
+      hostUrl: "https://host.test/api/tailorkit",
       scopes: { org: { tenant: "one" } },
       subjectId: "user-one",
-      hostUrl: "https://host.test/api/tailorkit",
     });
     expect(fetch).not.toHaveBeenCalled();
   });
 
   it("is exposed by createServer with the same object shape as authenticate returns", async () => {
     const server = createServer({
-      contract: defineContract({ scopes, components: {} }),
       baseUrl: "https://host.test/api/tailorkit",
+      contract: defineContract({ components: {}, scopes }),
       projectKey: "host-key",
     });
-    const result = await server.mcp.transport({ scopes: { org: { tenant: "one" } } });
+    const result = await server.mcp.transport({
+      scopes: { org: { tenant: "one" } },
+    });
     expect(result.url).toBe("https://tailorkit.dev/api/platform/app-agent/mcp");
     expect(context(result.headers)).not.toHaveProperty("subjectId");
   });
@@ -62,7 +82,7 @@ describe("MCP transport configuration", () => {
     const authenticate = vi.fn(() => ({ scopes: { org: { tenant: "one" } } }));
     const response = await server.handler(
       new Request("https://host.test/api/tailorkit/mcp", { method: "POST" }),
-      { authenticate },
+      { authenticate }
     );
     expect(response.status).toBe(404);
     expect(fetch).not.toHaveBeenCalled();
@@ -77,10 +97,15 @@ describe("MCP transport configuration", () => {
       { scopes: { org: { tenant: "" } } },
       { scopes: { org: { tenant: "one" } }, subjectId: "" },
       { scopes: { org: { tenant: "one" } }, subjectId: "x".repeat(257) },
-    ])
+    ]) {
+      // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       await expect(
-        server.mcp.transport(value as { scopes: { org: { tenant: string } } }),
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+        server.mcp.transport(value as { scopes: { org: { tenant: string } } })
       ).rejects.toThrow();
+    }
   });
 
   it("encodes Unicode identities safely and isolates callers", async () => {
@@ -89,38 +114,46 @@ describe("MCP transport configuration", () => {
       scopes: { org: { tenant: "墨尔本" } },
       subjectId: "用户",
     });
-    const second = await server.mcp.transport({ scopes: { org: { tenant: "two" } } });
+    const second = await server.mcp.transport({
+      scopes: { org: { tenant: "two" } },
+    });
     expect(first.headers["x-tailorkit-context"]).toMatch(/^[A-Za-z0-9_-]+$/u);
     expect(context(first.headers)).toMatchObject({
       scopes: { org: { tenant: "墨尔本" } },
       subjectId: "用户",
     });
-    expect(context(second.headers)).toMatchObject({ scopes: { org: { tenant: "two" } } });
+    expect(context(second.headers)).toMatchObject({
+      scopes: { org: { tenant: "two" } },
+    });
   });
 
   it("resolves configured headers per call and requires a project credential", async () => {
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
     const headers = vi.fn(async () => ({ authorization: "Bearer custom-key" }));
     const { server } = setup({ platformHeaders: headers });
-    expect(
-      (await server.mcp.transport({ scopes: { org: { tenant: "one" } } })).headers.authorization,
-    ).toBe("Bearer custom-key");
+    const awaitedResult1 = await server.mcp.transport({
+      scopes: { org: { tenant: "one" } },
+    });
+    expect(awaitedResult1.headers.authorization).toBe("Bearer custom-key");
     expect(headers).toHaveBeenCalledOnce();
     const missing = setup({}).server;
-    await expect(missing.mcp.transport({ scopes: { org: { tenant: "one" } } })).rejects.toThrow(
-      "projectKey",
-    );
+    await expect(
+      missing.mcp.transport({ scopes: { org: { tenant: "one" } } })
+    ).rejects.toThrow("projectKey");
   });
 
   it("bounds the context header before exposing it to a client", async () => {
     const large = createTailorKitServer({
       baseUrl: "https://host.test/api/tailorkit",
-      projectKey: "host-key",
       components: {},
+      projectKey: "host-key",
       scopes: { org: z.record(z.string(), z.string()) },
     });
     const tenant = Object.fromEntries(
-      Array.from({ length: 30 }, (_, i) => [String(i), "x".repeat(255)]),
+      Array.from({ length: 30 }, (_, i) => [String(i), "x".repeat(255)])
     );
-    await expect(large.mcp.transport({ scopes: { org: tenant } })).rejects.toThrow("header limit");
+    await expect(
+      large.mcp.transport({ scopes: { org: tenant } })
+    ).rejects.toThrow("header limit");
   });
 });

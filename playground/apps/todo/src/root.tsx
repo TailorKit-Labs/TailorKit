@@ -1,11 +1,9 @@
 import { ClientProvider, defineRoute, Route } from "tailorkit/client";
 
-function Shell() {
-  return (
-    <ClientProvider>
-      <Route />
-    </ClientProvider>
-  );
-}
+const Shell = () => (
+  <ClientProvider>
+    <Route />
+  </ClientProvider>
+);
 
 export default defineRoute({ shellComponent: Shell });

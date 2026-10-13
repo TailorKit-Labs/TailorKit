@@ -3,10 +3,16 @@ import { confirm, intro, isCancel, log, outro, spinner } from "@clack/prompts";
 import { cac } from "cac";
 import pc from "picocolors";
 
-import { createCliAuthApprovalUrl, runLogin, runLogout, runWhoami } from "./auth";
+import {
+  createCliAuthApprovalUrl,
+  runLogin,
+  runLogout,
+  runWhoami,
+} from "./auth";
 import { runDeploy } from "./deploy";
 import { generateTypes } from "./generator/types";
 import { runInit } from "./init";
+import type { CliOptions } from "./options";
 import { toPreviewOptions, runPreview } from "./preview";
 import { openUrlInBrowser } from "./utils/open-browser";
 
@@ -31,23 +37,29 @@ const formatBytes = (bytes: number): string => {
   return `${value.toFixed(value >= 10 ? 1 : 2)} ${units[unitIndex]}`;
 };
 
-const loginWithApproval = async (options: Parameters<typeof runLogin>[0], open = true) => {
+const loginWithApproval = async (
+  options: Parameters<typeof runLogin>[0],
+  open = true
+) => {
   const approvalSpinner = spinner();
   let isWaitingForApproval = false;
   try {
-    const result = await runLogin(options, ({ expiresAt, hostUrl, userCode }) => {
-      const approvalUrl = createCliAuthApprovalUrl(hostUrl, userCode);
-      if (open) {
-        void openUrlInBrowser(approvalUrl);
-      }
+    const result = await runLogin(
+      options,
+      ({ expiresAt, hostUrl, userCode }) => {
+        const approvalUrl = createCliAuthApprovalUrl(hostUrl, userCode);
+        if (open) {
+          void openUrlInBrowser(approvalUrl);
+        }
 
-      log.info(`Enter this code in the host app: ${pc.bold(userCode)}`);
-      log.info(`Approval URL: ${pc.cyan(approvalUrl)}`);
-      log.info(`Code expires at ${expiresAt.toLocaleString()}.`);
-      log.info("Waiting for approval...");
-      approvalSpinner.start("Checking approval status");
-      isWaitingForApproval = true;
-    });
+        log.info(`Enter this code in the host app: ${pc.bold(userCode)}`);
+        log.info(`Approval URL: ${pc.cyan(approvalUrl)}`);
+        log.info(`Code expires at ${expiresAt.toLocaleString()}.`);
+        log.info("Waiting for approval...");
+        approvalSpinner.start("Checking approval status");
+        isWaitingForApproval = true;
+      }
+    );
     if (isWaitingForApproval) {
       approvalSpinner.stop("Approved.");
     }
@@ -66,8 +78,11 @@ cli
   .option("--config <path>", "Path to tailorkit config")
   .option("--out-dir <path>", "Build output directory")
   .option("--mode <mode>", "Vite mode")
-  .option("--replace", "End the active preview for this app and start a new one")
-  .action(async (options: Record<string, unknown>) => {
+  .option(
+    "--replace",
+    "End the active preview for this app and start a new one"
+  )
+  .action(async (options: CliOptions) => {
     intro(pc.bold("TailorKit"));
     try {
       await runPreview(toPreviewOptions(options));
@@ -82,24 +97,30 @@ cli
   .option("--cwd <path>", "Working directory", { default: "." })
   .option("--host <url>", "TailorKit host API URL (overrides config host)")
   .option("--config <path>", "Path to tailorkit config")
-  .option("--open", "Open the approval URL in the default browser", { default: true })
-  .option("--timeout <seconds>", "Seconds to wait for approval", { default: 1800 })
-  .action(async (options: Record<string, unknown>) => {
+  .option("--open", "Open the approval URL in the default browser", {
+    default: true,
+  })
+  .option("--timeout <seconds>", "Seconds to wait for approval", {
+    default: 1800,
+  })
+  .action(async (options: CliOptions) => {
     intro(pc.bold("TailorKit"));
     try {
-      const timeoutSeconds = Number.parseInt(String(options.timeout ?? "1800"), 10);
+      const timeoutSeconds = Math.trunc(
+        Number(String(options.timeout ?? "1800"))
+      );
       if (!Number.isInteger(timeoutSeconds) || timeoutSeconds <= 0) {
         throw new Error("--timeout must be a positive integer.");
       }
 
       await loginWithApproval(
         {
-          configPath: options.config as string | undefined,
-          host: options.host as string | undefined,
-          cwd: String(options.cwd ?? "."),
+          configPath: options.config,
+          cwd: options.cwd ?? ".",
+          host: options.host,
           timeout: timeoutSeconds * 1000,
         },
-        options.open !== false,
+        options.open !== false
       );
       outro("Authenticated successfully.");
     } catch (error) {
@@ -113,19 +134,19 @@ cli
   .option("--cwd <path>", "Working directory", { default: "." })
   .option("--host <url>", "TailorKit host API URL (overrides config host)")
   .option("--config <path>", "Path to tailorkit config")
-  .action(async (options: Record<string, unknown>) => {
+  .action(async (options: CliOptions) => {
     intro(pc.bold("TailorKit"));
     try {
       const result = await runLogout({
-        host: options.host as string | undefined,
-        configPath: options.config as string | undefined,
-        cwd: String(options.cwd ?? "."),
+        configPath: options.config,
+        cwd: options.cwd ?? ".",
+        host: options.host,
       });
 
       outro(
         result.removed
           ? `Logged out of ${pc.cyan(result.hostUrl)}.`
-          : `No stored credentials found for ${pc.cyan(result.hostUrl)}.`,
+          : `No stored credentials found for ${pc.cyan(result.hostUrl)}.`
       );
     } catch (error) {
       log.error(error instanceof Error ? error.message : String(error));
@@ -138,13 +159,13 @@ cli
   .option("--cwd <path>", "Working directory", { default: "." })
   .option("--host <url>", "TailorKit host API URL (overrides config host)")
   .option("--config <path>", "Path to tailorkit config")
-  .action(async (options: Record<string, unknown>) => {
+  .action(async (options: CliOptions) => {
     intro(pc.bold("TailorKit"));
     try {
       const result = await runWhoami({
-        host: options.host as string | undefined,
-        configPath: options.config as string | undefined,
-        cwd: String(options.cwd ?? "."),
+        configPath: options.config,
+        cwd: options.cwd ?? ".",
+        host: options.host,
       });
 
       log.info(`Host: ${pc.cyan(result.hostUrl)}`);
@@ -161,27 +182,27 @@ cli
   .option("--app-id <id>", "Deploy to this existing app")
   .option(
     "--no-interactive",
-    "Fail instead of prompting for login, app creation, or type check overrides",
+    "Fail instead of prompting for login, app creation, or type check overrides"
   )
   .option("--cwd <path>", "Working directory", { default: "." })
   .option("--config <path>", "Path to tailorkit config")
   .option("--out-dir <path>", "Build output directory")
   .option("--mode <mode>", "Vite mode")
-  .action(async (options: Record<string, unknown>) => {
+  .action(async (options: CliOptions) => {
     intro(pc.bold("TailorKit"));
     const deploySpinner = spinner();
     try {
       deploySpinner.start("Building and deploying app");
-      const result = await runDeploy({
-        appId: options.appId as string | undefined,
-        configPath: options.config as string | undefined,
-        cwd: String(options.cwd ?? "."),
-        mode: options.mode as string | undefined,
+      const deployOptions: Parameters<typeof runDeploy>[0] = {
+        appId: options.appId,
+        configPath: options.config,
+        cwd: options.cwd ?? ".",
+        mode: options.mode,
         onLoginRequired: async () => {
           deploySpinner.stop("Authentication required.");
           const auth = await loginWithApproval({
-            configPath: options.config as string | undefined,
-            cwd: String(options.cwd ?? "."),
+            configPath: options.config,
+            cwd: options.cwd ?? ".",
           });
           deploySpinner.start("Building and deploying app");
           return auth;
@@ -191,7 +212,7 @@ cli
           log.info(
             reason === "missing"
               ? `No appId found in ${pc.cyan(configPath)}.`
-              : `The appId in ${pc.cyan(configPath)} does not exist.`,
+              : `The appId in ${pc.cyan(configPath)} does not exist.`
           );
           log.info(`Host: ${pc.cyan(hostUrl)}`);
           const shouldCreate = await confirm({
@@ -210,7 +231,7 @@ cli
             deploySpinner.start("Creating app and deploying");
           }
 
-          return shouldCreate === true;
+          return shouldCreate;
         },
         onTypecheckFailed: async ({ command, output }) => {
           deploySpinner.stop("Type check failed.");
@@ -221,7 +242,8 @@ cli
 
           const shouldUpload = await confirm({
             initialValue: false,
-            message: "Type check failed, but the app built successfully. Upload anyway?",
+            message:
+              "Type check failed, but the app built successfully. Upload anyway?",
           });
 
           if (isCancel(shouldUpload)) {
@@ -232,16 +254,21 @@ cli
             deploySpinner.start("Uploading app");
           }
 
-          return shouldUpload === true;
+          return shouldUpload;
         },
-        ...(options.interactive === false
-          ? { onLoginRequired: undefined, onMissingAppId: undefined, onTypecheckFailed: undefined }
-          : {}),
-        outDir: options.outDir as string | undefined,
-      });
+        outDir: options.outDir,
+      };
+      if (options.interactive === false) {
+        deployOptions.onLoginRequired = undefined;
+        deployOptions.onMissingAppId = undefined;
+        deployOptions.onTypecheckFailed = undefined;
+      }
+      const result = await runDeploy(deployOptions);
       deploySpinner.stop("Deployed app.");
       if (result.createdApp) {
-        log.info(`Created app and updated tailorkit.config.ts with ${pc.cyan(result.appId)}.`);
+        log.info(
+          `Created app and updated tailorkit.config.ts with ${pc.cyan(result.appId)}.`
+        );
       }
       log.info(`Host: ${pc.cyan(result.hostUrl)}`);
       log.info(`App: ${pc.cyan(result.appId)}`);
@@ -249,10 +276,14 @@ cli
       log.info("Uploaded files:");
       for (const file of result.uploadedFiles) {
         log.info(
-          `  ${pc.cyan(file.path)} ${pc.dim(`${formatBytes(file.size)} raw, ${formatBytes(file.gzipSize)} gzip`)}`,
+          `  ${pc.cyan(file.path)} ${pc.dim(`${formatBytes(file.size)} raw, ${formatBytes(file.gzipSize)} gzip`)}`
         );
       }
-      if (result.status) {
+      if (
+        result.status !== undefined &&
+        result.status !== null &&
+        result.status !== ""
+      ) {
         log.info(`Status: ${pc.cyan(result.status)}`);
       }
       outro("Deployment published.");
@@ -268,17 +299,19 @@ cli
   .option("--cwd <path>", "Working directory", { default: "." })
   .option("--config <path>", "Path to tailorkit config")
   .option("--name <name>", "Migration name")
-  .action(async (command: string, options: Record<string, unknown>) => {
+  .action(async (command: string, options: CliOptions) => {
     intro(pc.bold("TailorKit"));
     try {
       if (command !== "generate") {
-        throw new Error(`Unknown database command: ${command}. Use tailorkit db generate.`);
+        throw new Error(
+          `Unknown database command: ${command}. Use tailorkit db generate.`
+        );
       }
       const { generateAppMigrations } = await import("@tailorkit/vite/builder");
       const directory = await generateAppMigrations({
-        configPath: options.config as string | undefined,
-        cwd: String(options.cwd ?? "."),
-        name: options.name as string | undefined,
+        configPath: options.config,
+        cwd: options.cwd ?? ".",
+        name: options.name,
       });
       outro(`Migrations are up to date in ${pc.cyan(directory)}.`);
     } catch (error) {
@@ -289,18 +322,21 @@ cli
 
 cli
   .command("generate", "Generate TailorKit app bindings")
-  .option("--schema <path>", "Read the host schema from a JSON file instead of the host")
+  .option(
+    "--schema <path>",
+    "Read the host schema from a JSON file instead of the host"
+  )
   .option("--cwd <path>", "Working directory", { default: "." })
   .option("--config <path>", "Path to tailorkit config")
   .option("--out <path>", "Generated TypeScript output file")
-  .action(async (options: Record<string, unknown>) => {
+  .action(async (options: CliOptions) => {
     intro(pc.bold("TailorKit"));
     try {
       const outPath = await generateTypes({
-        schemaPath: options.schema as string | undefined,
-        configPath: options.config as string | undefined,
-        cwd: String(options.cwd ?? "."),
-        outFile: options.out as string | undefined,
+        configPath: options.config,
+        cwd: options.cwd ?? ".",
+        outFile: options.out,
+        schemaPath: options.schema,
       });
       outro(`Generated ${pc.cyan(outPath)}.`);
     } catch (error) {
@@ -311,28 +347,34 @@ cli
 
 cli
   .command("init [directory]", "Create a new TailorKit app")
-  .option("--schema <path>", "Read the host schema from a JSON file instead of the host")
+  .option(
+    "--schema <path>",
+    "Read the host schema from a JSON file instead of the host"
+  )
   .option("--cwd <path>", "Working directory", { default: "." })
   .option("--name <name>", "Package name")
   .option("--host <url>", "TailorKit host URL")
   .option("--package-manager <pm>", "Package manager: bun, yarn, pnpm, or npm")
   .option("--tooling <tooling>", "Tooling: vite-plus (recommended) or vite")
-  .option("--install", "Install dependencies after scaffolding (use --no-install to skip)")
+  .option(
+    "--install",
+    "Install dependencies after scaffolding (use --no-install to skip)"
+  )
   .option("--force", "Overwrite existing files")
-  .action(async (directory: string | undefined, options: Record<string, unknown>) => {
+  .action(async (directory: string | undefined, options: CliOptions) => {
     intro(pc.bold("TailorKit"));
     try {
-      const cwd = String(options.cwd ?? ".");
+      const cwd = options.cwd ?? ".";
       const targetDirectory = await runInit({
-        schemaPath: options.schema as string | undefined,
         cwd,
         directory,
-        force: options.force as boolean | undefined,
-        host: options.host as string | undefined,
-        install: options.install as boolean | undefined,
-        name: options.name as string | undefined,
-        packageManager: options.packageManager as string | undefined,
-        tooling: options.tooling as string | undefined,
+        force: options.force,
+        host: options.host,
+        install: options.install,
+        name: options.name,
+        packageManager: options.packageManager,
+        schemaPath: options.schema,
+        tooling: options.tooling,
       });
       outro(`Created app at ${pc.cyan(targetDirectory)}.`);
     } catch (error) {
@@ -343,20 +385,23 @@ cli
 
 cli
   .command("agent", "Chat with the TailorKit app agent")
-  .option("--schema <path>", "Host schema snapshot for generation without host access")
+  .option(
+    "--schema <path>",
+    "Host schema snapshot for generation without host access"
+  )
   .option("--host <url>", "TailorKit host API URL (required)")
   .option("--app <id>", "App ID (otherwise prompts to select or create an app)")
-  .action(async (options: Record<string, unknown>) => {
+  .action(async (options: CliOptions) => {
     try {
       const { runAgentCommand } = await import("./agent");
       await runAgentCommand({
-        appId: options.app as string | undefined,
-        schemaPath: options.schema as string | undefined,
-        host: options.host as string | undefined,
-        onLoginRequired: () =>
-          loginWithApproval({
-            host: options.host as string | undefined,
+        appId: options.app,
+        host: options.host,
+        onLoginRequired: async () =>
+          await loginWithApproval({
+            host: options.host,
           }),
+        schemaPath: options.schema,
       });
     } catch (error) {
       log.error(error instanceof Error ? error.message : String(error));

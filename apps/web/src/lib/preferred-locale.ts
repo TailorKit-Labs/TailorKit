@@ -9,7 +9,10 @@ export const getPreferredLocale = createIsomorphicFn()
       ?.split(";")[0]
       ?.trim();
 
-    if (!locale || locale === "*") {
+    if (
+      !(locale !== undefined && locale !== null && locale !== "") ||
+      locale === "*"
+    ) {
       return "en";
     }
 

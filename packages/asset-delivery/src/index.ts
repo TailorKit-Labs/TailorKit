@@ -1,14 +1,23 @@
 import { Effect } from "effect";
+import { catch as catchEffect } from "effect/Effect";
+
 import type { LogoContentType } from "./logo-validation";
+
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
 
 const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const publicId = "[0-9a-z]{10}(?:[0-9a-z]{2})?";
 const deploymentAssetPath = new RegExp(
   `^/p/(${uuid})/a/(${publicId})/d/(${publicId})/(?:client/(client\\.js)|logos/([a-f0-9]{64}\\.(?:svg|png|webp)))$`,
-  "u",
+  "u"
 );
 const teamIdPattern = /^[a-z0-9][a-z0-9-]{12}[a-z0-9]$/u;
-const nodeAssetPath = /^\/api\/assets\/t\/([^/]+)(\/p\/.*)$/u;
+const nodeAssetPath = /^\/api\/assets\/t\/(?<team>[^/]+)(?<path>\/p\/.*)$/u;
 const methods = new Set(["GET", "HEAD", "OPTIONS"]);
 
 export const maxDeploymentBytes = 3 * 1024 * 1024;
@@ -23,7 +32,9 @@ export interface AssetIdentity {
   contentType: "application/javascript" | LogoContentType;
 }
 
-const getAssetContentType = (filename: string): AssetIdentity["contentType"] => {
+const getAssetContentType = (
+  filename: string
+): AssetIdentity["contentType"] => {
   if (filename.endsWith(".svg")) {
     return "image/svg+xml";
   }
@@ -36,96 +47,133 @@ const getAssetContentType = (filename: string): AssetIdentity["contentType"] => 
   return "application/javascript";
 };
 
-function createIdentity(publicTeamId: string, pathname: string): AssetIdentity | undefined {
+const createIdentity = (
+  publicTeamId: string,
+  pathname: string
+): AssetIdentity | undefined => {
   if (!teamIdPattern.test(publicTeamId)) {
-    return;
+    return undefined;
   }
 
   const match = deploymentAssetPath.exec(pathname);
-  if (!match) return;
-  const [, projectId, appId, deploymentId, clientFilename, logoFilename] = match;
+  if (!match) {
+    return undefined;
+  }
+  const [, projectId, appId, deploymentId, clientFilename, logoFilename] =
+    match;
   const filename = clientFilename ?? logoFilename;
-  if (!projectId || !appId || !deploymentId || !filename) return;
+  if (
+    !(projectId !== undefined && projectId !== null && projectId !== "") ||
+    !(appId !== undefined && appId !== null && appId !== "") ||
+    !(
+      deploymentId !== undefined &&
+      deploymentId !== null &&
+      deploymentId !== ""
+    ) ||
+    !(filename !== undefined && filename !== null && filename !== "")
+  ) {
+    return undefined;
+  }
   const appKey = `teams/${publicTeamId}/projects/${projectId}/apps/${appId}`;
   return {
     appId,
+    contentType: getAssetContentType(filename),
     deploymentId,
-    key: clientFilename
-      ? `${appKey}/deployments/${deploymentId}/client/${filename}`
-      : `${appKey}/logos/${filename}`,
+    key:
+      clientFilename !== undefined &&
+      clientFilename !== null &&
+      clientFilename !== ""
+        ? `${appKey}/deployments/${deploymentId}/client/${filename}`
+        : `${appKey}/logos/${filename}`,
     projectId,
     publicTeamId,
-    contentType: getAssetContentType(filename),
   };
-}
+};
 
-export function parseHostedAssetRequest(
+export const parseHostedAssetRequest = (
   request: Request,
-  assetDomain: string,
-): AssetIdentity | undefined {
+  assetDomain: string
+): AssetIdentity | undefined => {
   const url = new URL(request.url);
   const suffix = `.${assetDomain}`;
-  if (url.protocol !== "https:" || url.port || url.search || !url.hostname.endsWith(suffix)) {
-    return;
+  if (
+    url.protocol !== "https:" ||
+    url.port ||
+    url.search ||
+    !url.hostname.endsWith(suffix)
+  ) {
+    return undefined;
   }
   return createIdentity(url.hostname.slice(0, -suffix.length), url.pathname);
-}
+};
 
-export function parseNodeAssetRequest(request: Request): AssetIdentity | undefined {
+export const parseNodeAssetRequest = (
+  request: Request
+): AssetIdentity | undefined => {
   const url = new URL(request.url);
   if (url.search) {
-    return;
+    return undefined;
   }
   const match = nodeAssetPath.exec(url.pathname);
   if (!match) {
-    return;
+    return undefined;
   }
   const [, publicTeamId, assetPathname] = match;
-  if (!publicTeamId || !assetPathname) {
-    return;
+  if (
+    !(
+      publicTeamId !== undefined &&
+      publicTeamId !== null &&
+      publicTeamId !== ""
+    ) ||
+    !(
+      assetPathname !== undefined &&
+      assetPathname !== null &&
+      assetPathname !== ""
+    )
+  ) {
+    return undefined;
   }
   return createIdentity(publicTeamId, assetPathname);
-}
+};
 
-export function isAssetMethod(method: string): boolean {
-  return methods.has(method);
-}
+export const isAssetMethod = (method: string): boolean => methods.has(method);
 
-export function isValidAssetSize(size: number | undefined): size is number {
-  return size !== undefined && size >= 1 && size <= maxAssetBytes;
-}
+export const isValidAssetSize = (size: number | undefined): size is number =>
+  size !== undefined && size >= 1 && size <= maxAssetBytes;
 
-export function assetFailure(status: number): Response {
-  return new Response(null, {
+export const assetFailure = (status: number): Response =>
+  new Response(null, {
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Cache-Control": "no-store",
+    },
     status,
-    headers: { "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" },
   });
-}
 
-export function assetPreflight(): Response {
-  return new Response(null, {
-    status: 204,
+export const assetPreflight = (): Response =>
+  new Response(null, {
     headers: {
       "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
       "Access-Control-Allow-Origin": "*",
       "Cache-Control": "no-store",
     },
+    status: 204,
   });
-}
 
-export function assetHeaders(input: {
+export const assetHeaders = (input: {
   contentLength: number;
   contentEncoding?: string;
   contentType?: AssetIdentity["contentType"];
   etag?: string;
-}): Headers {
+}): Headers => {
   const headers = new Headers({
     "Access-Control-Allow-Origin": "*",
     "Cache-Control": "public, max-age=86400",
     "Content-Length": String(input.contentLength),
     "Content-Security-Policy": "default-src 'none'; sandbox",
     "Content-Type":
-      input.contentType === "application/javascript" || input.contentType === undefined
+      input.contentType === "application/javascript" ||
+      input.contentType === undefined
         ? "application/javascript; charset=utf-8"
         : input.contentType,
     "Cross-Origin-Resource-Policy": "cross-origin",
@@ -136,57 +184,107 @@ export function assetHeaders(input: {
     headers.set("Content-Encoding", "gzip");
     headers.set("Vary", "Accept-Encoding");
   }
-  if (input.etag) {
+  if (input.etag !== undefined && input.etag !== null && input.etag !== "") {
     headers.set("ETag", input.etag);
   }
   return headers;
-}
+};
 
 /** Hosted app routes use public team/app IDs and the canonical project UUID. */
-const hostedAppPath = new RegExp(`^/p/(${uuid})/a/(${publicId})(/rpc(?:/.*)?)$`, "u");
-const publicationPath = new RegExp(`^/p/(${uuid})/a/(${publicId})/new-deployment$`, "u");
+const hostedAppPath = new RegExp(
+  `^/p/(${uuid})/a/(${publicId})(/rpc(?:/.*)?)$`,
+  "u"
+);
+const publicationPath = new RegExp(
+  `^/p/(${uuid})/a/(${publicId})/new-deployment$`,
+  "u"
+);
 
-export function parseHostedAppRoute(request: Request, assetDomain: string) {
+export const parseHostedAppRoute = (request: Request, assetDomain: string) => {
   const url = new URL(request.url);
   const suffix = `.${assetDomain}`;
   const local =
-    url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
-  if (!local && (url.protocol !== "https:" || url.port || !url.hostname.endsWith(suffix))) return;
-  const publicTeamId = local ? undefined : url.hostname.slice(0, -suffix.length);
-  if (!local && (!publicTeamId || !teamIdPattern.test(publicTeamId))) return;
+    url.protocol === "http:" &&
+    ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+  if (
+    !local &&
+    (url.protocol !== "https:" || url.port || !url.hostname.endsWith(suffix))
+  ) {
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
+  }
+  const publicTeamId = local
+    ? undefined
+    : url.hostname.slice(0, -suffix.length);
+  if (
+    !local &&
+    (!(
+      publicTeamId !== undefined &&
+      publicTeamId !== null &&
+      publicTeamId !== ""
+    ) ||
+      !teamIdPattern.test(publicTeamId))
+  ) {
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
+  }
   const match = hostedAppPath.exec(url.pathname);
-  if (!match) return;
-  return { publicTeamId, projectId: match[1]!, appPublicId: match[2]!, rpcPath: match[3]! };
-}
+  if (!match) {
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
+  }
+  return {
+    appPublicId: requireValue(match[2]),
+    projectId: requireValue(match[1]),
+    publicTeamId,
+    rpcPath: requireValue(match[3]),
+  };
+};
 
 /** Publication uses the reserved internal hostname, never a tenant hostname. */
-export function parseDeploymentPublicationRoute(request: Request, assetDomain: string) {
+export const parseDeploymentPublicationRoute = (
+  request: Request,
+  assetDomain: string
+) => {
   const url = new URL(request.url);
   if (
     url.protocol !== "https:" ||
     url.port ||
     url.search ||
     url.hostname !== `internal.${assetDomain}`
-  )
-    return;
+  ) {
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
+  }
   const match = publicationPath.exec(url.pathname);
-  if (!match) return;
-  return { projectId: match[1]!, appPublicId: match[2]! };
-}
+  if (!match) {
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
+  }
+  return {
+    appPublicId: requireValue(match[2]),
+    projectId: requireValue(match[1]),
+  };
+};
 
 export class AssetDeliveryError extends Error {
   readonly _tag = "AssetDeliveryError";
-  constructor(readonly status: 400 | 404 | 405 | 503) {
+  readonly status: 400 | 404 | 405 | 503;
+  constructor(status: 400 | 404 | 405 | 503) {
     super(`Asset delivery failed (${status})`);
+    this.name = "AssetDeliveryError";
+    this.status = status;
   }
 }
 
 /** Bound decoded bytes, including objects that have not passed publication checks. */
-export function limitAssetBody(body: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
+export const limitAssetBody = (
+  body: ReadableStream<Uint8Array>
+): ReadableStream<Uint8Array> => {
   let contentLength = 0;
   return body.pipeThrough(
     new TransformStream<Uint8Array, Uint8Array>({
-      transform(chunk, controller) {
+      transform: (chunk, controller) => {
         contentLength += chunk.byteLength;
         if (contentLength > maxAssetBytes) {
           controller.error(new AssetDeliveryError(404));
@@ -194,78 +292,99 @@ export function limitAssetBody(body: ReadableStream<Uint8Array>): ReadableStream
         }
         controller.enqueue(chunk);
       },
-    }),
+    })
   );
-}
+};
 
-export function hostedAssetRequest(request: Request, assetDomain: string) {
-  return Effect.gen(function* () {
+export const hostedAssetRequest = (request: Request, assetDomain: string) =>
+  Effect.gen(function* hostedAssetRequestValue() {
     if (new URL(request.url).protocol !== "https:") {
       return yield* Effect.fail(new AssetDeliveryError(400));
     }
     const identity = parseHostedAssetRequest(request, assetDomain);
-    if (!identity) return yield* Effect.fail(new AssetDeliveryError(404));
+    if (!identity) {
+      return yield* Effect.fail(new AssetDeliveryError(404));
+    }
     return identity;
   });
-}
 
-export function nodeAssetRequest(request: Request) {
-  return Effect.gen(function* () {
+export const nodeAssetRequest = (request: Request) =>
+  Effect.gen(function* nodeAssetRequestValue() {
     const identity = parseNodeAssetRequest(request);
-    if (!identity) return yield* Effect.fail(new AssetDeliveryError(404));
+    if (!identity) {
+      return yield* Effect.fail(new AssetDeliveryError(404));
+    }
     return identity;
   });
-}
 
-export function assetSize(size: number | undefined) {
-  return Effect.gen(function* () {
-    if (!isValidAssetSize(size)) return yield* Effect.fail(new AssetDeliveryError(404));
+export const assetSize = (size: number | undefined) =>
+  Effect.gen(function* assetSizeValue() {
+    if (!isValidAssetSize(size)) {
+      return yield* Effect.fail(new AssetDeliveryError(404));
+    }
     return size;
   });
-}
 
 /** Both delivery adapters share request admission. */
-export function serveAssetRequest(
+export const serveAssetRequest = (
   request: Request,
   options: {
     identity: Effect.Effect<AssetIdentity, AssetDeliveryError>;
-    load(identity: AssetIdentity): Effect.Effect<Response, AssetDeliveryError>;
-  },
-): Effect.Effect<Response, AssetDeliveryError> {
-  return Effect.gen(function* () {
+    load: (
+      identity: AssetIdentity
+    ) => Effect.Effect<Response, AssetDeliveryError>;
+  }
+): Effect.Effect<Response, AssetDeliveryError> =>
+  Effect.gen(function* serveAssetRequestValue() {
     const identity = yield* options.identity;
-    if (!isAssetMethod(request.method)) return yield* Effect.fail(new AssetDeliveryError(405));
-    if (request.method === "OPTIONS") return assetPreflight();
+    if (!isAssetMethod(request.method)) {
+      return yield* Effect.fail(new AssetDeliveryError(405));
+    }
+    if (request.method === "OPTIONS") {
+      return assetPreflight();
+    }
     return yield* options.load(identity);
   });
-}
 
 /** Storage details stay in trusted infrastructure; public failures expose only a status. */
-export function assetResponse(
+export const assetResponse = (
   program: Effect.Effect<Response, AssetDeliveryError>,
-  onUnavailable?: () => void,
-): Effect.Effect<Response> {
-  return program.pipe(
-    Effect.catch((error) =>
+  onUnavailable?: () => void
+): Effect.Effect<Response> =>
+  program.pipe(
+    // oxlint-disable-next-line promise/prefer-await-to-callbacks -- This is an Effect recovery operator or transport callback, not a Node-style completion callback.
+    catchEffect((err) =>
       Effect.sync(() => {
-        if (error.status === 503) onUnavailable?.();
-        return assetFailure(error.status);
-      }),
-    ),
+        if (err.status === 503) {
+          onUnavailable?.();
+        }
+        return assetFailure(err.status);
+      })
+    )
   );
-}
 
 /** An explicit gzip refusal takes precedence over a wildcard. */
-export function acceptsGzip(request: Request): boolean {
+export const acceptsGzip = (request: Request): boolean => {
   const encodings = (request.headers.get("Accept-Encoding") ?? "")
     .toLowerCase()
     .split(",")
     .map((entry) => {
       const [name, ...parameters] = entry.split(";").map((part) => part.trim());
-      const quality = parameters.find((parameter) => parameter.startsWith("q="));
-      return { name, quality: quality ? Number(quality.slice(2)) : 1 };
+      const quality = parameters.find((parameter) =>
+        parameter.startsWith("q=")
+      );
+      return {
+        name,
+        quality:
+          quality !== undefined && quality !== null && quality !== ""
+            ? Number(quality.slice(2))
+            : 1,
+      };
     });
   const encoding =
-    encodings.find(({ name }) => name === "gzip") ?? encodings.find(({ name }) => name === "*");
-  return encoding !== undefined && encoding.quality > 0 && encoding.quality <= 1;
-}
+    encodings.find(({ name }) => name === "gzip") ??
+    encodings.find(({ name }) => name === "*");
+  return (
+    encoding !== undefined && encoding.quality > 0 && encoding.quality <= 1
+  );
+};

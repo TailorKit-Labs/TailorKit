@@ -22,7 +22,7 @@ export type ServerSentEventsOptions<TData = unknown> = Omit<RequestInit, "method
      *
      * @param error The error that occurred.
      */
-    onSseError?: (error: unknown) => void;
+    onSseError?: (error: ErrorOptions["cause"]) => void;
     /**
      * Callback invoked when an event is streamed from the server.
      *

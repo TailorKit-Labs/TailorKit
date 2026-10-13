@@ -1,24 +1,38 @@
 import { auth, getSocialProviderAvailability } from "@tailorkit/auth";
 import { db } from "@tailorkit/db";
 import { account } from "@tailorkit/db/schema/auth";
-import { getKV } from "@tailorkit/kv";
-import { env } from "#env";
-import { and, eq } from "drizzle-orm";
-import { publicProcedure, protectedProcedure, requireOrg } from "../procedures";
-import z from "zod";
 import { validateOrgSlug } from "@tailorkit/db/validate-org-slug";
+import { getKV } from "@tailorkit/kv";
+import { and, eq } from "drizzle-orm";
+import { z } from "zod";
+
+import { env } from "#env";
+import { publicProcedure, protectedProcedure, requireOrg } from "#procedures";
+
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
 
 const MANUAL_ORG_ONBOARDING_MESSAGE =
   "We're currently onboarding users manually. Contact us to create an organisation for your account.";
 
-async function getGitHubUsername(accountId: string, getAccessToken: () => Promise<string | null>) {
+const getGitHubUsername = async (
+  accountId: string,
+  getAccessToken: () => Promise<string | null>
+) => {
   const key = `tailorkit:github-username:${accountId}`;
   let kv: ReturnType<typeof getKV> = null;
 
   try {
     kv = getKV();
     const cachedUsername = kv ? await kv.get(key, { timeout: 1000 }) : null;
-    if (cachedUsername) {
+    if (
+      cachedUsername !== undefined &&
+      cachedUsername !== null &&
+      cachedUsername !== ""
+    ) {
       return cachedUsername;
     }
   } catch {
@@ -26,7 +40,9 @@ async function getGitHubUsername(accountId: string, getAccessToken: () => Promis
   }
 
   const accessToken = await getAccessToken();
-  if (!accessToken) {
+  if (
+    !(accessToken !== undefined && accessToken !== null && accessToken !== "")
+  ) {
     return null;
   }
 
@@ -44,90 +60,39 @@ async function getGitHubUsername(accountId: string, getAccessToken: () => Promis
     }
 
     const profile: unknown = await response.json();
-    if (typeof profile !== "object" || profile === null || !("login" in profile)) {
+    if (!isObjectValue(profile) || profile === null || !("login" in profile)) {
       return null;
     }
 
     const username = profile.login;
-    if (typeof username !== "string") {
+    if (!isStringValue(username)) {
       return null;
     }
 
-    void kv?.set(key, username, { ttl: 86_400 }).catch(() => {});
+    void (async () => {
+      try {
+        await kv?.set(key, username, { ttl: 86_400 });
+      } catch {
+        /* The cache write is best effort. */
+      }
+    })();
     return username;
   } catch {
     // Account management should remain available if GitHub is temporarily unavailable.
     return null;
   }
-}
+};
 
 export const userRouter = {
-  getSocialProviders: publicProcedure.handler(() => getSocialProviderAvailability()),
-
-  getSession: publicProcedure.handler(({ context }) => ({
-    session: context.session,
-    user: context.user,
-  })),
-
-  listAccounts: protectedProcedure.handler(async ({ context }) => {
-    const accounts = await auth.api.listUserAccounts({ headers: context.headers });
-    const githubAccount = accounts.find((linkedAccount) => linkedAccount.providerId === "github");
-    const githubUsername = githubAccount
-      ? await getGitHubUsername(githubAccount.id, async () => {
-          try {
-            const tokens = await auth.api.getAccessToken({
-              body: { accountId: githubAccount.id },
-              headers: context.headers,
-            });
-            return tokens.accessToken;
-          } catch {
-            return null;
-          }
+  acceptInvitation: protectedProcedure
+    .input(z.object({ invitationId: z.string() }))
+    .handler(
+      async ({ input, context }) =>
+        await auth.api.acceptInvitation({
+          body: { invitationId: input.invitationId },
+          headers: context.headers,
         })
-      : null;
-
-    return accounts.map((linkedAccount) => ({
-      ...linkedAccount,
-      githubUsername: linkedAccount.id === githubAccount?.id ? githubUsername : null,
-    }));
-  }),
-
-  linkSocial: protectedProcedure
-    .input(
-      z.object({
-        callbackURL: z.string().optional(),
-        errorCallbackURL: z.string().optional(),
-        provider: z.enum(["github", "google"]),
-      }),
-    )
-    .handler(({ input, context }) =>
-      auth.api.linkSocialAccount({ body: input, headers: context.headers }),
     ),
-
-  unlinkAccount: protectedProcedure
-    .input(z.object({ accountId: z.string() }))
-    .handler(async ({ input, context, errors }) => {
-      const accounts = await auth.api.listUserAccounts({ headers: context.headers });
-      const passkeys = await db.query.passkey.findMany({
-        columns: { id: true },
-        where: { userId: context.user.id },
-      });
-
-      if (accounts.length + passkeys.length <= 1) {
-        throw errors.BAD_REQUEST({ message: "You must keep at least one sign-in method." });
-      }
-
-      const [deletedAccount] = await db
-        .delete(account)
-        .where(and(eq(account.id, input.accountId), eq(account.userId, context.user.id)))
-        .returning({ id: account.id });
-
-      if (!deletedAccount) {
-        throw errors.BAD_REQUEST({ message: "Account not found." });
-      }
-
-      return { status: true };
-    }),
 
   changePassword: protectedProcedure
     .input(
@@ -135,64 +100,12 @@ export const userRouter = {
         currentPassword: z.string().min(1),
         newPassword: z.string().min(1),
         revokeOtherSessions: z.boolean().optional(),
-      }),
+      })
     )
-    .handler(({ input, context }) =>
-      auth.api.changePassword({ body: input, headers: context.headers }),
+    .handler(
+      async ({ input, context }) =>
+        await auth.api.changePassword({ body: input, headers: context.headers })
     ),
-
-  listSessions: protectedProcedure.handler(({ context }) =>
-    auth.api.listSessions({ headers: context.headers }),
-  ),
-
-  revokeSession: protectedProcedure
-    .input(z.object({ token: z.string() }))
-    .handler(({ input, context }) =>
-      auth.api.revokeSession({ body: input, headers: context.headers }),
-    ),
-
-  revokeOtherSessions: protectedProcedure.handler(({ context }) =>
-    auth.api.revokeOtherSessions({ headers: context.headers }),
-  ),
-
-  enableTwoFactor: protectedProcedure
-    .input(z.object({ method: z.literal("totp"), password: z.string() }))
-    .handler(({ input, context }) =>
-      auth.api.enableTwoFactor({ body: input, headers: context.headers }),
-    ),
-
-  verifyTotp: protectedProcedure
-    .input(z.object({ code: z.string().length(6) }))
-    .handler(({ input, context }) =>
-      auth.api.verifyTOTP({ body: input, headers: context.headers }),
-    ),
-
-  disableTwoFactor: protectedProcedure
-    .input(z.object({ password: z.string() }))
-    .handler(({ input, context }) =>
-      auth.api.disableTwoFactor({ body: input, headers: context.headers }),
-    ),
-
-  generateBackupCodes: protectedProcedure
-    .input(z.object({ password: z.string() }))
-    .handler(({ input, context }) =>
-      auth.api.generateBackupCodes({ body: input, headers: context.headers }),
-    ),
-
-  getOrgs: protectedProcedure.handler(async ({ context }) => {
-    const orgs = await db.query.organization.findMany({
-      where: {
-        members: { userId: context.user.id },
-      },
-    });
-
-    return orgs;
-  }),
-
-  getOrg: protectedProcedure
-    .input(z.union([z.object({ orgId: z.string() }), z.object({ orgSlug: z.string() })]))
-    .use(requireOrg())
-    .handler(({ context }) => context.org),
 
   checkOrgSlug: protectedProcedure
     .input(z.object({ slug: z.string().min(2).max(48) }))
@@ -211,7 +124,9 @@ export const userRouter = {
     }),
 
   createOrg: protectedProcedure
-    .input(z.object({ name: z.string().min(1), slug: z.string().min(2).max(48) }))
+    .input(
+      z.object({ name: z.string().min(1), slug: z.string().min(2).max(48) })
+    )
     .handler(async ({ input, context, errors }) => {
       if (env.VERCEL_ENV === "production") {
         throw errors.FORBIDDEN({ message: MANUAL_ORG_ONBOARDING_MESSAGE });
@@ -228,7 +143,9 @@ export const userRouter = {
       });
 
       if (existingOrg) {
-        throw errors.BAD_REQUEST({ message: "This organisation slug is already taken." });
+        throw errors.BAD_REQUEST({
+          message: "This organisation slug is already taken.",
+        });
       }
 
       const org = await auth.api.createOrganization({
@@ -238,29 +155,186 @@ export const userRouter = {
       return org;
     }),
 
+  disableTwoFactor: protectedProcedure
+    .input(z.object({ password: z.string() }))
+    .handler(
+      async ({ input, context }) =>
+        await auth.api.disableTwoFactor({
+          body: input,
+          headers: context.headers,
+        })
+    ),
+
+  enableTwoFactor: protectedProcedure
+    .input(z.object({ method: z.literal("totp"), password: z.string() }))
+    .handler(
+      async ({ input, context }) =>
+        await auth.api.enableTwoFactor({
+          body: input,
+          headers: context.headers,
+        })
+    ),
+
+  generateBackupCodes: protectedProcedure
+    .input(z.object({ password: z.string() }))
+    .handler(
+      async ({ input, context }) =>
+        await auth.api.generateBackupCodes({
+          body: input,
+          headers: context.headers,
+        })
+    ),
+
+  getOrg: protectedProcedure
+    .input(
+      z.union([
+        z.object({ orgId: z.string() }),
+        z.object({ orgSlug: z.string() }),
+      ])
+    )
+    .use(requireOrg())
+    .handler(({ context }) => context.org),
+
+  getOrgs: protectedProcedure.handler(async ({ context }) => {
+    const orgs = await db.query.organization.findMany({
+      where: {
+        members: { userId: context.user.id },
+      },
+    });
+
+    return orgs;
+  }),
+
   getPendingInvitations: protectedProcedure.handler(async ({ context }) => {
     const invitations = await db.query.invitation.findMany({
-      where: { email: context.user.email, status: "pending", expiresAt: { gt: new Date() } },
+      where: {
+        email: context.user.email,
+        expiresAt: { gt: new Date() },
+        status: "pending",
+      },
       with: { organization: true },
     });
     return invitations;
   }),
 
-  acceptInvitation: protectedProcedure
-    .input(z.object({ invitationId: z.string() }))
-    .handler(({ input, context }) =>
-      auth.api.acceptInvitation({
-        body: { invitationId: input.invitationId },
-        headers: context.headers,
-      }),
+  getSession: publicProcedure.handler(({ context }) => ({
+    session: context.session,
+    user: context.user,
+  })),
+
+  getSocialProviders: publicProcedure.handler(() =>
+    getSocialProviderAvailability()
+  ),
+
+  linkSocial: protectedProcedure
+    .input(
+      z.object({
+        callbackURL: z.string().optional(),
+        errorCallbackURL: z.string().optional(),
+        provider: z.enum(["github", "google"]),
+      })
+    )
+    .handler(
+      async ({ input, context }) =>
+        await auth.api.linkSocialAccount({
+          body: input,
+          headers: context.headers,
+        })
     ),
+
+  listAccounts: protectedProcedure.handler(async ({ context }) => {
+    const accounts = await auth.api.listUserAccounts({
+      headers: context.headers,
+    });
+    const githubAccount = accounts.find(
+      (linkedAccount) => linkedAccount.providerId === "github"
+    );
+    const githubUsername = githubAccount
+      ? await getGitHubUsername(githubAccount.id, async () => {
+          try {
+            const tokens = await auth.api.getAccessToken({
+              body: { accountId: githubAccount.id },
+              headers: context.headers,
+            });
+            return tokens.accessToken;
+          } catch {
+            return null;
+          }
+        })
+      : null;
+
+    return accounts.map((linkedAccount) => ({
+      ...linkedAccount,
+      githubUsername:
+        linkedAccount.id === githubAccount?.id ? githubUsername : null,
+    }));
+  }),
+
+  listSessions: protectedProcedure.handler(
+    async ({ context }) =>
+      await auth.api.listSessions({ headers: context.headers })
+  ),
 
   rejectInvitation: protectedProcedure
     .input(z.object({ invitationId: z.string() }))
-    .handler(({ input, context }) =>
-      auth.api.rejectInvitation({
-        body: { invitationId: input.invitationId },
+    .handler(
+      async ({ input, context }) =>
+        await auth.api.rejectInvitation({
+          body: { invitationId: input.invitationId },
+          headers: context.headers,
+        })
+    ),
+
+  revokeOtherSessions: protectedProcedure.handler(
+    async ({ context }) =>
+      await auth.api.revokeOtherSessions({ headers: context.headers })
+  ),
+
+  revokeSession: protectedProcedure
+    .input(z.object({ token: z.string() }))
+    .handler(
+      async ({ input, context }) =>
+        await auth.api.revokeSession({ body: input, headers: context.headers })
+    ),
+
+  unlinkAccount: protectedProcedure
+    .input(z.object({ accountId: z.string() }))
+    .handler(async ({ input, context, errors }) => {
+      const accounts = await auth.api.listUserAccounts({
         headers: context.headers,
-      }),
+      });
+      const passkeys = await db.query.passkey.findMany({
+        columns: { id: true },
+        where: { userId: context.user.id },
+      });
+
+      if (accounts.length + passkeys.length <= 1) {
+        throw errors.BAD_REQUEST({
+          message: "You must keep at least one sign-in method.",
+        });
+      }
+
+      const [deletedAccount] = await db
+        .delete(account)
+        .where(
+          and(
+            eq(account.id, input.accountId),
+            eq(account.userId, context.user.id)
+          )
+        )
+        .returning({ id: account.id });
+
+      if (!deletedAccount) {
+        throw errors.BAD_REQUEST({ message: "Account not found." });
+      }
+
+      return { status: true };
+    }),
+
+  verifyTotp: protectedProcedure
+    .input(z.object({ code: z.string().length(6) }))
+    .handler(
+      async ({ input, context }) =>
+        await auth.api.verifyTOTP({ body: input, headers: context.headers })
     ),
 };

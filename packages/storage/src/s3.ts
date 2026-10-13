@@ -8,6 +8,7 @@ import {
 import type { S3ClientConfig } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { withSpan } from "@tailorkit/observability";
+
 import type {
   CreateDownloadUrlInput,
   CreateDownloadUrlOutput,
@@ -28,14 +29,21 @@ export interface S3CompatibleStorageOptions {
   forcePathStyle?: boolean;
 }
 
-function createS3Client(options: S3CompatibleStorageOptions): S3Client {
+const createS3Client = (options: S3CompatibleStorageOptions): S3Client => {
   const config: S3ClientConfig = {
-    region: options.region ?? "auto",
     endpoint: options.endpoint,
     forcePathStyle: options.forcePathStyle ?? Boolean(options.endpoint),
+    region: options.region ?? "auto",
   };
 
-  if (options.accessKeyId && options.secretAccessKey) {
+  if (
+    options.accessKeyId !== undefined &&
+    options.accessKeyId !== null &&
+    options.accessKeyId !== "" &&
+    options.secretAccessKey !== undefined &&
+    options.secretAccessKey !== null &&
+    options.secretAccessKey !== ""
+  ) {
     config.credentials = {
       accessKeyId: options.accessKeyId,
       secretAccessKey: options.secretAccessKey,
@@ -43,88 +51,17 @@ function createS3Client(options: S3CompatibleStorageOptions): S3Client {
   }
 
   return new S3Client(config);
-}
+};
 
-export function createS3CompatibleStorage(options: S3CompatibleStorageOptions): Storage<"s3"> {
+export const createS3CompatibleStorage = (
+  options: S3CompatibleStorageOptions
+): Storage => {
   const client = createS3Client(options);
 
   return {
-    type: "s3",
-    head: async (input: HeadObjectInput): Promise<HeadObjectOutput> => {
-      const result = await withSpan(
-        "storage.head",
-        { attributes: { "tailorkit.package": "storage", "storage.type": "s3" } },
-        () =>
-          client.send(
-            new HeadObjectCommand({
-              Bucket: options.bucket,
-              ChecksumMode: "ENABLED",
-              Key: input.key,
-            }),
-          ),
-      );
-
-      return {
-        key: input.key,
-        contentType: result.ContentType,
-        contentEncoding: result.ContentEncoding,
-        contentLength: result.ContentLength,
-        checksumSha256: result.ChecksumSHA256,
-        etag: result.ETag,
-        metadata: result.Metadata,
-      };
-    },
-    delete: async (input: DeleteObjectInput): Promise<void> => {
-      await withSpan(
-        "storage.delete",
-        { attributes: { "tailorkit.package": "storage", "storage.type": "s3" } },
-        () =>
-          client.send(
-            new DeleteObjectCommand({
-              Bucket: options.bucket,
-              Key: input.key,
-            }),
-          ),
-      );
-    },
-    createUploadUrl: async (input: CreateUploadUrlInput): Promise<CreateUploadUrlOutput> => {
-      const command = new PutObjectCommand({
-        Bucket: options.bucket,
-        Key: input.key,
-        ChecksumSHA256: input.checksumSha256,
-        ContentType: input.contentType,
-        ContentEncoding: input.contentEncoding,
-        Metadata: input.metadata,
-      });
-
-      return {
-        key: input.key,
-        uploadUrl: await withSpan(
-          "storage.create_upload_url",
-          {
-            attributes: {
-              "tailorkit.package": "storage",
-              "storage.type": "s3",
-              "storage.expires_seconds": input.expiresInSeconds ?? 300,
-            },
-          },
-          () =>
-            getSignedUrl(client, command, {
-              expiresIn: input.expiresInSeconds ?? 300,
-              // The upload contract sends this checksum as a header. Keep it
-              // signed there instead of also hoisting it into the query string.
-              unhoistableHeaders: new Set(["x-amz-checksum-sha256"]),
-              signableHeaders: new Set(["content-type", "content-encoding"]),
-            }),
-        ),
-        headers: {
-          ...(input.contentType ? { "content-type": input.contentType } : {}),
-          ...(input.contentEncoding ? { "content-encoding": input.contentEncoding } : {}),
-          ...(input.checksumSha256 ? { "x-amz-checksum-sha256": input.checksumSha256 } : {}),
-        },
-      };
-    },
-    createDownloadUrl: async (input: CreateDownloadUrlInput): Promise<CreateDownloadUrlOutput> => {
+    createDownloadUrl: async (
+      input: CreateDownloadUrlInput
+    ): Promise<CreateDownloadUrlOutput> => {
       const command = new GetObjectCommand({
         Bucket: options.bucket,
         Key: input.key,
@@ -136,17 +73,118 @@ export function createS3CompatibleStorage(options: S3CompatibleStorageOptions): 
           "storage.create_download_url",
           {
             attributes: {
-              "tailorkit.package": "storage",
-              "storage.type": "s3",
               "storage.expires_seconds": input.expiresInSeconds ?? 300,
+              "storage.type": "s3",
+              "tailorkit.package": "storage",
             },
           },
-          () =>
-            getSignedUrl(client, command, {
+          async () =>
+            await getSignedUrl(client, command, {
               expiresIn: input.expiresInSeconds ?? 300,
-            }),
+            })
         ),
       };
     },
+    createUploadUrl: async (
+      input: CreateUploadUrlInput
+    ): Promise<CreateUploadUrlOutput> => {
+      const command = new PutObjectCommand({
+        Bucket: options.bucket,
+        ChecksumSHA256: input.checksumSha256,
+        ContentEncoding: input.contentEncoding,
+        ContentType: input.contentType,
+        Key: input.key,
+        Metadata: input.metadata,
+      });
+
+      const headers: CreateUploadUrlOutput["headers"] = {};
+      if (
+        input.contentType !== undefined &&
+        input.contentType !== null &&
+        input.contentType !== ""
+      ) {
+        headers["content-type"] = input.contentType;
+      }
+      if (
+        input.contentEncoding !== undefined &&
+        input.contentEncoding !== null &&
+        input.contentEncoding !== ""
+      ) {
+        headers["content-encoding"] = input.contentEncoding;
+      }
+      if (
+        input.checksumSha256 !== undefined &&
+        input.checksumSha256 !== null &&
+        input.checksumSha256 !== ""
+      ) {
+        headers["x-amz-checksum-sha256"] = input.checksumSha256;
+      }
+      return {
+        headers,
+        key: input.key,
+        uploadUrl: await withSpan(
+          "storage.create_upload_url",
+          {
+            attributes: {
+              "storage.expires_seconds": input.expiresInSeconds ?? 300,
+              "storage.type": "s3",
+              "tailorkit.package": "storage",
+            },
+          },
+          async () =>
+            await getSignedUrl(client, command, {
+              expiresIn: input.expiresInSeconds ?? 300,
+
+              signableHeaders: new Set(["content-type", "content-encoding"]),
+
+              // The upload contract sends this checksum as a header. Keep it
+              // signed there instead of also hoisting it into the query string.
+              unhoistableHeaders: new Set(["x-amz-checksum-sha256"]),
+            })
+        ),
+      };
+    },
+    delete: async (input: DeleteObjectInput): Promise<void> => {
+      await withSpan(
+        "storage.delete",
+        {
+          attributes: { "storage.type": "s3", "tailorkit.package": "storage" },
+        },
+        async () =>
+          await client.send(
+            new DeleteObjectCommand({
+              Bucket: options.bucket,
+              Key: input.key,
+            })
+          )
+      );
+    },
+    head: async (input: HeadObjectInput): Promise<HeadObjectOutput> => {
+      const result = await withSpan(
+        "storage.head",
+        {
+          attributes: { "storage.type": "s3", "tailorkit.package": "storage" },
+        },
+        async () =>
+          await client.send(
+            new HeadObjectCommand({
+              Bucket: options.bucket,
+              ChecksumMode: "ENABLED",
+              Key: input.key,
+            })
+          )
+      );
+
+      return {
+        checksumSha256: result.ChecksumSHA256,
+        contentEncoding: result.ContentEncoding,
+        contentLength: result.ContentLength,
+        contentType: result.ContentType,
+        etag: result.ETag,
+        key: input.key,
+        metadata: result.Metadata,
+      };
+    },
+    type: "s3",
   };
-}
+};

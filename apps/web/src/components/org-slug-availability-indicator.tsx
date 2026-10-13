@@ -1,6 +1,7 @@
-import { CheckCircle2Icon, XCircleIcon } from "lucide-react";
 import { Spinner } from "@tailorkit/ui/spinner";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "@tailorkit/ui/tooltip";
+import { CheckCircle2Icon, XCircleIcon } from "lucide-react";
+
 import type { OrgSlugAvailability } from "#lib/org-slug-availability";
 
 interface OrgSlugAvailabilityIndicatorProps {
@@ -8,11 +9,14 @@ interface OrgSlugAvailabilityIndicatorProps {
   submitError?: string | null;
 }
 
-export function OrgSlugAvailabilityIndicator({
+export const OrgSlugAvailabilityIndicator = ({
   availability,
   submitError,
-}: OrgSlugAvailabilityIndicatorProps) {
-  const status = submitError ? "unavailable" : availability.status;
+}: OrgSlugAvailabilityIndicatorProps) => {
+  const status =
+    submitError !== undefined && submitError !== null && submitError !== ""
+      ? "unavailable"
+      : availability.status;
   const message = submitError ?? availability.message;
 
   if (status === "idle") {
@@ -24,16 +28,18 @@ export function OrgSlugAvailabilityIndicator({
 
   if (status === "checking") {
     tooltip = "Checking slug availability...";
-    icon = <Spinner className="size-4 text-muted-foreground" />;
+    icon = <Spinner className="size-4" />;
   } else if (status === "available") {
     tooltip = "This slug is available.";
-    icon = <CheckCircle2Icon className="size-4 text-green-600 dark:text-green-400" />;
+    icon = <CheckCircle2Icon className="size-4 text-success" />;
   }
 
   return (
     <Tooltip>
-      <TooltipTrigger render={<span className="inline-flex items-center" />}>{icon}</TooltipTrigger>
+      <TooltipTrigger render={<span className="inline-flex items-center" />}>
+        {icon}
+      </TooltipTrigger>
       <TooltipPopup>{tooltip}</TooltipPopup>
     </Tooltip>
   );
-}
+};
