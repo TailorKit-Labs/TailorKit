@@ -20,18 +20,18 @@ async function chooseApp(client: Pick<TailorKitRouterClient, "apps">): Promise<s
     let hasMore = true;
     while (hasMore) {
       const result = await client.apps.list({ page, pageSize: 100 });
-      apps.push(...result.items);
+      apps.push(...result.items.filter((app) => app.createdByAgent));
       hasMore = result.pagination.hasMore;
       page += 1;
     }
-    loading.stop(apps.length ? "Found apps." : "No apps found.");
+    loading.stop(apps.length ? "Found AI-created apps." : "No AI-created apps found.");
   } catch (error) {
     loading.stop("Unable to list apps.");
     throw error;
   }
 
   const selection = await autocomplete<string | null>({
-    message: "Select an app or create a new one",
+    message: "Select an AI-created app or create a new one",
     placeholder: "Search by name or app ID",
     options: [
       ...apps.map((app) => ({ value: app.id, label: app.name, hint: app.publicId })),
@@ -61,7 +61,11 @@ async function chooseApp(client: Pick<TailorKitRouterClient, "apps">): Promise<s
   }
   loading.start("Creating app");
   try {
-    const app = await client.apps.create({ name: name.trim(), description: null });
+    const app = await client.apps.create({
+      name: name.trim(),
+      description: null,
+      createdByAgent: true,
+    });
     loading.stop("Created app.");
     return app.id;
   } catch (error) {
@@ -93,6 +97,11 @@ export async function runAgentCommand(options: AgentOptions) {
   if (!appId) {
     appId = await chooseApp(client);
     if (!appId) return;
+  } else {
+    const app = await client.apps.get({ appId });
+    if (!app.createdByAgent) {
+      throw new Error("The agent can only edit apps created by AI. Create a new app to continue.");
+    }
   }
   log.info(`App: ${appId}`);
   const { openAgentTui } = await import("./agent-tui");

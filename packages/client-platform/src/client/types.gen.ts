@@ -148,6 +148,7 @@ export type AppsListResponses = {
       };
       name: string;
       description: string | null;
+      createdByAgent: boolean;
       currentDeploymentId: string | null;
       createdAt: string;
       updatedAt: string;
@@ -224,6 +225,7 @@ export type AppsGetResponses = {
     };
     name: string;
     description: string | null;
+    createdByAgent: boolean;
     currentDeploymentId: string | null;
     createdAt: string;
     updatedAt: string;
@@ -272,6 +274,7 @@ export type AppsCreateData = {
         [key: string]: Schema0;
       };
     };
+    createdByAgent?: boolean;
   };
   path?: never;
   query?: never;
@@ -294,6 +297,7 @@ export type AppsCreateResponses = {
     };
     name: string;
     description: string | null;
+    createdByAgent: boolean;
     currentDeploymentId: string | null;
     createdAt: string;
     updatedAt: string;
@@ -393,6 +397,7 @@ export type AppsUpdateResponses = {
     };
     name: string;
     description: string | null;
+    createdByAgent: boolean;
     currentDeploymentId: string | null;
     createdAt: string;
     updatedAt: string;
@@ -464,6 +469,7 @@ export type AppsDeployResponses = {
     };
     name: string;
     description: string | null;
+    createdByAgent: boolean;
     currentDeploymentId: string | null;
     createdAt: string;
     updatedAt: string;
@@ -1086,6 +1092,7 @@ export type PreviewAcceptedResponses = {
         };
         name: string;
         description: string | null;
+        createdByAgent: boolean;
         currentDeploymentId: string | null;
         createdAt: string;
         updatedAt: string;

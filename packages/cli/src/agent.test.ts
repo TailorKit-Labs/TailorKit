@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   client: vi.fn(),
   tui: vi.fn(),
   list: vi.fn(),
+  get: vi.fn(),
   create: vi.fn(),
   select: vi.fn(),
   text: vi.fn(),
@@ -53,9 +54,10 @@ beforeEach(async () => {
   mocks.token.mockResolvedValue({ deployToken: "cli-token" });
   mocks.client.mockReturnValue({
     appAgent: { chat: vi.fn() },
-    apps: { list: mocks.list, create: mocks.create },
+    apps: { list: mocks.list, get: mocks.get, create: mocks.create },
   });
   mocks.list.mockResolvedValue({ items: [], pagination: { hasMore: false } });
+  mocks.get.mockResolvedValue({ createdByAgent: true });
   mocks.create.mockResolvedValue({ id: "new-app" });
   mocks.select.mockResolvedValue(null);
   mocks.text.mockResolvedValue("my-app");
@@ -85,6 +87,7 @@ describe("agent command", () => {
     expect(mocks.token).toHaveBeenCalledWith(host);
     expect(mocks.tui.mock.lastCall![0].appId).toBe("app-one");
     expect(mocks.list).not.toHaveBeenCalled();
+    expect(mocks.get).toHaveBeenCalledWith({ appId: "app-one" });
     expect(mocks.select).not.toHaveBeenCalled();
     expect(await readdir(root)).toEqual([]);
   });
@@ -108,14 +111,17 @@ describe("agent command", () => {
       expect(mocks.whoami).not.toHaveBeenCalled();
     },
   );
-  it("lists every page, searches by name or ID, and opens the selected app", async () => {
+  it("lists AI-created apps across every page, searches by name or ID, and opens the selected app", async () => {
     mocks.list
       .mockResolvedValueOnce({
-        items: [{ id: "app-one", publicId: "one", name: "First app" }],
+        items: [
+          { id: "manual", publicId: "manual", name: "Manual app", createdByAgent: false },
+          { id: "app-one", publicId: "one", name: "First app", createdByAgent: true },
+        ],
         pagination: { hasMore: true },
       })
       .mockResolvedValueOnce({
-        items: [{ id: "app-two", publicId: "two", name: "Second app" }],
+        items: [{ id: "app-two", publicId: "two", name: "Second app", createdByAgent: true }],
         pagination: { hasMore: false },
       });
     mocks.select.mockResolvedValueOnce("app-two");
@@ -146,19 +152,51 @@ describe("agent command", () => {
     const { validate } = mocks.text.mock.lastCall![0];
     expect(validate("  ")).toBe("Enter an app name.");
     expect(validate("New app")).toBeUndefined();
-    expect(mocks.create).toHaveBeenCalledWith({ name: "New app", description: null });
+    expect(mocks.create).toHaveBeenCalledWith({
+      name: "New app",
+      description: null,
+      createdByAgent: true,
+    });
     expect(await readdir(root)).toEqual(["package.json"]);
     expect(mocks.info).toHaveBeenCalledWith("App: new-app");
     expect(mocks.tui.mock.lastCall![0].appId).toBe("new-app");
   });
   it("offers creation even when existing apps are available", async () => {
     mocks.list.mockResolvedValueOnce({
-      items: [{ id: "existing", publicId: "existing-public", name: "Existing app" }],
+      items: [
+        { id: "existing", publicId: "existing-public", name: "Existing app", createdByAgent: true },
+      ],
       pagination: { hasMore: false },
     });
     await runAgentCommand({ host });
     expect(mocks.create).toHaveBeenCalledOnce();
     expect(mocks.tui.mock.lastCall![0].appId).toBe("new-app");
+  });
+  it("only offers creation when all existing apps were created manually", async () => {
+    mocks.list.mockResolvedValueOnce({
+      items: [{ id: "manual", publicId: "manual", name: "Manual app", createdByAgent: false }],
+      pagination: { hasMore: false },
+    });
+    await runAgentCommand({ host });
+    expect(mocks.select.mock.lastCall![0].options).toEqual([
+      { value: null, label: "Create a new app" },
+    ]);
+  });
+  it.each([false, undefined])(
+    "rejects an explicit app with createdByAgent=%s",
+    async (createdByAgent) => {
+      mocks.get.mockResolvedValueOnce({ createdByAgent });
+      await expect(runAgentCommand({ host, appId: "manual" })).rejects.toThrow(
+        "The agent can only edit apps created by AI",
+      );
+      expect(mocks.tui).not.toHaveBeenCalled();
+      expect(mocks.create).not.toHaveBeenCalled();
+    },
+  );
+  it("does not open the agent when an explicit app lookup fails", async () => {
+    mocks.get.mockRejectedValueOnce(new Error("App not found"));
+    await expect(runAgentCommand({ host, appId: "missing" })).rejects.toThrow("App not found");
+    expect(mocks.tui).not.toHaveBeenCalled();
   });
   it.each(["select", "text"] as const)(
     "cancels at the %s prompt without creating an app",

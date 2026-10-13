@@ -653,14 +653,51 @@ describe("createTailorKitServer", () => {
       url: "https://example.com/api/tailorkit",
     });
 
-    await expect(client.apps.create({ description: null, name: "Calendar" })).resolves.toEqual({
+    await expect(
+      client.apps.create({ description: null, name: "Calendar", createdByAgent: true }),
+    ).resolves.toEqual({
       id: "app_1",
     });
     expect(hostRequests[0]?.method).toBe("POST");
     await expect(requests[1]?.json()).resolves.toEqual({
       description: null,
       name: "Calendar",
+      createdByAgent: true,
       scope: { name: "org", value: { orgId: "org_1" } },
+    });
+  });
+
+  it.each([true, false])("returns AI provenance from app lookups: %s", async (createdByAgent) => {
+    const server = createTailorKitServer({
+      baseUrl: "https://example.com/api/tailorkit",
+      scopes: { org: testScopeSchema },
+      $internal: {
+        platformFetch: async (input, init) => {
+          const request = input instanceof Request ? input : new Request(input, init);
+          if (request.url.endsWith("/cli-auth/verify-token"))
+            return Response.json({ scope: { name: "org", value: { orgId: "org_1" } } });
+          expect(request.url).toBe("https://tailorkit.dev/api/platform/apps/app_1/lookup");
+          expect(await request.json()).toEqual({
+            scopes: [{ name: "org", value: { orgId: "org_1" } }],
+          });
+          return Response.json({ id: "app_1", createdByAgent });
+        },
+      },
+      components: {},
+    });
+    const client = createTailorKitClient({
+      url: "https://example.com/api/tailorkit",
+      headers: { authorization: "Bearer cli-token" },
+      fetch: async (input, init) =>
+        server.handler(input instanceof Request ? input : new Request(input, init), {
+          authenticate: () => {
+            throw new Error("Host authentication should not run for deploy-token routes.");
+          },
+        }),
+    });
+    await expect(client.apps.get({ appId: "app_1" })).resolves.toEqual({
+      id: "app_1",
+      createdByAgent,
     });
   });
 

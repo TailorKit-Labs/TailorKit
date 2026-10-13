@@ -56,8 +56,14 @@ it("uses existing platform deployment endpoints and scope from the agent JWT", a
     expect(request.redirect).toBe("error");
     expect(await request.json()).toMatchObject({ scope });
   }
-  await client.apps.create({ name: "App", description: null });
+  await client.apps.create({ name: "App", description: null, createdByAgent: true });
   expect((fetch.mock.lastCall![0] as Request).url).toBe("https://platform.test/api/platform/apps");
+  expect(await (fetch.mock.lastCall![0] as Request).json()).toEqual({
+    name: "App",
+    description: null,
+    createdByAgent: true,
+    scope,
+  });
 });
 
 it.each([

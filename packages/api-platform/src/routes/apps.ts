@@ -151,10 +151,10 @@ const createApp = cliRouter
       method: "POST",
     }),
   )
-  .input(z.object({ body: createAppInput }))
+  .input(z.object({ body: createAppInput.extend({ createdByAgent: z.boolean().optional() }) }))
   .output(z.object({ body: AppWithCurrentDeployment }))
   .handler(async ({ context, input }) => {
-    return { body: await createAppRecord(context, input.body) };
+    return { body: await createAppRecord(context, input.body, input.body.createdByAgent) };
   });
 
 const deleteApp = cliRouter

@@ -22,7 +22,7 @@ const appInput = z.object({
 export const appRouter = {
   create: o
     .use(requireCliDeployToken)
-    .input(appInput)
+    .input(appInput.extend({ createdByAgent: z.boolean().optional() }))
     .handler(async ({ context, input }) => {
       const { data } = await appsCreate({
         responseStyle: "fields",
@@ -60,15 +60,17 @@ export const appRouter = {
   get: o
     .use(requireCliDeployToken)
     .input(z.object({ appId: z.string(), scopes: z.array(z.string()).optional() }))
-    .handler(
-      async ({ context, input }) =>
-        await appsGet({
-          body: { scopes: getTailorKitScopes(context, input.scopes) },
-          client: context.platform,
-          headers: context.platformHeaders,
-          path: { appId: input.appId },
-        }),
-    ),
+    .handler(async ({ context, input }) => {
+      const { data } = await appsGet({
+        responseStyle: "fields",
+        throwOnError: true,
+        body: { scopes: getTailorKitScopes(context, input.scopes) },
+        client: context.platform,
+        headers: context.platformHeaders,
+        path: { appId: input.appId },
+      });
+      return data;
+    }),
   list: o
     .use(requireCliDeployToken)
     .input(paginationInput.extend({ scopes: z.array(z.string()).optional() }).optional())

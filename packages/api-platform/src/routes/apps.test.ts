@@ -172,6 +172,31 @@ describe("platform appRouter", () => {
     expect(error).not.toHaveProperty("status");
   });
 
+  it("persists AI provenance when creating an app through the CLI API", async () => {
+    const context = createContext();
+    const created = await call(
+      appRouter.create,
+      {
+        body: {
+          name: "AI app",
+          description: null,
+          scope: productionScope,
+          createdByAgent: true,
+        },
+      },
+      { context },
+    );
+    expect(created.body.createdByAgent).toBe(true);
+    const found = await call(
+      appRouter.get,
+      { params: { appId: created.body.id }, body: { scopes: [productionScope] } },
+      { context },
+    );
+    expect(found.body.createdByAgent).toBe(true);
+    const listed = await call(appRouter.list, { body: { scopes: [productionScope] } }, { context });
+    expect(listed.body.items).toEqual([expect.objectContaining({ createdByAgent: true })]);
+  });
+
   it("creates and lists apps within the authenticated project and scope", async () => {
     const context = createContext();
 
@@ -189,6 +214,7 @@ describe("platform appRouter", () => {
 
     expect(created.body).toEqual(
       expect.objectContaining({
+        createdByAgent: false,
         description: "Embedded inbox",
         name: "Inbox",
         projectId,

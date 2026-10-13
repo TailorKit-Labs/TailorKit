@@ -60,7 +60,7 @@ async function consume(options = { context }) {
 }
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.app.mockResolvedValue({ id: "app-one" });
+  mocks.app.mockResolvedValue({ id: "app-one", createdByAgent: true });
   mocks.token.mockResolvedValue({
     id: "cli-one",
     scope: scope.scope,
@@ -220,6 +220,14 @@ describe("platform app chat", () => {
     await expect(consume()).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(mocks.start).not.toHaveBeenCalled();
   });
+  it("rejects manually created apps before starting a workflow", async () => {
+    mocks.app.mockResolvedValueOnce({ id: "manual-app", createdByAgent: false });
+    await expect(consume()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      message: "The agent can only edit apps created by AI. Create a new app to continue.",
+    });
+    expect(mocks.start).not.toHaveBeenCalled();
+  });
 
   it("waits for workflow cleanup before finishing the response", async () => {
     let finish!: () => void;
@@ -334,7 +342,7 @@ describe("platform app chat", () => {
 });
 
 it("accepts another app in the JWT scope without extending the original deadline", async () => {
-  mocks.app.mockResolvedValue({ id: "app-two" });
+  mocks.app.mockResolvedValue({ id: "app-two", createdByAgent: true });
   const jwt = await issueAgentToken(
     { projectId: context.project.id, appId: "app-one", cliTokenId: "cli-one", scope: scope.scope },
     env.AUTH_SECRET!,
