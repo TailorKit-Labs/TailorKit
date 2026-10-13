@@ -1,0 +1,146 @@
+---
+title: "Showing UI"
+description: "Choose where UI appears and how it follows the current page."
+---
+
+import SlotTypes from "/snippets/sdk/slots.mdx";
+import ViewTypes from "/snippets/sdk/views.mdx";
+
+A side panel can stay open while you move from a members list to one member's page. Its contents can change from a general overview to details about that member.
+
+Two definitions make this work: a **slot** names the place for UI, and a **view** is the version shown for the current context.
+
+## Choose a place
+
+The green areas are slots: one in the navbar and one in the side panel.
+
+![An app wireframe with a navbar slot and a side panel slot highlighted in green.](/images/slots-wireframe.svg)
+
+Start with a panel that supports a default context:
+
+```ts title="tailorkit.ts"
+import { defineContract } from "tailorkit";
+import { z } from "zod";
+
+export const contract = defineContract({
+  views: { "/": z.object({}) },
+  slots: { panel: { views: ["/"] } },
+});
+```
+
+## Give it context
+
+Add a context for the members list, and a more specific one for a member's details. The slot can now show a view for each:
+
+```ts title="Updated contract"
+export const contract = defineContract({
+  views: {
+    "/": z.object({}),
+    "/members": z.object({}),
+    "/members/detail": z.object({
+      member: z.object({ id: z.string(), name: z.string() }),
+    }),
+  },
+  slots: {
+    panel: { views: ["/", "/members", "/members/detail"] },
+  },
+});
+```
+
+Context paths describe a hierarchy. They don't need to match browser URLs. `/` provides a default; `/members/detail` gives the UI the selected member.
+
+## Register pages and layouts
+
+Inside your TailorKit provider, call `useViewContext` in the components that own each context. Keep general contexts in layouts so they remain available as pages change:
+
+<CodeGroup>
+
+```tsx title="Root layout"
+import type { ReactNode } from "react";
+import { tailor } from "@/lib/tailorkit-client";
+
+export function RootLayout({ children }: { children: ReactNode }) {
+  tailor.useViewContext("/", { context: {} });
+  return children;
+}
+```
+
+```tsx title="Members layout"
+import type { ReactNode } from "react";
+import { tailor } from "@/lib/tailorkit-client";
+
+export function MembersLayout({ children }: { children: ReactNode }) {
+  tailor.useViewContext("/members", { context: {} });
+  return children;
+}
+```
+
+```tsx title="Member page"
+import { tailor } from "@/lib/tailorkit-client";
+
+export function MemberPage({
+  member,
+}: {
+  member: { id: string; name: string };
+}) {
+  tailor.useViewContext("/members/detail", { context: { member } });
+  return <h1>{member.name}</h1>;
+}
+```
+
+</CodeGroup>
+
+The hook registers and validates the context, updates it when the data changes, and unregisters it on unmount. TailorKit uses the deepest mounted context to select UI.
+
+## Follow the current page
+
+For the panel, TailorKit checks the current path, then its parents. It selects the first view that the slot supports and the app supplies:
+
+```text
+/members/detail → /members → /
+```
+
+| Where you are    | What the panel can show                    |
+| ---------------- | ------------------------------------------ |
+| Members list     | A members overview                         |
+| Member details   | UI for that member, with their ID and name |
+| Back on the list | The overview again                         |
+
+A global navbar follows the same context. Each slot makes its own selection, so the panel can show member details while the navbar keeps a general view. Without a match, nothing renders for that app in the slot.
+
+## Repeat a slot
+
+Context changes which view appears. To have several independent instances, set `multiple: true` on the slot:
+
+```ts title="Inside your contract's slots"
+tile: { views: ["/"], multiple: true },
+```
+
+One app can then supply several dashboard tiles, each with its own key, data, and metadata for placement. Or it can supply several pages, each with a label and icon for a sidebar link. Your UI decides how to use that metadata.
+
+To supply views and instances, see [Writing apps → UI](/writing-apps/ui).
+
+## SDK reference
+
+- `defineContract({ slots })` names UI areas and lists their supported context paths.
+- `defineContract({ views })` maps those paths to object schemas.
+- `tailor.useViewContext(path, { context, loading?, error? })` registers context inside the provider.
+
+Register every declared ancestor. Their context fields combine with the selected view's fields; child schemas cannot repeat ancestor field names. During loading, pass `{ context: undefined, loading: true }`; for a failure, pass `{ context: undefined, error }`.
+
+<SlotTypes />
+<ViewTypes />
+
+## Frequently asked questions
+
+<AccordionGroup>
+  <Accordion title="Does each slot need its own registration hook?">
+    Context is shared across slots. Register it in the relevant pages and
+    layouts; each slot picks its own closest supported view.
+  </Accordion>
+  <Accordion title="What happens if there isn't a view for the details page?">
+    TailorKit checks the parent paths, including `/`, for a supported view. A
+    fallback receives context for its own path and ancestors, without the
+    details-only fields.
+  </Accordion>
+</AccordionGroup>

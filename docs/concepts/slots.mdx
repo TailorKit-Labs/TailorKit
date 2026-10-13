@@ -1,0 +1,101 @@
+---
+title: "Slots"
+description: "Define where UI can appear."
+---
+
+import SlotTypes from "/snippets/sdk/slots.mdx";
+
+## What is a slot?
+
+A slot is a named place for UI. It might be a side panel, part of a navbar, or a whole page. The green areas below are two slots:
+
+![An app wireframe with a navbar slot and a side panel slot highlighted in green.](/images/slots-wireframe.svg)
+
+## Define slots
+
+Give each area a name in your contract. This defines the two slots in the picture:
+
+```ts title="tailorkit.ts"
+import { defineContract } from "tailorkit";
+import { z } from "zod";
+
+export const contract = defineContract({
+  views: { "/": z.object({}) },
+  slots: {
+    navbar: { views: ["/"] },
+    panel: { views: ["/"] },
+  },
+});
+```
+
+`/` is the default context. We'll come back to context below.
+
+## One slot, many instances
+
+By default, a slot has one instance per app, showing one view at a time. Set `multiple: true` when you want separate instances that can appear together.
+
+| Slot | Instances | Metadata could describe |
+| --- | --- | --- |
+| Dashboard tile | A chart, a task list, and a summary | Each tile's position and size |
+| Page | Reports, activity, and settings pages | A label and icon for each page's sidebar link |
+
+One app can supply all of these instances. Each has its own key, metadata, and data. Tiles can appear together; page instances can each have a link and open separately.
+
+```ts title="Inside your contract's slots"
+tile: { views: ["/"], multiple: true },
+page: { views: ["/"], multiple: true },
+```
+
+For example, two page instances could have this metadata:
+
+```json title="Page instances"
+[
+  {
+    "key": "reports",
+    "metadata": { "label": "Reports", "icon": "chart" },
+    "data": {}
+  },
+  {
+    "key": "activity",
+    "metadata": { "label": "Activity", "icon": "clock" },
+    "data": {}
+  }
+]
+```
+
+Metadata lets you decide how to arrange tiles or build links. TailorKit doesn't automatically position tiles or create routes from it.
+
+## Context chooses the view
+
+A panel can show an overview on a members list and details when a member is open. The slot selects the closest available [view](/concepts/views) for the current context. That changes the UI inside an instance; `multiple` lets you have more instances.
+
+To supply UI and instances from an app, see [Writing apps → UI](/writing-apps/ui).
+
+## SDK reference
+
+Slots live in `defineContract({ slots })`, keyed by the names you choose.
+
+<ResponseField name="views" type="readonly string[]" required>
+  Supported context paths. Each path must be declared in the contract's `views`.
+</ResponseField>
+
+<ResponseField name="multiple" type="boolean" default="false">
+  Allows multiple instances per app. Each instance needs a stable, non-empty key
+  unique within that view, a metadata object, and schema-validated data.
+</ResponseField>
+
+<SlotTypes />
+
+## Frequently asked questions
+
+<AccordionGroup>
+  <Accordion title="Do I need multiple instances to change UI between pages?">
+    No. Views let one instance change with the current context. Enable
+    `multiple` when you need distinct tiles, pages, or other entries from the
+    same app.
+  </Accordion>
+  <Accordion title="Does metadata have a fixed format?">
+    It's an object with the fields you agree to use, such as `label`, `icon`, or
+    `position`. Your UI decides what those fields mean.
+  </Accordion>
+</AccordionGroup>

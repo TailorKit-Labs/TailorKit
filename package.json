@@ -39,7 +39,9 @@
     "playground:build": "vp -C packages/ui run build && vp -C playground/tanstack-start run build && vp -C playground/apps/todo run build",
     "playground:schema:export": "vp -C packages/client-platform run build && vp -C packages/core run build && vp -C packages/tailorkit run build && vp -C playground/shared run schema:export",
     "playground:generate": "vp -C packages/client-platform run build && vp -C packages/core run build && vp -C packages/app run build && vp -C packages/vite run build && vp -C packages/sandbox run build && vp -C packages/client-core run build && vp -C packages/react run build && vp -C packages/cli run build && vp -C packages/tailorkit run build && vp -C playground/shared run schema:export && vp -C playground/apps/todo run generate",
-    "playground:todo:build": "vp -C playground/apps/todo run build"
+    "playground:todo:build": "vp -C playground/apps/todo run build",
+    "docs:reference": "node ./scripts/generate-docs-reference.mjs",
+    "docs:reference:check": "node ./scripts/generate-docs-reference.mjs --check"
   },
   "devDependencies": {
     "@changesets/cli": "3.0.3",

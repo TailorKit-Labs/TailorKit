@@ -1,0 +1,98 @@
+---
+title: "Components"
+description: "Share your components while keeping app code isolated."
+---
+
+import ComponentTypes from "/snippets/sdk/components.mdx";
+
+Apps run in a sandbox, without direct access to your components or the surrounding page. A component schema describes what they can use: its props, events, and children.
+
+TailorKit generates stand-in components for the sandbox. A local bridge passes their updates to your real components and sends events back. Your buttons still look and behave like your buttons, while app code stays isolated. UI updates cross this bridge in the browser, without a server round trip.
+
+## Define a component
+
+A button shows the three parts of a component schema:
+
+```ts title="tailorkit.ts"
+import { defineContract } from "tailorkit";
+import { z } from "zod";
+
+export const contract = defineContract({
+  components: {
+    Button: {
+      fields: z.object({
+        variant: z.enum(["default", "secondary"]).optional(),
+        disabled: z.boolean().optional(),
+      }),
+      callbacks: { onClick: {} },
+      children: true,
+    },
+  },
+});
+```
+
+| Part | What it does | Button example |
+| --- | --- | --- |
+| `fields` | Describes data props | `variant="secondary"`, `disabled` |
+| `callbacks` | Describes events sent back to app code | `onClick` |
+| `children` | Allows text or nested components inside | The button's label |
+
+## Connect the real component
+
+Map the schema's name to your existing button when you create the client:
+
+```tsx title="tailorkit-client.tsx"
+import { Button } from "@/components/button";
+import { createClient } from "tailorkit/react";
+import { contract } from "./tailorkit";
+
+export const tailor = createClient({
+  contract,
+  baseUrl: "http://localhost:3000/api/tailorkit/",
+  components: {
+    Button: ({ props, children }) => <Button {...props}>{children}</Button>,
+  },
+});
+```
+
+A callback describes an event on a component. For an action such as opening a toast or navigating, expose a [client tool](/concepts/tools#client-tools) instead.
+
+See [Writing apps → UI](/writing-apps/ui) for using these components in an app.
+
+## Changing a schema
+
+Removing a field, an allowed variant such as `"secondary"`, or a callback can break apps that use it. Adding a required field can break them too. Prefer optional additions and keep existing names and values until those apps have migrated.
+
+## SDK reference
+
+Each entry in `defineContract({ components })` describes one component. Schemas use Standard Schema validators, such as Zod.
+
+<ResponseField name="fields" type="Schema">
+  Schema for data props. Field names must be distinct from callback names.
+</ResponseField>
+
+<ResponseField name="callbacks" type="Record<string, CallbackDefinition>">
+  Named function props. `{}` declares a callback with no arguments and no return
+  value. Use `input` for its event payload, `output` for its result, and `async:
+  true` for a promise.
+</ResponseField>
+
+<ResponseField name="children" type="boolean" default="false">
+  Whether the component accepts text and nested components as children.
+</ResponseField>
+
+<ComponentTypes />
+
+## Frequently asked questions
+
+<AccordionGroup>
+  <Accordion title="Can an app import any component from my codebase?">
+    It uses generated stand-ins for the components you expose in the contract.
+    The client mapping keeps the real implementations outside the sandbox.
+  </Accordion>
+  <Accordion title="Should showing a toast be a component callback?">
+    Use a [client tool](/concepts/tools#client-tools) such as `showToast` for
+    that action. Callbacks describe events from a rendered component, such as a
+    click or selection.
+  </Accordion>
+</AccordionGroup>

@@ -1,0 +1,135 @@
+---
+title: "Views"
+description: "Choose UI that fits the current page and its context."
+---
+
+import ViewTypes from "/snippets/sdk/views.mdx";
+
+A view is a version of the UI in a [slot](/concepts/slots), matched to a context. The contract names those contexts and describes the data available in each one.
+
+A global side panel might show an overview on a members list, then details about one member when you open their page. The panel stays in place; its view changes.
+
+## Define the contexts
+
+Use paths to describe a hierarchy, from general to specific:
+
+```ts title="tailorkit.ts"
+import { defineContract } from "tailorkit";
+import { z } from "zod";
+
+export const contract = defineContract({
+  views: {
+    "/": z.object({}),
+    "/members": z.object({}),
+    "/members/detail": z.object({
+      member: z.object({ id: z.string(), name: z.string() }),
+    }),
+  },
+  slots: {
+    panel: { views: ["/", "/members", "/members/detail"] },
+  },
+});
+```
+
+`/` is a default context. These names don't need to match your browser URLs. Each slot lists the contexts it supports and can have a different view for each.
+
+## Register the current context
+
+Call `useViewContext` inside your TailorKit provider. Register general contexts in layouts and specific contexts in pages:
+
+<CodeGroup>
+
+```tsx title="Root layout"
+import type { ReactNode } from "react";
+import { tailor } from "@/lib/tailorkit-client";
+
+export function RootLayout({ children }: { children: ReactNode }) {
+  tailor.useViewContext("/", { context: {} });
+  return children;
+}
+```
+
+```tsx title="Members layout"
+import type { ReactNode } from "react";
+import { tailor } from "@/lib/tailorkit-client";
+
+export function MembersLayout({ children }: { children: ReactNode }) {
+  tailor.useViewContext("/members", { context: {} });
+  return children;
+}
+```
+
+```tsx title="Member page"
+import { tailor } from "@/lib/tailorkit-client";
+
+export function MemberPage({
+  member,
+}: {
+  member: { id: string; name: string };
+}) {
+  tailor.useViewContext("/members/detail", { context: { member } });
+  return <h1>{member.name}</h1>;
+}
+```
+
+</CodeGroup>
+
+The hook registers the context when mounted, validates its data, and updates it when values change. On unmount, it removes that registration. Register each declared ancestor too, as the layouts above do.
+
+## The closest match wins
+
+TailorKit uses the deepest mounted context. For each slot, it checks that path, then its parents, selecting the first supported view supplied by the app:
+
+```text
+/members/detail → /members → /
+```
+
+On the members list, the panel can show an overview. Opening a member registers `/members/detail`, so the panel switches to that member's view. Leaving the page unregisters it and returns to the overview. The same works for a global navbar.
+
+If no matching view is available, nothing renders for that app in the slot. To write those views, see [Writing apps → UI](/writing-apps/ui).
+
+## SDK reference
+
+`defineContract({ views })` maps paths starting with `/` to object schemas. Context fields from declared ancestors are combined with the selected view's fields. Child schemas must not redeclare an ancestor's field names. A fallback view receives its own and its ancestors' context, without fields from deeper paths.
+
+Call `tailor.useViewContext(path, state)` on the client returned by `createClient`:
+
+<ResponseField name="path" type="keyof contract.views" required>
+  The declared context to register. The deepest mounted path is active.
+</ResponseField>
+
+<ResponseField name="state.context" type="Schema input | undefined" required>
+  Data matching this path's schema. Pass `undefined` while unavailable.
+</ResponseField>
+
+<ResponseField name="state.loading" type="boolean" default="false">
+  Marks the context as loading. Loading contexts do not publish data.
+</ResponseField>
+
+<ResponseField name="state.error" type="Error | null">
+  Marks a failed context. Takes precedence over loading and does not publish
+  data.
+</ResponseField>
+
+```tsx title="While member data loads"
+tailor.useViewContext("/members/detail", {
+  context: undefined,
+  loading: true,
+});
+```
+
+<ViewTypes />
+
+## Frequently asked questions
+
+<AccordionGroup>
+  <Accordion title="Does TailorKit watch my router automatically?">
+    Call `useViewContext` in each relevant page or layout. Its mount and unmount
+    lifecycle supplies the active context, so it works with different routers.
+  </Accordion>
+  <Accordion title="Does every slot need a view for every context?">
+    No. A slot can support a subset, and an app can provide a subset of those
+    views. Matching falls back through parent paths. Without a match, that app's
+    UI is hidden.
+  </Accordion>
+</AccordionGroup>

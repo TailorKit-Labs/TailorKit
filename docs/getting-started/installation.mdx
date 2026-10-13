@@ -328,7 +328,7 @@ export const tailorKit = createServer({
 
 Supply `authenticate` to return `{ scopes, subjectId? }`. `subjectId` is any product-defined principal, such as a user, service account, or scheduled job. Omit it to attribute calls to the installation. Tool handlers receive verified `context.identity`, the installation's `context.scope`, and `context.requestId`. Authentication can also be supplied per request when calling `handler`.
 
-Client tools use `tool.client()` and are implemented through `createClient({ contract, tools })` in the product frontend. See [Tools](/tools) for nested callers, backend action access, and credential behavior.
+Client tools use `tool.client()` and are implemented through `createClient({ contract, tools })` in the product frontend. See [Tools](/concepts/tools) for server and client handlers.
 
 </Step>
 <Step title="Add the API handler">
@@ -675,7 +675,9 @@ export default function Page() {
 
   useViewContext(
     "/",
-    session ? { context: { user: session.user } } : { status: "loading" }
+    session
+      ? { context: { user: session.user } }
+      : { context: undefined, loading: true }
   );
 
   const selectedView =
@@ -730,7 +732,9 @@ function Page() {
 
   useViewContext(
     "/",
-    session ? { context: { user: session.user } } : { status: "loading" }
+    session
+      ? { context: { user: session.user } }
+      : { context: undefined, loading: true }
   );
 
   const selectedView =
@@ -782,7 +786,9 @@ export default function Page() {
 
   useViewContext(
     "/",
-    session ? { context: { user: session.user } } : { status: "loading" }
+    session
+      ? { context: { user: session.user } }
+      : { context: undefined, loading: true }
   );
 
   const selectedView =
