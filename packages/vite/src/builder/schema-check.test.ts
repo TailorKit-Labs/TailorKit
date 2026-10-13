@@ -1,4 +1,5 @@
-import { cp, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
+import { linkTestDependencies, testSchema, testMigrations } from "../test-utils";
+import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect, it } from "vite-plus/test";
@@ -6,15 +7,14 @@ import { checkAppSchema } from "./schema-check";
 
 it("checks schema drift without rewriting committed migrations and allows apps without tables", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-schema-test-"));
-  const example = path.resolve(import.meta.dirname, "../../test/fixtures/backend-todo");
   const migrations = path.join(root, "src/db/migrations");
   try {
     await mkdir(path.join(root, "src/db"), { recursive: true });
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
-    await symlink(path.join(example, "node_modules"), path.join(root, "node_modules"), "dir");
-    const schema = await readFile(path.join(example, "src/db/schema.ts"), "utf8");
+    await linkTestDependencies(root);
+    const schema = testSchema;
     await writeFile(path.join(root, "src/db/schema.ts"), schema);
-    await cp(path.join(example, "src/db/migrations"), migrations, { recursive: true });
+    await cp(testMigrations, migrations, { recursive: true });
     const files = (await readdir(migrations, { recursive: true })).filter(
       (name) => name.endsWith(".sql") || name.endsWith(".json"),
     );

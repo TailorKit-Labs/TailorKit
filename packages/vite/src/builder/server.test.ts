@@ -1,7 +1,8 @@
+import { linkTestDependencies, createDatabaseTestApp } from "../test-utils";
 import { pathToFileURL } from "node:url";
 import { runtimeManifest } from "./server";
 import type { ApplicationModule } from "@tailorkit/app/server";
-import { readFile, writeFile, rm, readdir, mkdtemp, mkdir, symlink } from "node:fs/promises";
+import { readFile, writeFile, rm, readdir, mkdtemp, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect, it } from "vite-plus/test";
@@ -45,11 +46,7 @@ declare module "@tailorkit/app/client" {
 it("builds file routes with a configured server and blocks server imports from the browser", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-custom-entries-"));
   try {
-    await symlink(
-      path.resolve(import.meta.dirname, "../../test/fixtures/backend-todo/node_modules"),
-      path.join(root, "node_modules"),
-      "dir",
-    );
+    await linkTestDependencies(root);
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(
       path.join(root, "tailorkit.config.mjs"),
@@ -106,7 +103,8 @@ it("builds file routes with a configured server and blocks server imports from t
 }, 60_000);
 
 it("builds separate artifacts and rejects accidental imports of server code", async () => {
-  const root = path.resolve(import.meta.dirname, "../../test/fixtures/backend-todo");
+  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-server-build-"));
+  await createDatabaseTestApp(root);
   const client = await readFile(path.join(root, "src/root.tsx"), "utf-8");
   const sourceFiles = await readdir(path.join(root, "src"), { recursive: true });
   try {
@@ -123,7 +121,7 @@ it("builds separate artifacts and rejects accidental imports of server code", as
     expect(browser).not.toContain("tailorkit_migrations");
     expect(browser).not.toContain("CREATE TABLE `todos`");
     expect(browser).not.toContain("tailorkit_receipts");
-    expect(browser).not.toContain("Todo does not exist");
+    expect(browser).not.toContain("PRIVATE_DATABASE_TEST");
     expect(browser).not.toContain("cloudflare:workers");
     expect(browser).not.toContain("jwtVerify");
     expect(browser).not.toContain("SignJWT");
@@ -171,19 +169,14 @@ it("builds separate artifacts and rejects accidental imports of server code", as
       "cannot be imported into a browser bundle",
     );
   } finally {
-    await writeFile(path.join(root, "src/root.tsx"), client);
-    await rm(path.join(root, ".tailorkit"), { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true });
   }
 }, 60_000);
 
 it("builds colocated instance resolvers as query-only server actions", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-instances-build-"));
   try {
-    await symlink(
-      path.resolve(import.meta.dirname, "../../test/fixtures/backend-todo/node_modules"),
-      path.join(root, "node_modules"),
-      "dir",
-    );
+    await linkTestDependencies(root);
     await mkdir(path.join(root, "src/slots/page"), { recursive: true });
     await mkdir(path.join(root, "src/slots/panel.links"), { recursive: true });
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');

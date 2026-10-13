@@ -1,4 +1,5 @@
-import { mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
+import { linkTestDependencies, testSchema } from "../test-utils";
+import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect, it } from "vite-plus/test";
@@ -9,15 +10,11 @@ it.each([undefined, "history"])(
   "generates Drizzle migrations for the new layout with directory %s",
   async (directory) => {
     const root = await mkdtemp(path.join(tmpdir(), "tailorkit-db-generate-"));
-    const example = path.resolve(import.meta.dirname, "../../test/fixtures/backend-todo");
     try {
       await mkdir(path.join(root, "src/db"), { recursive: true });
       await writeFile(path.join(root, "package.json"), '{"type":"module"}');
-      await symlink(path.join(example, "node_modules"), path.join(root, "node_modules"), "dir");
-      await writeFile(
-        path.join(root, "src/db/schema.ts"),
-        await readFile(path.join(example, "src/db/schema.ts"), "utf-8"),
-      );
+      await linkTestDependencies(root);
+      await writeFile(path.join(root, "src/db/schema.ts"), testSchema);
       await writeFile(
         path.join(root, "tailorkit.config.mjs"),
         `export default { host: "https://host.example.com", server: ${JSON.stringify(directory ? { migrations: directory } : {})} };`,

@@ -13,27 +13,27 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
     },
     "./builder": {
-      "types": "./dist/builder/index.d.ts",
-      "import": "./dist/builder.js"
+      "types": "./dist/builder.d.mts",
+      "import": "./dist/builder.mjs"
     },
     "./config": {
-      "types": "./dist/config/index.d.ts",
-      "import": "./dist/config.js"
+      "types": "./dist/config.d.mts",
+      "import": "./dist/config.mjs"
     },
     "./config/loader": {
-      "types": "./dist/config/loader.d.ts",
-      "import": "./dist/config-loader.js"
+      "types": "./dist/config-loader.d.mts",
+      "import": "./dist/config-loader.mjs"
     }
   },
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "tsup --config tsup.config.ts && tsc -p tsconfig.build.json",
+    "build": "vp pack",
     "check-types": "tsc --noEmit",
     "test": "vp test run"
   },
@@ -46,9 +46,10 @@
     "@tailorkit/asset-delivery": "workspace:*",
     "@tailorkit/config": "workspace:*",
     "@types/node": "catalog:",
+    "drizzle-kit": "catalog:",
+    "drizzle-orm": "catalog:",
     "happy-dom": "^20.14.5",
     "preact": "^11.0.0",
-    "tsup": "^8.5.1",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"

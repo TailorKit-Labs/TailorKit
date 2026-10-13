@@ -1,22 +1,12 @@
+import { linkTestDependencies } from "./test-utils";
 import { SignJWT } from "jose";
 import { createHash } from "node:crypto";
 import { gunzipSync } from "node:zlib";
-import {
-  mkdir,
-  mkdtemp,
-  rm,
-  writeFile,
-  rename,
-  symlink,
-  readFile,
-  readdir,
-} from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile, rename, readFile, readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { NotLoggedInError } from "./auth";
-import { tailorkitUploadManifestSchema } from "../../vite/src/builder/upload-manifest";
-import { getClientSourceFiles } from "../../vite/src/builder/file-routes";
 
 const mocks = vi.hoisted(() => ({
   load: vi.fn(),
@@ -28,10 +18,6 @@ const mocks = vi.hoisted(() => ({
   publish: vi.fn(),
 }));
 vi.mock("@tailorkit/vite/config/loader", () => ({ loadTailorKitConfig: mocks.load }));
-vi.mock("@tailorkit/vite/builder", () => ({
-  tailorkitUploadManifestSchema,
-  getClientSourceFiles,
-}));
 vi.mock("./build", () => ({ buildProject: mocks.build }));
 vi.mock("@tailorkit/core/server", () => ({ createTailorKitClient: mocks.client }));
 vi.mock("./auth", async (importOriginal) => ({
@@ -186,11 +172,7 @@ it("preserves client-only deployment uploads", async () => {
 });
 
 it("typechecks the server entry even when the client does not import it", async () => {
-  await symlink(
-    path.resolve(import.meta.dirname, "../../vite/test/fixtures/backend-todo/node_modules"),
-    path.join(root, "node_modules"),
-    "dir",
-  );
+  await linkTestDependencies(root);
   await mkdir(path.join(root, "src"));
   await writeFile(path.join(root, "src/root.tsx"), "export default {};\n");
   await writeFile(path.join(root, "src/server.ts"), 'export const invalid: number = "string";');
@@ -205,11 +187,7 @@ it("typechecks the server entry even when the client does not import it", async 
 });
 
 it("typechecks file route roots, layouts and views without a manual client entry", async () => {
-  await symlink(
-    path.resolve(import.meta.dirname, "../../vite/test/fixtures/backend-todo/node_modules"),
-    path.join(root, "node_modules"),
-    "dir",
-  );
+  await linkTestDependencies(root);
   await mkdir(path.join(root, "src/slots/panel"), { recursive: true });
   await writeFile(path.join(root, "src/server.ts"), "export default {};\n");
   const sources = [

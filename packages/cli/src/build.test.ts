@@ -1,4 +1,5 @@
-import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import { linkTestDependencies } from "./test-utils";
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect, it } from "vite-plus/test";
@@ -7,11 +8,7 @@ import { buildProject } from "./build";
 it("builds the app's Vite config with custom plugins, aliases, constants and output", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-vite-config-"));
   try {
-    await symlink(
-      path.resolve(import.meta.dirname, "../../vite/test/fixtures/backend-todo/node_modules"),
-      path.join(root, "node_modules"),
-      "dir",
-    );
+    await linkTestDependencies(root);
     await mkdir(path.join(root, "src"));
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(
@@ -75,11 +72,7 @@ it("builds the app's Vite config with custom plugins, aliases, constants and out
 it("requires the TailorKit plugin when deploying", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-missing-plugin-"));
   try {
-    await symlink(
-      path.resolve(import.meta.dirname, "../../vite/test/fixtures/backend-todo/node_modules"),
-      path.join(root, "node_modules"),
-      "dir",
-    );
+    await linkTestDependencies(root);
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(path.join(root, "vite.config.mjs"), "export default {};");
     await expect(buildProject({ cwd: root })).rejects.toThrow("Add tailorkit()");

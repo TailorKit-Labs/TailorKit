@@ -5,10 +5,7 @@ import path from "node:path";
 import { expect, it } from "vite-plus/test";
 import { readAppMigrations } from "./migrations";
 
-const example = path.resolve(
-  import.meta.dirname,
-  "../../test/fixtures/backend-todo/src/db/migrations",
-);
+const example = path.resolve(import.meta.dirname, "../../test/migrations");
 
 it("packages generated SQL with stable checksums and tracks the source files", async () => {
   const { migrations, files } = await readAppMigrations(example);

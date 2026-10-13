@@ -1,4 +1,5 @@
-import { mkdtemp, mkdir, rm, writeFile, symlink, readFile, rename } from "node:fs/promises";
+import { linkTestDependencies } from "../test-utils";
+import { mkdtemp, mkdir, rm, writeFile, readFile, rename } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect, it } from "vite-plus/test";
@@ -143,11 +144,7 @@ it("discovers only view and layout files, supports roots, and checks the same so
 it("builds file routes with extracted instances and discovers additions, renames and removals in watch mode", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-file-build-"));
   try {
-    await symlink(
-      path.resolve(import.meta.dirname, "../../test/fixtures/backend-todo/node_modules"),
-      path.join(root, "node_modules"),
-      "dir",
-    );
+    await linkTestDependencies(root);
     await mkdir(path.join(root, "src/slots/page"), { recursive: true });
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(
@@ -224,11 +221,7 @@ it("resolves the client runtime from the app when build output is outside the pr
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-file-client-"));
   const output = await mkdtemp(path.join(tmpdir(), "tailorkit-external-output-"));
   try {
-    await symlink(
-      path.resolve(import.meta.dirname, "../../test/fixtures/backend-todo/node_modules"),
-      path.join(root, "node_modules"),
-      "dir",
-    );
+    await linkTestDependencies(root);
     await mkdir(path.join(root, "src/slots/panel"), { recursive: true });
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(

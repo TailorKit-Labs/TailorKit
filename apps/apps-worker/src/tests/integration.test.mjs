@@ -1,3 +1,4 @@
+import { createTestBackend } from "./backend";
 import { gzipSync } from "node:zlib";
 // Disposable local workerd/R2 test. No Cloudflare account or deployed resources are used.
 /* eslint-disable unicorn/no-await-expression-member, no-restricted-properties */
@@ -13,7 +14,6 @@ import { issueAppToken, appTokenVerifier, APP_AUDIENCE } from "@tailorkit/api-ut
 import { createClient, createApi, reference } from "@tailorkit/app/client";
 
 import { it } from "vite-plus/test";
-import { readAppMigrations } from "../../../../packages/vite/src/builder/migrations.ts";
 
 it("runs isolated app backends with persistent SQLite and two-client realtime updates", async () => {
   // Exercise precisely the workerd/Miniflare version bundled with this project's Wrangler.
@@ -192,15 +192,22 @@ export default { functions: { probe: {
 
   async function checkRpc() {
     const repo = path.resolve(import.meta.dirname, "../../../..");
-    const { migrations } = await readAppMigrations(
-      path.join(repo, "packages/vite/test/fixtures/backend-todo/src/db/migrations"),
-    );
+    const backend = path.join(state, "backend");
+    await createTestBackend(backend);
+    const sql = await readFile(new URL("./fixtures/todos-init.sql", import.meta.url), "utf8");
+    const migrations = [
+      {
+        id: "20261001062220_init",
+        hash: createHash("sha256").update(sql).digest("hex"),
+        statements: sql.split("--> statement-breakpoint"),
+      },
+    ];
 
     const entry = path.join(state, "fixture.ts");
 
     async function publishRpc(history, deploymentId) {
       // Use the same migration bootstrap bundled into production server artifacts.
-      const setup = `import app from ${JSON.stringify(path.join(repo, "packages/vite/test/fixtures/backend-todo/src/server.ts"))};
+      const setup = `import app from ${JSON.stringify(path.join(backend, "server.ts"))};
 import { defineServer, action, query, table, text, integer, AppError } from ${JSON.stringify(path.join(repo, "packages/app/dist/server.js"))};
 import { env } from "cloudflare:workers";
 
