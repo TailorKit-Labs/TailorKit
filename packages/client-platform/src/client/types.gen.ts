@@ -119,6 +119,7 @@ export type AppsListData = {
   body: {
     page?: number;
     pageSize?: number;
+    agentOnly?: boolean;
     scopes: Array<{
       name: string;
       value: {
@@ -266,6 +267,7 @@ export type AppsCreateData = {
   body: {
     name: string;
     description: string | null;
+    createdByAgent?: boolean;
     scope: {
       name: string;
       value: {

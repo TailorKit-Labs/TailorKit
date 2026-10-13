@@ -51,7 +51,12 @@ const { handleAppAgentMcpRequest } = await import("./app-agent-mcp");
 const scope = canonicalizeScope({ name: "org", value: { tenant: "one" } });
 const context = { project: { id: "project" }, organization: { id: "org" } } as Context;
 const identity = { scopes: { org: scope.scope.value }, subjectId: "user" };
-const app = { id: "internal-app", publicId: "public-app", scope: scope.scope };
+const app = {
+  id: "internal-app",
+  publicId: "public-app",
+  scope: scope.scope,
+  createdByAgent: true,
+};
 
 function request(name: string, args: Record<string, unknown> = {}, overrides = {}, headers = {}) {
   const context = { ...identity, hostUrl: "https://host.test/api/tailorkit", ...overrides };
@@ -110,6 +115,7 @@ describe("platform MCP endpoint", () => {
     expect(mocks.list.mock.lastCall![0].input.body).toEqual({
       page: 1,
       pageSize: 100,
+      agentOnly: true,
       scopes: [scope.scope],
     });
     expect(mocks.start).not.toHaveBeenCalled();

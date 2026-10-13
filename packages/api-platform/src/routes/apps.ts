@@ -42,7 +42,14 @@ const listApps = cliRouter
       method: "POST",
     }),
   )
-  .input(z.object({ body: paginationQuery.extend({ scopes: scopesSchema }) }))
+  .input(
+    z.object({
+      body: paginationQuery.extend({
+        scopes: scopesSchema,
+        agentOnly: z.boolean().optional(),
+      }),
+    }),
+  )
   .output(paginatedOutput(AppWithCurrentDeployment))
   .handler(async ({ context, input }) => {
     const { page, pageSize } = input.body;
@@ -52,6 +59,7 @@ const listApps = cliRouter
         RAW: (fields, { and, eq, or }) =>
           and(
             eq(fields.projectId, context.project.id),
+            input.body.agentOnly ? eq(fields.createdByAgent, true) : undefined,
             or(
               ...scopes.map(({ scope, scopeKey }) =>
                 and(eq(fields.scopeKey, scopeKey), eq(fields.scope, scope)),
@@ -112,6 +120,7 @@ const createAppInput = z.object({
   name: App.shape.name,
   description: App.shape.description,
   scope: scopeSchema,
+  createdByAgent: z.boolean().optional(),
 });
 
 export async function createAppRecord(
@@ -154,7 +163,9 @@ const createApp = cliRouter
   .input(z.object({ body: createAppInput }))
   .output(z.object({ body: AppWithCurrentDeployment }))
   .handler(async ({ context, input }) => {
-    return { body: await createAppRecord(context, input.body) };
+    return {
+      body: await createAppRecord(context, input.body, input.body.createdByAgent ?? false),
+    };
   });
 
 const deleteApp = cliRouter

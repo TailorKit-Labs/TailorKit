@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   tui: vi.fn(),
   list: vi.fn(),
   create: vi.fn(),
+  get: vi.fn(),
   select: vi.fn(),
   text: vi.fn(),
   cancel: vi.fn(),
@@ -53,10 +54,11 @@ beforeEach(async () => {
   mocks.token.mockResolvedValue({ deployToken: "cli-token" });
   mocks.client.mockReturnValue({
     appAgent: { chat: vi.fn() },
-    apps: { list: mocks.list, create: mocks.create },
+    apps: { list: mocks.list, create: mocks.create, get: mocks.get },
   });
   mocks.list.mockResolvedValue({ items: [], pagination: { hasMore: false } });
   mocks.create.mockResolvedValue({ id: "new-app" });
+  mocks.get.mockResolvedValue({ createdByAgent: true });
   mocks.select.mockResolvedValue(null);
   mocks.text.mockResolvedValue("my-app");
   mocks.tui.mockResolvedValue(undefined);
@@ -111,19 +113,19 @@ describe("agent command", () => {
   it("lists every page, searches by name or ID, and opens the selected app", async () => {
     mocks.list
       .mockResolvedValueOnce({
-        items: [{ id: "app-one", publicId: "one", name: "First app" }],
+        items: [{ id: "app-one", publicId: "one", name: "First app", createdByAgent: true }],
         pagination: { hasMore: true },
       })
       .mockResolvedValueOnce({
-        items: [{ id: "app-two", publicId: "two", name: "Second app" }],
+        items: [{ id: "app-two", publicId: "two", name: "Second app", createdByAgent: true }],
         pagination: { hasMore: false },
       });
     mocks.select.mockResolvedValueOnce("app-two");
     await runAgentCommand({ host });
     expect(mocks.whoami).toHaveBeenCalledOnce();
     expect(mocks.list.mock.calls).toEqual([
-      [{ page: 1, pageSize: 100 }],
-      [{ page: 2, pageSize: 100 }],
+      [{ page: 1, pageSize: 100, agentOnly: true }],
+      [{ page: 2, pageSize: 100, agentOnly: true }],
     ]);
     const prompt = mocks.select.mock.lastCall![0];
     expect(prompt.options).toEqual([
@@ -146,7 +148,11 @@ describe("agent command", () => {
     const { validate } = mocks.text.mock.lastCall![0];
     expect(validate("  ")).toBe("Enter an app name.");
     expect(validate("New app")).toBeUndefined();
-    expect(mocks.create).toHaveBeenCalledWith({ name: "New app", description: null });
+    expect(mocks.create).toHaveBeenCalledWith({
+      name: "New app",
+      description: null,
+      createdByAgent: true,
+    });
     expect(await readdir(root)).toEqual(["package.json"]);
     expect(mocks.info).toHaveBeenCalledWith("App: new-app");
     expect(mocks.tui.mock.lastCall![0].appId).toBe("new-app");

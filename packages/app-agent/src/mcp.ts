@@ -68,7 +68,7 @@ export function createAppAgentMcp(backend: AppAgentMcpBackend, scopeNames: reado
         "list_apps",
         {
           description:
-            "List apps in the host-authorized scopes so you can choose an app for an agent to edit. This is a read-only lookup; it does not create an agent. create_app and edit_app each create an app agent to do their task.",
+            "List AI-created apps in the host-authorized scopes that can be edited by the app agent. This is a read-only lookup; it does not create an agent. create_app and edit_app each create an app agent to do their task.",
           inputSchema: z.strictObject({
             page: z.number().int().min(1).default(1),
             pageSize: z.number().int().min(1).max(100).default(100),
@@ -96,7 +96,7 @@ export function createAppAgentMcp(backend: AppAgentMcpBackend, scopeNames: reado
         "edit_app",
         {
           description:
-            "Create an autonomous app agent to edit and deploy an existing app from your prompt. The agent writes code, runs commands, and publishes the changes. Wait for the streamed agent progress and final result. Each call starts a new agent; do not automatically retry a disconnected call.",
+            "Create an autonomous app agent to edit and deploy an existing AI-created app from your prompt. Apps not created by the AI cannot be edited. The agent writes code, runs commands, and publishes the changes. Wait for the streamed agent progress and final result. Each call starts a new agent; do not automatically retry a disconnected call.",
           inputSchema: editSchema,
           annotations: {
             readOnlyHint: false,

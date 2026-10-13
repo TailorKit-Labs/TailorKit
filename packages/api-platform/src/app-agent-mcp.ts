@@ -56,9 +56,18 @@ export async function handleAppAgentMcpRequest(
   }
   const authorizedScopes = scopes.map(({ scope }) => scope);
 
-  async function runAgent(appId: string, prompt: string, execution: AppAgentMcpExecution) {
+  async function runAgent(
+    appId: string,
+    prompt: string,
+    execution: AppAgentMcpExecution,
+    requireAiCreated = false,
+  ) {
     execution.signal.throwIfAborted();
     const app = await findAppInScopes(context.project.id, appId, scopes);
+    if (requireAiCreated && !app.createdByAgent)
+      throw new ORPCError("FORBIDDEN", {
+        message: "The app agent can only edit apps created by the AI.",
+      });
     if (!env.AUTH_SECRET) throw new ORPCError("SERVICE_UNAVAILABLE");
     // Reuse the existing CLI/JWT boundary for this agent's one-hour, single-scope grant.
     // A source row keeps revocation checks identical to existing app agent turns.
@@ -146,7 +155,7 @@ export async function handleAppAgentMcpRequest(
       async listApps(pagination) {
         const { body } = await call(
           appRouter.list,
-          { body: { ...pagination, scopes: authorizedScopes } },
+          { body: { ...pagination, scopes: authorizedScopes, agentOnly: true } },
           { context },
         );
         return body;
@@ -165,7 +174,7 @@ export async function handleAppAgentMcpRequest(
       },
       editApp: ({ appId, prompt }, execution) =>
         call(
-          protectedRouter.handler(() => runAgent(appId, prompt, execution)),
+          protectedRouter.handler(() => runAgent(appId, prompt, execution, true)),
           undefined,
           { context },
         ),

@@ -19,7 +19,7 @@ async function chooseApp(client: Pick<TailorKitRouterClient, "apps">): Promise<s
     let page = 1;
     let hasMore = true;
     while (hasMore) {
-      const result = await client.apps.list({ page, pageSize: 100 });
+      const result = await client.apps.list({ page, pageSize: 100, agentOnly: true });
       apps.push(...result.items);
       hasMore = result.pagination.hasMore;
       page += 1;
@@ -61,7 +61,11 @@ async function chooseApp(client: Pick<TailorKitRouterClient, "apps">): Promise<s
   }
   loading.start("Creating app");
   try {
-    const app = await client.apps.create({ name: name.trim(), description: null });
+    const app = await client.apps.create({
+      name: name.trim(),
+      description: null,
+      createdByAgent: true,
+    });
     loading.stop("Created app.");
     return app.id;
   } catch (error) {
@@ -90,6 +94,11 @@ export async function runAgentCommand(options: AgentOptions) {
   const auth = await getDeployToken(authUrl);
   if (!auth) throw new NotLoggedInError(hostUrl);
   const client = createCliClient({ url: authUrl, token: auth.deployToken });
+  if (appId) {
+    const app = await client.apps.get({ appId });
+    if (!app.createdByAgent)
+      throw new Error("The app agent can only edit apps created by the AI.");
+  }
   if (!appId) {
     appId = await chooseApp(client);
     if (!appId) return;

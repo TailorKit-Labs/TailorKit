@@ -60,7 +60,7 @@ async function consume(options = { context }) {
 }
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.app.mockResolvedValue({ id: "app-one" });
+  mocks.app.mockResolvedValue({ id: "app-one", createdByAgent: true });
   mocks.token.mockResolvedValue({
     id: "cli-one",
     scope: scope.scope,
@@ -334,7 +334,7 @@ describe("platform app chat", () => {
 });
 
 it("accepts another app in the JWT scope without extending the original deadline", async () => {
-  mocks.app.mockResolvedValue({ id: "app-two" });
+  mocks.app.mockResolvedValue({ id: "app-two", createdByAgent: true });
   const jwt = await issueAgentToken(
     { projectId: context.project.id, appId: "app-one", cliTokenId: "cli-one", scope: scope.scope },
     env.AUTH_SECRET!,

@@ -182,6 +182,7 @@ describe("platform appRouter", () => {
           description: " Embedded inbox ",
           name: " Inbox ",
           scope: productionScope,
+          createdByAgent: true,
         },
       },
       { context },
@@ -189,6 +190,7 @@ describe("platform appRouter", () => {
 
     expect(created.body).toEqual(
       expect.objectContaining({
+        createdByAgent: true,
         description: "Embedded inbox",
         name: "Inbox",
         projectId,

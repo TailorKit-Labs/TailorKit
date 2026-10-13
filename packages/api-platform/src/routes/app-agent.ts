@@ -55,6 +55,10 @@ const chat = cliRouter
     const app = await findAppInScopes(context.project.id, input.body.appId, [
       canonicalizeScope(token.scope),
     ]);
+    if (!app.createdByAgent)
+      throw new ORPCError("FORBIDDEN", {
+        message: "The app agent can only edit apps created by the AI.",
+      });
     let messages;
     try {
       messages = await convertToModelMessages(

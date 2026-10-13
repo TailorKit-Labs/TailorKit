@@ -12,11 +12,13 @@ import { getTailorKitScope, getTailorKitScopes, o, requireCliDeployToken } from 
 const paginationInput = z.object({
   page: z.number().int().min(1).optional(),
   pageSize: z.number().int().min(1).max(100).optional(),
+  agentOnly: z.boolean().optional(),
 });
 
 const appInput = z.object({
   description: z.string().nullable(),
   name: z.string(),
+  createdByAgent: z.boolean().optional(),
 });
 
 export const appRouter = {
@@ -81,6 +83,7 @@ export const appRouter = {
         body: {
           page: input?.page,
           pageSize: input?.pageSize,
+          agentOnly: input?.agentOnly,
           scopes: getTailorKitScopes(context, input?.scopes),
         },
       });
