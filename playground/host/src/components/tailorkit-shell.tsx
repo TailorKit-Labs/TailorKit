@@ -20,9 +20,17 @@ import {
   useViewContext,
   tailor,
 } from "#lib/tailorkit-client";
+import { localPlaygroundApps } from "#lib/local-apps";
 
 function ShellContent({ children, session }: { children: ReactNode; session: DemoSession }) {
   const { data: apps, error: appsError, isPending: appsPending } = useApps();
+  const installedApps = [
+    ...localPlaygroundApps.map(
+      (localApp) => apps?.find((app) => app.id === localApp.id) ?? localApp,
+    ),
+    ...(apps?.filter((app) => !localPlaygroundApps.some((localApp) => localApp.id === app.id)) ??
+      []),
+  ];
   const [selectedApp, setSelectedApp] = useState<TailorKitApp | null>(null);
   useViewContext("/", {
     context: {
@@ -40,7 +48,7 @@ function ShellContent({ children, session }: { children: ReactNode; session: Dem
   return (
     <SidebarProvider>
       <AppSidebar
-        apps={apps}
+        apps={installedApps}
         appsError={appsError}
         appsPending={appsPending}
         onSelectApp={setSelectedApp}
@@ -70,7 +78,18 @@ function ShellContent({ children, session }: { children: ReactNode; session: Dem
               <SheetDescription>App panel</SheetDescription>
             </SheetHeader>
             <SheetPanel>
-              <RenderSlot app={selectedApp} slot="panel" />
+              <TailorKitProvider apps={installedApps}>
+                <RenderSlot.Controlled
+                  app={selectedApp}
+                  context={{
+                    user: { id: session.user.id, name: session.user.name },
+                    team: { id: session.team.id, name: session.team.name },
+                  }}
+                  slot="panel"
+                  status="ready"
+                  view="/"
+                />
+              </TailorKitProvider>
             </SheetPanel>
           </SheetPopup>
         ) : null}

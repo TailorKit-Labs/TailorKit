@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ApiAuthRouteImport } from './routes/api/auth'
 import { Route as IssuesIndexRouteImport } from './routes/issues.index'
 import { Route as IssuesIssueIdRouteImport } from './routes/issues.$issueId'
+import { Route as ApiPlaygroundTodoClientRouteImport } from './routes/api/playground/todo-client'
 import { Route as ApiPlaygroundTodosRouteImport } from './routes/api/playground/todos'
 import { Route as ApiTailorkitSplatRouteImport } from './routes/api/tailorkit.$'
 
@@ -48,6 +49,11 @@ const IssuesIssueIdRoute = IssuesIssueIdRouteImport.update({
   path: '/$issueId',
   getParentRoute: () => IssuesRoute,
 } as any)
+const ApiPlaygroundTodoClientRoute = ApiPlaygroundTodoClientRouteImport.update({
+  id: '/api/playground/todo-client',
+  path: '/api/playground/todo-client',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPlaygroundTodosRoute = ApiPlaygroundTodosRouteImport.update({
   id: '/api/playground/todos',
   path: '/api/playground/todos',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/api/auth': typeof ApiAuthRoute
   '/issues/$issueId': typeof IssuesIssueIdRoute
   '/issues/': typeof IssuesIndexRoute
+  '/api/playground/todo-client': typeof ApiPlaygroundTodoClientRoute
   '/api/playground/todos': typeof ApiPlaygroundTodosRoute
   '/api/tailorkit/$': typeof ApiTailorkitSplatRoute
 }
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/api/auth': typeof ApiAuthRoute
   '/issues/$issueId': typeof IssuesIssueIdRoute
   '/issues': typeof IssuesIndexRoute
+  '/api/playground/todo-client': typeof ApiPlaygroundTodoClientRoute
   '/api/playground/todos': typeof ApiPlaygroundTodosRoute
   '/api/tailorkit/$': typeof ApiTailorkitSplatRoute
 }
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/api/auth': typeof ApiAuthRoute
   '/issues/$issueId': typeof IssuesIssueIdRoute
   '/issues/': typeof IssuesIndexRoute
+  '/api/playground/todo-client': typeof ApiPlaygroundTodoClientRoute
   '/api/playground/todos': typeof ApiPlaygroundTodosRoute
   '/api/tailorkit/$': typeof ApiTailorkitSplatRoute
 }
@@ -98,6 +107,7 @@ export interface FileRouteTypes {
     | '/api/auth'
     | '/issues/$issueId'
     | '/issues/'
+    | '/api/playground/todo-client'
     | '/api/playground/todos'
     | '/api/tailorkit/$'
   fileRoutesByTo: FileRoutesByTo
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/api/auth'
     | '/issues/$issueId'
     | '/issues'
+    | '/api/playground/todo-client'
     | '/api/playground/todos'
     | '/api/tailorkit/$'
   id:
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/api/auth'
     | '/issues/$issueId'
     | '/issues/'
+    | '/api/playground/todo-client'
     | '/api/playground/todos'
     | '/api/tailorkit/$'
   fileRoutesById: FileRoutesById
@@ -126,6 +138,7 @@ export interface RootRouteChildren {
   IssuesRoute: typeof IssuesRouteWithChildren
   LoginRoute: typeof LoginRoute
   ApiAuthRoute: typeof ApiAuthRoute
+  ApiPlaygroundTodoClientRoute: typeof ApiPlaygroundTodoClientRoute
   ApiPlaygroundTodosRoute: typeof ApiPlaygroundTodosRoute
   ApiTailorkitSplatRoute: typeof ApiTailorkitSplatRoute
 }
@@ -174,6 +187,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IssuesIssueIdRouteImport
       parentRoute: typeof IssuesRoute
     }
+    '/api/playground/todo-client': {
+      id: '/api/playground/todo-client'
+      path: '/api/playground/todo-client'
+      fullPath: '/api/playground/todo-client'
+      preLoaderRoute: typeof ApiPlaygroundTodoClientRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/playground/todos': {
       id: '/api/playground/todos'
       path: '/api/playground/todos'
@@ -209,6 +229,7 @@ const rootRouteChildren: RootRouteChildren = {
   IssuesRoute: IssuesRouteWithChildren,
   LoginRoute: LoginRoute,
   ApiAuthRoute: ApiAuthRoute,
+  ApiPlaygroundTodoClientRoute: ApiPlaygroundTodoClientRoute,
   ApiPlaygroundTodosRoute: ApiPlaygroundTodosRoute,
   ApiTailorkitSplatRoute: ApiTailorkitSplatRoute,
 }

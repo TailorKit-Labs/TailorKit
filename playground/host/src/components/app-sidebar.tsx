@@ -90,10 +90,7 @@ export function AppSidebar({
               <li className="px-2 py-1 text-muted-foreground text-xs">Loading apps…</li>
             ) : null}
             {appsError ? (
-              <li className="px-2 py-1 text-muted-foreground text-xs">Unable to load apps</li>
-            ) : null}
-            {!appsPending && !appsError && apps?.length === 0 ? (
-              <li className="px-2 py-1 text-muted-foreground text-xs">No apps installed</li>
+              <li className="px-2 py-1 text-muted-foreground text-xs">Platform apps unavailable</li>
             ) : null}
           </SidebarMenu>
         </SidebarGroup>

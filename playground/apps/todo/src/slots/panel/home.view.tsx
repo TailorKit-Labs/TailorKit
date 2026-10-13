@@ -1,6 +1,6 @@
 import { defineView } from "tailorkit/client";
-import { useEffect, useState } from "preact/hooks";
-import { tools, Box, Button, Flex, Input } from "#tailorkit";
+import { useState } from "preact/hooks";
+import { Box, Button, Flex, Input } from "#tailorkit";
 
 interface Todo {
   id: string;
@@ -11,71 +11,29 @@ interface Todo {
 const view = defineView({ slot: "panel", view: "/", component: TodoPanel });
 
 function TodoPanel() {
-  const [todos, setTodos] = useState<Todo[]>([]);
+  const [todos, setTodos] = useState<Todo[]>([
+    { id: "todo-1", title: "Review the onboarding flow", done: false },
+    { id: "todo-2", title: "Share this playground with the team", done: true },
+  ]);
   const [title, setTitle] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string>();
 
-  useEffect(() => {
-    let active = true;
-    void tools.todos
-      .list()
-      .then(
-        (result) => {
-          if (active) setTodos(result);
-        },
-        (reason: unknown) => {
-          if (active) setError(reason instanceof Error ? reason.message : "Could not load todos");
-        },
-      )
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  async function addTodo() {
+  function addTodo() {
     if (!title.trim()) return;
-    setPending(true);
-    setError(undefined);
-    try {
-      const todo = await tools.todos.add({ title });
-      setTodos((current) => [...current, todo]);
-      setTitle("");
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Could not add todo");
-    } finally {
-      setPending(false);
-    }
+    setTodos((current) => [
+      ...current,
+      { id: crypto.randomUUID(), title: title.trim(), done: false },
+    ]);
+    setTitle("");
   }
 
-  async function toggleTodo(todo: Todo) {
-    setPending(true);
-    setError(undefined);
-    try {
-      const updated = await tools.todos.toggle({ id: todo.id });
-      setTodos((current) => current.map((item) => (item.id === updated.id ? updated : item)));
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Could not update todo");
-    } finally {
-      setPending(false);
-    }
+  function toggleTodo(todo: Todo) {
+    setTodos((current) =>
+      current.map((item) => (item.id === todo.id ? { ...item, done: !item.done } : item)),
+    );
   }
 
-  async function removeTodo(todo: Todo) {
-    setPending(true);
-    setError(undefined);
-    try {
-      await tools.todos.remove({ id: todo.id });
-      setTodos((current) => current.filter((item) => item.id !== todo.id));
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Could not remove todo");
-    } finally {
-      setPending(false);
-    }
+  function removeTodo(todo: Todo) {
+    setTodos((current) => current.filter((item) => item.id !== todo.id));
   }
 
   return (
@@ -92,23 +50,21 @@ function TodoPanel() {
             placeholder="Add a task"
             value={title}
           />
-          <Button disabled={!title.trim() || pending} onClick={() => void addTodo()}>
+          <Button disabled={!title.trim()} onClick={addTodo}>
             Add
           </Button>
         </Flex>
 
-        {loading ? <Box textColor="muted">Loading todos…</Box> : null}
-        {error ? <Box textColor="muted">{error}</Box> : null}
-        {!loading && todos.length === 0 ? <Box textColor="muted">No todos yet.</Box> : null}
+        {todos.length === 0 ? <Box textColor="muted">No todos yet.</Box> : null}
 
         <Flex direction="column" gap="sm">
           {todos.map((todo) => (
             <Flex align="center" gap="sm" key={todo.id}>
               <Box grow="1">{todo.done ? `✓ ${todo.title}` : todo.title}</Box>
-              <Button disabled={pending} onClick={() => void toggleTodo(todo)} variant="secondary">
+              <Button onClick={() => toggleTodo(todo)} variant="secondary">
                 {todo.done ? "Reopen" : "Done"}
               </Button>
-              <Button disabled={pending} onClick={() => void removeTodo(todo)} variant="ghost">
+              <Button onClick={() => removeTodo(todo)} variant="ghost">
                 Remove
               </Button>
             </Flex>
