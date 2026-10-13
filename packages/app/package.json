@@ -16,6 +16,18 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./config": {
+      "types": "./dist/config/index.d.ts",
+      "import": "./dist/config.js"
+    },
+    "./config/loader": {
+      "types": "./dist/config/loader.d.ts",
+      "import": "./dist/config-loader.js"
+    },
+    "./builder": {
+      "types": "./dist/builder/index.d.ts",
+      "import": "./dist/builder.js"
+    },
     "./client": {
       "types": "./dist/client.d.ts",
       "import": "./dist/client.js"
@@ -42,21 +54,23 @@
     "test": "vp test run"
   },
   "dependencies": {
-    "@nanostores/preact": "1.1.0",
+    "@nanostores/preact": "1.1.1",
     "@orpc/client": "catalog:",
     "@orpc/contract": "catalog:",
+    "cosmiconfig": "^10.0.1",
     "drizzle-orm": "catalog:",
-    "nanostores": "1.5.4",
+    "nanostores": "1.5.5",
+    "vite": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@tailorkit/asset-delivery": "workspace:*",
     "@tailorkit/config": "workspace:*",
     "@types/node": "catalog:",
-    "happy-dom": "^20.14.5",
-    "preact": "^11.0.0",
+    "happy-dom": "^20.14.6",
+    "preact": "^11.0.1",
     "tsup": "^8.5.1",
     "typescript": "catalog:",
-    "vite": "catalog:",
     "vite-plus": "catalog:"
   },
   "peerDependencies": {

@@ -28,14 +28,14 @@
     "test": "vp test run"
   },
   "dependencies": {
-    "@ai-sdk/tui": "1.0.128",
+    "@ai-sdk/tui": "1.0.138",
     "@clack/prompts": "^1.8.1",
     "@orpc/client": "catalog:",
+    "@tailorkit/app": "workspace:*",
     "@tailorkit/client-platform": "workspace:*",
     "@tailorkit/core": "workspace:*",
-    "@tailorkit/vite": "workspace:*",
     "ai": "catalog:",
-    "cac": "^7.0.0",
+    "cac": "^7.0.1",
     "jose": "6.2.12",
     "liquidjs": "^10.30.0",
     "picocolors": "^1.1.1",
@@ -43,10 +43,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@tailorkit/app": "workspace:*",
     "@tailorkit/config": "workspace:*",
     "@types/node": "catalog:",
-    "preact": "^11.0.0",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   }

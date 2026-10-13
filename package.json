@@ -28,25 +28,18 @@
     "changeset": "vp exec changeset",
     "release:status": "vp exec changeset status --verbose",
     "release:version": "vp exec changeset version",
-    "release:build": "turbo run build --filter=tailorkit --filter=@tailorkit/app --filter=@tailorkit/vite --filter=@tailorkit/cli --filter=@tailorkit/client-core --filter=@tailorkit/client-platform --filter=@tailorkit/core --filter=@tailorkit/react --filter=@tailorkit/sandbox",
+    "release:build": "turbo run build --filter=tailorkit --filter=@tailorkit/app --filter=@tailorkit/cli --filter=@tailorkit/client-core --filter=@tailorkit/client-platform --filter=@tailorkit/core --filter=@tailorkit/react --filter=@tailorkit/sandbox",
     "release:publish": "vp run release:build && node ./scripts/check-prerelease.mjs && vp exec changeset publish",
-    "tailorkit": "vp -C packages/cli build && node ./packages/cli/dist/index.js",
-    "playground:dev": "vp run playground:generate && vp -C playground/apps/todo run build && vp -C playground/tanstack-start run dev",
-    "playground:db:push": "vp -C playground/shared run db:push",
-    "playground:db:seed": "vp -C playground/shared run db:seed",
-    "playground:build": "vp -C packages/ui run build && vp -C playground/tanstack-start run build && vp -C playground/apps/todo run build",
-    "playground:schema:export": "vp -C packages/client-platform run build && vp -C packages/core run build && vp -C packages/tailorkit run build && vp -C playground/shared run schema:export",
-    "playground:generate": "vp -C packages/client-platform run build && vp -C packages/core run build && vp -C packages/app run build && vp -C packages/vite run build && vp -C packages/sandbox run build && vp -C packages/client-core run build && vp -C packages/react run build && vp -C packages/cli run build && vp -C packages/tailorkit run build && vp -C playground/shared run schema:export && vp -C playground/apps/todo run generate",
-    "playground:todo:build": "vp -C playground/apps/todo run build"
+    "tailorkit": "vp -C packages/cli build && node ./packages/cli/dist/index.js"
   },
   "devDependencies": {
     "@changesets/cli": "3.0.3",
-    "mint": "^4.2.970",
-    "oxfmt": "0.71.0",
-    "oxlint": "1.86.0",
+    "mint": "^4.2.998",
+    "oxfmt": "0.72.0",
+    "oxlint": "1.87.0",
     "sherif": "^1.13.0",
-    "turbo": "2.11.6",
-    "ultracite": "7.12.2",
+    "turbo": "2.11.7",
+    "ultracite": "7.12.4",
     "vite-plus": "catalog:"
   },
   "packageManager": "pnpm@12.8.1"

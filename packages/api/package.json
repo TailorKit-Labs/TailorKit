@@ -35,16 +35,14 @@
     "@orpc/client": "catalog:",
     "@orpc/server": "catalog:",
     "@tailorkit/api-utils": "workspace:*",
-    "@tailorkit/app-agent": "workspace:*",
     "@tailorkit/auth": "workspace:*",
     "@tailorkit/db": "workspace:*",
     "@tailorkit/env": "workspace:*",
-    "@tailorkit/flags": "workspace:*",
     "@tailorkit/kv": "workspace:*",
     "@tailorkit/observability": "workspace:*",
-    "@vercel/functions": "^3.9.9",
+    "@vercel/functions": "^3.9.11",
     "drizzle-orm": "catalog:",
-    "nanoid": "^6.0.1",
+    "nanoid": "^6.0.2",
     "zod": "catalog:"
   },
   "devDependencies": {

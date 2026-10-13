@@ -44,7 +44,7 @@
     "@tailorkit/client-platform": "workspace:*",
     "@tailorkit/core": "workspace:*",
     "@tailorkit/sandbox": "workspace:*",
-    "nanostores": "1.5.4"
+    "nanostores": "1.5.5"
   },
   "devDependencies": {
     "@tailorkit/config": "workspace:*",

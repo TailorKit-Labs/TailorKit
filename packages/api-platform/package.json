@@ -46,7 +46,7 @@
     "test": "vp test run"
   },
   "dependencies": {
-    "@ai-sdk/workflow": "2.0.58",
+    "@ai-sdk/workflow": "2.0.69",
     "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
     "@orpc/zod": "catalog:",
@@ -63,7 +63,7 @@
     "ai": "catalog:",
     "drizzle-orm": "catalog:",
     "effect": "catalog:",
-    "workflow": "5.0.1",
+    "workflow": "5.2.0",
     "zod": "catalog:"
   },
   "devDependencies": {

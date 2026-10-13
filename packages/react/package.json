@@ -34,14 +34,14 @@
     "@tailorkit/client-platform": "workspace:*",
     "@tailorkit/core": "workspace:*",
     "@tailorkit/sandbox": "workspace:*",
-    "nanostores": "1.5.4"
+    "nanostores": "1.5.5"
   },
   "devDependencies": {
     "@tailorkit/config": "workspace:*",
     "@testing-library/react": "^16.3.3",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
-    "happy-dom": "^20.14.5",
+    "happy-dom": "^20.14.6",
     "react": "catalog:",
     "react-dom": "catalog:",
     "tsup": "^8.5.1",

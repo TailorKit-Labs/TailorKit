@@ -37,7 +37,7 @@
   "devDependencies": {
     "@tailorkit/config": "workspace:*",
     "@types/node": "catalog:",
-    "happy-dom": "^20.14.5",
+    "happy-dom": "^20.14.6",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"
