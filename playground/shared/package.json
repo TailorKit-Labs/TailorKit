@@ -1,0 +1,37 @@
+{
+  "name": "@playground/shared",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./auth": "./src/auth.ts",
+    "./contracts/active": "./src/contracts/active.ts",
+    "./contracts/arktype": "./src/contracts/arktype.ts",
+    "./contracts/theme": "./src/contracts/theme.ts",
+    "./contracts/valibot": "./src/contracts/valibot.ts",
+    "./contracts/zod": "./src/contracts/zod.ts",
+    "./db": "./src/db/index.ts",
+    "./db/schema": "./src/db/schema.ts",
+    "./issues": "./src/issues.ts",
+    "./todos": "./src/todos.ts"
+  },
+  "scripts": {
+    "db:push": "node --import tsx scripts/prepare-db.ts && drizzle-kit push",
+    "db:seed": "node --import tsx scripts/seed.ts",
+    "schema:export": "node --import tsx scripts/export-schema.ts"
+  },
+  "dependencies": {
+    "@tailorkit/core": "workspace:*",
+    "@valibot/to-json-schema": "^1.8.0",
+    "arktype": "^2.2.7",
+    "drizzle-orm": "catalog:",
+    "tailorkit": "workspace:*",
+    "valibot": "^1.5.0",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "drizzle-kit": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
+}

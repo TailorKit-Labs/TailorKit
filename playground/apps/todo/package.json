@@ -1,0 +1,28 @@
+{
+  "name": "@playground/todo",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#tailorkit": "./src/tailorkit.gen.ts",
+    "#*": [
+      "./src/*",
+      "./src/*.ts",
+      "./src/*.tsx",
+      "./src/*/index.ts",
+      "./src/*/index.tsx"
+    ]
+  },
+  "scripts": {
+    "generate": "tailorkit generate --schema ../../schema.json",
+    "build": "tailorkit build",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "preact": "^11.0.0",
+    "tailorkit": "workspace:*"
+  },
+  "devDependencies": {
+    "@tailorkit/cli": "workspace:*",
+    "typescript": "catalog:"
+  }
+}
