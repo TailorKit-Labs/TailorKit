@@ -284,7 +284,6 @@ catalogs:
 
 overrides:
   '@tanstack/react-start': 1.168.60
-  better-auth>nanostores: 1.5.4
   vite@*: npm:@voidzero-dev/vite-plus-core@1.0.0
 
 importers:
