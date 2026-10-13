@@ -1516,10 +1516,10 @@ importers:
         specifier: 'catalog:'
         version: 1.0.0-rc.4-5d5b77c(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(@upstash/redis@1.39.0)(arktype@2.2.7)(effect@4.0.2)(pg@8.23.1)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5)
       happy-dom:
-        specifier: ^20.14.5
+        specifier: ^20.14.6
         version: 20.14.6
       preact:
-        specifier: ^11.0.0
+        specifier: ^11.0.1
         version: 11.0.1
       typescript:
         specifier: 'catalog:'
@@ -1531,7 +1531,7 @@ importers:
   playground/apps/todo:
     dependencies:
       preact:
-        specifier: ^11.0.0
+        specifier: ^11.0.1
         version: 11.0.1
       tailorkit:
         specifier: workspace:*
@@ -1559,7 +1559,7 @@ importers:
         specifier: ^1.8.0
         version: 1.8.0(valibot@1.5.0(typescript@7.0.2))
       arktype:
-        specifier: ^2.2.7
+        specifier: ^2.2.8
         version: 2.2.8
       drizzle-orm:
         specifier: 'catalog:'
