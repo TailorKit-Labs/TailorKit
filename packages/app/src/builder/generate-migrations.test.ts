@@ -9,7 +9,7 @@ it.each([undefined, "history"])(
   "generates Drizzle migrations for the new layout with directory %s",
   async (directory) => {
     const root = await mkdtemp(path.join(tmpdir(), "tailorkit-db-generate-"));
-    const example = path.resolve(import.meta.dirname, "../../../../examples/apps/backend-todo");
+    const example = path.resolve(import.meta.dirname, "../../test/fixtures/backend-todo");
     try {
       await mkdir(path.join(root, "src/db"), { recursive: true });
       await writeFile(path.join(root, "package.json"), '{"type":"module"}');

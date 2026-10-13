@@ -15,7 +15,7 @@ it("builds file routes with a configured server and blocks server imports from t
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-custom-entries-"));
   try {
     await symlink(
-      path.resolve(import.meta.dirname, "../../../../examples/apps/backend-todo/node_modules"),
+      path.resolve(import.meta.dirname, "../../test/fixtures/backend-todo/node_modules"),
       path.join(root, "node_modules"),
       "dir",
     );
@@ -75,7 +75,7 @@ it("builds file routes with a configured server and blocks server imports from t
 }, 60_000);
 
 it("builds separate artifacts and rejects accidental imports of server code", async () => {
-  const root = path.resolve(import.meta.dirname, "../../../../examples/apps/backend-todo");
+  const root = path.resolve(import.meta.dirname, "../../test/fixtures/backend-todo");
   const client = await readFile(path.join(root, "src/root.tsx"), "utf-8");
   const sourceFiles = await readdir(path.join(root, "src"), { recursive: true });
   try {
@@ -149,7 +149,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-instances-build-"));
   try {
     await symlink(
-      path.resolve(import.meta.dirname, "../../../../examples/apps/backend-todo/node_modules"),
+      path.resolve(import.meta.dirname, "../../test/fixtures/backend-todo/node_modules"),
       path.join(root, "node_modules"),
       "dir",
     );

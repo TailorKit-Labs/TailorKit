@@ -186,7 +186,7 @@ it("preserves client-only deployment uploads", async () => {
 
 it("typechecks the server entry even when the client does not import it", async () => {
   await symlink(
-    path.resolve(import.meta.dirname, "../../../examples/apps/backend-todo/node_modules"),
+    path.resolve(import.meta.dirname, "../../app/test/fixtures/backend-todo/node_modules"),
     path.join(root, "node_modules"),
     "dir",
   );
@@ -205,7 +205,7 @@ it("typechecks the server entry even when the client does not import it", async 
 
 it("typechecks file route roots, layouts and views without a manual client entry", async () => {
   await symlink(
-    path.resolve(import.meta.dirname, "../../../examples/apps/backend-todo/node_modules"),
+    path.resolve(import.meta.dirname, "../../app/test/fixtures/backend-todo/node_modules"),
     path.join(root, "node_modules"),
     "dir",
   );
