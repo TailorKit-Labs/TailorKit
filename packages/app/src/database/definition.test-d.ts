@@ -1,6 +1,6 @@
 import { defineRelations } from "drizzle-orm";
 import { z } from "zod";
-import { defineDatabase, table, text, boolean, tk, query, mutation, defineServer } from "../server";
+import { defineDatabase, table, text, boolean, fn, query, mutation, defineServer } from "../server";
 import { createApi } from "../client/reference";
 import type { Client } from "../client/connection";
 
@@ -15,7 +15,7 @@ const relations = defineRelations({ users, posts }, (r) => ({
   posts: { user: r.one.users({ from: r.posts.userId, to: r.users.id }) },
 }));
 const database = defineDatabase({ relations });
-const read = tk.query
+const read = fn.query
   .database(database)
   .input(z.object({ id: z.string() }))
   .handler(({ db, input }) => {
@@ -29,7 +29,7 @@ const read = tk.query
     rows satisfies { id: number }[];
     return rows;
   });
-const write = tk.mutation
+const write = fn.mutation
   .input(z.string())
   .database(database)
   .output(z.boolean())
@@ -48,9 +48,9 @@ const directMutation = mutation({
   handler: ({ db }) => db.query.posts.findFirst().sync(),
 });
 // @ts-expect-error Actions cannot access a database directly.
-tk.action.database(database);
+fn.action.database(database);
 // @ts-expect-error A query cannot return a relational promise; use sync().
-tk.query.database(database).handler(({ db }) => db.query.users.findMany());
+fn.query.database(database).handler(({ db }) => db.query.users.findMany());
 const app = defineServer({ read, write, directQuery, directMutation });
 const api = createApi<typeof app.functions>();
 declare const client: Client;

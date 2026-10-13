@@ -16,10 +16,15 @@
     "./mcp": {
       "types": "./dist/mcp.d.mts",
       "import": "./dist/mcp.mjs"
+    },
+    "./source-export": {
+      "development": "./src/source-export.ts",
+      "types": "./dist/source-export.d.mts",
+      "default": "./dist/source-export.mjs"
     }
   },
   "scripts": {
-    "build": "vp pack",
+    "build": "vp pack src/index.ts src/workflows.ts src/mcp.ts src/source-export.ts --format esm --dts --clean",
     "check-types": "tsc --noEmit",
     "test": "vp test run"
   },

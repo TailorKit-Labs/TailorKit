@@ -18,7 +18,7 @@ import { authenticateCliRequest } from "../cli-token";
 import { canonicalizeScope } from "../scope";
 import { issueAgentToken } from "@tailorkit/api-utils/agent-token";
 
-const APP_AGENT_MODEL = "openai/gpt-6.1-sol";
+const APP_AGENT_MODEL = "xiaomi/mimo-v2.6-pro";
 
 const chunkSchema = asSchema(uiMessageChunkSchema);
 
