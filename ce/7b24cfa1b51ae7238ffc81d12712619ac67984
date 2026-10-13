@@ -1,0 +1,47 @@
+packages/cli/package.json
+  s_2f40b5dc18ecb8::t_6fe7ea86fdf1f9 49
+packages/cli/src/build.test.ts
+  s_2f40b5dc18ecb8::t_662b11ceb4b7ce 1-2,11,75
+packages/vite/package.json
+  s_2f40b5dc18ecb8::t_b329f1878bec31 16-17,20-21,24-25,28-29,36,49-50
+packages/vite/src/builder/file-routes.test.ts
+  s_2f40b5dc18ecb8::t_7caeaf7673572f 1-2,147,224
+packages/vite/src/builder/generate-migrations.test.ts
+  s_2f40b5dc18ecb8::t_0243808cfa2e39 1-2,16-17
+packages/vite/src/builder/schema-check.test.ts
+  s_2f40b5dc18ecb8::t_f74653c0ed8588 1-2,14-15,17
+packages/vite/src/builder/server.test.ts
+  s_2f40b5dc18ecb8::t_c16aa86afc782c 1,5,49,106-107,124,172,179
+packages/vite/src/playground.test.ts
+  s_2f40b5dc18ecb8::t_6174f805eb55c5 1-21
+packages/vite/test/migrations/20261001062220_init/migration.sql
+  s_1c2f5257cdad52::t_ed5d75e1f03e8f 1-5
+packages/vite/vite.config.ts
+  s_2f40b5dc18ecb8::t_5ef88c81109cdd 1,4-15
+playground/apps/todo/vite.config.ts
+  s_2f40b5dc18ecb8::t_a9e3a96b2f23ae 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ce7b24cfa1b51ae7238ffc81d12712619ac67984",
+  "prompts": {},
+  "sessions": {
+    "s_1c2f5257cdad52": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1330d-146a-7191-b1d2-8c234710d378",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_2f40b5dc18ecb8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1335c-f897-7d11-a78a-d7756d0c881a",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
