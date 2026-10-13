@@ -4,6 +4,7 @@
   "noUpdateNotifier": true,
   "envMode": "strict",
   "globalEnv": ["!VERCEL_TARGET_ENV"],
+  "globalPassThroughEnv": ["PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

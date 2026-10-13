@@ -15,8 +15,8 @@ concurrency:
 
 env:
   CI: true
-  # Rebuild dependency links from the lockfile instead of reusing cached global links.
-  PNPM_CONFIG_VIRTUAL_STORE_TYPE: project
+  # Dependencies are installed explicitly from the frozen lockfile before tasks run.
+  PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN: "false"
   TURBO_TELEMETRY_DISABLED: 1
   TAILORKIT_OTEL_DISABLED: true
   OTEL_SDK_DISABLED: true
