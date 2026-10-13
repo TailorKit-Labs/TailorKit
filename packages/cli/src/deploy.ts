@@ -10,6 +10,7 @@ import type { TailorKitUploadManifest } from "@tailorkit/app/builder";
 import type { LoadedTailorKitConfig } from "@tailorkit/app/config/loader";
 import { loadTailorKitConfig } from "@tailorkit/app/config/loader";
 import type { z } from "zod";
+import { buildProject } from "./build";
 import { getDeployToken, NotLoggedInError, runWhoami } from "./auth";
 import { createDeploymentClient, getAgentAuth } from "./deployment-client";
 import { readAppName, writeAppIdToConfig } from "./app-link";
@@ -249,9 +250,9 @@ export const runDeploy = async (options: DeployOptions): Promise<DeployResult> =
     );
   }
 
-  const { buildApp, tailorkitUploadManifestSchema } = await import("@tailorkit/app/builder");
+  const { tailorkitUploadManifestSchema } = await import("@tailorkit/app/builder");
   const [buildResult, typecheckResult] = await Promise.allSettled([
-    buildApp(options),
+    buildProject({ ...options, cwd: loaded.root }),
     typecheckAppEntries(loaded),
   ]);
 
@@ -270,10 +271,7 @@ export const runDeploy = async (options: DeployOptions): Promise<DeployResult> =
     }
   }
 
-  const outDir = path.resolve(
-    loaded.root,
-    options.outDir ?? loaded.config.build?.outDir ?? ".tailorkit",
-  );
+  const { outDir } = buildResult.value;
   const manifest = await readUploadManifest(outDir, tailorkitUploadManifestSchema);
   const clientAssetPath = path.join(outDir, manifest.assets.client);
   const clientAsset = await readFile(clientAssetPath);

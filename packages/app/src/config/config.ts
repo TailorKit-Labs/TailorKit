@@ -1,9 +1,5 @@
 import { z } from "zod";
 
-const buildConfigSchema = z.object({
-  outDir: z.string().default(".tailorkit"),
-});
-
 const logosConfigSchema = z.object({
   dark: z.string().min(1).optional(),
   light: z.string().min(1).optional(),
@@ -11,7 +7,6 @@ const logosConfigSchema = z.object({
 
 const tailorkitConfigSchema = z.strictObject({
   appId: z.string().min(1).optional(),
-  build: buildConfigSchema.optional(),
   host: z.string().url(),
   logos: logosConfigSchema.optional(),
   server: z
@@ -34,18 +29,6 @@ export interface TailorKitConfig extends z.input<typeof tailorkitConfigSchema> {
    * @default undefined
    */
   appId?: string;
-  /**
-   * Build output settings. Omit to use the default output directory.
-   * @default undefined
-   */
-  build?: {
-    /**
-     * Directory for generated client bundles, server bundles, and migration assets.
-     * A build or CLI `outDir` option overrides this value.
-     * @default ".tailorkit"
-     */
-    outDir?: string;
-  };
   /**
    * URL of the TailorKit host used for authentication, deployment, remote preview,
    * and fetching the host schema for generated types. Required; has no default.

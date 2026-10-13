@@ -19,9 +19,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@tailorkit/app/config/loader", () => ({ loadTailorKitConfig: mocks.load }));
-vi.mock("@tailorkit/app/builder", () => ({
-  buildApp: mocks.build,
-}));
+vi.mock("./build", () => ({ buildProject: mocks.build }));
 vi.mock("@tailorkit/core/server", () => ({ createTailorKitClient: mocks.client }));
 vi.mock("@tailorkit/client-platform/preview", () => ({
   createPreviewWebSocketClient: () => ({
@@ -46,7 +44,10 @@ beforeEach(() => {
     SIGTERM: process.listeners("SIGTERM"),
   };
   vi.resetAllMocks();
-  mocks.build.mockResolvedValue({ close: mocks.close });
+  mocks.build.mockImplementation(async (options) => ({
+    result: { close: mocks.close },
+    outDir: path.resolve(options.cwd, options.outDir ?? ".tailorkit"),
+  }));
   mocks.close.mockImplementation(async () => {});
   mocks.client.mockReturnValue({ preview: { start: mocks.start, stop: mocks.stop } });
   mocks.start.mockResolvedValue({ data: { sessionId: "session" } });

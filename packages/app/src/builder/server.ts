@@ -1,6 +1,7 @@
 import { mkdir, mkdtemp, writeFile, cp, rm } from "node:fs/promises";
 import path from "node:path";
 import { build } from "vite";
+import type { UserConfig } from "vite";
 import type { LoadedTailorKitConfig } from "../config/loader";
 import { readAppMigrations } from "./migrations";
 import { runtimeManifest } from "../server/bundle";
@@ -16,13 +17,13 @@ export async function buildServer(
   buildOutDir?: string,
   instances: InstanceModule[] = [],
   registrations: InstanceRegistration[] = [],
+  viteConfig: UserConfig = {},
 ) {
   const config = loaded.config.server;
   if (!config) {
     return;
   }
-  const output =
-    buildOutDir ?? path.resolve(loaded.root, loaded.config.build?.outDir ?? ".tailorkit");
+  const output = buildOutDir ?? path.resolve(loaded.root, ".tailorkit");
   const directory = path.join(output, "server");
   const migrationsDirectory = appDatabasePaths(loaded.root, config.migrations).migrations;
   const migrationsOutput = path.join(output, "migrations");
@@ -55,7 +56,11 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
     const result = await build({
       root: loaded.root,
       configFile: false,
+      mode: viteConfig.mode,
+      resolve: viteConfig.resolve,
+      define: viteConfig.define,
       plugins: [
+        ...(viteConfig.plugins ?? []),
         instanceServerPlugin(loaded.root, instances),
         {
           name: "tailorkit-app-migrations",

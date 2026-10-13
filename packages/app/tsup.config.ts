@@ -10,6 +10,7 @@ export default defineConfig({
     __PREACT_VERSION__: JSON.stringify(preactPackageJson.version),
   },
   entry: {
+    vite: "src/vite.ts",
     builder: "src/builder/index.ts",
     config: "src/config/index.ts",
     "config-loader": "src/config/loader.ts",

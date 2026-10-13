@@ -1,0 +1,12 @@
+import { defineConfig{% if vitePlus %}, lazyPlugins{% endif %} } from "{% if vitePlus %}vite-plus{% else %}vite{% endif %}";
+import { tailorkit } from "tailorkit/vite";
+
+export default defineConfig({
+  plugins: {% if vitePlus %}lazyPlugins(() => [tailorkit()]){% else %}[tailorkit()]{% endif %},{% if vitePlus %}
+  lint: {
+    ignorePatterns: ["src/tailorkit.gen.ts", ".tailorkit/**"],
+  },
+  fmt: {
+    ignorePatterns: ["src/tailorkit.gen.ts", ".tailorkit/**"],
+  },{% endif %}
+});

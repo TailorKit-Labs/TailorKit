@@ -29,10 +29,10 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("@tailorkit/app/config/loader", () => ({ loadTailorKitConfig: mocks.load }));
 vi.mock("@tailorkit/app/builder", () => ({
-  buildApp: mocks.build,
   tailorkitUploadManifestSchema,
   getClientSourceFiles,
 }));
+vi.mock("./build", () => ({ buildProject: mocks.build }));
 vi.mock("@tailorkit/core/server", () => ({ createTailorKitClient: mocks.client }));
 vi.mock("./auth", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./auth")>()),
@@ -61,6 +61,7 @@ beforeEach(async () => {
       assets: { client: "client/client.js", server: "server/server.js" },
     }),
   );
+  mocks.build.mockResolvedValue({ outDir: path.join(root, ".tailorkit") });
   mocks.load.mockResolvedValue({
     root,
     filepath: path.join(root, "tailorkit.config.ts"),
@@ -261,18 +262,18 @@ it("does not publish when the server upload fails", async () => {
   expect(mocks.publish).not.toHaveBeenCalled();
 });
 
-it.each(["config", "option"])(
+it.each(["vite config", "option"])(
   "uploads all artifacts from a custom %s output directory",
   async (mode) => {
     await writeFile(path.join(root, ".tailorkit/server/server.js"), "new-backend-code");
     await rename(path.join(root, ".tailorkit"), path.join(root, "output"));
+    mocks.build.mockResolvedValue({ outDir: path.join(root, "output") });
     mocks.load.mockResolvedValue({
       root,
       filepath: path.join(root, "tailorkit.config.ts"),
       config: {
         appId: "app-one",
         server: {},
-        build: { outDir: mode === "config" ? "output" : ".tailorkit" },
       },
     });
     const fetch = vi

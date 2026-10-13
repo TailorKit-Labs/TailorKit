@@ -12,13 +12,12 @@ export interface InitOptions {
   cwd: string;
   directory?: string;
   force?: boolean;
-  formatting?: boolean;
   host?: string;
   install?: boolean;
-  linting?: boolean;
   name?: string;
   packageManager?: string;
   schemaPath?: string;
+  tooling?: string;
 }
 
 const PACKAGE_MANAGERS = ["pnpm", "yarn", "npm", "bun"] as const;
@@ -79,22 +78,29 @@ const promptPackageManager = async (given: string | undefined): Promise<PackageM
   return answer as PackageManager;
 };
 
-const promptLinting = async (given: boolean | undefined): Promise<boolean> => {
+const promptTooling = async (given: string | undefined): Promise<"vite-plus" | "vite"> => {
   if (given !== undefined) {
-    return given;
+    if (given === "vite-plus" || given === "vite") return given;
+    throw new Error("--tooling must be vite-plus or vite.");
   }
   return abortIfCancelled(
-    await confirm({ initialValue: true, message: "Add linting with oxlint?" }),
-  ) as boolean;
-};
-
-const promptFormatting = async (given: boolean | undefined): Promise<boolean> => {
-  if (given !== undefined) {
-    return given;
-  }
-  return abortIfCancelled(
-    await confirm({ initialValue: true, message: "Add formatting with oxfmt?" }),
-  ) as boolean;
+    await select({
+      initialValue: "vite-plus",
+      message: "App tooling",
+      options: [
+        {
+          value: "vite-plus" as const,
+          label: "Vite+ (recommended)",
+          hint: "Build, lint, format and test",
+        },
+        {
+          value: "vite" as const,
+          label: "Vite (build only)",
+          hint: "Minimal setup; bring your own tools",
+        },
+      ],
+    }),
+  );
 };
 
 const validateHostUrl = (value: string | undefined): string | undefined => {
@@ -185,8 +191,7 @@ export const runInit = async (options: InitOptions): Promise<string> => {
   const force = await promptForce(targetDirectory, options.force ?? false);
   const packageManager = await promptPackageManager(options.packageManager);
   const hostUrl = await promptHostUrl(options.host);
-  const linting = await promptLinting(options.linting);
-  const formatting = await promptFormatting(options.formatting);
+  const tooling = await promptTooling(options.tooling);
   const install = await promptInstall(options.install);
 
   const s = spinner();
@@ -203,16 +208,15 @@ export const runInit = async (options: InitOptions): Promise<string> => {
     throw error;
   }
   s.start("Resolving package versions");
-  const packageVersions = await resolveTemplatePackageVersions();
+  const packageVersions = await resolveTemplatePackageVersions(tooling);
   s.stop("Resolved package versions.");
 
   await mkdir(targetDirectory, { recursive: true });
 
   await generateApp({
     force,
-    formatting,
     hostUrl,
-    linting,
+    tooling,
     packageName,
     packageVersions,
     schema,
@@ -221,7 +225,7 @@ export const runInit = async (options: InitOptions): Promise<string> => {
 
   if (install) {
     await runInstall(targetDirectory, packageManager);
-    if (formatting) {
+    if (tooling === "vite-plus") {
       await runFormat(targetDirectory, packageManager);
     }
   }

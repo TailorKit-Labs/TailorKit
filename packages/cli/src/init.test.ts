@@ -2,13 +2,14 @@ import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, expect, it, vi } from "vite-plus/test";
+import { select } from "@clack/prompts";
 import { runInit } from "./init";
 
 vi.mock("./generator", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./generator")>()),
   resolveTemplatePackageVersions: async () => ({
-    oxfmt: "0.71.0",
-    oxlint: "1.86.0",
+    vite: "8.0.0",
+    vitePlus: "1.0.0",
     preact: "11.0.0",
     tailorkit: "0.1.0-beta.16",
     typescript: "6.0.3",
@@ -16,6 +17,7 @@ vi.mock("./generator", async (importOriginal) => ({
 }));
 vi.mock("@clack/prompts", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@clack/prompts")>()),
+  select: vi.fn(async () => "vite-plus"),
   spinner: () => ({ start: vi.fn(), stop: vi.fn() }),
 }));
 
@@ -36,8 +38,7 @@ async function initOptions() {
     host: "https://host.test/api/tailorkit",
     packageManager: "pnpm",
     install: false,
-    formatting: false,
-    linting: false,
+    tooling: "vite" as const,
   };
 }
 
@@ -125,3 +126,36 @@ it.each(["{", "null", "{}", '{"version":2,"components":{}}'])(
     await expect(stat(path.join(options.cwd, options.name))).rejects.toThrow();
   },
 );
+
+it("recommends Vite+ and offers build-only Vite in one tooling prompt", async () => {
+  const options = await initOptions();
+  await writeFile(
+    path.join(options.cwd, "schema.json"),
+    JSON.stringify({
+      version: 1,
+      components: {},
+      views: { "/": { context: { type: "object" } } },
+      slots: { page: { views: ["/"] } },
+      tools: {},
+    }),
+  );
+  const directory = await runInit({ ...options, tooling: undefined, schemaPath: "schema.json" });
+  expect(select).toHaveBeenCalledWith(
+    expect.objectContaining({
+      initialValue: "vite-plus",
+      options: [
+        expect.objectContaining({ value: "vite-plus", label: "Vite+ (recommended)" }),
+        expect.objectContaining({ value: "vite", label: "Vite (build only)" }),
+      ],
+    }),
+  );
+  const pkg = JSON.parse(await readFile(path.join(directory, "package.json"), "utf8"));
+  expect(pkg.scripts.build).toBe("vp build");
+  expect(pkg.scripts.check).toBe("vp check");
+});
+
+it("rejects unsupported tooling before creating the app", async () => {
+  const options = await initOptions();
+  await expect(runInit({ ...options, tooling: "other" })).rejects.toThrow("--tooling must be");
+  await expect(stat(path.join(options.cwd, options.name))).rejects.toThrow();
+});

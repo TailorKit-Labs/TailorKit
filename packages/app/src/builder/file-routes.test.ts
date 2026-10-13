@@ -3,7 +3,32 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect, it } from "vite-plus/test";
 import { discoverFileRoutes, inferFileView, getClientSourceFiles } from "./file-routes";
-import { buildApp } from "./index";
+import { build } from "vite";
+import { tailorkit } from "../vite";
+
+async function buildFixture(options: {
+  cwd: string;
+  configPath?: string;
+  outDir?: string;
+  watch?: boolean;
+}) {
+  const result = await build({
+    root: options.cwd,
+    configFile: false,
+    plugins: [tailorkit(options)],
+    build: { outDir: options.outDir, watch: options.watch ? {} : null },
+  });
+  if ("on" in result) {
+    await new Promise<void>((resolve, reject) =>
+      result.on("event", (event) => {
+        if (event.code === "END") resolve();
+        if (event.code === "ERROR") reject(event.error);
+      }),
+    );
+  }
+  return result;
+}
+
 import { readClientManifest } from "./client-views";
 
 it("infers dotted paths and literal slot names while preserving explicit overrides", () => {
@@ -154,7 +179,7 @@ it("builds file routes with extracted instances and discovers additions, renames
       path.join(root, "src/slots/page/card.tsx"),
       'throw new Error("Ordinary components are not routes");',
     );
-    await buildApp({ cwd: root });
+    await buildFixture({ cwd: root });
     const manifestFile = path.join(root, ".tailorkit/client/client.js");
     const manifest = await readClientManifest(manifestFile);
     expect(manifest.views).toEqual([{ slot: "page", path: "/", instances: true }]);
@@ -162,7 +187,7 @@ it("builds file routes with extracted instances and discovers additions, renames
     expect(await readFile(path.join(root, ".tailorkit/server/server.js"), "utf-8")).toContain(
       "PRIVATE_RESOLVER",
     );
-    const watcher = (await buildApp({ cwd: root, watch: true })) as { close(): Promise<void> };
+    const watcher = (await buildFixture({ cwd: root, watch: true })) as { close(): Promise<void> };
     try {
       const next = path.join(root, "src/slots/page/customers.details.view.tsx");
       await writeFile(
@@ -214,7 +239,7 @@ it("resolves the client runtime from the app when build output is outside the pr
       path.join(root, "src/slots/panel/home.view.tsx"),
       'import { defineView } from "tailorkit/client"; export default defineView({ view: "/", component: () => "home" });',
     );
-    await buildApp({ cwd: root, outDir: output });
+    await buildFixture({ cwd: root, outDir: output });
     const manifest = await readClientManifest(path.join(output, "client/client.js"));
     expect(manifest.views).toEqual([{ slot: "panel", path: "/" }]);
   } finally {

@@ -8,7 +8,32 @@ import { expect, it } from "vite-plus/test";
 import { Window } from "happy-dom";
 import type { TailorKitClientWithMeta, ViewDefinition, ViewInstance } from "../views";
 import type { VNode } from "preact";
-import { buildApp } from "./index";
+import { build } from "vite";
+import { tailorkit } from "../vite";
+
+async function buildFixture(options: {
+  cwd: string;
+  configPath?: string;
+  outDir?: string;
+  watch?: boolean;
+}) {
+  const result = await build({
+    root: options.cwd,
+    configFile: false,
+    plugins: [tailorkit(options)],
+    build: { outDir: options.outDir, watch: options.watch ? {} : null },
+  });
+  if ("on" in result) {
+    await new Promise<void>((resolve, reject) =>
+      result.on("event", (event) => {
+        if (event.code === "END") resolve();
+        if (event.code === "ERROR") reject(event.error);
+      }),
+    );
+  }
+  return result;
+}
+
 import { readClientManifest } from "./client-views";
 
 it("builds file routes with a configured server and blocks server imports from the browser", async () => {
@@ -42,7 +67,7 @@ it("builds file routes with a configured server and blocks server imports from t
       path.join(root, "backend/api.ts"),
       'import { defineServer, tk } from "tailorkit/server"; export default defineServer({ configured: tk.query.handler(() => "Configured server loaded"), lazy: tk.action.handler(async () => (await import("./helper")).value) });',
     );
-    await buildApp({ cwd: root });
+    await buildFixture({ cwd: root });
     expect(await readdir(path.join(root, ".tailorkit/server"))).toEqual(["server.js"]);
     expect(await readdir(path.join(root, ".tailorkit/tmp"))).toEqual([]);
     const browser = await readFile(path.join(root, ".tailorkit/client/client.js"), "utf8");
@@ -64,9 +89,9 @@ it("builds file routes with a configured server and blocks server imports from t
       path.join(root, "src/root.tsx"),
       'import type app from "../backend/api";\n' + client,
     );
-    await expect(buildApp({ cwd: root })).resolves.toBeDefined();
+    await expect(buildFixture({ cwd: root })).resolves.toBeDefined();
     await writeFile(path.join(root, "src/root.tsx"), 'import "../backend/api";\n' + client);
-    await expect(buildApp({ cwd: root })).rejects.toThrow(
+    await expect(buildFixture({ cwd: root })).rejects.toThrow(
       "cannot be imported into a browser bundle",
     );
   } finally {
@@ -79,7 +104,7 @@ it("builds separate artifacts and rejects accidental imports of server code", as
   const client = await readFile(path.join(root, "src/root.tsx"), "utf-8");
   const sourceFiles = await readdir(path.join(root, "src"), { recursive: true });
   try {
-    await buildApp({ cwd: root });
+    await buildFixture({ cwd: root });
     const browser = await readFile(path.join(root, ".tailorkit/client/client.js"), "utf-8");
     const server = await readFile(path.join(root, ".tailorkit/server/server.js"), "utf-8");
     // Keep a small app below this budget, including its schemas and ORM.
@@ -111,7 +136,7 @@ it("builds separate artifacts and rejects accidental imports of server code", as
         await readFile(path.join(root, "src/db/migrations", file), "utf-8"),
       );
     }
-    await buildApp({ cwd: root, outDir: ".tailorkit/custom" });
+    await buildFixture({ cwd: root, outDir: ".tailorkit/custom" });
     expect(await readFile(path.join(root, ".tailorkit/custom/client/client.js"), "utf-8")).toBe(
       browser,
     );
@@ -125,18 +150,18 @@ it("builds separate artifacts and rejects accidental imports of server code", as
       await readdir(path.join(root, ".tailorkit/custom/migrations"), { recursive: true }),
     ).toEqual(migrationFiles);
     await writeFile(path.join(root, "src/root.tsx"), `import "./server";\n${client}`);
-    await expect(buildApp({ cwd: root })).rejects.toThrow(
+    await expect(buildFixture({ cwd: root })).rejects.toThrow(
       "cannot be imported into a browser bundle",
     );
     await writeFile(path.join(root, "src/root.tsx"), `import "tailorkit/server";\n${client}`);
-    await expect(buildApp({ cwd: root })).rejects.toThrow(
+    await expect(buildFixture({ cwd: root })).rejects.toThrow(
       "cannot be imported into a browser bundle",
     );
-    await expect(buildApp({ cwd: root, outDir: "src/db/migrations" })).rejects.toThrow(
+    await expect(buildFixture({ cwd: root, outDir: "src/db/migrations" })).rejects.toThrow(
       "must not overlap migration source",
     );
     await writeFile(path.join(root, "src/root.tsx"), `import "effect";\n${client}`);
-    await expect(buildApp({ cwd: root })).rejects.toThrow(
+    await expect(buildFixture({ cwd: root })).rejects.toThrow(
       "cannot be imported into a browser bundle",
     );
   } finally {
@@ -199,7 +224,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       path.join(root, "src/slots/panel.links/home.view.tsx"),
       'import view from "../page/home.view"; export default { ...view, slot: "panel.links" };',
     );
-    await buildApp({ cwd: root });
+    await buildFixture({ cwd: root });
     const browser = await readFile(path.join(root, ".tailorkit/client/client.js"), "utf8");
     const server = await readFile(path.join(root, ".tailorkit/server/server.js"), "utf8");
     expect(browser).not.toContain("PRIVATE_SERVER_ONLY");
@@ -300,11 +325,15 @@ it("builds colocated instance resolvers as query-only server actions", async () 
         });
       await window.happyDOM.close();
     }
-    await buildApp({ cwd: root, outDir: ".tailorkit/custom" });
+    await buildFixture({ cwd: root, outDir: ".tailorkit/custom" });
     expect(await readFile(path.join(root, ".tailorkit/custom/client/client.js"), "utf8")).toBe(
       browser,
     );
-    const watcher = (await buildApp({ cwd: root, watch: true, outDir: ".tailorkit/watched" })) as {
+    const watcher = (await buildFixture({
+      cwd: root,
+      watch: true,
+      outDir: ".tailorkit/watched",
+    })) as {
       close(): Promise<void>;
     };
     const watchedServer = path.join(root, ".tailorkit/watched/server/server.js");
@@ -356,7 +385,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       path.join(root, "no-server.config.mjs"),
       'export default { host: "https://host.example.com" };',
     );
-    await expect(buildApp({ cwd: root, configPath: "no-server.config.mjs" })).rejects.toThrow(
+    await expect(buildFixture({ cwd: root, configPath: "no-server.config.mjs" })).rejects.toThrow(
       "require server configuration",
     );
   } finally {

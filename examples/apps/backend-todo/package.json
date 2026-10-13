@@ -7,7 +7,7 @@
     "#tailorkit": "./src/tailorkit.gen.ts"
   },
   "scripts": {
-    "build": "tailorkit build",
+    "build": "vp build",
     "db:generate": "tailorkit db generate",
     "check-types": "tsc --noEmit"
   },
@@ -21,6 +21,8 @@
     "@types/node": "catalog:",
     "drizzle-kit": "catalog:",
     "drizzle-orm": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
   }
 }
