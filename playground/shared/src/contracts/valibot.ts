@@ -20,6 +20,7 @@ const primitiveComponents = Object.fromEntries(
     name,
     {
       ...component,
+      // SAFETY: These component fields are the Valibot schemas declared in this file; the shared Standard Schema component interface erases the Valibot-specific schema members required by the JSON converter.
       fields: json(
         component.fields as v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>
       ),

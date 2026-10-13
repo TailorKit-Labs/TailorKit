@@ -7,6 +7,9 @@ import {
 import { expect, it } from "vite-plus/test";
 import { z } from "zod";
 
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 it("round trips preview calls, full upload chunks, and streamed events over the v2 wire format", async () => {
   const upload = z.object({ base64: z.string() });
   const handler = new RPCHandler({
@@ -34,22 +37,21 @@ it("round trips preview calls, full upload chunks, and streamed events over the 
     removeEventListener: events.removeEventListener.bind(events),
     send: (rawData: string | Uint8Array) => {
       expect(
-        typeof rawData === "string"
-          ? Buffer.byteLength(rawData)
-          : rawData.byteLength
+        isStringValue(rawData) ? Buffer.byteLength(rawData) : rawData.byteLength
       ).toBeLessThan(512 * 1024);
       pending.push(
         handler.message(peer, {
           rawData,
           uint8Array: () =>
-            typeof rawData === "string"
+            isStringValue(rawData)
               ? new TextEncoder().encode(rawData)
               : rawData,
         })
       );
     },
   };
-  const client = createPreviewWebSocketClient(socket as unknown as WebSocket);
+  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+  const client = createPreviewWebSocketClient(socket as WebSocket);
 
   try {
     await expect(client.heartbeat()).resolves.toEqual({ accepted: true });

@@ -69,7 +69,7 @@ const createMemberColumns = ({
       return (
         <div className="flex items-center gap-3">
           <Avatar className="size-7">
-            <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+            <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
           <div className="min-w-0">
             <p className="truncate text-sm leading-tight font-medium">
@@ -197,15 +197,16 @@ export const MembersTable = ({
       <Table variant="card" className="table-fixed">
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow className="hover:bg-transparent" key={headerGroup.id}>
+            <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
                 const columnSize = header.column.getSize();
                 return (
                   <TableHead
                     key={header.id}
-                    style={
-                      columnSize ? { width: `${columnSize}px` } : undefined
-                    }
+                    className="w-[var(--column-width)]"
+                    style={{
+                      "--column-width": columnSize ? `${columnSize}px` : "auto",
+                    }}
                   >
                     {renderSortableHeader(header)}
                   </TableHead>

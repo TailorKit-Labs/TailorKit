@@ -8,6 +8,7 @@ import {
   LoaderCircleIcon,
   TriangleAlertIcon,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type React from "react";
 
 import { cn } from "#ui";
@@ -15,13 +16,13 @@ import { buttonVariants } from "#ui/button";
 
 export { Toast as ToastPrimitive } from "@base-ui/react/toast";
 
-const TOAST_ICONS = {
-  error: CircleAlertIcon,
-  info: InfoIcon,
-  loading: LoaderCircleIcon,
-  success: CircleCheckIcon,
-  warning: TriangleAlertIcon,
-} as const;
+const TOAST_ICONS = new Map<string, LucideIcon>([
+  ["error", CircleAlertIcon],
+  ["info", InfoIcon],
+  ["loading", LoaderCircleIcon],
+  ["success", CircleCheckIcon],
+  ["warning", TriangleAlertIcon],
+]);
 
 type SwipeDirection = "up" | "down" | "left" | "right";
 
@@ -71,7 +72,7 @@ const Toasts = ({
   position: ToastPosition;
   portalProps?: React.ComponentProps<typeof Toast.Portal>;
 }): React.ReactElement => {
-  const { toasts } = Toast.useToastManager();
+  const { toasts } = Toast.useToastManager<ToastData>();
   const swipeDirection = getSwipeDirection(position);
 
   return (
@@ -91,10 +92,8 @@ const Toasts = ({
         data-slot="toast-viewport"
       >
         {toasts.map((toast) => {
-          const Icon = toast.type
-            ? TOAST_ICONS[toast.type as keyof typeof TOAST_ICONS]
-            : null;
-          const toastData = toast.data as ToastData | undefined;
+          const Icon = toast.type ? TOAST_ICONS.get(toast.type) : null;
+          const toastData = toast.data;
 
           return (
             <Toast.Root
@@ -191,7 +190,7 @@ const AnchoredToasts = ({
 }: {
   portalProps?: React.ComponentProps<typeof Toast.Portal>;
 }): React.ReactElement => {
-  const { toasts } = Toast.useToastManager();
+  const { toasts } = Toast.useToastManager<ToastData>();
 
   return (
     <Toast.Portal data-slot="toast-portal-anchored" {...portalProps}>
@@ -200,10 +199,8 @@ const AnchoredToasts = ({
         data-slot="toast-viewport-anchored"
       >
         {toasts.map((toast) => {
-          const Icon = toast.type
-            ? TOAST_ICONS[toast.type as keyof typeof TOAST_ICONS]
-            : null;
-          const toastData = toast.data as ToastData | undefined;
+          const Icon = toast.type ? TOAST_ICONS.get(toast.type) : null;
+          const toastData = toast.data;
           const tooltipStyle = toastData?.tooltipStyle ?? false;
           const { positionerProps } = toast;
 

@@ -38,14 +38,13 @@ export const withAppAssetUrl = <
     const deploymentBase = `${appBase}/d/${deployment.publicId}`;
     clientPath = `${deploymentBase}/client/client.js`;
     const getLogoUrl = (path: string) => `${deploymentBase}/${path}`;
-    const logos = {
-      ...(deployment.logoDarkPath
-        ? { dark: getLogoUrl(deployment.logoDarkPath) }
-        : {}),
-      ...(deployment.logoLightPath
-        ? { light: getLogoUrl(deployment.logoLightPath) }
-        : {}),
-    };
+    const logos: NonNullable<typeof logoPaths> = {};
+    if (deployment.logoDarkPath) {
+      logos.dark = getLogoUrl(deployment.logoDarkPath);
+    }
+    if (deployment.logoLightPath) {
+      logos.light = getLogoUrl(deployment.logoLightPath);
+    }
 
     if (Object.keys(logos).length > 0) {
       logoPaths = logos;

@@ -10,12 +10,22 @@ import { gzip } from "node:zlib";
 import type { TailorKitUploadManifest } from "@tailorkit/vite/builder";
 import type { LoadedTailorKitConfig } from "@tailorkit/vite/config/loader";
 import { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
-import type { z } from "zod";
+import { z } from "zod";
 
 import { readAppName, writeAppIdToConfig } from "./app-link";
 import { getDeployToken, NotLoggedInError, runWhoami } from "./auth";
 import { buildProject } from "./build";
 import { createDeploymentClient, getAgentAuth } from "./deployment-client";
+
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
+const isNumberValue = <TValue>(value: TValue): value is TValue & number =>
+  typeof value === "number";
 
 export interface TypecheckFailure {
   command: string;
@@ -61,14 +71,30 @@ interface DeploymentCreateResult {
   };
 }
 
-interface DeploymentPublishResult {
-  id: string;
-  status?: string;
-}
-
-interface AppCreateResult {
-  id: string;
-}
+const assetUploadSchema = z.object({
+  headers: z.record(z.string(), z.string()).optional(),
+  uploadUrl: z.string(),
+});
+const logoUploadSchema = z.object({
+  headers: z.record(z.string(), z.string()).optional(),
+  uploadUrl: z.string().optional(),
+});
+const deploymentCreateSchema = z.object({
+  assets: z.array(assetUploadSchema),
+  deployment: z.object({ id: z.string() }),
+  logos: z
+    .object({
+      dark: logoUploadSchema.optional(),
+      light: logoUploadSchema.optional(),
+    })
+    .optional(),
+  server: assetUploadSchema.optional(),
+});
+const deploymentPublishSchema = z.object({
+  id: z.string(),
+  status: z.string().optional(),
+});
+const appCreateSchema = z.object({ id: z.string() });
 
 export interface DeployResult {
   appId: string;
@@ -87,19 +113,22 @@ interface UploadedFileSummary {
 
 const maxDeploymentBytes = 3 * 1024 * 1024;
 const gzipAsync = promisify(gzip);
-const logoContentTypeByExtension: Record<
+const logoContentTypeByExtension = new Map<
   string,
   "image/png" | "image/svg+xml" | "image/webp"
-> = {
-  png: "image/png",
-  svg: "image/svg+xml",
-  webp: "image/webp",
-};
+>([
+  ["png", "image/png"],
+  ["svg", "image/svg+xml"],
+  ["webp", "image/webp"],
+]);
 
-const unwrapRpcResult = <T>(result: unknown): T => {
+const unwrapRpcResult = <TSchema extends z.ZodType, TResponse>(
+  schema: TSchema,
+  result: TResponse
+): z.output<TSchema> => {
   if (
     result &&
-    typeof result === "object" &&
+    isObjectValue(result) &&
     "error" in result &&
     result.error !== undefined
   ) {
@@ -107,30 +136,27 @@ const unwrapRpcResult = <T>(result: unknown): T => {
   }
 
   const data =
-    result && typeof result === "object" && "data" in result
-      ? result.data
-      : result;
-  const body =
-    data && typeof data === "object" && "body" in data ? data.body : data;
+    result && isObjectValue(result) && "data" in result ? result.data : result;
+  const body = data && isObjectValue(data) && "body" in data ? data.body : data;
 
-  return body as T;
+  return schema.parse(body);
 };
 
-const getErrorMessage = (error: unknown): string | undefined => {
-  if (error instanceof Error) {
-    return error.message;
+const getErrorMessage = (cause: unknown): string | undefined => {
+  if (cause instanceof Error) {
+    return cause.message;
   }
-  if (typeof error === "string") {
-    return error;
+  if (isStringValue(cause)) {
+    return cause;
   }
-  if (error && typeof error === "object" && "message" in error) {
-    const { message } = error as { message?: unknown };
-    return typeof message === "string" ? message : undefined;
+  if (cause && isObjectValue(cause) && "message" in cause) {
+    const { message } = cause;
+    return isStringValue(message) ? message : undefined;
   }
 };
 
-const isNotFoundError = (error: unknown): boolean =>
-  getErrorMessage(error)?.toLowerCase().includes("not found") ?? false;
+const isNotFoundError = (cause: unknown): boolean =>
+  getErrorMessage(cause)?.toLowerCase().includes("not found") ?? false;
 
 const readUploadManifest = async (
   outDir: string,
@@ -237,15 +263,18 @@ const typecheckAppEntries = async (
       { cwd: loaded.root, maxBuffer: 4 * 1024 * 1024 }
     );
   } catch (error) {
-    const failure = error as {
-      code?: string | number;
-      stdout?: string;
-      stderr?: string;
-      message?: string;
-    };
+    const parsed = z
+      .object({
+        code: z.union([z.string(), z.number()]).optional(),
+        message: z.string().optional(),
+        stderr: z.string().optional(),
+        stdout: z.string().optional(),
+      })
+      .safeParse(error);
+    const failure = parsed.success ? parsed.data : {};
     return {
       command: `tsc --noEmit ${clientFiles.map((file) => path.relative(loaded.root, file)).join(" ")}`,
-      exitCode: typeof failure.code === "number" ? failure.code : null,
+      exitCode: isNumberValue(failure.code) ? failure.code : null,
       output:
         `${failure.stdout ?? ""}${failure.stderr ?? ""}`.trim() ||
         failure.message ||
@@ -266,12 +295,14 @@ export const runDeploy = async (
   let appId = options.appId ?? loaded.config.appId ?? agent?.appId;
   let createdApp = false;
 
-  const auth = await runWhoami(options).catch((error: unknown) => {
-    if (error instanceof NotLoggedInError && options.onLoginRequired) {
-      return options.onLoginRequired();
+  const auth = await runWhoami(options).catch(
+    (error: ErrorOptions["cause"]) => {
+      if (error instanceof NotLoggedInError && options.onLoginRequired) {
+        return options.onLoginRequired();
+      }
+      throw error;
     }
-    throw error;
-  });
+  );
   const storedAuth = await getDeployToken(auth.hostUrl);
 
   if (!storedAuth?.deployToken) {
@@ -318,6 +349,7 @@ export const runDeploy = async (
   const serverAssetGzip = serverAsset
     ? await gzipAsync(serverAsset)
     : undefined;
+  // SAFETY: The upload manifest validator permits only dark and light logo keys, with string asset paths; Object.entries loses those validated literal keys.
   const logoEntries = Object.entries(manifest.assets.logos ?? {}) as [
     "dark" | "light",
     string,
@@ -326,7 +358,7 @@ export const runDeploy = async (
     logoEntries.map(async ([variant, filename]) => {
       const content = await readFile(path.join(outDir, filename));
       const extension = path.extname(filename).slice(1);
-      const contentType = logoContentTypeByExtension[extension];
+      const contentType = logoContentTypeByExtension.get(extension);
       if (!contentType) {
         throw new Error(`Unsupported ${variant} logo format.`);
       }
@@ -371,7 +403,8 @@ export const runDeploy = async (
       throw new Error("Deployment cancelled.");
     }
 
-    const app = unwrapRpcResult<AppCreateResult>(
+    const app = unwrapRpcResult(
+      appCreateSchema,
       await client.apps.create({
         description: null,
         name: appName,
@@ -391,7 +424,8 @@ export const runDeploy = async (
   const createDeployment = async (
     targetAppId: string
   ): Promise<DeploymentCreateResult> =>
-    unwrapRpcResult<DeploymentCreateResult>(
+    unwrapRpcResult(
+      deploymentCreateSchema,
       await client.deployments.create({
         appId: targetAppId,
         assets: [
@@ -467,7 +501,8 @@ export const runDeploy = async (
     }),
   ]);
 
-  const published = unwrapRpcResult<DeploymentPublishResult>(
+  const published = unwrapRpcResult(
+    deploymentPublishSchema,
     await client.deployments.publish({
       deploymentId: created.deployment.id,
       rollout: true,

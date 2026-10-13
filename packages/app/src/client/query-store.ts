@@ -5,6 +5,10 @@ import { appError } from "../errors";
 import type { Client } from "./connection";
 import type { Reference } from "./reference";
 
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
 export interface QueryState<T> {
   data: T | undefined;
   error: AppError | null;
@@ -17,11 +21,13 @@ export const pendingQuery: QueryState<never> = {
   status: "pending",
 };
 
-export const serializeInput = (input: unknown): string =>
+export const serializeInput = <TInput>(input: TInput): string =>
   JSON.stringify(
     { defined: input !== undefined, input },
+    // Native JSON serialization supplies arbitrary values; this boundary only normalizes object key order.
+    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- These are serializer inputs, not unparsed domain-handler arguments.
     (_key, value: unknown) => {
-      if (value && typeof value === "object" && !Array.isArray(value)) {
+      if (value && isObjectValue(value) && !Array.isArray(value)) {
         return Object.fromEntries(
           Object.entries(value).toSorted(([a], [b]) => a.localeCompare(b))
         );
@@ -75,6 +81,7 @@ export class QueryStore {
         if (this.disposed || this.entries.get(key) !== current) {
           return;
         }
+        // SAFETY: The entry is created and updated by this query reference's typed subscription; the shared cache erases its output generic.
         publish({
           data: this.state.get().get(key)?.data as O | undefined,
           error,

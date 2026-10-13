@@ -5,6 +5,7 @@ import { afterAll, describe, expect, it, vi } from "vite-plus/test";
 
 import { createTestDb } from "./test/pglite";
 
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const state = vi.hoisted(() => ({ db: undefined as unknown }));
 vi.mock("@tailorkit/db", () => ({ createDb: () => state.db }));
 vi.mock("@tailorkit/kv", () => ({ getKV: () => null }));

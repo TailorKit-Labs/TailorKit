@@ -5,8 +5,9 @@ import {
   serializeDemoSessionCookie,
 } from "@playground/shared/auth";
 import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
 
-const json = (data: unknown, init: ResponseInit = {}) => {
+const json = <T>(data: T, init: ResponseInit = {}) => {
   const headers = new Headers(init.headers);
   headers.set("Content-Type", "application/json");
   return Response.json(data, { ...init, headers });
@@ -23,21 +24,26 @@ const handle = async ({ request }: { request: Request }) => {
   if (request.method !== "POST") {
     return json({ error: "Method not allowed" }, { status: 405 });
   }
-  const body = (await request.json().catch(() => null)) as {
-    action?: string;
-    userId?: string;
-    teamId?: string;
-  } | null;
+  const parsed = z
+    .discriminatedUnion("action", [
+      z.object({ action: z.literal("sign-out") }),
+      z.object({
+        action: z.literal("sign-in"),
+        userId: z.string().min(1),
+        teamId: z.string().min(1),
+      }),
+    ])
+    .safeParse(await request.json().catch(() => null));
+  if (!parsed.success) {
+    return json({ error: "Choose a profile and team" }, { status: 400 });
+  }
+  const body = parsed.data;
 
-  if (body?.action === "sign-out") {
+  if (body.action === "sign-out") {
     return json(
       { choices: listSignInChoices(), session: null },
       { headers: { "Set-Cookie": clearDemoSessionCookie() } }
     );
-  }
-
-  if (body?.action !== "sign-in" || !body.userId || !body.teamId) {
-    return json({ error: "Choose a profile and team" }, { status: 400 });
   }
 
   const choice = listSignInChoices().find(

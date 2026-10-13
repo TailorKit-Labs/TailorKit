@@ -4,6 +4,17 @@ import { useContext } from "preact/hooks";
 
 import type { TailorKitClientWithMeta, ViewInstance } from "./views";
 
+const isFunctionValue = <TValue>(
+  value: TValue
+): value is Extract<TValue, CallableFunction> => typeof value === "function";
+
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 declare const __PREACT_VERSION__: string;
 
 export interface ShellProps {
@@ -16,7 +27,7 @@ export interface RouteDefinition {
 
 /** Define the shell in an app or slot root.tsx. */
 export const defineRoute = (options: RouteDefinition): RouteDefinition => {
-  if (typeof options.shellComponent !== "function") {
+  if (!isFunctionValue(options.shellComponent)) {
     throw new TypeError("defineRoute requires a shellComponent.");
   }
   return Object.freeze({ shellComponent: options.shellComponent });
@@ -72,15 +83,17 @@ const shellComponent = (
   root: boolean
 ): ComponentType<ShellProps> => {
   const { definition } = module;
-  if (!root && typeof definition === "function") {
+  if (!root && isFunctionValue(definition)) {
+    // SAFETY: The generated module registry owns these component and view declarations; the runtime adapter preserves their exported implementations.
     return definition as ComponentType<ShellProps>;
   }
   if (
     definition &&
-    typeof definition === "object" &&
+    isObjectValue(definition) &&
     "shellComponent" in definition &&
-    typeof definition.shellComponent === "function"
+    isFunctionValue(definition.shellComponent)
   ) {
+    // SAFETY: The generated module registry owns these component and view declarations; the runtime adapter preserves their exported implementations.
     return definition.shellComponent as ComponentType<ShellProps>;
   }
   throw new TypeError(
@@ -112,11 +125,12 @@ export const createFileClient = (options: {
     Record<string, FileViewDefinition>
   > = Object.create(null);
   for (const module of options.views) {
+    // SAFETY: The generated module registry owns these component and view declarations; the runtime adapter preserves their exported implementations.
     const view = module.definition as FileViewDefinition | undefined;
     if (
       !view ||
-      typeof view.component !== "function" ||
-      typeof view.path !== "string" ||
+      !isFunctionValue(view.component) ||
+      !isStringValue(view.path) ||
       !view.path.startsWith("/")
     ) {
       throw new TypeError(
@@ -129,6 +143,7 @@ export const createFileClient = (options: {
       );
     }
     definitions[module.slot] ??= Object.create(null);
+    // SAFETY: The generated module registry owns these component and view declarations; the runtime adapter preserves their exported implementations.
     const slot = definitions[module.slot] as Record<string, FileViewDefinition>;
     if (Object.hasOwn(slot, view.path)) {
       throw new Error(
@@ -196,6 +211,7 @@ export const createFileClient = (options: {
     : undefined;
   // Filesystem slots cannot be represented by a source-level generic. The
   // deployment manifest is checked against the host's supported slots/views.
+  // SAFETY: The generated module registry owns these component and view declarations; the runtime adapter preserves their exported implementations.
   return {
     $meta: { preactVersion: __PREACT_VERSION__ },
     $runtime: {

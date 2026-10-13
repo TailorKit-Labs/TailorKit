@@ -29,6 +29,7 @@ export default {
     const publication = parseDeploymentPublicationRoute(request, domain);
     const appRoute = parseHostedAppRoute(request, domain);
     if (!publication && !appRoute) {
+      // SAFETY: The worker forwards the same platform Request to the asset adapter; the two Workers declaration packages describe that Request differently.
       return assets.fetch(
         request as Parameters<typeof assets.fetch>[0],
         env,
@@ -74,7 +75,7 @@ export default {
           const value = yield* Effect.try({
             catch: () =>
               new AppError("BAD_REQUEST", "Invalid deployment metadata"),
-            try: () => JSON.parse(text) as unknown,
+            try: () => JSON.parse(text),
           });
           const parsed = appDeploymentMetadata.safeParse(value);
           if (!parsed.success) {

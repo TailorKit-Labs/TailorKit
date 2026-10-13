@@ -1,3 +1,4 @@
+import type { ToolBridge, TailorKitServerTools } from "@tailorkit/app/client";
 import type { AppDefinition, Identity } from "@tailorkit/app/server";
 
 import { inExecutionContext } from "./context";
@@ -11,26 +12,33 @@ import {
   functionValue,
 } from "./functions";
 
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 /** Host capability passed into each action invocation. */
 export interface ActionCapability {
   fetch: (request: Request, cancellation: ReadableStream) => Promise<Response>;
-  tool: (path: string, input: unknown) => Promise<unknown>;
+  tool: ToolBridge["client"];
   committed: (tables: string[]) => Promise<void>;
 }
 
 /** Action helpers call the local execution engine; app authors receive no raw database handle. */
-export interface ActionCalls {
-  tool?: (path: string, input: unknown) => Promise<unknown>;
+// Each registered function schema owns its result; the execution coordinator holds heterogeneous registrations.
+export interface ActionCalls<TOutput = unknown> {
+  tool?: ToolBridge["client"];
   fetch?: typeof globalThis.fetch;
-  query: (input: Invocation) => Promise<unknown>;
-  mutate: (input: Invocation & { requestId: string }) => Promise<unknown>;
+  query: (input: Invocation) => Promise<TOutput>;
+  mutate: (input: Invocation & { requestId: string }) => Promise<TOutput>;
 }
 
 export const createActionExecution = (app: AppDefinition) => {
   type Call = (
     check: () => void,
     calls: ActionCalls
-  ) => (args: unknown, options?: { requestId?: string }) => Promise<unknown>;
+  ) => (
+    args: Invocation["args"],
+    options?: { requestId?: string }
+  ) => ReturnType<ActionCalls["query"]>;
   interface Group {
     [name: string]: Group | Call;
   }
@@ -74,17 +82,21 @@ export const createActionExecution = (app: AppDefinition) => {
     }
     return { mutations, queries };
   };
+  const isCall = (entry: Group | Call): entry is Call =>
+    typeof entry === "function";
+  interface BoundGroup {
+    [name: string]: BoundGroup | ReturnType<Call>;
+  }
   const bind = (
     group: Group,
     check: () => void,
     calls: ActionCalls
-  ): Record<string, unknown> => {
-    const bound = Object.create(null);
+  ): BoundGroup => {
+    const bound: BoundGroup = Object.create(null);
     for (const [key, entry] of Object.entries(group)) {
-      bound[key] =
-        typeof entry === "function"
-          ? entry(check, calls)
-          : bind(entry, check, calls);
+      bound[key] = isCall(entry)
+        ? entry(check, calls)
+        : bind(entry, check, calls);
     }
     return Object.freeze(bound);
   };
@@ -121,11 +133,16 @@ export const createActionExecution = (app: AppDefinition) => {
         throw new AppError("UNAUTHORIZED", "App token expired");
       }
     };
-    const createTools = (parts: string[] = []): unknown =>
+    const createTools = (parts: string[] = []): TailorKitServerTools =>
+      // SAFETY: The proxy handles calls through apply and every string property through get, recursively returning the same callable proxy contract.
       new Proxy(
-        () => {
-          /* Intentionally no action is needed. */
-        },
+        () =>
+          Promise.reject(
+            new AppError(
+              "UNAVAILABLE",
+              "Tool proxy must dispatch through its apply handler"
+            )
+          ),
         {
           apply(_target, _this, args) {
             check();
@@ -138,7 +155,7 @@ export const createActionExecution = (app: AppDefinition) => {
             });
           },
           get(_target, key) {
-            if (typeof key !== "string" || key === "then") {
+            if (!isStringValue(key) || key === "then") {
               return;
             }
             if (["__proto__", "constructor", "prototype"].includes(key)) {
@@ -147,7 +164,7 @@ export const createActionExecution = (app: AppDefinition) => {
             return createTools([...parts, key]);
           },
         }
-      );
+      ) as TailorKitServerTools;
     check();
     const { fn, args } = prepareFunction(app, input, identity, "action");
     const binding = bindings.get(fn);
@@ -155,6 +172,7 @@ export const createActionExecution = (app: AppDefinition) => {
       throw new AppError("NOT_FOUND", "App action not found");
     }
     try {
+      // SAFETY: prepareFunction validates args with this registered action schema, and compile binds only its declared query and mutation functions.
       const value = await inExecutionContext(scope, () =>
         fn.handler({
           args,
@@ -176,7 +194,7 @@ export const createActionExecution = (app: AppDefinition) => {
 };
 
 export interface ActionServices {
-  tool?: (path: string, input: unknown) => Promise<unknown>;
+  tool?: ToolBridge["client"];
   fetch?: typeof globalThis.fetch;
   committed: (tables: string[]) => Promise<void>;
 }

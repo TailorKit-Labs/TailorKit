@@ -5,13 +5,17 @@ import type { Persistence } from "./database/driver";
 import { AppError } from "./errors";
 import { createExecution } from "./execution";
 
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
 const bundle = z.object({
   default: z.custom<AppDefinition>(
     (value) =>
-      typeof value === "object" &&
+      isObjectValue(value) &&
       value !== null &&
       "functions" in value &&
-      typeof value.functions === "object" &&
+      isObjectValue(value.functions) &&
       value.functions !== null &&
       !Array.isArray(value.functions)
   ),
@@ -36,7 +40,7 @@ const supportedFeatures = new Set([
 
 /** Check compatibility before creating tables or applying any application migrations. */
 export const createApplicationExecution = (
-  application: unknown,
+  application: Parameters<typeof bundle.safeParse>[0],
   persistence: Persistence
 ) => {
   const parsed = bundle.safeParse(application);

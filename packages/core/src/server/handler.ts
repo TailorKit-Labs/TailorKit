@@ -5,6 +5,10 @@ import {
   previewAccepted,
 } from "@tailorkit/client-platform/client";
 import { createClient } from "@tailorkit/client-platform/client/client/index";
+import type {
+  AppsListResponses,
+  PreviewAcceptedResponses,
+} from "@tailorkit/client-platform/client/types.gen";
 
 import type {
   NoComponentFieldCallbackConflicts,
@@ -34,6 +38,13 @@ import type {
   TailorKitServer,
   TailorKitServerInputOptions,
 } from "./types";
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
+const isFunctionValue = <TValue>(
+  value: TValue
+): value is Extract<TValue, CallableFunction> => typeof value === "function";
 
 const defaultPlatformBaseUrl = "https://tailorkit.dev/api/platform";
 
@@ -96,6 +107,7 @@ export const createTailorKitServer = <
       "preview.returnPath must be a same-origin root-relative path."
     );
   }
+  // SAFETY: The server preserves the supplied typed tool table and normalizes the route base path before constructing its handler.
   const schema = createTailorKitSchema<
     InferTailorKitServerComponents<TOptions>,
     InferTailorKitServerViews<TOptions>,
@@ -149,7 +161,7 @@ export const createTailorKitServer = <
 
       if (
         hostContext.subjectId !== undefined &&
-        (typeof hostContext.subjectId !== "string" ||
+        (!isStringValue(hostContext.subjectId) ||
           !hostContext.subjectId ||
           hostContext.subjectId.length > 256)
       ) {
@@ -167,7 +179,7 @@ export const createTailorKitServer = <
         request,
         authenticate,
         async (appId, scopes, subjectId) => {
-          const headers = await (typeof platformHeaders === "function"
+          const headers = await (isFunctionValue(platformHeaders)
             ? platformHeaders()
             : platformHeaders);
           const session = await appsRuntimeSession({
@@ -304,7 +316,9 @@ export const createTailorKitServer = <
         return Response.json([], { headers: { "cache-control": "no-store" } });
       }
 
-      const items: Record<string, unknown>[] = [];
+      const items: (AppsListResponses[200]["items"][number] & {
+        preview?: PreviewAcceptedResponses[200]["items"][number]["preview"];
+      })[] = [];
       let page = 1;
       for (;;) {
         // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
@@ -337,7 +351,10 @@ export const createTailorKitServer = <
             byId.set(accepted.app.id, items.length);
             items.push({ ...accepted.app, preview: accepted.preview });
           } else {
-            items[index] = { ...items[index], preview: accepted.preview };
+            const existing = items[index];
+            if (existing) {
+              items[index] = { ...existing, preview: accepted.preview };
+            }
           }
         }
       }
@@ -363,6 +380,7 @@ export const createTailorKitServer = <
       });
     }
 
+    // SAFETY: The server preserves the supplied typed tool table and normalizes the route base path before constructing its handler.
     const rpcResult = await rpcHandler.handle(request, {
       context: await createContext({
         authenticate,

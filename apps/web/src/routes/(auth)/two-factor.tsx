@@ -194,59 +194,60 @@ const TwoFactorPage = () => {
                 Enter the current code from your authenticator app.
               </CardDescription>
             </CardHeader>
-            <CardPanel className="flex flex-col gap-6">
-              <div className="flex flex-col items-center gap-6">
-                <Field className="items-center gap-2">
-                  <FieldLabel className="sr-only">
-                    Authentication code
-                  </FieldLabel>
-                  <OTPField
-                    autoComplete="one-time-code"
-                    className="justify-center gap-2 max-sm:gap-1.5"
-                    length={OTP_LENGTH}
-                    onValueChange={(value) => {
-                      setCode(value);
-                      setError(null);
-                      if (value.length === OTP_LENGTH) {
-                        void verify(value);
-                      }
-                    }}
-                    disabled={isTotpPending}
-                    size="lg"
-                    value={code}
-                  >
-                    {OTP_SLOT_KEYS.map((key, index) => (
-                      <Fragment key={key}>
-                        <OTPFieldInput
-                          aria-invalid={error ? true : undefined}
-                          aria-label={`Digit ${index + 1} of ${OTP_LENGTH}`}
-                          autoFocus={index === 0}
-                          className="size-11 text-xl leading-11 sm:size-12 sm:text-2xl sm:leading-12"
-                        />
-                        {index === 2 ? <OTPFieldSeparator /> : null}
-                      </Fragment>
-                    ))}
-                  </OTPField>
-                  {error ? <FieldError>{error}</FieldError> : null}
-                </Field>
+            <CardPanel>
+              <div className="flex flex-col gap-6">
+                <div className="flex flex-col items-center gap-6">
+                  <Field className="items-center">
+                    <FieldLabel className="sr-only">
+                      Authentication code
+                    </FieldLabel>
+                    <OTPField
+                      autoComplete="one-time-code"
+                      className="justify-center"
+                      length={OTP_LENGTH}
+                      onValueChange={(value) => {
+                        setCode(value);
+                        setError(null);
+                        if (value.length === OTP_LENGTH) {
+                          void verify(value);
+                        }
+                      }}
+                      disabled={isTotpPending}
+                      size="lg"
+                      value={code}
+                    >
+                      {OTP_SLOT_KEYS.map((key, index) => (
+                        <Fragment key={key}>
+                          <OTPFieldInput
+                            aria-invalid={error ? true : undefined}
+                            aria-label={`Digit ${index + 1} of ${OTP_LENGTH}`}
+                            autoFocus={index === 0}
+                          />
+                          {index === 2 ? <OTPFieldSeparator /> : null}
+                        </Fragment>
+                      ))}
+                    </OTPField>
+                    {error ? <FieldError>{error}</FieldError> : null}
+                  </Field>
+                </div>
+                <Button
+                  disabled={code.length !== OTP_LENGTH || isTotpPending}
+                  loading={isTotpPending}
+                  onClick={() => verify(code)}
+                  type="button"
+                >
+                  Verify
+                </Button>
+                <Button
+                  className="self-center"
+                  onClick={() => handleBackupCodeOpenChange(true)}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  Use a backup code
+                </Button>
               </div>
-              <Button
-                disabled={code.length !== OTP_LENGTH || isTotpPending}
-                loading={isTotpPending}
-                onClick={() => verify(code)}
-                type="button"
-              >
-                Verify
-              </Button>
-              <Button
-                className="self-center"
-                onClick={() => handleBackupCodeOpenChange(true)}
-                size="sm"
-                type="button"
-                variant="ghost"
-              >
-                Use a backup code
-              </Button>
             </CardPanel>
           </Card>
           <CardFrameFooter className="relative">
@@ -275,11 +276,11 @@ const TwoFactorPage = () => {
             </DialogDescription>
           </DialogHeader>
           <DialogPanel className="flex flex-col items-center">
-            <Field className="items-center gap-3">
+            <Field className="items-center">
               <FieldLabel className="sr-only">Backup code</FieldLabel>
               <OTPField
                 autoComplete="off"
-                className="justify-center gap-1 max-sm:gap-0.5"
+                className="justify-center"
                 length={BACKUP_CODE_LENGTH}
                 onValueChange={(value) => {
                   setBackupCode(value);
@@ -289,7 +290,7 @@ const TwoFactorPage = () => {
                   }
                 }}
                 disabled={isBackupCodePending}
-                size="lg"
+                size="compact"
                 validationType="alphanumeric"
                 value={backupCode}
               >
@@ -299,7 +300,6 @@ const TwoFactorPage = () => {
                       aria-invalid={backupCodeError ? true : undefined}
                       aria-label={`Character ${index + 1} of ${BACKUP_CODE_LENGTH}`}
                       autoFocus={index === 0}
-                      className="size-7 text-sm leading-7 sm:size-9 sm:text-lg sm:leading-9"
                     />
                     {index === 4 ? (
                       <OTPFieldSeparator className="mx-1" />

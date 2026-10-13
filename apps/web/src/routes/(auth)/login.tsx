@@ -253,86 +253,88 @@ const RouteComponent = () => {
                     emailForm.handleSubmit();
                   }}
                 >
-                  <CardPanel className="flex flex-col gap-4">
-                    <div className="flex flex-col gap-2">
-                      {(passkeyError ||
-                        socialError ||
-                        error_description ||
-                        authenticationError) && (
-                        <p className="text-destructive text-sm" role="alert">
-                          {passkeyError ||
-                            socialError ||
-                            error_description ||
-                            authenticationError}
-                        </p>
-                      )}
-                      {socialProvidersQuery.data?.github && (
+                  <CardPanel>
+                    <div className="flex flex-col gap-4">
+                      <div className="flex flex-col gap-2">
+                        {(passkeyError ||
+                          socialError ||
+                          error_description ||
+                          authenticationError) && (
+                          <p className="text-destructive text-sm" role="alert">
+                            {passkeyError ||
+                              socialError ||
+                              error_description ||
+                              authenticationError}
+                          </p>
+                        )}
+                        {socialProvidersQuery.data?.github && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full"
+                            disabled={authPending && socialPending !== "github"}
+                            loading={socialPending === "github"}
+                            onClick={() => signInWithSocial("github")}
+                          >
+                            <GitHubIcon />
+                            Continue with GitHub
+                          </Button>
+                        )}
+                        {socialProvidersQuery.data?.google && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full"
+                            disabled={authPending && socialPending !== "google"}
+                            loading={socialPending === "google"}
+                            onClick={() => signInWithSocial("google")}
+                          >
+                            <GoogleIcon className="size-4 shrink-0" />
+                            Continue with Google
+                          </Button>
+                        )}
                         <Button
                           type="button"
                           variant="outline"
                           className="w-full"
-                          disabled={authPending && socialPending !== "github"}
-                          loading={socialPending === "github"}
-                          onClick={() => signInWithSocial("github")}
+                          disabled={authPending && !passkeyPending}
+                          loading={passkeyPending}
+                          onClick={() => signInWithPasskey()}
                         >
-                          <GitHubIcon />
-                          Continue with GitHub
+                          <KeyRoundIcon
+                            aria-hidden="true"
+                            className="size-4 shrink-0"
+                          />
+                          Continue with a passkey
                         </Button>
-                      )}
-                      {socialProvidersQuery.data?.google && (
-                        <Button
-                          type="button"
-                          variant="outline"
+                      </div>
+
+                      <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
+                        <span className="bg-card text-muted-foreground relative z-10 px-2 text-xs">
+                          OR
+                        </span>
+                      </div>
+
+                      <emailForm.AppField name="email">
+                        {(field) => (
+                          <field.TextField
+                            disabled={authPending}
+                            label="Email"
+                            type="email"
+                            placeholder="you@example.com"
+                          />
+                        )}
+                      </emailForm.AppField>
+
+                      <emailForm.AppForm>
+                        <emailForm.SubmitButton
                           className="w-full"
-                          disabled={authPending && socialPending !== "google"}
-                          loading={socialPending === "google"}
-                          onClick={() => signInWithSocial("google")}
-                        >
-                          <GoogleIcon className="size-4 shrink-0" />
-                          Continue with Google
-                        </Button>
-                      )}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full"
-                        disabled={authPending && !passkeyPending}
-                        loading={passkeyPending}
-                        onClick={() => signInWithPasskey()}
-                      >
-                        <KeyRoundIcon
-                          aria-hidden="true"
-                          className="size-4 shrink-0"
-                        />
-                        Continue with a passkey
-                      </Button>
-                    </div>
-
-                    <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-                      <span className="bg-card text-muted-foreground relative z-10 px-2 text-xs">
-                        OR
-                      </span>
-                    </div>
-
-                    <emailForm.AppField name="email">
-                      {(field) => (
-                        <field.TextField
                           disabled={authPending}
-                          label="Email"
-                          type="email"
-                          placeholder="you@example.com"
-                        />
-                      )}
-                    </emailForm.AppField>
-
-                    <emailForm.AppForm>
-                      <emailForm.SubmitButton
-                        className="w-full"
-                        disabled={authPending}
-                      >
-                        Continue
-                      </emailForm.SubmitButton>
-                    </emailForm.AppForm>
+                        >
+                          Continue
+                        </emailForm.SubmitButton>
+                      </emailForm.AppForm>
+                    </div>
                   </CardPanel>
                 </form>
               ) : (
@@ -343,44 +345,46 @@ const RouteComponent = () => {
                     passwordForm.handleSubmit();
                   }}
                 >
-                  <CardPanel className="flex flex-col gap-4">
-                    <button
-                      type="button"
-                      onClick={() => transition("email")}
-                      className="text-muted-foreground hover:text-foreground flex w-fit items-center gap-1.5 text-sm transition-colors"
-                    >
-                      <ArrowLeftIcon className="size-3.5" />
-                      <span>{email}</span>
-                    </button>
+                  <CardPanel>
+                    <div className="flex flex-col gap-4">
+                      <button
+                        type="button"
+                        onClick={() => transition("email")}
+                        className="text-muted-foreground hover:text-foreground flex w-fit items-center gap-1.5 text-sm transition-colors"
+                      >
+                        <ArrowLeftIcon className="size-3.5" />
+                        <span>{email}</span>
+                      </button>
 
-                    {passwordError && (
-                      <passwordForm.FormError>
-                        {passwordError}
-                      </passwordForm.FormError>
-                    )}
-
-                    <passwordForm.AppField name="password">
-                      {(field) => (
-                        <field.SecretTextField
-                          label="Password"
-                          placeholder="••••••••"
-                          autoFocus
-                          labelAction={
-                            <Link
-                              search={{ email, return_to }}
-                              to="/forgot-password"
-                              className="text-muted-foreground text-xs hover:underline"
-                            >
-                              Forgot password?
-                            </Link>
-                          }
-                        />
+                      {passwordError && (
+                        <passwordForm.FormError>
+                          {passwordError}
+                        </passwordForm.FormError>
                       )}
-                    </passwordForm.AppField>
+
+                      <passwordForm.AppField name="password">
+                        {(field) => (
+                          <field.SecretTextField
+                            label="Password"
+                            placeholder="••••••••"
+                            autoFocus
+                            labelAction={
+                              <Link
+                                search={{ email, return_to }}
+                                to="/forgot-password"
+                                className="text-muted-foreground text-xs hover:underline"
+                              >
+                                Forgot password?
+                              </Link>
+                            }
+                          />
+                        )}
+                      </passwordForm.AppField>
+                    </div>
                   </CardPanel>
 
                   <passwordForm.AppForm>
-                    <CardFooter className="pt-4">
+                    <CardFooter>
                       <passwordForm.SubmitButton className="w-full">
                         Sign In
                       </passwordForm.SubmitButton>

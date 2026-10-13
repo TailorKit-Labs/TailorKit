@@ -34,7 +34,7 @@ const PACKAGE_MANAGERS = ["pnpm", "yarn", "npm", "bun"] as const;
 type PackageManager = (typeof PACKAGE_MANAGERS)[number];
 
 const isPackageManager = (value: string): value is PackageManager =>
-  PACKAGE_MANAGERS.includes(value as PackageManager);
+  PACKAGE_MANAGERS.some((manager) => manager === value);
 
 const normalizePackageName = (value: string): string =>
   value
@@ -43,12 +43,17 @@ const normalizePackageName = (value: string): string =>
     .replaceAll(/[^a-z0-9._/-]+/gu, "-")
     .replaceAll(/^-+|-+$/gu, "");
 
-const abortIfCancelled = <T>(value: T | typeof CANCEL_SYMBOL): T => {
-  if (isCancel(value)) {
+const isPromptValue = <T extends string | boolean>(
+  value: T | typeof CANCEL_SYMBOL
+): value is T => !isCancel(value);
+const abortIfCancelled = <T extends string | boolean>(
+  value: T | typeof CANCEL_SYMBOL
+): T => {
+  if (!isPromptValue(value)) {
     cancel("Init cancelled.");
     process.exit(0);
   }
-  return value as T;
+  return value;
 };
 
 const promptDirectory = (given: string | undefined, cwd: string): string =>
@@ -89,13 +94,13 @@ const promptPackageManager = async (
     );
   }
   const answer = abortIfCancelled(
-    await select({
-      initialValue: "pnpm" as PackageManager,
+    await select<PackageManager>({
+      initialValue: "pnpm",
       message: "Package manager",
       options: PACKAGE_MANAGERS.map((value) => ({ label: value, value })),
     })
   );
-  return answer as PackageManager;
+  return answer;
 };
 
 const promptTooling = async (
@@ -108,7 +113,7 @@ const promptTooling = async (
     throw new Error("--tooling must be vite-plus or vite.");
   }
   return abortIfCancelled(
-    await select({
+    await select<"vite-plus" | "vite">({
       initialValue: "vite-plus",
       message: "App tooling",
       options: [
@@ -163,7 +168,7 @@ const promptInstall = async (given: boolean | undefined): Promise<boolean> => {
   }
   return abortIfCancelled(
     await confirm({ initialValue: true, message: "Install dependencies?" })
-  ) as boolean;
+  );
 };
 
 const promptForce = async (
@@ -178,7 +183,7 @@ const promptForce = async (
       initialValue: false,
       message: `${pc.cyan(targetDir)} already exists. Overwrite matching files?`,
     })
-  ) as boolean;
+  );
 };
 
 const exec = (cmd: string, args: string[], cwd: string): Promise<number> =>

@@ -150,9 +150,9 @@ export interface PreviewWebSocketClient {
 export const createPreviewWebSocketClient = (
   websocket: WebSocket
 ): PreviewWebSocketClient => {
-  const rpc = createORPCClient(
-    new RPCLink({ connect: () => websocket })
-  ) as unknown as PreviewWebSocketClient;
+  const rpc = createORPCClient<{
+    [K in keyof PreviewWebSocketClient]: PreviewWebSocketClient[K];
+  }>(new RPCLink({ connect: () => websocket }));
   return {
     beginBuild: async (input) =>
       buildIdOutput.parse(await rpc.beginBuild(beginInput.parse(input))),

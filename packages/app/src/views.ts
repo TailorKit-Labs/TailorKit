@@ -10,6 +10,10 @@ import type { z } from "zod";
 
 import type { FunctionCalls, Identity } from "./server/functions";
 
+const isFunctionValue = <TValue>(
+  value: TValue
+): value is Extract<TValue, CallableFunction> => typeof value === "function";
+
 // oxlint-disable-next-line typescript/no-empty-interface, typescript/no-empty-object-type -- Generated bindings augment this interface.
 export interface TailorKitViews {}
 
@@ -19,9 +23,22 @@ export interface TailorKitSlots {}
 // oxlint-disable-next-line typescript/no-empty-interface, typescript/no-empty-object-type -- Generated bindings augment this interface.
 export interface TailorKitServerFunctions {}
 
+// Registered view schemas own these heterogeneous field types; shared adapters only forward or encode them.
+// oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- Context and instance metadata remain opaque until their owning schema consumes them.
+export type ViewDataFields = Record<string, unknown>;
+
+interface SerializedDomViewProps extends ViewDataFields {
+  "data-tailorkit-props"?: string;
+  "data-tailorkit-callbacks"?: string;
+}
+
+interface CompiledViewMetadata {
+  instances?: { resolver: string };
+}
+
 export interface ViewInstance<TData = unknown> {
   key: string;
-  metadata: Record<string, unknown>;
+  metadata: ViewDataFields;
   data: TData;
 }
 
@@ -202,9 +219,8 @@ export function defineView<
     context: ViewContext<TPath>;
     instance?: ViewInstance;
   } | null>(null);
-  const instances = options.instances as unknown as
-    | { resolver?: string }
-    | undefined;
+  // SAFETY: Generated bindings associate this view path with its context and instance schema; the adapter retains that relationship while erasing renderer generics.
+  const instances = options.instances as { resolver?: string } | undefined;
   if (instances && !instances.resolver) {
     throw new Error(
       "View instance resolvers must be compiled with the TailorKit app build."
@@ -221,6 +237,7 @@ export function defineView<
         `View "${path}" requires a selected instance. Pass instanceKey to RenderSlot or instance to RenderSlot.Controlled.`
       );
     }
+    // SAFETY: Generated bindings associate this view path with its context and instance schema; the adapter retains that relationship while erasing renderer generics.
     return h(
       Context.Provider,
       {
@@ -235,13 +252,17 @@ export function defineView<
     );
   };
 
+  const instanceMetadata: CompiledViewMetadata = {};
+  if (instances?.resolver) {
+    instanceMetadata.instances = { resolver: instances.resolver };
+  }
+  // SAFETY: Generated bindings associate this view path with its context and instance schema; the adapter retains that relationship while erasing renderer generics.
   return {
+    ...instanceMetadata,
     component: View,
     path,
     slot: options.slot,
-    ...(instances?.resolver
-      ? { instances: { resolver: instances.resolver } }
-      : {}),
+
     useContext: () => {
       const context = useContext(Context);
 
@@ -260,6 +281,7 @@ export function defineView<
           `View instance is only available while rendering an instance of "${path}".`
         );
       }
+      // SAFETY: Generated bindings associate this view path with its context and instance schema; the adapter retains that relationship while erasing renderer generics.
       return value.instance as ViewInstance<z.output<TSchema>>;
     },
   } as ViewDefinition<TPath, z.output<TSchema>>;
@@ -294,7 +316,8 @@ export const createRemoteComponent = <
   const callbacks = options.callbacks ?? {};
 
   return function RemoteComponent({ children, ...props }) {
-    const nextProps = { ...props } as Record<string, unknown>;
+    // SAFETY: Generated bindings associate this view path with its context and instance schema; the adapter retains that relationship while erasing renderer generics.
+    const nextProps: SerializedDomViewProps = { ...props };
     const callbackMap: Record<
       string,
       { callback: string; inputCount: number }
@@ -303,21 +326,24 @@ export const createRemoteComponent = <
     for (const [key, inputCount] of Object.entries(callbacks)) {
       const operation = nextProps[key];
       Reflect.deleteProperty(nextProps, key);
-      if (typeof operation !== "function") {
+      if (!isFunctionValue(operation)) {
         continue;
       }
 
       const eventName = toCallbackEventName(key);
       callbackMap[eventName] = { callback: key, inputCount };
       nextProps[toEventProp(eventName)] = (event: { detail?: unknown[] }) => {
-        operation(...(event.detail ?? []).slice(0, inputCount));
+        // SAFETY: The callback binding declares its input count, and CustomEvent detail carries those positional inputs.
+        (
+          operation as (
+            ...inputs: CustomEvent["detail"][]
+          ) => ReturnType<() => void>
+        )(...(event.detail ?? []).slice(0, inputCount));
       };
     }
 
     const serializedProps = Object.fromEntries(
-      Object.entries(nextProps).filter(
-        ([, value]) => typeof value !== "function"
-      )
+      Object.entries(nextProps).filter(([, value]) => !isFunctionValue(value))
     );
     nextProps["data-tailorkit-props"] = JSON.stringify(serializedProps);
 

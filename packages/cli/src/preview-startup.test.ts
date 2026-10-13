@@ -41,10 +41,11 @@ vi.mock("./auth", () => ({
 
 const { runPreview } = await import("./preview");
 const dirs: string[] = [];
-let signalListeners: {
+interface SignalListeners {
   SIGINT: ReturnType<typeof process.listeners>;
   SIGTERM: ReturnType<typeof process.listeners>;
-};
+}
+let signalListeners: SignalListeners;
 
 beforeEach(() => {
   signalListeners = {

@@ -96,7 +96,7 @@ const base64Schema = z
   .max(4 * Math.ceil(previewChunkBytes / 3))
   .regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u);
 const parse = <T>(value: string | null, schema: z.ZodType<T>): T | null =>
-  value === null ? null : schema.parse(JSON.parse(value) as unknown);
+  value === null ? null : schema.parse(JSON.parse(value));
 const hasControlCharacters = (value: string): boolean => {
   for (const character of value) {
     const code = character.codePointAt(0);
@@ -465,9 +465,7 @@ export const createPreviewBuildStore = (kv: KV) => {
       requireId(sessionId);
       return kv.subscribe(channel(sessionId), (message) => {
         try {
-          const value = notificationSchema.parse(
-            JSON.parse(message) as unknown
-          );
+          const value = notificationSchema.parse(JSON.parse(message));
           if ("ended" in value) {
             onRevision(null);
             return;

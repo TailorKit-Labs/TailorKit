@@ -1,19 +1,20 @@
 import { z } from "zod";
 
 import { AppError } from "../errors";
+import type { ViewDataFields } from "../views";
 import { action, defineServer, isFunction } from "./functions";
 import type { AppDefinition, Functions, Identity } from "./functions";
 
-interface InstanceResolver {
+interface InstanceResolver<TOutput = unknown> {
   slot: string;
   path: string;
   dataSchema: z.ZodType;
   resolve: (context: {
-    context: Record<string, unknown>;
+    context: ViewDataFields;
     identity: Identity;
     signal: AbortSignal;
     queries: unknown;
-  }) => unknown;
+  }) => TOutput;
 }
 
 const addressSchema = z.object({

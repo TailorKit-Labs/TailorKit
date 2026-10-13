@@ -1,6 +1,10 @@
 import type { CallbackMap, Callbacks, InferCallbacks } from "./callbacks";
 import type { EmptyObject, InferSchema, MergeProps, Schema } from "./shared";
 
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
 type EmptyCallbackMap = Record<never, never>;
 
 export type Fields = Schema;
@@ -64,21 +68,21 @@ export type NoComponentFieldCallbackConflicts<TComponents> = {
     : unknown;
 };
 
-const getObjectKeys = (value: unknown): string[] => {
-  if (!(value && typeof value === "object")) {
+const getObjectKeys = (value: Schema | undefined): string[] => {
+  if (!(value && isObjectValue(value))) {
     return [];
   }
 
   if ("shape" in value) {
-    const { shape } = value as { shape?: unknown };
-    if (shape && typeof shape === "object") {
-      return Object.keys(shape);
+    const fields = value.shape;
+    if (fields && isObjectValue(fields)) {
+      return Object.keys(fields);
     }
   }
 
   if ("entries" in value) {
-    const { entries } = value as { entries?: unknown };
-    if (entries && typeof entries === "object") {
+    const { entries } = value;
+    if (entries && isObjectValue(entries)) {
       return Object.keys(entries);
     }
   }

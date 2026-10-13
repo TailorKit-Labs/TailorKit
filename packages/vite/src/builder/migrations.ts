@@ -4,14 +4,16 @@ import path from "node:path";
 
 import type { AppMigration } from "@tailorkit/app/protocol";
 
+import { isMissingFile } from "./fs-errors";
+
 /** Read the timestamped migration folders produced by the workspace's Drizzle Kit version. */
 export const readAppMigrations = async (
   directory: string,
   optional = false
 ) => {
   const entries = await readdir(directory, { withFileTypes: true }).catch(
-    (error: unknown) => {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+    (error: ErrorOptions["cause"]) => {
+      if (isMissingFile(error)) {
         if (optional) {
           return [];
         }

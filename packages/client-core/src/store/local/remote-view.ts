@@ -4,12 +4,17 @@ import type {
   IframeUiHostOptions,
 } from "@tailorkit/sandbox/host";
 import type {
+  RemoteProps,
   HostToIframePayload,
   RemoteElementNode,
 } from "@tailorkit/sandbox/protocol";
 import { atom, batch, computed } from "nanostores";
 
 import { NodeStore } from "./node-store";
+
+// Framework adapters supply heterogeneous component constructors; the core store keeps them opaque.
+// oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- Only the owning React or Preact adapter interprets registry values.
+export type RemoteComponentRegistry = Record<string, unknown>;
 
 export interface RemoteViewSnapshot {
   error: Error | null;
@@ -18,8 +23,8 @@ export interface RemoteViewSnapshot {
 }
 
 export interface RemoteViewStoreOptions {
-  components?: Record<string, unknown>;
-  props?: Record<string, unknown>;
+  components?: RemoteComponentRegistry;
+  props?: RemoteProps;
 }
 
 export interface RemoteViewMountOptions extends Omit<
@@ -144,9 +149,9 @@ export const createRemoteViewStore = (
     nodes,
     selectComponent: (name: string) =>
       computed(components, (registry) => registry[name]),
-    setComponents: (registry: Record<string, unknown>) =>
+    setComponents: (registry: RemoteComponentRegistry) =>
       components.set(registry),
-    setProps(next: Record<string, unknown> | undefined) {
+    setProps(next: RemoteProps | undefined) {
       props = next;
       current?.host?.setProps(next);
     },
@@ -160,8 +165,8 @@ export type RemoteViewStore = ReturnType<typeof createRemoteViewStore>;
 export const createRemoteElementProps = (
   node: RemoteElementNode,
   dispatch: RemoteViewStore["dispatch"]
-): Record<string, unknown> => {
-  const props: Record<string, unknown> = { ...node.props };
+): RemoteProps => {
+  const props: RemoteProps = { ...node.props };
   for (const binding of node.callbacks ?? []) {
     props[binding.callback] = (...args: unknown[]) => {
       dispatch({

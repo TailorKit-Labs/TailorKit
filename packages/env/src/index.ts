@@ -6,14 +6,7 @@ import * as z from "zod";
 
 const { dirname, resolve } = nodePath;
 
-type EnvShape = z.ZodRawShape;
-interface EnvValidator {
-  safeParse: (
-    value: unknown
-  ) =>
-    | { success: true; data: unknown }
-    | { success: false; error: { issues: { message: string }[] } };
-}
+type EnvFields = NonNullable<Parameters<typeof z.object>[0]>;
 
 const reportedWarnings = new Set<string>();
 
@@ -34,7 +27,7 @@ const findWorkspaceRoot = (startDirectory: string): string | undefined => {
   }
 };
 
-const readEnvironment = (): Record<string, string | undefined> => {
+const readEnvironment = (): NodeJS.ProcessEnv => {
   const workspaceRoot = findWorkspaceRoot(process.cwd()) ?? process.cwd();
   const webRoot = resolve(workspaceRoot, "apps/web");
   const dotenvFiles = [
@@ -65,29 +58,28 @@ const warn = (scope: string, message: string): void => {
   console.warn(`[env:${scope}] ${message}`);
 };
 
-export const createEnv = <const T extends EnvShape>({
+export const createEnv = <const T extends EnvFields>({
   scope,
-  schema: schemaShape,
+  schema: environmentFields,
   warnings = {},
 }: {
   scope: string;
   schema: T;
   warnings?: Partial<Record<keyof T & string, string>>;
 }): Partial<z.output<z.ZodObject<T>>> => {
-  const schema = z.object(schemaShape);
   const source = readEnvironment();
-  const missingWarnings = warnings as Record<string, string | undefined>;
-  const parsedValues: Record<string, unknown> = {};
+  const missingWarnings = new Map<string, string | undefined>(
+    Object.entries(warnings)
+  );
+  const parsedEntries: [string, unknown][] = [];
 
-  for (const [name, validator] of Object.entries(schema.shape) as [
-    string,
-    EnvValidator,
-  ][]) {
+  for (const [name, validator] of Object.entries(environmentFields)) {
     const rawValue = source[name] === "" ? undefined : source[name];
-    const parsed = validator.safeParse(rawValue);
+    const parsed = z.safeParse(validator, rawValue);
 
-    if (rawValue === undefined && missingWarnings[name]) {
-      warn(scope, missingWarnings[name]);
+    const missingWarning = missingWarnings.get(name);
+    if (rawValue === undefined && missingWarning) {
+      warn(scope, missingWarning);
     }
 
     if (!parsed.success) {
@@ -101,16 +93,17 @@ export const createEnv = <const T extends EnvShape>({
     }
 
     if (parsed.data !== undefined) {
-      parsedValues[name] = parsed.data;
+      parsedEntries.push([name, parsed.data]);
     }
   }
 
-  return parsedValues as Partial<z.output<z.ZodObject<T>>>;
+  // SAFETY: Only declared fields with successful results from their own Zod validator are inserted; missing or invalid fields are omitted.
+  return Object.fromEntries(parsedEntries) as Partial<z.output<z.ZodObject<T>>>;
 };
 
-export const warnIfMissing = (
+export const warnIfMissing = <TFields extends object>(
   scope: string,
-  values: Record<string, unknown>
+  values: TFields
 ): void => {
   for (const [name, value] of Object.entries(values)) {
     if (value === undefined || value === "") {

@@ -1,21 +1,27 @@
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
 export const formatFieldErrors = (issueors: unknown[] = []): string =>
   issueors
     .flatMap((issue) => {
-      if (typeof issue === "string") {
+      if (isStringValue(issue)) {
         return [issue];
       }
 
       if (
-        typeof issue === "object" &&
+        isObjectValue(issue) &&
         issue !== null &&
         "message" in issue &&
-        typeof issue.message === "string"
+        isStringValue(issue.message)
       ) {
         return [issue.message];
       }
 
       if (
-        typeof issue === "object" &&
+        isObjectValue(issue) &&
         issue !== null &&
         "issues" in issue &&
         Array.isArray(issue.issues)
@@ -24,7 +30,7 @@ export const formatFieldErrors = (issueors: unknown[] = []): string =>
       }
 
       if (
-        typeof issue === "object" &&
+        isObjectValue(issue) &&
         issue !== null &&
         "issueors" in issue &&
         Array.isArray(issue.issueors)

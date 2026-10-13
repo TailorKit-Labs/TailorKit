@@ -17,6 +17,7 @@ const require = <T>(value: T | null | undefined): T => {
   return value;
 };
 
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const mocks = vi.hoisted(() => ({
   env: { AUTH_SECRET: "test-cli-token-secret" as string | undefined },
   findToken: vi.fn(),

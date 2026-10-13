@@ -16,6 +16,10 @@ import { AppError, appError, failedResult } from "./errors";
 import type { InvocationResult } from "./errors";
 import { prepareFunction, functionValue } from "./functions";
 
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
 export { invocationSchema } from "@tailorkit/app/protocol";
 export type { Invocation } from "@tailorkit/app/protocol";
 
@@ -50,10 +54,11 @@ export const createExecution = (
       fn.database?.relations
     );
     try {
+      // SAFETY: prepareFunction validated args using this registered function, and this transaction supplies its matching database capability.
       const value = inExecutionContext({ active: true, kind }, () =>
         fn.handler({ args, db: scope.db, identity } as never)
       );
-      if (value && typeof value === "object" && "then" in value) {
+      if (value && isObjectValue(value) && "then" in value) {
         // Revoke DB access before any continuation can run outside the transaction.
         void (async () => {
           try {
@@ -182,6 +187,7 @@ export const createExecution = (
             if (!parsed.success) {
               throw new AppError("BAD_REQUEST", "Invalid database invocation");
             }
+            // SAFETY: kind selected the mutation schema above, which required a UUID requestId before parsed.data reaches this branch.
             const result =
               kind === "mutation"
                 ? mutate(

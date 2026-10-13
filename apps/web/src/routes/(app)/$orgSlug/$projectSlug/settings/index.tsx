@@ -80,9 +80,9 @@ const ProjectSettingsPage = () => {
         projectSlug,
         slug: input.slug,
       }),
-    onError: (err: unknown) => {
+    onError: (cause: unknown) => {
       const message =
-        err instanceof Error ? err.message : "Failed to update project";
+        cause instanceof Error ? cause.message : "Failed to update project";
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: async (updatedProject) => {
@@ -110,9 +110,9 @@ const ProjectSettingsPage = () => {
 
   const deleteMutation = useMutation({
     mutationFn: () => client.project.delete({ orgSlug, projectSlug }),
-    onError: (err: unknown) => {
+    onError: (cause: unknown) => {
       const message =
-        err instanceof Error ? err.message : "Failed to delete project";
+        cause instanceof Error ? cause.message : "Failed to delete project";
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: async () => {
@@ -164,25 +164,30 @@ const ProjectSettingsPage = () => {
               form.handleSubmit();
             }}
           >
-            <CardPanel className="flex max-w-lg flex-col gap-4">
-              <form.AppField name="name">
-                {(field) => (
-                  <field.TextField label="Name" placeholder="Amazing project" />
-                )}
-              </form.AppField>
+            <CardPanel className="max-w-lg">
+              <div className="flex flex-col gap-4">
+                <form.AppField name="name">
+                  {(field) => (
+                    <field.TextField
+                      label="Name"
+                      placeholder="Amazing project"
+                    />
+                  )}
+                </form.AppField>
 
-              <form.AppField name="slug">
-                {(field) => (
-                  <field.TextField
-                    description={`tailorkit.com/${orgSlug}/${field.state.value || "project-slug"}`}
-                    label="Slug"
-                    placeholder="amazing-project"
-                    onChange={(event) =>
-                      field.handleChange(toSlug(event.target.value))
-                    }
-                  />
-                )}
-              </form.AppField>
+                <form.AppField name="slug">
+                  {(field) => (
+                    <field.TextField
+                      description={`tailorkit.com/${orgSlug}/${field.state.value || "project-slug"}`}
+                      label="Slug"
+                      placeholder="amazing-project"
+                      onChange={(event) =>
+                        field.handleChange(toSlug(event.target.value))
+                      }
+                    />
+                  )}
+                </form.AppField>
+              </div>
             </CardPanel>
           </form>
         </Card>
@@ -196,14 +201,14 @@ const ProjectSettingsPage = () => {
         </CardFrameFooter>
       </CardFrame>
 
-      <Card className="border-destructive/30">
+      <Card>
         <CardHeader>
           <CardTitle>Delete project</CardTitle>
           <CardDescription>
             Permanently delete this project and revoke its project API keys.
           </CardDescription>
         </CardHeader>
-        <CardPanel className="pt-0">
+        <CardPanel>
           <Button
             size="sm"
             type="button"

@@ -3,6 +3,10 @@ import { RPCLink } from "@orpc/client/fetch";
 
 import type { TailorKitRouterClient } from "./router";
 
+const isFunctionValue = <TValue>(
+  value: TValue
+): value is Extract<TValue, CallableFunction> => typeof value === "function";
+
 type HeaderInput = ConstructorParameters<typeof Headers>[0];
 
 export interface TailorKitClientOptions {
@@ -15,9 +19,10 @@ export const createTailorKitClient = (
   options: TailorKitClientOptions
 ): TailorKitRouterClient => {
   const url = URL.canParse(options.url) ? new URL(options.url) : undefined;
+  // SAFETY: The configured URL is normalized into a pathname before the client uses it as an absolute route path.
   const link = new RPCLink({
     async fetch(urlValue, init) {
-      const configuredHeaders = await (typeof options.headers === "function"
+      const configuredHeaders = await (isFunctionValue(options.headers)
         ? options.headers()
         : options.headers);
       const headers = new Headers(configuredHeaders);

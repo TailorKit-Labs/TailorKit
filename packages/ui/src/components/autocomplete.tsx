@@ -61,7 +61,7 @@ export const AutocompleteInput = ({
   triggerProps?: AutocompletePrimitive.Trigger.Props;
   clearProps?: AutocompletePrimitive.Clear.Props;
 }): React.ReactElement => {
-  const sizeValue = (size ?? "default") as "sm" | "default" | "lg" | number;
+  const sizeValue = size ?? "default";
 
   return (
     <AutocompletePrimitive.InputGroup

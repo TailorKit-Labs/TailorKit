@@ -13,6 +13,9 @@ import {
 
 import type * as authModule from "./auth";
 
+const isSymbolValue = <TValue>(value: TValue): value is TValue & symbol =>
+  typeof value === "symbol";
+
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
@@ -36,7 +39,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@clack/prompts", () => ({
   autocomplete: mocks.select,
   cancel: mocks.cancel,
-  isCancel: (value: unknown) => typeof value === "symbol",
+  isCancel: (value: unknown): value is symbol => isSymbolValue(value),
   log: { info: mocks.info },
   spinner: () => ({ start: vi.fn(), stop: vi.fn() }),
   text: mocks.text,

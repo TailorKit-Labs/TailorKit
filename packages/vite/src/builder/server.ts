@@ -7,6 +7,7 @@ import type { UserConfig } from "vite";
 
 import type { LoadedTailorKitConfig } from "../config/loader";
 import { appDatabasePaths } from "./database-paths";
+import { isMissingFile } from "./fs-errors";
 import {
   instanceServerBindings,
   instanceServerImports,
@@ -155,11 +156,8 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
             await mkdir(migrationsOutput, { recursive: true });
             await cp(migrationsDirectory, migrationsOutput, {
               recursive: true,
-            }).catch((error: unknown) => {
-              if (
-                config.migrations === undefined &&
-                (error as NodeJS.ErrnoException).code === "ENOENT"
-              ) {
+            }).catch((error: ErrorOptions["cause"]) => {
+              if (config.migrations === undefined && isMissingFile(error)) {
                 return;
               }
               throw error;

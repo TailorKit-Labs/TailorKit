@@ -59,6 +59,8 @@ it("uploads a build larger than 4.5 MiB in sequential bounded messages", async (
   let awaitingAck = false;
   let largestUploadMessage = 0;
   let largestViewerMessage = 0;
+  // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+  // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
   const client = {
     beginBuild: vi.fn(async (input: { manifest: unknown }) => {
       calls.push("begin");
@@ -151,6 +153,7 @@ it("chunks exact boundaries and the largest allowed aggregate build", async () =
     Array.from({ length: 10 }, () => 4)
   );
   const sent: { fileIndex: number; chunkIndex: number; base64: string }[] = [];
+  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   const client = {
     beginBuild: async () => ({ buildId: "build" }),
     commitBuild: async () => ({ revision: 1 }),

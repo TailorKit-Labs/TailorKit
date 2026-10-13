@@ -10,17 +10,27 @@ import {
 import type { AssetIdentity } from "@tailorkit/asset-delivery";
 import type { Storage } from "@tailorkit/storage";
 import { Effect } from "effect";
+import { z } from "zod";
 
-const storageFailure = (error: unknown) => {
-  if (error && typeof error === "object") {
-    const value = error as {
-      name?: string;
-      $metadata?: { httpStatusCode?: number };
-    };
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
+const storageFailure = (cause: unknown) => {
+  if (cause && isObjectValue(cause)) {
+    const parsed = z
+      .object({
+        $metadata: z
+          .object({ httpStatusCode: z.number().optional() })
+          .optional(),
+        name: z.string().optional(),
+      })
+      .safeParse(cause);
+    const value = parsed.success ? parsed.data : undefined;
     if (
-      value.name === "NoSuchKey" ||
-      value.name === "NotFound" ||
-      value.$metadata?.httpStatusCode === 404
+      value?.name === "NoSuchKey" ||
+      value?.name === "NotFound" ||
+      value?.$metadata?.httpStatusCode === 404
     ) {
       return new AssetDeliveryError(404);
     }

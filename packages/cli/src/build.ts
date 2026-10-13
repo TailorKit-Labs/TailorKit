@@ -3,7 +3,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 import type * as viteModule from "vite";
-import type { Plugin, ResolvedConfig } from "vite";
+import type { BuildOptions, Plugin, ResolvedConfig } from "vite";
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -23,6 +23,7 @@ interface BuildProjectOptions {
 export const buildProject = async (options: BuildProjectOptions) => {
   const root = path.resolve(options.cwd);
   const require = createRequire(path.join(root, "package.json"));
+  // SAFETY: The module path is resolved from the app's own installed Vite package, whose public build exports match this imported module contract.
   const { build } = (await import(
     pathToFileURL(require.resolve("vite")).href
   )) as typeof viteModule;
@@ -39,11 +40,12 @@ export const buildProject = async (options: BuildProjectOptions) => {
     },
     name: "tailorkit-deployment-output",
   };
+  const buildOptions: BuildOptions = { watch: options.watch ? {} : null };
+  if (options.outDir) {
+    buildOptions.outDir = options.outDir;
+  }
   const result = await build({
-    build: {
-      ...(options.outDir ? { outDir: options.outDir } : {}),
-      watch: options.watch ? {} : null,
-    },
+    build: buildOptions,
     mode: options.mode,
     plugins: [outputPlugin],
     root,

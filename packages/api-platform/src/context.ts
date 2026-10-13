@@ -154,12 +154,12 @@ export const createContext = async ({
 };
 
 /** Keep unavailable dependencies distinct from rejected credentials at the HTTP boundary. */
-export const contextErrorResponse = (error: unknown) => {
+export const contextErrorResponse = (cause: unknown) => {
   const unauthorized =
-    error instanceof ORPCError && error.code === "UNAUTHORIZED";
+    cause instanceof ORPCError && cause.code === "UNAUTHORIZED";
   return Response.json(
     unauthorized
-      ? { code: error.code, message: error.message }
+      ? { code: cause.code, message: cause.message }
       : {
           code: "SERVICE_UNAVAILABLE",
           message: "Platform is temporarily unavailable.",

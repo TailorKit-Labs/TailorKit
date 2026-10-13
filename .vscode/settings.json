@@ -55,5 +55,8 @@
   },
   "editor.codeActionsOnSave": {
     "source.fixAll.oxc": "explicit"
-  }
+  },
+  "oxc.disableNestedConfig": true,
+  "oxc.fmt.disableNestedConfig": true,
+  "editor.formatOnSaveMode": "file"
 }

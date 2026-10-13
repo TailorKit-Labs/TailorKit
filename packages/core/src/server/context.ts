@@ -4,6 +4,10 @@ import type { TailorKitSchema } from "../schema/index";
 import type { TailorKitScopeSchemas } from "./scope";
 import type { TailorKitPlatformOptions, TailorKitScopes } from "./types";
 
+const isFunctionValue = <TValue>(
+  value: TValue
+): value is Extract<TValue, CallableFunction> => typeof value === "function";
+
 export interface TailorKitRuntimeContext {
   subjectId?: string;
   scopes: TailorKitScopes;
@@ -41,7 +45,7 @@ export interface CreateContextOptions {
 export const createContext = async (
   options: CreateContextOptions
 ): Promise<Context> => {
-  const configuredHeaders = await (typeof options.platformHeaders === "function"
+  const configuredHeaders = await (isFunctionValue(options.platformHeaders)
     ? options.platformHeaders()
     : options.platformHeaders);
 

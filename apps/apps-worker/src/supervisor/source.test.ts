@@ -50,6 +50,8 @@ const setup = (contents: string | Uint8Array<ArrayBuffer> | null = code) => {
     get,
     source: deploymentSource({
       BUNDLES: { get },
+      // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+      // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
       DEPLOYMENTS: {
         // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
         get: vi.fn(async () => null),
@@ -123,6 +125,8 @@ it("serves KV hits to old clients and fills misses from the platform", async () 
     );
   const source = deploymentSource({
     BUNDLES: { get: vi.fn() },
+    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
     DEPLOYMENTS: {
       get: async (key: string) => await (values.get(key) ?? null),
       put,
@@ -195,12 +199,19 @@ it.each(["utf-8", "gzip"] as const)(
     const content = "x".repeat(3 * 1024 * 1024);
     const bytes =
       encoding === "gzip" ? gzipSync(content) : Buffer.from(content);
-    const metadata = {
-      ...deployment,
-      ...(encoding === "gzip" ? { contentEncoding: "gzip" as const } : {}),
-      checksum: createHash("sha256").update(bytes).digest("hex"),
-      contentLength: bytes.byteLength,
-    };
+    const metadata =
+      encoding === "gzip"
+        ? {
+            ...deployment,
+            checksum: createHash("sha256").update(bytes).digest("hex"),
+            contentEncoding: "gzip" as const,
+            contentLength: bytes.byteLength,
+          }
+        : {
+            ...deployment,
+            checksum: createHash("sha256").update(bytes).digest("hex"),
+            contentLength: bytes.byteLength,
+          };
     expect(await Effect.runPromise(setup(bytes).source.code(metadata))).toBe(
       content
     );

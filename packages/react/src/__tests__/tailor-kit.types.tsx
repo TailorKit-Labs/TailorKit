@@ -1,4 +1,3 @@
-/* oxlint-disable react/rules-of-hooks -- Compile-only API tests exercise hook signatures outside runtime components. */
 import type {
   StandardJSONSchemaV1,
   StandardSchemaV1,
@@ -6,6 +5,8 @@ import type {
 import type { ComponentRenderer } from "@tailorkit/client-core";
 import { defineContract } from "@tailorkit/core/schema";
 import type { ComponentDefinition } from "@tailorkit/core/schema";
+/* oxlint-disable react/rules-of-hooks -- Compile-only API tests exercise hook signatures outside runtime components. */
+import type { ViewContextValues } from "@tailorkit/core/views";
 import type { ReactNode } from "react";
 
 import type {
@@ -59,6 +60,7 @@ const leafRenderer: ComponentRenderer<{}, ReactNode> = (args) => {
 };
 void leafRenderer;
 
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const typedSchema = <TValue,>(): StandardSchemaV1<TValue, TValue> &
   StandardJSONSchemaV1<TValue, TValue> =>
   ({
@@ -67,7 +69,9 @@ const typedSchema = <TValue,>(): StandardSchemaV1<TValue, TValue> &
         input: () => ({}),
         output: () => ({}),
       },
-      validate: (value: unknown) => ({ value: value as TValue }),
+      validate: (
+        value: Parameters<StandardSchemaV1["~standard"]["validate"]>[0]
+      ) => ({ value: value as TValue }),
       vendor: "test",
       version: 1,
     },
@@ -305,7 +309,7 @@ void requireValue(requireValue(single.data)[0]).key;
 const defaultSingle = useViews({ slot: "panel" });
 // @ts-expect-error slots with an omitted multiple flag have no instance key
 void requireValue(requireValue(defaultSingle.data)[0]).key;
-const requiredMetadata: Record<string, unknown> = requireValue(
+const requiredMetadata: ViewContextValues = requireValue(
   requireValue(instances.data)[0]
 ).metadata;
 // @ts-expect-error single slots have no instance metadata
@@ -319,7 +323,7 @@ void requireValue(requireValue(selectedItems.data)[0]).key;
 const selectedItem = requireValue(requireValue(selectedItems.data)[0]);
 if ("key" in selectedItem) {
   const narrowedKey: string = selectedItem.key;
-  const narrowedMetadata: Record<string, unknown> = selectedItem.metadata;
+  const narrowedMetadata: ViewContextValues = selectedItem.metadata;
   void narrowedKey;
   void narrowedMetadata;
 }
@@ -573,12 +577,15 @@ const slotName: "page" | "navbar" = Math.random() > 0.5 ? "page" : "navbar";
 <RenderSlot app={app} slot={slotName} />;
 
 // Registration accepts schema input; apps receive the validated output.
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const transformedSchema: StandardSchemaV1<
   { count: string },
   { count: number }
 > = {
   "~standard": {
-    validate: (value: unknown) => ({
+    validate: (
+      value: Parameters<StandardSchemaV1["~standard"]["validate"]>[0]
+    ) => ({
       value: { count: Number((value as { count: string }).count) },
     }),
     vendor: "test",

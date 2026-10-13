@@ -10,6 +10,10 @@ import { getAgentAuth } from "./agent-auth";
 import { createCliClient } from "./client";
 import { normalizeHostUrl } from "./utils/url";
 
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
 interface AuthOptions {
   host?: string;
   configPath?: string;
@@ -20,10 +24,7 @@ interface LoginOptions extends AuthOptions {
   timeout?: number;
 }
 
-interface NamedScope {
-  name: string;
-  value: Record<string, unknown>;
-}
+type NamedScope = z.output<typeof namedScopeSchema>;
 
 interface StoredHostAuth {
   deployToken: string;
@@ -34,18 +35,6 @@ interface AuthStore {
   hosts?: Record<string, StoredHostAuth>;
 }
 
-interface CliAuthStartResult {
-  deviceCode: string;
-  expiresAt: string | Date;
-  userCode: string;
-}
-
-type CliAuthPollResult =
-  | { status: "pending" }
-  | { status: "denied" }
-  | { status: "expired" }
-  | { deployToken: string; scope: NamedScope; status: "approved" };
-
 interface CliAuthVerifyResult {
   scope: NamedScope;
 }
@@ -55,12 +44,28 @@ const namedScopeSchema = z.object({
   value: z.record(z.string(), z.unknown()),
 });
 
+const cliAuthStartSchema = z.object({
+  deviceCode: z.string(),
+  expiresAt: z.union([z.string(), z.date()]),
+  userCode: z.string(),
+});
+const cliAuthPollSchema = z.discriminatedUnion("status", [
+  z.object({ status: z.literal("pending") }),
+  z.object({ status: z.literal("denied") }),
+  z.object({ status: z.literal("expired") }),
+  z.object({
+    deployToken: z.string(),
+    scope: namedScopeSchema,
+    status: z.literal("approved"),
+  }),
+]);
+
 const legacyFlatScopeSchema = z.record(z.string(), z.string());
 
 const storedScopeSchema = z.preprocess(
   (value) =>
     value !== null &&
-    typeof value === "object" &&
+    isObjectValue(value) &&
     !Array.isArray(value) &&
     !Object.hasOwn(value, "value") &&
     legacyFlatScopeSchema.safeParse(value).success
@@ -108,10 +113,10 @@ const sleep = (milliseconds: number): Promise<void> =>
     return pendingPromise;
   })();
 
-const throwRpcError = (result: unknown) => {
+const throwRpcError = <TResponse>(result: TResponse) => {
   if (
     result &&
-    typeof result === "object" &&
+    isObjectValue(result) &&
     "error" in result &&
     result.error !== undefined
   ) {
@@ -127,7 +132,7 @@ const readAuthStore = async (): Promise<AuthStore> => {
   } catch (error) {
     if (
       error &&
-      typeof error === "object" &&
+      isObjectValue(error) &&
       "code" in error &&
       error.code === "ENOENT"
     ) {
@@ -270,7 +275,7 @@ export const runWhoami = async (
   } catch (error) {
     if (
       error !== null &&
-      typeof error === "object" &&
+      isObjectValue(error) &&
       "code" in error &&
       error.code === "UNAUTHORIZED"
     ) {
@@ -315,9 +320,9 @@ export const runLogin = async (
   const startResult = await client.cliAuth.start({});
   throwRpcError(startResult);
 
-  const started = (
+  const started = cliAuthStartSchema.parse(
     "data" in startResult ? startResult.data : startResult
-  ) as CliAuthStartResult;
+  );
   const expiresAt = new Date(started.expiresAt);
   const timeoutAt = Date.now() + (options.timeout ?? defaultLoginTimeoutMs);
 
@@ -332,9 +337,9 @@ export const runLogin = async (
     });
     throwRpcError(pollResult);
 
-    const result = (
+    const result = cliAuthPollSchema.parse(
       "data" in pollResult ? pollResult.data : pollResult
-    ) as CliAuthPollResult;
+    );
 
     switch (result.status) {
       case "pending": {

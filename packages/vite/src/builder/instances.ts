@@ -8,6 +8,9 @@ import type { ESTree, Plugin } from "vite";
 import { createDefineViewMatcher } from "./define-view";
 import { inferFileView } from "./file-routes";
 
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
@@ -443,12 +446,13 @@ export const extractInstances = async (
         ? owner.id.name
         : "default";
     const view = property(options, "view")?.value;
-    if (view?.type !== "Literal" || typeof view.value !== "string") {
+    if (view?.type !== "Literal" || !isStringValue(view.value)) {
       fail("Instance view paths must be string literals.");
     }
     if (instances.value.type !== "ObjectExpression") {
       fail("instances must be an inline object with dataSchema and resolve.");
     }
+    // SAFETY: The AST node kind and literal value are checked before this access; the compiler's node union loses that refinement across the helper.
     const config = instances.value as ESTree.ObjectExpression;
     if (
       config.properties.some(
@@ -471,6 +475,7 @@ export const extractInstances = async (
     ) {
       fail("instances requires dataSchema and an inline resolve function.");
     }
+    // SAFETY: The AST node kind and literal value are checked before this access; the compiler's node union loses that refinement across the helper.
     const name = `i${createHash("sha256")
       .update(
         `${path.relative(root, filename).split(path.sep).join("/")}\0${viewName}\0${(view as ESTree.StringLiteral).value}`
@@ -482,6 +487,7 @@ export const extractInstances = async (
         "Instance resolvers must have distinct module-level variable names."
       );
     }
+    // SAFETY: The AST node kind and literal value are checked before this access; the compiler's node union loses that refinement across the helper.
     resolvers.push({
       call: node,
       instances,

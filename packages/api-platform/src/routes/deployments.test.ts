@@ -32,6 +32,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
 
 vi.mock("@tailorkit/kv", () => ({ getKV: () => null }));
 
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const testState = vi.hoisted(() => ({ db: undefined as unknown }));
 
 vi.mock("@tailorkit/db", () => ({
@@ -341,15 +342,26 @@ describe("platform deployment uploads", () => {
           }
         )
       ).rejects.toMatchObject({ code: "NOT_FOUND" });
-      expect(runtime.body).toEqual({
-        appId: currentApp.id,
-        checksum: logoChecksum,
-        contentLength: 11,
-        deploymentId: created.body.deployment.id,
-        objectKey: created.body.server?.file.objectKey,
-        projectId: context.project.id,
-        ...(encoding === "gzip" ? { contentEncoding: "gzip" } : {}),
-      });
+      expect(runtime.body).toEqual(
+        encoding === "gzip"
+          ? {
+              appId: currentApp.id,
+              checksum: logoChecksum,
+              contentEncoding: "gzip",
+              contentLength: 11,
+              deploymentId: created.body.deployment.id,
+              objectKey: created.body.server?.file.objectKey,
+              projectId: context.project.id,
+            }
+          : {
+              appId: currentApp.id,
+              checksum: logoChecksum,
+              contentLength: 11,
+              deploymentId: created.body.deployment.id,
+              objectKey: created.body.server?.file.objectKey,
+              projectId: context.project.id,
+            }
+      );
       if (encoding === "gzip") {
         expect(
           context.storage.createDownloadUrl

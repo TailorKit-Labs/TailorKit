@@ -30,39 +30,41 @@ const RequestOrganizationPage = () => (
               {isOrgCreationManaged ? "Manual onboarding" : "New workspace"}
             </CardTitle>
           </CardHeader>
-          <CardPanel className="flex flex-col gap-4">
-            <p className="text-muted-foreground text-sm">
-              {isOrgCreationManaged
-                ? "We're currently onboarding users manually. Contact us to create an organisation for your account."
-                : "Create an organisation to start building and managing TailorKit projects."}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {isOrgCreationManaged ? (
+          <CardPanel>
+            <div className="flex flex-col gap-4">
+              <p className="text-muted-foreground text-sm">
+                {isOrgCreationManaged
+                  ? "We're currently onboarding users manually. Contact us to create an organisation for your account."
+                  : "Create an organisation to start building and managing TailorKit projects."}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {isOrgCreationManaged ? (
+                  <Button
+                    render={
+                      <a
+                        aria-label="Contact us"
+                        href="https://cal.com/alfiejones"
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      />
+                    }
+                    size="sm"
+                  >
+                    Contact us
+                  </Button>
+                ) : (
+                  <CreateOrgDialog>
+                    <Button size="sm">Create organisation</Button>
+                  </CreateOrgDialog>
+                )}
                 <Button
-                  render={
-                    <a
-                      aria-label="Contact us"
-                      href="https://cal.com/alfiejones"
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    />
-                  }
+                  render={<Link to="/account/invites" />}
                   size="sm"
+                  variant="outline"
                 >
-                  Contact us
+                  View invites
                 </Button>
-              ) : (
-                <CreateOrgDialog>
-                  <Button size="sm">Create organisation</Button>
-                </CreateOrgDialog>
-              )}
-              <Button
-                render={<Link to="/account/invites" />}
-                size="sm"
-                variant="outline"
-              >
-                View invites
-              </Button>
+              </div>
             </div>
           </CardPanel>
         </Card>

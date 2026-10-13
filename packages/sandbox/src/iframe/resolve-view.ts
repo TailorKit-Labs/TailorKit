@@ -5,6 +5,17 @@ import type {
   ResolvedViewProps as ContextProps,
 } from "@tailorkit/core/views";
 
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
+const isFunctionValue = <TValue>(
+  value: TValue
+): value is Extract<TValue, CallableFunction> => typeof value === "function";
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 export type ResolvedViewProps =
   | (Extract<ContextProps, { status: "ready" }> & { instance?: ViewInstance })
   | (Extract<ContextProps, { status: "loading" | "error" }> & {
@@ -25,19 +36,19 @@ export type ViewRequest =
   | LayeredViewRequest
   | (ViewRequestMetadata & ResolvedViewProps & { controlled: true });
 
-export interface AppViewDefinition {
+export interface AppViewDefinition<TNode = unknown> {
   instances?: { resolver: string };
-  component: (props: ResolvedViewProps) => unknown;
+  component: (props: ResolvedViewProps) => TNode;
 }
 
-export interface AppClient {
-  slots: Record<string, Record<string, AppViewDefinition | false>>;
+export interface AppClient<TNode = unknown> {
+  slots: Record<string, Record<string, AppViewDefinition<TNode> | false>>;
   $runtime: {
     h: (
-      component: AppViewDefinition["component"],
+      component: AppViewDefinition<TNode>["component"],
       props: ResolvedViewProps
-    ) => unknown;
-    render: (node: unknown, root: Element) => void;
+    ) => TNode;
+    render: (node: TNode, root: Element) => void;
   };
 }
 
@@ -49,7 +60,7 @@ const controlledViewProps = (
   }
   if (
     request.context === null ||
-    typeof request.context !== "object" ||
+    !isObjectValue(request.context) ||
     Array.isArray(request.context)
   ) {
     return { context: undefined, status: "error", view: request.view };
@@ -69,7 +80,7 @@ export const resolveView = (client: AppClient, request: ViewRequest) => {
     return null;
   }
   const definition = views[selected];
-  if (!definition || typeof definition.component !== "function") {
+  if (!definition || !isFunctionValue(definition.component)) {
     throw new TypeError(
       `TailorKit app client view "${selected}" is missing a component.`
     );
@@ -91,11 +102,11 @@ export const resolveView = (client: AppClient, request: ViewRequest) => {
     const { instance } = request;
     if (
       !instance ||
-      typeof instance !== "object" ||
-      typeof instance.key !== "string" ||
+      !isObjectValue(instance) ||
+      !isStringValue(instance.key) ||
       !instance.key ||
       !instance.metadata ||
-      typeof instance.metadata !== "object" ||
+      !isObjectValue(instance.metadata) ||
       Array.isArray(instance.metadata)
     ) {
       throw new TypeError(`Invalid instance for view "${selected}".`);
@@ -120,12 +131,18 @@ export const renderClient = (
 export const assertAppClient: (value: unknown) => asserts value is AppClient = (
   value
 ) => {
-  const client = value as Partial<AppClient> | null | undefined;
   if (
-    !client?.slots ||
-    !client.$runtime ||
-    typeof client.$runtime.h !== "function" ||
-    typeof client.$runtime.render !== "function"
+    !value ||
+    !isObjectValue(value) ||
+    !("slots" in value) ||
+    !value.slots ||
+    !("$runtime" in value) ||
+    !value.$runtime ||
+    !isObjectValue(value.$runtime) ||
+    !("h" in value.$runtime) ||
+    !isFunctionValue(value.$runtime.h) ||
+    !("render" in value.$runtime) ||
+    !isFunctionValue(value.$runtime.render)
   ) {
     throw new TypeError(
       "TailorKit app must be built with the app builder and include slots and its bundled runtime."

@@ -18,6 +18,15 @@ import {
   SheetTitle,
 } from "#ui/sheet";
 
+declare module "react" {
+  interface CSSProperties {
+    "--sidebar-width"?: string;
+  }
+}
+
+const isStringValue = <TValue,>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 const SIDEBAR_WIDTH = "16rem";
 const SIDEBAR_WIDTH_MOBILE = "18rem";
 
@@ -107,9 +116,7 @@ export const SidebarProvider = ({
           className
         )}
         data-slot="sidebar-wrapper"
-        style={
-          { "--sidebar-width": SIDEBAR_WIDTH, ...style } as React.CSSProperties
-        }
+        style={{ "--sidebar-width": SIDEBAR_WIDTH, ...style }}
         {...props}
       >
         {children}
@@ -133,9 +140,7 @@ export const Sidebar = ({
           data-mobile="true"
           data-slot="sidebar"
           side="left"
-          style={
-            { "--sidebar-width": SIDEBAR_WIDTH_MOBILE } as React.CSSProperties
-          }
+          style={{ "--sidebar-width": SIDEBAR_WIDTH_MOBILE }}
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Sidebar</SheetTitle>
@@ -401,7 +406,7 @@ const getPanelNames = (children: React.ReactNode): string[] => {
       return;
     }
 
-    if (typeof child.props.name === "string") {
+    if (isStringValue(child.props.name)) {
       names.push(child.props.name);
     }
   });

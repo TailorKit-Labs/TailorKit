@@ -33,7 +33,9 @@ const setup = (multiple = false) => {
     id: "app",
     projectId: "project",
     views: [
-      { path: "/", slot: "page", ...(multiple ? { instances: true } : {}) },
+      multiple
+        ? { instances: true, path: "/", slot: "page" }
+        : { path: "/", slot: "page" },
     ],
   };
   return { app, client, fetch, store };
@@ -176,7 +178,9 @@ it("updates the session provider when deployment changes behind the same custom 
 it("keeps preview subscriptions across context changes and switches sessions without accepting old source", async () => {
   const { atom, onStop } = await import("nanostores");
   const { store } = setup();
+  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   const first = atom({ revision: 0, source: null as string | null });
+  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   const second = atom({ revision: 0, source: null as string | null });
   const stopped = vi.fn();
   onStop(first, stopped);

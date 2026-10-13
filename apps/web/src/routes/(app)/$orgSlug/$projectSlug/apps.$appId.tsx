@@ -127,11 +127,12 @@ const DeploymentsTable = ({
       <Table className="table-fixed" variant="card">
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow className="hover:bg-transparent" key={headerGroup.id}>
+            <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
                 <TableHead
                   key={header.id}
-                  style={{ width: `${header.column.getSize()}px` }}
+                  className="w-[var(--column-width)]"
+                  style={{ "--column-width": `${header.column.getSize()}px` }}
                 >
                   {renderSortableHeader(header)}
                 </TableHead>
@@ -165,11 +166,11 @@ const AppPage = () => {
   );
   const sourceExportMutation = useMutation({
     mutationFn: () => client.apps.exportSource(sourceExportInput),
-    onError: (error: unknown) => {
+    onError: (cause: unknown) => {
       toastManager.add({
         description:
-          error instanceof Error
-            ? error.message
+          cause instanceof Error
+            ? cause.message
             : "Unable to export app source.",
         title: "Source export failed",
         type: "error",
@@ -282,7 +283,7 @@ const AppPage = () => {
       </div>
 
       {app.deployments.length === 0 ? (
-        <Empty className="mx-auto w-full rounded-lg border">
+        <Empty className="mx-auto w-full">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <RocketIcon />

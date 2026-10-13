@@ -2,8 +2,9 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { canonicalizeScope, scopeMatches, scopeSchema } from "./scope";
 
-const parseImplementationImplementation = (value: unknown) =>
-  scopeSchema.safeParse({ name: "organization", value });
+const parseImplementationImplementation = (
+  value: Parameters<typeof scopeSchema.safeParse>[0]
+) => scopeSchema.safeParse({ name: "organization", value });
 
 describe("scope canonicalization", () => {
   it("sorts object properties recursively and preserves array order", () => {
@@ -80,10 +81,10 @@ describe("scope canonicalization", () => {
   it("rejects __proto__ keys instead of silently losing them during schema parsing", () => {
     const rootValue = JSON.parse(
       '{"__proto__":"unexpected","orgId":"org_123"}'
-    ) as unknown;
+    );
     const nestedValue = JSON.parse(
       '{"orgId":"org_123","labels":[{"__proto__":"unexpected"}]}'
-    ) as unknown;
+    );
     expect(
       scopeSchema.safeParse({ name: "organization", value: rootValue }).success
     ).toBe(false);

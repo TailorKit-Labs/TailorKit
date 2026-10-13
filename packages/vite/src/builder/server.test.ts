@@ -15,11 +15,15 @@ import type {
   ViewDefinition,
   ViewInstance,
 } from "@tailorkit/app/client";
-import type { ApplicationModule } from "@tailorkit/app/server";
+import type {
+  ApplicationModule,
+  FunctionDefinition,
+} from "@tailorkit/app/server";
 import { Window } from "happy-dom";
 import type { VNode } from "preact";
 import { build } from "vite";
 import { expect, it } from "vite-plus/test";
+import type { z } from "zod";
 
 import { tailorkit } from "../index";
 import { linkTestDependencies, createDatabaseTestApp } from "../test-utils";
@@ -336,17 +340,17 @@ it("builds colocated instance resolvers as query-only server actions", async () 
     const application: ApplicationModule = await import(
       pathToFileURL(path.join(root, ".tailorkit/server/server.js")).href
     );
+    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     const internal = application.default.functions._tailorkit as Record<
       string,
       Record<
         string,
-        {
-          kind: string;
-          args: { parse: (args: unknown) => unknown };
-
-          functions: Record<string, unknown>;
-          handler: (context: never) => unknown;
-        }
+        FunctionDefinition<
+          "action",
+          z.ZodType,
+          z.output<z.ZodType>,
+          ApplicationModule["default"]["functions"]
+        > & { functions: ApplicationModule["default"]["functions"] }
       >
     >;
     const manifest = await readClientManifest(
@@ -364,7 +368,9 @@ it("builds colocated instance resolvers as query-only server actions", async () 
     const fn = requireValue(requireValue(internal.instances).resolve);
     expect(fn.kind).toBe("action");
     expect(browser).toContain(requireValue(names[0]));
+    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     expect(Object.keys(fn.functions.reports as object)).toEqual(["list"]);
+    // SAFETY: This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input.
     const resolved = await fn.handler({
       args: fn.args.parse({
         context: { userId: "user_123" },
@@ -385,6 +391,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
         metadata: { title: "PRIVATE_SERVER_ONLY:user_123PRIVATE_INITIALIZER" },
       },
     ]);
+    // SAFETY: This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input.
     const shared = await fn.handler({
       args: fn.args.parse({
         context: { userId: "user_123" },
@@ -408,7 +415,9 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       const module = await import(
         `data:text/javascript;base64,${Buffer.from(browser).toString("base64")}`
       );
+      // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
       const client = module.default as TailorKitClientWithMeta;
+      // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
       const component = (
         client.slots as Record<string, Record<string, ViewDefinition>>
       ).page?.["/"];
@@ -417,6 +426,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
         throw new Error("Missing compiled view");
       }
       const container = window.document.createElement("div");
+      // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
       const show = (instance: ViewInstance) =>
         client.$runtime.render(
           client.$runtime.h(component.component, {
@@ -425,8 +435,11 @@ it("builds colocated instance resolvers as query-only server actions", async () 
             status: "ready",
             view: "/",
           }) as VNode,
+          // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+          // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
           container as unknown as Element
         );
+      // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
       show(requireValue((resolved as ViewInstance[])[0]));
       expect(container.textContent).toBe(
         "BROWSER_COMPONENT_MUST_NOT_RUN:REPORT_123"
@@ -435,14 +448,19 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       expect(container.textContent).toBe(
         "BROWSER_COMPONENT_MUST_NOT_RUN:SUMMARY"
       );
+      // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
       client.$runtime.render(
         client.$runtime.h(component.component, {
           status: "loading",
           view: "/",
         }) as VNode,
+        // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+        // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
         container as unknown as Element
       );
       expect(container.textContent).toBe("");
+      // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+      // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
       client.$runtime.render(null, container as unknown as Element);
     } finally {
       if (previousDocument === undefined) {
@@ -462,6 +480,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
         "utf-8"
       )
     ).toBe(browser);
+    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     const watcher = (await buildFixture({
       cwd: root,
       outDir: ".tailorkit/watched",

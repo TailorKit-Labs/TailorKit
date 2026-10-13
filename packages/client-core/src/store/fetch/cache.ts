@@ -4,6 +4,10 @@ import type { ReadableAtom, WritableAtom } from "nanostores";
 
 import { createSnapshotStore } from "../snapshot-store";
 
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
 export interface FetchCacheOptions {
   /** Milliseconds before a successful response needs refreshing. Infinity keeps it fresh. */
   staleTime?: number;
@@ -55,12 +59,16 @@ interface Entry {
 }
 
 export const serializeCacheKey = (key: readonly unknown[]): string =>
-  JSON.stringify(key, (_name, value: unknown) =>
-    value && typeof value === "object" && !Array.isArray(value)
-      ? Object.fromEntries(
-          Object.entries(value).toSorted(([a], [b]) => a.localeCompare(b))
-        )
-      : value
+  JSON.stringify(
+    key,
+    // Native JSON serialization supplies arbitrary values; this boundary only normalizes object key order.
+    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- These are serializer inputs, not unparsed domain-handler arguments.
+    (_name, value: unknown) =>
+      value && isObjectValue(value) && !Array.isArray(value)
+        ? Object.fromEntries(
+            Object.entries(value).toSorted(([a], [b]) => a.localeCompare(b))
+          )
+        : value
   );
 
 const duration = (value: number | undefined, fallback: number): number => {
@@ -116,7 +124,7 @@ export const createFetchCache = (defaults: FetchCacheOptions = {}) => {
         },
         Math.min(Math.max(0, expiresAt - Date.now()), 2_147_483_647)
       );
-      if (typeof entry.timer === "object") {
+      if (isObjectValue(entry.timer)) {
         entry.timer.unref?.();
       }
     };
@@ -162,6 +170,7 @@ export const createFetchCache = (defaults: FetchCacheOptions = {}) => {
         }
         return entry;
       };
+      // SAFETY: This entry is populated by the store's T-typed fetcher and updater; the shared key table erases that generic.
       const store = {
         fetch(settings: FetchOptions = {}) {
           const entry = getEntry();
@@ -270,6 +279,7 @@ export const createFetchCache = (defaults: FetchCacheOptions = {}) => {
           entry.controller = null;
           entry.pending = null;
           entry.invalidated = false;
+          // SAFETY: This entry is populated by the store's T-typed fetcher and updater; the shared key table erases that generic.
           entry.state.set({
             data: updater(entry.state.get().data as T | undefined),
             error: null,

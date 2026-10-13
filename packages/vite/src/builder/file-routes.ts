@@ -7,6 +7,10 @@ import type { ESTree, Plugin } from "vite";
 
 import { createDefineViewMatcher } from "./define-view";
 
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
 const clientRuntimeImport = "tailorkit:file-client-runtime";
 
 const routePath = (name: string, filename: string) => {
@@ -91,7 +95,8 @@ export const inferFileView = (
     for (const value of Object.values(node)) {
       const children = Array.isArray(value) ? value : [value];
       for (const child of children) {
-        if (child && typeof child === "object" && "type" in child) {
+        if (isObjectValue(child) && child && "type" in child) {
+          // SAFETY: These children come from the parsed ESTree AST, and only objects carrying a node type are visited.
           visit(child as ESTree.Node);
         }
       }

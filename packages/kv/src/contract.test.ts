@@ -1,6 +1,7 @@
-// oxlint-disable-next-line max-classes-per-file -- These related adapter or mock classes implement one runtime boundary.
+/* oxlint-disable max-classes-per-file -- These adapter doubles exercise the same Redis contract. */
 import { createHash } from "node:crypto";
 
+import type { Redis as UpstashRedis } from "@upstash/redis";
 /* oxlint-disable max-classes-per-file, no-useless-constructor, class-methods-use-this, require-await, typescript/no-explicit-any, typescript/no-non-null-assertion, unicorn/no-await-expression-member, import/first -- adapter mocks implement the Redis clients' asynchronous shape. */
 import { describe, expect, it, vi } from "vite-plus/test";
 
@@ -171,7 +172,7 @@ vi.mock("ioredis", () => ({
 }));
 vi.mock("@upstash/redis", () => ({
   Redis: class FakeUpstash {
-    constructor(_options: unknown) {}
+    constructor(_options: ConstructorParameters<typeof UpstashRedis>[0]) {}
     async get(key: string) {
       return read(state.upstash, key);
     }

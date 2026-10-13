@@ -17,17 +17,17 @@ export type AppTheme = (typeof themes)[number];
 export const fallbackTheme = "system" satisfies AppTheme;
 export const themeStorageKey = "theme";
 
-export const isAppTheme = (value: unknown): value is AppTheme =>
-  typeof value === "string" && themes.includes(value as AppTheme);
+export const isAppTheme = <TValue>(value: TValue): value is TValue & AppTheme =>
+  value === "system" || value === "light" || value === "dark";
 
 export const getUserTheme = (
   user: User | null | undefined
 ): AppTheme | undefined => {
-  if (!(user && typeof user === "object" && "theme" in user)) {
+  if (!user) {
     return;
   }
 
-  const { theme } = user as { theme?: unknown };
+  const { theme } = user;
   return isAppTheme(theme) ? theme : undefined;
 };
 

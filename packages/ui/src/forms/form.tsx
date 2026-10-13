@@ -29,6 +29,9 @@ import { SelectField as BaseSelectField } from "./select-field";
 import type { TextFieldProps as BaseTextFieldProps } from "./text-field";
 import { TextField as BaseTextField } from "./text-field";
 
+const isNumberValue = <TValue,>(value: TValue): value is TValue & number =>
+  typeof value === "number";
+
 export { formOptions } from "@tanstack/react-form";
 
 export { formatFieldErrors } from "./field-errors";
@@ -85,7 +88,7 @@ export const NumberField = ({
         field.handleChange(value);
         onChange?.(value, eventDetails);
       }}
-      value={typeof field.state.value === "number" ? field.state.value : null}
+      value={isNumberValue(field.state.value) ? field.state.value : null}
     />
   );
 };

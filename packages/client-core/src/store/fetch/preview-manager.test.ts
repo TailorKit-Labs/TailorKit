@@ -9,6 +9,7 @@ import type { TailorKitApp } from "../../types";
 import { createTailorKitStore } from "../store";
 import { createPreviewManager } from "./preview-manager";
 
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const state = vi.hoisted(() => ({
   batches: [] as PreviewEvent[][],
   events: [] as PreviewEvent[],

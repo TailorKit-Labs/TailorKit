@@ -54,6 +54,7 @@ for (const manifestPath of packages) {
     continue;
   }
 
+  // oxlint-disable-next-line anti-slop/no-runtime-typeof -- This JavaScript manifest parser checks that license is a nonempty string before interpreting it.
   if (typeof manifest.license !== "string" || manifest.license.length === 0) {
     errors.push(
       `${packageLabel}: missing a string license field in ${relativeToRoot(manifestPath)}`

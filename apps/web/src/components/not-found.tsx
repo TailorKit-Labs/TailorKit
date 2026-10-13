@@ -14,12 +14,7 @@ export const NotFound = () => (
   <main className="bg-background flex min-h-svh items-center justify-center px-6 py-16">
     <Empty>
       <EmptyHeader>
-        <EmptyMedia
-          variant="icon"
-          className="text-primary text-sm tracking-tight"
-        >
-          404
-        </EmptyMedia>
+        <EmptyMedia variant="icon">404</EmptyMedia>
         <EmptyTitle>Page not found</EmptyTitle>
         <EmptyDescription>
           You might not have permissions to view this page.

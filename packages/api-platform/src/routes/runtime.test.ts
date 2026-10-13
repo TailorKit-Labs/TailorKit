@@ -132,6 +132,7 @@ it("returns deployment metadata directly as the HTTP response body", async () =>
   });
   state.findFile.mockResolvedValueOnce(metadata);
   const handler = new OpenAPIHandler({ runtime: getRuntimeBundle });
+  // SAFETY: This test supplies the context members read by the handler; unrelated request context services are outside this scenario.
   const { matched, response } = await handler.handle(
     new Request("https://platform.test/api/platform/apps/app/runtime", {
       body: JSON.stringify({}),

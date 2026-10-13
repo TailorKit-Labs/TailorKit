@@ -4,8 +4,13 @@ import type {
   Identity,
   FunctionKind,
 } from "@tailorkit/app/server";
+import { z } from "zod";
 
 import { AppError } from "./errors";
+
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
 
 export type Functions = AppDefinition["functions"];
 type RegisteredFunction = Exclude<Functions[string], Functions>;
@@ -32,8 +37,8 @@ export const resolveFunction = (
   return isFunction(current) ? current : undefined;
 };
 
-const freezeIdentity = (value: unknown): void => {
-  if (!value || typeof value !== "object" || Object.isFrozen(value)) {
+const freezeIdentity = <TValue>(value: TValue): void => {
+  if (!value || !isObjectValue(value) || Object.isFrozen(value)) {
     return;
   }
   for (const child of Object.values(value)) {
@@ -64,11 +69,14 @@ export const prepareFunction = (
 };
 
 /** Validate serialization before a mutation can commit or an action can return. */
-export const functionValue = (
+const jsonResultSchema = z.json();
+export type FunctionValue = z.output<typeof jsonResultSchema>;
+export const functionValue = <TValue>(
   fn: RegisteredFunction,
-  initialValue: unknown
-): unknown => {
-  let value = initialValue;
+  initialValue: TValue
+): FunctionValue => {
+  let value: Parameters<RegisteredFunction["args"]["safeParse"]>[0] =
+    initialValue;
 
   if (fn.result) {
     const result = fn.result.safeParse(value);
@@ -78,5 +86,5 @@ export const functionValue = (
     value = result.data;
   }
   const serialized = JSON.stringify(value ?? null);
-  return JSON.parse(serialized);
+  return jsonResultSchema.parse(JSON.parse(serialized));
 };

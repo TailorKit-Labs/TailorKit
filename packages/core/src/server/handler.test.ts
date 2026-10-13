@@ -228,6 +228,7 @@ describe("createTailorKitServer", () => {
     "/api\\path",
     " /api",
   ])("rejects an ambiguous or invalid baseUrl=%s", (baseUrl) => {
+    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     expect(() =>
       createTailorKitServer({
         baseUrl: baseUrl as string,

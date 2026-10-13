@@ -189,80 +189,84 @@ const RouteComponent = () => {
                     emailForm.handleSubmit();
                   }}
                 >
-                  <CardPanel className="flex flex-col gap-4">
-                    {(socialError ||
-                      error_description ||
-                      authenticationError) && (
-                      <p className="text-destructive text-sm" role="alert">
-                        {socialError ||
-                          error_description ||
-                          authenticationError}
-                      </p>
-                    )}
-                    {(socialProvidersQuery.data?.google ||
-                      socialProvidersQuery.data?.github) && (
-                      <>
-                        <div className="flex flex-col gap-2">
-                          {socialProvidersQuery.data.github && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className="w-full"
-                              disabled={
-                                socialAuthPending && socialPending !== "github"
-                              }
-                              loading={socialPending === "github"}
-                              onClick={() => signUpWithSocial("github")}
-                            >
-                              <GitHubIcon />
-                              Continue with GitHub
-                            </Button>
-                          )}
-                          {socialProvidersQuery.data.google && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className="w-full"
-                              disabled={
-                                socialAuthPending && socialPending !== "google"
-                              }
-                              loading={socialPending === "google"}
-                              onClick={() => signUpWithSocial("google")}
-                            >
-                              <GoogleIcon className="size-4 shrink-0" />
-                              Continue with Google
-                            </Button>
-                          )}
-                        </div>
-
-                        <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-                          <span className="bg-card text-muted-foreground relative z-10 px-2 text-xs">
-                            OR
-                          </span>
-                        </div>
-                      </>
-                    )}
-
-                    <emailForm.AppField name="email">
-                      {(field) => (
-                        <field.TextField
-                          label="Email"
-                          type="email"
-                          placeholder="you@example.com"
-                          autoFocus
-                          disabled={socialAuthPending}
-                        />
+                  <CardPanel>
+                    <div className="flex flex-col gap-4">
+                      {(socialError ||
+                        error_description ||
+                        authenticationError) && (
+                        <p className="text-destructive text-sm" role="alert">
+                          {socialError ||
+                            error_description ||
+                            authenticationError}
+                        </p>
                       )}
-                    </emailForm.AppField>
+                      {(socialProvidersQuery.data?.google ||
+                        socialProvidersQuery.data?.github) && (
+                        <>
+                          <div className="flex flex-col gap-2">
+                            {socialProvidersQuery.data.github && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full"
+                                disabled={
+                                  socialAuthPending &&
+                                  socialPending !== "github"
+                                }
+                                loading={socialPending === "github"}
+                                onClick={() => signUpWithSocial("github")}
+                              >
+                                <GitHubIcon />
+                                Continue with GitHub
+                              </Button>
+                            )}
+                            {socialProvidersQuery.data.google && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full"
+                                disabled={
+                                  socialAuthPending &&
+                                  socialPending !== "google"
+                                }
+                                loading={socialPending === "google"}
+                                onClick={() => signUpWithSocial("google")}
+                              >
+                                <GoogleIcon className="size-4 shrink-0" />
+                                Continue with Google
+                              </Button>
+                            )}
+                          </div>
 
-                    <emailForm.AppForm>
-                      <emailForm.SubmitButton
-                        className="w-full"
-                        disabled={socialAuthPending}
-                      >
-                        Continue
-                      </emailForm.SubmitButton>
-                    </emailForm.AppForm>
+                          <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
+                            <span className="bg-card text-muted-foreground relative z-10 px-2 text-xs">
+                              OR
+                            </span>
+                          </div>
+                        </>
+                      )}
+
+                      <emailForm.AppField name="email">
+                        {(field) => (
+                          <field.TextField
+                            label="Email"
+                            type="email"
+                            placeholder="you@example.com"
+                            autoFocus
+                            disabled={socialAuthPending}
+                          />
+                        )}
+                      </emailForm.AppField>
+
+                      <emailForm.AppForm>
+                        <emailForm.SubmitButton
+                          className="w-full"
+                          disabled={socialAuthPending}
+                        >
+                          Continue
+                        </emailForm.SubmitButton>
+                      </emailForm.AppForm>
+                    </div>
                   </CardPanel>
                 </form>
               ) : (
@@ -273,45 +277,47 @@ const RouteComponent = () => {
                     detailsForm.handleSubmit();
                   }}
                 >
-                  <CardPanel className="flex flex-col gap-4">
-                    <button
-                      type="button"
-                      onClick={() => transition("email")}
-                      className="text-muted-foreground hover:text-foreground flex w-fit items-center gap-1.5 text-sm transition-colors"
-                    >
-                      <ArrowLeftIcon className="size-3.5" />
-                      <span>{email}</span>
-                    </button>
+                  <CardPanel>
+                    <div className="flex flex-col gap-4">
+                      <button
+                        type="button"
+                        onClick={() => transition("email")}
+                        className="text-muted-foreground hover:text-foreground flex w-fit items-center gap-1.5 text-sm transition-colors"
+                      >
+                        <ArrowLeftIcon className="size-3.5" />
+                        <span>{email}</span>
+                      </button>
 
-                    {detailsError && (
-                      <detailsForm.FormError>
-                        {detailsError}
-                      </detailsForm.FormError>
-                    )}
-
-                    <detailsForm.AppField name="name">
-                      {(field) => (
-                        <field.TextField
-                          label="Name"
-                          placeholder="Your name"
-                          autoFocus
-                        />
+                      {detailsError && (
+                        <detailsForm.FormError>
+                          {detailsError}
+                        </detailsForm.FormError>
                       )}
-                    </detailsForm.AppField>
 
-                    <detailsForm.AppField name="password">
-                      {(field) => (
-                        <field.SecretTextField
-                          description="Password must be at least 12 characters"
-                          label="Password"
-                          placeholder="••••••••"
-                        />
-                      )}
-                    </detailsForm.AppField>
+                      <detailsForm.AppField name="name">
+                        {(field) => (
+                          <field.TextField
+                            label="Name"
+                            placeholder="Your name"
+                            autoFocus
+                          />
+                        )}
+                      </detailsForm.AppField>
+
+                      <detailsForm.AppField name="password">
+                        {(field) => (
+                          <field.SecretTextField
+                            description="Password must be at least 12 characters"
+                            label="Password"
+                            placeholder="••••••••"
+                          />
+                        )}
+                      </detailsForm.AppField>
+                    </div>
                   </CardPanel>
 
                   <detailsForm.AppForm>
-                    <CardFooter className="pt-4">
+                    <CardFooter>
                       <detailsForm.SubmitButton className="w-full">
                         Create Account
                       </detailsForm.SubmitButton>

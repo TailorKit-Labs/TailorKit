@@ -1,7 +1,13 @@
 import { useId } from "react";
-import type { ButtonHTMLAttributes, CSSProperties } from "react";
+import type { ButtonHTMLAttributes } from "react";
 
 import { Button } from "./button";
+
+declare module "react" {
+  interface CSSProperties {
+    "--toggles-dot-dev--duration"?: string;
+  }
+}
 
 export interface ClassicProps extends Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
@@ -37,9 +43,7 @@ export const ThemeToggle = ({
         height="1em"
         viewBox="0 0 24 24"
         aria-hidden="true"
-        style={
-          { "--toggles-dot-dev--duration": `${duration}ms` } as CSSProperties
-        }
+        style={{ "--toggles-dot-dev--duration": `${duration}ms` }}
       >
         <defs>
           <clipPath id={clipMainId}>

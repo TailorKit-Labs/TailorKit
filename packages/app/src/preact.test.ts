@@ -21,7 +21,7 @@ let client: Client;
 const subscriptions: {
   name: string;
   input: unknown;
-  next: (value: unknown) => void;
+  next: Parameters<Client["subscribe"]>[2];
   error: (error: AppError) => void;
   stop: ReturnType<typeof vi.fn>;
 }[] = [];
@@ -35,7 +35,7 @@ const subscription = (index: number) => {
 };
 
 // The Nanostores Preact adapter batches hook updates with a zero-delay timer.
-const actWithStoreUpdates = async (operation: () => unknown) => {
+const actWithStoreUpdates = async <TResult>(operation: () => TResult) => {
   await act(async () => {
     await operation();
   });
@@ -363,6 +363,7 @@ it("ignores snapshots from a cancelled subscription when the same query is enabl
 it("captures snapshots delivered synchronously while opening a subscription", async () => {
   const stop = vi.fn();
   vi.mocked(client.subscribe).mockImplementation((_ref, _input, next) => {
+    // SAFETY: This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input.
     next("ready" as never);
     return stop;
   });
@@ -380,6 +381,7 @@ it("captures snapshots delivered synchronously while opening a subscription", as
 });
 
 it("switches query stores when the provider client changes and ignores the previous client", async () => {
+  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   const replacement: Client = {
     ...client,
     close: vi.fn(),

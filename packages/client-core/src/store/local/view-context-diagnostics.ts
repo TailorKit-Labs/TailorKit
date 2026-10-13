@@ -2,6 +2,10 @@ import type { Schema } from "@tailorkit/core/schema";
 
 import type { ViewEntry } from "./view-context";
 
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
 export interface ViewContextDiagnostic {
   message: string;
   details?: unknown;
@@ -24,7 +28,7 @@ export const validateViewContext = (
   }
   if (
     context !== undefined &&
-    (context === null || typeof context !== "object" || Array.isArray(context))
+    (context === null || !isObjectValue(context) || Array.isArray(context))
   ) {
     return {
       message: `TailorKit view "${view}" requires an object context that matches the view's schema.`,

@@ -1,4 +1,3 @@
-import { cn } from "@tailorkit/ui";
 import { Avatar, AvatarFallback, AvatarImage } from "@tailorkit/ui/avatar";
 import { AppWindowIcon } from "lucide-react";
 
@@ -21,15 +20,15 @@ export const AppLogo = ({ className, logoPaths, name }: AppLogoProps) => {
       : (logoPaths?.light ?? logoPaths?.dark);
 
   return (
-    <Avatar className={cn("bg-card rounded-lg border", className)}>
+    <Avatar className={className}>
       {logoPath ? (
         <AvatarImage
           alt={`${name} logo`}
-          className="object-contain p-1"
+          className="object-contain"
           src={logoPath}
         />
       ) : null}
-      <AvatarFallback className="text-muted-foreground rounded-lg">
+      <AvatarFallback>
         <AppWindowIcon aria-hidden="true" className="size-1/2" />
       </AvatarFallback>
     </Avatar>

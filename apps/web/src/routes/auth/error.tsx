@@ -11,15 +11,15 @@ import { Logo } from "@tailorkit/ui/logo";
 import { useSearch, createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
-const messages: Record<string, string> = {
-  no_code: "The sign-in request was cancelled or did not complete.",
-  state_mismatch: "Your sign-in session expired. Please try again.",
-  state_not_found: "Your sign-in session expired. Please try again.",
-};
+const messages = new Map<string, string>([
+  ["no_code", "The sign-in request was cancelled or did not complete."],
+  ["state_mismatch", "Your sign-in session expired. Please try again."],
+  ["state_not_found", "Your sign-in session expired. Please try again."],
+]);
 
 const AuthErrorPage = () => {
   const { error } = useSearch({ from: "/auth/error" });
-  const message = error ? messages[error] : undefined;
+  const message = error ? messages.get(error) : undefined;
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12">
@@ -37,17 +37,19 @@ const AuthErrorPage = () => {
             <CardHeader>
               <CardTitle>We couldn&apos;t complete sign in</CardTitle>
             </CardHeader>
-            <CardPanel className="flex flex-col gap-4">
-              <p className="text-muted-foreground text-sm">
-                {message ??
-                  "Something went wrong while signing you in. Please try again."}
-              </p>
-              <Button
-                className="w-full"
-                render={<a aria-label="Back to sign in" href="/login" />}
-              >
-                Back to sign in
-              </Button>
+            <CardPanel>
+              <div className="flex flex-col gap-4">
+                <p className="text-muted-foreground text-sm">
+                  {message ??
+                    "Something went wrong while signing you in. Please try again."}
+                </p>
+                <Button
+                  className="w-full"
+                  render={<a aria-label="Back to sign in" href="/login" />}
+                >
+                  Back to sign in
+                </Button>
+              </div>
             </CardPanel>
           </Card>
 

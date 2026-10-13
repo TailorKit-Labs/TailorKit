@@ -25,13 +25,14 @@ vi.mock("@tailorkit/app-agent/workflows", () => ({
 }));
 vi.mock("workflow/api", () => ({ start: vi.fn() }));
 vi.mock("@tailorkit/api-utils/dev-delay", () => ({
-  devDelayMiddleware: async ({ next }: { next: () => unknown }) => await next(),
+  devDelayMiddleware: async <TResult>({ next }: { next: () => TResult }) =>
+    await next(),
 }));
 vi.mock("@tailorkit/api-utils/rate-limiting", () => ({
   createRateLimiter: vi.fn(),
   ratelimitMiddleware:
     () =>
-    async ({ next }: { next: () => unknown }) =>
+    async <TResult>({ next }: { next: () => TResult }) =>
       await next(),
 }));
 const { handleAppAgentMcpRequest } = await import("./app-agent-mcp");
@@ -65,6 +66,7 @@ it("connects an ordinary MCP client directly to the platform with standard heade
             "https://platform.test/api/platform/app-agent/mcp"
           );
           expect(request.headers.get("authorization")).toBe("Bearer host-key");
+          // SAFETY: This test supplies the context members read by the handler; unrelated request context services are outside this scenario.
           return handleAppAgentMcpRequest(request, {
             organization: { id: "org" },
             project: { id: "project" },

@@ -3,6 +3,7 @@ import { expect, it, vi } from "vite-plus/test";
 
 import { appRuntimePublicKeys, issueAppRuntimeToken } from "./auth";
 
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const settings = vi.hoisted(() => ({
   APP_RUNTIME_PREVIOUS_PUBLIC_KEYS: undefined as string | undefined,
   APP_RUNTIME_SIGNING_KEY: "",

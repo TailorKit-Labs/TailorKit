@@ -33,19 +33,21 @@ vi.mock("@tailorkit/db", () => ({
   },
 }));
 vi.mock("@tailorkit/api-utils/dev-delay", () => ({
-  devDelayMiddleware: async ({ next }: { next: () => unknown }) => await next(),
+  devDelayMiddleware: async <TResult>({ next }: { next: () => TResult }) =>
+    await next(),
 }));
 vi.mock("@tailorkit/api-utils/rate-limiting", () => ({
   createRateLimiter: vi.fn(),
   ratelimitMiddleware:
     () =>
-    async ({ next }: { next: () => unknown }) =>
+    async <TResult>({ next }: { next: () => TResult }) =>
       await next(),
 }));
 vi.mock("@tailorkit/app-agent/workflows", () => ({ appAgent: vi.fn() }));
 vi.mock("workflow/api", () => ({ start: mocks.start }));
 
 const { appAgentRouter } = await import("./app-agent");
+// SAFETY: This test supplies the context members read by the handler; unrelated request context services are outside this scenario.
 const context = {
   organization: { id: "org" },
   project: { id: "project" },
@@ -385,6 +387,8 @@ describe("platform app chat", () => {
         {
           body: {
             ...input.body,
+            // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+            // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
             messages: [
               {
                 id: "bad",

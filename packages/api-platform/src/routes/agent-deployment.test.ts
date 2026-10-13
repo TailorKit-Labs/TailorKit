@@ -19,6 +19,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
   return value;
 };
 
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const mocks = vi.hoisted(() => ({
   apiKey: vi.fn(),
   db: undefined as unknown,
@@ -65,7 +66,11 @@ let sameScopeAppId: string;
 let otherScopeAppId: string;
 let otherProjectAppId: string;
 
-const request = (path: string, body: unknown = {}, secret = jwt) =>
+const request = <TInput>(
+  path: string,
+  body: TInput | Record<never, never> = {},
+  secret = jwt
+) =>
   new Request(`https://platform.test/api/platform${path}`, {
     body: JSON.stringify(body),
     headers: {
@@ -74,7 +79,10 @@ const request = (path: string, body: unknown = {}, secret = jwt) =>
     },
     method: "POST",
   });
-const post = async (path: string, body: unknown = {}) => {
+const post = async <TBody>(
+  path: string,
+  body: TBody | Record<never, never> = {}
+) => {
   const input = request(path, body);
   let context;
   try {

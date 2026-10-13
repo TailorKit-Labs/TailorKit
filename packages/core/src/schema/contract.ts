@@ -13,6 +13,9 @@ import type {
   ViewContextHierarchy,
 } from "./views";
 
+const isBooleanValue = <TValue>(value: TValue): value is TValue & boolean =>
+  typeof value === "boolean";
+
 export interface TailorKitContract<
   TComponents extends ComponentDefinitions = ComponentDefinitions,
   TViews extends ContextDefinitions = ContextDefinitions,
@@ -52,7 +55,7 @@ export const defineContract = <
   }
   flattenTools(definition.tools ?? {});
   for (const [name, slot] of Object.entries(definition.slots ?? {})) {
-    if (slot.multiple !== undefined && typeof slot.multiple !== "boolean") {
+    if (slot.multiple !== undefined && !isBooleanValue(slot.multiple)) {
       throw new TypeError(`Slot "${name}" multiple must be a boolean.`);
     }
     for (const view of slot.views) {
@@ -61,6 +64,7 @@ export const defineContract = <
       }
     }
   }
+  // SAFETY: Each provided definition is preserved, and omitted optional tables use the empty-table generic defaults.
   return {
     components: (definition.components ?? {}) as TComponents,
     scopes: (definition.scopes ?? {}) as TScopes,

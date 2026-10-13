@@ -25,6 +25,11 @@ import {
   scopeValueSchema,
 } from "./scope";
 
+interface AgentRunAttributes {
+  "tailorkit.projectId": string;
+  [name: string]: string;
+}
+
 const contextSchema = z.strictObject({
   hostUrl: z.url({ protocol: /^https?$/u }),
   scopes: z.record(z.string(), scopeValueSchema),
@@ -125,6 +130,12 @@ export const handleAppAgentMcpRequest = async (
         env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform"
       );
       execution.signal.throwIfAborted();
+      const attributes: AgentRunAttributes = {
+        "tailorkit.projectId": context.project.id,
+      };
+      if (input.subjectId) {
+        attributes["tailorkit.subjectId"] = input.subjectId;
+      }
       run = await start(
         appAgent,
         [
@@ -137,12 +148,7 @@ export const handleAppAgentMcpRequest = async (
           },
         ],
         {
-          attributes: {
-            "tailorkit.projectId": context.project.id,
-            ...(input.subjectId
-              ? { "tailorkit.subjectId": input.subjectId }
-              : {}),
-          },
+          attributes,
         }
       );
       const completed = run.returnValue;

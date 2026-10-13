@@ -1,18 +1,28 @@
+import { z } from "zod";
+
 import { AppError } from "../errors";
 import type { Session } from "./session";
 
-export interface ToolBridge {
-  client: (path: string, input: unknown) => Promise<unknown>;
+export interface ToolBridge<TInput = unknown, TOutput = unknown> {
+  client: (path: string, input: TInput) => Promise<TOutput>;
   session: (path: string) => Promise<Session>;
+}
+
+// These globals are the explicit ABI installed by the host and sandbox runtime.
+declare global {
+  var __tailorkitTools: ToolBridge | undefined;
+  var __tailorkitBackendSession:
+    | ((options: { refresh: boolean }) => Promise<Session>)
+    | undefined;
 }
 
 // oxlint-disable-next-line typescript/no-empty-interface, typescript/no-empty-object-type -- Generated bindings augment this public interface through declaration merging.
 export interface TailorKitServerTools {}
 
-export const executeServerTool = async (
+export const executeServerTool = async <TInput>(
   session: Session,
   path: string,
-  input: unknown,
+  input: TInput,
   request: typeof fetch = globalThis.fetch,
   signal?: AbortSignal
 ) => {
@@ -41,18 +51,18 @@ export const executeServerTool = async (
       "Tool call failed"
     );
   }
-  return ((await response.json()) as { output?: unknown }).output;
+  return z
+    .object({ output: z.unknown().optional() })
+    .parse(await response.json()).output;
 };
 
 /** Generated callers delegate only transport; host/server declarations validate both directions. */
 export const callTool = (
   kind: "client" | "server",
   path: string,
-  input?: unknown
-): Promise<unknown> => {
-  const bridge = (
-    globalThis as typeof globalThis & { __tailorkitTools?: ToolBridge }
-  ).__tailorkitTools;
+  input?: Parameters<ToolBridge["client"]>[1]
+): ReturnType<ToolBridge["client"]> => {
+  const bridge = globalThis.__tailorkitTools;
   if (!bridge) {
     return Promise.reject(
       new AppError("UNAVAILABLE", "Tool bridge unavailable")

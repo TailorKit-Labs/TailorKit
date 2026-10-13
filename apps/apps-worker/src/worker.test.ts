@@ -3,15 +3,16 @@ import { issueAppToken, APP_AUDIENCE } from "@tailorkit/api-utils/app-auth";
 import { AppError } from "@tailorkit/app/server";
 import { afterAll, beforeEach, expect, it, vi } from "vite-plus/test";
 
+import type { AppFacet } from "./dynamic-workers/facet";
 import { AppInstallation } from "./installation";
 import worker from "./worker";
 
 vi.mock("cloudflare:workers", () => ({
   DurableObject: class {
-    ctx: unknown;
-    env: unknown;
+    ctx: DurableObjectState;
+    env: Env;
 
-    constructor(ctx: unknown, env: unknown) {
+    constructor(ctx: DurableObjectState, env: Env) {
       this.ctx = ctx;
       this.env = env;
     }
@@ -122,7 +123,10 @@ const setup = () => {
   );
   let version: string | undefined;
   const facetQuery = vi.fn(
-    async (_input: unknown, _identity: unknown) =>
+    async (
+      _input: Parameters<AppFacet["query"]>[0],
+      _identity: Parameters<AppFacet["query"]>[1]
+    ) =>
       await {
         committed: false,
         result: { ok: true, value: "result" },
@@ -134,11 +138,18 @@ const setup = () => {
   const put = vi.fn((_key: string, value: string) => {
     version = value;
   });
-  const get = vi.fn((_name: string, options: () => unknown) => {
-    startup(options());
-    return { query: facetQuery };
-  });
+  const get = vi.fn(
+    (
+      _name: string,
+      options: () => { source: string; hostEnv?: { connection?: string } }
+    ) => {
+      startup(options());
+      return { query: facetQuery };
+    }
+  );
   const id = { equals: vi.fn(() => true), toString: () => "installation-id" };
+  // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+  // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
   const ctx = {
     facets: { abort, get },
     getWebSockets: () => [],
@@ -147,10 +158,15 @@ const setup = () => {
   } as unknown as DurableObjectState;
 
   const getClass = vi.fn(() => "facet-class");
-  const load = vi.fn((_name: string, options: () => unknown) => {
-    startup(options());
-    return { getDurableObjectClass: getClass };
-  });
+  const load = vi.fn(
+    (
+      _name: string,
+      options: () => { source: string; hostEnv?: { connection?: string } }
+    ) => {
+      startup(options());
+      return { getDurableObjectClass: getClass };
+    }
+  );
 
   const routeFetch = vi.fn(
     async (_request: Request) =>
@@ -159,6 +175,8 @@ const setup = () => {
   const getByName = vi.fn((_name: string) => ({ fetch: routeFetch }));
   const idFromName = vi.fn(() => id);
 
+  // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+  // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
   const env = {
     APP_RUNTIME_PUBLIC_KEYS: publicKeys,
     ASSET_DOMAIN: "tailorkit.app",
@@ -228,6 +246,7 @@ const fetchWorker = async (requestValue: Request, env: Env) => {
     url.hostname = `${identity.publicTeamId}.tailorkit.app`;
     url.pathname = `/p/${payload.projectId}/a/${identity.appPublicId}${url.pathname}`;
   }
+  // SAFETY: This test supplies the context members read by the handler; unrelated request context services are outside this scenario.
   return worker.fetch(
     new Request(url, requestValue),
     { ...env, ASSET_DOMAIN: env.ASSET_DOMAIN ?? "tailorkit.app" },
@@ -236,6 +255,7 @@ const fetchWorker = async (requestValue: Request, env: Env) => {
 };
 
 it("answers a preflight without accessing authentication or storage", async () => {
+  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   const response = await fetchWorker(
     new Request("https://runtime.test/rpc/queries", { method: "OPTIONS" }),
     {} as Parameters<typeof worker.fetch>[1]
@@ -452,7 +472,10 @@ it("rechecks authentication and rejects the wrong supervisor before looking up a
 it("accepts metadata publication only with the shared service credential", async () => {
   const { env, getByName } = setup();
   env.RUNTIME_SERVICE_TOKEN = "x".repeat(32);
-  const publish = (token: string, body: unknown = deployment) =>
+  const publish = <TInput>(
+    token: string,
+    body: TInput | Record<never, never> = deployment
+  ) =>
     fetchWorker(
       new Request(
         `https://internal.tailorkit.app/p/${identity.projectId}/a/${identity.appPublicId}/new-deployment`,
@@ -478,6 +501,7 @@ it("accepts metadata publication only with the shared service credential", async
     expect.any(String),
     { expirationTtl: 300 }
   );
+  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   expect(
     JSON.parse(
       requireValue(

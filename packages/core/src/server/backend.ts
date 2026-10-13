@@ -1,5 +1,12 @@
 import type { TailorKitScopes } from "./types";
 
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 // Keep the request/build lifecycle and its failure paths together.
 // eslint-disable-next-line complexity
 export const handleBackendSession = async (
@@ -60,9 +67,9 @@ export const handleBackendSession = async (
   }
   if (
     !input ||
-    typeof input !== "object" ||
+    !isObjectValue(input) ||
     !("appId" in input) ||
-    typeof input.appId !== "string" ||
+    !isStringValue(input.appId) ||
     !input.appId ||
     input.appId.length > 256 ||
     Object.keys(input).length !== 1

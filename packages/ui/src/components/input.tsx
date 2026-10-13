@@ -5,6 +5,13 @@ import type * as React from "react";
 
 import { cn } from "#ui";
 
+const isNumberValue = <TValue,>(value: TValue): value is TValue & number =>
+  typeof value === "number";
+
+const isFunctionValue = <TValue,>(
+  value: TValue
+): value is Extract<TValue, CallableFunction> => typeof value === "function";
+
 export { Input as InputPrimitive } from "@base-ui/react/input";
 
 export type InputProps = Omit<
@@ -51,15 +58,15 @@ export const Input = ({
         <input
           className={inputClassName}
           data-slot="input"
-          size={typeof size === "number" ? size : undefined}
-          style={typeof style === "function" ? undefined : style}
+          size={isNumberValue(size) ? size : undefined}
+          style={isFunctionValue(style) ? undefined : style}
           {...props}
         />
       ) : (
         <InputPrimitive
           className={inputClassName}
           data-slot="input"
-          size={typeof size === "number" ? size : undefined}
+          size={isNumberValue(size) ? size : undefined}
           style={style}
           {...props}
         />

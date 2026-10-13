@@ -32,8 +32,10 @@ import {
 } from "@tanstack/react-router";
 import { ChevronLeftIcon } from "lucide-react";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { z } from "zod";
 
 import { authClient } from "#lib/auth-client";
+import { optionalAuthSearchString } from "#lib/auth-search";
 import { getSameOriginPath } from "#lib/safe-return-url";
 
 const OTP_LENGTH = 6;
@@ -152,55 +154,55 @@ const RouteComponent = () => {
             <CardHeader>
               <CardTitle>Verify your email</CardTitle>
             </CardHeader>
-            <CardPanel className="flex flex-col gap-6">
-              <div className="flex flex-col items-center gap-6">
-                <Field className="items-center gap-1.5">
-                  <FieldLabel>Verification code</FieldLabel>
-                  <OTPField
-                    length={OTP_LENGTH}
-                    value={otp}
-                    onValueChange={handleOtpChange}
-                    disabled={verifying}
-                    size="lg"
-                    className="gap-2.5"
-                  >
-                    {SLOT_KEYS.map((key, index) => (
-                      <Fragment key={key}>
-                        <OTPFieldInput
-                          className="size-11 text-xl leading-11 sm:size-10 sm:text-lg sm:leading-10"
-                          aria-invalid={invalid || undefined}
-                          aria-label={`Digit ${index + 1} of ${OTP_LENGTH}`}
-                        />
-                        {index === 2 && <OTPFieldSeparator />}
-                      </Fragment>
-                    ))}
-                  </OTPField>
-                  <FieldDescription>
-                    {email
-                      ? `Sent to ${email}`
-                      : "Enter the 6-digit code sent to your email"}
-                  </FieldDescription>
-                  {invalid && (
-                    <FieldError>
-                      Invalid or expired code. Please try again.
-                    </FieldError>
-                  )}
-                  <Button
-                    variant="link"
-                    size="sm"
-                    onClick={sendOtp}
-                    disabled={sending || resendCountdown > 0}
-                    loading={sending}
-                    className="h-auto p-0 text-xs"
-                  >
-                    {resendCountdown > 0
-                      ? `Resend in ${resendCountdown}s`
-                      : "Resend code"}
-                  </Button>
-                </Field>
+            <CardPanel>
+              <div className="flex flex-col gap-6">
+                <div className="flex flex-col items-center gap-6">
+                  <Field className="items-center">
+                    <FieldLabel>Verification code</FieldLabel>
+                    <OTPField
+                      length={OTP_LENGTH}
+                      value={otp}
+                      onValueChange={handleOtpChange}
+                      disabled={verifying}
+                      size="lg"
+                    >
+                      {SLOT_KEYS.map((key, index) => (
+                        <Fragment key={key}>
+                          <OTPFieldInput
+                            aria-invalid={invalid || undefined}
+                            aria-label={`Digit ${index + 1} of ${OTP_LENGTH}`}
+                          />
+                          {index === 2 && <OTPFieldSeparator />}
+                        </Fragment>
+                      ))}
+                    </OTPField>
+                    <FieldDescription>
+                      {email
+                        ? `Sent to ${email}`
+                        : "Enter the 6-digit code sent to your email"}
+                    </FieldDescription>
+                    {invalid && (
+                      <FieldError>
+                        Invalid or expired code. Please try again.
+                      </FieldError>
+                    )}
+                    <Button
+                      variant="link"
+                      size="sm"
+                      onClick={sendOtp}
+                      disabled={sending || resendCountdown > 0}
+                      loading={sending}
+                      className="h-auto"
+                    >
+                      {resendCountdown > 0
+                        ? `Resend in ${resendCountdown}s`
+                        : "Resend code"}
+                    </Button>
+                  </Field>
+                </div>
               </div>
             </CardPanel>
-            <CardFooter className="pt-4">
+            <CardFooter>
               <Button
                 className="w-full"
                 disabled={otp.length < OTP_LENGTH || verifying}
@@ -228,8 +230,8 @@ const RouteComponent = () => {
 
 export const Route = createFileRoute("/(auth)/verify-email")({
   component: RouteComponent,
-  validateSearch: (search) => ({
-    email: search.email as string,
-    return_to: search.return_to as string | undefined,
+  validateSearch: z.object({
+    email: optionalAuthSearchString.transform((value) => value ?? ""),
+    return_to: optionalAuthSearchString,
   }),
 });

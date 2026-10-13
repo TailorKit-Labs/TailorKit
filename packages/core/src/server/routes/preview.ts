@@ -5,26 +5,31 @@ import { z } from "zod";
 
 import { getCliDeployToken, o, requireCliDeployToken } from "../procedures";
 
-export const isActivePreviewConflict = (error: unknown): boolean => {
-  if (!error || typeof error !== "object") {
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
+export const isActivePreviewConflict = (cause: unknown): boolean => {
+  if (!cause || !isObjectValue(cause)) {
     return false;
   }
 
   if (
-    "data" in error &&
-    error.data &&
-    typeof error.data === "object" &&
-    "reason" in error.data &&
-    error.data.reason === ACTIVE_PREVIEW_CONFLICT_REASON
+    "data" in cause &&
+    cause.data &&
+    isObjectValue(cause.data) &&
+    "reason" in cause.data &&
+    cause.data.reason === ACTIVE_PREVIEW_CONFLICT_REASON
   ) {
     return true;
   }
 
   // Older platform versions do not return a structured reason. Keep their message format working.
   const message =
-    "message" in error && typeof error.message === "string"
-      ? error.message
-      : "";
+    "message" in cause && isStringValue(cause.message) ? cause.message : "";
   if (
     /active preview already exists|preview is already running/iu.test(message)
   ) {
@@ -32,8 +37,8 @@ export const isActivePreviewConflict = (error: unknown): boolean => {
   }
 
   return (
-    ("error" in error && isActivePreviewConflict(error.error)) ||
-    ("cause" in error && isActivePreviewConflict(error.cause))
+    ("error" in cause && isActivePreviewConflict(cause.error)) ||
+    ("cause" in cause && isActivePreviewConflict(cause.cause))
   );
 };
 

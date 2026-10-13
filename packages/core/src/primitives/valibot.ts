@@ -1,13 +1,13 @@
 import * as v from "valibot";
 
 import type { ComponentDefinition } from "../schema/index";
-import { primitiveDefinitions, primitiveNames } from "./definition";
+import { primitiveDefinitions, mapPrimitiveDefinitions } from "./definition";
 import type { PrimitiveName, PrimitivePropDefinition } from "./definition";
 import { resolveTheme } from "./theme";
 import type { TailorKitTheme } from "./theme";
 
 type Schema = v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>;
-type Shape = Record<string, Schema>;
+type FieldValidators = Record<string, Schema>;
 type PrimitiveComponents = Record<
   PrimitiveName,
   ComponentDefinition & { children: true }
@@ -25,11 +25,11 @@ const responsive = <T extends Schema>(
   schema: T,
   theme: TailorKitTheme
 ): Schema => {
-  const shape: Shape = {};
+  const fields: FieldValidators = {};
   for (const key of Object.keys(theme.breakpoints ?? {})) {
-    shape[key] = v.optional(schema);
+    fields[key] = v.optional(schema);
   }
-  return v.union([schema, v.strictObject(shape as v.ObjectEntries)]);
+  return v.union([schema, v.strictObject(fields)]);
 };
 
 const optionalResponsive = <T extends Schema>(
@@ -50,7 +50,10 @@ const propSchema = (
     : optionalResponsive(schema, theme);
 };
 
-const primitiveShape = (name: PrimitiveName, theme: TailorKitTheme): Shape =>
+const primitiveFields = (
+  name: PrimitiveName,
+  theme: TailorKitTheme
+): FieldValidators =>
   Object.fromEntries(
     Object.entries(primitiveDefinitions[name]).map(([propName, definition]) => [
       propName,
@@ -60,15 +63,10 @@ const primitiveShape = (name: PrimitiveName, theme: TailorKitTheme): Shape =>
 
 export const primitives = (theme: TailorKitTheme = {}): PrimitiveComponents => {
   const resolvedTheme = resolveTheme(theme);
-  const components = {} as PrimitiveComponents;
-  for (const name of primitiveNames) {
-    components[name] = {
-      callbacks: {},
-      children: true,
-      fields: v.strictObject(
-        primitiveShape(name, resolvedTheme) as v.ObjectEntries
-      ) as unknown as ComponentDefinition["fields"],
-    };
-  }
+  const components = mapPrimitiveDefinitions((name) => ({
+    callbacks: {},
+    children: true as const,
+    fields: v.strictObject(primitiveFields(name, resolvedTheme)),
+  }));
   return components;
 };

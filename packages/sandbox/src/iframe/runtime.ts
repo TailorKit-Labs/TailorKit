@@ -1,9 +1,9 @@
-import type { ToolBridge, Session } from "@tailorkit/app/client";
+import * as v from "valibot";
 
 import { iframeReadyType, sandboxMessageType } from "../bridge";
 import { readElementProps } from "../host/serialize";
+import { HostToIframePayload, RemotePropsSchema } from "../protocol";
 import type {
-  HostToIframePayload,
   IframeToHostPayload,
   RemoteCallbackBinding,
   RemoteNode,
@@ -24,30 +24,18 @@ const readCallbacksImplementation = (
     return [];
   }
   try {
-    const callbacks = JSON.parse(value) as Record<
-      string,
-      Partial<RemoteCallbackBinding>
-    >;
-    if (
-      !callbacks ||
-      typeof callbacks !== "object" ||
-      Array.isArray(callbacks)
-    ) {
+    const parsed = v.safeParse(RemotePropsSchema, JSON.parse(value));
+    if (!parsed.success) {
       return [];
     }
-    return Object.entries(callbacks).flatMap(([event, config]) =>
-      config &&
-      typeof config.callback === "string" &&
-      typeof config.inputCount === "number"
-        ? [
-            {
-              callback: config.callback,
-              event,
-              inputCount: config.inputCount,
-            },
-          ]
-        : []
-    );
+    const callbackSchema = v.object({
+      callback: v.string(),
+      inputCount: v.number(),
+    });
+    return Object.entries(parsed.output).flatMap(([event, config]) => {
+      const callback = v.safeParse(callbackSchema, config);
+      return callback.success ? [{ ...callback.output, event }] : [];
+    });
   } catch {
     return [];
   }
@@ -89,19 +77,14 @@ export const startIframeRuntime = (options: {
   const backend = createIframeBackend((data) =>
     send({ data, type: "backendSessionRequest" })
   );
-  const backendGlobal = globalThis as typeof globalThis & {
-    __tailorkitTools?: ToolBridge;
-    __tailorkitBackendSession?: (options: {
-      refresh: boolean;
-    }) => Promise<Session>;
-  };
+  const backendGlobal = globalThis;
   backendGlobal.__tailorkitTools = tools.bridge;
   backendGlobal.__tailorkitBackendSession = backend.getSession;
-  const sendError = (error: unknown) =>
+  const sendError = (cause: unknown) =>
     send({
       data: {
         message:
-          error instanceof Error ? error.stack || error.message : String(error),
+          cause instanceof Error ? cause.stack || cause.message : String(cause),
       },
       type: "error",
     });
@@ -179,6 +162,8 @@ export const startIframeRuntime = (options: {
     }
     rendering = true;
     try {
+      // SAFETY: The adapter reconstructs the same runtime contract, but TypeScript cannot relate the erased generic parameters across this library boundary.
+      // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- The adapter reconstructs the same runtime contract, but TypeScript cannot relate the erased generic parameters across this library boundary.
       renderClient(client, props as unknown as ViewRequest, root);
     } finally {
       observer.takeRecords();
@@ -195,7 +180,11 @@ export const startIframeRuntime = (options: {
     ) {
       return;
     }
-    const payload = event.data.payload as HostToIframePayload;
+    const parsed = v.safeParse(HostToIframePayload, event.data.payload);
+    if (!parsed.success) {
+      return;
+    }
+    const payload = parsed.output;
     if (payload?.type === "toolResult") {
       tools.receive(payload.data);
       return;

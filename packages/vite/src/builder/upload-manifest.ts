@@ -39,13 +39,15 @@ export const createTailorKitUploadManifest = (
   logos?: TailorKitUploadManifest["assets"]["logos"],
   server = false,
   views?: TailorKitUploadManifest["views"]
-): TailorKitUploadManifest =>
-  tailorkitUploadManifestSchema.parse({
-    assets: {
-      client: "client/client.js",
-      ...(server ? { server: "server/server.js" } : {}),
-      ...(logos && Object.keys(logos).length > 0 ? { logos } : {}),
-    },
-    version: 1,
-    views,
-  });
+): TailorKitUploadManifest => {
+  const assets: TailorKitUploadManifest["assets"] = {
+    client: "client/client.js",
+  };
+  if (server) {
+    assets.server = "server/server.js";
+  }
+  if (logos && Object.keys(logos).length > 0) {
+    assets.logos = logos;
+  }
+  return tailorkitUploadManifestSchema.parse({ assets, version: 1, views });
+};

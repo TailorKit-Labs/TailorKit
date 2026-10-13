@@ -6,6 +6,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { defineHooks } from "crossws";
 import { z } from "zod";
 
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 const handler = new RPCHandler(previewWebSocketRouter);
 interface AuthorizationState {
   promise: Promise<PreviewWebSocketContext | null>;
@@ -31,7 +34,7 @@ const hooks = defineHooks({
     }
     const payload = message.rawData;
     let size = Infinity;
-    if (typeof payload === "string") {
+    if (isStringValue(payload)) {
       size = Buffer.byteLength(payload);
     } else if (payload instanceof ArrayBuffer || ArrayBuffer.isView(payload)) {
       size = payload.byteLength;

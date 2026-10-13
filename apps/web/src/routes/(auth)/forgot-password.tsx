@@ -31,6 +31,7 @@ import { Fragment, useRef, useState } from "react";
 import { z } from "zod";
 
 import { authClient } from "#lib/auth-client";
+import { optionalAuthSearchString } from "#lib/auth-search";
 
 const OTP_LENGTH = 6;
 const SLOT_KEYS = Array.from({ length: OTP_LENGTH }, (_, i) => `slot-${i}`);
@@ -213,21 +214,23 @@ const RouteComponent = () => {
             emailForm.handleSubmit();
           }}
         >
-          <CardPanel className="flex flex-col gap-4">
-            <emailForm.AppField name="email">
-              {(field) => (
-                <field.TextField
-                  label="Email"
-                  type="email"
-                  placeholder="you@example.com"
-                  autoFocus
-                />
-              )}
-            </emailForm.AppField>
+          <CardPanel>
+            <div className="flex flex-col gap-4">
+              <emailForm.AppField name="email">
+                {(field) => (
+                  <field.TextField
+                    label="Email"
+                    type="email"
+                    placeholder="you@example.com"
+                    autoFocus
+                  />
+                )}
+              </emailForm.AppField>
+            </div>
           </CardPanel>
 
           <emailForm.AppForm>
-            <CardFooter className="pt-4">
+            <CardFooter>
               <emailForm.SubmitButton className="w-full">
                 Send code
               </emailForm.SubmitButton>
@@ -240,64 +243,64 @@ const RouteComponent = () => {
     if (step === "otp") {
       return (
         <>
-          <CardPanel className="flex flex-col gap-6">
-            <div className="flex flex-col items-center gap-6">
-              <Field className="items-center gap-1.5">
-                <FieldDescription>Verification code</FieldDescription>
-                <OTPField
-                  length={OTP_LENGTH}
-                  value={otp}
-                  onValueChange={(value) => {
-                    setOtp(value);
-                    setOtpInvalid(false);
-                    if (value.length === OTP_LENGTH) {
-                      verifyOtp(value);
-                    }
-                  }}
-                  disabled={verifyingOtp}
-                  size="lg"
-                  className="gap-2.5"
-                >
-                  {SLOT_KEYS.map((key, index) => (
-                    <Fragment key={key}>
-                      <OTPFieldInput
-                        className="size-11 text-xl leading-11 sm:size-10 sm:text-lg sm:leading-10"
-                        aria-invalid={otpInvalid || undefined}
-                        aria-label={`Digit ${index + 1} of ${OTP_LENGTH}`}
-                      />
-                      {index === 2 && <OTPFieldSeparator />}
-                    </Fragment>
-                  ))}
-                </OTPField>
-                <FieldDescription>Sent to {email}</FieldDescription>
-                {otpInvalid && (
-                  <FieldError>
-                    Invalid or expired code. Please try again.
-                  </FieldError>
-                )}
-                <Button
-                  variant="link"
-                  size="sm"
-                  type="button"
-                  onClick={async () => {
-                    setResending(true);
-                    await sendOtp(email);
-                    setResending(false);
-                    setOtp("");
-                    setOtpInvalid(false);
-                  }}
-                  disabled={resending || resendCountdown > 0}
-                  loading={resending}
-                  className="h-auto p-0 text-xs"
-                >
-                  {resendCountdown > 0
-                    ? `Resend in ${resendCountdown}s`
-                    : "Resend code"}
-                </Button>
-              </Field>
+          <CardPanel>
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col items-center gap-6">
+                <Field className="items-center">
+                  <FieldDescription>Verification code</FieldDescription>
+                  <OTPField
+                    length={OTP_LENGTH}
+                    value={otp}
+                    onValueChange={(value) => {
+                      setOtp(value);
+                      setOtpInvalid(false);
+                      if (value.length === OTP_LENGTH) {
+                        verifyOtp(value);
+                      }
+                    }}
+                    disabled={verifyingOtp}
+                    size="lg"
+                  >
+                    {SLOT_KEYS.map((key, index) => (
+                      <Fragment key={key}>
+                        <OTPFieldInput
+                          aria-invalid={otpInvalid || undefined}
+                          aria-label={`Digit ${index + 1} of ${OTP_LENGTH}`}
+                        />
+                        {index === 2 && <OTPFieldSeparator />}
+                      </Fragment>
+                    ))}
+                  </OTPField>
+                  <FieldDescription>Sent to {email}</FieldDescription>
+                  {otpInvalid && (
+                    <FieldError>
+                      Invalid or expired code. Please try again.
+                    </FieldError>
+                  )}
+                  <Button
+                    variant="link"
+                    size="sm"
+                    type="button"
+                    onClick={async () => {
+                      setResending(true);
+                      await sendOtp(email);
+                      setResending(false);
+                      setOtp("");
+                      setOtpInvalid(false);
+                    }}
+                    disabled={resending || resendCountdown > 0}
+                    loading={resending}
+                    className="h-auto"
+                  >
+                    {resendCountdown > 0
+                      ? `Resend in ${resendCountdown}s`
+                      : "Resend code"}
+                  </Button>
+                </Field>
+              </div>
             </div>
           </CardPanel>
-          <CardFooter className="pt-4">
+          <CardFooter>
             <Button
               className="w-full"
               disabled={otp.length < OTP_LENGTH || verifyingOtp}
@@ -319,29 +322,31 @@ const RouteComponent = () => {
           resetForm.handleSubmit();
         }}
       >
-        <CardPanel className="flex flex-col gap-4">
-          <resetForm.AppField name="password">
-            {(field) => (
-              <field.SecretTextField
-                label="New password"
-                placeholder="••••••••"
-                autoFocus
-              />
-            )}
-          </resetForm.AppField>
+        <CardPanel>
+          <div className="flex flex-col gap-4">
+            <resetForm.AppField name="password">
+              {(field) => (
+                <field.SecretTextField
+                  label="New password"
+                  placeholder="••••••••"
+                  autoFocus
+                />
+              )}
+            </resetForm.AppField>
 
-          <resetForm.AppField name="confirmPassword">
-            {(field) => (
-              <field.SecretTextField
-                label="Confirm password"
-                placeholder="••••••••"
-              />
-            )}
-          </resetForm.AppField>
+            <resetForm.AppField name="confirmPassword">
+              {(field) => (
+                <field.SecretTextField
+                  label="Confirm password"
+                  placeholder="••••••••"
+                />
+              )}
+            </resetForm.AppField>
+          </div>
         </CardPanel>
 
         <resetForm.AppForm>
-          <CardFooter className="pt-4">
+          <CardFooter>
             <resetForm.SubmitButton className="w-full">
               Reset password
             </resetForm.SubmitButton>
@@ -401,9 +406,9 @@ const RouteComponent = () => {
 
 export const Route = createFileRoute("/(auth)/forgot-password")({
   component: RouteComponent,
-  validateSearch: (search) => ({
-    email: search.email as string | undefined,
-    return_to: search.return_to as string | undefined,
+  validateSearch: z.object({
+    email: optionalAuthSearchString,
+    return_to: optionalAuthSearchString,
   }),
 });
 

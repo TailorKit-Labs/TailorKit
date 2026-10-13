@@ -19,6 +19,8 @@ const setup = () => {
   const sockets: WebSocket[] = [];
   const operations = vi.fn();
   const cancel = vi.fn();
+  // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+  // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
   const ctx = {
     getWebSockets: () => sockets,
     storage: {
@@ -42,12 +44,15 @@ const setup = () => {
   } as unknown as DurableObjectState;
   vi.stubGlobal("WebSocket", { CLOSED: 3 });
   const socket = (id: string, expiresAt: number) => {
+    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
     const socketValue = {
       close: vi.fn(),
       deserializeAttachment: () => id,
       readyState: 2,
       send: vi.fn(),
     } as unknown as WebSocket;
+    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     records.set(`socket:${id}`, {
       identity: { expiresAt } as Identity,
       subscriptions: [],
@@ -111,6 +116,7 @@ it("rejects delivery for expired sessions and cannot recreate closed records", (
 
 it("removes abandoned durable records when an alarm wakes an installation with no sockets", async () => {
   const test = setup();
+  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   test.records.set("socket:orphan", {
     identity: { expiresAt: test.now - 1 } as Identity,
     subscriptions: [],

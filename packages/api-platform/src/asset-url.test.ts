@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { withAppAssetUrl } from "./asset-url";
 
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const env = vi.hoisted(() => ({
   ASSET_BASE_URL: undefined as string | undefined,
   ASSET_DOMAIN: "tailorkit.app",

@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import packageJson from "../../package.json" with { type: "json" };
 
 export interface TemplatePackageVersions {
@@ -100,10 +102,12 @@ const resolvePackageVersion = async ({
     if (!res.ok) {
       return fallback;
     }
-    const data = (await res.json()) as {
-      versions?: Record<string, unknown>;
-      time?: Record<string, string>;
-    };
+    const data = z
+      .object({
+        time: z.record(z.string(), z.string()).optional(),
+        versions: z.record(z.string(), z.object({}).passthrough()).optional(),
+      })
+      .parse(await res.json());
     const latest = Object.keys(data.versions ?? {})
       .map(parseStableVersion)
       .filter((v): v is SemverVersion => v !== undefined)

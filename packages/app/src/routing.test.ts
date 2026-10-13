@@ -79,12 +79,20 @@ it("keeps app and slot shells and common layouts mounted, and isolates mounted s
       if (!definition) {
         throw new Error("Missing view");
       }
+      // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
       client.$runtime.render(
-        h(definition.component as ComponentType<Record<string, unknown>>, {
-          context: { userId: "u1", workspaceId: "w1" },
-          status: "ready",
-          view,
-        }) as VNode,
+        h(
+          definition.component as ComponentType<{
+            context: { userId: string; workspaceId: string };
+            status: "ready";
+            view: string;
+          }>,
+          {
+            context: { userId: "u1", workspaceId: "w1" },
+            status: "ready",
+            view,
+          }
+        ) as VNode,
         target
       );
     });
@@ -159,6 +167,7 @@ it("matches layout prefixes at route boundaries and uses explicit view overrides
     if (!definition) {
       throw new Error("Missing view");
     }
+    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     await act(() =>
       client.$runtime.render(
         h(definition.component, {

@@ -1,4 +1,13 @@
+import { z } from "zod";
+
 import type { ToolIdentity } from "../schema/tools";
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
 
 const audience = "tailorkit-app";
 const decode = (part: string) =>
@@ -27,25 +36,29 @@ export const createToolVerifier = (options: {
           if (!response.ok) {
             throw new Error("Signing keys unavailable");
           }
-          const result = (await response.json()) as {
-            keys: (JsonWebKey & { kid: string })[];
-          };
-          if (
-            !Array.isArray(result.keys) ||
-            !result.keys.length ||
-            result.keys.length > 32 ||
-            result.keys.some(
-              (k) =>
-                k.kty !== "EC" ||
-                k.crv !== "P-256" ||
-                k.d ||
-                !k.x ||
-                !k.y ||
-                !k.kid
-            )
-          ) {
+          const parsed = z
+            .object({
+              keys: z
+                .array(
+                  z
+                    .object({
+                      crv: z.literal("P-256"),
+                      d: z.never().optional(),
+                      kid: z.string().min(1),
+                      kty: z.literal("EC"),
+                      x: z.string().min(1),
+                      y: z.string().min(1),
+                    })
+                    .passthrough()
+                )
+                .min(1)
+                .max(32),
+            })
+            .safeParse(await response.json());
+          if (!parsed.success) {
             throw new Error("Invalid signing keys");
           }
+          const result = parsed.data;
           cached = { expiresAt: Date.now() + 60_000, keys: result.keys };
         })();
       } finally {
@@ -63,6 +76,7 @@ export const createToolVerifier = (options: {
     if (parts.length !== 3) {
       throw new Error("Invalid tool credential");
     }
+    // SAFETY: Token parsing checks the three JWT segments before decoding them; their order is header, payload, and signature.
     const [headerPart, payloadPart, signaturePart] = parts as [
       string,
       string,
@@ -72,7 +86,7 @@ export const createToolVerifier = (options: {
     if (
       header.alg !== "ES256" ||
       header.typ !== "JWT" ||
-      typeof header.kid !== "string" ||
+      !isStringValue(header.kid) ||
       header.crit
     ) {
       throw new Error("Invalid tool credential");
@@ -137,7 +151,7 @@ export const createToolVerifier = (options: {
       "appPublicId",
     ]) {
       if (
-        typeof claims[name] !== "string" ||
+        !isStringValue(claims[name]) ||
         !claims[name] ||
         claims[name].length > 256
       ) {
@@ -147,14 +161,14 @@ export const createToolVerifier = (options: {
     if (
       claims.appId !== claims.installationId ||
       (claims.subjectId !== undefined &&
-        (typeof claims.subjectId !== "string" ||
+        (!isStringValue(claims.subjectId) ||
           !claims.subjectId ||
           claims.subjectId.length > 256)) ||
       !claims.scope ||
-      typeof claims.scope.name !== "string" ||
+      !isStringValue(claims.scope.name) ||
       !claims.scope.name ||
       !claims.scope.value ||
-      typeof claims.scope.value !== "object" ||
+      !isObjectValue(claims.scope.value) ||
       Array.isArray(claims.scope.value)
     ) {
       throw new Error("Invalid scope identity");

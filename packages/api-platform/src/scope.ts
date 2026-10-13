@@ -3,6 +3,19 @@ import { createHash } from "node:crypto";
 import { scopesSchema } from "@tailorkit/db/schema/scope";
 import type { JsonObject, JsonValue, Scope } from "@tailorkit/db/schema/scope";
 
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
+const isBooleanValue = <TValue>(value: TValue): value is TValue & boolean =>
+  typeof value === "boolean";
+
+const isNumberValue = <TValue>(value: TValue): value is TValue & number =>
+  typeof value === "number";
+
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
 export {
   type JsonObject,
   type JsonValue,
@@ -28,7 +41,7 @@ const maxNodes = 512;
 
 const maxSerializedBytes = 16 * 1024;
 
-const isPlainRecord = (value: unknown): value is Record<string, unknown> => {
+const isPlainRecord = (value: unknown): value is object => {
   if (
     value === null ||
     typeof value !== "object" ||
@@ -41,12 +54,12 @@ const isPlainRecord = (value: unknown): value is Record<string, unknown> => {
   return true;
 };
 
-const validateOwnDataProperties = (
-  value: object,
+const validateOwnDataProperties = <TRecord extends object>(
+  value: TRecord,
   keys: readonly PropertyKey[]
 ) => {
   for (const key of keys) {
-    if (typeof key !== "string") {
+    if (!isStringValue(key)) {
       throw new TypeError("Scope values cannot contain symbol keys.");
     }
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
@@ -60,6 +73,7 @@ const validateOwnDataProperties = (
 
 // oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
 const canonicalizeJsonValue = (
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser rejects non-JSON values, accessors, cycles and invalid scope identities before returning the canonical domain value.
   value: unknown,
   state: { active: WeakSet<object>; nodes: number },
   depth: number
@@ -69,16 +83,16 @@ const canonicalizeJsonValue = (
     throw new TypeError("Scope value cannot contain more than 512 values.");
   }
 
-  if (value === null || typeof value === "boolean") {
+  if (value === null || isBooleanValue(value)) {
     return value;
   }
-  if (typeof value === "string") {
+  if (isStringValue(value)) {
     if (value.length > maxStringLength) {
       throw new TypeError("Scope strings cannot exceed 255 characters.");
     }
     return value;
   }
-  if (typeof value === "number") {
+  if (isNumberValue(value)) {
     if (!Number.isFinite(value) || Object.is(value, -0)) {
       throw new TypeError("Scope numbers must be finite and cannot be -0.");
     }
@@ -87,7 +101,7 @@ const canonicalizeJsonValue = (
     }
     return value;
   }
-  if (typeof value !== "object") {
+  if (!isObjectValue(value)) {
     throw new TypeError("Scope values must contain only JSON values.");
   }
   if (depth > maxDepth) {
@@ -143,7 +157,7 @@ const canonicalizeJsonValue = (
     throw new TypeError("Scope objects cannot contain more than 32 entries.");
   }
   validateOwnDataProperties(value, ownKeys);
-  const keys = ownKeys as string[];
+  const keys = ownKeys.filter(isStringValue);
   for (const key of keys) {
     if (key === "__proto__" || key.length === 0 || key.length > maxKeyLength) {
       throw new TypeError("Scope object keys must contain 1–64 characters.");
@@ -165,10 +179,10 @@ const serializeJsonValue = (value: JsonValue): string => {
   if (value === null) {
     return "null";
   }
-  if (typeof value === "string") {
+  if (isStringValue(value)) {
     return JSON.stringify(value);
   }
-  if (typeof value === "number" || typeof value === "boolean") {
+  if (isNumberValue(value) || isBooleanValue(value)) {
     const serialized = JSON.stringify(value);
     if (serialized === undefined) {
       throw new TypeError("Scope value is not valid JSON.");
@@ -181,12 +195,14 @@ const serializeJsonValue = (value: JsonValue): string => {
   return `{${Object.keys(value)
     .toSorted()
     .map(
+      // SAFETY: Object.keys enumerates own entries of this canonical JsonObject, whose values cannot be undefined.
       (key) =>
         `${JSON.stringify(key)}:${serializeJsonValue(value[key] as JsonValue)}`
     )
     .join(",")}}`;
 };
 
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser rejects non-JSON values, accessors, cycles and invalid scope identities before returning the canonical domain value.
 const canonicalizeScopeValue = (value: unknown): JsonObject => {
   if (!isPlainRecord(value)) {
     throw new TypeError("Named scope value must be a plain object.");
@@ -196,7 +212,7 @@ const canonicalizeScopeValue = (value: unknown): JsonObject => {
   if (
     Array.isArray(canonicalValue) ||
     canonicalValue === null ||
-    typeof canonicalValue !== "object"
+    !isObjectValue(canonicalValue)
   ) {
     throw new TypeError("Named scope value must be a plain object.");
   }
@@ -217,13 +233,14 @@ const canonicalizeScopeValue = (value: unknown): JsonObject => {
 const serializeScope = (scope: Scope): string =>
   `{"name":${JSON.stringify(scope.name)},"value":${serializeJsonValue(scope.value)}}`;
 
-/** Validates and recursively canonicalizes a named scope before deriving its stable key. */
-export const canonicalizeScope = (
-  value: unknown
-): {
+export interface CanonicalScope {
   scope: Scope;
   scopeKey: string;
-} => {
+}
+
+/** Validates and recursively canonicalizes a named scope before deriving its stable key. */
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser rejects non-JSON values, accessors, cycles and invalid scope identities before returning the canonical domain value.
+export const canonicalizeScope = (value: unknown): CanonicalScope => {
   if (!isPlainRecord(value)) {
     throw new TypeError("Scope must be a plain object.");
   }
@@ -234,21 +251,19 @@ export const canonicalizeScope = (
       "Named scope must contain only name and value properties."
     );
   }
-  const { name } = value as Record<string, unknown>;
-  if (
-    typeof name !== "string" ||
-    !/^[A-Za-z][A-Za-z0-9_-]{0,63}$/u.test(name)
-  ) {
+  const name = Object.getOwnPropertyDescriptor(value, "name")?.value;
+  if (!isStringValue(name) || !/^[A-Za-z][A-Za-z0-9_-]{0,63}$/u.test(name)) {
     throw new TypeError(
       "Scope name must be 1–64 letters, digits, underscores, or hyphens and start with a letter."
     );
   }
   const valueScope = canonicalizeScopeValue(
-    (value as Record<string, unknown>).value
+    Object.getOwnPropertyDescriptor(value, "value")?.value
   );
-  const scope = Object.create(null) as Scope;
-  scope.name = name;
-  scope.value = valueScope;
+  const scope: Scope = Object.assign(Object.create(null), {
+    name,
+    value: valueScope,
+  });
   const serialized = serializeScope(scope);
   const scopeKey = createHash("sha256")
     .update(`scope:v2:${serialized}`)
@@ -258,7 +273,9 @@ export const canonicalizeScope = (
 };
 
 /** Canonicalizes an exact set of named identities for one multi-scope read. */
-export const canonicalizeScopes = (value: unknown) => {
+export const canonicalizeScopes = (
+  value: Parameters<typeof scopesSchema.parse>[0]
+) => {
   const parsed = scopesSchema.parse(value);
   const scopes = parsed.map((scope) => canonicalizeScope(scope));
   const seen = new Set<string>();
@@ -274,7 +291,10 @@ export const canonicalizeScopes = (value: unknown) => {
   return scopes;
 };
 
-export const scopeMatches = (left: unknown, right: unknown): boolean => {
+export const scopeMatches = (
+  left: Parameters<typeof canonicalizeScope>[0],
+  right: Parameters<typeof canonicalizeScope>[0]
+): boolean => {
   const canonicalLeft = canonicalizeScope(left);
   const canonicalRight = canonicalizeScope(right);
   return (

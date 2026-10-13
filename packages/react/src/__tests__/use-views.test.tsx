@@ -1,3 +1,4 @@
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { defineContract } from "@tailorkit/core/schema";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
@@ -14,10 +15,13 @@ const requireValue = <T,>(value: T | null | undefined): T => {
   return value;
 };
 
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const schema = {
   "~standard": {
     jsonSchema: { input: () => ({}), output: () => ({}) },
-    validate: (value: unknown) => ({ value: value as Record<never, never> }),
+    validate: (
+      value: Parameters<StandardSchemaV1["~standard"]["validate"]>[0]
+    ) => ({ value: value as Record<never, never> }),
     vendor: "test",
     version: 1 as const,
   },
@@ -360,17 +364,21 @@ it.each(["static", "disabled", "unsupported", "legacy"] as const)(
       kind === "legacy"
         ? undefined
         : [
-            {
-              instances: true as const,
-              path: "/",
-              slot: "page",
-              ...(kind === "disabled" ? { disabled: true as const } : {}),
-            },
-            {
-              path: "/customers/detail",
-              slot: "page",
-              ...(kind === "static" ? {} : { disabled: true as const }),
-            },
+            kind === "disabled"
+              ? {
+                  disabled: true as const,
+                  instances: true as const,
+                  path: "/",
+                  slot: "page",
+                }
+              : { instances: true as const, path: "/", slot: "page" },
+            kind === "static"
+              ? { path: "/customers/detail", slot: "page" }
+              : {
+                  disabled: true as const,
+                  path: "/customers/detail",
+                  slot: "page",
+                },
           ];
     apps = [{ ...app, views }];
     const { result } = renderHook(

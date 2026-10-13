@@ -51,6 +51,12 @@ type BuiltFunction<
 } & (R extends z.ZodType ? { readonly result: R } : unknown) &
   (K extends "action" ? { readonly functions: F } : unknown);
 
+interface FunctionMetadata<R, F, D extends AnyRelations> {
+  database?: DatabaseDefinition<D>;
+  result?: R;
+  functions?: F;
+}
+
 /** Immutable builders preserve the validated input and wire output types at every step. */
 class FunctionBuilder<
   K extends FunctionKind,
@@ -129,26 +135,34 @@ class FunctionBuilder<
   handler<O extends OutputInput<R>>(
     handler: (context: HandlerContext<K, A, F, D>) => HandlerOutput<K, O>
   ): BuiltFunction<K, A, R, O, F, D> {
+    const metadata: FunctionMetadata<R, F, D> = {};
+    if (this.databaseDefinition) {
+      metadata.database = this.databaseDefinition;
+    }
+    if (this.result) {
+      metadata.result = this.result;
+    }
+    if (this.kind === "action") {
+      metadata.functions = this.calls;
+    }
+    // SAFETY: The builder preserves its kind, schemas, database, and call definitions; optional metadata is added only for the matching generic branches.
     return Object.freeze({
+      ...metadata,
       args: this.args,
-
-      kind: this.kind,
-
-      ...(this.databaseDefinition ? { database: this.databaseDefinition } : {}),
-
-      ...(this.result ? { result: this.result } : {}),
-
-      ...(this.kind === "action" ? { functions: this.calls } : {}),
 
       handler: (
         context: Omit<HandlerContext<K, A, F, D>, "input"> & {
           args: z.output<A>;
         }
       ) =>
+        // SAFETY: The adapter reconstructs the same runtime contract, but TypeScript cannot relate the erased generic parameters across this library boundary.
+        // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- The adapter reconstructs the same runtime contract, but TypeScript cannot relate the erased generic parameters across this library boundary.
         handler({
           ...context,
           input: context.args,
         } as unknown as HandlerContext<K, A, F, D>),
+
+      kind: this.kind,
     }) as BuiltFunction<K, A, R, O, F, D>;
   }
 }

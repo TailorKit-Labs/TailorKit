@@ -68,10 +68,13 @@ export const createSlotStore = (
     contractIds.set(contract, contractId);
   }
   const enabled = appsStatus === "ready";
-  const settings = {
-    ...(staleTime === undefined ? {} : { staleTime }),
-    ...(gcTime === undefined ? {} : { gcTime }),
-  };
+  const settings: FetchCacheOptions = {};
+  if (staleTime !== undefined) {
+    settings.staleTime = staleTime;
+  }
+  if (gcTime !== undefined) {
+    settings.gcTime = gcTime;
+  }
   const waiting: SlotSnapshot = {
     data: undefined,
     error: appsStatus === "error" ? appsError : null,

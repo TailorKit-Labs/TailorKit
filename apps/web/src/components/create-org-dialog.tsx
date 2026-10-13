@@ -89,14 +89,16 @@ export const CreateOrgDialog = ({
   const createMutation = useMutation({
     mutationFn: (input: { name: string; slug: string }) =>
       client.user.createOrg(input),
-    onError: (err: unknown) => {
+    onError: (cause: unknown) => {
       const message =
-        err instanceof Error ? err.message : "Failed to create organisation";
+        cause instanceof Error
+          ? cause.message
+          : "Failed to create organisation";
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: (data, input) => {
       queryClient.invalidateQueries(orpc.user.getOrgs.queryOptions());
-      const orgSlug = (data as { slug?: string })?.slug ?? input.slug;
+      const orgSlug = data?.slug ?? input.slug;
       setOpen(false);
       resetForm();
       navigate({ params: { orgSlug }, to: "/$orgSlug/~/projects" });
@@ -163,48 +165,50 @@ export const CreateOrgDialog = ({
             form.handleSubmit();
           }}
         >
-          <DialogPanel className="flex flex-col gap-4">
-            <form.AppField name="name">
-              {(field) => (
-                <field.TextField
-                  autoComplete="organization"
-                  label="Name"
-                  placeholder="Acme Corp"
-                  required
-                  type="text"
-                  onChange={(e) => {
-                    if (!slugTouched.current) {
-                      setSlugSubmitError(null);
-                      form.setFieldValue("slug", toSlug(e.target.value));
-                    }
-                  }}
-                />
-              )}
-            </form.AppField>
+          <DialogPanel>
+            <div className="flex flex-col gap-4">
+              <form.AppField name="name">
+                {(field) => (
+                  <field.TextField
+                    autoComplete="organization"
+                    label="Name"
+                    placeholder="Acme Corp"
+                    required
+                    type="text"
+                    onChange={(e) => {
+                      if (!slugTouched.current) {
+                        setSlugSubmitError(null);
+                        form.setFieldValue("slug", toSlug(e.target.value));
+                      }
+                    }}
+                  />
+                )}
+              </form.AppField>
 
-            <form.AppField name="slug">
-              {(field) => (
-                <field.TextField
-                  autoComplete="off"
-                  description={`tailorkit.com/${field.state.value || "your-slug"}`}
-                  endAdornment={
-                    <OrgSlugAvailabilityIndicator
-                      availability={slugAvailability}
-                      submitError={slugSubmitError}
-                    />
-                  }
-                  label="Slug"
-                  placeholder="acme-corp"
-                  required
-                  type="text"
-                  onChange={(e) => {
-                    slugTouched.current = true;
-                    setSlugSubmitError(null);
-                    field.handleChange(toSlug(e.target.value));
-                  }}
-                />
-              )}
-            </form.AppField>
+              <form.AppField name="slug">
+                {(field) => (
+                  <field.TextField
+                    autoComplete="off"
+                    description={`tailorkit.com/${field.state.value || "your-slug"}`}
+                    endAdornment={
+                      <OrgSlugAvailabilityIndicator
+                        availability={slugAvailability}
+                        submitError={slugSubmitError}
+                      />
+                    }
+                    label="Slug"
+                    placeholder="acme-corp"
+                    required
+                    type="text"
+                    onChange={(e) => {
+                      slugTouched.current = true;
+                      setSlugSubmitError(null);
+                      field.handleChange(toSlug(e.target.value));
+                    }}
+                  />
+                )}
+              </form.AppField>
+            </div>
           </DialogPanel>
 
           <DialogFooter>

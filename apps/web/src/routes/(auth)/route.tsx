@@ -1,5 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
+import { authRedirectSearchSchema } from "#lib/auth-search";
+
 export const Route = createFileRoute("/(auth)")({
   loader: async ({ context, location }) => {
     const [session] = await Promise.all([
@@ -10,11 +12,11 @@ export const Route = createFileRoute("/(auth)")({
     ]);
 
     if (session.session || session.user) {
-      const returnTo = (location.search as { return_to?: string }).return_to;
+      const returnTo = authRedirectSearchSchema.parse(
+        location.search
+      ).return_to;
       throw redirect({ to: returnTo ?? "/" });
     }
   },
-  validateSearch: (search) => ({
-    return_to: search.return_to as string | undefined,
-  }),
+  validateSearch: authRedirectSearchSchema,
 });

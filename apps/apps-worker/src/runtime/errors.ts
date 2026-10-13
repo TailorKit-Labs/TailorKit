@@ -4,8 +4,9 @@ import { Effect } from "effect";
 
 export { AppError, appError } from "@tailorkit/app/client";
 
-export type FunctionResult =
-  | { ok: true; value: unknown }
+// RPC transports erase heterogeneous result types; callers recover them from the registered function schema.
+export type FunctionResult<TValue = unknown> =
+  | { ok: true; value: TValue }
   | {
       ok: false;
       error: { code: ReturnType<typeof appError>["code"]; message: string };
@@ -18,8 +19,8 @@ export interface InvocationResult {
   committed: boolean;
 }
 
-export const failedResult = (error: unknown): FunctionResult => {
-  const failure = appError(error);
+export const failedResult = (cause: unknown): FunctionResult => {
+  const failure = appError(cause);
   return { error: { code: failure.code, message: failure.message }, ok: false };
 };
 

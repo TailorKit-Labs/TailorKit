@@ -224,6 +224,7 @@ export class AppInstallation extends DurableObject<Env> {
 
           this.ctx.storage.kv.put("version", version);
 
+          // SAFETY: This facet factory returns AppFacet for this installation. Its methods validate input and serialize output; Cloudflare RPC declaration types erase heterogeneous schema results.
           const facet = this.ctx.facets.get("app", () => {
             const worker = this.env.LOADER.get(
               `${this.ctx.id.toString()}:${version}`,
@@ -241,7 +242,7 @@ export class AppInstallation extends DurableObject<Env> {
             return {
               class: worker.getDurableObjectClass<AppFacet>("AppFacet"),
             };
-          }) as unknown as Pick<AppFacet, "query" | "mutate" | "action">;
+          }) as Pick<AppFacet, "query" | "mutate" | "action">;
           // Runtime results have already passed JSON validation; CF's RPC types cannot describe unknown values.
           return { facet };
         },

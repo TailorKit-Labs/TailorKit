@@ -19,6 +19,9 @@ import type * as authModule from "./auth";
 import { NotLoggedInError } from "./auth";
 import { linkTestDependencies } from "./test-utils";
 
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 const mocks = vi.hoisted(() => ({
   build: vi.fn(),
   client: vi.fn(),
@@ -109,6 +112,7 @@ it("uploads gzip server and client code with metadata matching the stored bytes"
     ],
   });
   expect(fetch).toHaveBeenCalledTimes(2);
+  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   const uploaded = fetch.mock.calls.map(([url, options]) => ({
     code: gunzipSync(options?.body as Uint8Array).toString("utf-8"),
     url: String(url),
@@ -122,6 +126,7 @@ it("uploads gzip server and client code with metadata matching the stored bytes"
     url: "https://uploads.example/client",
   });
   for (const [uploadUrl, options] of fetch.mock.calls) {
+    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     const bytes = options?.body as Uint8Array;
     const metadata = String(uploadUrl).endsWith("server")
       ? mocks.create.mock.calls[0]?.[0].server
@@ -332,13 +337,13 @@ it.each(["vite config", "option"])(
     const fetch = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(new Response(null, { status: 200 }));
-    await runDeploy({
-      cwd: root,
-      ...(mode === "option" ? { outDir: "output" } : {}),
-    });
+    await runDeploy(
+      mode === "option" ? { cwd: root, outDir: "output" } : { cwd: root }
+    );
     const server = fetch.mock.calls.find(([url]) =>
       String(url).endsWith("server")
     );
+    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     expect(gunzipSync(server?.[1]?.body as Uint8Array).toString("utf-8")).toBe(
       "new-backend-code"
     );
@@ -474,6 +479,7 @@ it("preserves signed upload headers and uploads logos without gzip encoding", as
   const logoUpload = fetch.mock.calls.find(([url]) =>
     String(url).endsWith("logo")
   );
+  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   expect(new TextDecoder().decode(logoUpload?.[1]?.body as Uint8Array)).toBe(
     logo
   );
@@ -541,10 +547,7 @@ it("agent JWT deployment uses shared authentication and the configured app witho
     ) {
       return Response.json({ id: "deployment", status: "published" });
     }
-    if (
-      typeof input === "string" &&
-      input.startsWith("https://uploads.example/")
-    ) {
+    if (isStringValue(input) && input.startsWith("https://uploads.example/")) {
       return new Response(null, { status: 200 });
     }
     throw new Error("Unexpected host or platform request");

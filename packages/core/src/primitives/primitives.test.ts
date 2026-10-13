@@ -1,5 +1,4 @@
-import { ArkErrors } from "arktype";
-import * as v from "valibot";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { describe, expect, it } from "vite-plus/test";
 
 import { createTailorKitSchema } from "../schema/schema";
@@ -7,22 +6,20 @@ import { primitives as arktypePrimitives } from "./arktype";
 import { primitives as valibotPrimitives } from "./valibot";
 import { primitives as zodPrimitives } from "./zod";
 
-const isValid = (schema: unknown, value: unknown): boolean => {
-  if (schema && typeof schema === "object" && "safeParse" in schema) {
-    return (
-      schema as { safeParse: (input: unknown) => { success: boolean } }
-    ).safeParse(value).success;
+const isValid = (
+  schema: StandardSchemaV1 | undefined,
+  value: Parameters<StandardSchemaV1["~standard"]["validate"]>[0]
+): boolean => {
+  if (!schema) {
+    return false;
   }
-  if (schema && typeof schema === "object" && "~standard" in schema) {
-    return v.safeParse(
-      schema as v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>,
-      value
-    ).success;
+  const result = schema["~standard"].validate(value);
+  if (result instanceof Promise) {
+    throw new TypeError(
+      "Primitive schema tests require synchronous validators"
+    );
   }
-  if (typeof schema === "function") {
-    return !(schema(value) instanceof ArkErrors);
-  }
-  return false;
+  return !result.issues;
 };
 
 describe("primitive schema components", () => {

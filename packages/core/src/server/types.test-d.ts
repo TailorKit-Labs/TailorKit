@@ -85,13 +85,16 @@ scopedServer.handler(new Request("https://example.com/api/tailorkit/apps"), {
   }),
 });
 
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const nonJsonSchemaScope = {
   "~standard": {
     types: {} as StandardSchemaV1.Types<
       { accountId: string },
       { accountId: string }
     >,
-    validate: (value: unknown) => ({ value: value as { accountId: string } }),
+    validate: (
+      value: Parameters<StandardSchemaV1["~standard"]["validate"]>[0]
+    ) => ({ value: value as { accountId: string } }),
     vendor: "core-type-test",
     version: 1 as const,
   },

@@ -45,8 +45,8 @@ const OTP_SLOT_KEYS = Array.from(
   (_, index) => `slot-${index}`
 );
 
-const getErrorMessage = (error: unknown, fallback: string) =>
-  error instanceof Error ? error.message : fallback;
+const getErrorMessage = (cause: unknown, fallback: string) =>
+  cause instanceof Error ? cause.message : fallback;
 
 const getTotpSecret = (totpURI: string) => {
   try {
@@ -153,7 +153,7 @@ const TwoFactorSetupDialog = ({
           />
         </div>
         <div className="flex w-full items-center justify-center gap-2 py-3">
-          <code className="text-muted-foreground max-w-[calc(100%-2rem)] truncate font-mono text-sm tracking-[0.12em]">
+          <code className="text-muted-foreground max-w-[calc(100%-2rem)] truncate font-mono text-sm">
             {totpSecret}
           </code>
           <Tooltip>
@@ -194,11 +194,10 @@ const TwoFactorSetupDialog = ({
     description =
       "Enter the six-digit code from your authenticator app to finish setup.";
     panelContent = (
-      <Field className="items-center gap-5 py-4">
+      <Field className="items-center">
         <FieldLabel>Verification code</FieldLabel>
         <OTPField
           autoComplete="one-time-code"
-          className="gap-2.5"
           length={OTP_LENGTH}
           onValueChange={(value) => {
             setCode(value);
@@ -214,7 +213,6 @@ const TwoFactorSetupDialog = ({
             <Fragment key={key}>
               <OTPFieldInput
                 aria-label={`Digit ${index + 1} of ${OTP_LENGTH}`}
-                className="size-16 text-3xl leading-16 sm:size-14 sm:text-2xl sm:leading-14"
               />
               {index === 2 ? <OTPFieldSeparator /> : null}
             </Fragment>
@@ -253,12 +251,14 @@ const TwoFactorSetupDialog = ({
     panelContent = (
       <div className="flex flex-col gap-6">
         <Frame>
-          <FramePanel className="grid grid-cols-1 gap-x-12 gap-y-5 rounded-b-none border-b-0 p-6 font-mono text-base sm:grid-cols-2 sm:p-8">
-            {backupCodes.map((backupCode) => (
-              <code key={backupCode}>{backupCode}</code>
-            ))}
+          <FramePanel>
+            <div className="grid grid-cols-1 gap-x-12 gap-y-5 font-mono text-base sm:grid-cols-2">
+              {backupCodes.map((backupCode) => (
+                <code key={backupCode}>{backupCode}</code>
+              ))}
+            </div>
           </FramePanel>
-          <FrameFooter className="flex justify-end gap-1 py-2">
+          <FrameFooter className="flex justify-end">
             <Button
               onClick={() => onCopyBackupCodes()}
               size="sm"
@@ -279,7 +279,7 @@ const TwoFactorSetupDialog = ({
             </Button>
           </FrameFooter>
         </Frame>
-        <Field className="flex-row items-start gap-3">
+        <Field className="flex-row items-start">
           <Checkbox
             checked={backupCodesSaved}
             id="backup-codes-saved"
@@ -287,7 +287,7 @@ const TwoFactorSetupDialog = ({
               onBackupCodesSavedChange(checked === true)
             }
           />
-          <FieldLabel className="leading-5" htmlFor="backup-codes-saved">
+          <FieldLabel htmlFor="backup-codes-saved">
             I saved these recovery codes somewhere I can access if I lose my
             device.
           </FieldLabel>
@@ -313,13 +313,15 @@ const TwoFactorSetupDialog = ({
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        <DialogPanel className="flex flex-col gap-6">
-          {panelContent}
-          {error ? (
-            <p className="text-destructive text-sm" role="alert">
-              {error}
-            </p>
-          ) : null}
+        <DialogPanel>
+          <div className="flex flex-col gap-6">
+            {panelContent}
+            {error ? (
+              <p className="text-destructive text-sm" role="alert">
+                {error}
+              </p>
+            ) : null}
+          </div>
         </DialogPanel>
         <DialogFooter>{action}</DialogFooter>
       </DialogPopup>
@@ -715,31 +717,36 @@ export const TwoFactorSettings = ({
           <CardDescription>{description}</CardDescription>
         </CardHeader>
 
-        <CardPanel className="flex max-w-lg flex-col gap-4">
-          <TwoFactorStatus isLoading={isLoading} sessionError={sessionError} />
+        <CardPanel className="max-w-lg">
+          <div className="flex flex-col gap-4">
+            <TwoFactorStatus
+              isLoading={isLoading}
+              sessionError={sessionError}
+            />
 
-          {isReady && !hasCredentialAccount && (
-            <>
-              <p className="text-muted-foreground text-sm">
-                Create a password before enabling two-factor authentication.
-                This ensures your authenticator is an additional factor, not the
-                only credential protecting this account.
-              </p>
-              <Button
-                className="w-fit"
-                onClick={() => {
-                  window.location.assign(
-                    `/forgot-password?email=${encodeURIComponent(sessionUser?.email ?? "")}&return_to=/account/security`
-                  );
-                }}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                Create a password
-              </Button>
-            </>
-          )}
+            {isReady && !hasCredentialAccount && (
+              <>
+                <p className="text-muted-foreground text-sm">
+                  Create a password before enabling two-factor authentication.
+                  This ensures your authenticator is an additional factor, not
+                  the only credential protecting this account.
+                </p>
+                <Button
+                  className="w-fit"
+                  onClick={() => {
+                    window.location.assign(
+                      `/forgot-password?email=${encodeURIComponent(sessionUser?.email ?? "")}&return_to=/account/security`
+                    );
+                  }}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  Create a password
+                </Button>
+              </>
+            )}
+          </div>
         </CardPanel>
       </Card>
 
@@ -750,31 +757,37 @@ export const TwoFactorSettings = ({
       ) : null}
 
       {isReady && hasCredentialAccount && (
-        <CardFrameFooter className="relative flex flex-wrap justify-end gap-2">
-          {isEnabled ? (
-            <>
+        <CardFrameFooter>
+          <div className="relative flex flex-wrap justify-end gap-2">
+            {isEnabled ? (
+              <>
+                <Button
+                  onClick={() => setRegenerateOpen(true)}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  Regenerate codes
+                </Button>
+                <Button
+                  onClick={() => setDisableOpen(true)}
+                  size="sm"
+                  type="button"
+                  variant="destructive-outline"
+                >
+                  Disable 2FA
+                </Button>
+              </>
+            ) : (
               <Button
-                onClick={() => setRegenerateOpen(true)}
+                onClick={() => setSetupOpen(true)}
                 size="sm"
                 type="button"
-                variant="outline"
               >
-                Regenerate codes
+                Enable 2FA
               </Button>
-              <Button
-                onClick={() => setDisableOpen(true)}
-                size="sm"
-                type="button"
-                variant="destructive-outline"
-              >
-                Disable 2FA
-              </Button>
-            </>
-          ) : (
-            <Button onClick={() => setSetupOpen(true)} size="sm" type="button">
-              Enable 2FA
-            </Button>
-          )}
+            )}
+          </div>
         </CardFrameFooter>
       )}
 

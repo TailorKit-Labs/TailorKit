@@ -128,7 +128,7 @@ const ActiveSessionsSkeleton = () =>
       key={`session-skeleton-${index}`}
     >
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <Skeleton className="size-10 shrink-0 rounded-full" />
+        <Skeleton className="size-10 shrink-0" />
         <div className="flex flex-1 flex-col gap-2">
           <Skeleton className="h-4 w-40" />
           <Skeleton className="h-4 w-52" />
@@ -324,29 +324,31 @@ const ActiveSessions = ({
     <CardFrame className="w-full">
       <Card>
         <CardHeader>
-          <CardTitle className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <span>Active sessions</span>
-            <Button
-              disabled={
-                !sortedSessions?.some(
-                  (session) => session.token !== currentSession?.token
-                )
-              }
-              loading={revokeOtherMutation.isPending}
-              onClick={() => revokeOtherMutation.mutate()}
-              size="sm"
-              type="button"
-              variant="destructive-outline"
-            >
-              Sign out others
-            </Button>
+          <CardTitle>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <span>Active sessions</span>
+              <Button
+                disabled={
+                  !sortedSessions?.some(
+                    (session) => session.token !== currentSession?.token
+                  )
+                }
+                loading={revokeOtherMutation.isPending}
+                onClick={() => revokeOtherMutation.mutate()}
+                size="sm"
+                type="button"
+                variant="destructive-outline"
+              >
+                Sign out others
+              </Button>
+            </div>
           </CardTitle>
           <CardDescription>
             Manage the devices currently signed in to your account.
           </CardDescription>
         </CardHeader>
 
-        <CardPanel className="pt-0">
+        <CardPanel>
           <div className="divide-y overflow-hidden rounded-xl border">
             {sessionsContent}
           </div>
@@ -620,33 +622,35 @@ const SecurityPage = () => {
                   form.handleSubmit();
                 }}
               >
-                <CardPanel className="flex max-w-lg flex-col gap-4">
-                  <form.AppField name="currentPassword">
-                    {(field) => (
-                      <field.SecretTextField
-                        label="Current password"
-                        placeholder="••••••••"
-                      />
-                    )}
-                  </form.AppField>
+                <CardPanel className="max-w-lg">
+                  <div className="flex flex-col gap-4">
+                    <form.AppField name="currentPassword">
+                      {(field) => (
+                        <field.SecretTextField
+                          label="Current password"
+                          placeholder="••••••••"
+                        />
+                      )}
+                    </form.AppField>
 
-                  <form.AppField name="newPassword">
-                    {(field) => (
-                      <field.SecretTextField
-                        label="New password"
-                        placeholder="••••••••"
-                      />
-                    )}
-                  </form.AppField>
+                    <form.AppField name="newPassword">
+                      {(field) => (
+                        <field.SecretTextField
+                          label="New password"
+                          placeholder="••••••••"
+                        />
+                      )}
+                    </form.AppField>
 
-                  <form.AppField name="newPasswordRepeat">
-                    {(field) => (
-                      <field.SecretTextField
-                        label="Confirm new password"
-                        placeholder="••••••••"
-                      />
-                    )}
-                  </form.AppField>
+                    <form.AppField name="newPasswordRepeat">
+                      {(field) => (
+                        <field.SecretTextField
+                          label="Confirm new password"
+                          placeholder="••••••••"
+                        />
+                      )}
+                    </form.AppField>
+                  </div>
                 </CardPanel>
               </form>
             </Card>
@@ -783,7 +787,6 @@ const SecurityPage = () => {
                     )}
 
                     <Collapsible
-                      className="rounded-xl border"
                       onOpenChange={setPasskeysOpen}
                       open={passkeysOpen}
                     >
@@ -795,7 +798,7 @@ const SecurityPage = () => {
                           <p className="text-sm font-medium">Passkeys</p>
                           {passkeys.length ? (
                             <CollapsibleTrigger
-                              className="text-muted-foreground justify-start gap-1.5 px-0 py-0 font-normal hover:bg-transparent data-pressed:bg-transparent data-panel-open:[&_svg]:rotate-180"
+                              className="justify-start data-panel-open:[&_svg]:rotate-180"
                               render={<Button variant="ghost" />}
                             >
                               {passkeys.length} passkey

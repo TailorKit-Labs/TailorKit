@@ -8,11 +8,61 @@ import { previewMetadataSchema } from "@tailorkit/client-platform/preview";
 import type {
   TailorKitContract,
   ToolImplementations,
+  ContractTools,
 } from "@tailorkit/core/schema";
 import { flattenTools, validateToolValue } from "@tailorkit/core/schema";
+import type { ViewContextValues } from "@tailorkit/core/views";
+import { z } from "zod";
 
 import type { TailorKitApp } from "../types";
 import { toBaseUrl } from "./url";
+
+type ClientToolTree = ToolImplementations<ContractTools, "client">;
+const isToolHandler = (
+  value: ClientToolTree[string]
+): value is Exclude<ClientToolTree[string], ClientToolTree> =>
+  typeof value === "function";
+
+const appListSchema = z.array(
+  z
+    .object({
+      clientPath: z.string().optional(),
+      currentDeployment: z
+        .object({ id: z.string() })
+        .passthrough()
+        .nullable()
+        .optional(),
+      description: z.string().nullable().optional(),
+      id: z.string(),
+      logoPaths: z
+        .object({ dark: z.string().optional(), light: z.string().optional() })
+        .optional(),
+      name: z.string().optional(),
+      preview: previewMetadataSchema.optional(),
+      projectId: z.string().optional(),
+      scope: z.object({ name: z.string() }).passthrough().optional(),
+      views: z
+        .array(
+          z
+            .object({
+              disabled: z.literal(true).optional(),
+              instances: z.literal(true).optional(),
+              path: z.string(),
+              slot: z.string(),
+            })
+            .passthrough()
+        )
+        .optional(),
+    })
+    .passthrough()
+);
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
+const isFunctionValue = <TValue>(
+  value: TValue
+): value is Extract<TValue, CallableFunction> => typeof value === "function";
 
 const require = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -24,7 +74,7 @@ const require = <T>(value: T | null | undefined): T => {
 export interface SlotInstancesInput {
   slot: string;
   path: string;
-  context: Record<string, unknown>;
+  context: ViewContextValues;
 }
 
 const resolveInstances = reference<
@@ -121,8 +171,8 @@ export const createEndpointClient = (options: {
         throw new Error("Tool identity changed");
       }
       if (
-        typeof result.token !== "string" ||
-        typeof result.toolUrl !== "string" ||
+        !isStringValue(result.token) ||
+        !isStringValue(result.toolUrl) ||
         !Number.isFinite(result.expiresAt) ||
         result.expiresAt <= Date.now() ||
         result.identity?.installationId !== app.id
@@ -138,29 +188,31 @@ export const createEndpointClient = (options: {
         if (leaf?.kind !== "client") {
           throw new Error("Not a client tool");
         }
-        let implementation: unknown = options.tools;
+        let implementation: ClientToolTree[string] | undefined = options.tools;
         for (const part of path.split(".")) {
           if (
             !implementation ||
-            typeof implementation !== "object" ||
+            isToolHandler(implementation) ||
             !Object.hasOwn(implementation, part)
           ) {
             throw new Error("Missing client tool");
           }
-          implementation = (implementation as Record<string, unknown>)[part];
+          implementation = implementation[part];
         }
-        if (typeof implementation !== "function") {
+        if (!isFunctionValue(implementation)) {
           throw new TypeError("Missing client tool");
         }
         const value = await validateToolValue(leaf.definition.input, input);
         const credential = await session(path);
+        // SAFETY: The registered client path owns the schema that validated this input; its specific parameter type is erased by the shared tree.
+        const toolInput = value as never;
         const output = await implementation({
           context: Object.freeze({
             identity: credential.identity,
             requestId: crypto.randomUUID(),
             scope: credential.identity.scope,
           }),
-          input: value,
+          input: toolInput,
         });
         const result = await validateToolValue(leaf.definition.output, output);
         if (admitted !== generation) {
@@ -189,7 +241,7 @@ export const createEndpointClient = (options: {
           `Unable to fetch TailorKit apps from ${baseUrl.toString()}.`
         );
       }
-      return (await response.json()) as TailorKitApp[];
+      return appListSchema.parse(await response.json());
     },
     baseUrl,
     clearSessions,

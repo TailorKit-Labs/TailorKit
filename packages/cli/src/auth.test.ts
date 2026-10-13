@@ -53,7 +53,10 @@ const loadAuthModule = (homeDirectory: string) => {
 const authStorePath = (homeDirectory: string) =>
   path.join(homeDirectory, ".tailorkit", "auth.json");
 
-const writeAuthStoreFixture = async (homeDirectory: string, value: unknown) => {
+const writeAuthStoreFixture = async <TInput>(
+  homeDirectory: string,
+  value: TInput
+) => {
   const filePath = authStorePath(homeDirectory);
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, JSON.stringify(value));
@@ -255,6 +258,8 @@ describe("auth store", () => {
       status: "approved",
     });
     const verifyToken = vi.fn().mockResolvedValue({ scope });
+    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
     vi.mocked(createTailorKitClient).mockReturnValue({
       cliAuth: { poll, start, verifyToken },
     } as unknown as ReturnType<typeof createTailorKitClient>);
@@ -304,6 +309,8 @@ describe("auth store", () => {
       filepath: path.join(homeDirectory, "tailorkit.config.ts"),
       root: homeDirectory,
     });
+    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
     vi.mocked(createTailorKitClient).mockReturnValue({
       cliAuth: {
         verifyToken: vi.fn().mockResolvedValue({
@@ -365,6 +372,8 @@ describe("auth store", () => {
     } else {
       verifyToken.mockResolvedValue({ error });
     }
+    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
     vi.mocked(createTailorKitClient).mockReturnValue({
       cliAuth: { verifyToken },
     } as unknown as ReturnType<typeof createTailorKitClient>);
@@ -387,6 +396,8 @@ describe("auth store", () => {
       filepath: path.join(homeDirectory, "tailorkit.config.ts"),
       root: homeDirectory,
     });
+    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
     vi.mocked(createTailorKitClient).mockReturnValue({
       cliAuth: {
         verifyToken: vi.fn().mockResolvedValue({
@@ -420,6 +431,8 @@ describe("auth store", () => {
       filepath: path.join(homeDirectory, "tailorkit.config.ts"),
       root: homeDirectory,
     });
+    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
     vi.mocked(createTailorKitClient).mockReturnValue({
       cliAuth: {
         verifyToken: vi
@@ -467,6 +480,7 @@ describe("auth store", () => {
     const fetch = vi
       .spyOn(globalThis, "fetch")
       .mockImplementation(async (input) => {
+        // SAFETY: The exercised fetch call constructs this Request; the test inspects the captured request after asserting the call occurred.
         const request = input as Request;
         expect(request.url).toBe(
           "https://platform.test/api/platform/cli-auth/verify-token"

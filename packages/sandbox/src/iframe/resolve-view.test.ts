@@ -19,7 +19,10 @@ const viewClient = () => {
   return {
     client: {
       $runtime: {
-        h: (component: unknown, props: unknown) => ({ component, props }),
+        h: <TComponent, TProps>(component: TComponent, props: TProps) => ({
+          component,
+          props,
+        }),
         render,
       },
       slots: {
@@ -286,6 +289,8 @@ describe("controlled slot rendering", () => {
     (context) => {
       const { client } = viewClient();
       expect(
+        // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+        // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
         resolveView(client, { ...request, context } as unknown as ViewRequest)
           ?.props
       ).toEqual({
@@ -345,6 +350,8 @@ describe("instance rendering", () => {
         view: "/users/detail",
       });
       expect(
+        // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+        // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
         resolveView(client(), {
           ...request,
           context: undefined,
@@ -370,11 +377,12 @@ describe("instance rendering", () => {
     { ...instance, metadata: [] },
     { ...instance, metadata: null },
   ])("rejects malformed instances %j", (invalid) => {
+    // SAFETY: The exercised fetch call constructs this Request; the test inspects the captured request after asserting the call occurred.
     expect(() =>
       resolveView(client(), {
         ...request,
         instance: invalid,
-      } as unknown as ViewRequest)
+      } as ViewRequest)
     ).toThrow("Invalid instance");
   });
 });

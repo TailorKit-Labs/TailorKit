@@ -44,22 +44,16 @@ const InvitesPage = () => {
   const acceptMutation = useMutation({
     mutationFn: (invitationId: string) =>
       client.user.acceptInvitation({ invitationId }),
-    onError: (err: unknown) => {
+    onError: (cause: unknown) => {
       const message =
-        err instanceof Error ? err.message : "Failed to accept invitation";
+        cause instanceof Error ? cause.message : "Failed to accept invitation";
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries(orpc.user.getOrgs.queryOptions());
       queryClient.invalidateQueries(
         orpc.user.getPendingInvitations.queryOptions()
       );
-      const slug = (data as { organization?: { slug?: string } })?.organization
-        ?.slug;
-      if (slug) {
-        navigate({ params: { orgSlug: slug }, to: "/$orgSlug/~/projects" });
-        return;
-      }
       navigate({ to: "/account/organizations" });
     },
   });
@@ -67,9 +61,9 @@ const InvitesPage = () => {
   const rejectMutation = useMutation({
     mutationFn: (invitationId: string) =>
       client.user.rejectInvitation({ invitationId }),
-    onError: (err: unknown) => {
+    onError: (cause: unknown) => {
       const message =
-        err instanceof Error ? err.message : "Failed to decline invitation";
+        cause instanceof Error ? cause.message : "Failed to decline invitation";
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: () => {
@@ -110,7 +104,7 @@ const InvitesPage = () => {
               <Card key={invitation.id}>
                 <CardHeader>
                   <div className="min-w-0">
-                    <CardTitle className="truncate text-base">
+                    <CardTitle>
                       {invitation.organization?.name ?? "Organisation invite"}
                     </CardTitle>
                     <CardDescription>
@@ -121,26 +115,28 @@ const InvitesPage = () => {
                     <Badge variant="info">Pending</Badge>
                   </CardAction>
                 </CardHeader>
-                <CardPanel className="flex flex-col gap-4 pt-0 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-muted-foreground text-sm">
-                    Expires {formatDate(invitation.expiresAt)}
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      disabled={isMutating}
-                      size="sm"
-                      variant="outline"
-                      onClick={() => rejectMutation.mutate(invitation.id)}
-                    >
-                      Decline
-                    </Button>
-                    <Button
-                      disabled={isMutating}
-                      size="sm"
-                      onClick={() => acceptMutation.mutate(invitation.id)}
-                    >
-                      Accept
-                    </Button>
+                <CardPanel>
+                  <div className="flex flex-col gap-4 pt-0 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-muted-foreground text-sm">
+                      Expires {formatDate(invitation.expiresAt)}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        disabled={isMutating}
+                        size="sm"
+                        variant="outline"
+                        onClick={() => rejectMutation.mutate(invitation.id)}
+                      >
+                        Decline
+                      </Button>
+                      <Button
+                        disabled={isMutating}
+                        size="sm"
+                        onClick={() => acceptMutation.mutate(invitation.id)}
+                      >
+                        Accept
+                      </Button>
+                    </div>
                   </div>
                 </CardPanel>
               </Card>

@@ -50,11 +50,9 @@ export const SidebarUserMenu = () => {
         className="w-full"
         render={<Button variant="ghost" />}
       >
-        <Avatar className="size-6 rounded-lg">
+        <Avatar className="size-6">
           {image && <AvatarImage alt={name} src={image} />}
-          <AvatarFallback className="rounded-lg text-xs">
-            {initials}
-          </AvatarFallback>
+          <AvatarFallback>{initials}</AvatarFallback>
         </Avatar>
         <div className="flex min-w-0 flex-1 flex-col text-left text-sm leading-tight">
           <span className="truncate font-medium">{name}</span>
@@ -64,13 +62,11 @@ export const SidebarUserMenu = () => {
 
       <DropdownMenuContent align="end" className="w-56" side="top">
         <DropdownMenuGroup>
-          <DropdownMenuLabel className="p-0 font-normal">
+          <DropdownMenuLabel>
             <div className="flex items-center gap-2 px-1 py-1.5">
-              <Avatar className="size-6 rounded-lg">
+              <Avatar className="size-6">
                 {image && <AvatarImage alt={name} src={image} />}
-                <AvatarFallback className="rounded-lg text-xs">
-                  {initials}
-                </AvatarFallback>
+                <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
               <div className="flex min-w-0 flex-1 flex-col text-sm leading-tight">
                 <span className="truncate font-medium">{name}</span>
@@ -115,10 +111,7 @@ export const SidebarUserMenu = () => {
           />
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          closeOnClick={false}
-          className="p-0 data-highlighted:bg-transparent"
-        >
+        <DropdownMenuItem closeOnClick={false}>
           <div className="flex w-full items-center justify-between gap-3">
             <p className="px-2 text-sm">Theme</p>
             <ToggleGroup
@@ -137,6 +130,7 @@ export const SidebarUserMenu = () => {
                 void (async () => {
                   try {
                     return await (async () => {
+                      // SAFETY: The server declares theme as an additional user field and isAppTheme admits only its supported values; the client update overload omits additional fields.
                       const result = await authClient.updateUser({
                         theme: nextTheme,
                       } as Parameters<typeof authClient.updateUser>[0]);

@@ -28,6 +28,7 @@ const key = `teams/abc123def45678/projects/${projectId}/apps/${appId}/deployment
 const bundle = "export default 'tenant bundle';";
 const get = vi.fn();
 const head = vi.fn();
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const match = vi.fn((_request: Request) =>
   Promise.resolve(undefined as Response | undefined)
 );
@@ -35,12 +36,17 @@ const put = vi.fn((_request: Request, _response: Response) =>
   Promise.resolve()
 );
 const waitUntil = vi.fn();
+// SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+// oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 const env = {
   ASSET_DOMAIN: "tailorkit.app",
   BUNDLES: { get, head },
 } as unknown as Env;
+// SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+// oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 const ctx = { waitUntil } as unknown as ExecutionContext;
 
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const fetchAsset = (request: Request) =>
   worker.fetch(request as Parameters<typeof worker.fetch>[0], env, ctx);
 

@@ -42,6 +42,7 @@ const loadAsset = (
 ) =>
   Effect.gen(function* loadAssetValue() {
     // Node/DOM ambient types omit Cloudflare's default edge cache.
+    // SAFETY: Cloudflare Workers provides caches.default; the standard DOM CacheStorage declaration omits this Workers-only cache.
     const edgeCache = caches as CacheStorage & { readonly default: Cache };
     // Cache the stored representation, then negotiate for each downstream request.
     const cacheKey = new Request(request.url, {

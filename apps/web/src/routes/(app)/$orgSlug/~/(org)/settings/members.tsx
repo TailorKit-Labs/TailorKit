@@ -1,4 +1,8 @@
-import { Input } from "@tailorkit/ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@tailorkit/ui/input-group";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@tailorkit/ui/tabs";
 import { toastManager } from "@tailorkit/ui/toast";
 import {
@@ -10,6 +14,7 @@ import {
 import { useParams, createFileRoute } from "@tanstack/react-router";
 import { SearchIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { z } from "zod";
 
 import { InvitationsTable } from "#components/members/invitations-table";
 import type { InvitationRow } from "#components/members/invitations-table";
@@ -42,9 +47,9 @@ const OrgSettingsMembers = () => {
   const removeMutation = useMutation({
     mutationFn: (memberId: string) =>
       client.org.removeMember({ memberId, orgSlug }),
-    onError: (err: unknown) => {
+    onError: (cause: unknown) => {
       const message =
-        err instanceof Error ? err.message : "Failed to remove member";
+        cause instanceof Error ? cause.message : "Failed to remove member";
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: () => {
@@ -60,11 +65,11 @@ const OrgSettingsMembers = () => {
       client.org.inviteMember({
         email,
         orgSlug,
-        role: role as "member" | "admin",
+        role: z.enum(["member", "admin"]).parse(role),
       }),
-    onError: (err: unknown) => {
+    onError: (cause: unknown) => {
       const message =
-        err instanceof Error ? err.message : "Failed to resend invitation";
+        cause instanceof Error ? cause.message : "Failed to resend invitation";
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: () => {
@@ -75,9 +80,9 @@ const OrgSettingsMembers = () => {
   const revokeMutation = useMutation({
     mutationFn: (invitationId: string) =>
       client.org.revokeInvitation({ invitationId, orgSlug }),
-    onError: (err: unknown) => {
+    onError: (cause: unknown) => {
       const message =
-        err instanceof Error ? err.message : "Failed to revoke invitation";
+        cause instanceof Error ? cause.message : "Failed to revoke invitation";
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: () => {
@@ -161,14 +166,17 @@ const OrgSettingsMembers = () => {
           </TabsList>
 
           <div className="relative w-64 max-w-full">
-            <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 z-10 size-4 -translate-y-1/2" />
-            <Input
-              className="bg-popover [&_[data-slot=input]]:pl-8"
-              placeholder="Search"
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
+            <InputGroup>
+              <InputGroupInput
+                placeholder="Search"
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+              <InputGroupAddon>
+                <SearchIcon />
+              </InputGroupAddon>
+            </InputGroup>
           </div>
         </div>
 

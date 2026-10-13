@@ -59,6 +59,7 @@ it("uses existing platform deployment endpoints and scope from the agent JWT", a
     deploymentId: "deployment-one",
     rollout: true,
   });
+  // SAFETY: The exercised fetch call constructs this Request; the test inspects the captured request after asserting the call occurred.
   const requests = fetch.mock.calls.map(([input]) => input as Request);
   expect(requests.map((request) => request.url)).toEqual([
     "https://platform.test/api/platform/deployments",
@@ -71,6 +72,7 @@ it("uses existing platform deployment endpoints and scope from the agent JWT", a
     expect(await request.json()).toMatchObject({ scope });
   }
   await client.apps.create({ description: null, name: "App" });
+  // SAFETY: The exercised fetch call constructs this Request; the test inspects the captured request after asserting the call occurred.
   expect((requireValue(fetch.mock.lastCall)[0] as Request).url).toBe(
     "https://platform.test/api/platform/apps"
   );
@@ -150,6 +152,7 @@ it("routes every authenticated CLI surface through existing platform endpoints f
     .spyOn(globalThis, "fetch")
     // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
     .mockImplementation(async (input) => {
+      // SAFETY: The exercised fetch call constructs this Request; the test inspects the captured request after asserting the call occurred.
       const request = input as Request;
       expect(request.headers.get("authorization")).toBe(`Bearer ${jwt}`);
       expect(request.redirect).toBe("error");
@@ -185,6 +188,7 @@ it("routes every authenticated CLI surface through existing platform endpoints f
     { messageId: "one", type: "start" },
     { type: "finish" },
   ]);
+  // SAFETY: The exercised fetch call constructs this Request; the test inspects the captured request after asserting the call occurred.
   expect(fetch.mock.calls.map(([input]) => (input as Request).url)).toEqual([
     "https://platform.test/api/platform/cli-auth/verify-token",
     "https://platform.test/api/platform/apps/list",
@@ -213,6 +217,7 @@ it("discovers file authorization for all commands, with environment-token preced
       token: "stored-session",
       url: "http://localhost:1",
     }).cliAuth.verifyToken({});
+    // SAFETY: The exercised fetch call constructs this Request; the test inspects the captured request after asserting the call occurred.
     expect(
       (requireValue(fetch.mock.lastCall)[0] as Request).headers.get(
         "authorization"

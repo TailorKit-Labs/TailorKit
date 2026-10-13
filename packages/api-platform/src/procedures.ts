@@ -12,6 +12,10 @@ import { setSpanAttributes } from "@tailorkit/observability";
 import type { Context } from "./context";
 import { canonicalizeScope, canonicalizeScopes, scopeMatches } from "./scope";
 
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
@@ -74,17 +78,25 @@ const authenticatedRouter = o
 export const cliRouter = authenticatedRouter.use(
   async ({ context, next }, input) => {
     if (context.agentToken) {
-      const body = (input as { body?: { scope?: unknown; scopes?: unknown } })
-        ?.body;
-      if (body?.scope !== undefined || body?.scopes !== undefined) {
+      const body =
+        input && isObjectValue(input) && "body" in input
+          ? input.body
+          : undefined;
+      const requestedScope =
+        body && isObjectValue(body) && "scope" in body ? body.scope : undefined;
+      const scopesValue =
+        body && isObjectValue(body) && "scopes" in body
+          ? body.scopes
+          : undefined;
+      if (requestedScope !== undefined || scopesValue !== undefined) {
         try {
           const scopes = [
-            ...(body.scope === undefined
+            ...(requestedScope === undefined
               ? []
-              : [canonicalizeScope(body.scope)]),
-            ...(body.scopes === undefined
+              : [canonicalizeScope(requestedScope)]),
+            ...(scopesValue === undefined
               ? []
-              : canonicalizeScopes(body.scopes)),
+              : canonicalizeScopes(scopesValue)),
           ];
           if (
             !scopes.length ||

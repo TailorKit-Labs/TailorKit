@@ -16,7 +16,7 @@ import {
 import { getKV } from "@tailorkit/kv";
 import { initializeObservability } from "@tailorkit/observability";
 import { waitUntil as vercelWaitUntil } from "@vercel/functions";
-import type { SecondaryStorage } from "better-auth";
+import type { BetterAuthOptions, SecondaryStorage } from "better-auth";
 import { createAuthMiddleware } from "better-auth/api";
 import { deleteSessionCookie } from "better-auth/cookies";
 import { betterAuth } from "better-auth/minimal";
@@ -52,11 +52,14 @@ const enforceTwoFactorAfterSocialSignIn = createAuthMiddleware(async (ctx) => {
   }
 
   const { newSession } = ctx.context;
-  const user = newSession?.user as
-    | { id: string; twoFactorEnabled?: boolean }
-    | undefined;
+  const user = newSession?.user;
 
-  if (!newSession || !user?.twoFactorEnabled) {
+  if (
+    !newSession ||
+    !user ||
+    !("twoFactorEnabled" in user) ||
+    user.twoFactorEnabled !== true
+  ) {
     return;
   }
 
@@ -108,25 +111,20 @@ const createSecondaryStorage = (): SecondaryStorage | undefined => {
   };
 };
 
-const socialProviders = {
-  ...(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET
-    ? {
-        github: {
-          clientId: env.GITHUB_CLIENT_ID,
-          clientSecret: env.GITHUB_CLIENT_SECRET,
-          scope: ["user:email"],
-        },
-      }
-    : {}),
-  ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
-    ? {
-        google: {
-          clientId: env.GOOGLE_CLIENT_ID,
-          clientSecret: env.GOOGLE_CLIENT_SECRET,
-        },
-      }
-    : {}),
-};
+const socialProviders: NonNullable<BetterAuthOptions["socialProviders"]> = {};
+if (env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET) {
+  socialProviders.github = {
+    clientId: env.GITHUB_CLIENT_ID,
+    clientSecret: env.GITHUB_CLIENT_SECRET,
+    scope: ["user:email"],
+  };
+}
+if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
+  socialProviders.google = {
+    clientId: env.GOOGLE_CLIENT_ID,
+    clientSecret: env.GOOGLE_CLIENT_SECRET,
+  };
+}
 
 export const getSocialProviderAvailability = () => ({
   github: "github" in socialProviders,

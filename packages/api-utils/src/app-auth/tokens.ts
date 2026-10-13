@@ -56,7 +56,7 @@ const access = z.object({
   publicTeamId: z.string().min(1).max(256),
   scope: z.object({
     name: z.string().min(1),
-    value: z.record(z.string(), z.unknown()),
+    value: z.record(z.string(), z.json()),
   }),
   sub: z.string().min(1).max(256),
   subjectId: z.string().min(1).max(256).optional(),
@@ -77,11 +77,12 @@ const publicKeysSchema = z.object({
     .max(32),
 });
 
-export const parseAppPublicKeys = (value: unknown) =>
-  publicKeysSchema.parse(value);
+export const parseAppPublicKeys = (
+  value: Parameters<typeof publicKeysSchema.parse>[0]
+) => publicKeysSchema.parse(value);
 
-const signingError = (error: unknown): Error =>
-  error instanceof Error ? error : new Error("App token signing failed");
+const signingError = (cause: unknown): Error =>
+  cause instanceof Error ? cause : new Error("App token signing failed");
 
 /** Compose signing without starting a runtime; Promise callers use issueAppToken. */
 export const issueAppTokenEffect = (

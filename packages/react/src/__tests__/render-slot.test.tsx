@@ -3,6 +3,7 @@ import type {
   StandardSchemaV1,
 } from "@standard-schema/spec";
 import { defineContract } from "@tailorkit/core/schema";
+import type { RemoteProps } from "@tailorkit/sandbox/protocol";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { StrictMode } from "react";
 import {
@@ -17,18 +18,16 @@ import {
 import { RenderSlot } from "../index";
 import { createClient } from "../tailorkit";
 
-const requests: { appUrl: string; props: Record<string, unknown> }[] = [];
+const requests: { appUrl: string; props: RemoteProps }[] = [];
 
 vi.mock("../remote-view", () => ({
-  RemoteViewHost: (request: {
-    appUrl: string;
-    props: Record<string, unknown>;
-  }) => {
+  RemoteViewHost: (request: { appUrl: string; props: RemoteProps }) => {
     requests.push(request);
     return null;
   },
 }));
 
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const typedSchema = <T,>(): StandardSchemaV1<unknown, T> &
   StandardJSONSchemaV1<unknown, T> => ({
   "~standard": {
@@ -473,11 +472,9 @@ it.each([false, true])(
     const appWithViews = {
       ...app,
       views: [
-        {
-          path: "/customers",
-          slot: "panel",
-          ...(dynamic ? { instances: true as const } : {}),
-        },
+        dynamic
+          ? { instances: true as const, path: "/customers", slot: "panel" }
+          : { path: "/customers", slot: "panel" },
       ],
     };
     render(

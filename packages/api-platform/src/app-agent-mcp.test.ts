@@ -26,7 +26,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@tailorkit/db", () => ({
   db: {
     insert: () => ({
-      values: (value: unknown) => {
+      values: (value: Parameters<typeof mocks.grant>[0]) => {
         mocks.grant(value);
         // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
         return { returning: async () => [{ id: "grant" }] };
@@ -34,7 +34,9 @@ vi.mock("@tailorkit/db", () => ({
     }),
     query: { app: { findFirst: mocks.app } },
     update: () => ({
-      set: (value: unknown) => ({ where: () => mocks.revoke(value) }),
+      set: (value: Parameters<typeof mocks.revoke>[0]) => ({
+        where: () => mocks.revoke(value),
+      }),
     }),
   },
 }));
@@ -48,18 +50,20 @@ vi.mock("@tailorkit/app-agent/workflows", () => ({
 }));
 vi.mock("workflow/api", () => ({ start: mocks.start }));
 vi.mock("@tailorkit/api-utils/dev-delay", () => ({
-  devDelayMiddleware: async ({ next }: { next: () => unknown }) => await next(),
+  devDelayMiddleware: async <TResult>({ next }: { next: () => TResult }) =>
+    await next(),
 }));
 vi.mock("@tailorkit/api-utils/rate-limiting", () => ({
   createRateLimiter: vi.fn(),
   ratelimitMiddleware:
     () =>
-    async ({ next }: { next: () => unknown }) =>
+    async <TResult>({ next }: { next: () => TResult }) =>
       await next(),
 }));
 const { handleAppAgentMcpRequest } = await import("./app-agent-mcp");
 
 const scope = canonicalizeScope({ name: "org", value: { tenant: "one" } });
+// SAFETY: This test supplies the context members read by the handler; unrelated request context services are outside this scenario.
 const context = {
   organization: { id: "org" },
   project: { id: "project" },
@@ -69,7 +73,7 @@ const app = { id: "internal-app", publicId: "public-app", scope: scope.scope };
 
 const request = (
   name: string,
-  args: Record<string, unknown> = {},
+  args: Parameters<typeof JSON.stringify>[0] = {},
   overrides = {},
   headers = {}
 ) => {
@@ -226,6 +230,8 @@ describe("platform MCP endpoint", () => {
 
   it("rejects service/agent credentials and malformed host identities", async () => {
     for (const restricted of [{ runtimeService: true }, { agentToken: {} }]) {
+      // SAFETY: This test supplies the context members read by the handler; unrelated request context services are outside this scenario.
+
       // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       const awaitedResult1 = await handleAppAgentMcpRequest(
         request("list_apps"),

@@ -64,13 +64,18 @@ const fixture = () => {
     execute(sqlValue, params) {
       const statement = sqlite.prepare(sqlValue);
       statement.setReturnArrays(true);
-      const rows = statement.columns().length
-        ? (statement.all(...(params as never[])) as unknown as unknown[][])
-        : (statement.run(...(params as never[])), []);
+      // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+      let rows: unknown[][] = [];
+      if (statement.columns().length) {
+        // SAFETY: setReturnArrays(true) forces positional rows; Node's declarations still describe records.
+        // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- Node's SQLite declaration does not reflect setReturnArrays.
+        rows = statement.all(...(params as never[])) as unknown as unknown[][];
+      } else {
+        // SAFETY: This test supplies the SQLite-compatible parameters used by its fixture queries.
+        statement.run(...(params as never[]));
+      }
       return {
-        changes: Number(
-          (sqlite.prepare("SELECT changes() AS n").get() as { n: number }).n
-        ),
+        changes: Number(sqlite.prepare("SELECT changes() AS n").get()?.n),
         columns: statement.columns().map((column) => column.name),
         rows,
       };
@@ -112,7 +117,8 @@ const fixture = () => {
       .handler(({ input, db }) => {
         expect(input).toBeUndefined();
         db.insert(todos).values({ id: "invalid", title: "rollback" }).run();
-        return { ok: false } as unknown as { ok: true };
+        // SAFETY: This negative test deliberately returns data outside its declared result schema to verify rejection.
+        return { ok: false } as never;
       }),
     joined: query({
       args: z.object({}),
@@ -146,7 +152,10 @@ const fixture = () => {
         if (input === "bigint") {
           return 1n;
         }
-        const value: { self?: unknown } = {};
+        interface CyclicResult {
+          self?: CyclicResult;
+        }
+        const value: CyclicResult = {};
         value.self = value;
         return value;
       }),
@@ -293,6 +302,7 @@ it("deduplicates accepted writes and rejects reused IDs with different identity 
   expect(() =>
     execution.mutate(input, { ...identity, subjectId: "other" })
   ).toThrow("already used");
+  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   expect(
     (execution.query({ args: {}, name: "list" }, identity).value as unknown[])
       .length

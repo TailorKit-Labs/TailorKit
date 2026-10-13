@@ -14,12 +14,14 @@ export const appendScopeSelection = (
   }
 };
 
-export const normalizeScopeSelection = (
-  scopes?: readonly string[]
-): {
+export interface ScopeSelection {
   key: string;
   scopes?: readonly string[];
-} => {
+}
+
+export const normalizeScopeSelection = (
+  scopes?: readonly string[]
+): ScopeSelection => {
   if (scopes === undefined) {
     return { key: "*" };
   }

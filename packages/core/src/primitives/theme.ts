@@ -222,6 +222,7 @@ const resolveTokens = (
   const tokens = { ...theme?.tokens };
 
   for (const [key, value] of Object.entries(defaultTokenGroups)) {
+    // SAFETY: The token group name is checked against the declared default token groups before indexing that table.
     const tokenKey = key as keyof typeof defaultTokenGroups;
     tokens[tokenKey] ??= value;
   }

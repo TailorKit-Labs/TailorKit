@@ -30,7 +30,10 @@ type AncestorKeys<T, P extends string> = {
 }[Ancestors<T, P>];
 export type ViewContextHierarchy<T> = {
   [P in keyof T]: P extends string
-    ? Exclude<OwnContext<T[P]>, undefined> extends Record<string, unknown>
+    ? Exclude<OwnContext<T[P]>, undefined> extends Record<
+        string,
+        StandardSchemaV1.InferOutput<Schema>
+      >
       ? Extract<ContextKeys<OwnContext<T[P]>>, AncestorKeys<T, P>> extends never
         ? unknown
         : {

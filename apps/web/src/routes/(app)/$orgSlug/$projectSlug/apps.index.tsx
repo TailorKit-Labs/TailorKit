@@ -11,7 +11,11 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@tailorkit/ui/empty";
-import { Input } from "@tailorkit/ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@tailorkit/ui/input-group";
 import {
   Table,
   TableBody,
@@ -193,11 +197,12 @@ const AppsTable = ({
       <Table className="table-fixed" variant="card">
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow className="hover:bg-transparent" key={headerGroup.id}>
+            <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
                 <TableHead
                   key={header.id}
-                  style={{ width: `${header.column.getSize()}px` }}
+                  className="w-[var(--column-width)]"
+                  style={{ "--column-width": `${header.column.getSize()}px` }}
                 >
                   {renderSortableHeader(header)}
                 </TableHead>
@@ -298,29 +303,34 @@ const AppsIndexPage = () => {
   const isEmptyProject = !isPending && !normalizedSearch && apps.length === 0;
   const searchControl = (
     <div className="relative w-full sm:w-72">
-      <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 z-10 size-4 -translate-y-1/2" />
-      <Input
-        className="bg-popover [&_[data-slot=input]]:pl-8"
-        placeholder="Search apps"
-        type="search"
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-      />
+      <InputGroup>
+        <InputGroupInput
+          placeholder="Search apps"
+          type="search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
+        <InputGroupAddon>
+          <SearchIcon />
+        </InputGroupAddon>
+      </InputGroup>
     </div>
   );
   let content;
 
   if (isPending) {
     content = (
-      <CardFrame className="text-muted-foreground w-full px-4 py-6 text-center text-sm">
-        Loading apps...
+      <CardFrame className="w-full text-center">
+        <div className="text-muted-foreground px-4 py-6 text-sm">
+          Loading apps...
+        </div>
       </CardFrame>
     );
   } else if (apps.length === 0 && !normalizedSearch && projectApiKey) {
     content = <ProjectKeyEnv key={projectApiKey} apiKey={projectApiKey} />;
   } else if (apps.length === 0) {
     content = (
-      <Empty className="mx-auto w-full rounded-lg border">
+      <Empty className="mx-auto w-full">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <AppWindowIcon />

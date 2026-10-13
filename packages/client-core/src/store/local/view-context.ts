@@ -106,12 +106,13 @@ export const createViewContextStore = (
   };
 
   const check = (entry: ViewEntry) => {
-    const failed = (error: unknown) =>
+    const failed = (cause: unknown) =>
       apply(entry, {
-        details: error,
+        details: cause,
         message: `TailorKit could not validate context for view "${entry.view}".`,
       });
     try {
+      // SAFETY: The requested view name was resolved against this contract; indexing its declared view table preserves the associated validator.
       const result = validateViewContext(
         entry,
         contract.views[entry.view as keyof typeof contract.views]

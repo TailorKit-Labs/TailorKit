@@ -1,3 +1,10 @@
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+// Each view schema owns its field values; composition only merges checked object containers.
+// oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- A schema-agnostic composer cannot narrow arbitrary registered schema outputs.
+export type ViewContextValues = Record<string, unknown>;
+
 export type ViewStatus = "ready" | "loading" | "error";
 
 export interface ViewLayer {
@@ -30,8 +37,14 @@ export const getViewDepth = (path: string): number =>
   path.split("/").filter(Boolean).length;
 
 /** Context supplied to the selected view after combining its registered ancestors. */
+export interface ReadyViewProps {
+  view: string;
+  status: "ready";
+  context: ViewContextValues;
+}
+
 export type ResolvedViewProps =
-  | { view: string; status: "ready"; context: Record<string, unknown> }
+  | ReadyViewProps
   | { view: string; status: "loading" | "error"; context?: never };
 
 export const composeViewContext = (
@@ -39,7 +52,7 @@ export const composeViewContext = (
   request: { layers: readonly ViewLayer[]; declaredViews: readonly string[] }
 ): ResolvedViewProps => {
   let status: ViewStatus = "ready";
-  const context: Record<string, unknown> = {};
+  const context: ViewContextValues = {};
   for (const path of getViewHierarchy(selected).toReversed()) {
     const layer = request.layers.find((entry) => entry.path === path);
     if (!layer) {
@@ -58,7 +71,7 @@ export const composeViewContext = (
     }
     if (
       layer.context === null ||
-      typeof layer.context !== "object" ||
+      !isObjectValue(layer.context) ||
       Array.isArray(layer.context)
     ) {
       status = "error";

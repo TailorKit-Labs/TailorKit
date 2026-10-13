@@ -41,6 +41,7 @@ const emailConfig = {
   }
 >;
 
+// SAFETY: Object.entries enumerates this complete email configuration, and the projection retains each email type's subject.
 export const betterAuthEmailSubjects = Object.fromEntries(
   Object.entries(emailConfig).map(([type, value]) => [type, value.subject])
 ) as Record<BetterAuthEmailType, string>;

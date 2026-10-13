@@ -39,6 +39,8 @@ it.each([
     );
     const source = deploymentSource({
       BUNDLES: { get: load },
+      // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+      // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
       DEPLOYMENTS: {
         // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
         get: vi.fn(async () => null),
@@ -61,6 +63,8 @@ it("rejects a token that expires while resolving deployment", async () => {
   vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json(deployment));
   const source = deploymentSource({
     BUNDLES: { get: vi.fn() },
+    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
     DEPLOYMENTS: {
       // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
       get: vi.fn(async () => null),

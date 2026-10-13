@@ -9,8 +9,8 @@ interface Todo {
   done: boolean;
 }
 
-const errorMessage = (err: unknown) =>
-  err instanceof Error ? err.message : "Todo request failed";
+const errorMessage = (cause: unknown) =>
+  cause instanceof Error ? cause.message : "Todo request failed";
 
 const TodoPanel = () => {
   const [todos, setTodos] = useState<Todo[]>([]);

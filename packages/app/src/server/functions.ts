@@ -7,7 +7,10 @@ import type { QueryDatabase, MutationDatabase } from "../database/types";
 
 export interface Identity {
   readonly subjectId?: string;
-  readonly scope: { name: string; value: Record<string, unknown> };
+  readonly scope: {
+    name: string;
+    value: Record<string, z.output<ReturnType<typeof z.json>>>;
+  };
   readonly toolUrl: string;
   readonly projectId: string;
   readonly appId: string;
@@ -31,7 +34,7 @@ export type FunctionCalls<F, K extends "query" | "mutation"> = {
       : N
   ]: F[N] extends {
     args: infer A extends z.ZodType;
-    handler: (context: never) => unknown;
+    handler: (context: never) => infer _Output;
   }
     ? K extends "mutation"
       ? (
@@ -138,11 +141,11 @@ export const action = <
 ) => Object.freeze({ ...definition, kind: "action" as const });
 
 // Erasure is private to dispatch; the generic definitions preserve app argument/result types.
-export interface RegisteredFunction {
+export interface RegisteredFunction<TOutput = unknown> {
   kind: FunctionKind;
   args: z.ZodType;
   result?: z.ZodType;
-  handler: (context: never) => unknown;
+  handler: (context: never) => TOutput;
   functions?: Functions;
   database?: DatabaseDefinition;
 }

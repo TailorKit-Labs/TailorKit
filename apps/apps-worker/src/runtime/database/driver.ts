@@ -19,6 +19,17 @@ import { makeDefaultQueryMapper } from "drizzle-orm/utils";
 import { AppError } from "../errors";
 import { ALL_DATABASE_TABLES } from "./dependencies";
 
+type WorkerSQLiteSession = SQLiteSession<"sync", { changes: number }>;
+type RowMapper = NonNullable<
+  Parameters<WorkerSQLiteSession["prepareQuery"]>[3]
+>;
+type RelationalRowMapper = Parameters<
+  WorkerSQLiteSession["prepareRelationalQuery"]
+>[3];
+type PlaceholderValues = Parameters<
+  SQLitePreparedQuery<PreparedQueryConfig & { type: "sync" }>["all"]
+>[0];
+
 export interface SqlResult {
   columns: string[];
   rows: unknown[][];
@@ -44,19 +55,17 @@ export const databaseScope = (
   class Prepared extends SQLitePreparedQuery<
     PreparedQueryConfig & { type: "sync" }
   > {
-    private readonly relationalMapper:
-      | ((rows: Record<string, unknown>[]) => unknown)
-      | undefined;
+    private readonly relationalMapper: RelationalRowMapper | undefined;
     private fields: SelectedFieldsOrdered | undefined;
-    private mapper: ((rows: unknown[][]) => unknown) | undefined;
+    private mapper: RowMapper | undefined;
     private metadata: Metadata | undefined;
     constructor(
       query: Query,
       fields: SelectedFieldsOrdered | undefined,
       method: SQLiteExecuteMethod,
-      mapper: ((rows: unknown[][]) => unknown) | undefined,
+      mapper: RowMapper | undefined,
       metadata: Metadata | undefined,
-      relationalMapper?: (rows: Record<string, unknown>[]) => unknown
+      relationalMapper?: RelationalRowMapper
     ) {
       super("sync", method, query);
       this.fields = fields;
@@ -65,7 +74,7 @@ export const databaseScope = (
 
       this.relationalMapper = relationalMapper;
     }
-    private executeSql(values: Record<string, unknown> = {}) {
+    private executeSql(values: NonNullable<PlaceholderValues> = {}) {
       if (!active) {
         throw new AppError("BAD_REQUEST", "Database scope has ended");
       }
@@ -91,13 +100,13 @@ export const databaseScope = (
       }
       return result;
     }
-    run(values?: Record<string, unknown>) {
+    run(values?: PlaceholderValues) {
       return { changes: this.executeSql(values).changes };
     }
-    values(values?: Record<string, unknown>) {
+    values(values?: PlaceholderValues) {
       return this.executeSql(values).rows;
     }
-    all(values?: Record<string, unknown>) {
+    all(values?: PlaceholderValues) {
       const result = this.executeSql(values);
       if (this.relationalMapper) {
         return this.relationalMapper(
@@ -112,6 +121,7 @@ export const databaseScope = (
         return this.mapper(result.rows);
       }
       if (this.fields) {
+        // SAFETY: Drizzle SQLitePreparedQuery carries joinsNotNullableMap at runtime for its row mapper; its public subclass type omits the inherited metadata.
         return makeDefaultQueryMapper<unknown[]>(
           this.fields,
           (
@@ -127,9 +137,18 @@ export const databaseScope = (
         )
       );
     }
-    get(values?: Record<string, unknown>) {
+    get(values?: PlaceholderValues) {
       const result = this.all(values);
-      return this.relationalMapper ? result : (result as unknown[])[0];
+      if (this.relationalMapper) {
+        return result;
+      }
+      if (!Array.isArray(result)) {
+        throw new AppError(
+          "INTERNAL_SERVER_ERROR",
+          "Row mapper must return an array"
+        );
+      }
+      return result[0];
     }
   }
   class Session extends SQLiteSession<"sync", { changes: number }> {
@@ -138,7 +157,7 @@ export const databaseScope = (
       query: Query,
       fields: SelectedFieldsOrdered | undefined,
       method: SQLiteExecuteMethod,
-      mapper?: (rows: unknown[][]) => unknown,
+      mapper?: RowMapper,
       metadata?: Metadata
     ) {
       return new Prepared(query, fields, method, mapper, metadata);
@@ -148,7 +167,7 @@ export const databaseScope = (
       query: Query,
       fields: SelectedFieldsOrdered | undefined,
       method: SQLiteExecuteMethod,
-      mapper: (rows: Record<string, unknown>[]) => unknown
+      mapper: RelationalRowMapper
     ) {
       // RQB does not expose query metadata. Track all configured tables so nested
       // selections and relation filters invalidate subscriptions when their data changes.

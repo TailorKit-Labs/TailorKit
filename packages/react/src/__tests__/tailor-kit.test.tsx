@@ -6,6 +6,7 @@ import { createTailorKitStore } from "@tailorkit/client-core";
 import { defineContract } from "@tailorkit/core/schema";
 import type { IframeUiHost } from "@tailorkit/sandbox/host";
 import type {
+  RemoteProps,
   HostToIframePayload,
   RemoteNode,
 } from "@tailorkit/sandbox/protocol";
@@ -35,14 +36,14 @@ import type { TailorKitApp } from "../tailorkit";
 
 const hostRecords: {
   appUrl: string;
-  props: Record<string, unknown> | undefined;
+  props: RemoteProps | undefined;
   sourceText?: string;
 }[] = [];
 
 vi.mock("@tailorkit/sandbox/host", () => ({
   createIframeUiHost: (
     appUrl: string | URL,
-    options: { props?: Record<string, unknown>; sourceText?: string } = {}
+    options: { props?: RemoteProps; sourceText?: string } = {}
   ): IframeUiHost => {
     const record = {
       appUrl: appUrl.toString(),
@@ -68,6 +69,7 @@ vi.mock("@tailorkit/sandbox/host", () => ({
     };
     let listener: (() => void) | null = null;
 
+    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     return {
       destroy: () => {},
       dispatch: (_payload: HostToIframePayload) => {},
@@ -76,7 +78,7 @@ vi.mock("@tailorkit/sandbox/host", () => ({
       mount: () => {
         listener?.();
       },
-      setProps: (props: Record<string, unknown> | undefined) => {
+      setProps: (props: RemoteProps | undefined) => {
         record.props = props;
       },
       subscribe: (nextListener: () => void) => {
@@ -85,10 +87,11 @@ vi.mock("@tailorkit/sandbox/host", () => ({
           listener = null;
         };
       },
-    } as unknown as IframeUiHost;
+    } as IframeUiHost;
   },
 }));
 
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const emptySchema: StandardSchemaV1<unknown, Record<never, never>> &
   StandardJSONSchemaV1<unknown, Record<never, never>> = {
   "~standard": {
@@ -96,7 +99,9 @@ const emptySchema: StandardSchemaV1<unknown, Record<never, never>> &
       input: () => ({}),
       output: () => ({}),
     },
-    validate: (value: unknown) => ({ value: value as Record<never, never> }),
+    validate: (
+      value: Parameters<StandardSchemaV1["~standard"]["validate"]>[0]
+    ) => ({ value: value as Record<never, never> }),
     vendor: "test",
     version: 1,
   },
@@ -275,6 +280,7 @@ describe("tailorKitClient React adapter", () => {
           input instanceof URL && input.pathname.endsWith("/preview/metadata")
       );
     expect(metadataRequest).toBeInstanceOf(URL);
+    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     expect(
       new URL(metadataRequest as URL).searchParams.getAll("scopes")
     ).toEqual([]);
@@ -568,6 +574,7 @@ describe("tailorKitClient React adapter", () => {
       "http://runtime.test/apps/b.js",
       "http://assets.test/projects/project_1/apps/a/deployments/deployment_1/client/client.js",
     ]);
+    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     expect(
       hostRecords.map((record) => (record.props?.layers as unknown[])?.[0])
     ).toEqual([

@@ -82,6 +82,7 @@ type CustomComponentRenderers<
   ]?: ComponentRenderer<TComponents[TName], ReactNode>;
 };
 
+// SAFETY: The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary.
 export const components = <
   TComponents extends Record<string, AnyComponentDefinition>,
 >(
@@ -89,6 +90,11 @@ export const components = <
   customComponents: CustomComponentRenderers<TComponents>
 ): ComponentRenderers<TComponents, ReactNode> =>
   customComponents as ComponentRenderers<TComponents, ReactNode>;
+
+interface ReactComponentRenderArgs {
+  props: ComponentProps<ComponentDefinition>;
+  children?: ReactNode;
+}
 
 const createReactTailorKitClient = <
   TComponents extends Record<string, AnyComponentDefinition>,
@@ -111,11 +117,12 @@ const createReactTailorKitClient = <
       function TailorKitComponent({
         children,
         ...props
-      }: Record<string, unknown> & { children?: ReactNode }) {
-        const rendererArgs = {
-          props: props as ComponentProps<ComponentDefinition>,
-          ...(children === undefined ? {} : { children }),
-        };
+      }: ReactComponentRenderArgs["props"] & { children?: ReactNode }) {
+        const rendererArgs: ReactComponentRenderArgs = { props };
+        if (children !== undefined) {
+          rendererArgs.children = children;
+        }
+        // SAFETY: The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary.
         return (renderer as (args: typeof rendererArgs) => ReactNode)(
           rendererArgs
         );
@@ -130,6 +137,7 @@ const createReactTailorKitClient = <
   const ClientRenderSlot = (props: RenderSlotProps<TSlots>) => {
     // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
     useTailorkitContext("RenderSlot", client);
+    // SAFETY: The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary.
     return createElement(ReactRenderSlot, props as RenderSlotProps);
   };
 
@@ -163,9 +171,10 @@ const createReactTailorKitClient = <
         props: ControlledRenderSlotProps<TViews, TSlots>
       ) {
         useTailorkitContext("RenderSlot.Controlled", client);
+        // SAFETY: The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary.
         return createElement(
           ReactRenderSlot.Controlled,
-          props as unknown as ControlledRenderSlotProps
+          props as ControlledRenderSlotProps
         );
       },
     }),
@@ -184,6 +193,7 @@ const createReactTailorKitClient = <
       optionsValue3: UseViewsOptions<TScopeNames, TSlot>
     ) {
       useTailorkitContext("useViews", client);
+      // SAFETY: The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary.
       return useRootViews(optionsValue3) as UseViewsResult<
         SlotMultiple<TSlots[TSlot]>
       >;

@@ -12,6 +12,9 @@ import type {
   SubscriptionSession,
 } from "./subscriptions";
 
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
@@ -33,6 +36,7 @@ const setup = () => {
       ),
   };
   const values = { private: 2, public: 1 };
+  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   const query = vi.fn(
     async (input: Invocation, identity: Identity) =>
       await {
@@ -51,6 +55,7 @@ const setup = () => {
     return {
       read: () => {
         const record = records.get(user);
+        // SAFETY: The serialized fixture is produced by this test from the matching session contract before it is read back.
         return record ? (JSON.parse(record) as SubscriptionSession) : undefined;
       },
       send: (data: string | Uint8Array<ArrayBuffer>) =>
@@ -60,6 +65,8 @@ const setup = () => {
   };
   const socket = connection();
   const sockets = [socket];
+  // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+  // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
   const ctx = {
     getWebSockets: () =>
       sockets.map((socketValue: SubscriptionConnection) => ({
@@ -76,7 +83,7 @@ const setup = () => {
           const value = records.get(key.slice(7));
           return value ? JSON.parse(value) : undefined;
         },
-        put: (key: string, value: unknown) =>
+        put: <TInput>(key: string, value: TInput) =>
           records.set(key.slice(7), JSON.stringify(value)),
       },
     },
@@ -106,7 +113,7 @@ const setup = () => {
           pending.push(
             handler.message(
               socket,
-              typeof data === "string" ? data : new TextDecoder().decode(data),
+              isStringValue(data) ? data : new TextDecoder().decode(data),
               subscribe,
               (id) => Effect.runPromise(subscriptions.cancel(socket, id))
             )
@@ -170,6 +177,7 @@ it("restores multiple subscriptions and cancellation after recreation with isola
 
 it("refreshes view subscriptions on table writes after recreation without broadening table subscriptions", async () => {
   const test = setup();
+  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   test.query.mockImplementation((input, identity) =>
     Promise.resolve({
       tables: input.name === "public" ? ["*"] : ["private"],

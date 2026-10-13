@@ -127,7 +127,7 @@ const OrganizationsPage = () => {
           <CardFrame className="w-full">
             <Table className="table-fixed" variant="card">
               <TableHeader>
-                <TableRow className="hover:bg-transparent">
+                <TableRow>
                   <TableHead className="w-[48%]">Organisation</TableHead>
                   <TableHead className="w-[24%]">Slug</TableHead>
                   <TableHead className="w-[28%]">Created</TableHead>
@@ -136,11 +136,7 @@ const OrganizationsPage = () => {
               <TableBody>
                 {orgs.map((org) => (
                   <TableRow
-                    className={
-                      org.slug
-                        ? "focus-visible:ring-ring cursor-pointer focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
-                        : undefined
-                    }
+                    className={org.slug ? "cursor-pointer" : undefined}
                     key={org.id}
                     onClick={() => {
                       if (org.slug) {
@@ -166,8 +162,8 @@ const OrganizationsPage = () => {
                   >
                     <TableCell>
                       <div className="flex min-w-0 items-center gap-3">
-                        <Avatar className="size-8 rounded-md">
-                          <AvatarFallback className="bg-primary text-primary-foreground rounded-md text-xs">
+                        <Avatar className="size-8">
+                          <AvatarFallback>
                             {orgInitials(org.name)}
                           </AvatarFallback>
                         </Avatar>
@@ -176,12 +172,10 @@ const OrganizationsPage = () => {
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground truncate">
+                    <TableCell>
                       {org.slug ? `/${org.slug}` : "No slug set"}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDate(org.createdAt)}
-                    </TableCell>
+                    <TableCell>{formatDate(org.createdAt)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

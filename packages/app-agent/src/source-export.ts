@@ -86,7 +86,7 @@ export const exportAppAgentWorkspace = async (
   } finally {
     await sandbox
       .delete({ deleteOrphanSnapshots: true })
-      .catch((error: unknown) => {
+      .catch((error: ErrorOptions["cause"]) => {
         console.warn("App source export sandbox cleanup failed", error);
       });
   }

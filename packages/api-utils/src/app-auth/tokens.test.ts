@@ -82,7 +82,7 @@ it("rejects wrong signature, issuer, audience, app, expiry, missing claims and e
     // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     await expect(verify(token)).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   }
-  const sign = (claims: Record<string, unknown>) =>
+  const sign = (claims: ConstructorParameters<typeof SignJWT>[0]) =>
     new SignJWT({
       ...identity,
       ...claims,

@@ -14,6 +14,13 @@ import {
   requireCliDeployToken,
 } from "../procedures";
 
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
 const paginationInput = z.object({
   page: z.number().int().min(1).optional(),
   pageSize: z.number().int().min(1).max(100).optional(),
@@ -49,28 +56,28 @@ const deploymentLogosInput = z
   })
   .optional();
 
-const getErrorMessage = (error: unknown): string | undefined => {
-  if (error instanceof Error) {
-    return error.message;
+const getErrorMessage = (cause: unknown): string | undefined => {
+  if (cause instanceof Error) {
+    return cause.message;
   }
-  if (typeof error === "string") {
-    return error;
+  if (isStringValue(cause)) {
+    return cause;
   }
-  if (error && typeof error === "object" && "message" in error) {
-    const { message } = error as { message?: unknown };
-    return typeof message === "string" ? message : undefined;
+  if (cause && isObjectValue(cause) && "message" in cause) {
+    const { message } = cause;
+    return isStringValue(message) ? message : undefined;
   }
 };
 
-const isNotFoundError = (error: unknown): boolean =>
-  getErrorMessage(error)?.toLowerCase().includes("not found") ?? false;
+const isNotFoundError = (cause: unknown): boolean =>
+  getErrorMessage(cause)?.toLowerCase().includes("not found") ?? false;
 
-const preservePlatformNotFound = (error: unknown): never => {
-  if (isNotFoundError(error)) {
+const preservePlatformNotFound = (cause: unknown): never => {
+  if (isNotFoundError(cause)) {
     throw new ORPCError("NOT_FOUND", { message: "App not found." });
   }
 
-  throw error;
+  throw cause;
 };
 
 export const deploymentRouter = {

@@ -38,7 +38,7 @@ const assertConnection = (connection: PreviewConnection): void => {
 
 const parseConnection = (raw: string): PreviewConnection | null => {
   try {
-    return connectionSchema.parse(JSON.parse(raw) as unknown);
+    return connectionSchema.parse(JSON.parse(raw));
   } catch {
     return null;
   }

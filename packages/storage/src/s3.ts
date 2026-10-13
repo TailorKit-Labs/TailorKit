@@ -90,16 +90,18 @@ export const createS3CompatibleStorage = (
         Metadata: input.metadata,
       });
 
+      const headers: CreateUploadUrlOutput["headers"] = {};
+      if (input.contentType) {
+        headers["content-type"] = input.contentType;
+      }
+      if (input.contentEncoding) {
+        headers["content-encoding"] = input.contentEncoding;
+      }
+      if (input.checksumSha256) {
+        headers["x-amz-checksum-sha256"] = input.checksumSha256;
+      }
       return {
-        headers: {
-          ...(input.contentType ? { "content-type": input.contentType } : {}),
-          ...(input.contentEncoding
-            ? { "content-encoding": input.contentEncoding }
-            : {}),
-          ...(input.checksumSha256
-            ? { "x-amz-checksum-sha256": input.checksumSha256 }
-            : {}),
-        },
+        headers,
         key: input.key,
         uploadUrl: await withSpan(
           "storage.create_upload_url",

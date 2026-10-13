@@ -1,6 +1,15 @@
 export const primitiveNames = ["Box", "Flex", "Grid", "Inline"] as const;
 
 export type PrimitiveName = (typeof primitiveNames)[number];
+export const mapPrimitiveDefinitions = <T>(
+  create: (name: PrimitiveName) => T
+): Record<PrimitiveName, T> => ({
+  Box: create("Box"),
+  Flex: create("Flex"),
+  Grid: create("Grid"),
+  Inline: create("Inline"),
+});
+
 export type TokenName =
   | "background"
   | "border"

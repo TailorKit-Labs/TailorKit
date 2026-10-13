@@ -22,6 +22,10 @@ import {
 import { o, cliRouter } from "../procedures";
 import { previewGrantRoutes } from "./preview-grants";
 
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
@@ -204,17 +208,17 @@ const startPreview = cliRouter
           .returning({ id: previewSession.id });
         return { expiredSessions, replacedSessions, session: created };
       })
-      .catch((error: unknown) => {
+      .catch((error: ErrorOptions["cause"]) => {
         if (error instanceof ORPCError) {
           throw error;
         }
         const candidate =
-          error && typeof error === "object" && "cause" in error
+          error && isObjectValue(error) && "cause" in error
             ? error.cause
             : error;
         if (
           candidate &&
-          typeof candidate === "object" &&
+          isObjectValue(candidate) &&
           "code" in candidate &&
           candidate.code === "23505"
         ) {

@@ -15,6 +15,7 @@ export class AppFacet extends DurableObject<Record<string, never>> {
     const application = await import("application.js");
     return createApplicationExecution(application, {
       execute: (sql, params) => {
+        // SAFETY: The database adapter supplies SQLite-compatible positional parameters; this boundary bridges the Workers SQL declaration.
         const cursor = this.ctx.storage.sql.exec(
           sql,
           ...(params as SqlStorageValue[])

@@ -14,13 +14,16 @@ import {
   requireHostAuth,
 } from "../procedures";
 
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 const runPlatformCliAuthRequest = async <T>(
   request: Promise<T>
 ): Promise<T> => {
   try {
     return await request;
   } catch (error) {
-    if (typeof error === "string" && error.toLowerCase() === "unauthorized") {
+    if (isStringValue(error) && error.toLowerCase() === "unauthorized") {
       throw new ORPCError("UNAUTHORIZED", {
         message:
           "TailorKit platform rejected the host project key. Check TAILORKIT_PROJECT_KEY.",

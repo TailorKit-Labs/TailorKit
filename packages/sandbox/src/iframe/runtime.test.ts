@@ -19,10 +19,12 @@ const setup = (module: { default?: unknown; mount?: () => void }) => {
   cleanups.push(
     startIframeRuntime({ channel: "test", importModule, parentWindow, root })
   );
-  const send = (payload: unknown) => {
+  const send = <TPayload>(payload: TPayload) => {
     window.dispatchEvent(
       new MessageEvent("message", {
         data: { channel: "test", payload, type: sandboxMessageType },
+        // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+        // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
         source: parentWindow as unknown as Window,
       })
     );
@@ -50,6 +52,7 @@ const requestImplementation = (name: string): ViewRequest => ({
 
 it("imports once, publishes updates, clears unsupported slots, and dispatches callbacks", async () => {
   let clicks = 0;
+  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   const client: AppClient = {
     $runtime: {
       h: (component, props) => component(props),
@@ -125,6 +128,7 @@ it("reports a mount-only module instead of bypassing view resolution", async () 
 });
 
 it("renders controlled requests and updates their context without reimporting the app", async () => {
+  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   const client: AppClient = {
     $runtime: {
       h: (component, props) => component(props),
@@ -170,6 +174,7 @@ it("renders controlled requests and updates their context without reimporting th
 });
 
 it("forwards selected instances through the bridge and switches them without reimporting", async () => {
+  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   const client: AppClient = {
     $runtime: {
       h: (component, props) => component(props),
@@ -212,6 +217,8 @@ it("forwards selected instances through the bridge and switches them without rei
   await vi.waitFor(() =>
     expect(runtime.root.textContent).toBe('summary:{"count":2}')
   );
+  // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+  // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
   runtime.update({
     ...request,
     context: undefined,

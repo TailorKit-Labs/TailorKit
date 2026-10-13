@@ -56,6 +56,7 @@ it("fetches the host schema and generates real bindings even when installation i
       await Response.json({
         components: { Box: { callbacks: {}, children: true } },
         slots: { sidebar: { views: ["/people"] } },
+        version: 1,
         views: {
           "/people": {
             context: {

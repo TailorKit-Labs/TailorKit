@@ -83,6 +83,7 @@ export const useQuery = <I, O>(
   const { name } = ref;
   const serialized = serializeInput(input);
   const key = `${name}\0${serialized}`;
+  // SAFETY: serializeInput produced serialized from this reference's own input; this parses local transport-normalized input rather than external JSON.
   const stableInput = useMemo(
     () => (JSON.parse(serialized) as { input: I }).input,
     [serialized]
@@ -91,6 +92,7 @@ export const useQuery = <I, O>(
     () => reference<"query", I, O>(name, "query"),
     [name]
   );
+  // SAFETY: This cache key identifies the same reference and serialized input, so its state is populated only by that reference's O-typed subscription.
   const query = useMemo(
     () =>
       computed(
@@ -174,6 +176,7 @@ const useCall = <K extends "mutation" | "action", I, O>(
       current.current.sequence += 1;
       const { sequence } = current.current;
       const settings = callbacks.current;
+      // SAFETY: InputArguments requires an I value unless I includes undefined; destructuring its conditional tuple loses that relationship.
       const args = input as I;
       const isCurrent = () =>
         current.current.mounted &&

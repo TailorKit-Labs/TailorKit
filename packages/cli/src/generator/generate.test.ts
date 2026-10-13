@@ -538,6 +538,7 @@ describe("generateApp", () => {
     expect(view).not.toContain("Box");
   });
 
+  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   it.each([
     {},
     { slots: {}, views: { "/accounts": {} } },

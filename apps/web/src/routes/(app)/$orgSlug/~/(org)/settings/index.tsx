@@ -31,18 +31,20 @@ const OrgSettingsGeneral = () => {
               Update your organisation name and URL slug.
             </CardDescription>
           </CardHeader>
-          <CardPanel className="flex flex-col gap-4">
-            <Field>
-              <FieldLabel>Organisation name</FieldLabel>
-              <Input defaultValue={orgName} />
-            </Field>
-            <Field>
-              <FieldLabel>Slug</FieldLabel>
-              <Input defaultValue={orgSlug} />
-              <p className="text-muted-foreground text-xs">
-                Your org URL: tailorkit.com/{orgSlug}
-              </p>
-            </Field>
+          <CardPanel>
+            <div className="flex flex-col gap-4">
+              <Field>
+                <FieldLabel>Organisation name</FieldLabel>
+                <Input defaultValue={orgName} />
+              </Field>
+              <Field>
+                <FieldLabel>Slug</FieldLabel>
+                <Input defaultValue={orgSlug} />
+                <p className="text-muted-foreground text-xs">
+                  Your org URL: tailorkit.com/{orgSlug}
+                </p>
+              </Field>
+            </div>
           </CardPanel>
         </Card>
         <CardFrameFooter className="relative flex justify-end">

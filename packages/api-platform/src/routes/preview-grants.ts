@@ -172,7 +172,7 @@ export const accepted = protectedRouter
       }
       let grant: Grant;
       try {
-        grant = grantSchema.parse(JSON.parse(raw) as unknown);
+        grant = grantSchema.parse(JSON.parse(raw));
       } catch {
         continue;
       }
@@ -213,18 +213,17 @@ export const accepted = protectedRouter
       websocketUrl.searchParams.set("role", "viewer");
       // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
       const build = await createPreviewBuildStore(kv).current(session.id);
+      const app = withAppAssetUrl(
+        session.app,
+        context.organization.publicId,
+        context.project.id
+      );
+      // Until the first build arrives, the published deployment remains the fallback.
+      if (build?.manifest.views !== undefined) {
+        app.views = build.manifest.views;
+      }
       items.push({
-        app: {
-          ...withAppAssetUrl(
-            session.app,
-            context.organization.publicId,
-            context.project.id
-          ),
-          // Until the first build arrives, the published deployment remains the fallback.
-          ...(build?.manifest.views === undefined
-            ? {}
-            : { views: build.manifest.views }),
-        },
+        app,
         preview: {
           expiresAt: session.expiresAt,
           sessionId: session.id,

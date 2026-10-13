@@ -28,7 +28,7 @@ const ProfilePage = () => {
     onSubmit: async ({ value }) => {
       const result = await authClient.updateUser({
         name: value.name,
-      } as Parameters<typeof authClient.updateUser>[0]);
+      });
 
       if (result.error) {
         toastManager.add({
@@ -71,15 +71,17 @@ const ProfilePage = () => {
               form.handleSubmit();
             }}
           >
-            <CardPanel className="flex max-w-lg flex-col gap-4">
-              <form.AppField name="name">
-                {(field) => (
-                  <field.TextField
-                    label="Display name"
-                    placeholder="Your name"
-                  />
-                )}
-              </form.AppField>
+            <CardPanel className="max-w-lg">
+              <div className="flex flex-col gap-4">
+                <form.AppField name="name">
+                  {(field) => (
+                    <field.TextField
+                      label="Display name"
+                      placeholder="Your name"
+                    />
+                  )}
+                </form.AppField>
+              </div>
             </CardPanel>
           </form>
         </Card>

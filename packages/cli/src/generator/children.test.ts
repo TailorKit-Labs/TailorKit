@@ -3,6 +3,10 @@ import { describe, expect, it, vi } from "vite-plus/test";
 
 import { renderGeneratedTypes } from "./types";
 
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
 describe("children-only components", () => {
   it("generates opt-in children and leaf component bindings", () => {
     const output = renderGeneratedTypes({
@@ -59,9 +63,10 @@ describe("children-only components", () => {
       props: { children: "Save" },
       type: "tailorkit-button",
     });
-    if (!node || typeof node !== "object" || !("props" in node)) {
+    if (!node || !isObjectValue(node) || !("props" in node)) {
       throw new Error("Expected a remote component node");
     }
+    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     const props = node.props as {
       ontailorkitcallbackonclick: (event: { detail: unknown[] }) => void;
     };

@@ -17,6 +17,19 @@ import { ORPCInstrumentation } from "@orpc/opentelemetry";
 
 import { env } from "#env";
 
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
+const isNumberValue = <TValue>(value: TValue): value is TValue & number =>
+  typeof value === "number";
+
+const isBooleanValue = <TValue>(value: TValue): value is TValue & boolean =>
+  typeof value === "boolean";
+
+const isSpanHandler = <T>(
+  value: SpanOptions | ((span: Span) => T | Promise<T>)
+): value is (span: Span) => T | Promise<T> => typeof value === "function";
+
 interface TelemetryState {
   initializing?: Promise<void>;
   serviceName?: string;
@@ -37,6 +50,7 @@ const stateKey = Symbol.for("tailorkit.observability.state");
 const sensitiveAttributePattern =
   /(?:authorization|cookie|password|secret|token|key|body|headers|email|url)$/iu;
 
+// SAFETY: This module owns the telemetry symbol state and initializes it with TelemetryState; the optional SDK import is the installed @vercel/otel API.
 const globalState = globalThis as typeof globalThis & {
   [stateKey]?: TelemetryState;
 };
@@ -54,18 +68,14 @@ const resolveDeploymentEnvironment = () => env.VERCEL_ENV ?? env.NODE_ENV;
 
 const resolveServiceVersion = () => env.VERCEL_GIT_COMMIT_SHA;
 
-export const safeAttributeValue = (
-  value: unknown
+export const safeAttributeValue = <TValue>(
+  value: TValue
 ): string | number | boolean | undefined => {
   if (value === null || value === undefined) {
     return undefined;
   }
 
-  if (
-    typeof value === "string" ||
-    typeof value === "number" ||
-    typeof value === "boolean"
-  ) {
+  if (isStringValue(value) || isNumberValue(value) || isBooleanValue(value)) {
     return value;
   }
 
@@ -76,11 +86,11 @@ export const safeAttributeValue = (
   return String(value);
 };
 
-export const safeAttributes = (
-  attributes: Record<string, unknown> = {}
+export const safeAttributes = <TAttributes extends object>(
+  attributes?: TAttributes
 ): Attributes =>
   Object.fromEntries(
-    Object.entries(attributes)
+    Object.entries(attributes ?? {})
       .filter(([key]) => !sensitiveAttributePattern.test(key))
       .map(([key, value]) => [key, safeAttributeValue(value)])
       .filter(
@@ -172,6 +182,7 @@ export const initializeObservability = async (serviceName?: string) => {
       return;
     }
 
+    // SAFETY: This module owns the telemetry symbol state and initializes it with TelemetryState; the optional SDK import is the installed @vercel/otel API.
     const { registerOTel } = (await import("@vercel/otel")) as VercelOtelModule;
     registerOTel({
       attributes: createResourceAttributes(resolvedServiceName),
@@ -200,16 +211,18 @@ export const shutdownObservability = () => {
 
 export const getTracer = (name = "tailorkit") => trace.getTracer(name);
 
-export const setSpanAttributes = (attributes: Record<string, unknown>) => {
+export const setSpanAttributes = <TAttributes extends object>(
+  attributes: TAttributes
+) => {
   const span = trace.getActiveSpan();
   if (span) {
     span.setAttributes(safeAttributes(attributes));
   }
 };
 
-export const recordException = (
-  error: unknown,
-  attributes?: Record<string, unknown>
+export const recordException = <TAttributes extends object>(
+  cause: unknown,
+  attributes?: TAttributes
 ) => {
   const span = trace.getActiveSpan();
   if (!span) {
@@ -220,13 +233,13 @@ export const recordException = (
     span.setAttributes(safeAttributes(attributes));
   }
 
-  if (error instanceof Error) {
-    span.recordException(error);
-    span.setStatus({ code: SpanStatusCode.ERROR, message: error.message });
+  if (cause instanceof Error) {
+    span.recordException(cause);
+    span.setStatus({ code: SpanStatusCode.ERROR, message: cause.message });
     return;
   }
 
-  span.recordException(String(error));
+  span.recordException(String(cause));
   span.setStatus({ code: SpanStatusCode.ERROR });
 };
 
@@ -236,10 +249,12 @@ export const withSpan = <T>(
   maybeHandler?: (span: Span) => Promise<T> | T
 ): Promise<T> => {
   const tracer = getTracer("tailorkit.runtime");
-  const options =
-    typeof optionsOrHandler === "function" ? undefined : optionsOrHandler;
-  const handler =
-    typeof optionsOrHandler === "function" ? optionsOrHandler : maybeHandler;
+  const options = isSpanHandler(optionsOrHandler)
+    ? undefined
+    : optionsOrHandler;
+  const handler = isSpanHandler(optionsOrHandler)
+    ? optionsOrHandler
+    : maybeHandler;
 
   if (!handler) {
     throw new Error("withSpan requires a handler.");
@@ -281,10 +296,12 @@ export const withRequestSpan = <T>(
 
   return context.with(parentContext, () => {
     const url = new URL(request.url);
-    const options =
-      typeof optionsOrHandler === "function" ? undefined : optionsOrHandler;
-    const handler =
-      typeof optionsOrHandler === "function" ? optionsOrHandler : maybeHandler;
+    const options = isSpanHandler(optionsOrHandler)
+      ? undefined
+      : optionsOrHandler;
+    const handler = isSpanHandler(optionsOrHandler)
+      ? optionsOrHandler
+      : maybeHandler;
 
     if (!handler) {
       throw new Error("withRequestSpan requires a handler.");
@@ -312,11 +329,11 @@ export const getTraceId = () => {
   return spanContext?.traceId;
 };
 
-export const sanitizeErrorForLog = (error: unknown) => {
-  if (error instanceof Error) {
+export const sanitizeErrorForLog = (cause: unknown) => {
+  if (cause instanceof Error) {
     return {
-      message: error.message,
-      name: error.name,
+      message: cause.message,
+      name: cause.name,
       traceId: getTraceId(),
     };
   }

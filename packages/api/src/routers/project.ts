@@ -10,6 +10,9 @@ import { z } from "zod";
 
 import { protectedProcedure, requireOrg, requireProject } from "../procedures";
 
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 const projectInput = z.object({
   orgSlug: z.string(),
   projectSlug: z.string(),
@@ -48,18 +51,17 @@ const isKeyExpired = (key: { expiresAt: Date | string | null }) => {
 };
 
 const parseProjectApiKeyMetadata = (
-  metadata: Record<string, unknown> | string | null
+  metadata: Parameters<typeof projectApiKeyMetadataSchema.safeParse>[0]
 ) => {
-  const value =
-    typeof metadata === "string"
-      ? (() => {
-          try {
-            return JSON.parse(metadata) as unknown;
-          } catch {
-            return null;
-          }
-        })()
-      : metadata;
+  const value = isStringValue(metadata)
+    ? (() => {
+        try {
+          return JSON.parse(metadata);
+        } catch {
+          return null;
+        }
+      })()
+    : metadata;
   const result = projectApiKeyMetadataSchema.safeParse(value);
   return result.success ? result.data : null;
 };

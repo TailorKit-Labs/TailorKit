@@ -3,33 +3,39 @@ import { theme } from "@playground/shared/contracts/theme";
 import { Button } from "@tailorkit/ui/button";
 import { Input } from "@tailorkit/ui/input";
 import { createClient, primitives as reactPrimitives } from "tailorkit/react";
+import { z } from "zod";
 
-const callTodos = async <T,>(
+const isObjectValue = <TValue,>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
+const callTodos = async <TSchema extends z.ZodType>(
   action: string,
-  body?: Record<string, unknown>
-): Promise<T> => {
+  schema: TSchema,
+  body?: { id?: string; title?: string }
+): Promise<z.output<TSchema>> => {
   const response = await fetch("/api/playground/todos", {
     body: body ? JSON.stringify({ action, ...body }) : undefined,
     credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
     method: body ? "POST" : "GET",
   });
-  const result = (await response.json().catch(() => null)) as unknown;
+  const result = await response.json().catch(() => null);
   if (!response.ok) {
     const message =
-      typeof result === "object" && result !== null && "error" in result
+      isObjectValue(result) && result !== null && "error" in result
         ? String(result.error)
         : "Todo request failed";
     throw new Error(message);
   }
-  return result as T;
+  return schema.parse(result);
 };
 
-interface Todo {
-  id: string;
-  title: string;
-  done: boolean;
-}
+const todoSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  done: z.boolean(),
+});
 
 export const tailor = createClient({
   baseUrl:
@@ -50,10 +56,11 @@ export const tailor = createClient({
   theme,
   tools: {
     todos: {
-      add: ({ input }) => callTodos<Todo>("add", input),
-      list: () => callTodos<Todo[]>("list"),
-      remove: ({ input }) => callTodos<{ ok: boolean }>("remove", input),
-      toggle: ({ input }) => callTodos<Todo>("toggle", input),
+      add: ({ input }) => callTodos("add", todoSchema, input),
+      list: () => callTodos("list", z.array(todoSchema)),
+      remove: ({ input }) =>
+        callTodos("remove", z.object({ ok: z.boolean() }), input),
+      toggle: ({ input }) => callTodos("toggle", todoSchema, input),
     },
   },
 });

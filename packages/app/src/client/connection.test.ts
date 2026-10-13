@@ -392,6 +392,8 @@ it("keeps reconnecting an active subscription beyond three failures", async () =
     if (connect.mock.calls.length <= 5) {
       return Promise.reject(new Error("Offline"));
     }
+    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
     return Promise.resolve(socket as unknown as WebSocket);
   });
   const client = createClient({

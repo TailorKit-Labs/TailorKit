@@ -6,7 +6,6 @@ import {
   maxLogoBytes,
   validateLogoAsset,
 } from "@tailorkit/asset-delivery/logo-validation";
-import type { LogoContentType } from "@tailorkit/asset-delivery/logo-validation";
 import { db } from "@tailorkit/db";
 import {
   app,
@@ -33,6 +32,10 @@ import {
 } from "../scope";
 import { getRuntimeBundle, publishRuntimeMetadata } from "./runtime";
 
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
 const uploadUrlExpiresInSeconds = 15 * 60;
 
 const logoInspectionTimeoutMs = 10_000;
@@ -47,7 +50,7 @@ const logoExtensionByContentType = {
 
 const logoContentType = z.enum(logoContentTypes);
 
-const deploymentFileMetadataShape = {
+const deploymentFileMetadataFields = {
   checksum: z
     .string()
     .regex(/^[a-f0-9]{64}$/iu)
@@ -55,7 +58,7 @@ const deploymentFileMetadataShape = {
 };
 
 const createDeploymentAssetInput = z.object({
-  ...deploymentFileMetadataShape,
+  ...deploymentFileMetadataFields,
   contentLength: z.number().int().min(1),
   contentType: z.literal("application/javascript"),
   encoding: z.enum(["utf-8", "gzip"]),
@@ -68,7 +71,7 @@ const createDeploymentServerInput = createDeploymentAssetInput.extend({
 });
 
 const createDeploymentLogoInput = z.object({
-  ...deploymentFileMetadataShape,
+  ...deploymentFileMetadataFields,
   contentLength: z.number().int().min(1).max(maxLogoBytes),
   contentType: logoContentType,
 });
@@ -112,19 +115,22 @@ const deploymentLogoUploads = z.object({
   light: deploymentLogoUpload.optional(),
 });
 
-const isNotFound = (error: unknown) => {
-  if (!error || typeof error !== "object") {
+const isNotFound = (cause: unknown) => {
+  if (!cause || !isObjectValue(cause)) {
     return false;
   }
 
-  const value = error as {
-    name?: string;
-    $metadata?: { httpStatusCode?: number };
-  };
+  const parsed = z
+    .object({
+      $metadata: z.object({ httpStatusCode: z.number().optional() }).optional(),
+      name: z.string().optional(),
+    })
+    .safeParse(cause);
+  const value = parsed.success ? parsed.data : undefined;
   return (
-    value.name === "NoSuchKey" ||
-    value.name === "NotFound" ||
-    value.$metadata?.httpStatusCode === 404
+    value?.name === "NoSuchKey" ||
+    value?.name === "NotFound" ||
+    value?.$metadata?.httpStatusCode === 404
   );
 };
 
@@ -579,16 +585,25 @@ const createAppDeployment = cliRouter
       })
     );
 
+    interface DeploymentUploads {
+      server?: typeof serverUpload & { uploadUrl: string };
+      logos?: typeof uploadedLogos;
+    }
+    const optionalUploads: DeploymentUploads = {};
+    if (serverUpload?.uploadUrl) {
+      optionalUploads.server = {
+        ...serverUpload,
+        uploadUrl: serverUpload.uploadUrl,
+      };
+    }
+    if (Object.keys(uploadedLogos).length > 0) {
+      optionalUploads.logos = uploadedLogos;
+    }
     return {
       body: {
+        ...optionalUploads,
         assets: uploadedAssets,
-        ...(serverUpload?.uploadUrl
-          ? { server: { ...serverUpload, uploadUrl: serverUpload.uploadUrl } }
-          : {}),
         deployment: createdDeployment,
-        ...(Object.keys(uploadedLogos).length > 0
-          ? { logos: uploadedLogos }
-          : {}),
       },
     };
   });
@@ -715,7 +730,9 @@ const publishAppDeployment = cliRouter
             validateLogoAsset(
               // oxlint-disable-next-line no-await-in-loop -- Stream reads and cancellation must stay ordered and bounded.
               new Uint8Array(await response.arrayBuffer()),
-              file.contentType as LogoContentType
+              z
+                .enum(["image/png", "image/svg+xml", "image/webp"])
+                .parse(file.contentType)
             );
           } finally {
             clearTimeout(timeout);

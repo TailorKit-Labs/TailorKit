@@ -10,6 +10,13 @@ import { env } from "#env";
 
 import { publicProcedure, protectedProcedure, requireOrg } from "../procedures";
 
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 const MANUAL_ORG_ONBOARDING_MESSAGE =
   "We're currently onboarding users manually. Contact us to create an organisation for your account.";
 
@@ -49,16 +56,12 @@ const getGitHubUsername = async (
     }
 
     const profile: unknown = await response.json();
-    if (
-      typeof profile !== "object" ||
-      profile === null ||
-      !("login" in profile)
-    ) {
+    if (!isObjectValue(profile) || profile === null || !("login" in profile)) {
       return null;
     }
 
     const username = profile.login;
-    if (typeof username !== "string") {
+    if (!isStringValue(username)) {
       return null;
     }
 

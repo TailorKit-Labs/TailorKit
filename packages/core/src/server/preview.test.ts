@@ -5,6 +5,10 @@ import { z } from "zod";
 import { createTailorKitServer } from "./handler";
 import { isActivePreviewConflict } from "./routes/preview";
 
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
 const shareId = "s".repeat(43);
 const testScopeSchema = z.record(z.string(), z.string().min(1));
 const grantId = "g".repeat(43);
@@ -13,7 +17,7 @@ const baseUrl = `https://host.test${basePath}`;
 
 const server = (
   requests: string[],
-  previewError?: unknown,
+  previewError?: ErrorOptions["cause"],
   platformBodies: unknown[] = []
 ) =>
   createTailorKitServer({
@@ -23,12 +27,12 @@ const server = (
           input instanceof Request ? input : new Request(input, init);
         const url = new URL(request.url);
         requests.push(`${request.method} ${url.pathname}${url.search}`);
-        let body: Record<string, unknown> | undefined;
+        let body: z.output<ReturnType<typeof z.json>> | undefined;
         if (
           request.method !== "GET" &&
           request.headers.get("content-type")?.includes("json")
         ) {
-          body = (await request.clone().json()) as Record<string, unknown>;
+          body = z.json().parse(await request.clone().json());
           platformBodies.push(body);
         }
         if (url.pathname.endsWith(`/preview/shares/${shareId}/accept`)) {
@@ -48,7 +52,11 @@ const server = (
           });
         }
         if (url.pathname.endsWith("/apps/list")) {
-          const page = Number(body?.page);
+          const page = Number(
+            body && !Array.isArray(body) && isObjectValue(body)
+              ? body.page
+              : undefined
+          );
           return Response.json(
             page === 1
               ? {
@@ -358,6 +366,7 @@ describe("preview host flow", () => {
       }
     );
     expect(response.status).toBe(200);
+    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     const apps = (await response.json()) as {
       id: string;
       name: string;

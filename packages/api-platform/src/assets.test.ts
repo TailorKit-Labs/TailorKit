@@ -7,6 +7,9 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { handleAssetRequest } from "./assets";
 
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
@@ -164,7 +167,7 @@ it("serves Node fetch's decoded gzip body with consistent GET and HEAD metadata"
   })();
   try {
     const address = origin.address();
-    if (!address || typeof address === "string") {
+    if (!address || isStringValue(address)) {
       throw new Error("Missing test server address");
     }
     const backend = storage();

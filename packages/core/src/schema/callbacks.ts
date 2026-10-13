@@ -34,7 +34,7 @@ export type InferCallback<TCallback> =
     : (input: InferCallbackInput<TCallback>) => CallbackReturn<TCallback>;
 
 export type InferCallbacks<TCallbacks> =
-  TCallbacks extends Record<string, unknown>
+  TCallbacks extends Record<string, CallbackMap[string]>
     ? string extends keyof TCallbacks
       ? EmptyObject
       : {

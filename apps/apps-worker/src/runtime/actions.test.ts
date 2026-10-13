@@ -74,11 +74,12 @@ it("awaits actions and exposes scoped calls instead of a database handle", async
 });
 it("validates kind, arguments, expiry and output", async () => {
   const calls = { mutate: vi.fn(), query: vi.fn() };
+  // SAFETY: This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input.
   const app = defineServer({
     ...functions,
     invalid: action({
       args: z.object({ value: z.string() }),
-      handler: () => 1 as unknown as string,
+      handler: () => 1 as never,
       result: z.string(),
     }),
     read: query({ args: z.object({}), handler: () => 1 }),
@@ -297,7 +298,7 @@ it("reuses compiled nested bindings while isolating concurrent calls and retaine
 
 it("runs generated instance resolvers with all registered queries and no write capabilities", async () => {
   const { withInstanceResolvers } = await import("@tailorkit/app/server");
-  let retainedQuery!: () => Promise<unknown>;
+  let retainedQuery!: () => Promise<number>;
   const app = withInstanceResolvers(defineServer({ reports: functions }), [
     {
       dataSchema: z.object({ id: z.string() }),
@@ -309,8 +310,9 @@ it("runs generated instance resolvers with all registered queries and no write c
           "queries",
           "signal",
         ]);
+        // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
         const queries = context.queries as {
-          reports: { read: (args: object) => Promise<number> };
+          reports: { read: (args: Record<never, never>) => Promise<number> };
         };
         expect(Object.keys(queries.reports)).toEqual(["read"]);
         expect(context.context).toEqual({ subjectId: "user" });
@@ -502,7 +504,7 @@ it("dispatches by exact slot/path pairs and validates against the selected data 
 });
 
 it("binds backend tool calls to the active verified execution and closes escaped callers", async () => {
-  let escaped: (() => Promise<unknown>) | undefined;
+  let escaped: (() => Promise<{ amount: number }>) | undefined;
   const implementation = defineServer({
     read: action({
       args: z.undefined(),
@@ -510,10 +512,13 @@ it("binds backend tool calls to the active verified execution and closes escaped
       handler: async (ctx) => {
         expect(ctx.identity).toBe(identity);
         expect(ctx.scope).toBe(identity.scope);
+        // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
         escaped = () =>
           (
-            ctx.tools as unknown as {
-              billing: { read: (input: unknown) => Promise<unknown> };
+            ctx.tools as {
+              billing: {
+                read: (input: { id: string }) => Promise<{ amount: number }>;
+              };
             }
           ).billing.read({ id: "invoice" });
         return escaped();

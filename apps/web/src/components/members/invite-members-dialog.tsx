@@ -1,4 +1,3 @@
-import { roles } from "@tailorkit/auth/lib/permissions";
 import { Button } from "@tailorkit/ui/button";
 import {
   Dialog,
@@ -28,12 +27,10 @@ import { client } from "#lib/orpc";
 
 interface InviteRow {
   email: string;
-  role: keyof typeof roles;
+  role: "member" | "admin";
 }
 
-const invitableRoles = Object.keys(roles).filter(
-  (role) => role !== "owner"
-) as (keyof typeof roles)[];
+const invitableRoles = ["member", "admin"] as const;
 
 export const InviteMembersDialog = ({
   orgSlug,
@@ -55,7 +52,7 @@ export const InviteMembersDialog = ({
           client.org.inviteMember({
             email: row.email.trim(),
             orgSlug,
-            role: row.role as "member" | "admin",
+            role: row.role,
           })
         )
       );
@@ -69,14 +66,14 @@ export const InviteMembersDialog = ({
               }`
             : null
         )
-        .filter(Boolean) as string[];
+        .filter((message) => message !== null);
       if (failed.length > 0) {
         throw new Error(failed.join("\n"));
       }
     },
-    onError: (err: unknown) => {
+    onError: (cause: unknown) => {
       const message =
-        err instanceof Error ? err.message : "Some invitations failed";
+        cause instanceof Error ? cause.message : "Some invitations failed";
       setErrors(message.split("\n"));
     },
     onSuccess: () => {
@@ -127,78 +124,84 @@ export const InviteMembersDialog = ({
             </DialogDescription>
           </DialogHeader>
 
-          <DialogPanel className="space-y-3">
-            <div className="space-y-2">
-              {invites.map((row, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <Input
-                    aria-label={`Email address ${index + 1}`}
-                    className="flex-1"
-                    placeholder="colleague@example.com"
-                    type="email"
-                    value={row.email}
-                    onChange={(event) =>
-                      updateRow(index, "email", event.target.value)
-                    }
-                  />
-                  <Select
-                    value={row.role}
-                    onValueChange={(value) =>
-                      updateRow(index, "role", value as keyof typeof roles)
-                    }
-                  >
-                    <SelectTrigger
-                      aria-label={`Role for invite ${index + 1}`}
-                      className="w-32"
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectPopup>
-                      {invitableRoles.map((role) => (
-                        <SelectItem key={role} value={role}>
-                          {role.charAt(0).toUpperCase() + role.slice(1)}
-                        </SelectItem>
-                      ))}
-                    </SelectPopup>
-                  </Select>
-                  {invites.length > 1 && (
-                    <Button
-                      aria-label="Remove invite"
-                      size="icon-sm"
-                      type="button"
-                      variant="ghost"
-                      onClick={() =>
-                        setInvites((prev) => prev.filter((_, i) => i !== index))
+          <DialogPanel>
+            <div className="space-y-3">
+              <div className="space-y-2">
+                {invites.map((row, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      aria-label={`Email address ${index + 1}`}
+                      className="flex-1"
+                      placeholder="colleague@example.com"
+                      type="email"
+                      value={row.email}
+                      onChange={(event) =>
+                        updateRow(index, "email", event.target.value)
                       }
+                    />
+                    <Select
+                      value={row.role}
+                      onValueChange={(value) => {
+                        if (value === "member" || value === "admin") {
+                          updateRow(index, "role", value);
+                        }
+                      }}
                     >
-                      <TrashIcon />
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <Button
-              size="sm"
-              type="button"
-              variant="ghost"
-              onClick={() =>
-                setInvites((prev) => [...prev, { email: "", role: "member" }])
-              }
-            >
-              <PlusIcon />
-              Add another
-            </Button>
-
-            {errors.length > 0 && (
-              <div className="space-y-0.5">
-                {errors.map((error, index) => (
-                  <p key={index} className="text-destructive text-xs">
-                    {error}
-                  </p>
+                      <SelectTrigger
+                        aria-label={`Role for invite ${index + 1}`}
+                        className="w-32"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectPopup>
+                        {invitableRoles.map((role) => (
+                          <SelectItem key={role} value={role}>
+                            {role.charAt(0).toUpperCase() + role.slice(1)}
+                          </SelectItem>
+                        ))}
+                      </SelectPopup>
+                    </Select>
+                    {invites.length > 1 && (
+                      <Button
+                        aria-label="Remove invite"
+                        size="icon-sm"
+                        type="button"
+                        variant="ghost"
+                        onClick={() =>
+                          setInvites((prev) =>
+                            prev.filter((_, i) => i !== index)
+                          )
+                        }
+                      >
+                        <TrashIcon />
+                      </Button>
+                    )}
+                  </div>
                 ))}
               </div>
-            )}
+
+              <Button
+                size="sm"
+                type="button"
+                variant="ghost"
+                onClick={() =>
+                  setInvites((prev) => [...prev, { email: "", role: "member" }])
+                }
+              >
+                <PlusIcon />
+                Add another
+              </Button>
+
+              {errors.length > 0 && (
+                <div className="space-y-0.5">
+                  {errors.map((error, index) => (
+                    <p key={index} className="text-destructive text-xs">
+                      {error}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
           </DialogPanel>
 
           <DialogFooter>

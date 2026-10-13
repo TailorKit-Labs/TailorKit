@@ -2,12 +2,10 @@ import { beforeEach, expect, it, vi } from "vite-plus/test";
 
 import type { runAgentCommand } from "./agent";
 import type { runDeploy } from "./deploy";
+import type { CliOptions } from "./options";
 
 const mocks = vi.hoisted(() => ({
-  actions: new Map<
-    string,
-    (options: Record<string, unknown>) => Promise<void>
-  >(),
+  actions: new Map<string, (options: CliOptions) => Promise<void>>(),
   agent: vi.fn(),
   deploy: vi.fn(),
   error: vi.fn(),
@@ -27,9 +25,7 @@ vi.mock("cac", () => ({
   cac: () => {
     const cli = {
       command: (name: string) => ({
-        action: (
-          action: (options: Record<string, unknown>) => Promise<void>
-        ) => {
+        action: (action: (options: CliOptions) => Promise<void>) => {
           mocks.actions.set(name, action);
           return cli;
         },
@@ -101,9 +97,11 @@ it("passes --schema through generate with its working directory and config", asy
 
 it("passes --schema through init while retaining the required host", async () => {
   mocks.init.mockResolvedValue("/workspace/app");
+  // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+  // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
   const init = mocks.actions.get("init [directory]") as unknown as (
     directory: string,
-    options: Record<string, unknown>
+    options: CliOptions
   ) => Promise<void>;
   await init("/workspace", {
     cwd: "/tmp",

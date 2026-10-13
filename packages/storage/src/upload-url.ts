@@ -23,6 +23,7 @@ const toFetchBody = (body: StorageBody): FetchBody => {
     return new Uint8Array(body);
   }
 
+  // SAFETY: StorageBody contains fetch-compatible binary or stream bodies; Node Buffer is normalized to Uint8Array before forwarding.
   return body as FetchBody;
 };
 

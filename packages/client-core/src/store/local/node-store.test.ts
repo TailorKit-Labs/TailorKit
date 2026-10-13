@@ -1,4 +1,4 @@
-import type { RemoteNode } from "@tailorkit/sandbox/protocol";
+import type { RemoteProps, RemoteNode } from "@tailorkit/sandbox/protocol";
 import { describe, expect, it, vi } from "vite-plus/test";
 
 import { NodeStore } from "./node-store";
@@ -12,7 +12,7 @@ const textNode = (id: string, text: string): RemoteNode => ({
 const elemNode = (
   id: string,
   type: string,
-  props: Record<string, unknown> = {},
+  props: RemoteProps = {},
   children: RemoteNode[] = []
 ): RemoteNode => ({ children, id, kind: "element", props, type });
 

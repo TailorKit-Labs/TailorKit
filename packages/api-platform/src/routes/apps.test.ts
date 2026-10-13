@@ -23,6 +23,7 @@ import type { Context } from "../context";
 import { createTestDb } from "../test/pglite";
 import type * as RuntimeModule from "./runtime";
 
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const testState = vi.hoisted(() => ({
   db: undefined as unknown,
   env: { APP_RUNTIME_URL: undefined as string | undefined },
@@ -160,7 +161,7 @@ describe("platform appRouter", () => {
       { apps: appRouter },
       { plugins: [new RateLimitHandlerPlugin()] }
     );
-    const handle = (path: string, body: unknown) =>
+    const handle = <TInput>(path: string, body: TInput) =>
       handler.handle(
         new Request(`https://example.com/api/platform${path}`, {
           body: JSON.stringify(body),
@@ -177,6 +178,7 @@ describe("platform appRouter", () => {
     });
     expect(created.response?.status).toBe(200);
     expect(created.response?.headers.get("ratelimit-limit")).toBe("100");
+    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     const app = (await created.response?.json()) as { id: string };
 
     const found = await handle(`/apps/${app.id}/lookup`, {

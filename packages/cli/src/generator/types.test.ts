@@ -30,8 +30,10 @@ it.each([undefined, "{", '{"version":2,"components":{}}'])(
         failure = error;
       }
       expect(failure).toBeInstanceOf(Error);
+      // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
       const error = failure as Error;
       expect(error.cause).toBeInstanceOf(Error);
+      // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
       expect(error.message).toBe(
         `Unable to read TailorKit schema from ${schemaPath}: ${(error.cause as Error).message}`
       );
@@ -48,7 +50,7 @@ it("links the app to the configured server entry and never falls back to an unre
   const fetch = vi
     .spyOn(globalThis, "fetch")
     .mockImplementation(() =>
-      Promise.resolve(Response.json({ components: {}, views: {} }))
+      Promise.resolve(Response.json({ components: {}, version: 1, views: {} }))
     );
   try {
     await mkdir(path.join(root, "backend"));
@@ -90,7 +92,7 @@ it("preserves the type-only API link when regenerating host types, including cus
   const fetch = vi
     .spyOn(globalThis, "fetch")
     .mockImplementation(() =>
-      Promise.resolve(Response.json({ components: {}, views: {} }))
+      Promise.resolve(Response.json({ components: {}, version: 1, views: {} }))
     );
   try {
     await mkdir(path.join(root, "src"));
@@ -129,7 +131,7 @@ it("detects the default server file without server configuration and removes sta
   const fetch = vi
     .spyOn(globalThis, "fetch")
     .mockImplementation(() =>
-      Promise.resolve(Response.json({ components: {}, views: {} }))
+      Promise.resolve(Response.json({ components: {}, version: 1, views: {} }))
     );
   try {
     await writeFile(

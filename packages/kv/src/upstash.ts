@@ -133,13 +133,20 @@ const subscribe = (
 };
 
 export const createUpstashKV = (): KV<"upstash"> => {
+  const token = env.KV_REST_API_TOKEN;
+  const url = env.KV_REST_API_URL;
+  if (!token || !url) {
+    throw new Error(
+      "KV_REST_API_TOKEN and KV_REST_API_URL are required for Upstash"
+    );
+  }
   const redis = new Redis({
     // The KV interface stores and returns raw strings; individual consumers parse JSON as needed.
     automaticDeserialization: false,
 
-    token: env.KV_REST_API_TOKEN as string,
+    token,
 
-    url: env.KV_REST_API_URL as string,
+    url,
   });
 
   return {

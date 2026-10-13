@@ -24,6 +24,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
   return value;
 };
 
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const state = vi.hoisted(() => ({ db: undefined as unknown, start: vi.fn() }));
 vi.mock("@tailorkit/db", () => ({
   get db() {
@@ -37,13 +38,14 @@ vi.mock("@tailorkit/app-agent/workflows", () => ({
 }));
 vi.mock("workflow/api", () => ({ start: state.start }));
 vi.mock("@tailorkit/api-utils/dev-delay", () => ({
-  devDelayMiddleware: async ({ next }: { next: () => unknown }) => await next(),
+  devDelayMiddleware: async <TResult>({ next }: { next: () => TResult }) =>
+    await next(),
 }));
 vi.mock("@tailorkit/api-utils/rate-limiting", () => ({
   createRateLimiter: vi.fn(),
   ratelimitMiddleware:
     () =>
-    async ({ next }: { next: () => unknown }) =>
+    async <TResult>({ next }: { next: () => TResult }) =>
       await next(),
 }));
 const { handleAppAgentMcpRequest } = await import("./app-agent-mcp");
@@ -54,7 +56,10 @@ const otherProjectId = "33333333-3333-4333-8333-333333333333";
 const scope = canonicalizeScope({ name: "org", value: { tenant: "one" } });
 const otherScope = canonicalizeScope({ name: "org", value: { tenant: "two" } });
 
-const request = (name: string, args: Record<string, unknown> = {}) =>
+const request = (
+  name: string,
+  args: Parameters<typeof JSON.stringify>[0] = {}
+) =>
   new Request("https://platform.test/api/platform/app-agent/mcp", {
     body: JSON.stringify({
       id: 1,

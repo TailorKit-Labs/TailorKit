@@ -1,5 +1,6 @@
 import type { ToolBridge, Session, ViewInstance } from "@tailorkit/app/client";
 import type { ViewStatus } from "@tailorkit/core/views";
+import type { RemoteProps } from "@tailorkit/sandbox/protocol";
 import { atom } from "nanostores";
 
 import type {
@@ -43,7 +44,7 @@ export type SlotRuntimeSnapshot =
       appUrl: string;
       sourceText?: string;
       hostKey: string | number;
-      props: Record<string, unknown>;
+      props: RemoteProps;
       toolBridge: ToolBridge;
       getBackendSession: (options: { refresh: boolean }) => Promise<Session>;
     };
@@ -152,10 +153,10 @@ export const createSlotRuntime = (
         controlled: true,
         status: options.status,
         view: options.view,
-        ...(options.status === "ready" && options.instance
-          ? { instance: options.instance }
-          : {}),
       };
+      if (options.status === "ready" && options.instance) {
+        viewState.instance = options.instance;
+      }
       if (
         options.status === "ready" &&
         !options.instance &&

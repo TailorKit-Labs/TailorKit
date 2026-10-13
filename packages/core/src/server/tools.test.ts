@@ -6,6 +6,10 @@ import { tool } from "../schema/tools";
 import { createServer } from "./contract";
 import { createToolVerifier } from "./tool-auth";
 
+const isFunctionValue = <TValue>(
+  value: TValue
+): value is Extract<TValue, CallableFunction> => typeof value === "function";
+
 const pair = await crypto.subtle.generateKey(
   { name: "ECDSA", namedCurve: "P-256" },
   true,
@@ -42,6 +46,7 @@ const contract = defineContract({
     ui: { open: tool.client().input(z.string()).output(z.string()) },
   },
 });
+// SAFETY: This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input.
 const server = createServer({
   $internal: {
     platformBaseUrl: issuer,
@@ -67,7 +72,7 @@ const server = createServer({
   contract,
   tools: {
     math: {
-      broken: () => "invalid" as unknown as number,
+      broken: () => "invalid" as never,
       increment: handler,
       transformed: () => "42",
     },
@@ -82,6 +87,7 @@ it.each([
 ])(
   "requires an absolute HTTP(S) base URL when creating a server: %s",
   (baseUrl) => {
+    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     expect(() =>
       createServer({ baseUrl: baseUrl as string, contract: defineContract({}) })
     ).toThrow();
@@ -117,7 +123,7 @@ const encode = (value: Uint8Array) =>
     .replaceAll("/", "_")
     .replaceAll("=", "");
 const token = async (
-  overrides: Record<string, unknown> = {},
+  overrides: Parameters<typeof JSON.stringify>[0] = {},
   privateKey = pair.privateKey,
   kid = "platform"
 ) => {
@@ -211,7 +217,7 @@ it.each([
 ])("rejects invalid signed claims %j", async (claims) => {
   const before = handler.mock.calls.length;
   const awaitedResult1 = await execute(
-    await token(typeof claims === "function" ? claims() : claims)
+    await token(isFunctionValue(claims) ? claims() : claims)
   );
   expect(awaitedResult1.status).toBe(401);
   expect(handler.mock.calls.length).toBe(before);

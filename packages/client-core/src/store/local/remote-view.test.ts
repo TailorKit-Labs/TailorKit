@@ -34,6 +34,7 @@ const setup = () => {
     (_url: string | URL, options: IframeUiHostOptions = {}) => {
       const source = createRemoteUiStore();
       const listeners: (() => void)[] = [];
+      // SAFETY: The test provides a DOM stand-in with the members exercised by this scenario; unrelated browser members are never used.
       const host: IframeUiHost = {
         ...source,
         destroy: vi.fn(),
@@ -130,6 +131,7 @@ it("retains the latest props and shares callback payload construction", () => {
     undefined
   );
   const props = createRemoteElementProps(tree, store.dispatch);
+  // SAFETY: The fixture registers this callback before reading it back, and the test checks the dispatched callback arguments.
   (props.onSelect as (...args: unknown[]) => void)("selected value", {
     synthetic: "event",
   });
@@ -141,6 +143,7 @@ it("retains the latest props and shares callback payload construction", () => {
   });
   expect(tree.props).toEqual({ label: "Button" });
   stop();
+  // SAFETY: The fixture registers this callback before reading it back, and the test checks the dispatched callback arguments.
   (props.onSelect as (...args: unknown[]) => void)("after stop");
   expect(requireValue(records[0]).host.dispatch).toHaveBeenCalledOnce();
 });
@@ -159,6 +162,7 @@ it("isolates dispatch, component registries, and trees between remote views", ()
   const stopSecond = second.mount({ appUrl: "https://host.test/second.js" });
   requireValue(records[0]).host.setSnapshot(tree, 1);
   expect(second.nodes.root.get()).toBeNull();
+  // SAFETY: The fixture registers this callback before reading it back, and the test checks the dispatched callback arguments.
   const operation = createRemoteElementProps(tree, second.dispatch)
     .onSelect as (...args: unknown[]) => void;
   operation("second");
@@ -200,6 +204,7 @@ it("reports startup failures, releases partial hosts, and recovers on the next m
   const failure = new Error("Failed to start");
   createHost.mockImplementationOnce((_url, options = {}) => {
     const source = createRemoteUiStore();
+    // SAFETY: The test provides a DOM stand-in with the members exercised by this scenario; unrelated browser members are never used.
     const host: IframeUiHost = {
       ...source,
       destroy: vi.fn(),

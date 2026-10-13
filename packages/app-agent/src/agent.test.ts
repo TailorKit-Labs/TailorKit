@@ -1,3 +1,4 @@
+import type { WorkflowAgent } from "@ai-sdk/workflow";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { appAgent } from "./agent";
@@ -30,7 +31,7 @@ vi.mock("./sandbox", () => ({
 }));
 vi.mock("@ai-sdk/workflow", () => ({
   WorkflowAgent: class {
-    constructor(options: unknown) {
+    constructor(options: ConstructorParameters<typeof WorkflowAgent>[0]) {
       mocks.configure(options);
     }
     stream = mocks.stream;

@@ -96,6 +96,8 @@ describe("MCP transport configuration", () => {
       { scopes: { org: { tenant: "one" } }, subjectId: "" },
       { scopes: { org: { tenant: "one" } }, subjectId: "x".repeat(257) },
     ]) {
+      // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+
       // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       await expect(
         server.mcp.transport(value as { scopes: { org: { tenant: string } } })

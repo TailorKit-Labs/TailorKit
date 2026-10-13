@@ -1,5 +1,6 @@
 import type { DemoSession } from "@playground/shared/auth";
 import { useEffect, useState } from "react";
+import { z } from "zod";
 
 export interface SignInChoice {
   userId: string;
@@ -16,12 +17,37 @@ export interface DemoAuthState {
   choices: SignInChoice[];
 }
 
+const authStateSchema = z.object({
+  choices: z.array(
+    z.object({
+      userId: z.string(),
+      userName: z.string(),
+      email: z.string(),
+      avatar: z.string(),
+      teamId: z.string(),
+      teamName: z.string(),
+      teamKey: z.string(),
+    })
+  ),
+  session: z
+    .object({
+      user: z.object({
+        id: z.string(),
+        name: z.string(),
+        email: z.string(),
+        avatar: z.string(),
+      }),
+      team: z.object({ id: z.string(), name: z.string(), key: z.string() }),
+    })
+    .nullable(),
+});
+
 const readAuth = async (): Promise<DemoAuthState> => {
   const response = await fetch("/api/auth", { credentials: "same-origin" });
   if (!response.ok) {
     throw new Error("Could not load the local demo session");
   }
-  return (await response.json()) as DemoAuthState;
+  return authStateSchema.parse(await response.json());
 };
 
 export const useAuthSession = () => {
@@ -64,7 +90,7 @@ export const signInDemoUser = async (userId: string, teamId: string) => {
   if (!response.ok) {
     throw new Error("Could not start the local demo session");
   }
-  return (await response.json()) as DemoAuthState;
+  return authStateSchema.parse(await response.json());
 };
 
 export const signOutDemoUser = async () => {

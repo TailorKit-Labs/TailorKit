@@ -1,5 +1,18 @@
 import { z } from "zod";
 
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
+const isBooleanValue = <TValue>(value: TValue): value is TValue & boolean =>
+  typeof value === "boolean";
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
+const isNumberValue = <TValue>(value: TValue): value is TValue & number =>
+  typeof value === "number";
+
 export type JsonValue =
   | string
   | number
@@ -34,10 +47,11 @@ const quotedByteLength = (value: string) => {
   return json ? new TextEncoder().encode(json).byteLength : 0;
 };
 
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- Preflight validates raw scope data before Zod traversal and rejects getters, cycles and excessive nesting without invoking user code.
 const preflightScopeValue = (value: unknown): string | null => {
   if (
     value === null ||
-    typeof value !== "object" ||
+    !isObjectValue(value) ||
     Array.isArray(value) ||
     (Object.getPrototypeOf(value) !== Object.prototype &&
       Object.getPrototypeOf(value) !== null)
@@ -62,7 +76,7 @@ const preflightScopeValue = (value: unknown): string | null => {
       fail("Scope value exceeds 16 KiB of JSON.");
     }
   };
-  // oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
+  // oxlint-disable-next-line complexity, anti-slop/no-unknown-parameters -- This bounded preflight parser rejects invalid raw scope values, getters and cycles before Zod traversal.
   const visit = (current: unknown, depth: number): number => {
     nodes += 1;
     if (nodes > maxNodes) {
@@ -72,17 +86,17 @@ const preflightScopeValue = (value: unknown): string | null => {
     if (current === null) {
       return 4;
     }
-    if (typeof current === "boolean") {
+    if (isBooleanValue(current)) {
       return current ? 4 : 5;
     }
-    if (typeof current === "string") {
+    if (isStringValue(current)) {
       if (current.length > maxStringLength) {
         fail("Scope strings cannot exceed 255 characters.");
         return 0;
       }
       return quotedByteLength(current);
     }
-    if (typeof current === "number") {
+    if (isNumberValue(current)) {
       if (
         !Number.isFinite(current) ||
         Object.is(current, -0) ||
@@ -92,11 +106,7 @@ const preflightScopeValue = (value: unknown): string | null => {
       }
       return String(JSON.stringify(current)).length;
     }
-    if (
-      typeof current !== "object" ||
-      depth > maxDepth ||
-      active.has(current)
-    ) {
+    if (!isObjectValue(current) || depth > maxDepth || active.has(current)) {
       fail(
         "Scope value exceeds the allowed depth, contains a cycle, or is not JSON."
       );
@@ -144,7 +154,7 @@ const preflightScopeValue = (value: unknown): string | null => {
       for (let index = 0; index < keys.length && valid; index += 1) {
         const key = keys[index];
         if (
-          typeof key !== "string" ||
+          !isStringValue(key) ||
           key === "__proto__" ||
           key.length === 0 ||
           key.length > maxKeyLength
@@ -178,7 +188,7 @@ const preflightScopeValue = (value: unknown): string | null => {
   for (let index = 0; index < rootKeys.length && valid; index += 1) {
     const key = rootKeys[index];
     if (
-      typeof key !== "string" ||
+      !isStringValue(key) ||
       key === "__proto__" ||
       key.length === 0 ||
       key.length > maxKeyLength

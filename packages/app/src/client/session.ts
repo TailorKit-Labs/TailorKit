@@ -1,5 +1,34 @@
+import { z } from "zod";
+
 import { AppError } from "../errors";
 import type { Identity } from "../server/functions";
+
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
+const identitySchema = z.object({
+  appId: z.string(),
+  deploymentId: z.string(),
+  expiresAt: z.number(),
+  installationId: z.string(),
+  projectId: z.string(),
+  scope: z.object({ name: z.string(), value: z.record(z.string(), z.json()) }),
+  subjectId: z.string().optional(),
+  toolUrl: z.string(),
+});
+const sessionSchema = z.object({
+  expiresAt: z.number(),
+  identity: identitySchema.optional(),
+  subjectId: z.string().optional(),
+  token: z.string(),
+  toolUrl: z.string().optional(),
+  url: z.string(),
+});
+
+export const parseSession = (
+  value: Parameters<typeof sessionSchema.parse>[0]
+): Session => sessionSchema.parse(value);
 
 const APP_SESSION_RENEWAL_MS = 60_000;
 
@@ -13,7 +42,7 @@ export interface Session {
 }
 
 const freezeIdentity = <T>(value: T): T => {
-  if (value && typeof value === "object" && !Object.isFrozen(value)) {
+  if (value && isObjectValue(value) && !Object.isFrozen(value)) {
     for (const child of Object.values(value)) {
       freezeIdentity(child);
     }
@@ -73,26 +102,14 @@ export const createSessionProvider = (options: {
               "Unable to authorize the app backend"
             );
           }
-          const value = (await response.json()) as Partial<Session>;
-          if (
-            typeof value.token !== "string" ||
-            typeof value.expiresAt !== "number" ||
-            typeof value.url !== "string"
-          ) {
+          const parsed = sessionSchema.safeParse(await response.json());
+          if (!parsed.success) {
             throw new AppError("UNAVAILABLE", "Invalid app session");
           }
-          cached = {
-            ...(value.toolUrl === undefined ? {} : { toolUrl: value.toolUrl }),
-            ...(value.identity === undefined
-              ? {}
-              : { identity: freezeIdentity(value.identity) }),
-            expiresAt: value.expiresAt,
-            token: value.token,
-            url: value.url,
-            ...(value.subjectId === undefined
-              ? {}
-              : { subjectId: value.subjectId }),
-          };
+          cached = parsed.data;
+          if (cached.identity) {
+            cached.identity = freezeIdentity(cached.identity);
+          }
           return cached;
         })();
       } finally {

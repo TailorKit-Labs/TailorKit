@@ -166,15 +166,25 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
     await bucket.put(objectKey, bytes, {
       httpMetadata: version === 1 ? {} : { contentEncoding: "gzip" },
     });
-    published = {
-      appId: "app",
-      checksum: createHash("sha256").update(bytes).digest("hex"),
-      contentLength: bytes.byteLength,
-      deploymentId: `v${version}`,
-      objectKey,
-      projectId,
-      ...(version === 1 ? {} : { contentEncoding: "gzip" }),
-    };
+    published =
+      version === 1
+        ? {
+            appId: "app",
+            checksum: createHash("sha256").update(bytes).digest("hex"),
+            contentLength: bytes.byteLength,
+            deploymentId: `v${version}`,
+            objectKey,
+            projectId,
+          }
+        : {
+            appId: "app",
+            checksum: createHash("sha256").update(bytes).digest("hex"),
+            contentEncoding: "gzip",
+            contentLength: bytes.byteLength,
+            deploymentId: `v${version}`,
+            objectKey,
+            projectId,
+          };
     const response = await mf.dispatchFetch(
       `https://internal.tailorkit.app/p/${projectId}/a/${appPublicId}/new-deployment`,
       {

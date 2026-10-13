@@ -1,17 +1,23 @@
-import type { ToolBridge, Session } from "@tailorkit/app/client";
+import type { ToolBridge } from "@tailorkit/app/client";
+import { parseSession } from "@tailorkit/app/client/connection";
+
+import type { HostToIframePayload } from "../protocol";
+
+type ToolReply = Extract<HostToIframePayload, { type: "toolResult" }>["data"];
+type ToolOutput = ToolReply["output"];
 
 export const createIframeTools = (
   send: (input: {
     id: string;
     kind: "client" | "server";
     path: string;
-    input?: unknown;
+    input?: Parameters<ToolBridge["client"]>[1];
   }) => void
 ) => {
   const pending = new Map<
     string,
     {
-      resolve: (value: unknown) => void;
+      resolve: (value: ToolOutput) => void;
       reject: (error: Error) => void;
       timer: ReturnType<typeof setTimeout>;
     }
@@ -20,8 +26,8 @@ export const createIframeTools = (
   const request = (
     kind: "client" | "server",
     path: string,
-    input?: unknown
-  ): Promise<unknown> => {
+    input?: Parameters<ToolBridge["client"]>[1]
+  ): Promise<ToolOutput> => {
     if (closed) {
       return Promise.reject(new Error("Sandbox destroyed"));
     }
@@ -50,7 +56,7 @@ export const createIframeTools = (
   };
   const bridge: ToolBridge = {
     client: (path, input) => request("client", path, input),
-    session: (path) => request("server", path) as Promise<Session>,
+    session: async (path) => parseSession(await request("server", path)),
   };
   return {
     bridge,
@@ -62,7 +68,7 @@ export const createIframeTools = (
       }
       pending.clear();
     },
-    receive(result: { id: string; output?: unknown; error?: string }) {
+    receive(result: ToolReply) {
       const entry = pending.get(result.id);
       if (!entry) {
         return;

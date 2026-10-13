@@ -388,6 +388,7 @@ const renderDeclaration = (context: JsonSchema): string => {
 
 const declarations = cases.map(({ schema }) => {
   const wrapped = z.object({ value: schema });
+  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   return renderDeclaration(
     wrapped["~standard"].jsonSchema.output({
       target: "draft-2020-12",
@@ -410,6 +411,7 @@ describe("JSON Schema type generation", () => {
   it.each(cases)(
     "preserves $name in component fields, callbacks, and actions",
     ({ schema, expected }) => {
+      // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
       const value = schema["~standard"].jsonSchema.output({
         target: "draft-2020-12",
       }) as JsonSchema;

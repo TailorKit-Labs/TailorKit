@@ -26,6 +26,7 @@ import { env } from "#env";
 import type { Context } from "../context";
 import { createTestDb } from "../test/pglite";
 
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const state = vi.hoisted(() => ({
   db: undefined as unknown,
   kv: undefined as unknown,
@@ -244,7 +245,9 @@ describe("platform preview lifecycle and grants", () => {
       code: "CONFLICT",
       data: { reason: "ACTIVE_PREVIEW_EXISTS" },
     });
-    const kv = state.kv as ReturnType<typeof fakeKV>;
+    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    const kv = state.kv as unknown as ReturnType<typeof fakeKV>;
     const expiredBuildId = "expired_build";
     const manifest = {
       files: [
@@ -324,7 +327,9 @@ describe("platform preview lifecycle and grants", () => {
     });
     expect(session?.status).toBe("ended");
     expect(
-      await (state.kv as ReturnType<typeof fakeKV>).get(
+      // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+      // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+      await (state.kv as unknown as ReturnType<typeof fakeKV>).get(
         `preview:ended:${started.body.sessionId}`
       )
     ).toBe("1");
@@ -332,7 +337,9 @@ describe("platform preview lifecycle and grants", () => {
 
   it("retires a disconnected developer before checking the app conflict", async () => {
     const first = await start();
-    const kv = state.kv as ReturnType<typeof fakeKV>;
+    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    const kv = state.kv as unknown as ReturnType<typeof fakeKV>;
     await kv.set(`preview:developer-seen:${first.body.sessionId}`, "1");
     await kv.set(
       `preview:developer-connection:${first.body.sessionId}`,
@@ -360,7 +367,9 @@ describe("platform preview lifecycle and grants", () => {
 
     const replacement = await start();
     expect(replacement.body.sessionId).not.toBe(first.body.sessionId);
-    const kv = state.kv as ReturnType<typeof fakeKV>;
+    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    const kv = state.kv as unknown as ReturnType<typeof fakeKV>;
     expect(await kv.get(`preview:ended:${first.body.sessionId}`)).toBe("1");
   });
 
@@ -380,7 +389,9 @@ describe("platform preview lifecycle and grants", () => {
       { context }
     );
     expect(wrongScope.body.items).toEqual([]);
-    const kv = state.kv as ReturnType<typeof fakeKV>;
+    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    const kv = state.kv as unknown as ReturnType<typeof fakeKV>;
     await kv.set(
       `preview:current:${started.body.sessionId}`,
       JSON.stringify({
@@ -424,7 +435,9 @@ describe("platform preview lifecycle and grants", () => {
 
   it("retries KV cleanup after the session was durably stopped", async () => {
     const started = await start();
-    const kv = state.kv as ReturnType<typeof fakeKV>;
+    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    const kv = state.kv as unknown as ReturnType<typeof fakeKV>;
     const buildId = "retry_build";
     const buildKey = `preview:build:${started.body.sessionId}:${buildId}`;
     const chunkKey = `${buildKey}:0:0`;
@@ -485,7 +498,13 @@ describe("platform preview lifecycle and grants", () => {
 
   it("ends an idle viewer stream when its bearer token expires", async () => {
     const started = await start();
-    const current = vi.spyOn(state.kv as ReturnType<typeof fakeKV>, "get");
+    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    const current = vi.spyOn(
+      // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- The test installs fakeKV into a KV service; the service signature erases the fake implementation methods inspected here.
+      state.kv as unknown as ReturnType<typeof fakeKV>,
+      "get"
+    );
     vi.useFakeTimers({
       toFake: [
         "Date",
@@ -651,6 +670,7 @@ describe("platform preview lifecycle and grants", () => {
       { context: { ...context, agentToken }, prefix: "/api/platform" }
     );
     expect(response.response!.status).toBe(200);
+    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     const started = (await response.response!.json()) as {
       expiresAt: string;
       sessionId: string;

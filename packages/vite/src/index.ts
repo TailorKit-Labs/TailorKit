@@ -17,6 +17,9 @@ import { loadTailorKitConfig } from "./config/loader";
 import type { LoadedTailorKitConfig } from "./config/loader";
 import { assertSupportedPreactVersion } from "./preact-version";
 
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
@@ -50,9 +53,9 @@ const getInstalledPreactVersion = (root: string): string => {
 
   try {
     const packageJsonPath = require.resolve("preact/package.json");
-    const packageJson = require(packageJsonPath) as { version?: unknown };
+    const packageJson: { version?: unknown } = require(packageJsonPath);
 
-    if (typeof packageJson.version === "string") {
+    if (isStringValue(packageJson.version)) {
       return packageJson.version;
     }
   } catch (error) {
@@ -126,18 +129,22 @@ export const tailorkit = (options: TailorKitPluginOptions = {}): Plugin[] => {
         resolve: resolved.resolve,
       }
     );
-    const logoManifest: { dark?: string; light?: string } = {};
+    interface LogoManifest {
+      dark?: string;
+      light?: string;
+    }
+    const logoManifest: LogoManifest = {};
     for (const variant of ["light", "dark"] as const) {
       const configuredPath = loaded.config.logos?.[variant];
       if (!configuredPath) {
         continue;
       }
       const extension = path.extname(configuredPath).toLowerCase().slice(1);
-      const contentType = {
-        png: "image/png",
-        svg: "image/svg+xml",
-        webp: "image/webp",
-      }[extension] as LogoContentType | undefined;
+      const contentType = new Map<string, LogoContentType>([
+        ["png", "image/png"],
+        ["svg", "image/svg+xml"],
+        ["webp", "image/webp"],
+      ]).get(extension);
       if (!contentType) {
         throw new Error(
           `The ${variant} logo must be an SVG, PNG, or WebP file.`

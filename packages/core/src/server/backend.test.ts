@@ -13,7 +13,7 @@ const issueSession = vi.fn(async () => session);
 const authenticate = vi.fn(async () => ({
   scopes: { workspace: { id: "authorized-workspace" } },
 }));
-const request = (body: unknown, origin = "https://host.test") =>
+const request = <TInput>(body: TInput, origin = "https://host.test") =>
   new Request("https://host.test/api/tailorkit/backend/session", {
     body: JSON.stringify(body),
     headers: { "content-type": "application/json", origin },

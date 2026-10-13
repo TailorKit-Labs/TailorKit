@@ -41,7 +41,7 @@ export const createRateLimiter = ({
         script: string,
         keys: string[],
         args: string[]
-      ): Promise<unknown> {
+      ): ReturnType<typeof redis.eval> {
         return redis.eval(script, keys.length, ...keys, ...args);
       }
     }

@@ -1,3 +1,4 @@
+import type { StandardJSONSchemaV1 } from "@standard-schema/spec";
 import { z } from "zod";
 
 const JSONType = z.enum([
@@ -17,7 +18,9 @@ const JSONType = z.enum([
  * to support additional schema features, we can add them incrementally.
  */
 // oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
-export const JsonSchema: z.ZodType<Record<string, unknown>> = z
+export const JsonSchema: z.ZodType<
+  ReturnType<StandardJSONSchemaV1.Converter["output"]>
+> = z
   .object({
     $schema: z
       .enum(["https://json-schema.org/draft/2020-12/schema"])

@@ -1,11 +1,21 @@
 import { resolveTheme } from "@tailorkit/core/primitives/theme";
 import type { TailorKitTheme } from "@tailorkit/core/schema";
+import type { RemoteProps } from "@tailorkit/sandbox/protocol";
 
-type Responsive<T> = T | Record<string, T | undefined>;
+const isFunctionValue = <TValue>(
+  value: TValue
+): value is Extract<TValue, CallableFunction> => typeof value === "function";
+
+const isNumberValue = <TValue>(value: TValue): value is TValue & number =>
+  typeof value === "number";
+
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
 
 type PrimitiveValue = number | string;
 
-export type PrimitiveProps = Record<string, unknown>;
+export type PrimitiveProps = RemoteProps;
 
 const tokenGroups = [
   "space",
@@ -17,9 +27,8 @@ const tokenGroups = [
 ] as const;
 
 const cssEscape = (value: string): string => {
-  const css = (globalThis as { CSS?: { escape?: (input: string) => string } })
-    .CSS;
-  if (typeof css?.escape === "function") {
+  const css = globalThis.CSS;
+  if (isFunctionValue(css?.escape)) {
     return css.escape(value);
   }
   return value.replaceAll(/[^A-Za-z0-9_-]/gu, "\\$&");
@@ -29,7 +38,7 @@ const toCssValue = (
   group: (typeof tokenGroups)[number] | "size" | "raw",
   value: PrimitiveValue
 ): string => {
-  if (typeof value === "number") {
+  if (isNumberValue(value)) {
     return `${value}px`;
   }
   if (group === "size" || group === "raw") {
@@ -38,17 +47,23 @@ const toCssValue = (
   return `var(--tailorkit-${group}-${cssEscape(value)})`;
 };
 
-const toResponsiveEntries = <T>(
-  value: Responsive<T> | undefined
-): [string, T][] => {
-  if (value === undefined) {
+const isPrimitiveValue = <TValue>(
+  value: TValue
+): value is TValue & PrimitiveValue =>
+  typeof value === "string" || typeof value === "number";
+const toResponsiveEntries = (
+  value: RemoteProps[string]
+): [string, PrimitiveValue][] => {
+  if (isPrimitiveValue(value)) {
+    return [["base", value]];
+  }
+  if (!value || !isObjectValue(value) || Array.isArray(value)) {
     return [];
   }
-  if (!(value && typeof value === "object") || Array.isArray(value)) {
-    return [["base", value as T]];
-  }
-  return Object.entries(value as Record<string, T | undefined>).filter(
-    (entry): entry is [string, T] => entry[1] !== undefined
+  return Object.entries(value).flatMap(([breakpoint, entry]) =>
+    isPrimitiveValue(entry)
+      ? [[breakpoint, entry] satisfies [string, PrimitiveValue]]
+      : []
   );
 };
 
@@ -79,16 +94,16 @@ const declarationsForProp = (prop: string, value: PrimitiveValue): string[] => {
   if (prop === "columns") {
     return [`grid-template-columns: repeat(${String(value)}, minmax(0, 1fr));`];
   }
-  const tokenDeclarations: Record<
+  const tokenDeclarations = new Map<
     string,
     [(typeof tokenGroups)[number], string]
-  > = {
-    background: ["background", "background"],
-    border: ["border", "border"],
-    borderColor: ["borderColor", "border-color"],
-    textColor: ["textColor", "color"],
-  };
-  const tokenDeclaration = tokenDeclarations[prop];
+  >([
+    ["background", ["background", "background"]],
+    ["border", ["border", "border"]],
+    ["borderColor", ["borderColor", "border-color"]],
+    ["textColor", ["textColor", "color"]],
+  ]);
+  const tokenDeclaration = tokenDeclarations.get(prop);
   if (tokenDeclaration) {
     const [group, property] = tokenDeclaration;
     if (prop === "border") {
@@ -161,9 +176,7 @@ export const buildPrimitiveCss = ({
   const byBreakpoint = new Map<string, string[]>();
 
   for (const [prop, rawValue] of Object.entries(props)) {
-    for (const [breakpoint, value] of toResponsiveEntries(
-      rawValue as Responsive<PrimitiveValue>
-    )) {
+    for (const [breakpoint, value] of toResponsiveEntries(rawValue)) {
       const declarations = declarationsForProp(prop, value);
       if (declarations.length === 0) {
         continue;

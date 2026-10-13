@@ -61,7 +61,10 @@ export const InputGroupAddon = ({
     data-slot="input-group-addon"
     role="presentation"
     onMouseDown={(e: React.MouseEvent<HTMLDivElement>) => {
-      const target = e.target as Element;
+      const { target } = e;
+      if (!(target instanceof Element)) {
+        return;
+      }
       if (!e.currentTarget.contains(target)) {
         return;
       }

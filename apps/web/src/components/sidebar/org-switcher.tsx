@@ -61,18 +61,14 @@ export const OrgSwitcher = ({ orgSlug }: OrgSwitcherProps) => {
       value={currentOrg}
     >
       <ComboboxTrigger
-        render={
-          <SidebarMenuButton className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground h-12 w-full justify-between" />
-        }
+        render={<SidebarMenuButton className="h-12 w-full justify-between" />}
       >
         <ComboboxValue>
           {(org: SwitchableOrganization | null) =>
             org ? (
               <div className="flex items-center gap-2 truncate">
-                <Avatar className="size-6 rounded-md">
-                  <AvatarFallback className="bg-primary text-primary-foreground rounded-md text-[10px]">
-                    {orgInitials(org.name)}
-                  </AvatarFallback>
+                <Avatar className="size-6">
+                  <AvatarFallback>{orgInitials(org.name)}</AvatarFallback>
                 </Avatar>
                 <span className="truncate text-sm font-medium">{org.name}</span>
               </div>
@@ -88,7 +84,6 @@ export const OrgSwitcher = ({ orgSlug }: OrgSwitcherProps) => {
       <ComboboxPopup aria-label="Select organisation">
         <div className="border-b p-2">
           <ComboboxInput
-            className="rounded-md before:rounded-[calc(var(--radius-md)-1px)]"
             placeholder="Search organisations..."
             showTrigger={false}
             startAddon={<SearchIcon />}
@@ -98,10 +93,8 @@ export const OrgSwitcher = ({ orgSlug }: OrgSwitcherProps) => {
         <ComboboxList>
           {(org: SwitchableOrganization) => (
             <ComboboxItem key={org.slug} value={org}>
-              <Avatar className="mr-2 size-5 rounded-sm">
-                <AvatarFallback className="bg-input rounded-sm text-[10px]">
-                  {orgInitials(org.name)}
-                </AvatarFallback>
+              <Avatar className="mr-2 size-5">
+                <AvatarFallback>{orgInitials(org.name)}</AvatarFallback>
               </Avatar>
               <span>{org.name}</span>
             </ComboboxItem>

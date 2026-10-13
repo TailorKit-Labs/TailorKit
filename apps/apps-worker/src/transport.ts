@@ -17,14 +17,21 @@ import { decodePeerMessage, isPeerCancelMessage } from "@standard-server/peer";
 import { appContract } from "@tailorkit/app/protocol";
 import type { Invocation, MutationInvocation } from "@tailorkit/app/protocol";
 import { Effect } from "effect";
+import { z } from "zod";
 
 import type { SubscriptionConnection } from "./supervisor/subscriptions";
 
-export const wireError = (err: unknown) => {
-  if (err instanceof ORPCError) {
-    return err;
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
+export const wireError = (cause: unknown) => {
+  if (cause instanceof ORPCError) {
+    return cause;
   }
-  const failure = err as { code?: string; message?: string } | undefined;
+  const parsed = z
+    .object({ code: z.string().optional(), message: z.string().optional() })
+    .safeParse(cause);
+  const failure = parsed.success ? parsed.data : undefined;
   const code = failure?.code ?? "INTERNAL_SERVER_ERROR";
   return new ORPCError(code, {
     message: failure?.code ? failure.message : "App function failed",
@@ -38,13 +45,14 @@ export const errorStatusMap = {
 };
 
 /** Authentication failures must use the same oRPC wire format as procedure errors. */
-export const rpcErrorResponse = (err2: unknown) => {
-  const failure = wireError(err2);
+const rpcStatusByCode = new Map(Object.entries(errorStatusMap));
+
+export const rpcErrorResponse = (cause: unknown) => {
+  const failure = wireError(cause);
   return Response.json(
     { json: failure.toJSON() },
     {
-      status:
-        errorStatusMap[failure.code as keyof typeof errorStatusMap] ?? 500,
+      status: rpcStatusByCode.get(failure.code) ?? 500,
     }
   );
 };
@@ -203,10 +211,10 @@ export const createSubscriptionHandler = () => {
   );
   return {
     close: (socket: {
-      send: (data: string | Uint8Array<ArrayBuffer>) => unknown;
+      send: (data: string | Uint8Array<ArrayBuffer>) => void;
     }) => handler.close(socket),
     message(
-      socket: { send: (data: string | Uint8Array<ArrayBuffer>) => unknown },
+      socket: { send: (data: string | Uint8Array<ArrayBuffer>) => void },
       message: string | ArrayBuffer,
       subscribe: (input: Invocation) => HibernationAsyncIteratorClass<unknown>,
       cancel: (id: string) => Promise<void>
@@ -217,7 +225,7 @@ export const createSubscriptionHandler = () => {
       // Hibernation detaches the iterator from the peer. Cancellation must also
       // remove persisted subscriptions, including after a new handler is created.
       const decoded = decodePeerMessage(
-        typeof message === "string" ? message : new Uint8Array(message)
+        isStringValue(message) ? message : new Uint8Array(message)
       );
       if (decoded.matched && isPeerCancelMessage(decoded.message)) {
         return (async () => {
@@ -242,11 +250,11 @@ export const subscriptionStream = (
 export const deliverSubscription = (
   connection: SubscriptionConnection,
   id: string,
-  value: unknown,
+  value: Parameters<typeof encodeHibernationRPCEvent>[1],
   err6 = false
 ) =>
   Effect.tryPromise({
-    catch: (errorValue: unknown) => errorValue,
+    catch: (cause: unknown) => cause,
     try: async () => {
       connection.send(
         await encodeHibernationRPCEvent(

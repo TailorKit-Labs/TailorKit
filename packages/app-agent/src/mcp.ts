@@ -1,5 +1,8 @@
 import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";
-import type { ServerContext } from "@modelcontextprotocol/server";
+import type {
+  CallToolResult,
+  ServerContext,
+} from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 const promptSchema = z.string().trim().min(1).max(32_000);
@@ -21,7 +24,9 @@ const createSchema = z.strictObject({
 export interface AppAgentMcpExecution {
   signal: AbortSignal;
   /** Stream agent events through the MCP request's progress notifications. */
-  onProgress: (event: Record<string, unknown>) => Promise<void>;
+  onProgress: (
+    event: NonNullable<CallToolResult["structuredContent"]>
+  ) => Promise<void>;
 }
 
 /** Implementations receive authorization from the host, never from tool arguments. */
@@ -29,15 +34,15 @@ export interface AppAgentMcpBackend {
   listApps: (input: {
     page: number;
     pageSize: number;
-  }) => Promise<Record<string, unknown>>;
+  }) => Promise<NonNullable<CallToolResult["structuredContent"]>>;
   createApp: (
     input: z.infer<typeof createSchema>,
     execution: AppAgentMcpExecution
-  ) => Promise<Record<string, unknown>>;
+  ) => Promise<NonNullable<CallToolResult["structuredContent"]>>;
   editApp: (
     input: z.infer<typeof editSchema>,
     execution: AppAgentMcpExecution
-  ) => Promise<Record<string, unknown>>;
+  ) => Promise<NonNullable<CallToolResult["structuredContent"]>>;
 }
 
 const execution = (context: ServerContext): AppAgentMcpExecution => {
@@ -62,7 +67,7 @@ const execution = (context: ServerContext): AppAgentMcpExecution => {
   };
 };
 
-const result = (value: Record<string, unknown>) => ({
+const result = (value: NonNullable<CallToolResult["structuredContent"]>) => ({
   content: [{ text: JSON.stringify(value), type: "text" as const }],
   structuredContent: value,
 });

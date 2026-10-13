@@ -2,6 +2,13 @@ import { validateTailorKitScopes } from "./scope";
 import type { TailorKitScopeSchemas } from "./scope";
 import type { TailorKitHostContext, TailorKitPlatformOptions } from "./types";
 
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
+const isFunctionValue = <TValue>(
+  value: TValue
+): value is Extract<TValue, CallableFunction> => typeof value === "function";
+
 const maximumContextHeaderLength = 8192;
 
 /** Prepare standard HTTP MCP client configuration; no host route or custom fetch is needed. */
@@ -17,7 +24,7 @@ export const createMcpTransport = (options: {
   }> {
     if (
       context.subjectId !== undefined &&
-      (typeof context.subjectId !== "string" ||
+      (!isStringValue(context.subjectId) ||
         !context.subjectId ||
         context.subjectId.length > 256)
     ) {
@@ -43,7 +50,7 @@ export const createMcpTransport = (options: {
       .replaceAll("+", "-")
       .replaceAll("/", "_")
       .replace(/=+$/u, "");
-    const configured = await (typeof options.platformHeaders === "function"
+    const configured = await (isFunctionValue(options.platformHeaders)
       ? options.platformHeaders()
       : options.platformHeaders);
     const headers = new Headers(configured);

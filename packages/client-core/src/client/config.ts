@@ -9,11 +9,22 @@ import type {
   ToolImplementations,
 } from "@tailorkit/core/schema";
 
+import type { RemoteComponentRegistry } from "../store/local/remote-view";
 import { createTailorKitFetchClient } from "./fetch-client";
 import type {
   TailorKitFetchClient,
   TailorKitCacheOptions,
 } from "./fetch-client";
+
+const isFunctionValue = <TValue>(
+  value: TValue
+): value is Extract<TValue, CallableFunction> => typeof value === "function";
+
+type ClientToolTree = ToolImplementations<TailorKitContract["tools"], "client">;
+const isToolHandler = (
+  value: ClientToolTree[string]
+): value is Exclude<ClientToolTree[string], ClientToolTree> =>
+  typeof value === "function";
 
 export type AnyComponentDefinition = ComponentDefinition<
   Schema | undefined,
@@ -67,7 +78,7 @@ export interface TailorKitClientConfig {
   readonly fetchClient?: TailorKitFetchClient;
   /** Clear cached app data and sessions after changing the host auth session. */
   readonly clearCache: () => void;
-  readonly components: Record<string, unknown>;
+  readonly components: RemoteComponentRegistry;
   readonly theme: TailorKitTheme;
 }
 
@@ -85,19 +96,19 @@ export const createTailorKitClientConfig = (options: {
   tools?: ToolImplementations<TailorKitContract["tools"], "client">;
   assetsBaseUrl?: string | URL;
   baseUrl: string | URL;
-  components?: Record<string, unknown>;
+  components?: RemoteComponentRegistry;
   theme?: TailorKitTheme;
   cache?: TailorKitCacheOptions;
   fetch?: typeof fetch;
 }): TailorKitClientConfig => {
   const declarations = flattenTools(options.contract.tools);
-  const visit = (tree: unknown, prefix = "") => {
-    if (!tree || typeof tree !== "object") {
+  const visit = (tree: ClientToolTree | undefined, prefix = "") => {
+    if (!tree) {
       return;
     }
     for (const [name, value] of Object.entries(tree)) {
       const path = prefix + name;
-      if (typeof value === "function") {
+      if (isFunctionValue(value)) {
         if (declarations.get(path)?.kind !== "client") {
           throw new Error(`Undeclared client tool "${path}"`);
         }
@@ -111,14 +122,14 @@ export const createTailorKitClientConfig = (options: {
     if (leaf.kind !== "client") {
       continue;
     }
-    let value: unknown = options.tools;
+    let value: ClientToolTree[string] | undefined = options.tools;
     for (const name of path.split(".")) {
       value =
-        value && typeof value === "object" && Object.hasOwn(value, name)
-          ? (value as Record<string, unknown>)[name]
+        value && !isToolHandler(value) && Object.hasOwn(value, name)
+          ? value[name]
           : undefined;
     }
-    if (typeof value !== "function") {
+    if (!isFunctionValue(value)) {
       throw new TypeError(`Missing client tool "${path}"`);
     }
   }
@@ -135,17 +146,22 @@ export const createTailorKitClientConfig = (options: {
   };
 };
 
+interface WrappedComponentRegistry<TRenderer> {
+  [name: string]: TRenderer;
+}
+
 /** Register schema names and their remote element aliases with the same wrapped renderer. */
 export const createComponentRegistry = <
-  T extends Record<string, unknown>,
+  T extends RemoteComponentRegistry,
   TRenderer,
 >(
   renderers: T,
   wrap: (renderer: NonNullable<T[keyof T]>) => TRenderer
-): Record<string, TRenderer> => {
-  const components: Record<string, TRenderer> = {};
+): WrappedComponentRegistry<TRenderer> => {
+  const components: WrappedComponentRegistry<TRenderer> = {};
   for (const [name, renderer] of Object.entries(renderers)) {
     if (renderer) {
+      // SAFETY: Object.entries returns own values from renderers, and the truthy check excludes nullish entries before wrapping.
       const component = wrap(renderer as NonNullable<T[keyof T]>);
       components[name] = component;
       components[toComponentTagName(name)] = component;

@@ -19,7 +19,7 @@ export interface SubscriptionSession {
 export interface SubscriptionConnection {
   read: () => SubscriptionSession | undefined;
   write: (session: SubscriptionSession) => void;
-  send: (data: string | Uint8Array<ArrayBuffer>) => unknown;
+  send: (data: string | Uint8Array<ArrayBuffer>) => void;
 }
 
 /** Dependency tracking is independent of socket encoding and provider storage. */
@@ -39,7 +39,7 @@ const removeImplementation = (
   });
 
 const keyImplementation = (socket: WebSocket) =>
-  `socket:${socket.deserializeAttachment() as string}`;
+  `socket:${socket.deserializeAttachment()}`;
 
 export const createSubscriptions = (
   ctx: DurableObjectState,

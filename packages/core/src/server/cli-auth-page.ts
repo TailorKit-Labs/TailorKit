@@ -4,6 +4,9 @@ import type { Client as PlatformClient } from "@tailorkit/client-platform/client
 import { selectTailorKitScopes } from "./scope";
 import type { TailorKitNamedScope, TailorKitScopes } from "./types";
 
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
@@ -665,10 +668,9 @@ export const handleCliAuthApprovalPage = async ({
   const form = await request.formData();
   const intent = String(form.get("intent") ?? "");
   const userCode = String(form.get("userCode") ?? "").trim();
-  const selectedScopeName =
-    typeof form.get("scope") === "string"
-      ? String(form.get("scope"))
-      : undefined;
+  const selectedScopeName = isStringValue(form.get("scope"))
+    ? String(form.get("scope"))
+    : undefined;
 
   const tailorkit = await authenticate({ request });
   if (!userCode) {

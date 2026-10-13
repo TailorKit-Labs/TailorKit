@@ -22,6 +22,7 @@ export type {
   RequestResult,
   ResolvedRequestOptions,
   ResponseStyle,
+  // oxlint-disable-next-line anti-slop/no-shape-in-symbol-names -- This re-exports the generated client API; changing its public name would break generated consumers.
   TDataShape,
 } from "./types.gen.js";
 export { createConfig, mergeHeaders } from "./utils.gen.js";

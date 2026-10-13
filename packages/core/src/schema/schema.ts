@@ -16,6 +16,9 @@ import type {
   SlotDefinitions,
 } from "./views";
 
+const isBooleanValue = <TValue>(value: TValue): value is TValue & boolean =>
+  typeof value === "boolean";
+
 type EmptyToolMap = Record<never, never>;
 
 export interface TailorKitSchema<
@@ -68,6 +71,7 @@ const contextMayBeOmitted = (schema: Schema): boolean => {
   return !result.issues;
 };
 
+// SAFETY: These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes.
 export const createTailorKitSchema = <
   const TComponents extends Record<string, unknown>,
   const TViews extends ContextDefinitions = Record<string, never>,
@@ -81,7 +85,7 @@ export const createTailorKitSchema = <
   views?: TViews & ViewContextHierarchy<NoInfer<TViews>>;
 }): TailorKitSchema<TComponents, TViews, TTools> => {
   for (const [name, slot] of Object.entries(schema.slots ?? {})) {
-    if (slot.multiple !== undefined && typeof slot.multiple !== "boolean") {
+    if (slot.multiple !== undefined && !isBooleanValue(slot.multiple)) {
       throw new TypeError(`Slot "${name}" multiple must be a boolean.`);
     }
     for (const view of slot.views) {
@@ -90,11 +94,13 @@ export const createTailorKitSchema = <
       }
     }
   }
+  // SAFETY: These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes.
   const components = {} as TailorKitSchema<
     TComponents,
     TViews,
     TTools
   >["$internal"]["components"];
+  // SAFETY: These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes.
   const views = {} as TailorKitSchema<
     TComponents,
     TViews,
@@ -104,6 +110,7 @@ export const createTailorKitSchema = <
   for (const [name, definition] of Object.entries(
     schema.components as ComponentDefinitions
   )) {
+    // SAFETY: These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes.
     components[name as keyof TComponents] = resolveComponentMetadata(
       name,
       definition
@@ -113,6 +120,7 @@ export const createTailorKitSchema = <
   for (const [name, context] of Object.entries(
     (schema.views ?? {}) as ContextDefinitions
   )) {
+    // SAFETY: These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes.
     views[name as keyof TViews] = { context };
   }
 
@@ -148,44 +156,46 @@ export const createTailorKitSchema = <
     for (const [name, metadata] of Object.entries(views)) {
       serializedViews[name] = {
         context: serializeSchema(metadata.context, schemaSerializer),
-        ...(metadata.context && contextMayBeOmitted(metadata.context)
-          ? { contextOptional: true }
-          : {}),
       };
+      if (metadata.context && contextMayBeOmitted(metadata.context)) {
+        serializedViews[name].contextOptional = true;
+      }
     }
 
-    return {
+    const serialized: TailorKitSchemaSpec = {
       components: serializedComponents,
 
       slots: Object.fromEntries(
-        Object.entries(schema.slots ?? {}).map(([name, slot]) => [
-          name,
-          {
-            views: [...slot.views],
-            ...(slot.multiple === undefined ? {} : { multiple: slot.multiple }),
-          },
-        ])
+        Object.entries(schema.slots ?? {}).map(([name, slot]) => {
+          const definition: NonNullable<TailorKitSchemaSpec["slots"]>[string] =
+            {
+              views: [...slot.views],
+            };
+          if (slot.multiple !== undefined) {
+            definition.multiple = slot.multiple;
+          }
+          return [name, definition];
+        })
       ),
 
       tools: serializeTools(schema.tools ?? {}, schemaSerializer),
 
-      views: serializedViews,
-
-      ...(schema.scopes
-        ? {
-            scopes: Object.fromEntries(
-              Object.entries(schema.scopes).flatMap(([name, scope]) => {
-                const serialized = serializeSchema(scope, schemaSerializer);
-                return serialized ? [[name, serialized]] : [];
-              })
-            ),
-          }
-        : {}),
-
       version: 1,
+
+      views: serializedViews,
     };
+    if (schema.scopes) {
+      serialized.scopes = Object.fromEntries(
+        Object.entries(schema.scopes).flatMap(([name, scope]) => {
+          const value = serializeSchema(scope, schemaSerializer);
+          return value ? [[name, value]] : [];
+        })
+      );
+    }
+    return serialized;
   };
 
+  // SAFETY: These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes.
   return {
     $internal: {
       components,

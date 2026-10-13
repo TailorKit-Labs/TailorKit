@@ -15,7 +15,10 @@ const getChannel = (iframe: HTMLIFrameElement): string => {
   return match[1];
 };
 
-const emitFromIframe = (iframe: HTMLIFrameElement, data: unknown): void => {
+const emitFromIframe = <TPayload>(
+  iframe: HTMLIFrameElement,
+  data: TPayload
+): void => {
   window.dispatchEvent(
     new MessageEvent("message", { data, source: iframe.contentWindow })
   );

@@ -26,11 +26,9 @@ const setup = (multiple = true, apps?: TailorKitApp[]) => {
   const app: TailorKitApp = {
     id: "app",
     views: [
-      {
-        path: "/",
-        slot: "page",
-        ...(multiple ? { instances: true } : {}),
-      },
+      multiple
+        ? { instances: true, path: "/", slot: "page" }
+        : { path: "/", slot: "page" },
     ],
   };
   return { app, client, fetch, store };

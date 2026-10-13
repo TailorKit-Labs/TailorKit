@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { TailorKitApp } from "../types";
 import { createEndpointClient } from "./endpoints";
 
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const app = { id: "installed-app" } as TailorKitApp;
 const contract = defineContract({
   scopes: { workspace: z.object({ id: z.string() }) },
@@ -74,7 +75,8 @@ it("binds client tool calls to the installation and validates transformed inputs
   await expect(bridge.client("ui.select", 1)).rejects.toThrow(
     "Invalid tool payload"
   );
-  implementation.mockImplementation(() => "invalid" as unknown as number);
+  // SAFETY: This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input.
+  implementation.mockImplementation(() => "invalid" as never);
   await expect(bridge.client("ui.select", "test")).rejects.toThrow(
     "Invalid tool payload"
   );

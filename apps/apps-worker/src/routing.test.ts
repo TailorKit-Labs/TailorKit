@@ -52,6 +52,8 @@ const getByName = vi.fn(() => ({ fetch: fetchInstallation }));
 
 const put = vi.fn(async () => {});
 
+// SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+// oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 const env = {
   ASSET_DOMAIN: "tailorkit.app",
   DEPLOYMENTS: { put },
@@ -60,11 +62,16 @@ const env = {
   STORES: { getByName },
 } as unknown as Env;
 
+// SAFETY: This test supplies the context members read by the handler; unrelated request context services are outside this scenario.
 const ctx = {} as ExecutionContext;
 
 const call = (request: Request) => worker.fetch(request, env, ctx);
 
-const post = (url: string, body: unknown = metadata, token = secret) =>
+const post = <TInput>(
+  url: string,
+  body: TInput | Record<never, never> = metadata,
+  token = secret
+) =>
   new Request(url, {
     body: JSON.stringify(body),
     headers: {

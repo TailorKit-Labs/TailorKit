@@ -37,7 +37,7 @@ export const ProjectKeyEnv = ({ apiKey }: { apiKey: string }) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm">Get started</CardTitle>
+        <CardTitle>Get started</CardTitle>
         <CardDescription>
           Follow the{" "}
           <a
@@ -51,21 +51,19 @@ export const ProjectKeyEnv = ({ apiKey }: { apiKey: string }) => {
           to get started.
         </CardDescription>
       </CardHeader>
-      <CardPanel className="pt-0">
-        <InputGroup className="bg-muted">
+      <CardPanel>
+        <InputGroup>
           <InputGroupInput
             aria-label="Project API key"
-            className="min-w-0 font-mono text-xs sm:text-sm [&_input]:ps-0!"
+            className="min-w-0"
             readOnly
             type={showApiKey ? "text" : "password"}
             value={apiKey}
           />
           <InputGroupAddon align="inline-start" className="shrink-0">
-            <InputGroupText className="text-foreground font-mono text-xs sm:text-sm">
-              TAILORKIT_PROJECT_KEY=
-            </InputGroupText>
+            <InputGroupText>TAILORKIT_PROJECT_KEY=</InputGroupText>
           </InputGroupAddon>
-          <InputGroupAddon align="inline-end" className="gap-1">
+          <InputGroupAddon align="inline-end">
             <Tooltip>
               <TooltipTrigger
                 render={

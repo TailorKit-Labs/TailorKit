@@ -92,6 +92,7 @@ describe("BotID proxy configuration", () => {
     const headers = await sdkConfig.headers?.();
 
     expect(Array.isArray(rewrites)).toBe(true);
+    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     expect(vercelConfig.rewrites).toEqual(
       expect.arrayContaining(rewrites as unknown[])
     );

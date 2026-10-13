@@ -1,7 +1,8 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
-import type { InstanceRegistration } from "./instances";
+import { z } from "zod";
+
 import { tailorkitUploadManifestSchema } from "./upload-manifest";
 
 // Inspect the developer's bundled client in a short-lived build process, never on the platform.
@@ -33,31 +34,19 @@ export const readClientManifest = async (filename: string) => {
     const result = stdout.slice(
       stdout.lastIndexOf("\nTAILORKIT_VIEWS=") + "\nTAILORKIT_VIEWS=".length
     );
-    const manifest = JSON.parse(result) as {
-      views: unknown;
-      instanceResolvers: unknown;
-    };
-    const views = tailorkitUploadManifestSchema.shape.views
-      .unwrap()
-      .parse(manifest.views);
-    if (
-      !Array.isArray(manifest.instanceResolvers) ||
-      manifest.instanceResolvers.some(
-        (ref) =>
-          !ref ||
-          typeof ref !== "object" ||
-          typeof ref.slot !== "string" ||
-          typeof ref.path !== "string" ||
-          typeof ref.resolver !== "string" ||
-          !/^i[0-9a-f]{24}$/u.test(ref.resolver)
-      )
-    ) {
-      throw new Error("Invalid instance resolver references");
-    }
-    return {
-      instanceResolvers: manifest.instanceResolvers as InstanceRegistration[],
-      views,
-    };
+    const manifest = z
+      .object({
+        instanceResolvers: z.array(
+          z.object({
+            path: z.string(),
+            resolver: z.string().regex(/^i[0-9a-f]{24}$/u),
+            slot: z.string(),
+          })
+        ),
+        views: tailorkitUploadManifestSchema.shape.views.unwrap(),
+      })
+      .parse(JSON.parse(result));
+    return manifest;
   } catch (error) {
     throw new Error(
       "Unable to read app views during the build. Keep browser-only side effects inside components or effects. Check the default exports of your roots, layouts and .view.tsx files.",

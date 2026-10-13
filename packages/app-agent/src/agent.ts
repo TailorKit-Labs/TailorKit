@@ -13,6 +13,7 @@ import {
   writeAgentSchema,
   writeAgentToken,
 } from "./sandbox";
+import type { HostSchemaDocument } from "./schema";
 import {
   bashTool,
   editTool,
@@ -31,7 +32,7 @@ export interface AppAgentInput {
   /** Host API URL, including its route prefix; may point to a local host. */
   hostUrl: string;
   /** Optional serialized host schema for generation without contacting the host. */
-  schema?: Record<string, unknown>;
+  schema?: HostSchemaDocument;
   /** One-hour JWT used by authenticated CLI commands in the ephemeral sandbox. */
   agentToken: string;
   messages: ModelMessage[];

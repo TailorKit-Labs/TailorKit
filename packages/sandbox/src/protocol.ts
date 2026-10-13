@@ -1,12 +1,18 @@
 import * as v from "valibot";
 
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
 // Valibot object schemas also accept arrays; the wire protocol requires objects.
-const ObjectInput = v.custom<Record<string, unknown>>(
-  (input) =>
-    input !== null && typeof input === "object" && !Array.isArray(input),
+const ObjectInput = v.custom<object>(
+  (input) => input !== null && isObjectValue(input) && !Array.isArray(input),
   "Expected an object"
 );
-const Props = v.pipe(ObjectInput, v.record(v.string(), v.unknown()));
+export const RemotePropsSchema = v.pipe(
+  ObjectInput,
+  v.record(v.string(), v.unknown())
+);
 const strictObject = <const TEntries extends v.ObjectEntries>(
   entries: TEntries
 ) => v.pipe(ObjectInput, v.strictObject(entries));
@@ -46,7 +52,7 @@ export interface RemoteElementNode {
   type: string;
 }
 
-export type RemoteProps = Record<string, unknown>;
+export type RemoteProps = v.InferOutput<typeof RemotePropsSchema>;
 
 export interface RemoteCallbackBinding {
   callback: string;
@@ -132,7 +138,7 @@ export const HostToIframePayload = v.pipe(
       data: strictObject({
         appSource: v.string(),
         appUrl: v.string(),
-        props: v.optional(Props),
+        props: v.optional(RemotePropsSchema),
       }),
       type: v.literal("init"),
     }),
@@ -178,7 +184,7 @@ const RemoteNodeSchema: RemoteNodeSchemaType = v.lazy(() =>
         children: v.array(RemoteNodeSchema),
         id: v.string(),
         kind: v.literal("element"),
-        props: Props,
+        props: RemotePropsSchema,
         type: v.string(),
       }),
     ])

@@ -78,9 +78,9 @@ const getViewModulePath = (slotName: string, viewPath: string) => {
   return ["slots", slotName, routeName].join("/");
 };
 
-const renderTemplate = (
+const renderTemplate = <TData extends object>(
   template: string,
-  data: Record<string, unknown>
+  data: TData
 ): Promise<string> => engine.parseAndRender(template, data);
 
 const ensureDirectory = (directory: string): Promise<void> =>

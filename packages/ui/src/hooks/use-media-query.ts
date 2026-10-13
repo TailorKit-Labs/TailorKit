@@ -2,6 +2,12 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 
+const isNumberValue = <TValue>(value: TValue): value is TValue & number =>
+  typeof value === "number";
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 const BREAKPOINTS = {
   "2xl": 1536,
   "3xl": 1600,
@@ -14,25 +20,28 @@ const BREAKPOINTS = {
 
 type Breakpoint = keyof typeof BREAKPOINTS;
 
+const isBreakpoint = (value: string): value is Breakpoint =>
+  Object.hasOwn(BREAKPOINTS, value);
+
 type BreakpointQuery =
   | Breakpoint
   | `max-${Breakpoint}`
   | `${Breakpoint}:max-${Breakpoint}`;
 
 const resolveMin = (value: Breakpoint | number): string => {
-  const px = typeof value === "number" ? value : BREAKPOINTS[value];
+  const px = isNumberValue(value) ? value : BREAKPOINTS[value];
   return `(min-width: ${px}px)`;
 };
 
 const resolveMax = (value: Breakpoint | number): string => {
-  const px = typeof value === "number" ? value : BREAKPOINTS[value];
+  const px = isNumberValue(value) ? value : BREAKPOINTS[value];
   return `(max-width: ${px - 1}px)`;
 };
 
 const parseQuery = (
   query: BreakpointQuery | MediaQueryInput | string
 ): string => {
-  if (typeof query !== "string") {
+  if (!isStringValue(query)) {
     const parts: string[] = [];
     if (query.min !== undefined) {
       parts.push(resolveMin(query.min));
@@ -60,11 +69,11 @@ const parseQuery = (
   for (const segment of query.split(":")) {
     if (segment.startsWith("max-")) {
       const bp = segment.slice(4);
-      if (bp in BREAKPOINTS) {
-        parts.push(resolveMax(bp as Breakpoint));
+      if (isBreakpoint(bp)) {
+        parts.push(resolveMax(bp));
       }
-    } else if (segment in BREAKPOINTS) {
-      parts.push(resolveMin(segment as Breakpoint));
+    } else if (isBreakpoint(segment)) {
+      parts.push(resolveMin(segment));
     }
   }
 

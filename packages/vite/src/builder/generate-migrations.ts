@@ -23,7 +23,7 @@ export const generateAppMigrations = async (
     );
   }
   const paths = appDatabasePaths(loaded.root, loaded.config.server.migrations);
-  await access(paths.schema).catch((error: unknown) => {
+  await access(paths.schema).catch((error: ErrorOptions["cause"]) => {
     throw new Error(
       `Define the app database schema in ${path.relative(loaded.root, paths.schema)} before generating migrations.`,
       { cause: error }

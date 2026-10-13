@@ -6,6 +6,7 @@ import {
 } from "./preview-presence.js";
 import type { KV } from "./types.js";
 
+// SAFETY: This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input.
 const createKV = (values = new Map<string, string>()): KV => ({
   claimUpload: vi.fn(),
   delete: vi.fn((key: string) => {

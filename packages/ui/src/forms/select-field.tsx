@@ -18,7 +18,16 @@ import {
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../components/tooltip";
 import { formatFieldErrors } from "./field-errors";
 
+const isStringValue = <TValue,>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 const emptyErrors: unknown[] = [];
+
+const hasBaseUIHandlerControl = <TEvent extends object>(
+  event: TEvent
+): event is TEvent & { preventBaseUIHandler: () => void } =>
+  "preventBaseUIHandler" in event &&
+  typeof event.preventBaseUIHandler === "function";
 
 export interface SelectFieldProps {
   allowDeselect?: boolean;
@@ -66,7 +75,7 @@ export const SelectField = ({
         items={items}
         onOpenChange={setOpen}
         onValueChange={(nextValue) => {
-          onValueChange?.(typeof nextValue === "string" ? nextValue : null);
+          onValueChange?.(isStringValue(nextValue) ? nextValue : null);
         }}
         open={open}
         required={required}
@@ -91,11 +100,9 @@ export const SelectField = ({
                 }
 
                 event.preventDefault();
-                (
-                  event as typeof event & {
-                    preventBaseUIHandler?: () => void;
-                  }
-                ).preventBaseUIHandler?.();
+                if (hasBaseUIHandlerControl(event)) {
+                  event.preventBaseUIHandler();
+                }
                 onValueChange?.(null);
                 setOpen(false);
               }}

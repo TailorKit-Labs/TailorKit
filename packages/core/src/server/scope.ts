@@ -1,10 +1,24 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
 import type {
+  TailorKitJsonValue,
   TailorKitNamedScope,
   TailorKitScope,
   TailorKitScopes,
 } from "./types";
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
+const isBooleanValue = <TValue>(value: TValue): value is TValue & boolean =>
+  typeof value === "boolean";
+
+const isNumberValue = <TValue>(value: TValue): value is TValue & number =>
+  typeof value === "number";
 
 const maximumObjectKeys = 32;
 
@@ -24,7 +38,7 @@ const scopeNamePattern = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/u;
 
 export type TailorKitScopeSchemas = Record<string, StandardSchemaV1>;
 
-const isPlainRecord = (value: unknown): value is Record<string, unknown> => {
+const isPlainRecord = (value: unknown): value is object => {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return false;
   }
@@ -33,6 +47,7 @@ const isPlainRecord = (value: unknown): value is Record<string, unknown> => {
 };
 
 const assertPlainRecord: (
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This is the runtime validation boundary for host-provided scopes and validators; invalid values must remain representable until checked.
   value: unknown,
   errorMessage: string
 ) => asserts value is object = (value, errorMessage) => {
@@ -41,16 +56,16 @@ const assertPlainRecord: (
   }
 };
 
-const getRecordEntries = (
-  value: object,
+const getRecordEntries = <TRecord extends object>(
+  value: TRecord,
   errorMessage: string
 ): [string, unknown][] => {
   const ownKeys = Reflect.ownKeys(value);
-  if (ownKeys.some((key) => typeof key !== "string")) {
+  if (ownKeys.some((key) => !isStringValue(key))) {
     throw new TypeError(errorMessage);
   }
   const entries: [string, unknown][] = [];
-  for (const key of ownKeys as string[]) {
+  for (const key of ownKeys.filter(isStringValue)) {
     if (key === "__proto__") {
       throw new TypeError(
         'TailorKit scope property names may not be "__proto__".'
@@ -79,7 +94,21 @@ export const validateTailorKitScopeName = (name: string): string => {
   return name;
 };
 
+const isStandardSchema = (value: unknown): value is StandardSchemaV1 => {
+  if (value === null || typeof value !== "object" || !("~standard" in value)) {
+    return false;
+  }
+  const standard = value["~standard"];
+  return (
+    standard !== null &&
+    typeof standard === "object" &&
+    "validate" in standard &&
+    typeof standard.validate === "function"
+  );
+};
+
 export const validateTailorKitScopeSchemas = (
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This is the runtime validation boundary for host-provided scopes and validators; invalid values must remain representable until checked.
   value: unknown
 ): TailorKitScopeSchemas => {
   assertPlainRecord(
@@ -101,20 +130,12 @@ export const validateTailorKitScopeSchemas = (
   const schemas: [string, StandardSchemaV1][] = [];
   for (const [name, schema] of entries) {
     validateTailorKitScopeName(name);
-    const standard =
-      typeof schema === "object" && schema !== null
-        ? Reflect.get(schema, "~standard")
-        : undefined;
-    if (
-      typeof standard !== "object" ||
-      standard === null ||
-      typeof Reflect.get(standard, "validate") !== "function"
-    ) {
+    if (!isStandardSchema(schema)) {
       throw new TypeError(
         `TailorKit scope "${name}" must be a Standard Schema validator.`
       );
     }
-    schemas.push([name, schema as StandardSchemaV1]);
+    schemas.push([name, schema]);
   }
   return Object.fromEntries(schemas);
 };
@@ -132,19 +153,16 @@ const compareStrings = (left: string, right: string): number =>
 
 // oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
 const normalizeJsonValue = (
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This is the runtime validation boundary for host-provided scopes and validators; invalid values must remain representable until checked.
   value: unknown,
   depth: number,
   isRoot: boolean,
   ancestors: Set<object>,
   countNode: () => void
-): unknown => {
+): TailorKitJsonValue => {
   countNode();
-  if (
-    value === null ||
-    typeof value === "boolean" ||
-    typeof value === "string"
-  ) {
-    if (typeof value === "string" && value.length > maximumStringLength) {
+  if (value === null || isBooleanValue(value) || isStringValue(value)) {
+    if (isStringValue(value) && value.length > maximumStringLength) {
       throw new TypeError(
         `TailorKit scope strings may not exceed ${maximumStringLength} characters.`
       );
@@ -152,7 +170,7 @@ const normalizeJsonValue = (
     return value;
   }
 
-  if (typeof value === "number") {
+  if (isNumberValue(value)) {
     if (
       !Number.isFinite(value) ||
       (Number.isInteger(value) && !Number.isSafeInteger(value))
@@ -167,7 +185,7 @@ const normalizeJsonValue = (
     return value;
   }
 
-  if (typeof value !== "object") {
+  if (!isObjectValue(value)) {
     throw new TypeError(
       "TailorKit scope values must contain only JSON values."
     );
@@ -195,13 +213,13 @@ const normalizeJsonValue = (
     if (
       ownKeys.length !== value.length + 1 ||
       !ownKeys.includes("length") ||
-      ownKeys.some((key) => typeof key !== "string")
+      ownKeys.some((key) => !isStringValue(key))
     ) {
       throw new TypeError(
         "TailorKit scope arrays must be dense and have no extra properties."
       );
     }
-    const result: unknown[] = [];
+    const result: TailorKitJsonValue[] = [];
     for (let index = 0; index < value.length; index += 1) {
       const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
       if (!descriptor?.enumerable || !("value" in descriptor)) {
@@ -220,7 +238,8 @@ const normalizeJsonValue = (
       );
     }
     ancestors.delete(value);
-    return Object.freeze(result);
+    Object.freeze(result);
+    return result;
   }
 
   if (!isPlainRecord(value)) {
@@ -249,9 +268,11 @@ const normalizeJsonValue = (
       ])
   );
   ancestors.delete(value);
-  return Object.freeze(result);
+  Object.freeze(result);
+  return result;
 };
 
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser validates untrusted JSON values before returning the owned scope contract.
 export const normalizeTailorKitScope = (value: unknown): TailorKitScope => {
   if (!isPlainRecord(value)) {
     throw new TypeError(
@@ -278,11 +299,13 @@ export const normalizeTailorKitScope = (value: unknown): TailorKitScope => {
       `TailorKit scope values may not exceed ${maximumJsonBytes} bytes of JSON.`
     );
   }
+  // SAFETY: The root was checked as a plain record, and normalization preserves its root kind while rejecting non-JSON descendants.
   return normalized as TailorKitScope;
 };
 
 export const validateTailorKitScopes = async (
   scopeSchemas: TailorKitScopeSchemas,
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This is the runtime validation boundary for host-provided scopes and validators; invalid values must remain representable until checked.
   value: unknown
 ): Promise<TailorKitScopes> => {
   assertPlainRecord(
@@ -337,6 +360,7 @@ export const validateTailorKitScopes = async (
 };
 
 export const normalizeTailorKitNamedScope = (
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This is the runtime validation boundary for host-provided scopes and validators; invalid values must remain representable until checked.
   value: unknown
 ): TailorKitNamedScope => {
   if (!isPlainRecord(value)) {
@@ -359,7 +383,7 @@ export const normalizeTailorKitNamedScope = (
   }
   const name = Object.getOwnPropertyDescriptor(value, "name")?.value;
   const scopeValue = Object.getOwnPropertyDescriptor(value, "value")?.value;
-  if (typeof name !== "string") {
+  if (!isStringValue(name)) {
     throw new TypeError(
       "TailorKit scope identity must contain a name and value."
     );

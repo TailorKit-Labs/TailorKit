@@ -18,26 +18,34 @@ import { z } from "zod";
 import { getDeployToken, runWhoami } from "./auth";
 import { buildProject } from "./build";
 import { createCliClient } from "./client";
+import type { CliOptions } from "./options";
+
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
 
 const chunkBytes = 256 * 1024;
-const contentTypes: Record<string, string> = {
-  ".css": "text/css; charset=utf-8",
-  ".html": "text/html; charset=utf-8",
-  ".js": "text/javascript; charset=utf-8",
-  ".json": "application/json; charset=utf-8",
-  ".map": "application/json; charset=utf-8",
-};
-const errorMessage = (err: unknown): string =>
-  err instanceof Error ? err.message : String(err);
-const isEndedSessionError = (err2: unknown): boolean =>
-  err2 !== null &&
-  typeof err2 === "object" &&
-  "code" in err2 &&
-  err2.code === "UNAUTHORIZED" &&
-  "message" in err2 &&
-  typeof err2.message === "string" &&
+const contentTypes = new Map<string, string>([
+  [".css", "text/css; charset=utf-8"],
+  [".html", "text/html; charset=utf-8"],
+  [".js", "text/javascript; charset=utf-8"],
+  [".json", "application/json; charset=utf-8"],
+  [".map", "application/json; charset=utf-8"],
+]);
+const errorMessage = (cause: unknown): string =>
+  cause instanceof Error ? cause.message : String(cause);
+const isEndedSessionError = (cause: unknown): boolean =>
+  cause !== null &&
+  isObjectValue(cause) &&
+  "code" in cause &&
+  cause.code === "UNAUTHORIZED" &&
+  "message" in cause &&
+  isStringValue(cause.message) &&
   /Preview session is unavailable|Preview developer reconnect grace expired|Preview CLI token is unavailable/u.test(
-    err2.message
+    cause.message
   );
 
 export interface PreviewOptions {
@@ -101,7 +109,7 @@ export const capturePreviewSnapshot = async (
     manifest.files.push({
       chunks: Math.ceil(bytes.length / chunkBytes),
       contentType:
-        contentTypes[path.extname(relative)] ?? "application/octet-stream",
+        contentTypes.get(path.extname(relative)) ?? "application/octet-stream",
       path: relative,
       sha256: createHash("sha256").update(bytes).digest("hex"),
       size: bytes.length,
@@ -122,7 +130,7 @@ export const capturePreviewSnapshot = async (
 export const createLatestPreviewCapture = <T>(
   captureSnapshot: () => Promise<T>,
   onSnapshot: (snapshot: T) => void,
-  onError: (error: unknown) => void
+  onError: (cause: unknown) => void
 ): (() => Promise<void>) => {
   let generation = 0;
   return async () => {
@@ -173,9 +181,7 @@ const previewOptionsSchema = z.object({
   outDir: z.string().optional(),
   replace: z.boolean().optional(),
 });
-export const toPreviewOptions = (
-  options: Record<string, unknown>
-): PreviewOptions => {
+export const toPreviewOptions = (options: CliOptions): PreviewOptions => {
   const parsed = previewOptionsSchema.parse(options);
   return {
     configPath: parsed.config,
@@ -208,8 +214,8 @@ export const runPreview = async (options: PreviewOptions): Promise<void> => {
     watch: true,
   });
   const closeWatcher = async (): Promise<void> => {
-    if (watcher && typeof watcher === "object" && "close" in watcher) {
-      await (watcher as { close: () => Promise<void> | void }).close();
+    if ("close" in watcher) {
+      await watcher.close();
     }
   };
 
@@ -417,12 +423,8 @@ export const runPreview = async (options: PreviewOptions): Promise<void> => {
     }
   );
 
-  if (watcher && typeof watcher === "object" && "on" in watcher) {
-    (
-      watcher as {
-        on: (name: string, listener: (event: { code: string }) => void) => void;
-      }
-    ).on("event", (event: { code: string }) => {
+  if ("on" in watcher) {
+    watcher.on("event", (event) => {
       if (event.code === "BUNDLE_END") {
         void capture();
       }

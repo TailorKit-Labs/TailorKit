@@ -8,6 +8,21 @@ import {
 import { isViewAncestor } from "@tailorkit/core/views";
 import { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
 
+import { isMissingFile } from "../utils/fs-errors";
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
+const isNumberValue = <TValue>(value: TValue): value is TValue & number =>
+  typeof value === "number";
+
+const isBooleanValue = <TValue>(value: TValue): value is TValue & boolean =>
+  typeof value === "boolean";
+
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
 interface JsonSchema {
   additionalProperties?: boolean | JsonSchema;
   anyOf?: JsonSchema[];
@@ -91,15 +106,11 @@ const toPropertyKey = (value: string): string => {
   return quote(value);
 };
 
-const toLiteralType = (value: unknown): string => {
-  if (typeof value === "string") {
+const toLiteralType = <TInput>(value: TInput): string => {
+  if (isStringValue(value)) {
     return quote(value);
   }
-  if (
-    typeof value === "number" ||
-    typeof value === "boolean" ||
-    value === null
-  ) {
+  if (isNumberValue(value) || isBooleanValue(value) || value === null) {
     return JSON.stringify(value);
   }
 
@@ -247,7 +258,7 @@ const toTypeScriptType = (
     return "boolean";
   }
   if (schemaType === "array") {
-    const items = typeof schema.items === "object" ? schema.items : undefined;
+    const items = isObjectValue(schema.items) ? schema.items : undefined;
     if (schema.prefixItems !== undefined) {
       const tupleItems = schema.prefixItems.map((item, index) => {
         const type = toTypeScriptType(item, depth);
@@ -297,7 +308,7 @@ const toTypeName = (name: string): string => {
 
 const getComponentFields = (
   component: SerializedComponent
-): Record<string, JsonSchema> => {
+): NonNullable<JsonSchema["properties"]> => {
   if (component.fields?.properties !== undefined) {
     return component.fields.properties;
   }
@@ -665,7 +676,7 @@ export const fetchSchemaFromHost = async (
     );
   }
 
-  return (await response.json()) as TailorKitSchemaFile;
+  return TailorKitSchemaSpec.parse(await response.json());
 };
 
 export const generateTypes = async (
@@ -689,9 +700,12 @@ export const generateTypes = async (
   );
   const serverExists = await stat(serverEntry)
     .then((file) => file.isFile())
-    .catch((error: unknown) => {
-      const { code } = error as NodeJS.ErrnoException;
-      if (code === "ENOENT" || code === "ENOTDIR") {
+    .catch((error: ErrorOptions["cause"]) => {
+      const code =
+        error !== null && isObjectValue(error) && "code" in error
+          ? error.code
+          : undefined;
+      if (isMissingFile(error) || code === "ENOTDIR") {
         return false;
       }
       throw error;

@@ -4,6 +4,7 @@ import type {
 } from "@standard-schema/spec";
 import { createTailorKitStore } from "@tailorkit/client-core";
 import { defineContract } from "@tailorkit/core/schema";
+import type { ViewContextValues } from "@tailorkit/core/views";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { StrictMode } from "react";
@@ -13,15 +14,13 @@ import { TailorkitContext } from "../components/context";
 import type { ViewState } from "../hooks/use-view-context";
 import { createClient } from "../tailorkit";
 
-const contextSchema: StandardSchemaV1<
-  unknown,
-  Record<string, unknown> | undefined
-> &
-  StandardJSONSchemaV1<unknown, Record<string, unknown> | undefined> = {
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+const contextSchema: StandardSchemaV1<unknown, ViewContextValues | undefined> &
+  StandardJSONSchemaV1<unknown, ViewContextValues | undefined> = {
   "~standard": {
     jsonSchema: { input: () => ({}), output: () => ({}) },
     validate: (value) => ({
-      value: value as Record<string, unknown> | undefined,
+      value: value as ViewContextValues | undefined,
     }),
     vendor: "test",
     version: 1,

@@ -5,7 +5,7 @@ import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
-import { defineConfig } from "vite-plus";
+import { defineConfig, lazyPlugins } from "vite-plus";
 import { workflow } from "workflow/vite";
 
 import { env } from "#env";
@@ -40,7 +40,7 @@ export default defineConfig(({ mode }) => {
     },
     plugins: isTest
       ? [reactPlugin]
-      : [
+      : lazyPlugins(() => [
           workflow({
             dirs: [resolve(import.meta.dirname, "workflows")],
             runtime: "nodejs24.x",
@@ -94,7 +94,7 @@ export default defineConfig(({ mode }) => {
             workspaceDir: import.meta.dirname,
           }),
           reactPlugin,
-        ],
+        ]),
     server: {
       port: 3000,
     },

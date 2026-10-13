@@ -113,6 +113,7 @@ describe("AI SDK terminal transport", () => {
       hostUrl,
       expect.any(AbortSignal)
     );
+    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     const schemaSignal = requireValue(
       mocks.fetchSchema.mock.calls[0]
     )[1] as AbortSignal;
@@ -142,7 +143,7 @@ describe("AI SDK terminal transport", () => {
 
   it.each([new Error("Local host unavailable"), "Local host unavailable"])(
     "reports schema fetch failures with their cause and does not start a remote run: %s",
-    async (cause) => {
+    async (cause: unknown) => {
       const chat = vi.fn();
       mocks.fetchSchema.mockRejectedValueOnce(cause);
       await openAgentTui({ appId, client: { appAgent: { chat } }, hostUrl });

@@ -15,6 +15,24 @@ export const renderSortableHeader = <TData extends RowData>(
     return flexRender(header.column.columnDef.header, header.getContext());
   }
 
+  const sort = header.column.getIsSorted();
+  let sortIcon = null;
+  if (sort === "asc") {
+    sortIcon = (
+      <ChevronUpIcon
+        aria-hidden="true"
+        className="size-4 shrink-0 opacity-80"
+      />
+    );
+  }
+  if (sort === "desc") {
+    sortIcon = (
+      <ChevronDownIcon
+        aria-hidden="true"
+        className="size-4 shrink-0 opacity-80"
+      />
+    );
+  }
   return (
     <button
       className="flex h-full w-full cursor-pointer items-center justify-between gap-2 text-left select-none"
@@ -22,20 +40,7 @@ export const renderSortableHeader = <TData extends RowData>(
       type="button"
     >
       {flexRender(header.column.columnDef.header, header.getContext())}
-      {{
-        asc: (
-          <ChevronUpIcon
-            aria-hidden="true"
-            className="size-4 shrink-0 opacity-80"
-          />
-        ),
-        desc: (
-          <ChevronDownIcon
-            aria-hidden="true"
-            className="size-4 shrink-0 opacity-80"
-          />
-        ),
-      }[header.column.getIsSorted() as string] ?? null}
+      {sortIcon}
     </button>
   );
 };

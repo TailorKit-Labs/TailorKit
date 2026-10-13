@@ -8,6 +8,7 @@ import {
 } from "./index";
 
 const registerOTel = vi.fn();
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const mockEnv = vi.hoisted(() => ({
   NODE_ENV: "development" as "development" | "production" | "test",
   OTEL_SERVICE_NAME: undefined as string | undefined,

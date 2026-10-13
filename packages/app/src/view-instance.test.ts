@@ -21,6 +21,7 @@ const root = () => {
 };
 
 it("supplies instance data and context, updates data, and resets component state when the key changes", async () => {
+  // SAFETY: This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input.
   const view = defineView({
     // oxlint-disable-next-line func-name-matching -- The named function is a React-compatible test component supplied through a component property.
     component: function ViewComponent(): ComponentChild {
@@ -39,7 +40,7 @@ it("supplies instance data and context, updates data, and resets component state
     view: "/",
   });
   const container = root();
-  const show = (key: string, data: unknown) =>
+  const show = <TData>(key: string, data: TData) =>
     act(() =>
       render(
         h(view.component, {
@@ -86,6 +87,7 @@ it("keeps ordinary views rendering without an instance", async () => {
 });
 
 it("reports missing instances and useInstance outside its view", () => {
+  // SAFETY: This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input.
   const view = defineView({
     component: () => "never",
     instances: { resolver: "compiled-resolver" } as never,

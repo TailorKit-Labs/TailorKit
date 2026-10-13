@@ -1,5 +1,6 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
+import type { TailorKitScope } from "../server/types";
 import type { TailorKitSchemaSpec } from "../spec/index";
 import type { Schema, SchemaSerializer } from "./shared";
 import { serializeSchema } from "./shared";
@@ -56,7 +57,7 @@ export interface ToolIdentity {
   readonly appId: string;
   readonly projectId: string;
   readonly deploymentId: string;
-  readonly scope: { name: string; value: Record<string, unknown> };
+  readonly scope: { name: string; value: TailorKitScope };
   readonly expiresAt: number;
 }
 export interface ToolContext {
@@ -64,15 +65,15 @@ export interface ToolContext {
   readonly scope: ToolIdentity["scope"];
   readonly requestId: string;
 }
-export interface ToolImplementationTree {
+export interface ToolImplementationTree<TOutput = unknown> {
   [name: string]:
     | {
         bivarianceHack: (options: {
           input: never;
           context: ToolContext;
-        }) => unknown;
+        }) => TOutput;
       }["bivarianceHack"]
-    | ToolImplementationTree;
+    | ToolImplementationTree<TOutput>;
 }
 export type ToolImplementations<
   T extends ContractTools,
@@ -109,7 +110,11 @@ export type ToolImplementations<
         : ToolImplementations<Extract<T[N], ContractTools>, K>;
     };
 export interface ToolCallerTree {
-  [name: string]: ((input?: unknown) => Promise<unknown>) | ToolCallerTree;
+  [name: string]:
+    | ((
+        input?: StandardSchemaV1.InferInput<Schema>
+      ) => Promise<StandardSchemaV1.InferOutput<Schema>>)
+    | ToolCallerTree;
 }
 export type ToolCallers<
   T extends ContractTools,
@@ -133,6 +138,10 @@ export type ToolCallers<
           ) => Promise<InferToolOutput<T[N]>>
         : ToolCallers<Extract<T[N], ContractTools>, K>;
     };
+const isContractTool = (
+  value: ContractTool | ContractTools
+): value is ContractTool => value.$tailorkitToolDefinition === true;
+
 export const flattenTools = (
   tools: ContractTools,
   prefix = ""
@@ -146,17 +155,14 @@ export const flattenTools = (
       throw new Error(`Invalid tool name "${name}"`);
     }
     const path = prefix + name;
-    if (value.$tailorkitToolDefinition === true) {
-      const leaf = value as ContractTool;
+    if (isContractTool(value)) {
+      const leaf = value;
       if (!["client", "server"].includes(leaf.kind) || !leaf.definition) {
         throw new Error(`Invalid tool declaration "${path}"`);
       }
       result.set(path, leaf);
     } else {
-      for (const [key, leaf] of flattenTools(
-        value as ContractTools,
-        `${path}.`
-      )) {
+      for (const [key, leaf] of flattenTools(value, `${path}.`)) {
         result.set(key, leaf);
       }
     }
@@ -172,32 +178,39 @@ export const serializeTools = (
     if (!value) {
       continue;
     }
-    if (value.$tailorkitToolDefinition === true) {
-      const leaf = value as ContractTool;
+    if (isContractTool(value)) {
+      const leaf = value;
       result[name] = {
         input: serializeSchema(leaf.definition.input, serializer, "input"),
         kind: leaf.kind,
         output: serializeSchema(leaf.definition.output, serializer),
       };
     } else {
-      result[name] = serializeTools(value as ContractTools, serializer);
+      result[name] = serializeTools(value, serializer);
     }
   }
   return result;
 };
-export const validateToolValue = async (
-  schema: Schema | undefined,
+type ParsedToolValue<TSchema extends Schema | undefined> =
+  TSchema extends Schema ? StandardSchemaV1.InferOutput<TSchema> : undefined;
+
+export const validateToolValue = async <TSchema extends Schema | undefined>(
+  schema: TSchema,
+  // This is the parsing boundary; accepting unknown is required before Standard Schema validation.
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- Raw values are decoded here, not passed into domain handlers.
   value: unknown
-): Promise<unknown> => {
+): Promise<ParsedToolValue<TSchema>> => {
   if (!schema) {
     if (value !== undefined) {
       throw new Error("Tool expects no value");
     }
-    return undefined;
+    // SAFETY: Without a schema, the only admitted value is undefined and the corresponding output branch is undefined.
+    return undefined as ParsedToolValue<TSchema>;
   }
   const result = await schema["~standard"].validate(value);
   if (result.issues) {
     throw new Error("Invalid tool payload");
   }
-  return result.value;
+  // SAFETY: This exact schema produced result.value after reporting no validation issues.
+  return result.value as ParsedToolValue<TSchema>;
 };

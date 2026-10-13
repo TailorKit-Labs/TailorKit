@@ -6,7 +6,10 @@ import {
   createRemoteElementProps,
 } from "@tailorkit/client-core";
 import type { RemoteViewStore } from "@tailorkit/client-core";
-import type { RemoteElementNode } from "@tailorkit/sandbox/protocol";
+import type {
+  RemoteProps,
+  RemoteElementNode,
+} from "@tailorkit/sandbox/protocol";
 import {
   Component,
   Fragment,
@@ -18,7 +21,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
 
 const RemoteUIContext = createContext<RemoteViewStore | null>(null);
 
@@ -63,9 +66,9 @@ interface RemoteViewHostProps {
   sourceText?: string;
   toolBridge?: ToolBridge;
   getBackendSession?: (options: { refresh: boolean }) => Promise<Session>;
-  components: Record<string, unknown>;
+  components: RemoteProps;
   createIframe?: () => HTMLIFrameElement;
-  props?: Record<string, unknown>;
+  props?: RemoteProps;
 }
 
 const RemoteRoot = ({ store }: { store: RemoteViewStore }): ReactNode => {
@@ -151,8 +154,12 @@ const RemoteElementViewComponent = ({
   }
   const props = createRemoteElementProps(node, ctx.dispatch);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return createElement(component as any, props, ...children);
+  // SAFETY: The renderer was supplied through the typed component registry; React's createElement overload erases its heterogeneous props.
+  return createElement(
+    component as string | ComponentType<RemoteProps>,
+    props,
+    ...children
+  );
 };
 const RemoteElementView = memo(RemoteElementViewComponent);
 
@@ -171,7 +178,7 @@ const RemoteNodeView = ({
   }
 
   if (node.kind === "text") {
-    return node.text as unknown as ReactNode;
+    return node.text;
   }
 
   const childElements = node.children.map((child) => (

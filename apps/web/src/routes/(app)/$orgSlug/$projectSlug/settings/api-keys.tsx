@@ -49,6 +49,9 @@ import {
   setProjectApiKey,
 } from "#utils/project-api-key-memory";
 
+const isStringValue = <TValue,>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 const keyLabel = (key: {
   id: string;
   prefix?: string | null;
@@ -103,9 +106,9 @@ const ProjectApiKeysPage = () => {
         orgSlug,
         projectSlug,
       }),
-    onError: (err: unknown) => {
+    onError: (cause: unknown) => {
       const message =
-        err instanceof Error ? err.message : "Failed to rotate API key";
+        cause instanceof Error ? cause.message : "Failed to rotate API key";
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: async (result) => {
@@ -152,15 +155,14 @@ const ProjectApiKeysPage = () => {
 
     return (
       <div className="flex min-w-0 items-center gap-3">
-        <InputGroup className="bg-muted min-w-0 flex-1">
+        <InputGroup className="min-w-0 flex-1">
           <InputGroupInput
             aria-label="Project API key"
-            className="font-mono"
             readOnly
             type={showStoredApiKey ? "text" : "password"}
             value={storedApiKey}
           />
-          <InputGroupAddon align="inline-end" className="gap-1">
+          <InputGroupAddon align="inline-end">
             <Tooltip>
               <TooltipTrigger
                 render={
@@ -222,12 +224,11 @@ const ProjectApiKeysPage = () => {
             <InputGroup>
               <InputGroupInput
                 aria-label="New API key"
-                className="font-mono"
                 readOnly
                 type={showNewApiKey ? "text" : "password"}
                 value={newApiKey ?? ""}
               />
-              <InputGroupAddon align="inline-end" className="gap-1">
+              <InputGroupAddon align="inline-end">
                 <Tooltip>
                   <TooltipTrigger
                     render={
@@ -297,7 +298,7 @@ const ProjectApiKeysPage = () => {
                 items={gracePeriodOptions}
                 value={gracePeriodSeconds}
                 onValueChange={(value) => {
-                  if (typeof value === "string") {
+                  if (isStringValue(value)) {
                     setGracePeriodSeconds(value);
                   }
                 }}
@@ -333,7 +334,7 @@ const ProjectApiKeysPage = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Project key</CardTitle>
+          <CardTitle>Project key</CardTitle>
           <CardDescription>
             Used to by your platform to integrate with Tailorkit.
           </CardDescription>
@@ -351,7 +352,7 @@ const ProjectApiKeysPage = () => {
           </CardAction>
         </CardHeader>
 
-        <CardPanel className="pt-0">{projectKeyPanel}</CardPanel>
+        <CardPanel>{projectKeyPanel}</CardPanel>
       </Card>
 
       {expiringKeys.length > 0 ? (

@@ -16,18 +16,19 @@
         "settings": {
           "configPath": null,
           "flags": {},
-          "fmt.configPath": null,
+          "fmt.configPath": "./vite.config.ts",
           "fmt.experimental": true,
           "run": "onSave",
           "typeAware": false,
-          "unusedDisableDirectives": false
+          "unusedDisableDirectives": false,
+          "fmt.disableNestedConfig": true
         }
       }
     },
     "oxlint": {
       "initialization_options": {
         "settings": {
-          "disableNestedConfig": false,
+          "disableNestedConfig": true,
           "fixKind": "safe_fix",
           "run": "onType",
           "typeAware": null,

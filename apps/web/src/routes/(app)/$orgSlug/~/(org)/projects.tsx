@@ -106,9 +106,9 @@ const CreateProjectDialog = ({
         orgSlug,
         slug: input.slug,
       }),
-    onError: (err: unknown) => {
+    onError: (cause: unknown) => {
       const message =
-        err instanceof Error ? err.message : "Failed to create project";
+        cause instanceof Error ? cause.message : "Failed to create project";
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: (project) => {
@@ -187,46 +187,48 @@ const CreateProjectDialog = ({
             form.handleSubmit();
           }}
         >
-          <DialogPanel className="flex flex-col gap-4">
-            <form.AppField name="name">
-              {(field) => (
-                <field.TextField
-                  autoComplete="off"
-                  label="Name"
-                  placeholder="Amazing project"
-                  type="text"
-                  onChange={(event) => {
-                    if (!slugTouched.current) {
-                      setSlugSubmitError(null);
-                      form.setFieldValue("slug", toSlug(event.target.value));
-                    }
-                  }}
-                />
-              )}
-            </form.AppField>
+          <DialogPanel>
+            <div className="flex flex-col gap-4">
+              <form.AppField name="name">
+                {(field) => (
+                  <field.TextField
+                    autoComplete="off"
+                    label="Name"
+                    placeholder="Amazing project"
+                    type="text"
+                    onChange={(event) => {
+                      if (!slugTouched.current) {
+                        setSlugSubmitError(null);
+                        form.setFieldValue("slug", toSlug(event.target.value));
+                      }
+                    }}
+                  />
+                )}
+              </form.AppField>
 
-            <form.AppField name="slug">
-              {(field) => (
-                <field.TextField
-                  autoComplete="off"
-                  description={`tailorkit.com/${orgSlug}/${field.state.value || "project-slug"}`}
-                  endAdornment={
-                    <OrgSlugAvailabilityIndicator
-                      availability={slugAvailability}
-                      submitError={slugSubmitError}
-                    />
-                  }
-                  label="Slug"
-                  placeholder="amazing-project"
-                  type="text"
-                  onChange={(event) => {
-                    slugTouched.current = true;
-                    setSlugSubmitError(null);
-                    field.handleChange(toSlug(event.target.value));
-                  }}
-                />
-              )}
-            </form.AppField>
+              <form.AppField name="slug">
+                {(field) => (
+                  <field.TextField
+                    autoComplete="off"
+                    description={`tailorkit.com/${orgSlug}/${field.state.value || "project-slug"}`}
+                    endAdornment={
+                      <OrgSlugAvailabilityIndicator
+                        availability={slugAvailability}
+                        submitError={slugSubmitError}
+                      />
+                    }
+                    label="Slug"
+                    placeholder="amazing-project"
+                    type="text"
+                    onChange={(event) => {
+                      slugTouched.current = true;
+                      setSlugSubmitError(null);
+                      field.handleChange(toSlug(event.target.value));
+                    }}
+                  />
+                )}
+              </form.AppField>
+            </div>
           </DialogPanel>
 
           <DialogFooter>
@@ -271,7 +273,7 @@ const ProjectsPage = () => {
       title="Projects"
     >
       {projects.length === 0 ? (
-        <Empty className="mx-auto w-full rounded-lg border">
+        <Empty className="mx-auto w-full">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <FolderPlusIcon />

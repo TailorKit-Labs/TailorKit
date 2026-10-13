@@ -1,5 +1,7 @@
+import type { ToolBridge } from "@tailorkit/app/client";
 import { AppError } from "@tailorkit/app/server";
 import { RpcTarget } from "cloudflare:workers";
+import { z } from "zod";
 
 /** Tracks active actions only for cancellation and token expiry. */
 export const createActionLeases = () => {
@@ -85,7 +87,10 @@ export class ActionCapability extends RpcTarget {
     this.appSession = appSession;
   }
 
-  async tool(path: string, input: unknown): Promise<unknown> {
+  async tool(
+    path: string,
+    input: Parameters<ToolBridge["client"]>[1]
+  ): ReturnType<ToolBridge["client"]> {
     const credential = this.appSession;
     if (
       !credential ||
@@ -117,7 +122,9 @@ export class ActionCapability extends RpcTarget {
         "Tool call failed"
       );
     }
-    return ((await response.json()) as { output?: unknown }).output;
+    return z
+      .object({ output: z.unknown().optional() })
+      .parse(await response.json()).output;
   }
 
   // A committed write still needs delivery if its caller cancels before this RPC arrives.

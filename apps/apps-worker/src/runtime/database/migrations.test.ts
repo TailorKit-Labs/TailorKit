@@ -45,9 +45,16 @@ const fixture = () => {
     execute(sql, params) {
       const statement = sqlite.prepare(sql);
       statement.setReturnArrays(true);
-      const rows = statement.columns().length
-        ? (statement.all(...(params as never[])) as unknown as unknown[][])
-        : (statement.run(...(params as never[])), []);
+      // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+      let rows: unknown[][] = [];
+      if (statement.columns().length) {
+        // SAFETY: setReturnArrays(true) forces positional rows; Node's declarations still describe records.
+        // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- Node's SQLite declaration does not reflect setReturnArrays.
+        rows = statement.all(...(params as never[])) as unknown as unknown[][];
+      } else {
+        // SAFETY: This test supplies the SQLite-compatible parameters used by its fixture queries.
+        statement.run(...(params as never[]));
+      }
       return {
         changes: 0,
         columns: statement.columns().map((column) => column.name),

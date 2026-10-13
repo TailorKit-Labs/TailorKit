@@ -21,12 +21,19 @@ import type { TailorKitRouterClient } from "@tailorkit/core/server";
 
 import { getAgentAuth, validatePlatformUrl } from "./agent-auth";
 
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 type Input<
   Group extends keyof TailorKitRouterClient,
   Method extends keyof TailorKitRouterClient[Group],
 > = TailorKitRouterClient[Group][Method] extends (
   ...args: infer Args
-) => unknown
+) => infer _Output
   ? Args[0]
   : never;
 
@@ -40,9 +47,9 @@ const request = async <T>(operation: Promise<T>): Promise<T> => {
     }
     if (
       error &&
-      typeof error === "object" &&
+      isObjectValue(error) &&
       "message" in error &&
-      typeof error.message === "string"
+      isStringValue(error.message)
     ) {
       throw Object.assign(new Error(error.message, { cause: error }), {
         code: "code" in error ? error.code : undefined,
@@ -67,11 +74,14 @@ export const createCliClient = (options: {
 }): CliClient => {
   const agent = getAgentAuth();
   if (!agent) {
-    return createTailorKitClient({
-      url: options.url,
-      ...(options.fetch ? { fetch: options.fetch } : {}),
+    const clientOptions: Parameters<typeof createTailorKitClient>[0] = {
       headers: { authorization: `Bearer ${options.token}` },
-    });
+      url: options.url,
+    };
+    if (options.fetch) {
+      clientOptions.fetch = options.fetch;
+    }
+    return createTailorKitClient(clientOptions);
   }
   const client = createClient({
     baseUrl: validatePlatformUrl(agent.platformUrl),
@@ -89,6 +99,8 @@ export const createCliClient = (options: {
     return [scope];
   };
   // These map the host RPC shapes to existing OpenAPI routes. Both return compact bodies.
+  // SAFETY: The adapter reconstructs the same runtime contract, but TypeScript cannot relate the erased generic parameters across this library boundary.
+  // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- The adapter reconstructs the same runtime contract, but TypeScript cannot relate the erased generic parameters across this library boundary.
   return {
     appAgent: {
       async *chat(

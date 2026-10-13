@@ -21,7 +21,7 @@ interface AgentOptions {
   appId?: string;
   host?: string;
   schemaPath?: string;
-  onLoginRequired?: () => Promise<unknown>;
+  onLoginRequired?: () => ReturnType<typeof runWhoami>;
 }
 
 const chooseApp = async (

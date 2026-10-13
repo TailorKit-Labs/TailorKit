@@ -3,7 +3,11 @@ import { appsGet } from "@tailorkit/client-platform/client";
 import { createClient } from "@tailorkit/client-platform/client/client/index";
 
 import type { TailorKitContract } from "../schema/contract";
-import type { ToolImplementations, ToolContext } from "../schema/tools";
+import type {
+  ToolImplementations,
+  ToolContext,
+  ToolImplementationTree,
+} from "../schema/tools";
 import { flattenTools, validateToolValue } from "../schema/tools";
 import { normalizeBaseUrl } from "./base-url";
 import { createTailorKitServer } from "./handler";
@@ -16,26 +20,44 @@ import type {
   TailorKitServerInputOptions,
 } from "./types";
 
+const isFunctionValue = <TValue>(
+  value: TValue
+): value is Extract<TValue, CallableFunction> => typeof value === "function";
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 export type { ToolImplementations } from "../schema/tools";
 export type ContractScopes<T extends TailorKitContract> = {
   [N in keyof T["scopes"]]: StandardSchemaV1.InferInput<T["scopes"][N]>;
 };
-const getImplementation = (tree: unknown, path: string): unknown => {
-  let value = tree;
+const isToolHandler = (
+  value: ToolImplementationTree[string]
+): value is Exclude<ToolImplementationTree[string], ToolImplementationTree> =>
+  typeof value === "function";
+
+const getImplementation = (
+  tree: ToolImplementationTree | undefined,
+  path: string
+): ToolImplementationTree[string] | undefined => {
+  let value: ToolImplementationTree[string] | undefined = tree;
   for (const name of path.split(".")) {
-    if (!value || typeof value !== "object" || !Object.hasOwn(value, name)) {
+    if (!value || isToolHandler(value) || !Object.hasOwn(value, name)) {
       return undefined;
     }
-    value = (value as Record<string, unknown>)[name];
+    value = value[name];
   }
   return value;
 };
-const implementationPaths = (tree: unknown, prefix = ""): string[] => {
-  if (!tree || typeof tree !== "object") {
+const implementationPaths = (
+  tree: ToolImplementationTree | undefined,
+  prefix = ""
+): string[] => {
+  if (!tree) {
     return [];
   }
   return Object.entries(tree).flatMap(([name, value]) =>
-    typeof value === "function"
+    isFunctionValue(value)
       ? [prefix + name]
       : implementationPaths(value, `${prefix + name}.`)
   );
@@ -53,7 +75,7 @@ export const createServer = <const T extends TailorKitContract>(
   for (const [path, leaf] of declarations) {
     if (
       leaf.kind === "server" &&
-      typeof getImplementation(tools, path) !== "function"
+      !isFunctionValue(getImplementation(tools, path))
     ) {
       throw new Error(`Missing implementation for tool "${path}"`);
     }
@@ -68,6 +90,7 @@ export const createServer = <const T extends TailorKitContract>(
     slots: T["slots"];
     tools: T["tools"];
   };
+  // SAFETY: The generic contract supplies the matching views, slots and tools; configuration supplies the remaining server options.
   const server = createTailorKitServer<InternalOptions>({
     ...configuration,
     ...contract,
@@ -121,8 +144,8 @@ export const createServer = <const T extends TailorKitContract>(
           input = await request.json();
           if (
             !input ||
-            typeof input.path !== "string" ||
-            typeof input.requestId !== "string" ||
+            !isStringValue(input.path) ||
+            !isStringValue(input.requestId) ||
             !/^[0-9a-f-]{36}$/u.test(input.requestId) ||
             Object.keys(input).some(
               (k) => !["path", "input", "requestId"].includes(k)
@@ -155,7 +178,7 @@ export const createServer = <const T extends TailorKitContract>(
             throw new Error("Invalid credential.");
           }
           await validateToolValue(schema, identity.scope.value);
-          const headersValue = await (typeof platformHeaders === "function"
+          const headersValue = await (isFunctionValue(platformHeaders)
             ? platformHeaders()
             : platformHeaders);
           const installation = await appsGet({
@@ -195,13 +218,15 @@ export const createServer = <const T extends TailorKitContract>(
           });
         }
         try {
-          const implementation = getImplementation(
-            tools,
-            input.path
-          ) as (args: { input: unknown; context: ToolContext }) => unknown;
+          const implementation = getImplementation(tools, input.path);
+          if (!isFunctionValue(implementation)) {
+            throw new Error("Tool implementation unavailable");
+          }
+          // SAFETY: This registered path owns the declaration that validated value above; the heterogeneous tree erases only its specific input type.
+          const toolInput = value as never;
           const result = await validateToolValue(
             declaration.definition.output,
-            await implementation({ context, input: value })
+            await implementation({ context, input: toolInput })
           );
           return Response.json({ output: result }, { headers });
         } catch {
@@ -211,6 +236,7 @@ export const createServer = <const T extends TailorKitContract>(
           });
         }
       }
+      // SAFETY: ContractScopes derives each scope input from the same contract passed to createTailorKitServer.
       return server.handler(
         request,
         handlerOptions as Parameters<typeof server.handler>[1]

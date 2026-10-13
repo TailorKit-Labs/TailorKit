@@ -10,6 +10,18 @@ import {
   validateTailorKitScopes,
 } from "./scope";
 
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
+interface CyclicScopeFixture {
+  ok: boolean;
+  self?: CyclicScopeFixture;
+}
+interface NestedScopeFixture {
+  child: string | NestedScopeFixture;
+}
+
 describe("TailorKit named scope validation", () => {
   it("sorts object keys recursively while preserving array order", () => {
     const input = {
@@ -48,6 +60,7 @@ describe("TailorKit named scope validation", () => {
   });
 
   it("accepts Standard Schema validators without a JSON Schema converter", async () => {
+    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     const schema: StandardSchemaV1<
       { workspaceId: string },
       { workspaceId: string }
@@ -58,7 +71,7 @@ describe("TailorKit named scope validation", () => {
           { workspaceId: string }
         >,
         validate: (value) =>
-          typeof value === "object" && value !== null && "workspaceId" in value
+          isObjectValue(value) && value !== null && "workspaceId" in value
             ? { value: value as { workspaceId: string } }
             : { issues: [{ message: "workspaceId is required" }] },
         vendor: "scope-test",
@@ -146,7 +159,7 @@ describe("TailorKit named scope validation", () => {
   });
 
   it("rejects non-JSON values and non-plain objects", () => {
-    const circular: Record<string, unknown> = { ok: true };
+    const circular: CyclicScopeFixture = { ok: true };
     circular.self = circular;
     const withAccessor = Object.defineProperty({ ok: true }, "value", {
       enumerable: true,
@@ -190,7 +203,7 @@ describe("TailorKit named scope validation", () => {
     const tooManyArrayItems = {
       value: Array.from({ length: 101 }, (_, index) => index),
     };
-    let deepValue: unknown = "leaf";
+    let deepValue: string | NestedScopeFixture = "leaf";
     for (let index = 0; index < 17; index += 1) {
       deepValue = { child: deepValue };
     }

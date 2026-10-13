@@ -13,6 +13,13 @@ import {
 } from "./cli-auth-page";
 import type { TailorKitScopes } from "./types";
 
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 export const previewCookieName = "tailorkit_preview_grants";
 
 const grantIdSchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/u);
@@ -32,9 +39,7 @@ export const readPreviewGrantIds = (request: Request): string[] => {
   }
   try {
     return grantIdsSchema.parse(
-      JSON.parse(
-        decodeURIComponent(pair.slice(previewCookieName.length + 1))
-      ) as unknown
+      JSON.parse(decodeURIComponent(pair.slice(previewCookieName.length + 1)))
     );
   } catch {
     return [];
@@ -77,20 +82,20 @@ const html = (
     }
   );
 
-const previewErrorResponse = (error: unknown): Response => {
-  const details = error !== null && typeof error === "object" ? error : null;
+const previewErrorResponse = (cause: unknown): Response => {
+  const details = cause !== null && isObjectValue(cause) ? cause : null;
   const code = details && "code" in details ? details.code : undefined;
   let message = "";
-  if (error instanceof Error) {
-    ({ message } = error);
+  if (cause instanceof Error) {
+    ({ message } = cause);
   } else if (
     details &&
     "message" in details &&
-    typeof details.message === "string"
+    isStringValue(details.message)
   ) {
     ({ message } = details);
-  } else if (typeof error === "string") {
-    message = error;
+  } else if (isStringValue(cause)) {
+    message = cause;
   }
   return code === "SERVICE_UNAVAILABLE" ||
     /storage is unavailable|SERVICE_UNAVAILABLE/u.test(message)
@@ -138,10 +143,9 @@ export const handlePreviewConsent = async (
     }
     const form = await request.formData();
     const intent = consentIntentSchema.safeParse(form.get("intent"));
-    selectedScopeName =
-      typeof form.get("scope") === "string"
-        ? String(form.get("scope"))
-        : undefined;
+    selectedScopeName = isStringValue(form.get("scope"))
+      ? String(form.get("scope"))
+      : undefined;
     if (intent.success && intent.data === "cancel") {
       return new Response(null, {
         headers: { ...headers, location: returnPath },

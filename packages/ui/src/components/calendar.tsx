@@ -46,6 +46,7 @@ const CalendarChevron = ({
   );
 };
 
+// SAFETY: The wrapper retains DayPicker's original mode and selection props while adding shared presentation defaults; its declared class keys come from DayPicker.
 export const Calendar = ({
   className,
   classNames,
@@ -91,6 +92,7 @@ export const Calendar = ({
   for (const key of Object.keys(
     defaultClassNames
   ) as (keyof typeof defaultClassNames)[]) {
+    // SAFETY: The wrapper retains DayPicker's original mode and selection props while adding shared presentation defaults; its declared class keys come from DayPicker.
     const userClass = classNames?.[key as keyof typeof classNames];
     const baseClass = defaultClassNames[key];
     mergedClassNames[key] = userClass ? cn(baseClass, userClass) : baseClass;
@@ -103,6 +105,7 @@ export const Calendar = ({
     ...userComponents,
   };
 
+  // SAFETY: The wrapper retains DayPicker's original mode and selection props while adding shared presentation defaults; its declared class keys come from DayPicker.
   const dayPickerProps = {
     className: cn(
       "w-fit [--cell-size:--spacing(10)] sm:[--cell-size:--spacing(9)]",
@@ -120,6 +123,7 @@ export const Calendar = ({
     ...props,
   };
 
+  // SAFETY: The wrapper retains DayPicker's original mode and selection props while adding shared presentation defaults; its declared class keys come from DayPicker.
   return (
     <DayPicker
       {...(dayPickerProps as React.ComponentProps<typeof DayPicker>)}

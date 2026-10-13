@@ -8,6 +8,9 @@ import { Effect } from "effect";
 
 import { AppError } from "../runtime/errors";
 
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 interface RuntimeVerifierOptions {
   platformUrl: string;
   publicKeys: unknown;
@@ -22,7 +25,7 @@ export const createAppRuntimeVerifierEffect = (
       audience: APP_AUDIENCE,
       issuer: appRuntimeIssuer(options.platformUrl),
       publicKeys: parseAppPublicKeys(
-        typeof options.publicKeys === "string"
+        isStringValue(options.publicKeys)
           ? JSON.parse(options.publicKeys)
           : options.publicKeys
       ),

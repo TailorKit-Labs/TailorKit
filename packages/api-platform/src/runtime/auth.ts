@@ -1,19 +1,15 @@
 import { createPrivateKey, createPublicKey } from "node:crypto";
 
-import type {
-  AppTokenTrust,
-  AppTokenIdentity,
-} from "@tailorkit/api-utils/app-auth";
+import type { AppTokenIdentity } from "@tailorkit/api-utils/app-auth";
 import {
   APP_AUDIENCE,
   appRuntimeIssuer,
   issueAppToken,
   parseAppPublicKeys,
 } from "@tailorkit/api-utils/app-auth";
+import { z } from "zod";
 
 import { env } from "../env";
-
-type PublicKey = AppTokenTrust["publicKeys"]["keys"][number];
 
 const signingKey = () => {
   if (!env.APP_RUNTIME_SIGNING_KEY) {
@@ -21,10 +17,21 @@ const signingKey = () => {
       "APP_RUNTIME_SIGNING_KEY is required for app runtime tokens"
     );
   }
-  const key = JSON.parse(env.APP_RUNTIME_SIGNING_KEY) as PublicKey;
-  if (key.kty !== "EC" || key.crv !== "P-256" || !key.d || !key.kid) {
+  const parsed = z
+    .object({
+      crv: z.literal("P-256"),
+      d: z.string().min(1),
+      kid: z.string().min(1),
+      kty: z.literal("EC"),
+      x: z.string().min(1),
+      y: z.string().min(1),
+    })
+    .passthrough()
+    .safeParse(JSON.parse(env.APP_RUNTIME_SIGNING_KEY));
+  if (!parsed.success) {
     throw new Error("Configure an ES256 private JWK with a kid");
   }
+  const key = parsed.data;
   return key;
 };
 

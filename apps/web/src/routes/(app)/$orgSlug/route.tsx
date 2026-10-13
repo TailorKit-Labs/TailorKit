@@ -25,7 +25,7 @@ export const Route = createFileRoute("/(app)/$orgSlug")({
           input: { orgSlug: params.orgSlug },
         })
       )
-      .catch(async (error: unknown) => {
+      .catch(async (error: ErrorOptions["cause"]) => {
         if (
           !(error instanceof ORPCError) ||
           error.code !== "NOT_FOUND" ||

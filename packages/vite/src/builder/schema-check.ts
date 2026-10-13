@@ -4,9 +4,16 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 
+import { z } from "zod";
+
 import { appDatabasePaths } from "./database-paths";
 import { drizzleGenerateArguments } from "./drizzle";
 import { getBuildEnvironment } from "./env";
+import { isMissingFile } from "./fs-errors";
+
+const isObjectValue = <TValue>(
+  value: TValue
+): value is TValue & (object | null) => typeof value === "object";
 
 const run = promisify(execFile);
 
@@ -18,8 +25,8 @@ interface Snapshot {
 
 const snapshot = async (directory: string): Promise<Snapshot | undefined> => {
   const entries = await readdir(directory, { withFileTypes: true }).catch(
-    (error: unknown) => {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+    (error: ErrorOptions["cause"]) => {
+      if (isMissingFile(error)) {
         return [];
       }
       throw error;
@@ -34,26 +41,26 @@ const snapshot = async (directory: string): Promise<Snapshot | undefined> => {
     return;
   }
   const filename = path.join(directory, latest, "snapshot.json");
-  const value = JSON.parse(
-    await readFile(filename, "utf-8")
-  ) as Partial<Snapshot>;
-  if (
-    value.version !== "7" ||
-    value.dialect !== "sqlite" ||
-    !Array.isArray(value.ddl)
-  ) {
+  const parsed = z
+    .object({
+      ddl: z.array(z.unknown()),
+      dialect: z.literal("sqlite"),
+      version: z.literal("7"),
+    })
+    .safeParse(JSON.parse(await readFile(filename, "utf-8")));
+  if (!parsed.success) {
     throw new Error(
       `Unsupported app schema snapshot: ${filename}. Use Drizzle Kit v1 SQLite migrations.`
     );
   }
-  return value as Snapshot;
+  return parsed.data;
 };
 
-const canonical = (value: unknown): string => {
+const canonical = <TInput>(value: TInput): string => {
   if (Array.isArray(value)) {
     return `[${value.map(canonical).join(",")}]`;
   }
-  if (value && typeof value === "object") {
+  if (value && isObjectValue(value)) {
     return `{${Object.entries(value)
       .toSorted(([left], [right]) => left.localeCompare(right))
       .map(([key, item]) => `${JSON.stringify(key)}:${canonical(item)}`)
@@ -71,7 +78,7 @@ export const checkAppSchema = async (
   try {
     await access(schema);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+    if (isMissingFile(error)) {
       return;
     }
     throw error;
@@ -89,7 +96,7 @@ export const checkAppSchema = async (
         maxBuffer: 1024 * 1024,
         timeout: 30_000,
       }
-    ).catch((error: unknown) => {
+    ).catch((error: ErrorOptions["cause"]) => {
       throw new Error(
         `Could not check the app database schema with Drizzle Kit. Check ${path.relative(root, schema)} and your drizzle-kit/drizzle-orm dependencies.`,
         { cause: error }

@@ -1,6 +1,8 @@
 import { APIError, Drive, Sandbox } from "@vercel/sandbox";
 import { FatalError } from "workflow";
 
+import type { HostSchemaDocument } from "./schema";
+
 export const agentTokenPath = "/tmp/tailorkit-agent.token";
 
 export const sandboxIdleTimeoutMs = 15 * 60_000;
@@ -51,7 +53,7 @@ export const agentSchemaPath = "/workspace/tailorkit.schema.json";
 
 export const writeAgentSchema = async (
   sandboxName: string,
-  schema: Record<string, unknown>
+  schema: HostSchemaDocument
 ) => {
   "use step";
   const sandbox = await getSandbox(sandboxName);

@@ -9,6 +9,12 @@ import { cn } from "#ui";
 import { Input } from "#ui/input";
 import { ScrollArea } from "#ui/scroll-area";
 
+const isStringValue = <TValue,>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
+const isNumberValue = <TValue,>(value: TValue): value is TValue & number =>
+  typeof value === "number";
+
 export { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox";
 
 export const ComboboxContext: React.Context<{
@@ -49,7 +55,7 @@ export const ComboboxChipsInput = ({
   size?: "sm" | "default" | "lg" | number;
   ref?: React.Ref<HTMLInputElement>;
 }): React.ReactElement => {
-  const sizeValue = (size ?? "default") as "sm" | "default" | "lg" | number;
+  const sizeValue = size ?? "default";
 
   return (
     <ComboboxPrimitive.Input
@@ -58,9 +64,9 @@ export const ComboboxChipsInput = ({
         sizeValue === "sm" ? "ps-1.5" : "ps-2",
         className
       )}
-      data-size={typeof sizeValue === "string" ? sizeValue : undefined}
+      data-size={isStringValue(sizeValue) ? sizeValue : undefined}
       data-slot="combobox-chips-input"
-      size={typeof sizeValue === "number" ? sizeValue : undefined}
+      size={isNumberValue(sizeValue) ? sizeValue : undefined}
       {...props}
     />
   );
@@ -109,7 +115,7 @@ export const ComboboxInput = ({
   triggerProps?: ComboboxPrimitive.Trigger.Props;
   clearProps?: ComboboxPrimitive.Clear.Props;
 }): React.ReactElement => {
-  const sizeValue = (size ?? "default") as "sm" | "default" | "lg" | number;
+  const sizeValue = size ?? "default";
 
   return (
     <ComboboxPrimitive.InputGroup
@@ -363,6 +369,7 @@ export const ComboboxChips = ({
 }): React.ReactElement => {
   const { chipsRef } = React.useContext(ComboboxContext);
 
+  // SAFETY: The combobox context creates chipsRef as an HTMLDivElement ref, and this component attaches it to that div root.
   return (
     <ComboboxPrimitive.Chips
       className={cn(

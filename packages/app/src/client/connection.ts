@@ -119,13 +119,7 @@ export const createClient = (
   const getSession =
     options.getSession ??
     ((request: { refresh: boolean }) => {
-      const bridge = (
-        globalThis as typeof globalThis & {
-          __tailorkitBackendSession?: (options: {
-            refresh: boolean;
-          }) => Promise<Session>;
-        }
-      ).__tailorkitBackendSession;
+      const bridge = globalThis.__tailorkitBackendSession;
       if (!bridge) {
         throw new AppError("UNAVAILABLE", "The host JWT bridge is unavailable");
       }
@@ -231,10 +225,12 @@ export const createClient = (
               },
               headers: { authorization: `Bearer ${session.token}` },
               origin: url.origin,
+              // SAFETY: URL.pathname always starts with a slash for this HTTP session URL, satisfying the transport's absolute route-path type.
               url: url.pathname as `/${string}`,
             })
           );
           if (kind === "mutations") {
+            // SAFETY: The mutation branch assigned invocation.requestId before entering this retry loop.
             // oxlint-disable-next-line no-await-in-loop -- Each retry depends on the result of the previous attempt.
             return await http.mutations(
               invocation as typeof input & { requestId: string },
@@ -276,6 +272,7 @@ export const createClient = (
     }
   };
   return {
+    // SAFETY: The action reference owns its output type, and the server validates that registered action before the shared transport returns its erased result.
     action: (ref, ...[args]) =>
       call("actions", { args, name: ref.name }) as Promise<never>,
     close() {
@@ -289,12 +286,14 @@ export const createClient = (
       clearTimeout(timer);
       socket?.close();
     },
+    // SAFETY: The mutation reference owns its output type, and the server validates that registered mutation before the shared transport returns its erased result.
     mutate: (ref, ...[args, settings]) =>
       call("mutations", {
         args,
         name: ref.name,
         requestId: settings?.requestId ?? crypto.randomUUID(),
       }) as Promise<never>,
+    // SAFETY: The query reference owns its output type, and the server validates that registered query before the shared transport returns its erased result.
     query: (ref, ...[args]) =>
       call("queries", { args, name: ref.name }) as Promise<never>,
     subscribe(ref, args, next, settings = {}) {
@@ -320,6 +319,7 @@ export const createClient = (
               if (controller.signal.aborted || closed) {
                 break;
               }
+              // SAFETY: This subscription was opened with ref.name and args; its listener receives only results from that same registered query, whose output generic is erased by the transport.
               // oxlint-disable-next-line node/callback-return -- This is a value listener or middleware continuation, not a Node-style completion callback.
               next(value as never);
             }
@@ -361,4 +361,4 @@ export const createClient = (
   };
 };
 
-export { createSessionProvider } from "./session";
+export { createSessionProvider, parseSession } from "./session";

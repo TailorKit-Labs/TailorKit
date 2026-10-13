@@ -6,7 +6,6 @@ import {
   listIssues,
   updateIssueStatus,
 } from "@playground/shared/issues";
-import type { IssueStatus } from "@playground/shared/issues";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
@@ -56,11 +55,7 @@ export const changeIssueStatus = createServerFn({ method: "POST" })
   )
   .handler(({ data }) => {
     const { team } = requireSession();
-    const issue = updateIssueStatus(
-      team.id,
-      data.issueId,
-      data.status as IssueStatus
-    );
+    const issue = updateIssueStatus(team.id, data.issueId, data.status);
     if (!issue) {
       throw new Error("Issue not found");
     }

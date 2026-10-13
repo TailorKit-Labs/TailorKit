@@ -5,8 +5,11 @@ import * as v from "valibot";
 import iframeSource from "virtual:tailorkit-iframe";
 
 import { iframeReadyType, sandboxMessageType } from "../bridge";
+import type {
+  RemoteProps,
+  HostToIframePayload as HostToIframePayloadType,
+} from "../protocol.js";
 import { HostToIframePayload, IframeToHostPayload } from "../protocol.js";
-import type { HostToIframePayload as HostToIframePayloadType } from "../protocol.js";
 import { createRemoteUiStore } from "./store.js";
 import type { RemoteUiStore } from "./store.js";
 
@@ -24,7 +27,7 @@ export interface IframeUiHost extends RemoteUiStore {
   dispatch: (payload: HostToIframePayloadType) => void;
   iframe: HTMLIFrameElement;
   mount: () => void;
-  setProps: (props: Record<string, unknown> | undefined) => void;
+  setProps: (props: RemoteProps | undefined) => void;
 }
 
 export interface IframeUiHostOptions {
@@ -32,7 +35,7 @@ export interface IframeUiHostOptions {
   fetch?: typeof globalThis.fetch;
   mountTarget?: HTMLElement;
   onError?: (error: Error) => void;
-  props?: Record<string, unknown>;
+  props?: RemoteProps;
   /** Complete source for a committed preview revision. */
   sourceText?: string;
   /** Bound by the host SDK to this app installation; never supplied by the iframe. */
@@ -125,8 +128,10 @@ export const createIframeUiHost = (
 
   configureIframe(iframe, channel);
 
-  const reportError = (err: unknown): void => {
-    options.onError?.(err instanceof Error ? err : new Error(String(err)));
+  const reportError = (cause: unknown): void => {
+    options.onError?.(
+      cause instanceof Error ? cause : new Error(String(cause))
+    );
   };
 
   const postToIframe = (payload: HostToIframePayloadType): void => {
