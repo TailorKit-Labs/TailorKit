@@ -6,7 +6,7 @@ import { checkAppSchema } from "./schema-check";
 
 it("checks schema drift without rewriting committed migrations and allows apps without tables", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-schema-test-"));
-  const example = path.resolve(import.meta.dirname, "../../../../examples/apps/backend-todo");
+  const example = path.resolve(import.meta.dirname, "../../test/fixtures/backend-todo");
   const migrations = path.join(root, "src/db/migrations");
   try {
     await mkdir(path.join(root, "src/db"), { recursive: true });

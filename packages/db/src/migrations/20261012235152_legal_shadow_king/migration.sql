@@ -1,0 +1,1 @@
+ALTER TABLE "app" ADD COLUMN "created_by_agent" boolean DEFAULT false NOT NULL;

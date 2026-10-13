@@ -1,5 +1,5 @@
 import { expect, it, vi } from "vite-plus/test";
-import { tk } from "@tailorkit/app/server";
+import { fn } from "@tailorkit/app/server";
 import { defineServer } from "@tailorkit/app/server";
 import { resolveFunction } from "./functions";
 import { createExecution, invocationSchema } from "./execution";
@@ -16,13 +16,13 @@ import { createApi } from "@tailorkit/app/client";
 
 it("dispatches nested functions and preserves their names, identity, execution and typed action calls", async () => {
   const todos = {
-    read: tk.query.handler(() => "rows"),
-    save: tk.mutation.handler(() => "saved"),
+    read: fn.query.handler(() => "rows"),
+    save: fn.mutation.handler(() => "saved"),
   };
   const app = defineServer({
     todos,
     tasks: {
-      run: tk.action.functions({ todos }).handler(async ({ queries, mutations }) => ({
+      run: fn.action.functions({ todos }).handler(async ({ queries, mutations }) => ({
         rows: await queries.todos.read(),
         saved: await mutations.todos.save(),
       })),
@@ -67,7 +67,7 @@ it("dispatches nested functions and preserves their names, identity, execution a
 });
 
 it("validates names inside nested groups", () => {
-  expect(() => defineServer({ todos: { "invalid.name": tk.query.handler(() => null) } })).toThrow(
+  expect(() => defineServer({ todos: { "invalid.name": fn.query.handler(() => null) } })).toThrow(
     "Invalid function name",
   );
   for (const name of [

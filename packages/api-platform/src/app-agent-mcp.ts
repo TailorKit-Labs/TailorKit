@@ -15,7 +15,7 @@ import { env } from "./env";
 import type { Context } from "./context";
 import { findAppInScopes, protectedRouter } from "./procedures";
 import { canonicalizeScope, canonicalizeScopes, scopeValueSchema } from "./scope";
-import { appRouter } from "./routes/apps";
+import { appRouter, createAppRecord } from "./routes/apps";
 
 const contextSchema = z.strictObject({
   scopes: z.record(z.string(), scopeValueSchema),
@@ -95,7 +95,7 @@ export async function handleAppAgentMcpRequest(
             appId: app.id,
             hostUrl: input.hostUrl,
             agentToken,
-            model: "openai/gpt-6.1-sol",
+            model: "xiaomi/mimo-v2.6-pro",
             messages: [{ role: "user", content: prompt }],
           },
         ],
@@ -151,15 +151,15 @@ export async function handleAppAgentMcpRequest(
         );
         return body;
       },
-      async createApp({ scope: name, prompt, ...metadata }, execution) {
+      async createApp({ scope: scopeName, prompt, ...metadata }, execution) {
         execution.signal.throwIfAborted();
-        const scope = authorizedScopes.find((scope) => scope.name === name);
+        const scope = authorizedScopes.find((scope) => scope.name === scopeName);
         if (!scope)
           throw new ORPCError("FORBIDDEN", { message: "Scope is not authorized by the host." });
-        const { body: app } = await call(
-          appRouter.create,
-          { body: { ...metadata, description: metadata.description ?? null, scope } },
-          { context },
+        const app = await createAppRecord(
+          context,
+          { name: metadata.name, description: metadata.description ?? null, scope },
+          true,
         );
         return runAgent(app.id, prompt, execution);
       },

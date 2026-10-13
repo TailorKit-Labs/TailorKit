@@ -193,14 +193,14 @@ export default { functions: { probe: {
   async function checkRpc() {
     const repo = path.resolve(import.meta.dirname, "../../../..");
     const { migrations } = await readAppMigrations(
-      path.join(repo, "examples/apps/backend-todo/src/db/migrations"),
+      path.join(repo, "packages/app/test/fixtures/backend-todo/src/db/migrations"),
     );
 
     const entry = path.join(state, "fixture.ts");
 
     async function publishRpc(history, deploymentId) {
       // Use the same migration bootstrap bundled into production server artifacts.
-      const setup = `import app from ${JSON.stringify(path.join(repo, "examples/apps/backend-todo/src/server.ts"))};
+      const setup = `import app from ${JSON.stringify(path.join(repo, "packages/app/test/fixtures/backend-todo/src/server.ts"))};
 import { defineServer, action, query, table, text, integer, AppError } from ${JSON.stringify(path.join(repo, "packages/app/dist/server.js"))};
 import { env } from "cloudflare:workers";
 

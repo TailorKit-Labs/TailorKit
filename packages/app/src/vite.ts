@@ -116,6 +116,10 @@ export async function tailorkit(options: TailorKitPluginOptions = {}): Promise<P
         fileEntry = await createFileRouteEntry(loaded.root, resolvedOutDir, watching);
         return {
           root: loaded.root,
+          define: {
+            "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV ?? "production"),
+            ...config.define,
+          },
           oxc: { jsx: { importSource: "preact" } },
           build: {
             emptyOutDir: true,

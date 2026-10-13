@@ -8,7 +8,7 @@ it("builds the app's Vite config with custom plugins, aliases, constants and out
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-vite-config-"));
   try {
     await symlink(
-      path.resolve(import.meta.dirname, "../../../examples/apps/backend-todo/node_modules"),
+      path.resolve(import.meta.dirname, "../../app/test/fixtures/backend-todo/node_modules"),
       path.join(root, "node_modules"),
       "dir",
     );
@@ -31,10 +31,10 @@ it("builds the app's Vite config with custom plugins, aliases, constants and out
     await writeFile(
       path.join(root, "src/server.ts"),
       `
-      import { defineServer, tk } from "tailorkit/server";
+      import { defineServer, fn } from "tailorkit/server";
       import { message } from "@/message";
       import value from "virtual:example";
-      export default defineServer({ read: tk.query.handler(() => message + value + CUSTOM_CONSTANT) });
+      export default defineServer({ read: fn.query.handler(() => message + value + CUSTOM_CONSTANT) });
     `,
     );
     await writeFile(
@@ -76,7 +76,7 @@ it("requires the TailorKit plugin when deploying", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-missing-plugin-"));
   try {
     await symlink(
-      path.resolve(import.meta.dirname, "../../../examples/apps/backend-todo/node_modules"),
+      path.resolve(import.meta.dirname, "../../app/test/fixtures/backend-todo/node_modules"),
       path.join(root, "node_modules"),
       "dir",
     );

@@ -14,7 +14,7 @@ import {
   defineDatabase,
   query,
   mutation,
-  tk,
+  fn,
   AppError,
 } from "@tailorkit/app/server";
 import { createExecution } from "./execution";
@@ -114,14 +114,14 @@ function fixture() {
       handler: ({ db }) => db.delete(todos).where(eq(todos.id, "missing")).run(),
     }),
     optionalArgs: mutation({ args: z.unknown().optional(), handler: ({ args }) => args ?? null }),
-    unserializable: tk.mutation.input(z.enum(["bigint", "cycle"])).handler(({ input, db }) => {
+    unserializable: fn.mutation.input(z.enum(["bigint", "cycle"])).handler(({ input, db }) => {
       db.insert(todos).values({ id: input, title: "rollback" }).run();
       if (input === "bigint") return 1n;
       const value: { self?: unknown } = {};
       value.self = value;
       return value;
     }),
-    invalidResult: tk.mutation
+    invalidResult: fn.mutation
       .output(z.object({ ok: z.literal(true) }))
       .handler(({ input, db }) => {
         expect(input).toBeUndefined();
@@ -177,10 +177,10 @@ it.each([
   });
   const execution = createExecution(
     defineServer({
-      direct: tk.query
+      direct: fn.query
         .database(directDatabase)
         .handler(({ db }) => db.query.view.findMany().sync()),
-      nested: tk.query
+      nested: fn.query
         .database(nestedDatabase)
         .handler(({ db }) => db.query.users.findMany({ with: { todos: true } }).sync()),
     }),
@@ -352,11 +352,11 @@ it.each(["bigint", "cycle"])(
 it("runs action database calls locally and notifies only committed writes before the action finishes", async () => {
   const { persistence, sqlite } = fixture();
   const records = {
-    list: tk.query.handler(({ db }) => db.select().from(todos).all()),
-    add: tk.mutation
+    list: fn.query.handler(({ db }) => db.select().from(todos).all()),
+    add: fn.mutation
       .input(z.object({ id: z.string(), title: z.string() }))
       .handler(({ input, db }) => db.insert(todos).values(input).returning().all()),
-    fail: tk.mutation.handler(({ db }) => {
+    fail: fn.mutation.handler(({ db }) => {
       db.insert(todos).values({ id: "rolled-back", title: "discard" }).run();
       throw new AppError("CONFLICT", "Rollback");
     }),
@@ -372,7 +372,7 @@ it("runs action database calls locally and notifies only committed writes before
   const requestId = crypto.randomUUID();
   const app = defineServer({
     records,
-    run: tk.action.functions({ records }).handler(async ({ queries, mutations }) => {
+    run: fn.action.functions({ records }).handler(async ({ queries, mutations }) => {
       const input = { id: "committed", title: "local" };
       await mutations.records.add(input, { requestId });
       await mutations.records.add(input, { requestId });
@@ -424,7 +424,7 @@ it("runs nested relational queries and preserves scope, permissions and invalida
   }));
   const database = defineDatabase({ relations });
   const app = defineServer({
-    list: tk.query
+    list: fn.query
       .database(database)
       .handler(({ db }) =>
         db.query.users.findMany({ with: { todos: true }, orderBy: { id: "asc" } }).sync(),
@@ -435,17 +435,17 @@ it("runs nested relational queries and preserves scope, permissions and invalida
       handler: ({ db }) =>
         db.query.todos.findFirst({ where: { id: "one" }, with: { user: true } }).sync() ?? null,
     }),
-    absent: tk.query
+    absent: fn.query
       .database(database)
       .handler(({ db }) => db.query.todos.findFirst({ where: { id: "missing" } }).sync() ?? null),
-    insert: tk.mutation
+    insert: fn.mutation
       .database(database)
       .input(z.string())
       .handler(({ db, input }) => {
         db.insert(todos).values({ id: input, title: "Nested todo", done: true }).run();
         return db.query.todos.findFirst({ where: { id: input }, with: { user: true } }).sync();
       }),
-    writeInQuery: tk.query.database(database).handler(({ db }) => {
+    writeInQuery: fn.query.database(database).handler(({ db }) => {
       // @ts-expect-error Verify runtime enforcement even if a caller bypasses the type restriction.
       db.insert(todos).values({ id: "forbidden", title: "No" }).run();
       return null;

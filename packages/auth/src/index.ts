@@ -122,6 +122,10 @@ function buildAuth() {
   const backgroundTaskHandler = env.VERCEL ? vercelWaitUntil : noopWaitUntil;
   const secondaryStorage = createSecondaryStorage();
   const productionUrl = getProductionUrl(env);
+  const passkeyRpID =
+    env.VERCEL_ENV === "production"
+      ? new URL(productionUrl ?? getBaseUrl(env)).hostname
+      : new URL(getBaseUrl(env)).hostname;
 
   return betterAuth({
     appName: "TailorKit",
@@ -182,6 +186,7 @@ function buildAuth() {
       }),
       haveIBeenPwned(),
       passkey({
+        rpID: passkeyRpID,
         rpName: "TailorKit",
       }),
       twoFactor({

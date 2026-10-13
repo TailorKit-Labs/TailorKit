@@ -190,8 +190,9 @@ function SubmitButton({
   children,
   variant,
   className,
+  disabled = false,
   ...props
-}: Omit<ButtonProps, "type" | "disabled" | "loading">) {
+}: Omit<ButtonProps, "type" | "loading">) {
   const form = useFormContext();
   return (
     <form.Subscribe<SubmitButtonState>
@@ -206,7 +207,7 @@ function SubmitButton({
           variant={variant}
           className={cn("w-min", className)}
           type="submit"
-          disabled={!canSubmit}
+          disabled={disabled || !canSubmit}
           loading={isSubmitting || isValidating}
           {...props}
         >
