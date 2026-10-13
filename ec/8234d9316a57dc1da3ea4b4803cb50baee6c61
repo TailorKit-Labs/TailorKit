@@ -1,0 +1,61 @@
+examples/apps/backend-todo/src/db/index.ts
+  s_1fee9365510c9b::t_5a7bde1386e6e5 1
+examples/apps/backend-todo/src/server.ts
+  s_1fee9365510c9b::t_5a7bde1386e6e5 1
+examples/apps/todo/src/db/index.ts
+  s_1fee9365510c9b::t_5a7bde1386e6e5 1
+examples/apps/todo/README.md
+  s_1fee9365510c9b::t_5a7bde1386e6e5 3
+packages/tailorkit/package.json
+  s_1fee9365510c9b::t_1d554343a100c9 62
+packages/app/src/builder/server.ts
+  s_1fee9365510c9b::t_5a7bde1386e6e5 48
+docs/tools.mdx
+  s_1fee9365510c9b::t_5a7bde1386e6e5 143
+packages/cli/src/generator/templates/src/functions/greeting.ts.liquid
+  s_1fee9365510c9b::t_5a7bde1386e6e5 1
+packages/app/src/builder/file-routes.test.ts
+  s_1fee9365510c9b::t_5a7bde1386e6e5 134
+packages/cli/src/generator/templates/src/db/index.ts.liquid
+  s_1fee9365510c9b::t_5a7bde1386e6e5 1
+examples/apps/backend-todo/README.md
+  s_1fee9365510c9b::t_5a7bde1386e6e5 3
+examples/apps/backend-todo/src/functions/todos.ts
+  s_1fee9365510c9b::t_5a7bde1386e6e5 1
+packages/cli/src/generator/templates/src/server.ts.liquid
+  s_1fee9365510c9b::t_5a7bde1386e6e5 1
+packages/app/src/builder/index.ts
+  s_1fee9365510c9b::t_1d554343a100c9 160
+examples/apps/backend-todo/src/functions/import-todo.ts
+  s_1fee9365510c9b::t_5a7bde1386e6e5 2
+.changeset/fn-export.md
+  s_1fee9365510c9b::t_1d554343a100c9 6
+examples/apps/todo/src/functions/todos.ts
+  s_1fee9365510c9b::t_5a7bde1386e6e5 1
+examples/apps/todo/src/server.ts
+  s_1fee9365510c9b::t_5a7bde1386e6e5 1
+packages/app/src/builder/server.test.ts
+  s_1fee9365510c9b::t_5a7bde1386e6e5 35,43,131,166
+examples/apps/backend-todo/src/db/schema.ts
+  s_1fee9365510c9b::t_5a7bde1386e6e5 1
+examples/apps/todo/src/db/schema.ts
+  s_1fee9365510c9b::t_5a7bde1386e6e5 1
+examples/apps/todo/src/functions/import-todo.ts
+  s_1fee9365510c9b::t_5a7bde1386e6e5 2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ec8234d9316a57dc1da3ea4b4803cb50baee6c61",
+  "prompts": {},
+  "sessions": {
+    "s_1fee9365510c9b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13296-4517-7261-ba14-9c2db3d09d57",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
