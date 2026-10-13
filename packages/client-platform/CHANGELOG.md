@@ -1,5 +1,11 @@
 # @tailorkit/client-platform
 
+## 0.1.0-beta.31
+
+### Patch Changes
+
+- 4d2f904: Align source code with Ultracite’s default Oxlint and Oxfmt presets while preserving public APIs and runtime lifecycle behavior.
+
 ## 0.1.0-beta.30
 
 No changes in this release.
