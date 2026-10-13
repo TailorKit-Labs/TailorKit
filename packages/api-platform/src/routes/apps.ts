@@ -10,6 +10,7 @@ import { o, cliRouter, requireApp, requireAppInScopes } from "../procedures";
 import { createPublicId } from "../public-id";
 import { withAppAssetUrl } from "../asset-url";
 import { canonicalizeScope, canonicalizeScopes, scopeSchema, scopesSchema } from "../scope";
+import type { Context } from "../context";
 
 export const AppWithCurrentDeployment = App.omit({ scopeKey: true }).extend({
   currentDeployment: AppDeployment.nullable(),
@@ -107,6 +108,42 @@ const getApp = cliRouter
     body: withAppAssetUrl(context.app, context.organization.publicId, context.project.id),
   }));
 
+const createAppInput = z.object({
+  name: App.shape.name,
+  description: App.shape.description,
+  scope: scopeSchema,
+});
+
+export async function createAppRecord(
+  context: Context,
+  input: z.infer<typeof createAppInput>,
+  createdByAgent = false,
+) {
+  const scope = canonicalizeScope(input.scope);
+  const [createdApp] = await db
+    .insert(app)
+    .values({
+      createdByAgent,
+      description: input.description?.trim() || undefined,
+      name: input.name.trim(),
+      projectId: context.project.id,
+      publicId: await createUniqueAppPublicId(context.project.id),
+      scopeKey: scope.scopeKey,
+      scope: scope.scope,
+    })
+    .returning();
+
+  if (!createdApp) {
+    throw new ORPCError("BAD_REQUEST", { message: "Failed to create app." });
+  }
+
+  return {
+    ...createdApp,
+    currentDeployment: null,
+    views: [],
+  };
+}
+
 const createApp = cliRouter
   .meta(
     openapi({
@@ -114,37 +151,10 @@ const createApp = cliRouter
       method: "POST",
     }),
   )
-  .input(
-    z.object({
-      body: App.pick({ name: true, description: true }).extend({ scope: scopeSchema }),
-    }),
-  )
+  .input(z.object({ body: createAppInput }))
   .output(z.object({ body: AppWithCurrentDeployment }))
   .handler(async ({ context, input }) => {
-    const scope = canonicalizeScope(input.body.scope);
-    const [createdApp] = await db
-      .insert(app)
-      .values({
-        description: input.body.description?.trim() || undefined,
-        name: input.body.name.trim(),
-        projectId: context.project.id,
-        publicId: await createUniqueAppPublicId(context.project.id),
-        scopeKey: scope.scopeKey,
-        scope: scope.scope,
-      })
-      .returning();
-
-    if (!createdApp) {
-      throw new ORPCError("BAD_REQUEST", { message: "Failed to create app." });
-    }
-
-    return {
-      body: {
-        ...createdApp,
-        currentDeployment: null,
-        views: [],
-      },
-    };
+    return { body: await createAppRecord(context, input.body) };
   });
 
 const deleteApp = cliRouter
