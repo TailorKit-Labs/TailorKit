@@ -60,6 +60,9 @@ async function getSourceExportApp(
   if (!selectedApp) {
     throw new ORPCError("NOT_FOUND", { message: "App not found." });
   }
+  if (!selectedApp.createdByAgent) {
+    return { app: selectedApp, enabled: false };
+  }
 
   const enabled = await evaluateBooleanFlag("app-source-export", false, { user });
 
