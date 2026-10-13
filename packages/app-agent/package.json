@@ -16,6 +16,10 @@
     "./mcp": {
       "types": "./dist/mcp.d.mts",
       "import": "./dist/mcp.mjs"
+    },
+    "./source-export": {
+      "types": "./dist/source-export.d.mts",
+      "import": "./dist/source-export.mjs"
     }
   },
   "scripts": {

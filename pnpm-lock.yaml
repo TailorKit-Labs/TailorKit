@@ -547,6 +547,9 @@ importers:
       '@tailorkit/api-utils':
         specifier: workspace:*
         version: link:../api-utils
+      '@tailorkit/app-agent':
+        specifier: workspace:*
+        version: link:../app-agent
       '@tailorkit/auth':
         specifier: workspace:*
         version: link:../auth
@@ -556,6 +559,9 @@ importers:
       '@tailorkit/env':
         specifier: workspace:*
         version: link:../env
+      '@tailorkit/flags':
+        specifier: workspace:*
+        version: link:../flags
       '@tailorkit/kv':
         specifier: workspace:*
         version: link:../kv

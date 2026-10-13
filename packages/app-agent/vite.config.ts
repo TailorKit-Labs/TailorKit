@@ -4,7 +4,7 @@ import packageJson from "./package.json" with { type: "json" };
 
 export default defineConfig({
   pack: {
-    entry: ["src/index.ts", "src/workflows.ts", "src/mcp.ts"],
+    entry: ["src/index.ts", "src/workflows.ts", "src/mcp.ts", "src/source-export.ts"],
     format: "esm",
     target: "node24",
     dts: true,
