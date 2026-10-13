@@ -11,7 +11,8 @@
       "@tailorkit/client-platform",
       "@tailorkit/core",
       "@tailorkit/react",
-      "@tailorkit/sandbox"
+      "@tailorkit/sandbox",
+      "@tailorkit/vite"
     ]
   ],
   "linked": [],

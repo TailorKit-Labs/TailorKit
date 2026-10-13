@@ -6,16 +6,16 @@
     "#tailorkit": "./src/tailorkit.gen.ts"
   },
   "scripts": {
-    "build": "tailorkit build",
+    "build": "{% if vitePlus %}vp{% else %}vite{% endif %} build",
     "db:generate": "tailorkit db generate",
     "deploy": "tailorkit deploy",
-    "generate": "tailorkit generate"{% if linting %},
-    "lint": "oxlint",
-    "lint:fix": "oxlint --fix"{% endif %}{% if formatting %},
-    "format": "oxfmt --check",
-    "format:fix": "oxfmt --write"{% endif %}{% if linting or formatting %},
-    "check": "{{ checkScript }}",
-    "fix": "{{ fixScript }}"{% endif %}
+    "generate": "tailorkit generate"{% if vitePlus %},
+    "lint": "vp lint",
+    "format": "vp fmt --check",
+    "format:fix": "vp fmt",
+    "check": "vp check",
+    "fix": "vp check --fix",
+    "test": "vp test"{% endif %}
   },
   "dependencies": {
     "tailorkit": "{{ tailorkitVersion }}",
@@ -25,9 +25,9 @@
   "devDependencies": {
     "drizzle-kit": "{{ drizzleKitVersion }}",
     "drizzle-orm": "{{ drizzleOrmVersion }}",
-    "typescript": "{{ typescriptVersion }}"{% if linting %},
-    "oxlint": "{{ oxlintVersion }}"{% endif %}{% if formatting %},
-    "oxfmt": "{{ oxfmtVersion }}"{% endif %}
+    "typescript": "{{ typescriptVersion }}",
+    "vite": "{% if vitePlus %}npm:@voidzero-dev/vite-plus-core@{{ vitePlusVersion }}{% else %}{{ viteVersion }}{% endif %}"{% if vitePlus %},
+    "vite-plus": "{{ vitePlusVersion }}"{% endif %}
   },
   "type": "module"
 }

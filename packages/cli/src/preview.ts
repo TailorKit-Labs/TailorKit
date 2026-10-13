@@ -1,8 +1,9 @@
+import { buildProject } from "./build";
 import { createHash } from "node:crypto";
 import { readFile, readdir, realpath } from "node:fs/promises";
 import path from "node:path";
 import { log } from "@clack/prompts";
-import { loadTailorKitConfig } from "@tailorkit/app/config/loader";
+import { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
 import {
   createPreviewWebSocketClient,
   previewBuildManifestSchema,
@@ -175,8 +176,11 @@ export async function runPreview(options: PreviewOptions): Promise<void> {
   if (!stored?.deployToken) {
     throw new Error("Not logged in. Run tailorkit login first.");
   }
-  const { buildApp } = await import("@tailorkit/app/builder");
-  const watcher = await buildApp({ ...options, watch: true });
+  const { result: watcher, outDir } = await buildProject({
+    ...options,
+    cwd: loaded.root,
+    watch: true,
+  });
   const closeWatcher = async (): Promise<void> => {
     if (watcher && typeof watcher === "object" && "close" in watcher) {
       await (watcher as { close: () => Promise<void> | void }).close();
@@ -209,10 +213,6 @@ export async function runPreview(options: PreviewOptions): Promise<void> {
       log.warn(`Unable to end preview session: ${errorMessage(error)}`);
     }
   };
-  const outDir = path.resolve(
-    loaded.root,
-    options.outDir ?? loaded.config.build?.outDir ?? ".tailorkit",
-  );
   let root: string;
   let latest: Snapshot;
   try {

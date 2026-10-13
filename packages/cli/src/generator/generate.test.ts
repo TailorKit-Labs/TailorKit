@@ -16,7 +16,6 @@ const createTempDir = async (): Promise<string> => {
 
 const defaultOptions = {
   force: false,
-  formatting: false,
   hostUrl: "https://host.example.com/api/tailorkit",
   schema: {
     slots: { sidebar: { views: ["/customers"] } },
@@ -27,11 +26,11 @@ const defaultOptions = {
       Box: { children: true, fields: { type: "object", properties: {} }, callbacks: {} },
     },
   },
-  linting: false,
+  tooling: "vite",
   packageName: "test-app",
   packageVersions: {
-    oxfmt: "1.0.0",
-    oxlint: "1.0.0",
+    vite: "8.0.0",
+    vitePlus: "1.0.0",
     preact: "11.0.0",
     tailorkit: "4.5.6",
     typescript: "5.1.0",
@@ -54,6 +53,7 @@ describe("generateApp", () => {
       "package.json",
       "tsconfig.json",
       "tailorkit.config.ts",
+      "vite.config.ts",
       "logo-dark.svg",
       "logo-light.svg",
       ".gitignore",
@@ -89,34 +89,36 @@ describe("generateApp", () => {
     await expect(readFile(path.join(targetDirectory, "src/schema.ts"))).rejects.toThrow();
   });
 
-  it("does not generate linting or formatting configs when disabled", async () => {
+  it.each(["vite", "vite-plus"] as const)("generates a %s build configuration", async (tooling) => {
     const targetDirectory = await createTempDir();
-    await generateApp({ ...defaultOptions, targetDirectory });
-
-    await expect(
-      readFile(path.join(targetDirectory, "oxlint.config.ts"), "utf-8"),
-    ).rejects.toThrow();
-    await expect(
-      readFile(path.join(targetDirectory, "oxfmt.config.ts"), "utf-8"),
-    ).rejects.toThrow();
-  });
-
-  it("generates oxlint config when linting is enabled", async () => {
-    const targetDirectory = await createTempDir();
-    await generateApp({ ...defaultOptions, targetDirectory, linting: true });
-
-    const content = await readFile(path.join(targetDirectory, "oxlint.config.ts"), "utf-8");
-    expect(content).toContain("ignorePatterns");
-    expect(content).toContain("src/tailorkit.gen.ts");
-  });
-
-  it("generates oxfmt config when formatting is enabled", async () => {
-    const targetDirectory = await createTempDir();
-    await generateApp({ ...defaultOptions, targetDirectory, formatting: true });
-
-    const content = await readFile(path.join(targetDirectory, "oxfmt.config.ts"), "utf-8");
-    expect(content).toContain("ignorePatterns");
-    expect(content).toContain("src/tailorkit.gen.ts");
+    await generateApp({ ...defaultOptions, targetDirectory, tooling });
+    const config = await readFile(path.join(targetDirectory, "vite.config.ts"), "utf-8");
+    const pkg = JSON.parse(await readFile(path.join(targetDirectory, "package.json"), "utf-8"));
+    expect(config).toContain(`from "${tooling}"`);
+    expect(config).toContain('from "tailorkit/vite"');
+    expect(pkg.devDependencies).not.toHaveProperty("oxlint");
+    expect(pkg.devDependencies).not.toHaveProperty("oxfmt");
+    expect(pkg.scripts.build).toBe(tooling === "vite" ? "vite build" : "vp build");
+    if (tooling === "vite-plus") {
+      expect(config).toContain("lazyPlugins(() => [tailorkit()])");
+      expect(config).toContain("lint:");
+      expect(config).toContain("fmt:");
+      expect(config).toContain("src/tailorkit.gen.ts");
+      expect(pkg.devDependencies["vite-plus"]).toBe("1.0.0");
+      expect(pkg.devDependencies.vite).toBe("npm:@voidzero-dev/vite-plus-core@1.0.0");
+      expect(pkg.scripts.check).toBe("vp check");
+      expect(pkg.scripts.fix).toBe("vp check --fix");
+    } else {
+      expect(config).not.toContain("lint:");
+      expect(config).not.toContain("fmt:");
+      expect(pkg.devDependencies.vite).toBe("8.0.0");
+      expect(pkg.devDependencies).not.toHaveProperty("vite-plus");
+      expect(pkg.scripts).not.toHaveProperty("check");
+      expect(pkg.scripts).not.toHaveProperty("format");
+      expect(pkg.scripts).not.toHaveProperty("test");
+    }
+    await expect(readFile(path.join(targetDirectory, "oxlint.config.ts"))).rejects.toThrow();
+    await expect(readFile(path.join(targetDirectory, "oxfmt.config.ts"))).rejects.toThrow();
   });
 
   it("throws when a file exists and force is false", async () => {
@@ -156,48 +158,6 @@ describe("generateApp", () => {
     const content = await readFile(path.join(targetDirectory, "package.json"), "utf-8");
     expect(content).toContain('"tailorkit": "4.5.6"');
     expect(content).not.toContain("@tailorkit/cli");
-  });
-
-  it("includes lint and format scripts when both are enabled", async () => {
-    const targetDirectory = await createTempDir();
-    await generateApp({
-      ...defaultOptions,
-      targetDirectory,
-      linting: true,
-      formatting: true,
-    });
-
-    const content = await readFile(path.join(targetDirectory, "package.json"), "utf-8");
-    expect(content).toContain('"lint": "oxlint"');
-    expect(content).toContain('"lint:fix": "oxlint --fix"');
-    expect(content).toContain('"format": "oxfmt --check"');
-    expect(content).toContain('"format:fix": "oxfmt --write"');
-    expect(content).toContain('"check": "pnpm run lint && pnpm run format"');
-    expect(content).toContain('"fix": "pnpm run lint:fix && pnpm run format:fix"');
-  });
-
-  it("includes only lint scripts when only linting is enabled", async () => {
-    const targetDirectory = await createTempDir();
-    await generateApp({ ...defaultOptions, targetDirectory, linting: true });
-
-    const content = await readFile(path.join(targetDirectory, "package.json"), "utf-8");
-    expect(content).toContain('"lint": "oxlint"');
-    expect(content).toContain('"lint:fix": "oxlint --fix"');
-    expect(content).not.toContain('"format":');
-    expect(content).toContain('"check": "pnpm run lint"');
-    expect(content).toContain('"fix": "pnpm run lint:fix"');
-  });
-
-  it("includes only format scripts when only formatting is enabled", async () => {
-    const targetDirectory = await createTempDir();
-    await generateApp({ ...defaultOptions, targetDirectory, formatting: true });
-
-    const content = await readFile(path.join(targetDirectory, "package.json"), "utf-8");
-    expect(content).not.toContain('"lint":');
-    expect(content).toContain('"format": "oxfmt --check"');
-    expect(content).toContain('"format:fix": "oxfmt --write"');
-    expect(content).toContain('"check": "pnpm run format"');
-    expect(content).toContain('"fix": "pnpm run format:fix"');
   });
 
   it("renders package versions into package.json", async () => {

@@ -1,7 +1,7 @@
 # TailorKit playground
 
 A small local host product for trying TailorKit contracts and apps. The host is
-TanStack Start, with a SQLite-backed issue tracker and a passwordless profile
+`playground/tanstack-start`, built with TanStack Start, with a SQLite-backed issue tracker and a passwordless profile
 picker. The todo app uses the host's client tools, so todos are scoped to the
 selected team.
 
@@ -30,6 +30,13 @@ stored at `playground/shared/.data/playground.sqlite`; delete that file and run
 `pnpm playground:db:push` followed by `pnpm playground:db:seed` to reset it.
 
 ## Apps and contracts
+
+The Todo app builds with Vite+ and the TailorKit plugin in `vite.config.ts`.
+Run `pnpm playground:todo:build` from the repository root, or `pnpm build` from
+`playground/apps/todo`. Build aliases and custom plugins belong in that Vite
+configuration. Host and backend settings remain in `tailorkit.config.ts`.
+Lint and format settings are inherited from the repository's root configuration;
+the app also provides `check`, `fix`, `lint`, and `format` scripts.
 
 The single app is `playground/apps/todo`. It uses the host's `todos` client
 tools, whose API is defined in the active contract. To try a different

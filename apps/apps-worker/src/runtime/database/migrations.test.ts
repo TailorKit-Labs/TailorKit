@@ -17,10 +17,7 @@ function migration(id: string, file: string): AppMigration {
     statements: sql.split("--> statement-breakpoint"),
   };
 }
-const initial = migration(
-  "20261001000000_init",
-  "../../../../../packages/app/test/fixtures/backend-todo/src/db/migrations/20261001062220_init/migration.sql",
-);
+const initial = migration("20261001000000_init", "../../tests/fixtures/todos-init.sql");
 const priority = migration("20261001000001_priority", "../../tests/fixtures/todos-priority.sql");
 const required = migration("20261001000002_required", "../../tests/fixtures/todos-required.sql");
 const connections: DatabaseSync[] = [];

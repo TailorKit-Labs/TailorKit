@@ -99,6 +99,7 @@ it("passes --schema through init while retaining the required host", async () =>
     name: "app",
     host: "http://localhost:3000/api/tailorkit",
     schema: "host.json",
+    tooling: "vite",
     install: false,
   });
   expect(mocks.init).toHaveBeenCalledWith(
@@ -108,6 +109,7 @@ it("passes --schema through init while retaining the required host", async () =>
       name: "app",
       host: "http://localhost:3000/api/tailorkit",
       schemaPath: "host.json",
+      tooling: "vite",
       install: false,
     }),
   );

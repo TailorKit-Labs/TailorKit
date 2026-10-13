@@ -3,12 +3,12 @@ import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/pr
 import { tmpdir } from "node:os";
 import type * as nodeOs from "node:os";
 import path from "node:path";
-import { loadTailorKitConfig } from "@tailorkit/app/config/loader";
+import { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
 import { createTailorKitClient } from "@tailorkit/core/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
-vi.mock("@tailorkit/app/config/loader", () => ({
+vi.mock("@tailorkit/vite/config/loader", () => ({
   loadTailorKitConfig: vi.fn(),
 }));
 

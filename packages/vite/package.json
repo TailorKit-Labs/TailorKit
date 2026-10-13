@@ -1,0 +1,60 @@
+{
+  "name": "@tailorkit/vite",
+  "version": "0.1.0-beta.29",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TailorKit-Labs/TailorKit.git",
+    "directory": "packages/vite"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./builder": {
+      "types": "./dist/builder.d.mts",
+      "import": "./dist/builder.mjs"
+    },
+    "./config": {
+      "types": "./dist/config.d.mts",
+      "import": "./dist/config.mjs"
+    },
+    "./config/loader": {
+      "types": "./dist/config-loader.d.mts",
+      "import": "./dist/config-loader.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "vp pack",
+    "check-types": "tsc --noEmit",
+    "test": "vp test run"
+  },
+  "dependencies": {
+    "@tailorkit/app": "workspace:*",
+    "cosmiconfig": "^10.0.1",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@tailorkit/asset-delivery": "workspace:*",
+    "@tailorkit/config": "workspace:*",
+    "@types/node": "catalog:",
+    "drizzle-kit": "catalog:",
+    "drizzle-orm": "catalog:",
+    "happy-dom": "^20.14.5",
+    "preact": "^11.0.0",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
+  },
+  "peerDependencies": {
+    "vite": "^8.0.0 || ^1.0.0"
+  }
+}

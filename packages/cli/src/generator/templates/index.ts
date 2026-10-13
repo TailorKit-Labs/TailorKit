@@ -2,8 +2,7 @@ import packageJsonTemplate from "./package.json.liquid";
 import tsconfigTemplate from "./tsconfig.json.liquid";
 import tailorkitConfigTemplate from "./tailorkit.config.ts.liquid";
 import gitignoreTemplate from "./.gitignore.liquid";
-import oxlintConfigTemplate from "./oxlint.config.ts.liquid";
-import oxfmtConfigTemplate from "./oxfmt.config.ts.liquid";
+import viteConfigTemplate from "./vite.config.ts.liquid";
 import rootTemplate from "./src/root.tsx.liquid";
 import defaultViewTemplate from "./src/slots/view.tsx.liquid";
 import serverTemplate from "./src/server.ts.liquid";
@@ -19,8 +18,7 @@ export {
   tsconfigTemplate,
   tailorkitConfigTemplate,
   gitignoreTemplate,
-  oxlintConfigTemplate,
-  oxfmtConfigTemplate,
+  viteConfigTemplate,
   rootTemplate,
   defaultViewTemplate,
   serverTemplate,

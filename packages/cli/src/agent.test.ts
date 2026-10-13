@@ -24,7 +24,7 @@ vi.mock("@clack/prompts", () => ({
   log: { info: mocks.info },
   spinner: () => ({ start: vi.fn(), stop: vi.fn() }),
 }));
-vi.mock("@tailorkit/app/config/loader", () => ({ loadTailorKitConfig: mocks.load }));
+vi.mock("@tailorkit/vite/config/loader", () => ({ loadTailorKitConfig: mocks.load }));
 vi.mock("./auth", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./auth")>()),
   runWhoami: mocks.whoami,

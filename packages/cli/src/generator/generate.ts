@@ -9,8 +9,7 @@ import {
   rootTemplate,
   defaultViewTemplate,
   gitignoreTemplate,
-  oxfmtConfigTemplate,
-  oxlintConfigTemplate,
+  viteConfigTemplate,
   packageJsonTemplate,
   tailorkitConfigTemplate,
   tsconfigTemplate,
@@ -26,16 +25,15 @@ import {
 export interface GenerateAppOptions {
   targetDirectory: string;
   force: boolean;
-  formatting: boolean;
   hostUrl: string;
   schema: TailorKitSchemaFile;
-  linting: boolean;
+  tooling: "vite-plus" | "vite";
   packageName: string;
   packageVersions: {
     drizzleKit?: string;
     drizzleOrm?: string;
-    oxfmt: string;
-    oxlint: string;
+    vite: string;
+    vitePlus?: string;
     preact: string;
     tailorkit: string;
     typescript: string;
@@ -86,10 +84,9 @@ export const generateApp = async (options: GenerateAppOptions): Promise<void> =>
   const {
     targetDirectory,
     force,
-    formatting,
     hostUrl,
     schema,
-    linting,
+    tooling,
     packageName,
     packageVersions,
     useWorkspaceDependencies,
@@ -117,29 +114,16 @@ export const generateApp = async (options: GenerateAppOptions): Promise<void> =>
 
   const tailorkitVersion = useWorkspaceDependencies ? "workspace:*" : packageVersions.tailorkit;
 
-  const checkParts: string[] = [];
-  const fixParts: string[] = [];
-  if (linting) {
-    checkParts.push("pnpm run lint");
-    fixParts.push("pnpm run lint:fix");
-  }
-  if (formatting) {
-    checkParts.push("pnpm run format");
-    fixParts.push("pnpm run format:fix");
-  }
-
   const templateData = {
     viewPath: JSON.stringify(viewPath),
     slotName: JSON.stringify(slotName),
     multiple: schema.slots?.[slotName]?.multiple === true,
     useBox,
-    checkScript: checkParts.join(" && "),
-    fixScript: fixParts.join(" && "),
-    formatting,
     hostUrl,
-    linting,
-    oxfmtVersion: packageVersions.oxfmt,
-    oxlintVersion: packageVersions.oxlint,
+    tooling,
+    vitePlus: tooling === "vite-plus",
+    viteVersion: packageVersions.vite,
+    vitePlusVersion: packageVersions.vitePlus ?? "1.0.0",
     packageName,
     preactVersion: packageVersions.preact,
     tailorkitVersion,
@@ -160,8 +144,7 @@ export const generateApp = async (options: GenerateAppOptions): Promise<void> =>
     { template: logoDarkTemplate, dest: "logo-dark.svg" },
     { template: logoLightTemplate, dest: "logo-light.svg" },
     { template: gitignoreTemplate, dest: ".gitignore" },
-    { template: oxlintConfigTemplate, dest: "oxlint.config.ts", condition: linting },
-    { template: oxfmtConfigTemplate, dest: "oxfmt.config.ts", condition: formatting },
+    { template: viteConfigTemplate, dest: "vite.config.ts" },
     { template: rootTemplate, dest: path.join("src", "root.tsx") },
     { template: defaultViewTemplate, dest: viewFile },
     { template: serverTemplate, dest: path.join("src", "server.ts") },
