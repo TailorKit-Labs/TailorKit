@@ -45,7 +45,7 @@ export async function buildServer(
       entry,
       `${
         instances.length
-          ? `import app from ${JSON.stringify(path.resolve(loaded.root, config.entry ?? "src/server.ts"))};\nimport { withInstanceResolvers } from "tailorkit/fn";\n${instanceServerImports(instances)}\nexport default withInstanceResolvers(app, ${instanceServerBindings(instances, registrations)});`
+          ? `import app from ${JSON.stringify(path.resolve(loaded.root, config.entry ?? "src/server.ts"))};\nimport { withInstanceResolvers } from "tailorkit/server";\n${instanceServerImports(instances)}\nexport default withInstanceResolvers(app, ${instanceServerBindings(instances, registrations)});`
           : `export { default } from ${JSON.stringify(path.resolve(loaded.root, config.entry ?? "src/server.ts"))};`
       }
 export { default as migrations } from "tailorkit:migrations";

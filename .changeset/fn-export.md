@@ -3,4 +3,4 @@
 "@tailorkit/app": patch
 ---
 
-Expose app function builders from `tailorkit/fn` as `fn` and update generated apps to use the new entry point.
+Rename the app function builder export from `tk` to `fn` and update generated apps to use it from `tailorkit/server`.

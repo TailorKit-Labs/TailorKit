@@ -131,7 +131,7 @@ it("builds file routes with extracted instances and discovers additions, renames
     );
     await writeFile(
       path.join(root, "src/server.ts"),
-      'import { defineServer } from "tailorkit/fn"; export default defineServer({});',
+      'import { defineServer } from "tailorkit/server"; export default defineServer({});',
     );
     await writeFile(
       path.join(root, "src/root.tsx"),

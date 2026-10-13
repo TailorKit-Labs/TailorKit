@@ -26,10 +26,6 @@
       "types": "./dist/server.d.ts",
       "import": "./dist/server.js"
     },
-    "./fn": {
-      "types": "./dist/fn.d.ts",
-      "import": "./dist/fn.js"
-    },
     "./react": {
       "types": "./dist/react.d.ts",
       "import": "./dist/react.js"
@@ -63,7 +59,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsup ./src/index.ts ./src/server.ts ./src/fn.ts ./src/react.ts ./src/client.ts ./src/app.ts ./src/app-config.ts ./src/zod.ts ./src/valibot.ts ./src/arktype.ts --out-dir ./dist --format esm --target node20 --minify --clean && tsc -p tsconfig.build.json",
+    "build": "tsup ./src/index.ts ./src/server.ts ./src/react.ts ./src/client.ts ./src/app.ts ./src/app-config.ts ./src/zod.ts ./src/valibot.ts ./src/arktype.ts --out-dir ./dist --format esm --target node20 --minify --clean && tsc -p tsconfig.build.json",
     "check-types": "tsc --noEmit"
   },
   "dependencies": {

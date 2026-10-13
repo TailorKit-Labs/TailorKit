@@ -1,6 +1,6 @@
 # Todo
 
-This example stores todos in the app backend's installation-scoped SQLite database using `tailorkit/fn`. The view subscribes to the `list` query, so committed add, edit, toggle and delete mutations update every active client. Text edits stay in a local draft until **Save** is clicked. Arguments are validated with Zod, and todo rows are inferred from the database schema.
+This example stores todos in the app backend's installation-scoped SQLite database using `tailorkit/server`. The view subscribes to the `list` query, so committed add, edit, toggle and delete mutations update every active client. Text edits stay in a local draft until **Save** is clicked. Arguments are validated with Zod, and todo rows are inferred from the database schema.
 
 `src/slots/` contains the UI, `src/functions/` contains `fn.query`, `fn.mutation` and `fn.action` definitions, and `src/db/schema.ts` defines the SQLite table and validation schemas. `src/server.ts` registers the functions. `src/root.tsx` exports `defineRoute({ shellComponent: Shell })` with a `ClientProvider` wrapper to keep the backend client across view changes in each mounted slot. The UI uses `useQuery`, `useMutation` and `useAction` for live data, pending state and errors, with no manual subscriptions or cleanup.
 

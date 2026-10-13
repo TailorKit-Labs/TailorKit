@@ -1,6 +1,6 @@
 # Backend todo
 
-A small app using `tailorkit/fn`: SQLite tables, typed queries/mutations/actions, and direct WebSocket subscriptions supplied with JWTs by the host bridge. Its UI reuses TailorKit's existing remote `Box`, `Flex` and `Button` components.
+A small app using `tailorkit/server`: SQLite tables, typed queries/mutations/actions, and direct WebSocket subscriptions supplied with JWTs by the host bridge. Its UI reuses TailorKit's existing remote `Box`, `Flex` and `Button` components.
 
 Backend functions live in `src/functions/` and use the chained `fn` API. `src/db/schema.ts` defines tables, `src/server.ts` registers functions, and `src/slots/` uses `useQuery`, `useMutation` and `useAction`. `src/root.tsx` installs `ClientProvider`, which owns the connection and cleans up subscriptions automatically.
 

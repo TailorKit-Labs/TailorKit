@@ -157,7 +157,7 @@ export const buildApp = async (options: BuildAppOptions = {}): Promise<unknown> 
         enforce: "pre",
         async resolveId(id, importer) {
           if (
-            /^(?:@tailorkit\/app\/server$|tailorkit\/(?:fn|server|app\/server)$|effect(?:\/|$))/u.test(
+            /^(?:@tailorkit\/app\/server$|tailorkit\/(?:server|app\/server)$|effect(?:\/|$))/u.test(
               id,
             ) ||
             (importer && path.resolve(path.dirname(importer), id) === serverEntry)
