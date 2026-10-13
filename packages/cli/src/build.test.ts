@@ -8,7 +8,7 @@ it("builds the app's Vite config with custom plugins, aliases, constants and out
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-vite-config-"));
   try {
     await symlink(
-      path.resolve(import.meta.dirname, "../../app/test/fixtures/backend-todo/node_modules"),
+      path.resolve(import.meta.dirname, "../../vite/test/fixtures/backend-todo/node_modules"),
       path.join(root, "node_modules"),
       "dir",
     );
@@ -76,7 +76,7 @@ it("requires the TailorKit plugin when deploying", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-missing-plugin-"));
   try {
     await symlink(
-      path.resolve(import.meta.dirname, "../../app/test/fixtures/backend-todo/node_modules"),
+      path.resolve(import.meta.dirname, "../../vite/test/fixtures/backend-todo/node_modules"),
       path.join(root, "node_modules"),
       "dir",
     );

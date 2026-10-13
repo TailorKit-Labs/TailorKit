@@ -15,8 +15,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { NotLoggedInError } from "./auth";
-import { tailorkitUploadManifestSchema } from "../../app/src/builder/upload-manifest";
-import { getClientSourceFiles } from "../../app/src/builder/file-routes";
+import { tailorkitUploadManifestSchema } from "../../vite/src/builder/upload-manifest";
+import { getClientSourceFiles } from "../../vite/src/builder/file-routes";
 
 const mocks = vi.hoisted(() => ({
   load: vi.fn(),
@@ -27,8 +27,8 @@ const mocks = vi.hoisted(() => ({
   create: vi.fn(),
   publish: vi.fn(),
 }));
-vi.mock("@tailorkit/app/config/loader", () => ({ loadTailorKitConfig: mocks.load }));
-vi.mock("@tailorkit/app/builder", () => ({
+vi.mock("@tailorkit/vite/config/loader", () => ({ loadTailorKitConfig: mocks.load }));
+vi.mock("@tailorkit/vite/builder", () => ({
   tailorkitUploadManifestSchema,
   getClientSourceFiles,
 }));
@@ -187,7 +187,7 @@ it("preserves client-only deployment uploads", async () => {
 
 it("typechecks the server entry even when the client does not import it", async () => {
   await symlink(
-    path.resolve(import.meta.dirname, "../../app/test/fixtures/backend-todo/node_modules"),
+    path.resolve(import.meta.dirname, "../../vite/test/fixtures/backend-todo/node_modules"),
     path.join(root, "node_modules"),
     "dir",
   );
@@ -206,7 +206,7 @@ it("typechecks the server entry even when the client does not import it", async 
 
 it("typechecks file route roots, layouts and views without a manual client entry", async () => {
   await symlink(
-    path.resolve(import.meta.dirname, "../../app/test/fixtures/backend-todo/node_modules"),
+    path.resolve(import.meta.dirname, "../../vite/test/fixtures/backend-todo/node_modules"),
     path.join(root, "node_modules"),
     "dir",
   );

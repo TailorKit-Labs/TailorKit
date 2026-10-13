@@ -70,7 +70,8 @@
     "@tailorkit/app": "workspace:*",
     "@tailorkit/cli": "workspace:*",
     "@tailorkit/core": "workspace:*",
-    "@tailorkit/react": "workspace:*"
+    "@tailorkit/react": "workspace:*",
+    "@tailorkit/vite": "workspace:*"
   },
   "devDependencies": {
     "@tailorkit/config": "workspace:*",

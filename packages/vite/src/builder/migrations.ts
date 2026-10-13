@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import type { AppMigration } from "../protocol";
+import type { AppMigration } from "@tailorkit/app/protocol";
 
 /** Read the timestamped migration folders produced by the workspace's Drizzle Kit version. */
 export async function readAppMigrations(directory: string, optional = false) {

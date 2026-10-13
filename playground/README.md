@@ -1,7 +1,7 @@
 # TailorKit playground
 
 A small local host product for trying TailorKit contracts and apps. The host is
-TanStack Start, with a SQLite-backed issue tracker and a passwordless profile
+`playground/tanstack-start`, built with TanStack Start, with a SQLite-backed issue tracker and a passwordless profile
 picker. The todo app uses the host's client tools, so todos are scoped to the
 selected team.
 

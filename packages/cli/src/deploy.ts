@@ -6,9 +6,9 @@ import { readFile, writeFile, mkdtemp, rm } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import { gzip } from "node:zlib";
-import type { TailorKitUploadManifest } from "@tailorkit/app/builder";
-import type { LoadedTailorKitConfig } from "@tailorkit/app/config/loader";
-import { loadTailorKitConfig } from "@tailorkit/app/config/loader";
+import type { TailorKitUploadManifest } from "@tailorkit/vite/builder";
+import type { LoadedTailorKitConfig } from "@tailorkit/vite/config/loader";
+import { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
 import type { z } from "zod";
 import { buildProject } from "./build";
 import { getDeployToken, NotLoggedInError, runWhoami } from "./auth";
@@ -185,7 +185,7 @@ const typecheckAppEntries = async (
   } catch {
     return;
   }
-  const { getClientSourceFiles } = await import("@tailorkit/app/builder");
+  const { getClientSourceFiles } = await import("@tailorkit/vite/builder");
   const clientFiles = await getClientSourceFiles(loaded.root);
   // Check both application entry points with the project compiler options.
   const temporary = await mkdtemp(path.join(loaded.root, ".tailorkit-typecheck-"));
@@ -250,7 +250,7 @@ export const runDeploy = async (options: DeployOptions): Promise<DeployResult> =
     );
   }
 
-  const { tailorkitUploadManifestSchema } = await import("@tailorkit/app/builder");
+  const { tailorkitUploadManifestSchema } = await import("@tailorkit/vite/builder");
   const [buildResult, typecheckResult] = await Promise.allSettled([
     buildProject({ ...options, cwd: loaded.root }),
     typecheckAppEntries(loaded),

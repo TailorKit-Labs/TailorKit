@@ -37,6 +37,7 @@ function relativeToRoot(filePath) {
 }
 
 const errors = [];
+let licensedPackageCount = 0;
 const packages = findPackageManifests(root)
   .filter((manifestPath) => manifestPath !== path.join(root, "package.json"))
   .toSorted();
@@ -45,6 +46,15 @@ for (const manifestPath of packages) {
   const packageDirectory = path.dirname(manifestPath);
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
   const packageLabel = manifest.name ?? relativeToRoot(packageDirectory);
+
+  // Private playground examples do not require per-package license copies.
+  if (
+    manifest.private &&
+    manifest.license === undefined &&
+    relativeToRoot(packageDirectory).startsWith(`playground${path.sep}`)
+  ) {
+    continue;
+  }
 
   if (typeof manifest.license !== "string" || manifest.license.length === 0) {
     errors.push(
@@ -61,6 +71,7 @@ for (const manifestPath of packages) {
     continue;
   }
 
+  licensedPackageCount += 1;
   const source = fs.readFileSync(sourcePath, "utf-8");
   const target = fs.existsSync(targetPath) ? fs.readFileSync(targetPath, "utf-8") : null;
 
@@ -82,7 +93,7 @@ if (errors.length > 0) {
   console.error(errors.join("\n"));
   process.exitCode = 1;
 } else if (checkOnly) {
-  console.log(`Verified ${packages.length} package license files.`);
+  console.log(`Verified ${licensedPackageCount} package license files.`);
 } else {
-  console.log(`Synchronized ${packages.length} package license files.`);
+  console.log(`Synchronized ${licensedPackageCount} package license files.`);
 }

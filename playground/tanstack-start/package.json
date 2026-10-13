@@ -1,7 +1,6 @@
 {
-  "name": "@playground/host",
+  "name": "@playground/tanstack-start",
   "private": true,
-  "license": "BUSL-1.1",
   "type": "module",
   "imports": {
     "#*": [

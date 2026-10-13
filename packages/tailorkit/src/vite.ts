@@ -1,1 +1,1 @@
-export { tailorkit, type TailorKitPluginOptions } from "@tailorkit/app/vite";
+export { tailorkit, type TailorKitPluginOptions } from "@tailorkit/vite";

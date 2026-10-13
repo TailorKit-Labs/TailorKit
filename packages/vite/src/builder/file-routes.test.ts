@@ -4,7 +4,7 @@ import path from "node:path";
 import { expect, it } from "vite-plus/test";
 import { discoverFileRoutes, inferFileView, getClientSourceFiles } from "./file-routes";
 import { build } from "vite";
-import { tailorkit } from "../vite";
+import { tailorkit } from "../index";
 
 async function buildFixture(options: {
   cwd: string;

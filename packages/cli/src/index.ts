@@ -274,7 +274,7 @@ cli
       if (command !== "generate") {
         throw new Error(`Unknown database command: ${command}. Use tailorkit db generate.`);
       }
-      const { generateAppMigrations } = await import("@tailorkit/app/builder");
+      const { generateAppMigrations } = await import("@tailorkit/vite/builder");
       const directory = await generateAppMigrations({
         configPath: options.config as string | undefined,
         cwd: String(options.cwd ?? "."),

@@ -18,7 +18,7 @@ const mocks = vi.hoisted(() => ({
   commitBuild: vi.fn(),
 }));
 
-vi.mock("@tailorkit/app/config/loader", () => ({ loadTailorKitConfig: mocks.load }));
+vi.mock("@tailorkit/vite/config/loader", () => ({ loadTailorKitConfig: mocks.load }));
 vi.mock("./build", () => ({ buildProject: mocks.build }));
 vi.mock("@tailorkit/core/server", () => ({ createTailorKitClient: mocks.client }));
 vi.mock("@tailorkit/client-platform/preview", () => ({

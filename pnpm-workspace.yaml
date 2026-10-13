@@ -11,7 +11,7 @@ packages:
   - playground/*
   - playground/apps/*
   - packages/*
-  - packages/app/test/fixtures/*
+  - packages/vite/test/fixtures/*
 
 catalog:
   "@ai-sdk/react": ^3.0.192

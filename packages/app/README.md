@@ -114,6 +114,7 @@ Run `tailorkit init` to create an app. Choose **Vite+ (recommended)** for buildi
 linting, formatting, and testing, or **Vite (build only)** for a minimal setup.
 For non-interactive setup, pass `--tooling vite-plus` or `--tooling vite`.
 
+Build tooling lives in the separate [`@tailorkit/vite`](../vite/README.md) package.
 Both options generate `vite.config.ts` with the TailorKit plugin. Vite+ apps use:
 
 ```ts

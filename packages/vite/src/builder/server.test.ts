@@ -1,15 +1,15 @@
 import { pathToFileURL } from "node:url";
-import { runtimeManifest } from "../server/bundle";
-import type { ApplicationModule } from "../server/bundle";
+import { runtimeManifest } from "./server";
+import type { ApplicationModule } from "@tailorkit/app/server";
 import { readFile, writeFile, rm, readdir, mkdtemp, mkdir, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect, it } from "vite-plus/test";
 import { Window } from "happy-dom";
-import type { TailorKitClientWithMeta, ViewDefinition, ViewInstance } from "../views";
+import type { TailorKitClientWithMeta, ViewDefinition, ViewInstance } from "@tailorkit/app/client";
 import type { VNode } from "preact";
 import { build } from "vite";
-import { tailorkit } from "../vite";
+import { tailorkit } from "../index";
 
 async function buildFixture(options: {
   cwd: string;
@@ -35,6 +35,12 @@ async function buildFixture(options: {
 }
 
 import { readClientManifest } from "./client-views";
+
+declare module "@tailorkit/app/client" {
+  interface TailorKitViews {
+    "/": { context: { workspaceId: string } };
+  }
+}
 
 it("builds file routes with a configured server and blocks server imports from the browser", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-custom-entries-"));

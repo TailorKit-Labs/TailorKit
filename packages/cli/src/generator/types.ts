@@ -2,7 +2,7 @@ import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { isViewAncestor } from "@tailorkit/core/views";
 
-import { loadTailorKitConfig } from "@tailorkit/app/config/loader";
+import { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
 import {
   SerializedComponent as SerializedComponentSchema,
   TailorKitSchemaSpec,

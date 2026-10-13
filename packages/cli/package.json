@@ -31,9 +31,9 @@
     "@ai-sdk/tui": "1.0.128",
     "@clack/prompts": "^1.8.1",
     "@orpc/client": "catalog:",
-    "@tailorkit/app": "workspace:*",
     "@tailorkit/client-platform": "workspace:*",
     "@tailorkit/core": "workspace:*",
+    "@tailorkit/vite": "workspace:*",
     "ai": "catalog:",
     "cac": "^7.0.0",
     "jose": "6.2.12",
@@ -43,6 +43,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@tailorkit/app": "workspace:*",
     "@tailorkit/config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",

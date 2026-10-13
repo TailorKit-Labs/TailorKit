@@ -16,18 +16,6 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./config": {
-      "types": "./dist/config/index.d.ts",
-      "import": "./dist/config.js"
-    },
-    "./config/loader": {
-      "types": "./dist/config/loader.d.ts",
-      "import": "./dist/config-loader.js"
-    },
-    "./builder": {
-      "types": "./dist/builder/index.d.ts",
-      "import": "./dist/builder.js"
-    },
     "./client": {
       "types": "./dist/client.d.ts",
       "import": "./dist/client.js"
@@ -43,10 +31,6 @@
     "./client/connection": {
       "types": "./dist/client/connection.d.ts",
       "import": "./dist/client-connection.js"
-    },
-    "./vite": {
-      "types": "./dist/vite.d.ts",
-      "import": "./dist/vite.js"
     }
   },
   "publishConfig": {
@@ -61,13 +45,11 @@
     "@nanostores/preact": "1.1.0",
     "@orpc/client": "catalog:",
     "@orpc/contract": "catalog:",
-    "cosmiconfig": "^10.0.1",
     "drizzle-orm": "catalog:",
     "nanostores": "1.5.4",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@tailorkit/asset-delivery": "workspace:*",
     "@tailorkit/config": "workspace:*",
     "@types/node": "catalog:",
     "happy-dom": "^20.14.5",
@@ -78,7 +60,6 @@
     "vite-plus": "catalog:"
   },
   "peerDependencies": {
-    "preact": "^11.0.0",
-    "vite": "^8.0.0 || ^1.0.0"
+    "preact": "^11.0.0"
   }
 }

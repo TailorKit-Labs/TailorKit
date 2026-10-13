@@ -4,11 +4,17 @@ import { build } from "vite";
 import type { UserConfig } from "vite";
 import type { LoadedTailorKitConfig } from "../config/loader";
 import { readAppMigrations } from "./migrations";
-import { runtimeManifest } from "../server/bundle";
+import type { RuntimeManifest } from "@tailorkit/app/server";
 import { checkAppSchema } from "./schema-check";
 import { appDatabasePaths } from "./database-paths";
 import { instanceServerBindings, instanceServerImports, instanceServerPlugin } from "./instances";
 import type { InstanceModule, InstanceRegistration } from "./instances";
+
+/** Emitted by this SDK's builder; breaking interface changes increment apiVersion. */
+export const runtimeManifest = {
+  apiVersion: 1,
+  requires: ["database", "actions", "database-relations", "tools"],
+} as const satisfies RuntimeManifest;
 
 /** Bundle the private app backend and migrations. */
 export async function buildServer(

@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile, readdir, realpath } from "node:fs/promises";
 import path from "node:path";
 import { log } from "@clack/prompts";
-import { loadTailorKitConfig } from "@tailorkit/app/config/loader";
+import { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
 import {
   createPreviewWebSocketClient,
   previewBuildManifestSchema,
