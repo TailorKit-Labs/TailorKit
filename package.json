@@ -2,7 +2,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "prepare": "vp config --no-agent",
+    "prepare": "vp config --no-agent & effect-tsgo patch --oxlint",
     "dev": "turbo run dev --filter=web",
     "dev:docs": "cd docs && mint dev",
     "build": "turbo run build",

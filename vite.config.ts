@@ -1,3 +1,4 @@
+import { recommended as effect } from "@effect/tsgo/oxlint-presets";
 import formatting from "ultracite/oxfmt";
 import antiSlop from "ultracite/oxlint/anti-slop";
 import core from "ultracite/oxlint/core";
@@ -49,7 +50,7 @@ export default defineConfig({
     },
   },
   lint: {
-    extends: [core, antiSlop],
+    extends: [core, antiSlop, effect],
     ignorePatterns: [...(core.ignorePatterns ?? []), ...ignorePatterns],
     jsPlugins: [...antiSlop.jsPlugins, ...shadcn.jsPlugins],
     overrides: [
