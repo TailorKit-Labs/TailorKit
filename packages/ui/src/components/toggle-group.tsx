@@ -43,7 +43,7 @@ export const ToggleGroup = ({
   return (
     <ToggleGroupPrimitive
       className={cn(
-        "dark:*:[[data-slot=separator]:has(+[data-slot=toggle]:hover)]:before:bg-input/64 dark:*:[[data-slot=separator]:has(+[data-slot=toggle][data-pressed])]:before:bg-input dark:*:[[data-slot=toggle]:hover+[data-slot=separator]]:before:bg-input/64 dark:*:[[data-slot=toggle][data-pressed]+[data-slot=separator]]:before:bg-input flex w-fit *:focus-visible:z-10",
+        "flex w-fit *:focus-visible:z-10 dark:*:[[data-slot=separator]:has(+[data-slot=toggle]:hover)]:before:bg-input/64 dark:*:[[data-slot=separator]:has(+[data-slot=toggle][data-pressed])]:before:bg-input dark:*:[[data-slot=toggle]:hover+[data-slot=separator]]:before:bg-input/64 dark:*:[[data-slot=toggle][data-pressed]+[data-slot=separator]]:before:bg-input",
         orientation === "horizontal"
           ? "*:pointer-coarse:after:min-w-auto"
           : "*:pointer-coarse:after:min-h-auto",
@@ -99,7 +99,7 @@ export const ToggleGroupSeparator = ({
 } & React.ComponentProps<typeof Separator>): React.ReactElement => (
   <Separator
     className={cn(
-      "bg-input dark:before:bg-input/32 pointer-events-none relative before:absolute before:inset-0",
+      "pointer-events-none relative bg-input before:absolute before:inset-0 dark:before:bg-input/32",
       className
     )}
     orientation={orientation}

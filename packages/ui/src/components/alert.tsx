@@ -5,7 +5,7 @@ import type * as React from "react";
 import { cn } from "#ui";
 
 const alertVariants = cva(
-  "text-card-foreground relative grid w-full items-start gap-x-2 gap-y-0.5 rounded-xl border px-3.5 py-3 text-sm has-data-[slot=alert-action]:grid-cols-[1fr_auto] has-[>svg]:grid-cols-[calc(var(--spacing)*4)_1fr] has-[>svg]:gap-x-2 has-[>svg]:has-data-[slot=alert-action]:grid-cols-[calc(var(--spacing)*4)_1fr_auto] [&>svg]:h-lh [&>svg]:w-4",
+  "relative grid w-full items-start gap-x-2 gap-y-0.5 rounded-xl border px-3.5 py-3 text-sm text-card-foreground has-data-[slot=alert-action]:grid-cols-[1fr_auto] has-[>svg]:grid-cols-[calc(var(--spacing)*4)_1fr] has-[>svg]:gap-x-2 has-[>svg]:has-data-[slot=alert-action]:grid-cols-[calc(var(--spacing)*4)_1fr_auto] [&>svg]:h-lh [&>svg]:w-4",
   {
     defaultVariants: {
       variant: "default",
@@ -13,7 +13,7 @@ const alertVariants = cva(
     variants: {
       variant: {
         default:
-          "dark:bg-input/32 [&>svg]:text-muted-foreground bg-transparent",
+          "bg-transparent dark:bg-input/32 [&>svg]:text-muted-foreground",
         error:
           "border-destructive/32 bg-destructive/4 [&>svg]:text-destructive",
         info: "border-info/32 bg-info/4 [&>svg]:text-info",
@@ -55,7 +55,7 @@ export const AlertDescription = ({
 }: React.ComponentProps<"div">): React.ReactElement => (
   <div
     className={cn(
-      "text-muted-foreground flex flex-col gap-2.5 [svg~&]:col-start-2",
+      "flex flex-col gap-2.5 text-muted-foreground [svg~&]:col-start-2",
       className
     )}
     data-slot="alert-description"

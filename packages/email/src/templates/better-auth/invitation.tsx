@@ -30,19 +30,19 @@ export const InvitationTemplate = ({
         </Heading>
       </Section>
 
-      <Text className="text-muted-foreground mx-auto mt-0 mb-8 max-w-[420px] text-center font-sans text-[16px] leading-6">
+      <Text className="mx-auto mt-0 mb-8 max-w-[420px] text-center font-sans text-[16px] leading-6 text-muted-foreground">
         {inviterName ?? "Someone"} invited you to join {organizationName} as{" "}
         {role} on {COMPANY_NAME}.
       </Text>
 
       <Button
-        className="bg-primary text-primary-foreground rounded-md px-5 py-3 text-center text-sm font-medium"
+        className="rounded-md bg-primary px-5 py-3 text-center text-sm font-medium text-primary-foreground"
         href={acceptUrl}
       >
         Review invitation
       </Button>
 
-      <Text className="text-muted-foreground mx-auto mt-8 mb-0 max-w-[420px] text-center font-sans text-[13px] leading-5">
+      <Text className="mx-auto mt-8 mb-0 max-w-[420px] text-center font-sans text-[13px] leading-5 text-muted-foreground">
         If you were not expecting this invitation, you can ignore this email.
       </Text>
     </AuthEmailLayout>

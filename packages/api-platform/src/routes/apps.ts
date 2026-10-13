@@ -5,17 +5,18 @@ import { App, app, AppDeployment } from "@tailorkit/db/schema/apps";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { withAppAssetUrl } from "../asset-url";
-import type { Context } from "../context";
-import { paginatedOutput, paginationQuery } from "../pagination";
-import { o, cliRouter, requireApp, requireAppInScopes } from "../procedures";
-import { createPublicId } from "../public-id";
+import { withAppAssetUrl } from "#asset-url";
+import type { Context } from "#context";
+import { paginatedOutput, paginationQuery } from "#pagination";
+import { o, cliRouter, requireApp, requireAppInScopes } from "#procedures";
+import { createPublicId } from "#public-id";
 import {
   canonicalizeScope,
   canonicalizeScopes,
   scopeSchema,
   scopesSchema,
-} from "../scope";
+} from "#scope";
+
 import { publishRuntimeMetadata, runtimeSession } from "./runtime";
 
 export const AppWithCurrentDeployment = App.omit({ scopeKey: true }).extend({

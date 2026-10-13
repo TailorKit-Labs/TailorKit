@@ -57,7 +57,7 @@ export const SidebarUserMenu = () => {
         <div className="flex min-w-0 flex-1 flex-col text-left text-sm leading-tight">
           <span className="truncate font-medium">{name}</span>
         </div>
-        <ChevronsUpDownIcon className="text-muted-foreground ml-auto size-4 shrink-0" />
+        <ChevronsUpDownIcon className="ml-auto size-4 shrink-0 text-muted-foreground" />
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-56" side="top">
@@ -70,7 +70,7 @@ export const SidebarUserMenu = () => {
               </Avatar>
               <div className="flex min-w-0 flex-1 flex-col text-sm leading-tight">
                 <span className="truncate font-medium">{name}</span>
-                <span className="text-muted-foreground truncate text-xs">
+                <span className="truncate text-xs text-muted-foreground">
                   {email}
                 </span>
               </div>

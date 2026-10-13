@@ -14,6 +14,7 @@ Install packages only after at least 3 days have passed since their release date
 
 Use Ultracite’s Oxlint core and Anti-Slop presets and Oxfmt defaults through the root `vite.config.ts`. Framework presets are scoped with `lint.overrides`: React for UI and React/Preact workspaces, and React plus TanStack for the web hosts, and shadcn only for `apps/web`. Keep the custom environment-access restriction in that config.
 
+- Use `#` aliases for imports between source directories in workspaces that declare `#*`; sibling `./` imports remain allowed.
 - Run `pnpm check` to check lint and formatting through Turborepo.
 - Run `pnpm fix` to apply fixes, and review the result for behavior changes.
 - Run `pnpm exec vp lint` and `pnpm exec vp fmt --check` for individual checks.

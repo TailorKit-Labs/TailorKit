@@ -10,10 +10,10 @@ import { Effect } from "effect";
 import { catch as catchEffect } from "effect/Effect";
 import { z } from "zod";
 
-import { env } from "../env";
-import { o, protectedRouter, requireAppInScopes } from "../procedures";
-import { appRuntimePublicKeys, issueAppRuntimeToken } from "../runtime/auth";
-import { scopeSchema, scopesSchema } from "../scope";
+import { env } from "#env";
+import { o, protectedRouter, requireAppInScopes } from "#procedures";
+import { appRuntimePublicKeys, issueAppRuntimeToken } from "#runtime/auth";
+import { scopeSchema, scopesSchema } from "#scope";
 
 export const appRuntimeKeysResponse = (): ReturnType<typeof Response.json> => {
   try {

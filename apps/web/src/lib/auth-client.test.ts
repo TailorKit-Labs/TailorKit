@@ -10,6 +10,7 @@ import {
   vi,
 } from "vite-plus/test";
 
+// oxlint-disable-next-line import/no-relative-parent-imports -- This test reads the app deployment configuration outside src, which the # alias cannot address.
 import vercelConfig from "../../vercel.json";
 
 vi.mock("botid/client/core", () => ({ initBotId: vi.fn() }));

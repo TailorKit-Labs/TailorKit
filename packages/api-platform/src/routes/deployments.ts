@@ -19,17 +19,18 @@ import { setSpanAttributes } from "@tailorkit/observability";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import type { Context } from "../context";
-import { paginatedOutput, paginationQuery } from "../pagination";
-import { o, cliRouter, requireApp, requireAppInScopes } from "../procedures";
-import { createPublicId } from "../public-id";
+import type { Context } from "#context";
+import { paginatedOutput, paginationQuery } from "#pagination";
+import { o, cliRouter, requireApp, requireAppInScopes } from "#procedures";
+import { createPublicId } from "#public-id";
 import {
   canonicalizeScope,
   canonicalizeScopes,
   scopeMatches,
   scopeSchema,
   scopesSchema,
-} from "../scope";
+} from "#scope";
+
 import { getRuntimeBundle, publishRuntimeMetadata } from "./runtime";
 
 const isObjectValue = <TValue>(

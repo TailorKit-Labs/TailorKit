@@ -42,7 +42,7 @@ const IssueDetailPage = () => {
         All issues
       </Button>
       <div className="flex flex-wrap items-center gap-3">
-        <span className="text-muted-foreground font-mono text-sm">
+        <span className="font-mono text-sm text-muted-foreground">
           {issue.key}
         </span>
         <Badge variant={issue.status === "Done" ? "secondary" : "outline"}>
@@ -55,13 +55,13 @@ const IssueDetailPage = () => {
           <CardTitle className="text-base">Description</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground text-sm whitespace-pre-wrap">
+          <p className="text-sm whitespace-pre-wrap text-muted-foreground">
             {issue.description || "No description added."}
           </p>
         </CardContent>
       </Card>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-muted-foreground">
           Created by {creatorName}
         </p>
         <Button onClick={() => advanceStatus()} variant="outline">

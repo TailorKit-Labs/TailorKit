@@ -33,7 +33,7 @@ export const AuthScreen = ({ choices }: { choices: SignInChoice[] }) => {
   };
 
   return (
-    <main className="bg-muted/40 grid min-h-svh place-items-center p-6">
+    <main className="grid min-h-svh place-items-center bg-muted/40 p-6">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Choose a demo workspace</CardTitle>
@@ -52,12 +52,12 @@ export const AuthScreen = ({ choices }: { choices: SignInChoice[] }) => {
                 variant="outline"
                 className="h-auto min-h-16 w-full justify-start py-2 text-left whitespace-normal"
               >
-                <span className="bg-muted flex size-8 items-center justify-center rounded-full text-xs font-medium">
+                <span className="flex size-8 items-center justify-center rounded-full bg-muted text-xs font-medium">
                   {choice.avatar}
                 </span>
                 <span className="flex flex-1 flex-col items-start">
                   <span>{choice.userName}</span>
-                  <span className="text-muted-foreground text-xs">
+                  <span className="text-xs text-muted-foreground">
                     {choice.teamName}
                   </span>
                 </span>
@@ -65,7 +65,7 @@ export const AuthScreen = ({ choices }: { choices: SignInChoice[] }) => {
             );
           })}
           {operationError ? (
-            <p className="text-destructive text-sm" role="alert">
+            <p className="text-sm text-destructive" role="alert">
               {operationError}
             </p>
           ) : null}

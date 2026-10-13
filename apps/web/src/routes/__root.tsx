@@ -14,18 +14,17 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import type { ReactNode } from "react";
 import { useEffect, useRef } from "react";
 
+import { NotFound } from "#components/not-found";
 import { orpc } from "#lib/orpc";
-
-import { NotFound } from "../components/not-found";
 import {
   ThemeProvider,
   fallbackTheme,
   getCachedThemeScript,
   getUserTheme,
   useTheme,
-} from "../lib/theme";
+} from "#lib/theme";
 
-import appCss from "../index.css?url";
+import appCss from "#index.css?url";
 
 export interface RouterAppContext {
   orpc: typeof orpc;

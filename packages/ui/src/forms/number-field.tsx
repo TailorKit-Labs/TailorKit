@@ -7,15 +7,16 @@ import {
   FieldDescription,
   FieldError,
   FieldLabel,
-} from "../components/field";
-import type { NumberFieldProps as PrimitiveNumberFieldProps } from "../components/number-field";
+} from "#components/field";
+import type { NumberFieldProps as PrimitiveNumberFieldProps } from "#components/number-field";
 import {
   NumberField as PrimitiveNumberField,
   NumberFieldDecrement,
   NumberFieldGroup,
   NumberFieldIncrement,
   NumberFieldInput,
-} from "../components/number-field";
+} from "#components/number-field";
+
 import { formatFieldErrors } from "./field-errors";
 
 const emptyErrors: unknown[] = [];

@@ -39,7 +39,7 @@ const AuthErrorPage = () => {
             </CardHeader>
             <CardPanel>
               <div className="flex flex-col gap-4">
-                <p className="text-muted-foreground text-sm">
+                <p className="text-sm text-muted-foreground">
                   {message ??
                     "Something went wrong while signing you in. Please try again."}
                 </p>
@@ -54,7 +54,7 @@ const AuthErrorPage = () => {
           </Card>
 
           <CardFrameFooter className="relative">
-            <p className="text-muted-foreground text-center text-sm">
+            <p className="text-center text-sm text-muted-foreground">
               If this keeps happening, contact support.
             </p>
           </CardFrameFooter>

@@ -11,7 +11,7 @@ import { evaluateBooleanFlag } from "@tailorkit/flags";
 import { and, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
-import { protectedProcedure, requireProject } from "../procedures";
+import { protectedProcedure, requireProject } from "#procedures";
 
 const projectInput = z.object({
   orgSlug: z.string(),

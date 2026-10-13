@@ -3,22 +3,22 @@ import { EyeIcon, EyeOffIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 
-import { cn } from "#ui";
-
-import { Button } from "../components/button";
-import type { ButtonProps } from "../components/button";
+import { Button } from "#components/button";
+import type { ButtonProps } from "#components/button";
 import {
   Field,
   FieldDescription,
   FieldError,
   FieldLabel,
-} from "../components/field";
+} from "#components/field";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
-} from "../components/input-group";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../components/tooltip";
+} from "#components/input-group";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "#components/tooltip";
+import { cn } from "#ui";
+
 import type { BooleanFieldProps as BaseBooleanFieldProps } from "./boolean-field";
 import { BooleanField as BaseBooleanField } from "./boolean-field";
 import { formatFieldErrors } from "./field-errors";

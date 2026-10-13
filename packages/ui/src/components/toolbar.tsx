@@ -13,7 +13,7 @@ export const Toolbar = ({
 }: ToolbarPrimitive.Root.Props): React.ReactElement => (
   <ToolbarPrimitive.Root
     className={cn(
-      "bg-card text-card-foreground relative flex gap-2 rounded-xl border p-1 not-dark:bg-clip-padding",
+      "relative flex gap-2 rounded-xl border bg-card p-1 text-card-foreground not-dark:bg-clip-padding",
       className
     )}
     data-slot="toolbar"
@@ -71,7 +71,7 @@ export const ToolbarSeparator = ({
 }: ToolbarPrimitive.Separator.Props): React.ReactElement => (
   <ToolbarPrimitive.Separator
     className={cn(
-      "bg-border shrink-0 data-[orientation=horizontal]:my-0.5 data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:my-1.5 data-[orientation=vertical]:w-px data-[orientation=vertical]:not-[[class^='h-']]:not-[[class*='_h-']]:self-stretch",
+      "shrink-0 bg-border data-[orientation=horizontal]:my-0.5 data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:my-1.5 data-[orientation=vertical]:w-px data-[orientation=vertical]:not-[[class^='h-']]:not-[[class*='_h-']]:self-stretch",
       className
     )}
     data-slot="toolbar-separator"

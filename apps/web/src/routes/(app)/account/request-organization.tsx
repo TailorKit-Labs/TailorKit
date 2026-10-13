@@ -32,7 +32,7 @@ const RequestOrganizationPage = () => (
           </CardHeader>
           <CardPanel>
             <div className="flex flex-col gap-4">
-              <p className="text-muted-foreground text-sm">
+              <p className="text-sm text-muted-foreground">
                 {isOrgCreationManaged
                   ? "We're currently onboarding users manually. Contact us to create an organisation for your account."
                   : "Create an organisation to start building and managing TailorKit projects."}

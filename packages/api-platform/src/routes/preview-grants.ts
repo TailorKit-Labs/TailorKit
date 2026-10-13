@@ -7,20 +7,20 @@ import { getBaseUrl } from "@tailorkit/env";
 import { getKV } from "@tailorkit/kv";
 import { z } from "zod";
 
+import { withAppAssetUrl } from "#asset-url";
 import { env } from "#env";
-
-import { withAppAssetUrl } from "../asset-url";
-import { createPreviewBuildStore } from "../preview-build-store";
-import { ensurePreviewDeveloperGrace } from "../preview-lifecycle";
-import { createPreviewViewerToken } from "../preview-token";
-import { protectedRouter } from "../procedures";
+import { createPreviewBuildStore } from "#preview-build-store";
+import { ensurePreviewDeveloperGrace } from "#preview-lifecycle";
+import { createPreviewViewerToken } from "#preview-token";
+import { protectedRouter } from "#procedures";
 import {
   canonicalizeScope,
   canonicalizeScopes,
   scopeMatches,
   scopeSchema,
   scopesSchema,
-} from "../scope";
+} from "#scope";
+
 import { AppWithCurrentDeployment } from "./apps";
 
 const opaqueId = z.string().regex(/^[A-Za-z0-9_-]{43}$/u);

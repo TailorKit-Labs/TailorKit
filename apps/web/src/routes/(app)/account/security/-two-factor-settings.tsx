@@ -153,7 +153,7 @@ const TwoFactorSetupDialog = ({
           />
         </div>
         <div className="flex w-full items-center justify-center gap-2 py-3">
-          <code className="text-muted-foreground max-w-[calc(100%-2rem)] truncate font-mono text-sm">
+          <code className="max-w-[calc(100%-2rem)] truncate font-mono text-sm text-muted-foreground">
             {totpSecret}
           </code>
           <Tooltip>
@@ -317,7 +317,7 @@ const TwoFactorSetupDialog = ({
           <div className="flex flex-col gap-6">
             {panelContent}
             {error ? (
-              <p className="text-destructive text-sm" role="alert">
+              <p className="text-sm text-destructive" role="alert">
                 {error}
               </p>
             ) : null}
@@ -342,7 +342,7 @@ const TwoFactorStatus = ({
 
   if (sessionError) {
     return (
-      <p className="text-destructive text-sm" role="alert">
+      <p className="text-sm text-destructive" role="alert">
         Security settings could not be loaded. Please refresh and try again.
       </p>
     );
@@ -387,7 +387,7 @@ const DisableTwoFactorDialog = ({
           />
         </Field>
         {error ? (
-          <p className="text-destructive mt-3 text-sm" role="alert">
+          <p className="mt-3 text-sm text-destructive" role="alert">
             {error}
           </p>
         ) : null}
@@ -450,7 +450,7 @@ const RegenerateBackupCodesDialog = ({
           />
         </Field>
         {error ? (
-          <p className="text-destructive mt-3 text-sm" role="alert">
+          <p className="mt-3 text-sm text-destructive" role="alert">
             {error}
           </p>
         ) : null}
@@ -726,7 +726,7 @@ export const TwoFactorSettings = ({
 
             {isReady && !hasCredentialAccount && (
               <>
-                <p className="text-muted-foreground text-sm">
+                <p className="text-sm text-muted-foreground">
                   Create a password before enabling two-factor authentication.
                   This ensures your authenticator is an additional factor, not
                   the only credential protecting this account.

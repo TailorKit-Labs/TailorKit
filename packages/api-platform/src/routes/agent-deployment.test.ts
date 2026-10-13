@@ -8,9 +8,8 @@ import { project } from "@tailorkit/db/schema/project";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 
 import { env } from "#env";
-
-import { canonicalizeScope } from "../scope";
-import { createTestDb } from "../test/pglite";
+import { canonicalizeScope } from "#scope";
+import { createTestDb } from "#test/pglite";
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -42,7 +41,7 @@ vi.mock("@tailorkit/auth", () => ({
 vi.mock("@tailorkit/storage", () => ({ getStorage: () => mocks.storage }));
 vi.mock("@tailorkit/kv", () => ({ getKV: () => null }));
 
-const { createContext, contextErrorResponse } = await import("../context");
+const { createContext, contextErrorResponse } = await import("#context");
 const { appRouter } = await import("./apps");
 const { deploymentRouter } = await import("./deployments");
 const { cliAuthRouter } = await import("./cli-auth");

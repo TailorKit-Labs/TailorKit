@@ -25,7 +25,7 @@ vi.mock("@orpc/server/crossws", () => ({
 }));
 vi.mock("crossws", () => ({ defineHooks: (handlers) => handlers }));
 
-const { Route } = await import("../routes/api/platform.preview.ws.ts");
+const { Route } = await import("#routes/api/platform.preview.ws.ts");
 const response = Route.options.server.handlers.GET();
 const socket = response.crossws;
 

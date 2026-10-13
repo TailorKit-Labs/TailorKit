@@ -12,8 +12,8 @@ import {
   vi,
 } from "vite-plus/test";
 
-import type { Context } from "../context";
-import { createTestDb } from "../test/pglite";
+import type { Context } from "#context";
+import { createTestDb } from "#test/pglite";
 
 // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const testState = vi.hoisted(() => ({

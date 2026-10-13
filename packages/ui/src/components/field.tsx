@@ -24,7 +24,7 @@ export const FieldLabel = ({
 }: FieldPrimitive.Label.Props): React.ReactElement => (
   <FieldPrimitive.Label
     className={cn(
-      "text-foreground inline-flex items-center gap-2 text-base/4.5 font-medium data-disabled:opacity-64 sm:text-sm/4",
+      "inline-flex items-center gap-2 text-base/4.5 font-medium text-foreground sm:text-sm/4 data-disabled:opacity-64",
       className
     )}
     data-slot="field-label"
@@ -48,7 +48,7 @@ export const FieldDescription = ({
   ...props
 }: FieldPrimitive.Description.Props): React.ReactElement => (
   <FieldPrimitive.Description
-    className={cn("text-muted-foreground text-xs", className)}
+    className={cn("text-xs text-muted-foreground", className)}
     data-slot="field-description"
     {...props}
   />
@@ -59,7 +59,7 @@ export const FieldError = ({
   ...props
 }: FieldPrimitive.Error.Props): React.ReactElement => (
   <FieldPrimitive.Error
-    className={cn("text-destructive-foreground text-xs", className)}
+    className={cn("text-xs text-destructive-foreground", className)}
     data-slot="field-error"
     {...props}
   />

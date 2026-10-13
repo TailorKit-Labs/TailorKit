@@ -7,8 +7,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { env } from "#env";
-
-import { publicProcedure, protectedProcedure, requireOrg } from "../procedures";
+import { publicProcedure, protectedProcedure, requireOrg } from "#procedures";
 
 const isObjectValue = <TValue>(
   value: TValue

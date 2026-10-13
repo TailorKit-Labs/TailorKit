@@ -10,7 +10,7 @@ export const SidebarBackButton = ({
   ...props
 }: SidebarBackButtonProps) => (
   <Button
-    className="text-sidebar-accent-foreground/75 hover:text-sidebar-accent-foreground mb-1 w-full px-2.5 text-center"
+    className="mb-1 w-full px-2.5 text-center text-sidebar-accent-foreground/75 hover:text-sidebar-accent-foreground"
     render={<Link {...props} />}
     size="lg"
     variant="ghost"

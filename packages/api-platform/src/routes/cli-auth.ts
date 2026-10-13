@@ -8,11 +8,10 @@ import { cliAuthSession, cliToken } from "@tailorkit/db/schema/cli-auth";
 import { and, eq, gt } from "drizzle-orm";
 import { z } from "zod";
 
+import { authenticateCliRequest } from "#cli-token";
 import { env } from "#env";
-
-import { authenticateCliRequest } from "../cli-token";
-import { o, protectedRouter, cliRouter } from "../procedures";
-import { canonicalizeScope, scopeSchema } from "../scope";
+import { o, protectedRouter, cliRouter } from "#procedures";
+import { canonicalizeScope, scopeSchema } from "#scope";
 
 const deviceCodeBytes = 32;
 const deployTokenBytes = 32;

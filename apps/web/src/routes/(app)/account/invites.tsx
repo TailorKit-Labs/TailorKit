@@ -117,7 +117,7 @@ const InvitesPage = () => {
                 </CardHeader>
                 <CardPanel>
                   <div className="flex flex-col gap-4 pt-0 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-muted-foreground text-sm">
+                    <p className="text-sm text-muted-foreground">
                       Expires {formatDate(invitation.expiresAt)}
                     </p>
                     <div className="flex gap-2">

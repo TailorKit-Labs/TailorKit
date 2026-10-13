@@ -9,7 +9,7 @@ import {
 } from "@tailorkit/api-utils/app-auth";
 import { z } from "zod";
 
-import { env } from "../env";
+import { env } from "#env";
 
 const signingKey = () => {
   if (!env.APP_RUNTIME_SIGNING_KEY) {

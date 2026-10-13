@@ -79,7 +79,7 @@ export const OrgSwitcher = ({ orgSlug }: OrgSwitcherProps) => {
             )
           }
         </ComboboxValue>
-        <ChevronsUpDownIcon className="text-muted-foreground ml-auto size-4 shrink-0" />
+        <ChevronsUpDownIcon className="ml-auto size-4 shrink-0 text-muted-foreground" />
       </ComboboxTrigger>
       <ComboboxPopup aria-label="Select organisation">
         <div className="border-b p-2">

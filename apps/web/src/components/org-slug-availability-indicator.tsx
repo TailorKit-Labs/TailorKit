@@ -21,14 +21,14 @@ export const OrgSlugAvailabilityIndicator = ({
   }
 
   let tooltip = message ?? "This slug is not available.";
-  let icon = <XCircleIcon className="text-destructive-foreground size-4" />;
+  let icon = <XCircleIcon className="size-4 text-destructive-foreground" />;
 
   if (status === "checking") {
     tooltip = "Checking slug availability...";
     icon = <Spinner className="size-4" />;
   } else if (status === "available") {
     tooltip = "This slug is available.";
-    icon = <CheckCircle2Icon className="text-success size-4" />;
+    icon = <CheckCircle2Icon className="size-4 text-success" />;
   }
 
   return (

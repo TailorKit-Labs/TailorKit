@@ -112,7 +112,7 @@ export const SidebarProvider = ({
     <SidebarContext.Provider value={contextValue}>
       <div
         className={cn(
-          "group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full",
+          "group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar",
           className
         )}
         data-slot="sidebar-wrapper"
@@ -136,7 +136,7 @@ export const Sidebar = ({
     return (
       <Sheet onOpenChange={setOpenMobile} open={openMobile} {...props}>
         <SheetPopup
-          className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
+          className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
           data-mobile="true"
           data-slot="sidebar"
           side="left"
@@ -154,7 +154,7 @@ export const Sidebar = ({
 
   return (
     <div
-      className="group peer text-sidebar-foreground hidden md:block"
+      className="group peer hidden text-sidebar-foreground md:block"
       data-slot="sidebar"
       data-state={open ? "expanded" : "collapsed"}
       data-variant="inset"
@@ -178,7 +178,7 @@ export const Sidebar = ({
         {...props}
       >
         <div
-          className="bg-sidebar flex h-full w-full flex-col"
+          className="flex h-full w-full flex-col bg-sidebar"
           data-slot="sidebar-inner"
         >
           {children}
@@ -194,7 +194,7 @@ export const SidebarInset = ({
 }: React.ComponentProps<"main">): React.ReactElement => (
   <main
     className={cn(
-      "bg-background relative z-20 flex w-full flex-1 flex-col",
+      "relative z-20 flex w-full flex-1 flex-col bg-background",
       "md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ms-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm/5 md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ms-2",
       "not-dark:bg-clip-padding lg:rounded-2xl lg:border lg:shadow-xs/5",
       "mt-1 mr-1 mb-1 ml-1 lg:before:pointer-events-none lg:before:absolute lg:before:inset-0 lg:before:rounded-[calc(var(--radius-2xl)-1px)] lg:before:shadow-[0_1px_--theme(--color-black/4%)] dark:lg:before:shadow-[0_-1px_--theme(--color-white/6%)]",
@@ -290,7 +290,7 @@ export const SidebarSeparator = ({
   ...props
 }: React.ComponentProps<typeof Separator>): React.ReactElement => (
   <Separator
-    className={cn("bg-sidebar-border mx-2 w-auto", className)}
+    className={cn("mx-2 w-auto bg-sidebar-border", className)}
     data-slot="sidebar-separator"
     {...props}
   />
@@ -313,7 +313,7 @@ export const SidebarGroupLabel = ({
 }: React.ComponentProps<"div">): React.ReactElement => (
   <div
     className={cn(
-      "text-sidebar-foreground/60 flex h-8 shrink-0 items-center rounded-lg px-2 text-xs font-medium",
+      "flex h-8 shrink-0 items-center rounded-lg px-2 text-xs font-medium text-sidebar-foreground/60",
       className
     )}
     data-slot="sidebar-group-label"
@@ -353,8 +353,8 @@ export const SidebarMenuButton = ({
 }): React.ReactElement => {
   const defaultProps = {
     className: cn(
-      "text-sidebar-accent-foreground/75 ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground active:bg-sidebar-accent active:text-sidebar-accent-foreground flex h-8 w-full items-center gap-2 overflow-hidden rounded-lg p-2 text-left text-sm outline-hidden transition-colors focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50",
-      "data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-medium",
+      "flex h-8 w-full items-center gap-2 overflow-hidden rounded-lg p-2 text-left text-sm text-sidebar-accent-foreground/75 ring-sidebar-ring outline-hidden transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50",
+      "data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground",
       "[&>span:last-child]:truncate [&>svg]:shrink-0 [&>svg:not([class*='size-'])]:size-4",
       className
     ),
@@ -507,8 +507,8 @@ export const SidebarPanelTrigger = ({
   return (
     <Button
       className={cn(
-        "hover:text-sidebar-accent-foreground text-sidebar-accent-foreground/75 w-full",
-        "data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-medium",
+        "w-full text-sidebar-accent-foreground/75 hover:text-sidebar-accent-foreground",
+        "data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground",
         back ? "mb-1 px-2.5 text-center" : "text-left"
       )}
       data-active={isActive}

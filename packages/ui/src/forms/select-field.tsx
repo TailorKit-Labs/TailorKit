@@ -7,15 +7,16 @@ import {
   FieldDescription,
   FieldError,
   FieldLabel,
-} from "../components/field";
+} from "#components/field";
 import {
   Select,
   SelectItem,
   SelectPopup,
   SelectTrigger,
   SelectValue,
-} from "../components/select";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../components/tooltip";
+} from "#components/select";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "#components/tooltip";
+
 import { formatFieldErrors } from "./field-errors";
 
 const isStringValue = <TValue,>(value: TValue): value is TValue & string =>

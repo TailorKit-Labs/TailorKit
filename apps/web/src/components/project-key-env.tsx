@@ -41,7 +41,7 @@ export const ProjectKeyEnv = ({ apiKey }: { apiKey: string }) => {
         <CardDescription>
           Follow the{" "}
           <a
-            className="text-foreground hover:text-primary underline underline-offset-4"
+            className="text-foreground underline underline-offset-4 hover:text-primary"
             href="https://tailorkit.dev/docs/installation"
             rel="noopener noreferrer"
             target="_blank"

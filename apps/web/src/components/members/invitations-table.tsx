@@ -186,7 +186,7 @@ export const InvitationsTable = ({
 
   if (invitations.length === 0) {
     return (
-      <div className="text-muted-foreground rounded-lg border px-4 py-12 text-center text-sm">
+      <div className="rounded-lg border px-4 py-12 text-center text-sm text-muted-foreground">
         No pending invitations.
       </div>
     );

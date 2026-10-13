@@ -121,7 +121,7 @@ const AppsTable = ({
               <span className="truncate text-sm font-medium">
                 {row.original.name}
               </span>
-              <span className="text-muted-foreground truncate text-xs">
+              <span className="truncate text-xs text-muted-foreground">
                 {row.original.publicId}
               </span>
             </div>
@@ -166,7 +166,7 @@ const AppsTable = ({
               {row.original.currentDeployment.status}
             </Badge>
           ) : (
-            <span className="text-muted-foreground text-sm">None</span>
+            <span className="text-sm text-muted-foreground">None</span>
           ),
         header: "Current",
         id: "currentDeployment",
@@ -252,7 +252,7 @@ const AppsTable = ({
       {(isFetchingNextPage || hasNextPage) && (
         <div
           ref={loadMoreRef}
-          className="text-muted-foreground border-t px-4 py-3 text-center text-sm"
+          className="border-t px-4 py-3 text-center text-sm text-muted-foreground"
         >
           {isFetchingNextPage ? "Loading more apps..." : "Scroll for more apps"}
         </div>
@@ -321,7 +321,7 @@ const AppsIndexPage = () => {
   if (isPending) {
     content = (
       <CardFrame className="w-full text-center">
-        <div className="text-muted-foreground px-4 py-6 text-sm">
+        <div className="px-4 py-6 text-sm text-muted-foreground">
           Loading apps...
         </div>
       </CardFrame>

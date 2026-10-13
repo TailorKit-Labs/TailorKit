@@ -19,8 +19,9 @@ import {
   vi,
 } from "vite-plus/test";
 
-import type { Context } from "../context";
-import { createTestDb } from "../test/pglite";
+import type { Context } from "#context";
+import { createTestDb } from "#test/pglite";
+
 import type * as RuntimeModule from "./runtime";
 
 // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
@@ -60,7 +61,7 @@ vi.mock("./runtime", async (importOriginal) => ({
 }));
 
 const { appRouter } = await import("./apps");
-const { canonicalizeScope } = await import("../scope");
+const { canonicalizeScope } = await import("#scope");
 
 const orgId = "11111111-1111-4111-8111-111111111111";
 const projectId = "22222222-2222-4222-8222-222222222222";

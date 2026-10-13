@@ -13,7 +13,7 @@ export const Card = ({
 }: useRender.ComponentProps<"div">): React.ReactElement => {
   const defaultProps = {
     className: cn(
-      "bg-card text-card-foreground relative flex flex-col rounded-2xl border shadow-xs/5 not-dark:bg-clip-padding before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-2xl)-1px)] before:shadow-[0_1px_--theme(--color-black/4%)] dark:before:shadow-[0_-1px_--theme(--color-white/6%)]",
+      "relative flex flex-col rounded-2xl border bg-card text-card-foreground shadow-xs/5 not-dark:bg-clip-padding before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-2xl)-1px)] before:shadow-[0_1px_--theme(--color-black/4%)] dark:before:shadow-[0_-1px_--theme(--color-white/6%)]",
       className
     ),
     "data-slot": "card",
@@ -33,7 +33,7 @@ export const CardFrame = ({
 }: useRender.ComponentProps<"div">): React.ReactElement => {
   const defaultProps = {
     className: cn(
-      "bg-card text-card-foreground before:bg-muted/72 relative flex flex-col rounded-2xl border shadow-xs/5 [--clip-bottom:-1rem] [--clip-top:-1rem] not-dark:bg-clip-padding before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-2xl)-1px)] before:shadow-[0_1px_--theme(--color-black/4%)] has-data-[slot=table-container]:overflow-hidden *:data-[slot=card]:-m-px *:data-[slot=card]:bg-clip-padding *:data-[slot=card]:shadow-none *:data-[slot=card]:[clip-path:inset(var(--clip-top)_1px_var(--clip-bottom)_1px_round_calc(var(--radius-2xl)-1px))] *:not-first:data-[slot=card]:rounded-t-xl *:not-last:data-[slot=card]:rounded-b-xl *:data-[slot=card]:before:hidden *:not-first:data-[slot=card]:before:rounded-t-[calc(var(--radius-xl)-1px)] *:not-last:data-[slot=card]:before:rounded-b-[calc(var(--radius-xl)-1px)] *:data-[slot=card]:first:[--clip-top:1px] *:data-[slot=card]:last:[--clip-bottom:1px] *:data-[slot=table-container]:-m-px *:data-[slot=table-container]:w-[calc(100%+2px)] dark:before:shadow-[0_-1px_--theme(--color-white/6%)]",
+      "relative flex flex-col rounded-2xl border bg-card text-card-foreground shadow-xs/5 [--clip-bottom:-1rem] [--clip-top:-1rem] not-dark:bg-clip-padding before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-2xl)-1px)] before:bg-muted/72 before:shadow-[0_1px_--theme(--color-black/4%)] has-data-[slot=table-container]:overflow-hidden *:data-[slot=card]:-m-px *:data-[slot=card]:bg-clip-padding *:data-[slot=card]:shadow-none *:data-[slot=card]:[clip-path:inset(var(--clip-top)_1px_var(--clip-bottom)_1px_round_calc(var(--radius-2xl)-1px))] *:not-first:data-[slot=card]:rounded-t-xl *:not-last:data-[slot=card]:rounded-b-xl *:data-[slot=card]:before:hidden *:not-first:data-[slot=card]:before:rounded-t-[calc(var(--radius-xl)-1px)] *:not-last:data-[slot=card]:before:rounded-b-[calc(var(--radius-xl)-1px)] *:data-[slot=card]:first:[--clip-top:1px] *:data-[slot=card]:last:[--clip-bottom:1px] *:data-[slot=table-container]:-m-px *:data-[slot=table-container]:w-[calc(100%+2px)] dark:before:shadow-[0_-1px_--theme(--color-white/6%)]",
       className
     ),
     "data-slot": "card-frame",
@@ -89,7 +89,7 @@ export const CardFrameDescription = ({
   ...props
 }: useRender.ComponentProps<"div">): React.ReactElement => {
   const defaultProps = {
-    className: cn("text-muted-foreground self-center text-sm", className),
+    className: cn("self-center text-sm text-muted-foreground", className),
     "data-slot": "card-frame-description",
   };
 
@@ -180,7 +180,7 @@ export const CardDescription = ({
   ...props
 }: useRender.ComponentProps<"div">): React.ReactElement => {
   const defaultProps = {
-    className: cn("text-muted-foreground text-sm", className),
+    className: cn("text-sm text-muted-foreground", className),
     "data-slot": "card-description",
   };
 

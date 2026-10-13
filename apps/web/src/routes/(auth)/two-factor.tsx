@@ -252,7 +252,7 @@ const TwoFactorPage = () => {
           </Card>
           <CardFrameFooter className="relative">
             <Link
-              className="text-muted-foreground text-sm hover:underline"
+              className="text-sm text-muted-foreground hover:underline"
               search={{
                 email: undefined,
                 error: undefined,

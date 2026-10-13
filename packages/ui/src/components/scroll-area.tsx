@@ -22,7 +22,7 @@ export const ScrollBar = ({
     {...props}
   >
     <ScrollAreaPrimitive.Thumb
-      className="bg-foreground/20 relative flex-1 rounded-full"
+      className="relative flex-1 rounded-full bg-foreground/20"
       data-slot="scroll-area-thumb"
     />
   </ScrollAreaPrimitive.Scrollbar>
@@ -50,7 +50,7 @@ export const ScrollArea = ({
   >
     <ScrollAreaPrimitive.Viewport
       className={cn(
-        "focus-visible:ring-ring focus-visible:ring-offset-background h-full rounded-[inherit] transition-shadow outline-none focus-visible:ring-2 focus-visible:ring-offset-1",
+        "h-full rounded-[inherit] transition-shadow outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
         overscrollContain &&
           "data-has-overflow-x:overscroll-x-contain data-has-overflow-y:overscroll-y-contain",
         scrollFade &&

@@ -21,10 +21,9 @@ import {
   vi,
 } from "vite-plus/test";
 
+import type { Context } from "#context";
 import { env } from "#env";
-
-import type { Context } from "../context";
-import { createTestDb } from "../test/pglite";
+import { createTestDb } from "#test/pglite";
 
 // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const state = vi.hoisted(() => ({
@@ -42,9 +41,9 @@ vi.mock("@tailorkit/kv", async (original) => ({
 }));
 
 const { previewRouter } = await import("./preview");
-const { canonicalizeScope } = await import("../scope");
-const { authorizePreviewSocket } = await import("../preview-ws-auth");
-const { previewWebSocketRouter } = await import("../preview-ws");
+const { canonicalizeScope } = await import("#scope");
+const { authorizePreviewSocket } = await import("#preview-ws-auth");
+const { previewWebSocketRouter } = await import("#preview-ws");
 const authSecret = env.AUTH_SECRET;
 if (!authSecret) {
   throw new Error(

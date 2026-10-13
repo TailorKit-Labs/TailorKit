@@ -236,7 +236,7 @@ const ProjectSettingsPage = () => {
             <DialogDescription>
               This permanently deletes {project.name} and revokes its project
               API keys. Type{" "}
-              <span className="text-foreground font-mono">{project.slug}</span>{" "}
+              <span className="font-mono text-foreground">{project.slug}</span>{" "}
               to confirm.
             </DialogDescription>
           </DialogHeader>

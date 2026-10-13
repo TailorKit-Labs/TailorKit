@@ -1,7 +1,8 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { beforeEach, expect, it, vi } from "vite-plus/test";
 
-import type { Context } from "../context";
+import type { Context } from "#context";
+
 import {
   getRuntimeBundle,
   handlePublicRuntimeRequest,

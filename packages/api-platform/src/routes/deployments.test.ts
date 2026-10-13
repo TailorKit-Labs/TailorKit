@@ -20,8 +20,8 @@ import {
   vi,
 } from "vite-plus/test";
 
-import type { Context } from "../context";
-import { createTestDb } from "../test/pglite";
+import type { Context } from "#context";
+import { createTestDb } from "#test/pglite";
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -44,7 +44,7 @@ vi.mock("@tailorkit/db", () => ({
 
 const { deploymentRouter, mapReturnedFilesByAssetPath } =
   await import("./deployments");
-const { canonicalizeScope } = await import("../scope");
+const { canonicalizeScope } = await import("#scope");
 
 const organizationId = "11111111-1111-4111-8111-111111111111";
 const projectId = "22222222-2222-4222-8222-222222222222";

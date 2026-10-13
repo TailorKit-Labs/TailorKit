@@ -300,13 +300,13 @@ const ProjectsPage = () => {
           {projects.map((project) => (
             <Link
               key={project.id}
-              className="group bg-card hover:bg-accent/50 flex flex-col gap-2 rounded-lg border p-4 transition-colors"
+              className="group flex flex-col gap-2 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50"
               params={{ orgSlug, projectSlug: project.slug }}
               to="/$orgSlug/$projectSlug"
             >
               <div className="flex items-center gap-2">
-                <span className="bg-muted flex size-7 items-center justify-center rounded-md">
-                  <FolderIcon className="text-muted-foreground size-3.5" />
+                <span className="flex size-7 items-center justify-center rounded-md bg-muted">
+                  <FolderIcon className="size-3.5 text-muted-foreground" />
                 </span>
                 <span className="text-sm font-medium">{project.name}</span>
               </div>

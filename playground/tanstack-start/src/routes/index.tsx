@@ -28,11 +28,11 @@ const OverviewPage = () => {
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-muted-foreground mb-2 text-sm">Team overview</p>
+          <p className="mb-2 text-sm text-muted-foreground">Team overview</p>
           <h1 className="text-3xl font-semibold tracking-tight">
             Your team’s work
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="mt-2 text-muted-foreground">
             A quick look at what your team is working on.
           </p>
         </div>
@@ -49,7 +49,7 @@ const OverviewPage = () => {
               <CardDescription>{label}</CardDescription>
               <Icon
                 aria-hidden="true"
-                className="text-muted-foreground size-4"
+                className="size-4 text-muted-foreground"
               />
             </CardHeader>
             <CardContent>
@@ -75,12 +75,12 @@ const OverviewPage = () => {
           {overview.recent.length ? (
             overview.recent.map((issue) => (
               <Link
-                className="hover:bg-muted/60 flex items-center gap-3 rounded-lg px-3 py-3 transition-colors"
+                className="flex items-center gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-muted/60"
                 key={issue.id}
                 params={{ issueId: issue.id }}
                 to="/issues/$issueId"
               >
-                <span className="text-muted-foreground shrink-0 font-mono text-xs">
+                <span className="shrink-0 font-mono text-xs text-muted-foreground">
                   {issue.key}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-sm">
@@ -94,7 +94,7 @@ const OverviewPage = () => {
               </Link>
             ))
           ) : (
-            <p className="text-muted-foreground px-3 py-8 text-center text-sm">
+            <p className="px-3 py-8 text-center text-sm text-muted-foreground">
               No issues yet.
             </p>
           )}

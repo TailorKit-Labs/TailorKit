@@ -195,7 +195,7 @@ export const InviteMembersDialog = ({
               {errors.length > 0 && (
                 <div className="space-y-0.5">
                   {errors.map((error, index) => (
-                    <p key={index} className="text-destructive text-xs">
+                    <p key={index} className="text-xs text-destructive">
                       {error}
                     </p>
                   ))}

@@ -8,8 +8,9 @@ import {
   FieldDescription,
   FieldError,
   FieldLabel,
-} from "../components/field";
-import { Switch } from "../components/switch";
+} from "#components/field";
+import { Switch } from "#components/switch";
+
 import { formatFieldErrors } from "./field-errors";
 
 const emptyErrors: unknown[] = [];

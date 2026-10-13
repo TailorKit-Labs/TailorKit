@@ -3,8 +3,8 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { authClient } from "#lib/auth-client";
 
 const LogoutPage = () => (
-  <main className="bg-background grid min-h-svh place-items-center p-6">
-    <p className="text-muted-foreground text-sm">Signing out...</p>
+  <main className="grid min-h-svh place-items-center bg-background p-6">
+    <p className="text-sm text-muted-foreground">Signing out...</p>
   </main>
 );
 

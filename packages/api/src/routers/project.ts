@@ -8,7 +8,7 @@ import { and, desc, eq, ne } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import { z } from "zod";
 
-import { protectedProcedure, requireOrg, requireProject } from "../procedures";
+import { protectedProcedure, requireOrg, requireProject } from "#procedures";
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";

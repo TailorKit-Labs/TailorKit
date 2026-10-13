@@ -7,10 +7,9 @@ import {
 import { readUIMessageStream } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
+import type { Context } from "#context";
 import { env } from "#env";
-
-import type { Context } from "../context";
-import { canonicalizeScope } from "../scope";
+import { canonicalizeScope } from "#scope";
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {

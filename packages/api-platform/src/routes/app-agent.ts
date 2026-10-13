@@ -18,11 +18,10 @@ import type { UIMessageChunk } from "ai";
 import { start } from "workflow/api";
 import { z } from "zod";
 
+import { authenticateCliRequest } from "#cli-token";
 import { env } from "#env";
-
-import { authenticateCliRequest } from "../cli-token";
-import { findAppInScopes, o, cliRouter } from "../procedures";
-import { canonicalizeScope } from "../scope";
+import { findAppInScopes, o, cliRouter } from "#procedures";
+import { canonicalizeScope } from "#scope";
 
 const require = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {

@@ -72,7 +72,7 @@ const GitHubIcon = () => (
 const LinkedAccountsSkeleton = () => (
   <div className="flex flex-col gap-3">
     <div className="flex items-center gap-3 rounded-xl border p-4">
-      <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-full">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
         <GoogleIcon className="size-5" />
       </div>
       <div className="min-w-0 flex-1">
@@ -82,7 +82,7 @@ const LinkedAccountsSkeleton = () => (
       <Skeleton className="h-7 w-12" />
     </div>
     <div className="flex items-center gap-3 rounded-xl border p-4">
-      <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-full">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
         <GitHubIcon />
       </div>
       <div className="min-w-0 flex-1">
@@ -92,7 +92,7 @@ const LinkedAccountsSkeleton = () => (
       <Skeleton className="h-7 w-12" />
     </div>
     <div className="flex items-center gap-3 rounded-xl border p-4">
-      <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-full">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
         <KeyRoundIcon aria-hidden="true" className="size-5" />
       </div>
       <div className="min-w-0 flex-1">
@@ -261,7 +261,7 @@ const ActiveSessions = ({
     sessionsContent = <ActiveSessionsSkeleton />;
   } else if (error) {
     sessionsContent = (
-      <p className="text-destructive-foreground px-4 py-6 text-sm">
+      <p className="px-4 py-6 text-sm text-destructive-foreground">
         Active sessions could not be loaded. Please try again.
       </p>
     );
@@ -277,7 +277,7 @@ const ActiveSessions = ({
           key={session.id}
         >
           <div className="flex min-w-0 flex-1 items-center gap-3">
-            <div className="bg-muted grid size-10 shrink-0 place-items-center rounded-full">
+            <div className="grid size-10 shrink-0 place-items-center rounded-full bg-muted">
               <DeviceIcon aria-hidden="true" className="size-5" />
             </div>
             <div className="min-w-0">
@@ -287,7 +287,7 @@ const ActiveSessions = ({
                 </p>
                 {isCurrent ? <Badge variant="secondary">Current</Badge> : null}
               </div>
-              <p className="text-muted-foreground mt-0.5 text-sm">
+              <p className="mt-0.5 text-sm text-muted-foreground">
                 Last active{" "}
                 {formatLastActive(session.updatedAt, locale, timeZone)}
               </p>
@@ -314,7 +314,7 @@ const ActiveSessions = ({
     });
   } else {
     sessionsContent = (
-      <p className="text-muted-foreground px-4 py-6 text-sm">
+      <p className="px-4 py-6 text-sm text-muted-foreground">
         No active sessions found.
       </p>
     );
@@ -668,7 +668,7 @@ const SecurityPage = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Linked accounts</CardTitle>
-                <p className="text-muted-foreground text-sm">
+                <p className="text-sm text-muted-foreground">
                   Connect an external account for another way to sign in.
                 </p>
               </CardHeader>
@@ -678,7 +678,7 @@ const SecurityPage = () => {
                   error ||
                   accountsQuery.error ||
                   passkeysQuery.error) && (
-                  <p className="text-destructive mb-4 text-sm" role="alert">
+                  <p className="mb-4 text-sm text-destructive" role="alert">
                     {error_description ||
                       error ||
                       accountsQuery.error?.message ||
@@ -692,12 +692,12 @@ const SecurityPage = () => {
                   <div className="flex flex-col gap-3">
                     {(googleAccount || socialProvidersQuery.data?.google) && (
                       <div className="flex items-center gap-3 rounded-xl border p-4">
-                        <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-full">
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
                           <GoogleIcon className="size-5" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium">Google</p>
-                          <p className="text-muted-foreground text-sm">
+                          <p className="text-sm text-muted-foreground">
                             {googleAccount
                               ? "Connected"
                               : "Sign in with Google"}
@@ -741,12 +741,12 @@ const SecurityPage = () => {
 
                     {(githubAccount || socialProvidersQuery.data?.github) && (
                       <div className="flex items-center gap-3 rounded-xl border p-4">
-                        <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-full">
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
                           <GitHubIcon />
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium">GitHub</p>
-                          <p className="text-muted-foreground text-sm">
+                          <p className="text-sm text-muted-foreground">
                             {githubStatus}
                           </p>
                         </div>
@@ -791,7 +791,7 @@ const SecurityPage = () => {
                       open={passkeysOpen}
                     >
                       <div className="flex items-center gap-3 p-4">
-                        <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-full">
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
                           <KeyRoundIcon aria-hidden="true" className="size-5" />
                         </div>
                         <div className="min-w-0 flex-1">
@@ -809,7 +809,7 @@ const SecurityPage = () => {
                               />
                             </CollapsibleTrigger>
                           ) : (
-                            <p className="text-muted-foreground text-sm">
+                            <p className="text-sm text-muted-foreground">
                               No passkeys registered
                             </p>
                           )}
@@ -845,7 +845,7 @@ const SecurityPage = () => {
                                       {passkey.name || "Passkey"}
                                     </p>
                                     {createdAt ? (
-                                      <p className="text-muted-foreground text-sm">
+                                      <p className="text-sm text-muted-foreground">
                                         Created {createdAt}
                                       </p>
                                     ) : null}

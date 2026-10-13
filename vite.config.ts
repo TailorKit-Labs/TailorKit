@@ -16,6 +16,23 @@ const reactWorkspaces = [
   "playground/tanstack-start/**",
 ];
 const tanstackWorkspaces = ["apps/web", "playground/tanstack-start"];
+const aliasWorkspaces = [
+  "apps/web",
+  "packages/api",
+  "packages/api-platform",
+  "packages/api-utils",
+  "packages/auth",
+  "packages/config",
+  "packages/db",
+  "packages/email",
+  "packages/env",
+  "packages/kv",
+  "packages/observability",
+  "packages/storage",
+  "packages/ui",
+  "playground/apps/todo",
+  "playground/tanstack-start",
+];
 const ignorePatterns = [
   ".agents/skills",
   ".claude/skills",
@@ -26,6 +43,10 @@ export default defineConfig({
   fmt: {
     ...formatting,
     ignorePatterns: [...(formatting.ignorePatterns ?? []), ...ignorePatterns],
+    sortTailwindcss: {
+      functions: ["clsx", "cva", "cn"],
+      stylesheet: "./packages/ui/src/styles/globals.css",
+    },
   },
   lint: {
     extends: [core, antiSlop],
@@ -33,6 +54,12 @@ export default defineConfig({
     jsPlugins: [...antiSlop.jsPlugins, ...shadcn.jsPlugins],
     overrides: [
       ...(core.overrides ?? []),
+      {
+        files: aliasWorkspaces.map((workspace) => `${workspace}/src/**`),
+        rules: {
+          "import/no-relative-parent-imports": "error",
+        },
+      },
       {
         files: ["apps/web/**"],
         rules: shadcn.rules,

@@ -19,7 +19,7 @@ export const segmentedControlItemLayoutClassName =
 
 export const segmentedControlItemVariants = cva(
   [
-    "text-muted-foreground/72 hover:text-muted-foreground focus-visible:outline-ring relative inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md border border-transparent text-base font-medium whitespace-nowrap outline-2 outline-transparent transition-[outline-color] select-none hover:bg-transparent disabled:pointer-events-none disabled:opacity-64 data-disabled:pointer-events-none data-disabled:opacity-64 sm:text-sm",
+    "relative inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md border border-transparent text-base font-medium whitespace-nowrap text-muted-foreground/72 outline-2 outline-transparent transition-[outline-color] select-none hover:bg-transparent hover:text-muted-foreground focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-64 sm:text-sm data-disabled:pointer-events-none data-disabled:opacity-64",
     segmentedControlItemLayoutClassName,
   ],
   {
@@ -30,11 +30,11 @@ export const segmentedControlItemVariants = cva(
       size: segmentedControlItemSizeClassNames,
       state: {
         checked:
-          "data-checked:bg-background data-checked:text-foreground dark:data-checked:bg-input data-checked:shadow-sm/5",
+          "data-checked:bg-background data-checked:text-foreground data-checked:shadow-sm/5 dark:data-checked:bg-input",
         current:
-          "aria-[current=page]:bg-background aria-[current=page]:text-foreground dark:aria-[current=page]:bg-input aria-[current=page]:shadow-sm/5",
+          "aria-[current=page]:bg-background aria-[current=page]:text-foreground aria-[current=page]:shadow-sm/5 dark:aria-[current=page]:bg-input",
         pressed:
-          "data-pressed:bg-background data-pressed:text-foreground dark:data-pressed:bg-input data-pressed:shadow-sm/5",
+          "data-pressed:bg-background data-pressed:text-foreground data-pressed:shadow-sm/5 dark:data-pressed:bg-input",
       },
     },
   }

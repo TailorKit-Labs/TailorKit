@@ -87,7 +87,7 @@ export const SheetPopup = ({
     <SheetViewport side={side} variant={variant}>
       <SheetPrimitive.Popup
         className={cn(
-          "bg-popover text-popover-foreground relative flex max-h-full min-h-0 w-full min-w-0 flex-col shadow-lg/5 transition-[opacity,translate] duration-200 ease-in-out will-change-transform not-dark:bg-clip-padding before:pointer-events-none before:absolute before:inset-0 before:shadow-[0_1px_--theme(--color-black/4%)] data-ending-style:opacity-0 data-starting-style:opacity-0 max-sm:before:hidden dark:before:shadow-[0_-1px_--theme(--color-white/6%)]",
+          "relative flex max-h-full min-h-0 w-full min-w-0 flex-col bg-popover text-popover-foreground shadow-lg/5 transition-[opacity,translate] duration-200 ease-in-out will-change-transform not-dark:bg-clip-padding before:pointer-events-none before:absolute before:inset-0 before:shadow-[0_1px_--theme(--color-black/4%)] data-ending-style:opacity-0 data-starting-style:opacity-0 max-sm:before:hidden dark:before:shadow-[0_-1px_--theme(--color-white/6%)]",
           side === "bottom" &&
             "row-start-2 border-t data-ending-style:translate-y-8 data-starting-style:translate-y-8",
           side === "top" &&
@@ -150,7 +150,7 @@ export const SheetFooter = ({
   const defaultProps = {
     className: cn(
       "flex flex-col-reverse gap-2 px-6 sm:flex-row sm:justify-end",
-      variant === "default" && "bg-muted/72 border-t py-4",
+      variant === "default" && "border-t bg-muted/72 py-4",
       variant === "bare" &&
         "pt-4 pb-6 in-[[data-slot=sheet-popup]:has([data-slot=sheet-panel])]:pt-3",
       className
@@ -181,7 +181,7 @@ export const SheetDescription = ({
   ...props
 }: SheetPrimitive.Description.Props): React.ReactElement => (
   <SheetPrimitive.Description
-    className={cn("text-muted-foreground text-sm", className)}
+    className={cn("text-sm text-muted-foreground", className)}
     data-slot="sheet-description"
     {...props}
   />

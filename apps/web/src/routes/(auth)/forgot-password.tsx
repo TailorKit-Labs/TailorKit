@@ -371,7 +371,7 @@ const RouteComponent = () => {
             <div className={contentClass}>
               <CardHeader>
                 <CardTitle>{getTitle()}</CardTitle>
-                <p className="text-muted-foreground text-sm">
+                <p className="text-sm text-muted-foreground">
                   {getDescription()}
                 </p>
               </CardHeader>

@@ -75,12 +75,12 @@ const createMemberColumns = ({
             <p className="truncate text-sm leading-tight font-medium">
               {row.original.name}
               {row.original.isCurrentUser && (
-                <span className="text-muted-foreground ml-1.5 text-xs font-normal">
+                <span className="ml-1.5 text-xs font-normal text-muted-foreground">
                   (you)
                 </span>
               )}
             </p>
-            <p className="text-muted-foreground truncate text-xs leading-tight">
+            <p className="truncate text-xs leading-tight text-muted-foreground">
               {row.original.email}
             </p>
           </div>

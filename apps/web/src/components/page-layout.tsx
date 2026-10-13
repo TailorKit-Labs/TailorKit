@@ -16,7 +16,7 @@ export const PageLayout = ({
       <div>
         <h1 className="text-2xl font-semibold tracking-normal">{title}</h1>
         {description ? (
-          <p className="text-muted-foreground mt-1 text-sm">{description}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         ) : null}
       </div>
       {actions ? (

@@ -46,12 +46,12 @@ export const AppSidebar = ({
   <Sidebar>
     <SidebarHeader>
       <div className="flex items-center gap-3 px-2 py-1">
-        <div className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-xl">
+        <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
           <CheckSquare2 aria-hidden="true" className="size-4" />
         </div>
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">Issue tracker</p>
-          <p className="text-muted-foreground truncate text-xs">
+          <p className="truncate text-xs text-muted-foreground">
             {session.team.name}
           </p>
         </div>
@@ -94,12 +94,12 @@ export const AppSidebar = ({
             </SidebarMenuItem>
           ))}
           {appsPending ? (
-            <li className="text-muted-foreground px-2 py-1 text-xs">
+            <li className="px-2 py-1 text-xs text-muted-foreground">
               Loading apps…
             </li>
           ) : null}
           {appsError ? (
-            <li className="text-muted-foreground px-2 py-1 text-xs">
+            <li className="px-2 py-1 text-xs text-muted-foreground">
               Platform apps unavailable
             </li>
           ) : null}
@@ -107,8 +107,8 @@ export const AppSidebar = ({
       </SidebarGroup>
     </SidebarContent>
     <SidebarFooter>
-      <div className="bg-sidebar-accent/60 flex min-w-0 items-center gap-2 rounded-lg p-2">
-        <span className="bg-background flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-medium">
+      <div className="flex min-w-0 items-center gap-2 rounded-lg bg-sidebar-accent/60 p-2">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-background text-xs font-medium">
           {session.user.name
             .split(" ")
             .map((part) => part[0])
@@ -116,7 +116,7 @@ export const AppSidebar = ({
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium">{session.user.name}</p>
-          <p className="text-muted-foreground truncate text-xs">
+          <p className="truncate text-xs text-muted-foreground">
             {session.team.key}
           </p>
         </div>

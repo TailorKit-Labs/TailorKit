@@ -260,7 +260,7 @@ const RouteComponent = () => {
                           socialError ||
                           error_description ||
                           authenticationError) && (
-                          <p className="text-destructive text-sm" role="alert">
+                          <p className="text-sm text-destructive" role="alert">
                             {passkeyError ||
                               socialError ||
                               error_description ||
@@ -309,8 +309,8 @@ const RouteComponent = () => {
                         </Button>
                       </div>
 
-                      <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-                        <span className="bg-card text-muted-foreground relative z-10 px-2 text-xs">
+                      <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
+                        <span className="relative z-10 bg-card px-2 text-xs text-muted-foreground">
                           OR
                         </span>
                       </div>
@@ -350,7 +350,7 @@ const RouteComponent = () => {
                       <button
                         type="button"
                         onClick={() => transition("email")}
-                        className="text-muted-foreground hover:text-foreground flex w-fit items-center gap-1.5 text-sm transition-colors"
+                        className="flex w-fit items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
                       >
                         <ArrowLeftIcon className="size-3.5" />
                         <span>{email}</span>
@@ -372,7 +372,7 @@ const RouteComponent = () => {
                               <Link
                                 search={{ email, return_to }}
                                 to="/forgot-password"
-                                className="text-muted-foreground text-xs hover:underline"
+                                className="text-xs text-muted-foreground hover:underline"
                               >
                                 Forgot password?
                               </Link>
@@ -396,7 +396,7 @@ const RouteComponent = () => {
           </Card>
 
           <CardFrameFooter className="relative">
-            <p className="text-muted-foreground text-sm">
+            <p className="text-sm text-muted-foreground">
               Don&apos;t have an account?{" "}
               <Link
                 search={{ email, return_to }}

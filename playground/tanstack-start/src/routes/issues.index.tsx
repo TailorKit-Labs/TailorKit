@@ -52,9 +52,9 @@ const IssuesPage = () => {
   return (
     <div className="flex flex-col gap-7">
       <div>
-        <p className="text-muted-foreground mb-2 text-sm">Workspace</p>
+        <p className="mb-2 text-sm text-muted-foreground">Workspace</p>
         <h1 className="text-3xl font-semibold tracking-tight">Issues</h1>
-        <p className="text-muted-foreground mt-2">
+        <p className="mt-2 text-muted-foreground">
           A small, shared list of work for your team.
         </p>
       </div>
@@ -89,7 +89,7 @@ const IssuesPage = () => {
             </Button>
           </form>
           {operationError ? (
-            <p className="text-destructive mt-3 text-sm" role="alert">
+            <p className="mt-3 text-sm text-destructive" role="alert">
               {operationError}
             </p>
           ) : null}
@@ -100,7 +100,7 @@ const IssuesPage = () => {
         <CardHeader>
           <CardTitle>
             All issues{" "}
-            <span className="text-muted-foreground ml-2 text-sm font-normal">
+            <span className="ml-2 text-sm font-normal text-muted-foreground">
               {issues.length}
             </span>
           </CardTitle>
@@ -108,12 +108,12 @@ const IssuesPage = () => {
         <CardContent className="flex flex-col gap-1">
           {issues.map((issue) => (
             <Link
-              className="group hover:bg-muted/60 flex items-center gap-3 rounded-lg px-3 py-3 transition-colors"
+              className="group flex items-center gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-muted/60"
               key={issue.id}
               params={{ issueId: issue.id }}
               to="/issues/$issueId"
             >
-              <span className="text-muted-foreground shrink-0 font-mono text-xs">
+              <span className="shrink-0 font-mono text-xs text-muted-foreground">
                 {issue.key}
               </span>
               <span className="min-w-0 flex-1 truncate text-sm">
@@ -126,12 +126,12 @@ const IssuesPage = () => {
               </Badge>
               <ArrowUpRight
                 aria-hidden="true"
-                className="text-muted-foreground size-4 opacity-0 transition-opacity group-hover:opacity-100"
+                className="size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
               />
             </Link>
           ))}
           {issues.length === 0 ? (
-            <p className="text-muted-foreground px-3 py-8 text-center text-sm">
+            <p className="px-3 py-8 text-center text-sm text-muted-foreground">
               No issues yet. Create the first one above.
             </p>
           ) : null}

@@ -5,7 +5,7 @@ import { invitation } from "@tailorkit/db/schema/index";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { protectedProcedure, requireOrg } from "../procedures";
+import { protectedProcedure, requireOrg } from "#procedures";
 
 export const orgRouter = {
   /**

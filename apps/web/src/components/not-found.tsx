@@ -11,7 +11,7 @@ import { Link } from "@tanstack/react-router";
 import { HomeIcon } from "lucide-react";
 
 export const NotFound = () => (
-  <main className="bg-background flex min-h-svh items-center justify-center px-6 py-16">
+  <main className="flex min-h-svh items-center justify-center bg-background px-6 py-16">
     <Empty>
       <EmptyHeader>
         <EmptyMedia variant="icon">404</EmptyMedia>

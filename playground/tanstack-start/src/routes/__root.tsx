@@ -10,7 +10,7 @@ import {
 import { TailorKitShell } from "#components/tailorkit-shell";
 import { loadSession } from "#lib/auth.functions";
 
-import css from "../styles.css?url";
+import css from "#styles.css?url";
 
 const AppShell = () => {
   const { session } = useRouteContext({ from: "__root__" });

@@ -63,7 +63,7 @@ const LastUsedLabel = ({
 }: {
   lastRequest?: Date | string | null;
 }) => (
-  <span className="text-muted-foreground shrink-0 text-xs">
+  <span className="shrink-0 text-xs text-muted-foreground">
     Last used{" "}
     {lastRequest ? <DateAgo className="inline" date={lastRequest} /> : "never"}
   </span>
@@ -132,12 +132,12 @@ const ProjectApiKeysPage = () => {
   const expiringKeys = apiKeys.rotating;
   const projectKeyPanel = (() => {
     if (!activeKey) {
-      return <p className="text-muted-foreground text-sm">No API key yet.</p>;
+      return <p className="text-sm text-muted-foreground">No API key yet.</p>;
     }
 
     if (!storedApiKey) {
       return (
-        <div className="bg-muted min-w-0 rounded-lg border px-3 py-2">
+        <div className="min-w-0 rounded-lg border bg-muted px-3 py-2">
           <div className="flex min-w-0 items-center gap-3">
             <p className="min-w-0 flex-1 truncate font-mono text-sm">
               {keyLabel(activeKey)}
@@ -145,7 +145,7 @@ const ProjectApiKeysPage = () => {
             <LastUsedLabel lastRequest={activeKey.lastRequest} />
           </div>
           <div className="min-w-0">
-            <p className="text-muted-foreground mt-0.5 text-xs">
+            <p className="mt-0.5 text-xs text-muted-foreground">
               The full key is only shown once. Rotate it if you need a new one.
             </p>
           </div>
@@ -366,7 +366,7 @@ const ProjectApiKeysPage = () => {
                     <p className="truncate font-mono text-sm">
                       {keyLabel(key)}
                     </p>
-                    <p className="text-muted-foreground mt-0.5 text-xs">
+                    <p className="mt-0.5 text-xs text-muted-foreground">
                       Expires{" "}
                       {key.expiresAt ? (
                         <DateAgo className="inline" date={key.expiresAt} />

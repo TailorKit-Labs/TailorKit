@@ -73,7 +73,7 @@ const DeploymentsTable = ({
               {row.original.publicId}
             </p>
             {row.original.id === currentDeploymentId ? (
-              <p className="text-muted-foreground text-xs">
+              <p className="text-xs text-muted-foreground">
                 Current production deployment
               </p>
             ) : null}
@@ -247,7 +247,7 @@ const AppPage = () => {
                 >
                   {app.scope.name}
                 </Badge>
-                <pre className="bg-muted/40 text-foreground max-h-64 max-w-full overflow-auto rounded-md border p-3 font-mono text-xs">
+                <pre className="max-h-64 max-w-full overflow-auto rounded-md border bg-muted/40 p-3 font-mono text-xs text-foreground">
                   {JSON.stringify(app.scope.value, null, 2)}
                 </pre>
               </div>

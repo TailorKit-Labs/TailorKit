@@ -158,7 +158,7 @@ const OrgSettingsMembers = () => {
             <TabsTab value="invitations">
               Pending invitations
               {invitations.length > 0 && (
-                <span className="bg-muted ml-1.5 rounded-full px-1.5 py-0.5 text-xs tabular-nums">
+                <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs tabular-nums">
                   {invitations.length}
                 </span>
               )}

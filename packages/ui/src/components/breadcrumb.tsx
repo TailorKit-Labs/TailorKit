@@ -19,7 +19,7 @@ export const BreadcrumbList = ({
 }: React.ComponentProps<"ol">): React.ReactElement => (
   <ol
     className={cn(
-      "text-muted-foreground flex flex-wrap items-center gap-1.5 text-sm wrap-break-word sm:gap-2.5",
+      "flex flex-wrap items-center gap-1.5 text-sm wrap-break-word text-muted-foreground sm:gap-2.5",
       className
     )}
     data-slot="breadcrumb-list"
@@ -44,7 +44,7 @@ export const BreadcrumbLink = ({
   ...props
 }: useRender.ComponentProps<"a">): React.ReactElement => {
   const defaultProps = {
-    className: cn("hover:text-foreground transition-colors", className),
+    className: cn("transition-colors hover:text-foreground", className),
     "data-slot": "breadcrumb-link",
   };
 
@@ -61,7 +61,7 @@ export const BreadcrumbPage = ({
 }: React.ComponentProps<"span">): React.ReactElement => (
   <span
     aria-current="page"
-    className={cn("text-foreground font-normal", className)}
+    className={cn("font-normal text-foreground", className)}
     data-slot="breadcrumb-page"
     {...props}
   />

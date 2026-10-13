@@ -40,7 +40,7 @@ const OrgSettingsGeneral = () => {
               <Field>
                 <FieldLabel>Slug</FieldLabel>
                 <Input defaultValue={orgSlug} />
-                <p className="text-muted-foreground text-xs">
+                <p className="text-xs text-muted-foreground">
                   Your org URL: tailorkit.com/{orgSlug}
                 </p>
               </Field>
