@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import type { Plugin } from "vite";
+import type { Plugin, ResolvedConfig } from "vite";
 
 interface BuildProjectOptions {
   cwd: string;
@@ -17,7 +17,7 @@ export async function buildProject(options: BuildProjectOptions) {
   const { build } = (await import(
     pathToFileURL(require.resolve("vite")).href
   )) as typeof import("vite");
-  let outDir = "";
+  let resolved: ResolvedConfig;
   const outputPlugin: Plugin = {
     name: "tailorkit-deployment-output",
     apply: (config) => !config.build?.ssr,
@@ -27,7 +27,7 @@ export async function buildProject(options: BuildProjectOptions) {
           "Add tailorkit() from tailorkit/vite to your vite.config.ts before deploying.",
         );
       }
-      outDir = path.dirname(path.resolve(config.root, config.build.outDir));
+      resolved = config;
     },
   };
   const result = await build({
@@ -50,5 +50,6 @@ export async function buildProject(options: BuildProjectOptions) {
       throw error;
     });
   }
+  const outDir = path.dirname(path.resolve(resolved!.root, resolved!.build.outDir));
   return { result, outDir };
 }

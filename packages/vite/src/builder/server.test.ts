@@ -21,7 +21,11 @@ async function buildFixture(options: {
   const result = await build({
     root: options.cwd,
     configFile: false,
-    plugins: [tailorkit(options)],
+    plugins: [
+      tailorkit({
+        configPath: path.resolve(options.cwd, options.configPath ?? "tailorkit.config.mjs"),
+      }),
+    ],
     build: { outDir: options.outDir, watch: options.watch ? {} : null },
   });
   if ("on" in result) {

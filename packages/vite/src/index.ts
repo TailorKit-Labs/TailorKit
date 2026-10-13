@@ -5,6 +5,7 @@ import { validateLogoAsset } from "@tailorkit/asset-delivery/logo-validation";
 import type { LogoContentType } from "@tailorkit/asset-delivery/logo-validation";
 import type { Plugin, PluginOption, ResolvedConfig } from "vite";
 import { loadTailorKitConfig } from "./config/loader";
+import type { LoadedTailorKitConfig } from "./config/loader";
 import { assertSupportedPreactVersion } from "./preact-version";
 import { readClientManifest } from "./builder/client-views";
 import { buildServer, validateServerBuildOutput } from "./builder/server";
@@ -18,17 +19,16 @@ const preactPackageJson = "preact/package.json";
 const preactPackageJsonModuleId = "\0tailorkit-preact-package-json";
 
 export interface TailorKitPluginOptions {
+  /** Config file path relative to the directory containing vite.config.ts. */
   configPath?: string;
-  cwd?: string;
 }
 
 /** Build the app client, private backend, migrations and deployment manifest. */
-export async function tailorkit(options: TailorKitPluginOptions = {}): Promise<Plugin[]> {
-  const loaded = await loadTailorKitConfig(options.configPath, options.cwd);
-  loaded.root = await realpath(loaded.root);
-  const serverEntry = path.resolve(loaded.root, loaded.config.server?.entry ?? "src/server.ts");
-  const preactVersion = getInstalledPreactVersion(loaded.root);
-  assertSupportedPreactVersion(preactVersion);
+export function tailorkit(options: TailorKitPluginOptions = {}): Plugin[] {
+  let loaded: LoadedTailorKitConfig;
+  let serverEntry: string;
+  let preactVersion: string;
+  let outputDirectory: string;
 
   let resolvedOutDir: string;
   let clientOutDir: string;
@@ -110,12 +110,8 @@ export async function tailorkit(options: TailorKitPluginOptions = {}): Promise<P
           (plugin) => !plugins.includes(plugin),
         );
         watching = Boolean(config.build?.watch);
-        resolvedOutDir = path.resolve(loaded.root, config.build?.outDir ?? ".tailorkit");
-        validateServerBuildOutput(loaded, resolvedOutDir);
-        clientOutDir = path.join(resolvedOutDir, "client");
-        fileEntry = await createFileRouteEntry(loaded.root, resolvedOutDir, watching);
+        outputDirectory = config.build?.outDir ?? ".tailorkit";
         return {
-          root: loaded.root,
           define: {
             "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV ?? "production"),
             ...config.define,
@@ -123,8 +119,8 @@ export async function tailorkit(options: TailorKitPluginOptions = {}): Promise<P
           oxc: { jsx: { importSource: "preact" } },
           build: {
             emptyOutDir: true,
-            lib: { entry: fileEntry.entry, fileName: "client", formats: ["es"] },
-            outDir: clientOutDir,
+            lib: { entry: "tailorkit:client-entry", fileName: "client", formats: ["es"] },
+            outDir: path.join(outputDirectory, "client"),
             minify: "oxc",
             rollupOptions: {
               output: {
@@ -137,7 +133,23 @@ export async function tailorkit(options: TailorKitPluginOptions = {}): Promise<P
           },
         };
       },
-      configResolved(config) {
+      async configResolved(config) {
+        const root = config.configFile ? path.dirname(config.configFile) : config.root;
+        loaded = await loadTailorKitConfig(
+          path.resolve(root, options.configPath ?? "tailorkit.config.ts"),
+        );
+        loaded.root = await realpath(root);
+        serverEntry = path.resolve(loaded.root, loaded.config.server?.entry ?? "src/server.ts");
+        preactVersion = getInstalledPreactVersion(loaded.root);
+        assertSupportedPreactVersion(preactVersion);
+        resolvedOutDir = path.resolve(loaded.root, outputDirectory);
+        validateServerBuildOutput(loaded, resolvedOutDir);
+        clientOutDir = path.join(resolvedOutDir, "client");
+        fileEntry = await createFileRouteEntry(loaded.root, resolvedOutDir, watching);
+        for (const build of [config.build, config.environments.client!.build]) {
+          build.outDir = clientOutDir;
+          if (build.lib) build.lib.entry = fileEntry.entry;
+        }
         resolved = config;
       },
       async writeBundle() {
@@ -151,8 +163,12 @@ export async function tailorkit(options: TailorKitPluginOptions = {}): Promise<P
       },
       closeWatcher: cleanup,
     },
-    fileRoutesPlugin(loaded.root),
-    instanceExtractionPlugin(loaded.root, Boolean(loaded.config.server), instanceModules),
+    fileRoutesPlugin(() => loaded.root),
+    instanceExtractionPlugin(
+      () => loaded.root,
+      () => Boolean(loaded.config.server),
+      instanceModules,
+    ),
     {
       name: "tailorkit-browser-server-boundary",
       enforce: "pre",

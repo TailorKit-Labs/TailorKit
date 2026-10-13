@@ -224,7 +224,7 @@ export async function createFileRouteEntry(root: string, output: string, watchin
   };
 }
 
-export function fileRoutesPlugin(root: string): Plugin {
+export function fileRoutesPlugin(root: () => string): Plugin {
   return {
     name: "tailorkit-file-routes",
     enforce: "pre",
@@ -233,7 +233,7 @@ export function fileRoutesPlugin(root: string): Plugin {
         return;
       }
       // Resolve from the app even when its build output is outside the project.
-      const importer = path.join(root, "src/root.tsx");
+      const importer = path.join(root(), "src/root.tsx");
       return (
         (await this.resolve("tailorkit/client", importer, { skipSelf: true })) ??
         this.resolve("@tailorkit/app/client", importer, { skipSelf: true })
@@ -243,7 +243,7 @@ export function fileRoutesPlugin(root: string): Plugin {
       if (!filename.endsWith(".view.tsx")) {
         return;
       }
-      const code = inferFileView(source, filename, root);
+      const code = inferFileView(source, filename, root());
       return code === source ? undefined : { code, map: null };
     },
   };

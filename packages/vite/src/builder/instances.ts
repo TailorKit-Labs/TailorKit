@@ -412,8 +412,8 @@ export async function extractInstances(
 }
 
 export function instanceExtractionPlugin(
-  root: string,
-  serverConfigured: boolean,
+  root: () => string,
+  serverConfigured: () => boolean,
   modules: Map<string, InstanceModule>,
 ): Plugin {
   return {
@@ -426,12 +426,12 @@ export function instanceExtractionPlugin(
         (!source.includes("instances") && !modules.has(filename))
       )
         return;
-      const result = await extractInstances(filename, source, root);
+      const result = await extractInstances(filename, source, root());
       if (!result) {
         modules.delete(filename);
         return;
       }
-      if (!serverConfigured)
+      if (!serverConfigured())
         throw new Error("View instances require server configuration in tailorkit.config.ts.");
       modules.set(filename, { filename, names: result.names });
       return { code: result.browser, map: null };

@@ -16,7 +16,10 @@ export default defineConfig({
 ```
 
 For ordinary Vite, import `defineConfig` from `vite` and set
-`plugins: [tailorkit()]`. Build output defaults to `.tailorkit`; customize
+`plugins: [tailorkit()]`. The plugin finds `tailorkit.config.ts` beside the loaded Vite config. To use another
+file, pass `tailorkit({ configPath: "./config/tailorkit.config.ts" })`; relative
+paths always resolve from the Vite config directory. App source and output paths
+also resolve from that directory. Build output defaults to `.tailorkit`; customize
 `build.outDir`, aliases, constants, and plugins in the app's Vite config.
 
 The CLI imports config loading from `@tailorkit/vite/config/loader` and migration
