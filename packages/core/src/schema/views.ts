@@ -1,4 +1,5 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
+
 import type { Schema } from "./shared";
 
 export type ContextDefinitions = Record<`/${string}`, Schema>;
@@ -11,7 +12,9 @@ export interface ResolvedViewMetadata {
 }
 
 type OwnContext<T> =
-  T extends StandardSchemaV1<unknown, infer TOutput> ? TOutput : Record<never, never>;
+  T extends StandardSchemaV1<unknown, infer TOutput>
+    ? TOutput
+    : Record<never, never>;
 type ContextKeys<T> = T extends Record<string, never> ? never : keyof T;
 type Ancestors<T, P extends string> = {
   [K in keyof T & string]: K extends P

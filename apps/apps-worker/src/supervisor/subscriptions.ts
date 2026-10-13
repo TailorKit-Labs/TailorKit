@@ -1,10 +1,15 @@
+import type { Invocation } from "@tailorkit/app/protocol";
+import type { Identity } from "@tailorkit/app/server";
+import { AppError } from "@tailorkit/app/server";
 import { Effect } from "effect";
 import type { Semaphore } from "effect";
-import type { Identity } from "@tailorkit/app/server";
-import { subscriptionStream, deliverSubscription, createSubscriptionHandler } from "../transport";
-import { AppError } from "@tailorkit/app/server";
-import type { Invocation } from "@tailorkit/app/protocol";
+
 import { ALL_DATABASE_TABLES } from "../runtime/database/dependencies";
+import {
+  subscriptionStream,
+  deliverSubscription,
+  createSubscriptionHandler,
+} from "../transport";
 
 export interface SubscriptionSession {
   identity: Identity;
@@ -21,9 +26,9 @@ export function createSubscriptions(
   ctx: DurableObjectState,
   query: (
     input: Invocation,
-    identity: Identity,
+    identity: Identity
   ) => Effect.Effect<{ value: unknown; tables: string[] }, unknown>,
-  queue: Semaphore.Semaphore,
+  queue: Semaphore.Semaphore
 ) {
   const handler = createSubscriptionHandler();
   function key(socket: WebSocket) {
@@ -32,11 +37,6 @@ export function createSubscriptions(
   function connection(socket: WebSocket): SubscriptionConnection {
     return {
       read: () => ctx.storage.kv.get<SubscriptionSession>(key(socket)),
-      write: (session) => {
-        if (ctx.storage.kv.get(key(socket))) {
-          ctx.storage.kv.put(key(socket), session);
-        }
-      },
       send: (data) => {
         const session = ctx.storage.kv.get<SubscriptionSession>(key(socket));
         if (!session || session.identity.expiresAt <= Date.now()) {
@@ -44,6 +44,11 @@ export function createSubscriptions(
           throw new AppError("UNAUTHORIZED", "App token expired");
         }
         socket.send(data);
+      },
+      write: (session) => {
+        if (ctx.storage.kv.get(key(socket))) {
+          ctx.storage.kv.put(key(socket), session);
+        }
       },
     };
   }
@@ -76,7 +81,7 @@ export function createSubscriptions(
         return;
       }
       session.subscriptions = session.subscriptions.filter(
-        (subscription) => subscription.id !== id,
+        (subscription) => subscription.id !== id
       );
       connection.write(session);
     });
@@ -84,11 +89,13 @@ export function createSubscriptions(
   function deliver(
     connection: SubscriptionConnection,
     id: string,
-    execute = query,
+    execute = query
   ): Effect.Effect<void, unknown> {
     return Effect.gen(function* deliverSnapshot() {
       const session = connection.read();
-      const subscription = session?.subscriptions.find((entry) => entry.id === id);
+      const subscription = session?.subscriptions.find(
+        (entry) => entry.id === id
+      );
       if (!session || !subscription) {
         return;
       }
@@ -104,13 +111,17 @@ export function createSubscriptions(
     }).pipe(
       Effect.catch((error) =>
         remove(connection, id).pipe(
-          Effect.andThen(deliverSubscription(connection, id, error, true)),
-        ),
+          Effect.andThen(deliverSubscription(connection, id, error, true))
+        )
       ),
-      Effect.catch(() => Effect.void),
+      Effect.catch(() => Effect.void)
     );
   }
-  function subscribe(connection: SubscriptionConnection, input: Invocation, id: string) {
+  function subscribe(
+    connection: SubscriptionConnection,
+    input: Invocation,
+    id: string
+  ) {
     return queue.withPermits(1)(
       Effect.gen(function* subscribe() {
         const session = connection.read();
@@ -118,68 +129,29 @@ export function createSubscriptions(
           return;
         }
         const count = connections().reduce(
-          (total, current) => total + (current.read()?.subscriptions.length ?? 0),
-          0,
+          (total, current) =>
+            total + (current.read()?.subscriptions.length ?? 0),
+          0
         );
         if (count >= 256) {
           yield* deliverSubscription(
             connection,
             id,
-            new AppError("BAD_REQUEST", "Installation subscription limit exceeded"),
-            true,
+            new AppError(
+              "BAD_REQUEST",
+              "Installation subscription limit exceeded"
+            ),
+            true
           );
           return;
         }
         session.subscriptions.push({ id, input, tables: [] });
         connection.write(session);
         yield* deliver(connection, id);
-      }),
+      })
     );
   }
   return {
-    connections,
-    async open(identity: Identity) {
-      if (connections().length >= 128) {
-        throw new AppError("BAD_REQUEST", "Installation connection limit exceeded");
-      }
-      const pair = new WebSocketPair();
-      const [client, server] = [pair[0], pair[1]];
-      ctx.acceptWebSocket(server);
-      server.serializeAttachment(crypto.randomUUID());
-      ctx.storage.kv.put(key(server), {
-        identity,
-        subscriptions: [],
-      } satisfies SubscriptionSession);
-      await arm();
-      return new Response(null, {
-        status: 101,
-        webSocket: client,
-        headers: { "sec-websocket-protocol": "tailorkit" },
-      });
-    },
-    message(socket: WebSocket, message: string | ArrayBuffer) {
-      const current = connection(socket);
-      const session = current.read();
-      if (!session || session.identity.expiresAt <= Date.now()) {
-        ctx.storage.kv.delete(key(socket));
-        socket.close(1008, "Authentication expired");
-        return Promise.resolve();
-      }
-      return handler.message(
-        socket,
-        message,
-        (input) => subscriptionStream((id) => subscribe(current, input, id)),
-        (id) => Effect.runPromise(queue.withPermits(1)(remove(current, id))),
-      );
-    },
-    async close(socket: WebSocket, code = 1000, reason = "") {
-      ctx.storage.kv.delete(key(socket));
-      if (socket.readyState !== WebSocket.CLOSED) {
-        socket.close(code, reason);
-      }
-      await handler.close(socket);
-      await arm();
-    },
     async alarm() {
       const sockets = ctx.getWebSockets();
       const active = new Set(sockets.map(key));
@@ -197,9 +169,54 @@ export function createSubscriptions(
       }
       await arm();
     },
-    subscribe,
     cancel: (connection: SubscriptionConnection, id: string) =>
       queue.withPermits(1)(remove(connection, id)),
+    async close(socket: WebSocket, code = 1000, reason = "") {
+      ctx.storage.kv.delete(key(socket));
+      if (socket.readyState !== WebSocket.CLOSED) {
+        socket.close(code, reason);
+      }
+      await handler.close(socket);
+      await arm();
+    },
+    connections,
+    message(socket: WebSocket, message: string | ArrayBuffer) {
+      const current = connection(socket);
+      const session = current.read();
+      if (!session || session.identity.expiresAt <= Date.now()) {
+        ctx.storage.kv.delete(key(socket));
+        socket.close(1008, "Authentication expired");
+        return Promise.resolve();
+      }
+      return handler.message(
+        socket,
+        message,
+        (input) => subscriptionStream((id) => subscribe(current, input, id)),
+        (id) => Effect.runPromise(queue.withPermits(1)(remove(current, id)))
+      );
+    },
+    async open(identity: Identity) {
+      if (connections().length >= 128) {
+        throw new AppError(
+          "BAD_REQUEST",
+          "Installation connection limit exceeded"
+        );
+      }
+      const pair = new WebSocketPair();
+      const [client, server] = [pair[0], pair[1]];
+      ctx.acceptWebSocket(server);
+      server.serializeAttachment(crypto.randomUUID());
+      ctx.storage.kv.put(key(server), {
+        identity,
+        subscriptions: [],
+      } satisfies SubscriptionSession);
+      await arm();
+      return new Response(null, {
+        status: 101,
+        webSocket: client,
+        headers: { "sec-websocket-protocol": "tailorkit" },
+      });
+    },
     /** External mutations and local action notifications serialize subscriber refreshes. */
     refresh(tables: string[], execute = query) {
       if (!tables.length) {
@@ -210,7 +227,8 @@ export function createSubscriptions(
           for (const subscription of connection.read()?.subscriptions ?? []) {
             if (
               subscription.tables.some(
-                (table) => table === ALL_DATABASE_TABLES || tables.includes(table),
+                (table) =>
+                  table === ALL_DATABASE_TABLES || tables.includes(table)
               )
             ) {
               yield* deliver(connection, subscription.id, execute);
@@ -219,5 +237,6 @@ export function createSubscriptions(
         }
       });
     },
+    subscribe,
   };
 }

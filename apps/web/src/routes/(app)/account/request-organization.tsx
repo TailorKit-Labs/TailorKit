@@ -1,11 +1,17 @@
+import { Button } from "@tailorkit/ui/button";
+import {
+  Card,
+  CardFrame,
+  CardHeader,
+  CardPanel,
+  CardTitle,
+} from "@tailorkit/ui/card";
 import { Link, createFileRoute } from "@tanstack/react-router";
 
 import { AccountLayout } from "#components/account-layout";
 import { CreateOrgDialog } from "#components/create-org-dialog";
 import { PageLayout } from "#components/page-layout";
 import { isOrgCreationManaged } from "#lib/org-creation";
-import { Button } from "@tailorkit/ui/button";
-import { Card, CardFrame, CardHeader, CardPanel, CardTitle } from "@tailorkit/ui/card";
 
 export const Route = createFileRoute("/(app)/account/request-organization")({
   component: RequestOrganizationPage,
@@ -25,7 +31,9 @@ function RequestOrganizationPage() {
         <CardFrame>
           <Card>
             <CardHeader>
-              <CardTitle>{isOrgCreationManaged ? "Manual onboarding" : "New workspace"}</CardTitle>
+              <CardTitle>
+                {isOrgCreationManaged ? "Manual onboarding" : "New workspace"}
+              </CardTitle>
             </CardHeader>
             <CardPanel className="flex flex-col gap-4">
               <p className="text-muted-foreground text-sm">
@@ -53,7 +61,11 @@ function RequestOrganizationPage() {
                     <Button size="sm">Create organisation</Button>
                   </CreateOrgDialog>
                 )}
-                <Button render={<Link to="/account/invites" />} size="sm" variant="outline">
+                <Button
+                  render={<Link to="/account/invites" />}
+                  size="sm"
+                  variant="outline"
+                >
                   View invites
                 </Button>
               </div>

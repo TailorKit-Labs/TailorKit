@@ -1,19 +1,27 @@
-import { RpcTarget } from "cloudflare:workers";
 import { AppError } from "@tailorkit/app/server";
+import { RpcTarget } from "cloudflare:workers";
 
 /** Tracks active actions only for cancellation and token expiry. */
 export function createActionLeases() {
   const active = new Set<AbortController>();
   return {
+    closeAll() {
+      for (const controller of active) {
+        controller.abort(new AppError("UNAVAILABLE", "App deployment changed"));
+      }
+    },
     open(identity: { expiresAt: number }, parent?: AbortSignal) {
       const deadline = identity.expiresAt;
       if (deadline <= Date.now()) {
         throw new AppError("UNAUTHORIZED", "App token expired");
       }
       const controller = new AbortController();
-      const cancel = () => controller.abort(new AppError("UNAVAILABLE", "Action cancelled"));
+      const cancel = () =>
+        controller.abort(new AppError("UNAVAILABLE", "Action cancelled"));
       const timer = setTimeout(cancel, deadline - Date.now());
-      const signal = parent ? AbortSignal.any([controller.signal, parent]) : controller.signal;
+      const signal = parent
+        ? AbortSignal.any([controller.signal, parent])
+        : controller.signal;
       active.add(controller);
       return {
         deadline,
@@ -25,18 +33,15 @@ export function createActionLeases() {
         },
       };
     },
-    closeAll() {
-      for (const controller of active) {
-        controller.abort(new AppError("UNAVAILABLE", "App deployment changed"));
-      }
-    },
   };
 }
 
 /** HTTPS Internet access only; validate every redirect rather than forwarding it implicitly. */
 export function actionDestination(url: URL) {
   const host = url.hostname.toLowerCase();
-  const octets = /^\d+\.\d+\.\d+\.\d+$/u.test(host) ? host.split(".").map(Number) : undefined;
+  const octets = /^\d+\.\d+\.\d+\.\d+$/u.test(host)
+    ? host.split(".").map(Number)
+    : undefined;
 
   if (
     url.protocol !== "https:" ||
@@ -47,7 +52,10 @@ export function actionDestination(url: URL) {
     (host.startsWith("[") && !/^\[[23][a-f\d]{3}:/u.test(host)) ||
     (octets && privateIPv4(octets))
   ) {
-    throw new AppError("FORBIDDEN", "Action destination must be a public HTTPS endpoint");
+    throw new AppError(
+      "FORBIDDEN",
+      "Action destination must be a public HTTPS endpoint"
+    );
   }
 }
 
@@ -72,7 +80,7 @@ export class ActionCapability extends RpcTarget {
   constructor(
     lease: { signal: AbortSignal; deadline: number },
     notify: (tables: string[]) => Promise<void>,
-    appSession?: { url: string; token: string },
+    appSession?: { url: string; token: string }
   ) {
     super();
     this.lease = lease;
@@ -82,23 +90,36 @@ export class ActionCapability extends RpcTarget {
 
   async tool(path: string, input: unknown): Promise<unknown> {
     const credential = this.appSession;
-    if (!credential || this.lease.signal.aborted || this.lease.deadline <= Date.now())
+    if (
+      !credential ||
+      this.lease.signal.aborted ||
+      this.lease.deadline <= Date.now()
+    ) {
       throw new AppError("UNAVAILABLE", "Action has ended");
-    if (!/^[a-zA-Z][a-zA-Z0-9_]*(?:\.[a-zA-Z][a-zA-Z0-9_]*)*$/u.test(path) || path.length > 512)
+    }
+    if (
+      !/^[a-zA-Z][a-zA-Z0-9_]*(?:\.[a-zA-Z][a-zA-Z0-9_]*)*$/u.test(path) ||
+      path.length > 512
+    ) {
       throw new AppError("BAD_REQUEST", "Invalid tool path");
+    }
     actionDestination(new URL(credential.url));
     const response = await fetch(credential.url, {
+      body: JSON.stringify({ path, input, requestId: crypto.randomUUID() }),
+      headers: {
+        authorization: `Bearer ${credential.token}`,
+        "content-type": "application/json",
+      },
       method: "POST",
       redirect: "manual",
       signal: this.lease.signal,
-      headers: { authorization: `Bearer ${credential.token}`, "content-type": "application/json" },
-      body: JSON.stringify({ path, input, requestId: crypto.randomUUID() }),
     });
-    if (!response.ok)
+    if (!response.ok) {
       throw new AppError(
         response.status === 401 ? "UNAUTHORIZED" : "UNAVAILABLE",
-        "Tool call failed",
+        "Tool call failed"
       );
+    }
     return ((await response.json()) as { output?: unknown }).output;
   }
 
@@ -107,7 +128,10 @@ export class ActionCapability extends RpcTarget {
     return this.notify(tables);
   }
 
-  async fetch(request: Request, cancellation: ReadableStream): Promise<Response> {
+  async fetch(
+    request: Request,
+    cancellation: ReadableStream
+  ): Promise<Response> {
     const controller = new AbortController();
     const reader = cancellation.getReader();
     const cleanup = () => {
@@ -152,9 +176,13 @@ export class ActionCapability extends RpcTarget {
         return response;
       }
 
-      if (request.redirect === "manual") return response;
+      if (request.redirect === "manual") {
+        return response;
+      }
       await response.body?.cancel();
-      if (request.redirect === "error") throw new TypeError("Fetch encountered a redirect");
+      if (request.redirect === "error") {
+        throw new TypeError("Fetch encountered a redirect");
+      }
 
       const url = new URL(location, next.url);
       const headers = new Headers(backup.headers);
@@ -166,16 +194,20 @@ export class ActionCapability extends RpcTarget {
 
       const get =
         (response.status === 303 && !["GET", "HEAD"].includes(backup.method)) ||
-        ((response.status === 301 || response.status === 302) && backup.method === "POST");
+        ((response.status === 301 || response.status === 302) &&
+          backup.method === "POST");
       if (get) {
         headers.delete("content-type");
         headers.delete("content-length");
       }
 
       next = new Request(url, {
-        method: get ? "GET" : backup.method,
+        body:
+          get || ["GET", "HEAD"].includes(backup.method)
+            ? undefined
+            : backup.body,
         headers,
-        body: get || ["GET", "HEAD"].includes(backup.method) ? undefined : backup.body,
+        method: get ? "GET" : backup.method,
         redirect: "manual",
       });
     }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import type { DemoSession } from "@playground/shared/auth";
 import {
   Sheet,
   SheetDescription,
@@ -7,12 +7,18 @@ import {
   SheetPopup,
   SheetTitle,
 } from "@tailorkit/ui/sheet";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@tailorkit/ui/sidebar";
-import type { TailorKitApp } from "tailorkit/react";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@tailorkit/ui/sidebar";
+import { useState } from "react";
 import type { ReactNode } from "react";
-import type { DemoSession } from "@playground/shared/auth";
+import type { TailorKitApp } from "tailorkit/react";
+
 import { AppSidebar } from "#components/app-sidebar";
 import { signOutDemoUser } from "#lib/auth-client";
+import { localPlaygroundApps } from "#lib/local-apps";
 import {
   RenderSlot,
   TailorKitProvider,
@@ -20,22 +26,28 @@ import {
   useViewContext,
   tailor,
 } from "#lib/tailorkit-client";
-import { localPlaygroundApps } from "#lib/local-apps";
 
-function ShellContent({ children, session }: { children: ReactNode; session: DemoSession }) {
+function ShellContent({
+  children,
+  session,
+}: {
+  children: ReactNode;
+  session: DemoSession;
+}) {
   const { data: apps, error: appsError, isPending: appsPending } = useApps();
   const installedApps = [
     ...localPlaygroundApps.map(
-      (localApp) => apps?.find((app) => app.id === localApp.id) ?? localApp,
+      (localApp) => apps?.find((app) => app.id === localApp.id) ?? localApp
     ),
-    ...(apps?.filter((app) => !localPlaygroundApps.some((localApp) => localApp.id === app.id)) ??
-      []),
+    ...(apps?.filter(
+      (app) => !localPlaygroundApps.some((localApp) => localApp.id === app.id)
+    ) ?? []),
   ];
   const [selectedApp, setSelectedApp] = useState<TailorKitApp | null>(null);
   useViewContext("/", {
     context: {
-      user: { id: session.user.id, name: session.user.name },
       team: { id: session.team.id, name: session.team.name },
+      user: { id: session.user.id, name: session.user.name },
     },
   });
 
@@ -60,14 +72,18 @@ function ShellContent({ children, session }: { children: ReactNode; session: Dem
         <header className="flex h-14 items-center gap-3 border-b px-5">
           <SidebarTrigger />
           <div className="min-w-0 flex-1">
-            <p className="truncate font-medium text-sm">{session.team.name}</p>
+            <p className="truncate text-sm font-medium">{session.team.name}</p>
           </div>
         </header>
-        <main className="mx-auto w-full max-w-6xl flex-1 p-6 md:p-10">{children}</main>
+        <main className="mx-auto w-full max-w-6xl flex-1 p-6 md:p-10">
+          {children}
+        </main>
       </SidebarInset>
       <Sheet
         onOpenChange={(open) => {
-          if (!open) setSelectedApp(null);
+          if (!open) {
+            setSelectedApp(null);
+          }
         }}
         open={selectedApp !== null}
       >
@@ -82,8 +98,8 @@ function ShellContent({ children, session }: { children: ReactNode; session: Dem
                 <RenderSlot.Controlled
                   app={selectedApp}
                   context={{
-                    user: { id: session.user.id, name: session.user.name },
                     team: { id: session.team.id, name: session.team.name },
+                    user: { id: session.user.id, name: session.user.name },
                   }}
                   slot="panel"
                   status="ready"

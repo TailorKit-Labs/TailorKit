@@ -3,24 +3,26 @@ import type { ContractRouterClient } from "@orpc/contract";
 import { z } from "zod";
 
 export const invocationSchema = z.strictObject({
+  args: z.unknown().optional(),
   name: z
     .string()
     .max(512)
-    .regex(/^(?:[a-zA-Z][a-zA-Z0-9_]{0,63}|_tailorkit)(?:\.[a-zA-Z][a-zA-Z0-9_]{0,63})*$/u),
-  args: z.unknown().optional(),
+    .regex(
+      /^(?:[a-zA-Z][a-zA-Z0-9_]{0,63}|_tailorkit)(?:\.[a-zA-Z][a-zA-Z0-9_]{0,63})*$/u
+    ),
 });
 export type Invocation = z.infer<typeof invocationSchema>;
 export type MutationInvocation = Invocation & { requestId: string };
 
 const procedure = oc.errors({
   BAD_REQUEST: {},
-  UNAUTHORIZED: {},
-  FORBIDDEN: {},
-  NOT_FOUND: {},
   CONFLICT: {},
+  FORBIDDEN: {},
   INCOMPATIBLE_VERSION: {},
-  UNAVAILABLE: {},
   INTERNAL_SERVER_ERROR: {},
+  NOT_FOUND: {},
+  UNAUTHORIZED: {},
+  UNAVAILABLE: {},
 });
 
 /** Public wire contract; implementations and clients both depend on this definition. */
@@ -31,7 +33,9 @@ export const appContract = {
     .output(type<unknown>()),
   actions: procedure.input(invocationSchema).output(type<unknown>()),
   // A pass-through type schema preserves the private hibernation iterator instance.
-  subscribe: procedure.input(invocationSchema).output(type<AsyncIterableIterator<unknown>>()),
+  subscribe: procedure
+    .input(invocationSchema)
+    .output(type<AsyncIterableIterator<unknown>>()),
 };
 export type PlatformClient = ContractRouterClient<typeof appContract>;
 export type SubscriptionClient = Pick<PlatformClient, "subscribe">;

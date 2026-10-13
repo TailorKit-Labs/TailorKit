@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+
 import type { KV } from "@tailorkit/kv";
 import { z } from "zod";
 
@@ -30,10 +31,16 @@ export interface CommittedPreviewBuild {
   revision: number;
 }
 
-const sha256 = (bytes: Buffer): string => createHash("sha256").update(bytes).digest("hex");
-const buildKey = (sessionId: string, buildId: string) => `preview:build:${sessionId}:${buildId}`;
-const chunkKey = (sessionId: string, buildId: string, fileIndex: number, chunkIndex: number) =>
-  `${buildKey(sessionId, buildId)}:${fileIndex}:${chunkIndex}`;
+const sha256 = (bytes: Buffer): string =>
+  createHash("sha256").update(bytes).digest("hex");
+const buildKey = (sessionId: string, buildId: string) =>
+  `preview:build:${sessionId}:${buildId}`;
+const chunkKey = (
+  sessionId: string,
+  buildId: string,
+  fileIndex: number,
+  chunkIndex: number
+) => `${buildKey(sessionId, buildId)}:${fileIndex}:${chunkIndex}`;
 const pointerKey = (sessionId: string) => `preview:current:${sessionId}`;
 const uploadingKey = (sessionId: string) => `preview:uploading:${sessionId}`;
 const endedKey = (sessionId: string) => `preview:ended:${sessionId}`;
@@ -43,22 +50,22 @@ const requireId = (value: string): void => {
   identifierSchema.parse(value);
 };
 const fileSchema = z.object({
-  path: z.string().min(1).max(1024),
-  contentType: z.string().min(1).max(255),
-  size: z.number().int().min(0).max(previewFileBytes),
   chunks: z.number().int().min(0).max(4),
+  contentType: z.string().min(1).max(255),
+  path: z.string().min(1).max(1024),
   sha256: z.string().regex(/^[a-f0-9]{64}$/u),
+  size: z.number().int().min(0).max(previewFileBytes),
 });
 const manifestSchema = z.object({
   files: z.array(fileSchema).max(previewBuildFiles),
   views: z
     .array(
       z.object({
-        slot: z.string().min(1).max(255),
-        path: z.string().startsWith("/").max(1024),
-        instances: z.literal(true).optional(),
         disabled: z.literal(true).optional(),
-      }),
+        instances: z.literal(true).optional(),
+        path: z.string().startsWith("/").max(1024),
+        slot: z.string().min(1).max(255),
+      })
     )
     .max(1000)
     .optional(),
@@ -67,8 +74,8 @@ const buildSchema = z.discriminatedUnion("state", [
   z.object({ manifest: manifestSchema, state: z.literal("uploading") }),
   z.object({
     manifest: manifestSchema,
-    state: z.literal("ready"),
     revision: z.number().int().positive(),
+    state: z.literal("ready"),
   }),
   z.object({ manifest: manifestSchema, state: z.literal("committed") }),
 ]);
@@ -79,7 +86,10 @@ const committedSchema = z.object({
 });
 const notificationSchema = z.union([
   z.object({ ended: z.literal(true) }),
-  z.object({ revision: z.number().int().positive(), buildId: identifierSchema }),
+  z.object({
+    buildId: identifierSchema,
+    revision: z.number().int().positive(),
+  }),
 ]);
 const base64Schema = z
   .string()
@@ -100,7 +110,10 @@ const hasControlCharacters = (value: string): boolean => {
 // oxlint-disable-next-line complexity -- path, file, and aggregate limits are checked together.
 export function validatePreviewManifest(manifest: PreviewBuildManifest): void {
   manifestSchema.parse(manifest);
-  if (!Array.isArray(manifest.files) || manifest.files.length > previewBuildFiles) {
+  if (
+    !Array.isArray(manifest.files) ||
+    manifest.files.length > previewBuildFiles
+  ) {
     throw new Error("Preview build exceeds the file limit.");
   }
   const paths = new Set<string>();
@@ -111,14 +124,20 @@ export function validatePreviewManifest(manifest: PreviewBuildManifest): void {
       Buffer.byteLength(file.path) > 1024 ||
       file.path.startsWith("/") ||
       file.path.includes("\\") ||
-      file.path.split("/").some((part) => !part || part === "." || part === "..") ||
+      file.path
+        .split("/")
+        .some((part) => !part || part === "." || part === "..") ||
       hasControlCharacters(file.path) ||
       paths.has(file.path)
     ) {
       throw new Error("Invalid or duplicate preview file path.");
     }
     paths.add(file.path);
-    if (!file.contentType || file.contentType.length > 255 || /[\r\n]/u.test(file.contentType)) {
+    if (
+      !file.contentType ||
+      file.contentType.length > 255 ||
+      /[\r\n]/u.test(file.contentType)
+    ) {
       throw new Error("Invalid preview content type.");
     }
     if (
@@ -147,7 +166,10 @@ export function createPreviewBuildStore(kv: KV) {
   async function readBuild(sessionId: string, buildId: string) {
     return parse(await kv.get(buildKey(sessionId, buildId)), buildSchema);
   }
-  async function removeUploadingBuild(sessionId: string, buildId: string): Promise<void> {
+  async function removeUploadingBuild(
+    sessionId: string,
+    buildId: string
+  ): Promise<void> {
     const build = await readBuild(sessionId, buildId);
     const current = parse(await kv.get(pointerKey(sessionId)), committedSchema);
     if (!build || current?.buildId === buildId) {
@@ -161,7 +183,10 @@ export function createPreviewBuildStore(kv: KV) {
     await kv.delete(buildKey(sessionId, buildId));
   }
   return {
-    async begin(sessionId: string, manifest: PreviewBuildManifest): Promise<string> {
+    async begin(
+      sessionId: string,
+      manifest: PreviewBuildManifest
+    ): Promise<string> {
       requireId(sessionId);
       if (await kv.get(endedKey(sessionId))) {
         throw new Error("Preview session has ended.");
@@ -172,15 +197,19 @@ export function createPreviewBuildStore(kv: KV) {
         requireId(previous);
       }
       const buildId = randomUUID();
-      await kv.set(buildKey(sessionId, buildId), JSON.stringify({ manifest, state: "uploading" }), {
-        ttl: uploadTtlSeconds,
-      });
+      await kv.set(
+        buildKey(sessionId, buildId),
+        JSON.stringify({ manifest, state: "uploading" }),
+        {
+          ttl: uploadTtlSeconds,
+        }
+      );
       const claimed = await kv.claimUpload(
         uploadingKey(sessionId),
         endedKey(sessionId),
         previous,
         buildId,
-        uploadTtlSeconds,
+        uploadTtlSeconds
       );
       if (!claimed) {
         await kv.delete(buildKey(sessionId, buildId));
@@ -200,7 +229,7 @@ export function createPreviewBuildStore(kv: KV) {
       buildId: string,
       fileIndex: number,
       chunkIndex: number,
-      base64: string,
+      base64: string
     ): Promise<void> {
       requireId(sessionId);
       requireId(buildId);
@@ -228,11 +257,15 @@ export function createPreviewBuildStore(kv: KV) {
         throw new Error("Invalid preview chunk encoding.");
       }
       const bytes = Buffer.from(base64, "base64");
-      const expected = Math.min(previewChunkBytes, file.size - chunkIndex * previewChunkBytes);
+      const expected = Math.min(
+        previewChunkBytes,
+        file.size - chunkIndex * previewChunkBytes
+      );
       if (
         bytes.length !== expected ||
-        Buffer.byteLength(JSON.stringify({ sessionId, buildId, fileIndex, chunkIndex, base64 })) >
-          previewMessageBytes
+        Buffer.byteLength(
+          JSON.stringify({ base64, buildId, chunkIndex, fileIndex, sessionId })
+        ) > previewMessageBytes
       ) {
         throw new Error("Invalid preview chunk size.");
       }
@@ -244,7 +277,10 @@ export function createPreviewBuildStore(kv: KV) {
       await kv.set(key, base64, { ttl: uploadTtlSeconds });
     },
     // oxlint-disable-next-line complexity -- commit verifies all chunks before advancing the pointer.
-    async commit(sessionId: string, buildId: string): Promise<CommittedPreviewBuild> {
+    async commit(
+      sessionId: string,
+      buildId: string
+    ): Promise<CommittedPreviewBuild> {
       requireId(sessionId);
       requireId(buildId);
       if (await kv.get(endedKey(sessionId))) {
@@ -263,7 +299,9 @@ export function createPreviewBuildStore(kv: KV) {
         for (const [fileIndex, file] of build.manifest.files.entries()) {
           const parts: Buffer[] = [];
           for (let chunkIndex = 0; chunkIndex < file.chunks; chunkIndex += 1) {
-            const value = await kv.get(chunkKey(sessionId, buildId, fileIndex, chunkIndex));
+            const value = await kv.get(
+              chunkKey(sessionId, buildId, fileIndex, chunkIndex)
+            );
             if (value === null) {
               throw new Error("Preview build is incomplete.");
             }
@@ -273,7 +311,10 @@ export function createPreviewBuildStore(kv: KV) {
             const bytes = Buffer.from(value, "base64");
             if (
               bytes.length !==
-              Math.min(previewChunkBytes, file.size - chunkIndex * previewChunkBytes)
+              Math.min(
+                previewChunkBytes,
+                file.size - chunkIndex * previewChunkBytes
+              )
             ) {
               throw new Error("Corrupt preview chunk.");
             }
@@ -284,7 +325,10 @@ export function createPreviewBuildStore(kv: KV) {
             throw new Error("Preview checksum mismatch.");
           }
         }
-        revision = await kv.increment(`preview:revision-counter:${sessionId}`, activeTtlSeconds);
+        revision = await kv.increment(
+          `preview:revision-counter:${sessionId}`,
+          activeTtlSeconds
+        );
         for (const [fileIndex, file] of build.manifest.files.entries()) {
           for (let chunkIndex = 0; chunkIndex < file.chunks; chunkIndex += 1) {
             const key = chunkKey(sessionId, buildId, fileIndex, chunkIndex);
@@ -297,17 +341,21 @@ export function createPreviewBuildStore(kv: KV) {
         }
         await kv.set(
           buildKey(sessionId, buildId),
-          JSON.stringify({ manifest: build.manifest, state: "ready", revision }),
+          JSON.stringify({
+            manifest: build.manifest,
+            revision,
+            state: "ready",
+          }),
           {
             ttl: activeTtlSeconds,
-          },
+          }
         );
         const stillOwned = await kv.claimUpload(
           uploadingKey(sessionId),
           endedKey(sessionId),
           buildId,
           buildId,
-          activeTtlSeconds,
+          activeTtlSeconds
         );
         if (!stillOwned) {
           throw new Error("Preview build was cancelled or superseded.");
@@ -325,7 +373,7 @@ export function createPreviewBuildStore(kv: KV) {
         buildId,
         JSON.stringify(committed),
         revision,
-        activeTtlSeconds,
+        activeTtlSeconds
       );
       if (!promoted) {
         const current = await this.current(sessionId);
@@ -343,12 +391,25 @@ export function createPreviewBuildStore(kv: KV) {
         if (previous && previous.buildId !== buildId) {
           const previousBuild = await readBuild(sessionId, previous.buildId);
           if (previousBuild) {
-            await kv.set(buildKey(sessionId, previous.buildId), JSON.stringify(previousBuild), {
-              ttl: committedTtlSeconds,
-            });
+            await kv.set(
+              buildKey(sessionId, previous.buildId),
+              JSON.stringify(previousBuild),
+              {
+                ttl: committedTtlSeconds,
+              }
+            );
             for (const [fileIndex, file] of previous.manifest.files.entries()) {
-              for (let chunkIndex = 0; chunkIndex < file.chunks; chunkIndex += 1) {
-                const key = chunkKey(sessionId, previous.buildId, fileIndex, chunkIndex);
+              for (
+                let chunkIndex = 0;
+                chunkIndex < file.chunks;
+                chunkIndex += 1
+              ) {
+                const key = chunkKey(
+                  sessionId,
+                  previous.buildId,
+                  fileIndex,
+                  chunkIndex
+                );
                 const value = await kv.get(key);
                 if (value !== null) {
                   await kv.set(key, value, { ttl: committedTtlSeconds });
@@ -361,7 +422,10 @@ export function createPreviewBuildStore(kv: KV) {
         // The pointer is durable and TTLs bound cleanup.
       }
       try {
-        await kv.publish(channel(sessionId), JSON.stringify({ revision, buildId }));
+        await kv.publish(
+          channel(sessionId),
+          JSON.stringify({ buildId, revision })
+        );
       } catch {
         // Polling recovers missed notifications.
       }
@@ -378,7 +442,7 @@ export function createPreviewBuildStore(kv: KV) {
       sessionId: string,
       buildId: string,
       fileIndex: number,
-      chunkIndex: number,
+      chunkIndex: number
     ): Promise<string | null> {
       requireId(sessionId);
       requireId(buildId);
@@ -396,14 +460,23 @@ export function createPreviewBuildStore(kv: KV) {
       ) {
         return null;
       }
-      const value = await kv.get(chunkKey(sessionId, buildId, fileIndex, chunkIndex));
-      return value !== null && base64Schema.safeParse(value).success ? value : null;
+      const value = await kv.get(
+        chunkKey(sessionId, buildId, fileIndex, chunkIndex)
+      );
+      return value !== null && base64Schema.safeParse(value).success
+        ? value
+        : null;
     },
-    subscribe(sessionId: string, onRevision: (revision: number | null) => void) {
+    subscribe(
+      sessionId: string,
+      onRevision: (revision: number | null) => void
+    ) {
       requireId(sessionId);
       return kv.subscribe(channel(sessionId), (message) => {
         try {
-          const value = notificationSchema.parse(JSON.parse(message) as unknown);
+          const value = notificationSchema.parse(
+            JSON.parse(message) as unknown
+          );
           if ("ended" in value) {
             onRevision(null);
             return;
@@ -417,7 +490,10 @@ export function createPreviewBuildStore(kv: KV) {
     async end(sessionId: string): Promise<void> {
       requireId(sessionId);
       await kv.set(endedKey(sessionId), "1", { ttl: activeTtlSeconds });
-      const active = parse(await kv.get(pointerKey(sessionId)), committedSchema);
+      const active = parse(
+        await kv.get(pointerKey(sessionId)),
+        committedSchema
+      );
       const uploading = await kv.get(uploadingKey(sessionId));
       if (uploading) {
         requireId(uploading);
@@ -426,7 +502,9 @@ export function createPreviewBuildStore(kv: KV) {
       if (active) {
         for (const [fileIndex, file] of active.manifest.files.entries()) {
           for (let chunkIndex = 0; chunkIndex < file.chunks; chunkIndex += 1) {
-            await kv.delete(chunkKey(sessionId, active.buildId, fileIndex, chunkIndex));
+            await kv.delete(
+              chunkKey(sessionId, active.buildId, fileIndex, chunkIndex)
+            );
           }
         }
         await kv.delete(buildKey(sessionId, active.buildId));

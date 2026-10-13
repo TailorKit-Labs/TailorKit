@@ -1,10 +1,14 @@
 "use client";
 
-import type { NumberFieldProps as PrimitiveNumberFieldProps } from "../components/number-field";
 import type { ReactNode } from "react";
 
-import { Field, FieldDescription, FieldError, FieldLabel } from "../components/field";
-import { formatFieldErrors } from "./field-errors";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "../components/field";
+import type { NumberFieldProps as PrimitiveNumberFieldProps } from "../components/number-field";
 import {
   NumberField as PrimitiveNumberField,
   NumberFieldDecrement,
@@ -12,6 +16,7 @@ import {
   NumberFieldIncrement,
   NumberFieldInput,
 } from "../components/number-field";
+import { formatFieldErrors } from "./field-errors";
 
 const emptyErrors: unknown[] = [];
 
@@ -47,7 +52,8 @@ export function NumberField({
     <Field disabled={disabled}>
       <div className="flex w-full items-center gap-2">
         <FieldLabel>
-          {label} {required && <span className="text-destructive-foreground">*</span>}
+          {label}{" "}
+          {required && <span className="text-destructive-foreground">*</span>}
         </FieldLabel>
         {labelAction && <div className="ml-auto">{labelAction}</div>}
       </div>

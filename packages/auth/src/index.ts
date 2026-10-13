@@ -1,29 +1,41 @@
-import { createDb } from "@tailorkit/db";
-import * as schema from "@tailorkit/db/schema/auth";
-import { sendBetterAuthOtpEmail, sendOrganizationInvitationEmail } from "@tailorkit/email";
-import { getBaseUrl, getProductionUrl, getTrustedOrigins } from "@tailorkit/env";
-import { env } from "#env";
-import { getKV } from "@tailorkit/kv";
-import { initializeObservability } from "@tailorkit/observability";
-import type { SecondaryStorage } from "better-auth";
-import { betterAuth } from "better-auth/minimal";
-import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
-import { tanstackStartCookies } from "better-auth/tanstack-start";
-import { createAuthMiddleware } from "better-auth/api";
-import { deleteSessionCookie } from "better-auth/cookies";
-import { waitUntil as vercelWaitUntil } from "@vercel/functions";
-import { captcha, haveIBeenPwned } from "better-auth/plugins";
-import { checkBotId } from "botid/server";
-import { emailOTP } from "better-auth/plugins/email-otp";
-import { organization } from "better-auth/plugins/organization";
-import { oAuthProxy } from "better-auth/plugins/oauth-proxy";
-import { twoFactor } from "better-auth/plugins/two-factor";
-import { ac, roles } from "./lib/permissions";
 import { apiKey } from "@better-auth/api-key";
+import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import { dash } from "@better-auth/infra";
 import { passkey } from "@better-auth/passkey";
-import { initializePublicTeamId, publicTeamIdField } from "./lib/public-team-id";
+import { createDb } from "@tailorkit/db";
+import * as schema from "@tailorkit/db/schema/auth";
+import {
+  sendBetterAuthOtpEmail,
+  sendOrganizationInvitationEmail,
+} from "@tailorkit/email";
+import {
+  getBaseUrl,
+  getProductionUrl,
+  getTrustedOrigins,
+} from "@tailorkit/env";
+import { getKV } from "@tailorkit/kv";
+import { initializeObservability } from "@tailorkit/observability";
+import { waitUntil as vercelWaitUntil } from "@vercel/functions";
+import type { SecondaryStorage } from "better-auth";
+import { createAuthMiddleware } from "better-auth/api";
+import { deleteSessionCookie } from "better-auth/cookies";
+import { betterAuth } from "better-auth/minimal";
+import { captcha, haveIBeenPwned } from "better-auth/plugins";
+import { emailOTP } from "better-auth/plugins/email-otp";
+import { oAuthProxy } from "better-auth/plugins/oauth-proxy";
+import { organization } from "better-auth/plugins/organization";
+import { twoFactor } from "better-auth/plugins/two-factor";
+import { tanstackStartCookies } from "better-auth/tanstack-start";
+import { checkBotId } from "botid/server";
+
+import { env } from "#env";
+
 import { captchaEndpoints } from "./lib/captcha-endpoints";
+import { ac, roles } from "./lib/permissions";
+import {
+  initializePublicTeamId,
+  publicTeamIdField,
+} from "./lib/public-team-id";
 
 void initializeObservability("tailorkit-web");
 
@@ -37,8 +49,10 @@ const enforceTwoFactorAfterSocialSignIn = createAuthMiddleware(async (ctx) => {
     return;
   }
 
-  const newSession = ctx.context.newSession;
-  const user = newSession?.user as { id: string; twoFactorEnabled?: boolean } | undefined;
+  const { newSession } = ctx.context;
+  const user = newSession?.user as
+    | { id: string; twoFactorEnabled?: boolean }
+    | undefined;
 
   if (!newSession || !user?.twoFactorEnabled) {
     return;
@@ -49,7 +63,9 @@ const enforceTwoFactorAfterSocialSignIn = createAuthMiddleware(async (ctx) => {
   ctx.context.setNewSession(null);
 
   const maxAge = 600;
-  const twoFactorCookie = ctx.context.createAuthCookie("two_factor", { maxAge });
+  const twoFactorCookie = ctx.context.createAuthCookie("two_factor", {
+    maxAge,
+  });
   const identifier = `2fa-${crypto.randomUUID()}`;
   const expiresAt = new Date(Date.now() + maxAge * 1000);
 
@@ -67,7 +83,7 @@ const enforceTwoFactorAfterSocialSignIn = createAuthMiddleware(async (ctx) => {
     twoFactorCookie.name,
     identifier,
     ctx.context.secret,
-    twoFactorCookie.attributes,
+    twoFactorCookie.attributes
   );
 
   return ctx.redirect(new URL("/two-factor", getBaseUrl(env)).toString());
@@ -85,7 +101,8 @@ const createSecondaryStorage = (): SecondaryStorage | undefined => {
     get: (key: string) => kv.get(key),
     getAndDelete: (key: string) => kv.getAndDelete(key),
     increment: (key: string, ttl: number) => kv.increment(key, ttl),
-    set: (key: string, value: string, ttl?: number) => kv.set(key, value, { ttl }),
+    set: (key: string, value: string, ttl?: number) =>
+      kv.set(key, value, { ttl }),
   };
 };
 
@@ -130,16 +147,17 @@ function buildAuth() {
   return betterAuth({
     appName: "TailorKit",
     account: {
-      encryptOAuthTokens: true,
       accountLinking: {
         allowDifferentEmails: true,
       },
+      encryptOAuthTokens: true,
     },
     advanced: {
       backgroundTasks: {
         handler: backgroundTaskHandler,
       },
-      cookiePrefix: env.VERCEL_TARGET_ENV === "production" ? "tailorkit" : "tailorkit-dev",
+      cookiePrefix:
+        env.VERCEL_TARGET_ENV === "production" ? "tailorkit" : "tailorkit-dev",
       database: {
         generateId: "uuid",
         joins: true,
@@ -162,8 +180,8 @@ function buildAuth() {
     secondaryStorage,
     emailAndPassword: {
       enabled: true,
-      requireEmailVerification: true,
       minPasswordLength: 12,
+      requireEmailVerification: true,
       revokeSessionsOnPasswordReset: true,
     },
     emailVerification: {
@@ -180,9 +198,9 @@ function buildAuth() {
     socialProviders,
     plugins: [
       captcha({
-        provider: "vercel-botid",
         checkBotId,
         endpoints: captchaEndpoints,
+        provider: "vercel-botid",
       }),
       haveIBeenPwned(),
       passkey({
@@ -198,20 +216,33 @@ function buildAuth() {
       emailOTP({
         expiresIn: 600,
         overrideDefaultEmailVerification: true,
-        sendVerificationOnSignUp: false,
         sendVerificationOTP: ({ email, otp, type }) => {
           backgroundTaskHandler(sendBetterAuthOtpEmail({ email, otp, type }));
           return Promise.resolve();
         },
+        sendVerificationOnSignUp: false,
         storeOTP: "hashed",
       }),
       organization({
         ac,
         allowUserToCreateOrganization: false,
-        roles,
         organizationHooks: {
           beforeCreateOrganization: ({ organization }) =>
             Promise.resolve(initializePublicTeamId(organization)),
+        },
+        roles,
+        schema: {
+          organization: {
+            additionalFields: {
+              publicId: publicTeamIdField,
+              slug: {
+                fieldName: "slug",
+                required: true,
+                type: "string",
+                unique: true,
+              },
+            },
+          },
         },
         sendInvitationEmail: async (data) => {
           await sendOrganizationInvitationEmail({
@@ -221,19 +252,6 @@ function buildAuth() {
             organizationName: data.organization.name,
             role: data.role,
           });
-        },
-        schema: {
-          organization: {
-            additionalFields: {
-              publicId: publicTeamIdField,
-              slug: {
-                type: "string",
-                fieldName: "slug",
-                unique: true,
-                required: true,
-              },
-            },
-          },
         },
       }),
       apiKey({

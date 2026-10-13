@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
 import { validateOrgSlug } from "@tailorkit/db/validate-org-slug";
+import { useEffect, useState } from "react";
+
 import { client } from "#lib/orpc";
 
 const ORG_SLUG_TAKEN_MESSAGE = "This organisation slug is already taken.";
@@ -31,18 +32,18 @@ export async function checkOrgSlugAvailability(slug: string) {
 
 export function useOrgSlugAvailability(slug: string) {
   const [availability, setAvailability] = useState<OrgSlugAvailability>({
-    status: "idle",
     message: null,
+    status: "idle",
   });
 
   useEffect(() => {
     if (!slug) {
-      setAvailability({ status: "idle", message: null });
+      setAvailability({ message: null, status: "idle" });
       return;
     }
 
     let cancelled = false;
-    setAvailability({ status: "checking", message: null });
+    setAvailability({ message: null, status: "checking" });
 
     const timeout = window.setTimeout(async () => {
       try {
@@ -54,11 +55,11 @@ export function useOrgSlugAvailability(slug: string) {
 
           setAvailability(
             slug.length < 3
-              ? { status: "idle", message: null }
+              ? { message: null, status: "idle" }
               : {
-                  status: "unavailable",
                   message: localResult.reason ?? "This slug is not available.",
-                },
+                  status: "unavailable",
+                }
           );
           return;
         }
@@ -70,14 +71,18 @@ export function useOrgSlugAvailability(slug: string) {
 
         setAvailability(
           result.available
-            ? { status: "available", message: null }
-            : { status: "unavailable", message: result.message ?? ORG_SLUG_TAKEN_MESSAGE },
+            ? { message: null, status: "available" }
+            : {
+                message: result.message ?? ORG_SLUG_TAKEN_MESSAGE,
+                status: "unavailable",
+              }
         );
       } catch {
         if (!cancelled) {
           setAvailability({
+            message:
+              "Could not check this slug. Try again before creating the organisation.",
             status: "error",
-            message: "Could not check this slug. Try again before creating the organisation.",
           });
         }
       }

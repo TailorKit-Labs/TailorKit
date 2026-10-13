@@ -1,8 +1,12 @@
-import { initializeObservability, withRequestSpan } from "@tailorkit/observability";
+import {
+  initializeObservability,
+  withRequestSpan,
+} from "@tailorkit/observability";
 
 await initializeObservability("tailorkit-web");
 
-const { default: handler, createServerEntry } = await import("@tanstack/react-start/server-entry");
+const { default: handler, createServerEntry } =
+  await import("@tanstack/react-start/server-entry");
 
 export default createServerEntry({
   fetch(request) {

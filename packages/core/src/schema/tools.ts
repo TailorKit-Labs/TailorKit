@@ -1,4 +1,5 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
+
 import type { TailorKitSchemaSpec } from "../spec/index";
 import type { Schema, SchemaSerializer } from "./shared";
 import { serializeSchema } from "./shared";
@@ -18,16 +19,16 @@ export interface ContractTool<
 export interface ContractTools {
   [name: string]: ContractTool | ContractTools;
 }
-function build<K extends ToolKind, I extends Schema | undefined, O extends Schema | undefined>(
-  kind: K,
-  input?: I,
-  output?: O,
-): ContractTool<K, I, O> {
+function build<
+  K extends ToolKind,
+  I extends Schema | undefined,
+  O extends Schema | undefined,
+>(kind: K, input?: I, output?: O): ContractTool<K, I, O> {
   return {
     $tailorkitToolDefinition: true,
-    kind,
     definition: { input, output },
     input: (schema) => build(kind, schema, output),
+    kind,
     output: (schema) => build(kind, input, schema),
   };
 }
@@ -63,7 +64,12 @@ export interface ToolContext {
 }
 export interface ToolImplementationTree {
   [name: string]:
-    | { bivarianceHack(options: { input: never; context: ToolContext }): unknown }["bivarianceHack"]
+    | {
+        bivarianceHack(options: {
+          input: never;
+          context: ToolContext;
+        }): unknown;
+      }["bivarianceHack"]
     | ToolImplementationTree;
 }
 export type ToolImplementations<
@@ -77,12 +83,17 @@ export type ToolImplementations<
           ? T[N]["kind"] extends K
             ? N
             : never
-          : keyof ToolImplementations<Extract<T[N], ContractTools>, K> extends never
+          : keyof ToolImplementations<
+                Extract<T[N], ContractTools>,
+                K
+              > extends never
             ? never
             : N
       ]: T[N] extends ContractTool<K, infer I, infer O>
         ? (options: {
-            input: I extends Schema ? StandardSchemaV1.InferOutput<I> : undefined;
+            input: I extends Schema
+              ? StandardSchemaV1.InferOutput<I>
+              : undefined;
             context: ToolContext;
           }) =>
             | (O extends Schema ? StandardSchemaV1.InferInput<O> : void)
@@ -114,53 +125,70 @@ export type ToolCallers<
           ) => Promise<InferToolOutput<T[N]>>
         : ToolCallers<Extract<T[N], ContractTools>, K>;
     };
-export function flattenTools(tools: ContractTools, prefix = ""): Map<string, ContractTool> {
+export function flattenTools(
+  tools: ContractTools,
+  prefix = ""
+): Map<string, ContractTool> {
   const result = new Map<string, ContractTool>();
   for (const [name, value] of Object.entries(tools)) {
     if (
       !/^[a-zA-Z][a-zA-Z0-9_]{0,63}$/u.test(name) ||
       ["constructor", "prototype", "__proto__"].includes(name)
-    )
+    ) {
       throw new Error(`Invalid tool name "${name}"`);
+    }
     const path = prefix + name;
     if (value.$tailorkitToolDefinition === true) {
       const leaf = value as ContractTool;
-      if (!["client", "server"].includes(leaf.kind) || !leaf.definition)
+      if (!["client", "server"].includes(leaf.kind) || !leaf.definition) {
         throw new Error(`Invalid tool declaration "${path}"`);
+      }
       result.set(path, leaf);
-    } else
-      for (const [key, leaf] of flattenTools(value as ContractTools, path + "."))
+    } else {
+      for (const [key, leaf] of flattenTools(
+        value as ContractTools,
+        path + "."
+      ))
         result.set(key, leaf);
+    }
   }
   return result;
 }
 export function serializeTools(
   tools: ContractTools,
-  serializer?: SchemaSerializer,
+  serializer?: SchemaSerializer
 ): TailorKitSchemaSpec["tools"] {
   const result: TailorKitSchemaSpec["tools"] = {};
   for (const [name, value] of Object.entries(tools)) {
-    if (!value) continue;
+    if (!value) {
+      continue;
+    }
     if (value.$tailorkitToolDefinition === true) {
       const leaf = value as ContractTool;
       result[name] = {
-        kind: leaf.kind,
         input: serializeSchema(leaf.definition.input, serializer, "input"),
+        kind: leaf.kind,
         output: serializeSchema(leaf.definition.output, serializer),
       };
-    } else result[name] = serializeTools(value as ContractTools, serializer);
+    } else {
+      result[name] = serializeTools(value as ContractTools, serializer);
+    }
   }
   return result;
 }
 export async function validateToolValue(
   schema: Schema | undefined,
-  value: unknown,
+  value: unknown
 ): Promise<unknown> {
   if (!schema) {
-    if (value !== undefined) throw new Error("Tool expects no value");
+    if (value !== undefined) {
+      throw new Error("Tool expects no value");
+    }
     return undefined;
   }
   const result = await schema["~standard"].validate(value);
-  if (result.issues) throw new Error("Invalid tool payload");
+  if (result.issues) {
+    throw new Error("Invalid tool payload");
+  }
   return result.value;
 }

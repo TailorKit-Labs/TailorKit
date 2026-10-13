@@ -1,26 +1,29 @@
-import { handlePublicRuntimeRequest } from "@tailorkit/api-platform/routes/runtime";
-import { handleAppAgentMcpRequest } from "@tailorkit/api-platform/app-agent-mcp";
-import { onError } from "@orpc/server";
-import { createContext, contextErrorResponse } from "@tailorkit/api-platform/context";
-import { platformRouter } from "@tailorkit/api-platform";
-import { RateLimitHandlerPlugin } from "@tailorkit/api-utils/rate-limiting";
-import { createFileRoute } from "@tanstack/react-router";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
+import { onError } from "@orpc/server";
+import { platformRouter } from "@tailorkit/api-platform";
+import { handleAppAgentMcpRequest } from "@tailorkit/api-platform/app-agent-mcp";
+import {
+  createContext,
+  contextErrorResponse,
+} from "@tailorkit/api-platform/context";
+import { handlePublicRuntimeRequest } from "@tailorkit/api-platform/routes/runtime";
+import { RateLimitHandlerPlugin } from "@tailorkit/api-utils/rate-limiting";
 import {
   initializeObservability,
   recordException,
   sanitizeErrorForLog,
   setSpanAttributes,
 } from "@tailorkit/observability";
+import { createFileRoute } from "@tanstack/react-router";
 
 const handler = new OpenAPIHandler(platformRouter, {
-  plugins: [new RateLimitHandlerPlugin()],
   interceptors: [
     onError((error) => {
       recordException(error, { "tailorkit.adapter": "orpc-openapi" });
       console.error("OpenAPI request failed", sanitizeErrorForLog(error));
     }),
   ],
+  plugins: [new RateLimitHandlerPlugin()],
 });
 
 async function handle({ request }: { request: Request }) {
@@ -31,7 +34,9 @@ async function handle({ request }: { request: Request }) {
   });
 
   const publicResponse = handlePublicRuntimeRequest(request);
-  if (publicResponse) return publicResponse;
+  if (publicResponse) {
+    return publicResponse;
+  }
 
   const context = await createContext({ request }).catch((error) => {
     recordException(error, { "tailorkit.adapter": "orpc-openapi" });

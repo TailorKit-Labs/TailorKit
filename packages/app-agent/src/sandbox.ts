@@ -7,23 +7,33 @@ export const agentTokenPath = "/tmp/tailorkit-agent.token";
 export async function writeAgentToken(sandboxName: string, token: string) {
   "use step";
   const session = (await getSandbox(sandboxName)).currentSession();
-  await session.writeFiles([{ path: agentTokenPath, content: Buffer.from(token, "utf8") }]);
+  await session.writeFiles([
+    { content: Buffer.from(token, "utf8"), path: agentTokenPath },
+  ]);
   const result = await session.runCommand({
-    cmd: "chmod",
     args: ["600", agentTokenPath],
+    cmd: "chmod",
     timeoutMs: 30_000,
   });
-  if (result.exitCode !== 0) throw new FatalError("Could not secure agent authorization file.");
+  if (result.exitCode !== 0) {
+    throw new FatalError("Could not secure agent authorization file.");
+  }
 }
 
 export const agentSchemaPath = "/workspace/tailorkit.schema.json";
 
-export async function writeAgentSchema(sandboxName: string, schema: Record<string, unknown>) {
+export async function writeAgentSchema(
+  sandboxName: string,
+  schema: Record<string, unknown>
+) {
   "use step";
   const sandbox = await getSandbox(sandboxName);
-  await sandbox
-    .currentSession()
-    .writeFiles([{ path: agentSchemaPath, content: Buffer.from(JSON.stringify(schema), "utf-8") }]);
+  await sandbox.currentSession().writeFiles([
+    {
+      content: Buffer.from(JSON.stringify(schema), "utf-8"),
+      path: agentSchemaPath,
+    },
+  ]);
 }
 
 export const sandboxIdleTimeoutMs = 15 * 60_000;
@@ -32,28 +42,29 @@ export async function prepareSandbox(driveName: string, sandboxName: string) {
   "use step";
   try {
     const drive = await Drive.getOrCreate({
-      name: driveName,
       maxSize: 5 * 1024 * 1024 * 1024, // 5 GiB
+      name: driveName,
     });
     if (drive.currentSandboxName && drive.currentSandboxName !== sandboxName) {
       throw new FatalError(
-        "This app is already being edited. Retry after the active run finishes.",
+        "This app is already being edited. Retry after the active run finishes."
       );
     }
     // The mount is the atomic lock, including when two detached-Drive checks race.
     await Sandbox.getOrCreate({
-      name: sandboxName,
-      image: "vercel/sandbox/universal",
-      region: drive.region,
-      persistent: false,
-      timeout: sandboxIdleTimeoutMs,
-      mounts: { "/workspace": drive },
       env: { TAILORKIT_AGENT_TOKEN_FILE: agentTokenPath },
+      image: "vercel/sandbox/universal",
+      mounts: { "/workspace": drive },
+      name: sandboxName,
+      persistent: false,
+      region: drive.region,
+      timeout: sandboxIdleTimeoutMs,
     });
   } catch (error) {
     // Mount conflicts end the workflow instead of turning into waiting retries.
-    if (error instanceof APIError)
+    if (error instanceof APIError) {
       throw new FatalError(`Cannot open app workspace: ${error.message}`);
+    }
     throw error;
   }
 }
@@ -69,14 +80,15 @@ export async function getSandbox(name: string) {
     const extension = Date.now() + sandboxIdleTimeoutMs - expiresAt;
     // The Sandbox API rejects extensions shorter than one second. Near the
     // 15-minute boundary, clock and request latency can produce a smaller top-up.
-    if (extension >= 1_000) {
+    if (extension >= 1000) {
       // Session methods cannot auto-resume a stopped VM and remount its Drive.
       await sandbox.currentSession().extendTimeout(extension);
     }
     return sandbox;
   } catch (error) {
-    if (error instanceof APIError)
+    if (error instanceof APIError) {
       throw new FatalError(`Cannot access app sandbox: ${error.message}`);
+    }
     throw error;
   }
 }
@@ -93,7 +105,12 @@ export async function deleteSandbox(name: string) {
     const sandbox = await Sandbox.get({ name });
     await sandbox.delete({ deleteOrphanSnapshots: true });
   } catch (error) {
-    if (error instanceof APIError && error.response.status === 404) return;
-    console.warn("App agent sandbox cleanup failed; idle timeout will release the Drive", error);
+    if (error instanceof APIError && error.response.status === 404) {
+      return;
+    }
+    console.warn(
+      "App agent sandbox cleanup failed; idle timeout will release the Drive",
+      error
+    );
   }
 }

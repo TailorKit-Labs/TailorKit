@@ -2,14 +2,18 @@
 
 import { Avatar as AvatarPrimitive } from "@base-ui/react/avatar";
 import type React from "react";
+
 import { cn } from "#ui";
 
-export function Avatar({ className, ...props }: AvatarPrimitive.Root.Props): React.ReactElement {
+export function Avatar({
+  className,
+  ...props
+}: AvatarPrimitive.Root.Props): React.ReactElement {
   return (
     <AvatarPrimitive.Root
       className={cn(
-        "relative isolate inline-flex size-8 shrink-0 select-none items-center justify-center overflow-hidden rounded-full bg-background align-middle font-medium text-xs",
-        className,
+        "bg-background relative isolate inline-flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full align-middle text-xs font-medium select-none",
+        className
       )}
       data-slot="avatar"
       {...props}
@@ -25,7 +29,7 @@ export function AvatarImage({
     <AvatarPrimitive.Image
       className={cn(
         "absolute inset-0 z-10 size-full object-cover data-error:invisible data-loading:invisible",
-        className,
+        className
       )}
       data-slot="avatar-image"
       {...props}
@@ -40,8 +44,8 @@ export function AvatarFallback({
   return (
     <AvatarPrimitive.Fallback
       className={cn(
-        "absolute inset-0 flex size-full items-center justify-center rounded-full bg-muted",
-        className,
+        "bg-muted absolute inset-0 flex size-full items-center justify-center rounded-full",
+        className
       )}
       data-slot="avatar-fallback"
       {...props}

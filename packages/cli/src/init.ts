@@ -2,8 +2,18 @@ import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
-import { CANCEL_SYMBOL, cancel, confirm, isCancel, select, spinner, text } from "@clack/prompts";
+
+import type { CANCEL_SYMBOL } from "@clack/prompts";
+import {
+  cancel,
+  confirm,
+  isCancel,
+  select,
+  spinner,
+  text,
+} from "@clack/prompts";
 import pc from "picocolors";
+
 import { generateApp, resolveTemplatePackageVersions } from "./generator";
 import { fetchSchemaFromHost, readSchemaFile } from "./generator/types";
 import { normalizeHostUrl } from "./utils/url";
@@ -45,8 +55,12 @@ const abortIfCancelled = <T>(value: T | typeof CANCEL_SYMBOL): T => {
 const promptDirectory = (given: string | undefined, cwd: string): string =>
   path.resolve(cwd, given ?? ".");
 
-const promptPackageName = async (given: string | undefined, baseDir: string): Promise<string> => {
-  const defaultName = normalizePackageName(path.basename(baseDir)) || "tailorkit-app";
+const promptPackageName = async (
+  given: string | undefined,
+  baseDir: string
+): Promise<string> => {
+  const defaultName =
+    normalizePackageName(path.basename(baseDir)) || "tailorkit-app";
   if (given !== undefined) {
     return normalizePackageName(given);
   }
@@ -56,25 +70,31 @@ const promptPackageName = async (given: string | undefined, baseDir: string): Pr
       message: "Package name",
       placeholder: defaultName,
       validate: (value) =>
-        normalizePackageName(value ?? "").length === 0 ? "Enter a package name." : undefined,
-    }),
+        normalizePackageName(value ?? "").length === 0
+          ? "Enter a package name."
+          : undefined,
+    })
   );
   return normalizePackageName(answer);
 };
 
-const promptPackageManager = async (given: string | undefined): Promise<PackageManager> => {
+const promptPackageManager = async (
+  given: string | undefined
+): Promise<PackageManager> => {
   if (given !== undefined) {
     if (isPackageManager(given)) {
       return given;
     }
-    throw new Error(`--package-manager must be one of: ${PACKAGE_MANAGERS.join(", ")}.`);
+    throw new Error(
+      `--package-manager must be one of: ${PACKAGE_MANAGERS.join(", ")}.`
+    );
   }
   const answer = abortIfCancelled(
     await select({
       initialValue: "pnpm" as PackageManager,
       message: "Package manager",
       options: PACKAGE_MANAGERS.map((value) => ({ label: value, value })),
-    }),
+    })
   );
   return answer as PackageManager;
 };
@@ -84,16 +104,18 @@ const promptLinting = async (given: boolean | undefined): Promise<boolean> => {
     return given;
   }
   return abortIfCancelled(
-    await confirm({ initialValue: true, message: "Add linting with oxlint?" }),
+    await confirm({ initialValue: true, message: "Add linting with oxlint?" })
   ) as boolean;
 };
 
-const promptFormatting = async (given: boolean | undefined): Promise<boolean> => {
+const promptFormatting = async (
+  given: boolean | undefined
+): Promise<boolean> => {
   if (given !== undefined) {
     return given;
   }
   return abortIfCancelled(
-    await confirm({ initialValue: true, message: "Add formatting with oxfmt?" }),
+    await confirm({ initialValue: true, message: "Add formatting with oxfmt?" })
   ) as boolean;
 };
 
@@ -122,7 +144,7 @@ const promptHostUrl = async (given: string | undefined): Promise<string> => {
       message: "Host URL",
       placeholder: defaultValue,
       validate: validateHostUrl,
-    }),
+    })
   );
   return normalizeHostUrl(answer);
 };
@@ -132,11 +154,14 @@ const promptInstall = async (given: boolean | undefined): Promise<boolean> => {
     return given;
   }
   return abortIfCancelled(
-    await confirm({ initialValue: true, message: "Install dependencies?" }),
+    await confirm({ initialValue: true, message: "Install dependencies?" })
   ) as boolean;
 };
 
-const promptForce = async (targetDir: string, given: boolean): Promise<boolean> => {
+const promptForce = async (
+  targetDir: string,
+  given: boolean
+): Promise<boolean> => {
   if (given || !existsSync(targetDir)) {
     return given;
   }
@@ -144,7 +169,7 @@ const promptForce = async (targetDir: string, given: boolean): Promise<boolean> 
     await confirm({
       initialValue: false,
       message: `${pc.cyan(targetDir)} already exists. Overwrite matching files?`,
-    }),
+    })
   ) as boolean;
 };
 
@@ -155,7 +180,10 @@ const exec = (cmd: string, args: string[], cwd: string): Promise<number> =>
     proc.on("error", reject);
   });
 
-const runInstall = async (targetDir: string, packageManager: PackageManager): Promise<void> => {
+const runInstall = async (
+  targetDir: string,
+  packageManager: PackageManager
+): Promise<void> => {
   const s = spinner();
   s.start(`Installing dependencies with ${packageManager}`);
   const code = await exec(packageManager, ["install"], targetDir);
@@ -166,13 +194,18 @@ const runInstall = async (targetDir: string, packageManager: PackageManager): Pr
   s.stop("Installed dependencies.");
 };
 
-const runFormat = async (targetDir: string, packageManager: PackageManager): Promise<void> => {
+const runFormat = async (
+  targetDir: string,
+  packageManager: PackageManager
+): Promise<void> => {
   const s = spinner();
   s.start("Formatting project");
   const code = await exec(packageManager, ["run", "format:fix"], targetDir);
   if (code !== 0) {
     s.stop("Formatting failed.");
-    throw new Error(`${packageManager} run format:fix exited with code ${code}.`);
+    throw new Error(
+      `${packageManager} run format:fix exited with code ${code}.`
+    );
   }
   s.stop("Formatted project.");
 };
@@ -190,13 +223,17 @@ export const runInit = async (options: InitOptions): Promise<string> => {
   const install = await promptInstall(options.install);
 
   const s = spinner();
-  s.start(options.schemaPath !== undefined ? "Reading host schema" : "Fetching host schema");
+  s.start(
+    options.schemaPath === undefined
+      ? "Fetching host schema"
+      : "Reading host schema"
+  );
   let schema;
   try {
     schema =
-      options.schemaPath !== undefined
-        ? await readSchemaFile(path.resolve(options.cwd, options.schemaPath))
-        : await fetchSchemaFromHost(hostUrl);
+      options.schemaPath === undefined
+        ? await fetchSchemaFromHost(hostUrl)
+        : await readSchemaFile(path.resolve(options.cwd, options.schemaPath));
     s.stop("Loaded host schema.");
   } catch (error) {
     s.stop("Unable to load host schema.");

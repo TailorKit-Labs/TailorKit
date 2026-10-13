@@ -1,4 +1,5 @@
 import type { z } from "zod";
+
 import type { FunctionResult, Functions } from "../server/functions";
 
 export interface Reference<K extends "query" | "mutation" | "action", I, O> {
@@ -7,7 +8,7 @@ export interface Reference<K extends "query" | "mutation" | "action", I, O> {
 }
 export function reference<K extends "query" | "mutation" | "action", I, O>(
   name: string,
-  _kind: K,
+  _kind: K
 ): Reference<K, I, O> {
   return Object.freeze({ name });
 }
@@ -28,8 +29,12 @@ export function createApi<F extends Functions>(): References<F> {
   function group(path: string): References<F> {
     return new Proxy(Object.create(null) as References<F>, {
       get(_target, name) {
-        if (typeof name !== "string" || name === "then") return;
-        if (name === "name" && path) return path;
+        if (typeof name !== "string" || name === "then") {
+          return;
+        }
+        if (name === "name" && path) {
+          return path;
+        }
         return group(path ? `${path}.${name}` : name);
       },
     });

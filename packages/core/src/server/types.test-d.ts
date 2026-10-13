@@ -1,9 +1,9 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
-import { z } from "zod";
-import { createTailorKitServer } from "./handler";
-import type { TailorKitServerOptions } from "./types";
 import { expectTypeOf } from "vite-plus/test";
-import type { TailorKitHostContext } from "./types";
+import { z } from "zod";
+
+import { createTailorKitServer } from "./handler";
+import type { TailorKitServerOptions, TailorKitHostContext } from "./types";
 expectTypeOf<TailorKitHostContext<{ org: { orgId: string } }>>().toEqualTypeOf<{
   scopes: { org: { orgId: string } };
   subjectId?: string;
@@ -11,10 +11,10 @@ expectTypeOf<TailorKitHostContext<{ org: { orgId: string } }>>().toEqualTypeOf<{
 
 createTailorKitServer({
   baseUrl: "https://example.com/api/tailorkit",
-  scopes: { account: z.object({ accountId: z.string() }) },
   components: {},
-  views: { "/": z.object({}), "/users": z.object({}) },
+  scopes: { account: z.object({ accountId: z.string() }) },
   slots: { navbar: { views: ["/"] }, panel: { views: ["/users"] } },
+  views: { "/": z.object({}), "/users": z.object({}) },
 });
 createTailorKitServer({
   baseUrl: "https://example.com/api/tailorkit",
@@ -31,24 +31,31 @@ const namedScopes = {
 };
 const scopedServer = createTailorKitServer({
   baseUrl: "https://example.com/api/tailorkit",
-  scopes: namedScopes,
   components: {},
+  scopes: namedScopes,
 });
 const explicitlyTypedOptions: TailorKitServerOptions<
   Record<never, never>,
   Record<never, never>,
   Record<never, never>,
   typeof namedScopes
-> = { baseUrl: "https://example.com/api/tailorkit", scopes: namedScopes, components: {} };
+> = {
+  baseUrl: "https://example.com/api/tailorkit",
+  components: {},
+  scopes: namedScopes,
+};
 const explicitlyTypedServer = createTailorKitServer(explicitlyTypedOptions);
-explicitlyTypedServer.handler(new Request("https://example.com/api/tailorkit/apps"), {
-  authenticate: () => ({
-    scopes: {
-      // @ts-expect-error explicit options retain the org schema's required orgId
-      org: {},
-    },
-  }),
-});
+explicitlyTypedServer.handler(
+  new Request("https://example.com/api/tailorkit/apps"),
+  {
+    authenticate: () => ({
+      scopes: {
+        // @ts-expect-error explicit options retain the org schema's required orgId
+        org: {},
+      },
+    }),
+  }
+);
 scopedServer.handler(new Request("https://example.com/api/tailorkit/apps"), {
   authenticate: () => ({
     scopes: {
@@ -75,18 +82,24 @@ scopedServer.handler(new Request("https://example.com/api/tailorkit/apps"), {
 
 const nonJsonSchemaScope = {
   "~standard": {
-    version: 1 as const,
-    vendor: "core-type-test",
-    types: {} as StandardSchemaV1.Types<{ accountId: string }, { accountId: string }>,
+    types: {} as StandardSchemaV1.Types<
+      { accountId: string },
+      { accountId: string }
+    >,
     validate: (value: unknown) => ({ value: value as { accountId: string } }),
+    vendor: "core-type-test",
+    version: 1 as const,
   },
 } satisfies StandardSchemaV1<{ accountId: string }, { accountId: string }>;
 
 const standardOnlyServer = createTailorKitServer({
   baseUrl: "https://example.com/api/tailorkit",
-  scopes: { account: nonJsonSchemaScope },
   components: {},
+  scopes: { account: nonJsonSchemaScope },
 });
-standardOnlyServer.handler(new Request("https://example.com/api/tailorkit/apps"), {
-  authenticate: () => ({ scopes: { account: { accountId: "acct_1" } } }),
-});
+standardOnlyServer.handler(
+  new Request("https://example.com/api/tailorkit/apps"),
+  {
+    authenticate: () => ({ scopes: { account: { accountId: "acct_1" } } }),
+  }
+);

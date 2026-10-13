@@ -1,6 +1,14 @@
-import { HeadContent, Outlet, Scripts, createRootRoute, redirect } from "@tanstack/react-router";
+import {
+  HeadContent,
+  Outlet,
+  Scripts,
+  createRootRoute,
+  redirect,
+} from "@tanstack/react-router";
+
 import { TailorKitShell } from "#components/tailorkit-shell";
 import { loadSession } from "#lib/auth.functions";
+
 import css from "../styles.css?url";
 
 export const Route = createRootRoute({
@@ -14,6 +22,7 @@ export const Route = createRootRoute({
     }
     return { session };
   },
+  component: AppShell,
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -23,12 +32,13 @@ export const Route = createRootRoute({
     links: [{ rel: "stylesheet", href: css }],
   }),
   shellComponent: RootDocument,
-  component: AppShell,
 });
 
 function AppShell() {
   const { session } = Route.useRouteContext();
-  if (!session) return <Outlet />;
+  if (!session) {
+    return <Outlet />;
+  }
   return (
     <TailorKitShell session={session}>
       <Outlet />

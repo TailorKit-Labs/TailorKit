@@ -1,10 +1,13 @@
+import { contract } from "@playground/shared/contracts/active";
+import { theme } from "@playground/shared/contracts/theme";
 import { Button } from "@tailorkit/ui/button";
 import { Input } from "@tailorkit/ui/input";
 import { createClient, primitives as reactPrimitives } from "tailorkit/react";
-import { contract } from "@playground/shared/contracts/active";
-import { theme } from "@playground/shared/contracts/theme";
 
-async function callTodos<T>(action: string, body?: Record<string, unknown>): Promise<T> {
+async function callTodos<T>(
+  action: string,
+  body?: Record<string, unknown>
+): Promise<T> {
   const response = await fetch("/api/playground/todos", {
     body: body ? JSON.stringify({ action, ...body }) : undefined,
     credentials: "same-origin",
@@ -29,27 +32,35 @@ interface Todo {
 }
 
 export const tailor = createClient({
-  contract,
   baseUrl:
     typeof window === "undefined"
       ? "http://localhost:5010/api/tailorkit/"
       : new URL("/api/tailorkit/", window.location.origin),
-  theme,
   components: {
     ...reactPrimitives,
     Button: ({ props, children }) => <Button {...props}>{children}</Button>,
     Input: ({ props: { onValueChange, ...rest } }) => (
-      <Input onChange={(event) => onValueChange({ value: event.target.value })} {...rest} />
+      <Input
+        onChange={(event) => onValueChange({ value: event.target.value })}
+        {...rest}
+      />
     ),
   },
+  contract,
+  theme,
   tools: {
     todos: {
-      list: () => callTodos<Todo[]>("list"),
       add: ({ input }) => callTodos<Todo>("add", input),
-      toggle: ({ input }) => callTodos<Todo>("toggle", input),
+      list: () => callTodos<Todo[]>("list"),
       remove: ({ input }) => callTodos<{ ok: boolean }>("remove", input),
+      toggle: ({ input }) => callTodos<Todo>("toggle", input),
     },
   },
 });
 
-export const { Provider: TailorKitProvider, RenderSlot, useApps, useViewContext } = tailor;
+export const {
+  Provider: TailorKitProvider,
+  RenderSlot,
+  useApps,
+  useViewContext,
+} = tailor;

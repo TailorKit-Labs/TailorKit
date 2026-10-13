@@ -1,17 +1,17 @@
 import { readFileSync } from "node:fs";
+
 import { defineConfig } from "vite-plus";
+
 import packageJson from "./package.json" with { type: "json" };
 
 export default defineConfig({
   pack: {
+    clean: true,
+    deps: { neverBundle: Object.keys(packageJson.dependencies) },
+    dts: true,
     entry: ["src/index.ts", "src/workflows.ts", "src/mcp.ts"],
     format: "esm",
-    target: "node24",
-    dts: true,
-    sourcemap: true,
-    clean: true,
     minify: false,
-    deps: { neverBundle: Object.keys(packageJson.dependencies) },
     plugins: [
       {
         name: "instructions-raw",
@@ -22,5 +22,7 @@ export default defineConfig({
         },
       },
     ],
+    sourcemap: true,
+    target: "node24",
   },
 });

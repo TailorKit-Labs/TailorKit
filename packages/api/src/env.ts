@@ -1,7 +1,7 @@
-import * as z from "zod";
 import { createEnv } from "@tailorkit/env";
+import * as z from "zod";
 
 export const env = createEnv({
-  scope: "api",
   schema: { VERCEL_ENV: z.string().optional() },
+  scope: "api",
 });

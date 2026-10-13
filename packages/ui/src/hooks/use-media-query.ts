@@ -14,7 +14,10 @@ const BREAKPOINTS = {
 
 type Breakpoint = keyof typeof BREAKPOINTS;
 
-type BreakpointQuery = Breakpoint | `max-${Breakpoint}` | `${Breakpoint}:max-${Breakpoint}`;
+type BreakpointQuery =
+  | Breakpoint
+  | `max-${Breakpoint}`
+  | `${Breakpoint}:max-${Breakpoint}`;
 
 function resolveMin(value: Breakpoint | number): string {
   const px = typeof value === "number" ? value : BREAKPOINTS[value];
@@ -77,7 +80,9 @@ export interface MediaQueryInput {
   pointer?: "coarse" | "fine";
 }
 
-export function useMediaQuery(query: BreakpointQuery | MediaQueryInput | string): boolean {
+export function useMediaQuery(
+  query: BreakpointQuery | MediaQueryInput | string
+): boolean {
   const mediaQuery = parseQuery(query);
 
   const subscribe = useCallback(
@@ -89,7 +94,7 @@ export function useMediaQuery(query: BreakpointQuery | MediaQueryInput | string)
       mql.addEventListener("change", callback);
       return () => mql.removeEventListener("change", callback);
     },
-    [mediaQuery],
+    [mediaQuery]
   );
 
   const getSnapshot = useCallback(() => {

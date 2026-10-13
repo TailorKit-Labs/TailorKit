@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from "vite-plus/test";
+
 import { resolveTemplatePackageVersions } from "./package-versions";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -7,7 +8,6 @@ it("resolves only stable Preact 11 releases from the registry", async () => {
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => ({
-      ok: true,
       json: async () => ({
         versions: {
           "10.99.0": {},
@@ -17,7 +17,8 @@ it("resolves only stable Preact 11 releases from the registry", async () => {
           "12.0.0": {},
         },
       }),
-    })),
+      ok: true,
+    }))
   );
   expect((await resolveTemplatePackageVersions()).preact).toBe("^11.1.0");
 });

@@ -1,8 +1,9 @@
 import { atom } from "nanostores";
-import type { Client } from "./connection";
-import type { Reference } from "./reference";
+
 import type { AppError } from "../errors";
 import { appError } from "../errors";
+import type { Client } from "./connection";
+import type { Reference } from "./reference";
 
 export interface QueryState<T> {
   data: T | undefined;
@@ -10,15 +11,24 @@ export interface QueryState<T> {
   status: "pending" | "success" | "error";
 }
 
-export const pendingQuery: QueryState<never> = { data: undefined, error: null, status: "pending" };
+export const pendingQuery: QueryState<never> = {
+  data: undefined,
+  error: null,
+  status: "pending",
+};
 
 export function serializeInput(input: unknown): string {
-  return JSON.stringify({ input, defined: input !== undefined }, (_key, value: unknown) => {
-    if (value && typeof value === "object" && !Array.isArray(value)) {
-      return Object.fromEntries(Object.entries(value).toSorted(([a], [b]) => a.localeCompare(b)));
+  return JSON.stringify(
+    { defined: input !== undefined, input },
+    (_key, value: unknown) => {
+      if (value && typeof value === "object" && !Array.isArray(value)) {
+        return Object.fromEntries(
+          Object.entries(value).toSorted(([a], [b]) => a.localeCompare(b))
+        );
+      }
+      return value;
     }
-    return value;
-  });
+  );
 }
 
 interface Entry {
@@ -38,7 +48,7 @@ export class QueryStore {
   constructor(
     client: Client,
     ownsClient: boolean,
-    errorHandler: (error: AppError) => void = () => {},
+    errorHandler: (error: AppError) => void = () => {}
   ) {
     this.client = client;
     this.ownsClient = ownsClient;
@@ -64,7 +74,11 @@ export class QueryStore {
         if (this.disposed || this.entries.get(key) !== current) {
           return;
         }
-        publish({ data: this.state.get().get(key)?.data as O | undefined, error, status: "error" });
+        publish({
+          data: this.state.get().get(key)?.data as O | undefined,
+          error,
+          status: "error",
+        });
         this.onError(error);
       };
       try {
@@ -72,7 +86,7 @@ export class QueryStore {
           ref,
           input,
           (data) => publish({ data, error: null, status: "success" }),
-          { onError },
+          { onError }
         );
       } catch (error) {
         onError(appError(error));

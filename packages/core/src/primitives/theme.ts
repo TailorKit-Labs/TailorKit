@@ -96,100 +96,100 @@ export interface TailorKitTheme {
 }
 
 export const defaultBreakpoints = {
-  base: null,
-  sm: "640px",
-  md: "768px",
-  lg: "1024px",
-  xl: "1280px",
   "2xl": "1536px",
+  base: null,
+  lg: "1024px",
+  md: "768px",
+  sm: "640px",
+  xl: "1280px",
 } as const;
 
 export const defaultSpace = {
-  none: "0rem",
-  "2xs": "0.125rem",
-  xs: "0.25rem",
-  sm: "0.5rem",
-  md: "1rem",
-  lg: "1.5rem",
-  xl: "2rem",
   "2xl": "3rem",
+  "2xs": "0.125rem",
   "3xl": "4.5rem",
+  lg: "1.5rem",
+  md: "1rem",
+  none: "0rem",
+  sm: "0.5rem",
+  xl: "2rem",
+  xs: "0.25rem",
 } as const;
 
 export const defaultRadius = {
-  none: "0rem",
-  "2xs": "0.125rem",
-  xs: "0.25rem",
-  sm: "0.375rem",
-  md: "0.5rem",
-  lg: "0.75rem",
-  xl: "1rem",
   "2xl": "1.5rem",
+  "2xs": "0.125rem",
   "3xl": "2rem",
+  lg: "0.75rem",
+  md: "0.5rem",
+  none: "0rem",
+  sm: "0.375rem",
+  xl: "1rem",
+  xs: "0.25rem",
 } as const;
 
 export const defaultBorder = {
-  solid: "solid",
   dashed: "dashed",
   dotted: "dotted",
   double: "double",
+  solid: "solid",
 } as const;
 
 export const defaultOverflow = {
-  visible: "visible",
-  hidden: "hidden",
-  clip: "clip",
-  scroll: "scroll",
   auto: "auto",
+  clip: "clip",
+  hidden: "hidden",
+  scroll: "scroll",
+  visible: "visible",
 } as const;
 
 export const defaultOverflowWrap = {
-  normal: "normal",
-  breakWord: "break-word",
   anywhere: "anywhere",
+  breakWord: "break-word",
+  normal: "normal",
 } as const;
 
 export const defaultSize = {
   "0": "0px",
+  "1/12": "8.333333%",
   "1/2": "50%",
   "1/3": "33.333333%",
-  "2/3": "66.666667%",
   "1/4": "25%",
-  "2/4": "50%",
-  "3/4": "75%",
   "1/5": "20%",
-  "2/5": "40%",
-  "3/5": "60%",
-  "4/5": "80%",
   "1/6": "16.666667%",
-  "2/6": "33.333333%",
-  "3/6": "50%",
-  "4/6": "66.666667%",
-  "5/6": "83.333333%",
-  "1/12": "8.333333%",
+  "10/12": "83.333333%",
+  "11/12": "91.666667%",
   "2/12": "16.666667%",
+  "2/3": "66.666667%",
+  "2/4": "50%",
+  "2/5": "40%",
+  "2/6": "33.333333%",
   "3/12": "25%",
+  "3/4": "75%",
+  "3/5": "60%",
+  "3/6": "50%",
   "4/12": "33.333333%",
+  "4/5": "80%",
+  "4/6": "66.666667%",
   "5/12": "41.666667%",
+  "5/6": "83.333333%",
   "6/12": "50%",
   "7/12": "58.333333%",
   "8/12": "66.666667%",
   "9/12": "75%",
-  "10/12": "83.333333%",
-  "11/12": "91.666667%",
-  full: "100%",
-  min: "min-content",
-  max: "max-content",
   fit: "fit-content",
+  full: "100%",
+  max: "max-content",
+  min: "min-content",
 } as const;
 
 export const defaultTextAlign = {
+  center: "center",
+  end: "end",
+  justify: "justify",
   left: "left",
   right: "right",
   start: "start",
-  end: "end",
-  center: "center",
-  justify: "justify",
 } as const;
 
 export const defaultTextOverflow = {
@@ -199,9 +199,9 @@ export const defaultTextOverflow = {
 
 export const defaultTextTransform = {
   capitalize: "capitalize",
-  uppercase: "uppercase",
   lowercase: "lowercase",
   none: "none",
+  uppercase: "uppercase",
 } as const;
 
 const defaultTokenGroups = {
@@ -216,7 +216,9 @@ const defaultTokenGroups = {
   textTransform: defaultTextTransform,
 } satisfies TailorKitTheme["tokens"];
 
-const resolveTokens = (theme: TailorKitTheme | undefined): TailorKitTheme["tokens"] => {
+const resolveTokens = (
+  theme: TailorKitTheme | undefined
+): TailorKitTheme["tokens"] => {
   const tokens = { ...theme?.tokens };
 
   for (const [key, value] of Object.entries(defaultTokenGroups)) {
@@ -227,7 +229,9 @@ const resolveTokens = (theme: TailorKitTheme | undefined): TailorKitTheme["token
   return tokens;
 };
 
-export const resolveTheme = (theme: TailorKitTheme | undefined): TailorKitTheme => ({
+export const resolveTheme = (
+  theme: TailorKitTheme | undefined
+): TailorKitTheme => ({
   breakpoints: theme?.breakpoints ?? defaultBreakpoints,
   tokens: resolveTokens(theme),
 });

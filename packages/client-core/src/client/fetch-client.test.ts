@@ -1,8 +1,9 @@
-import { testContract } from "../test-contract";
 import { afterEach, expect, it, vi } from "vite-plus/test";
-import { createTailorKitFetchClient } from "./fetch-client";
-import { createTailorKitStore } from "../store/store";
+
 import { createSlotStore } from "../store/fetch/slot";
+import { createTailorKitStore } from "../store/store";
+import { testContract } from "../test-contract";
+import { createTailorKitFetchClient } from "./fetch-client";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -12,19 +13,26 @@ afterEach(() => {
 it("shares endpoint responses across roots without sharing local view registrations", async () => {
   const fetchMock = vi.fn((input) =>
     Promise.resolve(
-      Response.json(String(input).endsWith("/apps") ? [{ id: "app" }] : { schema: { views: {} } }),
-    ),
+      Response.json(
+        String(input).endsWith("/apps")
+          ? [{ id: "app" }]
+          : { schema: { views: {} } }
+      )
+    )
   );
-  const client = createTailorKitFetchClient({ baseUrl: "https://host.test/api", fetch: fetchMock });
+  const client = createTailorKitFetchClient({
+    baseUrl: "https://host.test/api",
+    fetch: fetchMock,
+  });
   const first = createTailorKitStore({
-    baseUrl: client.baseUrl,
     apps: undefined,
+    baseUrl: client.baseUrl,
     client,
     contract: testContract(),
   });
   const second = createTailorKitStore({
-    baseUrl: client.baseUrl,
     apps: undefined,
+    baseUrl: client.baseUrl,
     client,
     contract: testContract(),
   });
@@ -32,24 +40,29 @@ it("shares endpoint responses across roots without sharing local view registrati
   await Promise.all([first.fetchApps(), second.fetchApps()]);
   expect(fetchMock).toHaveBeenCalledOnce();
   expect(second.getAppsSnapshot().apps).toBe(first.getAppsSnapshot().apps);
-  first.views.register({ id: Symbol(), view: "/", context: {} });
+  first.views.register({ context: {}, id: Symbol(), view: "/" });
   await Promise.resolve();
   expect(second.views.getSnapshot()).toBeNull();
   stop();
 });
 
 it("keeps supplied discovery data local while another root fetches", async () => {
-  const fetchMock = vi.fn().mockResolvedValue(Response.json([{ id: "remote" }]));
-  const client = createTailorKitFetchClient({ baseUrl: "https://host.test/", fetch: fetchMock });
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValue(Response.json([{ id: "remote" }]));
+  const client = createTailorKitFetchClient({
+    baseUrl: "https://host.test/",
+    fetch: fetchMock,
+  });
   const supplied = createTailorKitStore({
-    baseUrl: client.baseUrl,
     apps: [{ id: "provided" }],
+    baseUrl: client.baseUrl,
     client,
     contract: testContract(),
   });
   const remote = createTailorKitStore({
-    baseUrl: client.baseUrl,
     apps: undefined,
+    baseUrl: client.baseUrl,
     client,
     contract: testContract(),
   });
@@ -64,13 +77,15 @@ it("honors app freshness defaults", async () => {
   vi.useFakeTimers();
   const fetchMock = vi.fn((input) =>
     Promise.resolve(
-      Response.json(String(input).endsWith("/apps") ? [{ id: "app" }] : { schema: {} }),
-    ),
+      Response.json(
+        String(input).endsWith("/apps") ? [{ id: "app" }] : { schema: {} }
+      )
+    )
   );
   const client = createTailorKitFetchClient({
     baseUrl: "https://host.test/",
+    cache: { apps: { staleTime: 10 }, gcTime: Infinity },
     fetch: fetchMock,
-    cache: { gcTime: Infinity, apps: { staleTime: 10 } },
   });
   await client.apps().fetch();
   vi.advanceTimersByTime(11);
@@ -81,10 +96,20 @@ it("honors app freshness defaults", async () => {
 });
 
 it("isolates authenticated clients at the same endpoint and clears credentials with data", async () => {
-  const firstFetch = vi.fn().mockResolvedValue(Response.json([{ id: "first" }]));
-  const secondFetch = vi.fn().mockResolvedValue(Response.json([{ id: "second" }]));
-  const first = createTailorKitFetchClient({ baseUrl: "https://host.test/", fetch: firstFetch });
-  const second = createTailorKitFetchClient({ baseUrl: "https://host.test/", fetch: secondFetch });
+  const firstFetch = vi
+    .fn()
+    .mockResolvedValue(Response.json([{ id: "first" }]));
+  const secondFetch = vi
+    .fn()
+    .mockResolvedValue(Response.json([{ id: "second" }]));
+  const first = createTailorKitFetchClient({
+    baseUrl: "https://host.test/",
+    fetch: firstFetch,
+  });
+  const second = createTailorKitFetchClient({
+    baseUrl: "https://host.test/",
+    fetch: secondFetch,
+  });
   await first.apps().fetch();
   expect(second.apps().getSnapshot().status).toBe("idle");
   await second.apps().fetch();
@@ -99,34 +124,48 @@ it("isolates authenticated clients at the same endpoint and clears credentials w
 it("deduplicates instance requests and sessions across framework-neutral consumers", async () => {
   const fetchMock = vi.fn((input) => {
     const path = new URL(String(input)).pathname;
-    if (path.endsWith("/meta"))
+    if (path.endsWith("/meta")) {
       return Promise.resolve(
         Response.json({
           schema: {
             views: { "/": {} },
             slots: { page: { views: ["/"], multiple: true } },
           },
-        }),
+        })
       );
-    if (path.endsWith("/backend/session"))
+    }
+    if (path.endsWith("/backend/session")) {
       return Promise.resolve(
         Response.json({
           token: "token",
           url: "https://runtime.test/rpc",
           expiresAt: Date.now() + 300_000,
-        }),
+        })
       );
-    return Promise.resolve(Response.json({ json: [{ key: "overview", data: {}, metadata: {} }] }));
+    }
+    return Promise.resolve(
+      Response.json({ json: [{ data: {}, key: "overview", metadata: {} }] })
+    );
   });
-  const client = createTailorKitFetchClient({ baseUrl: "https://host.test/", fetch: fetchMock });
+  const client = createTailorKitFetchClient({
+    baseUrl: "https://host.test/",
+    fetch: fetchMock,
+  });
   const contract = testContract(true);
   const options = {
-    apps: [{ id: "app", views: [{ slot: "page", path: "/", instances: true as const }] }],
-    slot: "page",
     activeView: {
+      layers: [
+        { path: "/", context: { userId: "user" }, status: "ready" as const },
+      ],
       view: "/",
-      layers: [{ path: "/", context: { userId: "user" }, status: "ready" as const }],
     },
+    apps: [
+      {
+        id: "app",
+        views: [{ slot: "page", path: "/", instances: true as const }],
+      },
+    ],
+    slot: "page",
   };
   const first = createSlotStore(client, contract, options);
   const second = createSlotStore(client, contract, options);

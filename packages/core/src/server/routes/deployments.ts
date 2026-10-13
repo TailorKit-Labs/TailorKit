@@ -1,12 +1,18 @@
+import { ORPCError } from "@orpc/server";
 import {
   deploymentsCreate,
   deploymentsGet,
   deploymentsList,
   deploymentsPublish,
 } from "@tailorkit/client-platform/client";
-import { ORPCError } from "@orpc/server";
 import { z } from "zod";
-import { getTailorKitScope, getTailorKitScopes, o, requireCliDeployToken } from "../procedures";
+
+import {
+  getTailorKitScope,
+  getTailorKitScopes,
+  o,
+  requireCliDeployToken,
+} from "../procedures";
 
 const paginationInput = z.object({
   page: z.number().int().min(1).optional(),
@@ -21,7 +27,9 @@ const clientAssetInput = z.object({
   objectKey: z.literal("client.js"),
 });
 
-const serverAssetInput = clientAssetInput.extend({ objectKey: z.literal("server.js") });
+const serverAssetInput = clientAssetInput.extend({
+  objectKey: z.literal("server.js"),
+});
 
 const logoAssetInput = z.object({
   checksum: z.string(),
@@ -49,7 +57,7 @@ const getErrorMessage = (error: unknown): string | undefined => {
     return error;
   }
   if (error && typeof error === "object" && "message" in error) {
-    const message = (error as { message?: unknown }).message;
+    const { message } = error as { message?: unknown };
     return typeof message === "string" ? message : undefined;
   }
 };
@@ -72,6 +80,8 @@ export const deploymentRouter = {
       z.object({
         appId: z.string(),
         assets: deploymentAssetsInput,
+        logos: deploymentLogosInput,
+        server: serverAssetInput.optional(),
         views: z
           .array(
             z.object({
@@ -79,13 +89,11 @@ export const deploymentRouter = {
               path: z.string().startsWith("/").max(1024),
               instances: z.literal(true).optional(),
               disabled: z.literal(true).optional(),
-            }),
+            })
           )
           .max(1000)
           .optional(),
-        server: serverAssetInput.optional(),
-        logos: deploymentLogosInput,
-      }),
+      })
     )
     .handler(async ({ context, input }) => {
       try {
@@ -93,10 +101,10 @@ export const deploymentRouter = {
           body: {
             appId: input.appId,
             assets: input.assets,
-            views: input.views,
-            server: input.server,
             logos: input.logos,
             scope: getTailorKitScope(context),
+            server: input.server,
+            views: input.views,
           },
           client: context.platform,
           headers: context.platformHeaders,
@@ -107,7 +115,12 @@ export const deploymentRouter = {
     }),
   get: o
     .use(requireCliDeployToken)
-    .input(z.object({ deploymentId: z.string(), scopes: z.array(z.string()).optional() }))
+    .input(
+      z.object({
+        deploymentId: z.string(),
+        scopes: z.array(z.string()).optional(),
+      })
+    )
     .handler(
       async ({ context, input }) =>
         await deploymentsGet({
@@ -115,27 +128,27 @@ export const deploymentRouter = {
           client: context.platform,
           headers: context.platformHeaders,
           path: { deploymentId: input.deploymentId },
-        }),
+        })
     ),
   list: o
     .use(requireCliDeployToken)
     .input(
       z
         .object({ appId: z.string(), scopes: z.array(z.string()).optional() })
-        .merge(paginationInput),
+        .merge(paginationInput)
     )
     .handler(
       async ({ context, input }) =>
         await deploymentsList({
-          client: context.platform,
-          headers: context.platformHeaders,
           body: {
             appId: input.appId,
             page: input.page,
             pageSize: input.pageSize,
             scopes: getTailorKitScopes(context, input.scopes),
           },
-        }),
+          client: context.platform,
+          headers: context.platformHeaders,
+        })
     ),
   publish: o
     .use(requireCliDeployToken)
@@ -143,15 +156,15 @@ export const deploymentRouter = {
       z.object({
         deploymentId: z.string(),
         rollout: z.boolean().optional(),
-      }),
+      })
     )
     .handler(
       async ({ context, input }) =>
         await deploymentsPublish({
-          body: { scope: getTailorKitScope(context), rollout: input.rollout },
+          body: { rollout: input.rollout, scope: getTailorKitScope(context) },
           client: context.platform,
           headers: context.platformHeaders,
           path: { deploymentId: input.deploymentId },
-        }),
+        })
     ),
 };

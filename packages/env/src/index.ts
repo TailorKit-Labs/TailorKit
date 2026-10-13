@@ -1,12 +1,13 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+
 import { parse } from "dotenv";
 import * as z from "zod";
 
 type EnvShape = z.ZodRawShape;
 interface EnvValidator {
   safeParse(
-    value: unknown,
+    value: unknown
   ):
     | { success: true; data: unknown }
     | { success: false; error: { issues: { message: string }[] } };
@@ -76,7 +77,10 @@ export function createEnv<const T extends EnvShape>({
   const missingWarnings = warnings as Record<string, string | undefined>;
   const parsedValues: Record<string, unknown> = {};
 
-  for (const [name, validator] of Object.entries(schema.shape) as [string, EnvValidator][]) {
+  for (const [name, validator] of Object.entries(schema.shape) as [
+    string,
+    EnvValidator,
+  ][]) {
     const rawValue = source[name] === "" ? undefined : source[name];
     const parsed = validator.safeParse(rawValue);
 
@@ -86,7 +90,9 @@ export function createEnv<const T extends EnvShape>({
 
     if (!parsed.success) {
       if (rawValue !== undefined) {
-        const issueMessages = parsed.error.issues.map((issue) => issue.message).join(", ");
+        const issueMessages = parsed.error.issues
+          .map((issue) => issue.message)
+          .join(", ");
         warn(scope, `Invalid ${name}: ${issueMessages}`);
       }
       continue;
@@ -100,10 +106,16 @@ export function createEnv<const T extends EnvShape>({
   return parsedValues as Partial<z.output<z.ZodObject<T>>>;
 }
 
-export function warnIfMissing(scope: string, values: Record<string, unknown>): void {
+export function warnIfMissing(
+  scope: string,
+  values: Record<string, unknown>
+): void {
   for (const [name, value] of Object.entries(values)) {
     if (value === undefined || value === "") {
-      warn(scope, `Missing ${name}. Add it to a local .env file or the deployment environment.`);
+      warn(
+        scope,
+        `Missing ${name}. Add it to a local .env file or the deployment environment.`
+      );
     }
   }
 }
@@ -145,7 +157,10 @@ export function getBaseUrl(values: {
   VERCEL_PROJECT_PRODUCTION_URL?: string;
   VERCEL_URL?: string;
 }): string {
-  if (values.VERCEL_ENV === "production" && values.VERCEL_PROJECT_PRODUCTION_URL) {
+  if (
+    values.VERCEL_ENV === "production" &&
+    values.VERCEL_PROJECT_PRODUCTION_URL
+  ) {
     return `https://${values.VERCEL_PROJECT_PRODUCTION_URL}`;
   }
   if (values.VERCEL_ENV === "preview" && values.VERCEL_URL) {
@@ -172,7 +187,10 @@ export function getTrustedOrigins(values: {
     }
   }
 
-  if (values.VERCEL_ENV === "production" && values.VERCEL_PROJECT_PRODUCTION_URL) {
+  if (
+    values.VERCEL_ENV === "production" &&
+    values.VERCEL_PROJECT_PRODUCTION_URL
+  ) {
     origins.add(`https://${values.VERCEL_PROJECT_PRODUCTION_URL}`);
   }
 

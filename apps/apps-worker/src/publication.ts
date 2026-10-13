@@ -4,7 +4,7 @@ import { AppError } from "@tailorkit/app/server";
 /** Public URL identifiers must describe the same private bundle as the payload. */
 export function validateDeploymentPublication(
   metadata: AppDeploymentMetadata,
-  publication: { projectId: string; appPublicId: string },
+  publication: { projectId: string; appPublicId: string }
 ): void {
   const segments = metadata.objectKey.split("/");
   if (
@@ -19,6 +19,9 @@ export function validateDeploymentPublication(
     segments[8] !== "server" ||
     segments[9] !== "server.js"
   ) {
-    throw new AppError("BAD_REQUEST", "Deployment metadata does not match the route");
+    throw new AppError(
+      "BAD_REQUEST",
+      "Deployment metadata does not match the route"
+    );
   }
 }

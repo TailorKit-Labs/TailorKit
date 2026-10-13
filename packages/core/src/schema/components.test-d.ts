@@ -1,6 +1,11 @@
 import { expectTypeOf } from "vite-plus/test";
 import type { z } from "zod";
-import type { Component, ComponentProps, NoComponentFieldCallbackConflicts } from "./components";
+
+import type {
+  Component,
+  ComponentProps,
+  NoComponentFieldCallbackConflicts,
+} from "./components";
 
 interface Button {
   fields: z.ZodObject<{

@@ -1,7 +1,5 @@
-import { createIframeTools } from "./tools";
-import type { ToolBridge } from "@tailorkit/app/client";
-import { createIframeBackend } from "./backend";
-import type { Session } from "@tailorkit/app/client";
+import type { ToolBridge, Session } from "@tailorkit/app/client";
+
 import { iframeReadyType, sandboxMessageType } from "../bridge";
 import { readElementProps } from "../host/serialize";
 import type {
@@ -10,8 +8,10 @@ import type {
   RemoteCallbackBinding,
   RemoteNode,
 } from "../protocol";
+import { createIframeBackend } from "./backend";
 import { assertAppClient, renderClient } from "./resolve-view";
 import type { AppClient, ViewRequest } from "./resolve-view";
+import { createIframeTools } from "./tools";
 
 type InitData = Extract<HostToIframePayload, { type: "init" }>["data"];
 
@@ -38,20 +38,32 @@ export function startIframeRuntime(options: {
 
   const send = (payload: IframeToHostPayload) => {
     if (!destroyed) {
-      parentWindow.postMessage({ channel, payload, type: sandboxMessageType }, "*");
+      parentWindow.postMessage(
+        { channel, payload, type: sandboxMessageType },
+        "*"
+      );
     }
   };
-  const tools = createIframeTools((data) => send({ type: "toolRequest", data }));
-  const backend = createIframeBackend((data) => send({ type: "backendSessionRequest", data }));
+  const tools = createIframeTools((data) =>
+    send({ data, type: "toolRequest" })
+  );
+  const backend = createIframeBackend((data) =>
+    send({ data, type: "backendSessionRequest" })
+  );
   const backendGlobal = globalThis as typeof globalThis & {
     __tailorkitTools?: ToolBridge;
-    __tailorkitBackendSession?: (options: { refresh: boolean }) => Promise<Session>;
+    __tailorkitBackendSession?: (options: {
+      refresh: boolean;
+    }) => Promise<Session>;
   };
   backendGlobal.__tailorkitTools = tools.bridge;
   backendGlobal.__tailorkitBackendSession = backend.getSession;
   const sendError = (error: unknown) =>
     send({
-      data: { message: error instanceof Error ? error.stack || error.message : String(error) },
+      data: {
+        message:
+          error instanceof Error ? error.stack || error.message : String(error),
+      },
       type: "error",
     });
   const getNodeId = (node: Node): string => {
@@ -64,19 +76,34 @@ export function startIframeRuntime(options: {
     return id;
   };
   const readCallbacks = (element: Element): RemoteCallbackBinding[] => {
-    const value = element.getAttribute("data-tailorkit-callbacks");
+    const value = element.dataset.tailorkitCallbacks;
     if (!value) {
       return [];
     }
     try {
-      const callbacks = JSON.parse(value) as Record<string, Partial<RemoteCallbackBinding>>;
-      if (!callbacks || typeof callbacks !== "object" || Array.isArray(callbacks)) {
+      const callbacks = JSON.parse(value) as Record<
+        string,
+        Partial<RemoteCallbackBinding>
+      >;
+      if (
+        !callbacks ||
+        typeof callbacks !== "object" ||
+        Array.isArray(callbacks)
+      ) {
         return [];
       }
       return Object.entries(callbacks).flatMap(([event, config]) =>
-        config && typeof config.callback === "string" && typeof config.inputCount === "number"
-          ? [{ callback: config.callback, event, inputCount: config.inputCount }]
-          : [],
+        config &&
+        typeof config.callback === "string" &&
+        typeof config.inputCount === "number"
+          ? [
+              {
+                callback: config.callback,
+                event,
+                inputCount: config.inputCount,
+              },
+            ]
+          : []
       );
     } catch {
       return [];
@@ -119,7 +146,12 @@ export function startIframeRuntime(options: {
       sendSnapshot();
     }
   });
-  observer.observe(root, { attributes: true, characterData: true, childList: true, subtree: true });
+  observer.observe(root, {
+    attributes: true,
+    characterData: true,
+    childList: true,
+    subtree: true,
+  });
 
   const loadApp = async ({ appSource, appUrl, props }: InitData) => {
     if (destroyed) {
@@ -127,7 +159,7 @@ export function startIframeRuntime(options: {
     }
     if (loadedAppUrl !== appUrl) {
       const module = await importModule(
-        `data:text/javascript;charset=utf-8,${encodeURIComponent(appSource)}`,
+        `data:text/javascript;charset=utf-8,${encodeURIComponent(appSource)}`
       );
       if (destroyed) {
         return;
@@ -165,12 +197,18 @@ export function startIframeRuntime(options: {
     if (payload?.type === "backendSessionResult") {
       backend.receive(payload.data);
     } else if (payload?.type === "init") {
-      pendingLoad = pendingLoad.then(() => loadApp(payload.data)).catch(sendError);
+      pendingLoad = pendingLoad
+        .then(() => loadApp(payload.data))
+        .catch(sendError);
     } else if (payload?.type === "dispatchCallback") {
       const target = nodes.get(payload.data.nodeId)?.deref();
       if (!(target instanceof Element)) {
         nodes.delete(payload.data.nodeId);
-        sendError(new Error(`Cannot dispatch callback to unknown node "${payload.data.nodeId}".`));
+        sendError(
+          new Error(
+            `Cannot dispatch callback to unknown node "${payload.data.nodeId}".`
+          )
+        );
         return;
       }
       target.dispatchEvent(
@@ -178,7 +216,7 @@ export function startIframeRuntime(options: {
           bubbles: false,
           cancelable: true,
           detail: payload.data.args ?? [],
-        }),
+        })
       );
     }
   };
@@ -187,10 +225,13 @@ export function startIframeRuntime(options: {
   send({ type: "ready" });
   return () => {
     tools.close();
-    if (backendGlobal.__tailorkitTools === tools.bridge) delete backendGlobal.__tailorkitTools;
+    if (backendGlobal.__tailorkitTools === tools.bridge) {
+      delete backendGlobal.__tailorkitTools;
+    }
     backend.close();
-    if (backendGlobal.__tailorkitBackendSession === backend.getSession)
+    if (backendGlobal.__tailorkitBackendSession === backend.getSession) {
       delete backendGlobal.__tailorkitBackendSession;
+    }
     destroyed = true;
     observer.disconnect();
     window.removeEventListener("message", handleMessage);

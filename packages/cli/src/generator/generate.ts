@@ -1,10 +1,10 @@
-import { Liquid } from "liquidjs";
 import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { generateTypes, type TailorKitSchemaFile } from "./types";
-import { TEMPLATE_DRIZZLE_VERSION } from "./package-versions";
 
+import { Liquid } from "liquidjs";
+
+import { TEMPLATE_DRIZZLE_VERSION } from "./package-versions";
 import {
   rootTemplate,
   defaultViewTemplate,
@@ -22,6 +22,8 @@ import {
   logoDarkTemplate,
   logoLightTemplate,
 } from "./templates/index";
+import { generateTypes } from "./types";
+import type { TailorKitSchemaFile } from "./types";
 
 export interface GenerateAppOptions {
   targetDirectory: string;
@@ -49,24 +51,32 @@ const engine = new Liquid({ strictVariables: true });
 // eslint-disable-next-line no-control-regex -- Host-provided file names cannot contain control characters.
 const invalidFilenameCharacters = /[<>:"/\\|?*#\u0000-\u001F]/u;
 const isFilenameSegment = (segment: string) =>
-  segment !== "" && segment !== "." && segment !== ".." && !invalidFilenameCharacters.test(segment);
+  segment !== "" &&
+  segment !== "." &&
+  segment !== ".." &&
+  !invalidFilenameCharacters.test(segment);
 
 function getViewModulePath(slotName: string, viewPath: string) {
-  const viewSegments = viewPath === "/" ? ["home"] : viewPath.slice(1).split("/");
+  const viewSegments =
+    viewPath === "/" ? ["home"] : viewPath.slice(1).split("/");
   const routeName = viewSegments.join(".");
   if (
     !viewPath.startsWith("/") ||
-    ![slotName, ...viewSegments, ...routeName.split(".")].every(isFilenameSegment)
+    ![slotName, ...viewSegments, ...routeName.split(".")].every(
+      isFilenameSegment
+    )
   ) {
     throw new Error(
-      "The selected slot and view must have valid file names with no empty dot-separated route segments to generate src/slots.",
+      "The selected slot and view must have valid file names with no empty dot-separated route segments to generate src/slots."
     );
   }
   return ["slots", slotName, routeName].join("/");
 }
 
-const renderTemplate = (template: string, data: Record<string, unknown>): Promise<string> =>
-  engine.parseAndRender(template, data);
+const renderTemplate = (
+  template: string,
+  data: Record<string, unknown>
+): Promise<string> => engine.parseAndRender(template, data);
 
 const ensureDirectory = (directory: string): Promise<void> =>
   mkdir(directory, { recursive: true }).then(() => {});
@@ -74,7 +84,7 @@ const ensureDirectory = (directory: string): Promise<void> =>
 const writeTemplateFile = async (
   filepath: string,
   contents: string,
-  force: boolean,
+  force: boolean
 ): Promise<void> => {
   if (!force && existsSync(filepath)) {
     throw new Error(`${filepath} already exists. Use --force to overwrite it.`);
@@ -82,7 +92,9 @@ const writeTemplateFile = async (
   await writeFile(filepath, contents, "utf-8");
 };
 
-export const generateApp = async (options: GenerateAppOptions): Promise<void> => {
+export const generateApp = async (
+  options: GenerateAppOptions
+): Promise<void> => {
   const {
     targetDirectory,
     force,
@@ -98,13 +110,17 @@ export const generateApp = async (options: GenerateAppOptions): Promise<void> =>
   const slots = Object.keys(schema.slots ?? {}).sort();
   const viewPath = Object.keys(schema.views ?? {})
     .sort()
-    .find((view) => slots.some((slot) => schema.slots?.[slot]?.views.includes(view)));
+    .find((view) =>
+      slots.some((slot) => schema.slots?.[slot]?.views.includes(view))
+    );
   if (viewPath === undefined) {
     throw new Error(
-      "The host schema has no views supported by a slot. Add a view and slot before running tailorkit init.",
+      "The host schema has no views supported by a slot. Add a view and slot before running tailorkit init."
     );
   }
-  const slotName = slots.find((slot) => schema.slots?.[slot]?.views.includes(viewPath))!;
+  const slotName = slots.find((slot) =>
+    schema.slots?.[slot]?.views.includes(viewPath)
+  )!;
   const viewModulePath = getViewModulePath(slotName, viewPath);
   const viewFile = path.join("src", `${viewModulePath}.view.tsx`);
   const box = schema.components?.Box;
@@ -112,10 +128,14 @@ export const generateApp = async (options: GenerateAppOptions): Promise<void> =>
   const useBox = box?.children === true && !box.fields?.required?.length;
   const bindingsPath = path.join(targetDirectory, "src", "tailorkit.gen.ts");
   if (!force && existsSync(bindingsPath)) {
-    throw new Error(`${bindingsPath} already exists. Use --force to overwrite it.`);
+    throw new Error(
+      `${bindingsPath} already exists. Use --force to overwrite it.`
+    );
   }
 
-  const tailorkitVersion = useWorkspaceDependencies ? "workspace:*" : packageVersions.tailorkit;
+  const tailorkitVersion = useWorkspaceDependencies
+    ? "workspace:*"
+    : packageVersions.tailorkit;
 
   const checkParts: string[] = [];
   const fixParts: string[] = [];
@@ -129,24 +149,24 @@ export const generateApp = async (options: GenerateAppOptions): Promise<void> =>
   }
 
   const templateData = {
-    viewPath: JSON.stringify(viewPath),
-    slotName: JSON.stringify(slotName),
-    multiple: schema.slots?.[slotName]?.multiple === true,
-    useBox,
     checkScript: checkParts.join(" && "),
+    drizzleKitVersion: packageVersions.drizzleKit ?? TEMPLATE_DRIZZLE_VERSION,
+    drizzleOrmVersion: packageVersions.drizzleOrm ?? TEMPLATE_DRIZZLE_VERSION,
     fixScript: fixParts.join(" && "),
     formatting,
     hostUrl,
     linting,
+    multiple: schema.slots?.[slotName]?.multiple === true,
     oxfmtVersion: packageVersions.oxfmt,
     oxlintVersion: packageVersions.oxlint,
     packageName,
     preactVersion: packageVersions.preact,
+    slotName: JSON.stringify(slotName),
     tailorkitVersion,
     typescriptVersion: packageVersions.typescript,
+    useBox,
+    viewPath: JSON.stringify(viewPath),
     zodVersion: packageVersions.zod ?? "^4.0.0",
-    drizzleKitVersion: packageVersions.drizzleKit ?? TEMPLATE_DRIZZLE_VERSION,
-    drizzleOrmVersion: packageVersions.drizzleOrm ?? TEMPLATE_DRIZZLE_VERSION,
   };
 
   await ensureDirectory(path.dirname(path.join(targetDirectory, viewFile)));
@@ -154,21 +174,35 @@ export const generateApp = async (options: GenerateAppOptions): Promise<void> =>
   await ensureDirectory(path.join(targetDirectory, "src", "db", "migrations"));
 
   const files: { template: string; dest: string; condition?: boolean }[] = [
-    { template: packageJsonTemplate, dest: "package.json" },
-    { template: tsconfigTemplate, dest: "tsconfig.json" },
-    { template: tailorkitConfigTemplate, dest: "tailorkit.config.ts" },
-    { template: logoDarkTemplate, dest: "logo-dark.svg" },
-    { template: logoLightTemplate, dest: "logo-light.svg" },
-    { template: gitignoreTemplate, dest: ".gitignore" },
-    { template: oxlintConfigTemplate, dest: "oxlint.config.ts", condition: linting },
-    { template: oxfmtConfigTemplate, dest: "oxfmt.config.ts", condition: formatting },
-    { template: rootTemplate, dest: path.join("src", "root.tsx") },
-    { template: defaultViewTemplate, dest: viewFile },
-    { template: serverTemplate, dest: path.join("src", "server.ts") },
-    { template: schemaTemplate, dest: path.join("src", "db", "schema.ts") },
-    { template: databaseTemplate, dest: path.join("src", "db", "index.ts") },
-    { template: relationsTemplate, dest: path.join("src", "db", "relations.ts") },
-    { template: greetingTemplate, dest: path.join("src", "functions", "greeting.ts") },
+    { dest: "package.json", template: packageJsonTemplate },
+    { dest: "tsconfig.json", template: tsconfigTemplate },
+    { dest: "tailorkit.config.ts", template: tailorkitConfigTemplate },
+    { dest: "logo-dark.svg", template: logoDarkTemplate },
+    { dest: "logo-light.svg", template: logoLightTemplate },
+    { dest: ".gitignore", template: gitignoreTemplate },
+    {
+      condition: linting,
+      dest: "oxlint.config.ts",
+      template: oxlintConfigTemplate,
+    },
+    {
+      condition: formatting,
+      dest: "oxfmt.config.ts",
+      template: oxfmtConfigTemplate,
+    },
+    { dest: path.join("src", "root.tsx"), template: rootTemplate },
+    { dest: viewFile, template: defaultViewTemplate },
+    { dest: path.join("src", "server.ts"), template: serverTemplate },
+    { dest: path.join("src", "db", "schema.ts"), template: schemaTemplate },
+    { dest: path.join("src", "db", "index.ts"), template: databaseTemplate },
+    {
+      dest: path.join("src", "db", "relations.ts"),
+      template: relationsTemplate,
+    },
+    {
+      dest: path.join("src", "functions", "greeting.ts"),
+      template: greetingTemplate,
+    },
   ];
 
   await Promise.all(
@@ -176,8 +210,12 @@ export const generateApp = async (options: GenerateAppOptions): Promise<void> =>
       .filter((f) => f.condition !== false)
       .map(async ({ template, dest }) => {
         const rendered = await renderTemplate(template, templateData);
-        await writeTemplateFile(path.join(targetDirectory, dest), rendered, force);
-      }),
+        await writeTemplateFile(
+          path.join(targetDirectory, dest),
+          rendered,
+          force
+        );
+      })
   );
 
   // Use the same binding generator as `tailorkit generate`, even without installation.

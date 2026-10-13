@@ -1,15 +1,16 @@
-import { createTailorKitSchema } from "./schema";
-import type { ComponentProps } from "./schema";
 import { expectTypeOf } from "vite-plus/test";
 import { z } from "zod";
+
+import { createTailorKitSchema } from "./schema";
+import type { ComponentProps } from "./schema";
 
 createTailorKitSchema({
   components: {
     Button: {
+      children: true,
       fields: z.object({
         variant: z.enum(["default", "secondary"]),
       }),
-      children: true,
     },
   },
 });
@@ -25,10 +26,10 @@ createTailorKitSchema({
 const tailor = createTailorKitSchema({
   components: {
     Button: {
+      children: true,
       fields: z.object({
         variant: z.enum(["default", "secondary"]),
       }),
-      children: true,
     },
   },
   views: {
@@ -42,26 +43,30 @@ const context = tailor.views["/customers/:customerId"];
 void component;
 void context;
 
-const buttonProps: ComponentProps<typeof tailor.components.Button> = { variant: "default" };
+const buttonProps: ComponentProps<typeof tailor.components.Button> = {
+  variant: "default",
+};
 void buttonProps;
 
 expectTypeOf<ComponentProps<typeof tailor.components.Button>>().toMatchTypeOf<{
   variant: "default" | "secondary";
 }>();
 expectTypeOf<typeof tailor.components.Button.children>().toEqualTypeOf<true>();
-expectTypeOf<typeof context>().toEqualTypeOf<z.ZodObject<{ customerId: z.ZodString }>>();
+expectTypeOf<typeof context>().toEqualTypeOf<
+  z.ZodObject<{ customerId: z.ZodString }>
+>();
 const callbacks = createTailorKitSchema({
   components: {
     Dialog: {
       callbacks: {
-        onSave: {
-          input: z.object({ title: z.string(), version: z.number() }),
-          output: z.object({ saved: z.boolean() }),
-        },
         onClose: {},
         onLoad: {
           async: true,
           output: z.object({ ready: z.literal(true) }),
+        },
+        onSave: {
+          input: z.object({ title: z.string(), version: z.number() }),
+          output: z.object({ saved: z.boolean() }),
         },
       },
     },
@@ -69,15 +74,17 @@ const callbacks = createTailorKitSchema({
 });
 
 const dialogProps: ComponentProps<typeof callbacks.components.Dialog> = {
+  onClose: () => {},
+  onLoad: () => Promise.resolve({ ready: true as const }),
   onSave: (input) => {
     expectTypeOf(input).toEqualTypeOf<{ title: string; version: number }>();
     return { saved: true };
   },
-  onClose: () => {},
-  onLoad: () => Promise.resolve({ ready: true as const }),
 };
 void dialogProps;
-expectTypeOf<ComponentProps<typeof callbacks.components.Dialog>>().toMatchTypeOf<{
+expectTypeOf<
+  ComponentProps<typeof callbacks.components.Dialog>
+>().toMatchTypeOf<{
   onSave: (input: { title: string; version: number }) => { saved: boolean };
   onClose: () => void;
   onLoad: () => Promise<{ ready: true }>;
@@ -86,13 +93,13 @@ expectTypeOf<ComponentProps<typeof callbacks.components.Dialog>>().toMatchTypeOf
 createTailorKitSchema({
   components: {
     Button: {
-      fields: z.object({
-        variant: z.enum(["default", "secondary"]),
-      }),
       callbacks: {
         onClick: {},
       },
       children: true,
+      fields: z.object({
+        variant: z.enum(["default", "secondary"]),
+      }),
     },
   },
 });
@@ -101,12 +108,12 @@ createTailorKitSchema({
   components: {
     // @ts-expect-error field and callback keys must still conflict when explicitly duplicated
     Button: {
-      fields: z.object({
-        variant: z.enum(["default", "secondary"]),
-      }),
       callbacks: {
         variant: {},
       },
+      fields: z.object({
+        variant: z.enum(["default", "secondary"]),
+      }),
     },
   },
 });
@@ -122,8 +129,8 @@ createTailorKitSchema({
 
 createTailorKitSchema({
   components: {},
-  views: { "/": z.object({}), "/users": z.object({}) },
   slots: { navbar: { views: ["/"] }, panel: { views: ["/users"] } },
+  views: { "/": z.object({}), "/users": z.object({}) },
 });
 createTailorKitSchema({
   components: {},

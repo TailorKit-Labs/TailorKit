@@ -67,7 +67,10 @@ const compareVersions = (a: SemverVersion, b: SemverVersion): number => {
   return a.patch - b.patch;
 };
 
-const satisfiesCaretMatcher = (version: SemverVersion, matcher: string): boolean => {
+const satisfiesCaretMatcher = (
+  version: SemverVersion,
+  matcher: string
+): boolean => {
   const match = /^\^(?<major>\d+)(?:\.(?<minor>\d+))?/u.exec(matcher);
   if (!match?.groups?.major) {
     return false;
@@ -83,9 +86,12 @@ const resolvePackageVersion = async ({
   packageName,
 }: PackageVersionRequest): Promise<string> => {
   try {
-    const res = await fetch(`${REGISTRY_URL}/${encodeURIComponent(packageName)}`, {
-      signal: AbortSignal.timeout(REGISTRY_TIMEOUT_MS),
-    });
+    const res = await fetch(
+      `${REGISTRY_URL}/${encodeURIComponent(packageName)}`,
+      {
+        signal: AbortSignal.timeout(REGISTRY_TIMEOUT_MS),
+      }
+    );
     if (!res.ok) {
       return fallback;
     }
@@ -102,23 +108,25 @@ const resolvePackageVersion = async ({
   }
 };
 
-export const resolveTemplatePackageVersions = async (): Promise<TemplatePackageVersions> => {
-  const [oxfmt, oxlint, preact, tailorkit, typescript, zod] = await Promise.all([
-    resolvePackageVersion(REQUESTS.oxfmt),
-    resolvePackageVersion(REQUESTS.oxlint),
-    resolvePackageVersion(REQUESTS.preact),
-    resolvePackageVersion(REQUESTS.tailorkit),
-    resolvePackageVersion(REQUESTS.typescript),
-    resolvePackageVersion(REQUESTS.zod),
-  ]);
-  return {
-    drizzleKit: TEMPLATE_DRIZZLE_VERSION,
-    drizzleOrm: TEMPLATE_DRIZZLE_VERSION,
-    oxfmt,
-    oxlint,
-    preact,
-    tailorkit,
-    typescript,
-    zod,
+export const resolveTemplatePackageVersions =
+  async (): Promise<TemplatePackageVersions> => {
+    const [oxfmt, oxlint, preact, tailorkit, typescript, zod] =
+      await Promise.all([
+        resolvePackageVersion(REQUESTS.oxfmt),
+        resolvePackageVersion(REQUESTS.oxlint),
+        resolvePackageVersion(REQUESTS.preact),
+        resolvePackageVersion(REQUESTS.tailorkit),
+        resolvePackageVersion(REQUESTS.typescript),
+        resolvePackageVersion(REQUESTS.zod),
+      ]);
+    return {
+      drizzleKit: TEMPLATE_DRIZZLE_VERSION,
+      drizzleOrm: TEMPLATE_DRIZZLE_VERSION,
+      oxfmt,
+      oxlint,
+      preact,
+      tailorkit,
+      typescript,
+      zod,
+    };
   };
-};

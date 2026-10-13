@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
+
 import {
   acceptsGzip,
   assetFailure,
@@ -30,7 +31,11 @@ describe("gzip content negotiation", () => {
     ["br", false],
   ])("negotiates %s as %s", (acceptEncoding, expected) => {
     expect(
-      acceptsGzip(new Request(hostedUrl, { headers: { "Accept-Encoding": acceptEncoding } })),
+      acceptsGzip(
+        new Request(hostedUrl, {
+          headers: { "Accept-Encoding": acceptEncoding },
+        })
+      )
     ).toBe(expected);
   });
 });
@@ -39,24 +44,28 @@ describe("asset delivery contract", () => {
   it("maps the same local and hosted URL contract to one storage key", () => {
     const expected = {
       appId,
+      contentType: "application/javascript",
       deploymentId,
       key: `teams/${teamId}/projects/${projectId}/apps/${appId}/deployments/${deploymentId}/client/client.js`,
       projectId,
       publicTeamId: teamId,
-      contentType: "application/javascript",
     };
     expect(parseNodeAssetRequest(new Request(localUrl))).toEqual(expected);
-    expect(parseHostedAssetRequest(new Request(hostedUrl), "tailorkit.app")).toEqual(expected);
+    expect(
+      parseHostedAssetRequest(new Request(hostedUrl), "tailorkit.app")
+    ).toEqual(expected);
   });
 
   it("maps content-addressed app logos to shared storage keys", () => {
     const logoPath = `/p/${projectId}/a/${appId}/d/${deploymentId}/logos/${logoHash}.webp`;
     expect(
-      parseNodeAssetRequest(new Request(`http://localhost:3000/api/assets/t/${teamId}${logoPath}`)),
+      parseNodeAssetRequest(
+        new Request(`http://localhost:3000/api/assets/t/${teamId}${logoPath}`)
+      )
     ).toEqual({
       appId,
-      deploymentId,
       contentType: "image/webp",
+      deploymentId,
       key: `teams/${teamId}/projects/${projectId}/apps/${appId}/logos/${logoHash}.webp`,
       projectId,
       publicTeamId: teamId,
@@ -64,24 +73,29 @@ describe("asset delivery contract", () => {
     expect(
       parseHostedAssetRequest(
         new Request(`https://${teamId}.tailorkit.app${logoPath}`),
-        "tailorkit.app",
-      ),
+        "tailorkit.app"
+      )
     ).toEqual(
       expect.objectContaining({
         key: `teams/${teamId}/projects/${projectId}/apps/${appId}/logos/${logoHash}.webp`,
-      }),
+      })
     );
   });
 
   it("requires the hosted tenant hostname to match the request identity", () => {
     expect(
       parseHostedAssetRequest(
-        new Request(hostedUrl.replace("tailorkit.app", "tailorkit.app.evil.example")),
-        "tailorkit.app",
-      ),
+        new Request(
+          hostedUrl.replace("tailorkit.app", "tailorkit.app.evil.example")
+        ),
+        "tailorkit.app"
+      )
     ).toBeUndefined();
     expect(
-      parseHostedAssetRequest(new Request(hostedUrl.replace("https:", "http:")), "tailorkit.app"),
+      parseHostedAssetRequest(
+        new Request(hostedUrl.replace("https:", "http:")),
+        "tailorkit.app"
+      )
     ).toBeUndefined();
   });
 
@@ -110,9 +124,11 @@ describe("asset delivery contract", () => {
     expect(headers.get("ETag")).toBe('"etag"');
     expect(headers.get("Access-Control-Allow-Origin")).toBe("*");
     expect(headers.get("Cache-Control")).toBe("public, max-age=86400");
-    expect(assetHeaders({ contentLength: 10, contentType: "image/png" }).get("Content-Type")).toBe(
-      "image/png",
-    );
+    expect(
+      assetHeaders({ contentLength: 10, contentType: "image/png" }).get(
+        "Content-Type"
+      )
+    ).toBe("image/png");
   });
 });
 
@@ -126,11 +142,13 @@ it("rejects retired flat asset and app-scoped logo URLs", () => {
     expect(
       parseHostedAssetRequest(
         new Request(`https://${teamId}.tailorkit.app${path}`),
-        "tailorkit.app",
-      ),
+        "tailorkit.app"
+      )
     ).toBeUndefined();
     expect(
-      parseNodeAssetRequest(new Request(`http://localhost:3000/api/assets/t/${teamId}${path}`)),
+      parseNodeAssetRequest(
+        new Request(`http://localhost:3000/api/assets/t/${teamId}${path}`)
+      )
     ).toBeUndefined();
   }
 });

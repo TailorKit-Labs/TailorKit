@@ -1,24 +1,33 @@
-import { publishRuntimeMetadata, runtimeSession } from "./runtime";
 import { openapi } from "@orpc/openapi";
 import { ORPCError } from "@orpc/server";
 import { db } from "@tailorkit/db";
 import { App, app, AppDeployment } from "@tailorkit/db/schema/apps";
 import { eq } from "drizzle-orm";
 import z from "zod";
+
+import { withAppAssetUrl } from "../asset-url";
+import type { Context } from "../context";
 import { paginatedOutput, paginationQuery } from "../pagination";
 import { o, cliRouter, requireApp, requireAppInScopes } from "../procedures";
 import { createPublicId } from "../public-id";
-import { withAppAssetUrl } from "../asset-url";
-import { canonicalizeScope, canonicalizeScopes, scopeSchema, scopesSchema } from "../scope";
-import type { Context } from "../context";
+import {
+  canonicalizeScope,
+  canonicalizeScopes,
+  scopeSchema,
+  scopesSchema,
+} from "../scope";
+import { publishRuntimeMetadata, runtimeSession } from "./runtime";
 
 export const AppWithCurrentDeployment = App.omit({ scopeKey: true }).extend({
-  currentDeployment: AppDeployment.nullable(),
-  views: AppDeployment.shape.views,
   clientPath: z.url().optional(),
-  logoPaths: z.object({ dark: z.url().optional(), light: z.url().optional() }).optional(),
+  currentDeployment: AppDeployment.nullable(),
+  logoPaths: z
+    .object({ dark: z.url().optional(), light: z.url().optional() })
+    .optional(),
+  views: AppDeployment.shape.views,
 });
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
 async function createUniqueAppPublicId(projectId: string) {
   for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -38,9 +47,9 @@ async function createUniqueAppPublicId(projectId: string) {
 const listApps = cliRouter
   .meta(
     openapi({
-      path: "/apps/list",
       method: "POST",
-    }),
+      path: "/apps/list",
+    })
   )
   .input(z.object({ body: paginationQuery.extend({ scopes: scopesSchema }) }))
   .output(paginatedOutput(AppWithCurrentDeployment))
@@ -48,19 +57,21 @@ const listApps = cliRouter
     const { page, pageSize } = input.body;
     const scopes = canonicalizeScopes(input.body.scopes);
     const apps = await db.query.app.findMany({
+      limit: pageSize + 1,
+      offset: (page - 1) * pageSize,
+      orderBy: {
+        createdAt: "desc",
+      },
       where: {
         RAW: (fields, { and, eq, or }) =>
           and(
             eq(fields.projectId, context.project.id),
             or(
               ...scopes.map(({ scope, scopeKey }) =>
-                and(eq(fields.scopeKey, scopeKey), eq(fields.scope, scope)),
-              ),
-            ),
+                and(eq(fields.scopeKey, scopeKey), eq(fields.scope, scope))
+              )
+            )
           ) ?? eq(fields.projectId, context.project.id),
-      },
-      orderBy: {
-        createdAt: "desc",
       },
       with: {
         currentDeployment: {
@@ -69,15 +80,19 @@ const listApps = cliRouter
           },
         },
       },
-      limit: pageSize + 1,
-      offset: (page - 1) * pageSize,
     });
 
     return {
       body: {
         items: apps
           .slice(0, pageSize)
-          .map((item) => withAppAssetUrl(item, context.organization.publicId, context.project.id)),
+          .map((item) =>
+            withAppAssetUrl(
+              item,
+              context.organization.publicId,
+              context.project.id
+            )
+          ),
         pagination: {
           hasMore: apps.length > pageSize,
           page,
@@ -90,34 +105,40 @@ const listApps = cliRouter
 const getApp = cliRouter
   .meta(
     openapi({
-      path: "/apps/{appId}/lookup",
       method: "POST",
-    }),
+      path: "/apps/{appId}/lookup",
+    })
   )
   .input(
     z.object({
-      params: z.object({ appId: z.string() }),
       body: z.object({ scopes: scopesSchema }),
-    }),
+      params: z.object({ appId: z.string() }),
+    })
   )
   .output(z.object({ body: AppWithCurrentDeployment }))
   .use(
-    requireAppInScopes.adaptInput(({ params: { appId }, body: { scopes } }) => ({ appId, scopes })),
+    requireAppInScopes.adaptInput(
+      ({ params: { appId }, body: { scopes } }) => ({ appId, scopes })
+    )
   )
   .handler(({ context }) => ({
-    body: withAppAssetUrl(context.app, context.organization.publicId, context.project.id),
+    body: withAppAssetUrl(
+      context.app,
+      context.organization.publicId,
+      context.project.id
+    ),
   }));
 
 const createAppInput = z.object({
-  name: App.shape.name,
   description: App.shape.description,
+  name: App.shape.name,
   scope: scopeSchema,
 });
 
 export async function createAppRecord(
   context: Context,
   input: z.infer<typeof createAppInput>,
-  createdByAgent = false,
+  createdByAgent = false
 ) {
   const scope = canonicalizeScope(input.scope);
   const [createdApp] = await db
@@ -128,8 +149,8 @@ export async function createAppRecord(
       name: input.name.trim(),
       projectId: context.project.id,
       publicId: await createUniqueAppPublicId(context.project.id),
-      scopeKey: scope.scopeKey,
       scope: scope.scope,
+      scopeKey: scope.scopeKey,
     })
     .returning();
 
@@ -147,31 +168,36 @@ export async function createAppRecord(
 const createApp = cliRouter
   .meta(
     openapi({
-      path: "/apps",
       method: "POST",
-    }),
+      path: "/apps",
+    })
   )
   .input(z.object({ body: createAppInput }))
   .output(z.object({ body: AppWithCurrentDeployment }))
-  .handler(async ({ context, input }) => {
-    return { body: await createAppRecord(context, input.body) };
-  });
+  .handler(async ({ context, input }) => ({
+    body: await createAppRecord(context, input.body),
+  }));
 
 const deleteApp = cliRouter
   .meta(
     openapi({
-      path: "/apps/{appId}",
       method: "DELETE",
-    }),
+      path: "/apps/{appId}",
+    })
   )
   .input(
     z.object({
-      params: z.object({ appId: z.string() }),
       body: z.object({ scope: scopeSchema }),
-    }),
+      params: z.object({ appId: z.string() }),
+    })
   )
   .output(z.object({ body: z.object({ id: z.uuid({ version: "v7" }) }) }))
-  .use(requireApp.adaptInput(({ params: { appId }, body: { scope } }) => ({ appId, scope })))
+  .use(
+    requireApp.adaptInput(({ params: { appId }, body: { scope } }) => ({
+      appId,
+      scope,
+    }))
+  )
   .handler(async ({ context }) => {
     await db.delete(app).where(eq(app.id, context.app.id));
 
@@ -181,24 +207,33 @@ const deleteApp = cliRouter
 const updateApp = cliRouter
   .meta(
     openapi({
-      path: "/apps/{appId}",
       method: "PUT",
-    }),
+      path: "/apps/{appId}",
+    })
   )
   .input(
     z.object({
-      body: App.pick({ name: true, description: true }).extend({ scope: scopeSchema }),
+      body: App.pick({ description: true, name: true }).extend({
+        scope: scopeSchema,
+      }),
       params: z.object({ appId: z.string() }),
-    }),
+    })
   )
   .output(z.object({ body: AppWithCurrentDeployment }))
-  .use(requireApp.adaptInput(({ params: { appId }, body: { scope } }) => ({ appId, scope })))
+  .use(
+    requireApp.adaptInput(({ params: { appId }, body: { scope } }) => ({
+      appId,
+      scope,
+    }))
+  )
   .handler(async ({ context, input }) => {
     const [updatedApp] = await db
       .update(app)
       .set({
         description:
-          input.body.description === undefined ? undefined : input.body.description?.trim() || null,
+          input.body.description === undefined
+            ? undefined
+            : input.body.description?.trim() || null,
         name: input.body.name?.trim(),
       })
       .where(eq(app.id, context.app.id))
@@ -220,18 +255,23 @@ const updateApp = cliRouter
 const deploy = cliRouter
   .meta(
     openapi({
-      path: "/apps/{appId}/deploy",
       method: "POST",
-    }),
+      path: "/apps/{appId}/deploy",
+    })
   )
   .input(
     z.object({
       body: z.object({ deploymentId: z.string(), scope: scopeSchema }),
       params: z.object({ appId: z.string() }),
-    }),
+    })
   )
   .output(z.object({ body: AppWithCurrentDeployment }))
-  .use(requireApp.adaptInput(({ params: { appId }, body: { scope } }) => ({ appId, scope })))
+  .use(
+    requireApp.adaptInput(({ params: { appId }, body: { scope } }) => ({
+      appId,
+      scope,
+    }))
+  )
   .handler(async ({ context, input }) => {
     const deploymentByPublicId = await db.query.appDeployment.findFirst({
       where: {
@@ -268,21 +308,21 @@ const deploy = cliRouter
       const server = await db.query.appDeploymentFile.findFirst({
         where: {
           appDeploymentId: deployment.id,
-          status: "verified",
           objectKey: `teams/${context.organization.publicId}/projects/${context.project.id}/apps/${context.app.publicId}/deployments/${deployment.publicId}/server/server.js`,
+          status: "verified",
         },
       });
       if (server?.checksum) {
         await publishRuntimeMetadata(
           {
-            projectId: context.project.id,
             appId: context.app.id,
-            deploymentId: deployment.id,
-            objectKey: server.objectKey,
             checksum: server.checksum,
             contentLength: server.contentLength,
+            deploymentId: deployment.id,
+            objectKey: server.objectKey,
+            projectId: context.project.id,
           },
-          context.app.publicId,
+          context.app.publicId
         );
       }
     }
@@ -291,17 +331,17 @@ const deploy = cliRouter
       body: withAppAssetUrl(
         { ...updatedApp, currentDeployment: deployment },
         context.organization.publicId,
-        context.project.id,
+        context.project.id
       ),
     };
   });
 
 export const appRouter = o.router({
-  runtimeSession,
-  list: listApps,
-  get: getApp,
   create: createApp,
   delete: deleteApp,
-  update: updateApp,
   deploy,
+  get: getApp,
+  list: listApps,
+  runtimeSession,
+  update: updateApp,
 });

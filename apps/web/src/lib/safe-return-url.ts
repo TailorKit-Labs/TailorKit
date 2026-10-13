@@ -1,4 +1,7 @@
-export function getSameOriginPath(value: string | undefined, currentOrigin: string) {
+export function getSameOriginPath(
+  value: string | undefined,
+  currentOrigin: string
+) {
   if (!value) {
     return;
   }
@@ -15,7 +18,10 @@ export function getSameOriginPath(value: string | undefined, currentOrigin: stri
   }
 }
 
-export function getSameOriginUrl(value: string | undefined, currentOrigin: string) {
+export function getSameOriginUrl(
+  value: string | undefined,
+  currentOrigin: string
+) {
   const path = getSameOriginPath(value, currentOrigin);
 
   if (!path) {
@@ -28,7 +34,7 @@ export function getSameOriginUrl(value: string | undefined, currentOrigin: strin
 export function getAuthErrorCallbackUrl(
   route: "/login" | "/sign-up",
   returnTo: string | undefined,
-  currentOrigin: string,
+  currentOrigin: string
 ) {
   const callbackUrl = new URL(route, currentOrigin);
   const returnPath = getSameOriginPath(returnTo, currentOrigin);

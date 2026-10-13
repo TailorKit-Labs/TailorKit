@@ -1,10 +1,11 @@
-import { atom } from "nanostores";
+import type { TailorKitContract } from "@tailorkit/core/schema";
 import { getViewDepth, isViewAncestor } from "@tailorkit/core/views";
 import type { ActiveView, ViewStatus } from "@tailorkit/core/views";
-import type { TailorKitContract } from "@tailorkit/core/schema";
-import type { ViewContextRegistration } from "./view-context-types";
+import { atom } from "nanostores";
+
 import { validateViewContext } from "./view-context-diagnostics";
 import type { ViewContextResult } from "./view-context-diagnostics";
+import type { ViewContextRegistration } from "./view-context-types";
 
 export interface ViewEntry {
   id: symbol;
@@ -15,7 +16,9 @@ export interface ViewEntry {
 }
 
 /** Own view state and diagnostics independently of any framework adapter. */
-export function createViewContextStore(contract: Pick<TailorKitContract, "views">) {
+export function createViewContextStore(
+  contract: Pick<TailorKitContract, "views">
+) {
   const entries = new Map<symbol, ViewEntry>();
   const state = atom<ActiveView | null>(null);
   let nextOrder = 0;
@@ -26,7 +29,9 @@ export function createViewContextStore(contract: Pick<TailorKitContract, "views"
   const parsed = new Map<symbol, { context: unknown; status: ViewStatus }>();
 
   const apply = (entry: ViewEntry, result: ViewContextResult) => {
-    if (entries.get(entry.id) !== entry) return;
+    if (entries.get(entry.id) !== entry) {
+      return;
+    }
     if ("value" in result) {
       parsed.set(entry.id, { context: result.value, status: entry.status });
       diagnostics.delete(entry.id);
@@ -35,8 +40,11 @@ export function createViewContextStore(contract: Pick<TailorKitContract, "views"
       const key = JSON.stringify([entry.view, entry.context, result.message]);
       if (key !== diagnostics.get(entry.id)) {
         diagnostics.set(entry.id, key);
-        if (result.details === undefined) console.error(result.message);
-        else console.error(result.message, result.details);
+        if (result.details === undefined) {
+          console.error(result.message);
+        } else {
+          console.error(result.message, result.details);
+        }
       }
     }
     publish();
@@ -44,13 +52,13 @@ export function createViewContextStore(contract: Pick<TailorKitContract, "views"
   const check = (entry: ViewEntry) => {
     const failed = (error: unknown) =>
       apply(entry, {
-        message: `TailorKit could not validate context for view "${entry.view}".`,
         details: error,
+        message: `TailorKit could not validate context for view "${entry.view}".`,
       });
     try {
       const result = validateViewContext(
         entry,
-        contract.views[entry.view as keyof typeof contract.views],
+        contract.views[entry.view as keyof typeof contract.views]
       );
       if ("then" in result) {
         parsed.set(entry.id, { context: undefined, status: "loading" });
@@ -73,15 +81,18 @@ export function createViewContextStore(contract: Pick<TailorKitContract, "views"
       scheduled = false;
       // Retain diagnostic keys across synchronous cleanup/remount cycles.
       for (const id of diagnostics.keys()) {
-        if (!entries.has(id)) diagnostics.delete(id);
+        if (!entries.has(id)) {
+          diagnostics.delete(id);
+        }
       }
       const ordered = [...entries.values()].toSorted(
-        (a, b) => getViewDepth(b.view) - getViewDepth(a.view) || b.order - a.order,
+        (a, b) =>
+          getViewDepth(b.view) - getViewDepth(a.view) || b.order - a.order
       );
       const selected = ordered[0];
       if (selected) {
         const peers = ordered.filter(
-          (entry) => getViewDepth(entry.view) === getViewDepth(selected.view),
+          (entry) => getViewDepth(entry.view) === getViewDepth(selected.view)
         );
         if (peers.length > 1) {
           console.warn(
@@ -89,12 +100,11 @@ export function createViewContextStore(contract: Pick<TailorKitContract, "views"
               .toReversed()
               .map((entry) => `"${entry.view}"`)
               .join(
-                ", ",
-              )}. TailorKit selected "${selected.view}" by mount order. Only one route at a hierarchy depth should register a view.`,
+                ", "
+              )}. TailorKit selected "${selected.view}" by mount order. Only one route at a hierarchy depth should register a view.`
           );
         }
         state.set({
-          view: selected.view,
           layers: ordered
             .filter((entry) => isViewAncestor(entry.view, selected.view))
             .toReversed()
@@ -103,6 +113,7 @@ export function createViewContextStore(contract: Pick<TailorKitContract, "views"
               context: parsed.get(entry.id)?.context,
               status: parsed.get(entry.id)?.status ?? entry.status,
             })),
+          view: selected.view,
         });
       } else {
         state.set(null);
@@ -110,9 +121,7 @@ export function createViewContextStore(contract: Pick<TailorKitContract, "views"
     });
   };
   return {
-    state,
     getSnapshot: () => state.get(),
-    subscribe: (listener: () => void): (() => void) => state.listen(listener),
     register(input: ViewContextRegistration) {
       const status =
         input.error != null && input.error !== false
@@ -135,6 +144,8 @@ export function createViewContextStore(contract: Pick<TailorKitContract, "views"
       check(entry);
       publish();
     },
+    state,
+    subscribe: (listener: () => void): (() => void) => state.listen(listener),
     unregister(id: symbol) {
       if (!entries.delete(id)) return;
       keys.delete(id);

@@ -24,7 +24,9 @@ export function getViewHierarchy(path: string): string[] {
 }
 
 export function isViewAncestor(ancestor: string, path: string): boolean {
-  return ancestor === "/" || ancestor === path || path.startsWith(`${ancestor}/`);
+  return (
+    ancestor === "/" || ancestor === path || path.startsWith(`${ancestor}/`)
+  );
 }
 
 export function getViewDepth(path: string): number {
@@ -38,7 +40,7 @@ export type ResolvedViewProps =
 
 export function composeViewContext(
   selected: string,
-  request: { layers: readonly ViewLayer[]; declaredViews: readonly string[] },
+  request: { layers: readonly ViewLayer[]; declaredViews: readonly string[] }
 ): ResolvedViewProps {
   let status: ViewStatus = "ready";
   const context: Record<string, unknown> = {};
@@ -71,16 +73,16 @@ export function composeViewContext(
         throw new Error(`Duplicate view context field "${key}".`);
       }
       Object.defineProperty(context, key, {
-        value,
-        enumerable: true,
         configurable: true,
+        enumerable: true,
+        value,
         writable: true,
       });
     }
   }
   const props: ResolvedViewProps =
     status === "ready"
-      ? { view: selected, status, context }
-      : { view: selected, status, context: undefined };
+      ? { context, status, view: selected }
+      : { context: undefined, status, view: selected };
   return props;
 }

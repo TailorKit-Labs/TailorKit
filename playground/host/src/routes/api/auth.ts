@@ -14,10 +14,15 @@ function json(data: unknown, init: ResponseInit = {}) {
 
 async function handle({ request }: { request: Request }) {
   if (request.method === "GET") {
-    return json({ session: getDemoSessionFromRequest(request), choices: listSignInChoices() });
+    return json({
+      choices: listSignInChoices(),
+      session: getDemoSessionFromRequest(request),
+    });
   }
 
-  if (request.method !== "POST") return json({ error: "Method not allowed" }, { status: 405 });
+  if (request.method !== "POST") {
+    return json({ error: "Method not allowed" }, { status: 405 });
+  }
   const body = (await request.json().catch(() => null)) as {
     action?: string;
     userId?: string;
@@ -26,8 +31,8 @@ async function handle({ request }: { request: Request }) {
 
   if (body?.action === "sign-out") {
     return json(
-      { session: null, choices: listSignInChoices() },
-      { headers: { "Set-Cookie": clearDemoSessionCookie() } },
+      { choices: listSignInChoices(), session: null },
+      { headers: { "Set-Cookie": clearDemoSessionCookie() } }
     );
   }
 
@@ -36,24 +41,33 @@ async function handle({ request }: { request: Request }) {
   }
 
   const choice = listSignInChoices().find(
-    (item) => item.userId === body.userId && item.teamId === body.teamId,
+    (item) => item.userId === body.userId && item.teamId === body.teamId
   );
-  if (!choice) return json({ error: "That profile is not a member of this team" }, { status: 400 });
+  if (!choice) {
+    return json(
+      { error: "That profile is not a member of this team" },
+      { status: 400 }
+    );
+  }
 
   return json(
     {
+      choices: listSignInChoices(),
       session: {
+        team: { id: choice.teamId, key: choice.teamKey, name: choice.teamName },
         user: {
+          avatar: choice.avatar,
+          email: choice.email,
           id: choice.userId,
           name: choice.userName,
-          email: choice.email,
-          avatar: choice.avatar,
         },
-        team: { id: choice.teamId, name: choice.teamName, key: choice.teamKey },
       },
-      choices: listSignInChoices(),
     },
-    { headers: { "Set-Cookie": serializeDemoSessionCookie(choice.userId, choice.teamId) } },
+    {
+      headers: {
+        "Set-Cookie": serializeDemoSessionCookie(choice.userId, choice.teamId),
+      },
+    }
   );
 }
 

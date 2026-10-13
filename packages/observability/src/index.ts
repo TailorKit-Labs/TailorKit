@@ -1,10 +1,20 @@
-import { context, propagation, SpanKind, SpanStatusCode, trace } from "@opentelemetry/api";
+import {
+  context,
+  propagation,
+  SpanKind,
+  SpanStatusCode,
+  trace,
+} from "@opentelemetry/api";
 import type { Attributes, Span, SpanOptions } from "@opentelemetry/api";
 import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
 import { PgInstrumentation } from "@opentelemetry/instrumentation-pg";
 import { UndiciInstrumentation } from "@opentelemetry/instrumentation-undici";
-import { ParentBasedSampler, TraceIdRatioBasedSampler } from "@opentelemetry/sdk-trace-base";
+import {
+  ParentBasedSampler,
+  TraceIdRatioBasedSampler,
+} from "@opentelemetry/sdk-trace-base";
 import { ORPCInstrumentation } from "@orpc/opentelemetry";
+
 import { env } from "#env";
 
 interface TelemetryState {
@@ -50,16 +60,17 @@ function resolveServiceVersion() {
 
 function createResourceAttributes(serviceName: string): Attributes {
   return safeAttributes({
+    "cloud.region": env.VERCEL_REGION,
+    "deployment.environment.name": resolveDeploymentEnvironment(),
     "service.name": serviceName,
     "service.version": resolveServiceVersion(),
-    "deployment.environment.name": resolveDeploymentEnvironment(),
-    "cloud.region": env.VERCEL_REGION,
     "tailorkit.package": "observability",
   });
 }
 
 function resolveSampleRate() {
-  const configuredRate = env.TAILORKIT_OTEL_SAMPLE_RATE ?? env.OTEL_TRACES_SAMPLER_ARG;
+  const configuredRate =
+    env.TAILORKIT_OTEL_SAMPLE_RATE ?? env.OTEL_TRACES_SAMPLER_ARG;
 
   if (!configuredRate) {
     return 1;
@@ -85,28 +96,30 @@ function createInstrumentations() {
     new ORPCInstrumentation(),
     new PgInstrumentation({
       enhancedDatabaseReporting: false,
-      requireParentSpan: false,
       requestHook: (span, queryInfo) => {
-        const operation = queryInfo.query.text.trim().split(/\s+/u)[0]?.toLowerCase() ?? "query";
+        const operation =
+          queryInfo.query.text.trim().split(/\s+/u)[0]?.toLowerCase() ??
+          "query";
         span.setAttributes(
           safeAttributes({
             "operation.name": `db.${operation}`,
             "resource.name": `postgres ${operation}`,
             "tailorkit.package": "db",
-          }),
+          })
         );
       },
+      requireParentSpan: false,
       responseHook: (span, responseInfo) => {
         span.setAttributes(
           safeAttributes({
             "db.response.rows": responseInfo.data.rowCount,
-          }),
+          })
         );
       },
     }),
     new HttpInstrumentation({
-      requireParentforOutgoingSpans: true,
       requireParentforIncomingSpans: false,
+      requireParentforOutgoingSpans: true,
     }),
     new UndiciInstrumentation(),
   ];
@@ -136,9 +149,9 @@ export async function initializeObservability(serviceName?: string) {
     const { registerOTel } = (await import("@vercel/otel")) as VercelOtelModule;
     registerOTel({
       attributes: createResourceAttributes(resolvedServiceName),
+      instrumentations: createInstrumentations(),
       serviceName: resolvedServiceName,
       traceSampler: createSampler(),
-      instrumentations: createInstrumentations(),
     });
   })();
 
@@ -163,12 +176,18 @@ export function getTracer(name = "tailorkit") {
   return trace.getTracer(name);
 }
 
-export function safeAttributeValue(value: unknown): string | number | boolean | undefined {
+export function safeAttributeValue(
+  value: unknown
+): string | number | boolean | undefined {
   if (value === null || value === undefined) {
     return undefined;
   }
 
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
     return value;
   }
 
@@ -179,12 +198,17 @@ export function safeAttributeValue(value: unknown): string | number | boolean | 
   return String(value);
 }
 
-export function safeAttributes(attributes: Record<string, unknown> = {}): Attributes {
+export function safeAttributes(
+  attributes: Record<string, unknown> = {}
+): Attributes {
   return Object.fromEntries(
     Object.entries(attributes)
       .filter(([key]) => !sensitiveAttributePattern.test(key))
       .map(([key, value]) => [key, safeAttributeValue(value)])
-      .filter((entry): entry is [string, string | number | boolean] => entry[1] !== undefined),
+      .filter(
+        (entry): entry is [string, string | number | boolean] =>
+          entry[1] !== undefined
+      )
   );
 }
 
@@ -195,7 +219,10 @@ export function setSpanAttributes(attributes: Record<string, unknown>) {
   }
 }
 
-export function recordException(error: unknown, attributes?: Record<string, unknown>) {
+export function recordException(
+  error: unknown,
+  attributes?: Record<string, unknown>
+) {
   const span = trace.getActiveSpan();
   if (!span) {
     return;
@@ -218,11 +245,13 @@ export function recordException(error: unknown, attributes?: Record<string, unkn
 export function withSpan<T>(
   name: string,
   optionsOrHandler: SpanOptions | ((span: Span) => Promise<T> | T),
-  maybeHandler?: (span: Span) => Promise<T> | T,
+  maybeHandler?: (span: Span) => Promise<T> | T
 ): Promise<T> {
   const tracer = getTracer("tailorkit.runtime");
-  const options = typeof optionsOrHandler === "function" ? undefined : optionsOrHandler;
-  const handler = typeof optionsOrHandler === "function" ? optionsOrHandler : maybeHandler;
+  const options =
+    typeof optionsOrHandler === "function" ? undefined : optionsOrHandler;
+  const handler =
+    typeof optionsOrHandler === "function" ? optionsOrHandler : maybeHandler;
 
   if (!handler) {
     throw new Error("withSpan requires a handler.");
@@ -234,7 +263,7 @@ export function withSpan<T>(
         "operation.name": name,
         "resource.name": name,
         ...options?.attributes,
-      }),
+      })
     );
 
     try {
@@ -258,15 +287,17 @@ export function withRequestSpan<T>(
   request: Request,
   name: string,
   optionsOrHandler: SpanOptions | ((span: Span) => Promise<T> | T),
-  maybeHandler?: (span: Span) => Promise<T> | T,
+  maybeHandler?: (span: Span) => Promise<T> | T
 ): Promise<T> {
   const carrier = headersToCarrier(request.headers);
   const parentContext = propagation.extract(context.active(), carrier);
 
   return context.with(parentContext, () => {
     const url = new URL(request.url);
-    const options = typeof optionsOrHandler === "function" ? undefined : optionsOrHandler;
-    const handler = typeof optionsOrHandler === "function" ? optionsOrHandler : maybeHandler;
+    const options =
+      typeof optionsOrHandler === "function" ? undefined : optionsOrHandler;
+    const handler =
+      typeof optionsOrHandler === "function" ? optionsOrHandler : maybeHandler;
 
     if (!handler) {
       throw new Error("withRequestSpan requires a handler.");
@@ -283,7 +314,7 @@ export function withRequestSpan<T>(
           ...options?.attributes,
         }),
       },
-      handler,
+      handler
     );
   });
 }
@@ -297,15 +328,15 @@ export function getTraceId() {
 export function sanitizeErrorForLog(error: unknown) {
   if (error instanceof Error) {
     return {
-      name: error.name,
       message: error.message,
+      name: error.name,
       traceId: getTraceId(),
     };
   }
 
   return {
-    name: "UnknownError",
     message: "Unknown error",
+    name: "UnknownError",
     traceId: getTraceId(),
   };
 }

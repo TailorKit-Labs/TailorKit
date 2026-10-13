@@ -1,5 +1,5 @@
-import type { TailorKitTheme } from "@tailorkit/core/schema";
 import { resolveTheme } from "@tailorkit/core/primitives/theme";
+import type { TailorKitTheme } from "@tailorkit/core/schema";
 
 type Responsive<T> = T | Record<string, T | undefined>;
 type PrimitiveValue = number | string;
@@ -15,7 +15,8 @@ const tokenGroups = [
 ] as const;
 
 const cssEscape = (value: string): string => {
-  const css = (globalThis as { CSS?: { escape?: (input: string) => string } }).CSS;
+  const css = (globalThis as { CSS?: { escape?: (input: string) => string } })
+    .CSS;
   if (typeof css?.escape === "function") {
     return css.escape(value);
   }
@@ -24,7 +25,7 @@ const cssEscape = (value: string): string => {
 
 const toCssValue = (
   group: (typeof tokenGroups)[number] | "size" | "raw",
-  value: PrimitiveValue,
+  value: PrimitiveValue
 ): string => {
   if (typeof value === "number") {
     return `${value}px`;
@@ -35,7 +36,9 @@ const toCssValue = (
   return `var(--tailorkit-${group}-${cssEscape(value)})`;
 };
 
-const toResponsiveEntries = <T>(value: Responsive<T> | undefined): [string, T][] => {
+const toResponsiveEntries = <T>(
+  value: Responsive<T> | undefined
+): [string, T][] => {
   if (value === undefined) {
     return [];
   }
@@ -43,7 +46,7 @@ const toResponsiveEntries = <T>(value: Responsive<T> | undefined): [string, T][]
     return [["base", value as T]];
   }
   return Object.entries(value as Record<string, T | undefined>).filter(
-    (entry): entry is [string, T] => entry[1] !== undefined,
+    (entry): entry is [string, T] => entry[1] !== undefined
   );
 };
 
@@ -51,7 +54,10 @@ const declarationsForProp = (prop: string, value: PrimitiveValue): string[] => {
   if (prop === "columns") {
     return [`grid-template-columns: repeat(${String(value)}, minmax(0, 1fr));`];
   }
-  const tokenDeclarations: Record<string, [(typeof tokenGroups)[number], string]> = {
+  const tokenDeclarations: Record<
+    string,
+    [(typeof tokenGroups)[number], string]
+  > = {
     background: ["background", "background"],
     border: ["border", "border"],
     borderColor: ["borderColor", "border-color"],
@@ -61,7 +67,10 @@ const declarationsForProp = (prop: string, value: PrimitiveValue): string[] => {
   if (tokenDeclaration) {
     const [group, property] = tokenDeclaration;
     if (prop === "border") {
-      return [`border-style: ${toCssValue(group, value)};`, "border-width: 1px;"];
+      return [
+        `border-style: ${toCssValue(group, value)};`,
+        "border-width: 1px;",
+      ];
     }
     return [`${property}: ${toCssValue(group, value)};`];
   }
@@ -144,18 +153,21 @@ export const buildPrimitiveCss = ({
   theme: TailorKitTheme;
 }): string => {
   const selector = `[data-tailorkit-view="${cssEscape(viewId)}"] [data-tailorkit-node="${cssEscape(
-    nodeId,
+    nodeId
   )}"]`;
   const base = [`display: ${display};`];
   const byBreakpoint = new Map<string, string[]>();
 
   for (const [prop, rawValue] of Object.entries(props)) {
-    for (const [breakpoint, value] of toResponsiveEntries(rawValue as Responsive<PrimitiveValue>)) {
+    for (const [breakpoint, value] of toResponsiveEntries(
+      rawValue as Responsive<PrimitiveValue>
+    )) {
       const declarations = declarationsForProp(prop, value);
       if (declarations.length === 0) {
         continue;
       }
-      const target = breakpoint === "base" ? base : (byBreakpoint.get(breakpoint) ?? []);
+      const target =
+        breakpoint === "base" ? base : (byBreakpoint.get(breakpoint) ?? []);
       target.push(...declarations);
       if (breakpoint !== "base") {
         byBreakpoint.set(breakpoint, target);
@@ -169,19 +181,26 @@ export const buildPrimitiveCss = ({
     if (!minWidth) {
       continue;
     }
-    rules.push(`@media (min-width: ${minWidth}) { ${selector} { ${declarations.join(" ")} } }`);
+    rules.push(
+      `@media (min-width: ${minWidth}) { ${selector} { ${declarations.join(" ")} } }`
+    );
   }
 
   return rules.join("\n");
 };
 
-export const buildThemeCss = (viewId: string, theme: TailorKitTheme): string => {
+export const buildThemeCss = (
+  viewId: string,
+  theme: TailorKitTheme
+): string => {
   const selector = `[data-tailorkit-view="${cssEscape(viewId)}"]`;
   const declarations: string[] = [];
   const resolvedTheme = resolveTheme(theme);
 
   for (const group of tokenGroups) {
-    for (const [name, value] of Object.entries(resolvedTheme.tokens?.[group] ?? {})) {
+    for (const [name, value] of Object.entries(
+      resolvedTheme.tokens?.[group] ?? {}
+    )) {
       declarations.push(`--tailorkit-${group}-${cssEscape(name)}: ${value};`);
     }
   }

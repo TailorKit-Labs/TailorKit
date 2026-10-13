@@ -1,8 +1,9 @@
-import { createLocalJWKSet, importJWK, jwtVerify, SignJWT } from "jose";
-import { Clock, Effect } from "effect";
-import { z } from "zod";
 import { AppError } from "@tailorkit/app/client";
 import type { Identity } from "@tailorkit/app/server";
+import { Clock, Effect } from "effect";
+import { createLocalJWKSet, importJWK, jwtVerify, SignJWT } from "jose";
+import { z } from "zod";
+
 import { APP_TOKEN_LIFETIME_SECONDS } from "./policy";
 
 export type AppTokenIdentity = Omit<Identity, "expiresAt"> & {
@@ -14,8 +15,16 @@ export type VerifiedAppTokenIdentity = Identity &
 
 export function appRuntimeIssuer(platformUrl: string) {
   const url = new URL(platformUrl);
-  if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) {
-    throw new Error("Platform URL requires HTTPS and no credentials, query or fragment");
+  if (
+    url.protocol !== "https:" ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash
+  ) {
+    throw new Error(
+      "Platform URL requires HTTPS and no credentials, query or fragment"
+    );
   }
   return url.href.replace(/\/$/u, "");
 }
@@ -37,30 +46,33 @@ export interface AppTokenTrust {
   publicKeys: { keys: (JsonWebKey & { kid: string })[] };
 }
 const access = z.object({
-  publicTeamId: z.string().min(1).max(256),
-  appPublicId: z.string().min(1).max(256),
-  projectId: z.string().min(1).max(256),
-  deploymentId: z.string().min(1).max(256),
-  sub: z.string().min(1).max(256),
-  subjectId: z.string().min(1).max(256).optional(),
-  scope: z.object({ name: z.string().min(1), value: z.record(z.string(), z.unknown()) }),
-  toolUrl: z.url(),
   appId: z.string().min(1).max(256),
-  installationId: z.string().min(1).max(256),
+  appPublicId: z.string().min(1).max(256),
+  deploymentId: z.string().min(1).max(256),
   exp: z.number().int(),
   iat: z.number().int(),
+  installationId: z.string().min(1).max(256),
+  projectId: z.string().min(1).max(256),
+  publicTeamId: z.string().min(1).max(256),
+  scope: z.object({
+    name: z.string().min(1),
+    value: z.record(z.string(), z.unknown()),
+  }),
+  sub: z.string().min(1).max(256),
+  subjectId: z.string().min(1).max(256).optional(),
+  toolUrl: z.url(),
 });
 const publicKeysSchema = z.object({
   keys: z
     .array(
       z.object({
-        kty: z.literal("EC"),
         crv: z.literal("P-256"),
+        d: z.never().optional(),
         kid: z.string().min(1),
+        kty: z.literal("EC"),
         x: z.string().min(1),
         y: z.string().min(1),
-        d: z.never().optional(),
-      }),
+      })
     )
     .max(32),
 });
@@ -74,15 +86,21 @@ function signingError(error: unknown): Error {
 }
 
 /** Compose signing without starting a runtime; Promise callers use issueAppToken. */
-export function issueAppTokenEffect(options: AppSigningOptions, identity: AppTokenIdentity) {
+export function issueAppTokenEffect(
+  options: AppSigningOptions,
+  identity: AppTokenIdentity
+) {
   return Effect.gen(function* issueToken() {
     const maximum = APP_TOKEN_LIFETIME_SECONDS;
     const lifetime = options.lifetimeSeconds ?? maximum;
     if (!Number.isInteger(lifetime) || lifetime < 1 || lifetime > maximum) {
-      return yield* Effect.fail(new Error(`App tokens must last 1–${maximum} seconds`));
+      return yield* Effect.fail(
+        new Error(`App tokens must last 1–${maximum} seconds`)
+      );
     }
     const now = Math.floor((yield* Clock.currentTimeMillis) / 1000);
     yield* Effect.try({
+      catch: signingError,
       try: () =>
         access.parse({
           publicTeamId: identity.publicTeamId,
@@ -98,16 +116,16 @@ export function issueAppTokenEffect(options: AppSigningOptions, identity: AppTok
           iat: now,
           exp: now + lifetime,
         }),
-      catch: signingError,
     });
     const key = yield* Effect.tryPromise({
+      catch: signingError,
       try: async () =>
         "kty" in options.privateKey
           ? await importJWK({ ...options.privateKey, alg: "ES256" }, "ES256")
           : options.privateKey,
-      catch: signingError,
     });
     const token = yield* Effect.tryPromise({
+      catch: signingError,
       try: () =>
         new SignJWT({
           publicTeamId: identity.publicTeamId,
@@ -127,13 +145,15 @@ export function issueAppTokenEffect(options: AppSigningOptions, identity: AppTok
           .setIssuedAt(now)
           .setExpirationTime(now + lifetime)
           .sign(key),
-      catch: signingError,
     });
-    return { token, expiresAt: (now + lifetime) * 1000 };
+    return { expiresAt: (now + lifetime) * 1000, token };
   });
 }
 
-export function issueAppToken(options: AppSigningOptions, identity: AppTokenIdentity) {
+export function issueAppToken(
+  options: AppSigningOptions,
+  identity: AppTokenIdentity
+) {
   return Effect.runPromise(issueAppTokenEffect(options, identity));
 }
 
@@ -154,8 +174,10 @@ export function appTokenVerifierEffect(trust: AppTokenTrust) {
   return (token: string): Effect.Effect<VerifiedAppTokenIdentity, AppError> =>
     Effect.gen(function* verifyToken() {
       const now = yield* Clock.currentTimeMillis;
-      const invalidToken = () => new AppError("UNAUTHORIZED", "Invalid or expired app token");
+      const invalidToken = () =>
+        new AppError("UNAUTHORIZED", "Invalid or expired app token");
       const { payload } = yield* Effect.tryPromise({
+        catch: invalidToken,
         try: () =>
           jwtVerify(token, keys, {
             issuer: trust.issuer,
@@ -178,14 +200,17 @@ export function appTokenVerifierEffect(trust: AppTokenTrust) {
             maxTokenAge: APP_TOKEN_LIFETIME_SECONDS,
             currentDate: new Date(now),
           }),
-        catch: invalidToken,
       });
-      const claims = yield* Effect.try({ try: () => access.parse(payload), catch: invalidToken });
+      const claims = yield* Effect.try({
+        catch: invalidToken,
+        try: () => access.parse(payload),
+      });
       const verifiedAt = yield* Clock.currentTimeMillis;
       if (
         claims.sub !== claims.installationId ||
         (trust.appId !== undefined && claims.appId !== trust.appId) ||
-        (trust.projectId !== undefined && claims.projectId !== trust.projectId) ||
+        (trust.projectId !== undefined &&
+          claims.projectId !== trust.projectId) ||
         claims.exp <= claims.iat ||
         claims.exp - claims.iat > APP_TOKEN_LIFETIME_SECONDS ||
         claims.iat > Math.floor(verifiedAt / 1000) ||
@@ -194,16 +219,16 @@ export function appTokenVerifierEffect(trust: AppTokenTrust) {
         return yield* Effect.fail(invalidToken());
       }
       return Object.freeze({
-        publicTeamId: claims.publicTeamId,
-        appPublicId: claims.appPublicId,
-        projectId: claims.projectId,
-        deploymentId: claims.deploymentId,
-        subjectId: claims.subjectId,
-        scope: Object.freeze(claims.scope),
-        toolUrl: claims.toolUrl,
         appId: claims.appId,
-        installationId: claims.installationId,
+        appPublicId: claims.appPublicId,
+        deploymentId: claims.deploymentId,
         expiresAt: claims.exp * 1000,
+        installationId: claims.installationId,
+        projectId: claims.projectId,
+        publicTeamId: claims.publicTeamId,
+        scope: Object.freeze(claims.scope),
+        subjectId: claims.subjectId,
+        toolUrl: claims.toolUrl,
       });
     });
 }

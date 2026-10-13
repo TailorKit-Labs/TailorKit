@@ -3,9 +3,14 @@
 import { useId } from "react";
 import type { ComponentProps } from "react";
 
-import { formatFieldErrors } from "./field-errors";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "../components/field";
 import { Switch } from "../components/switch";
-import { Field, FieldDescription, FieldError, FieldLabel } from "../components/field";
+import { formatFieldErrors } from "./field-errors";
 
 const emptyErrors: unknown[] = [];
 
@@ -45,9 +50,12 @@ export function BooleanField({
       />
       <div className="flex flex-col gap-1">
         <FieldLabel htmlFor={id}>
-          {label} {required && <span className="text-destructive-foreground">*</span>}
+          {label}{" "}
+          {required && <span className="text-destructive-foreground">*</span>}
         </FieldLabel>
-        {description && !isError && <FieldDescription>{description}</FieldDescription>}
+        {description && !isError && (
+          <FieldDescription>{description}</FieldDescription>
+        )}
         {isError && <FieldError>{errorMessage}</FieldError>}
       </div>
     </Field>

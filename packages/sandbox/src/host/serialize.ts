@@ -11,7 +11,11 @@ export function readElementProps(element: Element): Record<string, unknown> {
   if (typedProps !== null) {
     try {
       const value = JSON.parse(typedProps) as unknown;
-      if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+      if (
+        value !== null &&
+        typeof value === "object" &&
+        !Array.isArray(value)
+      ) {
         return value as Record<string, unknown>;
       }
     } catch {

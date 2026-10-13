@@ -1,5 +1,5 @@
-import type { AppDefinition } from "./functions";
 import type { AppMigration } from "../protocol";
+import type { AppDefinition } from "./functions";
 
 /** Interface between an uploaded application module and the server runtime. */
 export interface RuntimeManifest {

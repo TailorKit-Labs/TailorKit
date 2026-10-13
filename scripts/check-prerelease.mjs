@@ -12,7 +12,8 @@ const publishablePackages = [
 ];
 
 const allowedPrerelease = /-(?:alpha|beta)(?:\.|$)/u;
-const releaseRepository = process.env.GITHUB_REPOSITORY ?? "tailorkit-labs/TailorKit";
+const releaseRepository =
+  process.env.GITHUB_REPOSITORY ?? "tailorkit-labs/TailorKit";
 const expectedRepositoryUrl = `git+https://github.com/${releaseRepository}.git`;
 const errors = [];
 const manifests = [];
@@ -26,7 +27,9 @@ for (const manifestPath of publishablePackages) {
   }
 
   if (!allowedPrerelease.test(manifest.version)) {
-    errors.push(`${manifest.name}@${manifest.version} is not an alpha or beta prerelease`);
+    errors.push(
+      `${manifest.name}@${manifest.version} is not an alpha or beta prerelease`
+    );
   }
 
   if (manifest.publishConfig?.access !== "public") {
@@ -35,7 +38,7 @@ for (const manifestPath of publishablePackages) {
 
   if (manifest.repository?.url !== expectedRepositoryUrl) {
     errors.push(
-      `${manifest.name} repository.url must be ${expectedRepositoryUrl} for trusted publishing`,
+      `${manifest.name} repository.url must be ${expectedRepositoryUrl} for trusted publishing`
     );
   }
 }
@@ -56,7 +59,9 @@ for (const manifest of manifests) {
 
   for (const [dependency, range] of Object.entries(publishedDependencies)) {
     if (range.startsWith("workspace:") && !publishableNames.has(dependency)) {
-      errors.push(`${manifest.name} has an unpublished workspace dependency on ${dependency}`);
+      errors.push(
+        `${manifest.name} has an unpublished workspace dependency on ${dependency}`
+      );
     }
   }
 }

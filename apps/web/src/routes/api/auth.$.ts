@@ -1,5 +1,8 @@
 import { auth } from "@tailorkit/auth";
-import { initializeObservability, setSpanAttributes } from "@tailorkit/observability";
+import {
+  initializeObservability,
+  setSpanAttributes,
+} from "@tailorkit/observability";
 import { createFileRoute } from "@tanstack/react-router";
 
 async function handleAuthRequest(request: Request) {

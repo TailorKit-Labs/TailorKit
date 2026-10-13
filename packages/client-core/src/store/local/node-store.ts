@@ -1,9 +1,10 @@
-import { atom, computed } from "nanostores";
 import type { RemoteNode } from "@tailorkit/sandbox/protocol";
+import { atom, computed } from "nanostores";
 
 type Listener = () => void;
 
-const childIds = (children: RemoteNode[]): string => children.map((c) => c.id).join(",");
+const childIds = (children: RemoteNode[]): string =>
+  children.map((c) => c.id).join(",");
 
 const nodeSignature = (node: RemoteNode): string => {
   if (node.kind === "text") {
@@ -15,7 +16,9 @@ const nodeSignature = (node: RemoteNode): string => {
   // For elements: type + child IDs + serialized props + callback bindings
   const propsStr = JSON.stringify(node.props);
   const callbacksStr = (node.callbacks ?? [])
-    .map((binding) => `${binding.callback}:${binding.event}:${binding.inputCount}`)
+    .map(
+      (binding) => `${binding.callback}:${binding.event}:${binding.inputCount}`
+    )
     .join(",");
   return `elem:${node.type}|${childIds(node.children)}|${propsStr}|${callbacksStr}`;
 };
@@ -49,7 +52,8 @@ export class NodeStore {
     const previous = this.state.get();
     const next = new Map<string, RemoteNode>();
     flattenTree(tree, next);
-    let changed = previous.rootId !== tree.id || previous.nodes.size !== next.size;
+    let changed =
+      previous.rootId !== tree.id || previous.nodes.size !== next.size;
 
     for (const [id, node] of next) {
       const signature = nodeSignature(node);

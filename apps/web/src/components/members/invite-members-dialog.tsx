@@ -1,6 +1,4 @@
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { PlusIcon, TrashIcon, UserPlusIcon } from "lucide-react";
+import { roles } from "@tailorkit/auth/lib/permissions";
 import { Button } from "@tailorkit/ui/button";
 import {
   Dialog,
@@ -14,9 +12,18 @@ import {
   DialogTrigger,
 } from "@tailorkit/ui/dialog";
 import { Input } from "@tailorkit/ui/input";
-import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "@tailorkit/ui/select";
+import {
+  Select,
+  SelectItem,
+  SelectPopup,
+  SelectTrigger,
+  SelectValue,
+} from "@tailorkit/ui/select";
 import { toastManager } from "@tailorkit/ui/toast";
-import { roles } from "@tailorkit/auth/lib/permissions";
+import { useMutation } from "@tanstack/react-query";
+import { PlusIcon, TrashIcon, UserPlusIcon } from "lucide-react";
+import { useState } from "react";
+
 import { client } from "#lib/orpc";
 
 interface InviteRow {
@@ -25,7 +32,7 @@ interface InviteRow {
 }
 
 const invitableRoles = Object.keys(roles).filter(
-  (role) => role !== "owner",
+  (role) => role !== "owner"
 ) as (keyof typeof roles)[];
 
 export function InviteMembersDialog({
@@ -36,7 +43,9 @@ export function InviteMembersDialog({
   onSuccess: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [invites, setInvites] = useState<InviteRow[]>([{ email: "", role: "member" }]);
+  const [invites, setInvites] = useState<InviteRow[]>([
+    { email: "", role: "member" },
+  ]);
   const [errors, setErrors] = useState<string[]>([]);
 
   const mutation = useMutation({
@@ -47,21 +56,28 @@ export function InviteMembersDialog({
             orgSlug,
             email: row.email.trim(),
             role: row.role as "member" | "admin",
-          }),
-        ),
+          })
+        )
       );
       const failed = results
         .map((result, index) =>
           result.status === "rejected"
             ? `${rows[index].email}: ${
-                result.reason instanceof Error ? result.reason.message : "Failed"
+                result.reason instanceof Error
+                  ? result.reason.message
+                  : "Failed"
               }`
-            : null,
+            : null
         )
         .filter(Boolean) as string[];
       if (failed.length > 0) {
         throw new Error(failed.join("\n"));
       }
+    },
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error ? err.message : "Some invitations failed";
+      setErrors(message.split("\n"));
     },
     onSuccess: () => {
       setOpen(false);
@@ -70,14 +86,12 @@ export function InviteMembersDialog({
       toastManager.add({ title: "Invitations sent", type: "success" });
       onSuccess();
     },
-    onError: (err: unknown) => {
-      const message = err instanceof Error ? err.message : "Some invitations failed";
-      setErrors(message.split("\n"));
-    },
   });
 
   function updateRow(index: number, field: keyof InviteRow, value: string) {
-    setInvites((prev) => prev.map((row, i) => (i === index ? { ...row, [field]: value } : row)));
+    setInvites((prev) =>
+      prev.map((row, i) => (i === index ? { ...row, [field]: value } : row))
+    );
   }
 
   function handleSubmit(event: React.FormEvent) {
@@ -123,13 +137,20 @@ export function InviteMembersDialog({
                     placeholder="colleague@example.com"
                     type="email"
                     value={row.email}
-                    onChange={(event) => updateRow(index, "email", event.target.value)}
+                    onChange={(event) =>
+                      updateRow(index, "email", event.target.value)
+                    }
                   />
                   <Select
                     value={row.role}
-                    onValueChange={(value) => updateRow(index, "role", value as keyof typeof roles)}
+                    onValueChange={(value) =>
+                      updateRow(index, "role", value as keyof typeof roles)
+                    }
                   >
-                    <SelectTrigger aria-label={`Role for invite ${index + 1}`} className="w-32">
+                    <SelectTrigger
+                      aria-label={`Role for invite ${index + 1}`}
+                      className="w-32"
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectPopup>
@@ -146,7 +167,9 @@ export function InviteMembersDialog({
                       size="icon-sm"
                       type="button"
                       variant="ghost"
-                      onClick={() => setInvites((prev) => prev.filter((_, i) => i !== index))}
+                      onClick={() =>
+                        setInvites((prev) => prev.filter((_, i) => i !== index))
+                      }
                     >
                       <TrashIcon />
                     </Button>
@@ -159,7 +182,9 @@ export function InviteMembersDialog({
               size="sm"
               type="button"
               variant="ghost"
-              onClick={() => setInvites((prev) => [...prev, { email: "", role: "member" }])}
+              onClick={() =>
+                setInvites((prev) => [...prev, { email: "", role: "member" }])
+              }
             >
               <PlusIcon />
               Add another
@@ -177,9 +202,13 @@ export function InviteMembersDialog({
           </DialogPanel>
 
           <DialogFooter>
-            <DialogClose render={<Button type="button" variant="ghost" />}>Cancel</DialogClose>
+            <DialogClose render={<Button type="button" variant="ghost" />}>
+              Cancel
+            </DialogClose>
             <Button
-              disabled={invites.every((row) => !row.email.trim()) || mutation.isPending}
+              disabled={
+                invites.every((row) => !row.email.trim()) || mutation.isPending
+              }
               type="submit"
             >
               {mutation.isPending ? "Sending…" : "Send invitations"}

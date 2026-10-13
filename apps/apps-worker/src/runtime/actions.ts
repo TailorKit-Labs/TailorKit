@@ -1,9 +1,15 @@
 import type { AppDefinition, Identity } from "@tailorkit/app/server";
-import type { Functions } from "./functions";
-import { isFunction, resolveFunction, prepareFunction, functionValue } from "./functions";
-import type { Invocation } from "./execution";
-import { AppError } from "./errors";
+
 import { inExecutionContext } from "./context";
+import { AppError } from "./errors";
+import type { Invocation } from "./execution";
+import type { Functions } from "./functions";
+import {
+  isFunction,
+  resolveFunction,
+  prepareFunction,
+  functionValue,
+} from "./functions";
 
 /** Host capability passed into each action invocation. */
 export interface ActionCapability {
@@ -23,7 +29,7 @@ export interface ActionCalls {
 export function createActionExecution(app: AppDefinition) {
   type Call = (
     check: () => void,
-    calls: ActionCalls,
+    calls: ActionCalls
   ) => (args: unknown, options?: { requestId?: string }) => Promise<unknown>;
   interface Group {
     [name: string]: Group | Call;
@@ -48,22 +54,37 @@ export function createActionExecution(app: AppDefinition) {
         continue;
       }
       if (resolveFunction(app.functions, name) !== definition) {
-        throw new AppError("NOT_FOUND", "Action function is not registered in this app");
+        throw new AppError(
+          "NOT_FOUND",
+          "Action function is not registered in this app"
+        );
       }
-      const kind = definition.kind;
-      (kind === "query" ? queries : mutations)[key] = (check, calls) => (args, options) => {
-        check();
-        return kind === "query"
-          ? calls.query({ name, args })
-          : calls.mutate({ name, args, requestId: options?.requestId ?? crypto.randomUUID() });
-      };
+      const { kind } = definition;
+      (kind === "query" ? queries : mutations)[key] =
+        (check, calls) => (args, options) => {
+          check();
+          return kind === "query"
+            ? calls.query({ args, name })
+            : calls.mutate({
+                args,
+                name,
+                requestId: options?.requestId ?? crypto.randomUUID(),
+              });
+        };
     }
-    return { queries, mutations };
+    return { mutations, queries };
   }
-  function bind(group: Group, check: () => void, calls: ActionCalls): Record<string, unknown> {
+  function bind(
+    group: Group,
+    check: () => void,
+    calls: ActionCalls
+  ): Record<string, unknown> {
     const bound = Object.create(null);
     for (const [key, entry] of Object.entries(group)) {
-      bound[key] = typeof entry === "function" ? entry(check, calls) : bind(entry, check, calls);
+      bound[key] =
+        typeof entry === "function"
+          ? entry(check, calls)
+          : bind(entry, check, calls);
     }
     return Object.freeze(bound);
   }
@@ -84,9 +105,14 @@ export function createActionExecution(app: AppDefinition) {
     input: Invocation,
     identity: Identity,
     calls: ActionCalls,
-    signal = new AbortController().signal,
+    signal = new AbortController().signal
   ) => {
-    const scope = { kind: "action" as const, active: true, signal, fetch: calls.fetch };
+    const scope = {
+      active: true,
+      fetch: calls.fetch,
+      kind: "action" as const,
+      signal,
+    };
     function check() {
       if (!scope.active || signal.aborted) {
         throw new AppError("UNAVAILABLE", "Action has ended");
@@ -97,19 +123,20 @@ export function createActionExecution(app: AppDefinition) {
     }
     const createTools = (parts: string[] = []): unknown =>
       new Proxy(() => {}, {
+        apply(_target, _this, args) {
+          check();
+          if (!calls.tool)
+            throw new AppError("UNAVAILABLE", "Tool transport unavailable");
+          return calls.tool(parts.join("."), args[0]).then((value) => {
+            check();
+            return value;
+          });
+        },
         get(_target, key) {
           if (typeof key !== "string" || key === "then") return undefined;
           if (["__proto__", "constructor", "prototype"].includes(key))
             throw new AppError("BAD_REQUEST", "Invalid tool path");
           return createTools([...parts, key]);
-        },
-        apply(_target, _this, args) {
-          check();
-          if (!calls.tool) throw new AppError("UNAVAILABLE", "Tool transport unavailable");
-          return calls.tool(parts.join("."), args[0]).then((value) => {
-            check();
-            return value;
-          });
         },
       });
     check();
@@ -123,13 +150,13 @@ export function createActionExecution(app: AppDefinition) {
         fn.handler({
           args,
           identity,
-          tools: createTools(),
-          scope: identity.scope,
-          requestId: crypto.randomUUID(),
-          signal,
-          queries: bind(binding.queries, check, calls),
           mutations: bind(binding.mutations, check, calls),
-        } as never),
+          queries: bind(binding.queries, check, calls),
+          requestId: crypto.randomUUID(),
+          scope: identity.scope,
+          signal,
+          tools: createTools(),
+        } as never)
       );
       check();
       return functionValue(fn, value);

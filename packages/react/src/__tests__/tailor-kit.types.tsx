@@ -1,13 +1,26 @@
-import { defineContract } from "@tailorkit/core/schema";
-import type { StandardJSONSchemaV1, StandardSchemaV1 } from "@standard-schema/spec";
-import type { ReactNode } from "react";
-import type { ComponentDefinition } from "@tailorkit/core/schema";
+import type {
+  StandardJSONSchemaV1,
+  StandardSchemaV1,
+} from "@standard-schema/spec";
 import type { ComponentRenderer } from "@tailorkit/client-core";
+import { defineContract } from "@tailorkit/core/schema";
+import type { ComponentDefinition } from "@tailorkit/core/schema";
+import type { ReactNode } from "react";
+
+import type {
+  TailorKitInstance,
+  UseAppsResult,
+  UseViewsResult,
+} from "../index";
 import { components, createClient } from "../tailorkit";
 import type { TailorKitApp } from "../tailorkit";
-import type { TailorKitInstance, UseAppsResult, UseViewsResult } from "../index";
 
-type ExpectedResultKeys = "data" | "isPending" | "error" | "isRefetching" | "fetch";
+type ExpectedResultKeys =
+  | "data"
+  | "isPending"
+  | "error"
+  | "isRefetching"
+  | "fetch";
 type Assert<T extends true> = T;
 type HasExactResultKeys<T> = [keyof T] extends [ExpectedResultKeys]
   ? [ExpectedResultKeys] extends [keyof T]
@@ -20,9 +33,10 @@ const resultKeys: [AppsResultKeys, ViewsResultKeys] = [true, true];
 void resultKeys;
 
 type OptionalChildrenComponent = ComponentDefinition<undefined, {}, true>;
-const optionalChildrenRenderer: ComponentRenderer<OptionalChildrenComponent, ReactNode> = ({
-  children,
-}) => children;
+const optionalChildrenRenderer: ComponentRenderer<
+  OptionalChildrenComponent,
+  ReactNode
+> = ({ children }) => children;
 void optionalChildrenRenderer;
 
 const leafRenderer: ComponentRenderer<{}, ReactNode> = (args) => {
@@ -44,21 +58,22 @@ const typedSchema = <TValue,>(): StandardSchemaV1<TValue, TValue> &
       vendor: "test",
       version: 1,
     },
-  }) as const satisfies StandardSchemaV1<TValue, TValue> & StandardJSONSchemaV1<TValue, TValue>;
+  }) as const satisfies StandardSchemaV1<TValue, TValue> &
+    StandardJSONSchemaV1<TValue, TValue>;
 
 const contract = defineContract({
+  components: {
+    Button: {},
+  },
   scopes: {
     organization: typedSchema<{ orgId: string }>(),
     user: typedSchema<{ userId: string }>(),
   },
   slots: {
-    panel: { views: ["/", "/home", "/home/detail", "/user"] },
     navbar: { views: ["/"] },
-    page: { views: ["/"], multiple: true },
-    single: { views: ["/"], multiple: false },
-  },
-  components: {
-    Button: {},
+    page: { multiple: true, views: ["/"] },
+    panel: { views: ["/", "/home", "/home/detail", "/user"] },
+    single: { multiple: false, views: ["/"] },
   },
   views: {
     "/": typedSchema<{ user: { id: string } }>(),
@@ -70,9 +85,15 @@ const contract = defineContract({
   },
 });
 
-const tailor = createClient({ contract: contract, baseUrl: "http://runtime.test" });
+const tailor = createClient({ contract, baseUrl: "http://runtime.test" });
 tailor.clearCache();
-const { Provider: TailorKitProvider, RenderSlot, useApps, useViews, useViewContext } = tailor;
+const {
+  Provider: TailorKitProvider,
+  RenderSlot,
+  useApps,
+  useViews,
+  useViewContext,
+} = tailor;
 const app = { clientPath: "/apps/todo.js", id: "todo" };
 
 <TailorKitProvider>
@@ -91,18 +112,17 @@ const app = { clientPath: "/apps/todo.js", id: "todo" };
 <TailorKitProvider apps={[{ id: 123 }]} />;
 
 const childrenContract = defineContract({
-  scopes: { user: typedSchema<{ userId: string }>() },
   components: {
     Button: {
       children: true,
     },
   },
+  scopes: { user: typedSchema<{ userId: string }>() },
 });
 
 const childrenSchema = childrenContract;
 
 createClient({
-  contract: childrenContract,
   baseUrl: "http://runtime.test",
   components: {
     Button: ({ children }) => {
@@ -110,14 +130,15 @@ createClient({
       return content;
     },
   },
+  contract: childrenContract,
 });
 
 const requiredComponentsContract = defineContract({
-  scopes: { user: typedSchema<{ userId: string }>() },
   components: {
     Button: {},
     Input: {},
   },
+  scopes: { user: typedSchema<{ userId: string }>() },
 });
 
 createClient({
@@ -140,16 +161,16 @@ components(childrenSchema, {
 });
 
 const callbackContract = defineContract({
-  scopes: { user: typedSchema<{ userId: string }>() },
   components: {
     Button: {
-      fields: typedSchema<{ variant?: "default" | "secondary" }>(),
       callbacks: {
         onClick: {},
       },
       children: true,
+      fields: typedSchema<{ variant?: "default" | "secondary" }>(),
     },
   },
+  scopes: { user: typedSchema<{ userId: string }>() },
 });
 
 components(callbackContract, {
@@ -171,14 +192,22 @@ useViewContext("/user", { context: { userId: "u1" }, loading: true });
 declare const queryContext: { userId: string } | undefined;
 declare const queryLoading: boolean;
 declare const queryError: boolean | string | Error | null;
-useViewContext("/user", { context: queryContext, loading: queryLoading, error: queryError });
+useViewContext("/user", {
+  context: queryContext,
+  error: queryError,
+  loading: queryLoading,
+});
 
 useViewContext("/user", { context: undefined, error: new Error("Failed") });
 useViewContext("/user", { context: undefined, error: true });
 useViewContext("/user", { context: { userId: "u1" }, error: false });
 useViewContext("/user", { context: undefined, error: "Failed" });
 useViewContext("/user", { context: undefined, error: "" });
-useViewContext("/user", { context: { userId: "u1" }, loading: false, error: null });
+useViewContext("/user", {
+  context: { userId: "u1" },
+  error: null,
+  loading: false,
+});
 
 // @ts-expect-error invalid view name
 useViewContext("missing", { context: {} });
@@ -190,11 +219,14 @@ useViewContext("/user", { context: { page: { title: "Home" } } });
 useViewContext("/home", {});
 
 // @ts-expect-error loading still requires a complete context shape or undefined
-useViewContext("/home", { loading: true, context: { page: {} } });
+useViewContext("/home", { context: { page: {} }, loading: true });
 // @ts-expect-error errors still require a complete context shape or undefined
-useViewContext("/home", { error: new Error("Failed"), context: { page: {} } });
+useViewContext("/home", { context: { page: {} }, error: new Error("Failed") });
 // @ts-expect-error the context shape belongs to the selected view even while loading
-useViewContext("/user", { loading: true, context: { page: { title: "Home" } } });
+useViewContext("/user", {
+  context: { page: { title: "Home" } },
+  loading: true,
+});
 // @ts-expect-error loading must be a boolean
 useViewContext("/user", { context: undefined, loading: "loading" });
 // @ts-expect-error error cannot be a number
@@ -218,21 +250,21 @@ useApps({ scopes: ["organization", "user"] });
 useApps({ scopes: ["unknown"] });
 
 const workspaceContract = defineContract({
-  scopes: { workspace: typedSchema<{ workspaceId: string }>() },
   components: {},
+  scopes: { workspace: typedSchema<{ workspaceId: string }>() },
 });
 const workspaceClient = createClient({
-  contract: workspaceContract,
   baseUrl: "http://runtime.test",
+  contract: workspaceContract,
 });
 workspaceClient.useApps({ scopes: ["workspace"] });
 // @ts-expect-error scope names belong to the client that declared them
 workspaceClient.useApps({ scopes: ["organization"] });
 
 // @ts-expect-error The former object-only hook signature is not supported.
-useViewContext({ view: "/user", context: { userId: "u1" } });
+useViewContext({ context: { userId: "u1" }, view: "/user" });
 
-useViews({ scopes: ["organization"], appIds: ["todo"], slot: "panel" });
+useViews({ appIds: ["todo"], scopes: ["organization"], slot: "panel" });
 // @ts-expect-error scope names must be declared by this contract
 useViews({ scopes: ["unknown"], slot: "panel" });
 
@@ -314,14 +346,18 @@ useViews({});
   slot="panel"
   view="/home"
   status="ready"
-  context={{ user: { id: "u1" }, page: { title: "Home" } }}
+  context={{ page: { title: "Home" }, user: { id: "u1" } }}
 />;
 <RenderSlot.Controlled
   app={app}
   slot="panel"
   view="/home/detail"
   status="ready"
-  context={{ user: { id: "u1" }, page: { title: "Home" }, detail: { id: "d1" } }}
+  context={{
+    detail: { id: "d1" },
+    page: { title: "Home" },
+    user: { id: "u1" },
+  }}
 />;
 <RenderSlot.Controlled
   app={app}
@@ -336,7 +372,12 @@ useViews({});
 // @ts-expect-error controlled slots require an explicit view and status
 <RenderSlot.Controlled app={app} slot="panel" />;
 // @ts-expect-error controlled slots require status even with ready context
-<RenderSlot.Controlled app={app} slot="panel" view="/" context={{ user: { id: "u1" } }} />;
+<RenderSlot.Controlled
+  app={app}
+  slot="panel"
+  view="/"
+  context={{ user: { id: "u1" } }}
+/>;
 // @ts-expect-error ready controlled slots require context
 <RenderSlot.Controlled app={app} slot="panel" view="/home" status="ready" />;
 <RenderSlot.Controlled
@@ -366,7 +407,12 @@ useViews({});
 // @ts-expect-error the navbar only supports root
 <RenderSlot.Controlled app={app} slot="navbar" view="/user" status="loading" />;
 // @ts-expect-error unknown views cannot be rendered
-<RenderSlot.Controlled app={app} slot="panel" view="/missing" status="loading" />;
+<RenderSlot.Controlled
+  app={app}
+  slot="panel"
+  view="/missing"
+  status="loading"
+/>;
 
 const optionalContextContract = defineContract({
   components: {},
@@ -378,8 +424,8 @@ const optionalContextContract = defineContract({
   },
 });
 const optionalContextClient = createClient({
-  contract: optionalContextContract,
   baseUrl: "http://runtime.test",
+  contract: optionalContextContract,
 });
 optionalContextClient.useViewContext("/", { context: undefined });
 optionalContextClient.useViewContext("/", { context: { workspaceId: "w1" } });
@@ -396,7 +442,7 @@ const OptionalSlot = optionalContextClient.RenderSlot;
   slot="panel"
   view="/detail"
   status="ready"
-  context={{ workspaceId: "w1", detailId: "d1" }}
+  context={{ detailId: "d1", workspaceId: "w1" }}
 />;
 
 const unionContextContract = defineContract({
@@ -404,27 +450,29 @@ const unionContextContract = defineContract({
   scopes: { user: typedSchema<{ userId: string }>() },
   slots: { panel: { views: ["/detail"] } },
   views: {
-    "/": typedSchema<{ kind: "user"; userId: string } | { kind: "organization"; orgId: string }>(),
+    "/": typedSchema<
+      { kind: "user"; userId: string } | { kind: "organization"; orgId: string }
+    >(),
     "/detail": typedSchema<{ detailId: string }>(),
   },
 });
 const UnionSlot = createClient({
-  contract: unionContextContract,
   baseUrl: "http://runtime.test",
+  contract: unionContextContract,
 }).RenderSlot;
 <UnionSlot.Controlled
   app={app}
   slot="panel"
   view="/detail"
   status="ready"
-  context={{ kind: "user", userId: "u1", detailId: "d1" }}
+  context={{ detailId: "d1", kind: "user", userId: "u1" }}
 />;
 <UnionSlot.Controlled
   app={app}
   slot="panel"
   view="/detail"
   status="ready"
-  context={{ kind: "organization", orgId: "o1", detailId: "d1" }}
+  context={{ detailId: "d1", kind: "organization", orgId: "o1" }}
 />;
 
 <RenderSlot app={app} slot="page" instanceKey="overview" />;
@@ -435,9 +483,9 @@ const UnionSlot = createClient({
 // @ts-expect-error Single-instance slots reject a key (explicit false).
 <RenderSlot app={app} slot="single" instanceKey="overview" />;
 const suppliedInstance = {
+  data: { reportId: "r1" },
   key: "overview",
   metadata: { title: "Overview" },
-  data: { reportId: "r1" },
 };
 <RenderSlot.Controlled
   app={app}
@@ -500,11 +548,16 @@ const slotName: "page" | "navbar" = Math.random() > 0.5 ? "page" : "navbar";
 <RenderSlot app={app} slot={slotName} />;
 
 // Registration accepts schema input; apps receive the validated output.
-const transformedSchema: StandardSchemaV1<{ count: string }, { count: number }> = {
+const transformedSchema: StandardSchemaV1<
+  { count: string },
+  { count: number }
+> = {
   "~standard": {
-    version: 1,
+    validate: (value) => ({
+      value: { count: Number((value as { count: string }).count) },
+    }),
     vendor: "test",
-    validate: (value) => ({ value: { count: Number((value as { count: string }).count) } }),
+    version: 1,
   },
 };
 const transformedClient = createClient({

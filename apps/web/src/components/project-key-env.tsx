@@ -1,15 +1,21 @@
-import { useState } from "react";
-import { CopyIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import { Button } from "@tailorkit/ui/button";
-import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@tailorkit/ui/card";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardPanel,
+  CardTitle,
+} from "@tailorkit/ui/card";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
   InputGroupText,
 } from "@tailorkit/ui/input-group";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "@tailorkit/ui/tooltip";
 import { toastManager } from "@tailorkit/ui/toast";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "@tailorkit/ui/tooltip";
+import { CopyIcon, EyeIcon, EyeOffIcon } from "lucide-react";
+import { useState } from "react";
 
 export function ProjectKeyEnv({ apiKey }: { apiKey: string }) {
   const [showApiKey, setShowApiKey] = useState(false);
@@ -21,8 +27,8 @@ export function ProjectKeyEnv({ apiKey }: { apiKey: string }) {
       toastManager.add({ title: ".env copied", type: "success" });
     } catch {
       toastManager.add({
-        title: "Couldn't copy .env",
         description: "Try again, or reveal the key and copy the line manually.",
+        title: "Couldn't copy .env",
         type: "error",
       });
     }
@@ -35,7 +41,7 @@ export function ProjectKeyEnv({ apiKey }: { apiKey: string }) {
         <CardDescription>
           Follow the{" "}
           <a
-            className="text-foreground underline underline-offset-4 hover:text-primary"
+            className="text-foreground hover:text-primary underline underline-offset-4"
             href="https://tailorkit.dev/docs/installation"
             rel="noopener noreferrer"
             target="_blank"
@@ -55,7 +61,7 @@ export function ProjectKeyEnv({ apiKey }: { apiKey: string }) {
             value={apiKey}
           />
           <InputGroupAddon align="inline-start" className="shrink-0">
-            <InputGroupText className="font-mono text-foreground text-xs sm:text-sm">
+            <InputGroupText className="text-foreground font-mono text-xs sm:text-sm">
               TAILORKIT_PROJECT_KEY=
             </InputGroupText>
           </InputGroupAddon>
@@ -73,7 +79,11 @@ export function ProjectKeyEnv({ apiKey }: { apiKey: string }) {
                   />
                 }
               >
-                {showApiKey ? <EyeOffIcon aria-hidden="true" /> : <EyeIcon aria-hidden="true" />}
+                {showApiKey ? (
+                  <EyeOffIcon aria-hidden="true" />
+                ) : (
+                  <EyeIcon aria-hidden="true" />
+                )}
               </TooltipTrigger>
               <TooltipPopup>{revealLabel}</TooltipPopup>
             </Tooltip>

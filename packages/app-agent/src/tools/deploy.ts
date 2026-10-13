@@ -1,17 +1,20 @@
 import { tool } from "ai";
 import { z } from "zod";
+
 import { sandboxIdleTimeoutMs } from "../sandbox";
-import { commandResultSchema, sandboxContextSchema, toolNativeSandbox } from "./utils";
+import {
+  commandResultSchema,
+  sandboxContextSchema,
+  toolNativeSandbox,
+} from "./utils";
 
 export const deployTool = tool({
-  description:
-    "Build, type-check, and publish the finished app to its authorized TailorKit app. No login or host access is needed. Call only after completing and verifying the requested changes.",
   contextSchema: sandboxContextSchema.extend({
     appId: z.string().min(1),
     agentToken: z.string().min(1),
   }),
-  inputSchema: z.strictObject({}),
-  outputSchema: commandResultSchema,
+  description:
+    "Build, type-check, and publish the finished app to its authorized TailorKit app. No login or host access is needed. Call only after completing and verifying the requested changes.",
   execute: async (_input, options) => {
     "use step";
     const { appId, agentToken } = options.context;
@@ -36,7 +39,10 @@ export const deployTool = tool({
         signal: options.abortSignal,
         timeoutMs: sandboxIdleTimeoutMs,
       });
-      const [stdout, stderr] = await Promise.all([result.stdout(), result.stderr()]);
+      const [stdout, stderr] = await Promise.all([
+        result.stdout(),
+        result.stderr(),
+      ]);
       // Never put credentials in the model stream, even if a subprocess echoes them.
       return {
         exitCode: result.exitCode,
@@ -45,7 +51,13 @@ export const deployTool = tool({
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      return { exitCode: 1, stdout: "", stderr: message.replaceAll(agentToken, "[redacted]") };
+      return {
+        exitCode: 1,
+        stdout: "",
+        stderr: message.replaceAll(agentToken, "[redacted]"),
+      };
     }
   },
+  inputSchema: z.strictObject({}),
+  outputSchema: commandResultSchema,
 });

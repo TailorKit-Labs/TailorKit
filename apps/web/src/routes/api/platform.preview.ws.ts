@@ -1,7 +1,7 @@
 import { experimental_RPCHandler as RPCHandler } from "@orpc/server/crossws";
-import { authorizePreviewSocket } from "@tailorkit/api-platform/preview-ws-auth";
 import { previewWebSocketRouter } from "@tailorkit/api-platform/preview-ws";
 import type { PreviewWebSocketContext } from "@tailorkit/api-platform/preview-ws";
+import { authorizePreviewSocket } from "@tailorkit/api-platform/preview-ws-auth";
 import { createFileRoute } from "@tanstack/react-router";
 import { defineHooks } from "crossws";
 import { z } from "zod";
@@ -14,44 +14,15 @@ interface AuthorizationState {
 }
 const authorizations = new WeakMap<object, AuthorizationState>();
 const upgradeSchema = z.object({
-  sessionId: z.uuid(),
   role: z.enum(["uploader", "viewer"]),
+  sessionId: z.uuid(),
   token: z.string().min(1),
 });
 
 const hooks = defineHooks({
-  upgrade(request) {
-    const url = new URL(request.url);
-    const token = request.headers.get("sec-websocket-protocol")?.split(",")[0]?.trim();
-    return {
-      context: {
-        sessionId: url.searchParams.get("session"),
-        role: url.searchParams.get("role"),
-        token,
-      },
-      protocol: token,
-    };
-  },
-  async open(peer) {
-    const parsed = upgradeSchema.safeParse(peer.context);
-    if (!parsed.success) {
-      return peer.close();
-    }
-    const { sessionId, role, token } = parsed.data;
-    const state: AuthorizationState = {
-      promise: authorizePreviewSocket(sessionId, token, role).catch(() => null),
-      context: undefined,
-      pendingMessage: false,
-    };
-    authorizations.set(peer, state);
-    const context = await state.promise;
-    if (authorizations.get(peer) !== state) {
-      return;
-    }
-    state.context = context;
-    if (!context) {
-      return peer.close();
-    }
+  close(peer) {
+    handler.close(peer);
+    authorizations.delete(peer);
   },
   async message(peer, message) {
     const state = authorizations.get(peer);
@@ -90,9 +61,41 @@ const hooks = defineHooks({
     }
     await handler.message(peer, message, { context });
   },
-  close(peer) {
-    handler.close(peer);
-    authorizations.delete(peer);
+  async open(peer) {
+    const parsed = upgradeSchema.safeParse(peer.context);
+    if (!parsed.success) {
+      return peer.close();
+    }
+    const { sessionId, role, token } = parsed.data;
+    const state: AuthorizationState = {
+      promise: authorizePreviewSocket(sessionId, token, role).catch(() => null),
+      context: undefined,
+      pendingMessage: false,
+    };
+    authorizations.set(peer, state);
+    const context = await state.promise;
+    if (authorizations.get(peer) !== state) {
+      return;
+    }
+    state.context = context;
+    if (!context) {
+      return peer.close();
+    }
+  },
+  upgrade(request) {
+    const url = new URL(request.url);
+    const token = request.headers
+      .get("sec-websocket-protocol")
+      ?.split(",")[0]
+      ?.trim();
+    return {
+      context: {
+        sessionId: url.searchParams.get("session"),
+        role: url.searchParams.get("role"),
+        token,
+      },
+      protocol: token,
+    };
   },
 });
 
@@ -100,9 +103,12 @@ export const Route = createFileRoute("/api/platform/preview/ws")({
   server: {
     handlers: {
       GET: () =>
-        Object.assign(new Response("WebSocket upgrade is required.", { status: 426 }), {
-          crossws: hooks,
-        }),
+        Object.assign(
+          new Response("WebSocket upgrade is required.", { status: 426 }),
+          {
+            crossws: hooks,
+          }
+        ),
     },
   },
 });

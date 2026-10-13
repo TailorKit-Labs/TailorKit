@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+
 import { PGlite } from "@electric-sql/pglite";
 import { relations } from "@tailorkit/db/relations";
 import { drizzle } from "drizzle-orm/pglite";

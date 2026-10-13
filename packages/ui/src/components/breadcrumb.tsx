@@ -4,9 +4,12 @@ import { mergeProps } from "@base-ui/react/merge-props";
 import { useRender } from "@base-ui/react/use-render";
 import { ChevronRight, MoreHorizontal } from "lucide-react";
 import type * as React from "react";
+
 import { cn } from "#ui";
 
-export function Breadcrumb({ ...props }: React.ComponentProps<"nav">): React.ReactElement {
+export function Breadcrumb({
+  ...props
+}: React.ComponentProps<"nav">): React.ReactElement {
   return <nav aria-label="breadcrumb" data-slot="breadcrumb" {...props} />;
 }
 
@@ -17,8 +20,8 @@ export function BreadcrumbList({
   return (
     <ol
       className={cn(
-        "wrap-break-word flex flex-wrap items-center gap-1.5 text-muted-foreground text-sm sm:gap-2.5",
-        className,
+        "text-muted-foreground flex flex-wrap items-center gap-1.5 text-sm wrap-break-word sm:gap-2.5",
+        className
       )}
       data-slot="breadcrumb-list"
       {...props}
@@ -45,7 +48,7 @@ export function BreadcrumbLink({
   ...props
 }: useRender.ComponentProps<"a">): React.ReactElement {
   const defaultProps = {
-    className: cn("transition-colors hover:text-foreground", className),
+    className: cn("hover:text-foreground transition-colors", className),
     "data-slot": "breadcrumb-link",
   };
 
@@ -63,7 +66,7 @@ export function BreadcrumbPage({
   return (
     <span
       aria-current="page"
-      className={cn("font-normal text-foreground", className)}
+      className={cn("text-foreground font-normal", className)}
       data-slot="breadcrumb-page"
       {...props}
     />

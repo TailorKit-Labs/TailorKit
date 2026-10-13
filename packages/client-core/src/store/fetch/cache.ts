@@ -1,7 +1,8 @@
 import { computedAsync } from "@nanostores/async";
-import { createSnapshotStore } from "../snapshot-store";
 import { atom } from "nanostores";
 import type { ReadableAtom, WritableAtom } from "nanostores";
+
+import { createSnapshotStore } from "../snapshot-store";
 
 export interface FetchCacheOptions {
   /** Milliseconds before a successful response needs refreshing. Infinity keeps it fresh. */
@@ -35,8 +36,8 @@ export interface FetchStore<T> {
 const idle = <T>(): FetchSnapshot<T> => ({
   data: undefined,
   error: null,
-  status: "idle",
   isFetching: false,
+  status: "idle",
   updatedAt: 0,
 });
 
@@ -56,14 +57,20 @@ interface Entry {
 export function serializeCacheKey(key: readonly unknown[]): string {
   return JSON.stringify(key, (_name, value: unknown) =>
     value && typeof value === "object" && !Array.isArray(value)
-      ? Object.fromEntries(Object.entries(value).toSorted(([a], [b]) => a.localeCompare(b)))
-      : value,
+      ? Object.fromEntries(
+          Object.entries(value).toSorted(([a], [b]) => a.localeCompare(b))
+        )
+      : value
   );
 }
 
 function duration(value: number | undefined, fallback: number): number {
-  if (value === undefined) return fallback;
-  if (value < 0 || Number.isNaN(value)) throw new Error("Cache times must be non-negative.");
+  if (value === undefined) {
+    return fallback;
+  }
+  if (value < 0 || Number.isNaN(value)) {
+    throw new Error("Cache times must be non-negative.");
+  }
   return value;
 }
 
@@ -79,20 +86,28 @@ export function createFetchCache(defaults: FetchCacheOptions = {}) {
     entry.controller = null;
     entry.pending = null;
     entry.invalidated = false;
-    if (entry.timer) clearTimeout(entry.timer);
+    if (entry.timer) {
+      clearTimeout(entry.timer);
+    }
     entry.timer = null;
     entry.state.set(idle());
   };
 
   const scheduleGc = (key: string, entry: Entry) => {
-    if (entry.timer) clearTimeout(entry.timer);
+    if (entry.timer) {
+      clearTimeout(entry.timer);
+    }
     entry.timer = null;
-    if (entry.observers || entry.pending || entry.gcTime === Infinity) return;
+    if (entry.observers || entry.pending || entry.gcTime === Infinity) {
+      return;
+    }
     const expiresAt = Date.now() + entry.gcTime;
     const arm = () => {
       entry.timer = setTimeout(
         () => {
-          if (entries.get(key) !== entry || entry.observers || entry.pending) return;
+          if (entries.get(key) !== entry || entry.observers || entry.pending) {
+            return;
+          }
           if (Date.now() < expiresAt) {
             arm();
             return;
@@ -100,18 +115,26 @@ export function createFetchCache(defaults: FetchCacheOptions = {}) {
           entries.delete(key);
           reset(entry);
         },
-        Math.min(Math.max(0, expiresAt - Date.now()), 2_147_483_647),
+        Math.min(Math.max(0, expiresAt - Date.now()), 2_147_483_647)
       );
-      if (typeof entry.timer === "object") entry.timer.unref?.();
+      if (typeof entry.timer === "object") {
+        entry.timer.unref?.();
+      }
     };
     arm();
   };
 
   return {
+    clear() {
+      for (const [key, entry] of entries) {
+        reset(entry);
+        if (!entry.observers) entries.delete(key);
+      }
+    },
     getStore<T>(
       input: readonly unknown[],
       fetcher: Fetcher<T>,
-      options: FetchCacheOptions & { abortOnUnsubscribe?: boolean } = {},
+      options: FetchCacheOptions & { abortOnUnsubscribe?: boolean } = {}
     ): FetchStore<T> {
       const key = serializeCacheKey(input);
       const retention = duration(options.gcTime, gcTime);
@@ -152,7 +175,11 @@ export function createFetchCache(defaults: FetchCacheOptions = {}) {
             active = false;
             unsubscribe();
             entry.observers -= 1;
-            if (!entry.observers && options.abortOnUnsubscribe && entry.pending) {
+            if (
+              !entry.observers &&
+              options.abortOnUnsubscribe &&
+              entry.pending
+            ) {
               entry.generation += 1;
               entry.controller?.abort();
               entry.controller = null;
@@ -189,10 +216,13 @@ export function createFetchCache(defaults: FetchCacheOptions = {}) {
           const pending = new Promise<void>((resolve) => {
             start = () => {
               // Async owns fetching, settlement, and Nano Stores task tracking.
-              const request = computedAsync(atom(controller.signal), (signal) => {
-                signal.throwIfAborted();
-                return fetcher(signal);
-              });
+              const request = computedAsync(
+                atom(controller.signal),
+                (signal) => {
+                  signal.throwIfAborted();
+                  return fetcher(signal);
+                }
+              );
               const stop = request.listen((result) => {
                 if (result.state === "loading") return;
                 stop();
@@ -257,16 +287,15 @@ export function createFetchCache(defaults: FetchCacheOptions = {}) {
         invalidate() {
           const entry = getEntry();
           entry.invalidated = true;
-          return entry.observers ? store.fetch({ force: true }) : Promise.resolve();
+          return entry.observers
+            ? store.fetch({ force: true })
+            : Promise.resolve();
         },
       };
-      return { ...store, state: createSnapshotStore(store.getSnapshot, store.subscribe) };
-    },
-    clear() {
-      for (const [key, entry] of entries) {
-        reset(entry);
-        if (!entry.observers) entries.delete(key);
-      }
+      return {
+        ...store,
+        state: createSnapshotStore(store.getSnapshot, store.subscribe),
+      };
     },
   };
 }

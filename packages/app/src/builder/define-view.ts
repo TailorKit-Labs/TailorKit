@@ -15,10 +15,13 @@ interface Scope {
   bindings: Map<string, Binding>;
 }
 type FunctionNode = ESTree.Function | ESTree.ArrowFunctionExpression;
-type ClassNode = Extract<ESTree.Node, { type: "ClassDeclaration" | "ClassExpression" }>;
+type ClassNode = Extract<
+  ESTree.Node,
+  { type: "ClassDeclaration" | "ClassExpression" }
+>;
 
 function createScope(parent?: Scope, functionScope = false): Scope {
-  return { parent, functionScope, bindings: new Map() };
+  return { bindings: new Map(), functionScope, parent };
 }
 
 function bindingNames(node: ESTree.Node | null | undefined): string[] {
@@ -40,7 +43,9 @@ function bindingNames(node: ESTree.Node | null | undefined): string[] {
     }
     case "ObjectPattern": {
       return node.properties.flatMap((property) =>
-        bindingNames(property.type === "Property" ? property.value : property.argument),
+        bindingNames(
+          property.type === "Property" ? property.value : property.argument
+        )
       );
     }
     case "TSParameterProperty": {
@@ -79,13 +84,15 @@ function childNodes(node: ESTree.Node): ESTree.Node[] {
   return Object.values(node).flatMap((value) => {
     const children = Array.isArray(value) ? value : [value];
     return children.filter(
-      (child): child is ESTree.Node => !!child && typeof child === "object" && "type" in child,
+      (child): child is ESTree.Node =>
+        !!child && typeof child === "object" && "type" in child
     );
   });
 }
 
 function bindImports(node: ESTree.ImportDeclaration, scope: Scope) {
-  const sdk = node.importKind !== "type" && clientImports.has(String(node.source.value));
+  const sdk =
+    node.importKind !== "type" && clientImports.has(String(node.source.value));
   for (const specifier of node.specifiers) {
     let binding: Binding = "local";
     if (sdk && specifier.type === "ImportNamespaceSpecifier") {
@@ -220,7 +227,9 @@ export function createDefineViewMatcher(program: ESTree.Program) {
       return false;
     }
     return callee.computed
-      ? callee.property.type === "Literal" && callee.property.value === "defineView"
-      : callee.property.type === "Identifier" && callee.property.name === "defineView";
+      ? callee.property.type === "Literal" &&
+          callee.property.value === "defineView"
+      : callee.property.type === "Identifier" &&
+          callee.property.name === "defineView";
   };
 }

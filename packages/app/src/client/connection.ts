@@ -1,8 +1,9 @@
 import { createORPCClient } from "@orpc/client";
 import { RPCLink as FetchLink } from "@orpc/client/fetch";
-import type { PlatformClient, SubscriptionClient } from "../protocol";
 import { RPCLink } from "@orpc/client/websocket";
+
 import { AppError, appError } from "../errors";
+import type { PlatformClient, SubscriptionClient } from "../protocol";
 import type { Reference } from "./reference";
 import { sessionRenewalDelay } from "./session";
 import type { Session } from "./session";
@@ -18,7 +19,10 @@ type MutationArguments<I> = undefined extends I
   : [args: I, options?: { requestId?: string }];
 
 export interface Client {
-  query<I, O>(reference: Reference<"query", I, O>, ...args: InputArguments<NoInfer<I>>): Promise<O>;
+  query<I, O>(
+    reference: Reference<"query", I, O>,
+    ...args: InputArguments<NoInfer<I>>
+  ): Promise<O>;
   mutate<I, O>(
     reference: Reference<"mutation", I, O>,
     ...args: MutationArguments<NoInfer<I>>
@@ -31,17 +35,20 @@ export interface Client {
     reference: Reference<"query", I, O>,
     args: NoInfer<I>,
     next: (value: O) => void,
-    options?: { onError?: (error: AppError) => void },
+    options?: { onError?: (error: AppError) => void }
   ): () => void;
   close(): void;
 }
 export function createClient(
   options: {
     getSession?: (options: { refresh: boolean }) => Promise<Session>;
-    connect?: (url: string, protocols: string[]) => WebSocket | Promise<WebSocket>;
+    connect?: (
+      url: string,
+      protocols: string[]
+    ) => WebSocket | Promise<WebSocket>;
     fetch?: typeof fetch;
     retryDelayMs?: number;
-  } = {},
+  } = {}
 ): Client {
   let closed = false;
   let socket: WebSocket | undefined;
@@ -53,7 +60,9 @@ export function createClient(
     ((request: { refresh: boolean }) => {
       const bridge = (
         globalThis as typeof globalThis & {
-          __tailorkitBackendSession?: (options: { refresh: boolean }) => Promise<Session>;
+          __tailorkitBackendSession?: (options: {
+            refresh: boolean;
+          }) => Promise<Session>;
         }
       ).__tailorkitBackendSession;
       if (!bridge) {
@@ -73,27 +82,27 @@ export function createClient(
         }
         const url = backendUrl(session, "queries");
         url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
-        socket = await (options.connect ?? ((url, protocols) => new WebSocket(url, protocols)))(
-          url.href,
-          ["tailorkit", `jwt.${session.token}`],
-        );
+        socket = await (
+          options.connect ?? ((url, protocols) => new WebSocket(url, protocols))
+        )(url.href, ["tailorkit", `jwt.${session.token}`]);
         // Reconnect one minute before expiry. Active subscriptions obtain fresh snapshots automatically.
         clearTimeout(timer);
         timer = setTimeout(
           () => socket?.close(1000, "Renew authentication"),
-          sessionRenewalDelay(session),
+          sessionRenewalDelay(session)
         );
         return socket;
       },
       reconnect: {
+        delay: (info) =>
+          info.attempt === 1 ? 0 : (options.retryDelayMs ?? 1000),
         enabled: true,
-        delay: (info) => (info.attempt === 1 ? 0 : (options.retryDelayMs ?? 1000)),
       },
-    }),
+    })
   );
   async function call(
     kind: "queries" | "mutations" | "actions",
-    input: { name: string; args?: unknown; requestId?: string },
+    input: { name: string; args?: unknown; requestId?: string }
   ) {
     if (closed) {
       throw new AppError("UNAVAILABLE", "App client closed");
@@ -117,21 +126,29 @@ export function createClient(
             throw new AppError("UNAVAILABLE", "App client closed");
           }
           const url = backendUrl(session, kind);
-          url.pathname = url.pathname.slice(0, -kind.length).replace(/\/$/u, "");
+          url.pathname = url.pathname
+            .slice(0, -kind.length)
+            .replace(/\/$/u, "");
           const http = createORPCClient<PlatformClient>(
             new FetchLink({
-              url: url.pathname as `/${string}`,
-              origin: url.origin,
-              headers: { authorization: `Bearer ${session.token}` },
               fetch: async (url, init) => {
                 let response: Response;
                 try {
-                  response = await (options.fetch ?? fetch)(url, { ...init, credentials: "omit" });
+                  response = await (options.fetch ?? fetch)(url, {
+                    ...init,
+                    credentials: "omit",
+                  });
                 } catch {
-                  throw new AppError("UNAVAILABLE", "App connection interrupted");
+                  throw new AppError(
+                    "UNAVAILABLE",
+                    "App connection interrupted"
+                  );
                 }
                 if ([502, 503, 504].includes(response.status)) {
-                  throw new AppError("UNAVAILABLE", "App backend temporarily unavailable");
+                  throw new AppError(
+                    "UNAVAILABLE",
+                    "App backend temporarily unavailable"
+                  );
                 }
                 // A connection can drop after headers arrive but before the mutation result does.
                 if (kind === "mutations" && response.body) {
@@ -141,17 +158,26 @@ export function createClient(
                       headers: response.headers,
                     });
                   } catch {
-                    throw new AppError("UNAVAILABLE", "App connection interrupted");
+                    throw new AppError(
+                      "UNAVAILABLE",
+                      "App connection interrupted"
+                    );
                   }
                 }
                 return response;
               },
-            }),
+              headers: { authorization: `Bearer ${session.token}` },
+              origin: url.origin,
+              url: url.pathname as `/${string}`,
+            })
           );
           if (kind === "mutations") {
-            return await http.mutations(invocation as typeof input & { requestId: string }, {
-              signal: controller.signal,
-            });
+            return await http.mutations(
+              invocation as typeof input & { requestId: string },
+              {
+                signal: controller.signal,
+              }
+            );
           }
           return await http[kind](invocation, { signal: controller.signal });
         } catch (error) {
@@ -169,7 +195,10 @@ export function createClient(
           }
           await waitForRetry(
             controller.signal,
-            Math.min((options.retryDelayMs ?? 1000) * 2 ** Math.min(attempt++, 5), 30_000),
+            Math.min(
+              (options.retryDelayMs ?? 1000) * 2 ** Math.min(attempt++, 5),
+              30_000
+            )
           );
         }
       }
@@ -180,14 +209,27 @@ export function createClient(
     }
   }
   return {
-    query: (ref, ...[args]) => call("queries", { name: ref.name, args }) as Promise<never>,
+    action: (ref, ...[args]) =>
+      call("actions", { name: ref.name, args }) as Promise<never>,
+    close() {
+      closed = true;
+      for (const stop of stops) {
+        stop();
+      }
+      for (const request of requests) {
+        request.abort();
+      }
+      clearTimeout(timer);
+      socket?.close();
+    },
     mutate: (ref, ...[args, settings]) =>
       call("mutations", {
         name: ref.name,
         args,
         requestId: settings?.requestId ?? crypto.randomUUID(),
       }) as Promise<never>,
-    action: (ref, ...[args]) => call("actions", { name: ref.name, args }) as Promise<never>,
+    query: (ref, ...[args]) =>
+      call("queries", { name: ref.name, args }) as Promise<never>,
     subscribe(ref, args, next, settings = {}) {
       if (closed) {
         throw new AppError("UNAVAILABLE", "App client closed");
@@ -203,7 +245,7 @@ export function createClient(
           try {
             const stream = await wire.subscribe(
               { name: ref.name, args },
-              { signal: controller.signal },
+              { signal: controller.signal }
             );
             for await (const value of stream) {
               if (controller.signal.aborted || closed) {
@@ -219,7 +261,13 @@ export function createClient(
             if (!(error instanceof Error && error.name === "AbortError")) {
               settings.onError?.(failure);
             }
-            if (!["UNAUTHORIZED", "UNAVAILABLE", "INTERNAL_SERVER_ERROR"].includes(failure.code)) {
+            if (
+              ![
+                "UNAUTHORIZED",
+                "UNAVAILABLE",
+                "INTERNAL_SERVER_ERROR",
+              ].includes(failure.code)
+            ) {
               break;
             }
           }
@@ -234,17 +282,6 @@ export function createClient(
         settings.onError?.(appError(error));
       });
       return stop;
-    },
-    close() {
-      closed = true;
-      for (const stop of stops) {
-        stop();
-      }
-      for (const request of requests) {
-        request.abort();
-      }
-      clearTimeout(timer);
-      socket?.close();
     },
   };
 }
@@ -264,7 +301,10 @@ function backendUrl(session: Session, route: string) {
   }
   if (
     url.protocol !== "https:" &&
-    !(url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname))
+    !(
+      url.protocol === "http:" &&
+      ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)
+    )
   ) {
     throw new AppError("BAD_REQUEST", "App backends require HTTPS");
   }

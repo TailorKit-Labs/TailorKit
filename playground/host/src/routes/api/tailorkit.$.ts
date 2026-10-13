@@ -1,5 +1,6 @@
-import { authenticateTailorKitRequest, tailorKit } from "#lib/tailorkit-server";
 import { createFileRoute } from "@tanstack/react-router";
+
+import { authenticateTailorKitRequest, tailorKit } from "#lib/tailorkit-server";
 
 const handle = ({ request }: { request: Request }) =>
   tailorKit.handler(request, { authenticate: authenticateTailorKitRequest });

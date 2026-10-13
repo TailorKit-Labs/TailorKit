@@ -2,10 +2,21 @@
 
 import { useState } from "react";
 
-import { Field, FieldDescription, FieldError, FieldLabel } from "../components/field";
-import { formatFieldErrors } from "./field-errors";
-import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../components/select";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "../components/field";
+import {
+  Select,
+  SelectItem,
+  SelectPopup,
+  SelectTrigger,
+  SelectValue,
+} from "../components/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../components/tooltip";
+import { formatFieldErrors } from "./field-errors";
 
 const emptyErrors: unknown[] = [];
 
@@ -47,7 +58,8 @@ export function SelectField({
   return (
     <Field disabled={isDisabled}>
       <FieldLabel>
-        {label} {required && <span className="text-destructive-foreground">*</span>}
+        {label}{" "}
+        {required && <span className="text-destructive-foreground">*</span>}
       </FieldLabel>
       <Select
         disabled={isDisabled}
@@ -62,7 +74,9 @@ export function SelectField({
       >
         <Tooltip>
           <TooltipTrigger render={<SelectTrigger />} disabled={!isEmpty}>
-            <SelectValue placeholder={isEmpty ? emptyPlaceholder : placeholder} />
+            <SelectValue
+              placeholder={isEmpty ? emptyPlaceholder : placeholder}
+            />
           </TooltipTrigger>
           <TooltipContent>{emptyTooltip}</TooltipContent>
         </Tooltip>

@@ -1,14 +1,31 @@
 import type { ORPCError } from "@orpc/server";
 import { call } from "@orpc/server";
-import { user, organization, member, invitation } from "@tailorkit/db/schema/index";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import { createTestDb } from "../test/pglite";
+import {
+  user,
+  organization,
+  member,
+  invitation,
+} from "@tailorkit/db/schema/index";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vite-plus/test";
+
 import type { Context } from "../context";
+import { createTestDb } from "../test/pglite";
 
 const testState = vi.hoisted(() => ({
   db: undefined as unknown,
   env: {
-    VERCEL_ENV: undefined as "production" | "preview" | "development" | undefined,
+    VERCEL_ENV: undefined as
+      | "production"
+      | "preview"
+      | "development"
+      | undefined,
   },
 }));
 
@@ -88,46 +105,46 @@ describe("userRouter", () => {
 
     await db.insert(user).values([
       {
-        id: userId,
-        name: "Ada Lovelace",
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
         email: "ada@example.com",
         emailVerified: true,
-        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        id: userId,
+        name: "Ada Lovelace",
         updatedAt: new Date("2026-01-01T00:00:00.000Z"),
       },
       {
-        id: otherUserId,
-        name: "Grace Hopper",
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
         email: "grace@example.com",
         emailVerified: true,
-        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        id: otherUserId,
+        name: "Grace Hopper",
         updatedAt: new Date("2026-01-01T00:00:00.000Z"),
       },
     ]);
 
     await db.insert(organization).values([
       {
+        createdAt: new Date("2026-01-02T00:00:00.000Z"),
         id: orgId,
         name: "Analytical Engines",
-        slug: "analytical-engines",
         publicId: "team0000000001",
-        createdAt: new Date("2026-01-02T00:00:00.000Z"),
+        slug: "analytical-engines",
       },
       {
+        createdAt: new Date("2026-01-02T00:00:00.000Z"),
         id: otherOrgId,
         name: "Compilers Inc",
-        slug: "compilers-inc",
         publicId: "team0000000002",
-        createdAt: new Date("2026-01-02T00:00:00.000Z"),
+        slug: "compilers-inc",
       },
     ]);
 
     await db.insert(member).values({
+      createdAt: new Date("2026-01-03T00:00:00.000Z"),
       id: "55555555-5555-4555-8555-555555555555",
       organizationId: orgId,
-      userId,
       role: "owner",
-      createdAt: new Date("2026-01-03T00:00:00.000Z"),
+      userId,
     });
   });
 
@@ -138,21 +155,24 @@ describe("userRouter", () => {
 
   it("requires invitation management permission to enumerate pending invitations", async () => {
     await db.insert(invitation).values({
-      organizationId: orgId,
       email: "charles@example.com",
-      role: "member",
-      status: "pending",
       expiresAt: new Date("2099-02-01T00:00:00.000Z"),
       inviterId: userId,
+      organizationId: orgId,
+      role: "member",
+      status: "pending",
     });
-    vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ error: null, success: false });
+    vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({
+      error: null,
+      success: false,
+    });
 
     await expect(
       call(
         orgRouter.getOrgInvitations,
         { orgSlug: "analytical-engines" },
-        { context: createContext() },
-      ),
+        { context: createContext() }
+      )
     ).rejects.toEqual(expect.objectContaining({ code: "FORBIDDEN" }));
 
     expect(auth.api.hasPermission).toHaveBeenCalledWith({
@@ -167,7 +187,9 @@ describe("userRouter", () => {
   it("returns the current session and user", async () => {
     const context = createContext();
 
-    await expect(call(userRouter.getSession, undefined, { context })).resolves.toEqual({
+    await expect(
+      call(userRouter.getSession, undefined, { context })
+    ).resolves.toEqual({
       session: context.session,
       user: context.user,
     });
@@ -177,34 +199,46 @@ describe("userRouter", () => {
     await expect(
       call(userRouter.getOrgs, undefined, {
         context: createContext({ session: null, user: null }),
-      }),
+      })
     ).rejects.toEqual(expect.objectContaining({ code: "UNAUTHORIZED" }));
   });
 
   it("returns organizations the current user belongs to", async () => {
-    const orgs = await call(userRouter.getOrgs, undefined, { context: createContext() });
+    const orgs = await call(userRouter.getOrgs, undefined, {
+      context: createContext(),
+    });
 
     expect(orgs).toHaveLength(1);
-    expect(orgs[0]).toEqual(expect.objectContaining({ id: orgId, slug: "analytical-engines" }));
+    expect(orgs[0]).toEqual(
+      expect.objectContaining({ id: orgId, slug: "analytical-engines" })
+    );
   });
 
   it("resolves an organization by slug or id for the current user", async () => {
     await expect(
-      call(userRouter.getOrg, { orgSlug: "analytical-engines" }, { context: createContext() }),
+      call(
+        userRouter.getOrg,
+        { orgSlug: "analytical-engines" },
+        { context: createContext() }
+      )
     ).resolves.toEqual(expect.objectContaining({ id: orgId }));
 
-    await expect(call(userRouter.getOrg, { orgId }, { context: createContext() })).resolves.toEqual(
-      expect.objectContaining({ slug: "analytical-engines" }),
-    );
+    await expect(
+      call(userRouter.getOrg, { orgId }, { context: createContext() })
+    ).resolves.toEqual(expect.objectContaining({ slug: "analytical-engines" }));
   });
 
   it("does not resolve organizations outside the current user's membership", async () => {
     await expect(
-      call(userRouter.getOrg, { orgSlug: "compilers-inc" }, { context: createContext() }),
+      call(
+        userRouter.getOrg,
+        { orgSlug: "compilers-inc" },
+        { context: createContext() }
+      )
     ).rejects.toEqual(
       expect.objectContaining({ code: "NOT_FOUND" } satisfies Partial<
         ORPCError<"NOT_FOUND", unknown>
-      >),
+      >)
     );
   });
 
@@ -215,12 +249,12 @@ describe("userRouter", () => {
       call(
         userRouter.createOrg,
         { name: "New Org", slug: "new-org" },
-        { context: createContext() },
-      ),
+        { context: createContext() }
+      )
     ).rejects.toEqual(
       expect.objectContaining({ code: "FORBIDDEN" } satisfies Partial<
         ORPCError<"FORBIDDEN", unknown>
-      >),
+      >)
     );
   });
 
@@ -229,10 +263,10 @@ describe("userRouter", () => {
     vi.mocked(auth.api.createOrganization).mockResolvedValue({
       createdAt: new Date("2026-01-04T00:00:00.000Z"),
       id: "77777777-7777-4777-8777-777777777777",
-      publicId: "team0000000003",
       members: [],
       metadata: null,
       name: "New Org",
+      publicId: "team0000000003",
       slug: "new-org",
     });
 
@@ -240,13 +274,13 @@ describe("userRouter", () => {
       call(
         userRouter.createOrg,
         { name: "New Org", slug: "new-org" },
-        { context: createContext() },
-      ),
+        { context: createContext() }
+      )
     ).resolves.toEqual(
       expect.objectContaining({
         id: "77777777-7777-4777-8777-777777777777",
         slug: "new-org",
-      }),
+      })
     );
 
     expect(auth.api.createOrganization).toHaveBeenCalledWith({
@@ -260,37 +294,41 @@ describe("userRouter", () => {
 
     await db.insert(invitation).values([
       {
+        createdAt: new Date("2026-01-04T00:00:00.000Z"),
+        email: "ada@example.com",
+        expiresAt: futureDate,
         id: "66666666-6666-4666-8666-666666666666",
-        organizationId: orgId,
-        email: "ada@example.com",
-        status: "pending",
-        expiresAt: futureDate,
-        createdAt: new Date("2026-01-04T00:00:00.000Z"),
         inviterId: otherUserId,
+        organizationId: orgId,
+        status: "pending",
       },
       {
+        createdAt: new Date("2026-01-04T00:00:00.000Z"),
+        email: "ada@example.com",
+        expiresAt: futureDate,
         id: "77777777-7777-4777-8777-777777777777",
-        organizationId: orgId,
-        email: "ada@example.com",
-        status: "accepted",
-        expiresAt: futureDate,
-        createdAt: new Date("2026-01-04T00:00:00.000Z"),
         inviterId: otherUserId,
+        organizationId: orgId,
+        status: "accepted",
       },
       {
-        id: "88888888-8888-4888-8888-888888888888",
-        organizationId: orgId,
-        email: "ada@example.com",
-        status: "pending",
-        expiresAt: pastDate,
         createdAt: new Date("2026-01-04T00:00:00.000Z"),
+        email: "ada@example.com",
+        expiresAt: pastDate,
+        id: "88888888-8888-4888-8888-888888888888",
         inviterId: otherUserId,
+        organizationId: orgId,
+        status: "pending",
       },
     ]);
 
-    const invitations = await call(userRouter.getPendingInvitations, undefined, {
-      context: createContext(),
-    });
+    const invitations = await call(
+      userRouter.getPendingInvitations,
+      undefined,
+      {
+        context: createContext(),
+      }
+    );
 
     expect(invitations).toHaveLength(1);
     expect(invitations[0]).toEqual(
@@ -298,7 +336,7 @@ describe("userRouter", () => {
         email: "ada@example.com",
         organization: expect.objectContaining({ id: orgId }),
         status: "pending",
-      }),
+      })
     );
   });
 });

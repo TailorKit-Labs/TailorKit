@@ -1,7 +1,13 @@
 import { createContext, h } from "preact";
-import type { ComponentChild, ComponentChildren, ComponentType, VNode } from "preact";
+import type {
+  ComponentChild,
+  ComponentChildren,
+  ComponentType,
+  VNode,
+} from "preact";
 import { useContext } from "preact/hooks";
 import type { z } from "zod";
+
 import type { FunctionCalls, Identity } from "./server/functions";
 
 // oxlint-disable-next-line typescript-eslint/no-empty-interface, typescript-eslint/no-empty-object-type
@@ -26,30 +32,40 @@ export interface InstanceResolverContext<TPath extends AppViewPath> {
   queries: FunctionCalls<TailorKitServerFunctions, "query">;
 }
 
-export interface ViewInstances<TPath extends AppViewPath, TSchema extends z.ZodType> {
+export interface ViewInstances<
+  TPath extends AppViewPath,
+  TSchema extends z.ZodType,
+> {
   dataSchema: TSchema;
   /** Runs on the app server. Only registered queries are available. */
   resolve: (
-    context: InstanceResolverContext<TPath>,
-  ) => ViewInstance<z.input<TSchema>>[] | Promise<ViewInstance<z.input<TSchema>>[]>;
+    context: InstanceResolverContext<TPath>
+  ) =>
+    | ViewInstance<z.input<TSchema>>[]
+    | Promise<ViewInstance<z.input<TSchema>>[]>;
 }
 export type SlotName = keyof TailorKitSlots & string;
 
 export type ViewPath = Extract<keyof TailorKitViews & string, `/${string}`>;
 export type AppViewPath = ViewPath;
 
-export type ViewProps<TPath extends ViewPath> = TailorKitViews[TPath] extends object
-  ? TailorKitViews[TPath]
-  : Record<string, never>;
+export type ViewProps<TPath extends ViewPath> =
+  TailorKitViews[TPath] extends object
+    ? TailorKitViews[TPath]
+    : Record<string, never>;
 
 export type ViewPropsForPath<TPath extends AppViewPath> = TPath extends ViewPath
   ? ViewProps<TPath>
   : never;
 
 export type ViewContext<TPath extends AppViewPath> =
-  ViewPropsForPath<TPath> extends { context: infer TContext } ? TContext : Record<string, never>;
+  ViewPropsForPath<TPath> extends { context: infer TContext }
+    ? TContext
+    : Record<string, never>;
 
-export type View<TProps extends object = Record<string, never>> = (props: TProps) => ComponentChild;
+export type View<TProps extends object = Record<string, never>> = (
+  props: TProps
+) => ComponentChild;
 
 export type ViewRuntimeProps<TPath extends AppViewPath, TData = unknown> =
   | {
@@ -86,21 +102,28 @@ export interface ViewDefinition<
   instances?: { resolver: string };
 }
 
-export type SlotView<TSlot extends SlotName> = TailorKitSlots[TSlot] extends { views: infer TViews }
+export type SlotView<TSlot extends SlotName> = TailorKitSlots[TSlot] extends {
+  views: infer TViews;
+}
   ? Extract<TViews, AppViewPath>
   : never;
-type SlotInstanceDefinition<TSlot extends SlotName> = TailorKitSlots[TSlot] extends {
-  multiple: true;
-}
-  ? { instances: { resolver: string } }
-  : { instances?: never };
+type SlotInstanceDefinition<TSlot extends SlotName> =
+  TailorKitSlots[TSlot] extends {
+    multiple: true;
+  }
+    ? { instances: { resolver: string } }
+    : { instances?: never };
 
 type SlotDefinitions = {
   [V in SlotName]?: Partial<{
-    [P in SlotView<V>]: (ViewDefinition<P, unknown, V> & SlotInstanceDefinition<V>) | false;
+    [P in SlotView<V>]:
+      | (ViewDefinition<P, unknown, V> & SlotInstanceDefinition<V>)
+      | false;
   }>;
 };
-export interface TailorKitClient<TSlots extends SlotDefinitions = SlotDefinitions> {
+export interface TailorKitClient<
+  TSlots extends SlotDefinitions = SlotDefinitions,
+> {
   slots: TSlots;
 }
 
@@ -110,16 +133,24 @@ export interface TailorKitClientMeta {
 
 export interface TailorKitClientRuntime {
   h: typeof h;
-  render: (vnode: VNode | null, parent: Element | Document | ShadowRoot | DocumentFragment) => void;
+  render: (
+    vnode: VNode | null,
+    parent: Element | Document | ShadowRoot | DocumentFragment
+  ) => void;
 }
 
-export type TailorKitClientWithMeta<TViews extends SlotDefinitions = SlotDefinitions> =
-  TailorKitClient<TViews> & {
-    $meta: TailorKitClientMeta;
-    $runtime: TailorKitClientRuntime;
-  };
+export type TailorKitClientWithMeta<
+  TViews extends SlotDefinitions = SlotDefinitions,
+> = TailorKitClient<TViews> & {
+  $meta: TailorKitClientMeta;
+  $runtime: TailorKitClientRuntime;
+};
 
-type ViewOptions<TPath extends AppViewPath, TSlot extends SlotName, TSchema extends z.ZodType> = {
+type ViewOptions<
+  TPath extends AppViewPath,
+  TSlot extends SlotName,
+  TSchema extends z.ZodType,
+> = {
   [S in TSlot]: {
     slot: S;
     view: TPath;
@@ -148,9 +179,13 @@ export function defineView<
   const TSlot extends SlotName,
   TSchema extends z.ZodType,
 >(
-  options: ViewOptions<TPath, TSlot, TSchema>,
-): ViewDefinition<TPath, z.output<TSchema>, TSlot> & SlotInstanceDefinition<TSlot>;
-export function defineView<TPath extends AppViewPath, TSchema extends z.ZodType>(options: {
+  options: ViewOptions<TPath, TSlot, TSchema>
+): ViewDefinition<TPath, z.output<TSchema>, TSlot> &
+  SlotInstanceDefinition<TSlot>;
+export function defineView<
+  TPath extends AppViewPath,
+  TSchema extends z.ZodType,
+>(options: {
   slot?: SlotName;
   view?: TPath;
   component: View<Record<string, never>>;
@@ -158,16 +193,21 @@ export function defineView<TPath extends AppViewPath, TSchema extends z.ZodType>
 }): ViewDefinition<TPath, z.output<TSchema>> {
   if (!options.slot || !options.view) {
     throw new Error(
-      "Views without a slot or path must be compiled from a .view.tsx file by the TailorKit app build.",
+      "Views without a slot or path must be compiled from a .view.tsx file by the TailorKit app build."
     );
   }
   const path = options.view;
-  const Context = createContext<{ context: ViewContext<TPath>; instance?: ViewInstance } | null>(
-    null,
-  );
-  const instances = options.instances as unknown as { resolver?: string } | undefined;
+  const Context = createContext<{
+    context: ViewContext<TPath>;
+    instance?: ViewInstance;
+  } | null>(null);
+  const instances = options.instances as unknown as
+    | { resolver?: string }
+    | undefined;
   if (instances && !instances.resolver) {
-    throw new Error("View instance resolvers must be compiled with the TailorKit app build.");
+    throw new Error(
+      "View instance resolvers must be compiled with the TailorKit app build."
+    );
   }
 
   const View = (props: ViewRuntimeProps<TPath>) => {
@@ -177,13 +217,20 @@ export function defineView<TPath extends AppViewPath, TSchema extends z.ZodType>
 
     if (instances && !props.instance) {
       throw new Error(
-        `View "${path}" requires a selected instance. Pass instanceKey to RenderSlot or instance to RenderSlot.Controlled.`,
+        `View "${path}" requires a selected instance. Pass instanceKey to RenderSlot or instance to RenderSlot.Controlled.`
       );
     }
     return h(
       Context.Provider,
-      { value: { context: props.context as ViewContext<TPath>, instance: props.instance } },
-      h(options.component as ComponentType<object>, { key: props.instance?.key }),
+      {
+        value: {
+          context: props.context as ViewContext<TPath>,
+          instance: props.instance,
+        },
+      },
+      h(options.component as ComponentType<object>, {
+        key: props.instance?.key,
+      })
     );
   };
 
@@ -191,22 +238,27 @@ export function defineView<TPath extends AppViewPath, TSchema extends z.ZodType>
     component: View,
     path,
     slot: options.slot,
-    ...(instances?.resolver ? { instances: { resolver: instances.resolver } } : {}),
+    ...(instances?.resolver
+      ? { instances: { resolver: instances.resolver } }
+      : {}),
     useContext: () => {
       const context = useContext(Context);
 
       if (context === null) {
-        throw new Error(`View context is only available while rendering "${path}".`);
+        throw new Error(
+          `View context is only available while rendering "${path}".`
+        );
       }
 
       return context.context;
     },
     useInstance: () => {
       const value = useContext(Context);
-      if (!value?.instance)
+      if (!value?.instance) {
         throw new Error(
-          `View instance is only available while rendering an instance of "${path}".`,
+          `View instance is only available while rendering an instance of "${path}".`
         );
+      }
       return value.instance as ViewInstance<z.output<TSchema>>;
     },
   } as ViewDefinition<TPath, z.output<TSchema>>;
@@ -225,16 +277,24 @@ const toCallbackEventName = (name: string): string =>
 
 const toEventProp = (event: string): string => `on${event}`;
 
-export const createRemoteComponent = <TProps extends object, TChildren extends boolean = false>(
+export const createRemoteComponent = <
+  TProps extends object,
+  TChildren extends boolean = false,
+>(
   name: string,
-  options: { callbacks?: Record<string, number>; children?: TChildren } = {},
-): View<TProps & { children?: TChildren extends true ? ComponentChildren : never }> => {
+  options: { callbacks?: Record<string, number>; children?: TChildren } = {}
+): View<
+  TProps & { children?: TChildren extends true ? ComponentChildren : never }
+> => {
   const tagName = toComponentTagName(name);
   const callbacks = options.callbacks ?? {};
 
   return function RemoteComponent({ children, ...props }) {
     const nextProps = { ...props } as Record<string, unknown>;
-    const callbackMap: Record<string, { callback: string; inputCount: number }> = {};
+    const callbackMap: Record<
+      string,
+      { callback: string; inputCount: number }
+    > = {};
 
     for (const [key, inputCount] of Object.entries(callbacks)) {
       const callback = nextProps[key];
@@ -251,7 +311,9 @@ export const createRemoteComponent = <TProps extends object, TChildren extends b
     }
 
     const serializedProps = Object.fromEntries(
-      Object.entries(nextProps).filter(([, value]) => typeof value !== "function"),
+      Object.entries(nextProps).filter(
+        ([, value]) => typeof value !== "function"
+      )
     );
     nextProps["data-tailorkit-props"] = JSON.stringify(serializedProps);
 

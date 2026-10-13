@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { JsonSchema } from "./json-schema";
 
 export const SerializedCallback = z.object({
@@ -10,9 +11,9 @@ export const SerializedCallback = z.object({
 export type SerializedCallback = z.infer<typeof SerializedCallback>;
 
 export const SerializedComponent = z.object({
-  fields: JsonSchema.optional(),
   callbacks: z.record(z.string(), SerializedCallback),
   children: z.boolean(),
+  fields: JsonSchema.optional(),
 });
 
 export type SerializedComponent = z.infer<typeof SerializedComponent>;

@@ -1,8 +1,8 @@
 import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
+import { RateLimitHandlerPlugin } from "@tailorkit/api-utils/rate-limiting";
 import { createContext } from "@tailorkit/api/context";
 import { appRouter } from "@tailorkit/api/routers/index";
-import { RateLimitHandlerPlugin } from "@tailorkit/api-utils/rate-limiting";
 import {
   initializeObservability,
   recordException,

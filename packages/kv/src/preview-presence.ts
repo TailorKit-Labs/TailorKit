@@ -1,5 +1,6 @@
-import type { KV, Unsubscribe } from "./types.js";
 import { z } from "zod";
+
+import type { KV, Unsubscribe } from "./types.js";
 
 export const previewHeartbeatSeconds = 20;
 export const previewLeaseSeconds = 75;
@@ -21,7 +22,10 @@ function connectionChannel(sessionId: string): string {
 
 const identifierSchema = z
   .string()
-  .regex(/^[a-zA-Z0-9_-]{1,128}$/u, "Preview identifiers must be opaque identifiers.");
+  .regex(
+    /^[a-zA-Z0-9_-]{1,128}$/u,
+    "Preview identifiers must be opaque identifiers."
+  );
 const connectionSchema = z.object({
   connectionId: identifierSchema,
   revision: z.number().int().nonnegative(),
@@ -46,12 +50,41 @@ function parseConnection(raw: string): PreviewConnection | null {
 /** Stores a renewable CLI presence lease. Socket closes are not session ends. */
 export function createPreviewPresence(kv: KV) {
   return {
+    async get(sessionId: string): Promise<PreviewConnection | null> {
+      assertSessionId(sessionId);
+      const raw = await kv.get(connectionKey(sessionId));
+      if (!raw) {
+        return null;
+      }
+      return parseConnection(raw);
+    },
+    async heartbeat(
+      sessionId: string,
+      connection: PreviewConnection
+    ): Promise<void> {
+      assertSessionId(sessionId);
+      assertConnection(connection);
+      await kv.set(connectionKey(sessionId), JSON.stringify(connection), {
+        ttl: previewLeaseSeconds,
+      });
+      // Pub/sub wakes already-connected tunnel handlers immediately. The lease
+      // above remains the source of truth when a subscriber reconnects late or
+      // misses a transient Redis message.
+      try {
+        await kv.publish(
+          connectionChannel(sessionId),
+          JSON.stringify(connection)
+        );
+      } catch {
+        // The lease is authoritative; pub/sub only reduces update latency.
+      }
+    },
     async heartbeatIfActive(
       sessionId: string,
       connection: PreviewConnection,
       seenKey: string,
       endedKey: string,
-      seenTtl: number,
+      seenTtl: number
     ): Promise<boolean> {
       assertSessionId(sessionId);
       assertConnection(connection);
@@ -62,7 +95,7 @@ export function createPreviewPresence(kv: KV) {
         endedKey,
         value,
         previewLeaseSeconds,
-        seenTtl,
+        seenTtl
       );
       if (active) {
         try {
@@ -73,29 +106,6 @@ export function createPreviewPresence(kv: KV) {
       }
       return active;
     },
-    async heartbeat(sessionId: string, connection: PreviewConnection): Promise<void> {
-      assertSessionId(sessionId);
-      assertConnection(connection);
-      await kv.set(connectionKey(sessionId), JSON.stringify(connection), {
-        ttl: previewLeaseSeconds,
-      });
-      // Pub/sub wakes already-connected tunnel handlers immediately. The lease
-      // above remains the source of truth when a subscriber reconnects late or
-      // misses a transient Redis message.
-      try {
-        await kv.publish(connectionChannel(sessionId), JSON.stringify(connection));
-      } catch {
-        // The lease is authoritative; pub/sub only reduces update latency.
-      }
-    },
-    async get(sessionId: string): Promise<PreviewConnection | null> {
-      assertSessionId(sessionId);
-      const raw = await kv.get(connectionKey(sessionId));
-      if (!raw) {
-        return null;
-      }
-      return parseConnection(raw);
-    },
     /**
      * Subscribes to connection changes for an active tunnel handler. This is
      * best effort; callers must call `get` after subscribing to close the race
@@ -103,7 +113,7 @@ export function createPreviewPresence(kv: KV) {
      */
     subscribe(
       sessionId: string,
-      handler: (connection: PreviewConnection) => void,
+      handler: (connection: PreviewConnection) => void
     ): Promise<Unsubscribe> {
       assertSessionId(sessionId);
       return kv.subscribe(connectionChannel(sessionId), (message) => {

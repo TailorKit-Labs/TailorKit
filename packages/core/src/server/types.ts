@@ -1,6 +1,6 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { ClientOptions as PlatformClientOptions } from "@tailorkit/client-platform/client/types.gen";
-import type { TailorKitRouter } from "./router";
+
 import type {
   ContractTools,
   ComponentDefinitions,
@@ -11,6 +11,7 @@ import type {
   SchemaSerializer,
   TailorKitSchema,
 } from "../schema/index";
+import type { TailorKitRouter } from "./router";
 
 type HeaderInput = ConstructorParameters<typeof Headers>[0];
 
@@ -21,7 +22,10 @@ export interface TailorKitPlatformOptions {
 }
 
 export interface TailorKitServerBaseOptions<
-  TScopes extends Record<string, StandardSchemaV1> = Record<string, StandardSchemaV1>,
+  TScopes extends Record<string, StandardSchemaV1> = Record<
+    string,
+    StandardSchemaV1
+  >,
 > {
   /**
    * TailorKit.dev project key. The host application must read its
@@ -94,18 +98,22 @@ export interface TailorKitServerInputOptions extends TailorKitServerBaseOptions 
   views?: ContextDefinitions;
 }
 
-export type InferTailorKitServerComponents<TOptions extends TailorKitServerInputOptions> =
-  TOptions["components"];
+export type InferTailorKitServerComponents<
+  TOptions extends TailorKitServerInputOptions,
+> = TOptions["components"];
 
-export type InferTailorKitServerViews<TOptions extends TailorKitServerInputOptions> =
-  TOptions extends { views: infer TViews } ? TViews : Record<never, never>;
+export type InferTailorKitServerViews<
+  TOptions extends TailorKitServerInputOptions,
+> = TOptions extends { views: infer TViews } ? TViews : Record<never, never>;
 
 /** @deprecated Use InferTailorKitServerViews instead. */
-export type InferTailorKitServerContexts<TOptions extends TailorKitServerInputOptions> =
-  InferTailorKitServerViews<TOptions>;
+export type InferTailorKitServerContexts<
+  TOptions extends TailorKitServerInputOptions,
+> = InferTailorKitServerViews<TOptions>;
 
-export type InferTailorKitServerTools<TOptions extends TailorKitServerInputOptions> =
-  TOptions extends { tools: infer TTools } ? TTools : Record<never, never>;
+export type InferTailorKitServerTools<
+  TOptions extends TailorKitServerInputOptions,
+> = TOptions extends { tools: infer TTools } ? TTools : Record<never, never>;
 
 export type TailorKitJsonValue =
   | string
@@ -125,39 +133,53 @@ export interface TailorKitNamedScope {
 
 export type TailorKitScopes = Record<string, TailorKitScope>;
 
-export type InferTailorKitServerScopes<TOptions extends TailorKitServerInputOptions> =
-  TOptions extends { scopes: infer TSchemas extends Record<string, StandardSchemaV1> }
-    ? {
-        [TName in keyof TSchemas]: Pick<
-          { [TKey in keyof TSchemas]: StandardSchemaV1.InferInput<TSchemas[TKey]> },
-          TName
-        > &
-          Partial<{
-            [TKey in Exclude<keyof TSchemas, TName>]: StandardSchemaV1.InferInput<TSchemas[TKey]>;
-          }>;
-      }[keyof TSchemas]
-    : Record<never, never>;
+export type InferTailorKitServerScopes<
+  TOptions extends TailorKitServerInputOptions,
+> = TOptions extends {
+  scopes: infer TSchemas extends Record<string, StandardSchemaV1>;
+}
+  ? {
+      [TName in keyof TSchemas]: Pick<
+        {
+          [TKey in keyof TSchemas]: StandardSchemaV1.InferInput<TSchemas[TKey]>;
+        },
+        TName
+      > &
+        Partial<{
+          [TKey in Exclude<keyof TSchemas, TName>]: StandardSchemaV1.InferInput<
+            TSchemas[TKey]
+          >;
+        }>;
+    }[keyof TSchemas]
+  : Record<never, never>;
 
 export interface TailorKitServerOptions<
   TComponents extends ComponentDefinitions,
   TViews extends ContextDefinitions,
   TTools extends ContractTools = Record<never, never>,
-  TScopes extends Record<string, StandardSchemaV1> = Record<string, StandardSchemaV1>,
+  TScopes extends Record<string, StandardSchemaV1> = Record<
+    string,
+    StandardSchemaV1
+  >,
 >
   extends
     TailorKitServerBaseOptions<TScopes>,
     TailorKitServerSchemaOptions<TComponents, TViews, TTools> {}
 
-export type TailorKitHostContext<TScopes = TailorKitScopes> = {
+export interface TailorKitHostContext<TScopes = TailorKitScopes> {
   scopes: TScopes;
   subjectId?: string;
-};
+}
 export interface TailorKitHandlerOptions<TScopes = TailorKitScopes> {
   authenticate: (ctx: {
     request: Request;
-  }) => TailorKitHostContext<TScopes> | null | Promise<TailorKitHostContext<TScopes> | null>;
+  }) =>
+    | TailorKitHostContext<TScopes>
+    | null
+    | Promise<TailorKitHostContext<TScopes> | null>;
 }
-export type TailorKitHandlerContext<TScopes = TailorKitScopes> = TailorKitHostContext<TScopes>;
+export type TailorKitHandlerContext<TScopes = TailorKitScopes> =
+  TailorKitHostContext<TScopes>;
 
 export interface TailorKitServer<
   TComponents extends ComponentDefinitions,
@@ -174,7 +196,7 @@ export interface TailorKitServer<
   };
   handler: (
     request: Request,
-    options: TailorKitHandlerOptions<TScopes>,
+    options: TailorKitHandlerOptions<TScopes>
   ) => Response | Promise<Response>;
   /**
    * Internal TailorKit implementation details.

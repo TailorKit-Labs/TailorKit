@@ -1,8 +1,8 @@
 import { cn } from "@tailorkit/ui";
 
-type GoogleIconProps = {
+interface GoogleIconProps {
   className?: string;
-};
+}
 
 export function GoogleIcon({ className }: GoogleIconProps) {
   return (

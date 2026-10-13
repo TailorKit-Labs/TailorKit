@@ -1,8 +1,12 @@
-import type { ToolBridge } from "@tailorkit/app/client";
 import { useStore } from "@nanostores/react";
-import type { Session } from "@tailorkit/app/client";
+import type { ToolBridge, Session } from "@tailorkit/app/client";
 /* oxlint-disable react(invariant) */
-
+import {
+  createRemoteViewStore,
+  createRemoteElementProps,
+} from "@tailorkit/client-core";
+import type { RemoteViewStore } from "@tailorkit/client-core";
+import type { RemoteElementNode } from "@tailorkit/sandbox/protocol";
 import {
   Component,
   Fragment,
@@ -14,9 +18,6 @@ import {
   useMemo,
 } from "react";
 import type { ReactNode } from "react";
-import type { RemoteElementNode } from "@tailorkit/sandbox/protocol";
-import { createRemoteViewStore, createRemoteElementProps } from "@tailorkit/client-core";
-import type { RemoteViewStore } from "@tailorkit/client-core";
 
 const RemoteUIContext = createContext<RemoteViewStore | null>(null);
 
@@ -30,7 +31,10 @@ interface RemoteErrorBoundaryState {
   error: Error | null;
 }
 
-class RemoteErrorBoundary extends Component<RemoteErrorBoundaryProps, RemoteErrorBoundaryState> {
+class RemoteErrorBoundary extends Component<
+  RemoteErrorBoundaryProps,
+  RemoteErrorBoundaryState
+> {
   state: RemoteErrorBoundaryState = { error: null };
 
   static getDerivedStateFromError(error: Error): RemoteErrorBoundaryState {
@@ -70,7 +74,10 @@ export function RemoteViewHost({
   props,
 }: RemoteViewHostProps): ReactNode {
   const appKey = appUrl.toString();
-  const store = useMemo(() => createRemoteViewStore({ components, props }), [appKey]);
+  const store = useMemo(
+    () => createRemoteViewStore({ components, props }),
+    [appKey]
+  );
   const snapshot = useStore(store.state);
 
   useEffect(() => {
@@ -82,8 +89,15 @@ export function RemoteViewHost({
   }, [props, store]);
 
   useEffect(
-    () => store.mount({ appUrl, sourceText, toolBridge, getBackendSession, createIframe }),
-    [appUrl, sourceText, toolBridge, getBackendSession, createIframe, store],
+    () =>
+      store.mount({
+        appUrl,
+        createIframe,
+        getBackendSession,
+        sourceText,
+        toolBridge,
+      }),
+    [appUrl, sourceText, toolBridge, getBackendSession, createIframe, store]
   );
 
   if (snapshot.status === "error" && snapshot.error) {
@@ -109,19 +123,26 @@ interface RemoteElementViewProps {
   node: RemoteElementNode;
 }
 
-const RemoteElementView = memo(({ ctx, node }: RemoteElementViewProps): ReactNode => {
-  const componentStore = useMemo(() => ctx.selectComponent(node.type), [ctx, node.type]);
-  const component = useStore(componentStore);
-  const children = node.children.map((child) => <RemoteView key={child.id} nodeId={child.id} />);
+const RemoteElementView = memo(
+  ({ ctx, node }: RemoteElementViewProps): ReactNode => {
+    const componentStore = useMemo(
+      () => ctx.selectComponent(node.type),
+      [ctx, node.type]
+    );
+    const component = useStore(componentStore);
+    const children = node.children.map((child) => (
+      <RemoteView key={child.id} nodeId={child.id} />
+    ));
 
-  if (component === undefined) {
-    throw new Error(`TailorKit component "${node.type}" is not registered.`);
+    if (component === undefined) {
+      throw new Error(`TailorKit component "${node.type}" is not registered.`);
+    }
+    const props = createRemoteElementProps(node, ctx.dispatch);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return createElement(component as any, props, ...children);
   }
-  const props = createRemoteElementProps(node, ctx.dispatch);
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return createElement(component as any, props, ...children);
-});
+);
 
 interface RemoteViewProps {
   nodeId: string;
@@ -132,7 +153,10 @@ function RemoteViewComponent({ nodeId }: RemoteViewProps): ReactNode {
   return ctx === null ? null : <RemoteNodeView ctx={ctx} nodeId={nodeId} />;
 }
 
-function RemoteNodeView({ ctx, nodeId }: RemoteViewProps & { ctx: RemoteViewStore }): ReactNode {
+function RemoteNodeView({
+  ctx,
+  nodeId,
+}: RemoteViewProps & { ctx: RemoteViewStore }): ReactNode {
   const nodeStore = useMemo(() => ctx.nodes.selectNode(nodeId), [ctx, nodeId]);
   const node = useStore(nodeStore);
   if (node === null) {

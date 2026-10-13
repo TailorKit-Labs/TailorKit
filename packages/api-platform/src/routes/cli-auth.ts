@@ -1,15 +1,18 @@
+import { randomBytes, randomInt } from "node:crypto";
+
 import { openapi } from "@orpc/openapi";
 import { ORPCError } from "@orpc/server";
 import { hashSecret } from "@tailorkit/api-utils/hashing";
 import { db } from "@tailorkit/db";
 import { cliAuthSession, cliToken } from "@tailorkit/db/schema/cli-auth";
-import { env } from "#env";
 import { and, eq, gt } from "drizzle-orm";
-import { randomBytes, randomInt } from "node:crypto";
 import z from "zod";
+
+import { env } from "#env";
+
+import { authenticateCliRequest } from "../cli-token";
 import { o, protectedRouter, cliRouter } from "../procedures";
 import { canonicalizeScope, scopeSchema } from "../scope";
-import { authenticateCliRequest } from "../cli-token";
 
 const deviceCodeBytes = 32;
 const deployTokenBytes = 32;
@@ -57,9 +60,9 @@ function normalizeUserCode(userCode: string): string {
 const startCliAuth = protectedRouter
   .meta(
     openapi({
-      path: "/start",
       method: "POST",
-    }),
+      path: "/start",
+    })
   )
   .input(z.object({ body: z.object({}) }))
   .output(
@@ -69,7 +72,7 @@ const startCliAuth = protectedRouter
         expiresAt: z.date(),
         userCode: z.string(),
       }),
-    }),
+    })
   )
   .handler(async ({ context }) => {
     const deviceCode = generateSecret(deviceCodeBytes);
@@ -95,9 +98,9 @@ const startCliAuth = protectedRouter
 const approveCliAuth = protectedRouter
   .meta(
     openapi({
-      path: "/approve",
       method: "POST",
-    }),
+      path: "/approve",
+    })
   )
   .input(
     z.object({
@@ -105,7 +108,7 @@ const approveCliAuth = protectedRouter
         scope: scopeSchema,
         userCode: z.string().min(1),
       }),
-    }),
+    })
   )
   .output(z.object({ body: z.object({ id: z.string() }) }))
   .handler(async ({ context, input }) => {
@@ -113,22 +116,27 @@ const approveCliAuth = protectedRouter
     const [session] = await db
       .update(cliAuthSession)
       .set({
-        scopeKey: scope.scopeKey,
         scope: scope.scope,
+        scopeKey: scope.scopeKey,
         status: "approved",
       })
       .where(
         and(
           eq(cliAuthSession.projectId, context.project.id),
-          eq(cliAuthSession.userCodeHash, hashCliSecret(normalizeUserCode(input.body.userCode))),
+          eq(
+            cliAuthSession.userCodeHash,
+            hashCliSecret(normalizeUserCode(input.body.userCode))
+          ),
           eq(cliAuthSession.status, "pending"),
-          gt(cliAuthSession.expiresAt, new Date()),
-        ),
+          gt(cliAuthSession.expiresAt, new Date())
+        )
       )
       .returning({ id: cliAuthSession.id });
 
     if (!session) {
-      throw new ORPCError("NOT_FOUND", { message: "CLI auth session not found." });
+      throw new ORPCError("NOT_FOUND", {
+        message: "CLI auth session not found.",
+      });
     }
 
     return { body: session };
@@ -137,9 +145,9 @@ const approveCliAuth = protectedRouter
 const denyCliAuth = protectedRouter
   .meta(
     openapi({
-      path: "/deny",
       method: "POST",
-    }),
+      path: "/deny",
+    })
   )
   .input(z.object({ body: z.object({ userCode: z.string().min(1) }) }))
   .output(z.object({ body: z.object({ id: z.string() }) }))
@@ -150,15 +158,20 @@ const denyCliAuth = protectedRouter
       .where(
         and(
           eq(cliAuthSession.projectId, context.project.id),
-          eq(cliAuthSession.userCodeHash, hashCliSecret(normalizeUserCode(input.body.userCode))),
+          eq(
+            cliAuthSession.userCodeHash,
+            hashCliSecret(normalizeUserCode(input.body.userCode))
+          ),
           eq(cliAuthSession.status, "pending"),
-          gt(cliAuthSession.expiresAt, new Date()),
-        ),
+          gt(cliAuthSession.expiresAt, new Date())
+        )
       )
       .returning({ id: cliAuthSession.id });
 
     if (!session) {
-      throw new ORPCError("NOT_FOUND", { message: "CLI auth session not found." });
+      throw new ORPCError("NOT_FOUND", {
+        message: "CLI auth session not found.",
+      });
     }
 
     return { body: session };
@@ -167,9 +180,9 @@ const denyCliAuth = protectedRouter
 const pollCliAuth = protectedRouter
   .meta(
     openapi({
-      path: "/poll",
       method: "POST",
-    }),
+      path: "/poll",
+    })
   )
   .input(z.object({ body: z.object({ deviceCode: z.string().min(1) }) }))
   .output(
@@ -184,7 +197,7 @@ const pollCliAuth = protectedRouter
         }),
         z.object({ status: z.literal("expired") }),
       ]),
-    }),
+    })
   )
   .handler(async ({ context, input }) => {
     const deviceCodeHash = hashCliSecret(input.body.deviceCode);
@@ -197,7 +210,9 @@ const pollCliAuth = protectedRouter
     });
 
     if (!session) {
-      throw new ORPCError("NOT_FOUND", { message: "CLI auth session not found." });
+      throw new ORPCError("NOT_FOUND", {
+        message: "CLI auth session not found.",
+      });
     }
 
     await db
@@ -245,8 +260,8 @@ const pollCliAuth = protectedRouter
             eq(cliAuthSession.id, session.id),
             eq(cliAuthSession.projectId, context.project.id),
             eq(cliAuthSession.status, "approved"),
-            gt(cliAuthSession.expiresAt, now),
-          ),
+            gt(cliAuthSession.expiresAt, now)
+          )
         )
         .returning();
 
@@ -285,7 +300,9 @@ const pollCliAuth = protectedRouter
     });
 
     if (!deletedSession) {
-      throw new ORPCError("NOT_FOUND", { message: "CLI auth session not found." });
+      throw new ORPCError("NOT_FOUND", {
+        message: "CLI auth session not found.",
+      });
     }
 
     return {
@@ -300,16 +317,19 @@ const pollCliAuth = protectedRouter
 const verifyCliAuthToken = cliRouter
   .meta(
     openapi({
-      path: "/verify-token",
       method: "POST",
-    }),
+      path: "/verify-token",
+    })
   )
   .input(z.object({ body: z.object({ deployToken: z.string().min(1) }) }))
   .output(z.object({ body: z.object({ scope: scopeSchema }) }))
   .handler(async ({ context, input }) => {
     const token = await authenticateCliRequest(context, input.body.deployToken);
 
-    await db.update(cliToken).set({ lastUsedAt: new Date() }).where(eq(cliToken.id, token.id));
+    await db
+      .update(cliToken)
+      .set({ lastUsedAt: new Date() })
+      .where(eq(cliToken.id, token.id));
 
     return { body: { scope: token.scope } };
   });

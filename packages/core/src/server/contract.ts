@@ -1,12 +1,13 @@
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { appsGet } from "@tailorkit/client-platform/client";
 import { createClient } from "@tailorkit/client-platform/client/client/index";
-import type { StandardSchemaV1 } from "@standard-schema/spec";
+
 import type { TailorKitContract } from "../schema/contract";
 import type { ToolImplementations, ToolContext } from "../schema/tools";
 import { flattenTools, validateToolValue } from "../schema/tools";
+import { normalizeBaseUrl } from "./base-url";
 import { createTailorKitServer } from "./handler";
 import { normalizeTailorKitNamedScope } from "./scope";
-import { normalizeBaseUrl } from "./base-url";
 import { createToolVerifier } from "./tool-auth";
 import type {
   TailorKitServerBaseOptions,
@@ -22,15 +23,21 @@ export type ContractScopes<T extends TailorKitContract> = {
 function getImplementation(tree: unknown, path: string): unknown {
   let value = tree;
   for (const name of path.split(".")) {
-    if (!value || typeof value !== "object" || !Object.hasOwn(value, name)) return undefined;
+    if (!value || typeof value !== "object" || !Object.hasOwn(value, name)) {
+      return undefined;
+    }
     value = (value as Record<string, unknown>)[name];
   }
   return value;
 }
 function implementationPaths(tree: unknown, prefix = ""): string[] {
-  if (!tree || typeof tree !== "object") return [];
+  if (!tree || typeof tree !== "object") {
+    return [];
+  }
   return Object.entries(tree).flatMap(([name, value]) =>
-    typeof value === "function" ? [prefix + name] : implementationPaths(value, prefix + name + "."),
+    typeof value === "function"
+      ? [prefix + name]
+      : implementationPaths(value, `${prefix + name}.`)
   );
 }
 /** Bind server tools without placing their implementations in the shared contract. */
@@ -39,17 +46,22 @@ export function createServer<const T extends TailorKitContract>(
     contract: T;
   } & (keyof ToolImplementations<T["tools"], "server"> extends never
       ? { tools?: ToolImplementations<T["tools"], "server"> }
-      : { tools: ToolImplementations<T["tools"], "server"> }),
+      : { tools: ToolImplementations<T["tools"], "server"> })
 ) {
   const { contract, tools, ...configuration } = options;
   const declarations = flattenTools(contract.tools);
   for (const [path, leaf] of declarations) {
-    if (leaf.kind === "server" && typeof getImplementation(tools, path) !== "function")
+    if (
+      leaf.kind === "server" &&
+      typeof getImplementation(tools, path) !== "function"
+    ) {
       throw new Error(`Missing implementation for tool "${path}"`);
+    }
   }
-  for (const path of implementationPaths(tools))
+  for (const path of implementationPaths(tools)) {
     if (declarations.get(path)?.kind !== "server")
       throw new Error(`Undeclared server tool "${path}"`);
+  }
   type InternalOptions = TailorKitServerInputOptions & {
     views: T["views"];
     slots: T["slots"];
@@ -60,7 +72,8 @@ export function createServer<const T extends TailorKitContract>(
     ...contract,
   } as Parameters<typeof createTailorKitServer<InternalOptions>>[0]);
   const platformUrl = server.$internal.platformBaseUrl;
-  const requestPlatform = configuration.$internal?.platformFetch ?? globalThis.fetch;
+  const requestPlatform =
+    configuration.$internal?.platformFetch ?? globalThis.fetch;
   const platform = createClient({
     baseUrl: platformUrl,
     fetch: requestPlatform,
@@ -72,19 +85,14 @@ export function createServer<const T extends TailorKitContract>(
     (configuration.projectKey
       ? { authorization: `Bearer ${configuration.projectKey}` }
       : undefined);
-  const verify = createToolVerifier({ platformUrl, fetch: requestPlatform });
+  const verify = createToolVerifier({ fetch: requestPlatform, platformUrl });
   const { basePath, publicOrigin } = normalizeBaseUrl(configuration.baseUrl);
   return {
     ...server,
     contract,
-    mcp: {
-      transport(options: TailorKitHostContext<Partial<ContractScopes<T>>>) {
-        return server.mcp.transport(options);
-      },
-    },
     async handler(
       request: Request,
-      handlerOptions: TailorKitHandlerOptions<Partial<ContractScopes<T>>>,
+      handlerOptions: TailorKitHandlerOptions<Partial<ContractScopes<T>>>
     ) {
       if (!handlerOptions?.authenticate) {
         throw new Error("Supply authenticate to the handler");
@@ -97,7 +105,8 @@ export function createServer<const T extends TailorKitContract>(
           "access-control-allow-methods": "POST, OPTIONS",
           "access-control-allow-headers": "authorization, content-type",
         };
-        if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
+        if (request.method === "OPTIONS")
+          return new Response(null, { status: 204, headers });
         if (request.method !== "POST")
           return new Response("Method not allowed", { status: 405, headers });
         let input: { path: string; input?: unknown; requestId: string };
@@ -108,7 +117,9 @@ export function createServer<const T extends TailorKitContract>(
             typeof input.path !== "string" ||
             typeof input.requestId !== "string" ||
             !/^[0-9a-f-]{36}$/u.test(input.requestId) ||
-            Object.keys(input).some((k) => !["path", "input", "requestId"].includes(k))
+            Object.keys(input).some(
+              (k) => !["path", "input", "requestId"].includes(k)
+            )
           )
             throw new Error();
         } catch {
@@ -123,7 +134,7 @@ export function createServer<const T extends TailorKitContract>(
           if (!authorization?.startsWith("Bearer ")) throw new Error();
           const identity = await verify(
             authorization.slice(7),
-            publicOrigin + basePath + "/tools/execute",
+            publicOrigin + basePath + "/tools/execute"
           );
           const schema = contract.scopes[identity.scope.name];
           if (!schema) throw new Error();
@@ -138,38 +149,57 @@ export function createServer<const T extends TailorKitContract>(
             body: { scopes: [normalizeTailorKitNamedScope(identity.scope)] },
             throwOnError: true,
           });
-          const installed = "data" in installation ? installation.data : installation;
+          const installed =
+            "data" in installation ? installation.data : installation;
           if (
             installed.id !== identity.installationId ||
             installed.projectId !== identity.projectId ||
             installed.currentDeployment?.id !== identity.deploymentId
           )
             throw new Error("Installation unavailable");
-          context = Object.freeze({ identity, scope: identity.scope, requestId: input.requestId });
+          context = Object.freeze({
+            identity,
+            scope: identity.scope,
+            requestId: input.requestId,
+          });
         } catch {
           return new Response("Unauthorized", { status: 401, headers });
         }
         let value;
         try {
-          value = await validateToolValue(declaration.definition.input, input.input);
+          value = await validateToolValue(
+            declaration.definition.input,
+            input.input
+          );
         } catch {
           return new Response("Invalid tool input", { status: 400, headers });
         }
         try {
-          const implementation = getImplementation(tools, input.path) as (args: {
-            input: unknown;
-            context: ToolContext;
-          }) => unknown;
+          const implementation = getImplementation(
+            tools,
+            input.path
+          ) as (args: { input: unknown; context: ToolContext }) => unknown;
           const result = await validateToolValue(
             declaration.definition.output,
-            await implementation({ input: value, context }),
+            await implementation({ input: value, context })
           );
           return Response.json({ output: result }, { headers });
         } catch {
-          return new Response("Tool execution failed", { status: 500, headers });
+          return new Response("Tool execution failed", {
+            status: 500,
+            headers,
+          });
         }
       }
-      return server.handler(request, handlerOptions as Parameters<typeof server.handler>[1]);
+      return server.handler(
+        request,
+        handlerOptions as Parameters<typeof server.handler>[1]
+      );
+    },
+    mcp: {
+      transport(options: TailorKitHostContext<Partial<ContractScopes<T>>>) {
+        return server.mcp.transport(options);
+      },
     },
   };
 }

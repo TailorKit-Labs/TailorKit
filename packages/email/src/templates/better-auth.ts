@@ -1,9 +1,10 @@
 import { createElement } from "react";
+
 import { ChangeEmailTemplate } from "./better-auth/change-email";
 import { EmailVerificationTemplate } from "./better-auth/email-verification";
 import { ForgetPasswordTemplate } from "./better-auth/forget-password";
-import { SignInTemplate } from "./better-auth/sign-in";
 import type { BetterAuthTemplateProps } from "./better-auth/shared";
+import { SignInTemplate } from "./better-auth/sign-in";
 
 export type BetterAuthEmailType =
   | "change-email"
@@ -41,10 +42,14 @@ const emailConfig = {
 >;
 
 export const betterAuthEmailSubjects = Object.fromEntries(
-  Object.entries(emailConfig).map(([type, value]) => [type, value.subject]),
+  Object.entries(emailConfig).map(([type, value]) => [type, value.subject])
 ) as Record<BetterAuthEmailType, string>;
 
-export function BetterAuthOtpTemplate({ logoBaseUrl, otp, type }: BetterAuthOtpTemplateProps) {
+export function BetterAuthOtpTemplate({
+  logoBaseUrl,
+  otp,
+  type,
+}: BetterAuthOtpTemplateProps) {
   const Template = emailConfig[type].component;
 
   return createElement(Template, { logoBaseUrl, otp });

@@ -4,8 +4,8 @@ import { Link } from "@tanstack/react-router";
 export function SidebarBrand() {
   return (
     <Link className="flex items-center gap-2" to="/">
-      <Logo className="size-6 text-foreground" />
-      <span className="font-semibold text-base">TailorKit</span>
+      <Logo className="text-foreground size-6" />
+      <span className="text-base font-semibold">TailorKit</span>
     </Link>
   );
 }

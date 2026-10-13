@@ -1,12 +1,25 @@
 /* oxlint-disable require-await -- These negative type cases intentionally return promises from database handlers. */
 import { z } from "zod";
+
+import type { Client } from "../client/connection";
+import { createApi } from "../client/reference";
+import { useAction, useMutation, useQuery } from "../preact";
 import { fn } from "./builder";
 import { defineServer } from "./functions";
-import { createApi } from "../client/reference";
-import type { Client } from "../client/connection";
-import { useAction, useMutation, useQuery } from "../preact";
 
 const functions = {
+  actionWithoutSchemas: fn.action.handler(({ input }) => {
+    const absent: undefined = input;
+    void absent;
+    return Promise.resolve({ completed: true });
+  }),
+  list: fn.query.handler(({ input }) => {
+    const absent: undefined = input;
+    void absent;
+    // @ts-expect-error No input schema means there are no input properties.
+    void input.value;
+    return [1, 2];
+  }),
   read: fn.query
     .input(z.object({ raw: z.string().transform(Number) }))
     .output(z.string().transform(Number))
@@ -16,24 +29,14 @@ const functions = {
       void db.insert;
       return String(value);
     }),
-  write: fn.mutation.input(z.object({ value: z.number() })).handler(({ input }) => input.value),
-  list: fn.query.handler(({ input }) => {
-    const absent: undefined = input;
-    void absent;
-    // @ts-expect-error No input schema means there are no input properties.
-    void input.value;
-    return [1, 2];
-  }),
   saveWithoutSchemas: fn.mutation.handler(({ input }) => {
     const absent: undefined = input;
     void absent;
     return { saved: true };
   }),
-  actionWithoutSchemas: fn.action.handler(({ input }) => {
-    const absent: undefined = input;
-    void absent;
-    return Promise.resolve({ completed: true });
-  }),
+  write: fn.mutation
+    .input(z.object({ value: z.number() }))
+    .handler(({ input }) => input.value),
 };
 const save = fn.action
   .functions(functions)
@@ -46,7 +49,8 @@ const save = fn.action
     // @ts-expect-error Action query arguments use schema inputs.
     context.queries.read({ raw: 4 });
     const rows: number[] = await context.queries.list();
-    const saved: { saved: boolean } = await context.mutations.saveWithoutSchemas();
+    const saved: { saved: boolean } =
+      await context.mutations.saveWithoutSchemas();
     void rows;
     void saved;
     // @ts-expect-error No-input queries do not accept objects.
@@ -60,9 +64,11 @@ declare const client: Client;
 const result: Promise<number> = client.query(refs.read, { raw: "3" });
 void result;
 const inferredRows: Promise<number[]> = client.query(refs.list);
-const savedWithoutInput: Promise<{ saved: boolean }> = client.mutate(refs.saveWithoutSchemas);
+const savedWithoutInput: Promise<{ saved: boolean }> = client.mutate(
+  refs.saveWithoutSchemas
+);
 const completedWithoutInput: Promise<{ completed: boolean }> = client.action(
-  refs.actionWithoutSchemas,
+  refs.actionWithoutSchemas
 );
 void inferredRows;
 void savedWithoutInput;
@@ -90,10 +96,10 @@ void rows;
 // @ts-expect-error No-input queries do not accept objects.
 useQuery(refs.list, {});
 const inferredSave: Promise<{ saved: boolean }> = useMutation(
-  refs.saveWithoutSchemas,
+  refs.saveWithoutSchemas
 ).mutateAsync();
 const inferredAction: Promise<{ completed: boolean }> = useAction(
-  refs.actionWithoutSchemas,
+  refs.actionWithoutSchemas
 ).executeAsync();
 void inferredSave;
 void inferredAction;

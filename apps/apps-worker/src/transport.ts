@@ -1,17 +1,23 @@
 import { handlerGen, middlewareGen } from "@orpc/experimental-effect";
-import { ORPCError, COMMON_ERROR_STATUS_MAP, onError, implement } from "@orpc/server";
-import { RPCHandler as FetchHandler } from "@orpc/server/fetch";
-import { RPCHandler as WebSocketHandler } from "@orpc/server/websocket";
-import { CORSHandlerPlugin } from "@orpc/server/plugins";
 import {
   encodeHibernationRPCEvent,
   HibernationAsyncIteratorClass,
   HibernationHandlerPlugin,
 } from "@orpc/hibernation";
+import {
+  ORPCError,
+  COMMON_ERROR_STATUS_MAP,
+  onError,
+  implement,
+} from "@orpc/server";
+import { RPCHandler as FetchHandler } from "@orpc/server/fetch";
+import { CORSHandlerPlugin } from "@orpc/server/plugins";
+import { RPCHandler as WebSocketHandler } from "@orpc/server/websocket";
 import { decodePeerMessage, isPeerCancelMessage } from "@standard-server/peer";
-import { Effect } from "effect";
 import { appContract } from "@tailorkit/app/protocol";
 import type { Invocation, MutationInvocation } from "@tailorkit/app/protocol";
+import { Effect } from "effect";
+
 import type { SubscriptionConnection } from "./supervisor/subscriptions";
 
 export function wireError(error: unknown) {
@@ -36,7 +42,10 @@ export function rpcErrorResponse(error: unknown) {
   const failure = wireError(error);
   return Response.json(
     { json: failure.toJSON() },
-    { status: errorStatusMap[failure.code as keyof typeof errorStatusMap] ?? 500 },
+    {
+      status:
+        errorStatusMap[failure.code as keyof typeof errorStatusMap] ?? 500,
+    }
   );
 }
 
@@ -44,7 +53,10 @@ export function rpcErrorResponse(error: unknown) {
 export interface Installation {
   query(input: Invocation): Effect.Effect<unknown, unknown>;
   mutate(input: MutationInvocation): Effect.Effect<unknown, unknown>;
-  action(input: Invocation, signal?: AbortSignal): Effect.Effect<unknown, unknown>;
+  action(
+    input: Invocation,
+    signal?: AbortSignal
+  ): Effect.Effect<unknown, unknown>;
 }
 
 const base = implement(appContract);
@@ -53,32 +65,34 @@ const errors = middlewareGen(function* errors({ next }) {
 });
 const http = base.$context<{ installation: Installation }>().use(errors);
 const subscriptions = base
-  .$context<{ subscribe: (input: Invocation) => HibernationAsyncIteratorClass<unknown> }>()
+  .$context<{
+    subscribe: (input: Invocation) => HibernationAsyncIteratorClass<unknown>;
+  }>()
   .use(errors);
 export const router = base.router({
   queries: http.queries.handler(
     handlerGen(function* queries({ input, context }) {
       return yield* context.installation.query(input);
-    }),
+    })
   ),
   mutations: http.mutations.handler(
     handlerGen(function* mutations({ input, context }) {
       return yield* context.installation.mutate(input);
-    }),
+    })
   ),
   actions: http.actions.handler(
     handlerGen(function* actions({ input, context, signal }) {
       return yield* context.installation.action(input, signal);
-    }),
+    })
   ),
   // The public pass-through output schema preserves the hibernation callback.
   subscribe: subscriptions.subscribe.handler(
     handlerGen(function* subscribe({ input, context }) {
       return yield* Effect.try({
-        try: () => context.subscribe(input),
         catch: (error) => error,
+        try: () => context.subscribe(input),
       });
-    }),
+    })
   ),
 });
 
@@ -86,7 +100,9 @@ export const router = base.router({
 export function requestRoute(request: Request) {
   const path = new URL(request.url).pathname.replace(/\/$/u, "");
   if (request.headers.get("upgrade")?.toLowerCase() === "websocket") {
-    return request.method === "GET" && path === "/rpc/queries" ? "subscriptions" : undefined;
+    return request.method === "GET" && path === "/rpc/queries"
+      ? "subscriptions"
+      : undefined;
   }
   return request.method === "POST" &&
     !request.headers.has("upgrade") &&
@@ -100,8 +116,10 @@ export function routeInstallation<Identity, Error>(
   request: Request,
   options: {
     verify(token: string): Effect.Effect<Identity, Error>;
-    installation(identity: Identity): { fetch(request: Request): Promise<Response> };
-  },
+    installation(identity: Identity): {
+      fetch(request: Request): Promise<Response>;
+    };
+  }
 ) {
   return Effect.gen(function* () {
     if (request.method === "OPTIONS") {
@@ -122,34 +140,43 @@ export function routeInstallation<Identity, Error>(
         token = protocols.find((value) => value.startsWith("jwt."))?.slice(4);
       }
     } else {
-      token = request.headers.get("authorization")?.match(/^Bearer (\S+)$/u)?.[1];
+      token = request.headers
+        .get("authorization")
+        ?.match(/^Bearer (\S+)$/u)?.[1];
     }
     if (!token) {
-      return yield* Effect.fail(new ORPCError("UNAUTHORIZED", { message: "App token required" }));
+      return yield* Effect.fail(
+        new ORPCError("UNAUTHORIZED", { message: "App token required" })
+      );
     }
     const identity = yield* options.verify(token);
     return yield* Effect.tryPromise({
+      catch: (error) => error,
       try: () => {
         if (route === "subscriptions") {
           const headers = new Headers(request.headers);
           headers.set("authorization", `Bearer ${token}`);
           return options
             .installation(identity)
-            .fetch(new Request(request.url, { headers, signal: request.signal }));
+            .fetch(
+              new Request(request.url, { headers, signal: request.signal })
+            );
         }
         return options.installation(identity).fetch(request);
       },
-      catch: (error) => error,
     });
   });
 }
 
 export function createInstallationHandler() {
   return new FetchHandler(
-    { queries: router.queries, mutations: router.mutations, actions: router.actions },
+    {
+      actions: router.actions,
+      mutations: router.mutations,
+      queries: router.queries,
+    },
     {
       errorStatusMap,
-      plugins: [new CORSHandlerPlugin()],
       interceptors: [
         onError((error) => {
           if (
@@ -160,7 +187,8 @@ export function createInstallationHandler() {
           }
         }),
       ],
-    },
+      plugins: [new CORSHandlerPlugin()],
+    }
   );
 }
 
@@ -170,52 +198,61 @@ export function createSubscriptionHandler() {
     { subscribe: router.subscribe },
     {
       plugins: [new HibernationHandlerPlugin()],
-    },
+    }
   );
   return {
+    close: (socket: {
+      send(data: string | Uint8Array<ArrayBuffer>): unknown;
+    }) => handler.close(socket),
     message(
       socket: { send(data: string | Uint8Array<ArrayBuffer>): unknown },
       message: string | ArrayBuffer,
       subscribe: (input: Invocation) => HibernationAsyncIteratorClass<unknown>,
-      cancel: (id: string) => Promise<void>,
+      cancel: (id: string) => Promise<void>
     ) {
-      const dispatched = handler.message(socket, message, { context: { subscribe } });
+      const dispatched = handler.message(socket, message, {
+        context: { subscribe },
+      });
       // Hibernation detaches the iterator from the peer. Cancellation must also
       // remove persisted subscriptions, including after a new handler is created.
       const decoded = decodePeerMessage(
-        typeof message === "string" ? message : new Uint8Array(message),
+        typeof message === "string" ? message : new Uint8Array(message)
       );
       if (decoded.matched && isPeerCancelMessage(decoded.message)) {
-        return Promise.all([dispatched, cancel(decoded.message.id)]).then(() => {});
+        return Promise.all([dispatched, cancel(decoded.message.id)]).then(
+          () => {}
+        );
       }
       return dispatched.then(() => {});
     },
-    close: (socket: { send(data: string | Uint8Array<ArrayBuffer>): unknown }) =>
-      handler.close(socket),
   };
 }
 
 /** Promise/iterator conversion belongs at the oRPC transport boundary. */
-export function subscriptionStream(register: (id: string) => Effect.Effect<void, unknown>) {
-  return new HibernationAsyncIteratorClass<unknown>((id) => Effect.runPromise(register(id)));
+export function subscriptionStream(
+  register: (id: string) => Effect.Effect<void, unknown>
+) {
+  return new HibernationAsyncIteratorClass<unknown>((id) =>
+    Effect.runPromise(register(id))
+  );
 }
 
 export function deliverSubscription(
   connection: SubscriptionConnection,
   id: string,
   value: unknown,
-  error = false,
+  error = false
 ) {
   return Effect.tryPromise({
+    catch: (error) => error,
     try: async () => {
       connection.send(
         await encodeHibernationRPCEvent(
           id,
           error ? wireError(value) : value,
-          error ? { event: "error" } : undefined,
-        ),
+          error ? { event: "error" } : undefined
+        )
       );
     },
-    catch: (error) => error,
   });
 }

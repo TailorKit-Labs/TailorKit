@@ -11,5 +11,5 @@ export type QueryDatabase<R extends AnyRelations = EmptyRelations> = Pick<
   Database<R>,
   "select" | "selectDistinct" | "query"
 >;
-export type MutationDatabase<R extends AnyRelations = EmptyRelations> = QueryDatabase<R> &
-  Pick<Database<R>, "insert" | "update" | "delete">;
+export type MutationDatabase<R extends AnyRelations = EmptyRelations> =
+  QueryDatabase<R> & Pick<Database<R>, "insert" | "update" | "delete">;

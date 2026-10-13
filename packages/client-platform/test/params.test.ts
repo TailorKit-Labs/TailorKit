@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
+
 import { buildClientParams } from "../src/client/core/params.gen";
 
 describe("buildClientParams", () => {
@@ -6,8 +7,8 @@ describe("buildClientParams", () => {
     expect(() =>
       buildClientParams(
         [null, { $body_name: "TailorKit" }],
-        [{ in: "body" }, { allowExtra: { body: true } }],
-      ),
+        [{ in: "body" }, { allowExtra: { body: true } }]
+      )
     ).toThrow("Cannot mix raw and mapped body parameters.");
   });
 
@@ -15,15 +16,18 @@ describe("buildClientParams", () => {
     expect(() =>
       buildClientParams(
         [{ $body_name: "TailorKit" }, null],
-        [{ allowExtra: { body: true } }, { in: "body" }],
-      ),
+        [{ allowExtra: { body: true } }, { in: "body" }]
+      )
     ).toThrow("Cannot mix raw and mapped body parameters.");
   });
 
   it("preserves exclusively raw and exclusively mapped bodies", () => {
     expect(buildClientParams([null], [{ in: "body" }]).body).toBeNull();
     expect(
-      buildClientParams([{ $body_name: "TailorKit" }], [{ allowExtra: { body: true } }]).body,
+      buildClientParams(
+        [{ $body_name: "TailorKit" }],
+        [{ allowExtra: { body: true } }]
+      ).body
     ).toEqual({ name: "TailorKit" });
   });
 });

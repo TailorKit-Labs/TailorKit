@@ -1,24 +1,18 @@
 import { tool } from "ai";
 import { FatalError } from "workflow";
 import { z } from "zod";
-import { sandboxContextSchema, toolSandbox, fileChangeResultSchema, resolvePath } from "./utils";
+
+import {
+  sandboxContextSchema,
+  toolSandbox,
+  fileChangeResultSchema,
+  resolvePath,
+} from "./utils";
 
 export const editTool = tool({
   contextSchema: sandboxContextSchema,
   description:
     "Replace text in a file. Each oldText must match once in the original; edits must not overlap.",
-  inputSchema: z.object({
-    path: z.string().min(1).describe("Relative to /workspace/app, or an absolute path."),
-    edits: z
-      .array(
-        z.object({
-          oldText: z.string().min(1),
-          newText: z.string(),
-        }),
-      )
-      .min(1),
-  }),
-  outputSchema: fileChangeResultSchema,
   execute: async ({ path, edits }, options) => {
     "use step";
     const sandbox = await toolSandbox(options);
@@ -44,7 +38,9 @@ export const editTool = tool({
     let boundary = file.length;
     for (const match of matches) {
       if (match.index + match.oldText.length > boundary) {
-        throw new FatalError(`Edit overlaps an earlier edit: edits[${match.editIndex}]`);
+        throw new FatalError(
+          `Edit overlaps an earlier edit: edits[${match.editIndex}]`
+        );
       }
       content =
         content.slice(0, match.index) +
@@ -61,4 +57,19 @@ export const editTool = tool({
     });
     return { success: true, path };
   },
+  inputSchema: z.object({
+    path: z
+      .string()
+      .min(1)
+      .describe("Relative to /workspace/app, or an absolute path."),
+    edits: z
+      .array(
+        z.object({
+          oldText: z.string().min(1),
+          newText: z.string(),
+        })
+      )
+      .min(1),
+  }),
+  outputSchema: fileChangeResultSchema,
 });

@@ -1,13 +1,16 @@
-import { Effect, Semaphore } from "effect";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/websocket";
-import { expect, it, vi } from "vite-plus/test";
-import { createSubscriptions } from "./subscriptions";
-import type { SubscriptionConnection, SubscriptionSession } from "./subscriptions";
-import { createSubscriptionHandler, subscriptionStream } from "../transport";
-import type { Invocation } from "@tailorkit/app/protocol";
+import type { Invocation, SubscriptionClient } from "@tailorkit/app/protocol";
 import type { Identity } from "@tailorkit/app/server";
-import type { SubscriptionClient } from "@tailorkit/app/protocol";
+import { Effect, Semaphore } from "effect";
+import { expect, it, vi } from "vite-plus/test";
+
+import { createSubscriptionHandler, subscriptionStream } from "../transport";
+import { createSubscriptions } from "./subscriptions";
+import type {
+  SubscriptionConnection,
+  SubscriptionSession,
+} from "./subscriptions";
 
 function setup() {
   // Model durable records: reads copy data, rather than retaining live object references.
@@ -17,29 +20,32 @@ function setup() {
   const queue = {
     run: <A>(operation: () => Promise<A>) =>
       Effect.runPromise(
-        coordinator.withPermits(1)(Effect.tryPromise({ try: operation, catch: (error) => error })),
+        coordinator.withPermits(1)(
+          Effect.tryPromise({ catch: (error) => error, try: operation })
+        )
       ),
   };
-  const values = { public: 1, private: 2 };
+  const values = { private: 2, public: 1 };
   const query = vi.fn(async (input: Invocation, identity: Identity) => ({
-    value: `${identity.subjectId}:${values[input.name as keyof typeof values]}`,
     tables: [input.name],
+    value: `${identity.subjectId}:${values[input.name as keyof typeof values]}`,
   }));
   function connection(user = "alice"): SubscriptionConnection {
     records.set(
       user,
       JSON.stringify({
-        identity: { subjectId: user, expiresAt: Date.now() + 120_000 },
+        identity: { expiresAt: Date.now() + 120_000, subjectId: user },
         subscriptions: [],
-      }),
+      })
     );
     return {
       read: () => {
         const record = records.get(user);
         return record ? (JSON.parse(record) as SubscriptionSession) : undefined;
       },
+      send: (data) =>
+        events.dispatchEvent(new MessageEvent("message", { data })),
       write: (session) => records.set(user, JSON.stringify(session)),
-      send: (data) => events.dispatchEvent(new MessageEvent("message", { data })),
     };
   }
   const socket = connection();
@@ -47,18 +53,19 @@ function setup() {
   const ctx = {
     getWebSockets: () =>
       sockets.map((socket) => ({
+        close: vi.fn(),
         deserializeAttachment: () => socket.read()!.identity.subjectId,
         send: (data: string | Uint8Array<ArrayBuffer>) => socket.send(data),
-        close: vi.fn(),
       })),
     storage: {
       kv: {
+        delete: (key: string) => records.delete(key.slice(7)),
         get: (key: string) => {
           const value = records.get(key.slice(7));
           return value ? JSON.parse(value) : undefined;
         },
-        put: (key: string, value: unknown) => records.set(key.slice(7), JSON.stringify(value)),
-        delete: (key: string) => records.delete(key.slice(7)),
+        put: (key: string, value: unknown) =>
+          records.set(key.slice(7), JSON.stringify(value)),
       },
     },
   } as unknown as DurableObjectState;
@@ -66,8 +73,11 @@ function setup() {
     createSubscriptions(
       ctx,
       (input, identity) =>
-        Effect.tryPromise({ try: () => query(input, identity), catch: (error) => error }),
-      coordinator,
+        Effect.tryPromise({
+          catch: (error) => error,
+          try: () => query(input, identity),
+        }),
+      coordinator
     );
   let subscriptions = create();
   let handler = createSubscriptionHandler();
@@ -77,39 +87,41 @@ function setup() {
   const client = createORPCClient<SubscriptionClient>(
     new RPCLink({
       connect: () => ({
-        readyState: 1,
         addEventListener: events.addEventListener.bind(events),
+        readyState: 1,
         removeEventListener: events.removeEventListener.bind(events),
         send: (data: string | ArrayBuffer) => {
           pending.push(
             handler.message(socket, data, subscribe, (id) =>
-              Effect.runPromise(subscriptions.cancel(socket, id)),
-            ),
+              Effect.runPromise(subscriptions.cancel(socket, id))
+            )
           );
         },
       }),
-    }),
+    })
   );
   return {
     client,
-    values,
-    query,
-    socket,
-    records,
-    sockets,
     connection,
-    subscribe: (socket: SubscriptionConnection, input: Invocation) =>
-      subscriptionStream((id) => subscriptions.subscribe(socket, input, id)),
-    refresh: (tables: string[]) =>
-      Effect.runPromise(coordinator.withPermits(1)(subscriptions.refresh(tables))),
     flush: async () => {
       await Promise.all(pending);
       await queue.run(async () => {});
     },
+    query,
+    records,
     recreate: () => {
       subscriptions = create();
       handler = createSubscriptionHandler();
     },
+    refresh: (tables: string[]) =>
+      Effect.runPromise(
+        coordinator.withPermits(1)(subscriptions.refresh(tables))
+      ),
+    socket,
+    sockets,
+    subscribe: (socket: SubscriptionConnection, input: Invocation) =>
+      subscriptionStream((id) => subscriptions.subscribe(socket, input, id)),
+    values,
   };
 }
 
@@ -143,9 +155,9 @@ it("refreshes view subscriptions on table writes after recreation without broade
   const test = setup();
   test.query.mockImplementation((input, identity) =>
     Promise.resolve({
-      value: `${identity.subjectId}:${test.values[input.name as keyof typeof test.values]}`,
       tables: input.name === "public" ? ["*"] : ["private"],
-    }),
+      value: `${identity.subjectId}:${test.values[input.name as keyof typeof test.values]}`,
+    })
   );
   const viewStream = await test.client.subscribe({ name: "public" });
   const tableStream = await test.client.subscribe({ name: "private" });
@@ -158,7 +170,9 @@ it("refreshes view subscriptions on table writes after recreation without broade
   expect(test.query).not.toHaveBeenCalled();
   test.values.public = 3;
   await test.refresh(["underlying_table"]);
-  expect(test.query.mock.calls.map(([input]) => input.name)).toEqual(["public"]);
+  expect(test.query.mock.calls.map(([input]) => input.name)).toEqual([
+    "public",
+  ]);
   expect(await viewStream.next()).toMatchObject({ value: "alice:3" });
   test.query.mockClear();
   test.values.private = 4;
@@ -177,9 +191,15 @@ it("delivers typed errors and removes failed subscriptions after recreation", as
   await stream.next();
   await test.flush();
   test.recreate();
-  test.query.mockRejectedValueOnce({ code: "UNAUTHORIZED", message: "Expired" });
+  test.query.mockRejectedValueOnce({
+    code: "UNAUTHORIZED",
+    message: "Expired",
+  });
   await test.refresh(["public"]);
-  await expect(stream.next()).rejects.toMatchObject({ code: "UNAUTHORIZED", message: "Expired" });
+  await expect(stream.next()).rejects.toMatchObject({
+    code: "UNAUTHORIZED",
+    message: "Expired",
+  });
   expect(test.socket.read()!.subscriptions).toHaveLength(0);
 });
 
@@ -187,7 +207,7 @@ it("does not register a snapshot after the connection disappears during its quer
   const test = setup();
   test.query.mockImplementationOnce(async () => {
     test.records.delete("alice");
-    return { value: "gone", tables: ["public"] };
+    return { tables: ["public"], value: "gone" };
   });
   const stream = await test.client.subscribe({ name: "public" });
   await test.flush();
@@ -217,18 +237,20 @@ it("registers the first snapshot before a concurrent mutation and replaces depen
     ready = resolve;
   });
   let finish!: (snapshot: { value: string; tables: string[] }) => void;
-  const initial = new Promise<{ value: string; tables: string[] }>((resolve) => {
-    finish = resolve;
-  });
+  const initial = new Promise<{ value: string; tables: string[] }>(
+    (resolve) => {
+      finish = resolve;
+    }
+  );
   test.query.mockImplementationOnce(() => {
     ready();
     return initial;
   });
-  test.query.mockResolvedValueOnce({ value: "alice:3", tables: ["private"] });
+  test.query.mockResolvedValueOnce({ tables: ["private"], value: "alice:3" });
   const stream = await test.client.subscribe({ name: "public" });
   await started;
   const mutation = test.refresh(["public"]);
-  finish({ value: "alice:0", tables: ["public"] });
+  finish({ tables: ["public"], value: "alice:0" });
   await mutation;
   expect(await stream.next()).toMatchObject({ value: "alice:0" });
   expect(await stream.next()).toMatchObject({ value: "alice:3" });
@@ -246,21 +268,29 @@ it("reruns as each stored identity and isolates failures on different connection
   await stream.next();
   const bob = test.connection("bob");
   test.sockets.push(bob);
-  await test.subscribe(bob, { name: "public" })["~callback"]!("bob-subscription");
+  await test.subscribe(bob, { name: "public" })["~callback"]!(
+    "bob-subscription"
+  );
   await test.flush();
   test.recreate();
   test.query.mockClear();
   test.query.mockRejectedValueOnce({ code: "FORBIDDEN", message: "Denied" });
   await test.refresh(["public"]);
   await expect(stream.next()).rejects.toMatchObject({ code: "FORBIDDEN" });
-  expect(test.query.mock.calls.map((call) => call[1].subjectId)).toEqual(["alice", "bob"]);
+  expect(test.query.mock.calls.map((call) => call[1].subjectId)).toEqual([
+    "alice",
+    "bob",
+  ]);
   expect(test.socket.read()!.subscriptions).toHaveLength(0);
   expect(bob.read()!.subscriptions).toHaveLength(1);
 });
 
 it("reports an initial query error through the stream and removes its persisted registration", async () => {
   const test = setup();
-  test.query.mockRejectedValueOnce({ code: "NOT_FOUND", message: "Missing query" });
+  test.query.mockRejectedValueOnce({
+    code: "NOT_FOUND",
+    message: "Missing query",
+  });
   const stream = await test.client.subscribe({ name: "public" });
   await expect(stream.next()).rejects.toMatchObject({
     code: "NOT_FOUND",

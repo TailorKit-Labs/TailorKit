@@ -1,9 +1,13 @@
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+
 import { createFileRoute } from "@tanstack/react-router";
 
 const clientPath = fileURLToPath(
-  new URL("../../../../../apps/todo/.tailorkit/client/client.js", import.meta.url),
+  new URL(
+    "../../../../../apps/todo/.tailorkit/client/client.js",
+    import.meta.url
+  )
 );
 
 export const Route = createFileRoute("/api/playground/todo-client")({
@@ -19,7 +23,9 @@ export const Route = createFileRoute("/api/playground/todo-client")({
             },
           });
         } catch {
-          return new Response("Build the local Todo app before opening it.", { status: 503 });
+          return new Response("Build the local Todo app before opening it.", {
+            status: 503,
+          });
         }
       },
     },

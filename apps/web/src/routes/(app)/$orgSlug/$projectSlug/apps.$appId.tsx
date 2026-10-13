@@ -1,29 +1,46 @@
-/* oxlint-disable react/no-unstable-nested-components */
-import { Link, createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { flexRender, useTable } from "@tanstack/react-table";
-import type { ColumnDef, SortingState } from "@tanstack/react-table";
-import { ArrowLeftIcon, DownloadIcon, RocketIcon } from "lucide-react";
-import { useMemo, useState } from "react";
 import { Badge } from "@tailorkit/ui/badge";
 import { Button } from "@tailorkit/ui/button";
-import { toastManager } from "@tailorkit/ui/toast";
 import {
   CardFrame,
   CardFrameDescription,
   CardFrameHeader,
   CardFrameTitle,
 } from "@tailorkit/ui/card";
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@tailorkit/ui/empty";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@tailorkit/ui/table";
 import { DateAgo } from "@tailorkit/ui/date";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@tailorkit/ui/empty";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@tailorkit/ui/table";
+import { toastManager } from "@tailorkit/ui/toast";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+/* oxlint-disable react/no-unstable-nested-components */
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { flexRender, useTable } from "@tanstack/react-table";
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
+import { ArrowLeftIcon, DownloadIcon, RocketIcon } from "lucide-react";
+import { useMemo, useState } from "react";
+
 import { AppLogo } from "#components/apps/app-logo";
 import { renderSortableHeader } from "#components/members/member-table-utils";
 import { PageLayout } from "#components/page-layout";
 import { client, orpc } from "#lib/orpc";
 import { dataTableFeatures } from "#lib/table";
 
-export const Route = createFileRoute("/(app)/$orgSlug/$projectSlug/apps/$appId")({
+export const Route = createFileRoute(
+  "/(app)/$orgSlug/$projectSlug/apps/$appId"
+)({
+  component: AppPage,
   loader: ({ context, params }) =>
     context.queryClient.query(
       context.orpc.apps.get.queryOptions({
@@ -32,9 +49,8 @@ export const Route = createFileRoute("/(app)/$orgSlug/$projectSlug/apps/$appId")
           orgSlug: params.orgSlug,
           projectSlug: params.projectSlug,
         },
-      }),
+      })
     ),
-  component: AppPage,
 });
 
 interface DeploymentRow {
@@ -45,7 +61,9 @@ interface DeploymentRow {
   updatedAt: Date | string;
 }
 
-function getDeploymentStatusVariant(status: string): "info" | "outline" | "success" | "warning" {
+function getDeploymentStatusVariant(
+  status: string
+): "info" | "outline" | "success" | "warning" {
   if (status === "published") {
     return "success";
   }
@@ -65,49 +83,58 @@ function DeploymentsTable({
   currentDeploymentId: string | null;
   deployments: DeploymentRow[];
 }) {
-  const [sorting, setSorting] = useState<SortingState>([{ id: "createdAt", desc: true }]);
+  const [sorting, setSorting] = useState<SortingState>([
+    { desc: true, id: "createdAt" },
+  ]);
 
   const columns = useMemo<ColumnDef<typeof dataTableFeatures, DeploymentRow>[]>(
     () => [
       {
         accessorKey: "id",
-        header: "Deployment",
-        size: 300,
         cell: ({ row }) => (
           <div className="min-w-0">
-            <p className="truncate font-medium text-sm">{row.original.publicId}</p>
+            <p className="truncate text-sm font-medium">
+              {row.original.publicId}
+            </p>
             {row.original.id === currentDeploymentId ? (
-              <p className="text-muted-foreground text-xs">Current production deployment</p>
+              <p className="text-muted-foreground text-xs">
+                Current production deployment
+              </p>
             ) : null}
           </div>
         ),
+        header: "Deployment",
+        size: 300,
       },
       {
         accessorKey: "status",
-        header: "Status",
-        size: 130,
         cell: ({ row }) => (
-          <Badge size="lg" variant={getDeploymentStatusVariant(row.original.status)}>
+          <Badge
+            size="lg"
+            variant={getDeploymentStatusVariant(row.original.status)}
+          >
             {row.original.status}
           </Badge>
         ),
+        header: "Status",
+        size: 130,
       },
       {
         accessorKey: "createdAt",
+        cell: ({ row }) => <DateAgo date={row.original.createdAt} />,
         header: "Created",
         size: 140,
         sortFn: "datetime",
-        cell: ({ row }) => <DateAgo date={row.original.createdAt} />,
       },
       {
         accessorKey: "updatedAt",
+        cell: ({ row }) => <DateAgo date={row.original.updatedAt} />,
         header: "Updated",
         size: 140,
         sortFn: "datetime",
-        cell: ({ row }) => <DateAgo date={row.original.updatedAt} />,
       },
     ],
-    [currentDeploymentId],
+    [currentDeploymentId]
   );
 
   const table = useTable({
@@ -126,7 +153,10 @@ function DeploymentsTable({
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow className="hover:bg-transparent" key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id} style={{ width: `${header.column.getSize()}px` }}>
+                <TableHead
+                  key={header.id}
+                  style={{ width: `${header.column.getSize()}px` }}
+                >
                   {renderSortableHeader(header)}
                 </TableHead>
               ))}
@@ -153,14 +183,17 @@ function AppPage() {
   const { appId, orgSlug, projectSlug } = Route.useParams();
   const sourceExportInput = { appId, orgSlug, projectSlug };
   const { data: sourceExportStatus } = useQuery(
-    orpc.apps.sourceExportStatus.queryOptions({ input: sourceExportInput }),
+    orpc.apps.sourceExportStatus.queryOptions({ input: sourceExportInput })
   );
   const sourceExportMutation = useMutation({
     mutationFn: () => client.apps.exportSource(sourceExportInput),
     onError: (error: unknown) => {
       toastManager.add({
+        description:
+          error instanceof Error
+            ? error.message
+            : "Unable to export app source.",
         title: "Source export failed",
-        description: error instanceof Error ? error.message : "Unable to export app source.",
         type: "error",
       });
     },
@@ -175,7 +208,7 @@ function AppPage() {
     },
   });
   const { data: app } = useSuspenseQuery(
-    orpc.apps.get.queryOptions({ input: { appId, orgSlug, projectSlug } }),
+    orpc.apps.get.queryOptions({ input: { appId, orgSlug, projectSlug } })
   );
 
   return (
@@ -190,11 +223,18 @@ function AppPage() {
               variant="outline"
             >
               <DownloadIcon />
-              {sourceExportMutation.isPending ? "Preparing export..." : "Export source"}
+              {sourceExportMutation.isPending
+                ? "Preparing export..."
+                : "Export source"}
             </Button>
           ) : null}
           <Button
-            render={<Link params={{ orgSlug, projectSlug }} to="/$orgSlug/$projectSlug/apps" />}
+            render={
+              <Link
+                params={{ orgSlug, projectSlug }}
+                to="/$orgSlug/$projectSlug/apps"
+              />
+            }
             size="sm"
             variant="outline"
           >
@@ -206,7 +246,11 @@ function AppPage() {
       description={app.description || "App and deployment details."}
       title={
         <span className="flex items-center gap-3">
-          <AppLogo className="size-11" logoPaths={app.logoPaths} name={app.name} />
+          <AppLogo
+            className="size-11"
+            logoPaths={app.logoPaths}
+            name={app.name}
+          />
           <span>{app.name}</span>
         </span>
       }
@@ -215,8 +259,8 @@ function AppPage() {
         <CardFrame>
           <CardFrameHeader>
             <CardFrameTitle>Installation scope</CardFrameTitle>
-            <CardFrameDescription className="min-w-0 w-full">
-              <div className="grid min-w-0 w-full gap-2">
+            <CardFrameDescription className="w-full min-w-0">
+              <div className="grid w-full min-w-0 gap-2">
                 <Badge
                   className="max-w-full min-w-0 break-all whitespace-normal"
                   size="sm"
@@ -224,7 +268,7 @@ function AppPage() {
                 >
                   {app.scope.name}
                 </Badge>
-                <pre className="max-h-64 max-w-full overflow-auto rounded-md border bg-muted/40 p-3 font-mono text-foreground text-xs">
+                <pre className="bg-muted/40 text-foreground max-h-64 max-w-full overflow-auto rounded-md border p-3 font-mono text-xs">
                   {JSON.stringify(app.scope.value, null, 2)}
                 </pre>
               </div>
@@ -235,14 +279,18 @@ function AppPage() {
           <CardFrameHeader>
             <CardFrameTitle>Current deployment</CardFrameTitle>
             <CardFrameDescription>
-              {app.currentDeployment ? app.currentDeployment.publicId : "No deployment published"}
+              {app.currentDeployment
+                ? app.currentDeployment.publicId
+                : "No deployment published"}
             </CardFrameDescription>
           </CardFrameHeader>
         </CardFrame>
         <CardFrame>
           <CardFrameHeader>
             <CardFrameTitle>Total deployments</CardFrameTitle>
-            <CardFrameDescription>{app.deployments.length}</CardFrameDescription>
+            <CardFrameDescription>
+              {app.deployments.length}
+            </CardFrameDescription>
           </CardFrameHeader>
         </CardFrame>
         <CardFrame>
@@ -262,7 +310,9 @@ function AppPage() {
               <RocketIcon />
             </EmptyMedia>
             <EmptyTitle>No deployments</EmptyTitle>
-            <EmptyDescription>Deployments uploaded for this app will appear here.</EmptyDescription>
+            <EmptyDescription>
+              Deployments uploaded for this app will appear here.
+            </EmptyDescription>
           </EmptyHeader>
         </Empty>
       ) : (

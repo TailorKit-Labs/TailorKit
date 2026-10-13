@@ -48,7 +48,7 @@ for (const manifestPath of packages) {
 
   if (typeof manifest.license !== "string" || manifest.license.length === 0) {
     errors.push(
-      `${packageLabel}: missing a string license field in ${relativeToRoot(manifestPath)}`,
+      `${packageLabel}: missing a string license field in ${relativeToRoot(manifestPath)}`
     );
     continue;
   }
@@ -57,19 +57,23 @@ for (const manifestPath of packages) {
   const targetPath = path.join(packageDirectory, "LICENSE.md");
 
   if (!fs.existsSync(sourcePath)) {
-    errors.push(`${packageLabel}: missing canonical license ${relativeToRoot(sourcePath)}`);
+    errors.push(
+      `${packageLabel}: missing canonical license ${relativeToRoot(sourcePath)}`
+    );
     continue;
   }
 
   const source = fs.readFileSync(sourcePath, "utf-8");
-  const target = fs.existsSync(targetPath) ? fs.readFileSync(targetPath, "utf-8") : null;
+  const target = fs.existsSync(targetPath)
+    ? fs.readFileSync(targetPath, "utf-8")
+    : null;
 
   if (checkOnly) {
     if (target === null) {
       errors.push(`${packageLabel}: missing ${relativeToRoot(targetPath)}`);
     } else if (target !== source) {
       errors.push(
-        `${packageLabel}: ${relativeToRoot(targetPath)} is out of sync with ${relativeToRoot(sourcePath)}`,
+        `${packageLabel}: ${relativeToRoot(targetPath)} is out of sync with ${relativeToRoot(sourcePath)}`
       );
     }
   } else if (target !== source) {

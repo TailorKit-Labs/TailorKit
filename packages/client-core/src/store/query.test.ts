@@ -1,25 +1,35 @@
-import { testContract } from "../test-contract";
 import { allTasks } from "nanostores";
 import { expect, it, vi } from "vite-plus/test";
+
 import { createTailorKitFetchClient } from "../client/fetch-client";
-import { createTailorKitStore } from "./store";
-import { createAppsQuery, createAppViewsQuery, createViewsQuery } from "./query";
+import { testContract } from "../test-contract";
 import type { TailorKitApp } from "../types";
+import {
+  createAppsQuery,
+  createAppViewsQuery,
+  createViewsQuery,
+} from "./query";
+import { createTailorKitStore } from "./store";
 
 function setup(multiple = true, apps?: TailorKitApp[]) {
   const fetch = vi.fn<typeof globalThis.fetch>();
-  const client = createTailorKitFetchClient({ baseUrl: "https://host.test/api/", fetch });
+  const client = createTailorKitFetchClient({
+    baseUrl: "https://host.test/api/",
+    fetch,
+  });
   const store = createTailorKitStore({
-    baseUrl: client.baseUrl,
     apps,
+    baseUrl: client.baseUrl,
     client,
     contract: testContract(multiple),
   });
   const app: TailorKitApp = {
     id: "app",
-    views: [{ slot: "page", path: "/", ...(multiple ? { instances: true } : {}) }],
+    views: [
+      { path: "/", slot: "page", ...(multiple ? { instances: true } : {}) },
+    ],
   };
-  return { fetch, client, store, app };
+  return { app, client, fetch, store };
 }
 
 it("starts discovery only when observed and supplies filtered results and shared status flags", async () => {
@@ -29,27 +39,38 @@ it("starts discovery only when observed and supplies filtered results and shared
     () =>
       new Promise((done) => {
         resolve = done;
-      }),
+      })
   );
-  const query = createAppsQuery(store, { scopes: ["user"], appIds: ["included"] });
-  expect(query.state.get()).toMatchObject({ isPending: true, isLoading: false, data: undefined });
+  const query = createAppsQuery(store, {
+    appIds: ["included"],
+    scopes: ["user"],
+  });
+  expect(query.state.get()).toMatchObject({
+    data: undefined,
+    isLoading: false,
+    isPending: true,
+  });
   expect(fetch).not.toHaveBeenCalled();
   const stop = query.state.listen(vi.fn());
-  expect(query.state.get()).toMatchObject({ isPending: true, isLoading: true, isFetching: true });
+  expect(query.state.get()).toMatchObject({
+    isFetching: true,
+    isLoading: true,
+    isPending: true,
+  });
   await Promise.resolve();
   resolve(
     Response.json([
-      { id: "included", scope: { name: "user", context: {} } },
-      { id: "excluded", scope: { name: "user", context: {} } },
-      { id: "other", scope: { name: "organization", context: {} } },
-    ]),
+      { id: "included", scope: { context: {}, name: "user" } },
+      { id: "excluded", scope: { context: {}, name: "user" } },
+      { id: "other", scope: { context: {}, name: "organization" } },
+    ])
   );
   await allTasks();
   expect(query.state.get()).toMatchObject({
-    isSuccess: true,
+    data: [{ id: "included" }],
     isError: false,
     isFetching: false,
-    data: [{ id: "included" }],
+    isSuccess: true,
   });
   store.setProvidedApps([]);
   expect(query.state.get().data).toEqual([]);
@@ -70,7 +91,7 @@ it("updates single-slot results from provided apps without observing context or 
   const ready = query.state.get();
   expect(ready.data).toEqual([{ app }]);
   const id = Symbol("view");
-  store.views.register({ id, view: "/", context: undefined, loading: true });
+  store.views.register({ context: undefined, id, loading: true, view: "/" });
   await Promise.resolve();
   expect(query.state.get()).toBe(ready);
   expect(fetch).not.toHaveBeenCalled();
@@ -89,46 +110,50 @@ it("switches instance queries on context changes and immediately cancels unobser
   vi.spyOn(client.endpoints, "slotInstances").mockImplementation(
     (_app, _input, signal) =>
       new Promise((resolve) => {
-        requests.push({ signal, resolve });
-      }),
+        requests.push({ resolve, signal });
+      })
   );
   const id = Symbol("view");
-  store.views.register({ id, view: "/", context: { customer: "first" } });
+  store.views.register({ context: { customer: "first" }, id, view: "/" });
   await Promise.resolve();
   const query = createViewsQuery(store, { slot: "page" });
   const stop = query.state.listen(vi.fn());
   await vi.waitFor(() => expect(requests).toHaveLength(1));
-  store.views.register({ id, view: "/", context: { customer: "second" } });
+  store.views.register({ context: { customer: "second" }, id, view: "/" });
   await Promise.resolve();
   expect(requests[0]?.signal.aborted).toBe(true);
   await vi.waitFor(() => expect(requests).toHaveLength(2));
   expect(query.state.get().data).toBeUndefined();
-  requests[1]?.resolve([{ key: "second", metadata: {}, data: {} }]);
-  await vi.waitFor(() => expect(query.state.get().data?.[0]).toMatchObject({ key: "second", app }));
-  requests[0]?.resolve([{ key: "late", metadata: {}, data: {} }]);
+  requests[1]?.resolve([{ data: {}, key: "second", metadata: {} }]);
+  await vi.waitFor(() =>
+    expect(query.state.get().data?.[0]).toMatchObject({ app, key: "second" })
+  );
+  requests[0]?.resolve([{ data: {}, key: "late", metadata: {} }]);
   await allTasks();
   expect(query.state.get().data?.[0]).toMatchObject({ key: "second" });
   const pending = query.refetch();
   await vi.waitFor(() => expect(requests).toHaveLength(3));
   stop();
   expect(requests[2]?.signal.aborted).toBe(true);
-  requests[2]?.resolve([{ key: "stopped", metadata: {}, data: {} }]);
+  requests[2]?.resolve([{ data: {}, key: "stopped", metadata: {} }]);
   await pending;
   store.views.unregister(id);
 });
 
 it("refetches an unobserved explicit app with the latest registered context without discovery", async () => {
   const { client, fetch, store, app } = setup();
-  const instances = vi.spyOn(client.endpoints, "slotInstances").mockResolvedValue([]);
+  const instances = vi
+    .spyOn(client.endpoints, "slotInstances")
+    .mockResolvedValue([]);
   const query = createAppViewsQuery(store, app, "page");
   const id = Symbol("view");
-  store.views.register({ id, view: "/", context: { customer: "latest" } });
+  store.views.register({ context: { customer: "latest" }, id, view: "/" });
   await Promise.resolve();
   await query.refetch();
   expect(instances).toHaveBeenCalledWith(
     app,
     expect.objectContaining({ context: { customer: "latest" } }),
-    expect.any(AbortSignal),
+    expect.any(AbortSignal)
   );
   expect(fetch).not.toHaveBeenCalled();
   store.views.unregister(id);
@@ -140,17 +165,33 @@ it("sends parsed native contract context to instance requests without calling me
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockRejectedValue(new Error("Unexpected HTTP request"));
-  const client = createTailorKitFetchClient({ baseUrl: "https://host.test", fetch });
-  const contract = defineContract({
-    views: { "/": z.object({ user: z.object({ id: z.string() }) }) },
-    slots: { page: { views: ["/"], multiple: true } },
+  const client = createTailorKitFetchClient({
+    baseUrl: "https://host.test",
+    fetch,
   });
-  const app: TailorKitApp = { id: "app", views: [{ slot: "page", path: "/", instances: true }] };
-  const store = createTailorKitStore({ baseUrl: client.baseUrl, client, contract, apps: [app] });
-  const instances = vi.spyOn(client.endpoints, "slotInstances").mockResolvedValue([]);
+  const contract = defineContract({
+    slots: { page: { multiple: true, views: ["/"] } },
+    views: { "/": z.object({ user: z.object({ id: z.string() }) }) },
+  });
+  const app: TailorKitApp = {
+    id: "app",
+    views: [{ instances: true, path: "/", slot: "page" }],
+  };
+  const store = createTailorKitStore({
+    apps: [app],
+    baseUrl: client.baseUrl,
+    client,
+    contract,
+  });
+  const instances = vi
+    .spyOn(client.endpoints, "slotInstances")
+    .mockResolvedValue([]);
   const id = Symbol();
-  const original = { user: { id: "u1", email: "private@example.com" }, extra: true };
-  store.views.register({ id, view: "/", context: original });
+  const original = {
+    extra: true,
+    user: { email: "private@example.com", id: "u1" },
+  };
+  store.views.register({ context: original, id, view: "/" });
   await Promise.resolve();
   const query = createViewsQuery(store, { slot: "page" });
   const stop = query.state.listen(vi.fn());
@@ -158,11 +199,11 @@ it("sends parsed native contract context to instance requests without calling me
   expect(instances).toHaveBeenCalledExactlyOnceWith(
     app,
     {
-      slot: "page",
-      path: "/",
       context: { user: { id: "u1" } },
+      path: "/",
+      slot: "page",
     },
-    expect.any(AbortSignal),
+    expect.any(AbortSignal)
   );
   expect(fetch).not.toHaveBeenCalled();
   expect(original.user.email).toBe("private@example.com");

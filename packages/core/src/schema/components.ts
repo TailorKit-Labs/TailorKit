@@ -24,8 +24,12 @@ type AnyComponentDefinition = ComponentDefinition<
 export type ComponentDefinitions = Record<string, AnyComponentDefinition>;
 
 export type ComponentProps<TComponent> = MergeProps<
-  TComponent extends { fields: infer TFields } ? InferSchema<TFields> : EmptyObject,
-  TComponent extends { callbacks: infer TCallbacks } ? InferCallbacks<TCallbacks> : EmptyObject
+  TComponent extends { fields: infer TFields }
+    ? InferSchema<TFields>
+    : EmptyObject,
+  TComponent extends { callbacks: infer TCallbacks }
+    ? InferCallbacks<TCallbacks>
+    : EmptyObject
 >;
 
 export interface ResolvedComponentMetadata {
@@ -66,14 +70,14 @@ const getObjectKeys = (value: unknown): string[] => {
   }
 
   if ("shape" in value) {
-    const shape = (value as { shape?: unknown }).shape;
+    const { shape } = value as { shape?: unknown };
     if (shape && typeof shape === "object") {
       return Object.keys(shape);
     }
   }
 
   if ("entries" in value) {
-    const entries = (value as { entries?: unknown }).entries;
+    const { entries } = value as { entries?: unknown };
     if (entries && typeof entries === "object") {
       return Object.keys(entries);
     }
@@ -85,13 +89,13 @@ const getObjectKeys = (value: unknown): string[] => {
 const assertNoLocalFieldCallbackConflicts = (
   componentName: string,
   fieldKeys: readonly string[],
-  callbackKeys: readonly string[],
+  callbackKeys: readonly string[]
 ): void => {
   const callbackKeySet = new Set(callbackKeys);
   for (const fieldKey of fieldKeys) {
     if (callbackKeySet.has(fieldKey)) {
       throw new Error(
-        `Component "${componentName}" defines both a field and callback named "${fieldKey}". Use distinct names for serializable fields and function callbacks.`,
+        `Component "${componentName}" defines both a field and callback named "${fieldKey}". Use distinct names for serializable fields and function callbacks.`
       );
     }
   }
@@ -99,17 +103,17 @@ const assertNoLocalFieldCallbackConflicts = (
 
 export const resolveComponentMetadata = (
   name: string,
-  definition: ComponentDefinition,
+  definition: ComponentDefinition
 ): ResolvedComponentMetadata => {
-  const fields = definition.fields;
+  const { fields } = definition;
   const fieldKeys = fields ? getObjectKeys(fields) : [];
   const callbackKeys = Object.keys(definition.callbacks ?? {});
   assertNoLocalFieldCallbackConflicts(name, fieldKeys, callbackKeys);
 
   return {
     callbacks: definition.callbacks ?? {},
-    fields,
     children: definition.children ?? false,
+    fields,
   };
 };
 

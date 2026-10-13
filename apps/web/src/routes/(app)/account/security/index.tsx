@@ -1,7 +1,5 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { Badge } from "@tailorkit/ui/badge";
 import { Button } from "@tailorkit/ui/button";
 import {
@@ -13,7 +11,11 @@ import {
   CardPanel,
   CardTitle,
 } from "@tailorkit/ui/card";
-import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "@tailorkit/ui/collapsible";
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from "@tailorkit/ui/collapsible";
 import {
   Dialog,
   DialogClose,
@@ -25,11 +27,19 @@ import {
   DialogTitle,
 } from "@tailorkit/ui/dialog";
 import { Field, FieldLabel } from "@tailorkit/ui/field";
+import { useAppForm } from "@tailorkit/ui/form";
 import { Input } from "@tailorkit/ui/input";
 import { Skeleton } from "@tailorkit/ui/skeleton";
 import { toastManager } from "@tailorkit/ui/toast";
-import { useAppForm } from "@tailorkit/ui/form";
-import { ChevronDownIcon, KeyRoundIcon, LaptopIcon, SmartphoneIcon, TrashIcon } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, useSearch } from "@tanstack/react-router";
+import {
+  ChevronDownIcon,
+  KeyRoundIcon,
+  LaptopIcon,
+  SmartphoneIcon,
+  TrashIcon,
+} from "lucide-react";
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { z } from "zod";
@@ -39,7 +49,11 @@ import { GoogleIcon } from "#components/google-icon";
 import { PageLayout } from "#components/page-layout";
 import { authClient } from "#lib/auth-client";
 import { client, orpc } from "#lib/orpc";
-import { getPreferredLocale, getPreferredTimeZone } from "#lib/preferred-locale";
+import {
+  getPreferredLocale,
+  getPreferredTimeZone,
+} from "#lib/preferred-locale";
+
 import { TwoFactorSettings } from "./-two-factor-settings";
 
 export const Route = createFileRoute("/(app)/account/security/")({
@@ -47,7 +61,9 @@ export const Route = createFileRoute("/(app)/account/security/")({
   loader: async ({ context }) => {
     await Promise.all([
       context.queryClient.query(context.orpc.user.getSession.queryOptions()),
-      context.queryClient.query(context.orpc.user.getSocialProviders.queryOptions()),
+      context.queryClient.query(
+        context.orpc.user.getSocialProviders.queryOptions()
+      ),
       context.queryClient.query(context.orpc.user.listAccounts.queryOptions()),
       context.queryClient.query(context.orpc.user.listSessions.queryOptions()),
     ]);
@@ -62,7 +78,11 @@ export const Route = createFileRoute("/(app)/account/security/")({
 
 function getDeviceDetails(userAgent?: string | null) {
   if (!userAgent) {
-    return { browser: "Unknown browser", isMobile: false, os: "Unknown device" };
+    return {
+      browser: "Unknown browser",
+      isMobile: false,
+      os: "Unknown device",
+    };
   }
 
   const isMobile = /Android|iPhone|iPad|iPod/iu.test(userAgent);
@@ -94,7 +114,11 @@ function getDeviceDetails(userAgent?: string | null) {
   return { browser, isMobile, os };
 }
 
-function formatLastActive(value: Date | string, locale: string, timeZone: string) {
+function formatLastActive(
+  value: Date | string,
+  locale: string,
+  timeZone: string
+) {
   return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
@@ -105,20 +129,33 @@ function formatLastActive(value: Date | string, locale: string, timeZone: string
 function formatPasskeyCreated(
   value: Date | string | null | undefined,
   locale: string,
-  timeZone: string,
+  timeZone: string
 ) {
   if (!value) {
     return null;
   }
 
-  return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone }).format(new Date(value));
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium",
+    timeZone,
+  }).format(new Date(value));
 }
 
-function ActiveSessions({ locale, timeZone }: { locale: string; timeZone: string }) {
+function ActiveSessions({
+  locale,
+  timeZone,
+}: {
+  locale: string;
+  timeZone: string;
+}) {
   const queryClient = useQueryClient();
   const { data: sessionData } = useQuery(orpc.user.getSession.queryOptions());
   const currentSession = sessionData?.session ?? null;
-  const { data: sessions, error, isPending } = useQuery(orpc.user.listSessions.queryOptions());
+  const {
+    data: sessions,
+    error,
+    isPending,
+  } = useQuery(orpc.user.listSessions.queryOptions());
 
   const revokeMutation = useMutation({
     mutationFn: (token: string) => client.user.revokeSession({ token }),
@@ -130,7 +167,9 @@ function ActiveSessions({ locale, timeZone }: { locale: string; timeZone: string
       });
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries(orpc.user.listSessions.queryOptions());
+      await queryClient.invalidateQueries(
+        orpc.user.listSessions.queryOptions()
+      );
       toastManager.add({
         description: "The session has been signed out.",
         title: "Session ended",
@@ -149,7 +188,9 @@ function ActiveSessions({ locale, timeZone }: { locale: string; timeZone: string
       });
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries(orpc.user.listSessions.queryOptions());
+      await queryClient.invalidateQueries(
+        orpc.user.listSessions.queryOptions()
+      );
       toastManager.add({
         description: "All other devices have been signed out.",
         title: "Other sessions ended",
@@ -160,8 +201,12 @@ function ActiveSessions({ locale, timeZone }: { locale: string; timeZone: string
 
   const sortedSessions = sessions
     ? [
-        ...sessions.filter((session) => session.token === currentSession?.token),
-        ...sessions.filter((session) => session.token !== currentSession?.token),
+        ...sessions.filter(
+          (session) => session.token === currentSession?.token
+        ),
+        ...sessions.filter(
+          (session) => session.token !== currentSession?.token
+        ),
       ]
     : undefined;
 
@@ -170,35 +215,35 @@ function ActiveSessions({ locale, timeZone }: { locale: string; timeZone: string
     sessionsContent = <ActiveSessionsSkeleton />;
   } else if (error) {
     sessionsContent = (
-      <p className="px-4 py-6 text-destructive-foreground text-sm">
+      <p className="text-destructive-foreground px-4 py-6 text-sm">
         Active sessions could not be loaded. Please try again.
       </p>
     );
-  } else if (!sortedSessions?.length) {
-    sessionsContent = (
-      <p className="px-4 py-6 text-muted-foreground text-sm">No active sessions found.</p>
-    );
-  } else {
+  } else if (sortedSessions?.length) {
     sessionsContent = sortedSessions.map((session) => {
       const device = getDeviceDetails(session.userAgent);
       const isCurrent = session.token === currentSession?.token;
       const DeviceIcon = device.isMobile ? SmartphoneIcon : LaptopIcon;
 
       return (
-        <div className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center" key={session.id}>
+        <div
+          className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center"
+          key={session.id}
+        >
           <div className="flex min-w-0 flex-1 items-center gap-3">
-            <div className="grid size-10 shrink-0 place-items-center rounded-full bg-muted">
+            <div className="bg-muted grid size-10 shrink-0 place-items-center rounded-full">
               <DeviceIcon aria-hidden="true" className="size-5" />
             </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="font-medium text-sm">
+                <p className="text-sm font-medium">
                   {device.os}, {device.browser}
                 </p>
                 {isCurrent ? <Badge variant="secondary">Current</Badge> : null}
               </div>
-              <p className="mt-0.5 text-muted-foreground text-sm">
-                Last active {formatLastActive(session.updatedAt, locale, timeZone)}
+              <p className="text-muted-foreground mt-0.5 text-sm">
+                Last active{" "}
+                {formatLastActive(session.updatedAt, locale, timeZone)}
               </p>
             </div>
           </div>
@@ -206,7 +251,10 @@ function ActiveSessions({ locale, timeZone }: { locale: string; timeZone: string
           {!isCurrent ? (
             <Button
               className="self-start sm:self-center"
-              loading={revokeMutation.isPending && revokeMutation.variables === session.token}
+              loading={
+                revokeMutation.isPending &&
+                revokeMutation.variables === session.token
+              }
               onClick={() => revokeMutation.mutate(session.token)}
               size="sm"
               type="button"
@@ -218,6 +266,12 @@ function ActiveSessions({ locale, timeZone }: { locale: string; timeZone: string
         </div>
       );
     });
+  } else {
+    sessionsContent = (
+      <p className="text-muted-foreground px-4 py-6 text-sm">
+        No active sessions found.
+      </p>
+    );
   }
 
   return (
@@ -227,7 +281,11 @@ function ActiveSessions({ locale, timeZone }: { locale: string; timeZone: string
           <CardTitle className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span>Active sessions</span>
             <Button
-              disabled={!sortedSessions?.some((session) => session.token !== currentSession?.token)}
+              disabled={
+                !sortedSessions?.some(
+                  (session) => session.token !== currentSession?.token
+                )
+              }
               loading={revokeOtherMutation.isPending}
               onClick={() => revokeOtherMutation.mutate()}
               size="sm"
@@ -237,11 +295,15 @@ function ActiveSessions({ locale, timeZone }: { locale: string; timeZone: string
               Sign out others
             </Button>
           </CardTitle>
-          <CardDescription>Manage the devices currently signed in to your account.</CardDescription>
+          <CardDescription>
+            Manage the devices currently signed in to your account.
+          </CardDescription>
         </CardHeader>
 
         <CardPanel className="pt-0">
-          <div className="divide-y overflow-hidden rounded-xl border">{sessionsContent}</div>
+          <div className="divide-y overflow-hidden rounded-xl border">
+            {sessionsContent}
+          </div>
         </CardPanel>
       </Card>
     </CardFrame>
@@ -270,31 +332,31 @@ function LinkedAccountsSkeleton() {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3 rounded-xl border p-4">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
+        <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-full">
           <GoogleIcon className="size-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-medium text-sm">Google</p>
+          <p className="text-sm font-medium">Google</p>
           <Skeleton className="mt-1 h-4 w-28" />
         </div>
         <Skeleton className="h-7 w-12" />
       </div>
       <div className="flex items-center gap-3 rounded-xl border p-4">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
+        <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-full">
           <GitHubIcon />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-medium text-sm">GitHub</p>
+          <p className="text-sm font-medium">GitHub</p>
           <Skeleton className="mt-1 h-4 w-28" />
         </div>
         <Skeleton className="h-7 w-12" />
       </div>
       <div className="flex items-center gap-3 rounded-xl border p-4">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
+        <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-full">
           <KeyRoundIcon aria-hidden="true" className="size-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-medium text-sm">Passkeys</p>
+          <p className="text-sm font-medium">Passkeys</p>
           <div className="mt-1 py-2 sm:py-1.5">
             <Skeleton className="h-4 w-44" />
           </div>
@@ -316,16 +378,22 @@ const GitHubIcon = () => (
 
 // eslint-disable-next-line complexity -- This page coordinates independent account-security controls.
 function SecurityPage() {
-  const { error, error_description } = useSearch({ from: "/(app)/account/security/" });
+  const { error, error_description } = useSearch({
+    from: "/(app)/account/security/",
+  });
   const { locale, timeZone } = Route.useLoaderData();
   const queryClient = useQueryClient();
-  const [linkPending, setLinkPending] = useState<"github" | "google" | null>(null);
+  const [linkPending, setLinkPending] = useState<"github" | "google" | null>(
+    null
+  );
   const [unlinkPending, setUnlinkPending] = useState<string | null>(null);
   const [passkeyDialogOpen, setPasskeyDialogOpen] = useState(false);
   const [passkeyName, setPasskeyName] = useState("");
   const [passkeysOpen, setPasskeysOpen] = useState(false);
   const [passkeyPending, setPasskeyPending] = useState<string | null>(null);
-  const socialProvidersQuery = useQuery(orpc.user.getSocialProviders.queryOptions());
+  const socialProvidersQuery = useQuery(
+    orpc.user.getSocialProviders.queryOptions()
+  );
   const accountsQuery = useQuery(orpc.user.listAccounts.queryOptions());
   const passkeysQuery = useQuery({
     queryFn: async () => {
@@ -338,10 +406,14 @@ function SecurityPage() {
     queryKey: ["passkeys"],
   });
   const sessionQuery = useQuery(orpc.user.getSession.queryOptions());
-  const googleAccount = accountsQuery.data?.find((account) => account.providerId === "google");
-  const githubAccount = accountsQuery.data?.find((account) => account.providerId === "github");
+  const googleAccount = accountsQuery.data?.find(
+    (account) => account.providerId === "google"
+  );
+  const githubAccount = accountsQuery.data?.find(
+    (account) => account.providerId === "github"
+  );
   const hasCredentialAccount = accountsQuery.data?.some(
-    (account) => account.providerId === "credential",
+    (account) => account.providerId === "credential"
   );
   const passkeys = passkeysQuery.data ?? [];
   const signInMethodCount = (accountsQuery.data?.length ?? 0) + passkeys.length;
@@ -371,14 +443,19 @@ function SecurityPage() {
       setLinkPending(null);
       toastManager.add({
         description:
-          requestError instanceof Error ? requestError.message : `Failed to link ${providerName}`,
+          requestError instanceof Error
+            ? requestError.message
+            : `Failed to link ${providerName}`,
         title: "Error",
         type: "error",
       });
     }
   };
 
-  const unlinkSocial = async (accountId: string | undefined, provider: "github" | "google") => {
+  const unlinkSocial = async (
+    accountId: string | undefined,
+    provider: "github" | "google"
+  ) => {
     if (!accountId || signInMethodCount <= 1 || unlinkPending !== null) {
       return;
     }
@@ -392,7 +469,9 @@ function SecurityPage() {
       setUnlinkPending(null);
       toastManager.add({
         description:
-          requestError instanceof Error ? requestError.message : `Failed to unlink ${providerName}`,
+          requestError instanceof Error
+            ? requestError.message
+            : `Failed to unlink ${providerName}`,
         title: "Error",
         type: "error",
       });
@@ -436,7 +515,10 @@ function SecurityPage() {
       });
     } catch (requestError) {
       toastManager.add({
-        description: requestError instanceof Error ? requestError.message : "Failed to add passkey",
+        description:
+          requestError instanceof Error
+            ? requestError.message
+            : "Failed to add passkey",
         title: "Couldn't add passkey",
         type: "error",
       });
@@ -467,7 +549,9 @@ function SecurityPage() {
     } catch (requestError) {
       toastManager.add({
         description:
-          requestError instanceof Error ? requestError.message : "Failed to remove passkey",
+          requestError instanceof Error
+            ? requestError.message
+            : "Failed to remove passkey",
         title: "Couldn't remove passkey",
         type: "error",
       });
@@ -477,7 +561,11 @@ function SecurityPage() {
   };
 
   const form = useAppForm({
-    defaultValues: { currentPassword: "", newPassword: "", newPasswordRepeat: "" },
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      newPasswordRepeat: "",
+    },
     onSubmit: async ({ value }) => {
       try {
         await client.user.changePassword({
@@ -488,7 +576,9 @@ function SecurityPage() {
       } catch (requestError) {
         toastManager.add({
           description:
-            requestError instanceof Error ? requestError.message : "Failed to update password",
+            requestError instanceof Error
+              ? requestError.message
+              : "Failed to update password",
           title: "Error",
           type: "error",
         });
@@ -506,7 +596,9 @@ function SecurityPage() {
       onSubmit: z
         .object({
           currentPassword: z.string().min(1, "Current password is required"),
-          newPassword: z.string().min(10, "Password must be at least 10 characters"),
+          newPassword: z
+            .string()
+            .min(10, "Password must be at least 10 characters"),
           newPasswordRepeat: z.string().min(10, "Confirm password is required"),
         })
         .refine((data) => data.newPassword === data.newPasswordRepeat, {
@@ -518,7 +610,10 @@ function SecurityPage() {
 
   return (
     <AccountLayout>
-      <PageLayout description="Update your password and keep your account secure." title="Security">
+      <PageLayout
+        description="Update your password and keep your account secure."
+        title="Security"
+      >
         <div className="flex flex-col gap-6">
           <TwoFactorSettings
             hasCredentialAccount={hasCredentialAccount === true}
@@ -541,29 +636,38 @@ function SecurityPage() {
                   form.handleSubmit();
                 }}
               >
-                <CardPanel className="flex flex-col gap-4 max-w-lg">
+                <CardPanel className="flex max-w-lg flex-col gap-4">
                   <form.AppField name="currentPassword">
                     {(field) => (
-                      <field.SecretTextField label="Current password" placeholder="••••••••" />
+                      <field.SecretTextField
+                        label="Current password"
+                        placeholder="••••••••"
+                      />
                     )}
                   </form.AppField>
 
                   <form.AppField name="newPassword">
                     {(field) => (
-                      <field.SecretTextField label="New password" placeholder="••••••••" />
+                      <field.SecretTextField
+                        label="New password"
+                        placeholder="••••••••"
+                      />
                     )}
                   </form.AppField>
 
                   <form.AppField name="newPasswordRepeat">
                     {(field) => (
-                      <field.SecretTextField label="Confirm new password" placeholder="••••••••" />
+                      <field.SecretTextField
+                        label="Confirm new password"
+                        placeholder="••••••••"
+                      />
                     )}
                   </form.AppField>
                 </CardPanel>
               </form>
             </Card>
 
-            <CardFrameFooter className="flex justify-end relative">
+            <CardFrameFooter className="relative flex justify-end">
               <form.AppForm>
                 <form.SubmitButton form="change-password-form" size="sm">
                   Update password
@@ -582,8 +686,11 @@ function SecurityPage() {
               </CardHeader>
 
               <CardPanel>
-                {(error_description || error || accountsQuery.error || passkeysQuery.error) && (
-                  <p className="mb-4 text-destructive text-sm" role="alert">
+                {(error_description ||
+                  error ||
+                  accountsQuery.error ||
+                  passkeysQuery.error) && (
+                  <p className="text-destructive mb-4 text-sm" role="alert">
                     {error_description ||
                       error ||
                       accountsQuery.error?.message ||
@@ -597,21 +704,27 @@ function SecurityPage() {
                   <div className="flex flex-col gap-3">
                     {(googleAccount || socialProvidersQuery.data?.google) && (
                       <div className="flex items-center gap-3 rounded-xl border p-4">
-                        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                        <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-full">
                           <GoogleIcon className="size-5" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium text-sm">Google</p>
+                          <p className="text-sm font-medium">Google</p>
                           <p className="text-muted-foreground text-sm">
-                            {googleAccount ? "Connected" : "Sign in with Google"}
+                            {googleAccount
+                              ? "Connected"
+                              : "Sign in with Google"}
                           </p>
                         </div>
 
                         {googleAccount ? (
                           <Button
-                            disabled={!canUnlinkGoogle || unlinkPending !== null}
+                            disabled={
+                              !canUnlinkGoogle || unlinkPending !== null
+                            }
                             loading={unlinkPending === googleAccount.id}
-                            onClick={() => void unlinkSocial(googleAccount.id, "google")}
+                            onClick={() =>
+                              void unlinkSocial(googleAccount.id, "google")
+                            }
                             size="sm"
                             title={
                               canUnlinkGoogle
@@ -624,7 +737,9 @@ function SecurityPage() {
                           </Button>
                         ) : (
                           <Button
-                            disabled={linkPending !== null && linkPending !== "google"}
+                            disabled={
+                              linkPending !== null && linkPending !== "google"
+                            }
                             loading={linkPending === "google"}
                             onClick={() => void linkSocial("google")}
                             size="sm"
@@ -638,19 +753,25 @@ function SecurityPage() {
 
                     {(githubAccount || socialProvidersQuery.data?.github) && (
                       <div className="flex items-center gap-3 rounded-xl border p-4">
-                        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                        <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-full">
                           <GitHubIcon />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium text-sm">GitHub</p>
-                          <p className="text-muted-foreground text-sm">{githubStatus}</p>
+                          <p className="text-sm font-medium">GitHub</p>
+                          <p className="text-muted-foreground text-sm">
+                            {githubStatus}
+                          </p>
                         </div>
 
                         {githubAccount ? (
                           <Button
-                            disabled={!canUnlinkGitHub || unlinkPending !== null}
+                            disabled={
+                              !canUnlinkGitHub || unlinkPending !== null
+                            }
                             loading={unlinkPending === githubAccount.id}
-                            onClick={() => void unlinkSocial(githubAccount.id, "github")}
+                            onClick={() =>
+                              void unlinkSocial(githubAccount.id, "github")
+                            }
                             size="sm"
                             title={
                               canUnlinkGitHub
@@ -663,7 +784,9 @@ function SecurityPage() {
                           </Button>
                         ) : (
                           <Button
-                            disabled={linkPending !== null && linkPending !== "github"}
+                            disabled={
+                              linkPending !== null && linkPending !== "github"
+                            }
                             loading={linkPending === "github"}
                             onClick={() => void linkSocial("github")}
                             size="sm"
@@ -681,24 +804,27 @@ function SecurityPage() {
                       open={passkeysOpen}
                     >
                       <div className="flex items-center gap-3 p-4">
-                        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                        <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-full">
                           <KeyRoundIcon aria-hidden="true" className="size-5" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium text-sm">Passkeys</p>
+                          <p className="text-sm font-medium">Passkeys</p>
                           {passkeys.length ? (
                             <CollapsibleTrigger
-                              className="justify-start gap-1.5 px-0 py-0 font-normal text-muted-foreground hover:bg-transparent data-panel-open:[&_svg]:rotate-180 data-pressed:bg-transparent"
+                              className="text-muted-foreground justify-start gap-1.5 px-0 py-0 font-normal hover:bg-transparent data-pressed:bg-transparent data-panel-open:[&_svg]:rotate-180"
                               render={<Button variant="ghost" />}
                             >
-                              {passkeys.length} passkey{passkeys.length === 1 ? "" : "s"} registered
+                              {passkeys.length} passkey
+                              {passkeys.length === 1 ? "" : "s"} registered
                               <ChevronDownIcon
                                 aria-hidden="true"
                                 className="size-4 transition-transform"
                               />
                             </CollapsibleTrigger>
                           ) : (
-                            <p className="text-muted-foreground text-sm">No passkeys registered</p>
+                            <p className="text-muted-foreground text-sm">
+                              No passkeys registered
+                            </p>
                           )}
                         </div>
                         <Button
@@ -719,7 +845,7 @@ function SecurityPage() {
                               const createdAt = formatPasskeyCreated(
                                 passkey.createdAt,
                                 locale,
-                                timeZone,
+                                timeZone
                               );
 
                               return (
@@ -728,7 +854,7 @@ function SecurityPage() {
                                   key={passkey.id}
                                 >
                                   <div className="min-w-0 flex-1">
-                                    <p className="truncate font-medium text-sm">
+                                    <p className="truncate text-sm font-medium">
                                       {passkey.name || "Passkey"}
                                     </p>
                                     {createdAt ? (
@@ -739,9 +865,14 @@ function SecurityPage() {
                                   </div>
                                   <Button
                                     aria-label={`Remove ${passkey.name || "passkey"}`}
-                                    disabled={signInMethodCount <= 1 || passkeyPending !== null}
+                                    disabled={
+                                      signInMethodCount <= 1 ||
+                                      passkeyPending !== null
+                                    }
                                     loading={passkeyPending === passkey.id}
-                                    onClick={() => void deletePasskey(passkey.id)}
+                                    onClick={() =>
+                                      void deletePasskey(passkey.id)
+                                    }
                                     size="icon-sm"
                                     title={
                                       signInMethodCount > 1
@@ -804,7 +935,11 @@ function SecurityPage() {
                   </Field>
                 </DialogPanel>
                 <DialogFooter>
-                  <DialogClose render={<Button size="sm" type="button" variant="outline" />}>
+                  <DialogClose
+                    render={
+                      <Button size="sm" type="button" variant="outline" />
+                    }
+                  >
                     Cancel
                   </DialogClose>
                   <Button

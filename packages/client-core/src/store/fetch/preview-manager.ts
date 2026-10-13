@@ -1,10 +1,14 @@
-import { createSnapshotStore } from "../snapshot-store";
+import { createPreviewWebSocketClient } from "@tailorkit/client-platform/preview";
+import type {
+  PreviewBuildManifest,
+  PreviewEvent,
+} from "@tailorkit/client-platform/preview";
 import { atom, batch } from "nanostores";
 import type { WritableAtom } from "nanostores";
-import { createPreviewWebSocketClient } from "@tailorkit/client-platform/preview";
-import type { PreviewBuildManifest, PreviewEvent } from "@tailorkit/client-platform/preview";
-import type { TailorKitApp } from "../../types";
+
 import { createEndpointClient } from "../../client/endpoints";
+import type { TailorKitApp } from "../../types";
+import { createSnapshotStore } from "../snapshot-store";
 
 export interface PreviewSnapshot {
   revision: number;
@@ -30,7 +34,9 @@ interface Entry {
   delay: number;
 }
 
-function viewerTokenExpiresAt(metadata: NonNullable<TailorKitApp["preview"]>): number {
+function viewerTokenExpiresAt(
+  metadata: NonNullable<TailorKitApp["preview"]>
+): number {
   const expiresAt = Number(metadata.token.split(".", 1)[0]);
   return Number.isSafeInteger(expiresAt) ? expiresAt : 0;
 }
@@ -48,7 +54,11 @@ async function verify(candidate: Candidate): Promise<string | null> {
   let source: string | null = null;
   for (const [fileIndex, file] of candidate.manifest.files.entries()) {
     const parts = candidate.files[fileIndex];
-    if (!parts || parts.length !== file.chunks || parts.some((part) => part === null)) {
+    if (
+      !parts ||
+      parts.length !== file.chunks ||
+      parts.some((part) => part === null)
+    ) {
       return null;
     }
     const bytes = new Uint8Array(file.size);
@@ -63,7 +73,9 @@ async function verify(candidate: Candidate): Promise<string | null> {
     if (offset !== file.size) {
       return null;
     }
-    const digest = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))]
+    const digest = [
+      ...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
+    ]
       .map((byte) => byte.toString(16).padStart(2, "0"))
       .join("");
     if (digest !== file.sha256) {
@@ -80,7 +92,7 @@ export function createPreviewManager(
   baseUrl: URL,
   onEnded: () => void,
   onViews?: (appId: string, views: NonNullable<TailorKitApp["views"]>) => void,
-  refreshMetadata = createEndpointClient({ baseUrl }).previewMetadata,
+  refreshMetadata = createEndpointClient({ baseUrl }).previewMetadata
 ) {
   const entries = new Map<string, Entry>();
   const close = (entry: Entry) => {
@@ -88,7 +100,7 @@ export function createPreviewManager(
       clearTimeout(entry.reconnect);
     }
     entry.reconnect = null;
-    const socket = entry.socket;
+    const { socket } = entry;
     entry.socket = null;
     socket?.close();
     entry.connecting = false;
@@ -110,13 +122,15 @@ export function createPreviewManager(
     }
     if (event.type === "begin") {
       entry.candidate = {
-        revision: event.revision,
+        files: event.manifest.files.map((file) =>
+          Array.from({ length: file.chunks }, () => null)
+        ),
         manifest: event.manifest,
-        files: event.manifest.files.map((file) => Array.from({ length: file.chunks }, () => null)),
+        revision: event.revision,
       };
       return;
     }
-    const candidate = entry.candidate;
+    const { candidate } = entry;
     if (!candidate || candidate.revision !== event.revision) {
       return;
     }
@@ -134,7 +148,10 @@ export function createPreviewManager(
         return;
       }
       const bytes = bytesFromBase64(event.base64);
-      if (bytes.length !== Math.min(256 * 1024, file.size - event.chunkIndex * 256 * 1024)) {
+      if (
+        bytes.length !==
+        Math.min(256 * 1024, file.size - event.chunkIndex * 256 * 1024)
+      ) {
         entry.candidate = null;
         return;
       }
@@ -150,8 +167,9 @@ export function createPreviewManager(
       ) {
         batch(() => {
           entry.state.set({ revision: candidate.revision, source });
-          if (candidate.manifest.views !== undefined)
+          if (candidate.manifest.views !== undefined) {
             onViews?.(entry.app.id, candidate.manifest.views);
+          }
         });
       }
       if (entry.candidate === candidate) {
@@ -160,14 +178,20 @@ export function createPreviewManager(
     }
   };
   const connect = async (entry: Entry) => {
-    if (!entry.subscribers || !entry.app.preview || entry.socket || entry.connecting) {
+    if (
+      !entry.subscribers ||
+      !entry.app.preview ||
+      entry.socket ||
+      entry.connecting
+    ) {
       return;
     }
     entry.connecting = true;
     const appMetadata = entry.app.preview;
     let metadata =
       entry.metadata &&
-      viewerTokenExpiresAt(entry.metadata) > Math.max(Date.now(), viewerTokenExpiresAt(appMetadata))
+      viewerTokenExpiresAt(entry.metadata) >
+        Math.max(Date.now(), viewerTokenExpiresAt(appMetadata))
         ? entry.metadata
         : appMetadata;
     try {
@@ -222,15 +246,15 @@ export function createPreviewManager(
     });
   };
   const manager = {
+    dispose: () => {
+      for (const entry of entries.values()) {
+        entry.subscribers = 0;
+        close(entry);
+      }
+      entries.clear();
+    },
     getSnapshot: (sessionId: string): PreviewSnapshot =>
       entries.get(sessionId)?.state.get() ?? empty,
-    updateApp: (app: TailorKitApp): void => {
-      const sessionId = app.preview?.sessionId;
-      const entry = sessionId && entries.get(sessionId);
-      if (entry) {
-        entry.app = app;
-      }
-    },
     subscribe: (app: TailorKitApp, listener: () => void): (() => void) => {
       const sessionId = app.preview?.sessionId;
       if (!sessionId) {
@@ -268,12 +292,12 @@ export function createPreviewManager(
         }
       };
     },
-    dispose: () => {
-      for (const entry of entries.values()) {
-        entry.subscribers = 0;
-        close(entry);
+    updateApp: (app: TailorKitApp): void => {
+      const sessionId = app.preview?.sessionId;
+      const entry = sessionId && entries.get(sessionId);
+      if (entry) {
+        entry.app = app;
       }
-      entries.clear();
     },
   };
   return {
@@ -284,8 +308,10 @@ export function createPreviewManager(
         () => manager.getSnapshot(sessionId),
         (listener) => {
           const app = getApp();
-          return app.preview?.sessionId === sessionId ? manager.subscribe(app, listener) : () => {};
-        },
+          return app.preview?.sessionId === sessionId
+            ? manager.subscribe(app, listener)
+            : () => {};
+        }
       );
     },
   };

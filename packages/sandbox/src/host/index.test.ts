@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import { createIframeUiHost } from "./index.js";
 
 import { iframeReadyType, sandboxMessageType } from "../bridge";
+import { createIframeUiHost } from "./index.js";
 
 function getChannel(iframe: HTMLIFrameElement): string {
   const match = /data-tailorkit-channel="([a-f0-9]+)"/u.exec(iframe.srcdoc);
@@ -14,7 +14,9 @@ function getChannel(iframe: HTMLIFrameElement): string {
 }
 
 function emitFromIframe(iframe: HTMLIFrameElement, data: unknown): void {
-  window.dispatchEvent(new MessageEvent("message", { data, source: iframe.contentWindow }));
+  window.dispatchEvent(
+    new MessageEvent("message", { data, source: iframe.contentWindow })
+  );
 }
 
 function getContentWindow(iframe: HTMLIFrameElement): Window {
@@ -57,13 +59,15 @@ describe("createIframeUiHost", () => {
           },
           type: sandboxMessageType,
         },
-        "*",
+        "*"
       );
     });
 
     expect(host.iframe.hidden).toBe(true);
     expect(host.iframe.getAttribute("sandbox")).toBe("allow-scripts");
-    expect(host.iframe.getAttribute("sandbox")).not.toContain("allow-same-origin");
+    expect(host.iframe.getAttribute("sandbox")).not.toContain(
+      "allow-same-origin"
+    );
     expect(host.iframe.srcdoc).toContain("connect-src http: https: ws: wss:");
     expect(host.iframe.srcdoc).toContain("worker-src 'none'");
     expect(host.iframe.srcdoc).not.toContain("new Worker");
@@ -73,7 +77,9 @@ describe("createIframeUiHost", () => {
   });
 
   it("queues callback events until the iframe is ready", async () => {
-    const host = createIframeUiHost("https://assets.test/app.js", { fetch: createFetch() });
+    const host = createIframeUiHost("https://assets.test/app.js", {
+      fetch: createFetch(),
+    });
     host.mount();
     const postMessage = vi.spyOn(getContentWindow(host.iframe), "postMessage");
     const channel = getChannel(host.iframe);
@@ -89,7 +95,7 @@ describe("createIframeUiHost", () => {
     await vi.waitFor(() => {
       expect(postMessage).toHaveBeenLastCalledWith(
         { channel, payload: callback, type: sandboxMessageType },
-        "*",
+        "*"
       );
     });
   });
@@ -129,13 +135,21 @@ describe("createIframeUiHost", () => {
   });
 
   it("rejects invalid outbound messages before queuing or posting them", async () => {
-    const host = createIframeUiHost("https://assets.test/app.js", { fetch: createFetch() });
+    const host = createIframeUiHost("https://assets.test/app.js", {
+      fetch: createFetch(),
+    });
     host.mount();
     const postMessage = vi.spyOn(getContentWindow(host.iframe), "postMessage");
-    const invalid = { type: "animationFrame" as const, data: { timestamp: Infinity } };
+    const invalid = {
+      data: { timestamp: Infinity },
+      type: "animationFrame" as const,
+    };
 
     expect(() => host.dispatch(invalid)).toThrow();
-    emitFromIframe(host.iframe, { channel: getChannel(host.iframe), type: iframeReadyType });
+    emitFromIframe(host.iframe, {
+      channel: getChannel(host.iframe),
+      type: iframeReadyType,
+    });
     await vi.waitFor(() => expect(postMessage).toHaveBeenCalledTimes(1));
     expect(() => host.dispatch(invalid)).toThrow();
     expect(postMessage).toHaveBeenCalledTimes(1);
@@ -154,13 +168,15 @@ describe("createIframeUiHost", () => {
       new MessageEvent("message", {
         data: { channel, payload: { type: "wat" }, type: sandboxMessageType },
         source: window,
-      }),
+      })
     );
     expect(onError).not.toHaveBeenCalled();
   });
 
   it("removes the iframe when destroyed", () => {
-    const host = createIframeUiHost("https://assets.test/app.js", { fetch: createFetch() });
+    const host = createIframeUiHost("https://assets.test/app.js", {
+      fetch: createFetch(),
+    });
     host.mount();
     expect(document.body.contains(host.iframe)).toBe(true);
     host.destroy();
@@ -200,8 +216,8 @@ describe("backend JWT bridge", () => {
   });
   it("mounts without fetching a session and renews scoped sessions", async () => {
     const session = {
-      token: "scoped-token",
       expiresAt: Date.now() + 120_000,
+      token: "scoped-token",
       url: "https://runtime.test/rpc",
     };
     const getBackendSession = vi.fn().mockResolvedValue(session);
@@ -220,28 +236,34 @@ describe("backend JWT bridge", () => {
     // An app cannot choose another installation or project in the bridge request.
     emitFromIframe(host.iframe, {
       channel,
-      type: sandboxMessageType,
       payload: {
+        data: { appId: "another-app", id: "forged", refresh: true },
         type: "backendSessionRequest",
-        data: { id: "forged", refresh: true, appId: "another-app" },
       },
+      type: sandboxMessageType,
     });
     expect(getBackendSession).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalledOnce();
     emitFromIframe(host.iframe, {
       channel,
+      payload: {
+        data: { id: "renew", refresh: true },
+        type: "backendSessionRequest",
+      },
       type: sandboxMessageType,
-      payload: { type: "backendSessionRequest", data: { id: "renew", refresh: true } },
     });
     await vi.waitFor(() =>
       expect(postMessage).toHaveBeenCalledWith(
         {
           channel,
+          payload: {
+            data: { id: "renew", session },
+            type: "backendSessionResult",
+          },
           type: sandboxMessageType,
-          payload: { type: "backendSessionResult", data: { id: "renew", session } },
         },
-        "*",
-      ),
+        "*"
+      )
     );
     expect(getBackendSession).toHaveBeenLastCalledWith({ refresh: true });
     host.destroy();
@@ -264,8 +286,8 @@ it.each(["backend-first", "tools-first"])(
   "isolates tool and backend request limits and cleanup (%s)",
   async (order) => {
     const session = {
-      token: "token",
       expiresAt: Date.now() + 120_000,
+      token: "token",
       url: "https://runtime.test/rpc",
     };
     let complete!: () => void;
@@ -291,14 +313,14 @@ it.each(["backend-first", "tools-first"])(
     const send = (type: "toolRequest" | "backendSessionRequest", id: string) =>
       emitFromIframe(host.iframe, {
         channel,
-        type: sandboxMessageType,
         payload: {
-          type,
           data:
             type === "toolRequest"
               ? { id, kind: "client", path: "ui.open", input: "input" }
               : { id, refresh: false },
+          type,
         },
+        type: sandboxMessageType,
       });
     try {
       const types =
@@ -306,8 +328,13 @@ it.each(["backend-first", "tools-first"])(
           ? (["backendSessionRequest", "toolRequest"] as const)
           : (["toolRequest", "backendSessionRequest"] as const);
       for (const type of types) {
-        for (let index = 0; index < (type === "toolRequest" ? 32 : 4); index++)
+        for (
+          let index = 0;
+          index < (type === "toolRequest" ? 32 : 4);
+          index++
+        ) {
           send(type, String(index));
+        }
       }
       expect(client).toHaveBeenCalledTimes(32);
       expect(getBackendSession).toHaveBeenCalledTimes(4);
@@ -330,5 +357,5 @@ it.each(["backend-first", "tools-first"])(
       host.destroy();
       vi.restoreAllMocks();
     }
-  },
+  }
 );

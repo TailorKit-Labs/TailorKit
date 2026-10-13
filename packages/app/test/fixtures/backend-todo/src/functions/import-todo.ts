@@ -1,6 +1,6 @@
-import type {} from "../tailorkit.gen";
 import { AppError, fn } from "tailorkit/server";
 import { z } from "zod";
+
 import * as todos from "./todos";
 
 export const importTodo = fn.action

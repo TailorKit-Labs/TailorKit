@@ -1,15 +1,23 @@
+import { useStore } from "@nanostores/preact";
 /* oxlint-disable react/immutability -- Preact refs are mutable; the React compiler rule does not recognize preact/hooks.useRef. */
 import { atom, computed } from "nanostores";
-import { useStore } from "@nanostores/preact";
 import { createContext, h } from "preact";
 import type { ComponentChildren } from "preact";
-import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef } from "preact/hooks";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from "preact/hooks";
+
 import { createClient } from "./client/connection";
 import type { Client } from "./client/connection";
-import { reference } from "./client/reference";
-import type { Reference } from "./client/reference";
 import { pendingQuery, QueryStore, serializeInput } from "./client/query-store";
 import type { QueryState } from "./client/query-store";
+import { reference } from "./client/reference";
+import type { Reference } from "./client/reference";
 import { appError } from "./errors";
 import type { AppError } from "./errors";
 
@@ -22,13 +30,19 @@ export interface ClientProviderProps {
   onError?: (error: AppError) => void;
 }
 
-export function ClientProvider({ children, client, onError }: ClientProviderProps) {
+export function ClientProvider({
+  children,
+  client,
+  onError,
+}: ClientProviderProps) {
   const errorHandler = useRef(onError);
   errorHandler.current = onError;
   const store = useMemo(
     () =>
-      new QueryStore(client ?? createClient(), !client, (error) => errorHandler.current?.(error)),
-    [client],
+      new QueryStore(client ?? createClient(), !client, (error) =>
+        errorHandler.current?.(error)
+      ),
+    [client]
   );
   useLayoutEffect(() => () => store.dispose(), [store]);
   return h(Context.Provider, { value: store }, children);
@@ -37,7 +51,9 @@ export function ClientProvider({ children, client, onError }: ClientProviderProp
 function useQueryStore() {
   const store = useContext(Context);
   if (!store) {
-    throw new Error("TailorKit backend hooks require a ClientProvider at the app root.");
+    throw new Error(
+      "TailorKit backend hooks require a ClientProvider at the app root."
+    );
   }
   return store;
 }
@@ -64,18 +80,27 @@ export function useQuery<I, O>(
 ): QueryResult<O> {
   const store = useQueryStore();
   const enabled = options?.enabled ?? true;
-  const name = ref.name;
+  const { name } = ref;
   const serialized = serializeInput(input);
   const key = `${name}\0${serialized}`;
-  const stableInput = useMemo(() => (JSON.parse(serialized) as { input: I }).input, [serialized]);
-  const stableReference = useMemo(() => reference<"query", I, O>(name, "query"), [name]);
+  const stableInput = useMemo(
+    () => (JSON.parse(serialized) as { input: I }).input,
+    [serialized]
+  );
+  const stableReference = useMemo(
+    () => reference<"query", I, O>(name, "query"),
+    [name]
+  );
   const query = useMemo(
     () =>
       computed(
         store.state,
-        (queries) => (enabled ? (queries.get(key) ?? pendingQuery) : pendingQuery) as QueryState<O>,
+        (queries) =>
+          (enabled
+            ? (queries.get(key) ?? pendingQuery)
+            : pendingQuery) as QueryState<O>
       ),
-    [store, key, enabled],
+    [store, key, enabled]
   );
   const state = useStore(query);
   useEffect(() => {
@@ -85,10 +110,10 @@ export function useQuery<I, O>(
   }, [store, key, enabled, stableInput, stableReference]);
   return {
     ...state,
-    isPending: state.status === "pending",
-    isLoading: enabled && state.status === "pending",
-    isSuccess: state.status === "success",
     isError: state.status === "error",
+    isLoading: enabled && state.status === "pending",
+    isPending: state.status === "pending",
+    isSuccess: state.status === "success",
   };
 }
 
@@ -112,23 +137,27 @@ const idleCall = { data: undefined, error: null, status: "idle" as const };
 function useCall<K extends "mutation" | "action", I, O>(
   kind: K,
   ref: Reference<K, I, O>,
-  options: CallOptions<I, O>,
+  options: CallOptions<I, O>
 ) {
   const store = useQueryStore();
-  const name = ref.name;
+  const { name } = ref;
   const identity = useMemo(
     () => ({
-      store,
-      name,
       kind,
+      name,
       state: atom<Pick<CallState<O>, "data" | "error" | "status">>(idleCall),
+      store,
     }),
-    [store, name, kind],
+    [store, name, kind]
   );
   const state = useStore(identity.state);
-  const current = useRef({ identity, sequence: 0, mounted: true });
+  const current = useRef({ identity, mounted: true, sequence: 0 });
   if (current.current.identity !== identity) {
-    current.current = { identity, sequence: current.current.sequence + 1, mounted: true };
+    current.current = {
+      identity,
+      mounted: true,
+      sequence: current.current.sequence + 1,
+    };
   }
   const callbacks = useRef(options);
   callbacks.current = options;
@@ -154,12 +183,22 @@ function useCall<K extends "mutation" | "action", I, O>(
       try {
         data =
           kind === "mutation"
-            ? await store.client.mutate(reference<"mutation", I, O>(name, "mutation"), args)
-            : await store.client.action(reference<"action", I, O>(name, "action"), args);
+            ? await store.client.mutate(
+                reference<"mutation", I, O>(name, "mutation"),
+                args
+              )
+            : await store.client.action(
+                reference<"action", I, O>(name, "action"),
+                args
+              );
       } catch (error) {
         const failure = appError(error);
         if (isCurrent()) {
-          identity.state.set({ data: undefined, error: failure, status: "error" });
+          identity.state.set({
+            data: undefined,
+            error: failure,
+            status: "error",
+          });
           settings.onError?.(failure, args);
         }
         store.onError(failure);
@@ -171,13 +210,13 @@ function useCall<K extends "mutation" | "action", I, O>(
       }
       return data;
     },
-    [identity, kind, store, name],
+    [identity, kind, store, name]
   );
   const run = useCallback(
     (...args: InputArguments<I>) => {
       void runAsync(...args).catch(() => {});
     },
-    [runAsync],
+    [runAsync]
   );
   const reset = useCallback(() => {
     current.current.sequence += 1;
@@ -185,9 +224,9 @@ function useCall<K extends "mutation" | "action", I, O>(
   }, [identity]);
   return {
     ...state,
+    isError: state.status === "error",
     isPending: state.status === "pending",
     isSuccess: state.status === "success",
-    isError: state.status === "error",
     reset,
     run,
     runAsync,
@@ -201,7 +240,7 @@ export interface MutationResult<I, O> extends CallState<O> {
 
 export function useMutation<I, O>(
   ref: Reference<"mutation", I, O>,
-  options: CallOptions<I, O> = {},
+  options: CallOptions<I, O> = {}
 ): MutationResult<I, O> {
   const { run, runAsync, ...state } = useCall("mutation", ref, options);
   return { ...state, mutate: run, mutateAsync: runAsync };
@@ -214,7 +253,7 @@ export interface ActionResult<I, O> extends CallState<O> {
 
 export function useAction<I, O>(
   ref: Reference<"action", I, O>,
-  options: CallOptions<I, O> = {},
+  options: CallOptions<I, O> = {}
 ): ActionResult<I, O> {
   const { run, runAsync, ...state } = useCall("action", ref, options);
   return { ...state, execute: run, executeAsync: runAsync };

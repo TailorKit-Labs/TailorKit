@@ -12,7 +12,9 @@ export function normalizeBaseUrl(baseUrl: string | URL) {
     url.search ||
     url.hash
   ) {
-    throw new Error("baseUrl must be HTTP(S) without credentials, query parameters or a fragment");
+    throw new Error(
+      "baseUrl must be HTTP(S) without credentials, query parameters or a fragment"
+    );
   }
   return {
     basePath: url.pathname.replace(/\/+$/u, ""),

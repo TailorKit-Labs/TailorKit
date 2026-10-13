@@ -28,7 +28,11 @@ function toFetchBody(body: StorageBody): FetchBody {
 
 export async function uploadToUrl(input: UploadToUrlInput): Promise<void> {
   const size = getBodySize(input.body);
-  if (input.maxBytes !== undefined && size !== undefined && size > input.maxBytes) {
+  if (
+    input.maxBytes !== undefined &&
+    size !== undefined &&
+    size > input.maxBytes
+  ) {
     throw new Error(`Upload body exceeds ${input.maxBytes} bytes.`);
   }
 
@@ -44,6 +48,8 @@ export async function uploadToUrl(input: UploadToUrlInput): Promise<void> {
   });
 
   if (!response.ok) {
-    throw new Error(`Upload failed with ${response.status} ${response.statusText}.`);
+    throw new Error(
+      `Upload failed with ${response.status} ${response.statusText}.`
+    );
   }
 }

@@ -1,6 +1,13 @@
-import IORedis from "ioredis";
 import { withSpan } from "@tailorkit/observability";
-import type { GetOptions, KV, MessageHandler, SetOptions, Unsubscribe } from "./types.js";
+import IORedis from "ioredis";
+
+import type {
+  GetOptions,
+  KV,
+  MessageHandler,
+  SetOptions,
+  Unsubscribe,
+} from "./types.js";
 import { withTimeout } from "./with-timeout.js";
 
 const INCREMENT_WITH_TTL_SCRIPT = `
@@ -60,7 +67,7 @@ return 1
 async function subscribe(
   redis: IORedis,
   channel: string,
-  handler: MessageHandler,
+  handler: MessageHandler
 ): Promise<Unsubscribe> {
   // Redis connections in subscriber mode cannot execute ordinary commands.
   // Keep the KV client's command connection separate from each subscription.
@@ -92,18 +99,6 @@ export function createRedisKV(url: string): KV<"redis"> {
   const redis = new IORedis(url);
 
   return {
-    type: "redis",
-    engine: redis,
-    get: (key, options?: GetOptions) =>
-      withSpan("kv.get", { attributes: { "tailorkit.package": "kv", "kv.type": "redis" } }, () =>
-        withTimeout(redis.get(key), options?.timeout),
-      ),
-    getAndDelete: (key) =>
-      withSpan(
-        "kv.get_and_delete",
-        { attributes: { "tailorkit.package": "kv", "kv.type": "redis" } },
-        () => redis.getdel(key),
-      ),
     claimUpload: (ownerKey, endedKey, expectedOwner, newOwner, ttl) =>
       withSpan(
         "kv.claim_upload",
@@ -121,52 +116,31 @@ export function createRedisKV(url: string): KV<"redis"> {
                 endedKey,
                 expectedOwner ?? "",
                 newOwner,
-                ttl,
-              ),
+                ttl
+              )
             ) === 1
           );
-        },
+        }
       ),
-    setPreviewPresenceIfActive: (presenceKey, seenKey, endedKey, value, presenceTtl, seenTtl) =>
-      withSpan(
-        "kv.set_preview_presence_if_active",
+    delete: async (key) => {
+      await withSpan(
+        "kv.delete",
         { attributes: { "tailorkit.package": "kv", "kv.type": "redis" } },
-        async () =>
-          Number(
-            await redis.eval(
-              SET_PREVIEW_PRESENCE_IF_ACTIVE_SCRIPT,
-              3,
-              presenceKey,
-              seenKey,
-              endedKey,
-              value,
-              presenceTtl,
-              seenTtl,
-            ),
-          ) === 1,
+        () => redis.del(key)
+      );
+    },
+    engine: redis,
+    get: (key, options?: GetOptions) =>
+      withSpan(
+        "kv.get",
+        { attributes: { "tailorkit.package": "kv", "kv.type": "redis" } },
+        () => withTimeout(redis.get(key), options?.timeout)
       ),
-    keepPreviewSessionIfDeveloperPresent: (
-      presenceKey,
-      seenKey,
-      endedKey,
-      endedTtl,
-      expireUnseen,
-    ) =>
+    getAndDelete: (key) =>
       withSpan(
-        "kv.keep_preview_session_if_developer_present",
+        "kv.get_and_delete",
         { attributes: { "tailorkit.package": "kv", "kv.type": "redis" } },
-        async () =>
-          Number(
-            await redis.eval(
-              KEEP_PREVIEW_SESSION_IF_DEVELOPER_PRESENT_SCRIPT,
-              3,
-              presenceKey,
-              seenKey,
-              endedKey,
-              endedTtl,
-              expireUnseen ? "1" : "0",
-            ),
-          ) === 1,
+        () => redis.getdel(key)
       ),
     increment: (key, ttl) =>
       withSpan(
@@ -180,11 +154,84 @@ export function createRedisKV(url: string): KV<"redis"> {
         },
         async () => {
           if (!Number.isInteger(ttl) || ttl <= 0) {
-            throw new TypeError("Redis increment TTL must be a positive integer");
+            throw new TypeError(
+              "Redis increment TTL must be a positive integer"
+            );
           }
 
-          return Number(await redis.eval(INCREMENT_WITH_TTL_SCRIPT, 1, key, ttl));
-        },
+          return Number(
+            await redis.eval(INCREMENT_WITH_TTL_SCRIPT, 1, key, ttl)
+          );
+        }
+      ),
+    keepPreviewSessionIfDeveloperPresent: (
+      presenceKey,
+      seenKey,
+      endedKey,
+      endedTtl,
+      expireUnseen
+    ) =>
+      withSpan(
+        "kv.keep_preview_session_if_developer_present",
+        { attributes: { "tailorkit.package": "kv", "kv.type": "redis" } },
+        async () =>
+          Number(
+            await redis.eval(
+              KEEP_PREVIEW_SESSION_IF_DEVELOPER_PRESENT_SCRIPT,
+              3,
+              presenceKey,
+              seenKey,
+              endedKey,
+              endedTtl,
+              expireUnseen ? "1" : "0"
+            )
+          ) === 1
+      ),
+    promoteIfOwnerAndNewer: (
+      pointerKey,
+      ownerKey,
+      endedKey,
+      expectedOwner,
+      value,
+      revision,
+      ttl
+    ) =>
+      withSpan(
+        "kv.promote_if_owner_and_newer",
+        { attributes: { "tailorkit.package": "kv", "kv.type": "redis" } },
+        async () => {
+          if (
+            !Number.isSafeInteger(revision) ||
+            revision <= 0 ||
+            !Number.isInteger(ttl) ||
+            ttl <= 0
+          ) {
+            throw new TypeError(
+              "KV revision and TTL must be positive integers."
+            );
+          }
+          return (
+            Number(
+              await redis.eval(
+                PROMOTE_IF_OWNER_AND_NEWER_SCRIPT,
+                3,
+                pointerKey,
+                ownerKey,
+                endedKey,
+                expectedOwner,
+                revision,
+                value,
+                ttl
+              )
+            ) === 1
+          );
+        }
+      ),
+    publish: (channel, message) =>
+      withSpan(
+        "kv.publish",
+        { attributes: { "tailorkit.package": "kv", "kv.type": "redis" } },
+        () => redis.publish(channel, message)
       ),
     set: async (key, value, options?: SetOptions) => {
       if (options?.ttl) {
@@ -198,64 +245,47 @@ export function createRedisKV(url: string): KV<"redis"> {
               "kv.ttl_seconds": ttl,
             },
           },
-          () => redis.setex(key, ttl, value),
+          () => redis.setex(key, ttl, value)
         );
       } else {
         await withSpan(
           "kv.set",
           { attributes: { "tailorkit.package": "kv", "kv.type": "redis" } },
-          () => redis.set(key, value),
+          () => redis.set(key, value)
         );
       }
     },
-    promoteIfOwnerAndNewer: (pointerKey, ownerKey, endedKey, expectedOwner, value, revision, ttl) =>
+    setPreviewPresenceIfActive: (
+      presenceKey,
+      seenKey,
+      endedKey,
+      value,
+      presenceTtl,
+      seenTtl
+    ) =>
       withSpan(
-        "kv.promote_if_owner_and_newer",
+        "kv.set_preview_presence_if_active",
         { attributes: { "tailorkit.package": "kv", "kv.type": "redis" } },
-        async () => {
-          if (
-            !Number.isSafeInteger(revision) ||
-            revision <= 0 ||
-            !Number.isInteger(ttl) ||
-            ttl <= 0
-          ) {
-            throw new TypeError("KV revision and TTL must be positive integers.");
-          }
-          return (
-            Number(
-              await redis.eval(
-                PROMOTE_IF_OWNER_AND_NEWER_SCRIPT,
-                3,
-                pointerKey,
-                ownerKey,
-                endedKey,
-                expectedOwner,
-                revision,
-                value,
-                ttl,
-              ),
-            ) === 1
-          );
-        },
-      ),
-    delete: async (key) => {
-      await withSpan(
-        "kv.delete",
-        { attributes: { "tailorkit.package": "kv", "kv.type": "redis" } },
-        () => redis.del(key),
-      );
-    },
-    publish: (channel, message) =>
-      withSpan(
-        "kv.publish",
-        { attributes: { "tailorkit.package": "kv", "kv.type": "redis" } },
-        () => redis.publish(channel, message),
+        async () =>
+          Number(
+            await redis.eval(
+              SET_PREVIEW_PRESENCE_IF_ACTIVE_SCRIPT,
+              3,
+              presenceKey,
+              seenKey,
+              endedKey,
+              value,
+              presenceTtl,
+              seenTtl
+            )
+          ) === 1
       ),
     subscribe: (channel, handler) =>
       withSpan(
         "kv.subscribe",
         { attributes: { "tailorkit.package": "kv", "kv.type": "redis" } },
-        () => subscribe(redis, channel, handler),
+        () => subscribe(redis, channel, handler)
       ),
+    type: "redis",
   };
 }

@@ -1,11 +1,12 @@
 import { Effect } from "effect";
+
 import type { LogoContentType } from "./logo-validation";
 
 const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const publicId = "[0-9a-z]{10}(?:[0-9a-z]{2})?";
 const deploymentAssetPath = new RegExp(
   `^/p/(${uuid})/a/(${publicId})/d/(${publicId})/(?:client/(client\\.js)|logos/([a-f0-9]{64}\\.(?:svg|png|webp)))$`,
-  "u",
+  "u"
 );
 const teamIdPattern = /^[a-z0-9][a-z0-9-]{12}[a-z0-9]$/u;
 const nodeAssetPath = /^\/api\/assets\/t\/([^/]+)(\/p\/.*)$/u;
@@ -23,7 +24,9 @@ export interface AssetIdentity {
   contentType: "application/javascript" | LogoContentType;
 }
 
-const getAssetContentType = (filename: string): AssetIdentity["contentType"] => {
+const getAssetContentType = (
+  filename: string
+): AssetIdentity["contentType"] => {
   if (filename.endsWith(".svg")) {
     return "image/svg+xml";
   }
@@ -36,42 +39,57 @@ const getAssetContentType = (filename: string): AssetIdentity["contentType"] => 
   return "application/javascript";
 };
 
-function createIdentity(publicTeamId: string, pathname: string): AssetIdentity | undefined {
+function createIdentity(
+  publicTeamId: string,
+  pathname: string
+): AssetIdentity | undefined {
   if (!teamIdPattern.test(publicTeamId)) {
     return;
   }
 
   const match = deploymentAssetPath.exec(pathname);
-  if (!match) return;
-  const [, projectId, appId, deploymentId, clientFilename, logoFilename] = match;
+  if (!match) {
+    return;
+  }
+  const [, projectId, appId, deploymentId, clientFilename, logoFilename] =
+    match;
   const filename = clientFilename ?? logoFilename;
-  if (!projectId || !appId || !deploymentId || !filename) return;
+  if (!projectId || !appId || !deploymentId || !filename) {
+    return;
+  }
   const appKey = `teams/${publicTeamId}/projects/${projectId}/apps/${appId}`;
   return {
     appId,
+    contentType: getAssetContentType(filename),
     deploymentId,
     key: clientFilename
       ? `${appKey}/deployments/${deploymentId}/client/${filename}`
       : `${appKey}/logos/${filename}`,
     projectId,
     publicTeamId,
-    contentType: getAssetContentType(filename),
   };
 }
 
 export function parseHostedAssetRequest(
   request: Request,
-  assetDomain: string,
+  assetDomain: string
 ): AssetIdentity | undefined {
   const url = new URL(request.url);
   const suffix = `.${assetDomain}`;
-  if (url.protocol !== "https:" || url.port || url.search || !url.hostname.endsWith(suffix)) {
+  if (
+    url.protocol !== "https:" ||
+    url.port ||
+    url.search ||
+    !url.hostname.endsWith(suffix)
+  ) {
     return;
   }
   return createIdentity(url.hostname.slice(0, -suffix.length), url.pathname);
 }
 
-export function parseNodeAssetRequest(request: Request): AssetIdentity | undefined {
+export function parseNodeAssetRequest(
+  request: Request
+): AssetIdentity | undefined {
   const url = new URL(request.url);
   if (url.search) {
     return;
@@ -97,19 +115,22 @@ export function isValidAssetSize(size: number | undefined): size is number {
 
 export function assetFailure(status: number): Response {
   return new Response(null, {
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Cache-Control": "no-store",
+    },
     status,
-    headers: { "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" },
   });
 }
 
 export function assetPreflight(): Response {
   return new Response(null, {
-    status: 204,
     headers: {
       "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
       "Access-Control-Allow-Origin": "*",
       "Cache-Control": "no-store",
     },
+    status: 204,
   });
 }
 
@@ -125,7 +146,8 @@ export function assetHeaders(input: {
     "Content-Length": String(input.contentLength),
     "Content-Security-Policy": "default-src 'none'; sandbox",
     "Content-Type":
-      input.contentType === "application/javascript" || input.contentType === undefined
+      input.contentType === "application/javascript" ||
+      input.contentType === undefined
         ? "application/javascript; charset=utf-8"
         : input.contentType,
     "Cross-Origin-Resource-Policy": "cross-origin",
@@ -143,35 +165,64 @@ export function assetHeaders(input: {
 }
 
 /** Hosted app routes use public team/app IDs and the canonical project UUID. */
-const hostedAppPath = new RegExp(`^/p/(${uuid})/a/(${publicId})(/rpc(?:/.*)?)$`, "u");
-const publicationPath = new RegExp(`^/p/(${uuid})/a/(${publicId})/new-deployment$`, "u");
+const hostedAppPath = new RegExp(
+  `^/p/(${uuid})/a/(${publicId})(/rpc(?:/.*)?)$`,
+  "u"
+);
+const publicationPath = new RegExp(
+  `^/p/(${uuid})/a/(${publicId})/new-deployment$`,
+  "u"
+);
 
 export function parseHostedAppRoute(request: Request, assetDomain: string) {
   const url = new URL(request.url);
   const suffix = `.${assetDomain}`;
   const local =
-    url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
-  if (!local && (url.protocol !== "https:" || url.port || !url.hostname.endsWith(suffix))) return;
-  const publicTeamId = local ? undefined : url.hostname.slice(0, -suffix.length);
-  if (!local && (!publicTeamId || !teamIdPattern.test(publicTeamId))) return;
+    url.protocol === "http:" &&
+    ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+  if (
+    !local &&
+    (url.protocol !== "https:" || url.port || !url.hostname.endsWith(suffix))
+  ) {
+    return;
+  }
+  const publicTeamId = local
+    ? undefined
+    : url.hostname.slice(0, -suffix.length);
+  if (!local && (!publicTeamId || !teamIdPattern.test(publicTeamId))) {
+    return;
+  }
   const match = hostedAppPath.exec(url.pathname);
-  if (!match) return;
-  return { publicTeamId, projectId: match[1]!, appPublicId: match[2]!, rpcPath: match[3]! };
+  if (!match) {
+    return;
+  }
+  return {
+    appPublicId: match[2]!,
+    projectId: match[1]!,
+    publicTeamId,
+    rpcPath: match[3]!,
+  };
 }
 
 /** Publication uses the reserved internal hostname, never a tenant hostname. */
-export function parseDeploymentPublicationRoute(request: Request, assetDomain: string) {
+export function parseDeploymentPublicationRoute(
+  request: Request,
+  assetDomain: string
+) {
   const url = new URL(request.url);
   if (
     url.protocol !== "https:" ||
     url.port ||
     url.search ||
     url.hostname !== `internal.${assetDomain}`
-  )
+  ) {
     return;
+  }
   const match = publicationPath.exec(url.pathname);
-  if (!match) return;
-  return { projectId: match[1]!, appPublicId: match[2]! };
+  if (!match) {
+    return;
+  }
+  return { appPublicId: match[2]!, projectId: match[1]! };
 }
 
 export class AssetDeliveryError extends Error {
@@ -182,7 +233,9 @@ export class AssetDeliveryError extends Error {
 }
 
 /** Bound decoded bytes, including objects that have not passed publication checks. */
-export function limitAssetBody(body: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
+export function limitAssetBody(
+  body: ReadableStream<Uint8Array>
+): ReadableStream<Uint8Array> {
   let contentLength = 0;
   return body.pipeThrough(
     new TransformStream<Uint8Array, Uint8Array>({
@@ -194,7 +247,7 @@ export function limitAssetBody(body: ReadableStream<Uint8Array>): ReadableStream
         }
         controller.enqueue(chunk);
       },
-    }),
+    })
   );
 }
 
@@ -204,7 +257,9 @@ export function hostedAssetRequest(request: Request, assetDomain: string) {
       return yield* Effect.fail(new AssetDeliveryError(400));
     }
     const identity = parseHostedAssetRequest(request, assetDomain);
-    if (!identity) return yield* Effect.fail(new AssetDeliveryError(404));
+    if (!identity) {
+      return yield* Effect.fail(new AssetDeliveryError(404));
+    }
     return identity;
   });
 }
@@ -212,14 +267,18 @@ export function hostedAssetRequest(request: Request, assetDomain: string) {
 export function nodeAssetRequest(request: Request) {
   return Effect.gen(function* () {
     const identity = parseNodeAssetRequest(request);
-    if (!identity) return yield* Effect.fail(new AssetDeliveryError(404));
+    if (!identity) {
+      return yield* Effect.fail(new AssetDeliveryError(404));
+    }
     return identity;
   });
 }
 
 export function assetSize(size: number | undefined) {
   return Effect.gen(function* () {
-    if (!isValidAssetSize(size)) return yield* Effect.fail(new AssetDeliveryError(404));
+    if (!isValidAssetSize(size)) {
+      return yield* Effect.fail(new AssetDeliveryError(404));
+    }
     return size;
   });
 }
@@ -230,12 +289,16 @@ export function serveAssetRequest(
   options: {
     identity: Effect.Effect<AssetIdentity, AssetDeliveryError>;
     load(identity: AssetIdentity): Effect.Effect<Response, AssetDeliveryError>;
-  },
+  }
 ): Effect.Effect<Response, AssetDeliveryError> {
   return Effect.gen(function* () {
     const identity = yield* options.identity;
-    if (!isAssetMethod(request.method)) return yield* Effect.fail(new AssetDeliveryError(405));
-    if (request.method === "OPTIONS") return assetPreflight();
+    if (!isAssetMethod(request.method)) {
+      return yield* Effect.fail(new AssetDeliveryError(405));
+    }
+    if (request.method === "OPTIONS") {
+      return assetPreflight();
+    }
     return yield* options.load(identity);
   });
 }
@@ -243,15 +306,17 @@ export function serveAssetRequest(
 /** Storage details stay in trusted infrastructure; public failures expose only a status. */
 export function assetResponse(
   program: Effect.Effect<Response, AssetDeliveryError>,
-  onUnavailable?: () => void,
+  onUnavailable?: () => void
 ): Effect.Effect<Response> {
   return program.pipe(
     Effect.catch((error) =>
       Effect.sync(() => {
-        if (error.status === 503) onUnavailable?.();
+        if (error.status === 503) {
+          onUnavailable?.();
+        }
         return assetFailure(error.status);
-      }),
-    ),
+      })
+    )
   );
 }
 
@@ -262,10 +327,15 @@ export function acceptsGzip(request: Request): boolean {
     .split(",")
     .map((entry) => {
       const [name, ...parameters] = entry.split(";").map((part) => part.trim());
-      const quality = parameters.find((parameter) => parameter.startsWith("q="));
+      const quality = parameters.find((parameter) =>
+        parameter.startsWith("q=")
+      );
       return { name, quality: quality ? Number(quality.slice(2)) : 1 };
     });
   const encoding =
-    encodings.find(({ name }) => name === "gzip") ?? encodings.find(({ name }) => name === "*");
-  return encoding !== undefined && encoding.quality > 0 && encoding.quality <= 1;
+    encodings.find(({ name }) => name === "gzip") ??
+    encodings.find(({ name }) => name === "*");
+  return (
+    encoding !== undefined && encoding.quality > 0 && encoding.quality <= 1
+  );
 }

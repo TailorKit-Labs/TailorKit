@@ -16,11 +16,8 @@ it("keeps the app wrapper mounted across view changes and cleans it up on unmoun
   const mount = vi.fn();
   const cleanup = vi.fn();
   const client = createFileClient({
-    roots: [],
     layouts: [],
-    views: [],
     root: {
-      filename: "src/root.tsx",
       definition: defineRoute({
         shellComponent: ({ children }) => {
           useEffect(() => {
@@ -30,7 +27,10 @@ it("keeps the app wrapper mounted across view changes and cleans it up on unmoun
           return h(Context.Provider, { value: "shared" }, children);
         },
       }),
+      filename: "src/root.tsx",
     },
+    roots: [],
+    views: [],
   });
   function First() {
     return h("div", {}, `First: ${useContext(Context)}`);

@@ -1,5 +1,5 @@
-import type { Identity } from "../server/functions";
 import { AppError } from "../errors";
+import type { Identity } from "../server/functions";
 
 const APP_SESSION_RENEWAL_MS = 60_000;
 
@@ -14,7 +14,9 @@ export interface Session {
 
 function freezeIdentity<T>(value: T): T {
   if (value && typeof value === "object" && !Object.isFrozen(value)) {
-    for (const child of Object.values(value)) freezeIdentity(child);
+    for (const child of Object.values(value)) {
+      freezeIdentity(child);
+    }
     Object.freeze(value);
   }
   return value;
@@ -37,23 +39,33 @@ export function createSessionProvider(options: {
   let cached: Session | undefined;
   let pending: Promise<Session> | undefined;
   return (input: { refresh: boolean }): Promise<Session> => {
-    if (!input.refresh && cached && cached.expiresAt > Date.now() + APP_SESSION_RENEWAL_MS) {
+    if (
+      !input.refresh &&
+      cached &&
+      cached.expiresAt > Date.now() + APP_SESSION_RENEWAL_MS
+    ) {
       return Promise.resolve(cached);
     }
     pending ??= (async () => {
-      const response = await (options.fetch ?? fetch)(new URL("backend/session", base), {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ appId: options.appId }),
-      }).catch(() => {
-        throw new AppError("UNAVAILABLE", "Unable to reach the app session provider");
+      const response = await (options.fetch ?? fetch)(
+        new URL("backend/session", base),
+        {
+          body: JSON.stringify({ appId: options.appId }),
+          credentials: "same-origin",
+          headers: { "content-type": "application/json" },
+          method: "POST",
+        }
+      ).catch(() => {
+        throw new AppError(
+          "UNAVAILABLE",
+          "Unable to reach the app session provider"
+        );
       });
       if (!response.ok) {
         const code = response.status === 403 ? "FORBIDDEN" : "UNAVAILABLE";
         throw new AppError(
           response.status === 401 ? "UNAUTHORIZED" : code,
-          "Unable to authorize the app backend",
+          "Unable to authorize the app backend"
         );
       }
       const value = (await response.json()) as Partial<Session>;
@@ -65,12 +77,16 @@ export function createSessionProvider(options: {
         throw new AppError("UNAVAILABLE", "Invalid app session");
       }
       cached = {
-        ...(value.toolUrl !== undefined ? { toolUrl: value.toolUrl } : {}),
-        ...(value.identity !== undefined ? { identity: freezeIdentity(value.identity) } : {}),
-        token: value.token,
+        ...(value.toolUrl === undefined ? {} : { toolUrl: value.toolUrl }),
+        ...(value.identity === undefined
+          ? {}
+          : { identity: freezeIdentity(value.identity) }),
         expiresAt: value.expiresAt,
+        token: value.token,
         url: value.url,
-        ...(value.subjectId !== undefined ? { subjectId: value.subjectId } : {}),
+        ...(value.subjectId === undefined
+          ? {}
+          : { subjectId: value.subjectId }),
       };
       return cached;
     })().finally(() => {

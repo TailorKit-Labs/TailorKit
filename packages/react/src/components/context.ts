@@ -8,19 +8,23 @@ export interface TailorkitContextValue {
   client: TailorKitClientConfig;
 }
 
-export const TailorkitContext = createContext<TailorkitContextValue | null>(null);
+export const TailorkitContext = createContext<TailorkitContextValue | null>(
+  null
+);
 
 export function useTailorkitContext(
   component: string,
-  expectedClient?: TailorKitClientConfig,
+  expectedClient?: TailorKitClientConfig
 ): TailorkitContextValue {
   const context = useContext(TailorkitContext);
   if (!context) {
-    throw new Error(`${component} must be rendered inside a TailorKit Provider.`);
+    throw new Error(
+      `${component} must be rendered inside a TailorKit Provider.`
+    );
   }
   if (expectedClient && context.client !== expectedClient) {
     throw new Error(
-      `${component} was created for a different TailorKit client than the surrounding Provider.`,
+      `${component} was created for a different TailorKit client than the surrounding Provider.`
     );
   }
   return context;

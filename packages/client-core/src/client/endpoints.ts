@@ -1,9 +1,16 @@
-import type { TailorKitContract, ToolImplementations } from "@tailorkit/core/schema";
-import { flattenTools, validateToolValue } from "@tailorkit/core/schema";
-import type { ToolBridge } from "@tailorkit/app/client";
-import { createClient, createSessionProvider, reference } from "@tailorkit/app/client/connection";
-import type { ViewInstance } from "@tailorkit/app/client";
+import type { ToolBridge, ViewInstance } from "@tailorkit/app/client";
+import {
+  createClient,
+  createSessionProvider,
+  reference,
+} from "@tailorkit/app/client/connection";
 import { previewMetadataSchema } from "@tailorkit/client-platform/preview";
+import type {
+  TailorKitContract,
+  ToolImplementations,
+} from "@tailorkit/core/schema";
+import { flattenTools, validateToolValue } from "@tailorkit/core/schema";
+
 import type { TailorKitApp } from "../types";
 import { toBaseUrl } from "./url";
 
@@ -13,10 +20,11 @@ export interface SlotInstancesInput {
   context: Record<string, unknown>;
 }
 
-const resolveInstances = reference<"action", SlotInstancesInput, ViewInstance[]>(
-  "_tailorkit.instances.resolve",
+const resolveInstances = reference<
   "action",
-);
+  SlotInstancesInput,
+  ViewInstance[]
+>("_tailorkit.instances.resolve", "action");
 
 /** Endpoint transport owns no response stores. */
 export function createEndpointClient(options: {
@@ -26,7 +34,8 @@ export function createEndpointClient(options: {
   tools?: ToolImplementations<TailorKitContract["tools"], "client">;
 }) {
   const baseUrl = toBaseUrl(options.baseUrl);
-  const request: typeof fetch = (input, init) => (options.fetch ?? globalThis.fetch)(input, init);
+  const request: typeof fetch = (input, init) =>
+    (options.fetch ?? globalThis.fetch)(input, init);
   type SessionProvider = ReturnType<typeof createSessionProvider>;
   interface SessionEntry {
     key: string | undefined;
@@ -34,17 +43,22 @@ export function createEndpointClient(options: {
     provider: SessionProvider;
   }
   let generation = 0;
-  const toolBridges = new Map<string, { bridge: ToolBridge; app: TailorKitApp }>();
+  const toolBridges = new Map<
+    string,
+    { bridge: ToolBridge; app: TailorKitApp }
+  >();
   const declarations = flattenTools(options.contract?.tools ?? {});
   const sessions = new Map<string, SessionEntry>();
   const clearSessions = () => {
     generation++;
-    for (const entry of sessions.values()) entry.session = undefined;
+    for (const entry of sessions.values()) {
+      entry.session = undefined;
+    }
     sessions.clear();
   };
   const createSessionEntry = (appId: string, key?: string): SessionEntry => ({
     key,
-    session: createSessionProvider({ baseUrl, appId, fetch: request }),
+    session: createSessionProvider({ appId, baseUrl, fetch: request }),
     // Mounted consumers keep this wrapper, so resolve the current provider on every call.
     provider: async (input) => {
       let current = sessions.get(appId);
@@ -61,11 +75,18 @@ export function createEndpointClient(options: {
     },
   });
   const getSessionProvider = (app: TailorKitApp) => {
-    const key = JSON.stringify([app.currentDeployment?.id, app.preview?.sessionId]);
+    const key = JSON.stringify([
+      app.currentDeployment?.id,
+      app.preview?.sessionId,
+    ]);
     let entry = sessions.get(app.id);
-    if (entry && entry.key === undefined) entry.key = key;
+    if (entry && entry.key === undefined) {
+      entry.key = key;
+    }
     if (!entry || entry.key !== key) {
-      if (entry) entry.session = undefined;
+      if (entry) {
+        entry.session = undefined;
+      }
       entry = createSessionEntry(app.id, key);
       sessions.set(app.id, entry);
     }
@@ -79,27 +100,29 @@ export function createEndpointClient(options: {
     }
     const session = async (path: string) => {
       const admitted = generation;
-      if (!declarations.has(path)) throw new Error("Tool not declared");
-      const result = await getSessionProvider(toolBridges.get(app.id)?.app ?? app)({
+      if (!declarations.has(path)) {
+        throw new Error("Tool not declared");
+      }
+      const result = await getSessionProvider(
+        toolBridges.get(app.id)?.app ?? app
+      )({
         refresh: false,
       });
-      if (admitted !== generation) throw new Error("Tool identity changed");
+      if (admitted !== generation) {
+        throw new Error("Tool identity changed");
+      }
       if (
         typeof result.token !== "string" ||
         typeof result.toolUrl !== "string" ||
         !Number.isFinite(result.expiresAt) ||
         result.expiresAt <= Date.now() ||
         result.identity?.installationId !== app.id
-      )
+      ) {
         throw new Error("Invalid tool session");
+      }
       return { ...result, identity: result.identity, url: result.toolUrl };
     };
     const bridge: ToolBridge = {
-      session: (path) => {
-        if (declarations.get(path)?.kind !== "server")
-          return Promise.reject(new Error("Not a server tool"));
-        return session(path);
-      },
       async client(path, input) {
         const admitted = generation;
         const leaf = declarations.get(path);
@@ -114,7 +137,8 @@ export function createEndpointClient(options: {
             throw new Error("Missing client tool");
           implementation = (implementation as Record<string, unknown>)[part];
         }
-        if (typeof implementation !== "function") throw new Error("Missing client tool");
+        if (typeof implementation !== "function")
+          throw new Error("Missing client tool");
         const value = await validateToolValue(leaf.definition.input, input);
         const credential = await session(path);
         const output = await implementation({
@@ -129,25 +153,52 @@ export function createEndpointClient(options: {
         if (admitted !== generation) throw new Error("Tool identity changed");
         return result;
       },
+      session: (path) => {
+        if (declarations.get(path)?.kind !== "server")
+          return Promise.reject(new Error("Not a server tool"));
+        return session(path);
+      },
     };
-    toolBridges.set(app.id, { bridge, app });
+    toolBridges.set(app.id, { app, bridge });
     return bridge;
   };
   return {
-    baseUrl,
-    getToolBridge,
     async apps(signal: AbortSignal): Promise<TailorKitApp[]> {
       const response = await request(new URL("apps", baseUrl), {
         signal,
         credentials: "same-origin",
       });
       if (!response.ok)
-        throw new Error(`Unable to fetch TailorKit apps from ${baseUrl.toString()}.`);
+        throw new Error(
+          `Unable to fetch TailorKit apps from ${baseUrl.toString()}.`
+        );
       return (await response.json()) as TailorKitApp[];
     },
-    async slotInstances(app: TailorKitApp, input: SlotInstancesInput, signal: AbortSignal) {
+    baseUrl,
+    clearSessions,
+    getSessionProvider,
+    getToolBridge,
+    async previewMetadata(
+      sessionId: string
+    ): Promise<NonNullable<TailorKitApp["preview"]> | null> {
+      const url = new URL("preview/metadata", baseUrl);
+      url.searchParams.set("sessionId", sessionId);
+      const response = await request(url, { credentials: "same-origin" });
+      if (response.status === 404) return null;
+      if (!response.ok)
+        throw new Error("Unable to refresh TailorKit preview metadata.");
+      return previewMetadataSchema.parse(await response.json());
+    },
+    async slotInstances(
+      app: TailorKitApp,
+      input: SlotInstancesInput,
+      signal: AbortSignal
+    ) {
       signal.throwIfAborted();
-      const backend = createClient({ getSession: getSessionProvider(app), fetch: request });
+      const backend = createClient({
+        getSession: getSessionProvider(app),
+        fetch: request,
+      });
       const abort = () => backend.close();
       signal.addEventListener("abort", abort, { once: true });
       try {
@@ -157,16 +208,6 @@ export function createEndpointClient(options: {
         backend.close();
       }
     },
-    async previewMetadata(sessionId: string): Promise<NonNullable<TailorKitApp["preview"]> | null> {
-      const url = new URL("preview/metadata", baseUrl);
-      url.searchParams.set("sessionId", sessionId);
-      const response = await request(url, { credentials: "same-origin" });
-      if (response.status === 404) return null;
-      if (!response.ok) throw new Error("Unable to refresh TailorKit preview metadata.");
-      return previewMetadataSchema.parse(await response.json());
-    },
-    getSessionProvider,
-    clearSessions,
   };
 }
 

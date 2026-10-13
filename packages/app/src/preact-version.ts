@@ -18,12 +18,14 @@ export const parsePreactVersion = (version: string): PreactVersionCheck => {
   };
 };
 
-export const assertSupportedPreactVersion = (version: string): PreactVersionCheck => {
+export const assertSupportedPreactVersion = (
+  version: string
+): PreactVersionCheck => {
   const check = parsePreactVersion(version);
 
   if (check.major < MINIMUM_PREACT_MAJOR_VERSION) {
     throw new Error(
-      `TailorKit requires Preact ${MINIMUM_PREACT_MAJOR_VERSION}.0.0 or newer, but found ${version}.`,
+      `TailorKit requires Preact ${MINIMUM_PREACT_MAJOR_VERSION}.0.0 or newer, but found ${version}.`
     );
   }
 

@@ -1,12 +1,11 @@
 import { createHash } from "node:crypto";
+
 import {
   scopeSchema as namedScopeSchema,
   scopeValueSchema,
   scopesSchema,
-  type JsonObject,
-  type JsonValue,
-  type Scope,
 } from "@tailorkit/db/schema/scope";
+import type { JsonObject, JsonValue, Scope } from "@tailorkit/db/schema/scope";
 
 export const scopeSchema = namedScopeSchema;
 export { scopeValueSchema, scopesSchema };
@@ -25,21 +24,27 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
     value === null ||
     typeof value !== "object" ||
     Array.isArray(value) ||
-    (Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null)
+    (Object.getPrototypeOf(value) !== Object.prototype &&
+      Object.getPrototypeOf(value) !== null)
   ) {
     return false;
   }
   return true;
 }
 
-function validateOwnDataProperties(value: object, keys: readonly PropertyKey[]) {
+function validateOwnDataProperties(
+  value: object,
+  keys: readonly PropertyKey[]
+) {
   for (const key of keys) {
     if (typeof key !== "string") {
       throw new TypeError("Scope values cannot contain symbol keys.");
     }
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
     if (!descriptor || !("value" in descriptor) || !descriptor.enumerable) {
-      throw new TypeError("Scope values must use enumerable own data properties.");
+      throw new TypeError(
+        "Scope values must use enumerable own data properties."
+      );
     }
   }
 }
@@ -47,7 +52,7 @@ function validateOwnDataProperties(value: object, keys: readonly PropertyKey[]) 
 function canonicalizeJsonValue(
   value: unknown,
   state: { active: WeakSet<object>; nodes: number },
-  depth: number,
+  depth: number
 ): JsonValue {
   state.nodes += 1;
   if (state.nodes > maxNodes) {
@@ -85,26 +90,36 @@ function canonicalizeJsonValue(
   state.active.add(value);
   if (Array.isArray(value)) {
     if (Object.getPrototypeOf(value) !== Array.prototype) {
-      throw new TypeError("Scope arrays must use the standard array prototype.");
+      throw new TypeError(
+        "Scope arrays must use the standard array prototype."
+      );
     }
     if (value.length > maxArrayEntries) {
       throw new TypeError("Scope arrays cannot contain more than 100 entries.");
     }
     const ownKeys = Reflect.ownKeys(value);
     if (ownKeys.length !== value.length + 1 || !ownKeys.includes("length")) {
-      throw new TypeError("Scope arrays must be dense and cannot have extra properties.");
+      throw new TypeError(
+        "Scope arrays must be dense and cannot have extra properties."
+      );
     }
     validateOwnDataProperties(
       value,
-      ownKeys.filter((key): key is string => key !== "length"),
+      ownKeys.filter((key): key is string => key !== "length")
     );
     const canonical: JsonValue[] = [];
     for (let index = 0; index < value.length; index += 1) {
       const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
       if (!descriptor || !("value" in descriptor) || !descriptor.enumerable) {
-        throw new TypeError("Scope arrays must be dense and cannot contain accessors.");
+        throw new TypeError(
+          "Scope arrays must be dense and cannot contain accessors."
+        );
       }
-      canonical[index] = canonicalizeJsonValue(descriptor.value, state, depth + 1);
+      canonical[index] = canonicalizeJsonValue(
+        descriptor.value,
+        state,
+        depth + 1
+      );
     }
     state.active.delete(value);
     return canonical;
@@ -152,18 +167,29 @@ function canonicalizeScopeValue(value: unknown): JsonObject {
   if (Object.keys(canonicalValue).length === 0) {
     throw new TypeError("Named scope value must contain at least one entry.");
   }
-  if (Buffer.byteLength(serializeJsonValue(canonicalValue), "utf8") > maxSerializedBytes) {
-    throw new TypeError("Named scope value cannot exceed 16 KiB when serialized.");
+  if (
+    Buffer.byteLength(serializeJsonValue(canonicalValue), "utf-8") >
+    maxSerializedBytes
+  ) {
+    throw new TypeError(
+      "Named scope value cannot exceed 16 KiB when serialized."
+    );
   }
   return canonicalValue;
 }
 
 function serializeJsonValue(value: JsonValue): string {
-  if (value === null) return "null";
-  if (typeof value === "string") return JSON.stringify(value);
+  if (value === null) {
+    return "null";
+  }
+  if (typeof value === "string") {
+    return JSON.stringify(value);
+  }
   if (typeof value === "number" || typeof value === "boolean") {
     const serialized = JSON.stringify(value);
-    if (serialized === undefined) throw new TypeError("Scope value is not valid JSON.");
+    if (serialized === undefined) {
+      throw new TypeError("Scope value is not valid JSON.");
+    }
     return serialized;
   }
   if (Array.isArray(value)) {
@@ -171,7 +197,10 @@ function serializeJsonValue(value: JsonValue): string {
   }
   return `{${Object.keys(value)
     .sort()
-    .map((key) => `${JSON.stringify(key)}:${serializeJsonValue(value[key] as JsonValue)}`)
+    .map(
+      (key) =>
+        `${JSON.stringify(key)}:${serializeJsonValue(value[key] as JsonValue)}`
+    )
     .join(",")}}`;
 }
 
@@ -180,27 +209,40 @@ function serializeScope(scope: Scope): string {
 }
 
 /** Validates and recursively canonicalizes a named scope before deriving its stable key. */
-export function canonicalizeScope(value: unknown): { scope: Scope; scopeKey: string } {
+export function canonicalizeScope(value: unknown): {
+  scope: Scope;
+  scopeKey: string;
+} {
   if (!isPlainRecord(value)) {
     throw new TypeError("Scope must be a plain object.");
   }
   const keys = Reflect.ownKeys(value);
   validateOwnDataProperties(value, keys);
   if (keys.length !== 2 || !keys.includes("name") || !keys.includes("value")) {
-    throw new TypeError("Named scope must contain only name and value properties.");
-  }
-  const name = (value as Record<string, unknown>).name;
-  if (typeof name !== "string" || !/^[A-Za-z][A-Za-z0-9_-]{0,63}$/u.test(name)) {
     throw new TypeError(
-      "Scope name must be 1–64 letters, digits, underscores, or hyphens and start with a letter.",
+      "Named scope must contain only name and value properties."
     );
   }
-  const valueScope = canonicalizeScopeValue((value as Record<string, unknown>).value);
+  const { name } = value as Record<string, unknown>;
+  if (
+    typeof name !== "string" ||
+    !/^[A-Za-z][A-Za-z0-9_-]{0,63}$/u.test(name)
+  ) {
+    throw new TypeError(
+      "Scope name must be 1–64 letters, digits, underscores, or hyphens and start with a letter."
+    );
+  }
+  const valueScope = canonicalizeScopeValue(
+    (value as Record<string, unknown>).value
+  );
   const scope = Object.create(null) as Scope;
   scope.name = name;
   scope.value = valueScope;
   const serialized = serializeScope(scope);
-  const scopeKey = createHash("sha256").update(`scope:v2:${serialized}`).digest("hex").slice(0, 32);
+  const scopeKey = createHash("sha256")
+    .update(`scope:v2:${serialized}`)
+    .digest("hex")
+    .slice(0, 32);
   return { scope, scopeKey };
 }
 
@@ -212,7 +254,9 @@ export function canonicalizeScopes(value: unknown) {
   for (const entry of scopes) {
     const serialized = serializeScope(entry.scope);
     if (seen.has(serialized)) {
-      throw new TypeError("Multi-scope reads cannot contain duplicate identities.");
+      throw new TypeError(
+        "Multi-scope reads cannot contain duplicate identities."
+      );
     }
     seen.add(serialized);
   }

@@ -1,13 +1,14 @@
 import { ratelimit } from "@orpc/ratelimit";
-import { MemoryRateLimiter } from "@orpc/ratelimit/memory";
-import { BaseRedisRateLimiter } from "@orpc/ratelimit/base-redis";
-import { UpstashRateLimiter } from "@orpc/ratelimit/upstash";
-import { Ratelimit } from "@upstash/ratelimit";
-import { getKV } from "@tailorkit/kv";
 import type { RateLimiter } from "@orpc/ratelimit";
-import { waitUntil as vercelWaitUntil } from "@vercel/functions";
-import { env } from "#env";
+import { BaseRedisRateLimiter } from "@orpc/ratelimit/base-redis";
+import { MemoryRateLimiter } from "@orpc/ratelimit/memory";
+import { UpstashRateLimiter } from "@orpc/ratelimit/upstash";
 import type { Context, MiddlewareOptions } from "@orpc/server";
+import { getKV } from "@tailorkit/kv";
+import { Ratelimit } from "@upstash/ratelimit";
+import { waitUntil as vercelWaitUntil } from "@vercel/functions";
+
+import { env } from "#env";
 
 export { RateLimitHandlerPlugin } from "@orpc/ratelimit";
 
@@ -22,9 +23,9 @@ export function createRateLimiter({
 
   if (kv?.type === "upstash") {
     const upstashRatelimit = new Ratelimit({
-      redis: kv.engine,
       limiter: Ratelimit.slidingWindow(maxRequests, `${window} ms`),
       prefix: "tailorkit:ratelimit:",
+      redis: kv.engine,
     });
     return new UpstashRateLimiter(upstashRatelimit, {
       waitUntil: env.VERCEL ? vercelWaitUntil : undefined,
@@ -35,29 +36,36 @@ export function createRateLimiter({
     const redis = kv.engine;
     // Keep the shared ioredis connection through oRPC's Redis adapter base.
     class IORedisRateLimiter extends BaseRedisRateLimiter {
-      protected evalScript(script: string, keys: string[], args: string[]): Promise<unknown> {
+      protected evalScript(
+        script: string,
+        keys: string[],
+        args: string[]
+      ): Promise<unknown> {
         return redis.eval(script, keys.length, ...keys, ...args);
       }
     }
 
     return new IORedisRateLimiter({
       maxRequests,
-      window,
       prefix: "tailorkit:ratelimit:",
+      window,
     });
   }
 
   return new MemoryRateLimiter({ maxRequests, window });
 }
 
-export const ratelimitMiddleware = <TInContext extends Context, TInput = unknown>(
+export const ratelimitMiddleware = <
+  TInContext extends Context,
+  TInput = unknown,
+>(
   limiter: RateLimiter,
   key: (
     options: MiddlewareOptions<TInContext, unknown, Record<never, never>>,
-    input: TInput,
-  ) => string,
+    input: TInput
+  ) => string
 ) =>
   ratelimit<TInContext, TInput>({
-    limiter,
     key,
+    limiter,
   });

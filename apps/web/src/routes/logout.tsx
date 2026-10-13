@@ -1,10 +1,8 @@
-import { authClient } from "#lib/auth-client";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
+import { authClient } from "#lib/auth-client";
+
 export const Route = createFileRoute("/logout")({
-  ssr: false,
-  preload: false,
-  component: LogoutPage,
   beforeLoad: async ({ context }) => {
     await authClient.signOut().catch((error) => {
       console.error(error);
@@ -17,11 +15,14 @@ export const Route = createFileRoute("/logout")({
       to: "/login",
     });
   },
+  component: LogoutPage,
+  preload: false,
+  ssr: false,
 });
 
 function LogoutPage() {
   return (
-    <main className="grid min-h-svh place-items-center bg-background p-6">
+    <main className="bg-background grid min-h-svh place-items-center p-6">
       <p className="text-muted-foreground text-sm">Signing out...</p>
     </main>
   );

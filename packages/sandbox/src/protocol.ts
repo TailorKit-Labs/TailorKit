@@ -2,11 +2,14 @@ import * as v from "valibot";
 
 // Valibot object schemas also accept arrays; the wire protocol requires objects.
 const ObjectInput = v.custom<Record<string, unknown>>(
-  (input) => input !== null && typeof input === "object" && !Array.isArray(input),
-  "Expected an object",
+  (input) =>
+    input !== null && typeof input === "object" && !Array.isArray(input),
+  "Expected an object"
 );
 const Props = v.pipe(ObjectInput, v.record(v.string(), v.unknown()));
-function strictObject<const TEntries extends v.ObjectEntries>(entries: TEntries) {
+function strictObject<const TEntries extends v.ObjectEntries>(
+  entries: TEntries
+) {
   return v.pipe(ObjectInput, v.strictObject(entries));
 }
 
@@ -23,10 +26,13 @@ const SessionUrl = v.pipe(
       return false;
     }
   }, "Invalid URL"),
-  v.transform((value) => value.trim().replace(/[\t\n\r]/gu, "")),
+  v.transform((value) => value.trim().replaceAll(/[\t\n\r]/gu, ""))
 );
 
-export type RemoteNode = RemoteElementNode | RemoteFragmentNode | RemoteTextNode;
+export type RemoteNode =
+  | RemoteElementNode
+  | RemoteFragmentNode
+  | RemoteTextNode;
 
 export interface RemoteTextNode {
   id: string;
@@ -94,15 +100,14 @@ export const HostToIframePayload = v.pipe(
   ObjectInput,
   v.variant("type", [
     v.strictObject({
-      type: v.literal("toolResult"),
       data: strictObject({
         id: SessionId,
         output: v.optional(v.unknown()),
         error: v.optional(v.string()),
       }),
+      type: v.literal("toolResult"),
     }),
     v.strictObject({
-      type: v.literal("backendSessionResult"),
       data: strictObject({
         id: SessionId,
         session: v.optional(
@@ -111,7 +116,7 @@ export const HostToIframePayload = v.pipe(
             token: v.pipe(v.string(), v.maxLength(8192)),
             expiresAt: FiniteNumber,
             url: SessionUrl,
-          }),
+          })
         ),
         error: v.optional(
           strictObject({
@@ -126,9 +131,10 @@ export const HostToIframePayload = v.pipe(
               "INTERNAL_SERVER_ERROR",
             ]),
             message: v.string(),
-          }),
+          })
         ),
       }),
+      type: v.literal("backendSessionResult"),
     }),
     v.strictObject({
       data: strictObject({
@@ -150,14 +156,14 @@ export const HostToIframePayload = v.pipe(
       data: strictObject({ timestamp: FiniteNumber }),
       type: v.literal("animationFrame"),
     }),
-  ]),
+  ])
 );
 export type HostToIframePayload = v.InferOutput<typeof HostToIframePayload>;
 
 const RemoteCallbackBindingSchema = strictObject({
   callback: v.string(),
-  inputCount: FiniteNumber,
   event: v.string(),
+  inputCount: FiniteNumber,
 });
 
 type RemoteNodeSchemaType = v.GenericSchema<unknown, RemoteNode>;
@@ -183,8 +189,8 @@ const RemoteNodeSchema: RemoteNodeSchemaType = v.lazy(() =>
         props: Props,
         type: v.string(),
       }),
-    ]),
-  ),
+    ])
+  )
 );
 
 const RemotePatchSchema: v.GenericSchema<unknown, RemotePatch> = v.pipe(
@@ -221,24 +227,24 @@ const RemotePatchSchema: v.GenericSchema<unknown, RemotePatch> = v.pipe(
       nodeId: v.string(),
       op: v.literal("setCallbacks"),
     }),
-  ]),
+  ])
 );
 
 export const IframeToHostPayload = v.pipe(
   ObjectInput,
   v.variant("type", [
     v.strictObject({
-      type: v.literal("toolRequest"),
       data: strictObject({
         id: SessionId,
         kind: v.picklist(["client", "server"]),
         path: v.pipe(v.string(), v.maxLength(512)),
         input: v.optional(v.unknown()),
       }),
+      type: v.literal("toolRequest"),
     }),
     v.strictObject({
-      type: v.literal("backendSessionRequest"),
       data: strictObject({ id: SessionId, refresh: v.boolean() }),
+      type: v.literal("backendSessionRequest"),
     }),
     v.strictObject({ type: v.literal("ready") }),
     v.strictObject({
@@ -261,7 +267,10 @@ export const IframeToHostPayload = v.pipe(
       }),
       type: v.literal("error"),
     }),
-    v.strictObject({ data: strictObject({}), type: v.literal("requestAnimationFrame") }),
-  ]),
+    v.strictObject({
+      data: strictObject({}),
+      type: v.literal("requestAnimationFrame"),
+    }),
+  ])
 );
 export type IframeToHostPayload = v.InferOutput<typeof IframeToHostPayload>;

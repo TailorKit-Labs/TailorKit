@@ -1,7 +1,5 @@
 "use client";
 
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@tailorkit/ui/button";
 import {
   Card,
@@ -24,7 +22,13 @@ import {
 } from "@tailorkit/ui/dialog";
 import { Field, FieldError, FieldLabel } from "@tailorkit/ui/field";
 import { Logo } from "@tailorkit/ui/logo";
-import { OTPField, OTPFieldInput, OTPFieldSeparator } from "@tailorkit/ui/otp-field";
+import {
+  OTPField,
+  OTPFieldInput,
+  OTPFieldSeparator,
+} from "@tailorkit/ui/otp-field";
+import { useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { Fragment, useRef, useState } from "react";
 
 import { authClient } from "#lib/auth-client";
@@ -33,10 +37,13 @@ import { getSameOriginPath } from "#lib/safe-return-url";
 
 const OTP_LENGTH = 6;
 const BACKUP_CODE_LENGTH = 10;
-const OTP_SLOT_KEYS = Array.from({ length: OTP_LENGTH }, (_, index) => `otp-slot-${index}`);
+const OTP_SLOT_KEYS = Array.from(
+  { length: OTP_LENGTH },
+  (_, index) => `otp-slot-${index}`
+);
 const BACKUP_CODE_SLOT_KEYS = Array.from(
   { length: BACKUP_CODE_LENGTH },
-  (_, index) => `backup-code-slot-${index}`,
+  (_, index) => `backup-code-slot-${index}`
 );
 
 function formatBackupCode(code: string) {
@@ -81,7 +88,10 @@ function TwoFactorPage() {
     const verificationInProgressRef = useBackupCode
       ? backupCodeVerificationInProgressRef
       : totpVerificationInProgressRef;
-    if (verificationCode.length !== expectedLength || verificationInProgressRef.current) {
+    if (
+      verificationCode.length !== expectedLength ||
+      verificationInProgressRef.current
+    ) {
       return;
     }
 
@@ -97,7 +107,9 @@ function TwoFactorPage() {
     }
     try {
       const result = useBackupCode
-        ? await authClient.twoFactor.verifyBackupCode({ code: formatBackupCode(verificationCode) })
+        ? await authClient.twoFactor.verifyBackupCode({
+            code: formatBackupCode(verificationCode),
+          })
         : await authClient.twoFactor.verifyTotp({ code: verificationCode });
 
       if (result.error) {
@@ -106,7 +118,10 @@ function TwoFactorPage() {
           (useBackupCode
             ? "That backup code is not valid."
             : "That verification code is not valid.");
-        if (useBackupCode && backupCodeDialogSessionRef.current === backupCodeDialogSession) {
+        if (
+          useBackupCode &&
+          backupCodeDialogSessionRef.current === backupCodeDialogSession
+        ) {
           setBackupCodeError(message);
         } else if (!useBackupCode) {
           setError(message);
@@ -115,18 +130,26 @@ function TwoFactorPage() {
       }
 
       const returnPath = getSameOriginPath(
-        window.sessionStorage.getItem("tailorkit.two-factor-return-to") ?? undefined,
-        window.location.origin,
+        window.sessionStorage.getItem("tailorkit.two-factor-return-to") ??
+          undefined,
+        window.location.origin
       );
       window.sessionStorage.removeItem("tailorkit.two-factor-return-to");
       const destination = returnPath ?? "/";
       await navigateAfterVerification(destination);
       redirecting = true;
     } catch {
-      if (useBackupCode && backupCodeDialogSessionRef.current === backupCodeDialogSession) {
-        setBackupCodeError("Unable to verify that backup code. Please try again.");
+      if (
+        useBackupCode &&
+        backupCodeDialogSessionRef.current === backupCodeDialogSession
+      ) {
+        setBackupCodeError(
+          "Unable to verify that backup code. Please try again."
+        );
       } else if (!useBackupCode) {
-        setError("Unable to verify that authentication code. Please try again.");
+        setError(
+          "Unable to verify that authentication code. Please try again."
+        );
       }
     } finally {
       verificationInProgressRef.current = false;
@@ -156,20 +179,27 @@ function TwoFactorPage() {
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12">
       <div className="flex w-full max-w-sm flex-col items-center gap-4">
-        <a className="flex items-center gap-2" href="https://tailorkit.dev/home">
+        <a
+          className="flex items-center gap-2"
+          href="https://tailorkit.dev/home"
+        >
           <Logo className="size-6" />
-          <span className="font-semibold text-lg">TailorKit</span>
+          <span className="text-lg font-semibold">TailorKit</span>
         </a>
         <CardFrame className="w-full">
           <Card>
             <CardHeader>
               <CardTitle>Verify it’s you</CardTitle>
-              <CardDescription>Enter the current code from your authenticator app.</CardDescription>
+              <CardDescription>
+                Enter the current code from your authenticator app.
+              </CardDescription>
             </CardHeader>
             <CardPanel className="flex flex-col gap-6">
               <div className="flex flex-col items-center gap-6">
                 <Field className="items-center gap-2">
-                  <FieldLabel className="sr-only">Authentication code</FieldLabel>
+                  <FieldLabel className="sr-only">
+                    Authentication code
+                  </FieldLabel>
                   <OTPField
                     autoComplete="one-time-code"
                     className="justify-center gap-2 max-sm:gap-1.5"
@@ -240,7 +270,8 @@ function TwoFactorPage() {
           <DialogHeader>
             <DialogTitle>Use a backup code</DialogTitle>
             <DialogDescription>
-              Enter one of the recovery codes you saved when enabling two-factor authentication.
+              Enter one of the recovery codes you saved when enabling two-factor
+              authentication.
             </DialogDescription>
           </DialogHeader>
           <DialogPanel className="flex flex-col items-center">
@@ -270,19 +301,27 @@ function TwoFactorPage() {
                       autoFocus={index === 0}
                       className="size-7 text-sm leading-7 sm:size-9 sm:text-lg sm:leading-9"
                     />
-                    {index === 4 ? <OTPFieldSeparator className="mx-1" /> : null}
+                    {index === 4 ? (
+                      <OTPFieldSeparator className="mx-1" />
+                    ) : null}
                   </Fragment>
                 ))}
               </OTPField>
-              {backupCodeError ? <FieldError>{backupCodeError}</FieldError> : null}
+              {backupCodeError ? (
+                <FieldError>{backupCodeError}</FieldError>
+              ) : null}
             </Field>
           </DialogPanel>
           <DialogFooter>
-            <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
+            <DialogClose
+              render={<Button size="sm" type="button" variant="ghost" />}
+            >
               Cancel
             </DialogClose>
             <Button
-              disabled={backupCode.length !== BACKUP_CODE_LENGTH || isBackupCodePending}
+              disabled={
+                backupCode.length !== BACKUP_CODE_LENGTH || isBackupCodePending
+              }
               loading={isBackupCodePending}
               onClick={() => void verify(backupCode, true)}
               size="sm"

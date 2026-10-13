@@ -2,8 +2,13 @@
 
 import { mergeProps } from "@base-ui/react/merge-props";
 import { useRender } from "@base-ui/react/use-render";
-import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from "lucide-react";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  MoreHorizontalIcon,
+} from "lucide-react";
 import type * as React from "react";
+
 import { cn } from "#ui";
 import { buttonVariants } from "#ui/button";
 import type { Button } from "#ui/button";
@@ -35,7 +40,9 @@ export function PaginationContent({
   );
 }
 
-export function PaginationItem({ ...props }: React.ComponentProps<"li">): React.ReactElement {
+export function PaginationItem({
+  ...props
+}: React.ComponentProps<"li">): React.ReactElement {
   return <li data-slot="pagination-item" {...props} />;
 }
 
@@ -60,7 +67,7 @@ export function PaginationLink({
             size,
             variant: isActive ? "outline" : "ghost",
           }),
-          className,
+          className
         ),
     "data-active": isActive,
     "data-slot": "pagination-link",

@@ -1,12 +1,20 @@
 import type { ViewInstance } from "@tailorkit/app/client";
 import type { SlotDefinitions, ViewDefinition } from "@tailorkit/core/schema";
 import type { ActiveView, ViewStatus } from "@tailorkit/core/views";
-import type { TailorKitApp } from "../types";
+
 import type { ViewContext, ViewName } from "../store/local/view-context-types";
+import type { TailorKitApp } from "../types";
 
 type DefaultViews = Record<`/${string}`, ViewDefinition>;
-type ContextPaths<TViews extends Record<string, ViewDefinition>, TView extends ViewName<TViews>> = {
-  [P in ViewName<TViews>]: P extends "/" | TView ? P : TView extends `${P}/${string}` ? P : never;
+type ContextPaths<
+  TViews extends Record<string, ViewDefinition>,
+  TView extends ViewName<TViews>,
+> = {
+  [P in ViewName<TViews>]: P extends "/" | TView
+    ? P
+    : TView extends `${P}/${string}`
+      ? P
+      : never;
 }[ViewName<TViews>];
 type ContextFields<TView> =
   undefined extends ViewContext<TView>
@@ -17,7 +25,9 @@ export type RenderSlotContext<
   TViews extends Record<string, ViewDefinition>,
   TView extends ViewName<TViews>,
 > = {
-  [P in ContextPaths<TViews, TView>]: (context: ContextFields<TViews[P]>) => void;
+  [P in ContextPaths<TViews, TView>]: (
+    context: ContextFields<TViews[P]>
+  ) => void;
 }[ContextPaths<TViews, TView>] extends (context: infer TContext) => void
   ? TContext
   : never;
@@ -33,18 +43,18 @@ export interface RuntimeRenderSlotProps {
 type InstanceProps<TSlot, TKey extends string, TValue> = boolean extends (
   TSlot extends { multiple?: infer T } ? T : false
 )
-  ? { [K in TKey]?: TValue }
+  ? Partial<Record<TKey, TValue>>
   : TSlot extends { multiple: true }
-    ? { [K in TKey]: TValue }
-    : { [K in TKey]?: never };
+    ? Record<TKey, TValue>
+    : Partial<Record<TKey, never>>;
 
-export type RenderSlotProps<TSlots extends SlotDefinitions = SlotDefinitions> = {
-  [TSlot in keyof TSlots & string]: { app: TailorKitApp; slot: TSlot } & InstanceProps<
-    TSlots[TSlot],
-    "instanceKey",
-    string
-  >;
-}[keyof TSlots & string];
+export type RenderSlotProps<TSlots extends SlotDefinitions = SlotDefinitions> =
+  {
+    [TSlot in keyof TSlots & string]: {
+      app: TailorKitApp;
+      slot: TSlot;
+    } & InstanceProps<TSlots[TSlot], "instanceKey", string>;
+  }[keyof TSlots & string];
 
 export type ControlledRenderSlotProps<
   TViews extends Record<string, ViewDefinition> = DefaultViews,
@@ -56,11 +66,10 @@ export type ControlledRenderSlotProps<
       slot: TSlot;
       view: TView;
     } & (
-      | ({ context: RenderSlotContext<TViews, TView>; status: "ready" } & InstanceProps<
-          TSlots[TSlot],
-          "instance",
-          ViewInstance
-        >)
+      | ({
+          context: RenderSlotContext<TViews, TView>;
+          status: "ready";
+        } & InstanceProps<TSlots[TSlot], "instance", ViewInstance>)
       | { context?: never; status: "loading" | "error"; instance?: never }
     );
   }[Extract<ViewName<TViews>, TSlots[TSlot]["views"][number]>];

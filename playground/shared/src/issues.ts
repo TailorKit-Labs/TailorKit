@@ -1,4 +1,5 @@
 import { and, asc, desc, eq } from "drizzle-orm";
+
 import { db, issues, teams, users } from "./db";
 
 export type IssueStatus = (typeof issues.$inferSelect)["status"];
@@ -14,7 +15,7 @@ export function listIssues(teamId: string) {
 
 export function getIssue(teamId: string, issueId: string) {
   return db
-    .select({ issue: issues, creatorName: users.name })
+    .select({ creatorName: users.name, issue: issues })
     .from(issues)
     .innerJoin(users, eq(issues.createdBy, users.id))
     .where(and(eq(issues.teamId, teamId), eq(issues.id, issueId)))
@@ -24,10 +25,10 @@ export function getIssue(teamId: string, issueId: string) {
 export function getOverview(teamId: string) {
   const rows = listIssues(teamId);
   return {
-    total: rows.length,
-    inProgress: rows.filter((issue) => issue.status === "In Progress").length,
     done: rows.filter((issue) => issue.status === "Done").length,
+    inProgress: rows.filter((issue) => issue.status === "In Progress").length,
     recent: rows.slice(0, 5),
+    total: rows.length,
   };
 }
 
@@ -37,30 +38,39 @@ export function getTeam(teamId: string) {
 
 export function createIssue(teamId: string, createdBy: string, title: string) {
   const team = getTeam(teamId);
-  if (!team) throw new Error("Team not found");
+  if (!team) {
+    throw new Error("Team not found");
+  }
   const keyNumber =
-    listIssueKeys(teamId).filter(({ key }) => key.startsWith(`${team.key}-`)).length + 1;
+    listIssueKeys(teamId).filter(({ key }) => key.startsWith(`${team.key}-`))
+      .length + 1;
   const issue = {
+    createdAt: new Date(),
+    createdBy,
+    description: "",
     id: crypto.randomUUID(),
     key: `${team.key}-${keyNumber}`,
+    status: "Backlog" as const,
     teamId,
     title,
-    description: "",
-    status: "Backlog" as const,
-    createdBy,
-    createdAt: new Date(),
   };
   db.insert(issues).values(issue).run();
   return issue;
 }
 
-export function updateIssueStatus(teamId: string, issueId: string, status: IssueStatus) {
+export function updateIssueStatus(
+  teamId: string,
+  issueId: string,
+  status: IssueStatus
+) {
   const issue = db
     .select()
     .from(issues)
     .where(and(eq(issues.teamId, teamId), eq(issues.id, issueId)))
     .get();
-  if (!issue) return undefined;
+  if (!issue) {
+    return undefined;
+  }
   db.update(issues).set({ status }).where(eq(issues.id, issueId)).run();
   return { ...issue, status };
 }

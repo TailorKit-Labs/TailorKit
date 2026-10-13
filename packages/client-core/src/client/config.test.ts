@@ -1,11 +1,15 @@
-import { testContract } from "../test-contract";
 import { expect, it, vi } from "vite-plus/test";
+
+import { testContract } from "../test-contract";
 import { createComponentRegistry, createTailorKitClientConfig } from "./config";
 
 it("wraps each renderer once and shares it with remote component aliases", () => {
   const renderer = { id: "renderer" };
   const wrap = vi.fn((value: typeof renderer) => ({ wrapped: value }));
-  const registry = createComponentRegistry({ CustomerCard: renderer, Missing: undefined }, wrap);
+  const registry = createComponentRegistry(
+    { CustomerCard: renderer, Missing: undefined },
+    wrap
+  );
   expect(wrap).toHaveBeenCalledOnce();
   expect(registry.CustomerCard).toBe(registry["tailorkit-customer-card"]);
   expect(registry).not.toHaveProperty("Missing");
@@ -14,8 +18,8 @@ it("wraps each renderer once and shares it with remote component aliases", () =>
 it("builds reusable client configuration without initiating network requests", () => {
   const fetch = vi.fn<typeof globalThis.fetch>();
   const config = createTailorKitClientConfig({
-    contract: testContract(),
     baseUrl: "https://host.test/api/",
+    contract: testContract(),
     fetch,
   });
   expect(config.theme).toEqual({});
@@ -32,25 +36,33 @@ it("clears shared app data and sessions through clearCache", async () => {
       Response.json(
         String(input).endsWith("/apps")
           ? [{ id: user }]
-          : { token: user, expiresAt: Date.now() + 300_000, url: "https://runtime.test/rpc" },
-      ),
+          : {
+              expiresAt: Date.now() + 300_000,
+              token: user,
+              url: "https://runtime.test/rpc",
+            }
+      )
     );
   const config = createTailorKitClientConfig({
-    contract: testContract(),
     baseUrl: "https://host.test/api/",
+    contract: testContract(),
     fetch,
   });
   const client = config.fetchClient!;
   const apps = client.apps();
   const session = client.endpoints.getSessionProvider({ id: "app" });
   await apps.fetch();
-  await expect(session({ refresh: false })).resolves.toMatchObject({ token: "first" });
+  await expect(session({ refresh: false })).resolves.toMatchObject({
+    token: "first",
+  });
 
   user = "second";
   config.clearCache();
   expect(apps.getSnapshot().data).toBeUndefined();
   await apps.fetch();
   expect(apps.getSnapshot().data).toEqual([{ id: "second" }]);
-  await expect(session({ refresh: false })).resolves.toMatchObject({ token: "second" });
+  await expect(session({ refresh: false })).resolves.toMatchObject({
+    token: "second",
+  });
   expect(fetch).toHaveBeenCalledTimes(4);
 });

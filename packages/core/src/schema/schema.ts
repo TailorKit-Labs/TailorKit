@@ -1,20 +1,20 @@
 import type { TailorKitSchemaSpec } from "../spec/index";
-import type { ContractTools } from "./tools";
-import { serializeTools } from "./tools";
 import type {
   ComponentDefinitions,
   NoComponentFieldCallbackConflicts,
   ResolvedComponentMetadata,
 } from "./components";
 import { resolveComponentMetadata } from "./components";
+import { jsonSchemaSerializer, serializeSchema } from "./shared";
+import type { Schema, SchemaSerializer } from "./shared";
+import type { ContractTools } from "./tools";
+import { serializeTools } from "./tools";
 import type {
   ResolvedViewMetadata,
   ViewContextHierarchy,
   ContextDefinitions,
   SlotDefinitions,
 } from "./views";
-import { jsonSchemaSerializer, serializeSchema } from "./shared";
-import type { Schema, SchemaSerializer } from "./shared";
 
 type EmptyToolMap = Record<never, never>;
 
@@ -57,7 +57,8 @@ export const createTailorKitSchema = <
   slots?: SlotDefinitions<keyof NoInfer<TViews> & string>;
   scopes?: Record<string, Schema>;
   tools?: TTools;
-  components: TComponents & NoComponentFieldCallbackConflicts<NoInfer<TComponents>>;
+  components: TComponents &
+    NoComponentFieldCallbackConflicts<NoInfer<TComponents>>;
   views?: TViews & ViewContextHierarchy<NoInfer<TViews>>;
 }): TailorKitSchema<TComponents, TViews, TTools> => {
   for (const [name, slot] of Object.entries(schema.slots ?? {})) {
@@ -70,26 +71,44 @@ export const createTailorKitSchema = <
       }
     }
   }
-  const components = {} as TailorKitSchema<TComponents, TViews, TTools>["$internal"]["components"];
-  const views = {} as TailorKitSchema<TComponents, TViews, TTools>["$internal"]["views"];
+  const components = {} as TailorKitSchema<
+    TComponents,
+    TViews,
+    TTools
+  >["$internal"]["components"];
+  const views = {} as TailorKitSchema<
+    TComponents,
+    TViews,
+    TTools
+  >["$internal"]["views"];
 
-  for (const [name, definition] of Object.entries(schema.components as ComponentDefinitions)) {
-    components[name as keyof TComponents] = resolveComponentMetadata(name, definition);
+  for (const [name, definition] of Object.entries(
+    schema.components as ComponentDefinitions
+  )) {
+    components[name as keyof TComponents] = resolveComponentMetadata(
+      name,
+      definition
+    );
   }
 
-  for (const [name, context] of Object.entries((schema.views ?? {}) as ContextDefinitions)) {
+  for (const [name, context] of Object.entries(
+    (schema.views ?? {}) as ContextDefinitions
+  )) {
     views[name as keyof TViews] = { context };
   }
 
   const serialize = (
-    schemaSerializer: SchemaSerializer = jsonSchemaSerializer,
+    schemaSerializer: SchemaSerializer = jsonSchemaSerializer
   ): TailorKitSchemaSpec => {
     const serializedComponents: TailorKitSchemaSpec["components"] = {};
     const serializedViews: TailorKitSchemaSpec["views"] = {};
 
     for (const [name, metadata] of Object.entries(components)) {
-      const callbacks: TailorKitSchemaSpec["components"][string]["callbacks"] = {};
-      for (const [callbackName, callback] of Object.entries(metadata.callbacks)) {
+      const callbacks: TailorKitSchemaSpec["components"][string]["callbacks"] =
+        {};
+      for (const [callbackName, callback] of Object.entries(
+        metadata.callbacks
+      )) {
         if (callback === undefined) {
           continue;
         }
@@ -102,8 +121,8 @@ export const createTailorKitSchema = <
 
       serializedComponents[name] = {
         callbacks,
-        fields: serializeSchema(metadata.fields, schemaSerializer),
         children: metadata.children,
+        fields: serializeSchema(metadata.fields, schemaSerializer),
       };
     }
 
@@ -125,9 +144,9 @@ export const createTailorKitSchema = <
           name,
           {
             views: [...slot.views],
-            ...(slot.multiple !== undefined ? { multiple: slot.multiple } : {}),
+            ...(slot.multiple === undefined ? {} : { multiple: slot.multiple }),
           },
-        ]),
+        ])
       ),
       ...(schema.scopes
         ? {
@@ -135,7 +154,7 @@ export const createTailorKitSchema = <
               Object.entries(schema.scopes).flatMap(([name, scope]) => {
                 const serialized = serializeSchema(scope, schemaSerializer);
                 return serialized ? [[name, serialized]] : [];
-              }),
+              })
             ),
           }
         : {}),
@@ -144,16 +163,16 @@ export const createTailorKitSchema = <
   };
 
   return {
-    slots: schema.slots ?? {},
-    tools: (schema.tools ?? {}) as TTools,
-    components: schema.components,
-    views: (schema.views ?? {}) as TViews,
-    serialize,
     $internal: {
-      tools: (schema.tools ?? {}) as TTools,
       components,
+      tools: (schema.tools ?? {}) as TTools,
       views,
     },
+    components: schema.components,
+    serialize,
+    slots: schema.slots ?? {},
+    tools: (schema.tools ?? {}) as TTools,
+    views: (schema.views ?? {}) as TViews,
   };
 };
 
@@ -197,7 +216,11 @@ export {
   type Views,
   type SlotDefinitions,
 } from "./views";
-export { jsonSchemaSerializer, type Schema, type SchemaSerializer } from "./shared";
+export {
+  jsonSchemaSerializer,
+  type Schema,
+  type SchemaSerializer,
+} from "./shared";
 export type { TailorKitSchema as TailorKit };
 
 // JSON Schema cannot represent undefined at its root. Preserve that information

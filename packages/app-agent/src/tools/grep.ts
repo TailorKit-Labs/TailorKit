@@ -1,5 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
+
 import {
   appDirectory,
   commandResultSchema,
@@ -13,17 +14,6 @@ export const grepTool = tool({
   contextSchema: sandboxContextSchema,
   description:
     "Search with ripgrep. Returns matching lines with filenames and line numbers; exit 1 means no matches.",
-  inputSchema: z.object({
-    pattern: z.string().min(1),
-    path: z
-      .string()
-      .default(".")
-      .describe("File or directory relative to /workspace/app, or absolute."),
-    glob: z.string().min(1).optional().describe("An optional ripgrep file glob, such as *.ts."),
-    ignoreCase: z.boolean().default(false),
-    literal: z.boolean().default(false),
-  }),
-  outputSchema: commandResultSchema,
   execute: async ({ pattern, path, glob, ignoreCase, literal }, options) => {
     "use step";
     const sandbox = await toolSandbox(options);
@@ -47,4 +37,19 @@ export const grepTool = tool({
       abortSignal,
     });
   },
+  inputSchema: z.object({
+    pattern: z.string().min(1),
+    path: z
+      .string()
+      .default(".")
+      .describe("File or directory relative to /workspace/app, or absolute."),
+    glob: z
+      .string()
+      .min(1)
+      .optional()
+      .describe("An optional ripgrep file glob, such as *.ts."),
+    ignoreCase: z.boolean().default(false),
+    literal: z.boolean().default(false),
+  }),
+  outputSchema: commandResultSchema,
 });

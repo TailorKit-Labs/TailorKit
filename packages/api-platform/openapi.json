@@ -290,7 +290,13 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": ["token", "expiresAt", "url", "toolUrl", "identity"],
+                  "required": [
+                    "token",
+                    "expiresAt",
+                    "url",
+                    "toolUrl",
+                    "identity"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -461,7 +467,12 @@
                                   },
                                   "status": {
                                     "type": "string",
-                                    "enum": ["uploading", "deploying", "verifying", "published"]
+                                    "enum": [
+                                      "uploading",
+                                      "deploying",
+                                      "verifying",
+                                      "published"
+                                    ]
                                   },
                                   "clientEntryFileId": {
                                     "anyOf": [
@@ -817,7 +828,12 @@
                             },
                             "status": {
                               "type": "string",
-                              "enum": ["uploading", "deploying", "verifying", "published"]
+                              "enum": [
+                                "uploading",
+                                "deploying",
+                                "verifying",
+                                "published"
+                              ]
                             },
                             "clientEntryFileId": {
                               "anyOf": [
@@ -1148,7 +1164,12 @@
                             },
                             "status": {
                               "type": "string",
-                              "enum": ["uploading", "deploying", "verifying", "published"]
+                              "enum": [
+                                "uploading",
+                                "deploying",
+                                "verifying",
+                                "published"
+                              ]
                             },
                             "clientEntryFileId": {
                               "anyOf": [
@@ -1558,7 +1579,12 @@
                             },
                             "status": {
                               "type": "string",
-                              "enum": ["uploading", "deploying", "verifying", "published"]
+                              "enum": [
+                                "uploading",
+                                "deploying",
+                                "verifying",
+                                "published"
+                              ]
                             },
                             "clientEntryFileId": {
                               "anyOf": [
@@ -1887,7 +1913,12 @@
                             },
                             "status": {
                               "type": "string",
-                              "enum": ["uploading", "deploying", "verifying", "published"]
+                              "enum": [
+                                "uploading",
+                                "deploying",
+                                "verifying",
+                                "published"
+                              ]
                             },
                             "clientEntryFileId": {
                               "anyOf": [
@@ -2461,7 +2492,12 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": ["uploading", "deploying", "verifying", "published"]
+                            "enum": [
+                              "uploading",
+                              "deploying",
+                              "verifying",
+                              "published"
+                            ]
                           },
                           "clientEntryFileId": {
                             "anyOf": [
@@ -2670,7 +2706,12 @@
                     },
                     "status": {
                       "type": "string",
-                      "enum": ["uploading", "deploying", "verifying", "published"]
+                      "enum": [
+                        "uploading",
+                        "deploying",
+                        "verifying",
+                        "published"
+                      ]
                     },
                     "clientEntryFileId": {
                       "anyOf": [
@@ -3033,7 +3074,12 @@
                               },
                               "status": {
                                 "type": "string",
-                                "enum": ["uploading", "verifying", "verified", "failed"]
+                                "enum": [
+                                  "uploading",
+                                  "verifying",
+                                  "verified",
+                                  "failed"
+                                ]
                               },
                               "createdAt": {
                                 "type": "string",
@@ -3137,7 +3183,12 @@
                             },
                             "status": {
                               "type": "string",
-                              "enum": ["uploading", "verifying", "verified", "failed"]
+                              "enum": [
+                                "uploading",
+                                "verifying",
+                                "verified",
+                                "failed"
+                              ]
                             },
                             "createdAt": {
                               "type": "string",
@@ -3200,7 +3251,12 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["uploading", "deploying", "verifying", "published"]
+                          "enum": [
+                            "uploading",
+                            "deploying",
+                            "verifying",
+                            "published"
+                          ]
                         },
                         "clientEntryFileId": {
                           "anyOf": [
@@ -3327,7 +3383,11 @@
                                 },
                                 "contentType": {
                                   "type": "string",
-                                  "enum": ["image/svg+xml", "image/png", "image/webp"]
+                                  "enum": [
+                                    "image/svg+xml",
+                                    "image/png",
+                                    "image/webp"
+                                  ]
                                 },
                                 "encoding": {
                                   "anyOf": [
@@ -3358,7 +3418,12 @@
                                 },
                                 "status": {
                                   "type": "string",
-                                  "enum": ["uploading", "verifying", "verified", "failed"]
+                                  "enum": [
+                                    "uploading",
+                                    "verifying",
+                                    "verified",
+                                    "failed"
+                                  ]
                                 },
                                 "createdAt": {
                                   "type": "string",
@@ -3425,7 +3490,11 @@
                                 },
                                 "contentType": {
                                   "type": "string",
-                                  "enum": ["image/svg+xml", "image/png", "image/webp"]
+                                  "enum": [
+                                    "image/svg+xml",
+                                    "image/png",
+                                    "image/webp"
+                                  ]
                                 },
                                 "encoding": {
                                   "anyOf": [
@@ -3456,7 +3525,12 @@
                                 },
                                 "status": {
                                   "type": "string",
-                                  "enum": ["uploading", "verifying", "verified", "failed"]
+                                  "enum": [
+                                    "uploading",
+                                    "verifying",
+                                    "verified",
+                                    "failed"
+                                  ]
                                 },
                                 "createdAt": {
                                   "type": "string",
@@ -3589,7 +3663,12 @@
                     },
                     "status": {
                       "type": "string",
-                      "enum": ["uploading", "deploying", "verifying", "published"]
+                      "enum": [
+                        "uploading",
+                        "deploying",
+                        "verifying",
+                        "published"
+                      ]
                     },
                     "clientEntryFileId": {
                       "anyOf": [
@@ -3832,7 +3911,13 @@
                       "type": "string"
                     }
                   },
-                  "required": ["expiresAt", "sessionId", "tunnelToken", "tunnelUrl", "shareId"],
+                  "required": [
+                    "expiresAt",
+                    "sessionId",
+                    "tunnelToken",
+                    "tunnelUrl",
+                    "shareId"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -4171,7 +4256,12 @@
                                       },
                                       "status": {
                                         "type": "string",
-                                        "enum": ["uploading", "deploying", "verifying", "published"]
+                                        "enum": [
+                                          "uploading",
+                                          "deploying",
+                                          "verifying",
+                                          "published"
+                                        ]
                                       },
                                       "clientEntryFileId": {
                                         "anyOf": [
@@ -4362,7 +4452,12 @@
                                 "type": "string"
                               }
                             },
-                            "required": ["sessionId", "expiresAt", "websocketUrl", "token"],
+                            "required": [
+                              "sessionId",
+                              "expiresAt",
+                              "websocketUrl",
+                              "token"
+                            ],
                             "additionalProperties": false
                           }
                         },

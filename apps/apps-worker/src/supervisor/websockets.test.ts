@@ -1,8 +1,9 @@
-import { afterEach, expect, it, vi } from "vite-plus/test";
 import type { Identity } from "@tailorkit/app/server";
+import { Effect, Semaphore } from "effect";
+import { afterEach, expect, it, vi } from "vite-plus/test";
+
 import type { SubscriptionSession } from "./subscriptions";
 import { createSubscriptions } from "./subscriptions";
-import { Effect, Semaphore } from "effect";
 
 function setup() {
   const now = Date.now();
@@ -14,47 +15,51 @@ function setup() {
   const ctx = {
     getWebSockets: () => sockets,
     storage: {
-      kv: {
-        list: () => records.entries(),
-        get: (key: string) => records.get(key),
-        put: (key: string, value: SubscriptionSession) => records.set(key, value),
-        delete: (key: string) => records.delete(key),
-      },
-      getAlarm: async () => alarm,
-      setAlarm: async (time: number) => {
-        alarm = time;
-      },
       deleteAlarm: async () => {
         alarm = null;
+      },
+      getAlarm: async () => alarm,
+      kv: {
+        delete: (key: string) => records.delete(key),
+        get: (key: string) => records.get(key),
+        list: () => records.entries(),
+        put: (key: string, value: SubscriptionSession) =>
+          records.set(key, value),
+      },
+      setAlarm: async (time: number) => {
+        alarm = time;
       },
     },
   } as unknown as DurableObjectState;
   vi.stubGlobal("WebSocket", { CLOSED: 3 });
   function socket(id: string, expiresAt: number) {
     const socket = {
+      close: vi.fn(),
       deserializeAttachment: () => id,
       readyState: 2,
-      close: vi.fn(),
       send: vi.fn(),
     } as unknown as WebSocket;
-    records.set(`socket:${id}`, { identity: { expiresAt } as Identity, subscriptions: [] });
+    records.set(`socket:${id}`, {
+      identity: { expiresAt } as Identity,
+      subscriptions: [],
+    });
     sockets.push(socket);
     return socket;
   }
   return {
-    now,
-    records,
-    operations,
     cancel,
-    socket,
-    ctx,
-    getAlarm: () => alarm,
     create: () =>
       createSubscriptions(
         ctx,
         (input, identity) => Effect.promise(() => operations(input, identity)),
-        Semaphore.makeUnsafe(1),
+        Semaphore.makeUnsafe(1)
       ),
+    ctx,
+    getAlarm: () => alarm,
+    now,
+    operations,
+    records,
+    socket,
   };
 }
 

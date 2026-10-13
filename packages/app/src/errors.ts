@@ -11,7 +11,7 @@ export type ErrorCode =
 export class AppError extends Error {
   constructor(
     readonly code: ErrorCode,
-    message: string = code,
+    message: string = code
   ) {
     super(message);
     this.name = "AppError";
@@ -19,11 +19,20 @@ export class AppError extends Error {
 }
 
 export function appError(error: unknown): AppError {
-  if (error instanceof AppError) return error;
-  if (error instanceof Error && error.name === "AbortError")
+  if (error instanceof AppError) {
+    return error;
+  }
+  if (error instanceof Error && error.name === "AbortError") {
     return new AppError("UNAVAILABLE", "App connection interrupted");
-  if (error && typeof error === "object" && "code" in error && error.code === "NETWORK_ERROR")
+  }
+  if (
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    error.code === "NETWORK_ERROR"
+  ) {
     return new AppError("UNAVAILABLE", "App connection interrupted");
+  }
   if (
     error &&
     typeof error === "object" &&
@@ -37,10 +46,11 @@ export function appError(error: unknown): AppError {
       "INCOMPATIBLE_VERSION",
       "UNAVAILABLE",
     ].includes(String(error.code))
-  )
+  ) {
     return new AppError(
       error.code as ErrorCode,
-      "message" in error ? String(error.message) : String(error.code),
+      "message" in error ? String(error.message) : String(error.code)
     );
+  }
   return new AppError("INTERNAL_SERVER_ERROR", "App function failed");
 }

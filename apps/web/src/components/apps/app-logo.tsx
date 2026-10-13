@@ -1,6 +1,7 @@
-import { AppWindowIcon } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@tailorkit/ui/avatar";
 import { cn } from "@tailorkit/ui";
+import { Avatar, AvatarFallback, AvatarImage } from "@tailorkit/ui/avatar";
+import { AppWindowIcon } from "lucide-react";
+
 import { useTheme } from "#lib/theme";
 
 interface AppLogoProps {
@@ -20,11 +21,15 @@ export function AppLogo({ className, logoPaths, name }: AppLogoProps) {
       : (logoPaths?.light ?? logoPaths?.dark);
 
   return (
-    <Avatar className={cn("rounded-lg border bg-card", className)}>
+    <Avatar className={cn("bg-card rounded-lg border", className)}>
       {logoPath ? (
-        <AvatarImage alt={`${name} logo`} className="object-contain p-1" src={logoPath} />
+        <AvatarImage
+          alt={`${name} logo`}
+          className="object-contain p-1"
+          src={logoPath}
+        />
       ) : null}
-      <AvatarFallback className="rounded-lg text-muted-foreground">
+      <AvatarFallback className="text-muted-foreground rounded-lg">
         <AppWindowIcon aria-hidden="true" className="size-1/2" />
       </AvatarFallback>
     </Avatar>

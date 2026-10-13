@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
 import type { DemoSession } from "@playground/shared/auth";
+import { useEffect, useState } from "react";
 
 export interface SignInChoice {
   userId: string;
@@ -18,7 +18,9 @@ export interface DemoAuthState {
 
 async function readAuth(): Promise<DemoAuthState> {
   const response = await fetch("/api/auth", { credentials: "same-origin" });
-  if (!response.ok) throw new Error("Could not load the local demo session");
+  if (!response.ok) {
+    throw new Error("Could not load the local demo session");
+  }
   return (await response.json()) as DemoAuthState;
 }
 
@@ -30,11 +32,14 @@ export function useAuthSession() {
     let cancelled = false;
     void readAuth().then(
       (next) => {
-        if (!cancelled) setData(next);
+        if (!cancelled) {
+          setData(next);
+        }
       },
-      (reason: unknown) => {
-        if (!cancelled) setError(reason instanceof Error ? reason : new Error(String(reason)));
-      },
+      (error: unknown) => {
+        if (!cancelled)
+          setError(error instanceof Error ? error : new Error(String(error)));
+      }
     );
     return () => {
       cancelled = true;
@@ -46,12 +51,14 @@ export function useAuthSession() {
 
 export async function signInDemoUser(userId: string, teamId: string) {
   const response = await fetch("/api/auth", {
-    body: JSON.stringify({ action: "sign-in", userId, teamId }),
+    body: JSON.stringify({ action: "sign-in", teamId, userId }),
     credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
     method: "POST",
   });
-  if (!response.ok) throw new Error("Could not start the local demo session");
+  if (!response.ok) {
+    throw new Error("Could not start the local demo session");
+  }
   return (await response.json()) as DemoAuthState;
 }
 
@@ -62,5 +69,7 @@ export async function signOutDemoUser() {
     headers: { "Content-Type": "application/json" },
     method: "POST",
   });
-  if (!response.ok) throw new Error("Could not end the local demo session");
+  if (!response.ok) {
+    throw new Error("Could not end the local demo session");
+  }
 }

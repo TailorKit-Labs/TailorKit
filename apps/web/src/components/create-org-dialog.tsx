@@ -1,5 +1,4 @@
-import { useRef, useState } from "react";
-import type { ReactNode } from "react";
+import { validateOrgSlug } from "@tailorkit/db/validate-org-slug";
 import { Button } from "@tailorkit/ui/button";
 import {
   Dialog,
@@ -12,16 +11,21 @@ import {
   DialogPopup,
   DialogTrigger,
 } from "@tailorkit/ui/dialog";
-import { toastManager } from "@tailorkit/ui/toast";
 import { useAppForm } from "@tailorkit/ui/form";
-import { validateOrgSlug } from "@tailorkit/db/validate-org-slug";
-import { useNavigate } from "@tanstack/react-router";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toastManager } from "@tailorkit/ui/toast";
 import { useStore } from "@tanstack/react-form";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
+import { useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { z } from "zod";
-import { orpc, client } from "#lib/orpc";
-import { checkOrgSlugAvailability, useOrgSlugAvailability } from "#lib/org-slug-availability";
+
 import { OrgSlugAvailabilityIndicator } from "#components/org-slug-availability-indicator";
+import {
+  checkOrgSlugAvailability,
+  useOrgSlugAvailability,
+} from "#lib/org-slug-availability";
+import { orpc, client } from "#lib/orpc";
 
 function toSlug(name: string) {
   return name
@@ -50,7 +54,11 @@ interface CreateOrgDialogProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-export function CreateOrgDialog({ children, open: openProp, onOpenChange }: CreateOrgDialogProps) {
+export function CreateOrgDialog({
+  children,
+  open: openProp,
+  onOpenChange,
+}: CreateOrgDialogProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [openInternal, setOpenInternal] = useState(false);
@@ -62,17 +70,19 @@ export function CreateOrgDialog({ children, open: openProp, onOpenChange }: Crea
   const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setOpenInternal;
 
   const createMutation = useMutation({
-    mutationFn: (input: { name: string; slug: string }) => client.user.createOrg(input),
+    mutationFn: (input: { name: string; slug: string }) =>
+      client.user.createOrg(input),
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error ? err.message : "Failed to create organisation";
+      toastManager.add({ title: "Error", description: message, type: "error" });
+    },
     onSuccess: (data, input) => {
       queryClient.invalidateQueries(orpc.user.getOrgs.queryOptions());
       const orgSlug = (data as { slug?: string })?.slug ?? input.slug;
       setOpen(false);
       resetForm();
       navigate({ params: { orgSlug }, to: "/$orgSlug/~/projects" });
-    },
-    onError: (err: unknown) => {
-      const message = err instanceof Error ? err.message : "Failed to create organisation";
-      toastManager.add({ title: "Error", description: message, type: "error" });
     },
   });
 
@@ -81,10 +91,14 @@ export function CreateOrgDialog({ children, open: openProp, onOpenChange }: Crea
     onSubmit: async ({ value }) => {
       const slugAvailability = await checkOrgSlugAvailability(value.slug);
       if (!slugAvailability.available) {
-        setSlugSubmitError(slugAvailability.message ?? "This organisation slug is already taken.");
+        setSlugSubmitError(
+          slugAvailability.message ?? "This organisation slug is already taken."
+        );
         toastManager.add({
+          description:
+            slugAvailability.message ??
+            "This organisation slug is already taken.",
           title: "Error",
-          description: slugAvailability.message ?? "This organisation slug is already taken.",
           type: "error",
         });
         return;
@@ -117,11 +131,15 @@ export function CreateOrgDialog({ children, open: openProp, onOpenChange }: Crea
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      {children !== undefined && <DialogTrigger render={<span />}>{children}</DialogTrigger>}
+      {children !== undefined && (
+        <DialogTrigger render={<span />}>{children}</DialogTrigger>
+      )}
       <DialogPopup className="max-w-md">
         <DialogHeader>
           <DialogTitle>Create organisation</DialogTitle>
-          <DialogDescription>Set up a workspace for your team and projects.</DialogDescription>
+          <DialogDescription>
+            Set up a workspace for your team and projects.
+          </DialogDescription>
         </DialogHeader>
 
         <form
@@ -178,11 +196,16 @@ export function CreateOrgDialog({ children, open: openProp, onOpenChange }: Crea
           </DialogPanel>
 
           <DialogFooter>
-            <DialogClose render={<Button size="sm" type="button" variant="outline" />}>
+            <DialogClose
+              render={<Button size="sm" type="button" variant="outline" />}
+            >
               Close
             </DialogClose>
             <Button
-              disabled={createMutation.isPending || slugAvailability.status === "unavailable"}
+              disabled={
+                createMutation.isPending ||
+                slugAvailability.status === "unavailable"
+              }
               form="create-org-dialog-form"
               size="sm"
               type="submit"

@@ -2,9 +2,18 @@ import { call } from "@orpc/server";
 import { organization } from "@tailorkit/db/schema/auth";
 import { cliAuthSession, cliToken } from "@tailorkit/db/schema/cli-auth";
 import { project as projectTable } from "@tailorkit/db/schema/project";
-import { env } from "#env";
 import { eq } from "drizzle-orm";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vite-plus/test";
+
+import { env } from "#env";
+
 import type { Context } from "../context";
 import { createTestDb } from "../test/pglite";
 
@@ -23,7 +32,7 @@ const organizationId = "11111111-1111-4111-8111-111111111111";
 const projectId = "22222222-2222-4222-8222-222222222222";
 const scope = {
   name: "user",
-  value: { userId: "user_456", organizationId: "org_123" },
+  value: { organizationId: "org_123", userId: "user_456" },
 };
 const expectedScope = {
   name: "user",
@@ -34,28 +43,28 @@ const expectedScopeKey = "83f6cbb3372e91fda7451be1728a9e91";
 function createContext(): Context {
   return {
     organization: {
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
       id: organizationId,
-      publicId: "team0000000001",
-      name: "Analytical Engines",
-      slug: "analytical-engines",
       logo: null,
       metadata: null,
-      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      name: "Analytical Engines",
+      publicId: "team0000000001",
+      slug: "analytical-engines",
     },
     project: {
-      id: projectId,
-      organizationId,
-      name: "Compiler",
-      slug: "compiler",
       createdAt: new Date("2026-01-02T00:00:00.000Z"),
+      id: projectId,
+      name: "Compiler",
+      organizationId,
+      slug: "compiler",
       updatedAt: new Date("2026-01-02T00:00:00.000Z"),
     },
     storage: {
-      type: "s3",
-      createUploadUrl: vi.fn(),
       createDownloadUrl: vi.fn(),
+      createUploadUrl: vi.fn(),
       delete: vi.fn(),
       head: vi.fn(),
+      type: "s3",
     },
   };
 }
@@ -66,7 +75,9 @@ describe("platform CLI auth scopes", () => {
 
   beforeEach(async () => {
     if (!env.AUTH_SECRET) {
-      throw new Error("The CLI auth test requires AUTH_SECRET in its Vitest config.");
+      throw new Error(
+        "The CLI auth test requires AUTH_SECRET in its Vitest config."
+      );
     }
     const testDb = await createTestDb();
     client = testDb.client;
@@ -74,18 +85,18 @@ describe("platform CLI auth scopes", () => {
     testState.db = db;
 
     await db.insert(organization).values({
-      id: organizationId,
-      publicId: "team0000000001",
-      name: "Analytical Engines",
-      slug: "analytical-engines",
       createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      id: organizationId,
+      name: "Analytical Engines",
+      publicId: "team0000000001",
+      slug: "analytical-engines",
     });
     await db.insert(projectTable).values({
-      id: projectId,
-      organizationId,
-      name: "Compiler",
-      slug: "compiler",
       createdAt: new Date("2026-01-02T00:00:00.000Z"),
+      id: projectId,
+      name: "Compiler",
+      organizationId,
+      slug: "compiler",
       updatedAt: new Date("2026-01-02T00:00:00.000Z"),
     });
   });
@@ -101,13 +112,13 @@ describe("platform CLI auth scopes", () => {
     await call(
       cliAuthRouter.approve,
       { body: { scope, userCode: started.body.userCode } },
-      { context },
+      { context }
     );
 
     const polled = await call(
       cliAuthRouter.poll,
       { body: { deviceCode: started.body.deviceCode } },
-      { context },
+      { context }
     );
     if (polled.body.status !== "approved") {
       throw new Error("Expected CLI auth session to be approved.");
@@ -121,17 +132,17 @@ describe("platform CLI auth scopes", () => {
     const verified = await call(
       cliAuthRouter.verifyToken,
       { body: { deployToken: polled.body.deployToken } },
-      { context },
+      { context }
     );
     expect(verified.body).toEqual({ scope: expectedScope });
 
     const token = await db.query.cliToken.findFirst();
     expect(token).toEqual(
       expect.objectContaining({
+        lastUsedAt: expect.any(Date),
         scope: expectedScope,
         scopeKey: expectedScopeKey,
-        lastUsedAt: expect.any(Date),
-      }),
+      })
     );
   });
 
@@ -141,16 +152,22 @@ describe("platform CLI auth scopes", () => {
     await call(
       cliAuthRouter.approve,
       { body: { scope, userCode: started.body.userCode } },
-      { context },
+      { context }
     );
     const session = await db.query.cliAuthSession.findFirst();
-    if (!session) throw new Error("Expected CLI auth session.");
+    if (!session) {
+      throw new Error("Expected CLI auth session.");
+    }
     await db
       .update(cliAuthSession)
       .set({ scope: { name: "user", value: {} } })
       .where(eq(cliAuthSession.id, session.id));
     await expect(
-      call(cliAuthRouter.poll, { body: { deviceCode: started.body.deviceCode } }, { context }),
+      call(
+        cliAuthRouter.poll,
+        { body: { deviceCode: started.body.deviceCode } },
+        { context }
+      )
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
 
     await db
@@ -158,7 +175,11 @@ describe("platform CLI auth scopes", () => {
       .set({ scope: expectedScope, scopeKey: "0".repeat(32) })
       .where(eq(cliAuthSession.id, session.id));
     await expect(
-      call(cliAuthRouter.poll, { body: { deviceCode: started.body.deviceCode } }, { context }),
+      call(
+        cliAuthRouter.poll,
+        { body: { deviceCode: started.body.deviceCode } },
+        { context }
+      )
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
 
     await db
@@ -168,11 +189,15 @@ describe("platform CLI auth scopes", () => {
     const polled = await call(
       cliAuthRouter.poll,
       { body: { deviceCode: started.body.deviceCode } },
-      { context },
+      { context }
     );
-    if (polled.body.status !== "approved") throw new Error("Expected approved CLI token.");
+    if (polled.body.status !== "approved") {
+      throw new Error("Expected approved CLI token.");
+    }
     const token = await db.query.cliToken.findFirst();
-    if (!token) throw new Error("Expected CLI token.");
+    if (!token) {
+      throw new Error("Expected CLI token.");
+    }
     await db
       .update(cliToken)
       .set({ scope: { name: "user", value: {} } })
@@ -181,8 +206,8 @@ describe("platform CLI auth scopes", () => {
       call(
         cliAuthRouter.verifyToken,
         { body: { deployToken: polled.body.deployToken } },
-        { context },
-      ),
+        { context }
+      )
     ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
 
     await db
@@ -193,8 +218,8 @@ describe("platform CLI auth scopes", () => {
       call(
         cliAuthRouter.verifyToken,
         { body: { deployToken: polled.body.deployToken } },
-        { context },
-      ),
+        { context }
+      )
     ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
 });

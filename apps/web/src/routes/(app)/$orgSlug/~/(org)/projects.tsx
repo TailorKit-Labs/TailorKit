@@ -1,18 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
-import type { ReactNode } from "react";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { useStore } from "@tanstack/react-form";
-import { FolderIcon, FolderPlusIcon } from "lucide-react";
 import { Button } from "@tailorkit/ui/button";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@tailorkit/ui/empty";
 import {
   Dialog,
   DialogClose,
@@ -24,20 +10,41 @@ import {
   DialogPopup,
   DialogTrigger,
 } from "@tailorkit/ui/dialog";
-import { toastManager } from "@tailorkit/ui/toast";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@tailorkit/ui/empty";
 import { useAppForm } from "@tailorkit/ui/form";
+import { toastManager } from "@tailorkit/ui/toast";
+import { useStore } from "@tanstack/react-form";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { FolderIcon, FolderPlusIcon } from "lucide-react";
+import { useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { z } from "zod";
-import { PageLayout } from "#components/page-layout";
+
 import { OrgSlugAvailabilityIndicator } from "#components/org-slug-availability-indicator";
+import { PageLayout } from "#components/page-layout";
 import { client, orpc } from "#lib/orpc";
 import { setProjectApiKey } from "#utils/project-api-key-memory";
 
 export const Route = createFileRoute("/(app)/$orgSlug/~/(org)/projects")({
+  component: ProjectsPage,
   loader: ({ context, params }) =>
     context.queryClient.query(
-      context.orpc.project.list.queryOptions({ input: { orgSlug: params.orgSlug } }),
+      context.orpc.project.list.queryOptions({
+        input: { orgSlug: params.orgSlug },
+      })
     ),
-  component: ProjectsPage,
 });
 
 function toSlug(name: string) {
@@ -65,25 +72,34 @@ type ProjectSlugAvailability =
 
 function getProjectSlugAvailability(
   slug: string,
-  existingProjectSlugs: ReadonlySet<string>,
+  existingProjectSlugs: ReadonlySet<string>
 ): ProjectSlugAvailability {
   if (!slug) {
-    return { status: "idle", message: null };
+    return { message: null, status: "idle" };
   }
 
   if (slug.length < 3) {
-    return { status: "unavailable", message: "Slug must be at least 3 characters long." };
+    return {
+      message: "Slug must be at least 3 characters long.",
+      status: "unavailable",
+    };
   }
 
   if (slug.length > 64) {
-    return { status: "unavailable", message: "Slug must be at most 64 characters long." };
+    return {
+      message: "Slug must be at most 64 characters long.",
+      status: "unavailable",
+    };
   }
 
   if (existingProjectSlugs.has(slug)) {
-    return { status: "unavailable", message: "This project slug is already taken." };
+    return {
+      message: "This project slug is already taken.",
+      status: "unavailable",
+    };
   }
 
-  return { status: "available", message: null };
+  return { message: null, status: "available" };
 }
 
 interface CreateProjectDialogProps {
@@ -109,8 +125,15 @@ function CreateProjectDialog({
         orgSlug,
         slug: input.slug,
       }),
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error ? err.message : "Failed to create project";
+      toastManager.add({ title: "Error", description: message, type: "error" });
+    },
     onSuccess: (project) => {
-      queryClient.invalidateQueries(orpc.project.list.queryOptions({ input: { orgSlug } }));
+      queryClient.invalidateQueries(
+        orpc.project.list.queryOptions({ input: { orgSlug } })
+      );
       setProjectApiKey(orgSlug, project.slug, project.apiKey.key);
       form.reset();
       slugTouched.current = false;
@@ -119,21 +142,23 @@ function CreateProjectDialog({
         to: "/$orgSlug/$projectSlug/apps",
       });
     },
-    onError: (err: unknown) => {
-      const message = err instanceof Error ? err.message : "Failed to create project";
-      toastManager.add({ title: "Error", description: message, type: "error" });
-    },
   });
 
   const form = useAppForm({
     defaultValues: { name: "", slug: "" },
     onSubmit: async ({ value }) => {
-      const submitAvailability = getProjectSlugAvailability(value.slug, existingProjectSlugs);
+      const submitAvailability = getProjectSlugAvailability(
+        value.slug,
+        existingProjectSlugs
+      );
       if (submitAvailability.status !== "available") {
-        setSlugSubmitError(submitAvailability.message ?? "This project slug is not available.");
+        setSlugSubmitError(
+          submitAvailability.message ?? "This project slug is not available."
+        );
         toastManager.add({
+          description:
+            submitAvailability.message ?? "This project slug is not available.",
           title: "Error",
-          description: submitAvailability.message ?? "This project slug is not available.",
           type: "error",
         });
         return;
@@ -149,7 +174,10 @@ function CreateProjectDialog({
   });
 
   const slug = useStore(form.store, (state) => state.values.slug);
-  const slugAvailability = getProjectSlugAvailability(slug, existingProjectSlugs);
+  const slugAvailability = getProjectSlugAvailability(
+    slug,
+    existingProjectSlugs
+  );
 
   function resetForm() {
     slugTouched.current = false;
@@ -163,7 +191,9 @@ function CreateProjectDialog({
       <DialogPopup className="max-w-md">
         <DialogHeader>
           <DialogTitle>Create project</DialogTitle>
-          <DialogDescription>Projects keep work scoped inside this organisation.</DialogDescription>
+          <DialogDescription>
+            Projects keep work scoped inside this organisation.
+          </DialogDescription>
         </DialogHeader>
 
         <form
@@ -218,7 +248,9 @@ function CreateProjectDialog({
           </DialogPanel>
 
           <DialogFooter>
-            <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
+            <DialogClose
+              render={<Button size="sm" type="button" variant="ghost" />}
+            >
               Cancel
             </DialogClose>
             <form.AppForm>
@@ -236,14 +268,17 @@ function CreateProjectDialog({
 function ProjectsPage() {
   const { orgSlug } = Route.useParams();
   const { data: projects } = useSuspenseQuery(
-    orpc.project.list.queryOptions({ input: { orgSlug } }),
+    orpc.project.list.queryOptions({ input: { orgSlug } })
   );
   const existingProjectSlugs = new Set(projects.map((project) => project.slug));
 
   return (
     <PageLayout
       actions={
-        <CreateProjectDialog existingProjectSlugs={existingProjectSlugs} orgSlug={orgSlug}>
+        <CreateProjectDialog
+          existingProjectSlugs={existingProjectSlugs}
+          orgSlug={orgSlug}
+        >
           <Button size="sm">
             <FolderPlusIcon />
             New project
@@ -265,7 +300,10 @@ function ProjectsPage() {
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <CreateProjectDialog existingProjectSlugs={existingProjectSlugs} orgSlug={orgSlug}>
+            <CreateProjectDialog
+              existingProjectSlugs={existingProjectSlugs}
+              orgSlug={orgSlug}
+            >
               <Button size="sm">
                 <FolderPlusIcon />
                 Create project
@@ -278,15 +316,15 @@ function ProjectsPage() {
           {projects.map((project) => (
             <Link
               key={project.id}
-              className="group flex flex-col gap-2 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50"
+              className="group bg-card hover:bg-accent/50 flex flex-col gap-2 rounded-lg border p-4 transition-colors"
               params={{ orgSlug, projectSlug: project.slug }}
               to="/$orgSlug/$projectSlug"
             >
               <div className="flex items-center gap-2">
-                <span className="flex size-7 items-center justify-center rounded-md bg-muted">
-                  <FolderIcon className="size-3.5 text-muted-foreground" />
+                <span className="bg-muted flex size-7 items-center justify-center rounded-md">
+                  <FolderIcon className="text-muted-foreground size-3.5" />
                 </span>
-                <span className="font-medium text-sm">{project.name}</span>
+                <span className="text-sm font-medium">{project.name}</span>
               </div>
             </Link>
           ))}

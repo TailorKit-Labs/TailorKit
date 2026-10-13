@@ -1,6 +1,8 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { AppError } from "./errors";
+
 import type { FunctionKind } from "@tailorkit/app/server";
+
+import { AppError } from "./errors";
 
 export interface ExecutionContext {
   kind: FunctionKind;
@@ -28,6 +30,9 @@ export function installFetchGuard() {
   };
 }
 
-export function inExecutionContext<A>(scope: ExecutionContext, run: () => A): A {
+export function inExecutionContext<A>(
+  scope: ExecutionContext,
+  run: () => A
+): A {
   return context.run(scope, run);
 }

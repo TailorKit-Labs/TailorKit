@@ -1,24 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
+
 import { appAgent } from "./agent";
 
 const mocks = vi.hoisted(() => ({
   configure: vi.fn(),
-  prepareSandbox: vi.fn(),
-  writeAgentSchema: vi.fn(),
-  writeAgentToken: vi.fn(),
-  renewSandbox: vi.fn(),
   deleteSandbox: vi.fn(),
+  prepareSandbox: vi.fn(),
+  renewSandbox: vi.fn(),
   sleep: vi.fn(),
   stream: vi.fn(),
   writable: {},
+  writeAgentSchema: vi.fn(),
+  writeAgentToken: vi.fn(),
 }));
 vi.mock("./sandbox", () => ({
+  agentSchemaPath: "/workspace/tailorkit.schema.json",
+  deleteSandbox: mocks.deleteSandbox,
   prepareSandbox: mocks.prepareSandbox,
+  renewSandbox: mocks.renewSandbox,
   writeAgentSchema: mocks.writeAgentSchema,
   writeAgentToken: mocks.writeAgentToken,
-  agentSchemaPath: "/workspace/tailorkit.schema.json",
-  renewSandbox: mocks.renewSandbox,
-  deleteSandbox: mocks.deleteSandbox,
 }));
 vi.mock("@ai-sdk/workflow", () => ({
   WorkflowAgent: class {
@@ -30,34 +31,42 @@ vi.mock("@ai-sdk/workflow", () => ({
 }));
 vi.mock("workflow", () => ({
   getWorkflowMetadata: () => ({ workflowRunId: "run-1" }),
-  sleep: mocks.sleep,
   getWritable: () => mocks.writable,
+  sleep: mocks.sleep,
 }));
 
 const input = {
+  agentToken: "private-cli-token",
   appId: "app-123",
   hostUrl: "http://localhost:3000/api/tailorkit",
-  agentToken: "private-cli-token",
-  model: "test-model",
   messages: [{ role: "user" as const, content: "Build my app" }],
+  model: "test-model",
 };
 const sandboxName = "app-agent-run-1";
 
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.sleep.mockImplementation(() => new Promise(() => {}));
-  mocks.stream.mockImplementation(({ messages }) => Promise.resolve({ messages }));
+  mocks.stream.mockImplementation(({ messages }) =>
+    Promise.resolve({ messages })
+  );
 });
 
 describe("app agent workflow", () => {
   it("names the Drive directly from appId and streams only the supplied messages", async () => {
     expect(await appAgent(input)).toEqual({ messages: input.messages });
-    expect(mocks.prepareSandbox).toHaveBeenCalledWith("app-app-123", sandboxName);
-    expect(mocks.writeAgentToken).toHaveBeenCalledWith(sandboxName, input.agentToken);
+    expect(mocks.prepareSandbox).toHaveBeenCalledWith(
+      "app-app-123",
+      sandboxName
+    );
+    expect(mocks.writeAgentToken).toHaveBeenCalledWith(
+      sandboxName,
+      input.agentToken
+    );
     expect(mocks.stream.mock.lastCall?.[0]).toMatchObject({
       messages: input.messages,
-      writable: mocks.writable,
       timeout: 30 * 60_000,
+      writable: mocks.writable,
     });
     expect(Object.keys(mocks.configure.mock.lastCall?.[0].tools)).toEqual([
       "deploy",
@@ -69,41 +78,60 @@ describe("app agent workflow", () => {
       "glob",
       "ls",
     ]);
-    expect(mocks.configure.mock.lastCall?.[0].toolsContext.write).toEqual({ sandboxName });
-    expect(mocks.configure.mock.lastCall?.[0].toolsContext.deploy).toEqual({
+    expect(mocks.configure.mock.lastCall?.[0].toolsContext.write).toEqual({
       sandboxName,
-      appId: input.appId,
+    });
+    expect(mocks.configure.mock.lastCall?.[0].toolsContext.deploy).toEqual({
       agentToken: input.agentToken,
+      appId: input.appId,
+      sandboxName,
     });
     expect(mocks.deleteSandbox).toHaveBeenCalledWith(sandboxName);
     expect(mocks.renewSandbox).not.toHaveBeenCalled();
     expect(mocks.writeAgentSchema).not.toHaveBeenCalled();
-    const instructions = mocks.configure.mock.lastCall![0].instructions;
+    const { instructions } = mocks.configure.mock.lastCall![0];
     expect(instructions).not.toContain(input.agentToken);
-    expect(instructions).toContain("--host 'http://localhost:3000/api/tailorkit'");
+    expect(instructions).toContain(
+      "--host 'http://localhost:3000/api/tailorkit'"
+    );
     expect(instructions).toContain("pnpm run generate in /workspace/app");
     expect(instructions).not.toContain("--schema");
     expect(instructions).not.toContain("/workspace/tailorkit.schema.json");
   });
 
   it("writes each supplied schema before the model starts and uses it for init and generate", async () => {
-    const schema = { version: 1, components: {}, views: {}, slots: {}, tools: {} };
+    const schema = {
+      components: {},
+      slots: {},
+      tools: {},
+      version: 1,
+      views: {},
+    };
     mocks.configure.mockImplementation(() => {
-      expect(mocks.writeAgentSchema).toHaveBeenLastCalledWith(sandboxName, schema);
+      expect(mocks.writeAgentSchema).toHaveBeenLastCalledWith(
+        sandboxName,
+        schema
+      );
     });
     await appAgent({ ...input, schema });
     expect(mocks.writeAgentSchema).toHaveBeenCalledOnce();
-    const instructions = mocks.configure.mock.lastCall![0].instructions;
+    const { instructions } = mocks.configure.mock.lastCall![0];
     expect(instructions).toContain(
-      "--host 'http://localhost:3000/api/tailorkit' --schema /workspace/tailorkit.schema.json",
+      "--host 'http://localhost:3000/api/tailorkit' --schema /workspace/tailorkit.schema.json"
     );
-    expect(instructions).toContain("pnpm run generate --schema /workspace/tailorkit.schema.json");
+    expect(instructions).toContain(
+      "pnpm run generate --schema /workspace/tailorkit.schema.json"
+    );
     expect(instructions).toContain("including subsequent regeneration");
   });
 
   it("stops and cleans up when writing the schema fails", async () => {
-    mocks.writeAgentSchema.mockRejectedValueOnce(new Error("Schema write failed"));
-    await expect(appAgent({ ...input, schema: {} })).rejects.toThrow("Schema write failed");
+    mocks.writeAgentSchema.mockRejectedValueOnce(
+      new Error("Schema write failed")
+    );
+    await expect(appAgent({ ...input, schema: {} })).rejects.toThrow(
+      "Schema write failed"
+    );
     expect(mocks.configure).not.toHaveBeenCalled();
     expect(mocks.deleteSandbox).toHaveBeenCalledWith(sandboxName);
   });
@@ -117,7 +145,9 @@ describe("app agent workflow", () => {
     await vi.waitFor(() => expect(mocks.stream).toHaveBeenCalled());
     expect(mocks.deleteSandbox).not.toHaveBeenCalled();
     timer.resolve();
-    await vi.waitFor(() => expect(mocks.renewSandbox).toHaveBeenCalledWith(sandboxName));
+    await vi.waitFor(() =>
+      expect(mocks.renewSandbox).toHaveBeenCalledWith(sandboxName)
+    );
     expect(mocks.sleep).toHaveBeenCalledWith("5m");
     expect(mocks.deleteSandbox).not.toHaveBeenCalled();
     agent.resolve({ messages: input.messages });
@@ -129,7 +159,7 @@ describe("app agent workflow", () => {
     const agent = Promise.withResolvers<{ messages: typeof input.messages }>();
     const renewal = Promise.withResolvers<void>();
     mocks.stream.mockReturnValue(agent.promise);
-    mocks.sleep.mockResolvedValueOnce(undefined);
+    mocks.sleep.mockResolvedValueOnce();
     mocks.renewSandbox.mockReturnValue(renewal.promise);
     const run = appAgent(input);
     await vi.waitFor(() => expect(mocks.renewSandbox).toHaveBeenCalled());
@@ -144,12 +174,14 @@ describe("app agent workflow", () => {
   it("aborts on lost renewal but waits for the agent to settle before cleanup", async () => {
     const agent = Promise.withResolvers<{ messages: typeof input.messages }>();
     mocks.stream.mockReturnValue(agent.promise);
-    mocks.sleep.mockResolvedValueOnce(undefined);
+    mocks.sleep.mockResolvedValueOnce();
     mocks.renewSandbox.mockRejectedValue(new Error("Sandbox expired"));
     const run = appAgent(input);
     // Attach the rejection handler before settling the deferred model promise.
     const rejected = expect(run).rejects.toThrow("Sandbox expired");
-    await vi.waitFor(() => expect(mocks.stream.mock.lastCall?.[0].abortSignal.aborted).toBe(true));
+    await vi.waitFor(() =>
+      expect(mocks.stream.mock.lastCall?.[0].abortSignal.aborted).toBe(true)
+    );
     expect(mocks.deleteSandbox).not.toHaveBeenCalled();
     agent.resolve({ messages: input.messages });
     await rejected;
@@ -161,7 +193,9 @@ describe("app agent workflow", () => {
     await expect(appAgent(input)).rejects.toThrow("Model failed");
     expect(mocks.deleteSandbox).toHaveBeenCalledWith(sandboxName);
     mocks.stream.mockClear();
-    mocks.prepareSandbox.mockRejectedValue(new Error("App is already being edited"));
+    mocks.prepareSandbox.mockRejectedValue(
+      new Error("App is already being edited")
+    );
     await expect(appAgent(input)).rejects.toThrow("already being edited");
     expect(mocks.stream).not.toHaveBeenCalled();
     // Cleanup always targets this run's name, never another writer's name.

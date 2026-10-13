@@ -1,7 +1,8 @@
 import { z } from "zod";
+
+import { AppError } from "../errors";
 import { action, defineServer, isFunction } from "./functions";
 import type { AppDefinition, Functions, Identity } from "./functions";
-import { AppError } from "../errors";
 
 interface InstanceResolver {
   slot: string;
@@ -16,18 +17,22 @@ interface InstanceResolver {
 }
 
 const addressSchema = z.object({
-  slot: z.string().min(1).max(255),
   path: z.string().startsWith("/").max(1024),
+  slot: z.string().min(1).max(255),
 });
 
 function registeredQueries(functions: Functions): Functions {
   const queries: Record<string, Functions[string]> = {};
   for (const [name, fn] of Object.entries(functions)) {
     if (isFunction(fn)) {
-      if (fn.kind === "query") queries[name] = fn;
+      if (fn.kind === "query") {
+        queries[name] = fn;
+      }
     } else {
       const nested = registeredQueries(fn);
-      if (Object.keys(nested).length) queries[name] = nested;
+      if (Object.keys(nested).length) {
+        queries[name] = nested;
+      }
     }
   }
   return queries;
@@ -36,10 +41,12 @@ function registeredQueries(functions: Functions): Functions {
 /** Build-generated actions run through the existing authenticated action runtime. */
 export function withInstanceResolvers(
   app: AppDefinition,
-  resolvers: readonly InstanceResolver[],
+  resolvers: readonly InstanceResolver[]
 ): AppDefinition {
   if (Object.hasOwn(app.functions, "_tailorkit")) {
-    throw new Error("The _tailorkit function namespace is reserved by TailorKit.");
+    throw new Error(
+      "The _tailorkit function namespace is reserved by TailorKit."
+    );
   }
   const queries = registeredQueries(app.functions);
   const registry = new Map<
@@ -55,29 +62,35 @@ export function withInstanceResolvers(
     }
     if (paths.has(resolver.path)) {
       throw new Error(
-        `Duplicate instance resolver for slot "${resolver.slot}" and path "${resolver.path}".`,
+        `Duplicate instance resolver for slot "${resolver.slot}" and path "${resolver.path}".`
       );
     }
     const result = z
       .array(
         z.object({
+          data: resolver.dataSchema,
           key: z.string().min(1),
           metadata: z.record(z.string(), z.unknown()),
-          data: resolver.dataSchema,
-        }),
+        })
       )
-      .refine((items) => new Set(items.map((item) => item.key)).size === items.length, {
-        message: "Instance keys must be unique",
-      });
+      .refine(
+        (items) => new Set(items.map((item) => item.key)).size === items.length,
+        {
+          message: "Instance keys must be unique",
+        }
+      );
     paths.set(resolver.path, { resolver, result });
   }
   const instances = {
     resolve: action({
+      args: addressSchema.extend({
+        context: z.record(z.string(), z.unknown()),
+      }),
       functions: queries,
-      args: addressSchema.extend({ context: z.record(z.string(), z.unknown()) }),
       async handler({ args, identity, signal, queries }) {
         const entry = registry.get(args.slot)?.get(args.path);
-        if (!entry) throw new AppError("NOT_FOUND", "Instance resolver not found");
+        if (!entry)
+          throw new AppError("NOT_FOUND", "Instance resolver not found");
         const value = await entry.resolver.resolve({
           context: args.context,
           identity,
@@ -85,7 +98,11 @@ export function withInstanceResolvers(
           queries,
         });
         const result = entry.result.safeParse(value);
-        if (!result.success) throw new AppError("INTERNAL_SERVER_ERROR", "Invalid function result");
+        if (!result.success)
+          throw new AppError(
+            "INTERNAL_SERVER_ERROR",
+            "Invalid function result"
+          );
         return result.data;
       },
     }),

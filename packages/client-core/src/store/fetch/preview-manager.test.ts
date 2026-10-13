@@ -1,15 +1,17 @@
-import { testContract } from "../../test-contract";
 /* oxlint-disable require-await -- transport mocks return the asynchronous client shape. */
 import { createHash } from "node:crypto";
-import { afterEach, expect, it, vi } from "vite-plus/test";
-import { createPreviewManager } from "./preview-manager";
-import { createTailorKitStore } from "../store";
-import type { TailorKitApp } from "../../types";
+
 import type { PreviewEvent } from "@tailorkit/client-platform/preview";
+import { afterEach, expect, it, vi } from "vite-plus/test";
+
+import { testContract } from "../../test-contract";
+import type { TailorKitApp } from "../../types";
+import { createTailorKitStore } from "../store";
+import { createPreviewManager } from "./preview-manager";
 
 const state = vi.hoisted(() => ({
-  events: [] as PreviewEvent[],
   batches: [] as PreviewEvent[][],
+  events: [] as PreviewEvent[],
   hold: false,
   release: undefined as (() => void) | undefined,
 }));
@@ -52,24 +54,21 @@ it("publishes preview source and views together without notifying on subscriptio
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => ({
-      ok: true,
       json: async () => ({
         sessionId: "session",
         websocketUrl: "wss://platform.test/preview",
         token: "token",
       }),
-    })),
+      ok: true,
+    }))
   );
   const source = "export default 1";
   const bytes = Buffer.from(source);
-  const views = [{ slot: "page", path: "/new" }];
+  const views = [{ path: "/new", slot: "page" }];
   state.events = [
     {
-      type: "begin",
       buildId: "build",
-      revision: 1,
       manifest: {
-        views,
         files: [
           {
             path: "client.js",
@@ -79,25 +78,34 @@ it("publishes preview source and views together without notifying on subscriptio
             sha256: createHash("sha256").update(bytes).digest("hex"),
           },
         ],
+        views,
       },
+      revision: 1,
+      type: "begin",
     },
-    { type: "chunk", revision: 1, fileIndex: 0, chunkIndex: 0, base64: bytes.toString("base64") },
-    { type: "complete", revision: 1 },
+    {
+      base64: bytes.toString("base64"),
+      chunkIndex: 0,
+      fileIndex: 0,
+      revision: 1,
+      type: "chunk",
+    },
+    { revision: 1, type: "complete" },
   ];
   const app: TailorKitApp = {
     id: "app",
-    views: [{ slot: "page", path: "/old" }],
     preview: {
-      sessionId: "session",
       expiresAt: "later",
-      websocketUrl: "wss://platform.test/preview",
+      sessionId: "session",
       token: "token",
+      websocketUrl: "wss://platform.test/preview",
     },
+    views: [{ slot: "page", path: "/old" }],
   };
   const store = createTailorKitStore({
+    apps: [app],
     baseUrl: "https://host.test/api/tailorkit/",
     contract: testContract(),
-    apps: [app],
   });
   const snapshot = () => ({
     preview: store.previews.getSnapshot("session"),
@@ -133,34 +141,39 @@ it("refreshes the viewer token and reconnects when its stream ends", async () =>
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => ({
-      ok: true,
       json: async () => ({
         sessionId,
         websocketUrl: "wss://platform.test/preview",
         token: `token-${++refreshes}`,
         expiresAt: "2030-01-01T00:00:00.000Z",
       }),
-    })),
+      ok: true,
+    }))
   );
   const onEnded = vi.fn();
-  const manager = createPreviewManager(new URL("https://host.test/api/tailorkit/"), onEnded);
+  const manager = createPreviewManager(
+    new URL("https://host.test/api/tailorkit/"),
+    onEnded
+  );
   const unsubscribe = manager.subscribe(
     {
       id: "app",
       preview: {
-        sessionId,
         expiresAt: "later",
-        websocketUrl: "wss://platform.test/preview",
+        sessionId,
         token: "initial-token",
+        websocketUrl: "wss://platform.test/preview",
       },
     },
-    vi.fn(),
+    vi.fn()
   );
   await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
   expect(FakeSocket.instances[0]?.protocol).toBe("token-1");
   FakeSocket.instances[0]?.open();
   await vi.waitFor(() => expect(FakeSocket.instances[0]?.closed).toBe(true));
-  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(2), { timeout: 2500 });
+  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(2), {
+    timeout: 2500,
+  });
   expect(FakeSocket.instances[1]?.protocol).toBe("token-2");
   expect(onEnded).not.toHaveBeenCalled();
   unsubscribe();
@@ -178,33 +191,38 @@ it("reuses a still-valid refreshed token when the next metadata request fails", 
         throw new Error("Metadata temporarily unavailable.");
       }
       return {
-        ok: true,
         json: async () => ({
           sessionId,
           websocketUrl: "wss://platform.test/preview",
           token: refreshedToken,
           expiresAt: "2030-01-01T00:00:00.000Z",
         }),
+        ok: true,
       };
-    }),
+    })
   );
-  const manager = createPreviewManager(new URL("https://host.test/api/tailorkit/"), vi.fn());
+  const manager = createPreviewManager(
+    new URL("https://host.test/api/tailorkit/"),
+    vi.fn()
+  );
   const unsubscribe = manager.subscribe(
     {
       id: "app",
       preview: {
-        sessionId,
         expiresAt: "later",
-        websocketUrl: "wss://platform.test/preview",
+        sessionId,
         token: "expired-original",
+        websocketUrl: "wss://platform.test/preview",
       },
     },
-    vi.fn(),
+    vi.fn()
   );
   await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
   expect(FakeSocket.instances[0]?.protocol).toBe(refreshedToken);
   FakeSocket.instances[0]?.close();
-  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(2), { timeout: 2500 });
+  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(2), {
+    timeout: 2500,
+  });
   expect(FakeSocket.instances[1]?.protocol).toBe(refreshedToken);
   unsubscribe();
 });
@@ -218,23 +236,28 @@ it("uses updated app metadata after a failed refresh without replacing the subsc
     "fetch",
     vi.fn(async () => {
       throw new Error("Metadata unavailable.");
-    }),
+    })
   );
-  const manager = createPreviewManager(new URL("https://host.test/api/tailorkit/"), vi.fn());
+  const manager = createPreviewManager(
+    new URL("https://host.test/api/tailorkit/"),
+    vi.fn()
+  );
   const app = (token: string) => ({
     id: "app",
     preview: {
-      sessionId,
       expiresAt: "later",
-      websocketUrl: "wss://platform.test/preview",
+      sessionId,
       token,
+      websocketUrl: "wss://platform.test/preview",
     },
   });
   const unsubscribe = manager.subscribe(app(oldToken), vi.fn());
   await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
   manager.updateApp(app(newToken));
   FakeSocket.instances[0]?.close();
-  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(2), { timeout: 2500 });
+  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(2), {
+    timeout: 2500,
+  });
   expect(FakeSocket.instances[1]?.protocol).toBe(newToken);
   unsubscribe();
 });
@@ -254,23 +277,24 @@ it("keeps the last complete build through a corrupt transfer and recovers after 
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => ({
-      ok: true,
       json: async () => ({
         sessionId: "session",
         websocketUrl: "wss://platform.test/preview",
         token: "token",
       }),
-    })),
+      ok: true,
+    }))
   );
-  const buildEvents = (revision: number, source: string, chunk: string): PreviewEvent[] => {
+  const buildEvents = (
+    revision: number,
+    source: string,
+    chunk: string
+  ): PreviewEvent[] => {
     const bytes = Buffer.from(source);
     return [
       {
-        type: "begin",
         buildId: `build-${revision}`,
-        revision,
         manifest: {
-          views: [{ slot: "page", path: `/revision-${revision}` }],
           files: [
             {
               path: "client.js",
@@ -280,16 +304,19 @@ it("keeps the last complete build through a corrupt transfer and recovers after 
               sha256: createHash("sha256").update(bytes).digest("hex"),
             },
           ],
+          views: [{ slot: "page", path: `/revision-${revision}` }],
         },
+        revision,
+        type: "begin",
       },
       {
-        type: "chunk",
-        revision,
-        fileIndex: 0,
-        chunkIndex: 0,
         base64: Buffer.from(chunk).toString("base64"),
+        chunkIndex: 0,
+        fileIndex: 0,
+        revision,
+        type: "chunk",
       },
-      { type: "complete", revision },
+      { revision, type: "complete" },
     ];
   };
   state.batches = [
@@ -301,40 +328,57 @@ it("keeps the last complete build through a corrupt transfer and recovers after 
   const manager = createPreviewManager(
     new URL("https://host.test/api/tailorkit/"),
     vi.fn(),
-    onViews,
+    onViews
   );
   const unsubscribe = manager.subscribe(
     {
       id: "app",
       preview: {
-        sessionId: "session",
         expiresAt: "later",
-        websocketUrl: "wss://platform.test/preview",
+        sessionId: "session",
         token: "token",
+        websocketUrl: "wss://platform.test/preview",
       },
     },
-    vi.fn(),
+    vi.fn()
   );
   await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
   FakeSocket.instances[0]?.open();
   await vi.waitFor(() =>
-    expect(manager.getSnapshot("session")).toEqual({ revision: 1, source: "original" }),
+    expect(manager.getSnapshot("session")).toEqual({
+      revision: 1,
+      source: "original",
+    })
   );
   FakeSocket.instances[0]?.close();
-  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(2), { timeout: 2500 });
+  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(2), {
+    timeout: 2500,
+  });
   FakeSocket.instances[1]?.open();
   await vi.waitFor(() => expect(state.batches).toHaveLength(1));
-  expect(manager.getSnapshot("session")).toEqual({ revision: 1, source: "original" });
+  expect(manager.getSnapshot("session")).toEqual({
+    revision: 1,
+    source: "original",
+  });
   expect(onViews).toHaveBeenCalledTimes(1);
-  expect(onViews).toHaveBeenLastCalledWith("app", [{ slot: "page", path: "/revision-1" }]);
+  expect(onViews).toHaveBeenLastCalledWith("app", [
+    { path: "/revision-1", slot: "page" },
+  ]);
   FakeSocket.instances[1]?.close();
-  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(3), { timeout: 2500 });
+  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(3), {
+    timeout: 2500,
+  });
   FakeSocket.instances[2]?.open();
   await vi.waitFor(() =>
-    expect(manager.getSnapshot("session")).toEqual({ revision: 2, source: "replacement" }),
+    expect(manager.getSnapshot("session")).toEqual({
+      revision: 2,
+      source: "replacement",
+    })
   );
   expect(onViews).toHaveBeenCalledTimes(2);
-  expect(onViews).toHaveBeenLastCalledWith("app", [{ slot: "page", path: "/revision-2" }]);
+  expect(onViews).toHaveBeenLastCalledWith("app", [
+    { path: "/revision-2", slot: "page" },
+  ]);
   unsubscribe();
   expect(FakeSocket.instances[2]?.closed).toBe(true);
 });
@@ -344,29 +388,28 @@ it("keeps a reconnect's candidate when an older checksum finishes", async () => 
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => ({
-      ok: true,
       json: async () => ({
         sessionId: "session",
         websocketUrl: "wss://platform.test/preview",
         token: "token",
       }),
-    })),
+      ok: true,
+    }))
   );
   const oldDigest = Promise.withResolvers<ArrayBuffer>();
   const newDigest = Promise.withResolvers<ArrayBuffer>();
   let digestCalls = 0;
   vi.stubGlobal("crypto", {
     subtle: {
-      digest: () => (++digestCalls === 1 ? oldDigest.promise : newDigest.promise),
+      digest: () =>
+        ++digestCalls === 1 ? oldDigest.promise : newDigest.promise,
     },
   });
   const buildEvents = (revision: number, source: string): PreviewEvent[] => {
     const bytes = Buffer.from(source);
     return [
       {
-        type: "begin",
         buildId: `build-${revision}`,
-        revision,
         manifest: {
           files: [
             {
@@ -378,37 +421,57 @@ it("keeps a reconnect's candidate when an older checksum finishes", async () => 
             },
           ],
         },
+        revision,
+        type: "begin",
       },
-      { type: "chunk", revision, fileIndex: 0, chunkIndex: 0, base64: bytes.toString("base64") },
-      { type: "complete", revision },
+      {
+        base64: bytes.toString("base64"),
+        chunkIndex: 0,
+        fileIndex: 0,
+        revision,
+        type: "chunk",
+      },
+      { revision, type: "complete" },
     ];
   };
   state.batches = [buildEvents(1, "old"), buildEvents(2, "new")];
-  const manager = createPreviewManager(new URL("https://host.test/api/tailorkit/"), vi.fn());
+  const manager = createPreviewManager(
+    new URL("https://host.test/api/tailorkit/"),
+    vi.fn()
+  );
   const unsubscribe = manager.subscribe(
     {
       id: "app",
       preview: {
-        sessionId: "session",
         expiresAt: "later",
-        websocketUrl: "wss://platform.test/preview",
+        sessionId: "session",
         token: "token",
+        websocketUrl: "wss://platform.test/preview",
       },
     },
-    vi.fn(),
+    vi.fn()
   );
   await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
   FakeSocket.instances[0]?.open();
   await vi.waitFor(() => expect(digestCalls).toBe(1));
   FakeSocket.instances[0]?.close();
-  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(2), { timeout: 2500 });
+  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(2), {
+    timeout: 2500,
+  });
   FakeSocket.instances[1]?.open();
   await vi.waitFor(() => expect(digestCalls).toBe(2));
-  oldDigest.resolve(Uint8Array.from(createHash("sha256").update("old").digest()).buffer);
+  oldDigest.resolve(
+    Uint8Array.from(createHash("sha256").update("old").digest()).buffer
+  );
   await new Promise((resolve) => setTimeout(resolve, 0));
-  newDigest.resolve(Uint8Array.from(createHash("sha256").update("new").digest()).buffer);
+  newDigest.resolve(
+    Uint8Array.from(createHash("sha256").update("new").digest()).buffer
+  );
   await vi.waitFor(() =>
-    expect(manager.getSnapshot("session")).toEqual({ revision: 2, source: "new" }),
+    expect(manager.getSnapshot("session")).toEqual({
+      revision: 2,
+      source: "new",
+    })
   );
   unsubscribe();
 });
@@ -419,21 +482,19 @@ it("clears the published preview before refreshing apps when a session ends", as
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => ({
-      ok: true,
       json: async () => ({
         sessionId: "session",
         websocketUrl: "wss://platform.test/preview",
         token: "token",
       }),
-    })),
+      ok: true,
+    }))
   );
   const source = "export default 1";
   const bytes = Buffer.from(source);
   state.events = [
     {
-      type: "begin",
       buildId: "build",
-      revision: 1,
       manifest: {
         files: [
           {
@@ -445,24 +506,35 @@ it("clears the published preview before refreshing apps when a session ends", as
           },
         ],
       },
+      revision: 1,
+      type: "begin",
     },
-    { type: "chunk", revision: 1, fileIndex: 0, chunkIndex: 0, base64: bytes.toString("base64") },
-    { type: "complete", revision: 1 },
+    {
+      base64: bytes.toString("base64"),
+      chunkIndex: 0,
+      fileIndex: 0,
+      revision: 1,
+      type: "chunk",
+    },
+    { revision: 1, type: "complete" },
   ];
   const snapshots: { revision: number; source: string | null }[] = [];
   const endedSnapshots: { revision: number; source: string | null }[] = [];
   const onEnded = vi.fn(() => {
     endedSnapshots.push(manager.getSnapshot("session"));
   });
-  const manager = createPreviewManager(new URL("https://host.test/api/tailorkit/"), onEnded);
+  const manager = createPreviewManager(
+    new URL("https://host.test/api/tailorkit/"),
+    onEnded
+  );
   const unsubscribe = manager.subscribe(
     {
       id: "app",
       preview: {
-        sessionId: "session",
         expiresAt: "later",
-        websocketUrl: "wss://platform.test/preview",
+        sessionId: "session",
         token: "token",
+        websocketUrl: "wss://platform.test/preview",
       },
     },
     () => {
@@ -470,7 +542,7 @@ it("clears the published preview before refreshing apps when a session ends", as
       if (snapshots.length === 1) {
         state.events.push({ type: "ended" });
       }
-    },
+    }
   );
   await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
   FakeSocket.instances[0]?.open();
@@ -490,21 +562,19 @@ it("shares one socket, applies only complete checksummed revisions, and closes o
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => ({
-      ok: true,
       json: async () => ({
         sessionId: "session",
         websocketUrl: "wss://platform.test/preview",
         token: "token",
       }),
-    })),
+      ok: true,
+    }))
   );
   const source = "export default 1";
   const bytes = Buffer.from(source);
   state.events = [
     {
-      type: "begin",
       buildId: "build",
-      revision: 1,
       manifest: {
         files: [
           {
@@ -516,18 +586,29 @@ it("shares one socket, applies only complete checksummed revisions, and closes o
           },
         ],
       },
+      revision: 1,
+      type: "begin",
     },
-    { type: "chunk", revision: 1, fileIndex: 0, chunkIndex: 0, base64: bytes.toString("base64") },
-    { type: "complete", revision: 1 },
+    {
+      base64: bytes.toString("base64"),
+      chunkIndex: 0,
+      fileIndex: 0,
+      revision: 1,
+      type: "chunk",
+    },
+    { revision: 1, type: "complete" },
   ];
-  const manager = createPreviewManager(new URL("https://host.test/api/tailorkit/"), vi.fn());
+  const manager = createPreviewManager(
+    new URL("https://host.test/api/tailorkit/"),
+    vi.fn()
+  );
   const app = {
     id: "app",
     preview: {
-      sessionId: "session",
       expiresAt: "later",
-      websocketUrl: "wss://platform.test/preview",
+      sessionId: "session",
       token: "token",
+      websocketUrl: "wss://platform.test/preview",
     },
   };
   const listener = vi.fn();
@@ -535,7 +616,9 @@ it("shares one socket, applies only complete checksummed revisions, and closes o
   const second = manager.subscribe(app, vi.fn());
   await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
   FakeSocket.instances[0]?.open();
-  await vi.waitFor(() => expect(manager.getSnapshot("session")).toEqual({ revision: 1, source }));
+  await vi.waitFor(() =>
+    expect(manager.getSnapshot("session")).toEqual({ revision: 1, source })
+  );
   first();
   first();
   expect(FakeSocket.instances[0]?.closed).toBe(false);
@@ -551,20 +634,23 @@ it("does not open a socket after disposal while metadata is pending", async () =
   vi.stubGlobal("WebSocket", FakeSocket);
   vi.stubGlobal(
     "fetch",
-    vi.fn(() => response),
+    vi.fn(() => response)
   );
-  const manager = createPreviewManager(new URL("https://host.test/api/tailorkit/"), vi.fn());
+  const manager = createPreviewManager(
+    new URL("https://host.test/api/tailorkit/"),
+    vi.fn()
+  );
   const stop = manager.subscribe(
     {
       id: "app",
       preview: {
-        sessionId: "session",
         expiresAt: "later",
-        websocketUrl: "wss://platform.test/preview",
+        sessionId: "session",
         token: "token",
+        websocketUrl: "wss://platform.test/preview",
       },
     },
-    vi.fn(),
+    vi.fn()
   );
   manager.dispose();
   resolve(new Response(null, { status: 503 }));

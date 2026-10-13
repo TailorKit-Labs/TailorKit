@@ -1,4 +1,5 @@
 import { and, eq } from "drizzle-orm";
+
 import { db, teamMembers, teams, users } from "./db";
 
 export const demoSessionCookie = "tailorkit_playground";
@@ -13,13 +14,13 @@ export interface DemoSession {
 export function listSignInChoices() {
   return db
     .select({
+      avatar: users.avatar,
+      email: users.email,
+      teamId: teams.id,
+      teamKey: teams.key,
+      teamName: teams.name,
       userId: users.id,
       userName: users.name,
-      email: users.email,
-      avatar: users.avatar,
-      teamId: teams.id,
-      teamName: teams.name,
-      teamKey: teams.key,
     })
     .from(teamMembers)
     .innerJoin(users, eq(teamMembers.userId, users.id))
@@ -27,15 +28,21 @@ export function listSignInChoices() {
     .all();
 }
 
-export function getDemoSessionFromRequest(request: Request): DemoSession | null {
+export function getDemoSessionFromRequest(
+  request: Request
+): DemoSession | null {
   const value = getCookie(request.headers.get("cookie"), demoSessionCookie);
-  if (!value) return null;
+  if (!value) {
+    return null;
+  }
 
   const [userId, teamId] = value.split(".");
-  if (!userId || !teamId) return null;
+  if (!userId || !teamId) {
+    return null;
+  }
 
   const membership = db
-    .select({ user: users, team: teams })
+    .select({ team: teams, user: users })
     .from(teamMembers)
     .innerJoin(users, eq(teamMembers.userId, users.id))
     .innerJoin(teams, eq(teamMembers.teamId, teams.id))
@@ -56,7 +63,9 @@ export function clearDemoSessionCookie() {
 function getCookie(cookieHeader: string | null, name: string) {
   for (const part of cookieHeader?.split(";") ?? []) {
     const [key, ...value] = part.trim().split("=");
-    if (key === name) return decodeURIComponent(value.join("="));
+    if (key === name) {
+      return decodeURIComponent(value.join("="));
+    }
   }
   return null;
 }

@@ -1,17 +1,23 @@
-import { AppError } from "./errors";
-
 import type { Invocation } from "@tailorkit/app/protocol";
-import type { AppDefinition, Identity, FunctionKind } from "@tailorkit/app/server";
+import type {
+  AppDefinition,
+  Identity,
+  FunctionKind,
+} from "@tailorkit/app/server";
+
+import { AppError } from "./errors";
 
 export type Functions = AppDefinition["functions"];
 type RegisteredFunction = Exclude<Functions[string], Functions>;
-export function isFunction(value: Functions[string]): value is RegisteredFunction {
+export function isFunction(
+  value: Functions[string]
+): value is RegisteredFunction {
   return typeof value.kind === "string" && typeof value.handler === "function";
 }
 
 export function resolveFunction(
   functions: Functions,
-  name: string,
+  name: string
 ): RegisteredFunction | undefined {
   let current: RegisteredFunction | Functions = functions;
   for (const part of name.split(".")) {
@@ -28,8 +34,12 @@ export function resolveFunction(
 }
 
 function freezeIdentity(value: unknown): void {
-  if (!value || typeof value !== "object" || Object.isFrozen(value)) return;
-  for (const child of Object.values(value)) freezeIdentity(child);
+  if (!value || typeof value !== "object" || Object.isFrozen(value)) {
+    return;
+  }
+  for (const child of Object.values(value)) {
+    freezeIdentity(child);
+  }
   Object.freeze(value);
 }
 
@@ -37,7 +47,7 @@ export function prepareFunction(
   app: AppDefinition,
   input: Invocation,
   identity: Identity,
-  kind: FunctionKind,
+  kind: FunctionKind
 ) {
   if (identity.expiresAt <= Date.now()) {
     throw new AppError("UNAUTHORIZED", "App token expired");
@@ -51,7 +61,7 @@ export function prepareFunction(
   if (!args.success) {
     throw new AppError("BAD_REQUEST", "Invalid function arguments");
   }
-  return { fn, args: args.data };
+  return { args: args.data, fn };
 }
 
 /** Validate serialization before a mutation can commit or an action can return. */

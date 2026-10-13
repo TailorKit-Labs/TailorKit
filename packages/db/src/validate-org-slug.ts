@@ -581,30 +581,30 @@ export function isOrgSlugReserved(slug: string) {
 export function validateOrgSlug(slug: string) {
   if (isOrgSlugReserved(slug)) {
     return {
-      valid: false,
       reason: `Slug "${slug}" is reserved and cannot be used.`,
+      valid: false,
     };
   }
 
   if (slug.length < 3) {
     return {
-      valid: false,
       reason: `Slug "${slug}" must be at least 3 characters long.`,
+      valid: false,
     };
   }
 
   if (slug.length > 64) {
     return {
-      valid: false,
       reason: `Slug "${slug}" must be at most 64 characters long.`,
+      valid: false,
     };
   }
 
   const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
   if (!SLUG_RE.test(slug)) {
     return {
-      valid: false,
       reason: `Slug "${slug}" contains invalid characters.`,
+      valid: false,
     };
   }
 

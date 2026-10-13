@@ -1,5 +1,6 @@
 import { allTasks } from "nanostores";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+
 import { createFetchCache, serializeCacheKey } from "./cache";
 
 afterEach(() => vi.useRealTimers());
@@ -17,7 +18,7 @@ describe("fetch cache", () => {
     const cache = createFetchCache({ gcTime: Infinity });
     const response = deferred<string[]>();
     const fetcher = vi.fn(() => response.promise);
-    const first = cache.getStore(["apps", { b: 2, a: 1 }], fetcher);
+    const first = cache.getStore(["apps", { a: 1, b: 2 }], fetcher);
     const second = cache.getStore(["apps", { a: 1, b: 2 }], fetcher);
     const listener = vi.fn();
     const stop = second.subscribe(listener);
@@ -29,8 +30,8 @@ describe("fetch cache", () => {
     expect(fetcher).toHaveBeenCalledOnce();
     expect(second.getSnapshot()).toMatchObject({
       data: ["app"],
-      status: "ready",
       isFetching: false,
+      status: "ready",
     });
     expect(listener).toHaveBeenCalledTimes(2);
     stop();
@@ -41,7 +42,7 @@ describe("fetch cache", () => {
     vi.useFakeTimers();
     vi.setSystemTime(1000);
     const fetcher = vi.fn().mockResolvedValue("data");
-    const cache = createFetchCache({ staleTime: 100, gcTime: Infinity });
+    const cache = createFetchCache({ gcTime: Infinity, staleTime: 100 });
     const store = cache.getStore(["apps"], fetcher);
     await store.fetch();
     await store.fetch();
@@ -62,14 +63,28 @@ describe("fetch cache", () => {
 
   it("keeps successful data available while revalidating", async () => {
     const response = deferred<string>();
-    const fetcher = vi.fn().mockResolvedValueOnce("old").mockReturnValueOnce(response.promise);
-    const store = createFetchCache({ gcTime: Infinity }).getStore(["apps"], fetcher);
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce("old")
+      .mockReturnValueOnce(response.promise);
+    const store = createFetchCache({ gcTime: Infinity }).getStore(
+      ["apps"],
+      fetcher
+    );
     await store.fetch();
     const pending = store.fetch({ force: true });
-    expect(store.getSnapshot()).toMatchObject({ data: "old", status: "ready", isFetching: true });
+    expect(store.getSnapshot()).toMatchObject({
+      data: "old",
+      isFetching: true,
+      status: "ready",
+    });
     response.resolve("new");
     await pending;
-    expect(store.getSnapshot()).toMatchObject({ data: "new", status: "ready", isFetching: false });
+    expect(store.getSnapshot()).toMatchObject({
+      data: "new",
+      isFetching: false,
+      status: "ready",
+    });
   });
 
   it("evicts unused data after gcTime and retains actively observed data", async () => {
@@ -100,7 +115,7 @@ describe("fetch cache", () => {
         signal = input;
         return response.promise;
       },
-      { abortOnUnsubscribe: true },
+      { abortOnUnsubscribe: true }
     );
     const stopFirst = store.subscribe(vi.fn());
     const stopLast = store.subscribe(vi.fn());
@@ -113,15 +128,19 @@ describe("fetch cache", () => {
     expect(signal.aborted).toBe(true);
     response.resolve("late");
     await pending;
-    expect(store.getSnapshot()).toMatchObject({ status: "idle", data: undefined });
+    expect(store.getSnapshot()).toMatchObject({
+      data: undefined,
+      status: "idle",
+    });
   });
 
   it("retains unused responses for the full gcTime beyond the timer limit", async () => {
     vi.useFakeTimers();
     const timerLimit = 2_147_483_647;
     const gcTime = timerLimit + 1000;
-    const store = createFetchCache({ gcTime, staleTime: Infinity }).getStore(["apps"], () =>
-      Promise.resolve("data"),
+    const store = createFetchCache({ gcTime, staleTime: Infinity }).getStore(
+      ["apps"],
+      () => Promise.resolve("data")
     );
     await store.fetch();
     vi.advanceTimersByTime(timerLimit);
@@ -136,7 +155,9 @@ describe("fetch cache", () => {
     vi.useFakeTimers();
     const timerLimit = 2_147_483_647;
     const gcTime = timerLimit + 1000;
-    const store = createFetchCache({ gcTime }).getStore(["apps"], () => Promise.resolve("data"));
+    const store = createFetchCache({ gcTime }).getStore(["apps"], () =>
+      Promise.resolve("data")
+    );
     await store.fetch();
     vi.advanceTimersByTime(timerLimit);
     const stop = store.subscribe(vi.fn());
@@ -152,8 +173,14 @@ describe("fetch cache", () => {
   it("forces a new request and discards the superseded response", async () => {
     const old = deferred<string>();
     const fresh = deferred<string>();
-    const fetcher = vi.fn().mockReturnValueOnce(old.promise).mockReturnValueOnce(fresh.promise);
-    const store = createFetchCache({ gcTime: Infinity }).getStore(["apps"], fetcher);
+    const fetcher = vi
+      .fn()
+      .mockReturnValueOnce(old.promise)
+      .mockReturnValueOnce(fresh.promise);
+    const store = createFetchCache({ gcTime: Infinity }).getStore(
+      ["apps"],
+      fetcher
+    );
     const first = store.fetch();
     await Promise.resolve();
     const second = store.fetch({ force: true });
@@ -169,10 +196,10 @@ describe("fetch cache", () => {
 
   it("invalidates active stores and marks inactive data stale without fetching", async () => {
     const fetcher = vi.fn().mockResolvedValue("data");
-    const store = createFetchCache({ gcTime: Infinity, staleTime: Infinity }).getStore(
-      ["apps"],
-      fetcher,
-    );
+    const store = createFetchCache({
+      gcTime: Infinity,
+      staleTime: Infinity,
+    }).getStore(["apps"], fetcher);
     await store.fetch();
     await store.invalidate();
     expect(fetcher).toHaveBeenCalledOnce();
@@ -191,14 +218,23 @@ describe("fetch cache", () => {
         throw new Error("offline");
       })
       .mockResolvedValue("data");
-    const store = createFetchCache({ gcTime: Infinity }).getStore(["apps"], fetcher);
+    const store = createFetchCache({ gcTime: Infinity }).getStore(
+      ["apps"],
+      fetcher
+    );
     const stop = store.subscribe(() => {
-      if (store.getSnapshot().isFetching) void store.fetch();
+      if (store.getSnapshot().isFetching) {
+        void store.fetch();
+      }
     });
     await store.fetch();
     expect(store.getSnapshot().error?.message).toBe("offline");
     await store.fetch();
-    expect(store.getSnapshot()).toMatchObject({ data: "data", error: null, status: "ready" });
+    expect(store.getSnapshot()).toMatchObject({
+      data: "data",
+      error: null,
+      status: "ready",
+    });
     expect(fetcher).toHaveBeenCalledTimes(2);
     stop();
   });
@@ -207,8 +243,9 @@ describe("fetch cache", () => {
     const response = deferred<string>();
     const cache = createFetchCache({ gcTime: Infinity });
     const store = cache.getStore(["apps"], () => response.promise);
-    const other = createFetchCache({ gcTime: Infinity }).getStore(["apps"], () =>
-      Promise.resolve("other"),
+    const other = createFetchCache({ gcTime: Infinity }).getStore(
+      ["apps"],
+      () => Promise.resolve("other")
     );
     const stop = store.subscribe(vi.fn());
     const pending = store.fetch();
@@ -224,7 +261,7 @@ describe("fetch cache", () => {
     const response = deferred<string>();
     const store = createFetchCache({ gcTime: Infinity }).getStore(
       ["tasks"],
-      () => response.promise,
+      () => response.promise
     );
     const listener = vi.fn();
     const stop = store.state.listen(listener);
@@ -238,31 +275,49 @@ describe("fetch cache", () => {
     expect(settled).toBe(false);
     response.resolve("loaded");
     await tasks;
-    expect(store.state.get()).toMatchObject({ data: "loaded", status: "ready" });
+    expect(store.state.get()).toMatchObject({
+      data: "loaded",
+      status: "ready",
+    });
     expect(listener).toHaveBeenCalledTimes(2);
     stop();
   });
 
   it("aborts when the last Nano Store reader leaves before a request starts", async () => {
     const fetcher = vi.fn().mockResolvedValue("unused");
-    const store = createFetchCache({ gcTime: Infinity }).getStore(["cancel"], fetcher, {
-      abortOnUnsubscribe: true,
-    });
+    const store = createFetchCache({ gcTime: Infinity }).getStore(
+      ["cancel"],
+      fetcher,
+      {
+        abortOnUnsubscribe: true,
+      }
+    );
     const stop = store.state.listen(vi.fn());
     const pending = store.fetch();
     stop();
     await pending;
     expect(fetcher).not.toHaveBeenCalled();
-    expect(store.state.get()).toMatchObject({ status: "idle", isFetching: false });
+    expect(store.state.get()).toMatchObject({
+      isFetching: false,
+      status: "idle",
+    });
   });
 
   it("does not clear a request started by a settlement listener", async () => {
     const response = deferred<string>();
-    const fetcher = vi.fn().mockResolvedValueOnce("first").mockReturnValueOnce(response.promise);
-    const store = createFetchCache({ gcTime: Infinity }).getStore(["reentrant"], fetcher);
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce("first")
+      .mockReturnValueOnce(response.promise);
+    const store = createFetchCache({ gcTime: Infinity }).getStore(
+      ["reentrant"],
+      fetcher
+    );
     let second: Promise<void> | undefined;
     const stop = store.state.listen((snapshot) => {
-      if (snapshot.data === "first" && !snapshot.isFetching) second = store.fetch({ force: true });
+      if (snapshot.data === "first" && !snapshot.isFetching) {
+        second = store.fetch({ force: true });
+      }
     });
     await store.fetch();
     expect(store.fetch()).toBe(second);
@@ -273,12 +328,14 @@ describe("fetch cache", () => {
   });
 
   it("keeps previews, deployments, and input arrays distinct", () => {
-    expect(serializeCacheKey(["a", { z: 1, a: { b: 2, a: 3 } }])).toBe(
-      serializeCacheKey(["a", { a: { a: 3, b: 2 }, z: 1 }]),
+    expect(serializeCacheKey(["a", { a: { a: 3, b: 2 }, z: 1 }])).toBe(
+      serializeCacheKey(["a", { a: { a: 3, b: 2 }, z: 1 }])
     );
-    expect(serializeCacheKey(["a", [1, 2]])).not.toBe(serializeCacheKey(["a", [2, 1]]));
+    expect(serializeCacheKey(["a", [1, 2]])).not.toBe(
+      serializeCacheKey(["a", [2, 1]])
+    );
     expect(serializeCacheKey(["app", "deployment1"])).not.toBe(
-      serializeCacheKey(["app", "deployment2"]),
+      serializeCacheKey(["app", "deployment2"])
     );
   });
 });

@@ -1,10 +1,11 @@
-import { createSnapshotStore } from "../snapshot-store";
 import type { ViewInstance } from "@tailorkit/app/client";
 import type { TailorKitContract } from "@tailorkit/core/schema";
 import type { ActiveView } from "@tailorkit/core/views";
+
 import type { TailorKitFetchClient } from "../../client/fetch-client";
 import { resolveSlotView } from "../../client/slot-view";
 import type { TailorKitApp } from "../../types";
+import { createSnapshotStore } from "../snapshot-store";
 import type { FetchCacheOptions, FetchOptions, FetchSnapshot } from "./cache";
 
 const contractIds = new WeakMap<TailorKitContract, number>();
@@ -14,9 +15,10 @@ interface SingleSlotItem {
   app: TailorKitApp;
 }
 
-export type SlotItem<TMultiple extends boolean = boolean> = TMultiple extends true
-  ? ViewInstance & { app: TailorKitApp }
-  : SingleSlotItem;
+export type SlotItem<TMultiple extends boolean = boolean> =
+  TMultiple extends true
+    ? ViewInstance & { app: TailorKitApp }
+    : SingleSlotItem;
 
 export interface SlotStoreOptions extends FetchCacheOptions {
   apps: TailorKitApp[];
@@ -42,7 +44,7 @@ interface Result {
 export function createSlotStore(
   client: TailorKitFetchClient,
   contract: TailorKitContract,
-  options: SlotStoreOptions,
+  options: SlotStoreOptions
 ) {
   const {
     apps,
@@ -66,22 +68,33 @@ export function createSlotStore(
   const waiting: SlotSnapshot = {
     data: undefined,
     error: appsStatus === "error" ? appsError : null,
-    status: appsStatus,
     isFetching: false,
+    status: appsStatus,
   };
   const query = client.cache.getStore<Result>(
-    ["tailorkit", client.baseUrl.toString(), "slot", contractId, apps, slot, activeView],
+    [
+      "tailorkit",
+      client.baseUrl.toString(),
+      "slot",
+      contractId,
+      apps,
+      slot,
+      activeView,
+    ],
     async (signal) => {
       const candidates = apps.filter((app) =>
-        app.views?.some((view) => view.slot === slot && !view.disabled),
+        app.views?.some((view) => view.slot === slot && !view.disabled)
       );
-      if (!candidates.length) return { status: "ready", data: [] };
+      if (!candidates.length) {
+        return { status: "ready", data: [] };
+      }
       const schema = contract;
       const definition = schema.slots[slot];
-      if (!definition) return { status: "ready", data: [] };
+      if (!definition) {
+        return { status: "ready", data: [] };
+      }
       if (definition.multiple !== true) {
         return {
-          status: "ready",
           data: candidates
             .filter((app) =>
               app.views?.some(
@@ -89,38 +102,53 @@ export function createSlotStore(
                   view.slot === slot &&
                   !view.disabled &&
                   !view.instances &&
-                  definition.views.includes(view.path),
-              ),
+                  definition.views.includes(view.path)
+              )
             )
             .map((app) => ({ app })),
+          status: "ready",
         };
       }
-      if (activeView === null) return { status: "idle" };
+      if (activeView === null) {
+        return { status: "idle" };
+      }
       const matches = candidates.flatMap((app) => {
-        const resolved = resolveSlotView(app.views ?? [], slot, activeView, schema);
+        const resolved = resolveSlotView(
+          app.views ?? [],
+          slot,
+          activeView,
+          schema
+        );
         return resolved?.instances ? [{ app, resolved }] : [];
       });
       for (const { resolved } of matches) {
-        if (resolved.status === "error")
-          throw new Error(`Context for view "${resolved.view}" is unavailable.`);
+        if (resolved.status === "error") {
+          throw new Error(
+            `Context for view "${resolved.view}" is unavailable.`
+          );
+        }
       }
-      if (matches.some(({ resolved }) => resolved.status !== "ready")) return { status: "loading" };
+      if (matches.some(({ resolved }) => resolved.status !== "ready")) {
+        return { status: "loading" };
+      }
       const controller = new AbortController();
       const abort = () => controller.abort();
       signal.addEventListener("abort", abort, { once: true });
       try {
         const results = await Promise.all(
           matches.map(async ({ app, resolved }) => {
-            if (resolved.status !== "ready") return [];
+            if (resolved.status !== "ready") {
+              return [];
+            }
             const data = await client.endpoints.slotInstances(
               app,
-              { slot, path: resolved.view, context: resolved.context },
-              controller.signal,
+              { context: resolved.context, path: resolved.view, slot },
+              controller.signal
             );
             return data.map((instance) => ({ ...instance, app }));
-          }),
+          })
         );
-        return { status: "ready", data: results.flat() };
+        return { data: results.flat(), status: "ready" };
       } catch (error) {
         controller.abort();
         throw error;
@@ -128,11 +156,13 @@ export function createSlotStore(
         signal.removeEventListener("abort", abort);
       }
     },
-    { ...client.cacheOptions?.slot, ...settings, abortOnUnsubscribe: true },
+    { ...client.cacheOptions?.slot, ...settings, abortOnUnsubscribe: true }
   );
   let last: FetchSnapshot<Result> | undefined;
   let snapshot: SlotSnapshot;
   const store = {
+    fetch: (fetchOptions: FetchOptions = {}) =>
+      enabled ? query.fetch(fetchOptions) : Promise.resolve(),
     getSnapshot(): SlotSnapshot {
       if (!enabled) return waiting;
       const current = query.getSnapshot();
@@ -140,17 +170,20 @@ export function createSlotStore(
         snapshot = {
           data: current.data?.data,
           error: current.error,
-          status: current.status === "ready" ? current.data!.status : current.status,
+          status:
+            current.status === "ready" ? current.data!.status : current.status,
           isFetching: current.isFetching,
         };
         last = current;
       }
       return snapshot;
     },
-    subscribe: (listener: () => void) => (enabled ? query.subscribe(listener) : () => {}),
-    fetch: (fetchOptions: FetchOptions = {}) =>
-      enabled ? query.fetch(fetchOptions) : Promise.resolve(),
     invalidate: () => (enabled ? query.invalidate() : Promise.resolve()),
+    subscribe: (listener: () => void) =>
+      enabled ? query.subscribe(listener) : () => {},
   };
-  return { ...store, state: createSnapshotStore(store.getSnapshot, store.subscribe) };
+  return {
+    ...store,
+    state: createSnapshotStore(store.getSnapshot, store.subscribe),
+  };
 }

@@ -2,7 +2,9 @@ import { runAgentTUI } from "@ai-sdk/tui";
 import { asyncIteratorToUnproxiedDataStream } from "@orpc/client";
 import type { TailorKitRouterClient } from "@tailorkit/core/server";
 import type { ChatTransport, UIMessage } from "ai";
-import { fetchSchemaFromHost, readSchemaFile, type TailorKitSchemaFile } from "./generator/types";
+
+import { fetchSchemaFromHost, readSchemaFile } from "./generator/types";
+import type { TailorKitSchemaFile } from "./generator/types";
 
 const schemaFetchTimeoutMs = 10_000;
 
@@ -13,8 +15,16 @@ interface AgentTuiOptions {
   schemaPath?: string;
 }
 
-export async function openAgentTui({ client, hostUrl, appId, schemaPath }: AgentTuiOptions) {
+export async function openAgentTui({
+  client,
+  hostUrl,
+  appId,
+  schemaPath,
+}: AgentTuiOptions) {
   const transport: ChatTransport<UIMessage> = {
+    async reconnectToStream() {
+      return null;
+    },
     async sendMessages({ messages, abortSignal }) {
       const timeoutSignal = AbortSignal.timeout(schemaFetchTimeoutMs);
       const schemaSignal = abortSignal
@@ -41,7 +51,7 @@ export async function openAgentTui({ client, hostUrl, appId, schemaPath }: Agent
             : `Unable to fetch the host schema from ${hostUrl}: ${detail}`,
           {
             cause: error,
-          },
+          }
         );
       }
       const chunks = await client.appAgent.chat(
@@ -51,21 +61,18 @@ export async function openAgentTui({ client, hostUrl, appId, schemaPath }: Agent
           schema,
           messages: messages.filter(
             (message): message is UIMessage & { role: "user" | "assistant" } =>
-              message.role !== "system",
+              message.role !== "system"
           ),
         },
-        { signal: abortSignal },
+        { signal: abortSignal }
       );
       return asyncIteratorToUnproxiedDataStream(chunks);
     },
-    async reconnectToStream() {
-      return null;
-    },
   };
   await runAgentTUI({
-    title: `TailorKit Agent · ${hostUrl}`,
-    transport,
-    tools: "collapsed",
     reasoning: "hidden",
+    title: `TailorKit Agent · ${hostUrl}`,
+    tools: "collapsed",
+    transport,
   });
 }

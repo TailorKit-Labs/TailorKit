@@ -92,5 +92,6 @@ export type ResolvedTailorKitConfig = z.output<typeof tailorkitConfigSchema>;
 
 export { tailorkitConfigSchema };
 
-export const defineConfig = (config: TailorKitConfig): TailorKitConfig => config;
+export const defineConfig = (config: TailorKitConfig): TailorKitConfig =>
+  config;
 export const defineTailorKitConfig = defineConfig;

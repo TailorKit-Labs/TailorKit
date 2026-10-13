@@ -1,11 +1,13 @@
 import { resolve } from "node:path";
-import { workflow } from "workflow/vite";
+
 import tailwindcss from "@tailwindcss/vite";
 import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
-import { defineConfig } from "vite-plus";
 import { nitro } from "nitro/vite";
+import { defineConfig } from "vite-plus";
+import { workflow } from "workflow/vite";
+
 import { env } from "#env";
 
 const serverPackages = [
@@ -24,10 +26,14 @@ export default defineConfig(({ mode }) => {
 
   return {
     define: {
-      "import.meta.env.VITE_ORG_CREATION_MANAGED": JSON.stringify(env.VERCEL_ENV === "production"),
-      "import.meta.env.VITE_VERCEL_DEPLOYMENT_ID": JSON.stringify(env.VERCEL_DEPLOYMENT_ID ?? ""),
+      "import.meta.env.VITE_ORG_CREATION_MANAGED": JSON.stringify(
+        env.VERCEL_ENV === "production"
+      ),
+      "import.meta.env.VITE_VERCEL_DEPLOYMENT_ID": JSON.stringify(
+        env.VERCEL_DEPLOYMENT_ID ?? ""
+      ),
       "import.meta.env.VITE_VERCEL_SKEW_PROTECTION_ENABLED": JSON.stringify(
-        env.VERCEL_SKEW_PROTECTION_ENABLED === "1",
+        env.VERCEL_SKEW_PROTECTION_ENABLED === "1"
       ),
     },
     plugins: isTest
@@ -50,7 +56,9 @@ export default defineConfig(({ mode }) => {
             features: { websocket: !isTest },
             // Nitro's dev server otherwise treats client.js as a Vite static asset.
             // Forward this prefix to Start, which owns the endpoint and its handlers.
-            handlers: [{ route: "/api/assets/**", handler: "#start-assets", env: "dev" }],
+            handlers: [
+              { env: "dev", handler: "#start-assets", route: "/api/assets/**" },
+            ],
             virtual: {
               "#start-assets": `
             import { fetchViteEnv } from "nitro/vite/runtime";
@@ -58,22 +66,22 @@ export default defineConfig(({ mode }) => {
           `,
             },
             routeRules: {
-              "/signup": {
+              "/sign-in": {
                 redirect: {
-                  to: "/sign-up",
                   status: 308,
+                  to: "/login",
                 },
               },
               "/signin": {
                 redirect: {
-                  to: "/login",
                   status: 308,
+                  to: "/login",
                 },
               },
-              "/sign-in": {
+              "/signup": {
                 redirect: {
-                  to: "/login",
                   status: 308,
+                  to: "/sign-up",
                 },
               },
             },

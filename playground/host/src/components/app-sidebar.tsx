@@ -1,6 +1,5 @@
-import { Link } from "@tanstack/react-router";
+import type { DemoSession } from "@playground/shared/auth";
 import { Button } from "@tailorkit/ui/button";
-import type { TailorKitApp } from "tailorkit/react";
 import {
   Sidebar,
   SidebarContent,
@@ -12,8 +11,15 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@tailorkit/ui/sidebar";
-import { Blocks, CheckSquare2, CircleDot, LayoutDashboard, LogOut } from "lucide-react";
-import type { DemoSession } from "@playground/shared/auth";
+import { Link } from "@tanstack/react-router";
+import {
+  Blocks,
+  CheckSquare2,
+  CircleDot,
+  LayoutDashboard,
+  LogOut,
+} from "lucide-react";
+import type { TailorKitApp } from "tailorkit/react";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Overview", to: "/" },
@@ -41,12 +47,14 @@ export function AppSidebar({
     <Sidebar>
       <SidebarHeader>
         <div className="flex items-center gap-3 px-2 py-1">
-          <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+          <div className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-xl">
             <CheckSquare2 aria-hidden="true" className="size-4" />
           </div>
           <div className="min-w-0">
-            <p className="truncate font-semibold text-sm">Issue tracker</p>
-            <p className="truncate text-muted-foreground text-xs">{session.team.name}</p>
+            <p className="truncate text-sm font-semibold">Issue tracker</p>
+            <p className="text-muted-foreground truncate text-xs">
+              {session.team.name}
+            </p>
           </div>
         </div>
       </SidebarHeader>
@@ -87,27 +95,38 @@ export function AppSidebar({
               </SidebarMenuItem>
             ))}
             {appsPending ? (
-              <li className="px-2 py-1 text-muted-foreground text-xs">Loading apps…</li>
+              <li className="text-muted-foreground px-2 py-1 text-xs">
+                Loading apps…
+              </li>
             ) : null}
             {appsError ? (
-              <li className="px-2 py-1 text-muted-foreground text-xs">Platform apps unavailable</li>
+              <li className="text-muted-foreground px-2 py-1 text-xs">
+                Platform apps unavailable
+              </li>
             ) : null}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <div className="flex min-w-0 items-center gap-2 rounded-lg bg-sidebar-accent/60 p-2">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-background font-medium text-xs">
+        <div className="bg-sidebar-accent/60 flex min-w-0 items-center gap-2 rounded-lg p-2">
+          <span className="bg-background flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-medium">
             {session.user.name
               .split(" ")
               .map((part) => part[0])
               .join("")}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate font-medium text-sm">{session.user.name}</p>
-            <p className="truncate text-muted-foreground text-xs">{session.team.key}</p>
+            <p className="truncate text-sm font-medium">{session.user.name}</p>
+            <p className="text-muted-foreground truncate text-xs">
+              {session.team.key}
+            </p>
           </div>
-          <Button aria-label="Sign out" onClick={signOut} size="icon-sm" variant="ghost">
+          <Button
+            aria-label="Sign out"
+            onClick={signOut}
+            size="icon-sm"
+            variant="ghost"
+          >
             <LogOut aria-hidden="true" />
           </Button>
         </div>

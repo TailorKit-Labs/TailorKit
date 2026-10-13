@@ -1,11 +1,27 @@
-import { SignJWT } from "jose";
-import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import {
+  chmod,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import type * as nodeOs from "node:os";
 import path from "node:path";
+
 import { loadTailorKitConfig } from "@tailorkit/app/config/loader";
 import { createTailorKitClient } from "@tailorkit/core/server";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { SignJWT } from "jose";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vite-plus/test";
 import { z } from "zod";
 
 vi.mock("@tailorkit/app/config/loader", () => ({
@@ -58,13 +74,14 @@ describe("auth store", () => {
     await Promise.all(
       temporaryDirectories
         .splice(0)
-        .map((directory) => rm(directory, { force: true, recursive: true })),
+        .map((directory) => rm(directory, { force: true, recursive: true }))
     );
   });
 
   it("stores and reads deploy tokens by host", async () => {
     const homeDirectory = await createTemporaryHome();
-    const { getDeployToken, saveDeployToken } = await loadAuthModule(homeDirectory);
+    const { getDeployToken, saveDeployToken } =
+      await loadAuthModule(homeDirectory);
 
     await saveDeployToken("https://example.com", {
       deployToken: "deploy-token",
@@ -79,7 +96,9 @@ describe("auth store", () => {
 
   it("validates auth.json before returning stored credentials", async () => {
     const homeDirectory = await createTemporaryHome();
-    await writeAuthStoreFixture(homeDirectory, { hosts: { "https://example.com": {} } });
+    await writeAuthStoreFixture(homeDirectory, {
+      hosts: { "https://example.com": {} },
+    });
     const { getDeployToken } = await loadAuthModule(homeDirectory);
 
     await expect(getDeployToken("https://example.com")).rejects.toThrow();
@@ -120,18 +139,20 @@ describe("auth store", () => {
       scope: { name: "user", value: { userId: "user-1" } },
     });
 
-    await expect(readFile(filePath, "utf-8").then(JSON.parse)).resolves.toEqual({
-      futureKey: { value: true },
-      hosts: {
-        "https://existing.example.com": {
-          deployToken: "existing-token",
+    await expect(readFile(filePath, "utf-8").then(JSON.parse)).resolves.toEqual(
+      {
+        futureKey: { value: true },
+        hosts: {
+          "https://existing.example.com": {
+            deployToken: "existing-token",
+          },
+          "https://new.example.com": {
+            deployToken: "new-token",
+            scope: { name: "user", value: { userId: "user-1" } },
+          },
         },
-        "https://new.example.com": {
-          deployToken: "new-token",
-          scope: { name: "user", value: { userId: "user-1" } },
-        },
-      },
-    });
+      }
+    );
   });
 
   it("writes auth.json with user-only permissions", async () => {
@@ -171,7 +192,9 @@ describe("auth store", () => {
     });
     const { resolveHostUrl } = await loadAuthModule(homeDirectory);
 
-    await expect(resolveHostUrl({ cwd: homeDirectory })).resolves.toBe("https://example.com");
+    await expect(resolveHostUrl({ cwd: homeDirectory })).resolves.toBe(
+      "https://example.com"
+    );
     expect(loadTailorKitConfig).toHaveBeenCalledWith(undefined, homeDirectory);
   });
 
@@ -179,8 +202,13 @@ describe("auth store", () => {
     const homeDirectory = await createTemporaryHome();
     const { createCliAuthApprovalUrl } = await loadAuthModule(homeDirectory);
 
-    expect(createCliAuthApprovalUrl("https://example.com/api/tailorkit", "ABC-123-XYZ")).toBe(
-      "https://example.com/api/tailorkit/cli-auth/approve?code=ABC-123-XYZ",
+    expect(
+      createCliAuthApprovalUrl(
+        "https://example.com/api/tailorkit",
+        "ABC-123-XYZ"
+      )
+    ).toBe(
+      "https://example.com/api/tailorkit/cli-auth/approve?code=ABC-123-XYZ"
     );
   });
 
@@ -190,10 +218,10 @@ describe("auth store", () => {
 
     await expect(
       resolveHostUrl({
-        cwd: homeDirectory,
         configPath: "missing.config.ts",
+        cwd: homeDirectory,
         host: "https://example.com/api/tailorkit///?unused=true#fragment",
-      }),
+      })
     ).resolves.toBe("https://example.com/api/tailorkit");
     expect(loadTailorKitConfig).not.toHaveBeenCalled();
   });
@@ -204,9 +232,11 @@ describe("auth store", () => {
       const homeDirectory = await createTemporaryHome();
       const { resolveHostUrl } = await loadAuthModule(homeDirectory);
 
-      await expect(resolveHostUrl({ cwd: homeDirectory, host })).rejects.toThrow("host URL");
+      await expect(
+        resolveHostUrl({ cwd: homeDirectory, host })
+      ).rejects.toThrow("host URL");
       expect(loadTailorKitConfig).not.toHaveBeenCalled();
-    },
+    }
   );
 
   it("logs in, verifies credentials, and logs out using an explicit host without config", async () => {
@@ -216,19 +246,20 @@ describe("auth store", () => {
     const scope = { name: "user", value: { userId: "user-1" } };
     const start = vi.fn().mockResolvedValue({
       deviceCode: "device-code",
-      userCode: "ABC-123",
       expiresAt: new Date(Date.now() + 60_000),
+      userCode: "ABC-123",
     });
     const poll = vi.fn().mockResolvedValue({
-      status: "approved",
       deployToken: "deploy-token",
       scope,
+      status: "approved",
     });
     const verifyToken = vi.fn().mockResolvedValue({ scope });
     vi.mocked(createTailorKitClient).mockReturnValue({
-      cliAuth: { start, poll, verifyToken },
+      cliAuth: { poll, start, verifyToken },
     } as unknown as ReturnType<typeof createTailorKitClient>);
-    const { runLogin, runWhoami, runLogout, getDeployToken } = await loadAuthModule(homeDirectory);
+    const { runLogin, runWhoami, runLogout, getDeployToken } =
+      await loadAuthModule(homeDirectory);
     const onUserCode = vi.fn();
     const options = { cwd: homeDirectory, host: `${hostUrl}/` };
     const login = runLogin(options, onUserCode);
@@ -236,15 +267,18 @@ describe("auth store", () => {
 
     await expect(login).resolves.toEqual({ hostUrl, scope });
     expect(onUserCode).toHaveBeenCalledWith(
-      expect.objectContaining({ hostUrl, userCode: "ABC-123" }),
+      expect.objectContaining({ hostUrl, userCode: "ABC-123" })
     );
     expect(poll).toHaveBeenCalledWith({ deviceCode: "device-code" });
     await expect(runWhoami(options)).resolves.toEqual({ hostUrl, scope });
     expect(createTailorKitClient).toHaveBeenLastCalledWith({
-      url: hostUrl,
       headers: { authorization: "Bearer deploy-token" },
+      url: hostUrl,
     });
-    await expect(runLogout(options)).resolves.toEqual({ hostUrl, removed: true });
+    await expect(runLogout(options)).resolves.toEqual({
+      hostUrl,
+      removed: true,
+    });
     await expect(getDeployToken(hostUrl)).resolves.toBeUndefined();
     expect(loadTailorKitConfig).not.toHaveBeenCalled();
   });
@@ -258,7 +292,9 @@ describe("auth store", () => {
     });
     const { NotLoggedInError, runWhoami } = await loadAuthModule(homeDirectory);
 
-    await expect(runWhoami({ cwd: homeDirectory })).rejects.toBeInstanceOf(NotLoggedInError);
+    await expect(runWhoami({ cwd: homeDirectory })).rejects.toBeInstanceOf(
+      NotLoggedInError
+    );
   });
 
   it("treats unauthorized token verification as not logged in", async () => {
@@ -285,23 +321,37 @@ describe("auth store", () => {
     });
     const { NotLoggedInError, runWhoami } = await loadAuthModule(homeDirectory);
 
-    await expect(runWhoami({ cwd: homeDirectory })).rejects.toBeInstanceOf(NotLoggedInError);
+    await expect(runWhoami({ cwd: homeDirectory })).rejects.toBeInstanceOf(
+      NotLoggedInError
+    );
     await expect(runWhoami({ cwd: homeDirectory })).rejects.toThrow(
-      "Not logged in for https://example.com. Run tailorkit login --host https://example.com.",
+      "Not logged in for https://example.com. Run tailorkit login --host https://example.com."
     );
   });
 
   it.each([
-    { label: "network rejection", error: new TypeError("fetch failed"), rejected: true },
     {
-      label: "server RPC error",
+      error: new TypeError("fetch failed"),
+      label: "network rejection",
+      rejected: true,
+    },
+    {
       error: { code: "INTERNAL_SERVER_ERROR", message: "Service unavailable" },
+      label: "server RPC error",
       rejected: false,
     },
-    { label: "forbidden rejection", error: { code: "FORBIDDEN" }, rejected: true },
-    { label: "uncoded RPC error", error: new Error("Unexpected response"), rejected: false },
-    { label: "string rejection", error: "Connection closed", rejected: true },
-    { label: "null rejection", error: null, rejected: true },
+    {
+      error: { code: "FORBIDDEN" },
+      label: "forbidden rejection",
+      rejected: true,
+    },
+    {
+      error: new Error("Unexpected response"),
+      label: "uncoded RPC error",
+      rejected: false,
+    },
+    { error: "Connection closed", label: "string rejection", rejected: true },
+    { error: null, label: "null rejection", rejected: true },
   ])("preserves $label unchanged", async ({ error, rejected }) => {
     const homeDirectory = await createTemporaryHome();
     vi.mocked(loadTailorKitConfig).mockResolvedValue({
@@ -318,12 +368,16 @@ describe("auth store", () => {
     vi.mocked(createTailorKitClient).mockReturnValue({
       cliAuth: { verifyToken },
     } as unknown as ReturnType<typeof createTailorKitClient>);
-    const fixture = { hosts: { "https://example.com": { deployToken: "deploy-token" } } };
+    const fixture = {
+      hosts: { "https://example.com": { deployToken: "deploy-token" } },
+    };
     const filePath = await writeAuthStoreFixture(homeDirectory, fixture);
     const { runWhoami } = await loadAuthModule(homeDirectory);
 
     await expect(runWhoami({ cwd: homeDirectory })).rejects.toBe(error);
-    await expect(readFile(filePath, "utf-8").then(JSON.parse)).resolves.toEqual(fixture);
+    await expect(readFile(filePath, "utf-8").then(JSON.parse)).resolves.toEqual(
+      fixture
+    );
   });
 
   it("returns the verified named scope", async () => {
@@ -337,7 +391,10 @@ describe("auth store", () => {
       cliAuth: {
         verifyToken: vi.fn().mockResolvedValue({
           data: {
-            scope: { name: "organization", value: { orgId: "org-1", userId: "user-1" } },
+            scope: {
+              name: "organization",
+              value: { orgId: "org-1", userId: "user-1" },
+            },
           },
         }),
       },
@@ -349,7 +406,10 @@ describe("auth store", () => {
 
     await expect(runWhoami({ cwd: homeDirectory })).resolves.toEqual({
       hostUrl: "https://example.com",
-      scope: { name: "organization", value: { orgId: "org-1", userId: "user-1" } },
+      scope: {
+        name: "organization",
+        value: { orgId: "org-1", userId: "user-1" },
+      },
     });
   });
 
@@ -362,7 +422,9 @@ describe("auth store", () => {
     });
     vi.mocked(createTailorKitClient).mockReturnValue({
       cliAuth: {
-        verifyToken: vi.fn().mockResolvedValue({ data: { scopeId: "legacy-scope" } }),
+        verifyToken: vi
+          .fn()
+          .mockResolvedValue({ data: { scopeId: "legacy-scope" } }),
       },
     } as unknown as ReturnType<typeof createTailorKitClient>);
     const filePath = await writeAuthStoreFixture(homeDirectory, {
@@ -370,10 +432,14 @@ describe("auth store", () => {
     });
     const { runWhoami } = await loadAuthModule(homeDirectory);
 
-    await expect(runWhoami({ cwd: homeDirectory })).rejects.toBeInstanceOf(z.ZodError);
-    await expect(readFile(filePath, "utf-8").then(JSON.parse)).resolves.toEqual({
-      hosts: { "https://example.com": { deployToken: "deploy-token" } },
-    });
+    await expect(runWhoami({ cwd: homeDirectory })).rejects.toBeInstanceOf(
+      z.ZodError
+    );
+    await expect(readFile(filePath, "utf-8").then(JSON.parse)).resolves.toEqual(
+      {
+        hosts: { "https://example.com": { deployToken: "deploy-token" } },
+      }
+    );
   });
 
   it("JWT login and whoami use platform verification without reading or modifying stored sessions", async () => {
@@ -381,14 +447,14 @@ describe("auth store", () => {
     const now = Math.floor(Date.now() / 1000);
     const scope = { name: "user", value: { userId: "one" } };
     const jwt = await new SignJWT({
-      iss: "tailorkit-agent",
-      aud: "tailorkit-platform-cli",
-      projectId: "project",
       appId: "app",
-      platformUrl: "https://platform.test/api/platform",
-      scope,
-      iat: now,
+      aud: "tailorkit-platform-cli",
       exp: now + 3600,
+      iat: now,
+      iss: "tailorkit-agent",
+      platformUrl: "https://platform.test/api/platform",
+      projectId: "project",
+      scope,
     })
       .setProtectedHeader({ alg: "HS256", typ: "tailorkit-agent+jwt" })
       .sign(new TextEncoder().encode("test-only-signing-secret"));
@@ -396,15 +462,19 @@ describe("auth store", () => {
     const stored = await writeAuthStoreFixture(home, {
       hosts: { "http://localhost:1": { deployToken: "existing-token" } },
     });
-    const original = await readFile(stored, "utf8");
+    const original = await readFile(stored, "utf-8");
     const { runLogin, runWhoami, runLogout } = await loadAuthModule(home);
-    const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
-      const request = input as Request;
-      expect(request.url).toBe("https://platform.test/api/platform/cli-auth/verify-token");
-      expect(request.headers.get("authorization")).toBe(`Bearer ${jwt}`);
-      expect(await request.json()).toEqual({ deployToken: jwt });
-      return Response.json({ scope });
-    });
+    const fetch = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async (input) => {
+        const request = input as Request;
+        expect(request.url).toBe(
+          "https://platform.test/api/platform/cli-auth/verify-token"
+        );
+        expect(request.headers.get("authorization")).toBe(`Bearer ${jwt}`);
+        expect(await request.json()).toEqual({ deployToken: jwt });
+        return Response.json({ scope });
+      });
     const onCode = vi.fn();
     expect(await runLogin({ host: "http://localhost:1" }, onCode)).toEqual({
       hostUrl: "https://platform.test/api/platform",
@@ -415,16 +485,23 @@ describe("auth store", () => {
     expect(fetch).toHaveBeenCalledTimes(2);
     fetch.mockResolvedValueOnce(
       Response.json(
-        { code: "SERVICE_UNAVAILABLE", message: "Platform is temporarily unavailable." },
-        { status: 503 },
-      ),
+        {
+          code: "SERVICE_UNAVAILABLE",
+          message: "Platform is temporarily unavailable.",
+        },
+        { status: 503 }
+      )
     );
-    await expect(runWhoami({ host: "http://localhost:1" })).rejects.toMatchObject({
+    await expect(
+      runWhoami({ host: "http://localhost:1" })
+    ).rejects.toMatchObject({
       code: "SERVICE_UNAVAILABLE",
     });
     expect(onCode).not.toHaveBeenCalled();
-    expect(await runLogout({ host: "http://localhost:1" })).toMatchObject({ removed: false });
-    expect(await readFile(stored, "utf8")).toBe(original);
+    expect(await runLogout({ host: "http://localhost:1" })).toMatchObject({
+      removed: false,
+    });
+    expect(await readFile(stored, "utf-8")).toBe(original);
     vi.unstubAllEnvs();
     vi.restoreAllMocks();
   });

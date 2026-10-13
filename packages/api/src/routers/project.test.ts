@@ -3,7 +3,15 @@ import { call } from "@orpc/server";
 import { auth } from "@tailorkit/auth";
 import { organization, member, user } from "@tailorkit/db/schema/auth";
 import { project } from "@tailorkit/db/schema/project";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vite-plus/test";
+
 import type { Context } from "../context";
 import { createTestDb } from "../test/pglite";
 
@@ -22,7 +30,9 @@ vi.mock("@tailorkit/db", () => ({
 vi.mock("@tailorkit/auth", () => ({
   auth: {
     api: {
-      createApiKey: vi.fn(() => Promise.resolve({ id: "api-key-id", key: "tk_proj_secret" })),
+      createApiKey: vi.fn(() =>
+        Promise.resolve({ id: "api-key-id", key: "tk_proj_secret" })
+      ),
       deleteApiKey: vi.fn(),
       hasPermission: vi.fn(() => Promise.resolve({ success: true })),
       updateApiKey: vi.fn(),
@@ -78,53 +88,53 @@ describe("projectRouter", () => {
     testState.db = db;
 
     await db.insert(user).values({
-      id: userId,
-      name: "Ada Lovelace",
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
       email: "ada@example.com",
       emailVerified: true,
-      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      id: userId,
+      name: "Ada Lovelace",
       updatedAt: new Date("2026-01-01T00:00:00.000Z"),
     });
 
     await db.insert(organization).values([
       {
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
         id: orgId,
         name: "Analytical Engines",
-        slug: "analytical-engines",
         publicId: "team0000000001",
-        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        slug: "analytical-engines",
       },
       {
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
         id: otherOrgId,
         name: "Compilers Inc",
-        slug: "compilers-inc",
         publicId: "team0000000002",
-        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        slug: "compilers-inc",
       },
     ]);
 
     await db.insert(member).values({
+      createdAt: new Date("2026-01-03T00:00:00.000Z"),
       id: "55555555-5555-4555-8555-555555555555",
       organizationId: orgId,
-      userId,
       role: "owner",
-      createdAt: new Date("2026-01-03T00:00:00.000Z"),
+      userId,
     });
 
     await db.insert(project).values([
       {
-        id: projectId,
-        organizationId: orgId,
-        name: "Compiler",
-        slug: "compiler",
         createdAt: new Date("2026-01-04T00:00:00.000Z"),
+        id: projectId,
+        name: "Compiler",
+        organizationId: orgId,
+        slug: "compiler",
         updatedAt: new Date("2026-01-04T00:00:00.000Z"),
       },
       {
-        organizationId: otherOrgId,
-        name: "Runtime",
-        slug: "runtime",
         createdAt: new Date("2026-01-04T00:00:00.000Z"),
+        name: "Runtime",
+        organizationId: otherOrgId,
+        slug: "runtime",
         updatedAt: new Date("2026-01-04T00:00:00.000Z"),
       },
     ]);
@@ -139,20 +149,26 @@ describe("projectRouter", () => {
     const projects = await call(
       projectRouter.list,
       { orgSlug: "analytical-engines" },
-      { context: createContext() },
+      { context: createContext() }
     );
 
     expect(projects).toHaveLength(1);
-    expect(projects[0]).toEqual(expect.objectContaining({ id: projectId, slug: "compiler" }));
+    expect(projects[0]).toEqual(
+      expect.objectContaining({ id: projectId, slug: "compiler" })
+    );
   });
 
   it("rejects projects in organizations outside the current user's membership", async () => {
     await expect(
-      call(projectRouter.list, { orgSlug: "compilers-inc" }, { context: createContext() }),
+      call(
+        projectRouter.list,
+        { orgSlug: "compilers-inc" },
+        { context: createContext() }
+      )
     ).rejects.toEqual(
       expect.objectContaining({ code: "NOT_FOUND" } satisfies Partial<
         ORPCError<"NOT_FOUND", unknown>
-      >),
+      >)
     );
   });
 
@@ -160,13 +176,17 @@ describe("projectRouter", () => {
     await expect(
       call(
         projectRouter.create,
-        { name: "Compiler Two", orgSlug: "analytical-engines", slug: "compiler" },
-        { context: createContext() },
-      ),
+        {
+          name: "Compiler Two",
+          orgSlug: "analytical-engines",
+          slug: "compiler",
+        },
+        { context: createContext() }
+      )
     ).rejects.toEqual(
       expect.objectContaining({ code: "BAD_REQUEST" } satisfies Partial<
         ORPCError<"BAD_REQUEST", unknown>
-      >),
+      >)
     );
   });
 
@@ -174,7 +194,7 @@ describe("projectRouter", () => {
     await call(
       projectRouter.create,
       { name: "Analyzer", orgSlug: "analytical-engines", slug: "analyzer" },
-      { context: createContext() },
+      { context: createContext() }
     );
 
     expect(auth.api.createApiKey).toHaveBeenCalledWith({
@@ -189,7 +209,7 @@ describe("projectRouter", () => {
     await call(
       projectRouter.create,
       { name: "Analyzer", orgSlug: "analytical-engines", slug: "analyzer" },
-      { context: createContext() },
+      { context: createContext() }
     );
 
     expect(auth.api.createApiKey).toHaveBeenCalledWith({
@@ -210,7 +230,7 @@ describe("projectRouter", () => {
         orgSlug: "analytical-engines",
         slug: "long-project-name",
       },
-      { context: createContext() },
+      { context: createContext() }
     );
 
     expect(auth.api.createApiKey).toHaveBeenCalledWith({

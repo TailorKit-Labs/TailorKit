@@ -1,15 +1,16 @@
 import { z } from "zod";
-import { defineView } from "./views";
+
 import { defineServer, fn } from "./server";
+import { defineView } from "./views";
 
 const server = defineServer({
   reports: {
+    count: fn.query.handler(() => 1),
+    fetch: fn.action.handler(() => Promise.resolve(null)),
     list: fn.query
       .input(z.object({ userId: z.string() }))
       .handler(({ input }) => [{ id: input.userId }]),
-    count: fn.query.handler(() => 1),
     write: fn.mutation.handler(() => null),
-    fetch: fn.action.handler(() => Promise.resolve(null)),
   },
 });
 type ServerFunctions = typeof server.functions;
@@ -18,15 +19,15 @@ declare module "./views" {
 }
 
 defineView({
-  slot: "page",
-  view: "/users",
   component: () => null,
   instances: {
     dataSchema: z.object({ reportId: z.string() }),
     resolve: async ({ context, queries, identity, signal, ...other }) => {
       const user: string = context.userId;
       const count: number = await queries.reports.count();
-      const reports: { id: string }[] = await queries.reports.list({ userId: user });
+      const reports: { id: string }[] = await queries.reports.list({
+        userId: user,
+      });
       const installationId: string = identity.installationId;
       const abort: boolean = signal.aborted;
       void count;
@@ -51,26 +52,28 @@ defineView({
       }));
     },
   },
+  slot: "page",
+  view: "/users",
 });
 defineView({
-  slot: "page",
-  view: "/",
   component: () => null,
   instances: {
     dataSchema: z.object({ reportId: z.string() }),
     // @ts-expect-error Each instance's data must match dataSchema.
     resolve: () => [{ key: "overview", metadata: {}, data: { reportId: 123 } }],
   },
+  slot: "page",
+  view: "/",
 });
 
 const instanceView = defineView({
-  slot: "page",
-  view: "/",
   component: () => null,
   instances: {
     dataSchema: z.object({ count: z.string().transform(Number) }),
     resolve: () => [{ key: "summary", metadata: {}, data: { count: "42" } }],
   },
+  slot: "page",
+  view: "/",
 });
 const selected = instanceView.useInstance();
 const selectedKey: string = selected.key;

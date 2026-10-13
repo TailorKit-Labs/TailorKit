@@ -1,7 +1,12 @@
 import { runtimeServiceAuthorized } from "@tailorkit/api-utils/app-auth";
 /** Only the trusted runtime can select projects for private bundle metadata lookups. */
-export async function runtimeProjectAccess(request: Request, secret: string | undefined) {
-  if (!(await runtimeServiceAuthorized(request, secret))) return null;
+export async function runtimeProjectAccess(
+  request: Request,
+  secret: string | undefined
+) {
+  if (!(await runtimeServiceAuthorized(request, secret))) {
+    return null;
+  }
 
   const path = new URL(request.url).pathname;
   if (
@@ -12,7 +17,9 @@ export async function runtimeProjectAccess(request: Request, secret: string | un
   }
 
   const projectId = request.headers.get("x-tailorkit-project-id");
-  if (!projectId || projectId.length > 256) throw new Error("Runtime project required");
+  if (!projectId || projectId.length > 256) {
+    throw new Error("Runtime project required");
+  }
 
   return projectId;
 }

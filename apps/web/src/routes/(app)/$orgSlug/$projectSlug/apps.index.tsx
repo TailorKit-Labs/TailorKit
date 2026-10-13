@@ -1,15 +1,8 @@
-/* oxlint-disable react/no-unstable-nested-components */
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { flexRender, useTable } from "@tanstack/react-table";
-import type { ColumnDef, SortingState } from "@tanstack/react-table";
-import { AppWindowIcon, ArrowUpRightIcon, SearchIcon } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { RefObject } from "react";
 import type { Scope } from "@tailorkit/db/schema/scope";
 import { Badge } from "@tailorkit/ui/badge";
 import { Button } from "@tailorkit/ui/button";
 import { CardFrame } from "@tailorkit/ui/card";
+import { DateAgo } from "@tailorkit/ui/date";
 import {
   Empty,
   EmptyContent,
@@ -19,8 +12,23 @@ import {
   EmptyTitle,
 } from "@tailorkit/ui/empty";
 import { Input } from "@tailorkit/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@tailorkit/ui/table";
-import { DateAgo } from "@tailorkit/ui/date";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@tailorkit/ui/table";
+import { useInfiniteQuery } from "@tanstack/react-query";
+/* oxlint-disable react/no-unstable-nested-components */
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { flexRender, useTable } from "@tanstack/react-table";
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
+import { AppWindowIcon, ArrowUpRightIcon, SearchIcon } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { RefObject } from "react";
+
 import { AppLogo } from "#components/apps/app-logo";
 import { renderSortableHeader } from "#components/members/member-table-utils";
 import { PageLayout } from "#components/page-layout";
@@ -43,6 +51,9 @@ function appsListQueryOptions({
   search: string;
 }) {
   return appsList.infiniteOptions({
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.hasMore ? lastPage.pagination.page + 1 : undefined,
+    initialPageParam: 1,
     input: (page) => ({
       orgSlug,
       page,
@@ -50,13 +61,11 @@ function appsListQueryOptions({
       projectSlug,
       search,
     }),
-    getNextPageParam: (lastPage) =>
-      lastPage.pagination.hasMore ? lastPage.pagination.page + 1 : undefined,
-    initialPageParam: 1,
   });
 }
 
 export const Route = createFileRoute("/(app)/$orgSlug/$projectSlug/apps/")({
+  component: AppsIndexPage,
   loader: ({ context, params }) =>
     context.queryClient.infiniteQuery(
       appsListQueryOptions({
@@ -64,9 +73,8 @@ export const Route = createFileRoute("/(app)/$orgSlug/$projectSlug/apps/")({
         orgSlug: params.orgSlug,
         projectSlug: params.projectSlug,
         search: "",
-      }),
+      })
     ),
-  component: AppsIndexPage,
 });
 
 interface AppRow {
@@ -80,7 +88,9 @@ interface AppRow {
   logoPaths?: { dark?: string; light?: string };
 }
 
-function getDeploymentStatusVariant(status?: string): "info" | "outline" | "success" | "warning" {
+function getDeploymentStatusVariant(
+  status?: string
+): "info" | "outline" | "success" | "warning" {
   if (status === "published") {
     return "success";
   }
@@ -109,14 +119,14 @@ function AppsTable({
   projectSlug: string;
 }) {
   const navigate = useNavigate();
-  const [sorting, setSorting] = useState<SortingState>([{ id: "createdAt", desc: true }]);
+  const [sorting, setSorting] = useState<SortingState>([
+    { desc: true, id: "createdAt" },
+  ]);
 
   const columns = useMemo<ColumnDef<typeof dataTableFeatures, AppRow>[]>(
     () => [
       {
         accessorKey: "name",
-        header: "App",
-        size: 280,
         cell: ({ row }) => (
           <div className="flex min-w-0 items-center gap-3">
             <AppLogo
@@ -125,19 +135,21 @@ function AppsTable({
               name={row.original.name}
             />
             <div className="flex min-w-0 flex-col gap-0.5">
-              <span className="truncate font-medium text-sm">{row.original.name}</span>
-              <span className="truncate text-muted-foreground text-xs">
+              <span className="truncate text-sm font-medium">
+                {row.original.name}
+              </span>
+              <span className="text-muted-foreground truncate text-xs">
                 {row.original.publicId}
               </span>
             </div>
           </div>
         ),
+        header: "App",
+        size: 280,
       },
       {
-        accessorFn: (row) => `${row.scope.name} ${JSON.stringify(row.scope.value)}`,
-        id: "scope",
-        header: "Scope",
-        size: 220,
+        accessorFn: (row) =>
+          `${row.scope.name} ${JSON.stringify(row.scope.value)}`,
         cell: ({ row }) => (
           <span
             className="block truncate text-sm"
@@ -147,38 +159,45 @@ function AppsTable({
             {JSON.stringify(row.original.scope.value)}
           </span>
         ),
+        header: "Scope",
+        id: "scope",
+        size: 220,
       },
       {
         accessorKey: "deploymentCount",
+        cell: ({ row }) => (
+          <span className="text-sm">{row.original.deploymentCount}</span>
+        ),
         header: "Deployments",
         size: 120,
-        cell: ({ row }) => <span className="text-sm">{row.original.deploymentCount}</span>,
       },
       {
-        id: "currentDeployment",
-        header: "Current",
-        size: 140,
         cell: ({ row }) =>
           row.original.currentDeployment ? (
             <Badge
               size="lg"
-              variant={getDeploymentStatusVariant(row.original.currentDeployment.status)}
+              variant={getDeploymentStatusVariant(
+                row.original.currentDeployment.status
+              )}
             >
               {row.original.currentDeployment.status}
             </Badge>
           ) : (
             <span className="text-muted-foreground text-sm">None</span>
           ),
+        header: "Current",
+        id: "currentDeployment",
+        size: 140,
       },
       {
         accessorKey: "createdAt",
+        cell: ({ row }) => <DateAgo date={row.original.createdAt} />,
         header: "Created",
         size: 140,
         sortFn: "datetime",
-        cell: ({ row }) => <DateAgo date={row.original.createdAt} />,
       },
     ],
-    [],
+    []
   );
 
   const table = useTable({
@@ -197,7 +216,10 @@ function AppsTable({
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow className="hover:bg-transparent" key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id} style={{ width: `${header.column.getSize()}px` }}>
+                <TableHead
+                  key={header.id}
+                  style={{ width: `${header.column.getSize()}px` }}
+                >
                   {renderSortableHeader(header)}
                 </TableHead>
               ))}
@@ -212,7 +234,11 @@ function AppsTable({
               tabIndex={0}
               onClick={() =>
                 navigate({
-                  params: { appId: row.original.publicId, orgSlug, projectSlug },
+                  params: {
+                    appId: row.original.publicId,
+                    orgSlug,
+                    projectSlug,
+                  },
                   to: "/$orgSlug/$projectSlug/apps/$appId",
                 })
               }
@@ -220,7 +246,11 @@ function AppsTable({
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
                   navigate({
-                    params: { appId: row.original.publicId, orgSlug, projectSlug },
+                    params: {
+                      appId: row.original.publicId,
+                      orgSlug,
+                      projectSlug,
+                    },
                     to: "/$orgSlug/$projectSlug/apps/$appId",
                   });
                 }
@@ -238,7 +268,7 @@ function AppsTable({
       {(isFetchingNextPage || hasNextPage) && (
         <div
           ref={loadMoreRef}
-          className="border-t px-4 py-3 text-center text-muted-foreground text-sm"
+          className="text-muted-foreground border-t px-4 py-3 text-center text-sm"
         >
           {isFetchingNextPage ? "Loading more apps..." : "Scroll for more apps"}
         </div>
@@ -253,14 +283,15 @@ function AppsIndexPage() {
   const [search, setSearch] = useState("");
   const normalizedSearch = search.trim();
   const projectApiKey = getProjectApiKey(orgSlug, projectSlug);
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } = useInfiniteQuery(
-    appsListQueryOptions({
-      appsList: orpc.apps.list,
-      orgSlug,
-      projectSlug,
-      search: normalizedSearch,
-    }),
-  );
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
+    useInfiniteQuery(
+      appsListQueryOptions({
+        appsList: orpc.apps.list,
+        orgSlug,
+        projectSlug,
+        search: normalizedSearch,
+      })
+    );
 
   useEffect(() => {
     const loadMoreElement = loadMoreRef.current;
@@ -269,7 +300,10 @@ function AppsIndexPage() {
     }
 
     const observer = new IntersectionObserver((entries) => {
-      if (entries.some((entry) => entry.isIntersecting) && !isFetchingNextPage) {
+      if (
+        entries.some((entry) => entry.isIntersecting) &&
+        !isFetchingNextPage
+      ) {
         fetchNextPage();
       }
     });
@@ -283,7 +317,7 @@ function AppsIndexPage() {
   const isEmptyProject = !isPending && !normalizedSearch && apps.length === 0;
   const searchControl = (
     <div className="relative w-full sm:w-72">
-      <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
+      <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 z-10 size-4 -translate-y-1/2" />
       <Input
         className="bg-popover [&_[data-slot=input]]:pl-8"
         placeholder="Search apps"
@@ -297,7 +331,7 @@ function AppsIndexPage() {
 
   if (isPending) {
     content = (
-      <CardFrame className="w-full px-4 py-6 text-center text-muted-foreground text-sm">
+      <CardFrame className="text-muted-foreground w-full px-4 py-6 text-center text-sm">
         Loading apps...
       </CardFrame>
     );
@@ -310,14 +344,16 @@ function AppsIndexPage() {
           <EmptyMedia variant="icon">
             <AppWindowIcon />
           </EmptyMedia>
-          <EmptyTitle>{normalizedSearch ? "No apps found" : "No apps uploaded"}</EmptyTitle>
+          <EmptyTitle>
+            {normalizedSearch ? "No apps found" : "No apps uploaded"}
+          </EmptyTitle>
           <EmptyDescription>
             {normalizedSearch
               ? "Try a different app name, id, scope, or description."
               : "Apps deployed to this project will appear here."}
           </EmptyDescription>
         </EmptyHeader>
-        {!normalizedSearch ? (
+        {normalizedSearch ? null : (
           <EmptyContent>
             <Button
               render={
@@ -334,7 +370,7 @@ function AppsIndexPage() {
               <ArrowUpRightIcon aria-hidden="true" />
             </Button>
           </EmptyContent>
-        ) : null}
+        )}
       </Empty>
     );
   } else {

@@ -1,5 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
+
 import {
   appDirectory,
   commandResultSchema,
@@ -11,11 +12,8 @@ import {
 
 export const lsTool = tool({
   contextSchema: sandboxContextSchema,
-  description: "List a directory with ls -la, including hidden entries and file details.",
-  inputSchema: z.object({
-    path: z.string().default(".").describe("Directory relative to /workspace/app, or absolute."),
-  }),
-  outputSchema: commandResultSchema,
+  description:
+    "List a directory with ls -la, including hidden entries and file details.",
   execute: async ({ path }, options) => {
     "use step";
     const sandbox = await toolSandbox(options);
@@ -26,4 +24,11 @@ export const lsTool = tool({
       abortSignal,
     });
   },
+  inputSchema: z.object({
+    path: z
+      .string()
+      .default(".")
+      .describe("Directory relative to /workspace/app, or absolute."),
+  }),
+  outputSchema: commandResultSchema,
 });

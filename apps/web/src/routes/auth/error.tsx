@@ -12,10 +12,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
 export const Route = createFileRoute("/auth/error")({
+  component: AuthErrorPage,
   validateSearch: z.object({
     error: z.string().optional(),
   }),
-  component: AuthErrorPage,
 });
 
 const messages: Record<string, string> = {
@@ -31,9 +31,12 @@ function AuthErrorPage() {
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12">
       <div className="flex w-full max-w-sm flex-col items-center gap-4">
-        <a className="flex items-center gap-2" href="https://tailorkit.dev/home">
+        <a
+          className="flex items-center gap-2"
+          href="https://tailorkit.dev/home"
+        >
           <Logo className="size-6" />
-          <span className="font-semibold text-lg">TailorKit</span>
+          <span className="text-lg font-semibold">TailorKit</span>
         </a>
 
         <CardFrame className="w-full">
@@ -43,16 +46,20 @@ function AuthErrorPage() {
             </CardHeader>
             <CardPanel className="flex flex-col gap-4">
               <p className="text-muted-foreground text-sm">
-                {message ?? "Something went wrong while signing you in. Please try again."}
+                {message ??
+                  "Something went wrong while signing you in. Please try again."}
               </p>
-              <Button className="w-full" render={<a aria-label="Back to sign in" href="/login" />}>
+              <Button
+                className="w-full"
+                render={<a aria-label="Back to sign in" href="/login" />}
+              >
                 Back to sign in
               </Button>
             </CardPanel>
           </Card>
 
           <CardFrameFooter className="relative">
-            <p className="text-center text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-center text-sm">
               If this keeps happening, contact support.
             </p>
           </CardFrameFooter>

@@ -1,41 +1,58 @@
 import { expect, it, vi } from "vite-plus/test";
+
 import { createClient, reference } from "./connection";
 
 const session = {
-  url: "https://runtime.test/rpc/",
-  token: "token",
   expiresAt: Date.now() + 60_000,
+  token: "token",
+  url: "https://runtime.test/rpc/",
 };
 
 it("routes normal calls over authenticated HTTP without opening a WebSocket", async () => {
-  const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(Response.json({ json: "ok" }));
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValue(Response.json({ json: "ok" }));
   const connect = vi.fn();
-  const client = createClient({ getSession: () => Promise.resolve(session), fetch, connect });
+  const client = createClient({
+    connect,
+    fetch,
+    getSession: () => Promise.resolve(session),
+  });
   const requestId = crypto.randomUUID();
   try {
-    expect(await client.query(reference("todos.list", "query"), { filter: "open" })).toBe("ok");
+    expect(
+      await client.query(reference("todos.list", "query"), { filter: "open" })
+    ).toBe("ok");
     fetch.mockResolvedValueOnce(Response.json({ json: "saved" }));
     expect(
-      await client.mutate(reference("todos.add", "mutation"), { text: "todo" }, { requestId }),
+      await client.mutate(
+        reference("todos.add", "mutation"),
+        { text: "todo" },
+        { requestId }
+      )
     ).toBe("saved");
     fetch.mockResolvedValueOnce(Response.json({ json: "done" }));
-    expect(await client.action(reference("tasks.import", "action"))).toBe("done");
+    expect(await client.action(reference("tasks.import", "action"))).toBe(
+      "done"
+    );
     expect(fetch.mock.calls.map(([url]) => String(url))).toEqual([
       "https://runtime.test/rpc/queries",
       "https://runtime.test/rpc/mutations",
       "https://runtime.test/rpc/actions",
     ]);
     expect(fetch.mock.calls[0]?.[1]).toMatchObject({
-      method: "POST",
+      body: JSON.stringify({
+        json: { name: "todos.list", args: { filter: "open" } },
+      }),
       credentials: "omit",
-      body: JSON.stringify({ json: { name: "todos.list", args: { filter: "open" } } }),
+      method: "POST",
     });
-    expect(new Headers(fetch.mock.calls[0]?.[1]?.headers).get("authorization")).toBe(
-      "Bearer token",
-    );
+    expect(
+      new Headers(fetch.mock.calls[0]?.[1]?.headers).get("authorization")
+    ).toBe("Bearer token");
     expect(JSON.parse(String(fetch.mock.calls[1]?.[1]?.body)).json).toEqual({
-      name: "todos.add",
       args: { text: "todo" },
+      name: "todos.add",
       requestId,
     });
     expect(connect).not.toHaveBeenCalled();
@@ -45,17 +62,26 @@ it("routes normal calls over authenticated HTTP without opening a WebSocket", as
 });
 
 it("preserves runtime errors without retrying actions", async () => {
-  const fetch = vi
-    .fn<typeof globalThis.fetch>()
-    .mockResolvedValue(
-      Response.json(
-        { json: { code: "CONFLICT", message: "Already imported", defined: false } },
-        { status: 409 },
-      ),
-    );
-  const client = createClient({ getSession: () => Promise.resolve(session), fetch });
+  const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+    Response.json(
+      {
+        json: {
+          code: "CONFLICT",
+          defined: false,
+          message: "Already imported",
+        },
+      },
+      { status: 409 }
+    )
+  );
+  const client = createClient({
+    fetch,
+    getSession: () => Promise.resolve(session),
+  });
   try {
-    await expect(client.action(reference("import", "action"))).rejects.toMatchObject({
+    await expect(
+      client.action(reference("import", "action"))
+    ).rejects.toMatchObject({
       code: "CONFLICT",
       message: "Already imported",
     });
@@ -76,12 +102,15 @@ it("aborts pending HTTP calls when closed", async () => {
         init?.signal?.addEventListener(
           "abort",
           () => reject(new DOMException("Cancelled", "AbortError")),
-          { once: true },
+          { once: true }
         );
         started();
-      }),
+      })
   );
-  const client = createClient({ getSession: () => Promise.resolve(session), fetch });
+  const client = createClient({
+    fetch,
+    getSession: () => Promise.resolve(session),
+  });
   const call = client.action(reference("import", "action"));
   const assertion = expect(call).rejects.toMatchObject({ code: "UNAVAILABLE" });
   await ready;
@@ -103,7 +132,10 @@ it("retries a lost mutation response with the same ID and frozen arguments", asy
     receipts.set(json.requestId, json.args.text);
     return Promise.reject(new TypeError("Response lost after committing"));
   });
-  const client = createClient({ getSession: () => Promise.resolve(session), fetch });
+  const client = createClient({
+    fetch,
+    getSession: () => Promise.resolve(session),
+  });
   try {
     const args = { text: "original" };
     const result = client.mutate(reference("todos.add", "mutation"), args);
@@ -113,7 +145,9 @@ it("retries a lost mutation response with the same ID and frozen arguments", asy
     await vi.advanceTimersByTimeAsync(1000);
     expect(await result).toBe("original");
     expect(writes).toBe(1);
-    const bodies = fetch.mock.calls.map(([, init]) => JSON.parse(String(init?.body)).json);
+    const bodies = fetch.mock.calls.map(
+      ([, init]) => JSON.parse(String(init?.body)).json
+    );
     expect(bodies).toHaveLength(2);
     expect(bodies[1]).toEqual(bodies[0]);
     expect(bodies[0].requestId).toMatch(/^[0-9a-f-]{36}$/u);
@@ -131,10 +165,15 @@ it("backs off transient mutation failures and preserves an explicit request ID",
     .mockResolvedValueOnce(new Response("Service unavailable", { status: 503 }))
     .mockResolvedValueOnce(new Response("Gateway timeout", { status: 504 }))
     .mockResolvedValueOnce(Response.json({ json: "saved" }));
-  const client = createClient({ getSession: () => Promise.resolve(session), fetch });
+  const client = createClient({
+    fetch,
+    getSession: () => Promise.resolve(session),
+  });
   try {
     const requestId = crypto.randomUUID();
-    const result = client.mutate(reference("save", "mutation"), undefined, { requestId });
+    const result = client.mutate(reference("save", "mutation"), undefined, {
+      requestId,
+    });
     await vi.advanceTimersByTimeAsync(1000);
     expect(fetch).toHaveBeenCalledTimes(2);
     await vi.advanceTimersByTimeAsync(1999);
@@ -144,7 +183,9 @@ it("backs off transient mutation failures and preserves an explicit request ID",
     await vi.advanceTimersByTimeAsync(4000);
     expect(await result).toBe("saved");
     expect(
-      fetch.mock.calls.map(([, init]) => JSON.parse(String(init?.body)).json.requestId),
+      fetch.mock.calls.map(
+        ([, init]) => JSON.parse(String(init?.body)).json.requestId
+      )
     ).toEqual([requestId, requestId, requestId, requestId]);
   } finally {
     client.close();
@@ -152,46 +193,60 @@ it("backs off transient mutation failures and preserves an explicit request ID",
   }
 });
 
-it.each(["BAD_REQUEST", "FORBIDDEN", "CONFLICT", "INCOMPATIBLE_VERSION", "INTERNAL_SERVER_ERROR"])(
-  "does not retry a mutation rejected with %s",
-  async (code) => {
-    const fetch = vi
-      .fn<typeof globalThis.fetch>()
-      .mockResolvedValue(
-        Response.json({ json: { code, message: "Rejected", defined: false } }, { status: 500 }),
-      );
-    const client = createClient({ getSession: () => Promise.resolve(session), fetch });
-    try {
-      await expect(client.mutate(reference("save", "mutation"))).rejects.toMatchObject({ code });
-      expect(fetch).toHaveBeenCalledOnce();
-    } finally {
-      client.close();
-    }
-  },
-);
+it.each([
+  "BAD_REQUEST",
+  "FORBIDDEN",
+  "CONFLICT",
+  "INCOMPATIBLE_VERSION",
+  "INTERNAL_SERVER_ERROR",
+])("does not retry a mutation rejected with %s", async (code) => {
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValue(
+      Response.json(
+        { json: { code, defined: false, message: "Rejected" } },
+        { status: 500 }
+      )
+    );
+  const client = createClient({
+    fetch,
+    getSession: () => Promise.resolve(session),
+  });
+  try {
+    await expect(
+      client.mutate(reference("save", "mutation"))
+    ).rejects.toMatchObject({ code });
+    expect(fetch).toHaveBeenCalledOnce();
+  } finally {
+    client.close();
+  }
+});
 
 it("refreshes authentication once for a mutation without changing its request ID", async () => {
   const getSession = vi.fn(({ refresh }: { refresh: boolean }) =>
     Promise.resolve({
       ...session,
       token: refresh ? "fresh" : "expired",
-    }),
+    })
   );
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(
       Response.json(
-        { json: { code: "UNAUTHORIZED", message: "Expired", defined: false } },
-        { status: 401 },
-      ),
+        { json: { code: "UNAUTHORIZED", defined: false, message: "Expired" } },
+        { status: 401 }
+      )
     )
     .mockResolvedValueOnce(Response.json({ json: "saved" }));
-  const client = createClient({ getSession, fetch });
+  const client = createClient({ fetch, getSession });
   try {
     expect(await client.mutate(reference("save", "mutation"))).toBe("saved");
-    expect(getSession.mock.calls).toEqual([[{ refresh: false }], [{ refresh: true }]]);
+    expect(getSession.mock.calls).toEqual([
+      [{ refresh: false }],
+      [{ refresh: true }],
+    ]);
     const headers = fetch.mock.calls.map(([, init]) =>
-      new Headers(init?.headers).get("authorization"),
+      new Headers(init?.headers).get("authorization")
     );
     expect(headers).toEqual(["Bearer expired", "Bearer fresh"]);
     expect(fetch.mock.calls[0]?.[1]?.body).toBe(fetch.mock.calls[1]?.[1]?.body);
@@ -201,19 +256,24 @@ it("refreshes authentication once for a mutation without changing its request ID
 });
 
 it("stops when refreshed authentication is still rejected", async () => {
-  const fetch = vi
-    .fn<typeof globalThis.fetch>()
-    .mockImplementation(() =>
-      Promise.resolve(
-        Response.json(
-          { json: { code: "UNAUTHORIZED", message: "Rejected", defined: false } },
-          { status: 401 },
-        ),
-      ),
-    );
-  const client = createClient({ getSession: () => Promise.resolve(session), fetch });
+  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(() =>
+    Promise.resolve(
+      Response.json(
+        {
+          json: { code: "UNAUTHORIZED", defined: false, message: "Rejected" },
+        },
+        { status: 401 }
+      )
+    )
+  );
+  const client = createClient({
+    fetch,
+    getSession: () => Promise.resolve(session),
+  });
   try {
-    await expect(client.mutate(reference("save", "mutation"))).rejects.toMatchObject({
+    await expect(
+      client.mutate(reference("save", "mutation"))
+    ).rejects.toMatchObject({
       code: "UNAUTHORIZED",
     });
     expect(fetch).toHaveBeenCalledTimes(2);
@@ -224,10 +284,17 @@ it("stops when refreshed authentication is still rejected", async () => {
 
 it("cancels a mutation waiting to retry when the client closes", async () => {
   vi.useFakeTimers();
-  const fetch = vi.fn<typeof globalThis.fetch>().mockRejectedValue(new TypeError("Offline"));
-  const client = createClient({ getSession: () => Promise.resolve(session), fetch });
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockRejectedValue(new TypeError("Offline"));
+  const client = createClient({
+    fetch,
+    getSession: () => Promise.resolve(session),
+  });
   try {
-    const assertion = expect(client.mutate(reference("save", "mutation"))).rejects.toMatchObject({
+    const assertion = expect(
+      client.mutate(reference("save", "mutation"))
+    ).rejects.toMatchObject({
       code: "UNAVAILABLE",
     });
     await vi.advanceTimersByTimeAsync(0);
@@ -246,8 +313,13 @@ it("cancels a mutation waiting to retry when the client closes", async () => {
 it.each(["query", "action"] as const)(
   "does not retry %s calls after a network failure",
   async (kind) => {
-    const fetch = vi.fn<typeof globalThis.fetch>().mockRejectedValue(new TypeError("Offline"));
-    const client = createClient({ getSession: () => Promise.resolve(session), fetch });
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockRejectedValue(new TypeError("Offline"));
+    const client = createClient({
+      fetch,
+      getSession: () => Promise.resolve(session),
+    });
     try {
       const result =
         kind === "query"
@@ -258,7 +330,7 @@ it.each(["query", "action"] as const)(
     } finally {
       client.close();
     }
-  },
+  }
 );
 
 it("retries when the connection drops while reading a mutation response body", async () => {
@@ -269,13 +341,16 @@ it("retries when the connection drops while reading a mutation response body", a
         controller.error(new TypeError("Response interrupted"));
       },
     }),
-    { headers: { "content-type": "application/json" } },
+    { headers: { "content-type": "application/json" } }
   );
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(brokenResponse)
     .mockResolvedValueOnce(Response.json({ json: "saved" }));
-  const client = createClient({ getSession: () => Promise.resolve(session), fetch });
+  const client = createClient({
+    fetch,
+    getSession: () => Promise.resolve(session),
+  });
   try {
     const result = client.mutate(reference("save", "mutation"));
     await vi.advanceTimersByTimeAsync(1000);
@@ -289,7 +364,11 @@ it("retries when the connection drops while reading a mutation response body", a
 });
 
 it("keeps reconnecting an active subscription beyond three failures", async () => {
-  const socket = Object.assign(new EventTarget(), { readyState: 1, send: vi.fn(), close: vi.fn() });
+  const socket = Object.assign(new EventTarget(), {
+    close: vi.fn(),
+    readyState: 1,
+    send: vi.fn(),
+  });
   const connect = vi.fn(() => {
     if (connect.mock.calls.length <= 5) {
       return Promise.reject(new Error("Offline"));
@@ -297,8 +376,8 @@ it("keeps reconnecting an active subscription beyond three failures", async () =
     return Promise.resolve(socket as unknown as WebSocket);
   });
   const client = createClient({
-    getSession: () => Promise.resolve(session),
     connect,
+    getSession: () => Promise.resolve(session),
     retryDelayMs: 0,
   });
   const stop = client.subscribe(reference("todos.list", "query"), {}, vi.fn());

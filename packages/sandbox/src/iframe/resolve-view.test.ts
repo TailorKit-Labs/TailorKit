@@ -1,12 +1,14 @@
+import type { ViewLayer } from "@tailorkit/core/views";
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from "vite-plus/test";
-import type { ViewLayer } from "@tailorkit/core/views";
+
 import { assertAppClient, renderClient, resolveView } from "./resolve-view";
 import type { AppClient, ViewRequest } from "./resolve-view";
 
 function viewResolver() {
   const root = document.createElement("div");
-  return (client: AppClient, props: ViewRequest) => renderClient(client, props, root);
+  return (client: AppClient, props: ViewRequest) =>
+    renderClient(client, props, root);
 }
 
 function viewClient() {
@@ -15,33 +17,37 @@ function viewClient() {
   const general = { component: vi.fn() };
   const detail = { component: vi.fn() };
   return {
-    navigation,
-    general,
-    detail,
-    render,
     client: {
+      $runtime: {
+        h: (component: unknown, props: unknown) => ({ component, props }),
+        render,
+      },
       slots: {
         navbar: { "/": navigation },
         panel: { "/users": general, "/users/detail": detail },
       },
-      $runtime: { h: (component: unknown, props: unknown) => ({ component, props }), render },
     },
+    detail,
+    general,
+    navigation,
+    render,
   };
 }
 
 const viewLayers: [ViewLayer, ViewLayer, ViewLayer] = [
-  { path: "/", context: { workspaceId: "w1" }, status: "ready" },
-  { path: "/users", context: { canManageUsers: true }, status: "ready" },
-  { path: "/users/detail", context: { userId: "u1" }, status: "ready" },
+  { context: { workspaceId: "w1" }, path: "/", status: "ready" },
+  { context: { canManageUsers: true }, path: "/users", status: "ready" },
+  { context: { userId: "u1" }, path: "/users/detail", status: "ready" },
 ];
 
 function resolveProps(slot: string, layers: ViewLayer[] = viewLayers) {
   return {
-    slot,
-    view: "/users/detail",
-    layers,
     declaredViews: viewLayers.map((layer) => layer.path),
-    supportedViews: slot === "navbar" ? ["/"] : ["/", "/users", "/users/detail"],
+    layers,
+    slot,
+    supportedViews:
+      slot === "navbar" ? ["/"] : ["/", "/users", "/users/detail"],
+    view: "/users/detail",
   };
 }
 
@@ -53,43 +59,51 @@ describe("slot view resolution", () => {
     expect(render.mock.calls[0]?.[0]).toEqual({
       component: navigation.component,
       props: {
-        view: "/",
-        status: "ready",
         context: { workspaceId: "w1" },
+        status: "ready",
+        view: "/",
       },
     });
     resolve(client, resolveProps("panel"));
     expect(render.mock.calls[1]?.[0]).toEqual({
       component: detail.component,
       props: {
-        view: "/users/detail",
+        context: { canManageUsers: true, userId: "u1", workspaceId: "w1" },
         status: "ready",
-        context: { workspaceId: "w1", canManageUsers: true, userId: "u1" },
+        view: "/users/detail",
       },
     });
-    expect(render.mock.calls.some(([node]) => node?.component === general.component)).toBe(false);
+    expect(
+      render.mock.calls.some(([node]) => node?.component === general.component)
+    ).toBe(false);
   });
 
-  it.each(["loading", "error"] as const)("keeps navbar ready when detail is %s", (status) => {
-    const resolve = viewResolver();
-    const { client, render } = viewClient();
-    const layers = viewLayers.map((layer) =>
-      layer.path === "/users/detail" ? { ...layer, status } : layer,
-    );
-    resolve(client, resolveProps("navbar", layers));
-    expect(render.mock.calls[0]?.[0].props.status).toBe("ready");
-    resolve(client, resolveProps("panel", layers));
-    expect(render.mock.calls[1]?.[0].props).toMatchObject({
-      view: "/users/detail",
-      status,
-      context: undefined,
-    });
-  });
+  it.each(["loading", "error"] as const)(
+    "keeps navbar ready when detail is %s",
+    (status) => {
+      const resolve = viewResolver();
+      const { client, render } = viewClient();
+      const layers = viewLayers.map((layer) =>
+        layer.path === "/users/detail" ? { ...layer, status } : layer
+      );
+      resolve(client, resolveProps("navbar", layers));
+      expect(render.mock.calls[0]?.[0].props.status).toBe("ready");
+      resolve(client, resolveProps("panel", layers));
+      expect(render.mock.calls[1]?.[0].props).toMatchObject({
+        context: undefined,
+        status,
+        view: "/users/detail",
+      });
+    }
+  );
 
   it("falls back within a slot using the parent's own readiness", () => {
     const resolve = viewResolver();
     const { client, general, render } = viewClient();
-    const fallbackClient = { ...client, slots: { panel: { "/users": general } } };
+    const fallbackClient = {
+      ...client,
+      slots: { panel: { "/users": general } },
+    };
     resolve(
       fallbackClient,
       resolveProps(
@@ -97,15 +111,15 @@ describe("slot view resolution", () => {
         viewLayers.map((layer) => ({
           ...layer,
           status: layer.path === "/users/detail" ? "error" : "ready",
-        })),
-      ),
+        }))
+      )
     );
     expect(render.mock.calls[0]?.[0]).toEqual({
       component: general.component,
       props: {
-        view: "/users",
+        context: { canManageUsers: true, workspaceId: "w1" },
         status: "ready",
-        context: { workspaceId: "w1", canManageUsers: true },
+        view: "/users",
       },
     });
   });
@@ -123,7 +137,7 @@ describe("slot view resolution", () => {
           panel: { "/": client.slots.navbar["/"], "/users": false },
         },
       },
-      resolveProps("panel"),
+      resolveProps("panel")
     );
     expect(render.mock.calls.at(-1)?.[0]).toBeNull();
   });
@@ -133,8 +147,8 @@ describe("slot view resolution", () => {
     const { client, render } = viewClient();
     resolve(client, resolveProps("panel", viewLayers.slice(1)));
     expect(render.mock.calls.at(-1)?.[0].props).toMatchObject({
-      status: "error",
       context: undefined,
+      status: "error",
     });
     resolve(
       client,
@@ -143,12 +157,12 @@ describe("slot view resolution", () => {
         viewLayers.map((layer) => ({
           ...layer,
           status: layer.path === "/" ? "loading" : "ready",
-        })),
-      ),
+        }))
+      )
     );
     expect(render.mock.calls.at(-1)?.[0].props).toMatchObject({
-      status: "loading",
       context: undefined,
+      status: "loading",
     });
   });
 });
@@ -160,9 +174,9 @@ it("limits matching to supported views while retaining ancestor data", () => {
   expect(render.mock.calls.at(-1)?.[0]).toEqual({
     component: general.component,
     props: {
-      view: "/users",
+      context: { canManageUsers: true, workspaceId: "w1" },
       status: "ready",
-      context: { workspaceId: "w1", canManageUsers: true },
+      view: "/users",
     },
   });
   resolve(client, { ...resolveProps("panel"), supportedViews: [] });
@@ -173,7 +187,7 @@ it.each([null, undefined, { mount: () => {} }])(
   "rejects a module without a standard client (%j)",
   (client) => {
     expect(() => assertAppClient(client)).toThrow("app builder");
-  },
+  }
 );
 
 it.each([42, 0, "user", "", true, false, null, ["u1"]])(
@@ -184,20 +198,20 @@ it.each([42, 0, "user", "", true, false, null, ["u1"]])(
     resolve(client, {
       ...resolveProps("panel"),
       layers: viewLayers.map((layer) =>
-        layer.path === "/users/detail" ? { ...layer, context } : layer,
+        layer.path === "/users/detail" ? { ...layer, context } : layer
       ),
     });
     expect(render.mock.calls.at(-1)?.[0].props).toEqual({
-      view: "/users/detail",
-      status: "error",
       context: undefined,
+      status: "error",
+      view: "/users/detail",
     });
     resolve(client, resolveProps("panel"));
     expect(render.mock.calls.at(-1)?.[0].props).toMatchObject({
+      context: { canManageUsers: true, userId: "u1", workspaceId: "w1" },
       status: "ready",
-      context: { workspaceId: "w1", canManageUsers: true, userId: "u1" },
     });
-  },
+  }
 );
 
 it("composes named array fields and omitted optional object contexts", () => {
@@ -206,118 +220,149 @@ it("composes named array fields and omitted optional object contexts", () => {
   resolve(client, {
     ...resolveProps("panel"),
     layers: [
-      { path: "/", status: "ready", context: undefined },
-      { path: "/users", status: "ready", context: { userIds: ["u1", "u2"] } },
+      { context: undefined, path: "/", status: "ready" },
+      { context: { userIds: ["u1", "u2"] }, path: "/users", status: "ready" },
       viewLayers[2],
     ],
   });
   expect(render.mock.calls.at(-1)?.[0].props).toEqual({
-    view: "/users/detail",
+    context: { userId: "u1", userIds: ["u1", "u2"] },
     status: "ready",
-    context: { userIds: ["u1", "u2"], userId: "u1" },
+    view: "/users/detail",
   });
 });
 
 describe("controlled slot rendering", () => {
   const request = {
-    slot: "panel",
-    view: "/users/detail",
+    context: { canManageUsers: false, userId: "u2", workspaceId: "explicit" },
     controlled: true as const,
-    status: "ready" as const,
-    context: { workspaceId: "explicit", canManageUsers: false, userId: "u2" },
     declaredViews: ["/", "/users", "/users/detail"],
+    slot: "panel",
+    status: "ready" as const,
     supportedViews: ["/", "/users", "/users/detail"],
+    view: "/users/detail",
   };
 
   it("renders the explicit view using the complete supplied context", () => {
     const { client, detail } = viewClient();
     expect(resolveView(client, request)).toEqual({
       component: detail.component,
-      props: { view: request.view, status: "ready", context: request.context },
+      props: { context: request.context, status: "ready", view: request.view },
     });
   });
 
   it("does not fall back to a different app view or render an unsupported view", () => {
     const { client, general } = viewClient();
-    expect(resolveView({ ...client, slots: { panel: { "/users": general } } }, request)).toBeNull();
-    expect(resolveView(client, { ...request, supportedViews: ["/users"] })).toBeNull();
     expect(
-      resolveView({ ...client, slots: { panel: { "/users/detail": false } } }, request),
+      resolveView(
+        { ...client, slots: { panel: { "/users": general } } },
+        request
+      )
+    ).toBeNull();
+    expect(
+      resolveView(client, { ...request, supportedViews: ["/users"] })
+    ).toBeNull();
+    expect(
+      resolveView(
+        { ...client, slots: { panel: { "/users/detail": false } } },
+        request
+      )
     ).toBeNull();
   });
 
-  it.each(["loading", "error"] as const)("passes %s without exposing stale data", (status) => {
-    const { client } = viewClient();
-    expect(resolveView(client, { ...request, status, context: undefined })?.props).toEqual({
-      view: request.view,
-      status,
-      context: undefined,
-    });
-  });
+  it.each(["loading", "error"] as const)(
+    "passes %s without exposing stale data",
+    (status) => {
+      const { client } = viewClient();
+      expect(
+        resolveView(client, { ...request, context: undefined, status })?.props
+      ).toEqual({
+        context: undefined,
+        status,
+        view: request.view,
+      });
+    }
+  );
 
   it.each([null, undefined, [], 42, "invalid"])(
     "rejects invalid explicit context %j",
     (context) => {
       const { client } = viewClient();
-      expect(resolveView(client, { ...request, context } as unknown as ViewRequest)?.props).toEqual(
-        {
-          view: request.view,
-          status: "error",
-          context: undefined,
-        },
-      );
-    },
+      expect(
+        resolveView(client, { ...request, context } as unknown as ViewRequest)
+          ?.props
+      ).toEqual({
+        context: undefined,
+        status: "error",
+        view: request.view,
+      });
+    }
   );
 });
 
 describe("instance rendering", () => {
-  const instance = { key: "overview", metadata: { title: "Overview" }, data: { reportId: "r1" } };
+  const instance = {
+    data: { reportId: "r1" },
+    key: "overview",
+    metadata: { title: "Overview" },
+  };
   const request = { ...resolveProps("panel"), instance };
   function client() {
     const { client, detail } = viewClient();
     return {
       ...client,
-      slots: { panel: { "/users/detail": { ...detail, instances: { resolver: "compiled" } } } },
+      slots: {
+        panel: {
+          "/users/detail": { ...detail, instances: { resolver: "compiled" } },
+        },
+      },
     };
   }
 
   it("passes the selected instance alongside the matched context", () => {
     expect(resolveView(client(), request)?.props).toEqual({
-      view: "/users/detail",
-      status: "ready",
-      context: { workspaceId: "w1", canManageUsers: true, userId: "u1" },
+      context: { canManageUsers: true, userId: "u1", workspaceId: "w1" },
       instance,
+      status: "ready",
+      view: "/users/detail",
     });
-    const next = { key: "summary", metadata: {}, data: null };
-    expect(resolveView(client(), { ...request, instance: next })?.props).toMatchObject({
+    const next = { data: null, key: "summary", metadata: {} };
+    expect(
+      resolveView(client(), { ...request, instance: next })?.props
+    ).toMatchObject({
       instance: next,
     });
   });
 
-  it.each(["loading", "error"] as const)("strips stale instances when context is %s", (status) => {
-    const layers = viewLayers.map((layer) =>
-      layer.path === "/users/detail" ? { ...layer, status } : layer,
-    );
-    expect(resolveView(client(), { ...request, layers })?.props).toEqual({
-      view: "/users/detail",
-      status,
-      context: undefined,
-    });
-    expect(
-      resolveView(client(), {
-        ...request,
-        controlled: true,
-        status,
+  it.each(["loading", "error"] as const)(
+    "strips stale instances when context is %s",
+    (status) => {
+      const layers = viewLayers.map((layer) =>
+        layer.path === "/users/detail" ? { ...layer, status } : layer
+      );
+      expect(resolveView(client(), { ...request, layers })?.props).toEqual({
         context: undefined,
-      } as unknown as ViewRequest)?.props,
-    ).toEqual({ view: "/users/detail", status, context: undefined });
-  });
+        status,
+        view: "/users/detail",
+      });
+      expect(
+        resolveView(client(), {
+          ...request,
+          context: undefined,
+          controlled: true,
+          status,
+        } as unknown as ViewRequest)?.props
+      ).toEqual({ context: undefined, status, view: "/users/detail" });
+    }
+  );
 
   it("requires an instance for dynamic views and rejects instances on ordinary views", () => {
     expect(() => resolveView(client(), resolveProps("panel"))).toThrow(
-      "requires a selected instance",
+      "requires a selected instance"
     );
-    expect(() => resolveView(viewClient().client, request)).toThrow("does not support instances");
+    expect(() => resolveView(viewClient().client, request)).toThrow(
+      "does not support instances"
+    );
   });
 
   it.each([
@@ -327,7 +372,10 @@ describe("instance rendering", () => {
     { ...instance, metadata: null },
   ])("rejects malformed instances %j", (invalid) => {
     expect(() =>
-      resolveView(client(), { ...request, instance: invalid } as unknown as ViewRequest),
+      resolveView(client(), {
+        ...request,
+        instance: invalid,
+      } as unknown as ViewRequest)
     ).toThrow("Invalid instance");
   });
 });

@@ -13,7 +13,10 @@ import { Effect } from "effect";
 
 function storageFailure(error: unknown) {
   if (error && typeof error === "object") {
-    const value = error as { name?: string; $metadata?: { httpStatusCode?: number } };
+    const value = error as {
+      name?: string;
+      $metadata?: { httpStatusCode?: number };
+    };
     if (
       value.name === "NoSuchKey" ||
       value.name === "NotFound" ||
@@ -25,12 +28,16 @@ function storageFailure(error: unknown) {
   return new AssetDeliveryError(503);
 }
 
-function loadAsset(request: Request, identity: AssetIdentity, storage: Storage) {
+function loadAsset(
+  request: Request,
+  identity: AssetIdentity,
+  storage: Storage
+) {
   return Effect.gen(function* () {
-    const key = identity.key;
+    const { key } = identity;
     const object = yield* Effect.tryPromise({
-      try: () => storage.head({ key }),
       catch: storageFailure,
+      try: () => storage.head({ key }),
     });
     const contentLength = yield* assetSize(object.contentLength);
     const headers = assetHeaders({
@@ -42,19 +49,26 @@ function loadAsset(request: Request, identity: AssetIdentity, storage: Storage) 
     // that decoded stream; the stored length and strong ETag describe gzip bytes.
     if (object.contentEncoding === "gzip") {
       headers.delete("Content-Length");
-      if (object.etag) headers.set("ETag", `W/${object.etag}`);
+      if (object.etag) {
+        headers.set("ETag", `W/${object.etag}`);
+      }
     }
-    if (request.method === "HEAD") return new Response(null, { headers });
+    if (request.method === "HEAD") {
+      return new Response(null, { headers });
+    }
     const download = yield* Effect.tryPromise({
-      try: () => storage.createDownloadUrl({ key, expiresInSeconds: 60 }),
       catch: storageFailure,
+      try: () => storage.createDownloadUrl({ key, expiresInSeconds: 60 }),
     });
     const upstream = yield* Effect.tryPromise({
-      try: (signal) => fetch(download.url, { redirect: "error", signal }),
       catch: storageFailure,
+      try: (signal) => fetch(download.url, { redirect: "error", signal }),
     });
-    if (!upstream.ok)
-      return yield* Effect.fail(new AssetDeliveryError(upstream.status === 404 ? 404 : 503));
+    if (!upstream.ok) {
+      return yield* Effect.fail(
+        new AssetDeliveryError(upstream.status === 404 ? 404 : 503)
+      );
+    }
     const body =
       object.contentEncoding === "gzip" && upstream.body
         ? limitAssetBody(upstream.body)
@@ -63,10 +77,15 @@ function loadAsset(request: Request, identity: AssetIdentity, storage: Storage) 
   });
 }
 
-export function handleAssetRequest(request: Request, storage: Storage | null): Promise<Response> {
-  const program = Effect.gen(function* () {
+export function handleAssetRequest(
+  request: Request,
+  storage: Storage | null
+): Promise<Response> {
+  const program = Effect.gen(function* program() {
     const identity = yield* nodeAssetRequest(request);
-    if (!storage) return yield* Effect.fail(new AssetDeliveryError(503));
+    if (!storage) {
+      return yield* Effect.fail(new AssetDeliveryError(503));
+    }
     return yield* serveAssetRequest(request, {
       identity: Effect.succeed(identity),
       load: (asset) => loadAsset(request, asset, storage),

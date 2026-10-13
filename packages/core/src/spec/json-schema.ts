@@ -1,6 +1,14 @@
 import { z } from "zod";
 
-const JSONType = z.enum(["object", "array", "string", "number", "integer", "boolean", "null"]);
+const JSONType = z.enum([
+  "object",
+  "array",
+  "string",
+  "number",
+  "integer",
+  "boolean",
+  "null",
+]);
 
 /**
  * Models the exact JSON Schema 2020-12 subset emitted by `z.toJSONSchema()`.
@@ -10,24 +18,28 @@ const JSONType = z.enum(["object", "array", "string", "number", "integer", "bool
  */
 export const JsonSchema: z.ZodType<Record<string, unknown>> = z
   .object({
-    $schema: z.enum(["https://json-schema.org/draft/2020-12/schema"]).optional(),
-    type: z.union([JSONType, z.array(z.string())]).optional(),
-    properties: z.lazy(() => z.record(z.string(), JsonSchema)).optional(),
-    required: z.array(z.string()).optional(),
-    additionalProperties: z.union([z.boolean(), z.lazy(() => JsonSchema)]).optional(),
-    enum: z.array(z.unknown()).optional(),
-    const: z.unknown().optional(),
-    items: z.union([z.boolean(), z.lazy(() => JsonSchema)]).optional(),
-    prefixItems: z.lazy(() => z.array(JsonSchema)).optional(),
-    minItems: z.number().int().nonnegative().optional(),
-    maxItems: z.number().int().nonnegative().optional(),
-    propertyNames: z.lazy(() => JsonSchema).optional(),
-    minimum: z.number().optional(),
-    maximum: z.number().optional(),
-    anyOf: z.lazy(() => z.array(JsonSchema)).optional(),
-    oneOf: z.lazy(() => z.array(JsonSchema)).optional(),
+    $schema: z
+      .enum(["https://json-schema.org/draft/2020-12/schema"])
+      .optional(),
+    additionalProperties: z
+      .union([z.boolean(), z.lazy(() => JsonSchema)])
+      .optional(),
     allOf: z.lazy(() => z.array(JsonSchema)).optional(),
+    anyOf: z.lazy(() => z.array(JsonSchema)).optional(),
+    const: z.unknown().optional(),
+    enum: z.array(z.unknown()).optional(),
+    items: z.union([z.boolean(), z.lazy(() => JsonSchema)]).optional(),
+    maxItems: z.number().int().nonnegative().optional(),
+    maximum: z.number().optional(),
+    minItems: z.number().int().nonnegative().optional(),
+    minimum: z.number().optional(),
     not: z.lazy(() => JsonSchema).optional(),
+    oneOf: z.lazy(() => z.array(JsonSchema)).optional(),
+    prefixItems: z.lazy(() => z.array(JsonSchema)).optional(),
+    properties: z.lazy(() => z.record(z.string(), JsonSchema)).optional(),
+    propertyNames: z.lazy(() => JsonSchema).optional(),
+    required: z.array(z.string()).optional(),
+    type: z.union([JSONType, z.array(z.string())]).optional(),
   })
   .strict();
 

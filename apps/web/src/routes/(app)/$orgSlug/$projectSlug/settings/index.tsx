@@ -20,14 +20,19 @@ import {
   DialogTitle,
 } from "@tailorkit/ui/dialog";
 import { Field, FieldDescription, FieldLabel } from "@tailorkit/ui/field";
+import { useAppForm } from "@tailorkit/ui/form";
 import { Input } from "@tailorkit/ui/input";
 import { toastManager } from "@tailorkit/ui/toast";
-import { useAppForm } from "@tailorkit/ui/form";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
+
 import { PageLayout } from "#components/page-layout";
 import { client, orpc } from "#lib/orpc";
 
@@ -63,7 +68,7 @@ function ProjectSettingsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const { data: project } = useSuspenseQuery(
-    orpc.project.get.queryOptions({ input: { orgSlug, projectSlug } }),
+    orpc.project.get.queryOptions({ input: { orgSlug, projectSlug } })
   );
 
   const updateMutation = useMutation({
@@ -74,13 +79,20 @@ function ProjectSettingsPage() {
         projectSlug,
         slug: input.slug,
       }),
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error ? err.message : "Failed to update project";
+      toastManager.add({ title: "Error", description: message, type: "error" });
+    },
     onSuccess: async (updatedProject) => {
       await Promise.all([
-        queryClient.invalidateQueries(orpc.project.list.queryOptions({ input: { orgSlug } })),
+        queryClient.invalidateQueries(
+          orpc.project.list.queryOptions({ input: { orgSlug } })
+        ),
         queryClient.invalidateQueries(
           orpc.project.get.queryOptions({
             input: { orgSlug, projectSlug: updatedProject.slug },
-          }),
+          })
         ),
       ]);
 
@@ -93,22 +105,21 @@ function ProjectSettingsPage() {
         });
       }
     },
-    onError: (err: unknown) => {
-      const message = err instanceof Error ? err.message : "Failed to update project";
-      toastManager.add({ title: "Error", description: message, type: "error" });
-    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: () => client.project.delete({ orgSlug, projectSlug }),
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error ? err.message : "Failed to delete project";
+      toastManager.add({ title: "Error", description: message, type: "error" });
+    },
     onSuccess: async () => {
-      await queryClient.invalidateQueries(orpc.project.list.queryOptions({ input: { orgSlug } }));
+      await queryClient.invalidateQueries(
+        orpc.project.list.queryOptions({ input: { orgSlug } })
+      );
       toastManager.add({ title: "Project deleted", type: "success" });
       navigate({ params: { orgSlug }, to: "/$orgSlug/~/projects" });
-    },
-    onError: (err: unknown) => {
-      const message = err instanceof Error ? err.message : "Failed to delete project";
-      toastManager.add({ title: "Error", description: message, type: "error" });
     },
   });
 
@@ -130,13 +141,17 @@ function ProjectSettingsPage() {
   const canDelete = deleteConfirmation === project.slug;
 
   return (
-    <PageLayout description="Manage this project's identity and lifecycle." title="Settings">
+    <PageLayout
+      description="Manage this project's identity and lifecycle."
+      title="Settings"
+    >
       <CardFrame className="w-full">
         <Card>
           <CardHeader>
             <CardTitle>Project details</CardTitle>
             <CardDescription>
-              Rename the project or change the URL slug used in this organisation.
+              Rename the project or change the URL slug used in this
+              organisation.
             </CardDescription>
           </CardHeader>
 
@@ -150,7 +165,9 @@ function ProjectSettingsPage() {
           >
             <CardPanel className="flex max-w-lg flex-col gap-4">
               <form.AppField name="name">
-                {(field) => <field.TextField label="Name" placeholder="Amazing project" />}
+                {(field) => (
+                  <field.TextField label="Name" placeholder="Amazing project" />
+                )}
               </form.AppField>
 
               <form.AppField name="slug">
@@ -159,7 +176,9 @@ function ProjectSettingsPage() {
                     description={`tailorkit.com/${orgSlug}/${field.state.value || "project-slug"}`}
                     label="Slug"
                     placeholder="amazing-project"
-                    onChange={(event) => field.handleChange(toSlug(event.target.value))}
+                    onChange={(event) =>
+                      field.handleChange(toSlug(event.target.value))
+                    }
                   />
                 )}
               </form.AppField>
@@ -167,7 +186,7 @@ function ProjectSettingsPage() {
           </form>
         </Card>
 
-        <CardFrameFooter className="flex justify-end relative">
+        <CardFrameFooter className="relative flex justify-end">
           <form.AppForm>
             <form.SubmitButton form="project-settings-form" size="sm">
               Save changes
@@ -209,8 +228,10 @@ function ProjectSettingsPage() {
           <DialogHeader>
             <DialogTitle>Delete project</DialogTitle>
             <DialogDescription>
-              This permanently deletes {project.name} and revokes its project API keys. Type{" "}
-              <span className="font-mono text-foreground">{project.slug}</span> to confirm.
+              This permanently deletes {project.name} and revokes its project
+              API keys. Type{" "}
+              <span className="text-foreground font-mono">{project.slug}</span>{" "}
+              to confirm.
             </DialogDescription>
           </DialogHeader>
           <DialogPanel>
@@ -219,13 +240,17 @@ function ProjectSettingsPage() {
               <Input
                 autoComplete="off"
                 value={deleteConfirmation}
-                onChange={(event) => setDeleteConfirmation(toSlug(event.target.value))}
+                onChange={(event) =>
+                  setDeleteConfirmation(toSlug(event.target.value))
+                }
               />
               <FieldDescription>This action cannot be undone.</FieldDescription>
             </Field>
           </DialogPanel>
           <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
+            <DialogClose render={<Button type="button" variant="outline" />}>
+              Cancel
+            </DialogClose>
             <Button
               disabled={!canDelete || deleteMutation.isPending}
               loading={deleteMutation.isPending}

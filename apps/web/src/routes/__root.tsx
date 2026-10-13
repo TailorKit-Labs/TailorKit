@@ -1,15 +1,20 @@
+import { AnchoredToastProvider, ToastProvider } from "@tailorkit/ui/toast";
+import { a11yDevtoolsPlugin } from "@tanstack/devtools-a11y/react";
+import { TanStackDevtools } from "@tanstack/react-devtools";
+import { formDevtoolsPlugin } from "@tanstack/react-form-devtools";
 import { useQuery } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
-import { HeadContent, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
-import { AnchoredToastProvider, ToastProvider } from "@tailorkit/ui/toast";
+import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
+import {
+  HeadContent,
+  Scripts,
+  createRootRouteWithContext,
+} from "@tanstack/react-router";
+import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import type { ReactNode } from "react";
 import { useEffect, useRef } from "react";
 
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
-import { formDevtoolsPlugin } from "@tanstack/react-form-devtools";
-import { a11yDevtoolsPlugin } from "@tanstack/devtools-a11y/react";
-import { TanStackDevtools } from "@tanstack/react-devtools";
+import { orpc } from "#lib/orpc";
 
 import { NotFound } from "../components/not-found";
 import {
@@ -21,7 +26,6 @@ import {
 } from "../lib/theme";
 
 import appCss from "../index.css?url";
-import { orpc } from "#lib/orpc";
 
 export interface RouterAppContext {
   orpc: typeof orpc;
@@ -29,9 +33,6 @@ export interface RouterAppContext {
 }
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
-  shellComponent: RootDocument,
-  notFoundComponent: NotFound,
-
   head: () => ({
     links: [
       {
@@ -78,6 +79,8 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
       },
     ],
   }),
+  notFoundComponent: NotFound,
+  shellComponent: RootDocument,
 });
 
 function RootDocument({ children }: { children: ReactNode }) {
@@ -90,7 +93,7 @@ function RootDocument({ children }: { children: ReactNode }) {
       <body className="relative">
         <ThemeProvider>
           <UserThemeSync />
-          <div className="isolate relative flex min-h-svh flex-col">
+          <div className="relative isolate flex min-h-svh flex-col">
             <ToastProvider>
               <AnchoredToastProvider>{children}</AnchoredToastProvider>
             </ToastProvider>
@@ -121,9 +124,13 @@ function RootDocument({ children }: { children: ReactNode }) {
 
 function UserThemeSync() {
   const { setTheme, theme } = useTheme();
-  const { data: session, isPending } = useQuery(orpc.user.getSession.queryOptions());
+  const { data: session, isPending } = useQuery(
+    orpc.user.getSession.queryOptions()
+  );
   const lastSyncedTheme = useRef<string | null>(null);
-  const userTheme = session ? (getUserTheme(session.user) ?? fallbackTheme) : fallbackTheme;
+  const userTheme = session
+    ? (getUserTheme(session.user) ?? fallbackTheme)
+    : fallbackTheme;
 
   useEffect(() => {
     if (isPending || !session) {

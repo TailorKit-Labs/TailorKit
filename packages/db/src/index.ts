@@ -1,12 +1,15 @@
-import { env } from "#env";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { drizzle } from "drizzle-orm/node-postgres";
+
+import { env } from "#env";
 
 import { relations } from "./relations";
 
 export function createDb(): NodePgDatabase<typeof relations> {
   if (!env.DATABASE_URL) {
-    throw new Error("DATABASE_URL is required to create a database connection.");
+    throw new Error(
+      "DATABASE_URL is required to create a database connection."
+    );
   }
 
   return drizzle(env.DATABASE_URL, { relations });

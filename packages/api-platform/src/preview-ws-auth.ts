@@ -1,19 +1,21 @@
 import { hashSecret } from "@tailorkit/api-utils/hashing";
 import { db } from "@tailorkit/db";
-import { env } from "#env";
 import { getKV } from "@tailorkit/kv";
-import { previewViewerTokenExpiresAt } from "./preview-token";
+
+import { env } from "#env";
+
 import {
   endPreviewSession,
   ensurePreviewDeveloperGrace,
   previewCliCredentialActive,
 } from "./preview-lifecycle";
+import { previewViewerTokenExpiresAt } from "./preview-token";
 import type { PreviewWebSocketContext } from "./preview-ws";
 
 export async function authorizePreviewSocket(
   sessionId: string,
   token: string,
-  role: "uploader" | "viewer",
+  role: "uploader" | "viewer"
 ): Promise<PreviewWebSocketContext | null> {
   const kv = getKV();
   if (!kv || !env.AUTH_SECRET) {
@@ -32,13 +34,15 @@ export async function authorizePreviewSocket(
   }
   if (role === "viewer") {
     const viewerTokenExpiresAt = previewViewerTokenExpiresAt(sessionId, token);
-    return viewerTokenExpiresAt === null ? null : { sessionId, role, viewerTokenExpiresAt };
+    return viewerTokenExpiresAt === null
+      ? null
+      : { role, sessionId, viewerTokenExpiresAt };
   }
   if (!(await previewCliCredentialActive(kv, session))) {
     await endPreviewSession(kv, sessionId);
     return null;
   }
   return session.tunnelTokenHash === hashSecret(token, env.AUTH_SECRET)
-    ? { sessionId, role }
+    ? { role, sessionId }
     : null;
 }

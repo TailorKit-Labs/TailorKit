@@ -1,5 +1,10 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
-import type { TailorKitNamedScope, TailorKitScope, TailorKitScopes } from "./types";
+
+import type {
+  TailorKitNamedScope,
+  TailorKitScope,
+  TailorKitScopes,
+} from "./types";
 
 const maximumObjectKeys = 32;
 const maximumKeyLength = 64;
@@ -12,29 +17,40 @@ const scopeNamePattern = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/u;
 
 export type TailorKitScopeSchemas = Record<string, StandardSchemaV1>;
 
-export function validateTailorKitScopeSchemas(value: unknown): TailorKitScopeSchemas {
-  assertPlainRecord(value, "TailorKit scopes must be an object of Standard Schema validators.");
+export function validateTailorKitScopeSchemas(
+  value: unknown
+): TailorKitScopeSchemas {
+  assertPlainRecord(
+    value,
+    "TailorKit scopes must be an object of Standard Schema validators."
+  );
   const entries = getRecordEntries(
     value,
-    "TailorKit scopes must contain enumerable validator data properties.",
+    "TailorKit scopes must contain enumerable validator data properties."
   );
   if (entries.length === 0) {
     throw new TypeError("TailorKit must declare at least one named scope.");
   }
   if (entries.length > maximumObjectKeys) {
-    throw new TypeError(`TailorKit may declare at most ${maximumObjectKeys} named scopes.`);
+    throw new TypeError(
+      `TailorKit may declare at most ${maximumObjectKeys} named scopes.`
+    );
   }
   const schemas: [string, StandardSchemaV1][] = [];
   for (const [name, schema] of entries) {
     validateTailorKitScopeName(name);
     const standard =
-      typeof schema === "object" && schema !== null ? Reflect.get(schema, "~standard") : undefined;
+      typeof schema === "object" && schema !== null
+        ? Reflect.get(schema, "~standard")
+        : undefined;
     if (
       typeof standard !== "object" ||
       standard === null ||
       typeof Reflect.get(standard, "validate") !== "function"
     ) {
-      throw new TypeError(`TailorKit scope "${name}" must be a Standard Schema validator.`);
+      throw new TypeError(
+        `TailorKit scope "${name}" must be a Standard Schema validator.`
+      );
     }
     schemas.push([name, schema as StandardSchemaV1]);
   }
@@ -43,31 +59,40 @@ export function validateTailorKitScopeSchemas(value: unknown): TailorKitScopeSch
 
 export async function validateTailorKitScopes(
   scopeSchemas: TailorKitScopeSchemas,
-  value: unknown,
+  value: unknown
 ): Promise<TailorKitScopes> {
-  assertPlainRecord(value, "TailorKit authenticate() must return a scopes object.");
+  assertPlainRecord(
+    value,
+    "TailorKit authenticate() must return a scopes object."
+  );
   const inputEntries = getRecordEntries(
     value,
-    "TailorKit authenticate() scopes must be data properties.",
+    "TailorKit authenticate() scopes must be data properties."
   );
   if (inputEntries.length === 0) {
-    throw new TypeError("TailorKit authenticate() must return at least one scope.");
+    throw new TypeError(
+      "TailorKit authenticate() must return at least one scope."
+    );
   }
 
   const validatedEntries: [string, TailorKitScope][] = [];
   for (const [name, scopeValue] of inputEntries) {
     if (!Object.hasOwn(scopeSchemas, name)) {
-      throw new TypeError(`TailorKit authenticate() returned undeclared scope "${name}".`);
+      throw new TypeError(
+        `TailorKit authenticate() returned undeclared scope "${name}".`
+      );
     }
 
     const scopeSchema = scopeSchemas[name];
     if (!scopeSchema) {
-      throw new TypeError(`TailorKit authenticate() returned undeclared scope "${name}".`);
+      throw new TypeError(
+        `TailorKit authenticate() returned undeclared scope "${name}".`
+      );
     }
     const result = await scopeSchema["~standard"].validate(scopeValue);
     if (result.issues) {
       throw new TypeError(
-        `TailorKit authenticate() returned scope "${name}" that failed its Standard Schema validation.`,
+        `TailorKit authenticate() returned scope "${name}" that failed its Standard Schema validation.`
       );
     }
 
@@ -77,7 +102,9 @@ export async function validateTailorKitScopes(
   }
 
   if (validatedEntries.length === 0) {
-    throw new TypeError("TailorKit authenticate() must return at least one available scope.");
+    throw new TypeError(
+      "TailorKit authenticate() must return at least one available scope."
+    );
   }
 
   validatedEntries.sort(([left], [right]) => compareStrings(left, right));
@@ -87,7 +114,7 @@ export async function validateTailorKitScopes(
 export function validateTailorKitScopeName(name: string): string {
   if (!scopeNamePattern.test(name)) {
     throw new TypeError(
-      'TailorKit scope names must start with a letter and contain only letters, numbers, "_", or "-".',
+      'TailorKit scope names must start with a letter and contain only letters, numbers, "_", or "-".'
     );
   }
   return name;
@@ -95,7 +122,9 @@ export function validateTailorKitScopeName(name: string): string {
 
 export function normalizeTailorKitScope(value: unknown): TailorKitScope {
   if (!isPlainRecord(value)) {
-    throw new TypeError("TailorKit scope values must be nonempty plain JSON objects.");
+    throw new TypeError(
+      "TailorKit scope values must be nonempty plain JSON objects."
+    );
   }
 
   let nodes = 0;
@@ -104,29 +133,49 @@ export function normalizeTailorKitScope(value: unknown): TailorKitScope {
     nodes += 1;
     if (nodes > maximumNodes) {
       throw new TypeError(
-        `TailorKit scope values may contain at most ${maximumNodes} JSON values.`,
+        `TailorKit scope values may contain at most ${maximumNodes} JSON values.`
       );
     }
   });
   const json = JSON.stringify(normalized);
-  if (json === undefined || new TextEncoder().encode(json).byteLength > maximumJsonBytes) {
-    throw new TypeError(`TailorKit scope values may not exceed ${maximumJsonBytes} bytes of JSON.`);
+  if (
+    json === undefined ||
+    new TextEncoder().encode(json).byteLength > maximumJsonBytes
+  ) {
+    throw new TypeError(
+      `TailorKit scope values may not exceed ${maximumJsonBytes} bytes of JSON.`
+    );
   }
   return normalized as TailorKitScope;
 }
 
-export function normalizeTailorKitNamedScope(value: unknown): TailorKitNamedScope {
+export function normalizeTailorKitNamedScope(
+  value: unknown
+): TailorKitNamedScope {
   if (!isPlainRecord(value)) {
-    throw new TypeError("TailorKit scope identity must contain a name and value.");
+    throw new TypeError(
+      "TailorKit scope identity must contain a name and value."
+    );
   }
-  const entries = getRecordEntries(value, "TailorKit scope identity must contain data properties.");
-  if (entries.length !== 2 || !Object.hasOwn(value, "name") || !Object.hasOwn(value, "value")) {
-    throw new TypeError("TailorKit scope identity must contain only a name and value.");
+  const entries = getRecordEntries(
+    value,
+    "TailorKit scope identity must contain data properties."
+  );
+  if (
+    entries.length !== 2 ||
+    !Object.hasOwn(value, "name") ||
+    !Object.hasOwn(value, "value")
+  ) {
+    throw new TypeError(
+      "TailorKit scope identity must contain only a name and value."
+    );
   }
   const name = Object.getOwnPropertyDescriptor(value, "name")?.value;
   const scopeValue = Object.getOwnPropertyDescriptor(value, "value")?.value;
   if (typeof name !== "string") {
-    throw new TypeError("TailorKit scope identity must contain a name and value.");
+    throw new TypeError(
+      "TailorKit scope identity must contain a name and value."
+    );
   }
   validateTailorKitScopeName(name);
   return { name, value: normalizeTailorKitScope(scopeValue) };
@@ -134,7 +183,7 @@ export function normalizeTailorKitNamedScope(value: unknown): TailorKitNamedScop
 
 export function selectTailorKitScopes(
   availableScopes: TailorKitScopes,
-  selectedNames?: readonly string[],
+  selectedNames?: readonly string[]
 ): TailorKitNamedScope[] {
   const names = selectedNames ?? Object.keys(availableScopes);
   if (names.length === 0) {
@@ -150,11 +199,15 @@ export function selectTailorKitScopes(
     }
     seen.add(name);
     if (!Object.hasOwn(availableScopes, name)) {
-      throw new TypeError(`TailorKit scope "${name}" is not available for this request.`);
+      throw new TypeError(
+        `TailorKit scope "${name}" is not available for this request.`
+      );
     }
     const value = availableScopes[name];
     if (!value) {
-      throw new TypeError(`TailorKit scope "${name}" is not available for this request.`);
+      throw new TypeError(
+        `TailorKit scope "${name}" is not available for this request.`
+      );
     }
     selected.push({ name, value });
   }
@@ -170,21 +223,30 @@ function normalizeJsonValue(
   depth: number,
   isRoot: boolean,
   ancestors: Set<object>,
-  countNode: () => void,
+  countNode: () => void
 ): unknown {
   countNode();
-  if (value === null || typeof value === "boolean" || typeof value === "string") {
+  if (
+    value === null ||
+    typeof value === "boolean" ||
+    typeof value === "string"
+  ) {
     if (typeof value === "string" && value.length > maximumStringLength) {
       throw new TypeError(
-        `TailorKit scope strings may not exceed ${maximumStringLength} characters.`,
+        `TailorKit scope strings may not exceed ${maximumStringLength} characters.`
       );
     }
     return value;
   }
 
   if (typeof value === "number") {
-    if (!Number.isFinite(value) || (Number.isInteger(value) && !Number.isSafeInteger(value))) {
-      throw new TypeError("TailorKit scope numbers must be finite and safe when integral.");
+    if (
+      !Number.isFinite(value) ||
+      (Number.isInteger(value) && !Number.isSafeInteger(value))
+    ) {
+      throw new TypeError(
+        "TailorKit scope numbers must be finite and safe when integral."
+      );
     }
     if (Object.is(value, -0)) {
       throw new TypeError("TailorKit scope numbers may not be negative zero.");
@@ -193,11 +255,13 @@ function normalizeJsonValue(
   }
 
   if (typeof value !== "object") {
-    throw new TypeError("TailorKit scope values must contain only JSON values.");
+    throw new TypeError(
+      "TailorKit scope values must contain only JSON values."
+    );
   }
   if (depth > maximumDepth) {
     throw new TypeError(
-      `TailorKit scope values may be nested at most ${maximumDepth} levels deep.`,
+      `TailorKit scope values may be nested at most ${maximumDepth} levels deep.`
     );
   }
   if (ancestors.has(value)) {
@@ -211,7 +275,7 @@ function normalizeJsonValue(
     }
     if (value.length > maximumArrayLength) {
       throw new TypeError(
-        `TailorKit scope arrays may contain at most ${maximumArrayLength} items.`,
+        `TailorKit scope arrays may contain at most ${maximumArrayLength} items.`
       );
     }
     const ownKeys = Reflect.ownKeys(value);
@@ -220,15 +284,27 @@ function normalizeJsonValue(
       !ownKeys.includes("length") ||
       ownKeys.some((key) => typeof key !== "string")
     ) {
-      throw new TypeError("TailorKit scope arrays must be dense and have no extra properties.");
+      throw new TypeError(
+        "TailorKit scope arrays must be dense and have no extra properties."
+      );
     }
     const result: unknown[] = [];
     for (let index = 0; index < value.length; index += 1) {
       const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
       if (!descriptor?.enumerable || !("value" in descriptor)) {
-        throw new TypeError("TailorKit scope arrays must contain enumerable data items.");
+        throw new TypeError(
+          "TailorKit scope arrays must contain enumerable data items."
+        );
       }
-      result.push(normalizeJsonValue(descriptor.value, depth + 1, false, ancestors, countNode));
+      result.push(
+        normalizeJsonValue(
+          descriptor.value,
+          depth + 1,
+          false,
+          ancestors,
+          countNode
+        )
+      );
     }
     ancestors.delete(value);
     return Object.freeze(result);
@@ -237,13 +313,18 @@ function normalizeJsonValue(
   if (!isPlainRecord(value)) {
     throw new TypeError("TailorKit scope objects must be plain JSON objects.");
   }
-  const entries = getRecordEntries(value, "TailorKit scope objects must contain data properties.");
+  const entries = getRecordEntries(
+    value,
+    "TailorKit scope objects must contain data properties."
+  );
   if (isRoot && entries.length === 0) {
-    throw new TypeError("TailorKit scope values must be nonempty plain JSON objects.");
+    throw new TypeError(
+      "TailorKit scope values must be nonempty plain JSON objects."
+    );
   }
   if (entries.length > maximumObjectKeys) {
     throw new TypeError(
-      `TailorKit scope objects may contain at most ${maximumObjectKeys} properties.`,
+      `TailorKit scope objects may contain at most ${maximumObjectKeys} properties.`
     );
   }
   const result = Object.fromEntries(
@@ -252,13 +333,16 @@ function normalizeJsonValue(
       .map(([key, child]) => [
         key,
         normalizeJsonValue(child, depth + 1, false, ancestors, countNode),
-      ]),
+      ])
   );
   ancestors.delete(value);
   return Object.freeze(result);
 }
 
-function getRecordEntries(value: object, errorMessage: string): [string, unknown][] {
+function getRecordEntries(
+  value: object,
+  errorMessage: string
+): [string, unknown][] {
   const ownKeys = Reflect.ownKeys(value);
   if (ownKeys.some((key) => typeof key !== "string")) {
     throw new TypeError(errorMessage);
@@ -266,11 +350,13 @@ function getRecordEntries(value: object, errorMessage: string): [string, unknown
   const entries: [string, unknown][] = [];
   for (const key of ownKeys as string[]) {
     if (key === "__proto__") {
-      throw new TypeError('TailorKit scope property names may not be "__proto__".');
+      throw new TypeError(
+        'TailorKit scope property names may not be "__proto__".'
+      );
     }
     if (key.length === 0 || key.length > maximumKeyLength) {
       throw new TypeError(
-        `TailorKit scope property names must be 1 to ${maximumKeyLength} characters.`,
+        `TailorKit scope property names must be 1 to ${maximumKeyLength} characters.`
       );
     }
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
@@ -282,7 +368,10 @@ function getRecordEntries(value: object, errorMessage: string): [string, unknown
   return entries;
 }
 
-function assertPlainRecord(value: unknown, errorMessage: string): asserts value is object {
+function assertPlainRecord(
+  value: unknown,
+  errorMessage: string
+): asserts value is object {
   if (!isPlainRecord(value)) {
     throw new TypeError(errorMessage);
   }

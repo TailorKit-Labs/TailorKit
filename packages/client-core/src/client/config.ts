@@ -8,8 +8,12 @@ import type {
   TailorKitContract,
   ToolImplementations,
 } from "@tailorkit/core/schema";
+
 import { createTailorKitFetchClient } from "./fetch-client";
-import type { TailorKitFetchClient, TailorKitCacheOptions } from "./fetch-client";
+import type {
+  TailorKitFetchClient,
+  TailorKitCacheOptions,
+} from "./fetch-client";
 
 export type AnyComponentDefinition = ComponentDefinition<
   Schema | undefined,
@@ -17,14 +21,17 @@ export type AnyComponentDefinition = ComponentDefinition<
   boolean | undefined
 >;
 
-export type ComponentRenderer<TComponent extends AnyComponentDefinition, TNode> = (
+export type ComponentRenderer<
+  TComponent extends AnyComponentDefinition,
+  TNode,
+> = (
   args: {
     props: ComponentProps<TComponent>;
   } & ("children" extends keyof TComponent
     ? TComponent extends { children?: true }
       ? { children?: TNode }
       : {}
-    : {}),
+    : {})
 ) => TNode;
 
 export type ComponentRenderers<
@@ -61,7 +68,9 @@ export interface TailorKitClientConfig {
   readonly theme: TailorKitTheme;
 }
 
-export type SlotMultiple<TSlot> = TSlot extends { multiple: infer TMultiple extends boolean }
+export type SlotMultiple<TSlot> = TSlot extends {
+  multiple: infer TMultiple extends boolean;
+}
   ? TMultiple
   : TSlot extends { multiple?: infer TMultiple extends boolean }
     ? TMultiple | false
@@ -80,43 +89,56 @@ export function createTailorKitClientConfig(options: {
 }): TailorKitClientConfig {
   const declarations = flattenTools(options.contract.tools);
   const visit = (tree: unknown, prefix = "") => {
-    if (!tree || typeof tree !== "object") return;
+    if (!tree || typeof tree !== "object") {
+      return;
+    }
     for (const [name, value] of Object.entries(tree)) {
       const path = prefix + name;
       if (typeof value === "function") {
-        if (declarations.get(path)?.kind !== "client")
+        if (declarations.get(path)?.kind !== "client") {
           throw new Error(`Undeclared client tool "${path}"`);
-      } else visit(value, path + ".");
+        }
+      } else {
+        visit(value, path + ".");
+      }
     }
   };
   visit(options.tools);
   for (const [path, leaf] of declarations) {
-    if (leaf.kind !== "client") continue;
+    if (leaf.kind !== "client") {
+      continue;
+    }
     let value: unknown = options.tools;
-    for (const name of path.split("."))
+    for (const name of path.split(".")) {
       value =
         value && typeof value === "object" && Object.hasOwn(value, name)
           ? (value as Record<string, unknown>)[name]
           : undefined;
-    if (typeof value !== "function") throw new Error(`Missing client tool "${path}"`);
+    }
+    if (typeof value !== "function") {
+      throw new Error(`Missing client tool "${path}"`);
+    }
   }
   const fetchClient = createTailorKitFetchClient(options);
   return {
-    tools: options.tools,
-    baseUrl: options.baseUrl,
-    contract: options.contract,
     assetsBaseUrl: options.assetsBaseUrl,
-    fetchClient,
+    baseUrl: options.baseUrl,
     clearCache: () => fetchClient.clear(),
     components: options.components ?? {},
+    contract: options.contract,
+    fetchClient,
     theme: options.theme ?? {},
+    tools: options.tools,
   };
 }
 
 /** Register schema names and their remote element aliases with the same wrapped renderer. */
-export function createComponentRegistry<T extends Record<string, unknown>, TRenderer>(
+export function createComponentRegistry<
+  T extends Record<string, unknown>,
+  TRenderer,
+>(
   renderers: T,
-  wrap: (renderer: NonNullable<T[keyof T]>) => TRenderer,
+  wrap: (renderer: NonNullable<T[keyof T]>) => TRenderer
 ): Record<string, TRenderer> {
   const components: Record<string, TRenderer> = {};
   for (const [name, renderer] of Object.entries(renderers)) {

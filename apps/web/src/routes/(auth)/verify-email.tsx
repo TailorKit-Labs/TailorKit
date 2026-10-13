@@ -1,7 +1,5 @@
 "use client";
 
-import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@tailorkit/ui/button";
 import {
   Card,
@@ -12,15 +10,26 @@ import {
   CardPanel,
   CardTitle,
 } from "@tailorkit/ui/card";
-import { Field, FieldDescription, FieldError, FieldLabel } from "@tailorkit/ui/field";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "@tailorkit/ui/field";
 import { Logo } from "@tailorkit/ui/logo";
-import { OTPField, OTPFieldInput, OTPFieldSeparator } from "@tailorkit/ui/otp-field";
+import {
+  OTPField,
+  OTPFieldInput,
+  OTPFieldSeparator,
+} from "@tailorkit/ui/otp-field";
 import { toastManager } from "@tailorkit/ui/toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
+import { ChevronLeftIcon } from "lucide-react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 
 import { authClient } from "#lib/auth-client";
 import { getSameOriginPath } from "#lib/safe-return-url";
-import { useQueryClient } from "@tanstack/react-query";
-import { ChevronLeftIcon } from "lucide-react";
 
 export const Route = createFileRoute("/(auth)/verify-email")({
   component: RouteComponent,
@@ -134,9 +143,12 @@ function RouteComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12">
       <div className="flex w-full max-w-sm flex-col items-center gap-4">
-        <a className="flex items-center gap-2" href="https://tailorkit.dev/home">
+        <a
+          className="flex items-center gap-2"
+          href="https://tailorkit.dev/home"
+        >
           <Logo className="size-6" />
-          <span className="font-semibold text-lg">TailorKit</span>
+          <span className="text-lg font-semibold">TailorKit</span>
         </a>
         <CardFrame className="w-full">
           <Card>
@@ -167,9 +179,15 @@ function RouteComponent() {
                     ))}
                   </OTPField>
                   <FieldDescription>
-                    {email ? `Sent to ${email}` : "Enter the 6-digit code sent to your email"}
+                    {email
+                      ? `Sent to ${email}`
+                      : "Enter the 6-digit code sent to your email"}
                   </FieldDescription>
-                  {invalid && <FieldError>Invalid or expired code. Please try again.</FieldError>}
+                  {invalid && (
+                    <FieldError>
+                      Invalid or expired code. Please try again.
+                    </FieldError>
+                  )}
                   <Button
                     variant="link"
                     size="sm"
@@ -178,7 +196,9 @@ function RouteComponent() {
                     loading={sending}
                     className="h-auto p-0 text-xs"
                   >
-                    {resendCountdown > 0 ? `Resend in ${resendCountdown}s` : "Resend code"}
+                    {resendCountdown > 0
+                      ? `Resend in ${resendCountdown}s`
+                      : "Resend code"}
                   </Button>
                 </Field>
               </div>
@@ -195,7 +215,10 @@ function RouteComponent() {
             </CardFooter>
           </Card>
           <CardFrameFooter className="relative">
-            <Button variant={"link"} render={<Link search={{ email, return_to }} to="/login" />}>
+            <Button
+              variant="link"
+              render={<Link search={{ email, return_to }} to="/login" />}
+            >
               <ChevronLeftIcon />
               Back to sign in
             </Button>

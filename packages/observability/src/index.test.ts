@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+
 import {
   initializeObservability,
   safeAttributes,
@@ -51,7 +52,7 @@ describe("observability helpers", () => {
         "http.method": "GET",
         "request.headers": "cookie=value",
         "storage.key": "projects/id/file.js",
-      }),
+      })
     ).toEqual({
       "http.method": "GET",
     });
@@ -59,14 +60,16 @@ describe("observability helpers", () => {
 
   it("normalizes safe primitive values", () => {
     expect(safeAttributeValue(new Date("2026-01-01T00:00:00.000Z"))).toBe(
-      "2026-01-01T00:00:00.000Z",
+      "2026-01-01T00:00:00.000Z"
     );
     expect(safeAttributeValue(42)).toBe(42);
   });
 
   it("can be disabled in tests without registering an SDK", async () => {
     mockEnv.TAILORKIT_OTEL_DISABLED = true;
-    await expect(initializeObservability("test-service")).resolves.toBeUndefined();
+    await expect(
+      initializeObservability("test-service")
+    ).resolves.toBeUndefined();
   });
 
   it("deduplicates concurrent initialization", async () => {
@@ -92,7 +95,7 @@ describe("observability helpers", () => {
         }),
         instrumentations: expect.arrayContaining(["auto"]),
         serviceName: "test-service",
-      }),
+      })
     );
   });
 
@@ -103,8 +106,12 @@ describe("observability helpers", () => {
       throw new Error("registration failed");
     });
 
-    await expect(initializeObservability("test-service")).rejects.toThrow("registration failed");
-    await expect(initializeObservability("test-service")).resolves.toBeUndefined();
+    await expect(initializeObservability("test-service")).rejects.toThrow(
+      "registration failed"
+    );
+    await expect(
+      initializeObservability("test-service")
+    ).resolves.toBeUndefined();
 
     expect(registerOTel).toHaveBeenCalledTimes(2);
   });

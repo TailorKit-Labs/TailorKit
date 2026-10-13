@@ -1,7 +1,8 @@
 import { ORPCError } from "@orpc/server";
-import { ACTIVE_PREVIEW_CONFLICT_REASON } from "@tailorkit/client-platform/preview";
 import { previewStart, previewStop } from "@tailorkit/client-platform/client";
+import { ACTIVE_PREVIEW_CONFLICT_REASON } from "@tailorkit/client-platform/preview";
 import { z } from "zod";
+
 import { getCliDeployToken, o, requireCliDeployToken } from "../procedures";
 
 export function isActivePreviewConflict(error: unknown): boolean {
@@ -20,8 +21,13 @@ export function isActivePreviewConflict(error: unknown): boolean {
   }
 
   // Older platform versions do not return a structured reason. Keep their message format working.
-  const message = "message" in error && typeof error.message === "string" ? error.message : "";
-  if (/active preview already exists|preview is already running/iu.test(message)) {
+  const message =
+    "message" in error && typeof error.message === "string"
+      ? error.message
+      : "";
+  if (
+    /active preview already exists|preview is already running/iu.test(message)
+  ) {
     return true;
   }
 
@@ -35,7 +41,12 @@ export function isActivePreviewConflict(error: unknown): boolean {
 export const previewRouter = {
   start: o
     .use(requireCliDeployToken)
-    .input(z.object({ appId: z.string().min(1), replaceActive: z.boolean().optional() }))
+    .input(
+      z.object({
+        appId: z.string().min(1),
+        replaceActive: z.boolean().optional(),
+      })
+    )
     .handler(async ({ context, input }) => {
       try {
         return await previewStart({
@@ -68,6 +79,6 @@ export const previewRouter = {
           client: context.platform,
           headers: context.platformHeaders,
           path: { sessionId: input.sessionId },
-        }),
+        })
     ),
 };

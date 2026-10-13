@@ -1,4 +1,5 @@
 import { type } from "arktype";
+
 import type { ComponentDefinition } from "../schema/index";
 import { primitiveDefinitions, primitiveNames } from "./definition";
 import type { PrimitiveName, PrimitivePropDefinition } from "./definition";
@@ -7,7 +8,10 @@ import type { TailorKitTheme } from "./theme";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Shape = Record<string, any>;
-type PrimitiveComponents = Record<PrimitiveName, ComponentDefinition & { children: true }>;
+type PrimitiveComponents = Record<
+  PrimitiveName,
+  ComponentDefinition & { children: true }
+>;
 
 const tokenExpr = (tokens: Record<string, string> | undefined): string => {
   const keys = Object.keys(tokens ?? {});
@@ -27,17 +31,25 @@ const responsive = (expr: string, theme: TailorKitTheme) => {
     .onUndeclaredKey("reject");
 };
 
-const optionalResponsive = (expr: string, theme: TailorKitTheme) => responsive(expr, theme);
+const optionalResponsive = (expr: string, theme: TailorKitTheme) =>
+  responsive(expr, theme);
 
 const valueExpr = (values: readonly (number | string)[]): string =>
-  values.map((value) => (typeof value === "number" ? String(value) : `'${value}'`)).join(" | ");
+  values
+    .map((value) => (typeof value === "number" ? String(value) : `'${value}'`))
+    .join(" | ");
 
-const propExpr = (definition: PrimitivePropDefinition, theme: TailorKitTheme) => {
+const propExpr = (
+  definition: PrimitivePropDefinition,
+  theme: TailorKitTheme
+) => {
   const expr =
     definition.kind === "token"
       ? tokenExpr(theme.tokens?.[definition.token])
       : valueExpr(definition.values);
-  return definition.responsive === false ? expr : optionalResponsive(expr, theme);
+  return definition.responsive === false
+    ? expr
+    : optionalResponsive(expr, theme);
 };
 
 const primitiveShape = (name: PrimitiveName, theme: TailorKitTheme): Shape =>
@@ -45,7 +57,7 @@ const primitiveShape = (name: PrimitiveName, theme: TailorKitTheme): Shape =>
     Object.entries(primitiveDefinitions[name]).map(([propName, definition]) => [
       `${propName}?`,
       propExpr(definition, theme),
-    ]),
+    ])
   );
 
 export const primitives = (theme: TailorKitTheme = {}): PrimitiveComponents => {
@@ -54,8 +66,10 @@ export const primitives = (theme: TailorKitTheme = {}): PrimitiveComponents => {
   for (const name of primitiveNames) {
     components[name] = {
       callbacks: {},
-      fields: type(primitiveShape(name, resolvedTheme)).onDeepUndeclaredKey("reject"),
       children: true,
+      fields: type(primitiveShape(name, resolvedTheme)).onDeepUndeclaredKey(
+        "reject"
+      ),
     };
   }
   return components;

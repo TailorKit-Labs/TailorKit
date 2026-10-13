@@ -20,16 +20,19 @@ export const themeStorageKey = "theme";
 export const isAppTheme = (value: unknown): value is AppTheme =>
   typeof value === "string" && themes.includes(value as AppTheme);
 
-export const getUserTheme = (user: User | null | undefined): AppTheme | undefined => {
+export const getUserTheme = (
+  user: User | null | undefined
+): AppTheme | undefined => {
   if (!(user && typeof user === "object" && "theme" in user)) {
     return;
   }
 
-  const theme = (user as { theme?: unknown }).theme;
+  const { theme } = user as { theme?: unknown };
   return isAppTheme(theme) ? theme : undefined;
 };
 
-const prefersDark = () => window.matchMedia("(prefers-color-scheme: dark)").matches;
+const prefersDark = () =>
+  window.matchMedia("(prefers-color-scheme: dark)").matches;
 
 export const resolveTheme = (theme: AppTheme): "light" | "dark" => {
   if (theme === "system") {
@@ -49,7 +52,11 @@ export const getStoredTheme = (): AppTheme => {
 
 const disableTransitionOnChange = () => {
   const style = document.createElement("style");
-  style.append(document.createTextNode("*{transition:none!important;animation:none!important}"));
+  style.append(
+    document.createTextNode(
+      "*{transition:none!important;animation:none!important}"
+    )
+  );
   document.head.append(style);
 
   return () => {
@@ -60,12 +67,17 @@ const disableTransitionOnChange = () => {
   };
 };
 
-export const applyTheme = (theme: AppTheme, options: { disableTransitions?: boolean } = {}) => {
+export const applyTheme = (
+  theme: AppTheme,
+  options: { disableTransitions?: boolean } = {}
+) => {
   if (typeof document === "undefined") {
     return;
   }
 
-  const enableTransitions = options.disableTransitions ? disableTransitionOnChange() : undefined;
+  const enableTransitions = options.disableTransitions
+    ? disableTransitionOnChange()
+    : undefined;
   const resolvedTheme = resolveTheme(theme);
 
   document.documentElement.classList.toggle("dark", resolvedTheme === "dark");
@@ -121,7 +133,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({ resolvedTheme, setTheme, theme }),
-    [resolvedTheme, setTheme, theme],
+    [resolvedTheme, setTheme, theme]
   );
 
   return createElement(ThemeContext.Provider, { value }, children);

@@ -1,4 +1,3 @@
-import { ChevronsUpDownIcon, PlusIcon, SearchIcon } from "lucide-react";
 import { Avatar, AvatarFallback } from "@tailorkit/ui/avatar";
 import { Button } from "@tailorkit/ui/button";
 import {
@@ -12,8 +11,9 @@ import {
   ComboboxValue,
 } from "@tailorkit/ui/combobox";
 import { SidebarMenuButton } from "@tailorkit/ui/sidebar";
-import { Link, useNavigate } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { ChevronsUpDownIcon, PlusIcon, SearchIcon } from "lucide-react";
 
 import { CreateOrgDialog } from "#components/create-org-dialog";
 import { isOrgCreationManaged } from "#lib/org-creation";
@@ -48,7 +48,10 @@ export function OrgSwitcher({ orgSlug }: OrgSwitcherProps) {
       items={orgs ?? []}
       onValueChange={(org) => {
         if (org) {
-          navigate({ params: { orgSlug: org.slug }, to: "/$orgSlug/~/projects" });
+          navigate({
+            params: { orgSlug: org.slug },
+            to: "/$orgSlug/~/projects",
+          });
         }
       }}
       value={currentOrg}
@@ -63,18 +66,20 @@ export function OrgSwitcher({ orgSlug }: OrgSwitcherProps) {
             org ? (
               <div className="flex items-center gap-2 truncate">
                 <Avatar className="size-6 rounded-md">
-                  <AvatarFallback className="rounded-md bg-primary text-[10px] text-primary-foreground">
+                  <AvatarFallback className="bg-primary text-primary-foreground rounded-md text-[10px]">
                     {orgInitials(org.name)}
                   </AvatarFallback>
                 </Avatar>
-                <span className="truncate font-medium text-sm">{org.name}</span>
+                <span className="truncate text-sm font-medium">{org.name}</span>
               </div>
             ) : (
-              <span className="truncate font-medium text-sm">Select organisation</span>
+              <span className="truncate text-sm font-medium">
+                Select organisation
+              </span>
             )
           }
         </ComboboxValue>
-        <ChevronsUpDownIcon className="ml-auto size-4 shrink-0 text-muted-foreground" />
+        <ChevronsUpDownIcon className="text-muted-foreground ml-auto size-4 shrink-0" />
       </ComboboxTrigger>
       <ComboboxPopup aria-label="Select organisation">
         <div className="border-b p-2">
@@ -89,8 +94,8 @@ export function OrgSwitcher({ orgSlug }: OrgSwitcherProps) {
         <ComboboxList>
           {(org) => (
             <ComboboxItem key={org.slug} value={org}>
-              <Avatar className="size-5 rounded-sm mr-2">
-                <AvatarFallback className="rounded-sm text-[10px] bg-input">
+              <Avatar className="mr-2 size-5 rounded-sm">
+                <AvatarFallback className="bg-input rounded-sm text-[10px]">
                   {orgInitials(org.name)}
                 </AvatarFallback>
               </Avatar>
@@ -110,7 +115,11 @@ export function OrgSwitcher({ orgSlug }: OrgSwitcherProps) {
             </Button>
           ) : (
             <CreateOrgDialog>
-              <Button className="w-full justify-start" type="button" variant="ghost">
+              <Button
+                className="w-full justify-start"
+                type="button"
+                variant="ghost"
+              >
                 <PlusIcon className="mr-2 size-4" />
                 Create org
               </Button>

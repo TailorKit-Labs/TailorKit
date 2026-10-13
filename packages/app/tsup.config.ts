@@ -1,4 +1,5 @@
 import { createRequire } from "node:module";
+
 import { defineConfig } from "tsup";
 
 const require = createRequire(import.meta.url);
@@ -11,13 +12,13 @@ export default defineConfig({
   },
   entry: {
     builder: "src/builder/index.ts",
+    client: "src/client.ts",
+    "client-connection": "src/client/connection.ts",
     config: "src/config/index.ts",
     "config-loader": "src/config/loader.ts",
     index: "src/index.ts",
-    client: "src/client.ts",
-    "client-connection": "src/client/connection.ts",
-    server: "src/server.ts",
     protocol: "src/protocol.ts",
+    server: "src/server.ts",
   },
   format: ["esm"],
   noExternal: [/^@tailorkit\/asset-delivery(?:\/|$)/u],

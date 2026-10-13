@@ -1,4 +1,3 @@
-import { AppWindowIcon, KeyRoundIcon, SettingsIcon } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -11,8 +10,10 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from "@tailorkit/ui/sidebar";
-import { Link, useRouterState } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { AppWindowIcon, KeyRoundIcon, SettingsIcon } from "lucide-react";
+
 import { orpc } from "#lib/orpc";
 
 import { OrgSwitcher } from "./org-switcher";
@@ -28,9 +29,10 @@ interface ProjectSidebarProps {
 export function ProjectSidebar({ orgSlug, projectSlug }: ProjectSidebarProps) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const base = `/${orgSlug}/${projectSlug}`;
-  const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
+  const isActive = (path: string) =>
+    pathname === path || pathname.startsWith(`${path}/`);
   const { data: project } = useSuspenseQuery(
-    orpc.project.get.queryOptions({ input: { orgSlug, projectSlug } }),
+    orpc.project.get.queryOptions({ input: { orgSlug, projectSlug } })
   );
 
   return (
@@ -46,12 +48,21 @@ export function ProjectSidebar({ orgSlug, projectSlug }: ProjectSidebarProps) {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarBackButton label={project.name} params={{ orgSlug }} to="/$orgSlug/~/projects" />
+          <SidebarBackButton
+            label={project.name}
+            params={{ orgSlug }}
+            to="/$orgSlug/~/projects"
+          />
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
                 isActive={isActive(`${base}/apps`)}
-                render={<Link params={{ orgSlug, projectSlug }} to="/$orgSlug/$projectSlug/apps" />}
+                render={
+                  <Link
+                    params={{ orgSlug, projectSlug }}
+                    to="/$orgSlug/$projectSlug/apps"
+                  />
+                }
               >
                 <AppWindowIcon />
                 <span>Apps</span>
@@ -75,7 +86,10 @@ export function ProjectSidebar({ orgSlug, projectSlug }: ProjectSidebarProps) {
               <SidebarMenuButton
                 isActive={pathname === `${base}/settings`}
                 render={
-                  <Link params={{ orgSlug, projectSlug }} to="/$orgSlug/$projectSlug/settings" />
+                  <Link
+                    params={{ orgSlug, projectSlug }}
+                    to="/$orgSlug/$projectSlug/settings"
+                  />
                 }
               >
                 <SettingsIcon />

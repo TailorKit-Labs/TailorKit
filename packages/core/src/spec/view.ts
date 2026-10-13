@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { JsonSchema } from "./json-schema";
 
 const viewKeyPattern = /^\/.*$/u;

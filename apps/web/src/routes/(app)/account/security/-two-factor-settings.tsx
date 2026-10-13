@@ -1,4 +1,3 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@tailorkit/ui/button";
 import {
   Card,
@@ -23,19 +22,27 @@ import {
 import { Field, FieldLabel } from "@tailorkit/ui/field";
 import { Frame, FrameFooter, FramePanel } from "@tailorkit/ui/frame";
 import { Input } from "@tailorkit/ui/input";
-import { OTPField, OTPFieldInput, OTPFieldSeparator } from "@tailorkit/ui/otp-field";
+import {
+  OTPField,
+  OTPFieldInput,
+  OTPFieldSeparator,
+} from "@tailorkit/ui/otp-field";
 import { Skeleton } from "@tailorkit/ui/skeleton";
 import { toastManager } from "@tailorkit/ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "@tailorkit/ui/tooltip";
-import { QRCodeSVG } from "qrcode.react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CopyIcon, DownloadIcon } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { Fragment, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import { client, orpc } from "#lib/orpc";
 
 const OTP_LENGTH = 6;
-const OTP_SLOT_KEYS = Array.from({ length: OTP_LENGTH }, (_, index) => `slot-${index}`);
+const OTP_SLOT_KEYS = Array.from(
+  { length: OTP_LENGTH },
+  (_, index) => `slot-${index}`
+);
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;
@@ -109,7 +116,9 @@ function TwoFactorSetupDialog({
   );
   let action: ReactNode = (
     <>
-      <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>Cancel</DialogClose>
+      <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
+        Cancel
+      </DialogClose>
       <Button
         disabled={!password}
         loading={enabling}
@@ -144,7 +153,7 @@ function TwoFactorSetupDialog({
           />
         </div>
         <div className="flex w-full items-center justify-center gap-2 py-3">
-          <code className="max-w-[calc(100%-2rem)] truncate font-mono text-muted-foreground text-sm tracking-[0.12em]">
+          <code className="text-muted-foreground max-w-[calc(100%-2rem)] truncate font-mono text-sm tracking-[0.12em]">
             {totpSecret}
           </code>
           <Tooltip>
@@ -168,7 +177,9 @@ function TwoFactorSetupDialog({
     );
     action = (
       <>
-        <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
+        <DialogClose
+          render={<Button size="sm" type="button" variant="ghost" />}
+        >
           Cancel
         </DialogClose>
         <Button onClick={onContinueToVerification} size="sm" type="button">
@@ -180,7 +191,8 @@ function TwoFactorSetupDialog({
 
   if (totpURI && showVerificationStep) {
     title = "Verify authenticator app";
-    description = "Enter the six-digit code from your authenticator app to finish setup.";
+    description =
+      "Enter the six-digit code from your authenticator app to finish setup.";
     panelContent = (
       <Field className="items-center gap-5 py-4">
         <FieldLabel>Verification code</FieldLabel>
@@ -212,7 +224,13 @@ function TwoFactorSetupDialog({
     );
     action = (
       <>
-        <Button disabled={verifying} onClick={onBackToQr} size="sm" type="button" variant="outline">
+        <Button
+          disabled={verifying}
+          onClick={onBackToQr}
+          size="sm"
+          type="button"
+          variant="outline"
+        >
           Back
         </Button>
         <Button
@@ -250,7 +268,12 @@ function TwoFactorSetupDialog({
               <CopyIcon />
               Copy
             </Button>
-            <Button onClick={onDownloadBackupCodes} size="sm" type="button" variant="ghost">
+            <Button
+              onClick={onDownloadBackupCodes}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
               <DownloadIcon />
               Download
             </Button>
@@ -260,16 +283,21 @@ function TwoFactorSetupDialog({
           <Checkbox
             checked={backupCodesSaved}
             id="backup-codes-saved"
-            onCheckedChange={(checked) => onBackupCodesSavedChange(checked === true)}
+            onCheckedChange={(checked) =>
+              onBackupCodesSavedChange(checked === true)
+            }
           />
           <FieldLabel className="leading-5" htmlFor="backup-codes-saved">
-            I saved these recovery codes somewhere I can access if I lose my device.
+            I saved these recovery codes somewhere I can access if I lose my
+            device.
           </FieldLabel>
         </Field>
       </div>
     );
     action = (
-      <DialogClose render={<Button disabled={!backupCodesSaved} size="sm" type="button" />}>
+      <DialogClose
+        render={<Button disabled={!backupCodesSaved} size="sm" type="button" />}
+      >
         Done
       </DialogClose>
     );
@@ -329,7 +357,10 @@ export function TwoFactorSettings({
 }: {
   hasCredentialAccount: boolean;
   isLoading: boolean;
-  sessionUser: { email?: string | null; twoFactorEnabled?: boolean | null } | null | undefined;
+  sessionUser:
+    | { email?: string | null; twoFactorEnabled?: boolean | null }
+    | null
+    | undefined;
   sessionError: Error | null;
 }) {
   const queryClient = useQueryClient();
@@ -354,7 +385,12 @@ export function TwoFactorSettings({
     "Use an authenticator app to add a second step whenever you sign in.";
 
   if (isLoading) {
-    description = <Skeleton aria-hidden="true" className="h-10 w-full max-w-[30rem] sm:h-5" />;
+    description = (
+      <Skeleton
+        aria-hidden="true"
+        className="h-10 w-full max-w-[30rem] sm:h-5"
+      />
+    );
   } else if (isEnabled) {
     description = "Your account is protected with an authenticator app.";
   }
@@ -363,7 +399,10 @@ export function TwoFactorSettings({
     mutationFn: () => client.user.enableTwoFactor({ method: "totp", password }),
     onError: (requestError) => {
       setError(
-        getErrorMessage(requestError, "Unable to start authenticator setup. Please try again."),
+        getErrorMessage(
+          requestError,
+          "Unable to start authenticator setup. Please try again."
+        )
       );
     },
     onMutate: () => setError(null),
@@ -380,16 +419,20 @@ export function TwoFactorSettings({
   });
 
   const verifyMutation = useMutation({
-    mutationFn: (verificationCode: string) => client.user.verifyTotp({ code: verificationCode }),
+    mutationFn: (verificationCode: string) =>
+      client.user.verifyTotp({ code: verificationCode }),
     onError: (requestError) => {
       setError(
         getErrorMessage(
           requestError,
-          "That code is not valid. Try the current code from your app.",
-        ),
+          "That code is not valid. Try the current code from your app."
+        )
       );
     },
     onMutate: () => setError(null),
+    onSettled: () => {
+      verificationInProgressRef.current = false;
+    },
     onSuccess: async () => {
       setCode("");
       setTotpURI(null);
@@ -398,19 +441,20 @@ export function TwoFactorSettings({
       setVerificationStep(false);
       setPendingBackupCodes([]);
       toastManager.add({
-        description: "Authenticator-app verification is now required whenever you sign in.",
+        description:
+          "Authenticator-app verification is now required whenever you sign in.",
         title: "Two-factor authentication enabled",
         type: "success",
       });
       await queryClient.invalidateQueries(orpc.user.getSession.queryOptions());
     },
-    onSettled: () => {
-      verificationInProgressRef.current = false;
-    },
   });
 
   const verifyCode = (verificationCode: string) => {
-    if (verificationCode.length !== OTP_LENGTH || verificationInProgressRef.current) {
+    if (
+      verificationCode.length !== OTP_LENGTH ||
+      verificationInProgressRef.current
+    ) {
       return;
     }
 
@@ -421,7 +465,12 @@ export function TwoFactorSettings({
   const disableMutation = useMutation({
     mutationFn: () => client.user.disableTwoFactor({ password }),
     onError: (requestError) => {
-      setError(getErrorMessage(requestError, "Unable to disable two-factor authentication."));
+      setError(
+        getErrorMessage(
+          requestError,
+          "Unable to disable two-factor authentication."
+        )
+      );
     },
     onMutate: () => setError(null),
     onSuccess: async () => {
@@ -502,7 +551,7 @@ export function TwoFactorSettings({
 
   const downloadBackupCodes = () => {
     const downloadURL = URL.createObjectURL(
-      new Blob([backupCodes.join("\n")], { type: "text/plain" }),
+      new Blob([backupCodes.join("\n")], { type: "text/plain" })
     );
     const link = document.createElement("a");
     link.download = "recovery-codes.txt";
@@ -513,9 +562,12 @@ export function TwoFactorSettings({
   };
 
   const regenerateMutation = useMutation({
-    mutationFn: () => client.user.generateBackupCodes({ password: regeneratePassword }),
+    mutationFn: () =>
+      client.user.generateBackupCodes({ password: regeneratePassword }),
     onError: (requestError) => {
-      setRegenerateError(getErrorMessage(requestError, "Unable to regenerate recovery codes."));
+      setRegenerateError(
+        getErrorMessage(requestError, "Unable to regenerate recovery codes.")
+      );
     },
     onMutate: () => setRegenerateError(null),
     onSuccess: (result) => {
@@ -545,15 +597,15 @@ export function TwoFactorSettings({
           {isReady && !hasCredentialAccount && (
             <>
               <p className="text-muted-foreground text-sm">
-                Create a password before enabling two-factor authentication. This ensures your
-                authenticator is an additional factor, not the only credential protecting this
-                account.
+                Create a password before enabling two-factor authentication.
+                This ensures your authenticator is an additional factor, not the
+                only credential protecting this account.
               </p>
               <Button
                 className="w-fit"
                 onClick={() => {
                   window.location.assign(
-                    `/forgot-password?email=${encodeURIComponent(sessionUser?.email ?? "")}&return_to=/account/security`,
+                    `/forgot-password?email=${encodeURIComponent(sessionUser?.email ?? "")}&return_to=/account/security`
                   );
                 }}
                 size="sm"
@@ -568,13 +620,13 @@ export function TwoFactorSettings({
       </Card>
 
       {isLoading ? (
-        <CardFrameFooter className="flex justify-end relative">
+        <CardFrameFooter className="relative flex justify-end">
           <Skeleton className="h-7 w-24" />
         </CardFrameFooter>
       ) : null}
 
       {isReady && hasCredentialAccount && (
-        <CardFrameFooter className="flex flex-wrap justify-end gap-2 relative">
+        <CardFrameFooter className="relative flex flex-wrap justify-end gap-2">
           {isEnabled ? (
             <>
               <Button
@@ -679,8 +731,8 @@ function RegenerateBackupCodesDialog({
         <DialogHeader>
           <DialogTitle>Regenerate recovery codes</DialogTitle>
           <DialogDescription>
-            Your current recovery codes will stop working. Enter your password to generate a new
-            set.
+            Your current recovery codes will stop working. Enter your password
+            to generate a new set.
           </DialogDescription>
         </DialogHeader>
         <DialogPanel>
@@ -694,13 +746,15 @@ function RegenerateBackupCodesDialog({
             />
           </Field>
           {error ? (
-            <p className="mt-3 text-destructive text-sm" role="alert">
+            <p className="text-destructive mt-3 text-sm" role="alert">
               {error}
             </p>
           ) : null}
         </DialogPanel>
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
+          <DialogClose
+            render={<Button size="sm" type="button" variant="ghost" />}
+          >
             Cancel
           </DialogClose>
           <Button
@@ -755,13 +809,15 @@ function DisableTwoFactorDialog({
             />
           </Field>
           {error ? (
-            <p className="mt-3 text-destructive text-sm" role="alert">
+            <p className="text-destructive mt-3 text-sm" role="alert">
               {error}
             </p>
           ) : null}
         </DialogPanel>
         <DialogFooter>
-          <DialogClose render={<Button size="sm" type="button" variant="ghost" />}>
+          <DialogClose
+            render={<Button size="sm" type="button" variant="ghost" />}
+          >
             Cancel
           </DialogClose>
           <Button

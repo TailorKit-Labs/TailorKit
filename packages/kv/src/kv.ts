@@ -1,7 +1,8 @@
 import { env } from "#env";
+
 import { createRedisKV } from "./redis.js";
-import { createUpstashKV } from "./upstash.js";
 import type { KV } from "./types.js";
+import { createUpstashKV } from "./upstash.js";
 
 type KVInstance = KV<"upstash"> | KV<"redis"> | null;
 

@@ -1,276 +1,381 @@
-import { describe, expect, it } from "vite-plus/test";
 import { execFile } from "node:child_process";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
+
+import { describe, expect, it } from "vite-plus/test";
 import { z } from "zod";
 
 import { renderGeneratedTypes } from "./types";
 
 type JsonSchema = NonNullable<
-  NonNullable<Parameters<typeof renderGeneratedTypes>[0]["views"]>[string]["context"]
+  NonNullable<
+    Parameters<typeof renderGeneratedTypes>[0]["views"]
+  >[string]["context"]
 >;
 
-const cases: { name: string; schema: z.ZodType; expected: string; optional?: boolean }[] = [
-  { name: "string", schema: z.string(), expected: "string" },
-  { name: "number", schema: z.number(), expected: "number" },
-  { name: "integer", schema: z.int(), expected: "number" },
-  { name: "boolean", schema: z.boolean(), expected: "boolean" },
-  { name: "null", schema: z.null(), expected: "null" },
-  { name: "unknown", schema: z.unknown(), expected: "unknown" },
-  { name: "any", schema: z.any(), expected: "unknown" },
-  { name: "never", schema: z.never(), expected: "never" },
-  { name: "string literal", schema: z.literal("hello"), expected: '"hello"' },
-  { name: "escaped literal", schema: z.literal('a"b\\c'), expected: JSON.stringify('a"b\\c') },
-  { name: "number literal", schema: z.literal(42), expected: "42" },
-  { name: "false literal", schema: z.literal(false), expected: "false" },
-  { name: "true literal", schema: z.literal(true), expected: "true" },
-  { name: "zero literal", schema: z.literal(0), expected: "0" },
-  { name: "empty literal", schema: z.literal(""), expected: '""' },
-  { name: "enum", schema: z.enum(["new", "done"]), expected: '"new" | "done"' },
+const cases: {
+  name: string;
+  schema: z.ZodType;
+  expected: string;
+  optional?: boolean;
+}[] = [
+  { expected: "string", name: "string", schema: z.string() },
+  { expected: "number", name: "number", schema: z.number() },
+  { expected: "number", name: "integer", schema: z.int() },
+  { expected: "boolean", name: "boolean", schema: z.boolean() },
+  { expected: "null", name: "null", schema: z.null() },
+  { expected: "unknown", name: "unknown", schema: z.unknown() },
+  { expected: "unknown", name: "any", schema: z.any() },
+  { expected: "never", name: "never", schema: z.never() },
+  { expected: '"hello"', name: "string literal", schema: z.literal("hello") },
   {
+    expected: JSON.stringify('a"b\\c'),
+    name: "escaped literal",
+    schema: z.literal('a"b\\c'),
+  },
+  { expected: "42", name: "number literal", schema: z.literal(42) },
+  { expected: "false", name: "false literal", schema: z.literal(false) },
+  { expected: "true", name: "true literal", schema: z.literal(true) },
+  { expected: "0", name: "zero literal", schema: z.literal(0) },
+  { expected: '""', name: "empty literal", schema: z.literal("") },
+  { expected: '"new" | "done"', name: "enum", schema: z.enum(["new", "done"]) },
+  {
+    expected: '"x" | 1 | false | null',
     name: "mixed literals",
     schema: z.literal(["x", 1, false, null]),
-    expected: '"x" | 1 | false | null',
   },
-  { name: "nullable string", schema: z.string().nullable(), expected: "string | null" },
-  { name: "nullable number", schema: z.number().nullable(), expected: "number | null" },
-  { name: "nullable boolean", schema: z.boolean().nullable(), expected: "boolean | null" },
-  { name: "nullable literal", schema: z.literal("x").nullable(), expected: '"x" | null' },
   {
+    expected: "string | null",
+    name: "nullable string",
+    schema: z.string().nullable(),
+  },
+  {
+    expected: "number | null",
+    name: "nullable number",
+    schema: z.number().nullable(),
+  },
+  {
+    expected: "boolean | null",
+    name: "nullable boolean",
+    schema: z.boolean().nullable(),
+  },
+  {
+    expected: '"x" | null',
+    name: "nullable literal",
+    schema: z.literal("x").nullable(),
+  },
+  {
+    expected: '"new" | "done" | null',
     name: "nullable enum",
     schema: z.enum(["new", "done"]).nullable(),
-    expected: '"new" | "done" | null',
   },
-  { name: "optional string", schema: z.string().optional(), expected: "string", optional: true },
   {
-    name: "nullish string",
-    schema: z.string().nullish(),
-    expected: "string | null",
+    expected: "string",
+    name: "optional string",
     optional: true,
+    schema: z.string().optional(),
   },
   {
+    expected: "string | null",
+    name: "nullish string",
+    optional: true,
+    schema: z.string().nullish(),
+  },
+  {
+    expected: "string | number | boolean",
     name: "scalar union",
     schema: z.union([z.string(), z.number(), z.boolean()]),
-    expected: "string | number | boolean",
   },
-  { name: "literal union", schema: z.union([z.literal("x"), z.literal(1)]), expected: '"x" | 1' },
-  { name: "union with never", schema: z.union([z.never(), z.string()]), expected: "string" },
-  { name: "strings array", schema: z.array(z.string()), expected: "string[]" },
-  { name: "nested array", schema: z.array(z.array(z.number())), expected: "number[][]" },
-  { name: "nullable array", schema: z.array(z.string()).nullable(), expected: "string[] | null" },
-  { name: "nullable items", schema: z.array(z.number().nullable()), expected: "(number | null)[]" },
   {
+    expected: '"x" | 1',
+    name: "literal union",
+    schema: z.union([z.literal("x"), z.literal(1)]),
+  },
+  {
+    expected: "string",
+    name: "union with never",
+    schema: z.union([z.never(), z.string()]),
+  },
+  { expected: "string[]", name: "strings array", schema: z.array(z.string()) },
+  {
+    expected: "number[][]",
+    name: "nested array",
+    schema: z.array(z.array(z.number())),
+  },
+  {
+    expected: "string[] | null",
+    name: "nullable array",
+    schema: z.array(z.string()).nullable(),
+  },
+  {
+    expected: "(number | null)[]",
+    name: "nullable items",
+    schema: z.array(z.number().nullable()),
+  },
+  {
+    expected: "(string | null)[] | null",
     name: "nullable array and items",
     schema: z.array(z.string().nullable()).nullable(),
-    expected: "(string | null)[] | null",
   },
-  { name: "enum array", schema: z.array(z.enum(["x", "y"])), expected: '("x" | "y")[]' },
   {
+    expected: '("x" | "y")[]',
+    name: "enum array",
+    schema: z.array(z.enum(["x", "y"])),
+  },
+  {
+    expected: "(string | number)[]",
     name: "union array",
     schema: z.array(z.union([z.string(), z.number()])),
-    expected: "(string | number)[]",
   },
-  { name: "unknown array", schema: z.array(z.unknown()), expected: "unknown[]" },
-  { name: "never array", schema: z.array(z.never()), expected: "never[]" },
-  { name: "empty object", schema: z.object({}), expected: "Record<string, never>" },
-  { name: "object", schema: z.object({ id: z.string() }), expected: "{ id: string; }" },
   {
+    expected: "unknown[]",
+    name: "unknown array",
+    schema: z.array(z.unknown()),
+  },
+  { expected: "never[]", name: "never array", schema: z.array(z.never()) },
+  {
+    expected: "Record<string, never>",
+    name: "empty object",
+    schema: z.object({}),
+  },
+  {
+    expected: "{ id: string; }",
+    name: "object",
+    schema: z.object({ id: z.string() }),
+  },
+  {
+    expected: "{ name?: string; }",
     name: "optional object field",
     schema: z.object({ name: z.string().optional() }),
-    expected: "{ name?: string; }",
   },
   {
+    expected: "{ id: string; } | null",
     name: "nullable object",
     schema: z.object({ id: z.string() }).nullable(),
-    expected: "{ id: string; } | null",
   },
   {
+    expected: "{ customer: { id: string; } | null; }",
     name: "nested object",
     schema: z.object({ customer: z.object({ id: z.string() }).nullable() }),
-    expected: "{ customer: { id: string; } | null; }",
   },
   {
+    expected: '{ "display-name": string; }',
     name: "quoted property",
     schema: z.object({ "display-name": z.string() }),
-    expected: '{ "display-name": string; }',
   },
   {
+    expected: "{ id: string; }[]",
     name: "object array",
     schema: z.array(z.object({ id: z.string() })),
-    expected: "{ id: string; }[]",
   },
   {
+    expected: "({ id: string; } | null)[]",
     name: "nullable object array",
     schema: z.array(z.object({ id: z.string() }).nullable()),
-    expected: "({ id: string; } | null)[]",
   },
   {
-    name: "object intersection",
-    schema: z.intersection(z.object({ id: z.string() }), z.object({ name: z.string() })),
     expected: "{ id: string; name: string; }",
+    name: "object intersection",
+    schema: z.intersection(
+      z.object({ id: z.string() }),
+      z.object({ name: z.string() })
+    ),
   },
   {
+    expected:
+      '{ kind: "text"; text: string; } | { kind: "count"; count: number; }',
     name: "discriminated union",
     schema: z.discriminatedUnion("kind", [
       z.object({ kind: z.literal("text"), text: z.string() }),
       z.object({ kind: z.literal("count"), count: z.number() }),
     ]),
-    expected: '{ kind: "text"; text: string; } | { kind: "count"; count: number; }',
   },
-  { name: "record", schema: z.record(z.string(), z.number()), expected: "Record<string, number>" },
   {
+    expected: "Record<string, number>",
+    name: "record",
+    schema: z.record(z.string(), z.number()),
+  },
+  {
+    expected: "Record<string, number | null>",
     name: "nullable record values",
     schema: z.record(z.string(), z.number().nullable()),
-    expected: "Record<string, number | null>",
   },
   {
+    expected: "Record<string, boolean> | null",
     name: "nullable record",
     schema: z.record(z.string(), z.boolean()).nullable(),
-    expected: "Record<string, boolean> | null",
   },
   {
+    expected: "{ id: string; } & Record<string, unknown>",
     name: "loose object",
     schema: z.looseObject({ id: z.string() }),
-    expected: "{ id: string; } & Record<string, unknown>",
   },
-  { name: "tuple", schema: z.tuple([z.string(), z.number()]), expected: "[string, number]" },
   {
+    expected: "[string, number]",
+    name: "tuple",
+    schema: z.tuple([z.string(), z.number()]),
+  },
+  {
+    expected: "[string, number] | null",
     name: "nullable tuple",
     schema: z.tuple([z.string(), z.number()]).nullable(),
-    expected: "[string, number] | null",
   },
   {
+    expected: "[string | null]",
     name: "tuple with nullable item",
     schema: z.tuple([z.string().nullable()]),
-    expected: "[string | null]",
   },
   {
+    expected: "[string, ...number[]]",
     name: "tuple with rest",
     schema: z.tuple([z.string()], z.number()),
-    expected: "[string, ...number[]]",
   },
   {
+    expected: "[string, (number)?]",
     name: "optional tuple item",
     schema: z.tuple([z.string(), z.number().optional()]),
-    expected: "[string, (number)?]",
   },
-  { name: "empty tuple", schema: z.tuple([]), expected: "[]" },
+  { expected: "[]", name: "empty tuple", schema: z.tuple([]) },
   {
+    expected: "[string, ...(number | null)[]]",
     name: "tuple union rest",
     schema: z.tuple([z.string()], z.number().nullable()),
-    expected: "[string, ...(number | null)[]]",
   },
   {
+    expected: "[string, boolean][]",
     name: "tuple array",
     schema: z.array(z.tuple([z.string(), z.boolean()])),
-    expected: "[string, boolean][]",
   },
   {
+    expected: "Record<string, number>[]",
     name: "record array",
     schema: z.array(z.record(z.string(), z.number())),
-    expected: "Record<string, number>[]",
   },
   {
+    expected: "({ id: string; } & Record<string, unknown>)[]",
     name: "loose object array",
     schema: z.array(z.looseObject({ id: z.string() })),
-    expected: "({ id: string; } & Record<string, unknown>)[]",
   },
-  { name: "empty loose object", schema: z.looseObject({}), expected: "Record<string, unknown>" },
   {
+    expected: "Record<string, unknown>",
+    name: "empty loose object",
+    schema: z.looseObject({}),
+  },
+  {
+    expected: "{ id: number; } & Record<string, number>",
     name: "catchall",
     schema: z.object({ id: z.number() }).catchall(z.number()),
-    expected: "{ id: number; } & Record<string, number>",
   },
   {
+    expected: "string | number | null",
     name: "nullable union",
     schema: z.union([z.string(), z.number()]).nullable(),
-    expected: "string | number | null",
   },
   {
-    name: "optional nullable object",
-    schema: z.object({ id: z.string() }).nullish(),
     expected: "{ id: string; } | null",
+    name: "optional nullable object",
     optional: true,
+    schema: z.object({ id: z.string() }).nullish(),
   },
   {
+    expected: "{ id: string; } & Record<string, number | string>",
     name: "mixed catchall",
     schema: z.object({ id: z.string() }).catchall(z.number()),
-    expected: "{ id: string; } & Record<string, number | string>",
   },
   {
+    expected: "{ id?: string; } & Record<string, number | string | undefined>",
     name: "optional catchall property",
     schema: z.object({ id: z.string().optional() }).catchall(z.number()),
-    expected: "{ id?: string; } & Record<string, number | string | undefined>",
   },
   {
+    expected: "{ id: string | null; } & Record<string, number | string | null>",
     name: "nullable catchall property",
     schema: z.object({ id: z.string().nullable() }).catchall(z.number()),
-    expected: "{ id: string | null; } & Record<string, number | string | null>",
   },
 ];
 
-const tupleReviewCases: { name: string; schema: JsonSchema; expected: string }[] = [
+const tupleReviewCases: {
+  name: string;
+  schema: JsonSchema;
+  expected: string;
+}[] = [
   {
+    expected: "[string, number, number, ...number[]]",
     name: "required rest items",
     schema: {
-      type: "array",
-      prefixItems: [{ type: "string" }],
-      minItems: 3,
       items: { type: "number" },
+      minItems: 3,
+      prefixItems: [{ type: "string" }],
+      type: "array",
     },
-    expected: "[string, number, number, ...number[]]",
   },
   {
+    expected: "[boolean, number | null, ...(number | null)[]]",
     name: "required nullable rest items",
     schema: {
-      type: "array",
-      prefixItems: [{ type: "boolean" }],
-      minItems: 2,
       items: { type: ["number", "null"] },
+      minItems: 2,
+      prefixItems: [{ type: "boolean" }],
+      type: "array",
     },
-    expected: "[boolean, number | null, ...(number | null)[]]",
   },
   {
-    name: "required unrestricted rest items",
-    schema: { type: "array", prefixItems: [{ type: "string" }], minItems: 2, items: true },
     expected: "[string, unknown, ...unknown[]]",
+    name: "required unrestricted rest items",
+    schema: {
+      items: true,
+      minItems: 2,
+      prefixItems: [{ type: "string" }],
+      type: "array",
+    },
   },
   {
-    name: "required unspecified rest items",
-    schema: { type: "array", prefixItems: [], minItems: 2 },
     expected: "[unknown, unknown, ...unknown[]]",
+    name: "required unspecified rest items",
+    schema: { minItems: 2, prefixItems: [], type: "array" },
   },
   {
-    name: "impossible required rest items",
-    schema: { type: "array", prefixItems: [{ type: "string" }], minItems: 2, items: false },
     expected: "never",
+    name: "impossible required rest items",
+    schema: {
+      items: false,
+      minItems: 2,
+      prefixItems: [{ type: "string" }],
+      type: "array",
+    },
   },
   {
+    expected: "[string, (boolean)?, ...number[]]",
     name: "optional prefix with rest",
     schema: {
-      type: "array",
-      prefixItems: [{ type: "string" }, { type: "boolean" }],
-      minItems: 1,
       items: { type: "number" },
+      minItems: 1,
+      prefixItems: [{ type: "string" }, { type: "boolean" }],
+      type: "array",
     },
-    expected: "[string, (boolean)?, ...number[]]",
   },
   {
-    name: "closed required prefix",
-    schema: { type: "array", prefixItems: [{ type: "string" }], minItems: 1, items: false },
     expected: "[string]",
+    name: "closed required prefix",
+    schema: {
+      items: false,
+      minItems: 1,
+      prefixItems: [{ type: "string" }],
+      type: "array",
+    },
   },
 ];
 
-const normalize = (text: string): string => text.replaceAll(/\s+/gu, " ").trim();
+const normalize = (text: string): string =>
+  text.replaceAll(/\s+/gu, " ").trim();
 const renderDeclaration = (context: JsonSchema): string => {
   const output = renderGeneratedTypes({ views: { "/": { context } } });
   return output.slice(
     output.indexOf("export interface ViewPropsByPath"),
-    output.indexOf("declare module"),
+    output.indexOf("declare module")
   );
 };
 
@@ -278,8 +383,8 @@ const declarations = cases.map(({ schema }) =>
   renderDeclaration(
     z
       .object({ value: schema })
-      ["~standard"].jsonSchema.output({ target: "draft-2020-12" }) as JsonSchema,
-  ),
+      ["~standard"].jsonSchema.output({ target: "draft-2020-12" }) as JsonSchema
+  )
 );
 
 describe("JSON Schema type generation", () => {
@@ -289,9 +394,9 @@ describe("JSON Schema type generation", () => {
       expect(normalize(declarations[index]!)).toBe(
         expected === "never"
           ? 'export interface ViewPropsByPath { "/": { context: never; }; }'
-          : `export interface ViewPropsByPath { "/": { context: { value${optional ? "?" : ""}: ${expected}; }; }; }`,
+          : `export interface ViewPropsByPath { "/": { context: { value${optional ? "?" : ""}: ${expected}; }; }; }`
       );
-    },
+    }
   );
 
   it.each(cases)(
@@ -304,37 +409,54 @@ describe("JSON Schema type generation", () => {
         renderGeneratedTypes({
           components: {
             Custom: {
-              children: false,
-              fields: { type: "object", properties: { value } },
               callbacks: { onValue: { input: value } },
+              children: false,
+              fields: { properties: { value }, type: "object" },
             },
           },
-          tools: { echo: { kind: "server", input: value, output: value } },
-        }),
+          tools: { echo: { input: value, kind: "server", output: value } },
+        })
       );
       expect(output).toContain(`value?: ${expected};`);
       expect(output).toContain(`onValue?: (input: ${expected}) => void;`);
-      expect(output).toContain(`echo: (input: ${expected}) => Promise<${expected}>;`);
-    },
+      expect(output).toContain(
+        `echo: (input: ${expected}) => Promise<${expected}>;`
+      );
+    }
   );
 
   it.each<{ name: string; schema: JsonSchema; expected: string }>([
-    { name: "null first", schema: { type: ["null", "string"] }, expected: "null | string" },
     {
+      expected: "null | string",
+      name: "null first",
+      schema: { type: ["null", "string"] },
+    },
+    {
+      expected: "number",
       name: "duplicate types",
       schema: { type: ["number", "integer", "number"] },
-      expected: "number",
     },
-    { name: "empty type array", schema: { type: [] }, expected: "never" },
-    { name: "never union", schema: { anyOf: [{ not: {} }, { not: {} }] }, expected: "never" },
+    { expected: "never", name: "empty type array", schema: { type: [] } },
     {
-      name: "duplicate union",
-      schema: { anyOf: [{ type: "string" }, { type: "string" }, { type: "null" }] },
+      expected: "never",
+      name: "never union",
+      schema: { anyOf: [{ not: {} }, { not: {} }] },
+    },
+    {
       expected: "string | null",
+      name: "duplicate union",
+      schema: {
+        anyOf: [{ type: "string" }, { type: "string" }, { type: "null" }],
+      },
     },
-    { name: "unknown schema", schema: {}, expected: "unknown" },
-    { name: "unknown type", schema: { type: "unsupported" }, expected: "unknown" },
+    { expected: "unknown", name: "unknown schema", schema: {} },
     {
+      expected: "unknown",
+      name: "unknown type",
+      schema: { type: "unsupported" },
+    },
+    {
+      expected: "(string | number) & (string | boolean)",
       name: "intersection of unions",
       schema: {
         allOf: [
@@ -342,43 +464,53 @@ describe("JSON Schema type generation", () => {
           { anyOf: [{ type: "string" }, { type: "boolean" }] },
         ],
       },
-      expected: "(string | number) & (string | boolean)",
     },
-    { name: "null const", schema: { const: null }, expected: "null" },
+    { expected: "null", name: "null const", schema: { const: null } },
     {
-      name: "open object",
-      schema: { type: "object", additionalProperties: true },
       expected: "Record<string, unknown>",
+      name: "open object",
+      schema: { additionalProperties: true, type: "object" },
     },
-    { name: "unspecified array items", schema: { type: "array" }, expected: "unknown[]" },
     {
-      name: "unrestricted array items",
-      schema: { type: "array", items: true },
       expected: "unknown[]",
+      name: "unspecified array items",
+      schema: { type: "array" },
     },
-    { name: "forbidden array items", schema: { type: "array", items: false }, expected: "never[]" },
+    {
+      expected: "unknown[]",
+      name: "unrestricted array items",
+      schema: { items: true, type: "array" },
+    },
+    {
+      expected: "never[]",
+      name: "forbidden array items",
+      schema: { items: false, type: "array" },
+    },
   ])("handles raw JSON Schema: $name", ({ schema, expected }) => {
     const output = normalize(
       renderDeclaration({
-        type: "object",
-        properties: { value: schema, sibling: { type: "string" } },
+        properties: { sibling: { type: "string" }, value: schema },
         required: ["value", "sibling"],
-      }),
+        type: "object",
+      })
     );
     expect(output).toContain(`value: ${expected};`);
   });
 
-  it.each(tupleReviewCases)("handles reviewed tuple case: $name", ({ schema, expected }) => {
-    expect(
-      normalize(
-        renderDeclaration({
-          type: "object",
-          properties: { value: schema, sibling: { type: "string" } },
-          required: ["value", "sibling"],
-        }),
-      ),
-    ).toContain(`value: ${expected};`);
-  });
+  it.each(tupleReviewCases)(
+    "handles reviewed tuple case: $name",
+    ({ schema, expected }) => {
+      expect(
+        normalize(
+          renderDeclaration({
+            properties: { sibling: { type: "string" }, value: schema },
+            required: ["value", "sibling"],
+            type: "object",
+          })
+        )
+      ).toContain(`value: ${expected};`);
+    }
+  );
 
   it("generates TypeScript types equivalent to the expected types", async () => {
     const source = [
@@ -390,9 +522,9 @@ describe("JSON Schema type generation", () => {
       ]),
       ...tupleReviewCases.flatMap(({ schema, expected }, index) => [
         renderDeclaration({
-          type: "object",
-          properties: { value: schema, sibling: { type: "string" } },
+          properties: { sibling: { type: "string" }, value: schema },
           required: ["value", "sibling"],
+          type: "object",
         }).replace("ViewPropsByPath", `TupleCase${index}`),
         `type TupleCheck${index} = Assert<Equal<TupleCase${index}["/"]["context"]["value"], ${expected}>>;`,
       ]),
@@ -403,7 +535,9 @@ describe("JSON Schema type generation", () => {
       "// @ts-expect-error Required rest items must use the items schema type.",
       'const invalidTuple: TupleCase0["/"]["context"]["value"] = ["first", false, 2];',
     ].join("\n");
-    const root = await mkdtemp(path.join(tmpdir(), "tailorkit-generated-type-check-"));
+    const root = await mkdtemp(
+      path.join(tmpdir(), "tailorkit-generated-type-check-")
+    );
     try {
       await writeFile(path.join(root, "generated.ts"), source);
       await writeFile(
@@ -411,18 +545,18 @@ describe("JSON Schema type generation", () => {
         JSON.stringify({
           compilerOptions: {
             noEmit: true,
-            strict: true,
             skipLibCheck: true,
-            types: [],
+            strict: true,
             target: "ESNext",
+            types: [],
           },
           files: ["generated.ts"],
-        }),
+        })
       );
       const require = createRequire(import.meta.url);
       const compiler = path.join(
         path.dirname(require.resolve("typescript/package.json")),
-        "bin/tsc",
+        "bin/tsc"
       );
       const result = await promisify(execFile)(process.execPath, [
         compiler,
@@ -431,7 +565,7 @@ describe("JSON Schema type generation", () => {
       ]);
       expect(result.stdout).toBe("");
     } finally {
-      await rm(root, { recursive: true, force: true });
+      await rm(root, { force: true, recursive: true });
     }
   });
 });

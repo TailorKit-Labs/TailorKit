@@ -4,12 +4,19 @@ import { mergeProps } from "@base-ui/react/merge-props";
 import { useRender } from "@base-ui/react/use-render";
 import { ChevronLeftIcon, ChevronRightIcon, PanelLeftIcon } from "lucide-react";
 import * as React from "react";
-import { useMediaQuery } from "#ui/hooks/use-media-query";
+
 import { cn } from "#ui";
 import { Button } from "#ui/button";
+import { useMediaQuery } from "#ui/hooks/use-media-query";
 import { ScrollArea } from "#ui/scroll-area";
 import { Separator } from "#ui/separator";
-import { Sheet, SheetDescription, SheetHeader, SheetPopup, SheetTitle } from "#ui/sheet";
+import {
+  Sheet,
+  SheetDescription,
+  SheetHeader,
+  SheetPopup,
+  SheetTitle,
+} from "#ui/sheet";
 
 const SIDEBAR_WIDTH = "16rem";
 const SIDEBAR_WIDTH_MOBILE = "18rem";
@@ -23,7 +30,9 @@ export interface SidebarContextProps {
   toggleSidebar: () => void;
 }
 
-export const SidebarContext = React.createContext<SidebarContextProps | null>(null);
+export const SidebarContext = React.createContext<SidebarContextProps | null>(
+  null
+);
 
 export function useSidebar(): SidebarContextProps {
   const context = React.useContext(SidebarContext);
@@ -59,12 +68,12 @@ export function SidebarProvider({
         _setOpen(value);
       }
     },
-    [onOpenChange],
+    [onOpenChange]
   );
 
   const toggleSidebar = React.useCallback(
     () => (isMobile ? setOpenMobile((v) => !v) : setOpen(!open)),
-    [isMobile, open, setOpen],
+    [isMobile, open, setOpen]
   );
 
   React.useEffect(() => {
@@ -79,19 +88,28 @@ export function SidebarProvider({
   }, [toggleSidebar]);
 
   const contextValue = React.useMemo<SidebarContextProps>(
-    () => ({ isMobile, open, openMobile, setOpen, setOpenMobile, toggleSidebar }),
-    [isMobile, open, openMobile, setOpen, toggleSidebar],
+    () => ({
+      isMobile,
+      open,
+      openMobile,
+      setOpen,
+      setOpenMobile,
+      toggleSidebar,
+    }),
+    [isMobile, open, openMobile, setOpen, toggleSidebar]
   );
 
   return (
     <SidebarContext.Provider value={contextValue}>
       <div
         className={cn(
-          "group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar",
-          className,
+          "group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full",
+          className
         )}
         data-slot="sidebar-wrapper"
-        style={{ "--sidebar-width": SIDEBAR_WIDTH, ...style } as React.CSSProperties}
+        style={
+          { "--sidebar-width": SIDEBAR_WIDTH, ...style } as React.CSSProperties
+        }
         {...props}
       >
         {children}
@@ -111,11 +129,13 @@ export function Sidebar({
     return (
       <Sheet onOpenChange={setOpenMobile} open={openMobile} {...props}>
         <SheetPopup
-          className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+          className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
           data-mobile="true"
           data-slot="sidebar"
           side="left"
-          style={{ "--sidebar-width": SIDEBAR_WIDTH_MOBILE } as React.CSSProperties}
+          style={
+            { "--sidebar-width": SIDEBAR_WIDTH_MOBILE } as React.CSSProperties
+          }
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Sidebar</SheetTitle>
@@ -129,7 +149,7 @@ export function Sidebar({
 
   return (
     <div
-      className="group peer hidden text-sidebar-foreground md:block"
+      className="group peer text-sidebar-foreground hidden md:block"
       data-slot="sidebar"
       data-state={open ? "expanded" : "collapsed"}
       data-variant="inset"
@@ -138,7 +158,7 @@ export function Sidebar({
       <div
         className={cn(
           "relative w-(--sidebar-width) bg-transparent transition-[width] duration-300 ease-in-out",
-          !open && "w-0",
+          !open && "w-0"
         )}
         data-slot="sidebar-gap"
       />
@@ -146,13 +166,16 @@ export function Sidebar({
         className={cn(
           "fixed inset-y-0 left-0 z-10 hidden h-svh w-(--sidebar-width) opacity-100 transition-opacity duration-300 ease-in-out md:flex",
           !open && "opacity-0",
-          className,
+          className
         )}
         data-slot="sidebar-container"
         inert={!open}
         {...props}
       >
-        <div className="flex h-full w-full flex-col bg-sidebar" data-slot="sidebar-inner">
+        <div
+          className="bg-sidebar flex h-full w-full flex-col"
+          data-slot="sidebar-inner"
+        >
           {children}
         </div>
       </div>
@@ -167,11 +190,11 @@ export function SidebarInset({
   return (
     <main
       className={cn(
-        "relative flex w-full flex-1 flex-col bg-background z-20",
-        "md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ms-0 md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ms-2 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm/5",
-        "lg:rounded-2xl lg:border not-dark:bg-clip-padding lg:shadow-xs/5",
-        "lg:before:pointer-events-none lg:before:absolute lg:before:inset-0 lg:before:rounded-[calc(var(--radius-2xl)-1px)] lg:before:shadow-[0_1px_--theme(--color-black/4%)] dark:lg:before:shadow-[0_-1px_--theme(--color-white/6%)] mt-1 mr-1 mb-1 ml-1",
-        className,
+        "bg-background relative z-20 flex w-full flex-1 flex-col",
+        "md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ms-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm/5 md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ms-2",
+        "not-dark:bg-clip-padding lg:rounded-2xl lg:border lg:shadow-xs/5",
+        "mt-1 mr-1 mb-1 ml-1 lg:before:pointer-events-none lg:before:absolute lg:before:inset-0 lg:before:rounded-[calc(var(--radius-2xl)-1px)] lg:before:shadow-[0_1px_--theme(--color-black/4%)] dark:lg:before:shadow-[0_-1px_--theme(--color-white/6%)]",
+        className
       )}
       data-slot="sidebar-inset"
       {...props}
@@ -251,9 +274,15 @@ export function SidebarContent({
   ...props
 }: React.ComponentProps<"div">): React.ReactElement {
   return (
-    <ScrollArea className="**:data-[slot=scroll-area-scrollbar]:hidden" scrollFade>
+    <ScrollArea
+      className="**:data-[slot=scroll-area-scrollbar]:hidden"
+      scrollFade
+    >
       <div
-        className={cn("flex min-h-0 flex-1 flex-col gap-2 overflow-auto", className)}
+        className={cn(
+          "flex min-h-0 flex-1 flex-col gap-2 overflow-auto",
+          className
+        )}
         data-slot="sidebar-content"
         {...props}
       />
@@ -267,7 +296,7 @@ export function SidebarSeparator({
 }: React.ComponentProps<typeof Separator>): React.ReactElement {
   return (
     <Separator
-      className={cn("mx-2 w-auto bg-sidebar-border", className)}
+      className={cn("bg-sidebar-border mx-2 w-auto", className)}
       data-slot="sidebar-separator"
       {...props}
     />
@@ -294,8 +323,8 @@ export function SidebarGroupLabel({
   return (
     <div
       className={cn(
-        "flex h-8 shrink-0 items-center rounded-lg px-2 font-medium text-sidebar-foreground/60 text-xs",
-        className,
+        "text-sidebar-foreground/60 flex h-8 shrink-0 items-center rounded-lg px-2 text-xs font-medium",
+        className
       )}
       data-slot="sidebar-group-label"
       {...props}
@@ -339,10 +368,10 @@ export function SidebarMenuButton({
 }): React.ReactElement {
   const defaultProps = {
     className: cn(
-      "flex h-8 w-full items-center gap-2 overflow-hidden rounded-lg text-sidebar-accent-foreground/75 p-2 text-left text-sm outline-hidden ring-sidebar-ring transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50",
-      "data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground",
-      "[&>span:last-child]:truncate [&>svg:not([class*='size-'])]:size-4 [&>svg]:shrink-0",
-      className,
+      "text-sidebar-accent-foreground/75 ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground active:bg-sidebar-accent active:text-sidebar-accent-foreground flex h-8 w-full items-center gap-2 overflow-hidden rounded-lg p-2 text-left text-sm outline-hidden transition-colors focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50",
+      "data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-medium",
+      "[&>span:last-child]:truncate [&>svg]:shrink-0 [&>svg:not([class*='size-'])]:size-4",
+      className
     ),
     "data-active": isActive,
     "data-slot": "sidebar-menu-button",
@@ -363,7 +392,8 @@ interface SidebarPanelsContextProps {
   panelOrder: string[];
 }
 
-const SidebarPanelsContext = React.createContext<SidebarPanelsContextProps | null>(null);
+const SidebarPanelsContext =
+  React.createContext<SidebarPanelsContextProps | null>(null);
 
 function useSidebarPanels(): SidebarPanelsContextProps {
   const context = React.useContext(SidebarPanelsContext);
@@ -377,7 +407,11 @@ function getPanelNames(children: React.ReactNode): string[] {
   const names: string[] = [];
 
   React.Children.forEach(children, (child) => {
-    if (!React.isValidElement<{ children?: React.ReactNode; name?: unknown }>(child)) {
+    if (
+      !React.isValidElement<{ children?: React.ReactNode; name?: unknown }>(
+        child
+      )
+    ) {
       return;
     }
 
@@ -417,17 +451,19 @@ export function SidebarPanels({
         _setPanel(panel);
       }
     },
-    [onPanelChange],
+    [onPanelChange]
   );
 
   const contextValue = React.useMemo(
     () => ({ activePanel, panelOrder, setActivePanel }),
-    [activePanel, panelOrder, setActivePanel],
+    [activePanel, panelOrder, setActivePanel]
   );
 
   return (
     <SidebarPanelsContext.Provider value={contextValue}>
-      <div className="relative flex flex-1 flex-col overflow-hidden">{children}</div>
+      <div className="relative flex flex-1 flex-col overflow-hidden">
+        {children}
+      </div>
     </SidebarPanelsContext.Provider>
   );
 }
@@ -446,7 +482,8 @@ export function SidebarPanel({
 
   let translate = "translate-x-0";
   if (!isActive) {
-    translate = myIndex < activeIndex ? "-translate-x-full" : "translate-x-full";
+    translate =
+      myIndex < activeIndex ? "-translate-x-full" : "translate-x-full";
   }
 
   return (
@@ -455,7 +492,7 @@ export function SidebarPanel({
       className={cn(
         "absolute inset-0 flex flex-col transition-transform duration-200 ease-in-out",
         translate,
-        className,
+        className
       )}
       data-panel={name}
       data-slot="sidebar-panel"
@@ -484,13 +521,13 @@ export function SidebarPanelTrigger({
   return (
     <Button
       className={cn(
-        "w-full hover:text-sidebar-accent-foreground text-sidebar-accent-foreground/75",
-        "data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground",
-        back ? "text-center mb-1 px-2.5" : "text-left",
+        "hover:text-sidebar-accent-foreground text-sidebar-accent-foreground/75 w-full",
+        "data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-medium",
+        back ? "mb-1 px-2.5 text-center" : "text-left"
       )}
       data-active={isActive}
       onClick={() => setActivePanel(target)}
-      variant={"ghost"}
+      variant="ghost"
       size={back ? "lg" : "default"}
       {...props}
     >

@@ -1,20 +1,25 @@
 import { appRuntimeIssuer, bearerToken } from "@tailorkit/api-utils/app-auth";
+import type { Invocation } from "@tailorkit/app/protocol";
 import { AppError } from "@tailorkit/app/server";
 import type { Identity } from "@tailorkit/app/server";
-import { appError, resultEffect } from "./runtime/errors";
-import type { Invocation } from "@tailorkit/app/protocol";
 import { DurableObject } from "cloudflare:workers";
-import { createInstallationHandler, rpcErrorResponse, requestRoute } from "./transport";
-import { createSubscriptions } from "./supervisor/subscriptions";
-import { abortable, cancellationStream } from "./runtime/cancellation";
-import type { Installation } from "./transport";
 import { Effect, Semaphore } from "effect";
-import { ActionCapability, createActionLeases } from "./supervisor/actions";
+
 import bootstrap from "../.generated/bootstrap.txt";
-import { verifier } from "./supervisor/auth";
 import type { AppFacet } from "./dynamic-workers/facet";
+import { abortable, cancellationStream } from "./runtime/cancellation";
+import { appError, resultEffect } from "./runtime/errors";
+import { ActionCapability, createActionLeases } from "./supervisor/actions";
+import { verifier } from "./supervisor/auth";
 import { deploymentSource, installationName } from "./supervisor/source";
 import type { ServerDeployment } from "./supervisor/source";
+import { createSubscriptions } from "./supervisor/subscriptions";
+import {
+  createInstallationHandler,
+  rpcErrorResponse,
+  requestRoute,
+} from "./transport";
+import type { Installation } from "./transport";
 
 /** Trusted supervisor. The fixed facet name preserves SQLite when its code changes. */
 export class AppInstallation extends DurableObject<Env> {
@@ -30,71 +35,91 @@ export class AppInstallation extends DurableObject<Env> {
       this.#databaseQuery(input, identity).pipe(
         Effect.flatMap((result) =>
           resultEffect(result.result).pipe(
-            Effect.map((value) => ({ value, tables: result.tables })),
-          ),
-        ),
+            Effect.map((value) => ({ tables: result.tables, value }))
+          )
+        )
       ),
-    this.#queue,
+    this.#queue
   );
 
   fetch(request: Request): Promise<Response> {
     return Effect.runPromise(
       Effect.gen({ self: this }, function* () {
-        const token = yield* Effect.try({ try: () => bearerToken(request), catch: appError });
+        const token = yield* Effect.try({
+          catch: appError,
+          try: () => bearerToken(request),
+        });
         const identity = yield* this.#verify(token);
         yield* Effect.try({
+          catch: appError,
           try: () => {
             const expected = this.env.STORES.idFromName(
-              installationName(identity, appRuntimeIssuer(this.env.PLATFORM_URL)),
+              installationName(
+                identity,
+                appRuntimeIssuer(this.env.PLATFORM_URL)
+              )
             );
             if (!this.ctx.id.equals(expected)) {
               throw new AppError("FORBIDDEN", "Installation mismatch");
             }
           },
-          catch: appError,
         });
         const route = requestRoute(request);
         if (!route) {
-          return yield* Effect.fail(new AppError("NOT_FOUND", "Unknown RPC route"));
+          return yield* Effect.fail(
+            new AppError("NOT_FOUND", "Unknown RPC route")
+          );
         }
         if (route === "subscriptions") {
           yield* this.#source.current(
             identity,
-            this.ctx.storage.kv.get<string>("version")?.split(":")[0],
+            this.ctx.storage.kv.get<string>("version")?.split(":")[0]
           );
           return yield* Effect.tryPromise({
-            try: () => this.#subscriptions.open(identity),
             catch: appError,
+            try: () => this.#subscriptions.open(identity),
           });
         }
         const { matched, response } = yield* Effect.tryPromise({
+          catch: appError,
           try: () =>
             this.#http.handle(request, {
               prefix: "/rpc",
-              context: { installation: this.#operations(identity, token, request.signal) },
+              context: {
+                installation: this.#operations(identity, token, request.signal),
+              },
             }),
-          catch: appError,
         });
         if (matched) {
           return response;
         }
-        return yield* Effect.fail(new AppError("NOT_FOUND", "Unknown RPC route"));
+        return yield* Effect.fail(
+          new AppError("NOT_FOUND", "Unknown RPC route")
+        );
       }).pipe(
         Effect.mapError(appError),
-        Effect.catch((error) => Effect.succeed(rpcErrorResponse(error))),
-      ),
+        Effect.catch((error) => Effect.succeed(rpcErrorResponse(error)))
+      )
     );
   }
 
-  #operations(identity: Identity, token: string, signal?: AbortSignal): Installation {
+  #operations(
+    identity: Identity,
+    token: string,
+    signal?: AbortSignal
+  ): Installation {
     return {
-      query: (input) =>
-        this.#query(input, identity).pipe(Effect.flatMap((result) => resultEffect(result.result))),
-      mutate: (input) =>
-        this.#mutate(input, identity).pipe(Effect.flatMap((result) => resultEffect(result.result))),
       action: (input, callSignal) =>
         this.#action(input, identity, token, signal ?? callSignal).pipe(
-          Effect.flatMap((result) => resultEffect(result.result)),
+          Effect.flatMap((result) => resultEffect(result.result))
+        ),
+      mutate: (input) =>
+        this.#mutate(input, identity).pipe(
+          Effect.flatMap((result) => resultEffect(result.result))
+        ),
+      query: (input) =>
+        this.#query(input, identity).pipe(
+          Effect.flatMap((result) => resultEffect(result.result))
         ),
     };
   }
@@ -103,7 +128,7 @@ export class AppInstallation extends DurableObject<Env> {
     return Effect.gen({ self: this }, function* facet() {
       const deployment = yield* this.#source.current(
         identity,
-        this.ctx.storage.kv.get<string>("version")?.split(":")[0],
+        this.ctx.storage.kv.get<string>("version")?.split(":")[0]
       );
       return (yield* this.#prepareFacet(deployment, identity)).facet;
     });
@@ -113,10 +138,10 @@ export class AppInstallation extends DurableObject<Env> {
     return this.#facet(identity).pipe(
       Effect.flatMap((facet) =>
         Effect.tryPromise({
-          try: () => facet.query(input, identity),
           catch: appError,
-        }),
-      ),
+          try: () => facet.query(input, identity),
+        })
+      )
     );
   }
 
@@ -129,26 +154,29 @@ export class AppInstallation extends DurableObject<Env> {
       Effect.gen({ self: this }, function* mutation() {
         const facet = yield* this.#facet(identity);
         const result = yield* Effect.tryPromise({
-          try: () => facet.mutate(input, identity),
           catch: appError,
+          try: () => facet.mutate(input, identity),
         });
         if (result.committed && result.tables.length) {
           yield* this.#refresh(result.tables, facet);
         }
         return result;
-      }),
+      })
     );
   }
 
   #refresh(tables: string[], facet: Pick<AppFacet, "query">) {
     return this.#subscriptions.refresh(tables, (input, subscriber) =>
-      Effect.tryPromise({ try: () => facet.query(input, subscriber), catch: appError }).pipe(
+      Effect.tryPromise({
+        catch: appError,
+        try: () => facet.query(input, subscriber),
+      }).pipe(
         Effect.flatMap((result) =>
           resultEffect(result.result).pipe(
-            Effect.map((value) => ({ value, tables: result.tables })),
-          ),
-        ),
-      ),
+            Effect.map((value) => ({ tables: result.tables, value }))
+          )
+        )
+      )
     );
   }
 
@@ -174,6 +202,7 @@ export class AppInstallation extends DurableObject<Env> {
       // Verify code before stopping the running version. Cache belongs to this installation.
       const code = yield* this.#source.code(deployment);
       return yield* Effect.try({
+        catch: appError,
         try: () => {
           if (identity.expiresAt <= Date.now()) {
             throw new AppError("UNAUTHORIZED", "App token expired");
@@ -192,53 +221,69 @@ export class AppInstallation extends DurableObject<Env> {
           this.ctx.storage.kv.put("version", version);
 
           const facet = this.ctx.facets.get("app", () => {
-            const worker = this.env.LOADER.get(`${this.ctx.id.toString()}:${version}`, () => ({
-              compatibilityDate: "2026-10-01",
-              compatibilityFlags: ["nodejs_als"],
-              mainModule: "bootstrap.js",
-              modules: { "bootstrap.js": bootstrap, "application.js": code },
-              globalOutbound: null,
-              env: {},
-              limits: { cpuMs: 10, subRequests: 64 },
-            }));
+            const worker = this.env.LOADER.get(
+              `${this.ctx.id.toString()}:${version}`,
+              () => ({
+                compatibilityDate: "2026-10-01",
+                compatibilityFlags: ["nodejs_als"],
+                mainModule: "bootstrap.js",
+                modules: { "bootstrap.js": bootstrap, "application.js": code },
+                globalOutbound: null,
+                env: {},
+                limits: { cpuMs: 10, subRequests: 64 },
+              })
+            );
 
-            return { class: worker.getDurableObjectClass<AppFacet>("AppFacet") };
+            return {
+              class: worker.getDurableObjectClass<AppFacet>("AppFacet"),
+            };
           }) as unknown as Pick<AppFacet, "query" | "mutate" | "action">;
           // Runtime results have already passed JSON validation; CF's RPC types cannot describe unknown values.
           return { facet };
         },
-        catch: appError,
       });
     });
   }
 
-  #action(input: Invocation, identity: Identity, token: string, signal?: AbortSignal) {
+  #action(
+    input: Invocation,
+    identity: Identity,
+    token: string,
+    signal?: AbortSignal
+  ) {
     const admission = this.#queue.withPermits(1)(
       Effect.gen({ self: this }, function* admission() {
         const facet = yield* this.#facet(identity);
         return { facet, lease: this.#actions.open(identity, signal) };
-      }),
+      })
     );
     return Effect.acquireUseRelease(
       admission,
       ({ facet, lease }) =>
         Effect.tryPromise({
+          catch: appError,
           try: () => {
             lease.signal.throwIfAborted();
             const capability = new ActionCapability(
               lease,
               (tables) =>
-                Effect.runPromise(this.#queue.withPermits(1)(this.#refresh(tables, facet))),
-              { url: identity.toolUrl, token },
+                Effect.runPromise(
+                  this.#queue.withPermits(1)(this.#refresh(tables, facet))
+                ),
+              { url: identity.toolUrl, token }
             );
             return abortable(
-              facet.action(input, identity, capability, cancellationStream(lease.signal)),
-              lease.signal,
+              facet.action(
+                input,
+                identity,
+                capability,
+                cancellationStream(lease.signal)
+              ),
+              lease.signal
             );
           },
-          catch: appError,
         }),
-      ({ lease }) => Effect.sync(() => lease.close()),
+      ({ lease }) => Effect.sync(() => lease.close())
     );
   }
 }

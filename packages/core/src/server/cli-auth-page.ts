@@ -1,5 +1,6 @@
 import { cliAuthApprove, cliAuthDeny } from "@tailorkit/client-platform/client";
 import type { Client as PlatformClient } from "@tailorkit/client-platform/client/client/index";
+
 import { selectTailorKitScopes } from "./scope";
 import type { TailorKitNamedScope, TailorKitScopes } from "./types";
 
@@ -12,7 +13,10 @@ interface TailorKitRuntimeContext {
 export interface CliAuthApprovalPageOptions {
   authenticate: (ctx: {
     request: Request;
-  }) => TailorKitRuntimeContext | null | Promise<TailorKitRuntimeContext | null>;
+  }) =>
+    | TailorKitRuntimeContext
+    | null
+    | Promise<TailorKitRuntimeContext | null>;
   platform: PlatformClient;
   platformHeaders: HeaderInput;
   request: Request;
@@ -63,7 +67,9 @@ export async function handleCliAuthApprovalPage({
   const intent = String(form.get("intent") ?? "");
   const userCode = String(form.get("userCode") ?? "").trim();
   const selectedScopeName =
-    typeof form.get("scope") === "string" ? String(form.get("scope")) : undefined;
+    typeof form.get("scope") === "string"
+      ? String(form.get("scope"))
+      : undefined;
 
   const tailorkit = await authenticate({ request });
   if (!userCode) {
@@ -90,7 +96,7 @@ export async function handleCliAuthApprovalPage({
       const scope = selectOneScope(
         tailorkit.scopes,
         selectedScopeName,
-        "Choose one scope for this CLI login.",
+        "Choose one scope for this CLI login."
       );
       await cliAuthApprove({
         body: {
@@ -118,7 +124,10 @@ export async function handleCliAuthApprovalPage({
   } catch (error) {
     return renderCliAuthApprovalPage({
       code: userCode,
-      error: error instanceof Error ? error.message : "Unable to finish this CLI login request.",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unable to finish this CLI login request.",
       scopes: tailorkit.scopes,
       selectedScopeName,
       status: "idle",
@@ -137,10 +146,12 @@ export async function handleCliAuthApprovalPage({
 export function selectOneScope(
   scopes: TailorKitScopes,
   selectedName: string | undefined,
-  errorMessage: string,
+  errorMessage: string
 ): TailorKitNamedScope {
   const availableNames = Object.keys(scopes);
-  const name = selectedName ?? (availableNames.length === 1 ? availableNames[0]! : undefined);
+  const name =
+    selectedName ??
+    (availableNames.length === 1 ? availableNames[0]! : undefined);
   if (name === undefined) {
     throw new TypeError(errorMessage);
   }
@@ -160,7 +171,10 @@ function redirectToSignIn({
     throw new Error("TailorKit cliAuth.signInPath must be a same-origin path.");
   }
 
-  signInUrl.searchParams.set("returnTo", `${approvalUrl.pathname}${approvalUrl.search}`);
+  signInUrl.searchParams.set(
+    "returnTo",
+    `${approvalUrl.pathname}${approvalUrl.search}`
+  );
 
   return new Response(null, {
     headers: {
@@ -248,7 +262,7 @@ export function renderScopeControl(
   scopes: TailorKitScopes | undefined,
   selectedName: string | undefined,
   controlId: string,
-  label: string,
+  label: string
 ): string {
   const names = Object.keys(scopes ?? {});
   if (names.length === 0) {
@@ -260,7 +274,7 @@ export function renderScopeControl(
   const options = names
     .map(
       (name) =>
-        `<option value="${escapeHtml(name)}"${name === selectedName ? " selected" : ""}>${escapeHtml(name)}</option>`,
+        `<option value="${escapeHtml(name)}"${name === selectedName ? " selected" : ""}>${escapeHtml(name)}</option>`
     )
     .join("");
   const placeholder = `<option value="" disabled${selectedName ? "" : " selected"}>Choose a scope</option>`;
@@ -272,7 +286,9 @@ function renderOtpInputs(code: string): string {
     const autocomplete = index === 0 ? "one-time-code" : "off";
     const character = code[index] ?? "";
     const separator =
-      index === 2 || index === 5 ? `<span class="otp-separator" aria-hidden="true">-</span>` : "";
+      index === 2 || index === 5
+        ? `<span class="otp-separator" aria-hidden="true">-</span>`
+        : "";
 
     return `<input class="otp-input" type="text" inputmode="text" autocomplete="${autocomplete}" maxlength="1" aria-label="Code character ${index + 1}" value="${escapeHtml(character)}">${separator}`;
   }).join("");

@@ -1,4 +1,7 @@
-export function appendScopeSelection(url: URL, scopes?: readonly string[]): void {
+export function appendScopeSelection(
+  url: URL,
+  scopes?: readonly string[]
+): void {
   if (scopes === undefined) {
     return;
   }

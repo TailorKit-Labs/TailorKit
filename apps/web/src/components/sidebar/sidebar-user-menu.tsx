@@ -1,14 +1,3 @@
-import {
-  BookOpenIcon,
-  ChevronsUpDownIcon,
-  ExternalLinkIcon,
-  HomeIcon,
-  LaptopMinimalIcon,
-  LogOutIcon,
-  MoonIcon,
-  SunIcon,
-  UserIcon,
-} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@tailorkit/ui/avatar";
 import { Button } from "@tailorkit/ui/button";
 import {
@@ -20,14 +9,25 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@tailorkit/ui/dropdown-menu";
-import { ToggleGroup, ToggleGroupItem } from "@tailorkit/ui/toggle-group";
-import { Link } from "@tanstack/react-router";
 import { toastManager } from "@tailorkit/ui/toast";
+import { ToggleGroup, ToggleGroupItem } from "@tailorkit/ui/toggle-group";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import {
+  BookOpenIcon,
+  ChevronsUpDownIcon,
+  ExternalLinkIcon,
+  HomeIcon,
+  LaptopMinimalIcon,
+  LogOutIcon,
+  MoonIcon,
+  SunIcon,
+  UserIcon,
+} from "lucide-react";
 
 import { authClient } from "#lib/auth-client";
-import { fallbackTheme, getUserTheme, isAppTheme, useTheme } from "#lib/theme";
-import { useQuery } from "@tanstack/react-query";
 import { orpc } from "#lib/orpc.ts";
+import { fallbackTheme, getUserTheme, isAppTheme, useTheme } from "#lib/theme";
 
 export function SidebarUserMenu() {
   const { data: session } = useQuery(orpc.user.getSession.queryOptions());
@@ -46,15 +46,20 @@ export function SidebarUserMenu() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="w-full" render={<Button variant={"ghost"} />}>
+      <DropdownMenuTrigger
+        className="w-full"
+        render={<Button variant="ghost" />}
+      >
         <Avatar className="size-6 rounded-lg">
           {image && <AvatarImage alt={name} src={image} />}
-          <AvatarFallback className="rounded-lg text-xs">{initials}</AvatarFallback>
+          <AvatarFallback className="rounded-lg text-xs">
+            {initials}
+          </AvatarFallback>
         </Avatar>
         <div className="flex min-w-0 flex-1 flex-col text-left text-sm leading-tight">
           <span className="truncate font-medium">{name}</span>
         </div>
-        <ChevronsUpDownIcon className="ml-auto size-4 shrink-0 text-muted-foreground" />
+        <ChevronsUpDownIcon className="text-muted-foreground ml-auto size-4 shrink-0" />
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-56" side="top">
@@ -63,11 +68,15 @@ export function SidebarUserMenu() {
             <div className="flex items-center gap-2 px-1 py-1.5">
               <Avatar className="size-6 rounded-lg">
                 {image && <AvatarImage alt={name} src={image} />}
-                <AvatarFallback className="rounded-lg text-xs">{initials}</AvatarFallback>
+                <AvatarFallback className="rounded-lg text-xs">
+                  {initials}
+                </AvatarFallback>
               </Avatar>
               <div className="flex min-w-0 flex-1 flex-col text-sm leading-tight">
                 <span className="truncate font-medium">{name}</span>
-                <span className="truncate text-muted-foreground text-xs">{email}</span>
+                <span className="text-muted-foreground truncate text-xs">
+                  {email}
+                </span>
               </div>
             </div>
           </DropdownMenuLabel>
@@ -80,7 +89,11 @@ export function SidebarUserMenu() {
           </DropdownMenuItem>
           <DropdownMenuItem
             render={
-              <a href="https://tailorkit.dev/home" rel="noopener" target="_blank">
+              <a
+                href="https://tailorkit.dev/home"
+                rel="noopener"
+                target="_blank"
+              >
                 <HomeIcon />
                 <span className="w-full">Homepage</span>
                 <ExternalLinkIcon />
@@ -89,7 +102,11 @@ export function SidebarUserMenu() {
           />
           <DropdownMenuItem
             render={
-              <a href="https://tailorkit.dev/docs" rel="noopener" target="_blank">
+              <a
+                href="https://tailorkit.dev/docs"
+                rel="noopener"
+                target="_blank"
+              >
                 <BookOpenIcon />
                 <span className="w-full">Documentation</span>
                 <ExternalLinkIcon />
@@ -98,7 +115,10 @@ export function SidebarUserMenu() {
           />
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem closeOnClick={false} className="p-0 data-highlighted:bg-transparent">
+        <DropdownMenuItem
+          closeOnClick={false}
+          className="p-0 data-highlighted:bg-transparent"
+        >
           <div className="flex w-full items-center justify-between gap-3">
             <p className="px-2 text-sm">Theme</p>
             <ToggleGroup
@@ -115,11 +135,14 @@ export function SidebarUserMenu() {
 
                 setTheme(nextTheme);
                 void authClient
-                  .updateUser({ theme: nextTheme } as Parameters<typeof authClient.updateUser>[0])
+                  .updateUser({ theme: nextTheme } as Parameters<
+                    typeof authClient.updateUser
+                  >[0])
                   .then((result) => {
                     if (result.error) {
                       toastManager.add({
-                        description: result.error.message || "Failed to update theme",
+                        description:
+                          result.error.message || "Failed to update theme",
                         title: "Theme not saved",
                         type: "error",
                       });
@@ -134,20 +157,35 @@ export function SidebarUserMenu() {
                   });
               }}
             >
-              <ToggleGroupItem aria-label="System theme" title="System" value="system">
+              <ToggleGroupItem
+                aria-label="System theme"
+                title="System"
+                value="system"
+              >
                 <LaptopMinimalIcon />
               </ToggleGroupItem>
-              <ToggleGroupItem aria-label="Light theme" title="Light" value="light">
+              <ToggleGroupItem
+                aria-label="Light theme"
+                title="Light"
+                value="light"
+              >
                 <SunIcon />
               </ToggleGroupItem>
-              <ToggleGroupItem aria-label="Dark theme" title="Dark" value="dark">
+              <ToggleGroupItem
+                aria-label="Dark theme"
+                title="Dark"
+                value="dark"
+              >
                 <MoonIcon />
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem render={<Link preload={false} to="/logout" />} variant="destructive">
+        <DropdownMenuItem
+          render={<Link preload={false} to="/logout" />}
+          variant="destructive"
+        >
           <LogOutIcon />
           Sign out
         </DropdownMenuItem>

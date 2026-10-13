@@ -15,26 +15,26 @@ beforeEach(() => {
 
 it("uses the existing ioredis connection with prefixed keys and a millisecond window", async () => {
   const evalScript = vi.fn().mockResolvedValue([2, 900]);
-  mocks.getKV.mockReturnValue({ type: "redis", engine: { eval: evalScript } });
+  mocks.getKV.mockReturnValue({ engine: { eval: evalScript }, type: "redis" });
   const limiter = createRateLimiter({ maxRequests: 3, window: 1000 });
 
   await expect(limiter.limit("user:1", { weight: 2 })).resolves.toMatchObject({
-    success: true,
     limit: 3,
     remaining: 1,
+    success: true,
   });
   expect(evalScript).toHaveBeenCalledWith(
     expect.any(String),
     1,
     "tailorkit:ratelimit:user:1",
     "2",
-    "1000",
+    "1000"
   );
 
   evalScript.mockResolvedValueOnce([4, 900]);
   await expect(limiter.limit("user:1", { weight: 2 })).resolves.toMatchObject({
-    success: false,
     remaining: 0,
+    success: false,
   });
 });
 
@@ -49,22 +49,30 @@ it("deduplicates the limiter per request and returns HTTP 429 with retry headers
         .use(middleware)
         .handler(() => "pong"),
     },
-    { plugins: [new RateLimitHandlerPlugin()] },
+    { plugins: [new RateLimitHandlerPlugin()] }
   );
   const request = () =>
     new Request("https://example.com/rpc/ping", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
       body: JSON.stringify({ json: null }),
+      headers: { "content-type": "application/json" },
+      method: "POST",
     });
 
-  const first = await handler.handle(request(), { prefix: "/rpc", context: {} });
+  const first = await handler.handle(request(), {
+    context: {},
+    prefix: "/rpc",
+  });
   expect(first.response?.status).toBe(200);
   expect(first.response?.headers.get("ratelimit-limit")).toBe("1");
   expect(limit).toHaveBeenCalledTimes(1);
 
-  const second = await handler.handle(request(), { prefix: "/rpc", context: {} });
+  const second = await handler.handle(request(), {
+    context: {},
+    prefix: "/rpc",
+  });
   expect(second.response?.status).toBe(429);
   expect(second.response?.headers.get("ratelimit-remaining")).toBe("0");
-  expect(Number(second.response?.headers.get("retry-after"))).toBeGreaterThan(0);
+  expect(Number(second.response?.headers.get("retry-after"))).toBeGreaterThan(
+    0
+  );
 });

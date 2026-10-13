@@ -15,64 +15,77 @@ function downstreamResponse(response: Response, request: Request) {
   const headers = new Headers(response.headers);
   // Keep browser reuse bounded when a deployment is removed.
   headers.set("Cache-Control", "private, max-age=3600");
-  let body = response.body;
+  let { body } = response;
   if (headers.get("Content-Encoding") === "gzip" && !acceptsGzip(request)) {
     headers.delete("Content-Encoding");
     headers.delete("Content-Length");
-    if (headers.has("ETag")) headers.set("ETag", `W/${headers.get("ETag")}`);
+    if (headers.has("ETag")) {
+      headers.set("ETag", `W/${headers.get("ETag")}`);
+    }
     if (request.method !== "HEAD" && body) {
       body = limitAssetBody(body.pipeThrough(new DecompressionStream("gzip")));
     }
   }
   return new Response(request.method === "HEAD" ? null : body, {
+    encodeBody: "manual",
     headers,
     status: response.status,
-    encodeBody: "manual",
   });
 }
 
-function loadAsset(request: Request, identity: AssetIdentity, env: Env, ctx: ExecutionContext) {
+function loadAsset(
+  request: Request,
+  identity: AssetIdentity,
+  env: Env,
+  ctx: ExecutionContext
+) {
   return Effect.gen(function* () {
     // Node/DOM ambient types omit Cloudflare's default edge cache.
     const edgeCache = caches as CacheStorage & { readonly default: Cache };
     // Cache the stored representation, then negotiate for each downstream request.
-    const cacheKey = new Request(request.url, { headers: { "Accept-Encoding": "gzip" } });
-    const cached = yield* Effect.tryPromise(() => edgeCache.default.match(cacheKey)).pipe(
-      Effect.catch(() => Effect.succeed(undefined)),
-    );
-    if (cached) return downstreamResponse(cached, request);
+    const cacheKey = new Request(request.url, {
+      headers: { "Accept-Encoding": "gzip" },
+    });
+    const cached = yield* Effect.tryPromise(() =>
+      edgeCache.default.match(cacheKey)
+    ).pipe(Effect.catch(() => Effect.succeed()));
+    if (cached) {
+      return downstreamResponse(cached, request);
+    }
 
     if (request.method === "HEAD") {
       const object = yield* Effect.tryPromise({
-        try: () => env.BUNDLES.head(identity.key),
         catch: () => new AssetDeliveryError(503),
+        try: () => env.BUNDLES.head(identity.key),
       });
       const contentLength = yield* assetSize(object?.size);
       return downstreamResponse(
         new Response(null, {
           headers: assetHeaders({
+            contentEncoding: object?.httpMetadata?.contentEncoding,
             contentLength,
             contentType: identity.contentType,
-            contentEncoding: object?.httpMetadata?.contentEncoding,
             etag: object?.httpEtag,
           }),
         }),
-        request,
+        request
       );
     }
 
     const object = yield* Effect.tryPromise({
-      try: () => env.BUNDLES.get(identity.key),
       catch: () => new AssetDeliveryError(503),
+      try: () => env.BUNDLES.get(identity.key),
     });
     const contentLength = yield* assetSize(object?.size);
-    if (!object) return yield* Effect.fail(new AssetDeliveryError(404));
+    if (!object) {
+      return yield* Effect.fail(new AssetDeliveryError(404));
+    }
     const response = new Response(object.body, {
       encodeBody: "manual",
       headers: assetHeaders({
+        contentEncoding: object.httpMetadata?.contentEncoding,
         contentLength,
         contentType: identity.contentType,
-        contentEncoding: object.httpMetadata?.contentEncoding,
         etag: object.httpEtag,
       }),
     });
@@ -81,16 +94,18 @@ function loadAsset(request: Request, identity: AssetIdentity, env: Env, ctx: Exe
       edgeCache.default.put(
         cacheKey,
         new Response(response.clone().body, {
-          headers: response.headers,
           encodeBody: "manual",
-        }),
-      ),
+          headers: response.headers,
+        })
+      )
     ).pipe(
       Effect.catch(() =>
         Effect.sync(() => {
-          console.error(JSON.stringify({ message: "Asset cache write failed" }));
-        }),
-      ),
+          console.error(
+            JSON.stringify({ message: "Asset cache write failed" })
+          );
+        })
+      )
     );
     yield* Effect.sync(() => ctx.waitUntil(Effect.runPromise(cacheWrite)));
     return downstreamResponse(response, request);
@@ -107,11 +122,11 @@ export default {
       assetResponse(program, () => {
         console.error(
           JSON.stringify({
-            message: "Asset delivery failed",
             hostname: new URL(request.url).hostname,
-          }),
+            message: "Asset delivery failed",
+          })
         );
-      }),
+      })
     );
   },
 } satisfies ExportedHandler<Env>;

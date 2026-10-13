@@ -1,4 +1,5 @@
 import { and, asc, eq } from "drizzle-orm";
+
 import { db, todos } from "./db";
 
 export type Todo = typeof todos.$inferSelect;
@@ -14,11 +15,11 @@ export function listTodos(teamId: string) {
 
 export function addTodo(teamId: string, title: string): Todo {
   const todo = {
+    createdAt: new Date(),
+    done: false,
     id: crypto.randomUUID(),
     teamId,
     title,
-    done: false,
-    createdAt: new Date(),
   };
   db.insert(todos).values(todo).run();
   return todo;
@@ -26,7 +27,9 @@ export function addTodo(teamId: string, title: string): Todo {
 
 export function toggleTodo(teamId: string, id: string): Todo | undefined {
   const todo = db.select().from(todos).where(eq(todos.id, id)).get();
-  if (!todo || todo.teamId !== teamId) return undefined;
+  if (!todo || todo.teamId !== teamId) {
+    return undefined;
+  }
   const updated = { ...todo, done: !todo.done };
   db.update(todos).set({ done: updated.done }).where(eq(todos.id, id)).run();
   return updated;

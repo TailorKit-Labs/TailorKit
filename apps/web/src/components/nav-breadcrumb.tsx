@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -8,6 +7,7 @@ import {
   BreadcrumbSeparator,
 } from "@tailorkit/ui/breadcrumb";
 import { Link, useMatches } from "@tanstack/react-router";
+import { Fragment } from "react";
 
 interface BreadcrumbSegment {
   href?: string;
@@ -35,8 +35,14 @@ function toLabel(segment: string) {
     .join(" ");
 }
 
-function addOrgSegment(params: Record<string, string>, segments: BreadcrumbSegment[]) {
-  if (!("orgSlug" in params) || segments.some((s) => s.label === toLabel(params.orgSlug))) {
+function addOrgSegment(
+  params: Record<string, string>,
+  segments: BreadcrumbSegment[]
+) {
+  if (
+    !("orgSlug" in params) ||
+    segments.some((s) => s.label === toLabel(params.orgSlug))
+  ) {
     return;
   }
 
@@ -49,9 +55,12 @@ function addOrgSegment(params: Record<string, string>, segments: BreadcrumbSegme
 function addProjectSegment(
   id: string,
   params: Record<string, string>,
-  segments: BreadcrumbSegment[],
+  segments: BreadcrumbSegment[]
 ) {
-  if (!("projectSlug" in params) || segments.some((s) => s.label === toLabel(params.projectSlug))) {
+  if (
+    !("projectSlug" in params) ||
+    segments.some((s) => s.label === toLabel(params.projectSlug))
+  ) {
     return;
   }
 
@@ -66,7 +75,7 @@ function addStaticSegments(
   id: string,
   params: Record<string, string>,
   segments: BreadcrumbSegment[],
-  loaderData: unknown,
+  loaderData: unknown
 ) {
   if (id.includes("/account") && !segments.some((s) => s.label === "Account")) {
     segments.push({ href: "/account/profile", label: "Account" });
@@ -83,7 +92,10 @@ function addStaticSegments(
     if (appsSegment) {
       appsSegment.href = `/${params.orgSlug}/${params.projectSlug}/apps`;
     } else {
-      segments.push({ href: `/${params.orgSlug}/${params.projectSlug}/apps`, label: "Apps" });
+      segments.push({
+        href: `/${params.orgSlug}/${params.projectSlug}/apps`,
+        label: "Apps",
+      });
     }
     const appName =
       typeof loaderData === "object" &&
@@ -152,7 +164,9 @@ export function NavBreadcrumb() {
           <Fragment key={seg.label}>
             <BreadcrumbItem>
               {seg.href ? (
-                <BreadcrumbLink render={<Link to={seg.href} />}>{seg.label}</BreadcrumbLink>
+                <BreadcrumbLink render={<Link to={seg.href} />}>
+                  {seg.label}
+                </BreadcrumbLink>
               ) : (
                 <BreadcrumbPage>{seg.label}</BreadcrumbPage>
               )}

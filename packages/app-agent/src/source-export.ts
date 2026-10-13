@@ -1,47 +1,61 @@
 import { randomUUID } from "node:crypto";
+
 import { Drive, Sandbox } from "@vercel/sandbox";
 
 const drivePrefix = "app-";
 
 export class AppAgentWorkspaceBusyError extends Error {
   constructor() {
-    super("The app workspace is currently being edited. Try again when the agent finishes.");
+    super(
+      "The app workspace is currently being edited. Try again when the agent finishes."
+    );
     this.name = "AppAgentWorkspaceBusyError";
   }
 }
 
 async function findAppDrive(appId: string) {
   const name = `${drivePrefix}${appId}`;
-  const { drives } = await Drive.list({ limit: 1, namePrefix: name, sortBy: "name" });
+  const { drives } = await Drive.list({
+    limit: 1,
+    namePrefix: name,
+    sortBy: "name",
+  });
   return drives.find((drive) => drive.name === name) ?? null;
 }
 
 export async function getAppAgentWorkspaceStatus(
-  appId: string,
+  appId: string
 ): Promise<"missing" | "busy" | "available"> {
   const drive = await findAppDrive(appId);
-  if (!drive) return "missing";
+  if (!drive) {
+    return "missing";
+  }
   return drive.currentSandboxName ? "busy" : "available";
 }
 
 /** Export the persistent app-agent workspace as a source archive. */
-export async function exportAppAgentWorkspace(appId: string): Promise<Buffer | null> {
+export async function exportAppAgentWorkspace(
+  appId: string
+): Promise<Buffer | null> {
   const drive = await findAppDrive(appId);
-  if (!drive) return null;
-  if (drive.currentSandboxName) throw new AppAgentWorkspaceBusyError();
+  if (!drive) {
+    return null;
+  }
+  if (drive.currentSandboxName) {
+    throw new AppAgentWorkspaceBusyError();
+  }
 
   const sandbox = await Sandbox.create({
-    name: `app-source-export-${randomUUID()}`,
     image: "vercel/sandbox/universal",
-    region: drive.region,
-    persistent: false,
-    timeout: 120_000,
     mounts: { "/workspace": drive.snapshot() },
+    name: `app-source-export-${randomUUID()}`,
+    persistent: false,
+    region: drive.region,
+    timeout: 120_000,
   });
 
   try {
     const result = await sandbox.runCommand({
-      cmd: "tar",
       args: [
         "--exclude=node_modules",
         "--exclude=.git",
@@ -54,6 +68,7 @@ export async function exportAppAgentWorkspace(appId: string): Promise<Buffer | n
         "/workspace/app",
         ".",
       ],
+      cmd: "tar",
       timeoutMs: 60_000,
     });
 
@@ -61,12 +76,18 @@ export async function exportAppAgentWorkspace(appId: string): Promise<Buffer | n
       throw new Error("Could not package the app-agent workspace.");
     }
 
-    const archive = await sandbox.readFileToBuffer({ path: "/tmp/app-source.tar.gz" });
-    if (!archive) throw new Error("The app-agent source archive could not be read.");
+    const archive = await sandbox.readFileToBuffer({
+      path: "/tmp/app-source.tar.gz",
+    });
+    if (!archive) {
+      throw new Error("The app-agent source archive could not be read.");
+    }
     return archive;
   } finally {
-    await sandbox.delete({ deleteOrphanSnapshots: true }).catch((error: unknown) => {
-      console.warn("App source export sandbox cleanup failed", error);
-    });
+    await sandbox
+      .delete({ deleteOrphanSnapshots: true })
+      .catch((error: unknown) => {
+        console.warn("App source export sandbox cleanup failed", error);
+      });
   }
 }

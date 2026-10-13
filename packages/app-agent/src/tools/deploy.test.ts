@@ -1,4 +1,5 @@
 import { beforeEach, expect, it, vi } from "vite-plus/test";
+
 import { deployTool } from "./deploy";
 
 const mocks = vi.hoisted(() => ({ runCommand: vi.fn() }));
@@ -7,9 +8,9 @@ vi.mock("./utils", async (original) => ({
   toolNativeSandbox: async () => ({ runCommand: mocks.runCommand }),
 }));
 const context = {
-  sandboxName: "sandbox-one",
-  appId: "selected-app",
   agentToken: "private-token",
+  appId: "selected-app",
+  sandboxName: "sandbox-one",
 };
 
 beforeEach(() => {
@@ -19,14 +20,20 @@ beforeEach(() => {
 it("pins the authorized app and injects credentials only into the deploy process", async () => {
   mocks.runCommand.mockResolvedValue({
     exitCode: 0,
-    stdout: async () => "Deployment: published-one",
     stderr: async () => "",
+    stdout: async () => "Deployment: published-one",
   });
-  const result = await deployTool.execute!({}, { context, toolCallId: "deploy-one", messages: [] });
-  expect(result).toEqual({ exitCode: 0, stdout: "Deployment: published-one", stderr: "" });
+  const result = await deployTool.execute!(
+    {},
+    { context, messages: [], toolCallId: "deploy-one" }
+  );
+  expect(result).toEqual({
+    exitCode: 0,
+    stderr: "",
+    stdout: "Deployment: published-one",
+  });
   const command = mocks.runCommand.mock.lastCall![0];
   expect(command).toMatchObject({
-    cmd: "pnpm",
     args: [
       "--dir",
       "/tmp/tailorkit-cli",
@@ -39,6 +46,7 @@ it("pins the authorized app and injects credentials only into the deploy process
       context.appId,
       "--no-interactive",
     ],
+    cmd: "pnpm",
     env: {
       TAILORKIT_AGENT_TOKEN: context.agentToken,
     },
@@ -49,25 +57,33 @@ it("pins the authorized app and injects credentials only into the deploy process
 it("returns failures for the agent to address and redacts echoed credentials", async () => {
   mocks.runCommand.mockResolvedValue({
     exitCode: 1,
-    stdout: async () => context.agentToken,
     stderr: async () => `Rejected ${context.agentToken}`,
+    stdout: async () => context.agentToken,
   });
   expect(
-    await deployTool.execute!({}, { context, toolCallId: "deploy-one", messages: [] }),
+    await deployTool.execute!(
+      {},
+      { context, messages: [], toolCallId: "deploy-one" }
+    )
   ).toEqual({
     exitCode: 1,
-    stdout: "[redacted]",
     stderr: "Rejected [redacted]",
+    stdout: "[redacted]",
   });
 });
 
 it("redacts credentials from command transport failures", async () => {
-  mocks.runCommand.mockRejectedValue(new Error(`Command failed: ${context.agentToken}`));
+  mocks.runCommand.mockRejectedValue(
+    new Error(`Command failed: ${context.agentToken}`)
+  );
   expect(
-    await deployTool.execute!({}, { context, toolCallId: "deploy-one", messages: [] }),
+    await deployTool.execute!(
+      {},
+      { context, messages: [], toolCallId: "deploy-one" }
+    )
   ).toEqual({
     exitCode: 1,
-    stdout: "",
     stderr: "Command failed: [redacted]",
+    stdout: "",
   });
 });

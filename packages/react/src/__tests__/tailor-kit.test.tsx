@@ -1,17 +1,37 @@
-import { RenderSlot } from "../index";
-import { act, cleanup, render, screen as testingView, waitFor } from "@testing-library/react";
-import { createElement, StrictMode } from "react";
-import type { ReactNode } from "react";
-import type { StandardJSONSchemaV1, StandardSchemaV1 } from "@standard-schema/spec";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import type {
+  StandardJSONSchemaV1,
+  StandardSchemaV1,
+} from "@standard-schema/spec";
+import { createTailorKitStore } from "@tailorkit/client-core";
 import { defineContract } from "@tailorkit/core/schema";
 import type { IframeUiHost } from "@tailorkit/sandbox/host";
-import type { HostToIframePayload, RemoteNode } from "@tailorkit/sandbox/protocol";
-import { createClient } from "../tailorkit";
-import { RemoteViewHost } from "../remote-view";
-import { createTailorKitStore } from "@tailorkit/client-core";
-import type { TailorKitApp } from "../tailorkit";
+import type {
+  HostToIframePayload,
+  RemoteNode,
+} from "@tailorkit/sandbox/protocol";
+import {
+  act,
+  cleanup,
+  render,
+  screen as testingView,
+  waitFor,
+} from "@testing-library/react";
+import { createElement, StrictMode } from "react";
+import type { ReactNode } from "react";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vite-plus/test";
+
 import { useApps } from "../hooks/use-apps";
+import { RenderSlot } from "../index";
+import { RemoteViewHost } from "../remote-view";
+import { createClient } from "../tailorkit";
+import type { TailorKitApp } from "../tailorkit";
 
 const hostRecords: {
   appUrl: string;
@@ -22,7 +42,7 @@ const hostRecords: {
 vi.mock("@tailorkit/sandbox/host", () => ({
   createIframeUiHost: (
     appUrl: string | URL,
-    options: { props?: Record<string, unknown>; sourceText?: string } = {},
+    options: { props?: Record<string, unknown>; sourceText?: string } = {}
   ): IframeUiHost => {
     const record = {
       appUrl: appUrl.toString(),
@@ -32,24 +52,32 @@ vi.mock("@tailorkit/sandbox/host", () => ({
     hostRecords.push(record);
 
     const tree: RemoteNode = {
-      children: [{ id: `text-${hostRecords.length}`, kind: "text", text: appUrl.toString() }],
+      children: [
+        {
+          id: `text-${hostRecords.length}`,
+          kind: "text",
+          text: appUrl.toString(),
+        },
+      ],
       id: `root-${hostRecords.length}`,
       kind: "element",
       props: {},
-      type: appUrl.toString().includes("missing-component") ? "MissingComponent" : "Button",
+      type: appUrl.toString().includes("missing-component")
+        ? "MissingComponent"
+        : "Button",
     };
     let listener: (() => void) | null = null;
 
     return {
       destroy: () => {},
-      setProps: (props: Record<string, unknown> | undefined) => {
-        record.props = props;
-      },
       dispatch: (_payload: HostToIframePayload) => {},
       getSnapshot: () => tree,
       iframe: document.createElement("iframe"),
       mount: () => {
         listener?.();
+      },
+      setProps: (props: Record<string, unknown> | undefined) => {
+        record.props = props;
       },
       subscribe: (nextListener: () => void) => {
         listener = nextListener;
@@ -75,17 +103,17 @@ const emptySchema: StandardSchemaV1<unknown, Record<never, never>> &
 } as const;
 
 const contract = defineContract({
+  components: {
+    Button: { children: true },
+  },
   scopes: {
     organization: emptySchema,
     test: emptySchema,
     user: emptySchema,
   },
   slots: {
-    panel: { views: ["/", "/home", "/home/detail", "/user"] },
     navbar: { views: ["/"] },
-  },
-  components: {
-    Button: { children: true },
+    panel: { views: ["/", "/home", "/home/detail", "/user"] },
   },
   views: {
     "/": emptySchema,
@@ -96,7 +124,8 @@ const contract = defineContract({
 });
 
 const components = {
-  Button: ({ children }: { children?: ReactNode }) => createElement("button", null, children),
+  Button: ({ children }: { children?: ReactNode }) =>
+    createElement("button", null, children),
 };
 
 function CurrentViewRoute({
@@ -115,10 +144,15 @@ function CurrentViewRoute({
         }
       : {
           context: { page: { title: "home" } },
-        },
+        }
   );
 
-  return <RenderSlot slot="panel" app={{ clientPath: "/apps/todo.js", id: "todo" }} />;
+  return (
+    <RenderSlot
+      slot="panel"
+      app={{ clientPath: "/apps/todo.js", id: "todo" }}
+    />
+  );
 }
 
 function CurrentViewHost({
@@ -154,7 +188,7 @@ describe("tailorKitClient React adapter", () => {
         appUrl="https://host.test/client.js"
         sourceText="one"
         components={{ Button: () => null }}
-      />,
+      />
     );
     expect(hostRecords.at(-1)?.sourceText).toBe("one");
     rerender(
@@ -162,7 +196,7 @@ describe("tailorKitClient React adapter", () => {
         appUrl="https://host.test/client.js"
         sourceText="two"
         components={{ Button: () => null }}
-      />,
+      />
     );
     expect(hostRecords.at(-1)?.sourceText).toBe("two");
     expect(hostRecords).toHaveLength(2);
@@ -174,7 +208,7 @@ describe("tailorKitClient React adapter", () => {
       Response.json({
         assetsBaseUrl: "http://assets.test/",
         schema: {},
-      }),
+      })
     );
   });
 
@@ -188,8 +222,8 @@ describe("tailorKitClient React adapter", () => {
       Promise.resolve(
         input instanceof URL && input.pathname.endsWith("/preview/metadata")
           ? new Response(null, { status: 503 })
-          : Response.json({ assetsBaseUrl: "http://assets.test/", schema: {} }),
-      ),
+          : Response.json({ assetsBaseUrl: "http://assets.test/", schema: {} })
+      )
     );
     class PreviewSocket extends EventTarget {
       static instances: PreviewSocket[] = [];
@@ -209,7 +243,7 @@ describe("tailorKitClient React adapter", () => {
     }
     vi.stubGlobal("WebSocket", PreviewSocket);
     const tailor = createClient({
-      contract: contract,
+      contract,
       baseUrl: "http://runtime.test/api/tailorkit",
       components,
     });
@@ -219,13 +253,13 @@ describe("tailorKitClient React adapter", () => {
         <HomeSlot
           tailor={tailor}
           app={{
-            id: "preview",
             clientPath: "/apps/preview.js",
+            id: "preview",
             preview: {
-              sessionId: "session",
               expiresAt: "later",
-              websocketUrl: "wss://platform.test/preview",
+              sessionId: "session",
               token,
+              websocketUrl: "wss://platform.test/preview",
             },
           }}
         />
@@ -236,15 +270,22 @@ describe("tailorKitClient React adapter", () => {
     const metadataRequest = vi
       .mocked(globalThis.fetch)
       .mock.calls.map(([input]) => input)
-      .find((input) => input instanceof URL && input.pathname.endsWith("/preview/metadata"));
+      .find(
+        (input) =>
+          input instanceof URL && input.pathname.endsWith("/preview/metadata")
+      );
     expect(metadataRequest).toBeInstanceOf(URL);
-    expect(new URL(metadataRequest as URL).searchParams.getAll("scopes")).toEqual([]);
+    expect(
+      new URL(metadataRequest as URL).searchParams.getAll("scopes")
+    ).toEqual([]);
     const socket = PreviewSocket.instances[0];
     view.rerender(content("updated-token"));
     expect(PreviewSocket.instances).toHaveLength(1);
     expect(socket?.closed).toBe(false);
     socket?.close();
-    await waitFor(() => expect(PreviewSocket.instances).toHaveLength(2), { timeout: 2500 });
+    await waitFor(() => expect(PreviewSocket.instances).toHaveLength(2), {
+      timeout: 2500,
+    });
     expect(PreviewSocket.instances[1]?.protocol).toBe("updated-token");
     view.unmount();
     expect(PreviewSocket.instances[1]?.closed).toBe(true);
@@ -252,20 +293,22 @@ describe("tailorKitClient React adapter", () => {
 
   it("fetches and caches apps", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      Response.json([{ id: "todo", name: "Todo", scope: { name: "user" } }]),
+      Response.json([{ id: "todo", name: "Todo", scope: { name: "user" } }])
     );
     const tailor = createClient({
-      contract: contract,
+      contract,
       baseUrl: "http://runtime.test/api/tailorkit",
       components,
     });
 
     function AppList() {
-      const { data, isPending } = tailor.useApps({ scopes: ["organization", "user"] });
+      const { data, isPending } = tailor.useApps({
+        scopes: ["organization", "user"],
+      });
       return createElement(
         "p",
         null,
-        `${isPending ? "pending" : "ready"}:${(data ?? []).map((app) => app.id).join(",")}`,
+        `${isPending ? "pending" : "ready"}:${(data ?? []).map((app) => app.id).join(",")}`
       );
     }
 
@@ -273,7 +316,7 @@ describe("tailorKitClient React adapter", () => {
       <tailor.Provider>
         <AppList />
         <AppList />
-      </tailor.Provider>,
+      </tailor.Provider>
     );
 
     await waitFor(() => {
@@ -282,7 +325,10 @@ describe("tailorKitClient React adapter", () => {
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
     expect(globalThis.fetch).toHaveBeenCalledWith(
       new URL("apps", "http://runtime.test/api/tailorkit/"),
-      expect.objectContaining({ signal: expect.any(AbortSignal), credentials: "same-origin" }),
+      expect.objectContaining({
+        credentials: "same-origin",
+        signal: expect.any(AbortSignal),
+      })
     );
   });
 
@@ -291,10 +337,10 @@ describe("tailorKitClient React adapter", () => {
       Response.json([
         { id: "organization", scope: { name: "organization" } },
         { id: "user", scope: { name: "user" } },
-      ]),
+      ])
     );
     const tailor = createClient({
-      contract: contract,
+      contract,
       baseUrl: "http://runtime.test/api/tailorkit",
       components,
     });
@@ -308,7 +354,8 @@ describe("tailorKitClient React adapter", () => {
       const { data, isPending } = tailor.useApps({ scopes });
       return (
         <p>
-          {label}:{isPending ? "pending" : "ready"}:{data?.map((app) => app.id).join(",")}
+          {label}:{isPending ? "pending" : "ready"}:
+          {data?.map((app) => app.id).join(",")}
         </p>
       );
     }
@@ -318,9 +365,11 @@ describe("tailorKitClient React adapter", () => {
         <AppList label="user" scopes={["user"]} />
         <AppList label="all" />
         <AppList label="empty" scopes={[]} />
-      </tailor.Provider>,
+      </tailor.Provider>
     );
-    await waitFor(() => expect(testingView.getByText("all:ready:organization,user")).toBeTruthy());
+    await waitFor(() =>
+      expect(testingView.getByText("all:ready:organization,user")).toBeTruthy()
+    );
     expect(testingView.getByText("org:ready:organization")).toBeTruthy();
     expect(testingView.getByText("user:ready:user")).toBeTruthy();
     expect(testingView.getByText("empty:ready:")).toBeTruthy();
@@ -328,10 +377,12 @@ describe("tailorKitClient React adapter", () => {
   });
 
   it("retains app discovery across subscriber unmounts", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json([]));
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(Response.json([]));
     const store = createTailorKitStore({
       baseUrl: "http://runtime.test/api/tailorkit",
-      contract: contract,
+      contract,
     });
     const idle = store.getAppsSnapshot();
     expect(store.getAppsSnapshot()).toBe(idle);
@@ -349,7 +400,7 @@ describe("tailorKitClient React adapter", () => {
   it("defaults to all scopes when useApps omits a selection", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json([]));
     const tailor = createClient({
-      contract: contract,
+      contract,
       baseUrl: "http://runtime.test/api/tailorkit",
     });
 
@@ -361,19 +412,22 @@ describe("tailorKitClient React adapter", () => {
     render(
       <tailor.Provider>
         <AppList />
-      </tailor.Provider>,
+      </tailor.Provider>
     );
 
     await waitFor(() => expect(testingView.getByText("ready")).toBeTruthy());
     expect(globalThis.fetch).toHaveBeenCalledWith(
       new URL("apps", "http://runtime.test/api/tailorkit/"),
-      expect.objectContaining({ signal: expect.any(AbortSignal), credentials: "same-origin" }),
+      expect.objectContaining({
+        credentials: "same-origin",
+        signal: expect.any(AbortSignal),
+      })
     );
   });
 
   it("derives the hierarchy from the current view and reuses its extended context", async () => {
     const tailor = createClient({
-      contract: contract,
+      contract,
       baseUrl: "http://runtime.test",
       assetsBaseUrl: "http://assets.test/",
       components,
@@ -412,7 +466,7 @@ describe("tailorKitClient React adapter", () => {
 
   it("publishes loading and error states without stale context", async () => {
     const tailor = createClient({
-      contract: contract,
+      contract,
       baseUrl: "http://runtime.test",
       assetsBaseUrl: "http://assets.test/",
       components,
@@ -422,28 +476,35 @@ describe("tailorKitClient React adapter", () => {
       const { useViewContext } = tailor;
       useViewContext("/home/detail", {
         context: undefined,
-        loading: status === "loading",
         error: status === "error" ? new Error("Failed to load context") : null,
+        loading: status === "loading",
       });
-      return <RenderSlot slot="panel" app={{ clientPath: "/apps/todo.js", id: "todo" }} />;
+      return (
+        <RenderSlot
+          slot="panel"
+          app={{ clientPath: "/apps/todo.js", id: "todo" }}
+        />
+      );
     }
 
     const view = render(
       <tailor.Provider apps={[{ clientPath: "/apps/todo.js", id: "todo" }]}>
         <Route status="loading" />
-      </tailor.Provider>,
+      </tailor.Provider>
     );
 
     await waitFor(() => {
       expect(hostRecords.at(-1)?.props).toMatchObject({
-        layers: [{ context: undefined, path: "/home/detail", status: "loading" }],
+        layers: [
+          { context: undefined, path: "/home/detail", status: "loading" },
+        ],
       });
     });
 
     view.rerender(
       <tailor.Provider apps={[{ clientPath: "/apps/todo.js", id: "todo" }]}>
         <Route status="error" />
-      </tailor.Provider>,
+      </tailor.Provider>
     );
 
     await waitFor(() => {
@@ -456,7 +517,7 @@ describe("tailorKitClient React adapter", () => {
   it("renders the current match for multiple direct app props", async () => {
     hostRecords.length = 0;
     const tailor = createClient({
-      contract: contract,
+      contract,
       baseUrl: "http://runtime.test",
       assetsBaseUrl: "http://assets.test/",
       components,
@@ -467,7 +528,10 @@ describe("tailorKitClient React adapter", () => {
       useViewContext("/home", { context: { page: { title: "home" } } });
       return (
         <>
-          <RenderSlot slot="panel" app={{ clientPath: "/apps/b.js", id: "b" }} />
+          <RenderSlot
+            slot="panel"
+            app={{ clientPath: "/apps/b.js", id: "b" }}
+          />
           <RenderSlot
             slot="panel"
             app={{
@@ -492,7 +556,7 @@ describe("tailorKitClient React adapter", () => {
         ]}
       >
         <Route />
-      </tailor.Provider>,
+      </tailor.Provider>
     );
 
     await waitFor(() => {
@@ -502,7 +566,9 @@ describe("tailorKitClient React adapter", () => {
       "http://runtime.test/apps/b.js",
       "http://assets.test/projects/project_1/apps/a/deployments/deployment_1/client/client.js",
     ]);
-    expect(hostRecords.map((record) => (record.props?.layers as unknown[])?.[0])).toEqual([
+    expect(
+      hostRecords.map((record) => (record.props?.layers as unknown[])?.[0])
+    ).toEqual([
       { context: { page: { title: "home" } }, path: "/home", status: "ready" },
       { context: { page: { title: "home" } }, path: "/home", status: "ready" },
     ]);
@@ -510,7 +576,7 @@ describe("tailorKitClient React adapter", () => {
 
   it("renders a controlled view without a registered current view", async () => {
     const tailor = createClient({
-      contract: contract,
+      contract,
       baseUrl: "http://runtime.test",
       assetsBaseUrl: "http://assets.test/",
       components,
@@ -526,28 +592,28 @@ describe("tailorKitClient React adapter", () => {
           view="/user"
           status="ready"
         />
-      </tailor.Provider>,
+      </tailor.Provider>
     );
 
     await waitFor(() => {
       expect(hostRecords.at(-1)?.props).toMatchObject({
-        controlled: true,
         context: { userId: "user_1" },
-        view: "/user",
+        controlled: true,
         status: "ready",
+        view: "/user",
       });
     });
   });
 
   it("rejects a client RenderSlot rendered under a different client Provider", () => {
     const tailor = createClient({
-      contract: contract,
+      contract,
       baseUrl: "http://runtime.test",
       assetsBaseUrl: "http://assets.test/",
       components,
     });
     const otherTailor = createClient({
-      contract: contract,
+      contract,
       baseUrl: "http://other-runtime.test",
       components,
     });
@@ -557,18 +623,21 @@ describe("tailorKitClient React adapter", () => {
     expect(() =>
       render(
         <otherTailor.Provider>
-          <ClientRenderSlot slot="panel" app={{ clientPath: "/apps/todo.js", id: "todo" }} />
-        </otherTailor.Provider>,
-      ),
+          <ClientRenderSlot
+            slot="panel"
+            app={{ clientPath: "/apps/todo.js", id: "todo" }}
+          />
+        </otherTailor.Provider>
+      )
     ).toThrow(
-      "RenderSlot was created for a different TailorKit client than the surrounding Provider.",
+      "RenderSlot was created for a different TailorKit client than the surrounding Provider."
     );
   });
 
   it("warns when multiple hooks register views at the same hierarchy depth", async () => {
     const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const tailor = createClient({
-      contract: contract,
+      contract,
       baseUrl: "http://runtime.test",
       assetsBaseUrl: "http://assets.test/",
       components,
@@ -583,24 +652,31 @@ describe("tailorKitClient React adapter", () => {
     function UserRoute() {
       const { useViewContext } = tailor;
       useViewContext("/user", { context: { userId: "user_1" } });
-      return <RenderSlot slot="panel" app={{ clientPath: "/apps/todo.js", id: "todo" }} />;
+      return (
+        <RenderSlot
+          slot="panel"
+          app={{ clientPath: "/apps/todo.js", id: "todo" }}
+        />
+      );
     }
 
     render(
       <tailor.Provider apps={[{ clientPath: "/apps/todo.js", id: "todo" }]}>
         <HomeRoute />
         <UserRoute />
-      </tailor.Provider>,
+      </tailor.Provider>
     );
 
     await waitFor(() => {
-      expect(consoleWarn).toHaveBeenCalledWith(expect.stringContaining('"/home", "/user"'));
+      expect(consoleWarn).toHaveBeenCalledWith(
+        expect.stringContaining('"/home", "/user"')
+      );
     });
   });
 
   it("passes primitive theme tokens into mounted views", async () => {
     const tailor = createClient({
-      contract: contract,
+      contract,
       baseUrl: "http://runtime.test",
       assetsBaseUrl: "http://assets.test/",
       components,
@@ -615,34 +691,44 @@ describe("tailorKitClient React adapter", () => {
 
     render(
       <tailor.Provider apps={[{ clientPath: "/apps/todo.js", id: "todo" }]}>
-        <HomeSlot app={{ clientPath: "/apps/todo.js", id: "todo" }} tailor={tailor} />
-      </tailor.Provider>,
+        <HomeSlot
+          app={{ clientPath: "/apps/todo.js", id: "todo" }}
+          tailor={tailor}
+        />
+      </tailor.Provider>
     );
 
     await waitFor(() => {
       expect(hostRecords).toHaveLength(1);
     });
-    expect(document.querySelector("[data-tailorkit-theme-style]")?.textContent).toContain(
-      "--tailorkit-background-surface: var(--card);",
-    );
+    expect(
+      document.querySelector("[data-tailorkit-theme-style]")?.textContent
+    ).toContain("--tailorkit-background-surface: var(--card);");
   });
 
   it("renders missing component errors inside the app container", async () => {
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
     const tailor = createClient({
-      contract: contract,
+      contract,
       baseUrl: "http://runtime.test",
       assetsBaseUrl: "http://assets.test/",
     });
 
     render(
       <tailor.Provider apps={[{ clientPath: "/apps/todo.js", id: "todo" }]}>
-        <HomeSlot app={{ clientPath: "/apps/todo.js", id: "todo" }} tailor={tailor} />
-      </tailor.Provider>,
+        <HomeSlot
+          app={{ clientPath: "/apps/todo.js", id: "todo" }}
+          tailor={tailor}
+        />
+      </tailor.Provider>
     );
 
     await waitFor(() => {
-      expect(testingView.getByText('TailorKit component "Button" is not registered.')).toBeTruthy();
+      expect(
+        testingView.getByText('TailorKit component "Button" is not registered.')
+      ).toBeTruthy();
     });
     expect(consoleError).toHaveBeenCalled();
   });
@@ -650,37 +736,51 @@ describe("tailorKitClient React adapter", () => {
   it("clears a missing component error when switching apps", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const tailor = createClient({
-      contract: contract,
+      contract,
       baseUrl: "http://runtime.test",
       assetsBaseUrl: "http://assets.test/",
       components,
     });
 
     const view = render(
-      <tailor.Provider apps={[{ clientPath: "/apps/missing-component.js", id: "bad" }]}>
-        <HomeSlot app={{ clientPath: "/apps/missing-component.js", id: "bad" }} tailor={tailor} />
-      </tailor.Provider>,
+      <tailor.Provider
+        apps={[{ clientPath: "/apps/missing-component.js", id: "bad" }]}
+      >
+        <HomeSlot
+          app={{ clientPath: "/apps/missing-component.js", id: "bad" }}
+          tailor={tailor}
+        />
+      </tailor.Provider>
     );
 
     await waitFor(() => {
       expect(
-        testingView.getByText('TailorKit component "MissingComponent" is not registered.'),
+        testingView.getByText(
+          'TailorKit component "MissingComponent" is not registered.'
+        )
       ).toBeTruthy();
     });
 
     await act(() => {
       view.rerender(
         <tailor.Provider apps={[{ clientPath: "/apps/email.js", id: "email" }]}>
-          <HomeSlot app={{ clientPath: "/apps/email.js", id: "email" }} tailor={tailor} />
-        </tailor.Provider>,
+          <HomeSlot
+            app={{ clientPath: "/apps/email.js", id: "email" }}
+            tailor={tailor}
+          />
+        </tailor.Provider>
       );
     });
 
     await waitFor(() => {
       expect(
-        testingView.queryByText('TailorKit component "MissingComponent" is not registered.'),
+        testingView.queryByText(
+          'TailorKit component "MissingComponent" is not registered.'
+        )
       ).toBeNull();
-      expect(testingView.getByRole("button").textContent).toContain("/apps/email.js");
+      expect(testingView.getByRole("button").textContent).toContain(
+        "/apps/email.js"
+      );
     });
   });
 });
@@ -689,7 +789,7 @@ describe("view registries", () => {
   beforeEach(() => {
     hostRecords.length = 0;
     vi.spyOn(globalThis, "fetch").mockImplementation(() =>
-      Promise.resolve(Response.json({ schema: {} })),
+      Promise.resolve(Response.json({ schema: {} }))
     );
   });
   afterEach(cleanup);
@@ -707,12 +807,19 @@ describe("view registries", () => {
     return (
       <>
         {detail ? <Detail client={client} /> : null}
-        <RenderSlot slot="navbar" app={{ id: "nav", clientPath: "/nav.js" }} />
-        <RenderSlot slot="panel" app={{ id: "panel", clientPath: "/panel.js" }} />
+        <RenderSlot slot="navbar" app={{ clientPath: "/nav.js", id: "nav" }} />
+        <RenderSlot
+          slot="panel"
+          app={{ clientPath: "/panel.js", id: "panel" }}
+        />
       </>
     );
   }
-  function Detail({ client }: { client: ReturnType<typeof createClient<typeof contract>> }) {
+  function Detail({
+    client,
+  }: {
+    client: ReturnType<typeof createClient<typeof contract>>;
+  }) {
     const { useViewContext } = client;
     useViewContext("/home/detail", { context: undefined, loading: true });
     return null;
@@ -720,7 +827,7 @@ describe("view registries", () => {
 
   it("publishes the same active chain to simultaneous slots and removes unmounted layers", async () => {
     const client = createClient({
-      contract: contract,
+      contract,
       baseUrl: "http://runtime.test",
       assetsBaseUrl: "http://assets.test/",
       components,
@@ -728,22 +835,29 @@ describe("view registries", () => {
     const view = render(
       <client.Provider>
         <Layers client={client} />
-      </client.Provider>,
+      </client.Provider>
     );
     await waitFor(() => expect(hostRecords).toHaveLength(2));
-    expect(hostRecords.map((record) => record.props?.slot)).toEqual(["navbar", "panel"]);
+    expect(hostRecords.map((record) => record.props?.slot)).toEqual([
+      "navbar",
+      "panel",
+    ]);
     expect(hostRecords[0]?.props).toMatchObject({
-      view: "/home/detail",
       layers: [
         { path: "/", context: { user: { id: "u1" } }, status: "ready" },
-        { path: "/home", context: { page: { title: "Home" } }, status: "ready" },
+        {
+          path: "/home",
+          context: { page: { title: "Home" } },
+          status: "ready",
+        },
         { path: "/home/detail", status: "loading" },
       ],
+      view: "/home/detail",
     });
     view.rerender(
       <client.Provider>
         <Layers client={client} detail={false} />
-      </client.Provider>,
+      </client.Provider>
     );
     await waitFor(() => expect(hostRecords.at(-1)?.props?.view).toBe("/home"));
     expect(hostRecords.at(-1)?.props?.layers).toHaveLength(2);
@@ -752,7 +866,7 @@ describe("view registries", () => {
 
   it("isolates roots sharing a client and survives Strict Mode effect replay", async () => {
     const client = createClient({
-      contract: contract,
+      contract,
       baseUrl: "http://runtime.test",
       assetsBaseUrl: "http://assets.test/",
       components,
@@ -760,7 +874,12 @@ describe("view registries", () => {
     function OtherRoute() {
       const { useViewContext } = client;
       useViewContext("/user", { context: { userId: "other" } });
-      return <RenderSlot slot="panel" app={{ id: "other", clientPath: "/other.js" }} />;
+      return (
+        <RenderSlot
+          slot="panel"
+          app={{ clientPath: "/other.js", id: "other" }}
+        />
+      );
     }
     render(
       <StrictMode>
@@ -770,48 +889,66 @@ describe("view registries", () => {
         <client.Provider>
           <OtherRoute />
         </client.Provider>
-      </StrictMode>,
+      </StrictMode>
     );
     await waitFor(() =>
-      expect(hostRecords.some((record) => record.appUrl.endsWith("other.js"))).toBe(true),
+      expect(
+        hostRecords.some((record) => record.appUrl.endsWith("other.js"))
+      ).toBe(true)
     );
-    const other = hostRecords.find((record) => record.appUrl.endsWith("other.js"));
+    const other = hostRecords.find((record) =>
+      record.appUrl.endsWith("other.js")
+    );
     expect(other?.props).toMatchObject({
-      view: "/user",
       layers: [{ path: "/user", context: { userId: "other" } }],
+      view: "/user",
     });
     expect(other?.props?.layers).toHaveLength(1);
-    expect(hostRecords.find((record) => record.appUrl.endsWith("panel.js"))?.props?.view).toBe(
-      "/home/detail",
-    );
+    expect(
+      hostRecords.find((record) => record.appUrl.endsWith("panel.js"))?.props
+        ?.view
+    ).toBe("/home/detail");
   });
 });
 
 it("isolates a new client cache even when its endpoint is equivalent", async () => {
-  const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
-    const url = new URL(input.toString());
-    return Promise.resolve(
-      Response.json(url.pathname.endsWith("/apps") ? [{ id: url.hostname }] : { schema: {} }),
-    );
-  });
-  function Contents({ client }: { client: ReturnType<typeof createClient<typeof contract>> }) {
+  const fetchMock = vi
+    .spyOn(globalThis, "fetch")
+    .mockImplementation((input) => {
+      const url = new URL(input.toString());
+      return Promise.resolve(
+        Response.json(
+          url.pathname.endsWith("/apps")
+            ? [{ id: url.hostname }]
+            : { schema: {} }
+        )
+      );
+    });
+  function Contents({
+    client,
+  }: {
+    client: ReturnType<typeof createClient<typeof contract>>;
+  }) {
     const { useApps, useViewContext } = client;
     const { data } = useApps();
     useViewContext("/user", { context: { userId: "u1" } });
     return (
       <>
         <span>{data?.[0]?.id}</span>
-        <RenderSlot slot="panel" app={{ id: "test", clientPath: "client.js" }} />
+        <RenderSlot
+          slot="panel"
+          app={{ clientPath: "client.js", id: "test" }}
+        />
       </>
     );
   }
   const createRootClient = (baseUrl: string | URL) =>
-    createClient({ contract: contract, baseUrl, components });
+    createClient({ contract, baseUrl, components });
   const firstClient = createRootClient("http://first.test/api");
   const view = render(
     <firstClient.Provider>
       <Contents client={firstClient} />
-    </firstClient.Provider>,
+    </firstClient.Provider>
   );
   await waitFor(() => expect(testingView.getByText("first.test")).toBeTruthy());
   const count = fetchMock.mock.calls.length;
@@ -819,17 +956,21 @@ it("isolates a new client cache even when its endpoint is equivalent", async () 
   view.rerender(
     <equivalentClient.Provider>
       <Contents client={equivalentClient} />
-    </equivalentClient.Provider>,
+    </equivalentClient.Provider>
   );
   await waitFor(() => expect(fetchMock.mock.calls).toHaveLength(count + 1));
   const secondClient = createRootClient("http://second.test/api");
   view.rerender(
     <secondClient.Provider>
       <Contents client={secondClient} />
-    </secondClient.Provider>,
+    </secondClient.Provider>
   );
-  await waitFor(() => expect(testingView.getByText("second.test")).toBeTruthy());
-  await waitFor(() => expect(hostRecords.at(-1)?.appUrl).toBe("http://second.test/api/client.js"));
+  await waitFor(() =>
+    expect(testingView.getByText("second.test")).toBeTruthy()
+  );
+  await waitFor(() =>
+    expect(hostRecords.at(-1)?.appUrl).toBe("http://second.test/api/client.js")
+  );
   expect(hostRecords.at(-1)?.props?.view).toBe("/user");
   view.unmount();
 });
@@ -837,17 +978,25 @@ it("isolates a new client cache even when its endpoint is equivalent", async () 
 it("keeps each provider bound to its client's fetch transport", async () => {
   const explicitFetch = vi
     .fn()
-    .mockImplementation(() => Promise.resolve(Response.json([{ id: "explicit-user" }])));
+    .mockImplementation(() =>
+      Promise.resolve(Response.json([{ id: "explicit-user" }]))
+    );
   const fallbackFetch = vi
     .spyOn(globalThis, "fetch")
-    .mockImplementation(() => Promise.resolve(Response.json([{ id: "fallback-user" }])));
+    .mockImplementation(() =>
+      Promise.resolve(Response.json([{ id: "fallback-user" }]))
+    );
   const client = createClient({
-    contract: contract,
+    contract,
     baseUrl: "http://runtime.test/api",
     components,
     fetch: explicitFetch,
   });
-  const fallback = createClient({ contract: contract, baseUrl: client.baseUrl, components });
+  const fallback = createClient({
+    contract,
+    baseUrl: client.baseUrl,
+    components,
+  });
   function Contents() {
     const { data } = useApps();
     return <span>{data?.[0]?.id}</span>;
@@ -855,28 +1004,34 @@ it("keeps each provider bound to its client's fetch transport", async () => {
   const view = render(
     <client.Provider>
       <Contents />
-    </client.Provider>,
+    </client.Provider>
   );
-  await waitFor(() => expect(testingView.getByText("explicit-user")).toBeTruthy());
+  await waitFor(() =>
+    expect(testingView.getByText("explicit-user")).toBeTruthy()
+  );
   view.rerender(
     <fallback.Provider>
       <Contents />
-    </fallback.Provider>,
+    </fallback.Provider>
   );
-  await waitFor(() => expect(testingView.getByText("fallback-user")).toBeTruthy());
+  await waitFor(() =>
+    expect(testingView.getByText("fallback-user")).toBeTruthy()
+  );
   view.rerender(
     <fallback.Provider>
       <Contents />
-    </fallback.Provider>,
+    </fallback.Provider>
   );
   expect(testingView.getByText("fallback-user")).toBeTruthy();
   expect(fallbackFetch).toHaveBeenCalledOnce();
   view.rerender(
     <client.Provider>
       <Contents />
-    </client.Provider>,
+    </client.Provider>
   );
-  await waitFor(() => expect(testingView.getByText("explicit-user")).toBeTruthy());
+  await waitFor(() =>
+    expect(testingView.getByText("explicit-user")).toBeTruthy()
+  );
   expect(explicitFetch).toHaveBeenCalledOnce();
   expect(fallbackFetch).toHaveBeenCalledOnce();
   view.unmount();
@@ -884,10 +1039,10 @@ it("keeps each provider bound to its client's fetch transport", async () => {
 
 it("retains equivalent explicit context identity and publishes changed values", async () => {
   vi.spyOn(globalThis, "fetch").mockImplementation(() =>
-    Promise.resolve(Response.json({ schema: {} })),
+    Promise.resolve(Response.json({ schema: {} }))
   );
   const client = createClient({
-    contract: contract,
+    contract,
     baseUrl: "http://runtime.test",
     assetsBaseUrl: "http://assets.test/",
     components,
@@ -898,7 +1053,7 @@ it("retains equivalent explicit context identity and publishes changed values", 
         slot="panel"
         view="/user"
         context={{ userId }}
-        app={{ id: "test", clientPath: "/client.js" }}
+        app={{ clientPath: "/client.js", id: "test" }}
         status="ready"
       />
     </client.Provider>
@@ -909,7 +1064,9 @@ it("retains equivalent explicit context identity and publishes changed values", 
   view.rerender(content("u1"));
   expect(hostRecords.at(-1)?.props).toBe(initialProps);
   view.rerender(content("u2"));
-  await waitFor(() => expect(hostRecords.at(-1)?.props?.context).toEqual({ userId: "u2" }));
+  await waitFor(() =>
+    expect(hostRecords.at(-1)?.props?.context).toEqual({ userId: "u2" })
+  );
   view.unmount();
 });
 
@@ -927,29 +1084,33 @@ describe("supplied app discovery", () => {
       </button>
     );
   }
-  const client = createClient({ contract: contract, baseUrl: "https://apps.test/api/" });
+  const client = createClient({ contract, baseUrl: "https://apps.test/api/" });
 
   it("uses supplied apps for discovery, including updates and empty lists, without fetching", async () => {
     const fetch = vi.spyOn(globalThis, "fetch");
     const view = render(
       <client.Provider apps={[{ id: "first" }]}>
         <Apps />
-      </client.Provider>,
+      </client.Provider>
     );
     expect(testingView.getByText("ready:first")).toBeTruthy();
     expect(view.container.childElementCount).toBe(1);
-    expect(view.container.firstElementChild).toBe(testingView.getByRole("button"));
+    expect(view.container.firstElementChild).toBe(
+      testingView.getByRole("button")
+    );
     await act(() => testingView.getByRole("button").click());
     view.rerender(
       <client.Provider apps={[{ id: "second" }]}>
         <Apps />
-      </client.Provider>,
+      </client.Provider>
     );
-    await waitFor(() => expect(testingView.getByText("ready:second")).toBeTruthy());
+    await waitFor(() =>
+      expect(testingView.getByText("ready:second")).toBeTruthy()
+    );
     view.rerender(
       <client.Provider apps={[]}>
         <Apps />
-      </client.Provider>,
+      </client.Provider>
     );
     await waitFor(() => expect(testingView.getByText("ready:")).toBeTruthy());
     expect(fetch).not.toHaveBeenCalled();
@@ -963,21 +1124,23 @@ describe("supplied app discovery", () => {
         () =>
           new Promise((resolve) => {
             resolveRequest = resolve;
-          }),
+          })
       )
       .mockResolvedValue(Response.json([{ id: "fresh" }]));
     const view = render(
       <client.Provider>
         <Apps />
-      </client.Provider>,
+      </client.Provider>
     );
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
     view.rerender(
       <client.Provider apps={[{ id: "provided" }]}>
         <Apps />
-      </client.Provider>,
+      </client.Provider>
     );
-    await waitFor(() => expect(testingView.getByText("ready:provided")).toBeTruthy());
+    await waitFor(() =>
+      expect(testingView.getByText("ready:provided")).toBeTruthy()
+    );
     await act(() => {
       resolveRequest(Response.json([{ id: "stale" }]));
     });
@@ -985,9 +1148,11 @@ describe("supplied app discovery", () => {
     view.rerender(
       <client.Provider>
         <Apps />
-      </client.Provider>,
+      </client.Provider>
     );
-    await waitFor(() => expect(testingView.getByText("ready:fresh")).toBeTruthy());
+    await waitFor(() =>
+      expect(testingView.getByText("ready:fresh")).toBeTruthy()
+    );
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 });
@@ -996,15 +1161,22 @@ it("updates component renderers without recreating the remote sandbox", async ()
   const appUrl = "https://apps.example/client.js";
   const props = { example: true };
   const { rerender } = render(
-    <RemoteViewHost appUrl={appUrl} components={components} props={props} />,
+    <RemoteViewHost appUrl={appUrl} components={components} props={props} />
   );
-  await waitFor(() => expect(testingView.getByRole("button").textContent).toBe(appUrl));
+  await waitFor(() =>
+    expect(testingView.getByRole("button").textContent).toBe(appUrl)
+  );
   const mounted = hostRecords.length;
   const replacement = {
-    Button: ({ children }: { children?: ReactNode }) => createElement("a", { href: "/" }, children),
+    Button: ({ children }: { children?: ReactNode }) =>
+      createElement("a", { href: "/" }, children),
   };
-  rerender(<RemoteViewHost appUrl={appUrl} components={replacement} props={props} />);
-  await waitFor(() => expect(testingView.getByRole("link").textContent).toBe(appUrl));
+  rerender(
+    <RemoteViewHost appUrl={appUrl} components={replacement} props={props} />
+  );
+  await waitFor(() =>
+    expect(testingView.getByRole("link").textContent).toBe(appUrl)
+  );
   expect(hostRecords).toHaveLength(mounted);
   expect(testingView.queryByRole("button")).toBeNull();
 });

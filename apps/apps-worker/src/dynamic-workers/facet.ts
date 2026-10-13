@@ -1,11 +1,12 @@
+import type { Invocation } from "@tailorkit/app/protocol";
+import type { Identity } from "@tailorkit/app/server";
 import { DurableObject } from "cloudflare:workers";
 import { Effect } from "effect";
-import { cancellationStream, abortable } from "../runtime/cancellation";
-import { createApplicationExecution } from "../runtime/bundle";
-import { installFetchGuard } from "../runtime/context";
-import type { Invocation } from "@tailorkit/app/protocol";
+
 import type { ActionCapability } from "../runtime/actions";
-import type { Identity } from "@tailorkit/app/server";
+import { createApplicationExecution } from "../runtime/bundle";
+import { cancellationStream, abortable } from "../runtime/cancellation";
+import { installFetchGuard } from "../runtime/context";
 
 installFetchGuard();
 
@@ -14,11 +15,14 @@ export class AppFacet extends DurableObject<Record<string, never>> {
     const application = await import("application.js");
     return createApplicationExecution(application, {
       execute: (sql, params) => {
-        const cursor = this.ctx.storage.sql.exec(sql, ...(params as SqlStorageValue[]));
+        const cursor = this.ctx.storage.sql.exec(
+          sql,
+          ...(params as SqlStorageValue[])
+        );
         return {
+          changes: cursor.rowsWritten,
           columns: cursor.columnNames,
           rows: [...cursor.raw()],
-          changes: cursor.rowsWritten,
         };
       },
       transaction: (run) => this.ctx.storage.transactionSync(run),
@@ -39,7 +43,7 @@ export class AppFacet extends DurableObject<Record<string, never>> {
     input: Invocation,
     identity: Identity,
     capability: ActionCapability,
-    cancellation: ReadableStream,
+    cancellation: ReadableStream
   ) {
     const execution = await this.#execution;
     const controller = new AbortController();
@@ -52,6 +56,7 @@ export class AppFacet extends DurableObject<Record<string, never>> {
           input,
           identity,
           {
+            committed: (tables) => capability.committed(tables),
             fetch: (input, init) => {
               const request = new Request(input, init);
               const signal = request.signal;
@@ -63,14 +68,18 @@ export class AppFacet extends DurableObject<Record<string, never>> {
                 body: request.body,
                 redirect: request.redirect,
               });
-              return abortable(capability.fetch(transferable, cancellationStream(signal)), signal);
+              return abortable(
+                capability.fetch(transferable, cancellationStream(signal)),
+                signal
+              );
             },
             tool: (path, input) => capability.tool(path, input),
-            committed: (tables) => capability.committed(tables),
           },
-          controller.signal,
+          controller.signal
         )
-        .pipe(Effect.ensuring(Effect.promise(() => reader.cancel().catch(() => {})))),
+        .pipe(
+          Effect.ensuring(Effect.promise(() => reader.cancel().catch(() => {})))
+        )
     );
   }
 }

@@ -1,9 +1,15 @@
-import { composeViewContext, getViewHierarchy } from "@tailorkit/core/views";
-import type { ActiveView, ResolvedViewProps as ContextProps } from "@tailorkit/core/views";
 import type { ViewInstance } from "@tailorkit/app/client";
+import { composeViewContext, getViewHierarchy } from "@tailorkit/core/views";
+import type {
+  ActiveView,
+  ResolvedViewProps as ContextProps,
+} from "@tailorkit/core/views";
+
 export type ResolvedViewProps =
   | (Extract<ContextProps, { status: "ready" }> & { instance?: ViewInstance })
-  | (Extract<ContextProps, { status: "loading" | "error" }> & { instance?: never });
+  | (Extract<ContextProps, { status: "loading" | "error" }> & {
+      instance?: never;
+    });
 
 interface ViewRequestMetadata {
   slot: string;
@@ -12,7 +18,8 @@ interface ViewRequestMetadata {
   instance?: ViewInstance;
 }
 
-type LayeredViewRequest = ViewRequestMetadata & ActiveView & { controlled?: false };
+type LayeredViewRequest = ViewRequestMetadata &
+  ActiveView & { controlled?: false };
 export type ViewRequest =
   | LayeredViewRequest
   | (ViewRequestMetadata & ResolvedViewProps & { controlled: true });
@@ -25,7 +32,10 @@ export interface AppViewDefinition {
 export interface AppClient {
   slots: Record<string, Record<string, AppViewDefinition | false>>;
   $runtime: {
-    h: (component: AppViewDefinition["component"], props: ResolvedViewProps) => unknown;
+    h: (
+      component: AppViewDefinition["component"],
+      props: ResolvedViewProps
+    ) => unknown;
     render: (node: unknown, root: Element) => void;
   };
 }
@@ -35,25 +45,33 @@ export function resolveView(client: AppClient, request: ViewRequest) {
   const selected =
     views &&
     (request.controlled ? [request.view] : getViewHierarchy(request.view)).find(
-      (path) => request.supportedViews.includes(path) && Object.hasOwn(views, path),
+      (path) =>
+        request.supportedViews.includes(path) && Object.hasOwn(views, path)
     );
   if (!selected || views[selected] === false) {
     return null;
   }
   const definition = views[selected];
   if (!definition || typeof definition.component !== "function") {
-    throw new TypeError(`TailorKit app client view "${selected}" is missing a component.`);
+    throw new TypeError(
+      `TailorKit app client view "${selected}" is missing a component.`
+    );
   }
 
   const props = request.controlled
     ? controlledViewProps(request)
     : composeViewContext(selected, request);
-  if (props.status !== "ready") return { component: definition.component, props };
-  if (definition.instances && !request.instance)
+  if (props.status !== "ready") {
+    return { component: definition.component, props };
+  }
+  if (definition.instances && !request.instance) {
     throw new Error(`View "${selected}" requires a selected instance.`);
+  }
   if (request.instance !== undefined) {
-    if (!definition.instances) throw new Error(`View "${selected}" does not support instances.`);
-    const instance = request.instance;
+    if (!definition.instances) {
+      throw new Error(`View "${selected}" does not support instances.`);
+    }
+    const { instance } = request;
     if (
       !instance ||
       typeof instance !== "object" ||
@@ -71,26 +89,30 @@ export function resolveView(client: AppClient, request: ViewRequest) {
 }
 
 function controlledViewProps(
-  request: Extract<ViewRequest, { controlled: true }>,
+  request: Extract<ViewRequest, { controlled: true }>
 ): ResolvedViewProps {
   if (request.status !== "ready") {
-    return { view: request.view, status: request.status, context: undefined };
+    return { context: undefined, status: request.status, view: request.view };
   }
   if (
     request.context === null ||
     typeof request.context !== "object" ||
     Array.isArray(request.context)
   ) {
-    return { view: request.view, status: "error", context: undefined };
+    return { context: undefined, status: "error", view: request.view };
   }
-  return { view: request.view, status: "ready", context: request.context };
+  return { context: request.context, status: "ready", view: request.view };
 }
 
-export function renderClient(client: AppClient, request: ViewRequest, root: Element): void {
+export function renderClient(
+  client: AppClient,
+  request: ViewRequest,
+  root: Element
+): void {
   const selected = resolveView(client, request);
   client.$runtime.render(
     selected ? client.$runtime.h(selected.component, selected.props) : null,
-    root,
+    root
   );
 }
 
@@ -103,7 +125,7 @@ export function assertAppClient(value: unknown): asserts value is AppClient {
     typeof client.$runtime.render !== "function"
   ) {
     throw new TypeError(
-      "TailorKit app must be built with the app builder and include slots and its bundled runtime.",
+      "TailorKit app must be built with the app builder and include slots and its bundled runtime."
     );
   }
 }

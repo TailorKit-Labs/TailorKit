@@ -11,16 +11,16 @@ const statement = {
 
   apiKey: ["create", "read", "update", "delete"],
   invitation: [...defaultStatements.invitation, "read"],
-  projectApiKey: ["create", "read", "update", "delete"],
   project: ["create", "share", "update", "delete"],
+  projectApiKey: ["create", "read", "update", "delete"],
 } as const;
 
 export const ac = createAccessControl(statement);
 
 const member = ac.newRole({
   apiKey: ["create", "read"],
-  projectApiKey: ["create", "read"],
   project: ["create"],
+  projectApiKey: ["create", "read"],
   ...memberAc.statements,
 });
 
@@ -41,7 +41,7 @@ const owner = ac.newRole({
 });
 
 export const roles = {
-  member,
   admin,
+  member,
   owner,
 };

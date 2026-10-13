@@ -1,17 +1,20 @@
 import { AppError, eq, fn } from "tailorkit/server";
 import { z } from "zod";
+
 import { db as database, todos } from "../db";
 
 export const list = fn.query
   .database(database)
-  .handler(({ db }) => db.query.todos.findMany({ orderBy: { id: "asc" }, limit: 1000 }).sync());
+  .handler(({ db }) =>
+    db.query.todos.findMany({ limit: 1000, orderBy: { id: "asc" } }).sync()
+  );
 export const add = fn.mutation
   .database(database)
   .input(z.object({ text: z.string().trim().min(1).max(500) }))
   .handler(({ db, input }) => {
     const todo = db
       .insert(todos)
-      .values({ id: crypto.randomUUID(), text: input.text, done: false })
+      .values({ done: false, id: crypto.randomUUID(), text: input.text })
       .returning()
       .get();
     if (!todo) {
@@ -27,7 +30,10 @@ export const toggle = fn.mutation
     if (!todo) {
       throw new AppError("NOT_FOUND", "Todo does not exist");
     }
-    db.update(todos).set({ done: !todo.done }).where(eq(todos.id, todo.id)).run();
+    db.update(todos)
+      .set({ done: !todo.done })
+      .where(eq(todos.id, todo.id))
+      .run();
     return null;
   });
 export const remove = fn.mutation

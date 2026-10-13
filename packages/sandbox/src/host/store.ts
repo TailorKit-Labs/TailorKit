@@ -1,4 +1,8 @@
-import type { IframeToHostPayload, RemoteNode, RemotePatch } from "../protocol.js";
+import type {
+  IframeToHostPayload,
+  RemoteNode,
+  RemotePatch,
+} from "../protocol.js";
 
 export interface RemoteUiStore {
   applyPatches(patches: readonly RemotePatch[]): void;

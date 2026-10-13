@@ -5,7 +5,12 @@
   "prevIds": ["144b03f5-4eb8-4acd-9d4a-f89dded20a6b"],
   "ddl": [
     {
-      "values": ["application/javascript", "image/svg+xml", "image/png", "image/webp"],
+      "values": [
+        "application/javascript",
+        "image/svg+xml",
+        "image/png",
+        "image/webp"
+      ],
       "name": "app_deployment_file_content_type",
       "entityType": "enums",
       "schema": "public"

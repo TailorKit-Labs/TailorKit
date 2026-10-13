@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile, readdir, realpath } from "node:fs/promises";
 import path from "node:path";
+
 import { log } from "@clack/prompts";
 import { loadTailorKitConfig } from "@tailorkit/app/config/loader";
 import {
@@ -11,10 +12,11 @@ import type {
   PreviewBuildManifest,
   PreviewWebSocketClient,
 } from "@tailorkit/client-platform/preview";
-import { createCliClient } from "./client";
 import pc from "picocolors";
 import { z } from "zod";
+
 import { getDeployToken, runWhoami } from "./auth";
+import { createCliClient } from "./client";
 
 const chunkBytes = 256 * 1024;
 const contentTypes: Record<string, string> = {
@@ -34,7 +36,7 @@ const isEndedSessionError = (error: unknown): boolean =>
   "message" in error &&
   typeof error.message === "string" &&
   /Preview session is unavailable|Preview developer reconnect grace expired|Preview CLI token is unavailable/u.test(
-    error.message,
+    error.message
   );
 
 export interface PreviewOptions {
@@ -52,11 +54,16 @@ interface Snapshot {
 
 export async function capturePreviewSnapshot(root: string): Promise<Snapshot> {
   const actualRoot = await realpath(root);
-  const outputEntries = await readdir(actualRoot, { recursive: true, withFileTypes: true });
+  const outputEntries = await readdir(actualRoot, {
+    recursive: true,
+    withFileTypes: true,
+  });
   const entries = outputEntries
     .filter((entry) => entry.isFile())
     .toSorted((a, b) =>
-      path.join(a.parentPath, a.name).localeCompare(path.join(b.parentPath, b.name)),
+      path
+        .join(a.parentPath, a.name)
+        .localeCompare(path.join(b.parentPath, b.name))
     );
   if (entries.length > 100) {
     throw new Error("Preview build exceeds 100 files.");
@@ -66,7 +73,9 @@ export async function capturePreviewSnapshot(root: string): Promise<Snapshot> {
   let total = 0;
   for (const entry of entries) {
     const resolved = await realpath(path.join(entry.parentPath, entry.name));
-    const relative = path.relative(actualRoot, resolved).replaceAll(path.sep, "/");
+    const relative = path
+      .relative(actualRoot, resolved)
+      .replaceAll(path.sep, "/");
     if (!relative || relative.startsWith("../") || path.isAbsolute(relative)) {
       throw new Error("Preview file escapes the build output.");
     }
@@ -81,15 +90,16 @@ export async function capturePreviewSnapshot(root: string): Promise<Snapshot> {
     if (relative === "views.json") {
       manifest.views = previewBuildManifestSchema.shape.views
         .unwrap()
-        .parse(JSON.parse(bytes.toString("utf8")));
+        .parse(JSON.parse(bytes.toString("utf-8")));
     }
     files.push(bytes);
     manifest.files.push({
-      path: relative,
-      contentType: contentTypes[path.extname(relative)] ?? "application/octet-stream",
-      size: bytes.length,
       chunks: Math.ceil(bytes.length / chunkBytes),
+      contentType:
+        contentTypes[path.extname(relative)] ?? "application/octet-stream",
+      path: relative,
       sha256: createHash("sha256").update(bytes).digest("hex"),
+      size: bytes.length,
     });
   }
   if (!manifest.files.some((file) => file.path === "client.js")) {
@@ -97,15 +107,17 @@ export async function capturePreviewSnapshot(root: string): Promise<Snapshot> {
   }
   return {
     files,
+    fingerprint: createHash("sha256")
+      .update(JSON.stringify(manifest))
+      .digest("hex"),
     manifest,
-    fingerprint: createHash("sha256").update(JSON.stringify(manifest)).digest("hex"),
   };
 }
 
 export function createLatestPreviewCapture<T>(
   captureSnapshot: () => Promise<T>,
   onSnapshot: (snapshot: T) => void,
-  onError: (error: unknown) => void,
+  onError: (error: unknown) => void
 ): () => Promise<void> {
   let generation = 0;
   return async () => {
@@ -125,7 +137,7 @@ export function createLatestPreviewCapture<T>(
 
 export async function uploadPreviewSnapshot(
   client: PreviewWebSocketClient,
-  current: Snapshot,
+  current: Snapshot
 ): Promise<void> {
   const { buildId } = await client.beginBuild({ manifest: current.manifest });
   for (const [fileIndex, bytes] of current.files.entries()) {
@@ -135,12 +147,12 @@ export async function uploadPreviewSnapshot(
       chunkIndex++
     ) {
       await client.uploadChunk({
-        buildId,
-        fileIndex,
-        chunkIndex,
         base64: bytes
           .subarray(chunkIndex * chunkBytes, (chunkIndex + 1) * chunkBytes)
           .toString("base64"),
+        buildId,
+        chunkIndex,
+        fileIndex,
       });
     }
   }
@@ -154,7 +166,9 @@ const previewOptionsSchema = z.object({
   outDir: z.string().optional(),
   replace: z.boolean().optional(),
 });
-export const toPreviewOptions = (options: Record<string, unknown>): PreviewOptions => {
+export const toPreviewOptions = (
+  options: Record<string, unknown>
+): PreviewOptions => {
   const parsed = previewOptionsSchema.parse(options);
   return {
     configPath: parsed.config,
@@ -168,7 +182,9 @@ export const toPreviewOptions = (options: Record<string, unknown>): PreviewOptio
 export async function runPreview(options: PreviewOptions): Promise<void> {
   const loaded = await loadTailorKitConfig(options.configPath, options.cwd);
   if (!loaded.config.appId) {
-    throw new Error("Missing appId. Deploy once before starting a remote preview.");
+    throw new Error(
+      "Missing appId. Deploy once before starting a remote preview."
+    );
   }
   const auth = await runWhoami(options);
   const stored = await getDeployToken(auth.hostUrl);
@@ -198,7 +214,8 @@ export async function runPreview(options: PreviewOptions): Promise<void> {
     throw new Error("Unable to start preview session.");
   }
   const cleanupClient = createCliClient({
-    fetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(5000) }),
+    fetch: (input, init) =>
+      fetch(input, { ...init, signal: AbortSignal.timeout(5000) }),
     token: stored.deployToken,
     url: auth.hostUrl,
   });
@@ -211,7 +228,7 @@ export async function runPreview(options: PreviewOptions): Promise<void> {
   };
   const outDir = path.resolve(
     loaded.root,
-    options.outDir ?? loaded.config.build?.outDir ?? ".tailorkit",
+    options.outDir ?? loaded.config.build?.outDir ?? ".tailorkit"
   );
   let root: string;
   let latest: Snapshot;
@@ -298,7 +315,7 @@ export async function runPreview(options: PreviewOptions): Promise<void> {
             }
           });
       },
-      Math.max(500, 500 - (Date.now() - lastUploadStart)),
+      Math.max(500, 500 - (Date.now() - lastUploadStart))
     );
   };
   const capture = createLatestPreviewCapture(
@@ -314,17 +331,18 @@ export async function runPreview(options: PreviewOptions): Promise<void> {
       if (!closed) {
         log.warn(`Keeping the last successful preview: ${errorMessage(error)}`);
       }
-    },
+    }
   );
   if (watcher && typeof watcher === "object" && "on" in watcher) {
-    (watcher as { on: (name: string, listener: (event: { code: string }) => void) => void }).on(
-      "event",
-      (event) => {
-        if (event.code === "BUNDLE_END") {
-          void capture();
-        }
-      },
-    );
+    (
+      watcher as {
+        on: (name: string, listener: (event: { code: string }) => void) => void;
+      }
+    ).on("event", (event) => {
+      if (event.code === "BUNDLE_END") {
+        void capture();
+      }
+    });
   }
   const connect = () => {
     if (closed) {

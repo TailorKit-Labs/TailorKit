@@ -1,28 +1,29 @@
 // @vitest-environment happy-dom
 
 import { describe, expect, it } from "vite-plus/test";
+
 import { readElementProps } from "./serialize.js";
 
 describe("readElementProps", () => {
-  it.each(["textColor", "textcolor"])("canonicalizes the %s DOM attribute to textColor", (name) => {
-    const element = document.createElement("tailorkit-box");
-    element.setAttribute(name, "muted");
+  it.each(["textColor", "textcolor"])(
+    "canonicalizes the %s DOM attribute to textColor",
+    (name) => {
+      const element = document.createElement("tailorkit-box");
+      element.setAttribute(name, "muted");
 
-    expect(readElementProps(element)).toEqual({ textColor: "muted" });
-  });
+      expect(readElementProps(element)).toEqual({ textColor: "muted" });
+    }
+  );
 
   it("preserves typed props and their declared names", () => {
     const element = document.createElement("tailorkit-card");
-    element.setAttribute(
-      "data-tailorkit-props",
-      JSON.stringify({
-        count: 3,
-        enabled: false,
-        metadata: { owner: "TailorKit" },
-        textColor: "default",
-      }),
-    );
-    element.setAttribute("data-tailorkit-callbacks", "{}");
+    element.dataset.tailorkitProps = JSON.stringify({
+      count: 3,
+      enabled: false,
+      metadata: { owner: "TailorKit" },
+      textColor: "default",
+    });
+    element.dataset.tailorkitCallbacks = "{}";
 
     expect(readElementProps(element)).toEqual({
       count: 3,
@@ -34,8 +35,8 @@ describe("readElementProps", () => {
 
   it("excludes internal protocol attributes from the fallback props", () => {
     const element = document.createElement("tailorkit-button");
-    element.setAttribute("data-tailorkit-callbacks", "{}");
-    element.setAttribute("data-tailorkit-props", "invalid JSON");
+    element.dataset.tailorkitCallbacks = "{}";
+    element.dataset.tailorkitProps = "invalid JSON";
     element.setAttribute("disabled", "false");
 
     expect(readElementProps(element)).toEqual({ disabled: "false" });

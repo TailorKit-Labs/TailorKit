@@ -1,21 +1,22 @@
+import type { ColumnBuilderBase } from "drizzle-orm";
 import {
   sqliteTable,
   text as sqliteText,
   integer as sqliteInteger,
   real as sqliteReal,
 } from "drizzle-orm/sqlite-core";
-import type { ColumnBuilderBase } from "drizzle-orm";
 
-export function table<N extends string, C extends Record<string, ColumnBuilderBase>>(
-  name: N,
-  columns: C,
-) {
+export function table<
+  N extends string,
+  C extends Record<string, ColumnBuilderBase>,
+>(name: N, columns: C) {
   if (
     !/^[a-zA-Z][a-zA-Z0-9_]{0,62}$/u.test(name) ||
     name.startsWith("sqlite_") ||
     name.startsWith("tailorkit_")
-  )
+  ) {
     throw new Error("Invalid or reserved table name");
+  }
   return sqliteTable(name, columns);
 }
 

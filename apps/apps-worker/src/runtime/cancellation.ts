@@ -1,4 +1,7 @@
-export function abortable<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
+export function abortable<T>(
+  promise: Promise<T>,
+  signal: AbortSignal
+): Promise<T> {
   return new Promise((resolve, reject) => {
     const abort = () => reject(signal.reason);
     signal.addEventListener("abort", abort, { once: true });
@@ -24,6 +27,9 @@ export function cancellationStream(signal: AbortSignal) {
   let cleanup = () => {};
 
   return new ReadableStream<never>({
+    cancel() {
+      cleanup();
+    },
     start(controller) {
       const abort = () => {
         cleanup();
@@ -34,9 +40,6 @@ export function cancellationStream(signal: AbortSignal) {
       if (signal.aborted) {
         abort();
       }
-    },
-    cancel() {
-      cleanup();
     },
   });
 }

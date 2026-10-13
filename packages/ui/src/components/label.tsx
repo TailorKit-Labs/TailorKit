@@ -3,6 +3,7 @@
 import { mergeProps } from "@base-ui/react/merge-props";
 import { useRender } from "@base-ui/react/use-render";
 import type React from "react";
+
 import { cn } from "#ui";
 
 export function Label({
@@ -12,8 +13,8 @@ export function Label({
 }: useRender.ComponentProps<"label">): React.ReactElement {
   const defaultProps = {
     className: cn(
-      "inline-flex items-center gap-2 font-medium text-base/4.5 text-foreground sm:text-sm/4",
-      className,
+      "text-foreground inline-flex items-center gap-2 text-base/4.5 font-medium sm:text-sm/4",
+      className
     ),
     "data-slot": "label",
   };

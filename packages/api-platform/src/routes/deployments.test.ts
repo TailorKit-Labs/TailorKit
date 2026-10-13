@@ -1,12 +1,25 @@
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
+
 import { call } from "@orpc/server";
 import { maxDeploymentBytes } from "@tailorkit/asset-delivery";
-import { app as appTable, appDeployment, appDeploymentFile } from "@tailorkit/db/schema/apps";
+import {
+  app as appTable,
+  appDeployment,
+  appDeploymentFile,
+} from "@tailorkit/db/schema/apps";
 import { organization } from "@tailorkit/db/schema/auth";
 import { project as projectTable } from "@tailorkit/db/schema/project";
 import { eq } from "drizzle-orm";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vite-plus/test";
+
 import type { Context } from "../context";
 import { createTestDb } from "../test/pglite";
 
@@ -21,14 +34,18 @@ vi.mock("@tailorkit/db", () => ({
   },
 }));
 
-const { deploymentRouter, mapReturnedFilesByAssetPath } = await import("./deployments");
+const { deploymentRouter, mapReturnedFilesByAssetPath } =
+  await import("./deployments");
 const { canonicalizeScope } = await import("../scope");
 
 const organizationId = "11111111-1111-4111-8111-111111111111";
 const projectId = "22222222-2222-4222-8222-222222222222";
 const logoChecksum = "b".repeat(64);
 const logoChecksumBase64 = Buffer.from(logoChecksum, "hex").toString("base64");
-const productionScope = { name: "environment", value: { environment: "production" } };
+const productionScope = {
+  name: "environment",
+  value: { environment: "production" },
+};
 
 describe("platform deployment uploads", () => {
   let client: Awaited<ReturnType<typeof createTestDb>>["client"];
@@ -77,7 +94,11 @@ describe("platform deployment uploads", () => {
     }
     const [deployment] = await db
       .insert(appDeployment)
-      .values({ appId: currentApp.id, publicId: "dep000000001", status: "uploading" })
+      .values({
+        appId: currentApp.id,
+        publicId: "dep000000001",
+        status: "uploading",
+      })
       .returning();
     if (!deployment) {
       throw new Error("Test deployment was not created.");
@@ -112,7 +133,6 @@ describe("platform deployment uploads", () => {
       updatedAt: new Date(),
     },
     storage: {
-      type: "s3",
       createDownloadUrl: vi.fn().mockResolvedValue({ url: downloadUrl }),
       createUploadUrl: vi.fn(),
       delete: vi.fn(),
@@ -121,6 +141,7 @@ describe("platform deployment uploads", () => {
         contentLength: 11,
         contentType: "image/svg+xml",
       }),
+      type: "s3",
     },
   });
 
@@ -134,13 +155,19 @@ describe("platform deployment uploads", () => {
     await expect(
       call(
         deploymentRouter.get,
-        { params: { deploymentId: deployment.id }, body: { scopes: [productionScope] } },
-        { context: publishContext("https://uploads.example/logo-dark.svg") },
-      ),
+        {
+          body: { scopes: [productionScope] },
+          params: { deploymentId: deployment.id },
+        },
+        { context: publishContext("https://uploads.example/logo-dark.svg") }
+      )
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(warn).toHaveBeenCalledWith(
       "Deployment app has an invalid stored scope.",
-      expect.objectContaining({ appId: deployment.appId, deploymentId: deployment.id }),
+      expect.objectContaining({
+        appId: deployment.appId,
+        deploymentId: deployment.id,
+      })
     );
   });
 
@@ -155,13 +182,19 @@ describe("platform deployment uploads", () => {
     await expect(
       call(
         deploymentRouter.get,
-        { params: { deploymentId: deployment.id }, body: { scopes: [productionScope] } },
-        { context: publishContext("https://uploads.example/logo-dark.svg") },
-      ),
+        {
+          body: { scopes: [productionScope] },
+          params: { deploymentId: deployment.id },
+        },
+        { context: publishContext("https://uploads.example/logo-dark.svg") }
+      )
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(warn).toHaveBeenCalledWith(
       "Deployment app has an invalid stored scope.",
-      expect.objectContaining({ appId: deployment.appId, deploymentId: deployment.id }),
+      expect.objectContaining({
+        appId: deployment.appId,
+        deploymentId: deployment.id,
+      })
     );
   });
 
@@ -170,11 +203,13 @@ describe("platform deployment uploads", () => {
     async (encoding) => {
       const context = publishContext("https://private.example/server");
       const uploads = vi.fn(({ key }: { key: string }) =>
-        Promise.resolve({ key, uploadUrl: `https://uploads.example/${key}` }),
+        Promise.resolve({ key, uploadUrl: `https://uploads.example/${key}` })
       );
       context.storage.createUploadUrl = uploads;
       const currentApp = await db.query.app.findFirst();
-      if (!currentApp) throw new Error("Missing app");
+      if (!currentApp) {
+        throw new Error("Missing app");
+      }
       const metadata = {
         checksum: logoChecksum,
         contentLength: 11,
@@ -186,68 +221,77 @@ describe("platform deployment uploads", () => {
         {
           body: {
             appId: currentApp.id,
-            scope: productionScope,
             assets: [{ ...metadata, objectKey: "client.js" }],
+            scope: productionScope,
+            server: { ...metadata, objectKey: "server.js" },
             views: [
               { slot: "page", path: "/", instances: true },
               { slot: "page", path: "/disabled", disabled: true },
             ],
-            server: { ...metadata, objectKey: "server.js" },
           },
         },
-        { context },
+        { context }
       );
-      expect(created.body.assets[0]?.file.objectKey).toMatch(/\/client\/client\.js$/u);
-      expect(created.body.server?.file.objectKey).toMatch(/\/server\/server\.js$/u);
+      expect(created.body.assets[0]?.file.objectKey).toMatch(
+        /\/client\/client\.js$/u
+      );
+      expect(created.body.server?.file.objectKey).toMatch(
+        /\/server\/server\.js$/u
+      );
       expect(created.body.deployment.views).toEqual([
-        { slot: "page", path: "/", instances: true },
-        { slot: "page", path: "/disabled", disabled: true },
+        { instances: true, path: "/", slot: "page" },
+        { disabled: true, path: "/disabled", slot: "page" },
       ]);
       expect(uploads).toHaveBeenCalledTimes(2);
       expect(uploads).toHaveBeenCalledWith(
         expect.objectContaining({
-          key: created.body.assets[0]?.file.objectKey,
           contentEncoding: encoding === "gzip" ? "gzip" : undefined,
-        }),
+          key: created.body.assets[0]?.file.objectKey,
+        })
       );
       expect(uploads).toHaveBeenCalledWith(
         expect.objectContaining({
-          key: created.body.server?.file.objectKey,
           contentEncoding: encoding === "gzip" ? "gzip" : undefined,
-        }),
+          key: created.body.server?.file.objectKey,
+        })
       );
-      const lookup = { params: { appId: currentApp.id }, body: { scope: productionScope } };
+      const lookup = {
+        body: { scope: productionScope },
+        params: { appId: currentApp.id },
+      };
       await expect(
         call(
           deploymentRouter.runtime,
-          { params: lookup.params, body: {} },
-          { context: { ...context, runtimeService: true } },
-        ),
+          { body: {}, params: lookup.params },
+          { context: { ...context, runtimeService: true } }
+        )
       ).rejects.toMatchObject({ code: "NOT_FOUND" });
       expect(context.storage.createDownloadUrl).not.toHaveBeenCalled();
       context.storage.head = vi.fn().mockResolvedValue({
         checksumSha256: logoChecksumBase64,
+        contentEncoding: encoding === "gzip" ? "gzip" : undefined,
         contentLength: 11,
         contentType: "application/javascript",
-        contentEncoding: encoding === "gzip" ? "gzip" : undefined,
       });
       if (encoding === "gzip") {
         vi.mocked(context.storage.head).mockResolvedValueOnce({
-          key: created.body.assets[0]!.file.objectKey,
           checksumSha256: logoChecksumBase64,
           contentLength: 11,
           contentType: "application/javascript",
+          key: created.body.assets[0]!.file.objectKey,
         });
         await expect(
           call(
             deploymentRouter.publish,
             {
+              body: { rollout: true, scope: productionScope },
               params: { deploymentId: created.body.deployment.id },
-              body: { scope: productionScope, rollout: true },
             },
-            { context },
-          ),
-        ).rejects.toThrow("Uploaded file content encoding does not match deployment record.");
+            { context }
+          )
+        ).rejects.toThrow(
+          "Uploaded file content encoding does not match deployment record."
+        );
       }
       const fetchMock = vi
         .spyOn(globalThis, "fetch")
@@ -255,45 +299,54 @@ describe("platform deployment uploads", () => {
       await call(
         deploymentRouter.publish,
         {
+          body: { rollout: true, scope: productionScope },
           params: { deploymentId: created.body.deployment.id },
-          body: { scope: productionScope, rollout: true },
         },
-        { context },
-      );
-      await expect(
-        call(deploymentRouter.runtime, { params: lookup.params, body: {} }, { context }),
-      ).rejects.toMatchObject({ code: "FORBIDDEN" });
-      const runtime = await call(
-        deploymentRouter.runtime,
-        { params: lookup.params, body: {} },
-        { context: { ...context, runtimeService: true } },
+        { context }
       );
       await expect(
         call(
           deploymentRouter.runtime,
-          { params: lookup.params, body: {} },
+          { body: {}, params: lookup.params },
+          { context }
+        )
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      const runtime = await call(
+        deploymentRouter.runtime,
+        { body: {}, params: lookup.params },
+        { context: { ...context, runtimeService: true } }
+      );
+      await expect(
+        call(
+          deploymentRouter.runtime,
+          { body: {}, params: lookup.params },
           {
             context: {
               ...context,
+              project: {
+                ...context.project,
+                id: "33333333-3333-4333-8333-333333333333",
+              },
               runtimeService: true,
-              project: { ...context.project, id: "33333333-3333-4333-8333-333333333333" },
             },
-          },
-        ),
+          }
+        )
       ).rejects.toMatchObject({ code: "NOT_FOUND" });
       expect(runtime.body).toEqual({
-        projectId: context.project.id,
         appId: currentApp.id,
-        deploymentId: created.body.deployment.id,
-        objectKey: created.body.server?.file.objectKey,
         checksum: logoChecksum,
         contentLength: 11,
+        deploymentId: created.body.deployment.id,
+        objectKey: created.body.server?.file.objectKey,
+        projectId: context.project.id,
         ...(encoding === "gzip" ? { contentEncoding: "gzip" } : {}),
       });
       if (encoding === "gzip") {
-        expect(context.storage.createDownloadUrl).toHaveBeenCalledExactlyOnceWith({
-          key: created.body.assets[0]!.file.objectKey,
+        expect(
+          context.storage.createDownloadUrl
+        ).toHaveBeenCalledExactlyOnceWith({
           expiresInSeconds: 60,
+          key: created.body.assets[0]!.file.objectKey,
         });
         expect(fetchMock).toHaveBeenCalledOnce();
       } else {
@@ -305,7 +358,7 @@ describe("platform deployment uploads", () => {
       });
       expect(files).toHaveLength(2);
       expect(files.every((file) => file.status === "verified")).toBe(true);
-    },
+    }
   );
 
   const createGzipClientDeployment = async (decoded: Uint8Array) => {
@@ -313,25 +366,26 @@ describe("platform deployment uploads", () => {
     const checksum = createHash("sha256").update(bytes).digest("hex");
     const context = publishContext("https://uploads.example/client.js");
     context.storage.createUploadUrl = vi.fn(({ key }) =>
-      Promise.resolve({ key, uploadUrl: `https://uploads.example/${key}` }),
+      Promise.resolve({ key, uploadUrl: `https://uploads.example/${key}` })
     );
     context.storage.head = vi.fn(({ key }) =>
       Promise.resolve({
-        key,
         checksumSha256: Buffer.from(checksum, "hex").toString("base64"),
+        contentEncoding: "gzip",
         contentLength: bytes.byteLength,
         contentType: "application/javascript",
-        contentEncoding: "gzip",
-      }),
+        key,
+      })
     );
     const currentApp = await db.query.app.findFirst();
-    if (!currentApp) throw new Error("Missing app");
+    if (!currentApp) {
+      throw new Error("Missing app");
+    }
     const created = await call(
       deploymentRouter.create,
       {
         body: {
           appId: currentApp.id,
-          scope: productionScope,
           assets: [
             {
               checksum,
@@ -341,9 +395,10 @@ describe("platform deployment uploads", () => {
               objectKey: "client.js",
             },
           ],
+          scope: productionScope,
         },
       },
-      { context },
+      { context }
     );
     return { context, created };
   };
@@ -360,32 +415,39 @@ describe("platform deployment uploads", () => {
     ];
     const body = new ReadableStream<Uint8Array>(
       {
+        cancel,
         pull(controller) {
           controller.enqueue(chunks[position++]!);
         },
-        cancel,
       },
-      { highWaterMark: 0 },
+      { highWaterMark: 0 }
     );
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
-      .mockResolvedValue(new Response(body, { headers: { "Content-Encoding": "gzip" } }));
+      .mockResolvedValue(
+        new Response(body, { headers: { "Content-Encoding": "gzip" } })
+      );
 
     await expect(
       call(
         deploymentRouter.publish,
         {
+          body: { rollout: true, scope: productionScope },
           params: { deploymentId: created.body.deployment.id },
-          body: { scope: productionScope, rollout: true },
         },
-        { context },
-      ),
-    ).rejects.toThrow(`Decompressed client assets cannot exceed ${maxDeploymentBytes} bytes.`);
+        { context }
+      )
+    ).rejects.toThrow(
+      `Decompressed client assets cannot exceed ${maxDeploymentBytes} bytes.`
+    );
     expect(cancel).toHaveBeenCalledOnce();
     expect(position).toBe(2);
     expect(fetchMock).toHaveBeenCalledWith(
       new URL("https://uploads.example/client.js"),
-      expect.objectContaining({ redirect: "error", signal: expect.any(AbortSignal) }),
+      expect.objectContaining({
+        redirect: "error",
+        signal: expect.any(AbortSignal),
+      })
     );
     const deployment = await db.query.appDeployment.findFirst({
       where: { id: created.body.deployment.id },
@@ -403,15 +465,15 @@ describe("platform deployment uploads", () => {
     const decoded = new Uint8Array(maxDeploymentBytes);
     const { context, created } = await createGzipClientDeployment(decoded);
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(decoded, { headers: { "Content-Encoding": "gzip" } }),
+      new Response(decoded, { headers: { "Content-Encoding": "gzip" } })
     );
     const published = await call(
       deploymentRouter.publish,
       {
+        body: { rollout: true, scope: productionScope },
         params: { deploymentId: created.body.deployment.id },
-        body: { scope: productionScope, rollout: true },
       },
-      { context },
+      { context }
     );
     expect(published.body.status).toBe("published");
     const file = await db.query.appDeploymentFile.findFirst({
@@ -426,7 +488,7 @@ describe("platform deployment uploads", () => {
     "rejects gzip client inspection with %s",
     async (failure) => {
       const { context, created } = await createGzipClientDeployment(
-        new TextEncoder().encode("client-code"),
+        new TextEncoder().encode("client-code")
       );
       const body = new ReadableStream<Uint8Array>({
         start(controller) {
@@ -436,29 +498,34 @@ describe("platform deployment uploads", () => {
       const response =
         failure === "stream-error"
           ? new Response(body)
-          : new Response(null, { status: failure === "upstream-failure" ? 503 : 200 });
+          : new Response(null, {
+              status: failure === "upstream-failure" ? 503 : 200,
+            });
       vi.spyOn(globalThis, "fetch").mockResolvedValue(response);
       await expect(
         call(
           deploymentRouter.publish,
           {
+            body: { rollout: true, scope: productionScope },
             params: { deploymentId: created.body.deployment.id },
-            body: { scope: productionScope, rollout: true },
           },
-          { context },
-        ),
+          { context }
+        )
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
       const file = await db.query.appDeploymentFile.findFirst({
         where: { appDeploymentId: created.body.deployment.id },
       });
       expect(file?.status).toBe("failed");
-    },
+    }
   );
 
   it("maps reordered returned files using their generated file IDs", () => {
     const assets = [
       { asset: { objectKey: "client.js" }, fileId: "client-file-id" },
-      { asset: { objectKey: `logos/${logoChecksum}.svg` }, fileId: "logo-file-id" },
+      {
+        asset: { objectKey: `logos/${logoChecksum}.svg` },
+        fileId: "logo-file-id",
+      },
     ];
     const returnedFiles = [
       { id: "logo-file-id", objectKey: "stored-logo" },
@@ -468,7 +535,9 @@ describe("platform deployment uploads", () => {
     const filesByAssetPath = mapReturnedFilesByAssetPath(assets, returnedFiles);
 
     expect(filesByAssetPath.get("client.js")?.id).toBe("client-file-id");
-    expect(filesByAssetPath.get(`logos/${logoChecksum}.svg`)?.id).toBe("logo-file-id");
+    expect(filesByAssetPath.get(`logos/${logoChecksum}.svg`)?.id).toBe(
+      "logo-file-id"
+    );
   });
 
   it("creates optional logo assets alongside the client bundle", async () => {
@@ -476,7 +545,7 @@ describe("platform deployment uploads", () => {
       Promise.resolve({
         key,
         uploadUrl: `https://uploads.example/${key}`,
-      }),
+      })
     );
     const context = {
       organization: {
@@ -497,11 +566,11 @@ describe("platform deployment uploads", () => {
         updatedAt: new Date(),
       },
       storage: {
-        type: "s3",
         createDownloadUrl: vi.fn(),
         createUploadUrl,
         delete: vi.fn(),
         head: vi.fn().mockRejectedValue({ name: "NoSuchKey" }),
+        type: "s3",
       },
     } satisfies Context;
 
@@ -539,14 +608,16 @@ describe("platform deployment uploads", () => {
           scope: productionScope,
         },
       },
-      { context },
+      { context }
     );
 
     expect(result.body.assets).toHaveLength(1);
     expect(result.body.logos?.dark?.file.objectKey).toMatch(
-      new RegExp(`/logos/${"b".repeat(64)}\\.svg$`, "u"),
+      new RegExp(`/logos/${"b".repeat(64)}\\.svg$`, "u")
     );
-    expect(result.body.logos?.light?.file.id).toBe(result.body.logos?.dark?.file.id);
+    expect(result.body.logos?.light?.file.id).toBe(
+      result.body.logos?.dark?.file.id
+    );
     expect(result.body.deployment).toEqual(
       expect.objectContaining({
         clientEntryFileId: expect.any(String),
@@ -554,14 +625,14 @@ describe("platform deployment uploads", () => {
         logoDarkPath: `logos/${"b".repeat(64)}.svg`,
         logoLightFileId: expect.any(String),
         logoLightPath: `logos/${"b".repeat(64)}.svg`,
-      }),
+      })
     );
     expect(createUploadUrl).toHaveBeenCalledTimes(2);
   });
 
   it("reuses a matching app logo without creating another upload URL", async () => {
     const createUploadUrl = vi.fn(({ key }: { key: string }) =>
-      Promise.resolve({ key, uploadUrl: `https://uploads.example/${key}` }),
+      Promise.resolve({ key, uploadUrl: `https://uploads.example/${key}` })
     );
     const context = {
       organization: {
@@ -582,7 +653,6 @@ describe("platform deployment uploads", () => {
         updatedAt: new Date(),
       },
       storage: {
-        type: "s3",
         createDownloadUrl: vi.fn(),
         createUploadUrl,
         delete: vi.fn(),
@@ -591,6 +661,7 @@ describe("platform deployment uploads", () => {
           contentLength: 262_144,
           contentType: "image/svg+xml",
         }),
+        type: "s3",
       },
     } satisfies Context;
     const currentApp = await db.query.app.findFirst();
@@ -622,7 +693,7 @@ describe("platform deployment uploads", () => {
           scope: productionScope,
         },
       },
-      { context },
+      { context }
     );
 
     expect(result.body.logos?.dark?.uploadUrl).toBeUndefined();
@@ -653,11 +724,11 @@ describe("platform deployment uploads", () => {
         updatedAt: new Date(),
       },
       storage: {
-        type: "s3",
         createDownloadUrl: vi.fn(),
         createUploadUrl,
         delete: vi.fn(),
         head: vi.fn(),
+        type: "s3",
       },
     } satisfies Context;
 
@@ -684,8 +755,8 @@ describe("platform deployment uploads", () => {
             scope: productionScope,
           },
         },
-        { context },
-      ),
+        { context }
+      )
     ).rejects.toThrow("Input validation failed");
     expect(createUploadUrl).not.toHaveBeenCalled();
   });
@@ -702,8 +773,8 @@ describe("platform deployment uploads", () => {
           body: { rollout: true, scope: productionScope },
           params: { deploymentId: deployment.id },
         },
-        { context: publishContext("http://uploads.example/logo-dark.svg") },
-      ),
+        { context: publishContext("http://uploads.example/logo-dark.svg") }
+      )
     ).rejects.toThrow("Logo download URL must use HTTPS.");
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -718,12 +789,12 @@ describe("platform deployment uploads", () => {
           arrayBuffer: () =>
             new Promise<ArrayBuffer>((_resolve, reject) => {
               init?.signal?.addEventListener("abort", () =>
-                reject(new DOMException("Aborted", "AbortError")),
+                reject(new DOMException("Aborted", "AbortError"))
               );
             }),
           ok: true,
-        }),
-      ),
+        })
+      )
     );
 
     const publish = call(
@@ -732,7 +803,7 @@ describe("platform deployment uploads", () => {
         body: { rollout: true, scope: productionScope },
         params: { deploymentId: deployment.id },
       },
-      { context: publishContext("https://uploads.example/logo-dark.svg") },
+      { context: publishContext("https://uploads.example/logo-dark.svg") }
     );
     const advanceTimers = vi.advanceTimersByTimeAsync(10_000);
     await expect(publish).rejects.toThrow("Aborted");

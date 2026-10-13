@@ -1,8 +1,11 @@
-import { defineConfig } from "drizzle-kit";
 import { resolve } from "node:path";
 
+import { defineConfig } from "drizzle-kit";
+
 export default defineConfig({
-  schema: "./src/db/schema.ts",
+  dbCredentials: {
+    url: resolve(process.env.PLAYGROUND_DB_PATH ?? ".data/playground.sqlite"),
+  },
   dialect: "sqlite",
-  dbCredentials: { url: resolve(process.env.PLAYGROUND_DB_PATH ?? ".data/playground.sqlite") },
+  schema: "./src/db/schema.ts",
 });

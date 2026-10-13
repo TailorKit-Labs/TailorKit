@@ -1,13 +1,14 @@
+import { ORPCError } from "@orpc/server";
 import { auth } from "@tailorkit/auth";
 import { db } from "@tailorkit/db";
-import { validateProjectSlug } from "@tailorkit/db/validate-project-slug";
 import { apikey } from "@tailorkit/db/schema/auth";
 import { project } from "@tailorkit/db/schema/project";
-import { ORPCError } from "@orpc/server";
-import { protectedProcedure, requireOrg, requireProject } from "../procedures";
-import z from "zod";
+import { validateProjectSlug } from "@tailorkit/db/validate-project-slug";
 import { and, desc, eq, ne } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
+import z from "zod";
+
+import { protectedProcedure, requireOrg, requireProject } from "../procedures";
 
 const projectInput = z.object({
   orgSlug: z.string(),
@@ -17,7 +18,10 @@ const projectInput = z.object({
 const projectApiKeyConfigId = "project-host";
 const projectApiKeyRateLimitMax = 1000;
 const projectApiKeyRateLimitWindowMs = 1000;
-const createApiKeyPrefixSuffix = customAlphabet("0123456789abcdefghijklmnopqrstuvwxyz", 4);
+const createApiKeyPrefixSuffix = customAlphabet(
+  "0123456789abcdefghijklmnopqrstuvwxyz",
+  4
+);
 
 const projectApiKeyMetadataSchema = z.object({
   projectId: z.string(),
@@ -40,7 +44,9 @@ function isKeyExpired(key: { expiresAt: Date | string | null }) {
   return Boolean(expiresAt && expiresAt.getTime() <= Date.now());
 }
 
-function parseProjectApiKeyMetadata(metadata: Record<string, unknown> | string | null) {
+function parseProjectApiKeyMetadata(
+  metadata: Record<string, unknown> | string | null
+) {
   const value =
     typeof metadata === "string"
       ? (() => {
@@ -67,7 +73,9 @@ async function listProjectApiKeys({
 
   const active = keys.find((key) => key.enabled && !isKeyExpired(key));
   const previous = active
-    ? keys.filter((key) => key.id !== active.id && key.enabled && !isKeyExpired(key))
+    ? keys.filter(
+        (key) => key.id !== active.id && key.enabled && !isKeyExpired(key)
+      )
     : [];
 
   return {
@@ -86,7 +94,12 @@ async function listAllProjectApiKeys({
   const result = await db
     .select()
     .from(apikey)
-    .where(and(eq(apikey.referenceId, organizationId), eq(apikey.configId, projectApiKeyConfigId)))
+    .where(
+      and(
+        eq(apikey.referenceId, organizationId),
+        eq(apikey.configId, projectApiKeyConfigId)
+      )
+    )
     .orderBy(desc(apikey.createdAt));
 
   return result
@@ -140,20 +153,16 @@ function createProjectApiKey({
 }
 
 export const projectRouter = {
-  list: protectedProcedure
-    .input(z.object({ orgSlug: z.string() }))
-    .use(requireOrg())
-    .handler(({ context }) =>
-      db.query.project.findMany({
-        where: { organizationId: context.org.id },
-        orderBy: { createdAt: "desc" },
-      }),
-    ),
-
-  get: protectedProcedure
+  apiKeys: protectedProcedure
     .input(projectInput)
     .use(requireProject())
-    .handler(({ context }) => context.project),
+    .handler(({ context }) =>
+      listProjectApiKeys({
+        headers: context.headers,
+        organizationId: context.org.id,
+        projectId: context.project.id,
+      })
+    ),
 
   create: protectedProcedure
     .input(
@@ -161,7 +170,7 @@ export const projectRouter = {
         orgSlug: z.string(),
         name: z.string().min(1),
         slug: z.string().min(1),
-      }),
+      })
     )
     .use(requireOrg({ project: ["create"] }))
     .handler(async ({ input, context, errors }) => {
@@ -176,7 +185,8 @@ export const projectRouter = {
 
       if (existing) {
         throw new ORPCError("BAD_REQUEST", {
-          message: "A project with this slug already exists in this organisation.",
+          message:
+            "A project with this slug already exists in this organisation.",
         });
       }
 
@@ -190,7 +200,9 @@ export const projectRouter = {
         .returning();
 
       if (!createdProject) {
-        throw new ORPCError("BAD_REQUEST", { message: "Failed to create project." });
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Failed to create project.",
+        });
       }
 
       try {
@@ -205,54 +217,6 @@ export const projectRouter = {
         await db.delete(project).where(eq(project.id, createdProject.id));
         throw error;
       }
-    }),
-
-  update: protectedProcedure
-    .input(
-      projectInput.extend({
-        name: z.string().min(1),
-        slug: z.string().min(1),
-      }),
-    )
-    .use(requireProject({ project: ["update"] }))
-    .handler(async ({ input, context, errors }) => {
-      const slugResult = validateProjectSlug(input.slug);
-      if (!slugResult.valid) {
-        throw errors.BAD_REQUEST({ message: slugResult.reason });
-      }
-
-      const [existing] = await db
-        .select({ id: project.id })
-        .from(project)
-        .where(
-          and(
-            eq(project.organizationId, context.org.id),
-            eq(project.slug, input.slug),
-            ne(project.id, context.project.id),
-          ),
-        )
-        .limit(1);
-
-      if (existing) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: "A project with this slug already exists in this organisation.",
-        });
-      }
-
-      const [updatedProject] = await db
-        .update(project)
-        .set({
-          name: input.name.trim(),
-          slug: input.slug,
-        })
-        .where(eq(project.id, context.project.id))
-        .returning();
-
-      if (!updatedProject) {
-        throw new ORPCError("BAD_REQUEST", { message: "Failed to update project." });
-      }
-
-      return updatedProject;
     }),
 
   delete: protectedProcedure
@@ -272,8 +236,8 @@ export const projectRouter = {
               keyId: key.id,
             },
             headers: context.headers,
-          }),
-        ),
+          })
+        )
       );
 
       await db.delete(project).where(eq(project.id, context.project.id));
@@ -281,15 +245,19 @@ export const projectRouter = {
       return { id: context.project.id };
     }),
 
-  apiKeys: protectedProcedure
+  get: protectedProcedure
     .input(projectInput)
     .use(requireProject())
+    .handler(({ context }) => context.project),
+
+  list: protectedProcedure
+    .input(z.object({ orgSlug: z.string() }))
+    .use(requireOrg())
     .handler(({ context }) =>
-      listProjectApiKeys({
-        headers: context.headers,
-        organizationId: context.org.id,
-        projectId: context.project.id,
-      }),
+      db.query.project.findMany({
+        where: { organizationId: context.org.id },
+        orderBy: { createdAt: "desc" },
+      })
     ),
 
   rotateApiKey: protectedProcedure
@@ -300,7 +268,7 @@ export const projectRouter = {
           .int()
           .min(0)
           .max(60 * 60 * 24 * 30),
-      }),
+      })
     )
     .use(requireProject({ project: ["update"] }))
     .handler(async ({ input, context }) => {
@@ -328,8 +296,8 @@ export const projectRouter = {
                   keyId: key.id,
                 },
                 headers: context.headers,
-              }),
-            ),
+              })
+            )
           );
         } else {
           await Promise.all(
@@ -347,8 +315,8 @@ export const projectRouter = {
                   } satisfies ProjectApiKeyMetadata,
                 },
                 headers: context.headers,
-              }),
-            ),
+              })
+            )
           );
         }
       } catch (error) {
@@ -363,5 +331,56 @@ export const projectRouter = {
       }
 
       return { apiKey };
+    }),
+
+  update: protectedProcedure
+    .input(
+      projectInput.extend({
+        name: z.string().min(1),
+        slug: z.string().min(1),
+      })
+    )
+    .use(requireProject({ project: ["update"] }))
+    .handler(async ({ input, context, errors }) => {
+      const slugResult = validateProjectSlug(input.slug);
+      if (!slugResult.valid) {
+        throw errors.BAD_REQUEST({ message: slugResult.reason });
+      }
+
+      const [existing] = await db
+        .select({ id: project.id })
+        .from(project)
+        .where(
+          and(
+            eq(project.organizationId, context.org.id),
+            eq(project.slug, input.slug),
+            ne(project.id, context.project.id)
+          )
+        )
+        .limit(1);
+
+      if (existing) {
+        throw new ORPCError("BAD_REQUEST", {
+          message:
+            "A project with this slug already exists in this organisation.",
+        });
+      }
+
+      const [updatedProject] = await db
+        .update(project)
+        .set({
+          name: input.name.trim(),
+          slug: input.slug,
+        })
+        .where(eq(project.id, context.project.id))
+        .returning();
+
+      if (!updatedProject) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Failed to update project.",
+        });
+      }
+
+      return updatedProject;
     }),
 };

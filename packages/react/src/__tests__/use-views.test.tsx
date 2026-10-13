@@ -1,45 +1,58 @@
-import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { defineContract } from "@tailorkit/core/schema";
+import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { StrictMode } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
+
 import { createClient } from "../index";
 import type { TailorKitApp } from "../index";
 
 const schema = {
   "~standard": {
-    version: 1 as const,
-    vendor: "test",
     jsonSchema: { input: () => ({}), output: () => ({}) },
     validate: (value: unknown) => ({ value: value as Record<never, never> }),
+    vendor: "test",
+    version: 1 as const,
   },
 };
 const contract = defineContract({
-  scopes: { user: schema },
   components: {},
-  views: { "/": schema, "/customers": schema, "/customers/detail": schema },
+  scopes: { user: schema },
   slots: {
-    page: { views: ["/", "/customers", "/customers/detail"], multiple: true },
-    panel: { views: ["/"], multiple: true },
-    single: { views: ["/", "/customers/detail"], multiple: false },
     default: { views: ["/"] },
+    page: { multiple: true, views: ["/", "/customers", "/customers/detail"] },
+    panel: { multiple: true, views: ["/"] },
+    single: { multiple: false, views: ["/", "/customers/detail"] },
   },
+  views: { "/": schema, "/customers": schema, "/customers/detail": schema },
 });
-const client = createClient({ contract: contract, baseUrl: "https://host.test/api/tailorkit/" });
+const client = createClient({
+  contract,
+  baseUrl: "https://host.test/api/tailorkit/",
+});
 const app: TailorKitApp = {
-  id: "app_1",
   currentDeployment: { id: "deployment_1" },
+  id: "app_1",
   views: [
     { slot: "page", path: "/", instances: true },
     { slot: "page", path: "/customers/detail", instances: true },
   ],
 };
-const instances = [{ key: "overview", metadata: { title: "Overview" }, data: { reportId: "r1" } }];
+const instances = [
+  {
+    data: { reportId: "r1" },
+    key: "overview",
+    metadata: { title: "Overview" },
+  },
+];
 let apps: TailorKitApp[] | undefined;
 const wrapper = ({ children }: { children: ReactNode }) => (
   <client.Provider apps={apps}>{children}</client.Provider>
 );
-function withApp(instances: { key: string; metadata: object; data: object }[], source = app) {
+function withApp(
+  instances: { key: string; metadata: object; data: object }[],
+  source = app
+) {
   return instances.map((instance) => ({ ...instance, app: source }));
 }
 
@@ -50,15 +63,19 @@ function url(input: Parameters<typeof fetch>[0]) {
 function mockFetch() {
   return vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
     const path = url(input).pathname;
-    if (path.endsWith("/apps")) return Response.json([app]);
+    if (path.endsWith("/apps")) {
+      return Response.json([app]);
+    }
     if (path.endsWith("/backend/session")) {
       return Response.json({
-        token: "app-token",
         expiresAt: Date.now() + 300_000,
+        token: "app-token",
         url: "https://runtime.test/rpc",
       });
     }
-    if (path.endsWith("/actions")) return Response.json({ json: instances });
+    if (path.endsWith("/actions")) {
+      return Response.json({ json: instances });
+    }
     throw new Error(`Unexpected request: ${path}`);
   });
 }
@@ -79,13 +96,16 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function useDetail(status: "ready" | "loading" | "error" = "ready", userId = "u1") {
+function useDetail(
+  status: "ready" | "loading" | "error" = "ready",
+  userId = "u1"
+) {
   client.useViewContext("/", { context: { user: { id: userId } } });
   client.useViewContext("/customers", { context: { canEdit: true } });
   client.useViewContext("/customers/detail", {
     context: { customer: { id: "c1" } },
-    loading: status === "loading",
     error: status === "error" ? new Error("Failed to load context") : null,
+    loading: status === "loading",
   });
 }
 
@@ -95,35 +115,42 @@ it.each(["apps", "single", "page"] as const)(
     apps = undefined;
     const discovered: TailorKitApp = {
       ...app,
-      views: kind === "single" ? [{ slot: "single", path: "/" }] : app.views,
+      views: kind === "single" ? [{ path: "/", slot: "single" }] : app.views,
     };
     const pending: ((response: Response) => void)[] = [];
     const original = vi.mocked(globalThis.fetch).getMockImplementation()!;
     const requestPath = kind === "page" ? "/actions" : "/apps";
     vi.mocked(globalThis.fetch).mockImplementation((input, options) => {
       const path = url(input).pathname;
-      if (path.endsWith(requestPath)) return new Promise((resolve) => pending.push(resolve));
-      if (path.endsWith("/apps")) return Promise.resolve(Response.json([discovered]));
+      if (path.endsWith(requestPath)) {
+        return new Promise((resolve) => pending.push(resolve));
+      }
+      if (path.endsWith("/apps")) {
+        return Promise.resolve(Response.json([discovered]));
+      }
       return original(input, options);
     });
     const { result, rerender } = renderHook(
       () => {
         useDetail();
-        return kind === "apps" ? client.useApps() : client.useViews({ slot: kind });
+        return kind === "apps"
+          ? client.useApps()
+          : client.useViews({ slot: kind });
       },
-      { wrapper },
+      { wrapper }
     );
     const keys = ["data", "error", "fetch", "isPending", "isRefetching"];
-    const response = () => Response.json(kind === "page" ? { json: instances } : [discovered]);
+    const response = () =>
+      Response.json(kind === "page" ? { json: instances } : [discovered]);
     await waitFor(() => expect(pending).toHaveLength(1));
     expect(Object.keys(result.current).toSorted()).toEqual(keys);
     expect(result.current).toMatchObject({
       data: undefined,
-      isPending: true,
       error: null,
+      isPending: true,
       isRefetching: false,
     });
-    const fetch = result.current.fetch;
+    const { fetch } = result.current;
     await act(async () => pending[0]!(response()));
     await waitFor(() => expect(result.current.data).toBeDefined());
     expect(result.current.isPending).toBe(false);
@@ -150,7 +177,7 @@ it.each(["apps", "single", "page"] as const)(
     expect(result.current.isRefetching).toBe(false);
     expect(result.current.isPending).toBe(false);
     expect(result.current.error).toBeNull();
-  },
+  }
 );
 
 it("fetches the matched view's instances over authenticated HTTP with combined context", async () => {
@@ -159,52 +186,58 @@ it("fetches the matched view's instances over authenticated HTTP with combined c
       useDetail();
       return client.useViews({ slot: "page" });
     },
-    { wrapper },
+    { wrapper }
   );
   await waitFor(() => expect(result.current.data).toBeDefined());
   expect(result.current.data).toEqual(withApp(instances));
   expect(calls("/meta")).toHaveLength(0);
   expect(calls("/backend/session")[0]?.[1]).toMatchObject({
-    method: "POST",
     body: JSON.stringify({ appId: "app_1" }),
+    method: "POST",
   });
   const [, options] = calls("/actions")[0]!;
-  expect(new Headers(options?.headers).get("authorization")).toBe("Bearer app-token");
+  expect(new Headers(options?.headers).get("authorization")).toBe(
+    "Bearer app-token"
+  );
   expect(JSON.parse(String(options?.body))).toEqual({
     json: {
-      name: "_tailorkit.instances.resolve",
       args: {
-        slot: "page",
+        context: { canEdit: true, customer: { id: "c1" }, user: { id: "u1" } },
         path: "/customers/detail",
-        context: { user: { id: "u1" }, canEdit: true, customer: { id: "c1" } },
+        slot: "page",
       },
+      name: "_tailorkit.instances.resolve",
     },
   });
   expect(globalThis.fetch).toHaveBeenCalledTimes(2);
 });
 
 it("uses the closest supported ancestor and excludes deeper loading context", async () => {
-  apps = [{ ...app, views: [{ slot: "panel", path: "/", instances: true }] }];
+  apps = [{ ...app, views: [{ instances: true, path: "/", slot: "panel" }] }];
   const { result } = renderHook(
     () => {
       useDetail("loading");
       return client.useViews({ slot: "panel" });
     },
-    { wrapper },
+    { wrapper }
   );
-  await waitFor(() => expect(result.current.data).toEqual(withApp(instances, apps![0]!)));
-  expect(JSON.parse(String(calls("/actions")[0]?.[1]?.body)).json.args).toEqual({
-    slot: "panel",
-    path: "/",
-    context: { user: { id: "u1" } },
-  });
+  await waitFor(() =>
+    expect(result.current.data).toEqual(withApp(instances, apps![0]!))
+  );
+  expect(JSON.parse(String(calls("/actions")[0]?.[1]?.body)).json.args).toEqual(
+    {
+      context: { user: { id: "u1" } },
+      path: "/",
+      slot: "panel",
+    }
+  );
 });
 
 it("falls back to an enabled ancestor when the supported child is disabled", async () => {
   const disabledChildApp: TailorKitApp = {
     ...app,
     views: app.views?.map((view) =>
-      view.path === "/customers/detail" ? { ...view, disabled: true } : view,
+      view.path === "/customers/detail" ? { ...view, disabled: true } : view
     ),
   };
   apps = [disabledChildApp];
@@ -213,15 +246,15 @@ it("falls back to an enabled ancestor when the supported child is disabled", asy
       useDetail("loading");
       return client.useViews({ slot: "page" });
     },
-    { wrapper },
+    { wrapper }
   );
   await waitFor(() => expect(result.current.data).toBeDefined());
   expect(result.current.data).toEqual(withApp(instances, disabledChildApp));
   expect(calls("/actions")).toHaveLength(1);
   expect(JSON.parse(String(calls("/actions")[0]?.[1]?.body))).toEqual({
     json: {
+      args: { context: { user: { id: "u1" } }, path: "/", slot: "page" },
       name: "_tailorkit.instances.resolve",
-      args: { slot: "page", path: "/", context: { user: { id: "u1" } } },
     },
   });
 });
@@ -234,10 +267,12 @@ it("waits for every required ancestor before fetching instances", async () => {
         loading: !ready,
       });
       client.useViewContext("/customers", { context: { canEdit: true } });
-      client.useViewContext("/customers/detail", { context: { customer: { id: "c1" } } });
+      client.useViewContext("/customers/detail", {
+        context: { customer: { id: "c1" } },
+      });
       return client.useViews({ slot: "page" });
     },
-    { wrapper, initialProps: { ready: false } },
+    { initialProps: { ready: false }, wrapper }
   );
   expect(calls("/meta")).toHaveLength(0);
   expect(result.current.isPending).toBe(true);
@@ -253,31 +288,42 @@ it.each(["missing", "error", "invalid", "duplicate"] as const)(
   async (kind) => {
     const { result } = renderHook(
       () => {
-        if (kind !== "missing")
+        if (kind !== "missing") {
           client.useViewContext(
             "/",
             kind === "error"
-              ? { context: undefined, error: new Error("Failed to load context") }
-              : { context: kind === "invalid" ? null : { user: { id: "u1" } } },
+              ? {
+                  context: undefined,
+                  error: new Error("Failed to load context"),
+                }
+              : { context: kind === "invalid" ? null : { user: { id: "u1" } } }
           );
+        }
         client.useViewContext("/customers", {
-          context: kind === "duplicate" ? { user: { id: "another" } } : { canEdit: true },
+          context:
+            kind === "duplicate"
+              ? { user: { id: "another" } }
+              : { canEdit: true },
         });
-        client.useViewContext("/customers/detail", { context: { customer: { id: "c1" } } });
+        client.useViewContext("/customers/detail", {
+          context: { customer: { id: "c1" } },
+        });
         return client.useViews({ slot: "page" });
       },
-      { wrapper },
+      { wrapper }
     );
     await waitFor(() => expect(result.current.error).toBeInstanceOf(Error));
     expect(result.current.isPending).toBe(false);
     expect(result.current.data).toBeUndefined();
     expect(calls("/backend/session")).toHaveLength(0);
     expect(calls("/actions")).toHaveLength(0);
-  },
+  }
 );
 
 it("stays idle for multiple slots without a registered view and never calls a resolver", async () => {
-  const { result } = renderHook(() => client.useViews({ slot: "page" }), { wrapper });
+  const { result } = renderHook(() => client.useViews({ slot: "page" }), {
+    wrapper,
+  });
   expect(calls("/meta")).toHaveLength(0);
   expect(result.current.isRefetching).toBe(false);
   expect(result.current.isPending).toBe(true);
@@ -294,14 +340,14 @@ it.each(["static", "disabled", "unsupported", "legacy"] as const)(
         ? undefined
         : [
             {
-              slot: "page",
-              path: "/",
               instances: true as const,
+              path: "/",
+              slot: "page",
               ...(kind === "disabled" ? { disabled: true as const } : {}),
             },
             {
-              slot: "page",
               path: "/customers/detail",
+              slot: "page",
               ...(kind === "static" ? {} : { disabled: true as const }),
             },
           ];
@@ -313,13 +359,13 @@ it.each(["static", "disabled", "unsupported", "legacy"] as const)(
           slot: kind === "unsupported" ? "panel" : "page",
         });
       },
-      { wrapper },
+      { wrapper }
     );
     await waitFor(() => expect(result.current.data).toBeDefined());
     expect(result.current.data).toEqual([]);
     expect(calls("/backend/session")).toHaveLength(0);
     expect(calls("/actions")).toHaveLength(0);
-  },
+  }
 );
 
 it("does not refetch for equivalent inline objects and fetch refreshes instances", async () => {
@@ -328,7 +374,7 @@ it("does not refetch for equivalent inline objects and fetch refreshes instances
       useDetail();
       return client.useViews({ slot: "page" });
     },
-    { wrapper },
+    { wrapper }
   );
   await waitFor(() => expect(result.current.data).toBeDefined());
   rerender();
@@ -348,24 +394,28 @@ it("clears previous data and ignores late responses after context changes", asyn
   const original = vi.mocked(globalThis.fetch).getMockImplementation()!;
   vi.mocked(globalThis.fetch).mockImplementation((input, options) =>
     url(input).pathname.endsWith("/actions")
-      ? new Promise((resolve) => pending.push({ resolve, signal: options?.signal }))
-      : original(input, options),
+      ? new Promise((resolve) =>
+          pending.push({ resolve, signal: options?.signal })
+        )
+      : original(input, options)
   );
   const { result, rerender, unmount } = renderHook(
     ({ userId }) => {
       useDetail("ready", userId);
       return client.useViews({ slot: "page" });
     },
-    { wrapper, initialProps: { userId: "u1" } },
+    { initialProps: { userId: "u1" }, wrapper }
   );
   await waitFor(() => expect(pending).toHaveLength(1));
   rerender({ userId: "u2" });
   await waitFor(() => expect(pending).toHaveLength(2));
   expect(pending[0]?.signal?.aborted).toBe(true);
-  await act(async () => pending[0]!.resolve(Response.json({ json: instances })));
+  await act(async () =>
+    pending[0]!.resolve(Response.json({ json: instances }))
+  );
   expect(result.current.data).toBeUndefined();
   expect(result.current.isPending).toBe(true);
-  const fresh = [{ key: "fresh", metadata: {}, data: { userId: "u2" } }];
+  const fresh = [{ data: { userId: "u2" }, key: "fresh", metadata: {} }];
   await act(async () => pending[1]!.resolve(Response.json({ json: fresh })));
   expect(result.current.data).toEqual(withApp(fresh));
   rerender({ userId: "u3" });
@@ -373,18 +423,27 @@ it("clears previous data and ignores late responses after context changes", asyn
   expect(result.current.data).toBeUndefined();
   unmount();
   expect(pending[2]?.signal?.aborted).toBe(true);
-  await act(async () => pending[2]!.resolve(Response.json({ json: instances })));
+  await act(async () =>
+    pending[2]!.resolve(Response.json({ json: instances }))
+  );
 });
 
 it("exposes resolver errors and allows retry through fetch", async () => {
   const original = vi.mocked(globalThis.fetch).getMockImplementation()!;
   let fail = true;
   vi.mocked(globalThis.fetch).mockImplementation(async (input, options) => {
-    if (fail && url(input).pathname.endsWith("/actions"))
+    if (fail && url(input).pathname.endsWith("/actions")) {
       return Response.json(
-        { json: { code: "FORBIDDEN", message: "Reports unavailable", defined: false } },
-        { status: 403 },
+        {
+          json: {
+            code: "FORBIDDEN",
+            message: "Reports unavailable",
+            defined: false,
+          },
+        },
+        { status: 403 }
       );
+    }
     return original(input, options);
   });
   const { result } = renderHook(
@@ -392,9 +451,11 @@ it("exposes resolver errors and allows retry through fetch", async () => {
       useDetail();
       return client.useViews({ slot: "page" });
     },
-    { wrapper },
+    { wrapper }
   );
-  await waitFor(() => expect(result.current.error?.message).toBe("Reports unavailable"));
+  await waitFor(() =>
+    expect(result.current.error?.message).toBe("Reports unavailable")
+  );
   expect(result.current.error).toBeInstanceOf(Error);
   fail = false;
   await act(() => result.current.fetch());
@@ -407,14 +468,14 @@ it("exposes session failures without sending an unauthenticated resolver call", 
   vi.mocked(globalThis.fetch).mockImplementation(async (input, options) =>
     url(input).pathname.endsWith("/backend/session")
       ? new Response(null, { status: 401 })
-      : original(input, options),
+      : original(input, options)
   );
   const { result } = renderHook(
     () => {
       useDetail();
       return client.useViews({ slot: "page" });
     },
-    { wrapper },
+    { wrapper }
   );
   await waitFor(() => expect(result.current.error).toBeInstanceOf(Error));
   expect(result.current.error).toMatchObject({ code: "UNAUTHORIZED" });
@@ -427,20 +488,24 @@ it("reauthorizes when the discovered app or deployment changes", async () => {
       useDetail();
       return client.useViews({ slot: "page" });
     },
-    { wrapper },
+    { wrapper }
   );
   await waitFor(() => expect(result.current.data).toBeDefined());
   apps = [{ ...app, currentDeployment: { id: "deployment_2" } }];
   rerender();
   await waitFor(() => expect(calls("/actions")).toHaveLength(2));
   await waitFor(() => expect(result.current.data).toBeDefined());
-  apps = [{ ...app, id: "app_2", currentDeployment: { id: "deployment_3" } }];
+  apps = [{ ...app, currentDeployment: { id: "deployment_3" }, id: "app_2" }];
   rerender();
   await waitFor(() =>
-    expect(result.current.data !== undefined && calls("/actions").length === 3).toBe(true),
+    expect(
+      result.current.data !== undefined && calls("/actions").length === 3
+    ).toBe(true)
   );
   expect(calls("/backend/session")).toHaveLength(3);
-  expect(JSON.parse(String(calls("/backend/session")[2]?.[1]?.body))).toEqual({ appId: "app_2" });
+  expect(JSON.parse(String(calls("/backend/session")[2]?.[1]?.body))).toEqual({
+    appId: "app_2",
+  });
   expect(result.current.data?.[0]?.app).toEqual(apps[0]);
 });
 
@@ -455,22 +520,26 @@ it("works in Strict Mode and isolates different roots", async () => {
       useDetail("ready", "u1");
       return client.useViews({ slot: "page" });
     },
-    { wrapper: strictWrapper },
+    { wrapper: strictWrapper }
   );
   const second = renderHook(
     () => {
       useDetail("ready", "u2");
       return client.useViews({ slot: "page" });
     },
-    { wrapper: strictWrapper },
+    { wrapper: strictWrapper }
   );
   await waitFor(() =>
     expect(
-      first.result.current.data !== undefined && second.result.current.data !== undefined,
-    ).toBe(true),
+      first.result.current.data !== undefined &&
+        second.result.current.data !== undefined
+    ).toBe(true)
   );
   const users = calls("/actions")
-    .map(([, options]) => JSON.parse(String(options?.body)).json.args.context.user.id)
+    .map(
+      ([, options]) =>
+        JSON.parse(String(options?.body)).json.args.context.user.id
+    )
     .sort();
   expect(users).toEqual(["u1", "u2"]);
 });
@@ -478,14 +547,16 @@ it("works in Strict Mode and isolates different roots", async () => {
 it("rejects a hook used outside a Provider or under another client", () => {
   vi.spyOn(console, "error").mockImplementation(() => {});
   expect(() => renderHook(() => client.useViews({ slot: "page" }))).toThrow(
-    "useViews must be rendered inside a TailorKit Provider",
+    "useViews must be rendered inside a TailorKit Provider"
   );
-  const other = createClient({ contract: contract, baseUrl: "https://other.test/api/" });
+  const other = createClient({ contract, baseUrl: "https://other.test/api/" });
   const wrongWrapper = ({ children }: { children: ReactNode }) => (
     <other.Provider>{children}</other.Provider>
   );
   expect(() =>
-    renderHook(() => client.useViews({ slot: "page" }), { wrapper: wrongWrapper }),
+    renderHook(() => client.useViews({ slot: "page" }), {
+      wrapper: wrongWrapper,
+    })
   ).toThrow("useViews was created for a different TailorKit client");
 });
 
@@ -493,12 +564,17 @@ it("shares one resolver across two hooks and retains data across remounts", asyn
   const first = renderHook(
     () => {
       useDetail();
-      return [client.useViews({ slot: "page" }), client.useViews({ slot: "page" })];
+      return [
+        client.useViews({ slot: "page" }),
+        client.useViews({ slot: "page" }),
+      ];
     },
-    { wrapper },
+    { wrapper }
   );
   await waitFor(() =>
-    expect(first.result.current.every((query) => query.data !== undefined)).toBe(true),
+    expect(
+      first.result.current.every((query) => query.data !== undefined)
+    ).toBe(true)
   );
   expect(calls("/actions")).toHaveLength(1);
   expect(calls("/backend/session")).toHaveLength(1);
@@ -508,7 +584,7 @@ it("shares one resolver across two hooks and retains data across remounts", asyn
       useDetail();
       return client.useViews({ slot: "page" });
     },
-    { wrapper },
+    { wrapper }
   );
   await waitFor(() => expect(second.result.current.data).toBeDefined());
   expect(calls("/actions")).toHaveLength(1);
@@ -521,19 +597,20 @@ it("shares identical instance requests across roots while keeping their registra
       useDetail();
       return client.useViews({ slot: "page" });
     },
-    { wrapper },
+    { wrapper }
   );
   const second = renderHook(
     () => {
       useDetail();
       return client.useViews({ slot: "page" });
     },
-    { wrapper },
+    { wrapper }
   );
   await waitFor(() =>
     expect(
-      first.result.current.data !== undefined && second.result.current.data !== undefined,
-    ).toBe(true),
+      first.result.current.data !== undefined &&
+        second.result.current.data !== undefined
+    ).toBe(true)
   );
   expect(calls("/actions")).toHaveLength(1);
   first.unmount();
@@ -549,14 +626,14 @@ it("discovers apps through useApps before resolving their instances", async () =
       ? new Promise((resolve) => {
           finishApps = resolve;
         })
-      : original(input, options),
+      : original(input, options)
   );
   const { result } = renderHook(
     () => {
       useDetail();
       return client.useViews({ slot: "page" });
     },
-    { wrapper },
+    { wrapper }
   );
   await waitFor(() => expect(calls("/apps")).toHaveLength(1));
   expect(result.current.isPending).toBe(true);
@@ -569,29 +646,33 @@ it("aggregates apps in discovery order, resolves in parallel, and preserves dupl
   const second = {
     ...app,
     id: "app_2",
-    views: [{ slot: "page", path: "/", instances: true as const }],
+    views: [{ instances: true as const, path: "/", slot: "page" }],
   };
-  apps = [app, second, { id: "static", views: [{ slot: "page", path: "/" }] }];
-  const pending: { token: string | null; body: string; resolve: (response: Response) => void }[] =
-    [];
+  apps = [app, second, { id: "static", views: [{ path: "/", slot: "page" }] }];
+  const pending: {
+    token: string | null;
+    body: string;
+    resolve: (response: Response) => void;
+  }[] = [];
   const original = vi.mocked(globalThis.fetch).getMockImplementation()!;
   vi.mocked(globalThis.fetch).mockImplementation(async (input, options) => {
     if (url(input).pathname.endsWith("/backend/session")) {
       const { appId } = JSON.parse(String(options?.body));
       return Response.json({
-        token: appId,
         expiresAt: Date.now() + 300_000,
+        token: appId,
         url: "https://runtime.test/rpc",
       });
     }
-    if (url(input).pathname.endsWith("/actions"))
+    if (url(input).pathname.endsWith("/actions")) {
       return new Promise((resolve) =>
         pending.push({
           token: new Headers(options?.headers).get("authorization"),
           body: String(options?.body),
           resolve,
-        }),
+        })
       );
+    }
     return original(input, options);
   });
   const { result } = renderHook(
@@ -599,25 +680,37 @@ it("aggregates apps in discovery order, resolves in parallel, and preserves dupl
       useDetail();
       return client.useViews({ slot: "page" });
     },
-    { wrapper },
+    { wrapper }
   );
   await waitFor(() => expect(pending).toHaveLength(2));
-  expect(pending.map(({ token }) => token)).toEqual(["Bearer app_1", "Bearer app_2"]);
+  expect(pending.map(({ token }) => token)).toEqual([
+    "Bearer app_1",
+    "Bearer app_2",
+  ]);
   expect(pending.map(({ body }) => JSON.parse(body).json.args.path)).toEqual([
     "/customers/detail",
     "/",
   ]);
-  await act(async () => pending[1]!.resolve(Response.json({ json: instances })));
+  await act(async () =>
+    pending[1]!.resolve(Response.json({ json: instances }))
+  );
   expect(result.current.isPending).toBe(true);
   expect(result.current.data).toBeUndefined();
-  await act(async () => pending[0]!.resolve(Response.json({ json: instances })));
-  expect(result.current.data).toEqual([...withApp(instances), ...withApp(instances, second)]);
+  await act(async () =>
+    pending[0]!.resolve(Response.json({ json: instances }))
+  );
+  expect(result.current.data).toEqual([
+    ...withApp(instances),
+    ...withApp(instances, second),
+  ]);
   expect(calls("/meta")).toHaveLength(0);
 });
 
 it("returns an empty result without requests when there are no apps or registered context", async () => {
   apps = [];
-  const { result } = renderHook(() => client.useViews({ slot: "page" }), { wrapper });
+  const { result } = renderHook(() => client.useViews({ slot: "page" }), {
+    wrapper,
+  });
   await waitFor(() => expect(result.current.data).toEqual([]));
   expect(result.current.isPending).toBe(false);
   expect(globalThis.fetch).not.toHaveBeenCalled();
@@ -630,7 +723,7 @@ it("returns an empty result with no app requests using the local contract", asyn
       useDetail();
       return client.useViews({ slot: "page" });
     },
-    { wrapper },
+    { wrapper }
   );
   await waitFor(() => expect(result.current.data).toEqual([]));
   expect(result.current.isPending).toBe(false);
@@ -645,7 +738,9 @@ it("exposes app discovery failures and retries them through fetch", async () => 
   let fail = true;
   const original = vi.mocked(globalThis.fetch).getMockImplementation()!;
   vi.mocked(globalThis.fetch).mockImplementation(async (input, options) => {
-    if (fail && url(input).pathname.endsWith("/apps")) return new Response(null, { status: 503 });
+    if (fail && url(input).pathname.endsWith("/apps")) {
+      return new Response(null, { status: 503 });
+    }
     return original(input, options);
   });
   const { result } = renderHook(
@@ -653,10 +748,12 @@ it("exposes app discovery failures and retries them through fetch", async () => 
       useDetail();
       return client.useViews({ slot: "page" });
     },
-    { wrapper },
+    { wrapper }
   );
   await waitFor(() => expect(result.current.error).toBeInstanceOf(Error));
-  expect(result.current.error?.message).toContain("Unable to fetch TailorKit apps");
+  expect(result.current.error?.message).toContain(
+    "Unable to fetch TailorKit apps"
+  );
   expect(calls("/actions")).toHaveLength(0);
   fail = false;
   await act(() => result.current.fetch());
@@ -674,15 +771,17 @@ it("cancels every app resolver and ignores late results when the app list change
   const original = vi.mocked(globalThis.fetch).getMockImplementation()!;
   vi.mocked(globalThis.fetch).mockImplementation((input, options) =>
     url(input).pathname.endsWith("/actions")
-      ? new Promise((resolve) => pending.push({ resolve, signal: options?.signal }))
-      : original(input, options),
+      ? new Promise((resolve) =>
+          pending.push({ resolve, signal: options?.signal })
+        )
+      : original(input, options)
   );
   const { result, rerender, unmount } = renderHook(
     () => {
       useDetail();
       return client.useViews({ slot: "page" });
     },
-    { wrapper },
+    { wrapper }
   );
   await waitFor(() => expect(pending).toHaveLength(2));
   apps = [second];
@@ -690,10 +789,14 @@ it("cancels every app resolver and ignores late results when the app list change
   await waitFor(() => expect(pending).toHaveLength(3));
   expect(pending.slice(0, 2).every(({ signal }) => signal?.aborted)).toBe(true);
   await act(async () => {
-    for (const request of pending.slice(0, 2)) request.resolve(Response.json({ json: instances }));
+    for (const request of pending.slice(0, 2)) {
+      request.resolve(Response.json({ json: instances }));
+    }
   });
   expect(result.current.data).toBeUndefined();
-  await act(async () => pending[2]!.resolve(Response.json({ json: instances })));
+  await act(async () =>
+    pending[2]!.resolve(Response.json({ json: instances }))
+  );
   expect(result.current.data).toEqual(withApp(instances, second));
   await act(() => {
     void result.current.fetch();
@@ -712,24 +815,32 @@ it("clears the aggregate and cancels remaining resolvers when any app fails", as
   const original = vi.mocked(globalThis.fetch).getMockImplementation()!;
   vi.mocked(globalThis.fetch).mockImplementation((input, options) =>
     url(input).pathname.endsWith("/actions")
-      ? new Promise((resolve) => pending.push({ resolve, signal: options?.signal }))
-      : original(input, options),
+      ? new Promise((resolve) =>
+          pending.push({ resolve, signal: options?.signal })
+        )
+      : original(input, options)
   );
   const { result } = renderHook(
     () => {
       useDetail();
       return client.useViews({ slot: "page" });
     },
-    { wrapper },
+    { wrapper }
   );
   await waitFor(() => expect(pending).toHaveLength(2));
   await act(async () =>
     pending[0]!.resolve(
       Response.json(
-        { json: { code: "FORBIDDEN", message: "App unavailable", defined: false } },
-        { status: 403 },
-      ),
-    ),
+        {
+          json: {
+            code: "FORBIDDEN",
+            defined: false,
+            message: "App unavailable",
+          },
+        },
+        { status: 403 }
+      )
+    )
   );
   await waitFor(() => expect(result.current.error).toBeInstanceOf(Error));
   expect(result.current.error?.message).toBe("App unavailable");
@@ -743,17 +854,20 @@ it.each(["single", "default"] as const)(
     const first: TailorKitApp = {
       ...app,
       views: [
-        { slot, path: "/" },
-        { slot, path: "/customers/detail" },
+        { path: "/", slot },
+        { path: "/customers/detail", slot },
       ],
     };
-    const second: TailorKitApp = { id: "app_2", views: [{ slot, path: "/" }] };
+    const second: TailorKitApp = { id: "app_2", views: [{ path: "/", slot }] };
     apps = [
       first,
-      { id: "disabled", views: [{ slot, path: "/", disabled: true }] },
-      { id: "unsupported", views: [{ slot, path: "/unsupported" }] },
-      { id: "other-slot", views: [{ slot: "page", path: "/" }] },
-      { id: "invalid-instances", views: [{ slot, path: "/", instances: true }] },
+      { id: "disabled", views: [{ disabled: true, path: "/", slot }] },
+      { id: "unsupported", views: [{ path: "/unsupported", slot }] },
+      { id: "other-slot", views: [{ path: "/", slot: "page" }] },
+      {
+        id: "invalid-instances",
+        views: [{ instances: true, path: "/", slot }],
+      },
       { id: "legacy" },
       second,
     ];
@@ -764,54 +878,65 @@ it.each(["single", "default"] as const)(
     expect(calls("/apps")).toHaveLength(0);
     expect(calls("/backend/session")).toHaveLength(0);
     expect(calls("/actions")).toHaveLength(0);
-  },
+  }
 );
 
 it.each(["loading", "error"] as const)(
   "discovers single-slot apps despite %s context on another page",
   async (status) => {
-    const singleApp: TailorKitApp = { ...app, views: [{ slot: "single", path: "/" }] };
+    const singleApp: TailorKitApp = {
+      ...app,
+      views: [{ path: "/", slot: "single" }],
+    };
     apps = [singleApp];
     const { result } = renderHook(
       () => {
         client.useViewContext("/customers/detail", {
           context: undefined,
+          error:
+            status === "error" ? new Error("Failed to load context") : null,
           loading: status === "loading",
-          error: status === "error" ? new Error("Failed to load context") : null,
         });
         return client.useViews({ slot: "single" });
       },
-      { wrapper },
+      { wrapper }
     );
-    await waitFor(() => expect(result.current.data).toEqual([{ app: singleApp }]));
+    await waitFor(() =>
+      expect(result.current.data).toEqual([{ app: singleApp }])
+    );
     expect(calls("/backend/session")).toHaveLength(0);
     expect(calls("/actions")).toHaveLength(0);
-  },
+  }
 );
 
 it("intersects scope and app filters and updates supplied single-slot apps", async () => {
   const first: TailorKitApp = {
     id: "app_1",
     scope: { name: "user" },
-    views: [{ slot: "single", path: "/" }],
+    views: [{ path: "/", slot: "single" }],
   };
   const second: TailorKitApp = { ...first, id: "app_2" };
   const unscoped: TailorKitApp = { id: "app_3", views: first.views };
   apps = [first, second, unscoped];
   const { result, rerender } = renderHook(
-    ({ scopes, appIds }: { scopes?: readonly "user"[]; appIds?: readonly string[] }) =>
-      client.useViews({ slot: "single", scopes, appIds }),
-    { wrapper, initialProps: { scopes: ["user"], appIds: ["app_1", "app_3"] } },
+    ({
+      scopes,
+      appIds,
+    }: {
+      scopes?: readonly "user"[];
+      appIds?: readonly string[];
+    }) => client.useViews({ appIds, scopes, slot: "single" }),
+    { initialProps: { appIds: ["app_1", "app_3"], scopes: ["user"] }, wrapper }
   );
   await waitFor(() => expect(result.current.data).toEqual([{ app: first }]));
-  rerender({ scopes: undefined, appIds: ["app_3"] });
+  rerender({ appIds: ["app_3"], scopes: undefined });
   await waitFor(() => expect(result.current.data).toEqual([{ app: unscoped }]));
-  rerender({ scopes: [], appIds: undefined });
+  rerender({ appIds: undefined, scopes: [] });
   await waitFor(() => expect(result.current.data).toEqual([]));
-  rerender({ scopes: undefined, appIds: [] });
+  rerender({ appIds: [], scopes: undefined });
   await waitFor(() => expect(result.current.data).toEqual([]));
   apps = [{ ...second, name: "Updated" }];
-  rerender({ scopes: undefined, appIds: undefined });
+  rerender({ appIds: undefined, scopes: undefined });
   await waitFor(() => expect(result.current.data).toEqual([{ app: apps![0] }]));
   expect(calls("/apps")).toHaveLength(0);
   expect(calls("/meta")).toHaveLength(0);
@@ -820,19 +945,25 @@ it("intersects scope and app filters and updates supplied single-slot apps", asy
 
 it("shares app discovery with useApps and fetch refreshes single-slot entries", async () => {
   apps = undefined;
-  let discovered: TailorKitApp[] = [{ ...app, views: [{ slot: "single", path: "/" }] }];
+  let discovered: TailorKitApp[] = [
+    { ...app, views: [{ path: "/", slot: "single" }] },
+  ];
   const original = vi.mocked(globalThis.fetch).getMockImplementation()!;
   vi.mocked(globalThis.fetch).mockImplementation(async (input, options) =>
-    url(input).pathname.endsWith("/apps") ? Response.json(discovered) : original(input, options),
+    url(input).pathname.endsWith("/apps")
+      ? Response.json(discovered)
+      : original(input, options)
   );
   const { result } = renderHook(
     () => ({
       apps: client.useApps(),
       slot: client.useViews({ slot: "single" }),
     }),
-    { wrapper },
+    { wrapper }
   );
-  await waitFor(() => expect(result.current.slot.data).toEqual([{ app: discovered[0] }]));
+  await waitFor(() =>
+    expect(result.current.slot.data).toEqual([{ app: discovered[0] }])
+  );
   expect(calls("/apps")).toHaveLength(1);
   discovered = [{ ...discovered[0]!, id: "new-app" }];
   await act(() => result.current.slot.fetch());
@@ -849,11 +980,17 @@ it("filters multiple-slot apps before authorizing and resolving them", async () 
   const { result } = renderHook(
     () => {
       useDetail();
-      return client.useViews({ slot: "page", scopes: ["user"], appIds: [selected.id] });
+      return client.useViews({
+        appIds: [selected.id],
+        scopes: ["user"],
+        slot: "page",
+      });
     },
-    { wrapper },
+    { wrapper }
   );
-  await waitFor(() => expect(result.current.data).toEqual(withApp(instances, selected)));
+  await waitFor(() =>
+    expect(result.current.data).toEqual(withApp(instances, selected))
+  );
   expect(calls("/backend/session")).toHaveLength(1);
   expect(JSON.parse(String(calls("/backend/session")[0]?.[1]?.body))).toEqual({
     appId: selected.id,
@@ -862,13 +999,13 @@ it("filters multiple-slot apps before authorizing and resolving them", async () 
 });
 
 it("retains single-slot entries when registered context changes", async () => {
-  apps = [{ ...app, views: [{ slot: "single", path: "/" }] }];
+  apps = [{ ...app, views: [{ path: "/", slot: "single" }] }];
   const { result, rerender } = renderHook(
     ({ userId }) => {
       useDetail("ready", userId);
       return client.useViews({ slot: "single" });
     },
-    { wrapper, initialProps: { userId: "u1" } },
+    { initialProps: { userId: "u1" }, wrapper }
   );
   await waitFor(() => expect(result.current.data).toBeDefined());
   const previous = result.current.data;
@@ -889,28 +1026,36 @@ it.each(["page", "single"] as const)(
     const discovered: TailorKitApp = {
       ...app,
       scope: { name: "user" },
-      views: slot === "page" ? app.views : [{ slot, path: "/" }],
+      views: slot === "page" ? app.views : [{ path: "/", slot }],
     };
     const excluded: TailorKitApp = { ...discovered, id: "excluded" };
     const original = vi.mocked(globalThis.fetch).getMockImplementation()!;
     vi.mocked(globalThis.fetch).mockImplementation((input, options) => {
       const path = url(input).pathname;
-      if (path.endsWith("/apps"))
+      if (path.endsWith("/apps")) {
         return Promise.resolve(
-          fail ? new Response(null, { status: 503 }) : Response.json([discovered, excluded]),
+          fail
+            ? new Response(null, { status: 503 })
+            : Response.json([discovered, excluded])
         );
-      if (path.endsWith("/actions"))
+      }
+      if (path.endsWith("/actions")) {
         return new Promise((resolve) => {
           finishInstances = resolve;
         });
+      }
       return original(input, options);
     });
     const { result } = renderHook(
       () => {
         useDetail();
-        return client.useViews({ slot, scopes: ["user"], appIds: [discovered.id] });
+        return client.useViews({
+          appIds: [discovered.id],
+          scopes: ["user"],
+          slot,
+        });
       },
-      { wrapper },
+      { wrapper }
     );
     await waitFor(() => expect(result.current.error).toBeInstanceOf(Error));
     fail = false;
@@ -934,9 +1079,9 @@ it.each(["page", "single"] as const)(
     expect(result.current.isPending).toBe(false);
     expect(result.current.isRefetching).toBe(false);
     expect(result.current.data).toEqual(
-      slot === "page" ? withApp(instances, discovered) : [{ app: discovered }],
+      slot === "page" ? withApp(instances, discovered) : [{ app: discovered }]
     );
     expect(calls("/apps")).toHaveLength(2);
     expect(calls("/actions")).toHaveLength(slot === "page" ? 1 : 0);
-  },
+  }
 );

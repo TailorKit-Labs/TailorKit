@@ -1,4 +1,5 @@
 import { expect, it } from "vite-plus/test";
+
 import { extractInstances } from "./instances";
 
 const source = `
@@ -64,7 +65,11 @@ it("ignores instances in calls shadowing the SDK import", async () => {
   const unrelated = `function helper(cv) {
     return cv({ instances: { dataSchema: {}, resolve: () => [] }, component: () => null });
   }`;
-  const result = await extractInstances("/app/src/page.tsx", `${source}\n${unrelated}`, "/app");
+  const result = await extractInstances(
+    "/app/src/page.tsx",
+    `${source}\n${unrelated}`,
+    "/app"
+  );
   expect(result?.names).toHaveLength(1);
   expect(result?.server).not.toContain("function helper");
   expect(result?.browser).toContain("function helper");
@@ -75,7 +80,7 @@ it("keeps resolver references stable when component code or source positions cha
   const second = await extractInstances(
     "/app/src/page.tsx",
     `\n// changed\n${source.replace("Shared label", "Other label")}`,
-    "/app",
+    "/app"
   );
   expect(second!.names).toEqual(first!.names);
 });
@@ -85,7 +90,7 @@ it("handles shadowed variables, destructuring defaults and Unicode source offset
     .replace('"SERVER_ONLY_SECRET"', '"Private 🐈"')
     .replace(
       "const rows = await queries.reports.list",
-      "function inner(privateValue) { return privateValue; }\nconst { id = format('x') } = context;\nvoid inner(id);\nconst rows = await queries.reports.list",
+      "function inner(privateValue) { return privateValue; }\nconst { id = format('x') } = context;\nvoid inner(id);\nconst rows = await queries.reports.list"
     );
   const result = await extractInstances("/app/src/page.tsx", code, "/app");
   expect(result!.server).toContain("Private 🐈");
@@ -97,15 +102,15 @@ it("rejects browser globals and captured view definitions in server resolvers", 
     extractInstances(
       "/app/page.tsx",
       source.replace("serverHelper(value)", "document.title"),
-      "/app",
-    ),
+      "/app"
+    )
   ).rejects.toThrow("browser global document");
   await expect(
     extractInstances(
       "/app/page.tsx",
       source.replace("serverHelper(value)", "view.useContext()"),
-      "/app",
-    ),
+      "/app"
+    )
   ).rejects.toThrow("cannot capture a view definition");
 });
 
@@ -114,20 +119,24 @@ it("rejects dynamic definitions rather than leaving a resolver in the browser", 
     extractInstances(
       "/app/page.tsx",
       source.replace("instances: {", "instances: { ...extra,"),
-      "/app",
-    ),
+      "/app"
+    )
   ).rejects.toThrow("cannot contain spreads");
   await expect(
-    extractInstances("/app/page.tsx", source.replace('view: "/"', "view: path"), "/app"),
+    extractInstances(
+      "/app/page.tsx",
+      source.replace('view: "/"', "view: path"),
+      "/app"
+    )
   ).rejects.toThrow("must be string literals");
   await expect(
-    extractInstances("/app/page.tsx", source.replace('view: "/",', ""), "/app"),
+    extractInstances("/app/page.tsx", source.replace('view: "/",', ""), "/app")
   ).rejects.toThrow("must be string literals");
   await expect(
     extractInstances(
       "/app/page.tsx",
-      `function factory() { ${source.replace(/^import .*$/gm, "").replace("export default view;", "return view;")} }\nimport { defineView as cv } from "tailorkit/client";`,
-      "/app",
-    ),
+      `function factory() { ${source.replaceAll(/^import .*$/gm, "").replace("export default view;", "return view;")} }\nimport { defineView as cv } from "tailorkit/client";`,
+      "/app"
+    )
   ).rejects.toThrow("module scope");
 });

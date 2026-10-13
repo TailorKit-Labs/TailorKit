@@ -1,23 +1,36 @@
 import { hashSecret } from "@tailorkit/api-utils/hashing";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vite-plus/test";
+
 import { canonicalizeScope } from "./scope";
 
 const mocks = vi.hoisted(() => ({
-  findToken: vi.fn(),
   env: { AUTH_SECRET: "test-cli-token-secret" as string | undefined },
+  findToken: vi.fn(),
 }));
-vi.mock("@tailorkit/db", () => ({ db: { query: { cliToken: { findFirst: mocks.findToken } } } }));
+vi.mock("@tailorkit/db", () => ({
+  db: { query: { cliToken: { findFirst: mocks.findToken } } },
+}));
 vi.mock("#env", () => ({ env: mocks.env }));
 const { authenticateCli } = await import("./cli-token");
-const canonical = canonicalizeScope({ name: "org", value: { tenant: "one", environment: "dev" } });
+const canonical = canonicalizeScope({
+  name: "org",
+  value: { environment: "dev", tenant: "one" },
+});
 
 function validToken() {
   return {
+    expiresAt: new Date(Date.now() + 60_000),
     id: "cli-one",
     projectId: "project-one",
-    expiresAt: new Date(Date.now() + 60_000),
     revokedAt: null,
-    scope: { name: "org", value: { tenant: "one", environment: "dev" } },
+    scope: { name: "org", value: { environment: "dev", tenant: "one" } },
     scopeKey: canonical.scopeKey,
   };
 }
@@ -55,16 +68,20 @@ describe("shared platform CLI token authentication", () => {
     ["mismatched scope key", { scopeKey: "0".repeat(32) }],
   ])("rejects a %s token", async (_name, overrides) => {
     mocks.findToken.mockResolvedValueOnce(
-      overrides ? { ...validToken(), ...overrides } : undefined,
+      overrides ? { ...validToken(), ...overrides } : undefined
     );
-    await expect(authenticateCli("project-one", "deploy-token")).rejects.toMatchObject({
+    await expect(
+      authenticateCli("project-one", "deploy-token")
+    ).rejects.toMatchObject({
       code: "UNAUTHORIZED",
       message: "Invalid CLI deploy token.",
     });
   });
 
   it("rejects runtime credentials before reading tokens", async () => {
-    await expect(authenticateCli("project-one", "deploy-token", true)).rejects.toMatchObject({
+    await expect(
+      authenticateCli("project-one", "deploy-token", true)
+    ).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
     expect(mocks.findToken).not.toHaveBeenCalled();
@@ -72,7 +89,9 @@ describe("shared platform CLI token authentication", () => {
 
   it("reports missing auth configuration before reading tokens", async () => {
     mocks.env.AUTH_SECRET = undefined;
-    await expect(authenticateCli("project-one", "deploy-token")).rejects.toMatchObject({
+    await expect(
+      authenticateCli("project-one", "deploy-token")
+    ).rejects.toMatchObject({
       code: "SERVICE_UNAVAILABLE",
     });
     expect(mocks.findToken).not.toHaveBeenCalled();

@@ -1,10 +1,15 @@
 import { timingSafeEqual } from "node:crypto";
+
 import { hashSecret } from "@tailorkit/api-utils/hashing";
-import { env } from "#env";
 import { z } from "zod";
 
+import { env } from "#env";
+
 const viewerTokenLifetimeMs = 5 * 60 * 1000;
-const tokenSchema = z.tuple([z.coerce.number().int().positive(), z.string().min(1)]);
+const tokenSchema = z.tuple([
+  z.coerce.number().int().positive(),
+  z.string().min(1),
+]);
 
 function getSigningSecret(): string {
   if (!env.AUTH_SECRET) {
@@ -18,7 +23,10 @@ function signature(sessionId: string, expiresAt: number): string {
 }
 
 /** A short-lived, bearer URL credential for an already scope-authorized preview asset request. */
-export function createPreviewViewerToken(sessionId: string, now = Date.now()): string {
+export function createPreviewViewerToken(
+  sessionId: string,
+  now = Date.now()
+): string {
   const expiresAt = now + viewerTokenLifetimeMs;
   return `${expiresAt}.${signature(sessionId, expiresAt)}`;
 }
@@ -26,7 +34,7 @@ export function createPreviewViewerToken(sessionId: string, now = Date.now()): s
 export function verifyPreviewViewerToken(
   sessionId: string,
   token: string,
-  now = Date.now(),
+  now = Date.now()
 ): boolean {
   return previewViewerTokenExpiresAt(sessionId, token, now) !== null;
 }
@@ -34,7 +42,7 @@ export function verifyPreviewViewerToken(
 export function previewViewerTokenExpiresAt(
   sessionId: string,
   token: string,
-  now = Date.now(),
+  now = Date.now()
 ): number | null {
   const parsed = tokenSchema.safeParse(token.split("."));
   if (!parsed.success) {
@@ -48,7 +56,8 @@ export function previewViewerTokenExpiresAt(
   const expectedSignature = signature(sessionId, expiresAt);
   const received = Buffer.from(receivedSignature);
   const expected = Buffer.from(expectedSignature);
-  return received.length === expected.length && timingSafeEqual(received, expected)
+  return received.length === expected.length &&
+    timingSafeEqual(received, expected)
     ? expiresAt
     : null;
 }

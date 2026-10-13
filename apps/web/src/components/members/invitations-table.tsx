@@ -1,11 +1,8 @@
-import { useMemo, useState } from "react";
-import { flexRender, useTable } from "@tanstack/react-table";
-import type { CellContext, ColumnDef, SortingState } from "@tanstack/react-table";
-import { MoreHorizontalIcon, SendIcon, TrashIcon } from "lucide-react";
 import { Avatar, AvatarFallback } from "@tailorkit/ui/avatar";
 import { Badge } from "@tailorkit/ui/badge";
 import { Button } from "@tailorkit/ui/button";
 import { CardFrame } from "@tailorkit/ui/card";
+import { DateAgo } from "@tailorkit/ui/date";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,10 +10,29 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@tailorkit/ui/dropdown-menu";
-import { DateAgo } from "@tailorkit/ui/date";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@tailorkit/ui/table";
-import { getRoleBadgeVariant, renderSortableHeader } from "./member-table-utils";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@tailorkit/ui/table";
+import { flexRender, useTable } from "@tanstack/react-table";
+import type {
+  CellContext,
+  ColumnDef,
+  SortingState,
+} from "@tanstack/react-table";
+import { MoreHorizontalIcon, SendIcon, TrashIcon } from "lucide-react";
+import { useMemo, useState } from "react";
+
 import { dataTableFeatures } from "#lib/table";
+
+import {
+  getRoleBadgeVariant,
+  renderSortableHeader,
+} from "./member-table-utils";
 
 export interface InvitationRow {
   id: string;
@@ -39,29 +55,34 @@ function createInvitationColumns({
   onRevoke,
   resendPending,
   revokePending,
-}: InvitationColumnsOptions): ColumnDef<typeof dataTableFeatures, InvitationRow>[] {
+}: InvitationColumnsOptions): ColumnDef<
+  typeof dataTableFeatures,
+  InvitationRow
+>[] {
   return [
     {
       accessorKey: "email",
-      header: "Email",
-      size: 280,
-      cell: ({ row }: CellContext<typeof dataTableFeatures, InvitationRow, unknown>) => {
+      cell: ({
+        row,
+      }: CellContext<typeof dataTableFeatures, InvitationRow, unknown>) => {
         const initials = row.original.email.slice(0, 2).toUpperCase();
         return (
           <div className="flex items-center gap-3">
             <Avatar className="size-7">
               <AvatarFallback className="text-xs">{initials}</AvatarFallback>
             </Avatar>
-            <p className="truncate font-medium text-sm">{row.original.email}</p>
+            <p className="truncate text-sm font-medium">{row.original.email}</p>
           </div>
         );
       },
+      header: "Email",
+      size: 280,
     },
     {
       accessorKey: "role",
-      header: "Role",
-      size: 110,
-      cell: ({ row }: CellContext<typeof dataTableFeatures, InvitationRow, unknown>) => {
+      cell: ({
+        row,
+      }: CellContext<typeof dataTableFeatures, InvitationRow, unknown>) => {
         const role = row.original.role ?? "member";
         return (
           <Badge variant={getRoleBadgeVariant(role)} size="lg">
@@ -69,31 +90,38 @@ function createInvitationColumns({
           </Badge>
         );
       },
+      header: "Role",
+      size: 110,
     },
     {
       accessorKey: "expiresAt",
+      cell: ({
+        row,
+      }: CellContext<typeof dataTableFeatures, InvitationRow, unknown>) => (
+        <DateAgo date={row.original.expiresAt} />
+      ),
       header: "Expires",
       size: 140,
       sortFn: "datetime",
-      cell: ({ row }: CellContext<typeof dataTableFeatures, InvitationRow, unknown>) => (
-        <DateAgo date={row.original.expiresAt} />
-      ),
     },
     {
-      id: "actions",
-      size: 80,
-      enableSorting: false,
-      header: () => null,
-      cell: ({ row }: CellContext<typeof dataTableFeatures, InvitationRow, unknown>) =>
+      cell: ({
+        row,
+      }: CellContext<typeof dataTableFeatures, InvitationRow, unknown>) =>
         canManage ? (
           <div className="flex items-center justify-end gap-1">
             <DropdownMenu>
-              <DropdownMenuTrigger render={<Button size="icon-sm" variant="ghost" />}>
+              <DropdownMenuTrigger
+                render={<Button size="icon-sm" variant="ghost" />}
+              >
                 <MoreHorizontalIcon className="size-4" />
                 <span className="sr-only">Open invitation actions</span>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuItem disabled={resendPending} onClick={() => onResend(row.original)}>
+                <DropdownMenuItem
+                  disabled={resendPending}
+                  onClick={() => onResend(row.original)}
+                >
                   <SendIcon />
                   Resend email
                 </DropdownMenuItem>
@@ -110,6 +138,10 @@ function createInvitationColumns({
             </DropdownMenu>
           </div>
         ) : null,
+      enableSorting: false,
+      header: () => null,
+      id: "actions",
+      size: 80,
     },
   ];
 }
@@ -129,11 +161,20 @@ export function InvitationsTable({
   resendPending: boolean;
   revokePending: boolean;
 }) {
-  const [sorting, setSorting] = useState<SortingState>([{ id: "email", desc: false }]);
+  const [sorting, setSorting] = useState<SortingState>([
+    { desc: false, id: "email" },
+  ]);
 
   const columns = useMemo<ColumnDef<typeof dataTableFeatures, InvitationRow>[]>(
-    () => createInvitationColumns({ canManage, onResend, onRevoke, resendPending, revokePending }),
-    [canManage, onResend, onRevoke, resendPending, revokePending],
+    () =>
+      createInvitationColumns({
+        canManage,
+        onResend,
+        onRevoke,
+        resendPending,
+        revokePending,
+      }),
+    [canManage, onResend, onRevoke, resendPending, revokePending]
   );
 
   const table = useTable({
@@ -147,7 +188,7 @@ export function InvitationsTable({
 
   if (invitations.length === 0) {
     return (
-      <div className="rounded-lg border px-4 py-12 text-center text-muted-foreground text-sm">
+      <div className="text-muted-foreground rounded-lg border px-4 py-12 text-center text-sm">
         No pending invitations.
       </div>
     );
@@ -164,7 +205,9 @@ export function InvitationsTable({
                 return (
                   <TableHead
                     key={header.id}
-                    style={columnSize ? { width: `${columnSize}px` } : undefined}
+                    style={
+                      columnSize ? { width: `${columnSize}px` } : undefined
+                    }
                   >
                     {renderSortableHeader(header)}
                   </TableHead>

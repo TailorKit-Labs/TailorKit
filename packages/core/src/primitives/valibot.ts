@@ -1,4 +1,5 @@
 import * as v from "valibot";
+
 import type { ComponentDefinition } from "../schema/index";
 import { primitiveDefinitions, primitiveNames } from "./definition";
 import type { PrimitiveName, PrimitivePropDefinition } from "./definition";
@@ -7,7 +8,10 @@ import type { TailorKitTheme } from "./theme";
 
 type Schema = v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>;
 type Shape = Record<string, Schema>;
-type PrimitiveComponents = Record<PrimitiveName, ComponentDefinition & { children: true }>;
+type PrimitiveComponents = Record<
+  PrimitiveName,
+  ComponentDefinition & { children: true }
+>;
 
 const tokenPicklist = (tokens: Record<string, string> | undefined): Schema => {
   const keys = Object.keys(tokens ?? {});
@@ -17,7 +21,10 @@ const tokenPicklist = (tokens: Record<string, string> | undefined): Schema => {
   return v.picklist(keys);
 };
 
-const responsive = <T extends Schema>(schema: T, theme: TailorKitTheme): Schema => {
+const responsive = <T extends Schema>(
+  schema: T,
+  theme: TailorKitTheme
+): Schema => {
   const shape: Shape = {};
   for (const key of Object.keys(theme.breakpoints ?? {})) {
     shape[key] = v.optional(schema);
@@ -25,15 +32,22 @@ const responsive = <T extends Schema>(schema: T, theme: TailorKitTheme): Schema 
   return v.union([schema, v.strictObject(shape as v.ObjectEntries)]);
 };
 
-const optionalResponsive = <T extends Schema>(schema: T, theme: TailorKitTheme): Schema =>
-  v.optional(responsive(schema, theme));
+const optionalResponsive = <T extends Schema>(
+  schema: T,
+  theme: TailorKitTheme
+): Schema => v.optional(responsive(schema, theme));
 
-const propSchema = (definition: PrimitivePropDefinition, theme: TailorKitTheme): Schema => {
+const propSchema = (
+  definition: PrimitivePropDefinition,
+  theme: TailorKitTheme
+): Schema => {
   const schema =
     definition.kind === "token"
       ? tokenPicklist(theme.tokens?.[definition.token])
       : v.picklist(definition.values);
-  return definition.responsive === false ? v.optional(schema) : optionalResponsive(schema, theme);
+  return definition.responsive === false
+    ? v.optional(schema)
+    : optionalResponsive(schema, theme);
 };
 
 const primitiveShape = (name: PrimitiveName, theme: TailorKitTheme): Shape =>
@@ -41,7 +55,7 @@ const primitiveShape = (name: PrimitiveName, theme: TailorKitTheme): Shape =>
     Object.entries(primitiveDefinitions[name]).map(([propName, definition]) => [
       propName,
       propSchema(definition, theme),
-    ]),
+    ])
   );
 
 export const primitives = (theme: TailorKitTheme = {}): PrimitiveComponents => {
@@ -50,10 +64,10 @@ export const primitives = (theme: TailorKitTheme = {}): PrimitiveComponents => {
   for (const name of primitiveNames) {
     components[name] = {
       callbacks: {},
-      fields: v.strictObject(
-        primitiveShape(name, resolvedTheme) as v.ObjectEntries,
-      ) as unknown as ComponentDefinition["fields"],
       children: true,
+      fields: v.strictObject(
+        primitiveShape(name, resolvedTheme) as v.ObjectEntries
+      ) as unknown as ComponentDefinition["fields"],
     };
   }
   return components;

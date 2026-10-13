@@ -1,12 +1,3 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Building2Icon, MailIcon, PlusIcon } from "lucide-react";
-
-import { AccountLayout } from "#components/account-layout";
-import { CreateOrgDialog } from "#components/create-org-dialog";
-import { PageLayout } from "#components/page-layout";
-import { isOrgCreationManaged } from "#lib/org-creation";
-import { orpc } from "#lib/orpc";
 import { Avatar, AvatarFallback } from "@tailorkit/ui/avatar";
 import { Badge } from "@tailorkit/ui/badge";
 import { Button } from "@tailorkit/ui/button";
@@ -19,14 +10,32 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@tailorkit/ui/empty";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@tailorkit/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@tailorkit/ui/table";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Building2Icon, MailIcon, PlusIcon } from "lucide-react";
+
+import { AccountLayout } from "#components/account-layout";
+import { CreateOrgDialog } from "#components/create-org-dialog";
+import { PageLayout } from "#components/page-layout";
+import { isOrgCreationManaged } from "#lib/org-creation";
+import { orpc } from "#lib/orpc";
 
 export const Route = createFileRoute("/(app)/account/organizations")({
   component: OrganizationsPage,
   loader: async ({ context }) => {
     await Promise.all([
       context.queryClient.query(context.orpc.user.getOrgs.queryOptions()),
-      context.queryClient.query(context.orpc.user.getPendingInvitations.queryOptions()),
+      context.queryClient.query(
+        context.orpc.user.getPendingInvitations.queryOptions()
+      ),
     ]);
   },
 });
@@ -49,7 +58,9 @@ function formatDate(value: Date | string) {
 function OrganizationsPage() {
   const navigate = useNavigate();
   const { data: orgs } = useSuspenseQuery(orpc.user.getOrgs.queryOptions());
-  const { data: invitations } = useSuspenseQuery(orpc.user.getPendingInvitations.queryOptions());
+  const { data: invitations } = useSuspenseQuery(
+    orpc.user.getPendingInvitations.queryOptions()
+  );
   const pendingInviteCount = invitations.length;
 
   return (
@@ -57,7 +68,11 @@ function OrganizationsPage() {
       <PageLayout
         actions={
           <>
-            <Button render={<Link to="/account/invites" />} size="sm" variant="outline">
+            <Button
+              render={<Link to="/account/invites" />}
+              size="sm"
+              variant="outline"
+            >
               <MailIcon />
               Invites
               {pendingInviteCount > 0 && (
@@ -67,7 +82,10 @@ function OrganizationsPage() {
               )}
             </Button>
             {isOrgCreationManaged ? (
-              <Button render={<Link to="/account/request-organization" />} size="sm">
+              <Button
+                render={<Link to="/account/request-organization" />}
+                size="sm"
+              >
                 <PlusIcon />
                 New organisation
               </Button>
@@ -94,12 +112,16 @@ function OrganizationsPage() {
                   </EmptyMedia>
                   <EmptyTitle>No organisations yet</EmptyTitle>
                   <EmptyDescription>
-                    Create an organisation to start adding projects and teammates.
+                    Create an organisation to start adding projects and
+                    teammates.
                   </EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent>
                   {isOrgCreationManaged ? (
-                    <Button render={<Link to="/account/request-organization" />} size="sm">
+                    <Button
+                      render={<Link to="/account/request-organization" />}
+                      size="sm"
+                    >
                       <PlusIcon />
                       Create organisation
                     </Button>
@@ -130,19 +152,28 @@ function OrganizationsPage() {
                   <TableRow
                     className={
                       org.slug
-                        ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                        ? "focus-visible:ring-ring cursor-pointer focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
                         : undefined
                     }
                     key={org.id}
                     onClick={() => {
                       if (org.slug) {
-                        navigate({ params: { orgSlug: org.slug }, to: "/$orgSlug/~/projects" });
+                        navigate({
+                          params: { orgSlug: org.slug },
+                          to: "/$orgSlug/~/projects",
+                        });
                       }
                     }}
                     onKeyDown={(event) => {
-                      if (org.slug && (event.key === "Enter" || event.key === " ")) {
+                      if (
+                        org.slug &&
+                        (event.key === "Enter" || event.key === " ")
+                      ) {
                         event.preventDefault();
-                        navigate({ params: { orgSlug: org.slug }, to: "/$orgSlug/~/projects" });
+                        navigate({
+                          params: { orgSlug: org.slug },
+                          to: "/$orgSlug/~/projects",
+                        });
                       }
                     }}
                     tabIndex={org.slug ? 0 : undefined}
@@ -150,14 +181,16 @@ function OrganizationsPage() {
                     <TableCell>
                       <div className="flex min-w-0 items-center gap-3">
                         <Avatar className="size-8 rounded-md">
-                          <AvatarFallback className="rounded-md bg-primary text-primary-foreground text-xs">
+                          <AvatarFallback className="bg-primary text-primary-foreground rounded-md text-xs">
                             {orgInitials(org.name)}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="truncate font-medium text-sm">{org.name}</span>
+                        <span className="truncate text-sm font-medium">
+                          {org.name}
+                        </span>
                       </div>
                     </TableCell>
-                    <TableCell className="truncate text-muted-foreground">
+                    <TableCell className="text-muted-foreground truncate">
                       {org.slug ? `/${org.slug}` : "No slug set"}
                     </TableCell>
                     <TableCell className="text-muted-foreground">

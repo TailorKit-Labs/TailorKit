@@ -1,4 +1,5 @@
 import { createHmac, randomUUID } from "node:crypto";
+
 import { jwtVerify, SignJWT } from "jose";
 import { z } from "zod";
 
@@ -7,22 +8,29 @@ const audience = "tailorkit-platform-cli";
 const lifetimeSeconds = 60 * 60;
 
 const identitySchema = z.object({
-  projectId: z.string().min(1),
   appId: z.string().min(1),
   cliTokenId: z.string().min(1),
-  scope: z.object({ name: z.string().min(1), value: z.record(z.string(), z.json()) }),
+  projectId: z.string().min(1),
+  scope: z.object({
+    name: z.string().min(1),
+    value: z.record(z.string(), z.json()),
+  }),
 });
 const claimsSchema = identitySchema.extend({
+  exp: z.number().int(),
+  iat: z.number().int(),
+  jti: z.string().min(1),
   platformUrl: z.url({ protocol: /^https?$/u }),
   sub: z.string().min(1),
-  jti: z.string().min(1),
-  iat: z.number().int(),
-  exp: z.number().int(),
 });
 
 function signingKey(secret: string) {
-  if (secret.length < 32) throw new Error("AUTH_SECRET is required for agent tokens.");
-  return createHmac("sha256", secret).update("tailorkit-agent-deploy-v1").digest();
+  if (secret.length < 32) {
+    throw new Error("AUTH_SECRET is required for agent tokens.");
+  }
+  return createHmac("sha256", secret)
+    .update("tailorkit-agent-deploy-v1")
+    .digest();
 }
 
 function normalizePlatformUrl(value: string) {
@@ -34,8 +42,9 @@ function normalizePlatformUrl(value: string) {
     url.password ||
     url.search ||
     url.hash
-  )
+  ) {
     throw new Error("Invalid agent platform URL.");
+  }
   return url.href.replace(/\/$/u, "");
 }
 
@@ -43,12 +52,15 @@ function normalizePlatformUrl(value: string) {
 export async function issueAgentToken(
   identity: z.input<typeof identitySchema>,
   secret: string,
-  platformUrl: string,
+  platformUrl: string
 ) {
   const authorized = identitySchema.parse(identity);
   const now = Math.floor(Date.now() / 1000);
   return (
-    new SignJWT({ ...authorized, platformUrl: normalizePlatformUrl(platformUrl) })
+    new SignJWT({
+      ...authorized,
+      platformUrl: normalizePlatformUrl(platformUrl),
+    })
       .setProtectedHeader({ alg: "HS256", typ: "tailorkit-agent+jwt" })
       .setIssuer(issuer)
       .setAudience(audience)
@@ -61,14 +73,18 @@ export async function issueAgentToken(
   );
 }
 
-export async function verifyAgentToken(token: string, secret: string, platformUrl: string) {
+export async function verifyAgentToken(
+  token: string,
+  secret: string,
+  platformUrl: string
+) {
   const { payload } = await jwtVerify(token, signingKey(secret), {
     algorithms: ["HS256"],
-    typ: "tailorkit-agent+jwt",
-    issuer,
     audience,
+    issuer,
     maxTokenAge: lifetimeSeconds,
     requiredClaims: ["exp", "iat", "sub", "jti"],
+    typ: "tailorkit-agent+jwt",
   });
   const claims = claimsSchema.parse(payload);
   if (
@@ -76,8 +92,9 @@ export async function verifyAgentToken(token: string, secret: string, platformUr
     claims.exp - claims.iat > lifetimeSeconds ||
     claims.sub !== `cli-token:${claims.cliTokenId}` ||
     claims.platformUrl !== normalizePlatformUrl(platformUrl)
-  )
+  ) {
     throw new Error("Invalid agent token claims.");
+  }
   return claims;
 }
 

@@ -1,7 +1,14 @@
-import { atom, batch, computed } from "nanostores";
 import { createIframeUiHost } from "@tailorkit/sandbox/host";
-import type { IframeUiHost, IframeUiHostOptions } from "@tailorkit/sandbox/host";
-import type { HostToIframePayload, RemoteElementNode } from "@tailorkit/sandbox/protocol";
+import type {
+  IframeUiHost,
+  IframeUiHostOptions,
+} from "@tailorkit/sandbox/host";
+import type {
+  HostToIframePayload,
+  RemoteElementNode,
+} from "@tailorkit/sandbox/protocol";
+import { atom, batch, computed } from "nanostores";
+
 import { NodeStore } from "./node-store";
 
 export interface RemoteViewSnapshot {
@@ -15,7 +22,10 @@ export interface RemoteViewStoreOptions {
   props?: Record<string, unknown>;
 }
 
-export interface RemoteViewMountOptions extends Omit<IframeUiHostOptions, "onError" | "props"> {
+export interface RemoteViewMountOptions extends Omit<
+  IframeUiHostOptions,
+  "onError" | "props"
+> {
   appUrl: string | URL;
 }
 
@@ -28,18 +38,26 @@ interface RunningView {
 /** One remote app's state and host lifecycle, independent of its rendering framework. */
 export function createRemoteViewStore(
   options: RemoteViewStoreOptions = {},
-  createHost: typeof createIframeUiHost = createIframeUiHost,
+  createHost: typeof createIframeUiHost = createIframeUiHost
 ) {
   const nodes = new NodeStore();
   const components = atom(options.components ?? {});
-  const state = atom<RemoteViewSnapshot>({ status: "starting", error: null, generation: 0 });
-  let props = options.props;
+  const state = atom<RemoteViewSnapshot>({
+    error: null,
+    generation: 0,
+    status: "starting",
+  });
+  let { props } = options;
   let current: RunningView | null = null;
 
   const stop = (run: RunningView) => {
-    if (run.stopped) return;
+    if (run.stopped) {
+      return;
+    }
     run.stopped = true;
-    if (current === run) current = null;
+    if (current === run) {
+      current = null;
+    }
     run.unsubscribe?.();
     run.host?.destroy();
   };
@@ -47,19 +65,19 @@ export function createRemoteViewStore(
   const reset = () => {
     batch(() => {
       nodes.clear();
-      state.set({ status: "starting", error: null, generation: state.get().generation });
+      state.set({
+        error: null,
+        generation: state.get().generation,
+        status: "starting",
+      });
     });
   };
 
   return {
-    nodes,
     components,
-    state,
-    selectComponent: (name: string) => computed(components, (registry) => registry[name]),
-    setComponents: (registry: Record<string, unknown>) => components.set(registry),
-    setProps(next: Record<string, unknown> | undefined) {
-      props = next;
-      current?.host?.setProps(next);
+    destroy() {
+      if (current) stop(current);
+      reset();
     },
     dispatch(payload: HostToIframePayload) {
       current?.host?.dispatch(payload);
@@ -71,7 +89,11 @@ export function createRemoteViewStore(
         nodes.clear();
         state.set({ status: "starting", error: null, generation });
       });
-      const run: RunningView = { host: null, unsubscribe: null, stopped: false };
+      const run: RunningView = {
+        host: null,
+        unsubscribe: null,
+        stopped: false,
+      };
       current = run;
       const reportError = (error: Error) => {
         if (current !== run || run.stopped) return;
@@ -79,7 +101,11 @@ export function createRemoteViewStore(
         state.set({ status: "error", error, generation });
       };
       try {
-        const host = createHost(appUrl, { ...hostOptions, props, onError: reportError });
+        const host = createHost(appUrl, {
+          ...hostOptions,
+          props,
+          onError: reportError,
+        });
         run.host = host;
         run.unsubscribe = host.subscribe(() => {
           if (current !== run || run.stopped) return;
@@ -105,10 +131,16 @@ export function createRemoteViewStore(
         reset();
       };
     },
-    destroy() {
-      if (current) stop(current);
-      reset();
+    nodes,
+    selectComponent: (name: string) =>
+      computed(components, (registry) => registry[name]),
+    setComponents: (registry: Record<string, unknown>) =>
+      components.set(registry),
+    setProps(next: Record<string, unknown> | undefined) {
+      props = next;
+      current?.host?.setProps(next);
     },
+    state,
   };
 }
 
@@ -117,14 +149,18 @@ export type RemoteViewStore = ReturnType<typeof createRemoteViewStore>;
 /** Bind remote callbacks to their protocol payload without framework event arguments leaking. */
 export function createRemoteElementProps(
   node: RemoteElementNode,
-  dispatch: RemoteViewStore["dispatch"],
+  dispatch: RemoteViewStore["dispatch"]
 ): Record<string, unknown> {
   const props: Record<string, unknown> = { ...node.props };
   for (const binding of node.callbacks ?? []) {
     props[binding.callback] = (...args: unknown[]) => {
       dispatch({
+        data: {
+          args: args.slice(0, binding.inputCount),
+          event: binding.event,
+          nodeId: node.id,
+        },
         type: "dispatchCallback",
-        data: { nodeId: node.id, event: binding.event, args: args.slice(0, binding.inputCount) },
       });
     };
   }

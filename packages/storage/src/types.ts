@@ -1,6 +1,11 @@
 export type StorageType = "s3";
 
-export type StorageBody = Blob | Buffer | Uint8Array | ArrayBuffer | ReadableStream;
+export type StorageBody =
+  | Blob
+  | Buffer
+  | Uint8Array
+  | ArrayBuffer
+  | ReadableStream;
 
 export interface PutObjectInput {
   key: string;
@@ -73,6 +78,10 @@ export interface Storage<T extends StorageType = StorageType> {
   readonly type: T;
   head: (input: HeadObjectInput) => Promise<HeadObjectOutput>;
   delete: (input: DeleteObjectInput) => Promise<void>;
-  createUploadUrl: (input: CreateUploadUrlInput) => Promise<CreateUploadUrlOutput>;
-  createDownloadUrl: (input: CreateDownloadUrlInput) => Promise<CreateDownloadUrlOutput>;
+  createUploadUrl: (
+    input: CreateUploadUrlInput
+  ) => Promise<CreateUploadUrlOutput>;
+  createDownloadUrl: (
+    input: CreateDownloadUrlInput
+  ) => Promise<CreateDownloadUrlOutput>;
 }

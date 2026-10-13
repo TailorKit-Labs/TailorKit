@@ -1,13 +1,18 @@
 import { SendEmailCommand, SESv2Client } from "@aws-sdk/client-sesv2";
 import { render } from "@react-email/render";
 import { getBaseUrl } from "@tailorkit/env";
-import { env } from "#env";
 import { withSpan } from "@tailorkit/observability";
 import { createTransport } from "nodemailer";
 import type Mail from "nodemailer/lib/mailer";
 import type SESTransport from "nodemailer/lib/ses-transport";
 import type SMTPTransport from "nodemailer/lib/smtp-transport";
-import { BetterAuthOtpTemplate, betterAuthEmailSubjects } from "./templates/better-auth";
+
+import { env } from "#env";
+
+import {
+  BetterAuthOtpTemplate,
+  betterAuthEmailSubjects,
+} from "./templates/better-auth";
 import type { BetterAuthEmailType } from "./templates/better-auth";
 import { InvitationTemplate } from "./templates/better-auth/invitation";
 
@@ -36,7 +41,8 @@ export interface SendOrganizationInvitationEmailInput {
 
 let cachedTransporter: Mail | undefined;
 
-const hasSesCredentials = () => Boolean(env.EMAIL_ACCESS_KEY_ID && env.EMAIL_SECRET_ACCESS_KEY);
+const hasSesCredentials = () =>
+  Boolean(env.EMAIL_ACCESS_KEY_ID && env.EMAIL_SECRET_ACCESS_KEY);
 
 const resolveSesRegion = () => env.EMAIL_REGION ?? "us-east-1";
 
@@ -53,7 +59,7 @@ const resolveSmtpUrl = () => {
 const resolveSesCredentials = () => {
   if (!(env.EMAIL_ACCESS_KEY_ID && env.EMAIL_SECRET_ACCESS_KEY)) {
     throw new Error(
-      "EMAIL_ACCESS_KEY_ID and EMAIL_SECRET_ACCESS_KEY are required when EMAIL_PROVIDER is ses.",
+      "EMAIL_ACCESS_KEY_ID and EMAIL_SECRET_ACCESS_KEY are required when EMAIL_PROVIDER is ses."
     );
   }
 
@@ -86,7 +92,9 @@ const getTransporter = () => {
       return createSesTransport();
     }
 
-    throw new Error("Email transport requires EMAIL_PROVIDER with matching credentials.");
+    throw new Error(
+      "Email transport requires EMAIL_PROVIDER with matching credentials."
+    );
   })();
 
   return cachedTransporter;
@@ -104,7 +112,11 @@ const renderBetterAuthOtpEmail = async ({
   otp,
   type,
 }: Pick<SendBetterAuthOtpInput, "otp" | "type">) => {
-  const component = BetterAuthOtpTemplate({ logoBaseUrl: getBaseUrl(env), otp, type });
+  const component = BetterAuthOtpTemplate({
+    logoBaseUrl: getBaseUrl(env),
+    otp,
+    type,
+  });
 
   return {
     html: await render(component),
@@ -112,7 +124,14 @@ const renderBetterAuthOtpEmail = async ({
   };
 };
 
-export const sendEmail = async ({ from, html, replyTo, subject, text, to }: SendEmailInput) => {
+export const sendEmail = async ({
+  from,
+  html,
+  replyTo,
+  subject,
+  text,
+  to,
+}: SendEmailInput) => {
   const transporter = getTransporter();
   const message: SMTPTransport.MailOptions = {
     from: from ?? resolveFrom(),
@@ -127,25 +146,29 @@ export const sendEmail = async ({ from, html, replyTo, subject, text, to }: Send
     "email.send",
     {
       attributes: {
-        "tailorkit.package": "email",
         "email.provider": env.EMAIL_PROVIDER,
+        "tailorkit.package": "email",
       },
     },
-    () => transporter.sendMail(message),
+    () => transporter.sendMail(message)
   );
 };
 
-export const sendBetterAuthOtpEmail = async ({ email, otp, type }: SendBetterAuthOtpInput) => {
+export const sendBetterAuthOtpEmail = async ({
+  email,
+  otp,
+  type,
+}: SendBetterAuthOtpInput) => {
   const { html, text } = await withSpan(
     "email.render_better_auth_otp",
     {
       attributes: {
-        "tailorkit.package": "email",
-        "email.template": "better_auth_otp",
         "email.otp_type": type,
+        "email.template": "better_auth_otp",
+        "tailorkit.package": "email",
       },
     },
-    () => renderBetterAuthOtpEmail({ otp, type }),
+    () => renderBetterAuthOtpEmail({ otp, type })
   );
 
   await sendEmail({
@@ -180,14 +203,14 @@ export const sendOrganizationInvitationEmail = async ({
     "email.render_invitation",
     {
       attributes: {
-        "tailorkit.package": "email",
         "email.template": "organization_invitation",
+        "tailorkit.package": "email",
       },
     },
     async () => ({
       html: await render(component),
       text: await render(component, { plainText: true }),
-    }),
+    })
   );
 
   await sendEmail({

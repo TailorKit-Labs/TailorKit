@@ -6,15 +6,24 @@ import {
   cliAuthStart,
 } from "@tailorkit/client-platform/client";
 import { z } from "zod";
-import { getTailorKitScope, o, requireCliDeployToken, requireHostAuth } from "../procedures";
 
-const runPlatformCliAuthRequest = async <T>(request: Promise<T>): Promise<T> => {
+import {
+  getTailorKitScope,
+  o,
+  requireCliDeployToken,
+  requireHostAuth,
+} from "../procedures";
+
+const runPlatformCliAuthRequest = async <T>(
+  request: Promise<T>
+): Promise<T> => {
   try {
     return await request;
   } catch (error) {
     if (typeof error === "string" && error.toLowerCase() === "unauthorized") {
       throw new ORPCError("UNAUTHORIZED", {
-        message: "TailorKit platform rejected the host project key. Check TAILORKIT_PROJECT_KEY.",
+        message:
+          "TailorKit platform rejected the host project key. Check TAILORKIT_PROJECT_KEY.",
       });
     }
 
@@ -36,8 +45,8 @@ export const cliAuthRouter = {
             },
             client: context.platform,
             headers: context.platformHeaders,
-          }),
-        ),
+          })
+        )
     ),
   deny: o
     .use(requireHostAuth)
@@ -51,8 +60,8 @@ export const cliAuthRouter = {
             },
             client: context.platform,
             headers: context.platformHeaders,
-          }),
-        ),
+          })
+        )
     ),
   poll: o.input(z.object({ deviceCode: z.string().min(1) })).handler(
     async ({ context, input }) =>
@@ -63,8 +72,8 @@ export const cliAuthRouter = {
           },
           client: context.platform,
           headers: context.platformHeaders,
-        }),
-      ),
+        })
+      )
   ),
   start: o.input(z.object({})).handler(
     async ({ context }) =>
@@ -73,8 +82,8 @@ export const cliAuthRouter = {
           body: {},
           client: context.platform,
           headers: context.platformHeaders,
-        }),
-      ),
+        })
+      )
   ),
   verifyToken: o
     .input(z.object({}))

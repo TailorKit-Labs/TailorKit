@@ -1,12 +1,21 @@
 "use client";
 
-import type { InputProps } from "../components/input";
 import type { HTMLInputTypeAttribute, ReactNode } from "react";
 
-import { Field, FieldDescription, FieldError, FieldLabel } from "../components/field";
-import { formatFieldErrors } from "./field-errors";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "../components/field";
+import type { InputProps } from "../components/input";
 import { Input } from "../components/input";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "../components/input-group";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "../components/input-group";
+import { formatFieldErrors } from "./field-errors";
 
 const emptyErrors: unknown[] = [];
 
@@ -52,7 +61,8 @@ export function TextField({
     <Field disabled={disabled} invalid={isError}>
       <div className="flex w-full items-center gap-2">
         <FieldLabel>
-          {label} {required && <span className="text-destructive-foreground">*</span>}
+          {label}{" "}
+          {required && <span className="text-destructive-foreground">*</span>}
         </FieldLabel>
         {labelAction && <div className="ml-auto">{labelAction}</div>}
       </div>

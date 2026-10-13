@@ -2,14 +2,16 @@ import { beforeEach, expect, it, vi } from "vite-plus/test";
 
 const mocks = vi.hoisted(() => ({
   authorize: vi.fn(),
-  message: vi.fn(),
   close: vi.fn(),
+  message: vi.fn(),
 }));
 
 vi.mock("@tailorkit/api-platform/preview-ws-auth", () => ({
   authorizePreviewSocket: mocks.authorize,
 }));
-vi.mock("@tailorkit/api-platform/preview-ws", () => ({ previewWebSocketRouter: {} }));
+vi.mock("@tailorkit/api-platform/preview-ws", () => ({
+  previewWebSocketRouter: {},
+}));
 vi.mock("@orpc/server/crossws", () => ({
   experimental_RPCHandler: class {
     handlers = mocks;
@@ -32,7 +34,10 @@ it("returns an upgrade-required response for ordinary HTTP requests", () => {
   expect(response.crossws.open).toBeTypeOf("function");
   expect(response.crossws.message).toBeTypeOf("function");
 });
-const context = { sessionId: "11111111-1111-4111-8111-111111111111", role: "uploader" };
+const context = {
+  role: "uploader",
+  sessionId: "11111111-1111-4111-8111-111111111111",
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -43,9 +48,9 @@ it("waits for authorization before handling an early message", async () => {
   mocks.authorize.mockReturnValueOnce(
     new Promise((resolve) => {
       resolveAuthorization = resolve;
-    }),
+    })
   );
-  const peer = { context: { ...context, token: "token" }, close: vi.fn() };
+  const peer = { close: vi.fn(), context: { ...context, token: "token" } };
   const message = { rawData: "{}" };
 
   const opening = socket.open(peer);
@@ -64,9 +69,9 @@ it("closes an early message when authorization fails", async () => {
   mocks.authorize.mockReturnValueOnce(
     new Promise((resolve) => {
       resolveAuthorization = resolve;
-    }),
+    })
   );
-  const peer = { context: { ...context, token: "invalid" }, close: vi.fn() };
+  const peer = { close: vi.fn(), context: { ...context, token: "invalid" } };
 
   const opening = socket.open(peer);
   const handling = socket.message(peer, { rawData: "{}" });
@@ -81,9 +86,9 @@ it("closes a peer that sends multiple frames before authorization finishes", asy
   mocks.authorize.mockReturnValueOnce(
     new Promise((resolve) => {
       resolveAuthorization = resolve;
-    }),
+    })
   );
-  const peer = { context: { ...context, token: "token" }, close: vi.fn() };
+  const peer = { close: vi.fn(), context: { ...context, token: "token" } };
   const opening = socket.open(peer);
   const first = socket.message(peer, { rawData: "first" });
   const second = socket.message(peer, { rawData: "second" });
@@ -97,12 +102,15 @@ it("closes a peer that sends multiple frames before authorization finishes", asy
 
 it("handles multiple messages after authorization finishes", async () => {
   mocks.authorize.mockResolvedValueOnce(context);
-  const peer = { context: { ...context, token: "token" }, close: vi.fn() };
+  const peer = { close: vi.fn(), context: { ...context, token: "token" } };
   await socket.open(peer);
 
   const first = { rawData: "first" };
   const second = { rawData: "second" };
-  await Promise.all([socket.message(peer, first), socket.message(peer, second)]);
+  await Promise.all([
+    socket.message(peer, first),
+    socket.message(peer, second),
+  ]);
   expect(peer.close).not.toHaveBeenCalled();
   expect(mocks.message).toHaveBeenCalledTimes(2);
   expect(mocks.message).toHaveBeenNthCalledWith(1, peer, first, { context });

@@ -3,7 +3,10 @@ import type { BetterAuthTemplateProps } from "./shared";
 
 export function SignInTemplate({ logoBaseUrl, otp }: BetterAuthTemplateProps) {
   return (
-    <AuthEmailLayout logoBaseUrl={logoBaseUrl} preview={`Your ${COMPANY_NAME} sign-in code.`}>
+    <AuthEmailLayout
+      logoBaseUrl={logoBaseUrl}
+      preview={`Your ${COMPANY_NAME} sign-in code.`}
+    >
       <AuthOtpContent
         description={
           <>
@@ -20,8 +23,8 @@ export function SignInTemplate({ logoBaseUrl, otp }: BetterAuthTemplateProps) {
 }
 
 SignInTemplate.PreviewProps = {
-  otp: "123456",
   logoBaseUrl: "http://localhost:3000",
+  otp: "123456",
 } satisfies BetterAuthTemplateProps;
 
 export default SignInTemplate;

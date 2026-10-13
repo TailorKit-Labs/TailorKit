@@ -4,6 +4,7 @@ import type { ComponentType, VNode } from "preact";
 import { useLayoutEffect, useState } from "preact/hooks";
 import { act } from "preact/test-utils";
 import { expect, it, vi } from "vite-plus/test";
+
 import type { ShellProps } from "./routing";
 
 vi.stubGlobal("__PREACT_VERSION__", "11.0.0");
@@ -37,13 +38,27 @@ it("keeps app and slot shells and common layouts mounted, and isolates mounted s
       "div",
       {},
       h("button", { onClick: () => setCount(count + 1) }, `count:${count}`),
-      h(Route, {}),
+      h(Route, {})
     );
   }
-  const first = defineView({ slot: "panel", view: "/", component: () => "first" });
-  const users = defineView({ slot: "panel", view: "/users", component: () => "users" });
+  const first = defineView({
+    component: () => "first",
+    slot: "panel",
+    view: "/",
+  });
+  const users = defineView({
+    component: () => "users",
+    slot: "panel",
+    view: "/users",
+  });
   const client = createFileClient({
-    root: { filename: "src/root.tsx", definition: defineRoute({ shellComponent: Root }) },
+    layouts: [
+      { slot: "panel", path: "/", filename: "layout.tsx", definition: Layout },
+    ],
+    root: {
+      definition: defineRoute({ shellComponent: Root }),
+      filename: "src/root.tsx",
+    },
     roots: [
       {
         slot: "panel",
@@ -51,7 +66,6 @@ it("keeps app and slot shells and common layouts mounted, and isolates mounted s
         definition: defineRoute({ shellComponent: SlotRoot }),
       },
     ],
-    layouts: [{ slot: "panel", path: "/", filename: "layout.tsx", definition: Layout }],
     views: [
       { slot: "panel", filename: "home.view.tsx", definition: first },
       { slot: "panel", filename: "users.view.tsx", definition: users },
@@ -67,11 +81,11 @@ it("keeps app and slot shells and common layouts mounted, and isolates mounted s
       }
       client.$runtime.render(
         h(definition.component as ComponentType<Record<string, unknown>>, {
-          view,
+          context: { userId: "u1", workspaceId: "w1" },
           status: "ready",
-          context: { workspaceId: "w1", userId: "u1" },
+          view,
         }) as VNode,
-        target,
+        target
       );
     });
   try {
@@ -79,12 +93,20 @@ it("keeps app and slot shells and common layouts mounted, and isolates mounted s
     await act(() => container.querySelector("button")?.click());
     await show("/users");
     expect(container.textContent).toBe("count:1users");
-    expect(mounts.mock.calls.map(([name]) => name).toSorted()).toEqual(["layout", "root", "slot"]);
+    expect(mounts.mock.calls.map(([name]) => name).toSorted()).toEqual([
+      "layout",
+      "root",
+      "slot",
+    ]);
     expect(cleanup).not.toHaveBeenCalled();
     await show("/users", other);
     expect(other.textContent).toBe("count:0users");
     await act(() => client.$runtime.render(null, container));
-    expect(cleanup.mock.calls.map(([name]) => name).toSorted()).toEqual(["layout", "root", "slot"]);
+    expect(cleanup.mock.calls.map(([name]) => name).toSorted()).toEqual([
+      "layout",
+      "root",
+      "slot",
+    ]);
   } finally {
     await act(() => {
       render(null, container);
@@ -95,28 +117,41 @@ it("keeps app and slot shells and common layouts mounted, and isolates mounted s
 
 it("matches layout prefixes at route boundaries and uses explicit view overrides", async () => {
   const view = defineView({
+    component: () => h("div", {}, "leaf", h(Route, {})),
     slot: "panel",
     view: "/users",
-    component: () => h("div", {}, "leaf", h(Route, {})),
   });
   const client = createFileClient({
-    roots: [],
     layouts: [
       {
         slot: "panel",
         path: "/users",
         filename: "users.layout.tsx",
-        definition: ({ children }: ShellProps) => h("div", {}, "users:", children),
+        definition: ({ children }: ShellProps) =>
+          h("div", {}, "users:", children),
       },
       {
         slot: "panel",
         path: "/",
         filename: "layout.tsx",
-        definition: ({ children }: ShellProps) => h("div", {}, "all:", children),
+        definition: ({ children }: ShellProps) =>
+          h("div", {}, "all:", children),
       },
-      { slot: "panel", path: "/user", filename: "user.layout.tsx", definition: () => "wrong" },
+      {
+        slot: "panel",
+        path: "/user",
+        filename: "user.layout.tsx",
+        definition: () => "wrong",
+      },
     ],
-    views: [{ slot: "panel", filename: "descriptive-name.view.tsx", definition: view }],
+    roots: [],
+    views: [
+      {
+        slot: "panel",
+        filename: "descriptive-name.view.tsx",
+        definition: view,
+      },
+    ],
   });
   const container = document.createElement("div");
   try {
@@ -127,12 +162,12 @@ it("matches layout prefixes at route boundaries and uses explicit view overrides
     await act(() =>
       client.$runtime.render(
         h(definition.component, {
-          view: "/users",
+          context: { userId: "u1", workspaceId: "w1" },
           status: "ready",
-          context: { workspaceId: "w1", userId: "u1" },
+          view: "/users",
         }) as VNode,
-        container,
-      ),
+        container
+      )
     );
     expect(container.textContent).toBe("all:users:leaf");
   } finally {
@@ -141,19 +176,28 @@ it("matches layout prefixes at route boundaries and uses explicit view overrides
 });
 
 it("rejects duplicate paths, invalid root exports, and incorrect slots", () => {
-  const view = defineView({ slot: "panel", view: "/", component: () => null });
-  const module = { slot: "panel", filename: "home.view.tsx", definition: view };
-  const options = { roots: [], layouts: [], views: [module] };
+  const view = defineView({ component: () => null, slot: "panel", view: "/" });
+  const module = { definition: view, filename: "home.view.tsx", slot: "panel" };
+  const options = { layouts: [], roots: [], views: [module] };
   expect(() =>
-    createFileClient({ ...options, views: [...options.views, ...options.views] }),
+    createFileClient({
+      ...options,
+      views: [...options.views, ...options.views],
+    })
   ).toThrow("Duplicate view");
   expect(() =>
-    createFileClient({ ...options, root: { filename: "root.tsx", definition: () => null } }),
+    createFileClient({
+      ...options,
+      root: { definition: () => null, filename: "root.tsx" },
+    })
   ).toThrow("defineRoute");
-  expect(() => createFileClient({ ...options, views: [{ ...module, slot: "navbar" }] })).toThrow(
-    'declares slot "panel"',
-  );
   expect(() =>
-    createFileClient({ ...options, views: [{ ...module, definition: () => null }] }),
+    createFileClient({ ...options, views: [{ ...module, slot: "navbar" }] })
+  ).toThrow('declares slot "panel"');
+  expect(() =>
+    createFileClient({
+      ...options,
+      views: [{ ...module, definition: () => null }],
+    })
   ).toThrow("defineView");
 });

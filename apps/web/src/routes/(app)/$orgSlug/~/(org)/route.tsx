@@ -1,10 +1,3 @@
-import { Outlet, createFileRoute, Link, useRouterState } from "@tanstack/react-router";
-import { useEffect } from "react";
-
-import { SidebarLayoutHeader } from "#components/sidebar-layout-header";
-import { HeaderActionsProvider } from "#components/header-actions";
-
-import { FolderIcon, SettingsIcon, UsersIcon } from "lucide-react";
 import {
   SidebarInset,
   SidebarProvider,
@@ -23,7 +16,17 @@ import {
   SidebarPanels,
   SidebarSeparator,
 } from "@tailorkit/ui/sidebar";
+import {
+  Outlet,
+  createFileRoute,
+  Link,
+  useRouterState,
+} from "@tanstack/react-router";
+import { FolderIcon, SettingsIcon, UsersIcon } from "lucide-react";
+import { useEffect } from "react";
 
+import { HeaderActionsProvider } from "#components/header-actions";
+import { SidebarLayoutHeader } from "#components/sidebar-layout-header";
 import { OrgSwitcher } from "#components/sidebar/org-switcher";
 import { SidebarBrand } from "#components/sidebar/sidebar-brand";
 import { SidebarUserMenu } from "#components/sidebar/sidebar-user-menu";
@@ -38,7 +41,8 @@ interface AppSidebarProps {
 
 export function AppSidebar({ orgSlug }: AppSidebarProps) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
+  const isActive = (path: string) =>
+    pathname === path || pathname.startsWith(`${path}/`);
   const orgBase = `/${orgSlug}/~`;
   const onSettingsPath = pathname.startsWith(`${orgBase}/settings`);
 
@@ -62,7 +66,9 @@ export function AppSidebar({ orgSlug }: AppSidebarProps) {
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     isActive={isActive(`${orgBase}/projects`)}
-                    render={<Link params={{ orgSlug }} to="/$orgSlug/~/projects" />}
+                    render={
+                      <Link params={{ orgSlug }} to="/$orgSlug/~/projects" />
+                    }
                   >
                     <FolderIcon />
                     <span>Projects</span>
@@ -70,7 +76,10 @@ export function AppSidebar({ orgSlug }: AppSidebarProps) {
                 </SidebarMenuItem>
 
                 <SidebarMenuItem>
-                  <SidebarPanelTrigger isActive={onSettingsPath} target="settings">
+                  <SidebarPanelTrigger
+                    isActive={onSettingsPath}
+                    target="settings"
+                  >
                     <SettingsIcon />
                     <span className="grow">Settings</span>
                   </SidebarPanelTrigger>
@@ -90,7 +99,9 @@ export function AppSidebar({ orgSlug }: AppSidebarProps) {
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     isActive={pathname === `${orgBase}/settings`}
-                    render={<Link params={{ orgSlug }} to="/$orgSlug/~/settings" />}
+                    render={
+                      <Link params={{ orgSlug }} to="/$orgSlug/~/settings" />
+                    }
                   >
                     <SettingsIcon />
                     <span>General</span>
@@ -100,7 +111,12 @@ export function AppSidebar({ orgSlug }: AppSidebarProps) {
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     isActive={isActive(`${orgBase}/settings/members`)}
-                    render={<Link params={{ orgSlug }} to="/$orgSlug/~/settings/members" />}
+                    render={
+                      <Link
+                        params={{ orgSlug }}
+                        to="/$orgSlug/~/settings/members"
+                      />
+                    }
                   >
                     <UsersIcon />
                     <span>Members</span>
@@ -126,8 +142,8 @@ function OrgLayout() {
     sessionStorage.setItem("active-org-id", orgSlug);
     window.cookieStore.set({
       name: "active-org-id",
-      value: orgSlug,
       path: "/",
+      value: orgSlug,
     });
   }, [orgSlug]);
 

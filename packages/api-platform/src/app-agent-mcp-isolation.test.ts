@@ -3,7 +3,15 @@ import { app } from "@tailorkit/db/schema/apps";
 import { organization } from "@tailorkit/db/schema/auth";
 import { cliToken } from "@tailorkit/db/schema/cli-auth";
 import { project } from "@tailorkit/db/schema/project";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vite-plus/test";
+
 import type { Context } from "./context";
 import { env } from "./env";
 import { canonicalizeScope } from "./scope";
@@ -15,7 +23,7 @@ vi.mock("@tailorkit/db", () => ({
     return state.db;
   },
 }));
-vi.mock("@tailorkit/kv", () => ({ getKV: () => undefined }));
+vi.mock("@tailorkit/kv", () => ({ getKV: () => {} }));
 vi.mock("@tailorkit/app-agent/workflows", () => ({
   appAgent: vi.fn(),
   deleteSandbox: vi.fn(),
@@ -41,21 +49,6 @@ const otherScope = canonicalizeScope({ name: "org", value: { tenant: "two" } });
 
 function request(name: string, args: Record<string, unknown> = {}) {
   return new Request("https://platform.test/api/platform/app-agent/mcp", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      accept: "application/json, text/event-stream",
-      "mcp-protocol-version": "2026-07-28",
-      "mcp-method": "tools/call",
-      "mcp-name": name,
-      "x-tailorkit-context": Buffer.from(
-        JSON.stringify({
-          scopes: { org: scope.scope.value },
-          subjectId: "user",
-          hostUrl: "https://host.test/api/tailorkit",
-        }),
-      ).toString("base64url"),
-    },
     body: JSON.stringify({
       jsonrpc: "2.0",
       id: 1,
@@ -65,11 +58,29 @@ function request(name: string, args: Record<string, unknown> = {}) {
         arguments: args,
         _meta: {
           "io.modelcontextprotocol/protocolVersion": "2026-07-28",
-          "io.modelcontextprotocol/clientInfo": { name: "isolation-test", version: "1" },
+          "io.modelcontextprotocol/clientInfo": {
+            name: "isolation-test",
+            version: "1",
+          },
           "io.modelcontextprotocol/clientCapabilities": {},
         },
       },
     }),
+    headers: {
+      accept: "application/json, text/event-stream",
+      "content-type": "application/json",
+      "mcp-method": "tools/call",
+      "mcp-name": name,
+      "mcp-protocol-version": "2026-07-28",
+      "x-tailorkit-context": Buffer.from(
+        JSON.stringify({
+          scopes: { org: scope.scope.value },
+          subjectId: "user",
+          hostUrl: "https://host.test/api/tailorkit",
+        })
+      ).toString("base64url"),
+    },
+    method: "POST",
   });
 }
 
@@ -89,38 +100,53 @@ describe("MCP database authorization", () => {
     const [org] = await database.db
       .insert(organization)
       .values({
-        id: orgId,
-        publicId: "team0000000001",
-        name: "Test team",
-        slug: "test-team",
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        id: orgId,
+        name: "Test team",
+        publicId: "team0000000001",
+        slug: "test-team",
       })
       .returning();
     const [ownProject, otherProject] = await database.db
       .insert(project)
       .values([
-        { id: projectId, organizationId: orgId, name: "Own", slug: "own" },
-        { id: otherProjectId, organizationId: orgId, name: "Other", slug: "other" },
+        { id: projectId, name: "Own", organizationId: orgId, slug: "own" },
+        {
+          id: otherProjectId,
+          name: "Other",
+          organizationId: orgId,
+          slug: "other",
+        },
       ])
       .returning();
     context = {
       organization: org!,
       project: ownProject!,
       storage: {
-        type: "s3",
         createDownloadUrl: vi.fn(),
         createUploadUrl: vi.fn(),
         delete: vi.fn(),
         head: vi.fn(),
+        type: "s3",
       },
     };
     otherContext = { ...context, project: otherProject! };
     const apps = await database.db
       .insert(app)
       .values([
-        { projectId, publicId: "ownapp000001", name: "Own", ...scope },
-        { projectId: otherProjectId, publicId: "otherapp0001", name: "Other", ...scope },
-        { projectId, publicId: "outscope0001", name: "Out of scope", ...otherScope },
+        { name: "Own", projectId, publicId: "ownapp000001", ...scope },
+        {
+          name: "Other",
+          projectId: otherProjectId,
+          publicId: "otherapp0001",
+          ...scope,
+        },
+        {
+          name: "Out of scope",
+          projectId,
+          publicId: "outscope0001",
+          ...otherScope,
+        },
       ])
       .returning();
     [ownApp, foreignApp, outOfScopeApp] = [apps[0]!, apps[1]!, apps[2]!];
@@ -142,7 +168,6 @@ describe("MCP database authorization", () => {
       ])
       .returning();
     state.start.mockResolvedValue({
-      runId: "run",
       cancel: vi.fn(),
       readable: new ReadableStream({
         start(controller) {
@@ -150,6 +175,7 @@ describe("MCP database authorization", () => {
         },
       }),
       returnValue: Promise.resolve({ messages: [] }),
+      runId: "run",
     });
   });
 
@@ -158,12 +184,18 @@ describe("MCP database authorization", () => {
   });
 
   it("lists only the authenticated project's exact scope", async () => {
-    const response = await handleAppAgentMcpRequest(request("list_apps"), context);
+    const response = await handleAppAgentMcpRequest(
+      request("list_apps"),
+      context
+    );
     const events = await response.text();
     expect(events).toContain(ownApp.publicId);
     expect(events).not.toContain(foreignApp.publicId);
     expect(events).not.toContain(outOfScopeApp.publicId);
-    const otherResponse = await handleAppAgentMcpRequest(request("list_apps"), otherContext);
+    const otherResponse = await handleAppAgentMcpRequest(
+      request("list_apps"),
+      otherContext
+    );
     const otherEvents = await otherResponse.text();
     expect(otherEvents).toContain(foreignApp.publicId);
     expect(otherEvents).not.toContain(ownApp.publicId);
@@ -178,7 +210,7 @@ describe("MCP database authorization", () => {
       for (const appId of [deniedApp.id, deniedApp.publicId]) {
         const response = await handleAppAgentMcpRequest(
           request("edit_app", { appId, prompt: "Change it" }),
-          context,
+          context
         );
         expect(await response.text()).toContain('"isError":true');
       }
@@ -191,52 +223,70 @@ describe("MCP database authorization", () => {
   it("creates and revokes only its own single-scope agent grant", async () => {
     const response = await handleAppAgentMcpRequest(
       request("edit_app", { appId: ownApp.publicId, prompt: "Change it" }),
-      context,
+      context
     );
     expect(await response.text()).not.toContain('"isError":true');
     expect(state.start).toHaveBeenCalledOnce();
     const grants = await database.db.select().from(cliToken);
-    const grant = grants.find(({ id }) => !existingGrants.some((existing) => existing.id === id));
+    const grant = grants.find(
+      ({ id }) => !existingGrants.some((existing) => existing.id === id)
+    );
     expect(grants).toHaveLength(3);
     expect(grant).toMatchObject({
       projectId,
-      scopeKey: scope.scopeKey,
-      scope: scope.scope,
       revokedAt: expect.any(Date),
+      scope: scope.scope,
+      scopeKey: scope.scopeKey,
     });
     expect(grants.filter(({ id }) => id !== grant!.id)).toEqual(existingGrants);
     const input = state.start.mock.lastCall![1][0];
     expect(
-      await verifyAgentToken(input.agentToken, env.AUTH_SECRET!, env.OPENAPI_SERVER_URL!),
+      await verifyAgentToken(
+        input.agentToken,
+        env.AUTH_SECRET!,
+        env.OPENAPI_SERVER_URL!
+      )
     ).toMatchObject({
-      projectId,
       appId: ownApp.id,
       cliTokenId: grant!.id,
+      projectId,
       scope: scope.scope,
     });
   });
 
   it("creates the app and agent grant in the authenticated project and selected scope", async () => {
     const response = await handleAppAgentMcpRequest(
-      request("create_app", { name: "New app", scope: "org", prompt: "Build it" }),
-      context,
+      request("create_app", {
+        name: "New app",
+        prompt: "Build it",
+        scope: "org",
+      }),
+      context
     );
     expect(await response.text()).not.toContain('"isError":true');
     const apps = await database.db.select().from(app);
     const created = apps.find(({ name }) => name === "New app");
     expect(apps).toHaveLength(4);
-    expect(created).toMatchObject({ projectId, scopeKey: scope.scopeKey, scope: scope.scope });
+    expect(created).toMatchObject({
+      projectId,
+      scope: scope.scope,
+      scopeKey: scope.scopeKey,
+    });
     expect(state.start.mock.lastCall![1][0].appId).toBe(created!.id);
     const grants = await database.db.select().from(cliToken);
     expect(
-      grants.filter(({ id }) => existingGrants.some((existing) => existing.id === id)),
+      grants.filter(({ id }) =>
+        existingGrants.some((existing) => existing.id === id)
+      )
     ).toEqual(existingGrants);
     expect(
-      grants.find(({ id }) => !existingGrants.some((existing) => existing.id === id)),
+      grants.find(
+        ({ id }) => !existingGrants.some((existing) => existing.id === id)
+      )
     ).toMatchObject({
       projectId,
-      scope: scope.scope,
       revokedAt: expect.any(Date),
+      scope: scope.scope,
     });
   });
 });

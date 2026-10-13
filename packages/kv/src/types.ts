@@ -35,7 +35,7 @@ export interface KV<T extends KVType = KVType> {
     endedKey: string,
     expectedOwner: string | null,
     newOwner: string,
-    ttl: number,
+    ttl: number
   ) => Promise<boolean>;
   /** Atomically renew the developer lease and seen marker unless the session ended. */
   setPreviewPresenceIfActive: (
@@ -44,7 +44,7 @@ export interface KV<T extends KVType = KVType> {
     endedKey: string,
     value: string,
     presenceTtl: number,
-    seenTtl: number,
+    seenTtl: number
   ) => Promise<boolean>;
   /** Atomically end a previously connected session only when its lease is absent. */
   keepPreviewSessionIfDeveloperPresent: (
@@ -52,7 +52,7 @@ export interface KV<T extends KVType = KVType> {
     seenKey: string,
     endedKey: string,
     endedTtl: number,
-    expireUnseen?: boolean,
+    expireUnseen?: boolean
   ) => Promise<boolean>;
   increment: (key: string, ttl: number) => Promise<number>;
   set: (key: string, value: string, options?: SetOptions) => Promise<void>;
@@ -64,7 +64,7 @@ export interface KV<T extends KVType = KVType> {
     expectedOwner: string,
     value: string,
     revision: number,
-    ttl: number,
+    ttl: number
   ) => Promise<boolean>;
   delete: (key: string) => Promise<void>;
   publish: (channel: string, message: string) => Promise<number>;

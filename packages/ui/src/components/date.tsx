@@ -2,7 +2,13 @@
 
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { Tooltip, TooltipPopup, TooltipProvider, TooltipTrigger } from "./tooltip";
+
+import {
+  Tooltip,
+  TooltipPopup,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./tooltip";
 
 dayjs.extend(relativeTime);
 

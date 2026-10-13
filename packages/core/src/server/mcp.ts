@@ -1,4 +1,5 @@
-import { validateTailorKitScopes, type TailorKitScopeSchemas } from "./scope";
+import { validateTailorKitScopes } from "./scope";
+import type { TailorKitScopeSchemas } from "./scope";
 import type { TailorKitHostContext, TailorKitPlatformOptions } from "./types";
 
 const maximumContextHeaderLength = 8192;
@@ -20,18 +21,25 @@ export function createMcpTransport(options: {
         (typeof context.subjectId !== "string" ||
           !context.subjectId ||
           context.subjectId.length > 256)
-      )
+      ) {
         throw new TypeError("Invalid MCP subjectId.");
-      const scopes = await validateTailorKitScopes(options.scopeSchemas, context.scopes);
+      }
+      const scopes = await validateTailorKitScopes(
+        options.scopeSchemas,
+        context.scopes
+      );
       const bytes = new TextEncoder().encode(
         JSON.stringify({
+          hostUrl: options.hostUrl,
           scopes,
           subjectId: context.subjectId,
-          hostUrl: options.hostUrl,
-        }),
+        })
       );
-      if (bytes.length > (maximumContextHeaderLength * 3) / 4)
-        throw new TypeError("MCP context exceeds the 8 KiB header limit. Supply fewer scopes.");
+      if (bytes.length > (maximumContextHeaderLength * 3) / 4) {
+        throw new TypeError(
+          "MCP context exceeds the 8 KiB header limit. Supply fewer scopes."
+        );
+      }
       const encoded = btoa(String.fromCharCode(...bytes))
         .replaceAll("+", "-")
         .replaceAll("/", "_")
@@ -40,12 +48,15 @@ export function createMcpTransport(options: {
         ? options.platformHeaders()
         : options.platformHeaders);
       const headers = new Headers(configured);
-      if (!headers.get("authorization")?.startsWith("Bearer "))
-        throw new Error("A TailorKit projectKey is required for MCP transport.");
+      if (!headers.get("authorization")?.startsWith("Bearer ")) {
+        throw new Error(
+          "A TailorKit projectKey is required for MCP transport."
+        );
+      }
       headers.set("x-tailorkit-context", encoded);
       return {
-        url: options.platformUrl.replace(/\/$/u, "") + "/app-agent/mcp",
         headers: Object.fromEntries(headers),
+        url: options.platformUrl.replace(/\/$/u, "") + "/app-agent/mcp",
       };
     },
   };

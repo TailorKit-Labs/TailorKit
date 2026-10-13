@@ -1,11 +1,16 @@
+import type { Invocation } from "@tailorkit/app/protocol";
+import { action, defineServer, query, mutation } from "@tailorkit/app/server";
+import type {
+  ActionContext,
+  AppDefinition,
+  Identity,
+} from "@tailorkit/app/server";
 import { expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
-import { action, defineServer, query, mutation } from "@tailorkit/app/server";
-import type { ActionContext } from "@tailorkit/app/server";
+
 import { createActionExecution } from "./actions";
 import type { ActionCalls } from "./actions";
-import type { AppDefinition, Identity } from "@tailorkit/app/server";
-import type { Invocation } from "@tailorkit/app/protocol";
+
 function actionRunner(app: AppDefinition, calls: ActionCalls) {
   const run = createActionExecution(app);
   return (input: Invocation, identity: Identity, signal?: AbortSignal) =>
@@ -13,18 +18,21 @@ function actionRunner(app: AppDefinition, calls: ActionCalls) {
 }
 
 const identity = {
-  subjectId: "user",
-  projectId: "project",
-  scope: { name: "org", value: { id: "tenant" } },
-  toolUrl: "https://host.test/api/tailorkit/tools/execute",
   appId: "app",
-  installationId: "install",
   deploymentId: "v1",
   expiresAt: Date.now() + 60_000,
+  installationId: "install",
+  projectId: "project",
+  scope: { name: "org", value: { id: "tenant" } },
+  subjectId: "user",
+  toolUrl: "https://host.test/api/tailorkit/tools/execute",
 };
 const functions = {
   read: query({ args: z.object({}), handler: () => 4 }),
-  write: mutation({ args: z.object({ value: z.number() }), handler: ({ args }) => args.value }),
+  write: mutation({
+    args: z.object({ value: z.number() }),
+    handler: ({ args }) => args.value,
+  }),
 };
 
 it("awaits actions and exposes scoped calls instead of a database handle", async () => {
@@ -33,9 +41,8 @@ it("awaits actions and exposes scoped calls instead of a database handle", async
   const app = defineServer({
     ...functions,
     plus: action({
-      functions,
       args: z.object({ delta: z.number() }),
-      result: z.number(),
+      functions,
       async handler(context) {
         expect("db" in context).toBe(false);
         expect("runQuery" in context).toBe(false);
@@ -46,39 +53,49 @@ it("awaits actions and exposes scoped calls instead of a database handle", async
         const prior = await context.queries.read({});
         return context.mutations.write({ value: prior + context.args.delta });
       },
+      result: z.number(),
     }),
   });
-  const run = actionRunner(app, { query: queryCall, mutate: mutateCall });
-  expect(await run({ name: "plus", args: { delta: 2 } }, identity)).toBe(6);
-  expect(queryCall).toHaveBeenCalledWith({ name: "read", args: {} });
+  const run = actionRunner(app, { mutate: mutateCall, query: queryCall });
+  expect(await run({ args: { delta: 2 }, name: "plus" }, identity)).toBe(6);
+  expect(queryCall).toHaveBeenCalledWith({ args: {}, name: "read" });
   expect(mutateCall).toHaveBeenCalledWith({
-    name: "write",
     args: { value: 6 },
+    name: "write",
     requestId: expect.any(String),
   });
 });
 it("validates kind, arguments, expiry and output", async () => {
-  const calls = { query: vi.fn(), mutate: vi.fn() };
+  const calls = { mutate: vi.fn(), query: vi.fn() };
   const app = defineServer({
     ...functions,
     invalid: action({
       args: z.object({ value: z.string() }),
-      result: z.string(),
       handler: () => 1 as unknown as string,
+      result: z.string(),
     }),
     read: query({ args: z.object({}), handler: () => 1 }),
   });
   const run = actionRunner(app, calls);
-  await expect(run({ name: "read", args: {} }, identity)).rejects.toMatchObject({
-    code: "NOT_FOUND",
-  });
-  await expect(run({ name: "invalid", args: {} }, identity)).rejects.toMatchObject({
+  await expect(run({ args: {}, name: "read" }, identity)).rejects.toMatchObject(
+    {
+      code: "NOT_FOUND",
+    }
+  );
+  await expect(
+    run({ args: {}, name: "invalid" }, identity)
+  ).rejects.toMatchObject({
     code: "BAD_REQUEST",
   });
   await expect(
-    run({ name: "invalid", args: { value: "x" } }, { ...identity, expiresAt: 0 }),
+    run(
+      { args: { value: "x" }, name: "invalid" },
+      { ...identity, expiresAt: 0 }
+    )
   ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
-  await expect(run({ name: "invalid", args: { value: "x" } }, identity)).rejects.toMatchObject({
+  await expect(
+    run({ args: { value: "x" }, name: "invalid" }, identity)
+  ).rejects.toMatchObject({
     code: "INTERNAL_SERVER_ERROR",
   });
   expect(calls.query).not.toHaveBeenCalled();
@@ -89,25 +106,28 @@ it("does not retry actions or roll back earlier independent mutations after fail
   const app = defineServer({
     ...functions,
     fail: action({
-      functions,
       args: z.object({}),
+      functions,
       async handler(ctx) {
         sideEffect();
         await ctx.mutations.write(
           { value: 1 },
-          { requestId: "00000000-0000-4000-8000-000000000001" },
+          { requestId: "00000000-0000-4000-8000-000000000001" }
         );
         throw new Error("external failure");
       },
     }),
   });
   await expect(
-    actionRunner(app, { query: vi.fn(), mutate })({ name: "fail", args: {} }, identity),
+    actionRunner(app, { mutate, query: vi.fn() })(
+      { args: {}, name: "fail" },
+      identity
+    )
   ).rejects.toThrow("external failure");
   expect(sideEffect).toHaveBeenCalledTimes(1);
   expect(mutate).toHaveBeenCalledWith({
-    name: "write",
     args: { value: 1 },
+    name: "write",
     requestId: "00000000-0000-4000-8000-000000000001",
   });
   expect(mutate).toHaveBeenCalledTimes(1);
@@ -118,24 +138,29 @@ it("revokes callbacks after completion and cancellation", async () => {
   const app = defineServer({
     ...functions,
     capture: action({
-      functions,
       args: z.object({}),
+      functions,
       handler: (ctx) => {
         context = ctx;
         return null;
       },
     }),
   });
-  await actionRunner(app, { query: vi.fn(), mutate })({ name: "capture", args: {} }, identity);
-  expect(() => context.mutations.write({ value: 1 })).toThrow("Action has ended");
+  await actionRunner(app, { mutate, query: vi.fn() })(
+    { args: {}, name: "capture" },
+    identity
+  );
+  expect(() => context.mutations.write({ value: 1 })).toThrow(
+    "Action has ended"
+  );
   const controller = new AbortController();
   controller.abort();
   await expect(
-    actionRunner(app, { query: vi.fn(), mutate })(
-      { name: "capture", args: {} },
+    actionRunner(app, { mutate, query: vi.fn() })(
+      { args: {}, name: "capture" },
       identity,
-      controller.signal,
-    ),
+      controller.signal
+    )
   ).rejects.toThrow("Action has ended");
   expect(mutate).not.toHaveBeenCalled();
 });
@@ -150,8 +175,8 @@ it("revokes a running action's callbacks before its asynchronous work finishes",
   const app = defineServer({
     ...functions,
     wait: action({
-      functions,
       args: z.object({}),
+      functions,
       async handler(ctx) {
         context = ctx;
         await external;
@@ -160,29 +185,33 @@ it("revokes a running action's callbacks before its asynchronous work finishes",
     }),
   });
   const controller = new AbortController();
-  const running = actionRunner(app, { query: vi.fn(), mutate })(
-    { name: "wait", args: {} },
+  const running = actionRunner(app, { mutate, query: vi.fn() })(
+    { args: {}, name: "wait" },
     identity,
-    controller.signal,
+    controller.signal
   );
   controller.abort();
-  expect(() => context.mutations.write({ value: 1 })).toThrow("Action has ended");
+  expect(() => context.mutations.write({ value: 1 })).toThrow(
+    "Action has ended"
+  );
   finish();
   await expect(running).rejects.toThrow("Action has ended");
   expect(mutate).not.toHaveBeenCalled();
 });
 
 it("rejects action call collections that are not registered under the same names", async () => {
-  const calls = { query: vi.fn(), mutate: vi.fn() };
+  const calls = { mutate: vi.fn(), query: vi.fn() };
   const app = defineServer({
-    write: functions.write,
     bad: action({
       functions: { missing: functions.write },
       args: z.object({}),
       handler: (ctx) => ctx.mutations.missing({ value: 1 }),
     }),
+    write: functions.write,
   });
-  expect(() => createActionExecution(app)).toThrow("Action function is not registered in this app");
+  expect(() => createActionExecution(app)).toThrow(
+    "Action function is not registered in this app"
+  );
   expect(calls.mutate).not.toHaveBeenCalled();
 });
 
@@ -196,8 +225,8 @@ it("reuses compiled nested bindings while isolating concurrent calls and retaine
   const app = defineServer({
     ...nested,
     run: action({
-      functions: nested,
       args: z.object({}),
+      functions: nested,
       async handler(context) {
         contexts.push(context);
         expect(Object.keys(context.queries.records)).toEqual(["read"]);
@@ -208,17 +237,34 @@ it("reuses compiled nested bindings while isolating concurrent calls and retaine
     }),
   });
   const run = createActionExecution(app);
-  const first = { query: vi.fn().mockResolvedValue("first"), mutate: vi.fn() };
-  const second = { query: vi.fn().mockResolvedValue("second"), mutate: vi.fn() };
-  const one = run({ name: "run", args: {} }, identity, first);
-  const two = run({ name: "run", args: {} }, { ...identity, subjectId: "second" }, second);
+  const first = { mutate: vi.fn(), query: vi.fn().mockResolvedValue("first") };
+  const second = {
+    mutate: vi.fn(),
+    query: vi.fn().mockResolvedValue("second"),
+  };
+  const one = run({ args: {}, name: "run" }, identity, first);
+  const two = run(
+    { args: {}, name: "run" },
+    { ...identity, subjectId: "second" },
+    second
+  );
   release();
   expect(await Promise.all([one, two])).toEqual(["first", "second"]);
-  expect(contexts.map((context) => context.identity.subjectId)).toEqual(["user", "second"]);
-  for (const calls of [first, second])
-    expect(calls.query).toHaveBeenCalledExactlyOnceWith({ name: "records.read", args: {} });
-  for (const context of contexts)
-    expect(() => context.mutations.records.write({ value: 1 })).toThrow("Action has ended");
+  expect(contexts.map((context) => context.identity.subjectId)).toEqual([
+    "user",
+    "second",
+  ]);
+  for (const calls of [first, second]) {
+    expect(calls.query).toHaveBeenCalledExactlyOnceWith({
+      name: "records.read",
+      args: {},
+    });
+  }
+  for (const context of contexts) {
+    expect(() => context.mutations.records.write({ value: 1 })).toThrow(
+      "Action has ended"
+    );
+  }
 });
 
 it("runs generated instance resolvers with all registered queries and no write capabilities", async () => {
@@ -226,142 +272,199 @@ it("runs generated instance resolvers with all registered queries and no write c
   let retainedQuery!: () => Promise<unknown>;
   const app = withInstanceResolvers(defineServer({ reports: functions }), [
     {
-      slot: "page",
-      path: "/reports/annual.summary",
       dataSchema: z.object({ id: z.string() }),
+      path: "/reports/annual.summary",
       resolve: async (context) => {
-        expect(Object.keys(context).sort()).toEqual(["context", "identity", "queries", "signal"]);
-        const queries = context.queries as { reports: { read: (args: object) => Promise<number> } };
+        expect(Object.keys(context).sort()).toEqual([
+          "context",
+          "identity",
+          "queries",
+          "signal",
+        ]);
+        const queries = context.queries as {
+          reports: { read: (args: object) => Promise<number> };
+        };
         expect(Object.keys(queries.reports)).toEqual(["read"]);
         expect(context.context).toEqual({ subjectId: "user" });
         expect(context.identity).toEqual(identity);
         retainedQuery = () => queries.reports.read({});
         const count = await retainedQuery();
         return [
-          { key: "overview", metadata: { title: `Reports: ${count}` }, data: { id: "report" } },
+          {
+            key: "overview",
+            metadata: { title: `Reports: ${count}` },
+            data: { id: "report" },
+          },
         ];
       },
+      slot: "page",
     },
   ]);
   const queryCall = vi.fn().mockResolvedValue(4);
   const mutateCall = vi.fn();
-  const run = actionRunner(app, { query: queryCall, mutate: mutateCall });
+  const run = actionRunner(app, { mutate: mutateCall, query: queryCall });
   expect(
     await run(
       {
+        args: {
+          context: { subjectId: "user" },
+          path: "/reports/annual.summary",
+          slot: "page",
+        },
         name: "_tailorkit.instances.resolve",
-        args: { slot: "page", path: "/reports/annual.summary", context: { subjectId: "user" } },
       },
-      identity,
-    ),
-  ).toEqual([{ key: "overview", metadata: { title: "Reports: 4" }, data: { id: "report" } }]);
-  expect(queryCall).toHaveBeenCalledExactlyOnceWith({ name: "reports.read", args: {} });
+      identity
+    )
+  ).toEqual([
+    {
+      data: { id: "report" },
+      key: "overview",
+      metadata: { title: "Reports: 4" },
+    },
+  ]);
+  expect(queryCall).toHaveBeenCalledExactlyOnceWith({
+    args: {},
+    name: "reports.read",
+  });
   expect(mutateCall).not.toHaveBeenCalled();
   expect(retainedQuery).toThrow("Action has ended");
   await expect(
     run(
       {
+        args: { context: null, path: "/reports/annual.summary", slot: "page" },
         name: "_tailorkit.instances.resolve",
-        args: { slot: "page", path: "/reports/annual.summary", context: null },
       },
-      identity,
-    ),
+      identity
+    )
   ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   await expect(
     run(
       {
+        args: { context: {}, path: "/reports/annual.summary", slot: "page" },
         name: "_tailorkit.instances.resolve",
-        args: { slot: "page", path: "/reports/annual.summary", context: {} },
       },
-      { ...identity, expiresAt: 0 },
-    ),
+      { ...identity, expiresAt: 0 }
+    )
   ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
 });
 
 it("validates instance payloads and stable keys before returning resolver results", async () => {
   const { withInstanceResolvers } = await import("@tailorkit/app/server");
   for (const result of [
-    [{ key: "overview", metadata: {}, data: { id: 123 } }],
-    [{ key: "", metadata: {}, data: { id: "report" } }],
+    [{ data: { id: 123 }, key: "overview", metadata: {} }],
+    [{ data: { id: "report" }, key: "", metadata: {} }],
     [
-      { key: "overview", metadata: {}, data: { id: "one" } },
-      { key: "overview", metadata: {}, data: { id: "two" } },
+      { data: { id: "one" }, key: "overview", metadata: {} },
+      { data: { id: "two" }, key: "overview", metadata: {} },
     ],
   ]) {
     const app = withInstanceResolvers(defineServer({}), [
-      { slot: "page", path: "/", dataSchema: z.object({ id: z.string() }), resolve: () => result },
+      {
+        dataSchema: z.object({ id: z.string() }),
+        path: "/",
+        resolve: () => result,
+        slot: "page",
+      },
     ]);
     await expect(
-      actionRunner(app, { query: vi.fn(), mutate: vi.fn() })(
+      actionRunner(app, { mutate: vi.fn(), query: vi.fn() })(
         {
+          args: { context: {}, path: "/", slot: "page" },
           name: "_tailorkit.instances.resolve",
-          args: { slot: "page", path: "/", context: {} },
         },
-        identity,
-      ),
+        identity
+      )
     ).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
   }
 });
 
 it("reserves the internal namespace and rejects duplicate or invalid slot/path addresses", async () => {
   const { withInstanceResolvers } = await import("@tailorkit/app/server");
-  const resolver = { slot: "page", path: "/", dataSchema: z.object({}), resolve: () => [] };
+  const resolver = {
+    dataSchema: z.object({}),
+    path: "/",
+    resolve: () => [],
+    slot: "page",
+  };
   const app = withInstanceResolvers(defineServer({}), [resolver]);
   expect(() => withInstanceResolvers(app, [])).toThrow(
-    "The _tailorkit function namespace is reserved by TailorKit.",
-  );
-  expect(() => withInstanceResolvers(defineServer({}), [resolver, resolver])).toThrow(
-    "Duplicate instance resolver",
+    "The _tailorkit function namespace is reserved by TailorKit."
   );
   expect(() =>
-    withInstanceResolvers(defineServer({}), [{ ...resolver, path: "invalid" }]),
+    withInstanceResolvers(defineServer({}), [resolver, resolver])
+  ).toThrow("Duplicate instance resolver");
+  expect(() =>
+    withInstanceResolvers(defineServer({}), [{ ...resolver, path: "invalid" }])
   ).toThrow();
 });
 
 it("dispatches by exact slot/path pairs and validates against the selected data schema", async () => {
   const { withInstanceResolvers } = await import("@tailorkit/app/server");
-  const first = vi.fn(() => [{ key: "one", metadata: {}, data: { id: "item" } }]);
-  const second = vi.fn(() => [{ key: "two", metadata: {}, data: { count: 3 } }]);
+  const first = vi.fn(() => [
+    { data: { id: "item" }, key: "one", metadata: {} },
+  ]);
+  const second = vi.fn(() => [
+    { data: { count: 3 }, key: "two", metadata: {} },
+  ]);
   const app = withInstanceResolvers(defineServer({}), [
     {
-      slot: "page.links",
+      dataSchema: z.object({
+        id: z.string().transform((id) => id.toUpperCase()),
+      }),
       path: "/reports/annual.summary",
-      dataSchema: z.object({ id: z.string().transform((id) => id.toUpperCase()) }),
       resolve: first,
+      slot: "page.links",
     },
     {
-      slot: "panel",
-      path: "/reports/annual.summary",
       dataSchema: z.object({ count: z.number() }),
+      path: "/reports/annual.summary",
       resolve: second,
+      slot: "panel",
     },
   ]);
-  const run = actionRunner(app, { query: vi.fn(), mutate: vi.fn() });
+  const run = actionRunner(app, { mutate: vi.fn(), query: vi.fn() });
   const name = "_tailorkit.instances.resolve";
   await expect(
     run(
-      { name, args: { slot: "page.links", path: "/reports/annual.summary", context: {} } },
-      identity,
-    ),
-  ).resolves.toEqual([{ key: "one", metadata: {}, data: { id: "ITEM" } }]);
+      {
+        args: {
+          context: {},
+          path: "/reports/annual.summary",
+          slot: "page.links",
+        },
+        name,
+      },
+      identity
+    )
+  ).resolves.toEqual([{ data: { id: "ITEM" }, key: "one", metadata: {} }]);
   await expect(
-    run({ name, args: { slot: "panel", path: "/reports/annual.summary", context: {} } }, identity),
-  ).resolves.toEqual([{ key: "two", metadata: {}, data: { count: 3 } }]);
+    run(
+      {
+        args: { context: {}, path: "/reports/annual.summary", slot: "panel" },
+        name,
+      },
+      identity
+    )
+  ).resolves.toEqual([{ data: { count: 3 }, key: "two", metadata: {} }]);
   for (const [slot, path] of [
     ["page.links", "/reports"],
     ["missing", "/reports/annual.summary"],
     ["__proto__", "/constructor"],
   ]) {
-    await expect(run({ name, args: { slot, path, context: {} } }, identity)).rejects.toMatchObject({
+    await expect(
+      run({ args: { context: {}, path, slot }, name }, identity)
+    ).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
   }
   for (const args of [
-    { slot: "page.links", context: {} },
-    { slot: "page.links", path: "invalid", context: {} },
-    { slot: "", path: "/", context: {} },
+    { context: {}, slot: "page.links" },
+    { context: {}, path: "invalid", slot: "page.links" },
+    { context: {}, path: "/", slot: "" },
   ]) {
-    await expect(run({ name, args }, identity)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(run({ args, name }, identity)).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
   }
   expect(first).toHaveBeenCalledOnce();
   expect(second).toHaveBeenCalledOnce();
@@ -377,19 +480,25 @@ it("binds backend tool calls to the active verified execution and closes escaped
         expect(ctx.scope).toBe(identity.scope);
         escaped = () =>
           (
-            ctx.tools as unknown as { billing: { read(input: unknown): Promise<unknown> } }
+            ctx.tools as unknown as {
+              billing: { read(input: unknown): Promise<unknown> };
+            }
           ).billing.read({ id: "invoice" });
         return escaped();
       },
     }),
   });
   const calls = {
-    query: async () => undefined,
     mutate: async () => undefined,
+    query: async () => undefined,
     tool: vi.fn(async () => ({ amount: 42 })),
   };
   const execute = createActionExecution(implementation);
-  expect(await execute({ name: "read" }, identity, calls)).toEqual({ amount: 42 });
-  expect(calls.tool).toHaveBeenCalledExactlyOnceWith("billing.read", { id: "invoice" });
+  expect(await execute({ name: "read" }, identity, calls)).toEqual({
+    amount: 42,
+  });
+  expect(calls.tool).toHaveBeenCalledExactlyOnceWith("billing.read", {
+    id: "invoice",
+  });
   expect(() => escaped!()).toThrow("Action has ended");
 });

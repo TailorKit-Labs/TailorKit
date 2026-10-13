@@ -1,13 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
-import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Building2Icon, MailIcon, ShieldIcon, UserIcon } from "lucide-react";
-import type { ReactNode } from "react";
-
-import { HeaderActionsProvider } from "#components/header-actions";
-import { SidebarLayoutHeader } from "#components/sidebar-layout-header";
-import { SidebarBackButton } from "#components/sidebar/sidebar-back-button";
-import { SidebarBrand } from "#components/sidebar/sidebar-brand";
-import { SidebarUserMenu } from "#components/sidebar/sidebar-user-menu";
 import {
   Sidebar,
   SidebarContent,
@@ -23,15 +13,29 @@ import {
   SidebarProvider,
   SidebarSeparator,
 } from "@tailorkit/ui/sidebar";
+import { useQuery } from "@tanstack/react-query";
+import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { Building2Icon, MailIcon, ShieldIcon, UserIcon } from "lucide-react";
+import type { ReactNode } from "react";
+
+import { HeaderActionsProvider } from "#components/header-actions";
+import { SidebarLayoutHeader } from "#components/sidebar-layout-header";
+import { SidebarBackButton } from "#components/sidebar/sidebar-back-button";
+import { SidebarBrand } from "#components/sidebar/sidebar-brand";
+import { SidebarUserMenu } from "#components/sidebar/sidebar-user-menu";
 import { orpc } from "#lib/orpc";
 
 export function AccountSidebar() {
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
   const isActive = (path: string) => pathname === path;
 
   const { data: orgs } = useQuery(orpc.user.getOrgs.queryOptions());
   const activeOrgSlug =
-    typeof window !== "undefined" ? (sessionStorage.getItem("active-org-id") ?? "") : "";
+    typeof window === "undefined"
+      ? ""
+      : (sessionStorage.getItem("active-org-id") ?? "");
   const backOrg = orgs?.find((org) => org.slug === activeOrgSlug) ?? orgs?.[0];
 
   return (
@@ -107,7 +111,9 @@ export function AccountLayout({ children }: { children?: ReactNode }) {
         <AccountSidebar />
         <SidebarInset>
           <SidebarLayoutHeader />
-          <main className="flex flex-1 flex-col gap-4 p-4">{children ?? <Outlet />}</main>
+          <main className="flex flex-1 flex-col gap-4 p-4">
+            {children ?? <Outlet />}
+          </main>
         </SidebarInset>
       </SidebarProvider>
     </HeaderActionsProvider>

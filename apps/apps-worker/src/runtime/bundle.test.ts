@@ -1,5 +1,6 @@
-import { expect, it, vi } from "vite-plus/test";
 import { defineServer, fn } from "@tailorkit/app/server";
+import { expect, it, vi } from "vite-plus/test";
+
 import { createApplicationExecution } from "./bundle";
 
 const application = {
@@ -11,11 +12,11 @@ function persistence() {
   const transactions = vi.fn();
   return {
     execute: vi.fn(() => ({ rows: [], columns: [], changes: 0 })),
-    transactions,
     transaction<T>(run: () => T): T {
       transactions();
       return run();
     },
+    transactions,
   };
 }
 it.each([
@@ -27,28 +28,31 @@ it.each([
   const db = persistence();
   const execution = createApplicationExecution(
     { ...application, runtimeManifest: { apiVersion: 1, requires } },
-    db,
+    db
   );
   expect(
     execution.query(
       { name: "value" },
       {
-        subjectId: "u",
-        projectId: "p",
-        scope: { name: "org", value: { id: "tenant" } },
-        toolUrl: "https://host.test/api/tailorkit/tools/execute",
         appId: "a",
-        installationId: "i",
         deploymentId: "d",
         expiresAt: Date.now() + 60_000,
-      },
-    ).value,
+        installationId: "i",
+        projectId: "p",
+        scope: { name: "org", value: { id: "tenant" } },
+        subjectId: "u",
+        toolUrl: "https://host.test/api/tailorkit/tools/execute",
+      }
+    ).value
   ).toBe("ready");
 });
 it.each([
   { ...application, runtimeManifest: undefined },
   { ...application, runtimeManifest: { apiVersion: 2, requires: [] } },
-  { ...application, runtimeManifest: { apiVersion: 1, requires: ["scheduling"] } },
+  {
+    ...application,
+    runtimeManifest: { apiVersion: 1, requires: ["scheduling"] },
+  },
   { ...application, default: null },
   { ...application, migrations: undefined },
 ])("rejects incompatible exports before any database access", (module) => {
@@ -64,6 +68,9 @@ it.each([
 });
 it("ignores additional module exports for additive features", () => {
   expect(() =>
-    createApplicationExecution({ ...application, optionalMetadata: {} }, persistence()),
+    createApplicationExecution(
+      { ...application, optionalMetadata: {} },
+      persistence()
+    )
   ).not.toThrow();
 });

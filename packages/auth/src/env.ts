@@ -1,9 +1,9 @@
-import * as z from "zod";
 import { createEnv, resolveProductionUrl, warnIfMissing } from "@tailorkit/env";
+import * as z from "zod";
 
 export const env = createEnv({
-  scope: "auth",
   schema: {
+    AUTH_PRODUCTION_URL: z.url().optional(),
     AUTH_SECRET: z.string().min(32).optional(),
     AUTH_TRUSTED_ORIGINS: z.string().min(1).optional(),
     BETTER_AUTH_API_KEY: z.string().min(1).optional(),
@@ -12,15 +12,15 @@ export const env = createEnv({
     GOOGLE_CLIENT_ID: z.string().min(1).optional(),
     GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
     OAUTH_PROXY_SECRET: z.string().min(32).optional(),
-    AUTH_PRODUCTION_URL: z.url().optional(),
     PORT: z.coerce.number().optional(),
     VERCEL: z.stringbool().optional(),
-    VERCEL_TARGET_ENV: z.string().optional(),
-    VERCEL_ENV: z.string().optional(),
-    VERCEL_URL: z.string().optional(),
     VERCEL_BRANCH_URL: z.string().optional(),
+    VERCEL_ENV: z.string().optional(),
     VERCEL_PROJECT_PRODUCTION_URL: z.string().optional(),
+    VERCEL_TARGET_ENV: z.string().optional(),
+    VERCEL_URL: z.string().optional(),
   },
+  scope: "auth",
   warnings: {
     AUTH_SECRET: "AUTH_SECRET is not set; authentication will not work.",
   },
@@ -46,7 +46,7 @@ const hasSocialProvider =
 
 if (env.VERCEL_ENV === "preview" && hasSocialProvider) {
   warnIfMissing("auth", {
-    OAUTH_PROXY_SECRET: env.OAUTH_PROXY_SECRET,
     AUTH_PRODUCTION_URL: resolveProductionUrl(env),
+    OAUTH_PROXY_SECRET: env.OAUTH_PROXY_SECRET,
   });
 }

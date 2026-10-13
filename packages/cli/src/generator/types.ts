@@ -1,12 +1,12 @@
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { isViewAncestor } from "@tailorkit/core/views";
 
 import { loadTailorKitConfig } from "@tailorkit/app/config/loader";
 import {
   SerializedComponent as SerializedComponentSchema,
   TailorKitSchemaSpec,
 } from "@tailorkit/core/spec";
+import { isViewAncestor } from "@tailorkit/core/views";
 
 interface JsonSchema {
   additionalProperties?: boolean | JsonSchema;
@@ -94,14 +94,21 @@ const toLiteralType = (value: unknown): string => {
   if (typeof value === "string") {
     return quote(value);
   }
-  if (typeof value === "number" || typeof value === "boolean" || value === null) {
+  if (
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    value === null
+  ) {
     return JSON.stringify(value);
   }
 
   return "unknown";
 };
 
-const toTypeScriptType = (schema: JsonSchema | undefined, depth = 0): string => {
+const toTypeScriptType = (
+  schema: JsonSchema | undefined,
+  depth = 0
+): string => {
   if (schema === undefined) {
     return "unknown";
   }
@@ -119,7 +126,9 @@ const toTypeScriptType = (schema: JsonSchema | undefined, depth = 0): string => 
   }
 
   if (schema.allOf !== undefined && schema.allOf.length > 0) {
-    const options = schema.allOf.map((option) => toTypeScriptType(option, depth));
+    const options = schema.allOf.map((option) =>
+      toTypeScriptType(option, depth)
+    );
     return [...new Set(options)]
       .map((option) => (option.includes(" | ") ? `(${option})` : option))
       .join(" & ");
@@ -141,7 +150,9 @@ const toTypeScriptType = (schema: JsonSchema | undefined, depth = 0): string => 
   }
 
   if (Array.isArray(schema.type)) {
-    const options = schema.type.map((type) => toTypeScriptType({ ...schema, type }, depth));
+    const options = schema.type.map((type) =>
+      toTypeScriptType({ ...schema, type }, depth)
+    );
     return [...new Set(options)].join(" | ") || "never";
   }
 
@@ -166,7 +177,8 @@ const toTypeScriptType = (schema: JsonSchema | undefined, depth = 0): string => 
         const type = toTypeScriptType(item, depth);
         return index < (schema.minItems ?? 0) ? type : `(${type})?`;
       });
-      const additionalRequired = (schema.minItems ?? 0) - schema.prefixItems.length;
+      const additionalRequired =
+        (schema.minItems ?? 0) - schema.prefixItems.length;
       if (additionalRequired > 0 && schema.items === false) {
         return "never";
       }
@@ -178,7 +190,9 @@ const toTypeScriptType = (schema: JsonSchema | undefined, depth = 0): string => 
       }
       return `[${tupleItems.join(", ")}]`;
     }
-    return toArrayType(schema.items === false ? "never" : toTypeScriptType(items, depth));
+    return toArrayType(
+      schema.items === false ? "never" : toTypeScriptType(items, depth)
+    );
   }
   if (schemaType === "object") {
     return toObjectType(schema, depth);
@@ -198,7 +212,9 @@ const isNeverOnlyObject = (schema: JsonSchema): boolean => {
   const propertyEntries = Object.values(properties);
 
   return (
-    (Array.isArray(schema.type) ? schema.type.includes("object") : schema.type === "object") &&
+    (Array.isArray(schema.type)
+      ? schema.type.includes("object")
+      : schema.type === "object") &&
     propertyEntries.length > 0 &&
     propertyEntries.every(isNeverSchema)
   );
@@ -214,8 +230,10 @@ const toObjectType = (schema: JsonSchema, depth: number): string => {
 
   const required = new Set(schema.required);
   const catchallType = toTypeScriptType(
-    schema.additionalProperties === true ? undefined : schema.additionalProperties || undefined,
-    depth,
+    schema.additionalProperties === true
+      ? undefined
+      : schema.additionalProperties || undefined,
+    depth
   );
   const additionalValueTypes = [catchallType];
   if (catchallType !== "unknown") {
@@ -227,7 +245,8 @@ const toObjectType = (schema: JsonSchema, depth: number): string => {
     }
   }
   const additionalType =
-    schema.additionalProperties === false || schema.additionalProperties === undefined
+    schema.additionalProperties === false ||
+    schema.additionalProperties === undefined
       ? undefined
       : `Record<string, ${[...new Set(additionalValueTypes)].join(" | ")}>`;
 
@@ -242,13 +261,15 @@ const toObjectType = (schema: JsonSchema, depth: number): string => {
   for (const [key, propertySchema] of propertyEntries) {
     const optional = required.has(key) ? "" : "?";
     lines.push(
-      `${propertyIndent}${toPropertyKey(key)}${optional}: ${toTypeScriptType(propertySchema, depth + 2)};`,
+      `${propertyIndent}${toPropertyKey(key)}${optional}: ${toTypeScriptType(propertySchema, depth + 2)};`
     );
   }
 
   lines.push(`${currentIndent}}`);
   const objectType = lines.join("\n");
-  return additionalType === undefined ? objectType : `${objectType} & ${additionalType}`;
+  return additionalType === undefined
+    ? objectType
+    : `${objectType} & ${additionalType}`;
 };
 
 const toIdentifier = (name: string): string => {
@@ -261,14 +282,17 @@ const toIdentifier = (name: string): string => {
   return `_${identifier}`;
 };
 
-const toPropsName = (componentName: string): string => `${toIdentifier(componentName)}Props`;
+const toPropsName = (componentName: string): string =>
+  `${toIdentifier(componentName)}Props`;
 
 const toTypeName = (name: string): string => {
   const identifier = toIdentifier(name);
   return `${identifier.charAt(0).toUpperCase()}${identifier.slice(1)}`;
 };
 
-const getComponentFields = (component: SerializedComponent): Record<string, JsonSchema> => {
+const getComponentFields = (
+  component: SerializedComponent
+): Record<string, JsonSchema> => {
   if (component.fields?.properties !== undefined) {
     return component.fields.properties;
   }
@@ -284,13 +308,15 @@ const getComponentFields = (component: SerializedComponent): Record<string, Json
 
 const renderResponsiveType = (
   schema: JsonSchema | undefined,
-  depth: number,
+  depth: number
 ): string | undefined => {
   if (schema?.anyOf === undefined || schema.anyOf.length !== 2) {
     return undefined;
   }
 
-  const [firstOption, secondOption] = schema.anyOf.filter((option) => !isNeverSchema(option));
+  const [firstOption, secondOption] = schema.anyOf.filter(
+    (option) => !isNeverSchema(option)
+  );
   if (firstOption === undefined || secondOption === undefined) {
     return undefined;
   }
@@ -320,7 +346,9 @@ const renderResponsiveType = (
     return undefined;
   }
 
-  const responsiveTypes = properties.map((property) => toTypeScriptType(property, depth));
+  const responsiveTypes = properties.map((property) =>
+    toTypeScriptType(property, depth)
+  );
   if (responsiveTypes.some((type) => type !== scalarType && type !== "never")) {
     return undefined;
   }
@@ -328,11 +356,14 @@ const renderResponsiveType = (
   return `Responsive<${scalarType}>`;
 };
 
-const renderFieldType = (schema: JsonSchema | undefined, depth: number): string =>
+const renderFieldType = (
+  schema: JsonSchema | undefined,
+  depth: number
+): string =>
   renderResponsiveType(schema, depth) ?? toTypeScriptType(schema, depth);
 
 const collectFieldTypeAliases = (
-  components: Record<string, SerializedComponent>,
+  components: Record<string, SerializedComponent>
 ): Record<string, string> => {
   const aliases: Record<string, string> = {};
   const seenByAlias = new Map<string, string>();
@@ -361,13 +392,13 @@ const collectFieldTypeAliases = (
   }
 
   return Object.fromEntries(
-    Object.entries(aliases).filter(([, alias]) => !conflictedAliases.has(alias)),
+    Object.entries(aliases).filter(([, alias]) => !conflictedAliases.has(alias))
   );
 };
 
 const renderTypeAliases = (
   components: Record<string, SerializedComponent>,
-  aliases: Record<string, string>,
+  aliases: Record<string, string>
 ): string => {
   const lines = [
     'export type Breakpoint = "base" | "sm" | "md" | "lg" | "xl" | "2xl";',
@@ -411,8 +442,7 @@ const renderViewProps = (views: Record<string, SerializedView>): string => {
         ? contexts.map((context) => `(${context})`).join(" & ")
         : (contexts[0] ?? "Record<string, never>");
     const contextLines = context.split("\n");
-    lines.push(`  ${quote(viewPath)}: {`);
-    lines.push(`    context: ${contextLines[0]}`);
+    lines.push(`  ${quote(viewPath)}: {`, `    context: ${contextLines[0]}`);
     for (const line of contextLines.slice(1, -1)) {
       lines.push(line);
     }
@@ -432,7 +462,7 @@ const renderViewProps = (views: Record<string, SerializedView>): string => {
 const renderComponent = (
   name: string,
   component: SerializedComponent,
-  fieldAliases: Record<string, string>,
+  fieldAliases: Record<string, string>
 ): string => {
   const propsName = toPropsName(name);
   const fields = getComponentFields(component);
@@ -440,57 +470,77 @@ const renderComponent = (
   const lines = [`export interface ${propsName} {`];
 
   for (const [key, schema] of Object.entries(fields)) {
-    lines.push(`  ${toPropertyKey(key)}?: ${fieldAliases[key] ?? renderFieldType(schema, 2)};`);
+    lines.push(
+      `  ${toPropertyKey(key)}?: ${fieldAliases[key] ?? renderFieldType(schema, 2)};`
+    );
   }
 
   for (const [key, callback] of Object.entries(callbacks)) {
     const parameters =
-      callback.input === undefined ? "" : `input: ${toTypeScriptType(callback.input, 2)}`;
+      callback.input === undefined
+        ? ""
+        : `input: ${toTypeScriptType(callback.input, 2)}`;
     lines.push(`  ${toPropertyKey(key)}?: (${parameters}) => void;`);
   }
 
-  lines.push("}");
-  lines.push("");
+  lines.push("}", "");
 
   const callbackEntries = Object.entries(callbacks).map(
-    ([key, callback]) => `${quote(key)}: ${callback.input === undefined ? 0 : 1}`,
+    ([key, callback]) =>
+      `${quote(key)}: ${callback.input === undefined ? 0 : 1}`
   );
   const callbackOptions =
-    callbackEntries.length > 0 ? `,\n  callbacks: { ${callbackEntries.join(", ")} }` : "";
+    callbackEntries.length > 0
+      ? `,\n  callbacks: { ${callbackEntries.join(", ")} }`
+      : "";
 
   lines.push(
     `export const ${toIdentifier(name)} = /* @__PURE__ */ createRemoteComponent<${propsName}, ${component.children === true}>(${quote(name)}, {`,
+    `  children: ${component.children === true}${callbackOptions},`
   );
-  lines.push(`  children: ${component.children === true}${callbackOptions},`);
   lines.push("});");
 
   return lines.join("\n");
 };
 
-const isSerializedTool = (value: SerializedTool | SerializedTools): value is SerializedTool =>
+const isSerializedTool = (
+  value: SerializedTool | SerializedTools
+): value is SerializedTool =>
   "kind" in value && (value.kind === "client" || value.kind === "server");
 
 const hasServerTool = (value: SerializedTool | SerializedTools): boolean =>
-  isSerializedTool(value) ? value.kind === "server" : Object.values(value).some(hasServerTool);
+  isSerializedTool(value)
+    ? value.kind === "server"
+    : Object.values(value).some(hasServerTool);
 
-const renderTools = (tools: SerializedTools, depth = 0, serverOnly = false): string => {
+const renderTools = (
+  tools: SerializedTools,
+  depth = 0,
+  serverOnly = false
+): string => {
   const indent = " ".repeat(depth);
   const propertyIndent = " ".repeat(depth + 2);
   const lines = ["{"];
 
   for (const [key, value] of Object.entries(tools)) {
-    if (serverOnly && !hasServerTool(value)) continue;
+    if (serverOnly && !hasServerTool(value)) {
+      continue;
+    }
     if (isSerializedTool(value)) {
-      if (serverOnly && value.kind !== "server") continue;
+      if (serverOnly && value.kind !== "server") {
+        continue;
+      }
       const input = toTypeScriptType(value.input, depth + 2);
       const output = toTypeScriptType(value.output, depth + 2);
       lines.push(
-        `${propertyIndent}${toPropertyKey(key)}: (input${value.input ? "" : "?"}: ${value.input ? input : "undefined"}) => Promise<${value.output ? output : "void"}>;`,
+        `${propertyIndent}${toPropertyKey(key)}: (input${value.input ? "" : "?"}: ${value.input ? input : "undefined"}) => Promise<${value.output ? output : "void"}>;`
       );
     } else {
       const nested = renderTools(value, depth + 2, serverOnly).split("\n");
-      lines.push(`${propertyIndent}${toPropertyKey(key)}: ${nested[0]}`);
-      lines.push(...nested.slice(1, -1));
+      lines.push(
+        `${propertyIndent}${toPropertyKey(key)}: ${nested[0]}`,
+        ...nested.slice(1, -1)
+      );
       lines.push(`${nested.at(-1)};`);
     }
   }
@@ -499,19 +549,24 @@ const renderTools = (tools: SerializedTools, depth = 0, serverOnly = false): str
   return lines.join("\n");
 };
 
-const renderToolRuntime = (tools: SerializedTools, pathParts: string[] = []): string => {
+const renderToolRuntime = (
+  tools: SerializedTools,
+  pathParts: string[] = []
+): string => {
   const lines = ["{"];
 
   for (const [key, value] of Object.entries(tools)) {
     const path = [...pathParts, key];
     if (isSerializedTool(value)) {
       lines.push(
-        `  ${toPropertyKey(key)}: (input?: unknown) => callTool(${quote(value.kind)}, ${quote(path.join("."))}, input),`,
+        `  ${toPropertyKey(key)}: (input?: unknown) => callTool(${quote(value.kind)}, ${quote(path.join("."))}, input),`
       );
     } else {
       const nested = renderToolRuntime(value, path).split("\n");
-      lines.push(`  ${toPropertyKey(key)}: ${nested[0]}`);
-      lines.push(...nested.slice(1).map((line) => `  ${line}`));
+      lines.push(
+        `  ${toPropertyKey(key)}: ${nested[0]}`,
+        ...nested.slice(1).map((line) => `  ${line}`)
+      );
       lines.push(",");
     }
   }
@@ -522,7 +577,7 @@ const renderToolRuntime = (tools: SerializedTools, pathParts: string[] = []): st
 
 export const renderGeneratedTypes = (
   schema: TailorKitSchemaFile,
-  options: { serverModule?: string } = {},
+  options: { serverModule?: string } = {}
 ): string => {
   const toolsType = renderTools(schema.tools ?? {});
   const components = schema.components ?? {};
@@ -536,7 +591,7 @@ export const renderGeneratedTypes = (
   interface TailorKitSlots { ${Object.entries(schema.slots ?? {})
     .map(
       ([name, slot]) =>
-        `${quote(name)}: { views: ${slot.views.map(quote).join(" | ") || "never"}; multiple: ${slot.multiple === true} };`,
+        `${quote(name)}: { views: ${slot.views.map(quote).join(" | ") || "never"}; multiple: ${slot.multiple === true} };`
     )
     .join(" ")} }
 }
@@ -554,13 +609,15 @@ export const tools = ${renderToolRuntime(schema.tools ?? {})} as TailorKitTools;
     chunks.splice(
       1,
       0,
-      `import { createApi } from "tailorkit/client";\nimport type app from ${quote(options.serverModule)};\ntype AppServerFunctions = typeof app.functions;\ndeclare module "tailorkit/client" {\n  interface TailorKitServerFunctions extends AppServerFunctions {}\n}\n\nexport const api = createApi<typeof app.functions>();`,
+      `import { createApi } from "tailorkit/client";\nimport type app from ${quote(options.serverModule)};\ntype AppServerFunctions = typeof app.functions;\ndeclare module "tailorkit/client" {\n  interface TailorKitServerFunctions extends AppServerFunctions {}\n}\n\nexport const api = createApi<typeof app.functions>();`
     );
   }
 
   for (const [name, component] of Object.entries(components)) {
     const { children } = SerializedComponentSchema.parse(component);
-    chunks.push(renderComponent(name, { ...component, children }, fieldAliases));
+    chunks.push(
+      renderComponent(name, { ...component, children }, fieldAliases)
+    );
   }
 
   return `${chunks.join("\n\n")}\n`;
@@ -572,46 +629,63 @@ const joinUrlPath = (baseUrl: string, pathName: string): string => {
   return url.toString();
 };
 
-export const readSchemaFile = async (schemaPath: string): Promise<TailorKitSchemaFile> => {
+export const readSchemaFile = async (
+  schemaPath: string
+): Promise<TailorKitSchemaFile> => {
   try {
-    return TailorKitSchemaSpec.parse(JSON.parse(await readFile(schemaPath, "utf-8")));
+    return TailorKitSchemaSpec.parse(
+      JSON.parse(await readFile(schemaPath, "utf-8"))
+    );
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(`Unable to read TailorKit schema from ${schemaPath}: ${detail}`, {
-      cause: error,
-    });
+    throw new Error(
+      `Unable to read TailorKit schema from ${schemaPath}: ${detail}`,
+      {
+        cause: error,
+      }
+    );
   }
 };
 
 export const fetchSchemaFromHost = async (
   host: string,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<TailorKitSchemaFile> => {
   const schemaUrl = joinUrlPath(host, "schema");
   const response = await fetch(schemaUrl, { signal });
 
   if (!response.ok) {
-    throw new Error(`Unable to fetch TailorKit schema from ${schemaUrl}: ${response.statusText}`);
+    throw new Error(
+      `Unable to fetch TailorKit schema from ${schemaUrl}: ${response.statusText}`
+    );
   }
 
   return (await response.json()) as TailorKitSchemaFile;
 };
 
-export const generateTypes = async (options: GenerateTypesOptions = {}): Promise<string> => {
+export const generateTypes = async (
+  options: GenerateTypesOptions = {}
+): Promise<string> => {
   const root = path.resolve(options.cwd ?? ".");
-  const outPath = path.resolve(root, options.outFile ?? path.join("src", "tailorkit.gen.ts"));
+  const outPath = path.resolve(
+    root,
+    options.outFile ?? path.join("src", "tailorkit.gen.ts")
+  );
   const loaded = await loadTailorKitConfig(options.configPath, root);
   const schema =
     options.schema ??
-    (options.schemaPath !== undefined
-      ? await readSchemaFile(path.resolve(root, options.schemaPath))
-      : await fetchSchemaFromHost(loaded.config.host));
+    (options.schemaPath === undefined
+      ? await fetchSchemaFromHost(loaded.config.host)
+      : await readSchemaFile(path.resolve(root, options.schemaPath)));
 
-  const serverEntry = path.resolve(loaded.root, loaded.config.server?.entry ?? "src/server.ts");
+  const serverEntry = path.resolve(
+    loaded.root,
+    loaded.config.server?.entry ?? "src/server.ts"
+  );
   const serverExists = await stat(serverEntry)
     .then((file) => file.isFile())
     .catch((error: unknown) => {
-      const code = (error as NodeJS.ErrnoException).code;
+      const { code } = error as NodeJS.ErrnoException;
       if (code === "ENOENT" || code === "ENOTDIR") {
         return false;
       }

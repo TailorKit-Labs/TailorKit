@@ -1,9 +1,11 @@
 import { chmod, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
+
 import { loadTailorKitConfig } from "@tailorkit/app/config/loader";
 import { createTailorKitClient } from "@tailorkit/core/server";
 import { z } from "zod";
+
 import { getAgentAuth } from "./agent-auth";
 import { createCliClient } from "./client";
 import { normalizeHostUrl } from "./utils/url";
@@ -62,7 +64,7 @@ const storedScopeSchema = z.preprocess(
     legacyFlatScopeSchema.safeParse(value).success
       ? undefined
       : value,
-  namedScopeSchema.optional(),
+  namedScopeSchema.optional()
 );
 
 const authStorePath = path.join(homedir(), ".tailorkit", "auth.json");
@@ -89,16 +91,28 @@ const sleep = (milliseconds: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 const throwRpcError = (result: unknown) => {
-  if (result && typeof result === "object" && "error" in result && result.error !== undefined) {
+  if (
+    result &&
+    typeof result === "object" &&
+    "error" in result &&
+    result.error !== undefined
+  ) {
     throw result.error;
   }
 };
 
 const readAuthStore = async (): Promise<AuthStore> => {
   try {
-    return authStoreSchema.parse(JSON.parse(await readFile(authStorePath, "utf-8")));
+    return authStoreSchema.parse(
+      JSON.parse(await readFile(authStorePath, "utf-8"))
+    );
   } catch (error) {
-    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "ENOENT"
+    ) {
       return {};
     }
 
@@ -118,16 +132,22 @@ const writeAuthStore = async (store: AuthStore): Promise<void> => {
 /** Choose the JWT platform route when supplied, otherwise the configured host. */
 export const resolveHostUrl = async (options: AuthOptions): Promise<string> => {
   const agent = getAgentAuth();
-  if (agent) return agent.platformUrl;
+  if (agent) {
+    return agent.platformUrl;
+  }
   if (options.host !== undefined) {
     let url: URL;
     try {
       url = new URL(options.host);
     } catch {
-      throw new Error("Invalid TailorKit host URL. Use an absolute http:// or https:// URL.");
+      throw new Error(
+        "Invalid TailorKit host URL. Use an absolute http:// or https:// URL."
+      );
     }
     if (url.protocol !== "http:" && url.protocol !== "https:") {
-      throw new Error("Invalid TailorKit host URL. Use an absolute http:// or https:// URL.");
+      throw new Error(
+        "Invalid TailorKit host URL. Use an absolute http:// or https:// URL."
+      );
     }
     return normalizeHostUrl(options.host);
   }
@@ -136,10 +156,15 @@ export const resolveHostUrl = async (options: AuthOptions): Promise<string> => {
     return normalizeHostUrl(loaded.config.host);
   }
 
-  throw new Error("Missing TailorKit host URL. Set host in tailorkit.config.ts.");
+  throw new Error(
+    "Missing TailorKit host URL. Set host in tailorkit.config.ts."
+  );
 };
 
-export const createCliAuthApprovalUrl = (hostUrl: string, userCode: string): string => {
+export const createCliAuthApprovalUrl = (
+  hostUrl: string,
+  userCode: string
+): string => {
   const url = new URL(hostUrl);
   const pathname = url.pathname.replace(/\/+$/u, "");
 
@@ -153,14 +178,16 @@ export const createCliAuthApprovalUrl = (hostUrl: string, userCode: string): str
 
 export class NotLoggedInError extends Error {
   constructor(hostUrl: string) {
-    super(`Not logged in for ${hostUrl}. Run tailorkit login --host ${hostUrl}.`);
+    super(
+      `Not logged in for ${hostUrl}. Run tailorkit login --host ${hostUrl}.`
+    );
     this.name = "NotLoggedInError";
   }
 }
 
 export const saveDeployToken = async (
   hostUrl: string,
-  auth: Required<StoredHostAuth>,
+  auth: Required<StoredHostAuth>
 ): Promise<void> => {
   const store = await readAuthStore();
   await writeAuthStore({
@@ -191,9 +218,13 @@ export const removeDeployToken = async (hostUrl: string): Promise<boolean> => {
 };
 
 /** Prefer explicit JWT authorization without reading or changing stored host sessions. */
-export const getDeployToken = async (hostUrl: string): Promise<StoredHostAuth | undefined> => {
+export const getDeployToken = async (
+  hostUrl: string
+): Promise<StoredHostAuth | undefined> => {
   const agent = getAgentAuth();
-  if (agent) return { deployToken: agent.token, scope: agent.scope };
+  if (agent) {
+    return { deployToken: agent.token, scope: agent.scope };
+  }
   const store = await readAuthStore();
   return store.hosts?.[hostUrl];
 };
@@ -201,15 +232,23 @@ export const getDeployToken = async (hostUrl: string): Promise<StoredHostAuth | 
 /** Verify a supplied JWT, or use the existing host approval flow for a CLI session. */
 export const runLogin = async (
   options: LoginOptions,
-  onUserCode: (details: { expiresAt: Date; hostUrl: string; userCode: string }) => void,
+  onUserCode: (details: {
+    expiresAt: Date;
+    hostUrl: string;
+    userCode: string;
+  }) => void
 ): Promise<{ hostUrl: string; scope: NamedScope }> => {
-  if (getAgentAuth()) return runWhoami(options);
+  if (getAgentAuth()) {
+    return runWhoami(options);
+  }
   const hostUrl = await resolveHostUrl(options);
   const client = createTailorKitClient({ url: hostUrl });
   const startResult = await client.cliAuth.start({});
   throwRpcError(startResult);
 
-  const started = ("data" in startResult ? startResult.data : startResult) as CliAuthStartResult;
+  const started = (
+    "data" in startResult ? startResult.data : startResult
+  ) as CliAuthStartResult;
   const expiresAt = new Date(started.expiresAt);
   const timeoutAt = Date.now() + (options.timeout ?? defaultLoginTimeoutMs);
 
@@ -217,10 +256,14 @@ export const runLogin = async (
 
   while (Date.now() < timeoutAt && Date.now() < expiresAt.getTime()) {
     await sleep(pollIntervalMs);
-    const pollResult = await client.cliAuth.poll({ deviceCode: started.deviceCode });
+    const pollResult = await client.cliAuth.poll({
+      deviceCode: started.deviceCode,
+    });
     throwRpcError(pollResult);
 
-    const result = ("data" in pollResult ? pollResult.data : pollResult) as CliAuthPollResult;
+    const result = (
+      "data" in pollResult ? pollResult.data : pollResult
+    ) as CliAuthPollResult;
 
     switch (result.status) {
       case "pending": {
@@ -255,7 +298,7 @@ export const runLogin = async (
 
 /** Verify the selected credential at its authority and persist only normal CLI sessions. */
 export const runWhoami = async (
-  options: AuthOptions,
+  options: AuthOptions
 ): Promise<{ hostUrl: string; scope: NamedScope }> => {
   const hostUrl = await resolveHostUrl(options);
   const auth = await getDeployToken(hostUrl);
@@ -271,7 +314,7 @@ export const runWhoami = async (
     throwRpcError(verifyResult);
 
     result = verifiedCliAuthResultSchema.parse(
-      "data" in verifyResult ? verifyResult.data : verifyResult,
+      "data" in verifyResult ? verifyResult.data : verifyResult
     );
   } catch (error) {
     if (
@@ -281,17 +324,21 @@ export const runWhoami = async (
       error.code === "UNAUTHORIZED"
     ) {
       if (getAgentAuth())
-        throw new Error("Agent authorization expired or revoked. Start a new agent turn.");
+        throw new Error(
+          "Agent authorization expired or revoked. Start a new agent turn.",
+          { cause: error }
+        );
       throw new NotLoggedInError(hostUrl);
     }
     throw error;
   }
 
-  if (!getAgentAuth())
+  if (!getAgentAuth()) {
     await saveDeployToken(hostUrl, {
       deployToken: auth.deployToken,
       scope: result.scope,
     });
+  }
 
   return {
     hostUrl,
@@ -301,7 +348,7 @@ export const runWhoami = async (
 
 /** Remove a stored host session; environment/file JWTs remain managed by their caller. */
 export const runLogout = async (
-  options: AuthOptions,
+  options: AuthOptions
 ): Promise<{ hostUrl: string; removed: boolean }> => {
   const hostUrl = await resolveHostUrl(options);
   return {

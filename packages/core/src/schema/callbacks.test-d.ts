@@ -1,5 +1,6 @@
 import { expectTypeOf } from "vite-plus/test";
 import type { z } from "zod";
+
 import type { InferCallback, InferCallbacks } from "./callbacks";
 
 interface SaveCallback {
@@ -16,7 +17,9 @@ expectTypeOf<InferCallback<SaveCallback>>().toEqualTypeOf<
   (input: { title: string; version: number }) => { saved: boolean }
 >();
 
-expectTypeOf<InferCallback<LoadCallback>>().toEqualTypeOf<() => Promise<{ ready: true }>>();
+expectTypeOf<InferCallback<LoadCallback>>().toEqualTypeOf<
+  () => Promise<{ ready: true }>
+>();
 expectTypeOf<InferCallback<Record<never, never>>>().toEqualTypeOf<() => void>();
 
 expectTypeOf<

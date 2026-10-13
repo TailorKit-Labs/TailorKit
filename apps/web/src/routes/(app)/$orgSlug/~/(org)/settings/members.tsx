@@ -1,30 +1,40 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useMemo, useState } from "react";
-import { SearchIcon } from "lucide-react";
 import { Input } from "@tailorkit/ui/input";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@tailorkit/ui/tabs";
 import { toastManager } from "@tailorkit/ui/toast";
-import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { InviteMembersDialog } from "#components/members/invite-members-dialog";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { SearchIcon } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+
 import { InvitationsTable } from "#components/members/invitations-table";
 import type { InvitationRow } from "#components/members/invitations-table";
+import { InviteMembersDialog } from "#components/members/invite-members-dialog";
 import { MembersTable } from "#components/members/members-table";
 import type { MemberRow } from "#components/members/members-table";
 import { PageLayout } from "#components/page-layout";
 import { client, orpc } from "#lib/orpc";
 
-export const Route = createFileRoute("/(app)/$orgSlug/~/(org)/settings/members")({
+export const Route = createFileRoute(
+  "/(app)/$orgSlug/~/(org)/settings/members"
+)({
   component: OrgSettingsMembers,
   loader: async ({ context, params }) => {
     await Promise.all([
       context.queryClient.query(
-        context.orpc.org.getMembers.queryOptions({ input: { orgSlug: params.orgSlug } }),
+        context.orpc.org.getMembers.queryOptions({
+          input: { orgSlug: params.orgSlug },
+        })
       ),
       context.queryClient
         .query(
           context.orpc.org.getOrgInvitations.queryOptions({
             input: { orgSlug: params.orgSlug },
-          }),
+          })
         )
         .catch(() => null),
     ]);
@@ -36,99 +46,122 @@ function OrgSettingsMembers() {
   const queryClient = useQueryClient();
   const { data: session } = useQuery(orpc.user.getSession.queryOptions());
   const { data: members } = useSuspenseQuery(
-    orpc.org.getMembers.queryOptions({ input: { orgSlug } }),
+    orpc.org.getMembers.queryOptions({ input: { orgSlug } })
   );
   const { data: invitations } = useSuspenseQuery(
-    orpc.org.getOrgInvitations.queryOptions({ input: { orgSlug } }),
+    orpc.org.getOrgInvitations.queryOptions({ input: { orgSlug } })
   );
   const [search, setSearch] = useState("");
 
-  const currentMember = members.find((member) => member.user.id === session?.user?.id);
-  const canManage = currentMember?.role === "owner" || currentMember?.role === "admin";
+  const currentMember = members.find(
+    (member) => member.user.id === session?.user?.id
+  );
+  const canManage =
+    currentMember?.role === "owner" || currentMember?.role === "admin";
 
   const removeMutation = useMutation({
-    mutationFn: (memberId: string) => client.org.removeMember({ orgSlug, memberId }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(orpc.org.getMembers.queryOptions({ input: { orgSlug } }));
-      toastManager.add({ title: "Member removed", type: "success" });
-    },
+    mutationFn: (memberId: string) =>
+      client.org.removeMember({ orgSlug, memberId }),
     onError: (err: unknown) => {
-      const message = err instanceof Error ? err.message : "Failed to remove member";
+      const message =
+        err instanceof Error ? err.message : "Failed to remove member";
       toastManager.add({ title: "Error", description: message, type: "error" });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(
+        orpc.org.getMembers.queryOptions({ input: { orgSlug } })
+      );
+      toastManager.add({ title: "Member removed", type: "success" });
     },
   });
 
   const resendMutation = useMutation({
     mutationFn: ({ email, role }: { email: string; role: string }) =>
-      client.org.inviteMember({ orgSlug, email, role: role as "member" | "admin" }),
+      client.org.inviteMember({
+        orgSlug,
+        email,
+        role: role as "member" | "admin",
+      }),
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error ? err.message : "Failed to resend invitation";
+      toastManager.add({ title: "Error", description: message, type: "error" });
+    },
     onSuccess: () => {
       toastManager.add({ title: "Invitation resent", type: "success" });
-    },
-    onError: (err: unknown) => {
-      const message = err instanceof Error ? err.message : "Failed to resend invitation";
-      toastManager.add({ title: "Error", description: message, type: "error" });
     },
   });
 
   const revokeMutation = useMutation({
-    mutationFn: (invitationId: string) => client.org.revokeInvitation({ orgSlug, invitationId }),
+    mutationFn: (invitationId: string) =>
+      client.org.revokeInvitation({ orgSlug, invitationId }),
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error ? err.message : "Failed to revoke invitation";
+      toastManager.add({ title: "Error", description: message, type: "error" });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(
-        orpc.org.getOrgInvitations.queryOptions({ input: { orgSlug } }),
+        orpc.org.getOrgInvitations.queryOptions({ input: { orgSlug } })
       );
       toastManager.add({ title: "Invitation revoked", type: "success" });
-    },
-    onError: (err: unknown) => {
-      const message = err instanceof Error ? err.message : "Failed to revoke invitation";
-      toastManager.add({ title: "Error", description: message, type: "error" });
     },
   });
 
   const memberRows = useMemo<MemberRow[]>(
     () =>
       members.map((member) => ({
-        id: member.id,
-        name: member.user.name,
-        email: member.user.email,
-        role: member.role,
         createdAt: member.createdAt,
-        userId: member.user.id,
+        email: member.user.email,
+        id: member.id,
         isCurrentUser: member.user.id === session?.user?.id,
         isOwner: member.role === "owner",
+        name: member.user.name,
+        role: member.role,
+        userId: member.user.id,
       })),
-    [members, session?.user?.id],
+    [members, session?.user?.id]
   );
 
   const invalidateAll = useCallback(() => {
-    queryClient.invalidateQueries(orpc.org.getMembers.queryOptions({ input: { orgSlug } }));
-    queryClient.invalidateQueries(orpc.org.getOrgInvitations.queryOptions({ input: { orgSlug } }));
+    queryClient.invalidateQueries(
+      orpc.org.getMembers.queryOptions({ input: { orgSlug } })
+    );
+    queryClient.invalidateQueries(
+      orpc.org.getOrgInvitations.queryOptions({ input: { orgSlug } })
+    );
   }, [orgSlug, queryClient]);
 
   const handleRemoveMember = useCallback(
     (id: string) => {
       removeMutation.mutate(id);
     },
-    [removeMutation],
+    [removeMutation]
   );
 
   const handleResendInvitation = useCallback(
     (invitation: InvitationRow) => {
-      resendMutation.mutate({ email: invitation.email, role: invitation.role ?? "member" });
+      resendMutation.mutate({
+        email: invitation.email,
+        role: invitation.role ?? "member",
+      });
     },
-    [resendMutation],
+    [resendMutation]
   );
 
   const handleRevokeInvitation = useCallback(
     (id: string) => {
       revokeMutation.mutate(id);
     },
-    [revokeMutation],
+    [revokeMutation]
   );
 
   return (
     <PageLayout
       actions={
-        canManage ? <InviteMembersDialog orgSlug={orgSlug} onSuccess={invalidateAll} /> : null
+        canManage ? (
+          <InviteMembersDialog orgSlug={orgSlug} onSuccess={invalidateAll} />
+        ) : null
       }
       description="Manage who has access to this organisation."
       title="Members"
@@ -140,7 +173,7 @@ function OrgSettingsMembers() {
             <TabsTab value="invitations">
               Pending invitations
               {invitations.length > 0 && (
-                <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs tabular-nums">
+                <span className="bg-muted ml-1.5 rounded-full px-1.5 py-0.5 text-xs tabular-nums">
                   {invitations.length}
                 </span>
               )}
@@ -148,7 +181,7 @@ function OrgSettingsMembers() {
           </TabsList>
 
           <div className="relative w-64 max-w-full">
-            <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
+            <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 z-10 size-4 -translate-y-1/2" />
             <Input
               className="bg-popover [&_[data-slot=input]]:pl-8"
               placeholder="Search"

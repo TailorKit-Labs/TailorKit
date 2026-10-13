@@ -1,8 +1,3 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { CopyIcon, EyeIcon, EyeOffIcon, RefreshCwIcon } from "lucide-react";
-import { useState } from "react";
-import { DateAgo } from "@tailorkit/ui/date";
 import { Button } from "@tailorkit/ui/button";
 import {
   Card,
@@ -12,6 +7,7 @@ import {
   CardPanel,
   CardTitle,
 } from "@tailorkit/ui/card";
+import { DateAgo } from "@tailorkit/ui/date";
 import {
   Dialog,
   DialogClose,
@@ -23,22 +19,46 @@ import {
   DialogTitle,
 } from "@tailorkit/ui/dialog";
 import { Field, FieldLabel } from "@tailorkit/ui/field";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@tailorkit/ui/input-group";
-import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "@tailorkit/ui/select";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "@tailorkit/ui/tooltip";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@tailorkit/ui/input-group";
+import {
+  Select,
+  SelectItem,
+  SelectPopup,
+  SelectTrigger,
+  SelectValue,
+} from "@tailorkit/ui/select";
 import { toastManager } from "@tailorkit/ui/toast";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "@tailorkit/ui/tooltip";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { CopyIcon, EyeIcon, EyeOffIcon, RefreshCwIcon } from "lucide-react";
+import { useState } from "react";
+
 import { PageLayout } from "#components/page-layout";
 import { client, orpc } from "#lib/orpc";
-import { getProjectApiKey, setProjectApiKey } from "#utils/project-api-key-memory";
+import {
+  getProjectApiKey,
+  setProjectApiKey,
+} from "#utils/project-api-key-memory";
 
-export const Route = createFileRoute("/(app)/$orgSlug/$projectSlug/settings/api-keys")({
+export const Route = createFileRoute(
+  "/(app)/$orgSlug/$projectSlug/settings/api-keys"
+)({
+  component: ProjectApiKeysPage,
   loader: ({ context, params }) =>
     context.queryClient.query(
       context.orpc.project.apiKeys.queryOptions({
         input: { orgSlug: params.orgSlug, projectSlug: params.projectSlug },
-      }),
+      })
     ),
-  component: ProjectApiKeysPage,
 });
 
 const gracePeriodOptions = [
@@ -48,14 +68,27 @@ const gracePeriodOptions = [
   { label: "After 1 day", value: "86400" },
 ] as const;
 
-function keyLabel(key: { id: string; prefix?: string | null; start?: string | null }) {
+function keyLabel(key: {
+  id: string;
+  prefix?: string | null;
+  start?: string | null;
+}) {
   return `${key.prefix ?? key.start ?? key.id}${"*".repeat(8)}`;
 }
 
-function LastUsedLabel({ lastRequest }: { lastRequest?: Date | string | null }) {
+function LastUsedLabel({
+  lastRequest,
+}: {
+  lastRequest?: Date | string | null;
+}) {
   return (
-    <span className="shrink-0 text-muted-foreground text-xs">
-      Last used {lastRequest ? <DateAgo className="inline" date={lastRequest} /> : "never"}
+    <span className="text-muted-foreground shrink-0 text-xs">
+      Last used{" "}
+      {lastRequest ? (
+        <DateAgo className="inline" date={lastRequest} />
+      ) : (
+        "never"
+      )}
     </span>
   );
 }
@@ -69,9 +102,11 @@ function ProjectApiKeysPage() {
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
   const [showNewApiKey, setShowNewApiKey] = useState(false);
   const [showStoredApiKey, setShowStoredApiKey] = useState(false);
-  const [storedApiKey, setStoredApiKey] = useState(() => getProjectApiKey(orgSlug, projectSlug));
+  const [storedApiKey, setStoredApiKey] = useState(() =>
+    getProjectApiKey(orgSlug, projectSlug)
+  );
   const { data: apiKeys } = useSuspenseQuery(
-    orpc.project.apiKeys.queryOptions({ input: { orgSlug, projectSlug } }),
+    orpc.project.apiKeys.queryOptions({ input: { orgSlug, projectSlug } })
   );
 
   const rotateMutation = useMutation({
@@ -81,6 +116,11 @@ function ProjectApiKeysPage() {
         orgSlug,
         projectSlug,
       }),
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error ? err.message : "Failed to rotate API key";
+      toastManager.add({ title: "Error", description: message, type: "error" });
+    },
     onSuccess: async (result) => {
       setNewApiKey(result.apiKey.key);
       setShowNewApiKey(false);
@@ -90,13 +130,9 @@ function ProjectApiKeysPage() {
       setNewApiKeyDialogOpen(true);
       setProjectApiKey(orgSlug, projectSlug, result.apiKey.key);
       await queryClient.invalidateQueries(
-        orpc.project.apiKeys.queryOptions({ input: { orgSlug, projectSlug } }),
+        orpc.project.apiKeys.queryOptions({ input: { orgSlug, projectSlug } })
       );
       toastManager.add({ title: "API key rotated", type: "success" });
-    },
-    onError: (err: unknown) => {
-      const message = err instanceof Error ? err.message : "Failed to rotate API key";
-      toastManager.add({ title: "Error", description: message, type: "error" });
     },
   });
 
@@ -114,13 +150,15 @@ function ProjectApiKeysPage() {
 
     if (!storedApiKey) {
       return (
-        <div className="min-w-0 rounded-lg border bg-muted px-3 py-2">
+        <div className="bg-muted min-w-0 rounded-lg border px-3 py-2">
           <div className="flex min-w-0 items-center gap-3">
-            <p className="min-w-0 flex-1 truncate font-mono text-sm">{keyLabel(activeKey)}</p>
+            <p className="min-w-0 flex-1 truncate font-mono text-sm">
+              {keyLabel(activeKey)}
+            </p>
             <LastUsedLabel lastRequest={activeKey.lastRequest} />
           </div>
           <div className="min-w-0">
-            <p className="mt-0.5 text-muted-foreground text-xs">
+            <p className="text-muted-foreground mt-0.5 text-xs">
               The full key is only shown once. Rotate it if you need a new one.
             </p>
           </div>
@@ -130,7 +168,7 @@ function ProjectApiKeysPage() {
 
     return (
       <div className="flex min-w-0 items-center gap-3">
-        <InputGroup className="min-w-0 flex-1 bg-muted">
+        <InputGroup className="bg-muted min-w-0 flex-1">
           <InputGroupInput
             aria-label="Project API key"
             className="font-mono"
@@ -143,7 +181,9 @@ function ProjectApiKeysPage() {
               <TooltipTrigger
                 render={
                   <Button
-                    aria-label={showStoredApiKey ? "Hide API key" : "Show API key"}
+                    aria-label={
+                      showStoredApiKey ? "Hide API key" : "Show API key"
+                    }
                     size="icon-xs"
                     type="button"
                     variant="ghost"
@@ -153,7 +193,9 @@ function ProjectApiKeysPage() {
               >
                 {showStoredApiKey ? <EyeOffIcon /> : <EyeIcon />}
               </TooltipTrigger>
-              <TooltipPopup>{showStoredApiKey ? "Hide API key" : "Show API key"}</TooltipPopup>
+              <TooltipPopup>
+                {showStoredApiKey ? "Hide API key" : "Show API key"}
+              </TooltipPopup>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger
@@ -188,8 +230,8 @@ function ProjectApiKeysPage() {
           <DialogHeader>
             <DialogTitle>New API key</DialogTitle>
             <DialogDescription>
-              This key is only shown once. Copy it now — it won't be visible again after you close
-              this dialog.
+              This key is only shown once. Copy it now — it won't be visible
+              again after you close this dialog.
             </DialogDescription>
           </DialogHeader>
           <DialogPanel>
@@ -206,7 +248,9 @@ function ProjectApiKeysPage() {
                   <TooltipTrigger
                     render={
                       <Button
-                        aria-label={showNewApiKey ? "Hide API key" : "Show API key"}
+                        aria-label={
+                          showNewApiKey ? "Hide API key" : "Show API key"
+                        }
                         size="icon-xs"
                         type="button"
                         variant="ghost"
@@ -216,7 +260,9 @@ function ProjectApiKeysPage() {
                   >
                     {showNewApiKey ? <EyeOffIcon /> : <EyeIcon />}
                   </TooltipTrigger>
-                  <TooltipPopup>{showNewApiKey ? "Hide API key" : "Show API key"}</TooltipPopup>
+                  <TooltipPopup>
+                    {showNewApiKey ? "Hide API key" : "Show API key"}
+                  </TooltipPopup>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger
@@ -243,7 +289,9 @@ function ProjectApiKeysPage() {
             </InputGroup>
           </DialogPanel>
           <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>Done</DialogClose>
+            <DialogClose render={<Button type="button" variant="outline" />}>
+              Done
+            </DialogClose>
           </DialogFooter>
         </DialogPopup>
       </Dialog>
@@ -254,7 +302,8 @@ function ProjectApiKeysPage() {
           <DialogHeader>
             <DialogTitle>Rotate API key</DialogTitle>
             <DialogDescription>
-              Choose when the current key should stop working after the new key is created.
+              Choose when the current key should stop working after the new key
+              is created.
             </DialogDescription>
           </DialogHeader>
           <DialogPanel>
@@ -283,7 +332,9 @@ function ProjectApiKeysPage() {
             </Field>
           </DialogPanel>
           <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
+            <DialogClose render={<Button type="button" variant="outline" />}>
+              Cancel
+            </DialogClose>
             <Button
               disabled={rotateMutation.isPending}
               type="button"
@@ -299,7 +350,9 @@ function ProjectApiKeysPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">Project key</CardTitle>
-          <CardDescription>Used to by your platform to integrate with Tailorkit.</CardDescription>
+          <CardDescription>
+            Used to by your platform to integrate with Tailorkit.
+          </CardDescription>
           <CardAction>
             <Button
               disabled={rotateMutation.isPending}
@@ -319,14 +372,16 @@ function ProjectApiKeysPage() {
 
       {expiringKeys.length > 0 ? (
         <div>
-          <p className="mb-3 font-medium text-sm">Expiring keys</p>
+          <p className="mb-3 text-sm font-medium">Expiring keys</p>
           <div className="space-y-2">
             {expiringKeys.map((key) => (
               <Card key={key.id}>
                 <CardPanel>
                   <div className="min-w-0">
-                    <p className="truncate font-mono text-sm">{keyLabel(key)}</p>
-                    <p className="mt-0.5 text-muted-foreground text-xs">
+                    <p className="truncate font-mono text-sm">
+                      {keyLabel(key)}
+                    </p>
+                    <p className="text-muted-foreground mt-0.5 text-xs">
                       Expires{" "}
                       {key.expiresAt ? (
                         <DateAgo className="inline" date={key.expiresAt} />

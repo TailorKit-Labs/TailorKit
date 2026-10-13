@@ -1,4 +1,5 @@
 import { env } from "#env";
+
 import { createS3CompatibleStorage } from "./s3.js";
 import type { Storage } from "./types.js";
 
@@ -12,12 +13,12 @@ function createStorage(): StorageInstance {
   }
 
   return createS3CompatibleStorage({
-    bucket: env.BLOB_BUCKET,
-    region: env.BLOB_REGION,
-    endpoint: env.BLOB_ENDPOINT,
     accessKeyId: env.BLOB_ACCESS_KEY_ID,
-    secretAccessKey: env.BLOB_SECRET_ACCESS_KEY,
+    bucket: env.BLOB_BUCKET,
+    endpoint: env.BLOB_ENDPOINT,
     forcePathStyle: env.BLOB_FORCE_PATH_STYLE ?? Boolean(env.BLOB_ENDPOINT),
+    region: env.BLOB_REGION,
+    secretAccessKey: env.BLOB_SECRET_ACCESS_KEY,
   });
 }
 

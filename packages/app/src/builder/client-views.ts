@@ -1,7 +1,8 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { tailorkitUploadManifestSchema } from "./upload-manifest";
+
 import type { InstanceRegistration } from "./instances";
+import { tailorkitUploadManifestSchema } from "./upload-manifest";
 
 // Inspect the developer's bundled client in a short-lived build process, never on the platform.
 const inspectClient = `
@@ -23,7 +24,9 @@ process.exit(0);
 `;
 
 export async function readClientViews(filename: string) {
-  return (await readClientManifest(filename)).views.filter((view) => !view.disabled);
+  return (await readClientManifest(filename)).views.filter(
+    (view) => !view.disabled
+  );
 }
 
 export async function readClientManifest(filename: string) {
@@ -31,13 +34,18 @@ export async function readClientManifest(filename: string) {
     const { stdout } = await promisify(execFile)(
       process.execPath,
       ["--input-type=module", "--eval", inspectClient, filename],
-      { timeout: 10_000, maxBuffer: 2 * 1024 * 1024 },
+      { maxBuffer: 2 * 1024 * 1024, timeout: 10_000 }
     );
     const result = stdout.slice(
-      stdout.lastIndexOf("\nTAILORKIT_VIEWS=") + "\nTAILORKIT_VIEWS=".length,
+      stdout.lastIndexOf("\nTAILORKIT_VIEWS=") + "\nTAILORKIT_VIEWS=".length
     );
-    const manifest = JSON.parse(result) as { views: unknown; instanceResolvers: unknown };
-    const views = tailorkitUploadManifestSchema.shape.views.unwrap().parse(manifest.views);
+    const manifest = JSON.parse(result) as {
+      views: unknown;
+      instanceResolvers: unknown;
+    };
+    const views = tailorkitUploadManifestSchema.shape.views
+      .unwrap()
+      .parse(manifest.views);
     if (
       !Array.isArray(manifest.instanceResolvers) ||
       manifest.instanceResolvers.some(
@@ -47,16 +55,19 @@ export async function readClientManifest(filename: string) {
           typeof ref.slot !== "string" ||
           typeof ref.path !== "string" ||
           typeof ref.resolver !== "string" ||
-          !/^i[0-9a-f]{24}$/u.test(ref.resolver),
+          !/^i[0-9a-f]{24}$/u.test(ref.resolver)
       )
     ) {
       throw new Error("Invalid instance resolver references");
     }
-    return { views, instanceResolvers: manifest.instanceResolvers as InstanceRegistration[] };
+    return {
+      instanceResolvers: manifest.instanceResolvers as InstanceRegistration[],
+      views,
+    };
   } catch (error) {
     throw new Error(
       "Unable to read app views during the build. Keep browser-only side effects inside components or effects. Check the default exports of your roots, layouts and .view.tsx files.",
-      { cause: error },
+      { cause: error }
     );
   }
 }

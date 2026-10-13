@@ -1,8 +1,7 @@
-import * as z from "zod";
 import { createEnv } from "@tailorkit/env";
+import * as z from "zod";
 
 export const env = createEnv({
-  scope: "api-platform",
   schema: {
     APP_RUNTIME_SIGNING_KEY: z.string().optional(),
     APP_RUNTIME_PREVIOUS_PUBLIC_KEYS: z.string().optional(),
@@ -19,7 +18,9 @@ export const env = createEnv({
     VERCEL_PROJECT_PRODUCTION_URL: z.string().optional(),
     OPENAPI_SERVER_URL: z.url().default("https://tailorkit.dev/api/platform"),
   },
+  scope: "api-platform",
   warnings: {
-    AUTH_SECRET: "AUTH_SECRET is not set; authenticated platform routes will be unavailable.",
+    AUTH_SECRET:
+      "AUTH_SECRET is not set; authenticated platform routes will be unavailable.",
   },
 });
