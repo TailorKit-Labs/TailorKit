@@ -22,7 +22,7 @@
     "fix": "vp check --fix"
   },
   "dependencies": {
-    "preact": "^11.0.0",
+    "preact": "^11.0.1",
     "tailorkit": "workspace:*"
   },
   "devDependencies": {
