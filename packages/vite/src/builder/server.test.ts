@@ -559,12 +559,18 @@ it("builds colocated instance resolvers as query-only server actions", async () 
           { timeout: 10_000 }
         )
         .toBe(true);
-      expect(
-        await readFile(
-          path.join(root, ".tailorkit/watched/client/client.js"),
-          "utf-8"
+      // The server watcher can finish while the client watcher is still
+      // rebuilding and has temporarily cleared its output directory.
+      await expect
+        .poll(
+          async () =>
+            await readFile(
+              path.join(root, ".tailorkit/watched/client/client.js"),
+              "utf-8"
+            ).catch(() => ""),
+          { timeout: 10_000 }
         )
-      ).toContain(requireValue(names[0]));
+        .toContain(requireValue(names[0]));
       await rm(path.join(root, "src/slots/page/home.view.tsx"));
       await rm(path.join(root, "src/slots/panel.links/home.view.tsx"));
       await expect
