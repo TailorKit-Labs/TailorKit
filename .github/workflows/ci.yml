@@ -15,6 +15,8 @@ concurrency:
 
 env:
   CI: true
+  # Rebuild dependency links from the lockfile instead of reusing cached global links.
+  PNPM_CONFIG_VIRTUAL_STORE_TYPE: project
   TURBO_TELEMETRY_DISABLED: 1
   TAILORKIT_OTEL_DISABLED: true
   OTEL_SDK_DISABLED: true
