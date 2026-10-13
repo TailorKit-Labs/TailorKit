@@ -1,6 +1,8 @@
 import { defineContract } from "@tailorkit/core/schema";
 import type { StandardJSONSchemaV1, StandardSchemaV1 } from "@standard-schema/spec";
 import type { ReactNode } from "react";
+import type { ComponentDefinition } from "@tailorkit/core/schema";
+import type { ComponentRenderer } from "@tailorkit/client-core";
 import { components, createClient } from "../tailorkit";
 import type { TailorKitApp } from "../tailorkit";
 import type { TailorKitInstance, UseAppsResult, UseViewsResult } from "../index";
@@ -16,6 +18,19 @@ type AppsResultKeys = Assert<HasExactResultKeys<UseAppsResult>>;
 type ViewsResultKeys = Assert<HasExactResultKeys<UseViewsResult>>;
 const resultKeys: [AppsResultKeys, ViewsResultKeys] = [true, true];
 void resultKeys;
+
+type OptionalChildrenComponent = ComponentDefinition<undefined, {}, true>;
+const optionalChildrenRenderer: ComponentRenderer<OptionalChildrenComponent, ReactNode> = ({
+  children,
+}) => children;
+void optionalChildrenRenderer;
+
+const leafRenderer: ComponentRenderer<{}, ReactNode> = (args) => {
+  // @ts-expect-error leaf component renderer arguments do not include children
+  void args.children;
+  return null;
+};
+void leafRenderer;
 
 const typedSchema = <TValue,>(): StandardSchemaV1<TValue, TValue> &
   StandardJSONSchemaV1<TValue, TValue> =>
