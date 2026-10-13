@@ -4,6 +4,8 @@ virtualStoreType: global
 
 overrides:
   "@tanstack/react-start": "catalog:"
+  # Keep Better Auth's core peer resolution aligned with its plugins.
+  "better-auth>nanostores": 1.5.4
   vite@*: "catalog:"
 
 packages:
