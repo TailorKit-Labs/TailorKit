@@ -1,0 +1,75 @@
+apps/apps-worker/src/runtime/builder.test.ts
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 3,34,42,46-47,74-75,95,99,104,133-136
+packages/app/src/server/builder.ts
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 108
+packages/app/src/database/definition.test-d.ts
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 3,18,32,51,53
+packages/app-agent/package.json
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 19-23,27
+packages/flags/tsconfig.json
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 1-11
+packages/cli/src/generator/templates/src/functions/greeting.ts.liquid
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 1,5
+apps/web/src/routes/(app)/$orgSlug/$projectSlug/apps.$appId.tsx
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 3,6,10,23,154-176,184-204
+apps/apps-worker/src/runtime/functions.test.ts
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 2,19-20,25,70
+packages/api/src/procedures.ts
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 16
+packages/api-platform/src/routes/app-agent.ts
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 21
+packages/app/src/server.ts
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 4
+packages/app-agent/src/source-export.ts
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 1-72
+packages/api/src/routers/apps.ts
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 3-7,10,54-71,212-266
+packages/api-platform/src/app-agent-mcp.ts
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 98
+packages/flags/src/index.ts
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 1-24
+.changeset/fn-export.md
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 1-6
+packages/app/test/fixtures/backend-todo/src/functions/import-todo.ts
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 2,6
+packages/flags/package.json
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 1-26
+apps/apps-worker/src/runtime/execution.test.ts
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 17,117,124,180,183,355-356,359,375,427,438,441,448
+apps/web/package.json
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 39
+packages/app/src/instances.test-d.ts
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 3,7,10-12
+packages/app/src/builder/server.test.ts
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 35,43,166,168-170
+packages/api/package.json
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 38,42
+packages/app/test/fixtures/backend-todo/src/functions/todos.ts
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 1,5,8,22,33
+apps/apps-worker/src/runtime/bundle.test.ts
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 2,6
+apps/apps-worker/src/runtime/context.test.ts
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 7,29,33,42,48,53
+packages/app/src/server/builder.test-d.ts
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 3,10,19-20,27,32,38,77,79,81,83,105
+packages/flags/LICENSE.md
+  s_cf0fb7db315121::t_7cd66afc9c6b8b 1-87
+pnpm-lock.yaml
+  s_cf0fb7db315121::t_f1e4e7c417502a 420-422,553-555,565-567,1211-1226,6444-6454,6471-6474,9336-9339,17431-17443,17467-17468,21117-21118
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "deb490e59845f14c6b8605e9e1ff0d78b6aad5a3",
+  "prompts": {},
+  "sessions": {
+    "s_cf0fb7db315121": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13299-2aad-7903-a0fd-d5c80194fa73",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
