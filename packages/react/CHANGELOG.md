@@ -1,5 +1,19 @@
 # @tailorkit/react
 
+## 0.1.0-beta.30
+
+### Patch Changes
+
+- a79bf54: Omit the `children` renderer argument for components that do not support children and when no children are rendered.
+- Updated dependencies [a79bf54]
+- Updated dependencies [f8dce5d]
+- Updated dependencies [29f3e30]
+  - @tailorkit/client-core@0.1.0-beta.30
+  - @tailorkit/app@0.1.0-beta.30
+  - @tailorkit/sandbox@0.1.0-beta.30
+  - @tailorkit/client-platform@0.1.0-beta.30
+  - @tailorkit/core@0.1.0-beta.30
+
 ## 0.1.0-beta.29
 
 ### Patch Changes
