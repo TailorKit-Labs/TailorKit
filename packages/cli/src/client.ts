@@ -86,7 +86,12 @@ export function createCliClient(options: {
         request(
           appsList({
             client,
-            body: { page: input?.page, pageSize: input?.pageSize, scopes: scopes(input?.scopes) },
+            body: {
+              page: input?.page,
+              pageSize: input?.pageSize,
+              agentOnly: input?.agentOnly,
+              scopes: scopes(input?.scopes),
+            },
           }),
         ),
       get: (input: Input<"apps", "get">) =>

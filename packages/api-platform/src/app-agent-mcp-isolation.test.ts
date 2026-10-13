@@ -118,9 +118,21 @@ describe("MCP database authorization", () => {
     const apps = await database.db
       .insert(app)
       .values([
-        { projectId, publicId: "ownapp000001", name: "Own", ...scope },
-        { projectId: otherProjectId, publicId: "otherapp0001", name: "Other", ...scope },
-        { projectId, publicId: "outscope0001", name: "Out of scope", ...otherScope },
+        { projectId, publicId: "ownapp000001", name: "Own", createdByAgent: true, ...scope },
+        {
+          projectId: otherProjectId,
+          publicId: "otherapp0001",
+          name: "Other",
+          createdByAgent: true,
+          ...scope,
+        },
+        {
+          projectId,
+          publicId: "outscope0001",
+          name: "Out of scope",
+          createdByAgent: true,
+          ...otherScope,
+        },
       ])
       .returning();
     [ownApp, foreignApp, outOfScopeApp] = [apps[0]!, apps[1]!, apps[2]!];
@@ -182,6 +194,28 @@ describe("MCP database authorization", () => {
         );
         expect(await response.text()).toContain('"isError":true');
       }
+    }
+    expect(state.start).not.toHaveBeenCalled();
+    expect(await database.db.select().from(app)).toEqual(initialApps);
+    expect(await database.db.select().from(cliToken)).toEqual(existingGrants);
+  });
+
+  it("hides and rejects non-AI apps even within the authorized scope", async () => {
+    const [manualApp] = await database.db
+      .insert(app)
+      .values({ projectId, publicId: "manualapp001", name: "Manual", ...scope })
+      .returning();
+    const initialApps = await database.db.select().from(app);
+    const listed = await handleAppAgentMcpRequest(request("list_apps"), context);
+    const events = await listed.text();
+    expect(events).toContain(ownApp.publicId);
+    expect(events).not.toContain(manualApp!.publicId);
+    for (const appId of [manualApp!.id, manualApp!.publicId]) {
+      const response = await handleAppAgentMcpRequest(
+        request("edit_app", { appId, prompt: "Change it" }),
+        context,
+      );
+      expect(await response.text()).toContain('"isError":true');
     }
     expect(state.start).not.toHaveBeenCalled();
     expect(await database.db.select().from(app)).toEqual(initialApps);

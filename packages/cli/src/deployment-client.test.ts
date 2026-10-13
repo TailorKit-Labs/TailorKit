@@ -139,7 +139,13 @@ it("routes every authenticated CLI surface through existing platform endpoints f
   });
   const client = createCliClient({ url: "http://localhost:1", token: "stored-session" });
   await client.cliAuth.verifyToken({});
-  await client.apps.list({ page: 1, pageSize: 100 });
+  await client.apps.list({ page: 1, pageSize: 100, agentOnly: true });
+  expect(await (fetch.mock.lastCall![0] as Request).clone().json()).toEqual({
+    page: 1,
+    pageSize: 100,
+    scopes: [scope],
+    agentOnly: true,
+  });
   await client.apps.create({ name: "App", description: null });
   await client.preview.start({ appId: "app-one" });
   await client.preview.stop({ sessionId: "session-one" });

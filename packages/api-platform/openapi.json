@@ -347,6 +347,9 @@
                       "required": ["name", "value"],
                       "additionalProperties": false
                     }
+                  },
+                  "agentOnly": {
+                    "type": "boolean"
                   }
                 },
                 "required": ["scopes"]
@@ -417,6 +420,9 @@
                                 "type": "null"
                               }
                             ]
+                          },
+                          "createdByAgent": {
+                            "type": "boolean"
                           },
                           "currentDeploymentId": {
                             "anyOf": [
@@ -623,6 +629,7 @@
                           "scope",
                           "name",
                           "description",
+                          "createdByAgent",
                           "currentDeploymentId",
                           "createdAt",
                           "updatedAt",
@@ -774,6 +781,9 @@
                         }
                       ]
                     },
+                    "createdByAgent": {
+                      "type": "boolean"
+                    },
                     "currentDeploymentId": {
                       "anyOf": [
                         {
@@ -979,6 +989,7 @@
                     "scope",
                     "name",
                     "description",
+                    "createdByAgent",
                     "currentDeploymentId",
                     "createdAt",
                     "updatedAt",
@@ -1039,6 +1050,9 @@
                     },
                     "required": ["name", "value"],
                     "additionalProperties": false
+                  },
+                  "createdByAgent": {
+                    "type": "boolean"
                   }
                 },
                 "required": ["name", "description", "scope"]
@@ -1105,6 +1119,9 @@
                         }
                       ]
                     },
+                    "createdByAgent": {
+                      "type": "boolean"
+                    },
                     "currentDeploymentId": {
                       "anyOf": [
                         {
@@ -1310,6 +1327,7 @@
                     "scope",
                     "name",
                     "description",
+                    "createdByAgent",
                     "currentDeploymentId",
                     "createdAt",
                     "updatedAt",
@@ -1515,6 +1533,9 @@
                         }
                       ]
                     },
+                    "createdByAgent": {
+                      "type": "boolean"
+                    },
                     "currentDeploymentId": {
                       "anyOf": [
                         {
@@ -1720,6 +1741,7 @@
                     "scope",
                     "name",
                     "description",
+                    "createdByAgent",
                     "currentDeploymentId",
                     "createdAt",
                     "updatedAt",
@@ -1844,6 +1866,9 @@
                         }
                       ]
                     },
+                    "createdByAgent": {
+                      "type": "boolean"
+                    },
                     "currentDeploymentId": {
                       "anyOf": [
                         {
@@ -2049,6 +2074,7 @@
                     "scope",
                     "name",
                     "description",
+                    "createdByAgent",
                     "currentDeploymentId",
                     "createdAt",
                     "updatedAt",
@@ -4128,6 +4154,9 @@
                                   }
                                 ]
                               },
+                              "createdByAgent": {
+                                "type": "boolean"
+                              },
                               "currentDeploymentId": {
                                 "anyOf": [
                                   {
@@ -4333,6 +4362,7 @@
                               "scope",
                               "name",
                               "description",
+                              "createdByAgent",
                               "currentDeploymentId",
                               "createdAt",
                               "updatedAt",

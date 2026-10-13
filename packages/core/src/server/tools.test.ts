@@ -176,7 +176,7 @@ it.each([
   { toolUrl: "https://other.test/tools" },
   { exp: 1 },
   () => ({ exp: Math.floor(Date.now() / 1000) + 601 }),
-  () => ({ iat: Math.floor(Date.now() / 1000) + 1 }),
+  () => ({ iat: Math.floor(Date.now() / 1000) + 60 }),
   { scope: { name: "other", value: {} } },
   { subjectId: 123 },
   { projectId: "other-project" },

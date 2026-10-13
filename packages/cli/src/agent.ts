@@ -95,8 +95,9 @@ export async function runAgentCommand(options: AgentOptions) {
   if (!auth) throw new NotLoggedInError(hostUrl);
   const client = createCliClient({ url: authUrl, token: auth.deployToken });
   if (appId) {
-    const app = await client.apps.get({ appId });
-    if (!app.createdByAgent)
+    const result = await client.apps.get({ appId });
+    const app = "data" in result ? result.data : result;
+    if (!app?.createdByAgent)
       throw new Error("The app agent can only edit apps created by the AI.");
   }
   if (!appId) {

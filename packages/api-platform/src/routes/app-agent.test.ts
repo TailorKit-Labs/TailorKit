@@ -79,6 +79,15 @@ beforeEach(() => {
 });
 
 describe("platform app chat", () => {
+  it("rejects apps that were not created by the AI before starting a workflow", async () => {
+    mocks.app.mockResolvedValue({ id: "manual-app", createdByAgent: false });
+    await expect(consume()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      message: "The app agent can only edit apps created by the AI.",
+    });
+    expect(mocks.start).not.toHaveBeenCalled();
+  });
+
   it("streams SDK chunks and starts each turn with the client's full UI history", async () => {
     const events = await consume();
     expect(events).toContainEqual({ type: "start", messageId: expect.any(String) });

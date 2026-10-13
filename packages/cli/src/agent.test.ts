@@ -58,7 +58,7 @@ beforeEach(async () => {
   });
   mocks.list.mockResolvedValue({ items: [], pagination: { hasMore: false } });
   mocks.create.mockResolvedValue({ id: "new-app" });
-  mocks.get.mockResolvedValue({ createdByAgent: true });
+  mocks.get.mockResolvedValue({ data: { createdByAgent: true } });
   mocks.select.mockResolvedValue(null);
   mocks.text.mockResolvedValue("my-app");
   mocks.tui.mockResolvedValue(undefined);
@@ -97,6 +97,18 @@ describe("agent command", () => {
     await runAgentCommand({ host });
     expect(mocks.tui.mock.lastCall![0].appId).toBe("selected-app");
     expect(await readFile(configPath, "utf-8")).toBe(source);
+  });
+  it("accepts a compact app lookup from agent JWT authentication", async () => {
+    mocks.get.mockResolvedValue({ createdByAgent: true });
+    await runAgentCommand({ host, appId: "app-one" });
+    expect(mocks.tui.mock.lastCall![0].appId).toBe("app-one");
+  });
+  it("rejects an explicit app that was not created by the AI", async () => {
+    mocks.get.mockResolvedValue({ data: { createdByAgent: false } });
+    await expect(runAgentCommand({ host, appId: "manual-app" })).rejects.toThrow(
+      "The app agent can only edit apps created by the AI.",
+    );
+    expect(mocks.tui).not.toHaveBeenCalled();
   });
   it("requires --host even when a config exists", async () => {
     await writeFile(configPath, 'export default { host: "https://other.test" };\n');
