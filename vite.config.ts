@@ -1,4 +1,4 @@
-import { recommended as effect } from "@effect/tsgo/oxlint-presets";
+import { strict as effect } from "@effect/tsgo/oxlint-presets";
 import formatting from "ultracite/oxfmt";
 import antiSlop from "ultracite/oxlint/anti-slop";
 import core from "ultracite/oxlint/core";
@@ -22,22 +22,40 @@ const aliasWorkspaces = [
   "packages/api",
   "packages/api-platform",
   "packages/api-utils",
+  "packages/app",
+  "packages/app-agent",
+  "packages/asset-delivery",
   "packages/auth",
+  "packages/cli",
+  "packages/client-core",
+  "packages/client-platform",
   "packages/config",
+  "packages/core",
   "packages/db",
   "packages/email",
   "packages/env",
+  "packages/flags",
   "packages/kv",
   "packages/observability",
+  "packages/react",
+  "packages/sandbox",
   "packages/storage",
+  "packages/tailorkit",
   "packages/ui",
+  "packages/vite",
   "playground/apps/todo",
   "playground/tanstack-start",
 ];
 const ignorePatterns = [
   ".agents/skills",
   ".claude/skills",
-  "apps/apps-worker/src/worker-env.d.ts",
+  "**/wrangler.json",
+  "**/wrangler.jsonc",
+  "**/wrangler.toml",
+  "**/worker-env.d.ts",
+  "**/.wrangler/**",
+  "**/*.generated.*",
+  "**/*.gen.*",
 ];
 
 export default defineConfig({

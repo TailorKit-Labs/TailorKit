@@ -61,8 +61,10 @@ export interface ViewInstances<
     | ViewInstance<z.input<TSchema>>[]
     | Promise<ViewInstance<z.input<TSchema>>[]>;
 }
+// oxlint-disable-next-line typescript/no-redundant-type-constituents -- Declaration merging may add symbol or numeric keys; the public view and slot names remain string keys.
 export type SlotName = keyof TailorKitSlots & string;
 
+// oxlint-disable-next-line typescript/no-redundant-type-constituents -- Declaration merging may add symbol or numeric keys; the public view and slot names remain string keys.
 export type ViewPath = Extract<keyof TailorKitViews & string, `/${string}`>;
 export type AppViewPath = ViewPath;
 
@@ -171,7 +173,7 @@ type ViewOptions<
   [S in TSlot]: {
     slot: S;
     view: TPath;
-    component: View<Record<string, never>>;
+    component: View;
   } & (TPath extends SlotView<S>
     ? unknown
     : { readonly __tailorkit_error__: "View is not supported by this slot" }) &
@@ -188,7 +190,7 @@ export function defineView<
 >(options: {
   slot?: never;
   view?: TPath;
-  component: View<Record<string, never>>;
+  component: View;
   instances?: ViewInstances<TPath, TSchema>;
 }): ViewDefinition<TPath, z.output<TSchema>>;
 export function defineView<
@@ -199,14 +201,14 @@ export function defineView<
   options: ViewOptions<TPath, TSlot, TSchema>
 ): ViewDefinition<TPath, z.output<TSchema>, TSlot> &
   SlotInstanceDefinition<TSlot>;
-// oxlint-disable-next-line func-style -- TypeScript overloads require a function declaration.
+
 export function defineView<
   TPath extends AppViewPath,
   TSchema extends z.ZodType,
 >(options: {
   slot?: SlotName;
   view?: TPath;
-  component: View<Record<string, never>>;
+  component: View;
   instances?: ViewInstances<TPath, TSchema>;
 }): ViewDefinition<TPath, z.output<TSchema>> {
   if (!options.slot || !options.view) {
@@ -220,8 +222,18 @@ export function defineView<
     instance?: ViewInstance;
   } | null>(null);
   // SAFETY: Generated bindings associate this view path with its context and instance schema; the adapter retains that relationship while erasing renderer generics.
-  const instances = options.instances as { resolver?: string } | undefined;
-  if (instances && !instances.resolver) {
+  const instances =
+    /* oxlint-disable typescript/no-unsafe-type-assertion -- Generated bindings associate this view path with its context and instance schema; the adapter retains that relationship while erasing renderer generics. */
+    options.instances as { resolver?: string } | undefined;
+  /* oxlint-enable typescript/no-unsafe-type-assertion */
+  if (
+    instances &&
+    !(
+      instances.resolver !== undefined &&
+      instances.resolver !== null &&
+      instances.resolver !== ""
+    )
+  ) {
     throw new Error(
       "View instance resolvers must be compiled with the TailorKit app build."
     );
@@ -242,18 +254,27 @@ export function defineView<
       Context.Provider,
       {
         value: {
-          context: props.context as ViewContext<TPath>,
+          context: props.context,
           instance: props.instance,
         },
       },
-      h(options.component as ComponentType<object>, {
-        key: props.instance?.key,
-      })
+      h(
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- Generated bindings associate this view path with its context and instance schema; the adapter retains that relationship while erasing renderer generics. */
+        options.component as ComponentType<object>,
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
+        {
+          key: props.instance?.key,
+        }
+      )
     );
   };
 
   const instanceMetadata: CompiledViewMetadata = {};
-  if (instances?.resolver) {
+  if (
+    instances?.resolver !== undefined &&
+    instances?.resolver !== null &&
+    instances?.resolver !== ""
+  ) {
     instanceMetadata.instances = { resolver: instances.resolver };
   }
   // SAFETY: Generated bindings associate this view path with its context and instance schema; the adapter retains that relationship while erasing renderer generics.
@@ -282,9 +303,13 @@ export function defineView<
         );
       }
       // SAFETY: Generated bindings associate this view path with its context and instance schema; the adapter retains that relationship while erasing renderer generics.
-      return value.instance as ViewInstance<z.output<TSchema>>;
+      return (
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- Generated bindings associate this view path with its context and instance schema; the adapter retains that relationship while erasing renderer generics. */
+        value.instance as ViewInstance<z.output<TSchema>>
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
+      );
     },
-  } as ViewDefinition<TPath, z.output<TSchema>>;
+  };
 }
 
 const componentTagPrefix = "tailorkit-";
@@ -351,6 +376,10 @@ export const createRemoteComponent = <
       nextProps["data-tailorkit-callbacks"] = JSON.stringify(callbackMap);
     }
 
-    return h(tagName, nextProps, options.children ? children : undefined);
+    return h(
+      tagName,
+      nextProps,
+      options.children === true ? children : undefined
+    );
   };
 };

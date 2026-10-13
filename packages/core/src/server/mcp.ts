@@ -18,10 +18,12 @@ export const createMcpTransport = (options: {
   platformHeaders?: TailorKitPlatformOptions["headers"];
   scopeSchemas: TailorKitScopeSchemas;
 }) => ({
-  async transport(context: TailorKitHostContext<unknown>): Promise<{
+  transport: async (
+    context: TailorKitHostContext<unknown>
+  ): Promise<{
     url: string;
     headers: Record<string, string>;
-  }> {
+  }> => {
     if (
       context.subjectId !== undefined &&
       (!isStringValue(context.subjectId) ||
@@ -54,7 +56,7 @@ export const createMcpTransport = (options: {
       ? options.platformHeaders()
       : options.platformHeaders);
     const headers = new Headers(configured);
-    if (!headers.get("authorization")?.startsWith("Bearer ")) {
+    if (!(headers.get("authorization")?.startsWith("Bearer ") === true)) {
       throw new Error("A TailorKit projectKey is required for MCP transport.");
     }
     headers.set("x-tailorkit-context", encoded);

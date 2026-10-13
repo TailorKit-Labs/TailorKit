@@ -78,7 +78,12 @@ export const createEnv = <const T extends EnvFields>({
     const parsed = z.safeParse(validator, rawValue);
 
     const missingWarning = missingWarnings.get(name);
-    if (rawValue === undefined && missingWarning) {
+    if (
+      rawValue === undefined &&
+      missingWarning !== undefined &&
+      missingWarning !== null &&
+      missingWarning !== ""
+    ) {
       warn(scope, missingWarning);
     }
 
@@ -98,13 +103,15 @@ export const createEnv = <const T extends EnvFields>({
   }
 
   // SAFETY: Only declared fields with successful results from their own Zod validator are inserted; missing or invalid fields are omitted.
-  return Object.fromEntries(parsedEntries) as Partial<z.output<z.ZodObject<T>>>;
+  return (
+    /* oxlint-disable typescript/no-unsafe-type-assertion -- Only declared fields with successful results from their own Zod validator are inserted; missing or invalid fields are omitted. */
+    Object.fromEntries(parsedEntries) as Partial<z.output<z.ZodObject<T>>>
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
+  );
 };
 
-export const warnIfMissing = <TFields extends object>(
-  scope: string,
-  values: TFields
-): void => {
+// oxlint-disable-next-line anti-slop/no-object-parameters -- This structural adapter enumerates caller-owned fields; a concrete domain shape would exclude supported schema or attribute objects.
+export const warnIfMissing = (scope: string, values: object): void => {
   for (const [name, value] of Object.entries(values)) {
     if (value === undefined || value === "") {
       warn(
@@ -120,21 +127,29 @@ export const resolveProductionUrl = (values: {
   VERCEL_PROJECT_PRODUCTION_URL?: string;
 }) => {
   let value = values.AUTH_PRODUCTION_URL;
-  if (!value && values.VERCEL_PROJECT_PRODUCTION_URL) {
+  if (
+    !(value !== undefined && value !== null && value !== "") &&
+    values.VERCEL_PROJECT_PRODUCTION_URL !== undefined &&
+    values.VERCEL_PROJECT_PRODUCTION_URL !== null &&
+    values.VERCEL_PROJECT_PRODUCTION_URL !== ""
+  ) {
     value = `https://${values.VERCEL_PROJECT_PRODUCTION_URL}`;
   }
 
-  if (!value) {
-    return;
+  if (!(value !== undefined && value !== null && value !== "")) {
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
   }
 
   if (!URL.canParse(value)) {
-    return;
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
   }
 
   const url = new URL(value);
   if (url.protocol !== "http:" && url.protocol !== "https:") {
-    return;
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
   }
   return url.href.replace(/\/$/u, "");
 };
@@ -152,11 +167,18 @@ export const getBaseUrl = (values: {
 }): string => {
   if (
     values.VERCEL_ENV === "production" &&
-    values.VERCEL_PROJECT_PRODUCTION_URL
+    values.VERCEL_PROJECT_PRODUCTION_URL !== undefined &&
+    values.VERCEL_PROJECT_PRODUCTION_URL !== null &&
+    values.VERCEL_PROJECT_PRODUCTION_URL !== ""
   ) {
     return `https://${values.VERCEL_PROJECT_PRODUCTION_URL}`;
   }
-  if (values.VERCEL_ENV === "preview" && values.VERCEL_URL) {
+  if (
+    values.VERCEL_ENV === "preview" &&
+    values.VERCEL_URL !== undefined &&
+    values.VERCEL_URL !== null &&
+    values.VERCEL_URL !== ""
+  ) {
     return `https://${values.VERCEL_URL}`;
   }
 
@@ -182,16 +204,26 @@ export const getTrustedOrigins = (values: {
 
   if (
     values.VERCEL_ENV === "production" &&
-    values.VERCEL_PROJECT_PRODUCTION_URL
+    values.VERCEL_PROJECT_PRODUCTION_URL !== undefined &&
+    values.VERCEL_PROJECT_PRODUCTION_URL !== null &&
+    values.VERCEL_PROJECT_PRODUCTION_URL !== ""
   ) {
     origins.add(`https://${values.VERCEL_PROJECT_PRODUCTION_URL}`);
   }
 
   if (values.VERCEL_ENV === "preview") {
-    if (values.VERCEL_BRANCH_URL) {
+    if (
+      values.VERCEL_BRANCH_URL !== undefined &&
+      values.VERCEL_BRANCH_URL !== null &&
+      values.VERCEL_BRANCH_URL !== ""
+    ) {
       origins.add(`https://${values.VERCEL_BRANCH_URL}`);
     }
-    if (values.VERCEL_URL) {
+    if (
+      values.VERCEL_URL !== undefined &&
+      values.VERCEL_URL !== null &&
+      values.VERCEL_URL !== ""
+    ) {
       origins.add(`https://${values.VERCEL_URL}`);
     }
   }

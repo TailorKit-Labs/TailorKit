@@ -32,6 +32,9 @@ import {
   getSameOriginUrl,
 } from "#lib/safe-return-url";
 
+const hasText = (value: string | null | undefined): value is string =>
+  value !== undefined && value !== null && value.length > 0;
+
 const GitHubIcon = () => (
   <svg
     viewBox="0 0 24 24"
@@ -42,6 +45,7 @@ const GitHubIcon = () => (
   </svg>
 );
 
+// oxlint-disable-next-line eslint/complexity -- Keep this validation or rendering lifecycle together: its guards share the same state, cleanup, and error handling.
 const RouteComponent = () => {
   const {
     email: emailFromSearch,
@@ -55,7 +59,7 @@ const RouteComponent = () => {
   );
   const [step, setStep] = useState<Step>("email");
   const [visible, setVisible] = useState(true);
-  const [email, setEmail] = useState(emailFromSearch || "");
+  const [email, setEmail] = useState(emailFromSearch ?? "");
   const [detailsError, setDetailsError] = useState<string | null>(null);
   const [socialError, setSocialError] = useState<string | null>(null);
   const [socialPending, setSocialPending] = useState<
@@ -76,9 +80,9 @@ const RouteComponent = () => {
   };
 
   const emailForm = useAppForm({
-    defaultValues: { email: emailFromSearch || "" },
+    defaultValues: { email: emailFromSearch ?? "" },
     onSubmit: async ({ value }) => {
-      await (() => {
+      await (async () => {
         const {
           promise: pendingPromise,
           resolve,
@@ -89,7 +93,7 @@ const RouteComponent = () => {
         } catch (error) {
           rejectPending(error);
         }
-        return pendingPromise;
+        return await pendingPromise;
       })();
       transition("details", value.email);
     },
@@ -113,7 +117,10 @@ const RouteComponent = () => {
             );
           },
           onSuccess: () => {
-            navigate({ search: { email, return_to }, to: "/verify-email" });
+            void navigate({
+              search: { email, return_to },
+              to: "/verify-email",
+            });
           },
         }
       );
@@ -147,8 +154,7 @@ const RouteComponent = () => {
 
       if (result.error) {
         setSocialError(
-          result.error.message ||
-            result.error.statusText ||
+          (result.error.message ?? result.error.statusText) ||
             `${providerName} sign up failed`
         );
         setSocialPending(null);
@@ -186,25 +192,26 @@ const RouteComponent = () => {
                   onSubmit={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    emailForm.handleSubmit();
+                    void emailForm.handleSubmit();
                   }}
                 >
                   <CardPanel>
                     <div className="flex flex-col gap-4">
-                      {(socialError ||
-                        error_description ||
-                        authenticationError) && (
+                      {(socialError ??
+                        error_description ??
+                        authenticationError ??
+                        "") !== "" && (
                         <p className="text-sm text-destructive" role="alert">
-                          {socialError ||
-                            error_description ||
+                          {socialError ??
+                            error_description ??
                             authenticationError}
                         </p>
                       )}
-                      {(socialProvidersQuery.data?.google ||
-                        socialProvidersQuery.data?.github) && (
+                      {(socialProvidersQuery.data?.google === true ||
+                        socialProvidersQuery.data?.github === true) && (
                         <>
                           <div className="flex flex-col gap-2">
-                            {socialProvidersQuery.data.github && (
+                            {socialProvidersQuery.data?.github && (
                               <Button
                                 type="button"
                                 variant="outline"
@@ -214,13 +221,17 @@ const RouteComponent = () => {
                                   socialPending !== "github"
                                 }
                                 loading={socialPending === "github"}
-                                onClick={() => signUpWithSocial("github")}
+                                onClick={() => {
+                                  void (async () => {
+                                    await signUpWithSocial("github");
+                                  })();
+                                }}
                               >
                                 <GitHubIcon />
                                 Continue with GitHub
                               </Button>
                             )}
-                            {socialProvidersQuery.data.google && (
+                            {socialProvidersQuery.data?.google && (
                               <Button
                                 type="button"
                                 variant="outline"
@@ -230,7 +241,11 @@ const RouteComponent = () => {
                                   socialPending !== "google"
                                 }
                                 loading={socialPending === "google"}
-                                onClick={() => signUpWithSocial("google")}
+                                onClick={() => {
+                                  void (async () => {
+                                    await signUpWithSocial("google");
+                                  })();
+                                }}
                               >
                                 <GoogleIcon className="size-4 shrink-0" />
                                 Continue with Google
@@ -274,21 +289,23 @@ const RouteComponent = () => {
                   onSubmit={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    detailsForm.handleSubmit();
+                    void detailsForm.handleSubmit();
                   }}
                 >
                   <CardPanel>
                     <div className="flex flex-col gap-4">
                       <button
                         type="button"
-                        onClick={() => transition("email")}
+                        onClick={() => {
+                          transition("email");
+                        }}
                         className="flex w-fit items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
                       >
                         <ArrowLeftIcon className="size-3.5" />
                         <span>{email}</span>
                       </button>
 
-                      {detailsError && (
+                      {hasText(detailsError) && (
                         <detailsForm.FormError>
                           {detailsError}
                         </detailsForm.FormError>

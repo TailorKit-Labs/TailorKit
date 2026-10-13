@@ -52,7 +52,7 @@ export const OrgSwitcher = ({ orgSlug }: OrgSwitcherProps) => {
       items={orgs ?? []}
       onValueChange={(org: SwitchableOrganization | null) => {
         if (org) {
-          navigate({
+          void navigate({
             params: { orgSlug: org.slug },
             to: "/$orgSlug/~/projects",
           });

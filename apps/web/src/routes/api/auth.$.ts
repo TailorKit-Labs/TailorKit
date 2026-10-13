@@ -11,14 +11,14 @@ const handleAuthRequest = async (request: Request) => {
     "tailorkit.adapter": "better-auth",
     "tailorkit.package": "apps-web",
   });
-  return auth.handler(request);
+  return await auth.handler(request);
 };
 
 export const Route = createFileRoute("/api/auth/$")({
   server: {
     handlers: {
-      GET: ({ request }) => handleAuthRequest(request),
-      POST: ({ request }) => handleAuthRequest(request),
+      GET: async ({ request }) => await handleAuthRequest(request),
+      POST: async ({ request }) => await handleAuthRequest(request),
     },
   },
 });

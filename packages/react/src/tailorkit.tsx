@@ -89,9 +89,12 @@ export const components = <
   _contract: { components: TComponents },
   customComponents: CustomComponentRenderers<TComponents>
 ): ComponentRenderers<TComponents, ReactNode> =>
+  /* oxlint-disable typescript/no-unsafe-type-assertion -- The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary. */
   customComponents as ComponentRenderers<TComponents, ReactNode>;
+/* oxlint-enable typescript/no-unsafe-type-assertion */
 
 interface ReactComponentRenderArgs {
+  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
   props: ComponentProps<ComponentDefinition>;
   children?: ReactNode;
 }
@@ -114,6 +117,7 @@ const createReactTailorKitClient = <
   const wrappedComponents = createComponentRegistry(
     options.components ?? {},
     (renderer) =>
+      // oxlint-disable-next-line typescript/promise-function-async -- Client components must render synchronously; ReactNode also permits Promise results for server components.
       function TailorKitComponent({
         children,
         ...props
@@ -158,7 +162,12 @@ const createReactTailorKitClient = <
       useEffect(() => {
         store.setProvidedApps(apps);
       }, [store, apps]);
-      useEffect(() => () => store.previews.dispose(), [store]);
+      useEffect(
+        () => () => {
+          store.previews.dispose();
+        },
+        [store]
+      );
       const context = useMemo(() => ({ client, store }), [store]);
       return createElement(
         TailorkitContext.Provider,
@@ -174,7 +183,9 @@ const createReactTailorKitClient = <
         // SAFETY: The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary.
         return createElement(
           ReactRenderSlot.Controlled,
+          /* oxlint-disable typescript/no-unsafe-type-assertion -- The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary. */
           props as ControlledRenderSlotProps
+          /* oxlint-enable typescript/no-unsafe-type-assertion */
         );
       },
     }),
@@ -194,9 +205,13 @@ const createReactTailorKitClient = <
     ) {
       useTailorkitContext("useViews", client);
       // SAFETY: The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary.
-      return useRootViews(optionsValue3) as UseViewsResult<
-        SlotMultiple<TSlots[TSlot]>
-      >;
+      return (
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary. */
+        useRootViews(optionsValue3) as UseViewsResult<
+          SlotMultiple<TSlots[TSlot]>
+        >
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
+      );
     },
   };
 

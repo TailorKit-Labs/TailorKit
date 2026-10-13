@@ -24,9 +24,9 @@ export const runtimeServiceAuthorized = async (
 ) => {
   const authorization = request.headers.get("authorization");
   if (
-    !secret ||
+    !(secret !== undefined && secret !== null && secret !== "") ||
     secret.length < 32 ||
-    !authorization?.startsWith("Bearer ") ||
+    !(authorization?.startsWith("Bearer ") === true) ||
     authorization.length > 8192
   ) {
     return false;

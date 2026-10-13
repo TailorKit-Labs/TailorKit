@@ -45,7 +45,7 @@ const { canonicalizeScope } = await import("#scope");
 const { authorizePreviewSocket } = await import("#preview-ws-auth");
 const { previewWebSocketRouter } = await import("#preview-ws");
 const authSecret = env.AUTH_SECRET;
-if (!authSecret) {
+if (!(authSecret !== undefined && authSecret !== null && authSecret !== "")) {
   throw new Error(
     "The preview test requires AUTH_SECRET in its Vitest config."
   );
@@ -134,8 +134,8 @@ const context: Context = {
   },
 };
 
-const startImplementation = () =>
-  call(
+const startImplementation = async () =>
+  await call(
     previewRouter.start,
     { body: { appId: "authapp00001", deployToken: "deploy-token" } },
     { context }
@@ -205,8 +205,8 @@ describe("platform preview lifecycle and grants", () => {
       { preview: previewRouter },
       { plugins: [new RateLimitHandlerPlugin()] }
     );
-    const handle = (shareId: string) =>
-      handler.handle(
+    const handle = async (shareId: string) =>
+      await handler.handle(
         new Request(
           `https://example.com/api/platform/preview/shares/${shareId}`
         ),
@@ -245,8 +245,8 @@ describe("platform preview lifecycle and grants", () => {
       data: { reason: "ACTIVE_PREVIEW_EXISTS" },
     });
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    const kv = state.kv as unknown as ReturnType<typeof fakeKV>;
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+    const kv = state.kv as ReturnType<typeof fakeKV>;
     const expiredBuildId = "expired_build";
     const manifest = {
       files: [
@@ -327,8 +327,8 @@ describe("platform preview lifecycle and grants", () => {
     expect(session?.status).toBe("ended");
     expect(
       // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-      // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-      await (state.kv as unknown as ReturnType<typeof fakeKV>).get(
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+      await (state.kv as ReturnType<typeof fakeKV>).get(
         `preview:ended:${started.body.sessionId}`
       )
     ).toBe("1");
@@ -337,8 +337,8 @@ describe("platform preview lifecycle and grants", () => {
   it("retires a disconnected developer before checking the app conflict", async () => {
     const first = await start();
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    const kv = state.kv as unknown as ReturnType<typeof fakeKV>;
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+    const kv = state.kv as ReturnType<typeof fakeKV>;
     await kv.set(`preview:developer-seen:${first.body.sessionId}`, "1");
     await kv.set(
       `preview:developer-connection:${first.body.sessionId}`,
@@ -367,8 +367,8 @@ describe("platform preview lifecycle and grants", () => {
     const replacement = await start();
     expect(replacement.body.sessionId).not.toBe(first.body.sessionId);
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    const kv = state.kv as unknown as ReturnType<typeof fakeKV>;
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+    const kv = state.kv as ReturnType<typeof fakeKV>;
     expect(await kv.get(`preview:ended:${first.body.sessionId}`)).toBe("1");
   });
 
@@ -389,8 +389,8 @@ describe("platform preview lifecycle and grants", () => {
     );
     expect(wrongScope.body.items).toEqual([]);
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    const kv = state.kv as unknown as ReturnType<typeof fakeKV>;
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+    const kv = state.kv as ReturnType<typeof fakeKV>;
     await kv.set(
       `preview:current:${started.body.sessionId}`,
       JSON.stringify({
@@ -435,8 +435,8 @@ describe("platform preview lifecycle and grants", () => {
   it("retries KV cleanup after the session was durably stopped", async () => {
     const started = await start();
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    const kv = state.kv as unknown as ReturnType<typeof fakeKV>;
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+    const kv = state.kv as ReturnType<typeof fakeKV>;
     const buildId = "retry_build";
     const buildKey = `preview:build:${started.body.sessionId}:${buildId}`;
     const chunkKey = `${buildKey}:0:0`;
@@ -469,8 +469,8 @@ describe("platform preview lifecycle and grants", () => {
       }
       await remove(key);
     };
-    const stop = () =>
-      call(
+    const stop = async () =>
+      await call(
         previewRouter.stop,
         {
           body: { deployToken: "deploy-token" },
@@ -498,10 +498,10 @@ describe("platform preview lifecycle and grants", () => {
   it("ends an idle viewer stream when its bearer token expires", async () => {
     const started = await start();
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+
     const current = vi.spyOn(
-      // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- The test installs fakeKV into a KV service; the service signature erases the fake implementation methods inspected here.
-      state.kv as unknown as ReturnType<typeof fakeKV>,
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The test installs fakeKV into a KV service; the service signature erases the fake implementation methods inspected here. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+      state.kv as ReturnType<typeof fakeKV>,
       "get"
     );
     vi.useFakeTimers({
@@ -527,11 +527,11 @@ describe("platform preview lifecycle and grants", () => {
       const expired = expect(iterator.next()).rejects.toMatchObject({
         code: "UNAUTHORIZED",
       });
-      await vi.waitFor(() =>
+      await vi.waitFor(() => {
         expect(current).toHaveBeenCalledWith(
           `preview:current:${started.body.sessionId}`
-        )
-      );
+        );
+      });
       // Simulate a timer waking just before the wall-clock expiry deadline.
       clock.mockReturnValue(deadline - 1);
       await vi.advanceTimersByTimeAsync(1000);
@@ -560,8 +560,8 @@ describe("platform preview lifecycle and grants", () => {
         ...canonicalizeScope(authorScope),
       }))
     );
-    const startApp = (appId: string) =>
-      call(
+    const startApp = async (appId: string) =>
+      await call(
         previewRouter.start,
         { body: { appId, deployToken: "deploy-token" } },
         { context }
@@ -625,12 +625,13 @@ describe("platform preview lifecycle and grants", () => {
       }))
     );
     const results = await Promise.allSettled(
-      appIds.map((appId) =>
-        call(
-          previewRouter.start,
-          { body: { appId, deployToken: "deploy-token" } },
-          { context }
-        )
+      appIds.map(
+        async (appId) =>
+          await call(
+            previewRouter.start,
+            { body: { appId, deployToken: "deploy-token" } },
+            { context }
+          )
       )
     );
     expect(
@@ -652,11 +653,11 @@ describe("platform preview lifecycle and grants", () => {
         projectId,
         scope: authorScope,
       },
-      authSecret!,
+      authSecret,
       env.OPENAPI_SERVER_URL!
     );
     const agentToken = {
-      ...(await verifyAgentToken(jwt, authSecret!, env.OPENAPI_SERVER_URL!)),
+      ...(await verifyAgentToken(jwt, authSecret, env.OPENAPI_SERVER_URL!)),
       token: jwt,
     };
     const handler = new OpenAPIHandler({ preview: previewRouter });
@@ -670,6 +671,7 @@ describe("platform preview lifecycle and grants", () => {
     );
     expect(response.response!.status).toBe(200);
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     const started = (await response.response!.json()) as {
       expiresAt: string;
       sessionId: string;

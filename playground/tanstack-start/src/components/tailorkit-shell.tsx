@@ -68,7 +68,11 @@ const ShellContent = ({
         onSelectApp={setSelectedApp}
         selectedApp={selectedApp}
         session={session}
-        signOut={() => signOut()}
+        signOut={() => {
+          void (async () => {
+            await signOut();
+          })();
+        }}
       />
       <SidebarInset>
         <header className="flex h-14 items-center gap-3 border-b px-5">

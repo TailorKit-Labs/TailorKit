@@ -39,7 +39,7 @@ const resolveMax = (value: Breakpoint | number): string => {
 };
 
 const parseQuery = (
-  query: BreakpointQuery | MediaQueryInput | string
+  query: BreakpointQuery | MediaQueryInput | (string & Record<never, never>)
 ): string => {
   if (!isStringValue(query)) {
     const parts: string[] = [];
@@ -90,7 +90,7 @@ export interface MediaQueryInput {
 }
 
 export const useMediaQuery = (
-  query: BreakpointQuery | MediaQueryInput | string
+  query: BreakpointQuery | MediaQueryInput | (string & Record<never, never>)
 ): boolean => {
   const mediaQuery = parseQuery(query);
 
@@ -103,7 +103,9 @@ export const useMediaQuery = (
       }
       const mql = window.matchMedia(mediaQuery);
       mql.addEventListener("change", operation);
-      return () => mql.removeEventListener("change", operation);
+      return () => {
+        mql.removeEventListener("change", operation);
+      };
     },
     [mediaQuery]
   );

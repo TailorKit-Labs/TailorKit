@@ -13,7 +13,11 @@ export const env = createEnv({
   scope: "storage",
 });
 
-if (env.BLOB_BUCKET) {
+if (
+  env.BLOB_BUCKET !== undefined &&
+  env.BLOB_BUCKET !== null &&
+  env.BLOB_BUCKET !== ""
+) {
   warnIfMissing("storage", {
     BLOB_ACCESS_KEY_ID: env.BLOB_ACCESS_KEY_ID,
     BLOB_SECRET_ACCESS_KEY: env.BLOB_SECRET_ACCESS_KEY,

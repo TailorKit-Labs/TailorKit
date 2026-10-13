@@ -1,8 +1,10 @@
+/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
-import { defineContract } from "../schema/contract";
-import { tool } from "../schema/tools";
+import { defineContract } from "#schema/contract";
+import { tool } from "#schema/tools";
+
 import { createServer } from "./contract";
 import { createToolVerifier } from "./tool-auth";
 
@@ -51,7 +53,11 @@ const server = createServer({
   $internal: {
     platformBaseUrl: issuer,
     platformFetch: async (url, init) => {
-      if (String(url).endsWith("/runtime/keys")) {
+      if (
+        (url instanceof Request ? url.url : String(url)).endsWith(
+          "/runtime/keys"
+        )
+      ) {
         return Response.json({ keys: [{ ...jwk, kid: "platform" }] });
       }
       const request = url instanceof Request ? url : new Request(url, init);
@@ -72,6 +78,7 @@ const server = createServer({
   contract,
   tools: {
     math: {
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
       broken: () => "invalid" as never,
       increment: handler,
       transformed: () => "42",
@@ -89,7 +96,8 @@ it.each([
   (baseUrl) => {
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     expect(() =>
-      createServer({ baseUrl: baseUrl as string, contract: defineContract({}) })
+      // oxlint-disable-next-line typescript/no-non-null-assertion -- Parameterized negative cases deliberately pass invalid inputs through the public API.
+      createServer({ baseUrl: baseUrl!, contract: defineContract({}) })
     ).toThrow();
   }
 );
@@ -158,14 +166,14 @@ const token = async (
     )
   )}`;
 };
-// oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
+
 const execute = async (
   credential: string,
   path = "math.increment",
   ...args: [input?: unknown]
 ) => {
   const input = args.length ? args[0] : "41";
-  return server.handler(
+  return await server.handler(
     new Request(toolUrl, {
       body: JSON.stringify({
         input,
@@ -289,14 +297,17 @@ it("uses the trusted public origin to verify tool destinations behind a proxy", 
   const proxied = createServer({
     $internal: {
       platformBaseUrl: issuer,
+      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
       platformFetch: async (url) =>
-        await (String(url).endsWith("/runtime/keys")
+        (url instanceof Request ? url.url : String(url)).endsWith(
+          "/runtime/keys"
+        )
           ? Response.json({ keys: [{ ...jwk, kid: "platform" }] })
           : Response.json({
               currentDeployment: { id: "deployment" },
               id: "app",
               projectId: "project",
-            })),
+            }),
     },
     baseUrl: new URL("https://product.test/custom/tailorkit/"),
     contract,
@@ -350,9 +361,9 @@ it("refreshes once for a rotated key, coalesces requests and throttles unknown k
       .mockResolvedValueOnce(
         Response.json({ keys: [{ ...jwk, kid: "platform" }] })
       )
-      .mockImplementation(
-        async () =>
-          await Response.json({ keys: [{ ...rotatedJwk, kid: "rotated" }] })
+      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+      .mockImplementation(async () =>
+        Response.json({ keys: [{ ...rotatedJwk, kid: "rotated" }] })
       );
     const verify = createToolVerifier({
       fetch: fetchKeys,
@@ -399,11 +410,11 @@ it("keeps valid cached keys when a refresh returns invalid keys, and still expir
       .mockResolvedValueOnce(
         Response.json({ keys: [{ ...jwk, kid: "platform" }] })
       )
-      .mockImplementation(
-        async () =>
-          await Response.json({
-            keys: [{ ...jwk, d: "private", kid: "rotated" }],
-          })
+      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+      .mockImplementation(async () =>
+        Response.json({
+          keys: [{ ...jwk, d: "private", kid: "rotated" }],
+        })
       );
     const verify = createToolVerifier({
       fetch: fetchKeys,
@@ -429,8 +440,9 @@ it("keeps valid cached keys when a refresh returns invalid keys, and still expir
 it("rejects an unknown key after one fetch when the key cache is empty", async () => {
   const fetchKeys = vi
     .fn<typeof fetch>()
-    .mockImplementation(
-      async () => await Response.json({ keys: [{ ...jwk, kid: "platform" }] })
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    .mockImplementation(async () =>
+      Response.json({ keys: [{ ...jwk, kid: "platform" }] })
     );
   const verify = createToolVerifier({ fetch: fetchKeys, platformUrl: issuer });
   await expect(

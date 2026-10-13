@@ -1,20 +1,19 @@
 import { z } from "zod";
 
-import type { ComponentDefinition } from "../schema/index";
+import type { ComponentDefinition } from "#schema/index";
+
 import { primitiveDefinitions, mapPrimitiveDefinitions } from "./definition";
 import type { PrimitiveName, PrimitivePropDefinition } from "./definition";
 import { resolveTheme } from "./theme";
 import type { TailorKitTheme } from "./theme";
 
-type FieldValidators = Record<string, z.ZodTypeAny>;
+type FieldValidators = Record<string, z.ZodType>;
 type PrimitiveComponents = Record<
   PrimitiveName,
   ComponentDefinition & { children: true }
 >;
 
-const tokenEnum = (
-  tokens: Record<string, string> | undefined
-): z.ZodTypeAny => {
+const tokenEnum = (tokens: Record<string, string> | undefined): z.ZodType => {
   const keys = Object.keys(tokens ?? {});
   if (keys.length === 0) {
     return z.never();
@@ -22,7 +21,7 @@ const tokenEnum = (
   return z.enum(keys);
 };
 
-const valueEnum = (values: readonly (number | string)[]): z.ZodTypeAny => {
+const valueEnum = (values: readonly (number | string)[]): z.ZodType => {
   const [first, ...rest] = values;
   if (first === undefined) {
     return z.never();
@@ -30,10 +29,7 @@ const valueEnum = (values: readonly (number | string)[]): z.ZodTypeAny => {
   return z.union([z.literal(first), ...rest.map((value) => z.literal(value))]);
 };
 
-const responsive = (
-  schema: z.ZodTypeAny,
-  theme: TailorKitTheme
-): z.ZodTypeAny => {
+const responsive = (schema: z.ZodType, theme: TailorKitTheme): z.ZodType => {
   const fields: FieldValidators = {};
   for (const key of Object.keys(theme.breakpoints ?? {})) {
     fields[key] = schema.optional();
@@ -44,7 +40,7 @@ const responsive = (
 const propSchema = (
   definition: PrimitivePropDefinition,
   theme: TailorKitTheme
-): z.ZodTypeAny => {
+): z.ZodType => {
   const schema =
     definition.kind === "token"
       ? tokenEnum(theme.tokens?.[definition.token])
@@ -64,6 +60,7 @@ export const primitives = (theme: TailorKitTheme = {}): PrimitiveComponents => {
         Object.entries(primitiveDefinitions[name]).map(
           ([propName, definition]) => [
             propName,
+            // oxlint-disable-next-line typescript/no-unsafe-argument -- Object.entries erases the schema registry value type; these definitions were created and validated by the contract builder.
             propSchema(definition, resolvedTheme),
           ]
         )

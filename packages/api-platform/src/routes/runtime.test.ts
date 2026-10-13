@@ -141,11 +141,14 @@ it("returns deployment metadata directly as the HTTP response body", async () =>
       method: "POST",
     }),
     {
-      context: {
-        organization: { id: "organization", publicId: "team" },
-        project: { id: metadata.projectId },
-        runtimeService: true,
-      } as Context,
+      context:
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- This test supplies the context members read by the handler; unrelated request context services are outside this scenario. */
+        {
+          organization: { id: "organization", publicId: "team" },
+          project: { id: metadata.projectId },
+          runtimeService: true,
+        } as Context,
+      /* oxlint-enable typescript/no-unsafe-type-assertion */
       prefix: "/api/platform",
     }
   );

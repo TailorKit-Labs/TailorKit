@@ -86,7 +86,7 @@ export const writeAppIdToConfig = async (
   const rest = source.slice(position);
   const newline = /^(?<newline>\r?\n)(?<indent>[ \t]*)/u.exec(rest);
   const appIdLine = newline
-    ? `${newline[1]}${newline[2] || "  "}appId: ${JSON.stringify(appId)},`
+    ? `${newline[1]}${newline[2] ?? "  "}appId: ${JSON.stringify(appId)},`
     : ` appId: ${JSON.stringify(appId)},`;
   await writeFile(
     configPath,

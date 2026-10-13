@@ -44,7 +44,9 @@ export const createActionExecution = (app: AppDefinition) => {
   }
   const bindings = new Map<unknown, { queries: Group; mutations: Group }>();
   const compile = (functions: Functions, prefix = "") => {
+    // oxlint-disable-next-line typescript/no-unsafe-assignment -- Object.create(null) is typed as any by the standard library; this empty registry is populated only through the typed assignments below.
     const queries: Group = Object.create(null);
+    // oxlint-disable-next-line typescript/no-unsafe-assignment -- Object.create(null) is typed as any by the standard library; this empty registry is populated only through the typed assignments below.
     const mutations: Group = Object.create(null);
     for (const [key, definition] of Object.entries(functions)) {
       const name = prefix ? `${prefix}.${key}` : key;
@@ -69,6 +71,7 @@ export const createActionExecution = (app: AppDefinition) => {
       }
       const { kind } = definition;
       (kind === "query" ? queries : mutations)[key] =
+        // oxlint-disable-next-line typescript/promise-function-async -- These capability guards must throw synchronously before dispatching asynchronous work.
         (check, calls) => (args, options) => {
           check();
           return kind === "query"
@@ -92,6 +95,7 @@ export const createActionExecution = (app: AppDefinition) => {
     check: () => void,
     calls: ActionCalls
   ): BoundGroup => {
+    // oxlint-disable-next-line typescript/no-unsafe-assignment -- Object.create(null) is typed as any by the standard library; this empty registry is populated only through the typed assignments below.
     const bound: BoundGroup = Object.create(null);
     for (const [key, entry] of Object.entries(group)) {
       bound[key] = isCall(entry)
@@ -136,15 +140,15 @@ export const createActionExecution = (app: AppDefinition) => {
     const createTools = (parts: string[] = []): TailorKitServerTools =>
       // SAFETY: The proxy handles calls through apply and every string property through get, recursively returning the same callable proxy contract.
       new Proxy(
-        () =>
-          Promise.reject(
-            new AppError(
-              "UNAVAILABLE",
-              "Tool proxy must dispatch through its apply handler"
-            )
-          ),
+        () => {
+          throw new AppError(
+            "UNAVAILABLE",
+            "Tool proxy must dispatch through its apply handler"
+          );
+        },
         {
-          apply(_target, _this, args) {
+          // oxlint-disable-next-line typescript/promise-function-async -- These capability guards must throw synchronously before dispatching asynchronous work.
+          apply: (_target, _this, args) => {
             check();
             if (!calls.tool) {
               throw new AppError("UNAVAILABLE", "Tool transport unavailable");
@@ -154,9 +158,10 @@ export const createActionExecution = (app: AppDefinition) => {
               return value;
             });
           },
-          get(_target, key) {
+          get: (_target, key) => {
             if (!isStringValue(key) || key === "then") {
-              return;
+              /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+              return undefined;
             }
             if (["__proto__", "constructor", "prototype"].includes(key)) {
               throw new AppError("BAD_REQUEST", "Invalid tool path");
@@ -164,7 +169,7 @@ export const createActionExecution = (app: AppDefinition) => {
             return createTools([...parts, key]);
           },
         }
-      ) as TailorKitServerTools;
+      );
     check();
     const { fn, args } = prepareFunction(app, input, identity, "action");
     const binding = bindings.get(fn);
@@ -174,16 +179,20 @@ export const createActionExecution = (app: AppDefinition) => {
     try {
       // SAFETY: prepareFunction validates args with this registered action schema, and compile binds only its declared query and mutation functions.
       const value = await inExecutionContext(scope, () =>
-        fn.handler({
-          args,
-          identity,
-          mutations: bind(binding.mutations, check, calls),
-          queries: bind(binding.queries, check, calls),
-          requestId: crypto.randomUUID(),
-          scope: identity.scope,
-          signal,
-          tools: createTools(),
-        } as never)
+        fn.handler(
+          /* oxlint-disable typescript/no-unsafe-type-assertion -- prepareFunction validates args with this registered action schema, and compile binds only its declared query and mutation functions. */
+          {
+            args,
+            identity,
+            mutations: bind(binding.mutations, check, calls),
+            queries: bind(binding.queries, check, calls),
+            requestId: crypto.randomUUID(),
+            scope: identity.scope,
+            signal,
+            tools: createTools(),
+          } as never
+          /* oxlint-enable typescript/no-unsafe-type-assertion */
+        )
       );
       check();
       return functionValue(fn, value);

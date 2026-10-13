@@ -231,7 +231,8 @@ describe("createTailorKitServer", () => {
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     expect(() =>
       createTailorKitServer({
-        baseUrl: baseUrl as string,
+        // oxlint-disable-next-line typescript/no-non-null-assertion -- Parameterized negative cases deliberately pass invalid inputs through the public API.
+        baseUrl: baseUrl!,
         components: {},
         scopes: { org: testScopeSchema },
       })
@@ -323,9 +324,10 @@ describe("createTailorKitServer", () => {
     let platformCalls = 0;
     const server = createTailorKitServer({
       $internal: {
-        platformFetch: () => {
+        // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+        platformFetch: async () => {
           platformCalls += 1;
-          return Promise.resolve(Response.json({ items: [] }));
+          return Response.json({ items: [] });
         },
       },
       baseUrl: "https://example.com/api/tailorkit",
@@ -358,13 +360,12 @@ describe("createTailorKitServer", () => {
     };
     const server = createTailorKitServer({
       $internal: {
-        platformFetch: () =>
-          Promise.resolve(
-            Response.json({
-              items: [app],
-              pagination: { hasMore: false, page: 1, pageSize: 100 },
-            })
-          ),
+        // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+        platformFetch: async () =>
+          Response.json({
+            items: [app],
+            pagination: { hasMore: false, page: 1, pageSize: 100 },
+          }),
       },
       baseUrl: "https://example.com/api/tailorkit",
       components: {},
@@ -528,12 +529,13 @@ describe("createTailorKitServer", () => {
     const server = createTailorKitServer({
       $internal: {
         platformBaseUrl: "http://localhost:3000/api/platform",
-        platformFetch: (request, init) => {
+        // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+        platformFetch: async (request, init) => {
           const platformRequest =
             request instanceof Request ? request : new Request(request, init);
           requests.push(platformRequest);
 
-          return Promise.resolve(Response.json({ id: "cli_auth_session_1" }));
+          return Response.json({ id: "cli_auth_session_1" });
         },
         platformHeaders: { authorization: "Bearer host-token" },
       },
@@ -570,12 +572,13 @@ describe("createTailorKitServer", () => {
     const server = createTailorKitServer({
       $internal: {
         platformBaseUrl: "http://localhost:3000/api/platform",
-        platformFetch: (request, init) => {
+        // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+        platformFetch: async (request, init) => {
           const platformRequest =
             request instanceof Request ? request : new Request(request, init);
           requests.push(platformRequest);
 
-          return Promise.resolve(Response.json({ id: "cli_auth_session_1" }));
+          return Response.json({ id: "cli_auth_session_1" });
         },
       },
       baseUrl: "https://example.com/api/tailorkit",
@@ -605,8 +608,9 @@ describe("createTailorKitServer", () => {
     const server = createTailorKitServer({
       $internal: {
         platformBaseUrl: "http://localhost:3000/api/platform",
-        platformFetch: () =>
-          Promise.resolve(new Response("Unauthorized", { status: 401 })),
+        // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+        platformFetch: async () =>
+          new Response("Unauthorized", { status: 401 }),
       },
       baseUrl: "https://example.com/api/tailorkit",
       components: {},
@@ -614,15 +618,13 @@ describe("createTailorKitServer", () => {
       scopes: { org: testScopeSchema },
     });
     const client = createTailorKitClient({
-      fetch: (request, init) => {
+      fetch: async (request, init) => {
         const hostRequest =
           request instanceof Request ? request : new Request(request, init);
 
-        return Promise.resolve(
-          server.handler(hostRequest, {
-            authenticate: () => ({ scopes: { org: { orgId: "org_1" } } }),
-          })
-        );
+        return await server.handler(hostRequest, {
+          authenticate: () => ({ scopes: { org: { orgId: "org_1" } } }),
+        });
       },
       url: "https://example.com/api/tailorkit",
     });
@@ -638,25 +640,22 @@ describe("createTailorKitServer", () => {
     const server = createTailorKitServer({
       $internal: {
         platformBaseUrl: "http://localhost:3000/api/platform",
-        platformFetch: (request, init) => {
+        // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+        platformFetch: async (request, init) => {
           const platformRequest =
             request instanceof Request ? request : new Request(request, init);
           requests.push(platformRequest);
 
           if (platformRequest.url.endsWith("/cli-auth/verify-token")) {
-            return Promise.resolve(
-              Response.json({
-                scope: { name: "org", value: { orgId: "org_1" } },
-              })
-            );
+            return Response.json({
+              scope: { name: "org", value: { orgId: "org_1" } },
+            });
           }
 
-          return Promise.resolve(
-            Response.json({
-              items: [],
-              pagination: { hasMore: false, page: 1, pageSize: 20 },
-            })
-          );
+          return Response.json({
+            items: [],
+            pagination: { hasMore: false, page: 1, pageSize: 20 },
+          });
         },
         platformHeaders: { authorization: "Bearer host-token" },
       },
@@ -665,7 +664,7 @@ describe("createTailorKitServer", () => {
       scopes: { org: testScopeSchema },
     });
     const client = createTailorKitClient({
-      fetch: (request, init) => {
+      fetch: async (request, init) => {
         const hostRequest =
           request instanceof Request
             ? new Request(request, {
@@ -680,15 +679,13 @@ describe("createTailorKitServer", () => {
               });
         hostRequests.push(hostRequest);
 
-        return Promise.resolve(
-          server.handler(hostRequest, {
-            authenticate: () => {
-              throw new Error(
-                "Host authentication should not run for deploy-token routes."
-              );
-            },
-          })
-        );
+        return await server.handler(hostRequest, {
+          authenticate: () => {
+            throw new Error(
+              "Host authentication should not run for deploy-token routes."
+            );
+          },
+        });
       },
       url: "https://example.com/api/tailorkit",
     });
@@ -720,20 +717,19 @@ describe("createTailorKitServer", () => {
     const server = createTailorKitServer({
       $internal: {
         platformBaseUrl: "http://localhost:3000/api/platform",
-        platformFetch: (request, init) => {
+        // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+        platformFetch: async (request, init) => {
           const platformRequest =
             request instanceof Request ? request : new Request(request, init);
           requests.push(platformRequest);
 
           if (platformRequest.url.endsWith("/cli-auth/verify-token")) {
-            return Promise.resolve(
-              Response.json({
-                scope: { name: "org", value: { orgId: "org_1" } },
-              })
-            );
+            return Response.json({
+              scope: { name: "org", value: { orgId: "org_1" } },
+            });
           }
 
-          return Promise.resolve(Response.json({ id: "app_1" }));
+          return Response.json({ id: "app_1" });
         },
         platformHeaders: { authorization: "Bearer host-token" },
       },
@@ -742,7 +738,7 @@ describe("createTailorKitServer", () => {
       scopes: { org: testScopeSchema },
     });
     const client = createTailorKitClient({
-      fetch: (request, init) => {
+      fetch: async (request, init) => {
         const hostRequest =
           request instanceof Request
             ? new Request(request, {
@@ -757,15 +753,13 @@ describe("createTailorKitServer", () => {
               });
         hostRequests.push(hostRequest);
 
-        return Promise.resolve(
-          server.handler(hostRequest, {
-            authenticate: () => {
-              throw new Error(
-                "Host authentication should not run for deploy-token routes."
-              );
-            },
-          })
-        );
+        return await server.handler(hostRequest, {
+          authenticate: () => {
+            throw new Error(
+              "Host authentication should not run for deploy-token routes."
+            );
+          },
+        });
       },
       url: "https://example.com/api/tailorkit",
     });
@@ -866,13 +860,11 @@ describe("createTailorKitServer", () => {
       },
     });
     const client = createTailorKitClient({
-      fetch: (input, init) => {
+      fetch: async (input, init) => {
         const request =
           input instanceof Request ? input : new Request(input, init);
         request.headers.set("authorization", "Bearer cli-token");
-        return Promise.resolve(
-          server.handler(request, { authenticate: () => null })
-        );
+        return await server.handler(request, { authenticate: () => null });
       },
       url: "https://example.com/api/tailorkit",
     });

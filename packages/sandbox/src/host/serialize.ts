@@ -1,7 +1,7 @@
 import * as v from "valibot";
 
-import { RemotePropsSchema } from "../protocol.js";
-import type { RemoteProps } from "../protocol.js";
+import { RemotePropsSchema } from "#protocol";
+import type { RemoteProps } from "#protocol";
 
 export const readElementProps = (element: Element): RemoteProps => {
   const canonicalPropNames = new Map<string, string>([

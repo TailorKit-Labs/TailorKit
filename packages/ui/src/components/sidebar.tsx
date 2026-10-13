@@ -80,10 +80,13 @@ export const SidebarProvider = ({
     [onOpenChange]
   );
 
-  const toggleSidebar = React.useCallback(
-    () => (isMobile ? setOpenMobile((v) => !v) : setOpen(!open)),
-    [isMobile, open, setOpen]
-  );
+  const toggleSidebar = React.useCallback(() => {
+    if (isMobile) {
+      setOpenMobile((v) => !v);
+    } else {
+      setOpen(!open);
+    }
+  }, [isMobile, open, setOpen]);
 
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
@@ -93,7 +96,9 @@ export const SidebarProvider = ({
       }
     };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [toggleSidebar]);
 
   const contextValue = React.useMemo<SidebarContextProps>(
@@ -512,7 +517,9 @@ export const SidebarPanelTrigger = ({
         back ? "mb-1 px-2.5 text-center" : "text-left"
       )}
       data-active={isActive}
-      onClick={() => setActivePanel(target)}
+      onClick={() => {
+        setActivePanel(target);
+      }}
       variant="ghost"
       size={back ? "lg" : "default"}
       {...props}

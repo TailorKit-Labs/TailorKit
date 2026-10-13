@@ -43,12 +43,12 @@ describe("Better Auth public team identity", () => {
     const created = await auth.api.createOrganization({ body });
     expect(created?.publicId).toMatch(/^[a-z0-9][a-z0-9-]{12}[a-z0-9]$/u);
     expect(created?.publicId).not.toBe("attacker00");
-    if (!created) {
+    if (!(created !== undefined && created !== null)) {
       throw new Error("Organization not created");
     }
     const context = await auth.$context;
     const session = await context.internalAdapter.createSession(userId);
-    if (!session) {
+    if (!(session !== undefined && session !== null)) {
       throw new Error("Session not created");
     }
     const signature = createHmac("sha256", "test-auth-secret-test-auth-secret")

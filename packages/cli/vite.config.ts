@@ -4,11 +4,10 @@ import packageJson from "./package.json" with { type: "json" };
 
 const liquidRawPlugin = () => ({
   name: "liquid-raw",
-  transform(code: string, id: string) {
-    if (id.endsWith(".liquid")) {
-      return `export default ${JSON.stringify(code)};`;
-    }
-  },
+  transform: (code: string, id: string) =>
+    id.endsWith(".liquid")
+      ? `export default ${JSON.stringify(code)};`
+      : undefined,
 });
 
 export default defineConfig({

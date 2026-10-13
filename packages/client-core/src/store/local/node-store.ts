@@ -41,7 +41,7 @@ export interface NodeSnapshot {
 export class NodeStore {
   readonly state = atom<NodeSnapshot>({ nodes: new Map(), rootId: null });
   readonly root = computed(this.state, (snapshot) => snapshot.rootId);
-  private signatures = new Map<string, string>();
+  private readonly signatures = new Map<string, string>();
 
   clear(): void {
     this.signatures.clear();

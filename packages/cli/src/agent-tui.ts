@@ -22,10 +22,9 @@ export const openAgentTui = async ({
   schemaPath,
 }: AgentTuiOptions) => {
   const transport: ChatTransport<UIMessage> = {
-    reconnectToStream() {
-      return Promise.resolve(null);
-    },
-    async sendMessages({ messages, abortSignal }) {
+    // oxlint-disable-next-line eslint/require-await -- This asynchronous protocol method resolves synchronously but must preserve Promise results and rejected exceptions.
+    reconnectToStream: async () => null,
+    sendMessages: async ({ messages, abortSignal }) => {
       const timeoutSignal = AbortSignal.timeout(schemaFetchTimeoutMs);
       const schemaSignal = abortSignal
         ? AbortSignal.any([abortSignal, timeoutSignal])
@@ -58,6 +57,7 @@ export const openAgentTui = async ({
           }
         );
       }
+      // oxlint-disable-next-line typescript/no-unsafe-assignment -- The generated SSE client exposes its event stream through an erased generic; the platform validates agent events before streaming them.
       const chunks = await client.appAgent.chat(
         {
           appId,
@@ -70,6 +70,7 @@ export const openAgentTui = async ({
         },
         { signal: abortSignal }
       );
+      // oxlint-disable-next-line typescript/no-unsafe-argument -- The generated client erases this event-stream type; the protocol parser validates the streamed chunks.
       return asyncIteratorToUnproxiedDataStream(chunks);
     },
   };

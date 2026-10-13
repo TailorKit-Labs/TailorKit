@@ -12,11 +12,11 @@ const presenceKey = (sessionId: string) =>
 const endedKey = (sessionId: string) => `preview:ended:${sessionId}`;
 const activeTtlSeconds = 8 * 60 * 60;
 
-export const recordPreviewHeartbeat = (
+export const recordPreviewHeartbeat = async (
   kv: KV,
   sessionId: string
 ): Promise<boolean> =>
-  createPreviewPresence(kv).heartbeatIfActive(
+  await createPreviewPresence(kv).heartbeatIfActive(
     sessionId,
     {
       connectionId: sessionId,

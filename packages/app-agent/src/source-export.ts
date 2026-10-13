@@ -30,7 +30,11 @@ export const getAppAgentWorkspaceStatus = async (
   if (!drive) {
     return "missing";
   }
-  return drive.currentSandboxName ? "busy" : "available";
+  return drive.currentSandboxName !== undefined &&
+    drive.currentSandboxName !== null &&
+    drive.currentSandboxName !== ""
+    ? "busy"
+    : "available";
 };
 
 /** Export the persistent app-agent workspace as a source archive. */
@@ -41,7 +45,11 @@ export const exportAppAgentWorkspace = async (
   if (!drive) {
     return null;
   }
-  if (drive.currentSandboxName) {
+  if (
+    drive.currentSandboxName !== undefined &&
+    drive.currentSandboxName !== null &&
+    drive.currentSandboxName !== ""
+  ) {
     throw new AppAgentWorkspaceBusyError();
   }
 

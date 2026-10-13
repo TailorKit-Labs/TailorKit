@@ -9,24 +9,27 @@ import type { KV } from "./types.js";
 // SAFETY: This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input.
 const createKV = (values = new Map<string, string>()): KV => ({
   claimUpload: vi.fn(),
-  delete: vi.fn((key: string) => {
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  delete: vi.fn(async (key: string) => {
     values.delete(key);
-    return Promise.resolve();
   }),
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
   engine: {} as never,
-  get: vi.fn((key: string) => Promise.resolve(values.get(key) ?? null)),
-  getAndDelete: vi.fn((key: string) => {
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  get: vi.fn(async (key: string) => values.get(key) ?? null),
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  getAndDelete: vi.fn(async (key: string) => {
     const value = values.get(key) ?? null;
     values.delete(key);
-    return Promise.resolve(value);
+    return value;
   }),
   increment: vi.fn(),
   keepPreviewSessionIfDeveloperPresent: vi.fn(),
   promoteIfOwnerAndNewer: vi.fn(),
   publish: vi.fn(),
-  set: vi.fn((key: string, value: string) => {
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  set: vi.fn(async (key: string, value: string) => {
     values.set(key, value);
-    return Promise.resolve();
   }),
   setPreviewPresenceIfActive: vi.fn(),
   subscribe: vi.fn(),
@@ -97,12 +100,14 @@ describe("preview presence", () => {
   it("forwards only valid connection-change events to subscribers", async () => {
     const kv = createKV();
     const presence = createPreviewPresence(kv);
-    const handler = vi.fn();
+    const handler = vi.fn<Parameters<typeof presence.subscribe>[1]>();
     let listener: ((message: string) => void) | undefined;
-    vi.mocked(kv.subscribe).mockImplementation((_channel, nextListener) => {
-      listener = nextListener;
-      return Promise.all([]).then(() => () => Promise.resolve());
-    });
+    vi.mocked(kv.subscribe).mockImplementation(
+      async (_channel, nextListener) => {
+        listener = nextListener;
+        return await Promise.all([]).then(() => async () => {});
+      }
+    );
 
     await presence.subscribe("session_123", handler);
     listener?.("not-json");

@@ -78,7 +78,8 @@ export const updateIssueStatus = (
     .where(and(eq(issues.teamId, teamId), eq(issues.id, issueId)))
     .get();
   if (!issue) {
-    return;
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
   }
   db.update(issues).set({ status }).where(eq(issues.id, issueId)).run();
   return { ...issue, status };

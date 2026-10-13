@@ -11,7 +11,7 @@ export const readTool = tool({
     "use step";
     const sandbox = await toolSandbox(options);
     const { abortSignal } = options;
-    return sandbox.readTextFile({
+    return await sandbox.readTextFile({
       abortSignal,
       endLine,
       path: resolvePath(path),

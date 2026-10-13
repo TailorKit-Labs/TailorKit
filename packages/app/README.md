@@ -27,6 +27,7 @@ The slot directory is its literal host slot name, including dots in names such a
 ```tsx
 // src/slots/panel/customers.details.view.tsx
 import { defineView } from "tailorkit/client";
+
 import CustomerCard from "./customer-card";
 
 export default defineView({ component: CustomerCard });
@@ -91,8 +92,8 @@ Run `tailorkit init` to create an app. Choose **Vite+ (recommended)** for buildi
 Build tooling lives in the separate [`@tailorkit/vite`](../vite/README.md) package. Both options generate `vite.config.ts` with the TailorKit plugin. Vite+ apps use:
 
 ```ts
-import { defineConfig, lazyPlugins } from "vite-plus";
 import { tailorkit } from "tailorkit/vite";
+import { defineConfig, lazyPlugins } from "vite-plus";
 
 export default defineConfig({
   plugins: lazyPlugins(() => [tailorkit()]),

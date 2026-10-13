@@ -14,7 +14,8 @@ import { flattenTools, validateToolValue } from "@tailorkit/core/schema";
 import type { ViewContextValues } from "@tailorkit/core/views";
 import { z } from "zod";
 
-import type { TailorKitApp } from "../types";
+import type { TailorKitApp } from "#types";
+
 import { toBaseUrl } from "./url";
 
 type ClientToolTree = ToolImplementations<ContractTools, "client">;
@@ -29,7 +30,7 @@ const appListSchema = z.array(
       clientPath: z.string().optional(),
       currentDeployment: z
         .object({ id: z.string() })
-        .passthrough()
+        .loose()
         .nullable()
         .optional(),
       description: z.string().nullable().optional(),
@@ -40,7 +41,7 @@ const appListSchema = z.array(
       name: z.string().optional(),
       preview: previewMetadataSchema.optional(),
       projectId: z.string().optional(),
-      scope: z.object({ name: z.string() }).passthrough().optional(),
+      scope: z.object({ name: z.string() }).loose().optional(),
       views: z
         .array(
           z
@@ -50,11 +51,11 @@ const appListSchema = z.array(
               path: z.string(),
               slot: z.string(),
             })
-            .passthrough()
+            .loose()
         )
         .optional(),
     })
-    .passthrough()
+    .loose()
 );
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
@@ -91,8 +92,8 @@ export const createEndpointClient = (options: {
   tools?: ToolImplementations<TailorKitContract["tools"], "client">;
 }) => {
   const baseUrl = toBaseUrl(options.baseUrl);
-  const request: typeof fetch = (input, init) =>
-    (options.fetch ?? globalThis.fetch)(input, init);
+  const request: typeof fetch = async (input, init) =>
+    await (options.fetch ?? globalThis.fetch)(input, init);
   type SessionProvider = ReturnType<typeof createSessionProvider>;
   interface SessionEntry {
     key: string | undefined;
@@ -182,7 +183,7 @@ export const createEndpointClient = (options: {
       return { ...result, identity: result.identity, url: result.toolUrl };
     };
     const bridge: ToolBridge = {
-      async client(path, input) {
+      client: async (path, input) => {
         const admitted = generation;
         const leaf = declarations.get(path);
         if (leaf?.kind !== "client") {
@@ -205,7 +206,10 @@ export const createEndpointClient = (options: {
         const value = await validateToolValue(leaf.definition.input, input);
         const credential = await session(path);
         // SAFETY: The registered client path owns the schema that validated this input; its specific parameter type is erased by the shared tree.
-        const toolInput = value as never;
+        const toolInput =
+          /* oxlint-disable typescript/no-unsafe-type-assertion -- The registered client path owns the schema that validated this input; its specific parameter type is erased by the shared tree. */
+          value as never;
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
         const output = await implementation({
           context: Object.freeze({
             identity: credential.identity,
@@ -220,18 +224,18 @@ export const createEndpointClient = (options: {
         }
         return result;
       },
-      session: (path: string) => {
+      session: async (path: string) => {
         if (declarations.get(path)?.kind !== "server") {
-          return Promise.reject(new Error("Not a server tool"));
+          throw new Error("Not a server tool");
         }
-        return session(path);
+        return await session(path);
       },
     };
     toolBridges.set(app.id, { app, bridge });
     return bridge;
   };
   return {
-    async apps(signal: AbortSignal): Promise<TailorKitApp[]> {
+    apps: async (signal: AbortSignal): Promise<TailorKitApp[]> => {
       const response = await request(new URL("apps", baseUrl), {
         credentials: "same-origin",
         signal,
@@ -247,9 +251,9 @@ export const createEndpointClient = (options: {
     clearSessions,
     getSessionProvider,
     getToolBridge,
-    async previewMetadata(
+    previewMetadata: async (
       sessionId: string
-    ): Promise<NonNullable<TailorKitApp["preview"]> | null> {
+    ): Promise<NonNullable<TailorKitApp["preview"]> | null> => {
       const url = new URL("preview/metadata", baseUrl);
       url.searchParams.set("sessionId", sessionId);
       const response = await request(url, { credentials: "same-origin" });
@@ -261,17 +265,19 @@ export const createEndpointClient = (options: {
       }
       return previewMetadataSchema.parse(await response.json());
     },
-    async slotInstances(
+    slotInstances: async (
       app: TailorKitApp,
       input: SlotInstancesInput,
       signal: AbortSignal
-    ) {
+    ) => {
       signal.throwIfAborted();
       const backend = createClient({
         fetch: request,
         getSession: getSessionProvider(app),
       });
-      const abort = () => backend.close();
+      const abort = () => {
+        backend.close();
+      };
       signal.addEventListener("abort", abort, { once: true });
       try {
         return await backend.action(resolveInstances, input);

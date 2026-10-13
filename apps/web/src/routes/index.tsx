@@ -9,6 +9,7 @@ export const Route = createFileRoute("/")({
     );
 
     if (!session.session) {
+      // oxlint-disable-next-line typescript/only-throw-error -- TanStack Router intercepts its redirect and not-found response objects when they are thrown from route loaders.
       throw redirect({
         replace: true,
         search: { email: undefined, return_to: undefined },
@@ -27,17 +28,24 @@ export const Route = createFileRoute("/")({
     const selectedOrg = orgs.find(
       (org) => org.slug === activeOrg || org.id === activeOrg
     );
-    if (activeOrg && !selectedOrg) {
+    if (
+      activeOrg !== undefined &&
+      activeOrg !== null &&
+      activeOrg !== "" &&
+      !selectedOrg
+    ) {
       await clearActiveOrg();
     }
     const org = selectedOrg ?? orgs[0];
     if (org?.slug) {
+      // oxlint-disable-next-line typescript/only-throw-error -- TanStack Router intercepts its redirect and not-found response objects when they are thrown from route loaders.
       throw redirect({
         params: { orgSlug: org.slug },
         to: "/$orgSlug/~/projects",
       });
     }
 
+    // oxlint-disable-next-line typescript/only-throw-error -- TanStack Router intercepts its redirect and not-found response objects when they are thrown from route loaders.
     throw redirect({ to: "/onboarding" });
   },
 });

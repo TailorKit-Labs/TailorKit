@@ -1,8 +1,8 @@
 import { defineRelations } from "drizzle-orm";
 import { z } from "zod";
 
-import type { Client } from "../client/connection";
-import { createApi } from "../client/reference";
+import type { Client } from "#client/connection";
+import { createApi } from "#client/reference";
 import {
   defineDatabase,
   table,
@@ -12,7 +12,7 @@ import {
   query,
   mutation,
   defineServer,
-} from "../server";
+} from "#server";
 
 const users = table("users", { id: text().primaryKey() });
 const posts = table("posts", {
@@ -73,7 +73,7 @@ fn.query.database(database).handler(({ db }) => db.query.users.findMany());
 const app = defineServer({ directMutation, directQuery, read, write });
 const api = createApi<typeof app.functions>();
 declare const client: Client;
-client.query(api.read, { id: "u1" }) satisfies Promise<
+void (client.query(api.read, { id: "u1" }) satisfies Promise<
   { id: string; posts: { id: string; userId: string; published: boolean }[] }[]
->;
-client.mutate(api.write, "p1") satisfies Promise<boolean>;
+>);
+void (client.mutate(api.write, "p1") satisfies Promise<boolean>);

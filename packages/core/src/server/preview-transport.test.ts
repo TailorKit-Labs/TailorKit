@@ -51,6 +51,7 @@ it("round trips preview calls, full upload chunks, and streamed events over the 
     },
   };
   // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
   const client = createPreviewWebSocketClient(socket as WebSocket);
 
   try {

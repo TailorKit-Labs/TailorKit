@@ -106,16 +106,21 @@ export const createViewContextStore = (
   };
 
   const check = (entry: ViewEntry) => {
-    const failed = (cause: unknown) =>
+    const failed = (cause: unknown) => {
       apply(entry, {
         details: cause,
         message: `TailorKit could not validate context for view "${entry.view}".`,
       });
+    };
     try {
       // SAFETY: The requested view name was resolved against this contract; indexing its declared view table preserves the associated validator.
       const result = validateViewContext(
         entry,
-        contract.views[entry.view as keyof typeof contract.views]
+        contract.views[
+          /* oxlint-disable typescript/no-unsafe-type-assertion -- The requested view name was resolved against this contract; indexing its declared view table preserves the associated validator. */
+          entry.view as keyof typeof contract.views
+          /* oxlint-enable typescript/no-unsafe-type-assertion */
+        ]
       );
       if ("then" in result) {
         parsed.set(entry.id, { context: undefined, status: "loading" });
@@ -139,7 +144,7 @@ export const createViewContextStore = (
 
   return {
     getSnapshot: () => state.get(),
-    register(input: ViewContextRegistration) {
+    register: (input: ViewContextRegistration) => {
       const status = (() => {
         if (
           input.error !== null &&
@@ -148,7 +153,7 @@ export const createViewContextStore = (
         ) {
           return "error" as const;
         }
-        if (input.loading) {
+        if (input.loading === true) {
           return "loading" as const;
         }
         return "ready" as const;
@@ -172,7 +177,7 @@ export const createViewContextStore = (
     },
     state,
     subscribe: (listener: () => void): (() => void) => state.listen(listener),
-    unregister(id: symbol) {
+    unregister: (id: symbol) => {
       if (!entries.delete(id)) {
         return;
       }

@@ -1,8 +1,9 @@
 import { atom } from "nanostores";
 
-import type { TailorKitFetchClient } from "../../client/fetch-client";
-import type { TailorKitApp } from "../../types";
-import { createSnapshotStore } from "../snapshot-store";
+import type { TailorKitFetchClient } from "#client/fetch-client";
+import { createSnapshotStore } from "#store/snapshot-store";
+import type { TailorKitApp } from "#types";
+
 import type { FetchOptions, FetchSnapshot } from "./cache";
 
 export interface TailorKitAppsSnapshot {
@@ -36,11 +37,15 @@ export const createAppsStore = (
   let subscribers = 0;
   const empty: TailorKitApp[] = [];
   const store = {
-    fetch(options: FetchOptions = {}) {
+    // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
+    fetch: (options: FetchOptions = {}) => {
       requested = true;
-      return supplied ? Promise.resolve() : query.fetch(options);
+      if (supplied) {
+        return Promise.resolve();
+      }
+      return query.fetch(options);
     },
-    getSnapshot(): TailorKitAppsSnapshot {
+    getSnapshot: (): TailorKitAppsSnapshot => {
       if (supplied) {
         return supplied;
       }
@@ -57,11 +62,21 @@ export const createAppsStore = (
       }
       return snapshot;
     },
-    invalidate: () => (supplied ? Promise.resolve() : query.invalidate()),
-    refresh() {
-      return requested ? store.fetch({ force: true }) : Promise.resolve();
+    // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
+    invalidate: () => {
+      if (supplied) {
+        return Promise.resolve();
+      }
+      return query.invalidate();
     },
-    setProvidedApps(apps: TailorKitApp[] | undefined) {
+    // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
+    refresh: () => {
+      if (requested) {
+        return store.fetch({ force: true });
+      }
+      return Promise.resolve();
+    },
+    setProvidedApps: (apps: TailorKitApp[] | undefined) => {
       if (provided.get() === apps) {
         return;
       }
@@ -71,7 +86,7 @@ export const createAppsStore = (
         void store.fetch({ force: true });
       }
     },
-    subscribe(listener: () => void) {
+    subscribe: (listener: () => void) => {
       subscribers += 1;
       const stopProvided = provided.listen(listener);
       const stopQuery = query.subscribe(() => {
@@ -90,7 +105,10 @@ export const createAppsStore = (
         subscribers -= 1;
       };
     },
-    updateViews(appId: string, appViews: NonNullable<TailorKitApp["views"]>) {
+    updateViews: (
+      appId: string,
+      appViews: NonNullable<TailorKitApp["views"]>
+    ) => {
       const update = (apps: TailorKitApp[]) =>
         apps.map((app) =>
           app.id === appId ? { ...app, views: appViews } : app
@@ -99,7 +117,7 @@ export const createAppsStore = (
         store.setProvidedApps(update(supplied.apps));
       } else {
         const apps = query.getSnapshot().data;
-        if (apps?.some((app) => app.id === appId)) {
+        if (apps?.some((app) => app.id === appId) === true) {
           query.setData(() => update(apps));
         }
       }

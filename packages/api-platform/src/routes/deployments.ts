@@ -33,9 +33,8 @@ import {
 
 import { getRuntimeBundle, publishRuntimeMetadata } from "./runtime";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 const uploadUrlExpiresInSeconds = 15 * 60;
 
@@ -117,7 +116,7 @@ const deploymentLogoUploads = z.object({
 });
 
 const isNotFound = (cause: unknown) => {
-  if (!cause || !isObjectValue(cause)) {
+  if (!isObjectValue(cause)) {
     return false;
   }
 
@@ -178,10 +177,9 @@ const inspectCompressedClient = async (
     throw new Error("Client bundle download URL must use HTTPS.");
   }
   const controller = new AbortController();
-  const timeout = setTimeout(
-    () => controller.abort(),
-    clientInspectionTimeoutMs
-  );
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, clientInspectionTimeoutMs);
   try {
     const response = await fetch(downloadUrl, {
       redirect: "error",
@@ -222,11 +220,8 @@ const inspectCompressedClient = async (
   }
 };
 
-export const mapReturnedFilesByAssetPath = <
-  TAsset extends { asset: { objectKey: string }; fileId: string },
-  TFile extends { id: string },
->(
-  assets: readonly TAsset[],
+export const mapReturnedFilesByAssetPath = <TFile extends { id: string }>(
+  assets: readonly { asset: { objectKey: string }; fileId: string }[],
   files: readonly TFile[]
 ) => {
   const fileById = new Map(files.map((file) => [file.id, file]));
@@ -310,7 +305,9 @@ const requireDeployment = o.middleware(
     const { app: _app, ...deployment } = deploymentWithApp;
     void _app;
 
-    return next({ context: { ...context, app: deploymentApp, deployment } });
+    return await next({
+      context: { ...context, app: deploymentApp, deployment },
+    });
   }
 );
 
@@ -515,13 +512,19 @@ const createAppDeployment = cliRouter
         .update(appDeployment)
         .set({
           clientEntryFileId: fileByAssetPath.get("client.js")?.id,
-          logoDarkFileId: logoDarkPath
-            ? fileByAssetPath.get(logoDarkPath)?.id
-            : undefined,
+          logoDarkFileId:
+            logoDarkPath !== undefined &&
+            logoDarkPath !== null &&
+            logoDarkPath !== ""
+              ? fileByAssetPath.get(logoDarkPath)?.id
+              : undefined,
           logoDarkPath,
-          logoLightFileId: logoLightPath
-            ? fileByAssetPath.get(logoLightPath)?.id
-            : undefined,
+          logoLightFileId:
+            logoLightPath !== undefined &&
+            logoLightPath !== null &&
+            logoLightPath !== ""
+              ? fileByAssetPath.get(logoLightPath)?.id
+              : undefined,
           logoLightPath,
         })
         .where(eq(appDeployment.id, deployment.id))
@@ -559,7 +562,13 @@ const createAppDeployment = cliRouter
     );
     const uploadedAssets = input.body.assets.map((asset) => {
       const upload = uploadedAssetByName.get(asset.objectKey);
-      if (!upload?.uploadUrl) {
+      if (
+        !(
+          upload?.uploadUrl !== undefined &&
+          upload?.uploadUrl !== null &&
+          upload?.uploadUrl !== ""
+        )
+      ) {
         throw new ORPCError("BAD_REQUEST", {
           message: "Failed to resolve deployment asset.",
         });
@@ -569,7 +578,14 @@ const createAppDeployment = cliRouter
     const serverUpload = input.body.server
       ? uploadedAssetByName.get("server.js")
       : undefined;
-    if (input.body.server && !serverUpload?.uploadUrl) {
+    if (
+      input.body.server &&
+      !(
+        serverUpload?.uploadUrl !== undefined &&
+        serverUpload?.uploadUrl !== null &&
+        serverUpload?.uploadUrl !== ""
+      )
+    ) {
       throw new ORPCError("BAD_REQUEST", {
         message: "Failed to create server upload URL.",
       });
@@ -591,7 +607,11 @@ const createAppDeployment = cliRouter
       logos?: typeof uploadedLogos;
     }
     const optionalUploads: DeploymentUploads = {};
-    if (serverUpload?.uploadUrl) {
+    if (
+      serverUpload?.uploadUrl !== undefined &&
+      serverUpload?.uploadUrl !== null &&
+      serverUpload?.uploadUrl !== ""
+    ) {
       optionalUploads.server = {
         ...serverUpload,
         uploadUrl: serverUpload.uploadUrl,
@@ -688,7 +708,11 @@ const publishAppDeployment = cliRouter
         }
 
         if (
-          !file.checksum ||
+          !(
+            file.checksum !== undefined &&
+            file.checksum !== null &&
+            file.checksum !== ""
+          ) ||
           object.checksumSha256 !== hexToBase64(file.checksum)
         ) {
           throw new Error(
@@ -715,10 +739,9 @@ const publishAppDeployment = cliRouter
             throw new Error("Logo download URL must use HTTPS.");
           }
           const controller = new AbortController();
-          const timeout = setTimeout(
-            () => controller.abort(),
-            logoInspectionTimeoutMs
-          );
+          const timeout = setTimeout(() => {
+            controller.abort();
+          }, logoInspectionTimeoutMs);
           try {
             // oxlint-disable-next-line no-await-in-loop -- Stream reads and cancellation must stay ordered and bounded.
             const response = await fetch(downloadUrl, {
@@ -788,7 +811,11 @@ const publishAppDeployment = cliRouter
       const server = files.find((file) =>
         file.objectKey.endsWith("/server/server.js")
       );
-      if (server?.checksum) {
+      if (
+        server?.checksum !== undefined &&
+        server?.checksum !== null &&
+        server?.checksum !== ""
+      ) {
         await publishRuntimeMetadata(
           {
             appId: context.app.id,

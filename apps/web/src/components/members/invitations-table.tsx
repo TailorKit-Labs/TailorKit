@@ -61,9 +61,7 @@ const createInvitationColumns = ({
 >[] => [
   {
     accessorKey: "email",
-    cell: ({
-      row,
-    }: CellContext<typeof dataTableFeatures, InvitationRow, unknown>) => {
+    cell: ({ row }: CellContext<typeof dataTableFeatures, InvitationRow>) => {
       const initials = row.original.email.slice(0, 2).toUpperCase();
       return (
         <div className="flex items-center gap-3">
@@ -79,9 +77,7 @@ const createInvitationColumns = ({
   },
   {
     accessorKey: "role",
-    cell: ({
-      row,
-    }: CellContext<typeof dataTableFeatures, InvitationRow, unknown>) => {
+    cell: ({ row }: CellContext<typeof dataTableFeatures, InvitationRow>) => {
       const role = row.original.role ?? "member";
       return (
         <Badge variant={getRoleBadgeVariant(role)} size="lg">
@@ -94,9 +90,7 @@ const createInvitationColumns = ({
   },
   {
     accessorKey: "expiresAt",
-    cell: ({
-      row,
-    }: CellContext<typeof dataTableFeatures, InvitationRow, unknown>) => (
+    cell: ({ row }: CellContext<typeof dataTableFeatures, InvitationRow>) => (
       <DateAgo date={row.original.expiresAt} />
     ),
     header: "Expires",
@@ -104,9 +98,7 @@ const createInvitationColumns = ({
     sortFn: "datetime",
   },
   {
-    cell: ({
-      row,
-    }: CellContext<typeof dataTableFeatures, InvitationRow, unknown>) =>
+    cell: ({ row }: CellContext<typeof dataTableFeatures, InvitationRow>) =>
       canManage ? (
         <div className="flex items-center justify-end gap-1">
           <DropdownMenu>
@@ -119,7 +111,9 @@ const createInvitationColumns = ({
             <DropdownMenuContent align="end" className="w-44">
               <DropdownMenuItem
                 disabled={resendPending}
-                onClick={() => onResend(row.original)}
+                onClick={() => {
+                  onResend(row.original);
+                }}
               >
                 <SendIcon />
                 Resend email
@@ -128,7 +122,9 @@ const createInvitationColumns = ({
               <DropdownMenuItem
                 disabled={revokePending}
                 variant="destructive"
-                onClick={() => onRevoke(row.original.id)}
+                onClick={() => {
+                  onRevoke(row.original.id);
+                }}
               >
                 <TrashIcon />
                 Revoke invite

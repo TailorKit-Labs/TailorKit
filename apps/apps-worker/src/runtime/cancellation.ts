@@ -1,24 +1,28 @@
-export const abortable = <T>(
+export const abortable = async <T>(
   promise: Promise<T>,
   signal: AbortSignal
 ): Promise<T> =>
-  (() => {
+  await (async () => {
     const {
       promise: pendingPromise,
       resolve,
       reject,
     } = Promise.withResolvers<T>();
     try {
-      const abort = () => reject(signal.reason);
+      const abort = () => {
+        reject(signal.reason);
+      };
       signal.addEventListener("abort", abort, { once: true });
       if (signal.aborted) {
         abort();
       }
 
-      const cleanup = () => signal.removeEventListener("abort", abort);
-      (async () => {
+      const cleanup = () => {
+        signal.removeEventListener("abort", abort);
+      };
+      void (async () => {
         try {
-          return await (async () => {
+          await (async () => {
             const value = await promise;
             cleanup();
             resolve(value);
@@ -31,11 +35,11 @@ export const abortable = <T>(
     } catch (error) {
       reject(error);
     }
-    return pendingPromise;
+    return await pendingPromise;
   })();
 
 /** Streams can carry cancellation across Workers RPC without serializing an AbortSignal. */
-// oxlint-disable-next-line unicorn/consistent-function-scoping -- Keep the generator or mutable callback with its owning test or cancellation lifecycle.
+
 const noopCleanup = () => {
   /* No reader is active before stream initialization. */
 };
@@ -43,15 +47,17 @@ export const cancellationStream = (signal: AbortSignal) => {
   let cleanup = noopCleanup;
 
   return new ReadableStream<never>({
-    cancel() {
+    cancel: () => {
       cleanup();
     },
-    start(controller) {
+    start: (controller) => {
       const abort = () => {
         cleanup();
         controller.close();
       };
-      cleanup = () => signal.removeEventListener("abort", abort);
+      cleanup = () => {
+        signal.removeEventListener("abort", abort);
+      };
       signal.addEventListener("abort", abort, { once: true });
       if (signal.aborted) {
         abort();

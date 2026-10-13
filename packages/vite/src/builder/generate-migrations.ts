@@ -2,7 +2,8 @@ import { spawn } from "node:child_process";
 import { access } from "node:fs/promises";
 import path from "node:path";
 
-import { loadTailorKitConfig } from "../config/loader";
+import { loadTailorKitConfig } from "#config/loader";
+
 import { appDatabasePaths } from "./database-paths";
 import { drizzleGenerateArguments } from "./drizzle";
 import { checkAppSchema } from "./schema-check";
@@ -35,7 +36,7 @@ export const generateAppMigrations = async (
     directory,
     options.name
   );
-  await (() => {
+  await (async () => {
     const {
       promise: pendingPromise,
       resolve,
@@ -62,7 +63,7 @@ export const generateAppMigrations = async (
     } catch (error) {
       reject(error);
     }
-    return pendingPromise;
+    await pendingPromise;
   })();
   await checkAppSchema(loaded.root, directory);
   return directory;

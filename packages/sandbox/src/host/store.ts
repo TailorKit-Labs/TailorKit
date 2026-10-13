@@ -1,8 +1,7 @@
-import type {
-  IframeToHostPayload,
-  RemoteNode,
-  RemotePatch,
-} from "../protocol.js";
+import type { IframeToHostPayload, RemoteNode, RemotePatch } from "#protocol";
+
+const hasText = (value: string | null | undefined): value is string =>
+  value !== undefined && value !== null && value.length > 0;
 
 export interface RemoteUiStore {
   applyPatches: (patches: readonly RemotePatch[]) => void;
@@ -51,7 +50,7 @@ const applyPatch = (root: RemoteNode, patch: RemotePatch): void => {
       if (!parent || parent.kind === "text") {
         return;
       }
-      const beforeIndex = patch.beforeId
+      const beforeIndex = hasText(patch.beforeId)
         ? parent.children.findIndex((child) => child.id === patch.beforeId)
         : -1;
       if (beforeIndex === -1) {
@@ -111,7 +110,7 @@ export const createRemoteUiStore = (): RemoteUiStore => {
   };
 
   return {
-    applyPatches(patches) {
+    applyPatches: (patches) => {
       if (!snapshot) {
         return;
       }
@@ -122,13 +121,10 @@ export const createRemoteUiStore = (): RemoteUiStore => {
       snapshot = nextSnapshot;
       notify();
     },
-    getRevision() {
-      return revision;
-    },
-    getSnapshot() {
-      return snapshot;
-    },
+    getRevision: () => revision,
+    getSnapshot: () => snapshot,
     handleSandboxMessage(message) {
+      /* oxlint-disable typescript/switch-exhaustiveness-check -- This syntax visitor handles selected node kinds; other kinds use its generic traversal or default branch. */
       switch (message.type) {
         case "snapshot": {
           this.setSnapshot(message.data.tree, message.data.revision);
@@ -150,13 +146,14 @@ export const createRemoteUiStore = (): RemoteUiStore => {
           break;
         }
       }
+      /* oxlint-enable typescript/switch-exhaustiveness-check */
     },
-    setSnapshot(tree, nextRevision) {
+    setSnapshot: (tree, nextRevision) => {
       snapshot = cloneNode(tree);
       revision = nextRevision;
       notify();
     },
-    subscribe(listener) {
+    subscribe: (listener) => {
       listeners.add(listener);
       return () => {
         listeners.delete(listener);

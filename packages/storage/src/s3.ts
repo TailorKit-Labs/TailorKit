@@ -36,7 +36,14 @@ const createS3Client = (options: S3CompatibleStorageOptions): S3Client => {
     region: options.region ?? "auto",
   };
 
-  if (options.accessKeyId && options.secretAccessKey) {
+  if (
+    options.accessKeyId !== undefined &&
+    options.accessKeyId !== null &&
+    options.accessKeyId !== "" &&
+    options.secretAccessKey !== undefined &&
+    options.secretAccessKey !== null &&
+    options.secretAccessKey !== ""
+  ) {
     config.credentials = {
       accessKeyId: options.accessKeyId,
       secretAccessKey: options.secretAccessKey,
@@ -48,7 +55,7 @@ const createS3Client = (options: S3CompatibleStorageOptions): S3Client => {
 
 export const createS3CompatibleStorage = (
   options: S3CompatibleStorageOptions
-): Storage<"s3"> => {
+): Storage => {
   const client = createS3Client(options);
 
   return {
@@ -71,8 +78,8 @@ export const createS3CompatibleStorage = (
               "tailorkit.package": "storage",
             },
           },
-          () =>
-            getSignedUrl(client, command, {
+          async () =>
+            await getSignedUrl(client, command, {
               expiresIn: input.expiresInSeconds ?? 300,
             })
         ),
@@ -91,13 +98,25 @@ export const createS3CompatibleStorage = (
       });
 
       const headers: CreateUploadUrlOutput["headers"] = {};
-      if (input.contentType) {
+      if (
+        input.contentType !== undefined &&
+        input.contentType !== null &&
+        input.contentType !== ""
+      ) {
         headers["content-type"] = input.contentType;
       }
-      if (input.contentEncoding) {
+      if (
+        input.contentEncoding !== undefined &&
+        input.contentEncoding !== null &&
+        input.contentEncoding !== ""
+      ) {
         headers["content-encoding"] = input.contentEncoding;
       }
-      if (input.checksumSha256) {
+      if (
+        input.checksumSha256 !== undefined &&
+        input.checksumSha256 !== null &&
+        input.checksumSha256 !== ""
+      ) {
         headers["x-amz-checksum-sha256"] = input.checksumSha256;
       }
       return {
@@ -112,8 +131,8 @@ export const createS3CompatibleStorage = (
               "tailorkit.package": "storage",
             },
           },
-          () =>
-            getSignedUrl(client, command, {
+          async () =>
+            await getSignedUrl(client, command, {
               expiresIn: input.expiresInSeconds ?? 300,
 
               signableHeaders: new Set(["content-type", "content-encoding"]),
@@ -131,8 +150,8 @@ export const createS3CompatibleStorage = (
         {
           attributes: { "storage.type": "s3", "tailorkit.package": "storage" },
         },
-        () =>
-          client.send(
+        async () =>
+          await client.send(
             new DeleteObjectCommand({
               Bucket: options.bucket,
               Key: input.key,
@@ -146,8 +165,8 @@ export const createS3CompatibleStorage = (
         {
           attributes: { "storage.type": "s3", "tailorkit.package": "storage" },
         },
-        () =>
-          client.send(
+        async () =>
+          await client.send(
             new HeadObjectCommand({
               Bucket: options.bucket,
               ChecksumMode: "ENABLED",

@@ -1,8 +1,7 @@
 import { z } from "zod";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 const isBooleanValue = <TValue>(value: TValue): value is TValue & boolean =>
   typeof value === "boolean";
@@ -104,7 +103,7 @@ const preflightScopeValue = (value: unknown): string | null => {
       ) {
         fail("Scope numbers must be finite, safe integers, and cannot be -0.");
       }
-      return String(JSON.stringify(current)).length;
+      return JSON.stringify(current).length;
     }
     if (!isObjectValue(current) || depth > maxDepth || active.has(current)) {
       fail(
@@ -132,7 +131,11 @@ const preflightScopeValue = (value: unknown): string | null => {
           current,
           String(index)
         );
-        if (!descriptor || !("value" in descriptor) || !descriptor.enumerable) {
+        if (
+          !descriptor ||
+          !("value" in descriptor) ||
+          !(descriptor.enumerable === true)
+        ) {
           fail("Scope arrays must contain enumerable data properties.");
           break;
         }
@@ -142,7 +145,7 @@ const preflightScopeValue = (value: unknown): string | null => {
         currentBytes += visit(descriptor.value, depth + 1);
       }
     } else {
-      const prototype = Object.getPrototypeOf(current);
+      const prototype: unknown = Object.getPrototypeOf(current);
       if (prototype !== Object.prototype && prototype !== null) {
         fail("Scope values must contain only plain objects.");
       }
@@ -165,7 +168,11 @@ const preflightScopeValue = (value: unknown): string | null => {
           break;
         }
         const descriptor = Object.getOwnPropertyDescriptor(current, key);
-        if (!descriptor || !("value" in descriptor) || !descriptor.enumerable) {
+        if (
+          !descriptor ||
+          !("value" in descriptor) ||
+          !(descriptor.enumerable === true)
+        ) {
           fail("Scope objects must contain enumerable data properties.");
           break;
         }
@@ -196,7 +203,11 @@ const preflightScopeValue = (value: unknown): string | null => {
       return "Scope keys must contain 1–64 characters and cannot be __proto__.";
     }
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
-    if (!descriptor || !("value" in descriptor) || !descriptor.enumerable) {
+    if (
+      !descriptor ||
+      !("value" in descriptor) ||
+      !(descriptor.enumerable === true)
+    ) {
       return "Scope objects must contain enumerable data properties.";
     }
     if (index > 0) {
@@ -212,7 +223,6 @@ const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
     z.string().max(maxStringLength),
     z
       .number()
-      .finite()
       .refine(
         (value) => !Object.is(value, -0),
         "-0 is not a supported scope number."
@@ -235,7 +245,7 @@ const scopeObjectSchema = z.record(
 
 export const scopeValueSchema = z.preprocess((value, context) => {
   const issue = preflightScopeValue(value);
-  if (issue) {
+  if (issue !== undefined && issue !== null && issue !== "") {
     context.addIssue({ code: "custom", message: issue });
   }
   return value;

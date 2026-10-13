@@ -4,7 +4,8 @@ import path from "node:path";
 
 import { expect, it } from "vite-plus/test";
 
-import { linkTestDependencies, testSchema } from "../test-utils";
+import { linkTestDependencies, testSchema } from "#test-utils";
+
 import { generateAppMigrations } from "./generate-migrations";
 import { readAppMigrations } from "./migrations";
 
@@ -19,7 +20,7 @@ it.each([undefined, "history"])(
       await writeFile(path.join(root, "src/db/schema.ts"), testSchema);
       await writeFile(
         path.join(root, "tailorkit.config.mjs"),
-        `export default { host: "https://host.example.com", server: ${JSON.stringify(directory ? { migrations: directory } : {})} };`
+        `export default { host: "https://host.example.com", server: ${JSON.stringify(directory !== undefined && directory !== null && directory !== "" ? { migrations: directory } : {})} };`
       );
       const migrations = await generateAppMigrations({
         cwd: root,

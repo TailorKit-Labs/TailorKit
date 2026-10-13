@@ -57,7 +57,15 @@ const browserGlobals = new Set([
 ]);
 
 const isNode = (value: unknown): value is Node =>
-  !!value && typeof value === "object" && "type" in value;
+  value !== undefined &&
+  value !== null &&
+  value !== false &&
+  value !== "" &&
+  value !== 0 &&
+  !Number.isNaN(value) &&
+  value !== 0n &&
+  typeof value === "object" &&
+  "type" in value;
 const children = (node: Node): Node[] =>
   Object.values(node).flatMap((value) =>
     (() => {
@@ -84,6 +92,7 @@ const boundNames = (node: Node | null | undefined): string[] => {
   if (!node) {
     return [];
   }
+  /* oxlint-disable typescript/switch-exhaustiveness-check -- This syntax visitor handles selected node kinds; other kinds use its generic traversal or default branch. */
   switch (node.type) {
     case "Identifier": {
       return [node.name];
@@ -106,6 +115,7 @@ const boundNames = (node: Node | null | undefined): string[] => {
       return [];
     }
   }
+  /* oxlint-enable typescript/switch-exhaustiveness-check */
 };
 const declarations = (node: Node): string[] => {
   if (node.type === "VariableDeclaration") {
@@ -453,7 +463,10 @@ export const extractInstances = async (
       fail("instances must be an inline object with dataSchema and resolve.");
     }
     // SAFETY: The AST node kind and literal value are checked before this access; the compiler's node union loses that refinement across the helper.
-    const config = instances.value as ESTree.ObjectExpression;
+    const config =
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- The AST node kind and literal value are checked before this access; the compiler's node union loses that refinement across the helper. */
+      instances.value as ESTree.ObjectExpression;
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
     if (
       config.properties.some(
         (p) => p.type !== "Property" || p.computed || p.kind !== "init"
@@ -478,7 +491,12 @@ export const extractInstances = async (
     // SAFETY: The AST node kind and literal value are checked before this access; the compiler's node union loses that refinement across the helper.
     const name = `i${createHash("sha256")
       .update(
-        `${path.relative(root, filename).split(path.sep).join("/")}\0${viewName}\0${(view as ESTree.StringLiteral).value}`
+        `${path.relative(root, filename).split(path.sep).join("/")}\0${viewName}\0${
+          /* oxlint-disable typescript/no-unsafe-type-assertion -- The AST node kind and literal value are checked before this access; the compiler's node union loses that refinement across the helper. */
+          (view as ESTree.StringLiteral)
+            /* oxlint-enable typescript/no-unsafe-type-assertion */
+            .value
+        }`
       )
       .digest("hex")
       .slice(0, 24)}`;
@@ -494,7 +512,11 @@ export const extractInstances = async (
       name,
       resolve: requireValue(resolve),
       schema: requireValue(schema),
-      view: (view as ESTree.StringLiteral).value,
+      view:
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- The AST node kind and literal value are checked before this access; the compiler's node union loses that refinement across the helper. */
+        (view as ESTree.StringLiteral)
+          /* oxlint-enable typescript/no-unsafe-type-assertion */
+          .value,
     });
   });
   if (includedNames) {
@@ -506,7 +528,8 @@ export const extractInstances = async (
     }
   }
   if (!resolvers.length) {
-    return;
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
   }
   const original = units(program, source);
   const server = closure(
@@ -595,18 +618,20 @@ export const instanceExtractionPlugin = (
 ): Plugin => ({
   enforce: "pre",
   name: "tailorkit-instance-extraction",
-  async transform(source, filename) {
+  transform: async (source, filename) => {
     if (
       filename.includes("node_modules") ||
       !/\.[cm]?[jt]sx?$/u.test(filename) ||
       (!source.includes("instances") && !modules.has(filename))
     ) {
-      return;
+      /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+      return undefined;
     }
     const result = await extractInstances(filename, source, root());
     if (!result) {
       modules.delete(filename);
-      return;
+      /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+      return undefined;
     }
     if (!serverConfigured()) {
       throw new Error(
@@ -624,7 +649,8 @@ export const instanceServerPlugin = (
   enforce: "pre",
   async load(id) {
     if (!id.endsWith(suffix)) {
-      return;
+      /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+      return undefined;
     }
     const filename = id.slice(0, -suffix.length);
     this.addWatchFile(filename);
@@ -643,11 +669,7 @@ export const instanceServerPlugin = (
     return result.server;
   },
   name: "tailorkit-instance-server-modules",
-  resolveId(id) {
-    if (id.endsWith(suffix)) {
-      return id;
-    }
-  },
+  resolveId: (id) => (id.endsWith(suffix) ? id : undefined),
 });
 export const instanceServerImports = (modules: InstanceModule[]) =>
   modules

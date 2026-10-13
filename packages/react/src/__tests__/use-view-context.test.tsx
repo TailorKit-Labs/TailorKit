@@ -10,9 +10,9 @@ import type { ReactNode } from "react";
 import { StrictMode } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 
-import { TailorkitContext } from "../components/context";
-import type { ViewState } from "../hooks/use-view-context";
-import { createClient } from "../tailorkit";
+import { TailorkitContext } from "#components/context";
+import type { ViewState } from "#hooks/use-view-context";
+import { createClient } from "#tailorkit";
 
 // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const contextSchema: StandardSchemaV1<unknown, ViewContextValues | undefined> &
@@ -20,6 +20,7 @@ const contextSchema: StandardSchemaV1<unknown, ViewContextValues | undefined> &
   "~standard": {
     jsonSchema: { input: () => ({}), output: () => ({}) },
     validate: (value) => ({
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
       value: value as ViewContextValues | undefined,
     }),
     vendor: "test",
@@ -116,90 +117,103 @@ it.each([
   "registers $status with context $context from query state",
   async ({ options, status, context }) => {
     const { client, store, wrapper } = setup();
-    const { unmount } = renderHook(() => client.useViewContext("/", options), {
-      wrapper,
-    });
-    await waitFor(() =>
+    const { unmount } = renderHook(
+      () => {
+        client.useViewContext("/", options);
+      },
+      {
+        wrapper,
+      }
+    );
+    await waitFor(() => {
       expect(store.views.getSnapshot()).toEqual({
         layers: [{ context, path: "/", status }],
         view: "/",
-      })
-    );
+      });
+    });
     unmount();
-    await waitFor(() => expect(store.views.getSnapshot()).toBeNull());
+    await waitFor(() => {
+      expect(store.views.getSnapshot()).toBeNull();
+    });
   }
 );
 
 it("updates loading, error, and ready context as query results change", async () => {
   const { client, store, wrapper } = setup();
   const { rerender } = renderHook<ReturnType<() => void>, Options>(
-    (options) => client.useViewContext("/", options),
+    (options) => {
+      client.useViewContext("/", options);
+    },
     {
       initialProps: { context: undefined, loading: true },
       wrapper,
     }
   );
-  await waitFor(() =>
-    expect(store.views.getSnapshot()?.layers[0]?.status).toBe("loading")
-  );
+  await waitFor(() => {
+    expect(store.views.getSnapshot()?.layers[0]?.status).toBe("loading");
+  });
   rerender({ context: {}, error: "", loading: true });
-  await waitFor(() =>
+  await waitFor(() => {
     expect(store.views.getSnapshot()?.layers).toEqual([
       { context: undefined, path: "/", status: "error" },
-    ])
-  );
+    ]);
+  });
   rerender({ context: {}, error: false });
-  await waitFor(() =>
+  await waitFor(() => {
     expect(store.views.getSnapshot()?.layers).toEqual([
       { context: {}, path: "/", status: "ready" },
-    ])
-  );
+    ]);
+  });
   rerender({ context: {}, loading: true });
-  await waitFor(() =>
+  await waitFor(() => {
     expect(store.views.getSnapshot()?.layers).toEqual([
       { context: undefined, path: "/", status: "loading" },
-    ])
-  );
+    ]);
+  });
   rerender({ context: undefined });
-  await waitFor(() =>
+  await waitFor(() => {
     expect(store.views.getSnapshot()?.layers).toEqual([
       { context: undefined, path: "/", status: "ready" },
-    ])
-  );
+    ]);
+  });
 });
 
 it("does not republish equivalent context or changes to ignored query data", async () => {
   const { client, store, wrapper } = setup();
   const { rerender } = renderHook<ReturnType<() => void>, Options>(
-    (options) => client.useViewContext("/", options),
+    (options) => {
+      client.useViewContext("/", options);
+    },
     {
       initialProps: { context: {} },
       wrapper,
     }
   );
-  await waitFor(() =>
-    expect(store.views.getSnapshot()?.layers[0]?.status).toBe("ready")
-  );
-  const listener = vi.fn();
+  await waitFor(() => {
+    expect(store.views.getSnapshot()?.layers[0]?.status).toBe("ready");
+  });
+  const listener = vi.fn<Parameters<typeof store.views.state.listen>[0]>();
   const stop = store.views.state.listen(listener);
   const snapshot = store.views.getSnapshot();
-  await act(() => rerender({ context: {}, error: null, loading: false }));
+  act(() => {
+    rerender({ context: {}, error: null, loading: false });
+  });
   expect(listener).not.toHaveBeenCalled();
   expect(store.views.getSnapshot()).toBe(snapshot);
 
   rerender({ context: {}, error: new Error("First failure") });
-  await waitFor(() =>
-    expect(store.views.getSnapshot()?.layers[0]?.status).toBe("error")
-  );
+  await waitFor(() => {
+    expect(store.views.getSnapshot()?.layers[0]?.status).toBe("error");
+  });
   listener.mockClear();
   const errorSnapshot = store.views.getSnapshot();
-  await act(() =>
+  act(() => {
     rerender({
       context: undefined,
       error: new Error("Second failure"),
       loading: true,
-    })
-  );
+    });
+  });
   expect(listener).not.toHaveBeenCalled();
   expect(store.views.getSnapshot()).toBe(errorSnapshot);
   stop();

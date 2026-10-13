@@ -10,9 +10,8 @@ import type {
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 const isBooleanValue = <TValue>(value: TValue): value is TValue & boolean =>
   typeof value === "boolean";
@@ -42,12 +41,11 @@ const isPlainRecord = (value: unknown): value is object => {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return false;
   }
-  const prototype = Object.getPrototypeOf(value);
+  const prototype: unknown = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
 };
 
 const assertPlainRecord: (
-  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This is the runtime validation boundary for host-provided scopes and validators; invalid values must remain representable until checked.
   value: unknown,
   errorMessage: string
 ) => asserts value is object = (value, errorMessage) => {
@@ -56,8 +54,9 @@ const assertPlainRecord: (
   }
 };
 
-const getRecordEntries = <TRecord extends object>(
-  value: TRecord,
+const getRecordEntries = (
+  // oxlint-disable-next-line anti-slop/no-object-parameters -- This structural adapter enumerates caller-owned fields; a concrete domain shape would exclude supported schema or attribute objects.
+  value: object,
   errorMessage: string
 ): [string, unknown][] => {
   const ownKeys = Reflect.ownKeys(value);
@@ -77,7 +76,7 @@ const getRecordEntries = <TRecord extends object>(
       );
     }
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
-    if (!descriptor?.enumerable || !("value" in descriptor)) {
+    if (!(descriptor?.enumerable === true) || !("value" in descriptor)) {
       throw new TypeError(errorMessage);
     }
     entries.push([key, descriptor.value]);
@@ -222,7 +221,7 @@ const normalizeJsonValue = (
     const result: TailorKitJsonValue[] = [];
     for (let index = 0; index < value.length; index += 1) {
       const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
-      if (!descriptor?.enumerable || !("value" in descriptor)) {
+      if (!(descriptor?.enumerable === true) || !("value" in descriptor)) {
         throw new TypeError(
           "TailorKit scope arrays must contain enumerable data items."
         );
@@ -300,7 +299,11 @@ export const normalizeTailorKitScope = (value: unknown): TailorKitScope => {
     );
   }
   // SAFETY: The root was checked as a plain record, and normalization preserves its root kind while rejecting non-JSON descendants.
-  return normalized as TailorKitScope;
+  return (
+    /* oxlint-disable typescript/no-unsafe-type-assertion -- The root was checked as a plain record, and normalization preserves its root kind while rejecting non-JSON descendants. */
+    normalized as TailorKitScope
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
+  );
 };
 
 export const validateTailorKitScopes = async (
@@ -381,8 +384,11 @@ export const normalizeTailorKitNamedScope = (
       "TailorKit scope identity must contain only a name and value."
     );
   }
-  const name = Object.getOwnPropertyDescriptor(value, "name")?.value;
-  const scopeValue = Object.getOwnPropertyDescriptor(value, "value")?.value;
+  const name: unknown = Object.getOwnPropertyDescriptor(value, "name")?.value;
+  const scopeValue: unknown = Object.getOwnPropertyDescriptor(
+    value,
+    "value"
+  )?.value;
   if (!isStringValue(name)) {
     throw new TypeError(
       "TailorKit scope identity must contain a name and value."

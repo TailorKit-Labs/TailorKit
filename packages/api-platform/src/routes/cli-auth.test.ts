@@ -72,7 +72,13 @@ describe("platform CLI auth scopes", () => {
   let db: Awaited<ReturnType<typeof createTestDb>>["db"];
 
   beforeEach(async () => {
-    if (!env.AUTH_SECRET) {
+    if (
+      !(
+        env.AUTH_SECRET !== undefined &&
+        env.AUTH_SECRET !== null &&
+        env.AUTH_SECRET !== ""
+      )
+    ) {
       throw new Error(
         "The CLI auth test requires AUTH_SECRET in its Vitest config."
       );
@@ -122,6 +128,7 @@ describe("platform CLI auth scopes", () => {
       throw new Error("Expected CLI auth session to be approved.");
     }
     expect(polled.body).toEqual({
+      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
       deployToken: expect.any(String),
       scope: expectedScope,
       status: "approved",
@@ -137,6 +144,7 @@ describe("platform CLI auth scopes", () => {
     const token = await db.query.cliToken.findFirst();
     expect(token).toEqual(
       expect.objectContaining({
+        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
         lastUsedAt: expect.any(Date),
         scope: expectedScope,
         scopeKey: expectedScopeKey,

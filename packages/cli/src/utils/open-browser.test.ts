@@ -39,9 +39,9 @@ describe("openUrlInBrowser", () => {
   it("opens URLs with the platform browser command", async () => {
     const child = createChildProcess();
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+
     vi.mocked(spawn).mockReturnValue(
-      // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This event-driven ChildProcess double supplies only once and unref, the methods exercised by the browser opener.
+      // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This event-driven ChildProcess double supplies only once and unref, the methods exercised by the browser opener. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
       child as unknown as ReturnType<typeof spawn>
     );
 
@@ -64,9 +64,9 @@ describe("openUrlInBrowser", () => {
   it("returns false when the browser command cannot start", async () => {
     const child = createChildProcess();
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+
     vi.mocked(spawn).mockReturnValue(
-      // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This event-driven ChildProcess double supplies only once and unref, the methods exercised by the browser opener.
+      // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This event-driven ChildProcess double supplies only once and unref, the methods exercised by the browser opener. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
       child as unknown as ReturnType<typeof spawn>
     );
 

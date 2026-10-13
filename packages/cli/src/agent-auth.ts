@@ -55,7 +55,8 @@ export const getAgentAuth = () => {
     }
   }
   if (token === undefined) {
-    return;
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
   }
   try {
     const header = decodeProtectedHeader(token);

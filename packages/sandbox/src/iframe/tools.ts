@@ -1,7 +1,7 @@
 import type { ToolBridge } from "@tailorkit/app/client";
 import { parseSession } from "@tailorkit/app/client/connection";
 
-import type { HostToIframePayload } from "../protocol";
+import type { HostToIframePayload } from "#protocol";
 
 type ToolReply = Extract<HostToIframePayload, { type: "toolResult" }>["data"];
 type ToolOutput = ToolReply["output"];
@@ -23,18 +23,18 @@ export const createIframeTools = (
     }
   >();
   let closed = false;
-  const request = (
+  const request = async (
     kind: "client" | "server",
     path: string,
     input?: Parameters<ToolBridge["client"]>[1]
   ): Promise<ToolOutput> => {
     if (closed) {
-      return Promise.reject(new Error("Sandbox destroyed"));
+      return await Promise.reject(new Error("Sandbox destroyed"));
     }
     if (pending.size >= 32) {
-      return Promise.reject(new Error("Too many pending tool requests"));
+      return await Promise.reject(new Error("Too many pending tool requests"));
     }
-    return (() => {
+    return await (async () => {
       const {
         promise: pendingPromise,
         resolve,
@@ -51,16 +51,16 @@ export const createIframeTools = (
       } catch (error) {
         reject(error);
       }
-      return pendingPromise;
+      return await pendingPromise;
     })();
   };
   const bridge: ToolBridge = {
-    client: (path, input) => request("client", path, input),
+    client: async (path, input) => await request("client", path, input),
     session: async (path) => parseSession(await request("server", path)),
   };
   return {
     bridge,
-    close() {
+    close: () => {
       closed = true;
       for (const entry of pending.values()) {
         clearTimeout(entry.timer);
@@ -68,14 +68,18 @@ export const createIframeTools = (
       }
       pending.clear();
     },
-    receive(result: ToolReply) {
+    receive: (result: ToolReply) => {
       const entry = pending.get(result.id);
       if (!entry) {
         return;
       }
       clearTimeout(entry.timer);
       pending.delete(result.id);
-      if (result.error) {
+      if (
+        result.error !== undefined &&
+        result.error !== null &&
+        result.error !== ""
+      ) {
         entry.reject(new Error(result.error));
       } else {
         entry.resolve(result.output);

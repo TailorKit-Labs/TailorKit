@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-return, typescript/no-unsafe-argument, typescript/no-unsafe-assignment, typescript/no-unsafe-call, typescript/no-unsafe-member-access -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { beforeEach, expect, it, vi } from "vite-plus/test";
 
 const mocks = vi.hoisted(() => ({
@@ -46,6 +47,7 @@ beforeEach(() => {
 it("waits for authorization before handling an early message", async () => {
   let resolveAuthorization;
   mocks.authorize.mockReturnValueOnce(
+    // oxlint-disable-next-line typescript/promise-function-async -- This fixture returns the original deferred or runtime Promise and installs its resolver synchronously.
     (() => {
       const {
         promise: pendingPromise,
@@ -77,6 +79,7 @@ it("waits for authorization before handling an early message", async () => {
 it("closes an early message when authorization fails", async () => {
   let resolveAuthorization;
   mocks.authorize.mockReturnValueOnce(
+    // oxlint-disable-next-line typescript/promise-function-async -- This fixture returns the original deferred or runtime Promise and installs its resolver synchronously.
     (() => {
       const {
         promise: pendingPromise,
@@ -104,6 +107,7 @@ it("closes an early message when authorization fails", async () => {
 it("closes a peer that sends multiple frames before authorization finishes", async () => {
   let resolveAuthorization;
   mocks.authorize.mockReturnValueOnce(
+    // oxlint-disable-next-line typescript/promise-function-async -- This fixture returns the original deferred or runtime Promise and installs its resolver synchronously.
     (() => {
       const {
         promise: pendingPromise,

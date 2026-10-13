@@ -3,18 +3,15 @@ import type { ViewStatus } from "@tailorkit/core/views";
 import type { RemoteProps } from "@tailorkit/sandbox/protocol";
 import { atom } from "nanostores";
 
-import type {
-  RuntimeRenderSlotProps,
-  SlotState,
-} from "../../client/slot-types";
-import { resolveSlotView, selectSlotView } from "../../client/slot-view";
-import { toBaseUrl } from "../../client/url";
-import { createValueMemo } from "../../client/value-memo";
-import { serializeCacheKey } from "../fetch/cache";
-import type { SlotItem } from "../fetch/slot";
-import { createAppViewsQuery } from "../query";
-import { createSnapshotStore } from "../snapshot-store";
-import type { TailorKitStore } from "../store";
+import type { RuntimeRenderSlotProps, SlotState } from "#client/slot-types";
+import { resolveSlotView, selectSlotView } from "#client/slot-view";
+import { toBaseUrl } from "#client/url";
+import { createValueMemo } from "#client/value-memo";
+import { serializeCacheKey } from "#store/fetch/cache";
+import type { SlotItem } from "#store/fetch/slot";
+import { createAppViewsQuery } from "#store/query";
+import { createSnapshotStore } from "#store/snapshot-store";
+import type { TailorKitStore } from "#store/store";
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -164,9 +161,9 @@ export const createSlotRuntime = (
           (view) =>
             view.slot === slot &&
             view.path === options.view &&
-            view.instances &&
+            view.instances === true &&
             !view.disabled
-        )
+        ) === true
       ) {
         return failure(
           "A view instance is required. Pass instance to RenderSlot.Controlled."
@@ -176,10 +173,23 @@ export const createSlotRuntime = (
     const schema = store.contract;
     const source = getPreview().get();
     const appUrl = (() => {
-      if (app.clientPath) {
+      if (
+        app.clientPath !== undefined &&
+        app.clientPath !== null &&
+        app.clientPath !== ""
+      ) {
         return new URL(app.clientPath, store.baseUrl);
       }
-      if (store.assetsBaseUrl && app.projectId && app.currentDeployment?.id) {
+      if (
+        store.assetsBaseUrl !== undefined &&
+        store.assetsBaseUrl !== "" &&
+        app.projectId !== undefined &&
+        app.projectId !== null &&
+        app.projectId !== "" &&
+        app.currentDeployment?.id !== undefined &&
+        app.currentDeployment?.id !== null &&
+        app.currentDeployment?.id !== ""
+      ) {
         return new URL(
           `projects/${app.projectId}/apps/${app.id}/deployments/${app.currentDeployment.id}/client/client.js`,
           toBaseUrl(store.assetsBaseUrl)
@@ -227,8 +237,7 @@ export const createSlotRuntime = (
       ).toString(),
       getBackendSession: store.client.endpoints.getSessionProvider(app),
       hostKey:
-        source.revision ||
-        appUrl?.toString() ||
+        (source.revision || appUrl?.toString()) ??
         `preview/${app.preview?.sessionId ?? ""}`,
       props: {
         ...viewState,
@@ -313,7 +322,7 @@ export const createSlotRuntime = (
     }
   );
   return {
-    setInput(options: SlotRuntimeOptions) {
+    setInput: (options: SlotRuntimeOptions) => {
       store.previews.updateApp(options.app);
       input.set(memoInput(options));
     },

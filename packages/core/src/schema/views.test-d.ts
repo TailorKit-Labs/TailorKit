@@ -11,4 +11,4 @@ expectTypeOf<CustomerView>().toEqualTypeOf<
 
 expectTypeOf<{
   "/customers/:customerId": CustomerView;
-}>().toMatchTypeOf<ViewDefinitions>();
+}>().toExtend<ViewDefinitions>();

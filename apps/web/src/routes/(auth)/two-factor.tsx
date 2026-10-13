@@ -113,7 +113,7 @@ const TwoFactorPage = () => {
 
       if (result.error) {
         const message =
-          result.error.message ||
+          result.error.message ??
           (useBackupCode
             ? "That backup code is not valid."
             : "That verification code is not valid.");
@@ -219,7 +219,13 @@ const TwoFactorPage = () => {
                       {OTP_SLOT_KEYS.map((key, index) => (
                         <Fragment key={key}>
                           <OTPFieldInput
-                            aria-invalid={error ? true : undefined}
+                            aria-invalid={
+                              error !== undefined &&
+                              error !== null &&
+                              error !== ""
+                                ? true
+                                : undefined
+                            }
                             aria-label={`Digit ${index + 1} of ${OTP_LENGTH}`}
                             autoFocus={index === 0}
                           />
@@ -227,20 +233,28 @@ const TwoFactorPage = () => {
                         </Fragment>
                       ))}
                     </OTPField>
-                    {error ? <FieldError>{error}</FieldError> : null}
+                    {error !== undefined && error !== null && error !== "" ? (
+                      <FieldError>{error}</FieldError>
+                    ) : null}
                   </Field>
                 </div>
                 <Button
                   disabled={code.length !== OTP_LENGTH || isTotpPending}
                   loading={isTotpPending}
-                  onClick={() => verify(code)}
+                  onClick={() => {
+                    void (async () => {
+                      await verify(code);
+                    })();
+                  }}
                   type="button"
                 >
                   Verify
                 </Button>
                 <Button
                   className="self-center"
-                  onClick={() => handleBackupCodeOpenChange(true)}
+                  onClick={() => {
+                    handleBackupCodeOpenChange(true);
+                  }}
                   size="sm"
                   type="button"
                   variant="ghost"
@@ -297,7 +311,13 @@ const TwoFactorPage = () => {
                 {BACKUP_CODE_SLOT_KEYS.map((key, index) => (
                   <Fragment key={key}>
                     <OTPFieldInput
-                      aria-invalid={backupCodeError ? true : undefined}
+                      aria-invalid={
+                        backupCodeError !== undefined &&
+                        backupCodeError !== null &&
+                        backupCodeError !== ""
+                          ? true
+                          : undefined
+                      }
                       aria-label={`Character ${index + 1} of ${BACKUP_CODE_LENGTH}`}
                       autoFocus={index === 0}
                     />
@@ -307,7 +327,9 @@ const TwoFactorPage = () => {
                   </Fragment>
                 ))}
               </OTPField>
-              {backupCodeError ? (
+              {backupCodeError !== undefined &&
+              backupCodeError !== null &&
+              backupCodeError !== "" ? (
                 <FieldError>{backupCodeError}</FieldError>
               ) : null}
             </Field>
@@ -323,7 +345,11 @@ const TwoFactorPage = () => {
                 backupCode.length !== BACKUP_CODE_LENGTH || isBackupCodePending
               }
               loading={isBackupCodePending}
-              onClick={() => verify(backupCode, true)}
+              onClick={() => {
+                void (async () => {
+                  await verify(backupCode, true);
+                })();
+              }}
               size="sm"
               type="button"
             >

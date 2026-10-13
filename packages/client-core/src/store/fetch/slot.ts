@@ -2,10 +2,11 @@ import type { ViewInstance } from "@tailorkit/app/client";
 import type { TailorKitContract } from "@tailorkit/core/schema";
 import type { ActiveView } from "@tailorkit/core/views";
 
-import type { TailorKitFetchClient } from "../../client/fetch-client";
-import { resolveSlotView } from "../../client/slot-view";
-import type { TailorKitApp } from "../../types";
-import { createSnapshotStore } from "../snapshot-store";
+import type { TailorKitFetchClient } from "#client/fetch-client";
+import { resolveSlotView } from "#client/slot-view";
+import { createSnapshotStore } from "#store/snapshot-store";
+import type { TailorKitApp } from "#types";
+
 import type { FetchCacheOptions, FetchOptions, FetchSnapshot } from "./cache";
 
 const require = <T>(value: T | null | undefined): T => {
@@ -92,8 +93,10 @@ export const createSlotStore = (
       activeView,
     ],
     async (signal) => {
-      const candidates = apps.filter((app) =>
-        app.views?.some((view) => view.slot === slot && !view.disabled)
+      const candidates = apps.filter(
+        (app) =>
+          app.views?.some((view) => view.slot === slot && !view.disabled) ===
+          true
       );
       if (!candidates.length) {
         return { data: [], status: "ready" };
@@ -106,14 +109,15 @@ export const createSlotStore = (
       if (definition.multiple !== true) {
         return {
           data: candidates
-            .filter((app) =>
-              app.views?.some(
-                (view) =>
-                  view.slot === slot &&
-                  !view.disabled &&
-                  !view.instances &&
-                  definition.views.includes(view.path)
-              )
+            .filter(
+              (app) =>
+                app.views?.some(
+                  (view) =>
+                    view.slot === slot &&
+                    !view.disabled &&
+                    !view.instances &&
+                    definition.views.includes(view.path)
+                ) === true
             )
             .map((app) => ({ app })),
           status: "ready",
@@ -129,7 +133,7 @@ export const createSlotStore = (
           activeView,
           schema
         );
-        return resolved?.instances ? [{ app, resolved }] : [];
+        return resolved?.instances === true ? [{ app, resolved }] : [];
       });
       for (const { resolved } of matches) {
         if (resolved.status === "error") {
@@ -142,7 +146,9 @@ export const createSlotStore = (
         return { status: "loading" };
       }
       const controller = new AbortController();
-      const abort = () => controller.abort();
+      const abort = () => {
+        controller.abort();
+      };
       signal.addEventListener("abort", abort, { once: true });
       try {
         const results = await Promise.all(
@@ -171,9 +177,14 @@ export const createSlotStore = (
   let last: FetchSnapshot<Result> | undefined;
   let snapshot: SlotSnapshot;
   const store = {
-    fetch: (fetchOptions: FetchOptions = {}) =>
-      enabled ? query.fetch(fetchOptions) : Promise.resolve(),
-    getSnapshot(): SlotSnapshot {
+    // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
+    fetch: (fetchOptions: FetchOptions = {}) => {
+      if (enabled) {
+        return query.fetch(fetchOptions);
+      }
+      return Promise.resolve();
+    },
+    getSnapshot: (): SlotSnapshot => {
       if (!enabled) {
         return waiting;
       }
@@ -192,7 +203,13 @@ export const createSlotStore = (
       }
       return snapshot;
     },
-    invalidate: () => (enabled ? query.invalidate() : Promise.resolve()),
+    // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
+    invalidate: () => {
+      if (enabled) {
+        return query.invalidate();
+      }
+      return Promise.resolve();
+    },
     subscribe: (listener: () => void) =>
       enabled
         ? query.subscribe(listener)

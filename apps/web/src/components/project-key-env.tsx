@@ -73,7 +73,9 @@ export const ProjectKeyEnv = ({ apiKey }: { apiKey: string }) => {
                     size="icon-xs"
                     type="button"
                     variant="ghost"
-                    onClick={() => setShowApiKey((value) => !value)}
+                    onClick={() => {
+                      setShowApiKey((value) => !value);
+                    }}
                   />
                 }
               >
@@ -93,7 +95,9 @@ export const ProjectKeyEnv = ({ apiKey }: { apiKey: string }) => {
                     size="icon-xs"
                     type="button"
                     variant="ghost"
-                    onClick={copyEnv}
+                    onClick={(...args: Parameters<typeof copyEnv>) => {
+                      void copyEnv(...args);
+                    }}
                   />
                 }
               >

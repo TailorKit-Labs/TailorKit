@@ -2,9 +2,8 @@ import type { Schema } from "@tailorkit/core/schema";
 
 import type { ViewEntry } from "./view-context";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 export interface ViewContextDiagnostic {
   message: string;

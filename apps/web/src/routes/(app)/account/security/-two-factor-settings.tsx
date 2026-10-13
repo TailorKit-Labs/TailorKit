@@ -108,7 +108,9 @@ const TwoFactorSetupDialog = ({
       <FieldLabel>Password</FieldLabel>
       <Input
         autoComplete="current-password"
-        onChange={(event) => onPasswordChange(event.target.value)}
+        onChange={(event) => {
+          onPasswordChange(event.target.value);
+        }}
         type="password"
         value={password}
       />
@@ -122,7 +124,9 @@ const TwoFactorSetupDialog = ({
       <Button
         disabled={!password}
         loading={enabling}
-        onClick={() => onEnable()}
+        onClick={() => {
+          onEnable();
+        }}
         size="sm"
         type="button"
       >
@@ -131,7 +135,12 @@ const TwoFactorSetupDialog = ({
     </>
   );
 
-  if (totpURI && !showVerificationStep) {
+  if (
+    totpURI !== undefined &&
+    totpURI !== null &&
+    totpURI !== "" &&
+    !showVerificationStep
+  ) {
     const totpSecret = getTotpSecret(totpURI);
     title = "Set Up Authenticator App";
     description =
@@ -161,7 +170,11 @@ const TwoFactorSetupDialog = ({
               render={
                 <Button
                   aria-label="Copy setup key"
-                  onClick={() => onCopyTotpSecret()}
+                  onClick={() => {
+                    void (async () => {
+                      await onCopyTotpSecret();
+                    })();
+                  }}
                   size="icon-xs"
                   type="button"
                   variant="ghost"
@@ -189,7 +202,12 @@ const TwoFactorSetupDialog = ({
     );
   }
 
-  if (totpURI && showVerificationStep) {
+  if (
+    totpURI !== undefined &&
+    totpURI !== null &&
+    totpURI !== "" &&
+    showVerificationStep
+  ) {
     title = "Verify authenticator app";
     description =
       "Enter the six-digit code from your authenticator app to finish setup.";
@@ -234,7 +252,9 @@ const TwoFactorSetupDialog = ({
         <Button
           disabled={code.length !== OTP_LENGTH || verifying}
           loading={verifying}
-          onClick={() => onVerify(code)}
+          onClick={() => {
+            onVerify(code);
+          }}
           size="sm"
           type="button"
         >
@@ -260,7 +280,11 @@ const TwoFactorSetupDialog = ({
           </FramePanel>
           <FrameFooter className="flex justify-end">
             <Button
-              onClick={() => onCopyBackupCodes()}
+              onClick={() => {
+                void (async () => {
+                  await onCopyBackupCodes();
+                })();
+              }}
               size="sm"
               type="button"
               variant="ghost"
@@ -283,9 +307,9 @@ const TwoFactorSetupDialog = ({
           <Checkbox
             checked={backupCodesSaved}
             id="backup-codes-saved"
-            onCheckedChange={(checked) =>
-              onBackupCodesSavedChange(checked === true)
-            }
+            onCheckedChange={(checked) => {
+              onBackupCodesSavedChange(checked);
+            }}
           />
           <FieldLabel htmlFor="backup-codes-saved">
             I saved these recovery codes somewhere I can access if I lose my
@@ -306,7 +330,12 @@ const TwoFactorSetupDialog = ({
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogPopup
-        className={totpURI || backupCodes.length ? "max-w-2xl" : "max-w-md"}
+        className={
+          (totpURI !== undefined && totpURI !== null && totpURI !== "") ||
+          backupCodes.length
+            ? "max-w-2xl"
+            : "max-w-md"
+        }
         showCloseButton={!backupCodes.length && !verifying}
       >
         <DialogHeader>
@@ -316,7 +345,7 @@ const TwoFactorSetupDialog = ({
         <DialogPanel>
           <div className="flex flex-col gap-6">
             {panelContent}
-            {error ? (
+            {error !== undefined && error !== null && error !== "" ? (
               <p className="text-sm text-destructive" role="alert">
                 {error}
               </p>
@@ -381,12 +410,14 @@ const DisableTwoFactorDialog = ({
           <FieldLabel>Password</FieldLabel>
           <Input
             autoComplete="current-password"
-            onChange={(event) => onPasswordChange(event.target.value)}
+            onChange={(event) => {
+              onPasswordChange(event.target.value);
+            }}
             type="password"
             value={password}
           />
         </Field>
-        {error ? (
+        {error !== undefined && error !== null && error !== "" ? (
           <p className="mt-3 text-sm text-destructive" role="alert">
             {error}
           </p>
@@ -401,7 +432,9 @@ const DisableTwoFactorDialog = ({
         <Button
           disabled={!password}
           loading={disabling}
-          onClick={() => onDisable()}
+          onClick={() => {
+            onDisable();
+          }}
           size="sm"
           type="button"
           variant="destructive-outline"
@@ -444,12 +477,14 @@ const RegenerateBackupCodesDialog = ({
           <FieldLabel>Password</FieldLabel>
           <Input
             autoComplete="current-password"
-            onChange={(event) => onPasswordChange(event.target.value)}
+            onChange={(event) => {
+              onPasswordChange(event.target.value);
+            }}
             type="password"
             value={password}
           />
         </Field>
-        {error ? (
+        {error !== undefined && error !== null && error !== "" ? (
           <p className="mt-3 text-sm text-destructive" role="alert">
             {error}
           </p>
@@ -464,7 +499,9 @@ const RegenerateBackupCodesDialog = ({
         <Button
           disabled={!password}
           loading={loading}
-          onClick={() => onRegenerate()}
+          onClick={() => {
+            onRegenerate();
+          }}
           size="sm"
           type="button"
         >
@@ -522,7 +559,8 @@ export const TwoFactorSettings = ({
   }
 
   const enableMutation = useMutation({
-    mutationFn: () => client.user.enableTwoFactor({ method: "totp", password }),
+    mutationFn: async () =>
+      await client.user.enableTwoFactor({ method: "totp", password }),
     onError: (requestError) => {
       setError(
         getErrorMessage(
@@ -531,7 +569,9 @@ export const TwoFactorSettings = ({
         )
       );
     },
-    onMutate: () => setError(null),
+    onMutate: () => {
+      setError(null);
+    },
     onSuccess: (result) => {
       if (result.method !== "totp") {
         setError("Unable to start authenticator setup. Please try again.");
@@ -545,8 +585,8 @@ export const TwoFactorSettings = ({
   });
 
   const verifyMutation = useMutation({
-    mutationFn: (verificationCode: string) =>
-      client.user.verifyTotp({ code: verificationCode }),
+    mutationFn: async (verificationCode: string) =>
+      await client.user.verifyTotp({ code: verificationCode }),
     onError: (requestError) => {
       setError(
         getErrorMessage(
@@ -555,7 +595,9 @@ export const TwoFactorSettings = ({
         )
       );
     },
-    onMutate: () => setError(null),
+    onMutate: () => {
+      setError(null);
+    },
     onSettled: () => {
       verificationInProgressRef.current = false;
     },
@@ -589,7 +631,7 @@ export const TwoFactorSettings = ({
   };
 
   const disableMutation = useMutation({
-    mutationFn: () => client.user.disableTwoFactor({ password }),
+    mutationFn: async () => await client.user.disableTwoFactor({ password }),
     onError: (requestError) => {
       setError(
         getErrorMessage(
@@ -598,7 +640,9 @@ export const TwoFactorSettings = ({
         )
       );
     },
-    onMutate: () => setError(null),
+    onMutate: () => {
+      setError(null);
+    },
     onSuccess: async () => {
       setPassword("");
       toastManager.add({
@@ -654,7 +698,7 @@ export const TwoFactorSettings = ({
   };
 
   const copyTotpSecret = async () => {
-    if (!totpURI) {
+    if (!(totpURI !== undefined && totpURI !== null && totpURI !== "")) {
       return;
     }
 
@@ -683,19 +727,23 @@ export const TwoFactorSettings = ({
     link.download = "recovery-codes.txt";
     link.href = downloadURL;
     link.click();
-    setTimeout(() => URL.revokeObjectURL(downloadURL), 0);
+    setTimeout(() => {
+      URL.revokeObjectURL(downloadURL);
+    }, 0);
     toastManager.add({ title: "Recovery codes downloaded", type: "success" });
   };
 
   const regenerateMutation = useMutation({
-    mutationFn: () =>
-      client.user.generateBackupCodes({ password: regeneratePassword }),
+    mutationFn: async () =>
+      await client.user.generateBackupCodes({ password: regeneratePassword }),
     onError: (requestError) => {
       setRegenerateError(
         getErrorMessage(requestError, "Unable to regenerate recovery codes.")
       );
     },
-    onMutate: () => setRegenerateError(null),
+    onMutate: () => {
+      setRegenerateError(null);
+    },
     onSuccess: (result) => {
       setBackupCodes(result.backupCodes);
       setBackupCodesSaved(false);
@@ -762,7 +810,9 @@ export const TwoFactorSettings = ({
             {isEnabled ? (
               <>
                 <Button
-                  onClick={() => setRegenerateOpen(true)}
+                  onClick={() => {
+                    setRegenerateOpen(true);
+                  }}
                   size="sm"
                   type="button"
                   variant="outline"
@@ -770,7 +820,9 @@ export const TwoFactorSettings = ({
                   Regenerate codes
                 </Button>
                 <Button
-                  onClick={() => setDisableOpen(true)}
+                  onClick={() => {
+                    setDisableOpen(true);
+                  }}
                   size="sm"
                   type="button"
                   variant="destructive-outline"
@@ -780,7 +832,9 @@ export const TwoFactorSettings = ({
               </>
             ) : (
               <Button
-                onClick={() => setSetupOpen(true)}
+                onClick={() => {
+                  setSetupOpen(true);
+                }}
                 size="sm"
                 type="button"
               >
@@ -806,7 +860,9 @@ export const TwoFactorSettings = ({
         onCopyBackupCodes={copyBackupCodes}
         onCopyTotpSecret={copyTotpSecret}
         onDownloadBackupCodes={downloadBackupCodes}
-        onEnable={() => enableMutation.mutate()}
+        onEnable={() => {
+          enableMutation.mutate();
+        }}
         onOpenChange={handleSetupOpenChange}
         onPasswordChange={setPassword}
         onVerify={verifyCode}
@@ -817,7 +873,9 @@ export const TwoFactorSettings = ({
           setError(null);
         }}
         showVerificationStep={verificationStep}
-        onContinueToVerification={() => setVerificationStep(true)}
+        onContinueToVerification={() => {
+          setVerificationStep(true);
+        }}
         totpURI={totpURI}
         verifying={verifyMutation.isPending}
       />
@@ -825,7 +883,9 @@ export const TwoFactorSettings = ({
       <DisableTwoFactorDialog
         disabling={disableMutation.isPending}
         error={error}
-        onDisable={() => disableMutation.mutate()}
+        onDisable={() => {
+          disableMutation.mutate();
+        }}
         onOpenChange={handleDisableOpenChange}
         onPasswordChange={setPassword}
         open={disableOpen}
@@ -837,7 +897,9 @@ export const TwoFactorSettings = ({
         loading={regenerateMutation.isPending}
         onOpenChange={handleRegenerateOpenChange}
         onPasswordChange={setRegeneratePassword}
-        onRegenerate={() => regenerateMutation.mutate()}
+        onRegenerate={() => {
+          regenerateMutation.mutate();
+        }}
         open={regenerateOpen}
         password={regeneratePassword}
       />

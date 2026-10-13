@@ -1,6 +1,7 @@
 import * as v from "valibot";
 
-import type { ComponentDefinition } from "../schema/index";
+import type { ComponentDefinition } from "#schema/index";
+
 import { primitiveDefinitions, mapPrimitiveDefinitions } from "./definition";
 import type { PrimitiveName, PrimitivePropDefinition } from "./definition";
 import { resolveTheme } from "./theme";
@@ -21,10 +22,7 @@ const tokenPicklist = (tokens: Record<string, string> | undefined): Schema => {
   return v.picklist(keys);
 };
 
-const responsive = <T extends Schema>(
-  schema: T,
-  theme: TailorKitTheme
-): Schema => {
+const responsive = (schema: Schema, theme: TailorKitTheme): Schema => {
   const fields: FieldValidators = {};
   for (const key of Object.keys(theme.breakpoints ?? {})) {
     fields[key] = v.optional(schema);
@@ -32,10 +30,8 @@ const responsive = <T extends Schema>(
   return v.union([schema, v.strictObject(fields)]);
 };
 
-const optionalResponsive = <T extends Schema>(
-  schema: T,
-  theme: TailorKitTheme
-): Schema => v.optional(responsive(schema, theme));
+const optionalResponsive = (schema: Schema, theme: TailorKitTheme): Schema =>
+  v.optional(responsive(schema, theme));
 
 const propSchema = (
   definition: PrimitivePropDefinition,
@@ -57,6 +53,7 @@ const primitiveFields = (
   Object.fromEntries(
     Object.entries(primitiveDefinitions[name]).map(([propName, definition]) => [
       propName,
+      // oxlint-disable-next-line typescript/no-unsafe-argument -- Object.entries erases the schema registry value type; these definitions were created and validated by the contract builder.
       propSchema(definition, theme),
     ])
   );

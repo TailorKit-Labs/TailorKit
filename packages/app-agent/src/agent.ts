@@ -44,13 +44,12 @@ const keepSandboxAlive = async (
   sandboxName: string,
   finished: Promise<boolean>
 ) => {
-  // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
   while (
     // oxlint-disable-next-line no-await-in-loop -- Read or renew in sequence; the next operation depends on this result.
     !(await Promise.race([
       finished,
       (async () => {
-        void (await sleep("5m"));
+        await sleep("5m");
         return false;
       })(),
     ]))
@@ -136,7 +135,7 @@ export const appAgent = async ({
     let renewalError: unknown;
     const keepAlive = (async () => {
       try {
-        return await keepSandboxAlive(sandboxName, finished);
+        await keepSandboxAlive(sandboxName, finished);
       } catch (error) {
         renewalError = error;
         controller.abort();
@@ -149,10 +148,28 @@ export const appAgent = async ({
       // Finish any in-flight renewal before releasing the Drive.
       await keepAlive;
     }
-    if (renewalError) {
+    if (
+      renewalError !== undefined &&
+      renewalError !== null &&
+      renewalError !== false &&
+      renewalError !== "" &&
+      renewalError !== 0 &&
+      !Number.isNaN(renewalError) &&
+      renewalError !== 0n
+    ) {
+      // oxlint-disable-next-line typescript/only-throw-error -- Preserve the transport failure object, including its code and metadata, for the existing downstream error mapping.
       throw renewalError;
     }
-    if (result.error) {
+    if (
+      result.error !== undefined &&
+      result.error !== null &&
+      result.error !== false &&
+      result.error !== "" &&
+      result.error !== 0 &&
+      !Number.isNaN(result.error) &&
+      result.error !== 0n
+    ) {
+      // oxlint-disable-next-line typescript/only-throw-error -- Preserve the transport failure object, including its code and metadata, for the existing downstream error mapping.
       throw result.error;
     }
     return { messages: result.messages };

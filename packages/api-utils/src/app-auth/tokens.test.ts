@@ -82,8 +82,8 @@ it("rejects wrong signature, issuer, audience, app, expiry, missing claims and e
     // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     await expect(verify(token)).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   }
-  const sign = (claims: ConstructorParameters<typeof SignJWT>[0]) =>
-    new SignJWT({
+  const sign = async (claims: ConstructorParameters<typeof SignJWT>[0]) =>
+    await new SignJWT({
       ...identity,
       ...claims,
     })
@@ -157,11 +157,13 @@ it("composes signing and verification with an injected clock, including expiry",
     );
     return { access, expired, expiresAt: session.expiresAt };
   }).pipe(
-    Effect.provideService(Clock.Clock, {
-      ...clock,
-      currentTimeMillis: Effect.sync(() => now),
-      currentTimeMillisUnsafe: () => now,
-    })
+    Effect.provideService(
+      Clock.Clock,
+      Object.assign(Object.create(clock), {
+        currentTimeMillis: Effect.sync(() => now),
+        currentTimeMillisUnsafe: () => now,
+      })
+    )
   );
   const result = await Effect.runPromise(program);
   expect(result.access).toEqual({
@@ -192,12 +194,14 @@ it("rejects a token that expires while its signature is being verified", async (
   const program = appTokenVerifierEffect({ ...signing, publicKeys })(
     session.token
   ).pipe(
-    Effect.provideService(Clock.Clock, {
-      ...clock,
-      currentTimeMillis: Effect.sync(() =>
-        (reads += 1) === 1 ? session.expiresAt - 1 : session.expiresAt
-      ),
-    }),
+    Effect.provideService(
+      Clock.Clock,
+      Object.assign(Object.create(clock), {
+        currentTimeMillis: Effect.sync(() =>
+          (reads += 1) === 1 ? session.expiresAt - 1 : session.expiresAt
+        ),
+      })
+    ),
     // oxlint-disable-next-line promise/prefer-await-to-callbacks -- This is an Effect recovery operator or transport callback, not a Node-style completion callback.
     Effect.catch((error) => Effect.succeed(error.code))
   );

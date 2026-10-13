@@ -156,7 +156,7 @@ export const getRuntimeBundle = protectedRouter
   .use(
     o
       .middleware(async ({ context, next }, input: { appId: string }) => {
-        if (!context.runtimeService) {
+        if (!(context.runtimeService === true)) {
           throw new ORPCError("FORBIDDEN");
         }
 
@@ -168,7 +168,7 @@ export const getRuntimeBundle = protectedRouter
           throw new ORPCError("NOT_FOUND");
         }
 
-        return next({ context: { ...context, app } });
+        return await next({ context: { ...context, app } });
       })
       .adaptInput(({ params }) => ({ appId: params.appId }))
   )
@@ -185,7 +185,13 @@ export const getRuntimeBundle = protectedRouter
         status: "verified",
       },
     });
-    if (!file?.checksum) {
+    if (
+      !(
+        file?.checksum !== undefined &&
+        file?.checksum !== null &&
+        file?.checksum !== ""
+      )
+    ) {
       throw new ORPCError("NOT_FOUND");
     }
     return {
@@ -202,15 +208,22 @@ export const getRuntimeBundle = protectedRouter
   });
 
 /** Cache publication failures do not undo a published deployment; worker misses use the API. */
-export const publishRuntimeMetadata = (
+export const publishRuntimeMetadata = async (
   metadata: AppDeploymentMetadata,
   appPublicId: string
-) =>
-  Effect.runPromise(
+) => {
+  await Effect.runPromise(
+    // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context, effecttsgo/unknown-in-effect-catch -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
     Effect.tryPromise({
       catch: (err) => err,
       try: async () => {
-        if (!env.APP_RUNTIME_SERVICE_TOKEN) {
+        if (
+          !(
+            env.APP_RUNTIME_SERVICE_TOKEN !== undefined &&
+            env.APP_RUNTIME_SERVICE_TOKEN !== null &&
+            env.APP_RUNTIME_SERVICE_TOKEN !== ""
+          )
+        ) {
           return;
         }
         const url = new URL(
@@ -238,11 +251,11 @@ export const publishRuntimeMetadata = (
         }
       },
     }).pipe(
-      // oxlint-disable-next-line promise/prefer-await-to-callbacks -- This is an Effect recovery operator or transport callback, not a Node-style completion callback.
       catchEffect((err) =>
-        Effect.sync(() =>
-          console.error("Could not publish app runtime metadata", err)
-        )
+        Effect.sync(() => {
+          console.error("Could not publish app runtime metadata", err);
+        })
       )
     )
   );
+};

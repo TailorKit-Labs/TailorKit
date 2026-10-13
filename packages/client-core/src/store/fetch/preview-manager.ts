@@ -6,9 +6,9 @@ import type {
 import { atom, batch } from "nanostores";
 import type { WritableAtom } from "nanostores";
 
-import { createEndpointClient } from "../../client/endpoints";
-import type { TailorKitApp } from "../../types";
-import { createSnapshotStore } from "../snapshot-store";
+import { createEndpointClient } from "#client/endpoints";
+import { createSnapshotStore } from "#store/snapshot-store";
+import type { TailorKitApp } from "#types";
 
 export interface PreviewSnapshot {
   revision: number;
@@ -230,7 +230,9 @@ export const createPreviewManager = (
         }
       })();
     });
-    socket.addEventListener("error", () => socket.close());
+    socket.addEventListener("error", () => {
+      socket.close();
+    });
     socket.addEventListener("close", () => {
       if (entry.socket !== socket) {
         return;
@@ -258,7 +260,9 @@ export const createPreviewManager = (
       entries.get(sessionId)?.state.get() ?? empty,
     subscribe: (app: TailorKitApp, listener: () => void): (() => void) => {
       const sessionId = app.preview?.sessionId;
-      if (!sessionId) {
+      if (
+        !(sessionId !== undefined && sessionId !== null && sessionId !== "")
+      ) {
         return () => {
           /* Intentionally no action is needed. */
         };
@@ -301,15 +305,19 @@ export const createPreviewManager = (
     },
     updateApp: (app: TailorKitApp): void => {
       const sessionId = app.preview?.sessionId;
-      const entry = sessionId && entries.get(sessionId);
-      if (entry) {
+      const entry =
+        sessionId !== undefined &&
+        sessionId !== null &&
+        sessionId !== "" &&
+        entries.get(sessionId);
+      if (entry !== undefined && entry !== false) {
         entry.app = app;
       }
     },
   };
   return {
     ...manager,
-    getStore(getApp: () => TailorKitApp) {
+    getStore: (getApp: () => TailorKitApp) => {
       const sessionId = getApp().preview?.sessionId ?? "";
       return createSnapshotStore(
         () => manager.getSnapshot(sessionId),

@@ -37,7 +37,7 @@ export const Combobox = <
 ): React.ReactElement => {
   const chipsRef = React.useRef<Element | null>(null);
   const contextValue1 = useMemo(
-    () => ({ chipsRef, multiple: !!props.multiple }),
+    () => ({ chipsRef, multiple: props.multiple === true }),
     [chipsRef, props.multiple]
   );
   return (
@@ -122,7 +122,7 @@ export const ComboboxInput = ({
       className="relative w-full text-foreground not-has-[>*.w-full]:w-fit has-disabled:opacity-64"
       data-slot="combobox-input-group"
     >
-      {startAddon && (
+      {Boolean(startAddon) && (
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-y-0 start-px z-10 flex items-center ps-[calc(--spacing(3)-1px)] opacity-80 has-[+[data-size=sm]]:ps-[calc(--spacing(2.5)-1px)] [&_svg]:-mx-0.5 [&_svg:not([class*='size-'])]:size-4.5 sm:[&_svg:not([class*='size-'])]:size-4"
@@ -133,7 +133,7 @@ export const ComboboxInput = ({
       )}
       <ComboboxPrimitive.Input
         className={cn(
-          startAddon &&
+          Boolean(startAddon) &&
             "*:data-[slot=combobox-input]:ps-[calc(--spacing(8.5)-1px)] data-[size=sm]:*:data-[slot=combobox-input]:ps-[calc(--spacing(7.5)-1px)] sm:*:data-[slot=combobox-input]:ps-[calc(--spacing(8)-1px)] sm:data-[size=sm]:*:data-[slot=combobox-input]:ps-[calc(--spacing(7)-1px)]",
           sizeValue === "sm"
             ? "has-[+[data-slot=combobox-trigger],+[data-slot=combobox-clear]]:*:data-[slot=combobox-input]:pe-6.5"
@@ -377,10 +377,14 @@ export const ComboboxChips = ({
         className
       )}
       data-slot="combobox-chips"
-      ref={chipsRef as React.Ref<HTMLDivElement> | null}
+      ref={
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- The public generic API establishes this relationship; its runtime registry erases the type parameters. */
+        chipsRef as React.Ref<HTMLDivElement> | null
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
+      }
       {...props}
     >
-      {startAddon && (
+      {Boolean(startAddon) && (
         <div
           aria-hidden="true"
           className="flex shrink-0 items-center ps-2 opacity-80 has-[+[data-slot=combobox-chip]]:pe-2 has-[~[data-size=sm]]:ps-1.5 has-[~[data-size=sm]]:has-[+[data-slot=combobox-chip]]:pe-1.5 [&_svg]:pointer-events-none [&_svg]:-ms-0.5 [&_svg]:-me-1.5 [&_svg:not([class*='size-'])]:size-4.5 sm:[&_svg:not([class*='size-'])]:size-4"

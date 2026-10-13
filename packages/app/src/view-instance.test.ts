@@ -35,13 +35,15 @@ it("supplies instance data and context, updates data, and resets component state
         `${context.workspaceId}:${instance.key}:${JSON.stringify(instance.data)}:${initialKey}`
       );
     },
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     instances: { resolver: "compiled-resolver" } as never,
     slot: "page",
     view: "/",
   });
   const container = root();
-  const show = <TData>(key: string, data: TData) =>
-    act(() =>
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This fixture must represent malformed input so the runtime validation boundary can be tested.
+  const show = async (key: string, data: unknown) => {
+    await act(() => {
       render(
         h(view.component, {
           context: { workspaceId: "u1" },
@@ -50,17 +52,18 @@ it("supplies instance data and context, updates data, and resets component state
           view: "/",
         }),
         container
-      )
-    );
+      );
+    });
+  };
   await show("overview", { count: 1 });
   expect(container.textContent).toBe('u1:overview:{"count":1}:overview');
   await show("overview", { count: 2 });
   expect(container.textContent).toBe('u1:overview:{"count":2}:overview');
   await show("summary", null);
   expect(container.textContent).toBe("u1:summary:null:summary");
-  await act(() =>
-    render(h(view.component, { status: "loading", view: "/" }), container)
-  );
+  await act(() => {
+    render(h(view.component, { status: "loading", view: "/" }), container);
+  });
   expect(container.textContent).toBe("");
   await show("summary", { count: 3 });
   expect(container.textContent).toBe('u1:summary:{"count":3}:summary');
@@ -73,7 +76,7 @@ it("keeps ordinary views rendering without an instance", async () => {
     view: "/",
   });
   const container = root();
-  await act(() =>
+  await act(() => {
     render(
       h(view.component, {
         context: { workspaceId: "w1" },
@@ -81,8 +84,8 @@ it("keeps ordinary views rendering without an instance", async () => {
         view: "/",
       }),
       container
-    )
-  );
+    );
+  });
   expect(container.textContent).toBe("ordinary");
 });
 
@@ -90,11 +93,12 @@ it("reports missing instances and useInstance outside its view", () => {
   // SAFETY: This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input.
   const view = defineView({
     component: () => "never",
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     instances: { resolver: "compiled-resolver" } as never,
     slot: "page",
     view: "/",
   });
-  expect(() =>
+  expect(() => {
     render(
       h(view.component, {
         context: { workspaceId: "w1" },
@@ -102,13 +106,13 @@ it("reports missing instances and useInstance outside its view", () => {
         view: "/",
       }),
       root()
-    )
-  ).toThrow("requires a selected instance");
+    );
+  }).toThrow("requires a selected instance");
   const Outside = () => {
     view.useInstance();
     return null;
   };
-  expect(() => render(h(Outside, {}), root())).toThrow(
-    "View instance is only available"
-  );
+  expect(() => {
+    render(h(Outside, {}), root());
+  }).toThrow("View instance is only available");
 });

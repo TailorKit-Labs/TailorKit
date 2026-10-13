@@ -73,8 +73,8 @@ export const ToggleGroupItem = ({
   VariantProps<typeof toggleVariants>): React.ReactElement => {
   const context = React.useContext(ToggleGroupContext);
 
-  const resolvedVariant = context.variant || variant;
-  const resolvedSize = context.size || size;
+  const resolvedVariant = context.variant ?? variant;
+  const resolvedSize = context.size ?? size;
 
   return (
     <ToggleComponent

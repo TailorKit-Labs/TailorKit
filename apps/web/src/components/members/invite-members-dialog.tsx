@@ -48,12 +48,13 @@ export const InviteMembersDialog = ({
   const mutation = useMutation({
     mutationFn: async (rows: InviteRow[]) => {
       const results = await Promise.allSettled(
-        rows.map((row) =>
-          client.org.inviteMember({
-            email: row.email.trim(),
-            orgSlug,
-            role: row.role,
-          })
+        rows.map(
+          async (row) =>
+            await client.org.inviteMember({
+              email: row.email.trim(),
+              orgSlug,
+              role: row.role,
+            })
         )
       );
       const failed = results
@@ -91,7 +92,7 @@ export const InviteMembersDialog = ({
     );
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     const valid = invites.filter((row) => row.email.trim());
     if (valid.length === 0) {
@@ -135,9 +136,9 @@ export const InviteMembersDialog = ({
                       placeholder="colleague@example.com"
                       type="email"
                       value={row.email}
-                      onChange={(event) =>
-                        updateRow(index, "email", event.target.value)
-                      }
+                      onChange={(event) => {
+                        updateRow(index, "email", event.target.value);
+                      }}
                     />
                     <Select
                       value={row.role}
@@ -167,11 +168,11 @@ export const InviteMembersDialog = ({
                         size="icon-sm"
                         type="button"
                         variant="ghost"
-                        onClick={() =>
+                        onClick={() => {
                           setInvites((prev) =>
                             prev.filter((_, i) => i !== index)
-                          )
-                        }
+                          );
+                        }}
                       >
                         <TrashIcon />
                       </Button>
@@ -184,9 +185,12 @@ export const InviteMembersDialog = ({
                 size="sm"
                 type="button"
                 variant="ghost"
-                onClick={() =>
-                  setInvites((prev) => [...prev, { email: "", role: "member" }])
-                }
+                onClick={() => {
+                  setInvites((prev) => [
+                    ...prev,
+                    { email: "", role: "member" },
+                  ]);
+                }}
               >
                 <PlusIcon />
                 Add another

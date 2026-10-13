@@ -8,9 +8,8 @@ const isFunctionValue = <TValue>(
   value: TValue
 ): value is Extract<TValue, CallableFunction> => typeof value === "function";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
@@ -88,7 +87,6 @@ const shellComponent = (
     return definition as ComponentType<ShellProps>;
   }
   if (
-    definition &&
     isObjectValue(definition) &&
     "shellComponent" in definition &&
     isFunctionValue(definition.shellComponent)
@@ -123,10 +121,14 @@ export const createFileClient = (options: {
   const definitions: Record<
     string,
     Record<string, FileViewDefinition>
+    // oxlint-disable-next-line typescript/no-unsafe-assignment -- Object.create(null) is typed as any by the standard library; this empty registry is populated only through the typed assignments below.
   > = Object.create(null);
   for (const module of options.views) {
     // SAFETY: The generated module registry owns these component and view declarations; the runtime adapter preserves their exported implementations.
-    const view = module.definition as FileViewDefinition | undefined;
+    const view =
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- The generated module registry owns these component and view declarations; the runtime adapter preserves their exported implementations. */
+      module.definition as FileViewDefinition | undefined;
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
     if (
       !view ||
       !isFunctionValue(view.component) ||
@@ -144,7 +146,10 @@ export const createFileClient = (options: {
     }
     definitions[module.slot] ??= Object.create(null);
     // SAFETY: The generated module registry owns these component and view declarations; the runtime adapter preserves their exported implementations.
-    const slot = definitions[module.slot] as Record<string, FileViewDefinition>;
+    const slot = definitions[module.slot];
+    if (slot === undefined) {
+      throw new Error("Missing initialized slot registry.");
+    }
     if (Object.hasOwn(slot, view.path)) {
       throw new Error(
         `Duplicate view "${view.path}" in slot "${module.slot}" (${module.filename}).`
@@ -155,6 +160,7 @@ export const createFileClient = (options: {
   const slots: Record<
     string,
     Record<string, FileViewDefinition>
+    // oxlint-disable-next-line typescript/no-unsafe-assignment -- Object.create(null) is typed as any by the standard library; this empty registry is populated only through the typed assignments below.
   > = Object.create(null);
   for (const [slot, views] of Object.entries(definitions)) {
     const slotLayouts = layouts
@@ -216,9 +222,10 @@ export const createFileClient = (options: {
     $meta: { preactVersion: __PREACT_VERSION__ },
     $runtime: {
       h,
-      render: (vnode, parent) =>
-        render(vnode && Root ? h(Root, { children: vnode }) : vnode, parent),
+      render: (vnode, parent) => {
+        render(vnode && Root ? h(Root, { children: vnode }) : vnode, parent);
+      },
     },
-    slots: slots as TailorKitClientWithMeta["slots"],
+    slots,
   };
 };

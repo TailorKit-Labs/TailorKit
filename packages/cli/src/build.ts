@@ -24,13 +24,21 @@ export const buildProject = async (options: BuildProjectOptions) => {
   const root = path.resolve(options.cwd);
   const require = createRequire(path.join(root, "package.json"));
   // SAFETY: The module path is resolved from the app's own installed Vite package, whose public build exports match this imported module contract.
-  const { build } = (await import(
-    pathToFileURL(require.resolve("vite")).href
-  )) as typeof viteModule;
+  const { build } =
+    /* oxlint-disable typescript/no-unsafe-type-assertion -- The module path is resolved from the app's own installed Vite package, whose public build exports match this imported module contract. */
+    (await import(
+      pathToFileURL(require.resolve("vite")).href
+    )) as typeof viteModule;
+  /* oxlint-enable typescript/no-unsafe-type-assertion */
   let resolved: ResolvedConfig | undefined;
   const outputPlugin: Plugin = {
-    apply: (config) => !config.build?.ssr,
-    configResolved(config) {
+    apply: (config) =>
+      !(
+        config.build?.ssr !== undefined &&
+        config.build?.ssr !== false &&
+        config.build?.ssr !== ""
+      ),
+    configResolved: (config) => {
       if (!config.plugins.some((plugin) => plugin.name === "tailorkit")) {
         throw new Error(
           "Add tailorkit() from tailorkit/vite to your vite.config.ts before deploying."
@@ -40,8 +48,14 @@ export const buildProject = async (options: BuildProjectOptions) => {
     },
     name: "tailorkit-deployment-output",
   };
-  const buildOptions: BuildOptions = { watch: options.watch ? {} : null };
-  if (options.outDir) {
+  const buildOptions: BuildOptions = {
+    watch: options.watch === true ? {} : null,
+  };
+  if (
+    options.outDir !== undefined &&
+    options.outDir !== null &&
+    options.outDir !== ""
+  ) {
     buildOptions.outDir = options.outDir;
   }
   const result = await build({

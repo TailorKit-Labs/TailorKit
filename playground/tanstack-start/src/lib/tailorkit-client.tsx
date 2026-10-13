@@ -5,9 +5,8 @@ import { Input } from "@tailorkit/ui/input";
 import { createClient, primitives as reactPrimitives } from "tailorkit/react";
 import { z } from "zod";
 
-const isObjectValue = <TValue,>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue,>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 const callTodos = async <TSchema extends z.ZodType>(
   action: string,
@@ -20,7 +19,7 @@ const callTodos = async <TSchema extends z.ZodType>(
     headers: { "Content-Type": "application/json" },
     method: body ? "POST" : "GET",
   });
-  const result = await response.json().catch(() => null);
+  const result: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     const message =
       isObjectValue(result) && result !== null && "error" in result
@@ -47,7 +46,9 @@ export const tailor = createClient({
     Button: ({ props, children }) => <Button {...props}>{children}</Button>,
     Input: ({ props: { onValueChange, ...rest } }) => (
       <Input
-        onChange={(event) => onValueChange({ value: event.target.value })}
+        onChange={(event) => {
+          onValueChange({ value: event.target.value });
+        }}
         {...rest}
       />
     ),
@@ -56,11 +57,11 @@ export const tailor = createClient({
   theme,
   tools: {
     todos: {
-      add: ({ input }) => callTodos("add", todoSchema, input),
-      list: () => callTodos("list", z.array(todoSchema)),
-      remove: ({ input }) =>
-        callTodos("remove", z.object({ ok: z.boolean() }), input),
-      toggle: ({ input }) => callTodos("toggle", todoSchema, input),
+      add: async ({ input }) => await callTodos("add", todoSchema, input),
+      list: async () => await callTodos("list", z.array(todoSchema)),
+      remove: async ({ input }) =>
+        await callTodos("remove", z.object({ ok: z.boolean() }), input),
+      toggle: async ({ input }) => await callTodos("toggle", todoSchema, input),
     },
   },
 });

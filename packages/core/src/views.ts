@@ -1,6 +1,5 @@
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 // Each view schema owns its field values; composition only merges checked object containers.
 // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- A schema-agnostic composer cannot narrow arbitrary registered schema outputs.
 export type ViewContextValues = Record<string, unknown>;

@@ -45,9 +45,9 @@ describe("NodeStore", () => {
     const store = new NodeStore();
     store.setSnapshot(elemNode("root", "div", {}, [textNode("child", "old")]));
     const values: (RemoteNode | null)[] = [];
-    const stop = store.subscribe("child", () =>
-      values.push(store.getNode("child"))
-    );
+    const stop = store.subscribe("child", () => {
+      values.push(store.getNode("child"));
+    });
     store.setSnapshot(elemNode("root", "div"));
     expect(values).toEqual([null]);
     store.setSnapshot(elemNode("root", "div", {}, [textNode("child", "new")]));
@@ -64,8 +64,14 @@ describe("NodeStore", () => {
     });
     const nodeListener = vi.fn(snapshot);
     const rootListener = vi.fn(snapshot);
-    const stopNode = store.subscribe("root", nodeListener);
-    const stopRoot = store.subscribeRoot(rootListener);
+
+    const stopNode = store.subscribe("root", () => {
+      nodeListener();
+    });
+
+    const stopRoot = store.subscribeRoot(() => {
+      rootListener();
+    });
     store.clear();
     expect(nodeListener).toHaveBeenCalledOnce();
     expect(rootListener).toHaveBeenCalledOnce();
@@ -130,7 +136,8 @@ describe("NodeStore", () => {
       const store = new NodeStore();
       store.setSnapshot(textNode("n1", "initial"));
 
-      const listener = vi.fn();
+      const listener =
+        vi.fn<NonNullable<Parameters<typeof store.subscribe>[1]>>();
       store.subscribe("n1", listener);
 
       store.setSnapshot(textNode("n1", "updated"));
@@ -141,7 +148,8 @@ describe("NodeStore", () => {
       const store = new NodeStore();
       store.setSnapshot(textNode("n1", "same"));
 
-      const listener = vi.fn();
+      const listener =
+        vi.fn<NonNullable<Parameters<typeof store.subscribe>[1]>>();
       store.subscribe("n1", listener);
 
       store.setSnapshot(textNode("n1", "same"));
@@ -154,8 +162,8 @@ describe("NodeStore", () => {
         elemNode("root", "div", {}, [textNode("n1", "a"), textNode("n2", "b")])
       );
 
-      const n1Listener = vi.fn();
-      const n2Listener = vi.fn();
+      const n1Listener = vi.fn<Parameters<typeof store.subscribe>[1]>();
+      const n2Listener = vi.fn<Parameters<typeof store.subscribe>[1]>();
       store.subscribe("n1", n1Listener);
       store.subscribe("n2", n2Listener);
 
@@ -176,7 +184,8 @@ describe("NodeStore", () => {
         elemNode("root", "div", {}, [textNode("child", "initial")])
       );
 
-      const rootListener = vi.fn();
+      const rootListener =
+        vi.fn<NonNullable<Parameters<typeof store.subscribe>[1]>>();
       store.subscribe("root", rootListener);
 
       store.setSnapshot(
@@ -190,7 +199,7 @@ describe("NodeStore", () => {
       const store = new NodeStore();
       store.setSnapshot(elemNode("root", "div", {}, [textNode("n1", "a")]));
 
-      const rootListener = vi.fn();
+      const rootListener = vi.fn<Parameters<typeof store.subscribe>[1]>();
       store.subscribe("root", rootListener);
 
       store.setSnapshot(
@@ -204,7 +213,8 @@ describe("NodeStore", () => {
       const store = new NodeStore();
       store.setSnapshot(textNode("n1", "a"));
 
-      const listener = vi.fn();
+      const listener =
+        vi.fn<NonNullable<Parameters<typeof store.subscribe>[1]>>();
       const unsub = store.subscribe("n1", listener);
       unsub();
 
@@ -218,7 +228,8 @@ describe("NodeStore", () => {
       const store = new NodeStore();
       store.setSnapshot(textNode("root1", "a"));
 
-      const listener = vi.fn();
+      const listener =
+        vi.fn<NonNullable<Parameters<typeof store.subscribeRoot>[0]>>();
       store.subscribeRoot(listener);
 
       store.setSnapshot(textNode("root2", "b"));
@@ -229,7 +240,8 @@ describe("NodeStore", () => {
       const store = new NodeStore();
       store.setSnapshot(textNode("root", "a"));
 
-      const listener = vi.fn();
+      const listener =
+        vi.fn<NonNullable<Parameters<typeof store.subscribeRoot>[0]>>();
       store.subscribeRoot(listener);
 
       store.setSnapshot(textNode("root", "b"));
@@ -240,7 +252,8 @@ describe("NodeStore", () => {
       const store = new NodeStore();
       store.setSnapshot(textNode("root1", "a"));
 
-      const listener = vi.fn();
+      const listener =
+        vi.fn<NonNullable<Parameters<typeof store.subscribeRoot>[0]>>();
       const unsub = store.subscribeRoot(listener);
       unsub();
 
@@ -254,7 +267,8 @@ describe("NodeStore", () => {
       const store = new NodeStore();
       store.setSnapshot(elemNode("n", "div", { color: "red" }));
 
-      const listener = vi.fn();
+      const listener =
+        vi.fn<NonNullable<Parameters<typeof store.subscribe>[1]>>();
       store.subscribe("n", listener);
 
       store.setSnapshot(elemNode("n", "div", { color: "blue" }));
@@ -265,7 +279,8 @@ describe("NodeStore", () => {
       const store = new NodeStore();
       store.setSnapshot(elemNode("n", "div"));
 
-      const listener = vi.fn();
+      const listener =
+        vi.fn<NonNullable<Parameters<typeof store.subscribe>[1]>>();
       store.subscribe("n", listener);
 
       store.setSnapshot(elemNode("n", "span"));
@@ -276,7 +291,8 @@ describe("NodeStore", () => {
       const store = new NodeStore();
 
       store.setSnapshot(elementWithCallback("tailorkitcallbackonselect"));
-      const listener = vi.fn();
+      const listener =
+        vi.fn<NonNullable<Parameters<typeof store.subscribe>[1]>>();
       store.subscribe("n", listener);
 
       store.setSnapshot(elementWithCallback("tailorkitcallbackonchange"));
@@ -288,7 +304,7 @@ describe("NodeStore", () => {
       const event = "tailorkitcallbackonselect";
       store.setSnapshot(elementWithCallback(event, 1));
       const previous = store.getNode("n");
-      const listener = vi.fn();
+      const listener = vi.fn<Parameters<typeof store.subscribe>[1]>();
       const stop = store.subscribe("n", listener);
 
       store.setSnapshot(elementWithCallback(event, 2));

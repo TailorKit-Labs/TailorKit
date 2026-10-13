@@ -68,7 +68,7 @@ export const AutocompleteInput = ({
       className="relative w-full text-foreground not-has-[>*.w-full]:w-fit has-disabled:opacity-64"
       data-slot="autocomplete-input-group"
     >
-      {startAddon && (
+      {Boolean(startAddon) && (
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-y-0 start-px z-10 flex items-center ps-[calc(--spacing(3)-1px)] opacity-80 has-[+[data-size=sm]]:ps-[calc(--spacing(2.5)-1px)] [&_svg]:-mx-0.5 [&_svg:not([class*='size-'])]:size-4.5 sm:[&_svg:not([class*='size-'])]:size-4"
@@ -79,7 +79,7 @@ export const AutocompleteInput = ({
       )}
       <AutocompletePrimitive.Input
         className={cn(
-          startAddon &&
+          Boolean(startAddon) &&
             "*:data-[slot=autocomplete-input]:ps-[calc(--spacing(8.5)-1px)] data-[size=sm]:*:data-[slot=autocomplete-input]:ps-[calc(--spacing(7.5)-1px)] sm:*:data-[slot=autocomplete-input]:ps-[calc(--spacing(8)-1px)] sm:data-[size=sm]:*:data-[slot=autocomplete-input]:ps-[calc(--spacing(7)-1px)]",
           sizeValue === "sm"
             ? "has-[+[data-slot=autocomplete-trigger],+[data-slot=autocomplete-clear]]:*:data-[slot=autocomplete-input]:pe-6.5"

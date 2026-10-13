@@ -2,7 +2,7 @@ import type { TailorKitContract } from "@tailorkit/core/schema";
 import { composeViewContext, getViewHierarchy } from "@tailorkit/core/views";
 import type { ActiveView } from "@tailorkit/core/views";
 
-import type { TailorKitApp } from "../types";
+import type { TailorKitApp } from "#types";
 
 /** Select the supported view without reading or composing its context. */
 export const selectSlotView = (

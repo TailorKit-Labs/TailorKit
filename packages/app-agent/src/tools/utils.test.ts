@@ -30,8 +30,10 @@ beforeEach(() => {
   mocks.getSandbox.mockResolvedValue({ currentSession: () => session });
   mocks.runCommand.mockResolvedValue({
     exitCode: 0,
-    stderr: () => Promise.resolve(""),
-    stdout: () => Promise.resolve("ok"),
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    stderr: async () => "",
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    stdout: async () => "ok",
   });
 });
 

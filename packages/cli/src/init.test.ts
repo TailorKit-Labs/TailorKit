@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-member-access -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -22,8 +23,8 @@ vi.mock("./generator", async (importOriginal) => ({
 }));
 vi.mock("@clack/prompts", async (importOriginal) => ({
   ...(await importOriginal<typeof clackpromptsModule>()),
-  // oxlint-disable-next-line require-await -- The mock keeps the asynchronous API contract.
-  select: vi.fn(async () => "vite-plus"),
+
+  select: vi.fn<() => Promise<string>>().mockResolvedValue("vite-plus"),
   spinner: () => ({ start: vi.fn(), stop: vi.fn() }),
 }));
 
@@ -31,9 +32,9 @@ const directories: string[] = [];
 afterEach(async () => {
   vi.unstubAllGlobals();
   await Promise.all(
-    directories
-      .splice(0)
-      .map((directory) => rm(directory, { force: true, recursive: true }))
+    directories.splice(0).map(async (directory) => {
+      await rm(directory, { force: true, recursive: true });
+    })
   );
 });
 
@@ -51,21 +52,21 @@ const initOptions = async () => {
 };
 
 it("fetches the host schema and generates real bindings even when installation is skipped", async () => {
-  const fetch = vi.fn(
-    async () =>
-      await Response.json({
-        components: { Box: { callbacks: {}, children: true } },
-        slots: { sidebar: { views: ["/people"] } },
-        version: 1,
-        views: {
-          "/people": {
-            context: {
-              properties: { customer: { type: "string" } },
-              type: "object",
-            },
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  const fetch = vi.fn(async () =>
+    Response.json({
+      components: { Box: { callbacks: {}, children: true } },
+      slots: { sidebar: { views: ["/people"] } },
+      version: 1,
+      views: {
+        "/people": {
+          context: {
+            properties: { customer: { type: "string" } },
+            type: "object",
           },
         },
-      })
+      },
+    })
   );
   vi.stubGlobal("fetch", fetch);
   const directory = await runInit(await initOptions());
@@ -99,8 +100,9 @@ it("reports schema fetch failures without creating a project", async () => {
   vi.stubGlobal(
     "fetch",
     vi.fn(
+      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
       async () =>
-        await new Response("Unavailable", {
+        new Response("Unavailable", {
           status: 503,
           statusText: "Service Unavailable",
         })

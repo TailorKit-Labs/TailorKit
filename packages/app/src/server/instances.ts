@@ -1,7 +1,8 @@
 import { z } from "zod";
 
-import { AppError } from "../errors";
-import type { ViewDataFields } from "../views";
+import { AppError } from "#errors";
+import type { ViewDataFields } from "#views";
+
 import { action, defineServer, isFunction } from "./functions";
 import type { AppDefinition, Functions, Identity } from "./functions";
 
@@ -88,7 +89,7 @@ export const withInstanceResolvers = (
         context: z.record(z.string(), z.unknown()),
       }),
       functions: queries,
-      async handler({ args, identity, signal, queries: queriesValue }) {
+      handler: async ({ args, identity, signal, queries: queriesValue }) => {
         const entry = registry.get(args.slot)?.get(args.path);
         if (!entry) {
           throw new AppError("NOT_FOUND", "Instance resolver not found");

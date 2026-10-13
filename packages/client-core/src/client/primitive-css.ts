@@ -9,9 +9,8 @@ const isFunctionValue = <TValue>(
 const isNumberValue = <TValue>(value: TValue): value is TValue & number =>
   typeof value === "number";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 type PrimitiveValue = number | string;
 
@@ -57,13 +56,14 @@ const toResponsiveEntries = (
   if (isPrimitiveValue(value)) {
     return [["base", value]];
   }
-  if (!value || !isObjectValue(value) || Array.isArray(value)) {
+  if (!isObjectValue(value) || Array.isArray(value)) {
     return [];
   }
-  return Object.entries(value).flatMap(([breakpoint, entry]) =>
-    isPrimitiveValue(entry)
-      ? [[breakpoint, entry] satisfies [string, PrimitiveValue]]
-      : []
+  return Object.entries(value).flatMap(
+    ([breakpoint, entry]: [string, unknown]) =>
+      isPrimitiveValue(entry)
+        ? [[breakpoint, entry] satisfies [string, PrimitiveValue]]
+        : []
   );
 };
 
@@ -193,7 +193,7 @@ export const buildPrimitiveCss = ({
   const rules = [`${selector} { ${base.join(" ")} }`];
   for (const [breakpoint, declarations] of byBreakpoint) {
     const minWidth = theme.breakpoints?.[breakpoint];
-    if (!minWidth) {
+    if (!(minWidth !== undefined && minWidth !== null && minWidth !== "")) {
       continue;
     }
     rules.push(

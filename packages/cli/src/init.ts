@@ -186,8 +186,12 @@ const promptForce = async (
   );
 };
 
-const exec = (cmd: string, args: string[], cwd: string): Promise<number> =>
-  (() => {
+const exec = async (
+  cmd: string,
+  args: string[],
+  cwd: string
+): Promise<number> =>
+  await (async () => {
     const {
       promise: pendingPromise,
       resolve,
@@ -200,7 +204,7 @@ const exec = (cmd: string, args: string[], cwd: string): Promise<number> =>
     } catch (error) {
       reject(error);
     }
-    return pendingPromise;
+    return await pendingPromise;
   })();
 
 const runInstall = async (

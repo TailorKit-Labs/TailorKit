@@ -1,5 +1,6 @@
+/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-argument, typescript/no-unsafe-call, typescript/no-unsafe-return, typescript/no-unsafe-member-access -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 // Disposable local workerd/R2 test. No Cloudflare account or deployed resources are used.
-/* eslint-disable unicorn/no-await-expression-member, no-restricted-properties */
+/* eslint-disable unicorn/no-await-expression-member */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdtemp, rm, readFile, writeFile, readdir } from "node:fs/promises";
@@ -19,6 +20,11 @@ import { it } from "vite-plus/test";
 
 import { createTestBackend } from "./backend";
 
+/** @typedef {NonNullable<import("wrangler").unstable_DevEnv["runtimes"][number]["mf"]>} LocalMiniflare */
+/** @typedef {{ Miniflare: new(options: Record<string, unknown>) => LocalMiniflare, convertV4MiniflareOptions: (options: Record<string, unknown>) => Record<string, unknown> }} WranglerRuntimeModule */
+/** @typedef {{id: string, text: string, priority?: number}} Todo */
+/** @typedef {{appId: string, projectId: string, deploymentId: string, objectKey: string, checksum: string, contentLength: number, contentEncoding?: string}} PublishedDeployment */
+/** @param {number} version Fixture backend version. */
 const bundleImplementation = (version) =>
   `import { env } from "cloudflare:workers";
 let globals = 0;
@@ -37,9 +43,11 @@ export default { functions: { probe: {
 it("runs isolated app backends with persistent SQLite and two-client realtime updates", async () => {
   // Exercise precisely the workerd/Miniflare version bundled with this project's Wrangler.
   const require = createRequire(import.meta.url);
-  const { Miniflare, convertV4MiniflareOptions } = createRequire(
-    require.resolve("wrangler")
-  )("miniflare");
+  /** @type {WranglerRuntimeModule} */
+  const wranglerRuntime = createRequire(require.resolve("wrangler"))(
+    "miniflare"
+  );
+  const { Miniflare, convertV4MiniflareOptions } = wranglerRuntime;
 
   const state = await mkdtemp(path.join(tmpdir(), "tailorkit-apps-worker-"));
 
@@ -68,10 +76,14 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
   const publicTeamId = "abc123def45678";
   const appPublicId = "app000000001";
   const rpcUrl = `https://${publicTeamId}.tailorkit.app/p/${projectId}/a/${appPublicId}/rpc`;
+  /** @type {PublishedDeployment} */
   let published;
+  /** @type {Set<string>} */
   const appTokens = new Set();
   let externalCalls = 0;
+  /** @type {() => void} */
   let releaseExternal;
+  /** @type {Promise<void> | undefined} */
   let pendingExternal;
   let metadataReads = 0;
 
@@ -96,6 +108,8 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
     ],
     modulesRoot: dist,
     name: "tailorkit-runtime-test",
+    /** @param {Request} request Outbound request made by the isolated worker. */
+    // oxlint-disable-next-line eslint/complexity -- Keep this validation or rendering lifecycle together: its guards share the same state, cleanup, and error handling.
     outboundService: async (request) => {
       if (request.url === "https://host.test/api/tailorkit/tools/execute") {
         const { path: toolPath, input, requestId } = await request.json();
@@ -120,18 +134,42 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
         });
       }
 
-      if (request.url.startsWith("https://third-party.test/")) {
+      if (
+        request.url.startsWith("https://third-party.test/") !== undefined &&
+        request.url.startsWith("https://third-party.test/") !== null &&
+        request.url.startsWith("https://third-party.test/") &&
+        request.url.startsWith("https://third-party.test/") !== "" &&
+        request.url.startsWith("https://third-party.test/") !== 0 &&
+        !Number.isNaN(request.url.startsWith("https://third-party.test/")) &&
+        request.url.startsWith("https://third-party.test/") !== 0n
+      ) {
         externalCalls += 1;
         assert.equal(request.headers.get("authorization"), null);
 
-        if (request.url.endsWith("/redirect")) {
+        if (
+          request.url.endsWith("/redirect") !== undefined &&
+          request.url.endsWith("/redirect") !== null &&
+          request.url.endsWith("/redirect") &&
+          request.url.endsWith("/redirect") !== "" &&
+          request.url.endsWith("/redirect") !== 0 &&
+          !Number.isNaN(request.url.endsWith("/redirect")) &&
+          request.url.endsWith("/redirect") !== 0n
+        ) {
           return new Response(null, {
             headers: { location: "https://127.0.0.1/private" },
             status: 302,
           });
         }
 
-        if (request.url.endsWith("/slow")) {
+        if (
+          request.url.endsWith("/slow") !== undefined &&
+          request.url.endsWith("/slow") !== null &&
+          request.url.endsWith("/slow") &&
+          request.url.endsWith("/slow") !== "" &&
+          request.url.endsWith("/slow") !== 0 &&
+          !Number.isNaN(request.url.endsWith("/slow")) &&
+          request.url.endsWith("/slow") !== 0n
+        ) {
           await pendingExternal;
         }
 
@@ -154,10 +192,12 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
     workerLoaders: { LOADER: {} },
   };
 
+  /** @type {LocalMiniflare} */
   let mf;
 
   const bundle = bundleImplementation;
 
+  /** @param {number} version Fixture deployment to publish. */
   const publish = async (version) => {
     const code = bundle(version);
     const objectKey = `teams/${publicTeamId}/projects/${projectId}/apps/${appPublicId}/deployments/deploy00000${version}/server/server.js`;
@@ -220,7 +260,7 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
       toolUrl: "https://host.test/api/tailorkit/tools/execute",
       ...overrides,
     });
-    return mf.dispatchFetch(
+    return await mf.dispatchFetch(
       `${rpcUrl.replace(projectId, overrides.projectId ?? projectId)}/${endpoint}`,
       {
         body: JSON.stringify({ json: input }),
@@ -285,7 +325,7 @@ export const migrations = ${JSON.stringify(history)};`;
         build: {
           minify: true,
           outDir: path.join(state, "fixture"),
-          rollupOptions: {
+          rolldownOptions: {
             external: ["cloudflare:workers"],
             output: { entryFileNames: "server.js" },
           },
@@ -354,6 +394,7 @@ export const migrations = ${JSON.stringify(history)};`;
           socket.accept();
           return socket;
         },
+        // oxlint-disable-next-line typescript/promise-function-async, typescript/no-base-to-string -- This fixture returns the original deferred or runtime Promise and installs its resolver synchronously. The fixture sends string URLs and serialized JSON bodies; this assertion inspects those controlled wire values through the broader fetch signature.
         fetch: (url, init) => mf.dispatchFetch(String(url), init),
         getSession: async () => {
           renewals += 1;
@@ -380,26 +421,50 @@ export const migrations = ${JSON.stringify(history)};`;
 
     const first = makeClient();
     const second = makeClient();
+    /** @type {import("@tailorkit/app/client").Reference<"query", undefined, Todo[]>} */
     const list = reference("list", "query");
+    /** @type {import("@tailorkit/app/client").Reference<"mutation", {text: string}, Todo>} */
     const add = reference("add", "mutation");
+    /** @type {Todo[][][]} */
     const snapshots = [[], []];
+    /** @type {unknown[]} */
     const errors = [];
     const stops = [first, second].map((client, index) =>
-      client.subscribe(list, undefined, (rows) => snapshots[index].push(rows), {
-        onError: (err) => errors.push(err),
-      })
+      client.subscribe(
+        list,
+        undefined,
+        (rows) => {
+          snapshots[index].push(rows);
+        },
+        {
+          onError: (err) => {
+            errors.push(err);
+          },
+        }
+      )
     );
 
+    /** @param {() => boolean} predicate Completion condition. @param {string} label Failure context. */
     const wait = async (predicate, label) => {
       const until = Date.now() + 15_000;
-      while (!predicate()) {
+      while (
+        !(
+          predicate() !== undefined &&
+          predicate() !== null &&
+          predicate() &&
+          predicate() !== "" &&
+          predicate() !== 0 &&
+          !Number.isNaN(predicate()) &&
+          predicate() !== 0n
+        )
+      ) {
         if (Date.now() > until) {
           throw new Error(
             `Timeout: ${label}: ${JSON.stringify(errors.slice(-3))}`
           );
         }
         // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-        await (() => {
+        await (async () => {
           const {
             promise: pendingPromise,
             resolve,
@@ -410,14 +475,14 @@ export const migrations = ${JSON.stringify(history)};`;
           } catch (error) {
             rejectPending(error);
           }
-          return pendingPromise;
+          return await pendingPromise;
         })();
       }
     };
 
     try {
       await wait(
-        () => snapshots.every((rows) => rows.length),
+        () => snapshots.every((rows) => rows.length > 0),
         "initial query snapshots"
       );
       assert.deepEqual(await first.query(list), await second.query(list));
@@ -457,7 +522,7 @@ export const migrations = ${JSON.stringify(history)};`;
       assert.equal(errors.length, 0);
 
       {
-        pendingExternal = (() => {
+        pendingExternal = (async () => {
           const {
             promise: pendingPromise,
             resolve,
@@ -468,7 +533,7 @@ export const migrations = ${JSON.stringify(history)};`;
           } catch (error) {
             rejectPending(error);
           }
-          return pendingPromise;
+          return await pendingPromise;
         })();
         const oldCalls = externalCalls;
         const action = first.action(reference("importTodo", "action"), {
@@ -627,16 +692,20 @@ export const migrations = ${JSON.stringify(history)};`;
     const stopLive = live.subscribe(
       list,
       undefined,
-      (rows) => liveSnapshots.push(rows),
+      (rows) => {
+        liveSnapshots.push(rows);
+      },
       {
-        onError: (err2) => errors.push(err2),
+        onError: (err2) => {
+          errors.push(err2);
+        },
       }
     );
     await wait(
       () => liveSnapshots.length === 1,
       "subscription before deployment change"
     );
-    pendingExternal = (() => {
+    pendingExternal = (async () => {
       const {
         promise: pendingPromise,
         resolve,
@@ -647,7 +716,7 @@ export const migrations = ${JSON.stringify(history)};`;
       } catch (error) {
         rejectPending(error);
       }
-      return pendingPromise;
+      return await pendingPromise;
     })();
     const beforeUpgradeCalls = externalCalls;
     const oldAction = live.action(reference("importTodo", "action"), {
@@ -701,7 +770,7 @@ export const migrations = ${JSON.stringify(history)};`;
       assert.equal((await upgraded.query(list)).length, 5);
       const rows = await upgraded.query(reference("migrationProbe", "query"));
       assert.equal(rows.length, 5);
-      assert.ok(rows.every((row) => row.priority === 0));
+      assert.ok(Boolean(rows.every((row) => row.priority === 0)));
     } finally {
       upgraded.close();
     }
@@ -751,8 +820,10 @@ export const migrations = ${JSON.stringify(history)};`;
     try {
       assert.equal((await retried.query(list)).length, 5);
       assert.ok(
-        (await retried.query(reference("migrationProbe", "query"))).every(
-          (row) => row.priority === 0
+        Boolean(
+          (await retried.query(reference("migrationProbe", "query"))).every(
+            (row) => row.priority === 0
+          )
         )
       );
       assert.deepEqual(

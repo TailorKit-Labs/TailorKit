@@ -75,7 +75,9 @@ const IssuesPage = () => {
             <Input
               aria-label="Issue title"
               maxLength={160}
-              onChange={(event) => setTitle(event.target.value)}
+              onChange={(event) => {
+                setTitle(event.target.value);
+              }}
               placeholder="What needs to be done?"
               value={title}
             />
@@ -88,7 +90,9 @@ const IssuesPage = () => {
               Create issue
             </Button>
           </form>
-          {operationError ? (
+          {operationError !== undefined &&
+          operationError !== null &&
+          operationError !== "" ? (
             <p className="mt-3 text-sm text-destructive" role="alert">
               {operationError}
             </p>
@@ -143,5 +147,5 @@ const IssuesPage = () => {
 
 export const Route = createFileRoute("/issues/")({
   component: IssuesPage,
-  loader: () => loadIssues(),
+  loader: async () => await loadIssues(),
 });

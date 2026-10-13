@@ -1,8 +1,7 @@
 import type { TailorKitScopes } from "./types";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
@@ -25,8 +24,14 @@ export const handleBackendSession = async (
   const origin = request.headers.get("origin");
   if (
     request.method !== "POST" ||
-    !request.headers.get("content-type")?.startsWith("application/json") ||
-    (origin && origin !== publicOrigin)
+    !(
+      request.headers.get("content-type")?.startsWith("application/json") ===
+      true
+    ) ||
+    (origin !== undefined &&
+      origin !== null &&
+      origin !== "" &&
+      origin !== publicOrigin)
   ) {
     return new Response("Invalid request", { headers, status: 400 });
   }
@@ -66,7 +71,6 @@ export const handleBackendSession = async (
     return new Response("Invalid JSON", { headers, status: 400 });
   }
   if (
-    !input ||
     !isObjectValue(input) ||
     !("appId" in input) ||
     !isStringValue(input.appId) ||

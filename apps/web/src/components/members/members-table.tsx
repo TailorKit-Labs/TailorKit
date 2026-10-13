@@ -57,9 +57,7 @@ const createMemberColumns = ({
 }: MemberColumnsOptions): ColumnDef<typeof dataTableFeatures, MemberRow>[] => [
   {
     accessorKey: "name",
-    cell: ({
-      row,
-    }: CellContext<typeof dataTableFeatures, MemberRow, unknown>) => {
+    cell: ({ row }: CellContext<typeof dataTableFeatures, MemberRow>) => {
       const initials = row.original.name
         .split(" ")
         .map((word: string) => word[0])
@@ -92,9 +90,7 @@ const createMemberColumns = ({
   },
   {
     accessorKey: "role",
-    cell: ({
-      row,
-    }: CellContext<typeof dataTableFeatures, MemberRow, unknown>) => (
+    cell: ({ row }: CellContext<typeof dataTableFeatures, MemberRow>) => (
       <Badge variant={getRoleBadgeVariant(row.original.role)} size="lg">
         {row.original.role.charAt(0).toUpperCase() + row.original.role.slice(1)}
       </Badge>
@@ -104,9 +100,7 @@ const createMemberColumns = ({
   },
   {
     accessorKey: "createdAt",
-    cell: ({
-      row,
-    }: CellContext<typeof dataTableFeatures, MemberRow, unknown>) => (
+    cell: ({ row }: CellContext<typeof dataTableFeatures, MemberRow>) => (
       <DateAgo date={row.original.createdAt} />
     ),
     header: "Last Active",
@@ -114,9 +108,7 @@ const createMemberColumns = ({
     sortFn: "datetime",
   },
   {
-    cell: ({
-      row,
-    }: CellContext<typeof dataTableFeatures, MemberRow, unknown>) => (
+    cell: ({ row }: CellContext<typeof dataTableFeatures, MemberRow>) => (
       <div className="flex items-center justify-end gap-1">
         {canManage && !row.original.isCurrentUser && !row.original.isOwner && (
           <DropdownMenu>
@@ -130,7 +122,9 @@ const createMemberColumns = ({
               <DropdownMenuItem
                 disabled={removePending}
                 variant="destructive"
-                onClick={() => onRemove(row.original.id)}
+                onClick={() => {
+                  onRemove(row.original.id);
+                }}
               >
                 <TrashIcon />
                 Remove member

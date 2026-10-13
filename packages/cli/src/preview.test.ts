@@ -12,10 +12,14 @@ import {
   uploadPreviewSnapshot,
 } from "./preview";
 
+const emptyPreviewEvents = async function* emptyPreviewEvents() {};
+
 const dirs: string[] = [];
 afterEach(async () => {
   await Promise.all(
-    dirs.splice(0).map((dir) => rm(dir, { force: true, recursive: true }))
+    dirs.splice(0).map(async (dir) => {
+      await rm(dir, { force: true, recursive: true });
+    })
   );
 });
 
@@ -25,8 +29,11 @@ it("discards a stale snapshot that finishes after a later rebuild", async () => 
   const published: string[] = [];
   let attempts = 0;
   const capture = createLatestPreviewCapture(
-    () => ((attempts += 1) === 1 ? older.promise : newer.promise),
-    (snapshot) => published.push(snapshot),
+    async () =>
+      (attempts += 1) === 1 ? await older.promise : await newer.promise,
+    (snapshot) => {
+      published.push(snapshot);
+    },
     () => {}
   );
 
@@ -60,72 +67,75 @@ it("uploads a build larger than 4.5 MiB in sequential bounded messages", async (
   let largestUploadMessage = 0;
   let largestViewerMessage = 0;
   // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-  // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-  const client = {
-    beginBuild: vi.fn(async (input: { manifest: unknown }) => {
-      calls.push("begin");
-      expect(
-        Buffer.byteLength(
-          JSON.stringify({ id: 1, method: "beginBuild", params: input })
-        )
-      ).toBeLessThan(512 * 1024);
-      return { buildId: "build" };
-    }),
-    commitBuild: vi.fn(async () => {
-      calls.push("commit");
-      return { revision: 1 };
-    }),
-    uploadChunk: vi.fn(
-      async (input: {
-        base64: string;
-        fileIndex: number;
-        chunkIndex: number;
-      }) => {
-        expect(awaitingAck).toBe(false);
-        awaitingAck = true;
-        calls.push("chunk");
-        largestUploadMessage = Math.max(
-          largestUploadMessage,
+
+  const client =
+    /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
+    {
+      beginBuild: vi.fn(async (input: { manifest: unknown }) => {
+        calls.push("begin");
+        expect(
           Buffer.byteLength(
-            JSON.stringify({ id: 1, method: "uploadChunk", params: input })
+            JSON.stringify({ id: 1, method: "beginBuild", params: input })
           )
-        );
-        largestViewerMessage = Math.max(
-          largestViewerMessage,
-          Buffer.byteLength(
-            JSON.stringify({
-              event: {
-                base64: input.base64,
-                chunkIndex: input.chunkIndex,
-                fileIndex: input.fileIndex,
-                revision: 1,
-                type: "chunk",
-              },
-              id: 1,
-            })
-          )
-        );
-        expect(Buffer.from(input.base64, "base64").length).toBeLessThanOrEqual(
-          256 * 1024
-        );
-        await (() => {
-          const {
-            promise: pendingPromise,
-            resolve,
-            reject: rejectPending,
-          } = Promise.withResolvers();
-          try {
-            setTimeout(resolve, 0);
-          } catch (error) {
-            rejectPending(error);
-          }
-          return pendingPromise;
-        })();
-        awaitingAck = false;
-        return { accepted: true as const };
-      }
-    ),
-  } as unknown as PreviewWebSocketClient;
+        ).toBeLessThan(512 * 1024);
+        return { buildId: "build" };
+      }),
+      commitBuild: vi.fn(async () => {
+        calls.push("commit");
+        return { revision: 1 };
+      }),
+      uploadChunk: vi.fn(
+        async (input: {
+          base64: string;
+          fileIndex: number;
+          chunkIndex: number;
+        }) => {
+          expect(awaitingAck).toBe(false);
+          awaitingAck = true;
+          calls.push("chunk");
+          largestUploadMessage = Math.max(
+            largestUploadMessage,
+            Buffer.byteLength(
+              JSON.stringify({ id: 1, method: "uploadChunk", params: input })
+            )
+          );
+          largestViewerMessage = Math.max(
+            largestViewerMessage,
+            Buffer.byteLength(
+              JSON.stringify({
+                event: {
+                  base64: input.base64,
+                  chunkIndex: input.chunkIndex,
+                  fileIndex: input.fileIndex,
+                  revision: 1,
+                  type: "chunk",
+                },
+                id: 1,
+              })
+            )
+          );
+          expect(
+            Buffer.from(input.base64, "base64").length
+          ).toBeLessThanOrEqual(256 * 1024);
+          await (async () => {
+            const {
+              promise: pendingPromise,
+              resolve,
+              reject: rejectPending,
+            } = Promise.withResolvers();
+            try {
+              setTimeout(resolve, 0);
+            } catch (error) {
+              rejectPending(error);
+            }
+            return await pendingPromise;
+          })();
+          awaitingAck = false;
+          return { accepted: true as const };
+        }
+      ),
+    } as unknown as PreviewWebSocketClient;
+  /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
   await uploadPreviewSnapshot(client, snapshot);
   expect(calls[0]).toBe("begin");
   expect(calls.at(-1)).toBe("commit");
@@ -158,8 +168,8 @@ it("chunks exact boundaries and the largest allowed aggregate build", async () =
     beginBuild: async () => ({ buildId: "build" }),
     commitBuild: async () => ({ revision: 1 }),
     heartbeat: async () => ({ accepted: true as const }),
-    // oxlint-disable-next-line unicorn/consistent-function-scoping -- Keep the generator or mutable callback with its owning test or cancellation lifecycle.
-    subscribe: async () => (async function* empty() {})(),
+
+    subscribe: async () => emptyPreviewEvents(),
     uploadChunk: async (input: {
       fileIndex: number;
       chunkIndex: number;

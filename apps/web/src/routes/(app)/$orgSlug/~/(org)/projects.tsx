@@ -20,7 +20,7 @@ import {
 } from "@tailorkit/ui/empty";
 import { useAppForm } from "@tailorkit/ui/form";
 import { toastManager } from "@tailorkit/ui/toast";
-import { useStore } from "@tanstack/react-form";
+import { useSelector } from "@tanstack/react-form";
 import {
   useMutation,
   useQueryClient,
@@ -100,8 +100,8 @@ const CreateProjectDialog = ({
   const slugTouched = useRef(false);
 
   const createMutation = useMutation({
-    mutationFn: (input: { name: string; slug: string }) =>
-      client.project.create({
+    mutationFn: async (input: { name: string; slug: string }) =>
+      await client.project.create({
         name: input.name.trim(),
         orgSlug,
         slug: input.slug,
@@ -112,14 +112,14 @@ const CreateProjectDialog = ({
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: (project) => {
-      queryClient.invalidateQueries(
+      void queryClient.invalidateQueries(
         orpc.project.list.queryOptions({ input: { orgSlug } })
       );
       setProjectApiKey(orgSlug, project.slug, project.apiKey.key);
-      // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
+
       form.reset();
       slugTouched.current = false;
-      navigate({
+      void navigate({
         params: { orgSlug, projectSlug: project.slug },
         to: "/$orgSlug/$projectSlug/apps",
       });
@@ -155,7 +155,7 @@ const CreateProjectDialog = ({
     validators: { onSubmit: projectSchema },
   });
 
-  const slug = useStore(form.store, (state) => state.values.slug);
+  const slug = useSelector(form.store, (state) => state.values.slug);
   const slugAvailability = getProjectSlugAvailability(
     slug,
     existingProjectSlugs
@@ -168,7 +168,13 @@ const CreateProjectDialog = ({
   };
 
   return (
-    <Dialog onOpenChange={(open) => !open && resetForm()}>
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) {
+          resetForm();
+        }
+      }}
+    >
       <DialogTrigger render={<span />}>{children}</DialogTrigger>
       <DialogPopup className="max-w-md">
         <DialogHeader>
@@ -184,7 +190,7 @@ const CreateProjectDialog = ({
           onSubmit={(event) => {
             event.preventDefault();
             event.stopPropagation();
-            form.handleSubmit();
+            void form.handleSubmit();
           }}
         >
           <DialogPanel>
@@ -320,8 +326,8 @@ const ProjectsPage = () => {
 
 export const Route = createFileRoute("/(app)/$orgSlug/~/(org)/projects")({
   component: ProjectsPage,
-  loader: ({ context, params }) =>
-    context.queryClient.query(
+  loader: async ({ context, params }) =>
+    await context.queryClient.query(
       context.orpc.project.list.queryOptions({
         input: { orgSlug: params.orgSlug },
       })

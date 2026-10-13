@@ -12,9 +12,8 @@ const isBooleanValue = <TValue>(value: TValue): value is TValue & boolean =>
 const isNumberValue = <TValue>(value: TValue): value is TValue & number =>
   typeof value === "number";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 export {
   type JsonObject,
@@ -54,8 +53,9 @@ const isPlainRecord = (value: unknown): value is object => {
   return true;
 };
 
-const validateOwnDataProperties = <TRecord extends object>(
-  value: TRecord,
+const validateOwnDataProperties = (
+  // oxlint-disable-next-line anti-slop/no-object-parameters -- This structural adapter enumerates caller-owned fields; a concrete domain shape would exclude supported schema or attribute objects.
+  value: object,
   keys: readonly PropertyKey[]
 ) => {
   for (const key of keys) {
@@ -63,7 +63,11 @@ const validateOwnDataProperties = <TRecord extends object>(
       throw new TypeError("Scope values cannot contain symbol keys.");
     }
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
-    if (!descriptor || !("value" in descriptor) || !descriptor.enumerable) {
+    if (
+      !descriptor ||
+      !("value" in descriptor) ||
+      !(descriptor.enumerable === true)
+    ) {
       throw new TypeError(
         "Scope values must use enumerable own data properties."
       );
@@ -134,7 +138,11 @@ const canonicalizeJsonValue = (
     const canonical: JsonValue[] = [];
     for (let index = 0; index < value.length; index += 1) {
       const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
-      if (!descriptor || !("value" in descriptor) || !descriptor.enumerable) {
+      if (
+        !descriptor ||
+        !("value" in descriptor) ||
+        !(descriptor.enumerable === true)
+      ) {
         throw new TypeError(
           "Scope arrays must be dense and cannot contain accessors."
         );
@@ -163,6 +171,7 @@ const canonicalizeJsonValue = (
       throw new TypeError("Scope object keys must contain 1–64 characters.");
     }
   }
+  // oxlint-disable-next-line typescript/no-unsafe-assignment -- Object.create(null) is typed as any by the standard library; this empty registry is populated only through the typed assignments below.
   const canonical: Record<string, JsonValue> = Object.create(null);
   for (const key of keys.toSorted()) {
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
@@ -197,7 +206,11 @@ const serializeJsonValue = (value: JsonValue): string => {
     .map(
       // SAFETY: Object.keys enumerates own entries of this canonical JsonObject, whose values cannot be undefined.
       (key) =>
-        `${JSON.stringify(key)}:${serializeJsonValue(value[key] as JsonValue)}`
+        `${JSON.stringify(key)}:${serializeJsonValue(
+          /* oxlint-disable typescript/no-unsafe-type-assertion -- Object.keys enumerates own entries of this canonical JsonObject, whose values cannot be undefined. */
+          value[key] as JsonValue
+          /* oxlint-enable typescript/no-unsafe-type-assertion */
+        )}`
     )
     .join(",")}}`;
 };
@@ -212,7 +225,8 @@ const canonicalizeScopeValue = (value: unknown): JsonObject => {
   if (
     Array.isArray(canonicalValue) ||
     canonicalValue === null ||
-    !isObjectValue(canonicalValue)
+    // oxlint-disable-next-line anti-slop/no-runtime-typeof -- Narrow the closed canonical JSON union to its object member.
+    typeof canonicalValue !== "object"
   ) {
     throw new TypeError("Named scope value must be a plain object.");
   }
@@ -251,7 +265,7 @@ export const canonicalizeScope = (value: unknown): CanonicalScope => {
       "Named scope must contain only name and value properties."
     );
   }
-  const name = Object.getOwnPropertyDescriptor(value, "name")?.value;
+  const name: unknown = Object.getOwnPropertyDescriptor(value, "name")?.value;
   if (!isStringValue(name) || !/^[A-Za-z][A-Za-z0-9_-]{0,63}$/u.test(name)) {
     throw new TypeError(
       "Scope name must be 1–64 letters, digits, underscores, or hyphens and start with a letter."
@@ -260,6 +274,7 @@ export const canonicalizeScope = (value: unknown): CanonicalScope => {
   const valueScope = canonicalizeScopeValue(
     Object.getOwnPropertyDescriptor(value, "value")?.value
   );
+  // oxlint-disable-next-line typescript/no-unsafe-assignment -- Object.create(null) is typed as any by the standard library; this empty registry is populated only through the typed assignments below.
   const scope: Scope = Object.assign(Object.create(null), {
     name,
     value: valueScope,

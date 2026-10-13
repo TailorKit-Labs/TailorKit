@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-argument -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -31,10 +32,12 @@ it.each([undefined, "{", '{"version":2,"components":{}}'])(
       }
       expect(failure).toBeInstanceOf(Error);
       // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
       const error = failure as Error;
       expect(error.cause).toBeInstanceOf(Error);
       // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
       expect(error.message).toBe(
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
         `Unable to read TailorKit schema from ${schemaPath}: ${(error.cause as Error).message}`
       );
     } finally {
@@ -49,8 +52,9 @@ it("links the app to the configured server entry and never falls back to an unre
   );
   const fetch = vi
     .spyOn(globalThis, "fetch")
-    .mockImplementation(() =>
-      Promise.resolve(Response.json({ components: {}, version: 1, views: {} }))
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    .mockImplementation(async () =>
+      Response.json({ components: {}, version: 1, views: {} })
     );
   try {
     await mkdir(path.join(root, "backend"));
@@ -91,8 +95,9 @@ it("preserves the type-only API link when regenerating host types, including cus
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-host-types-"));
   const fetch = vi
     .spyOn(globalThis, "fetch")
-    .mockImplementation(() =>
-      Promise.resolve(Response.json({ components: {}, version: 1, views: {} }))
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    .mockImplementation(async () =>
+      Response.json({ components: {}, version: 1, views: {} })
     );
   try {
     await mkdir(path.join(root, "src"));
@@ -130,8 +135,9 @@ it("detects the default server file without server configuration and removes sta
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-detect-server-"));
   const fetch = vi
     .spyOn(globalThis, "fetch")
-    .mockImplementation(() =>
-      Promise.resolve(Response.json({ components: {}, version: 1, views: {} }))
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    .mockImplementation(async () =>
+      Response.json({ components: {}, version: 1, views: {} })
     );
   try {
     await writeFile(

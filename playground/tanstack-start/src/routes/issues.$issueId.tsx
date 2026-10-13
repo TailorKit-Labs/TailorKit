@@ -64,7 +64,14 @@ const IssueDetailPage = () => {
         <p className="text-sm text-muted-foreground">
           Created by {creatorName}
         </p>
-        <Button onClick={() => advanceStatus()} variant="outline">
+        <Button
+          onClick={() => {
+            void (async () => {
+              await advanceStatus();
+            })();
+          }}
+          variant="outline"
+        >
           {issue.status === "Done" ? (
             <CircleDot aria-hidden="true" />
           ) : (
@@ -79,5 +86,6 @@ const IssueDetailPage = () => {
 
 export const Route = createFileRoute("/issues/$issueId")({
   component: IssueDetailPage,
-  loader: ({ params }) => loadIssue({ data: { issueId: params.issueId } }),
+  loader: async ({ params }) =>
+    await loadIssue({ data: { issueId: params.issueId } }),
 });

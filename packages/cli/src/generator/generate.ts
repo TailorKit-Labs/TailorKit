@@ -3,6 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { Liquid } from "liquidjs";
+import { z } from "zod";
 
 import { TEMPLATE_DRIZZLE_VERSION } from "./package-versions";
 import {
@@ -78,16 +79,21 @@ const getViewModulePath = (slotName: string, viewPath: string) => {
   return ["slots", slotName, routeName].join("/");
 };
 
-const renderTemplate = <TData extends object>(
+const renderTemplate = async (
   template: string,
-  data: TData
-): Promise<string> => engine.parseAndRender(template, data);
+  // oxlint-disable-next-line anti-slop/no-object-parameters -- This structural adapter enumerates caller-owned fields; a concrete domain shape would exclude supported schema or attribute objects.
+  data: object
+): Promise<string> => {
+  const output: unknown = await engine.parseAndRender(template, data);
+  return z.string().parse(output);
+};
 
-const ensureDirectory = (directory: string): Promise<void> =>
-  (async () => {
+const ensureDirectory = async (directory: string): Promise<void> => {
+  await (async () => {
     void (await mkdir(directory, { recursive: true }));
     /* Intentionally no action is needed. */
   })();
+};
 
 const writeTemplateFile = async (
   filepath: string,
@@ -100,6 +106,7 @@ const writeTemplateFile = async (
   await writeFile(filepath, contents, "utf-8");
 };
 
+// oxlint-disable-next-line eslint/complexity -- Keep this validation or rendering lifecycle together: its guards share the same state, cleanup, and error handling.
 export const generateApp = async (
   options: GenerateAppOptions
 ): Promise<void> => {
@@ -118,7 +125,7 @@ export const generateApp = async (
   const viewPath = Object.keys(schema.views ?? {})
     .toSorted()
     .find((view) =>
-      slots.some((slot) => schema.slots?.[slot]?.views.includes(view))
+      slots.some((slot) => schema.slots?.[slot]?.views.includes(view) === true)
     );
   if (viewPath === undefined) {
     throw new Error(
@@ -126,13 +133,22 @@ export const generateApp = async (
     );
   }
   const slotName = requireValue(
-    slots.find((slot) => schema.slots?.[slot]?.views.includes(viewPath))
+    slots.find(
+      (slot) => schema.slots?.[slot]?.views.includes(viewPath) === true
+    )
   );
   const viewModulePath = getViewModulePath(slotName, viewPath);
   const viewFile = path.join("src", `${viewModulePath}.view.tsx`);
   const box = schema.components?.Box;
   // Only use a wrapper that accepts children without requiring host-specific props.
-  const useBox = box?.children === true && !box.fields?.required?.length;
+  const useBox =
+    box?.children === true &&
+    !(
+      box.fields?.required?.length !== undefined &&
+      box.fields?.required?.length !== null &&
+      box.fields?.required?.length !== 0 &&
+      !Number.isNaN(box.fields?.required?.length)
+    );
   const bindingsPath = path.join(targetDirectory, "src", "tailorkit.gen.ts");
   if (!force && existsSync(bindingsPath)) {
     throw new Error(
@@ -140,9 +156,10 @@ export const generateApp = async (
     );
   }
 
-  const tailorkitVersion = useWorkspaceDependencies
-    ? "workspace:*"
-    : packageVersions.tailorkit;
+  const tailorkitVersion =
+    useWorkspaceDependencies === true
+      ? "workspace:*"
+      : packageVersions.tailorkit;
 
   const templateData = {
     drizzleKitVersion: packageVersions.drizzleKit ?? TEMPLATE_DRIZZLE_VERSION,

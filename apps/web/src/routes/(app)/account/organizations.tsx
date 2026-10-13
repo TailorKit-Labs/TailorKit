@@ -140,7 +140,7 @@ const OrganizationsPage = () => {
                     key={org.id}
                     onClick={() => {
                       if (org.slug) {
-                        navigate({
+                        void navigate({
                           params: { orgSlug: org.slug },
                           to: "/$orgSlug/~/projects",
                         });
@@ -152,7 +152,7 @@ const OrganizationsPage = () => {
                         (event.key === "Enter" || event.key === " ")
                       ) {
                         event.preventDefault();
-                        navigate({
+                        void navigate({
                           params: { orgSlug: org.slug },
                           to: "/$orgSlug/~/projects",
                         });

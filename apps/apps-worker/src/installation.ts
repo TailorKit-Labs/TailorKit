@@ -24,13 +24,13 @@ import type { Installation } from "./transport";
 
 /** Trusted supervisor. The fixed facet name preserves SQLite when its code changes. */
 export class AppInstallation extends DurableObject<Env> {
-  #http = createInstallationHandler();
-  #queue = Semaphore.makeUnsafe(1);
-  #actions = createActionLeases();
-  #verify = verifier(this.env);
-  #source = deploymentSource(this.env);
+  readonly #http = createInstallationHandler();
+  readonly #queue = Semaphore.makeUnsafe(1);
+  readonly #actions = createActionLeases();
+  readonly #verify = verifier(this.env);
+  readonly #source = deploymentSource(this.env);
 
-  #subscriptions = createSubscriptions(
+  readonly #subscriptions = createSubscriptions(
     this.ctx,
     (input: Invocation, identity: Identity) =>
       this.#databaseQuery(input, identity).pipe(
@@ -43,8 +43,8 @@ export class AppInstallation extends DurableObject<Env> {
     this.#queue
   );
 
-  fetch(request: Request): Promise<Response> {
-    return Effect.runPromise(
+  async fetch(request: Request): Promise<Response> {
+    return await Effect.runPromise(
       Effect.gen({ self: this }, function* install() {
         const token = yield* Effect.try({
           catch: appError,
@@ -78,13 +78,13 @@ export class AppInstallation extends DurableObject<Env> {
           );
           return yield* Effect.tryPromise({
             catch: appError,
-            try: () => this.#subscriptions.open(identity),
+            try: async () => await this.#subscriptions.open(identity),
           });
         }
         const { matched, response } = yield* Effect.tryPromise({
           catch: appError,
-          try: () =>
-            this.#http.handle(request, {
+          try: async () =>
+            await this.#http.handle(request, {
               context: {
                 installation: this.#operations(identity, token, request.signal),
               },
@@ -99,7 +99,7 @@ export class AppInstallation extends DurableObject<Env> {
         );
       }).pipe(
         Effect.mapError(appError),
-        // oxlint-disable-next-line promise/prefer-await-to-callbacks -- This is an Effect recovery operator or transport callback, not a Node-style completion callback.
+
         catchEffect((err) => Effect.succeed(rpcErrorResponse(err)))
       )
     );
@@ -116,6 +116,7 @@ export class AppInstallation extends DurableObject<Env> {
           Effect.flatMap((result) => resultEffect(result.result))
         ),
       mutate: (input) =>
+        // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
         this.#mutate(input, identity).pipe(
           Effect.flatMap((result) => resultEffect(result.result))
         ),
@@ -141,7 +142,7 @@ export class AppInstallation extends DurableObject<Env> {
       Effect.flatMap((facet: Pick<AppFacet, "query">) =>
         Effect.tryPromise({
           catch: appError,
-          try: () => facet.query(input, identity),
+          try: async () => await facet.query(input, identity),
         })
       )
     );
@@ -157,9 +158,10 @@ export class AppInstallation extends DurableObject<Env> {
         const facet = yield* this.#facet(identity);
         const result = yield* Effect.tryPromise({
           catch: appError,
-          try: () => facet.mutate(input, identity),
+          try: async () => await facet.mutate(input, identity),
         });
         if (result.committed && result.tables.length) {
+          // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
           yield* this.#refresh(result.tables, facet);
         }
         return result;
@@ -168,12 +170,13 @@ export class AppInstallation extends DurableObject<Env> {
   }
 
   #refresh(tables: string[], facet: Pick<AppFacet, "query">) {
+    // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
     return this.#subscriptions.refresh(
       tables,
       (input: Invocation, subscriber) =>
         Effect.tryPromise({
           catch: appError,
-          try: () => facet.query(input, subscriber),
+          try: async () => await facet.query(input, subscriber),
         }).pipe(
           Effect.flatMap((result) =>
             resultEffect(result.result).pipe(
@@ -184,20 +187,20 @@ export class AppInstallation extends DurableObject<Env> {
     );
   }
 
-  webSocketMessage(socket: WebSocket, message: string | ArrayBuffer) {
-    return this.#subscriptions.message(socket, message);
+  async webSocketMessage(socket: WebSocket, message: string | ArrayBuffer) {
+    await this.#subscriptions.message(socket, message);
   }
 
-  webSocketClose(socket: WebSocket, code: number, reason: string) {
-    return this.#subscriptions.close(socket, code, reason);
+  async webSocketClose(socket: WebSocket, code: number, reason: string) {
+    await this.#subscriptions.close(socket, code, reason);
   }
 
-  webSocketError(socket: WebSocket) {
-    return this.#subscriptions.close(socket, 1011, "Socket error");
+  async webSocketError(socket: WebSocket) {
+    await this.#subscriptions.close(socket, 1011, "Socket error");
   }
 
-  alarm() {
-    return this.#subscriptions.alarm();
+  async alarm() {
+    await this.#subscriptions.alarm();
   }
 
   #prepareFacet(deployment: ServerDeployment, identity: Identity) {
@@ -214,7 +217,12 @@ export class AppInstallation extends DurableObject<Env> {
 
           const previous = this.ctx.storage.kv.get<string>("version");
 
-          if (previous && previous !== version) {
+          if (
+            previous !== undefined &&
+            previous !== null &&
+            previous !== "" &&
+            previous !== version
+          ) {
             for (const socket of this.ctx.getWebSockets()) {
               socket.close(1012, "App deployment changed");
             }
@@ -267,17 +275,19 @@ export class AppInstallation extends DurableObject<Env> {
       ({ facet, lease }) =>
         Effect.tryPromise({
           catch: appError,
-          try: () => {
+          try: async () => {
             lease.signal.throwIfAborted();
             const capability = new ActionCapability(
               lease,
-              (tables) =>
-                Effect.runPromise(
+              async (tables) => {
+                await Effect.runPromise(
+                  // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
                   this.#queue.withPermits(1)(this.#refresh(tables, facet))
-                ),
+                );
+              },
               { token, url: identity.toolUrl }
             );
-            return abortable(
+            return await abortable(
               facet.action(
                 input,
                 identity,
@@ -288,7 +298,10 @@ export class AppInstallation extends DurableObject<Env> {
             );
           },
         }),
-      ({ lease }) => Effect.sync(() => lease.close())
+      ({ lease }) =>
+        Effect.sync(() => {
+          lease.close();
+        })
     );
   }
 }

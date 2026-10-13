@@ -20,9 +20,8 @@ import { buildProject } from "./build";
 import { createCliClient } from "./client";
 import type { CliOptions } from "./options";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
@@ -195,7 +194,13 @@ export const toPreviewOptions = (options: CliOptions): PreviewOptions => {
 export const runPreview = async (options: PreviewOptions): Promise<void> => {
   const loaded = await loadTailorKitConfig(options.configPath, options.cwd);
 
-  if (!loaded.config.appId) {
+  if (
+    !(
+      loaded.config.appId !== undefined &&
+      loaded.config.appId !== null &&
+      loaded.config.appId !== ""
+    )
+  ) {
     throw new Error(
       "Missing appId. Deploy once before starting a remote preview."
     );
@@ -205,7 +210,13 @@ export const runPreview = async (options: PreviewOptions): Promise<void> => {
 
   const stored = await getDeployToken(auth.hostUrl);
 
-  if (!stored?.deployToken) {
+  if (
+    !(
+      stored?.deployToken !== undefined &&
+      stored?.deployToken !== null &&
+      stored?.deployToken !== ""
+    )
+  ) {
     throw new Error("Not logged in. Run tailorkit login first.");
   }
   const { result: watcher, outDir } = await buildProject({
@@ -245,8 +256,8 @@ export const runPreview = async (options: PreviewOptions): Promise<void> => {
   }
 
   const cleanupClient = createCliClient({
-    fetch: (input, init) =>
-      fetch(input, { ...init, signal: AbortSignal.timeout(5000) }),
+    fetch: async (input, init) =>
+      await fetch(input, { ...init, signal: AbortSignal.timeout(5000) }),
     token: stored.deployToken,
     url: auth.hostUrl,
   });
@@ -306,7 +317,7 @@ export const runPreview = async (options: PreviewOptions): Promise<void> => {
     process.off("SIGTERM", handleSignal);
     void (async () => {
       try {
-        return await closeWatcher();
+        await closeWatcher();
       } catch (error) {
         log.warn(`Unable to close preview watcher: ${errorMessage(error)}`);
       }
@@ -323,7 +334,7 @@ export const runPreview = async (options: PreviewOptions): Promise<void> => {
     activeSocket?.close();
     void (async () => {
       try {
-        return await stop();
+        await stop();
       } finally {
         process.exit(0);
       }
@@ -349,7 +360,7 @@ export const runPreview = async (options: PreviewOptions): Promise<void> => {
     activeSocket?.close();
     void (async () => {
       try {
-        return await closeWatcher();
+        await closeWatcher();
       } catch (error) {
         log.warn(`Unable to close preview watcher: ${errorMessage(error)}`);
       }
@@ -377,10 +388,10 @@ export const runPreview = async (options: PreviewOptions): Promise<void> => {
         lastUploadStart = Date.now();
         void (async () => {
           try {
-            return await (async () => {
+            await (async () => {
               try {
-                return await (async () => {
-                  void (await uploadPreviewSnapshot(wsClient, current));
+                await (async () => {
+                  await uploadPreviewSnapshot(wsClient, current);
                   if (generation === connectionGeneration) {
                     uploadedFingerprint = current.fingerprint;
                   }
@@ -408,7 +419,7 @@ export const runPreview = async (options: PreviewOptions): Promise<void> => {
   };
 
   const capture = createLatestPreviewCapture(
-    () => capturePreviewSnapshot(root),
+    async () => await capturePreviewSnapshot(root),
     (snapshot) => {
       if (closed) {
         return;
@@ -457,8 +468,10 @@ export const runPreview = async (options: PreviewOptions): Promise<void> => {
           }
         }
       };
-      sendHeartbeat();
-      heartbeatTimer = setInterval(sendHeartbeat, 20_000);
+      void sendHeartbeat();
+      heartbeatTimer = setInterval(() => {
+        void sendHeartbeat();
+      }, 20_000);
       scheduleUpload();
     });
     socket.addEventListener("close", () => {
@@ -476,7 +489,9 @@ export const runPreview = async (options: PreviewOptions): Promise<void> => {
         reconnectDelay = Math.min(reconnectDelay * 2, 30_000);
       }
     });
-    socket.addEventListener("error", () => socket.close());
+    socket.addEventListener("error", () => {
+      socket.close();
+    });
   };
 
   connect();

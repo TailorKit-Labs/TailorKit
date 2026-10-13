@@ -95,6 +95,7 @@ describe("BotID proxy configuration", () => {
     expect(Array.isArray(rewrites)).toBe(true);
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     expect(vercelConfig.rewrites).toEqual(
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
       expect.arrayContaining(rewrites as unknown[])
     );
     expect(vercelConfig.headers).toEqual(expect.arrayContaining(headers ?? []));

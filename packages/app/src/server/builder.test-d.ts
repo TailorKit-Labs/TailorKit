@@ -1,22 +1,24 @@
 /* oxlint-disable react/rules-of-hooks -- Compile-only API tests exercise hook signatures outside runtime components. */
 /* oxlint-disable require-await -- These negative type cases intentionally return promises from database handlers. */
+import { expectTypeOf } from "vite-plus/test";
 import { z } from "zod";
 
-import type { Client } from "../client/connection";
-import { createApi } from "../client/reference";
-import { useAction, useMutation, useQuery } from "../preact";
+import type { Client } from "#client/connection";
+import { createApi } from "#client/reference";
+import { useAction, useMutation, useQuery } from "#preact";
+
 import { fn } from "./builder";
 import { defineServer } from "./functions";
 
 const functions = {
-  actionWithoutSchemas: fn.action.handler(({ input }) => {
+  actionWithoutSchemas: fn.action.handler(async ({ input }) => {
     const absent: undefined = input;
-    void absent;
-    return Promise.resolve({ completed: true });
+    expectTypeOf(absent).toEqualTypeOf<undefined>();
+    return { completed: true };
   }),
   list: fn.query.handler(({ input }) => {
     const absent: undefined = input;
-    void absent;
+    expectTypeOf(absent).toEqualTypeOf<undefined>();
     // @ts-expect-error No input schema means there are no input properties.
     void input.value;
     return [1, 2];
@@ -32,7 +34,7 @@ const functions = {
     }),
   saveWithoutSchemas: fn.mutation.handler(({ input }) => {
     const absent: undefined = input;
-    void absent;
+    expectTypeOf(absent).toEqualTypeOf<undefined>();
     return { saved: true };
   }),
   write: fn.mutation
@@ -48,15 +50,15 @@ const save = fn.action
     // @ts-expect-error Actions have no direct database handle.
     void context.db;
     // @ts-expect-error Action query arguments use schema inputs.
-    context.queries.read({ raw: 4 });
+    void context.queries.read({ raw: 4 });
     const rows: number[] | undefined = await context.queries.list();
     const saved: { saved: boolean } =
       await context.mutations.saveWithoutSchemas();
     void rows;
     void saved;
     // @ts-expect-error No-input queries do not accept objects.
-    context.queries.list({});
-    return context.mutations.write({ value: context.input.value + read });
+    void context.queries.list({});
+    return await context.mutations.write({ value: context.input.value + read });
   });
 const app = defineServer({ ...functions, save });
 type Api = typeof app.functions;
@@ -75,11 +77,11 @@ void inferredRows;
 void savedWithoutInput;
 void completedWithoutInput;
 // @ts-expect-error No-input imperative queries do not accept values.
-client.query(refs.list, {});
+void client.query(refs.list, {});
 // @ts-expect-error Required imperative query inputs cannot be omitted.
-client.query(refs.read);
+void client.query(refs.read);
 // @ts-expect-error Imperative inputs are inferred from the reference, not widened by arguments.
-client.query(refs.read, { raw: 3 });
+void client.query(refs.read, { raw: 3 });
 // @ts-expect-error Async database handlers cannot escape the synchronous transaction.
 fn.mutation.handler(async () => 1);
 // @ts-expect-error Async queries are not allowed.

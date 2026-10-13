@@ -12,6 +12,7 @@ import {
 } from "@tailorkit/observability";
 import { getStorage } from "@tailorkit/storage";
 import type { Storage } from "@tailorkit/storage";
+import { z } from "zod";
 
 import { env } from "./env";
 import { runtimeProjectAccess } from "./runtime/access";
@@ -35,7 +36,7 @@ export const createContext = async ({
   await initializeObservability("tailorkit-web");
 
   // oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
-  return withSpan("api_platform.create_context", async () => {
+  return await withSpan("api_platform.create_context", async () => {
     const storage = getStorage();
     if (!storage) {
       throw new ORPCError("SERVICE_UNAVAILABLE", {
@@ -46,7 +47,7 @@ export const createContext = async ({
     const [scheme, key] =
       request.headers.get("authorization")?.split(" ") ?? [];
 
-    if (!key) {
+    if (!(key !== undefined && key !== null && key !== "")) {
       throw new ORPCError("UNAUTHORIZED", {
         message: "Authorization header not found",
       });
@@ -65,7 +66,13 @@ export const createContext = async ({
 
     let agentToken: Context["agentToken"];
     if (key.split(".").length === 3) {
-      if (!env.AUTH_SECRET) {
+      if (
+        !(
+          env.AUTH_SECRET !== undefined &&
+          env.AUTH_SECRET !== null &&
+          env.AUTH_SECRET !== ""
+        )
+      ) {
         throw new ORPCError("SERVICE_UNAVAILABLE");
       }
       let claims: AgentToken;
@@ -105,7 +112,11 @@ export const createContext = async ({
       // An authorized JWT has its own expiry; source revocation still applies.
       agentToken = { ...claims, scope: scope.scope, token: key };
       ({ projectId } = agentToken);
-    } else if (runtimeProject) {
+    } else if (
+      runtimeProject !== undefined &&
+      runtimeProject !== null &&
+      runtimeProject !== ""
+    ) {
       projectId = runtimeProject;
     } else {
       const apiKey = await auth.api.verifyApiKey({
@@ -114,12 +125,15 @@ export const createContext = async ({
       if (!apiKey?.valid) {
         throw new ORPCError("UNAUTHORIZED", { message: "Invalid API key" });
       }
-      projectId = apiKey.key?.metadata?.projectId;
-      if (!projectId) {
+      const keyProjectId = z
+        .object({ projectId: z.string().min(1) })
+        .safeParse(apiKey.key?.metadata).data?.projectId;
+      if (keyProjectId === undefined || keyProjectId === "") {
         throw new ORPCError("UNAUTHORIZED", {
           message: "Project ID not found in API key metadata",
         });
       }
+      projectId = keyProjectId;
     }
 
     const project = await db.query.project.findFirst({
@@ -155,15 +169,17 @@ export const createContext = async ({
 
 /** Keep unavailable dependencies distinct from rejected credentials at the HTTP boundary. */
 export const contextErrorResponse = (cause: unknown) => {
-  const unauthorized =
-    cause instanceof ORPCError && cause.code === "UNAUTHORIZED";
+  if (cause instanceof ORPCError && cause.code === "UNAUTHORIZED") {
+    return Response.json(
+      { code: "UNAUTHORIZED", message: cause.message },
+      { status: 401 }
+    );
+  }
   return Response.json(
-    unauthorized
-      ? { code: cause.code, message: cause.message }
-      : {
-          code: "SERVICE_UNAVAILABLE",
-          message: "Platform is temporarily unavailable.",
-        },
-    { status: unauthorized ? 401 : 503 }
+    {
+      code: "SERVICE_UNAVAILABLE",
+      message: "Platform is temporarily unavailable.",
+    },
+    { status: 503 }
   );
 };

@@ -62,6 +62,7 @@ describe("sandbox ownership and sliding timeout", () => {
     expect(mocks.getOrCreate).toHaveBeenCalledWith({
       env: { TAILORKIT_AGENT_TOKEN_FILE: agentTokenPath },
       image: "vercel/sandbox/universal",
+      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
       mounts: { "/workspace": expect.objectContaining({ name: "app-123" }) },
       name: sandboxName,
       persistent: false,

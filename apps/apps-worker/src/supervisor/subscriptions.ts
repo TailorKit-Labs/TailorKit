@@ -62,7 +62,7 @@ export const createSubscriptions = (
       socket.send(data);
     },
     write: (session) => {
-      if (ctx.storage.kv.get(key(socket))) {
+      if (ctx.storage.kv.get(key(socket)) !== undefined) {
         ctx.storage.kv.put(key(socket), session);
       }
     },
@@ -102,6 +102,7 @@ export const createSubscriptions = (
       if (!session || !subscription) {
         return;
       }
+      // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
       const snapshot = yield* execute(subscription.input, session.identity);
       const current = connectionValue2.read();
       const active = current?.subscriptions.find((entry) => entry.id === id);
@@ -110,15 +111,17 @@ export const createSubscriptions = (
       }
       active.tables = snapshot.tables;
       connectionValue2.write(current);
+      // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
       yield* deliverSubscription(connectionValue2, id, snapshot.value);
     }).pipe(
       // oxlint-disable-next-line promise/prefer-await-to-callbacks -- This is an Effect recovery operator or transport callback, not a Node-style completion callback.
       catchEffect((err) =>
         remove(connectionValue2, id).pipe(
+          // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
           Effect.andThen(deliverSubscription(connectionValue2, id, err, true))
         )
       ),
-      catchEffect(() => Effect.void)
+      Effect.ignore
     );
   const subscribe = (
     connectionValue3: SubscriptionConnection,
@@ -137,6 +140,7 @@ export const createSubscriptions = (
           0
         );
         if (count >= 256) {
+          // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
           yield* deliverSubscription(
             connectionValue3,
             id,
@@ -150,11 +154,12 @@ export const createSubscriptions = (
         }
         session.subscriptions.push({ id, input, tables: [] });
         connectionValue3.write(session);
+        // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
         yield* deliver(connectionValue3, id);
       })
     );
   return {
-    async alarm() {
+    alarm: async () => {
       const sockets = ctx.getWebSockets();
       const active = new Set(sockets.map(key));
       for (const [stored] of ctx.storage.kv.list({ prefix: "socket:" })) {
@@ -173,7 +178,7 @@ export const createSubscriptions = (
     },
     cancel: (connectionValue4: SubscriptionConnection, id: string) =>
       queue.withPermits(1)(remove(connectionValue4, id)),
-    async close(socket: WebSocket, code = 1000, reason = "") {
+    close: async (socket: WebSocket, code = 1000, reason = "") => {
       ctx.storage.kv.delete(key(socket));
       if (socket.readyState !== WebSocket.CLOSED) {
         socket.close(code, reason);
@@ -182,22 +187,25 @@ export const createSubscriptions = (
       await arm();
     },
     connections,
-    message(socket: WebSocket, message: string | ArrayBuffer) {
+    message: async (socket: WebSocket, message: string | ArrayBuffer) => {
       const current = connection(socket);
       const session = current.read();
       if (!session || session.identity.expiresAt <= Date.now()) {
         ctx.storage.kv.delete(key(socket));
         socket.close(1008, "Authentication expired");
-        return Promise.resolve();
+        return;
       }
-      return handler.message(
+      await handler.message(
         socket,
         message,
+        // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
         (input) => subscriptionStream((id) => subscribe(current, input, id)),
-        (id) => Effect.runPromise(queue.withPermits(1)(remove(current, id)))
+        async (id) => {
+          await Effect.runPromise(queue.withPermits(1)(remove(current, id)));
+        }
       );
     },
-    async open(identity: Identity) {
+    open: async (identity: Identity) => {
       if (connections().length >= 128) {
         throw new AppError(
           "BAD_REQUEST",
@@ -220,7 +228,7 @@ export const createSubscriptions = (
       });
     },
     /** External mutations and local action notifications serialize subscriber refreshes. */
-    refresh(tables: string[], execute = query) {
+    refresh: (tables: string[], execute = query) => {
       if (!tables.length) {
         return Effect.void;
       }
@@ -234,6 +242,7 @@ export const createSubscriptions = (
                   table === ALL_DATABASE_TABLES || tables.includes(table)
               )
             ) {
+              // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
               yield* deliver(connectionValue5, subscription.id, execute);
             }
           }

@@ -43,52 +43,56 @@ export const useOrgSlugAvailability = (slug: string) => {
   }
   useEffect(() => {
     if (!slug) {
-      return;
+      /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+      return undefined;
     }
 
     let cancelled = false;
 
-    const timeout = window.setTimeout(async () => {
-      try {
-        const localResult = validateOrgSlug(slug);
-        if (!localResult.valid) {
+    const timeout = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const localResult = validateOrgSlug(slug);
+          if (!localResult.valid) {
+            if (cancelled) {
+              return;
+            }
+
+            setAvailability(
+              slug.length < 3
+                ? { message: null, status: "idle" }
+                : {
+                    message:
+                      localResult.reason ?? "This slug is not available.",
+                    status: "unavailable",
+                  }
+            );
+            return;
+          }
+
+          const result = await checkOrgSlugAvailability(slug);
           if (cancelled) {
             return;
           }
 
           setAvailability(
-            slug.length < 3
-              ? { message: null, status: "idle" }
+            result.available
+              ? { message: null, status: "available" }
               : {
-                  message: localResult.reason ?? "This slug is not available.",
+                  message: result.message ?? ORG_SLUG_TAKEN_MESSAGE,
                   status: "unavailable",
                 }
           );
-          return;
+        } catch {
+          if (!cancelled) {
+            setAvailability({
+              message:
+                "Could not check this slug. Try again before creating the organisation.",
+              status: "error",
+            });
+          }
         }
-
-        const result = await checkOrgSlugAvailability(slug);
-        if (cancelled) {
-          return;
-        }
-
-        setAvailability(
-          result.available
-            ? { message: null, status: "available" }
-            : {
-                message: result.message ?? ORG_SLUG_TAKEN_MESSAGE,
-                status: "unavailable",
-              }
-        );
-      } catch {
-        if (!cancelled) {
-          setAvailability({
-            message:
-              "Could not check this slug. Try again before creating the organisation.",
-            status: "error",
-          });
-        }
-      }
+      })();
     }, ORG_SLUG_CHECK_DELAY_MS);
 
     return () => {

@@ -5,7 +5,11 @@ import {
 } from "@tailorkit/client-platform/agent";
 import { appAgentChat } from "@tailorkit/client-platform/client";
 
-import { getCliDeployToken, o, requireCliDeployToken } from "../procedures";
+import {
+  getCliDeployToken,
+  o,
+  requireCliDeployToken,
+} from "#server/procedures";
 
 /** CLI calls the host; only the host supplies the platform project credential. */
 export const appAgentRouter = {
@@ -45,7 +49,15 @@ export const appAgentRouter = {
           yield event;
         }
         signal?.throwIfAborted();
-        if (streamError) {
+        if (
+          streamError !== undefined &&
+          streamError !== null &&
+          streamError !== false &&
+          streamError !== "" &&
+          streamError !== 0 &&
+          !Number.isNaN(streamError) &&
+          streamError !== 0n
+        ) {
           throw new ORPCError("BAD_GATEWAY", {
             message: "The app agent stream failed. Try again.",
           });

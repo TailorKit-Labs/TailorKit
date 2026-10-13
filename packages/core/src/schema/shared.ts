@@ -75,5 +75,5 @@ export const serializeSchema = (
   return schemaSerializer(schema, {
     target: "draft-2020-12",
     typeMode,
-  }) as ReturnType<StandardJSONSchemaV1.Converter["output"]> | undefined;
+  });
 };

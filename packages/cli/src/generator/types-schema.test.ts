@@ -392,7 +392,7 @@ const declarations = cases.map(({ schema }) => {
   return renderDeclaration(
     wrapped["~standard"].jsonSchema.output({
       target: "draft-2020-12",
-    }) as JsonSchema
+    })
   );
 });
 
@@ -403,7 +403,7 @@ describe("JSON Schema type generation", () => {
       expect(normalize(requireValue(declarations[index]))).toBe(
         expected === "never"
           ? 'export interface ViewPropsByPath { "/": { context: never; }; }'
-          : `export interface ViewPropsByPath { "/": { context: { value${optional ? "?" : ""}: ${expected}; }; }; }`
+          : `export interface ViewPropsByPath { "/": { context: { value${optional === true ? "?" : ""}: ${expected}; }; }; }`
       );
     }
   );
@@ -531,7 +531,7 @@ describe("JSON Schema type generation", () => {
           "ViewPropsByPath",
           `Case${index}`
         ),
-        `type Check${index} = Assert<Equal<Case${index}["/"]["context"]["value"], ${expected}${optional ? " | undefined" : ""}>>;`,
+        `type Check${index} = Assert<Equal<Case${index}["/"]["context"]["value"], ${expected}${optional === true ? " | undefined" : ""}>>;`,
       ]),
       ...tupleReviewCases.flatMap(({ schema, expected }, index) => [
         renderDeclaration({
@@ -571,6 +571,7 @@ describe("JSON Schema type generation", () => {
         path.dirname(requireValueValue.resolve("typescript/package.json")),
         "bin/tsc"
       );
+      // oxlint-disable-next-line typescript/strict-void-return -- Node explicitly supports promisify(execFile); its ChildProcess return is intentionally ignored by the callback-to-Promise adapter.
       const result = await promisify(execFile)(process.execPath, [
         compiler,
         "-p",

@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { describe, expect, it } from "vite-plus/test";
 
-import { PrimitiveThemeContext, primitives } from "../primitives";
+import { PrimitiveThemeContext, primitives } from "#primitives";
 
 const theme = {
   breakpoints: {
@@ -31,11 +31,12 @@ const theme = {
   },
 };
 
+const contextValue1 = { theme, viewId: "screen-1" };
+const contextValue2 = { theme, viewId: "screen-2" };
+
 describe("react primitives", () => {
-  const contextValue1 = { theme, viewId: "screen-1" };
   it("renders a scoped primitive style with responsive rules", () => {
     render(
-      // oxlint-disable-next-line react/jsx-no-constructed-context-values -- This fixture is created once outside the render callback and stays stable for the test.
       <PrimitiveThemeContext.Provider value={contextValue1}>
         {primitives.Flex({
           children: createElement("span", null, "Content"),
@@ -70,10 +71,8 @@ describe("react primitives", () => {
     expect(style?.textContent).toContain("flex-direction: row;");
   });
 
-  const contextValue2 = { theme, viewId: "screen-2" };
   it("renders inline as a span", () => {
     render(
-      // oxlint-disable-next-line react/jsx-no-constructed-context-values -- This fixture is created once outside the render callback and stays stable for the test.
       <PrimitiveThemeContext.Provider value={contextValue2}>
         {primitives.Inline({
           children: "Label",

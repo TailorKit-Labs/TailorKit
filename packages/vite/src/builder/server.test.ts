@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-member-access -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import {
   readFile,
   writeFile,
@@ -25,8 +26,9 @@ import { build } from "vite";
 import { expect, it } from "vite-plus/test";
 import type { z } from "zod";
 
-import { tailorkit } from "../index";
-import { linkTestDependencies, createDatabaseTestApp } from "../test-utils";
+import { tailorkit } from "#index";
+import { linkTestDependencies, createDatabaseTestApp } from "#test-utils";
+
 import { readClientManifest } from "./client-views";
 import { runtimeManifest } from "./server";
 
@@ -44,7 +46,10 @@ const buildFixture = async (options: {
   watch?: boolean;
 }) => {
   const result = await build({
-    build: { outDir: options.outDir, watch: options.watch ? {} : null },
+    build: {
+      outDir: options.outDir,
+      watch: options.watch === true ? {} : null,
+    },
     configFile: false,
     plugins: [
       tailorkit({
@@ -341,6 +346,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       pathToFileURL(path.join(root, ".tailorkit/server/server.js")).href
     );
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     const internal = application.default.functions._tailorkit as Record<
       string,
       Record<
@@ -369,21 +375,28 @@ it("builds colocated instance resolvers as query-only server actions", async () 
     expect(fn.kind).toBe("action");
     expect(browser).toContain(requireValue(names[0]));
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     expect(Object.keys(fn.functions.reports as object)).toEqual(["list"]);
     // SAFETY: This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input.
-    const resolved = await fn.handler({
-      args: fn.args.parse({
-        context: { userId: "user_123" },
-        path: "/",
-        slot: "page",
-      }),
-      identity: { userId: "user_123" },
-      mutations: {},
-      queries: {
-        reports: { list: () => Promise.resolve([{ id: "report_123" }]) },
-      },
-      signal: new AbortController().signal,
-    } as never);
+
+    const resolved = await fn.handler(
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input. */
+      {
+        args: fn.args.parse({
+          context: { userId: "user_123" },
+          path: "/",
+          slot: "page",
+        }),
+        identity: { userId: "user_123" },
+        mutations: {},
+        queries: {
+          // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+          reports: { list: async () => [{ id: "report_123" }] },
+        },
+        signal: new AbortController().signal,
+      } as never
+      /* oxlint-enable typescript/no-unsafe-type-assertion */
+    );
     expect(resolved).toEqual([
       {
         data: { id: "REPORT_123" },
@@ -392,18 +405,24 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       },
     ]);
     // SAFETY: This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input.
-    const shared = await fn.handler({
-      args: fn.args.parse({
-        context: { userId: "user_123" },
-        path: "/",
-        slot: "panel.links",
-      }),
-      identity: { userId: "user_123" },
-      queries: {
-        reports: { list: () => Promise.resolve([{ id: "report_123" }]) },
-      },
-      signal: new AbortController().signal,
-    } as never);
+
+    const shared = await fn.handler(
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input. */
+      {
+        args: fn.args.parse({
+          context: { userId: "user_123" },
+          path: "/",
+          slot: "panel.links",
+        }),
+        identity: { userId: "user_123" },
+        queries: {
+          // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+          reports: { list: async () => [{ id: "report_123" }] },
+        },
+        signal: new AbortController().signal,
+      } as never
+      /* oxlint-enable typescript/no-unsafe-type-assertion */
+    );
     expect(shared).toEqual(resolved);
     const window = new Window();
     const previousDocument = globalThis.document;
@@ -416,7 +435,10 @@ it("builds colocated instance resolvers as query-only server actions", async () 
         `data:text/javascript;base64,${Buffer.from(browser).toString("base64")}`
       );
       // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-      const client = module.default as TailorKitClientWithMeta;
+      const client =
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below. */
+        module.default as TailorKitClientWithMeta;
+      /* oxlint-enable typescript/no-unsafe-type-assertion */
       // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
       const component = (
         client.slots as Record<string, Record<string, ViewDefinition>>
@@ -427,19 +449,24 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       }
       const container = window.document.createElement("div");
       // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-      const show = (instance: ViewInstance) =>
+      const show = (instance: ViewInstance) => {
         client.$runtime.render(
+          /* oxlint-disable typescript/no-unsafe-type-assertion -- The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below. */
+          // SAFETY: This fixture controls the asserted value and verifies the runtime boundary below.
           client.$runtime.h(component.component, {
             context: { workspaceId: "w1" },
             instance,
             status: "ready",
             view: "/",
           }) as VNode,
+          /* oxlint-enable typescript/no-unsafe-type-assertion */
           // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-          // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+          // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
           container as unknown as Element
         );
+      };
       // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
       show(requireValue((resolved as ViewInstance[])[0]));
       expect(container.textContent).toBe(
         "BROWSER_COMPONENT_MUST_NOT_RUN:REPORT_123"
@@ -450,17 +477,19 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       );
       // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
       client.$runtime.render(
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below. */
         client.$runtime.h(component.component, {
           status: "loading",
           view: "/",
         }) as VNode,
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
         // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-        // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+        // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
         container as unknown as Element
       );
       expect(container.textContent).toBe("");
       // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-      // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+      // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
       client.$runtime.render(null, container as unknown as Element);
     } finally {
       if (previousDocument === undefined) {
@@ -481,13 +510,17 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       )
     ).toBe(browser);
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-    const watcher = (await buildFixture({
-      cwd: root,
-      outDir: ".tailorkit/watched",
-      watch: true,
-    })) as {
-      close: () => Promise<void>;
-    };
+
+    const watcher =
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below. */
+      (await buildFixture({
+        cwd: root,
+        outDir: ".tailorkit/watched",
+        watch: true,
+      })) as {
+        close: () => Promise<void>;
+      };
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
     const watchedServer = path.join(
       root,
       ".tailorkit/watched/server/server.js"

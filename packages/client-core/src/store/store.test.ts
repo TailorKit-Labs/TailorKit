@@ -1,16 +1,17 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { createTailorKitFetchClient } from "../client/fetch-client";
-import { toBaseUrl } from "../client/url";
-import { testContract } from "../test-contract";
-import type { TailorKitApp } from "../types";
+import { createTailorKitFetchClient } from "#client/fetch-client";
+import { toBaseUrl } from "#client/url";
+import { testContract } from "#test-contract";
+import type { TailorKitApp } from "#types";
+
 import { createTailorKitStore } from "./store";
 
 afterEach(() => vi.unstubAllGlobals());
 
 const deferredResponse = () => {
   let resolve!: (response: Response) => void;
-  const promise = (() => {
+  const promise = (async () => {
     const {
       promise: pendingPromise,
       resolve: done,
@@ -21,7 +22,7 @@ const deferredResponse = () => {
     } catch (error) {
       rejectPending(error);
     }
-    return pendingPromise;
+    return await pendingPromise;
   })();
   return { promise, resolve };
 };
@@ -79,13 +80,13 @@ describe("client stores", () => {
 
   it("shares discovery requests and retains snapshots across subscription lifecycles", async () => {
     const response = deferredResponse();
-    const fetchMock = vi.fn(() => response.promise);
+    const fetchMock = vi.fn(async () => await response.promise);
     vi.stubGlobal("fetch", fetchMock);
     const store = createTailorKitStore({
       baseUrl: "https://host.test/api/tailorkit",
       contract: testContract(),
     });
-    const listener = vi.fn();
+    const listener = vi.fn<Parameters<typeof store.subscribeApps>[0]>();
     const stop = store.subscribeApps(listener);
     const first = store.fetchApps();
     expect(store.fetchApps()).toBe(first);
@@ -108,6 +109,7 @@ describe("client stores", () => {
       new URL("https://host.test/api/tailorkit/apps"),
       expect.objectContaining({
         credentials: "same-origin",
+        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
         signal: expect.any(AbortSignal),
       })
     );
@@ -144,7 +146,7 @@ describe("client stores", () => {
     const response = deferredResponse();
     vi.stubGlobal(
       "fetch",
-      vi.fn(() => response.promise)
+      vi.fn(async () => await response.promise)
     );
     const store = createTailorKitStore({
       baseUrl: "https://host.test/",
@@ -170,8 +172,12 @@ describe("client stores", () => {
       baseUrl: "https://host.test/",
       contract: testContract(),
     });
-    const firstStop = store.subscribeApps(vi.fn());
-    const stop = store.subscribeApps(vi.fn());
+    const firstStop = store.subscribeApps(
+      vi.fn<NonNullable<Parameters<typeof store.subscribeApps>[0]>>()
+    );
+    const stop = store.subscribeApps(
+      vi.fn<NonNullable<Parameters<typeof store.subscribeApps>[0]>>()
+    );
     await store.fetchApps();
     firstStop();
     firstStop();
@@ -185,7 +191,7 @@ describe("client stores", () => {
 
   it("does not seed discovery from preview updates before apps are available", async () => {
     const response = deferredResponse();
-    const fetchMock = vi.fn<typeof fetch>(() => response.promise);
+    const fetchMock = vi.fn<typeof fetch>(async () => await response.promise);
     vi.stubGlobal("fetch", fetchMock);
     const store = createTailorKitStore({
       baseUrl: "https://host.test/",

@@ -151,7 +151,7 @@ it("serves Node fetch's decoded gzip body with consistent GET and HEAD metadata"
     });
     response.end(bytes);
   });
-  await (() => {
+  await (async () => {
     const {
       promise: pendingPromise,
       resolve,
@@ -163,11 +163,11 @@ it("serves Node fetch's decoded gzip body with consistent GET and HEAD metadata"
     } catch (error) {
       reject(error);
     }
-    return pendingPromise;
+    await pendingPromise;
   })();
   try {
     const address = origin.address();
-    if (!address || isStringValue(address)) {
+    if (!(address !== null && address !== "") || isStringValue(address)) {
       throw new Error("Missing test server address");
     }
     const backend = storage();
@@ -194,18 +194,24 @@ it("serves Node fetch's decoded gzip body with consistent GET and HEAD metadata"
     expect([...head.headers]).toEqual([...response.headers]);
     expect(await head.text()).toBe("");
   } finally {
-    await (() => {
+    await (async () => {
       const {
         promise: pendingPromise,
         resolve,
         reject,
       } = Promise.withResolvers<ReturnType<() => void>>();
       try {
-        origin.close((error) => (error ? reject(error) : resolve()));
+        origin.close((error) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve();
+          }
+        });
       } catch (error) {
         reject(error);
       }
-      return pendingPromise;
+      await pendingPromise;
     })();
   }
 });
@@ -237,7 +243,9 @@ it("limits decoded gzip assets and cancels the upstream stream on overflow", asy
   const awaitedResult1 = await reader.read();
   expect(awaitedResult1.value?.byteLength).toBe(maxDeploymentBytes);
   await expect(reader.read()).rejects.toThrow("Asset delivery failed (404)");
-  await vi.waitFor(() => expect(cancel).toHaveBeenCalledOnce());
+  await vi.waitFor(() => {
+    expect(cancel).toHaveBeenCalledOnce();
+  });
 });
 
 it("serves decoded gzip assets at exactly the 3 MiB limit", async () => {

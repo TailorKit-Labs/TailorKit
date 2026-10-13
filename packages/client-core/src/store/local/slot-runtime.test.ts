@@ -1,10 +1,11 @@
 import { allTasks } from "nanostores";
 import { expect, it, vi } from "vite-plus/test";
 
-import { createTailorKitFetchClient } from "../../client/fetch-client";
-import { testContract } from "../../test-contract";
-import type { TailorKitApp } from "../../types";
-import { createTailorKitStore } from "../store";
+import { createTailorKitFetchClient } from "#client/fetch-client";
+import { createTailorKitStore } from "#store/store";
+import { testContract } from "#test-contract";
+import type { TailorKitApp } from "#types";
+
 import { createSlotRuntime } from "./slot-runtime";
 import type { SlotRuntimeOptions } from "./slot-runtime";
 
@@ -49,7 +50,9 @@ it("waits for an active managed view and constructs deployment URL and hierarchy
     mode: "managed",
     slot: "page",
   });
-  const stop = runtime.state.listen(vi.fn());
+  const stop = runtime.state.listen(
+    vi.fn<NonNullable<Parameters<typeof runtime.state.listen>[0]>>()
+  );
   expect(runtime.state.get().status).toBe("hidden");
   expect(fetch).not.toHaveBeenCalled();
   const id = Symbol("view");
@@ -96,7 +99,9 @@ it("selects instances and validates keys without a framework", async () => {
     slot: "page",
   };
   const runtime = createSlotRuntime(store, options);
-  const stop = runtime.state.listen(vi.fn());
+  const stop = runtime.state.listen(
+    vi.fn<NonNullable<Parameters<typeof runtime.state.listen>[0]>>()
+  );
   await allTasks();
   expect(runtime.state.get()).toMatchObject({
     props: { context: { customer: "registered" }, controlled: true, instance },
@@ -104,6 +109,7 @@ it("selects instances and validates keys without a framework", async () => {
   });
   runtime.setInput({ ...options, instanceKey: "missing" });
   expect(runtime.state.get()).toMatchObject({
+    // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
     error: expect.objectContaining({
       message: 'View instance "missing" is unavailable.',
     }),
@@ -127,7 +133,9 @@ it("keeps controlled state independent and removes stale context and instances w
   };
   const runtime = createSlotRuntime(store, options);
   const instances = vi.spyOn(client.endpoints, "slotInstances");
-  const stop = runtime.state.listen(vi.fn());
+  const stop = runtime.state.listen(
+    vi.fn<NonNullable<Parameters<typeof runtime.state.listen>[0]>>()
+  );
   const initial = runtime.state.get();
   const id = Symbol("other");
   store.views.register({ context: { unrelated: true }, id, view: "/" });
@@ -182,7 +190,7 @@ it("keeps preview subscriptions across context changes and switches sessions wit
   const first = atom({ revision: 0, source: null as string | null });
   // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   const second = atom({ revision: 0, source: null as string | null });
-  const stopped = vi.fn();
+  const stopped = vi.fn<Parameters<typeof onStop>[1]>();
   onStop(first, stopped);
   vi.spyOn(store.previews, "getStore").mockImplementation((getApp) =>
     getApp().preview?.sessionId === "first" ? first : second
@@ -205,7 +213,9 @@ it("keeps preview subscriptions across context changes and switches sessions wit
     view: "/",
   };
   const runtime = createSlotRuntime(store, options);
-  const stop = runtime.state.listen(vi.fn());
+  const stop = runtime.state.listen(
+    vi.fn<NonNullable<Parameters<typeof runtime.state.listen>[0]>>()
+  );
   expect(runtime.state.get().status).toBe("hidden");
   stopped.mockClear();
   first.set({ revision: 1, source: "export default 1" });
@@ -246,9 +256,9 @@ it("cancels an instance request when switching to a controlled slot", async () =
   let signal: AbortSignal | undefined;
   let respond!: (instances: []) => void;
   vi.spyOn(client.endpoints, "slotInstances").mockImplementation(
-    (_app, _input, abort) => {
+    async (_app, _input, abort) => {
       signal = abort;
-      return (() => {
+      return await (async () => {
         const {
           promise: pendingPromise,
           resolve,
@@ -261,7 +271,7 @@ it("cancels an instance request when switching to a controlled slot", async () =
         } catch (error) {
           rejectPending(error);
         }
-        return pendingPromise;
+        return await pendingPromise;
       })();
     }
   );
@@ -274,8 +284,12 @@ it("cancels an instance request when switching to a controlled slot", async () =
     mode: "managed",
     slot: "page",
   });
-  const stop = runtime.state.listen(vi.fn());
-  await vi.waitFor(() => expect(signal).toBeDefined());
+  const stop = runtime.state.listen(
+    vi.fn<NonNullable<Parameters<typeof runtime.state.listen>[0]>>()
+  );
+  await vi.waitFor(() => {
+    expect(signal).toBeDefined();
+  });
   runtime.setInput({
     app,
     context: {},

@@ -12,9 +12,8 @@ import { setSpanAttributes } from "@tailorkit/observability";
 import type { Context } from "./context";
 import { canonicalizeScope, canonicalizeScopes, scopeMatches } from "./scope";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -79,15 +78,11 @@ export const cliRouter = authenticatedRouter.use(
   async ({ context, next }, input) => {
     if (context.agentToken) {
       const body =
-        input && isObjectValue(input) && "body" in input
-          ? input.body
-          : undefined;
+        isObjectValue(input) && "body" in input ? input.body : undefined;
       const requestedScope =
-        body && isObjectValue(body) && "scope" in body ? body.scope : undefined;
+        isObjectValue(body) && "scope" in body ? body.scope : undefined;
       const scopesValue =
-        body && isObjectValue(body) && "scopes" in body
-          ? body.scopes
-          : undefined;
+        isObjectValue(body) && "scopes" in body ? body.scopes : undefined;
       if (requestedScope !== undefined || scopesValue !== undefined) {
         try {
           const scopes = [
@@ -139,7 +134,7 @@ export const requireApp = o.middleware(
       canonicalizeScope(input.scope),
     ]);
 
-    return next({ context: { ...context, app } });
+    return await next({ context: { ...context, app } });
   }
 );
 
@@ -157,6 +152,6 @@ export const requireAppInScopes = o.middleware(
       canonicalizeScopes(input.scopes)
     );
 
-    return next({ context: { ...context, app } });
+    return await next({ context: { ...context, app } });
   }
 );

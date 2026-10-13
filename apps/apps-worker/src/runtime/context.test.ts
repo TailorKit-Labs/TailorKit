@@ -33,18 +33,18 @@ const setup = () => {
   // Like an SDK: capture fetch once, then use it from nested async helpers.
   const captured = globalThis.fetch;
   const read = fn.query.handler(() => {
-    fetch(endpoint);
+    void fetch(endpoint);
     return null;
   });
   const write = fn.mutation.handler(() => {
-    fetch(endpoint);
+    void fetch(endpoint);
     return null;
   });
   let detached: Promise<Response>;
   let release!: () => void;
   const app = defineServer({
     ended: fn.action.handler(() => {
-      detached = (() => {
+      detached = (async () => {
         const {
           promise: pendingPromise,
           resolve,
@@ -55,8 +55,8 @@ const setup = () => {
         } catch (error) {
           rejectPending(error);
         }
-        return pendingPromise;
-      })().then(() => captured(endpoint));
+        await pendingPromise;
+      })().then(async () => await captured(endpoint));
       detached.catch(() => {});
       return "done";
     }),
@@ -70,12 +70,12 @@ const setup = () => {
           "only available inside actions"
         );
         const response = await captured(endpoint);
-        return response.text();
+        return await response.text();
       }),
     read,
     run: fn.action.handler(async () => {
       const response = await captured(endpoint);
-      return response.text();
+      return await response.text();
     }),
     write,
   });
@@ -86,15 +86,19 @@ const setup = () => {
   const calls = callsImplementation;
   return {
     calls,
-    detached: () => detached,
+    detached: async () => await detached,
     execution,
-    release: () => release(),
+    release: () => {
+      release();
+    },
   };
 };
 
 it("guards queries, mutations and missing contexts, including nested calls", async () => {
   const { execution, calls } = setup();
-  expect(() => fetch(endpoint)).toThrow("only available inside actions");
+  expect(() => {
+    void fetch(endpoint);
+  }).toThrow("only available inside actions");
   expect(() => execution.query({ name: "read" }, identity)).toThrow(
     "only available inside actions"
   );
@@ -119,21 +123,25 @@ it("guards queries, mutations and missing contexts, including nested calls", asy
 it("preserves concurrent action contexts and SDK-captured fetch", async () => {
   const { execution, calls } = setup();
   const results = await Promise.all(
-    Array.from({ length: 8 }, (_, i) =>
-      Effect.runPromise(
-        execution.action(
-          { name: "run" },
-          identity,
-          calls(String(i)),
-          new AbortController().signal
+    Array.from(
+      { length: 8 },
+      async (_, i) =>
+        await Effect.runPromise(
+          execution.action(
+            { name: "run" },
+            identity,
+            calls(String(i)),
+            new AbortController().signal
+          )
         )
-      )
     )
   );
   expect(results.map((result) => resultValue(result.result))).toEqual(
     Array.from({ length: 8 }, (_, i) => String(i))
   );
-  expect(() => fetch(endpoint)).toThrow("only available inside actions");
+  expect(() => {
+    void fetch(endpoint);
+  }).toThrow("only available inside actions");
 });
 
 it("revokes fetch in retained continuations after action completion", async () => {

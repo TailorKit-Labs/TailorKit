@@ -1,6 +1,5 @@
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 export type ErrorCode =
   | "BAD_REQUEST"
   | "UNAUTHORIZED"
@@ -40,7 +39,6 @@ export const appError = (cause: unknown): AppError => {
     return new AppError("UNAVAILABLE", "App connection interrupted");
   }
   if (
-    cause &&
     isObjectValue(cause) &&
     "code" in cause &&
     cause.code === "NETWORK_ERROR"
@@ -48,14 +46,13 @@ export const appError = (cause: unknown): AppError => {
     return new AppError("UNAVAILABLE", "App connection interrupted");
   }
   if (
-    cause &&
     isObjectValue(cause) &&
     "code" in cause &&
     isForwardableErrorCode(cause.code)
   ) {
     return new AppError(
       cause.code,
-      "message" in cause ? String(cause.message) : String(cause.code)
+      "message" in cause ? String(cause.message) : cause.code
     );
   }
   return new AppError("INTERNAL_SERVER_ERROR", "App function failed");

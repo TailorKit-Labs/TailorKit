@@ -15,7 +15,7 @@ export const createIframeBackend = (
   >();
   let closed = false;
   return {
-    close() {
+    close: () => {
       closed = true;
       for (const request of pending.values()) {
         clearTimeout(request.timer);
@@ -23,11 +23,11 @@ export const createIframeBackend = (
       }
       pending.clear();
     },
-    getSession(input: { refresh: boolean }): Promise<Session> {
+    getSession: async (input: { refresh: boolean }): Promise<Session> => {
       if (closed) {
-        return Promise.reject(new Error("Sandbox was destroyed"));
+        return await Promise.reject(new Error("Sandbox was destroyed"));
       }
-      return (() => {
+      return await (async () => {
         const {
           promise: pendingPromise,
           resolve,
@@ -44,14 +44,14 @@ export const createIframeBackend = (
         } catch (error) {
           reject(error);
         }
-        return pendingPromise;
+        return await pendingPromise;
       })();
     },
-    receive(result: {
+    receive: (result: {
       id: string;
       session?: Session;
       error?: { code: ErrorCode; message: string };
-    }) {
+    }) => {
       const request = pending.get(result.id);
       if (!request) {
         return;

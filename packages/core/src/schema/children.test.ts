@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { SerializedComponent } from "../spec/component";
+import { SerializedComponent } from "#spec/component";
+
 import { createTailorKitSchema } from "./schema";
 
 describe("component children contract", () => {

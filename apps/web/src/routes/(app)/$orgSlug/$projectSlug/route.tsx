@@ -27,8 +27,8 @@ const ProjectLayout = () => {
 
 export const Route = createFileRoute("/(app)/$orgSlug/$projectSlug")({
   component: ProjectLayout,
-  loader: ({ context, params }) =>
-    context.queryClient.query(
+  loader: async ({ context, params }) =>
+    await context.queryClient.query(
       context.orpc.project.get.queryOptions({
         input: { orgSlug: params.orgSlug, projectSlug: params.projectSlug },
       })

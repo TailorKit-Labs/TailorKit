@@ -5,13 +5,14 @@ import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import type { dataTableFeatures } from "#lib/table";
 
 export const renderSortableHeader = <TData extends RowData>(
-  header: Header<typeof dataTableFeatures, TData, unknown>
+  header: Header<typeof dataTableFeatures, TData>
 ) => {
   if (header.isPlaceholder) {
     return null;
   }
 
   if (!header.column.getCanSort()) {
+    // oxlint-disable-next-line typescript/no-unsafe-return -- TypeScript accepts TanStack flexRender as ReactNode; the Go linter cannot represent this conditional library return type.
     return flexRender(header.column.columnDef.header, header.getContext());
   }
 

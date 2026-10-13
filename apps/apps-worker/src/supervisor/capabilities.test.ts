@@ -1,10 +1,10 @@
+/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { expect, it, vi } from "vite-plus/test";
 
 import { cancellationStream } from "../runtime/cancellation";
 import { ActionCapability } from "./actions";
 
-// oxlint-disable-next-line unicorn/consistent-function-scoping -- Keep the generator or mutable callback with its owning test or cancellation lifecycle.
-vi.mock("cloudflare:workers", () => ({ RpcTarget: function RpcTarget() {} }));
+vi.mock("cloudflare:workers", () => ({ RpcTarget: vi.fn() }));
 
 const setup = () => {
   const controller = new AbortController();
@@ -59,9 +59,10 @@ it("keeps response bodies alive and propagates per-request cancellation", async 
   let outgoing!: AbortSignal;
   vi.stubGlobal(
     "fetch",
-    vi.fn((_request, init) => {
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    vi.fn(async (_request, init) => {
       outgoing = init.signal;
-      return Promise.resolve(new Response("response body"));
+      return new Response("response body");
     })
   );
   try {
@@ -82,13 +83,13 @@ it("keeps response bodies alive and propagates per-request cancellation", async 
 
 it("validates redirect destinations before forwarding", async () => {
   const { bridge, controller } = setup();
-  const fetch = vi.fn(() =>
-    Promise.resolve(
+  const fetch = vi.fn(
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    async () =>
       new Response(null, {
         headers: { location: "https://127.0.0.1/private" },
         status: 302,
       })
-    )
   );
   vi.stubGlobal("fetch", fetch);
   try {
@@ -110,8 +111,9 @@ it.each(["manual", "error"] as const)(
   async (redirect) => {
     const { bridge, controller } = setup();
     const fetch = vi.fn(
+      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
       async () =>
-        await new Response(null, {
+        new Response(null, {
           headers: { location: "https://example.com/final" },
           status: 302,
         })

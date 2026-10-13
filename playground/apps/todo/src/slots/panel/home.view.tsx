@@ -24,9 +24,9 @@ const TodoPanel = () => {
     void (async () => {
       // oxlint-disable-next-line react/todo -- Oxlint’s React compiler cannot lower try/finally; preserve cleanup after failed requests.
       try {
-        return await (async () => {
+        await (async () => {
           try {
-            return await (async () => {
+            await (async () => {
               const result = await tools.todos.list();
               if (active) {
                 setTodos(result);
@@ -120,19 +120,27 @@ const TodoPanel = () => {
 
         <Flex align="center" gap="sm">
           <Input
-            onValueChange={({ value }) => setTitle(value)}
+            onValueChange={({ value }) => {
+              setTitle(value);
+            }}
             placeholder="Add a task"
             value={title}
           />
           <Button
             disabled={loading || !title.trim() || pending}
-            onClick={() => addTodo()}
+            onClick={() => {
+              void (async () => {
+                await addTodo();
+              })();
+            }}
           >
             Add
           </Button>
         </Flex>
 
-        {err2 ? <Box textColor="muted">{err2}</Box> : null}
+        {err2 !== undefined && err2 !== null && err2 !== "" ? (
+          <Box textColor="muted">{err2}</Box>
+        ) : null}
         {loading ? <Box textColor="muted">Loading todos…</Box> : null}
         {!loading && todos.length === 0 ? (
           <Box textColor="muted">No todos yet.</Box>
@@ -144,14 +152,22 @@ const TodoPanel = () => {
               <Box grow="1">{todo.done ? `✓ ${todo.title}` : todo.title}</Box>
               <Button
                 disabled={pending}
-                onClick={() => toggleTodo(todo)}
+                onClick={() => {
+                  void (async () => {
+                    await toggleTodo(todo);
+                  })();
+                }}
                 variant="secondary"
               >
                 {todo.done ? "Reopen" : "Done"}
               </Button>
               <Button
                 disabled={pending}
-                onClick={() => removeTodo(todo)}
+                onClick={() => {
+                  void (async () => {
+                    await removeTodo(todo);
+                  })();
+                }}
                 variant="ghost"
               >
                 Remove

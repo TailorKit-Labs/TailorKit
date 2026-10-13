@@ -7,19 +7,20 @@ import { z } from "zod";
 export const createActionLeases = () => {
   const active = new Set<AbortController>();
   return {
-    closeAll() {
+    closeAll: () => {
       for (const controller of active) {
         controller.abort(new AppError("UNAVAILABLE", "App deployment changed"));
       }
     },
-    open(identity: { expiresAt: number }, parent?: AbortSignal) {
+    open: (identity: { expiresAt: number }, parent?: AbortSignal) => {
       const deadline = identity.expiresAt;
       if (deadline <= Date.now()) {
         throw new AppError("UNAUTHORIZED", "App token expired");
       }
       const controller = new AbortController();
-      const cancel = () =>
+      const cancel = () => {
         controller.abort(new AppError("UNAVAILABLE", "Action cancelled"));
+      };
       const timer = setTimeout(cancel, deadline - Date.now());
       const signal = parent
         ? AbortSignal.any([controller.signal, parent])
@@ -73,9 +74,9 @@ export const actionDestination = (url: URL) => {
 
 /** Trusted outbound fetch and committed-write notification; database calls stay in the facet. */
 export class ActionCapability extends RpcTarget {
-  private lease: { signal: AbortSignal; deadline: number };
-  private appSession: { url: string; token: string } | undefined;
-  private notify: (tables: string[]) => Promise<void>;
+  private readonly lease: { signal: AbortSignal; deadline: number };
+  private readonly appSession: { url: string; token: string } | undefined;
+  private readonly notify: (tables: string[]) => Promise<void>;
   constructor(
     lease: { signal: AbortSignal; deadline: number },
     notify: (tables: string[]) => Promise<void>,
@@ -128,8 +129,8 @@ export class ActionCapability extends RpcTarget {
   }
 
   // A committed write still needs delivery if its caller cancels before this RPC arrives.
-  committed(tables: string[]) {
-    return this.notify(tables);
+  async committed(tables: string[]) {
+    await this.notify(tables);
   }
 
   async fetch(
@@ -142,7 +143,7 @@ export class ActionCapability extends RpcTarget {
       this.lease.signal.removeEventListener("abort", cleanup);
       void (async () => {
         try {
-          return await reader.cancel();
+          await reader.cancel();
         } catch {
           /* Intentionally no action is needed. */
         }
@@ -190,7 +191,10 @@ export class ActionCapability extends RpcTarget {
       });
 
       const location = response.headers.get("location");
-      if (![301, 302, 303, 307, 308].includes(response.status) || !location) {
+      if (
+        ![301, 302, 303, 307, 308].includes(response.status) ||
+        !(location !== undefined && location !== null && location !== "")
+      ) {
         return response;
       }
 

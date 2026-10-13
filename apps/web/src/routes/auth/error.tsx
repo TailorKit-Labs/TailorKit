@@ -19,7 +19,10 @@ const messages = new Map<string, string>([
 
 const AuthErrorPage = () => {
   const { error } = useSearch({ from: "/auth/error" });
-  const message = error ? messages.get(error) : undefined;
+  const message =
+    error !== undefined && error !== null && error !== ""
+      ? messages.get(error)
+      : undefined;
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12">

@@ -1,7 +1,7 @@
 import type { TailorKitStore } from "@tailorkit/client-core";
 import { createContext, useContext } from "react";
 
-import type { TailorKitClientConfig } from "../tailorkit";
+import type { TailorKitClientConfig } from "#tailorkit";
 
 export interface TailorkitContextValue {
   store: TailorKitStore;

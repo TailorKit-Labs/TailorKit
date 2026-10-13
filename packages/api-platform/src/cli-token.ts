@@ -12,10 +12,16 @@ export const authenticateCli = async (
   deployToken: string,
   runtimeService?: boolean
 ) => {
-  if (runtimeService) {
+  if (runtimeService === true) {
     throw new ORPCError("FORBIDDEN");
   }
-  if (!env.AUTH_SECRET) {
+  if (
+    !(
+      env.AUTH_SECRET !== undefined &&
+      env.AUTH_SECRET !== null &&
+      env.AUTH_SECRET !== ""
+    )
+  ) {
     throw new ORPCError("SERVICE_UNAVAILABLE");
   }
   const token = await db.query.cliToken.findFirst({
@@ -55,7 +61,7 @@ export const authenticateCliRequest = async (
     );
   }
   const agent = context.agentToken;
-  if (token !== agent.token || context.runtimeService) {
+  if (token !== agent.token || context.runtimeService === true) {
     throw new ORPCError("UNAUTHORIZED");
   }
   return {

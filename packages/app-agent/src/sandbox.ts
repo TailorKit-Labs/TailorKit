@@ -12,7 +12,16 @@ export const getSandbox = async (name: string) => {
   try {
     const sandbox = await Sandbox.get({ name });
     const expiresAt = sandbox.expiresAt?.getTime();
-    if (sandbox.status !== "running" || !expiresAt || expiresAt <= Date.now()) {
+    if (
+      sandbox.status !== "running" ||
+      !(
+        expiresAt !== undefined &&
+        expiresAt !== null &&
+        expiresAt !== 0 &&
+        !Number.isNaN(expiresAt)
+      ) ||
+      expiresAt <= Date.now()
+    ) {
       throw new FatalError("App agent sandbox is no longer running.");
     }
     const extension = Date.now() + sandboxIdleTimeoutMs - expiresAt;
@@ -76,7 +85,12 @@ export const prepareSandbox = async (
       maxSize: 5 * 1024 * 1024 * 1024,
       name: driveName,
     });
-    if (drive.currentSandboxName && drive.currentSandboxName !== sandboxName) {
+    if (
+      drive.currentSandboxName !== undefined &&
+      drive.currentSandboxName !== null &&
+      drive.currentSandboxName !== "" &&
+      drive.currentSandboxName !== sandboxName
+    ) {
       throw new FatalError(
         "This app is already being edited. Retry after the active run finishes."
       );

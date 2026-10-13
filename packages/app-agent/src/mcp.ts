@@ -25,6 +25,7 @@ export interface AppAgentMcpExecution {
   signal: AbortSignal;
   /** Stream agent events through the MCP request's progress notifications. */
   onProgress: (
+    // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
     event: NonNullable<CallToolResult["structuredContent"]>
   ) => Promise<void>;
 }
@@ -34,14 +35,17 @@ export interface AppAgentMcpBackend {
   listApps: (input: {
     page: number;
     pageSize: number;
+    // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
   }) => Promise<NonNullable<CallToolResult["structuredContent"]>>;
   createApp: (
     input: z.infer<typeof createSchema>,
     execution: AppAgentMcpExecution
+    // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
   ) => Promise<NonNullable<CallToolResult["structuredContent"]>>;
   editApp: (
     input: z.infer<typeof editSchema>,
     execution: AppAgentMcpExecution
+    // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
   ) => Promise<NonNullable<CallToolResult["structuredContent"]>>;
 }
 
@@ -49,7 +53,7 @@ const execution = (context: ServerContext): AppAgentMcpExecution => {
   let progress = 0;
   const progressToken = context.mcpReq._meta?.progressToken;
   return {
-    async onProgress(event) {
+    onProgress: async (event) => {
       context.mcpReq.signal.throwIfAborted();
       if (progressToken === undefined) {
         return;
@@ -67,6 +71,7 @@ const execution = (context: ServerContext): AppAgentMcpExecution => {
   };
 };
 
+// oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
 const result = (value: NonNullable<CallToolResult["structuredContent"]>) => ({
   content: [{ text: JSON.stringify(value), type: "text" as const }],
   structuredContent: value,

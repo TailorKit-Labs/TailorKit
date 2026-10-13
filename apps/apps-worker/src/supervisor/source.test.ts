@@ -51,12 +51,14 @@ const setup = (contents: string | Uint8Array<ArrayBuffer> | null = code) => {
     source: deploymentSource({
       BUNDLES: { get },
       // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-      // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-      DEPLOYMENTS: {
-        // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-        get: vi.fn(async () => null),
-        put: vi.fn(async () => {}),
-      } as unknown as KVNamespace,
+
+      DEPLOYMENTS:
+        /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
+        {
+          get: vi.fn<() => Promise<null>>().mockResolvedValue(null),
+          put: vi.fn(async () => {}),
+        } as unknown as KVNamespace,
+      /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
       PLATFORM_URL: "https://platform.test/api/platform",
       RUNTIME_SERVICE_TOKEN: "private",
     }),
@@ -120,17 +122,22 @@ it("serves KV hits to old clients and fills misses from the platform", async () 
   });
   const fetch = vi
     .spyOn(globalThis, "fetch")
-    .mockImplementation(
-      async () => await Response.json({ ...deployment, deploymentId: "v2" })
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    .mockImplementation(async () =>
+      Response.json({ ...deployment, deploymentId: "v2" })
     );
   const source = deploymentSource({
     BUNDLES: { get: vi.fn() },
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    DEPLOYMENTS: {
-      get: async (key: string) => await (values.get(key) ?? null),
-      put,
-    } as unknown as KVNamespace,
+
+    DEPLOYMENTS:
+      /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
+      {
+        // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+        get: async (key: string) => values.get(key) ?? null,
+        put,
+      } as unknown as KVNamespace,
+    /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
     PLATFORM_URL: "https://platform.test",
     RUNTIME_SERVICE_TOKEN: "private",
   });

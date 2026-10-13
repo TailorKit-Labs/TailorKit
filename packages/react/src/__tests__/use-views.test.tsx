@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-member-access, typescript/no-unsafe-return, typescript/no-unsafe-assignment -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { defineContract } from "@tailorkit/core/schema";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
@@ -5,8 +6,8 @@ import type { ReactNode } from "react";
 import { StrictMode } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 
-import { createClient } from "../index";
-import type { TailorKitApp } from "../index";
+import { createClient } from "#index";
+import type { TailorKitApp } from "#index";
 
 const requireValue = <T,>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -21,6 +22,7 @@ const schema = {
     jsonSchema: { input: () => ({}), output: () => ({}) },
     validate: (
       value: Parameters<StandardSchemaV1["~standard"]["validate"]>[0]
+      // oxlint-disable-next-line typescript/no-generated-empty-object-type, typescript/no-unsafe-type-assertion -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     ) => ({ value: value as Record<never, never> }),
     vendor: "test",
     version: 1 as const,
@@ -129,10 +131,10 @@ it.each(["apps", "single", "page"] as const)(
       vi.mocked(globalThis.fetch).getMockImplementation()
     );
     const requestPath = kind === "page" ? "/actions" : "/apps";
-    vi.mocked(globalThis.fetch).mockImplementation((input, options) => {
+    vi.mocked(globalThis.fetch).mockImplementation(async (input, options) => {
       const path = url(input).pathname;
       if (path.endsWith(requestPath)) {
-        return (() => {
+        return await (async () => {
           const {
             promise: pendingPromise,
             resolve,
@@ -143,13 +145,13 @@ it.each(["apps", "single", "page"] as const)(
           } catch (error) {
             rejectPending(error);
           }
-          return pendingPromise;
+          return await pendingPromise;
         })();
       }
       if (path.endsWith("/apps")) {
-        return Promise.resolve(Response.json([discovered]));
+        return Response.json([discovered]);
       }
-      return original(input, options);
+      return await original(input, options);
     });
     const { result, rerender } = renderHook(
       () => {
@@ -163,8 +165,14 @@ it.each(["apps", "single", "page"] as const)(
     const keys = ["data", "error", "fetch", "isPending", "isRefetching"];
     const response = () =>
       Response.json(kind === "page" ? { json: instances } : [discovered]);
-    await waitFor(() => expect(pending).toHaveLength(1));
-    expect(Object.keys(result.current).toSorted()).toEqual(keys);
+    await waitFor(() => {
+      expect(pending).toHaveLength(1);
+    });
+    expect(
+      Object.keys(result.current).toSorted(
+        (left, right) => Number(left > right) - Number(left < right)
+      )
+    ).toEqual(keys);
     expect(result.current).toMatchObject({
       data: undefined,
       error: null,
@@ -173,8 +181,12 @@ it.each(["apps", "single", "page"] as const)(
     });
     const { fetch } = result.current;
     // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-    await act(async () => requireValue(pending[0])(response()));
-    await waitFor(() => expect(result.current.data).toBeDefined());
+    await act(async () => {
+      requireValue(pending[0])(response());
+    });
+    await waitFor(() => {
+      expect(result.current.data).toBeDefined();
+    });
     expect(result.current.isPending).toBe(false);
     expect(result.current.isRefetching).toBe(false);
     expect(result.current.fetch).toBe(fetch);
@@ -186,8 +198,12 @@ it.each(["apps", "single", "page"] as const)(
     act(() => {
       refresh = fetch();
     });
-    await waitFor(() => expect(pending).toHaveLength(2));
-    await waitFor(() => expect(result.current.isRefetching).toBe(true));
+    await waitFor(() => {
+      expect(pending).toHaveLength(2);
+    });
+    await waitFor(() => {
+      expect(result.current.isRefetching).toBe(true);
+    });
     expect(result.current.isPending).toBe(false);
     expect(result.current.data).toEqual(ready.data);
     expect(result.current.fetch).toBe(fetch);
@@ -195,7 +211,11 @@ it.each(["apps", "single", "page"] as const)(
       requireValue(pending[1])(response());
       await refresh;
     });
-    expect(Object.keys(result.current).toSorted()).toEqual(keys);
+    expect(
+      Object.keys(result.current).toSorted(
+        (left, right) => Number(left > right) - Number(left < right)
+      )
+    ).toEqual(keys);
     expect(result.current.isRefetching).toBe(false);
     expect(result.current.isPending).toBe(false);
     expect(result.current.error).toBeNull();
@@ -210,7 +230,9 @@ it("fetches the matched view's instances over authenticated HTTP with combined c
     },
     { wrapper }
   );
-  await waitFor(() => expect(result.current.data).toBeDefined());
+  await waitFor(() => {
+    expect(result.current.data).toBeDefined();
+  });
   expect(result.current.data).toEqual(withApp(instances));
   expect(calls("/meta")).toHaveLength(0);
   expect(calls("/backend/session")[0]?.[1]).toMatchObject({
@@ -221,7 +243,8 @@ it("fetches the matched view's instances over authenticated HTTP with combined c
   expect(new Headers(options?.headers).get("authorization")).toBe(
     "Bearer app-token"
   );
-  expect(JSON.parse(String(options?.body))).toEqual({
+
+  expect(await new Response(options?.body).json()).toEqual({
     json: {
       args: {
         context: { canEdit: true, customer: { id: "c1" }, user: { id: "u1" } },
@@ -243,18 +266,20 @@ it("uses the closest supported ancestor and excludes deeper loading context", as
     },
     { wrapper }
   );
-  await waitFor(() =>
+  await waitFor(() => {
     expect(result.current.data).toEqual(
       withApp(instances, requireValue(requireValue(apps)[0]))
-    )
-  );
-  expect(JSON.parse(String(calls("/actions")[0]?.[1]?.body)).json.args).toEqual(
-    {
-      context: { user: { id: "u1" } },
-      path: "/",
-      slot: "panel",
-    }
-  );
+    );
+  });
+
+  const requestPayload = await new Response(
+    calls("/actions")[0]?.[1]?.body
+  ).json();
+  expect(requestPayload.json.args).toEqual({
+    context: { user: { id: "u1" } },
+    path: "/",
+    slot: "panel",
+  });
 });
 
 it("falls back to an enabled ancestor when the supported child is disabled", async () => {
@@ -272,10 +297,13 @@ it("falls back to an enabled ancestor when the supported child is disabled", asy
     },
     { wrapper }
   );
-  await waitFor(() => expect(result.current.data).toBeDefined());
+  await waitFor(() => {
+    expect(result.current.data).toBeDefined();
+  });
   expect(result.current.data).toEqual(withApp(instances, disabledChildApp));
   expect(calls("/actions")).toHaveLength(1);
-  expect(JSON.parse(String(calls("/actions")[0]?.[1]?.body))).toEqual({
+
+  expect(await new Response(calls("/actions")[0]?.[1]?.body).json()).toEqual({
     json: {
       args: { context: { user: { id: "u1" } }, path: "/", slot: "page" },
       name: "_tailorkit.instances.resolve",
@@ -304,7 +332,9 @@ it("waits for every required ancestor before fetching instances", async () => {
   expect(calls("/backend/session")).toHaveLength(0);
   expect(calls("/actions")).toHaveLength(0);
   rerender({ ready: true });
-  await waitFor(() => expect(result.current.data).toEqual(withApp(instances)));
+  await waitFor(() => {
+    expect(result.current.data).toEqual(withApp(instances));
+  });
 });
 
 it.each(["missing", "error", "invalid", "duplicate"] as const)(
@@ -336,7 +366,9 @@ it.each(["missing", "error", "invalid", "duplicate"] as const)(
       },
       { wrapper }
     );
-    await waitFor(() => expect(result.current.error).toBeInstanceOf(Error));
+    await waitFor(() => {
+      expect(result.current.error).toBeInstanceOf(Error);
+    });
     expect(result.current.isPending).toBe(false);
     expect(result.current.data).toBeUndefined();
     expect(calls("/backend/session")).toHaveLength(0);
@@ -390,7 +422,9 @@ it.each(["static", "disabled", "unsupported", "legacy"] as const)(
       },
       { wrapper }
     );
-    await waitFor(() => expect(result.current.data).toBeDefined());
+    await waitFor(() => {
+      expect(result.current.data).toBeDefined();
+    });
     expect(result.current.data).toEqual([]);
     expect(calls("/backend/session")).toHaveLength(0);
     expect(calls("/actions")).toHaveLength(0);
@@ -405,10 +439,14 @@ it("does not refetch for equivalent inline objects and fetch refreshes instances
     },
     { wrapper }
   );
-  await waitFor(() => expect(result.current.data).toBeDefined());
+  await waitFor(() => {
+    expect(result.current.data).toBeDefined();
+  });
   rerender();
   expect(calls("/actions")).toHaveLength(1);
-  await act(() => result.current.fetch());
+  await act(async () => {
+    await result.current.fetch();
+  });
   expect(result.current.data).toEqual(withApp(instances));
   expect(calls("/actions")).toHaveLength(2);
   expect(calls("/backend/session")).toHaveLength(1);
@@ -423,9 +461,9 @@ it("clears previous data and ignores late responses after context changes", asyn
   const original = requireValue(
     vi.mocked(globalThis.fetch).getMockImplementation()
   );
-  vi.mocked(globalThis.fetch).mockImplementation((input, options) =>
+  vi.mocked(globalThis.fetch).mockImplementation(async (input, options) =>
     url(input).pathname.endsWith("/actions")
-      ? (() => {
+      ? await (async () => {
           const {
             promise: pendingPromise,
             resolve,
@@ -436,9 +474,9 @@ it("clears previous data and ignores late responses after context changes", asyn
           } catch (error) {
             rejectPending(error);
           }
-          return pendingPromise;
+          return await pendingPromise;
         })()
-      : original(input, options)
+      : await original(input, options)
   );
   const { result, rerender, unmount } = renderHook(
     ({ userId }) => {
@@ -447,31 +485,37 @@ it("clears previous data and ignores late responses after context changes", asyn
     },
     { initialProps: { userId: "u1" }, wrapper }
   );
-  await waitFor(() => expect(pending).toHaveLength(1));
+  await waitFor(() => {
+    expect(pending).toHaveLength(1);
+  });
   rerender({ userId: "u2" });
-  await waitFor(() => expect(pending).toHaveLength(2));
+  await waitFor(() => {
+    expect(pending).toHaveLength(2);
+  });
   expect(pending[0]?.signal?.aborted).toBe(true);
   // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-  await act(async () =>
-    requireValue(pending[0]).resolve(Response.json({ json: instances }))
-  );
+  await act(async () => {
+    requireValue(pending[0]).resolve(Response.json({ json: instances }));
+  });
   expect(result.current.data).toBeUndefined();
   expect(result.current.isPending).toBe(true);
   const fresh = [{ data: { userId: "u2" }, key: "fresh", metadata: {} }];
   // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-  await act(async () =>
-    requireValue(pending[1]).resolve(Response.json({ json: fresh }))
-  );
+  await act(async () => {
+    requireValue(pending[1]).resolve(Response.json({ json: fresh }));
+  });
   expect(result.current.data).toEqual(withApp(fresh));
   rerender({ userId: "u3" });
-  await waitFor(() => expect(pending).toHaveLength(3));
+  await waitFor(() => {
+    expect(pending).toHaveLength(3);
+  });
   expect(result.current.data).toBeUndefined();
   unmount();
   expect(pending[2]?.signal?.aborted).toBe(true);
   // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-  await act(async () =>
-    requireValue(pending[2]).resolve(Response.json({ json: instances }))
-  );
+  await act(async () => {
+    requireValue(pending[2]).resolve(Response.json({ json: instances }));
+  });
 });
 
 it("exposes resolver errors and allows retry through fetch", async () => {
@@ -479,7 +523,7 @@ it("exposes resolver errors and allows retry through fetch", async () => {
     vi.mocked(globalThis.fetch).getMockImplementation()
   );
   let fail = true;
-  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
+
   vi.mocked(globalThis.fetch).mockImplementation(async (input, options) => {
     if (fail && url(input).pathname.endsWith("/actions")) {
       return Response.json(
@@ -493,7 +537,7 @@ it("exposes resolver errors and allows retry through fetch", async () => {
         { status: 403 }
       );
     }
-    return original(input, options);
+    return await original(input, options);
   });
   const { result } = renderHook(
     () => {
@@ -502,12 +546,14 @@ it("exposes resolver errors and allows retry through fetch", async () => {
     },
     { wrapper }
   );
-  await waitFor(() =>
-    expect(result.current.error?.message).toBe("Reports unavailable")
-  );
+  await waitFor(() => {
+    expect(result.current.error?.message).toBe("Reports unavailable");
+  });
   expect(result.current.error).toBeInstanceOf(Error);
   fail = false;
-  await act(() => result.current.fetch());
+  await act(async () => {
+    await result.current.fetch();
+  });
   expect(result.current.data).toEqual(withApp(instances));
   expect(result.current.error).toBeNull();
 });
@@ -529,7 +575,9 @@ it("exposes session failures without sending an unauthenticated resolver call", 
     },
     { wrapper }
   );
-  await waitFor(() => expect(result.current.error).toBeInstanceOf(Error));
+  await waitFor(() => {
+    expect(result.current.error).toBeInstanceOf(Error);
+  });
   expect(result.current.error).toMatchObject({ code: "UNAUTHORIZED" });
   expect(calls("/actions")).toHaveLength(0);
 });
@@ -542,20 +590,29 @@ it("reauthorizes when the discovered app or deployment changes", async () => {
     },
     { wrapper }
   );
-  await waitFor(() => expect(result.current.data).toBeDefined());
+  await waitFor(() => {
+    expect(result.current.data).toBeDefined();
+  });
   apps = [{ ...app, currentDeployment: { id: "deployment_2" } }];
   rerender();
-  await waitFor(() => expect(calls("/actions")).toHaveLength(2));
-  await waitFor(() => expect(result.current.data).toBeDefined());
+  await waitFor(() => {
+    expect(calls("/actions")).toHaveLength(2);
+  });
+  await waitFor(() => {
+    expect(result.current.data).toBeDefined();
+  });
   apps = [{ ...app, currentDeployment: { id: "deployment_3" }, id: "app_2" }];
   rerender();
-  await waitFor(() =>
+  await waitFor(() => {
     expect(
       result.current.data !== undefined && calls("/actions").length === 3
-    ).toBe(true)
-  );
+    ).toBe(true);
+  });
   expect(calls("/backend/session")).toHaveLength(3);
-  expect(JSON.parse(String(calls("/backend/session")[2]?.[1]?.body))).toEqual({
+
+  expect(
+    await new Response(calls("/backend/session")[2]?.[1]?.body).json()
+  ).toEqual({
     appId: "app_2",
   });
   expect(result.current.data?.[0]?.app).toEqual(apps[0]);
@@ -583,18 +640,21 @@ it("works in Strict Mode and isolates different roots", async () => {
     },
     { wrapper: strictWrapper }
   );
-  await waitFor(() =>
+  await waitFor(() => {
     expect(
       first.result.current.data !== undefined &&
         second.result.current.data !== undefined
-    ).toBe(true)
+    ).toBe(true);
+  });
+  const resolvedUsers = await Promise.all(
+    calls("/actions").map(async ([, options]) => {
+      const request = await new Response(options?.body).json();
+      return request.json.args.context.user.id;
+    })
   );
-  const users = calls("/actions")
-    .map(
-      ([, options]) =>
-        JSON.parse(String(options?.body)).json.args.context.user.id
-    )
-    .toSorted();
+  const users = resolvedUsers.toSorted(
+    (left, right) => Number(left > right) - Number(left < right)
+  );
   expect(users).toEqual(["u1", "u2"]);
 });
 
@@ -604,13 +664,10 @@ it("rejects a hook used outside a Provider or under another client", () => {
     "useViews must be rendered inside a TailorKit Provider"
   );
   const other = createClient({ baseUrl: "https://other.test/api/", contract });
-  // oxlint-disable-next-line unicorn/consistent-function-scoping -- Keep the generator or mutable callback with its owning test or cancellation lifecycle.
-  const wrongWrapper = ({ children }: { children: ReactNode }) => (
-    <other.Provider>{children}</other.Provider>
-  );
+
   expect(() =>
     renderHook(() => client.useViews({ slot: "page" }), {
-      wrapper: wrongWrapper,
+      wrapper: other.Provider,
     })
   ).toThrow("useViews was created for a different TailorKit client");
 });
@@ -626,11 +683,11 @@ it("shares one resolver across two hooks and retains data across remounts", asyn
     },
     { wrapper }
   );
-  await waitFor(() =>
+  await waitFor(() => {
     expect(
       first.result.current.every((query) => query.data !== undefined)
-    ).toBe(true)
-  );
+    ).toBe(true);
+  });
   expect(calls("/actions")).toHaveLength(1);
   expect(calls("/backend/session")).toHaveLength(1);
   first.unmount();
@@ -641,7 +698,9 @@ it("shares one resolver across two hooks and retains data across remounts", asyn
     },
     { wrapper }
   );
-  await waitFor(() => expect(second.result.current.data).toBeDefined());
+  await waitFor(() => {
+    expect(second.result.current.data).toBeDefined();
+  });
   expect(calls("/actions")).toHaveLength(1);
   expect(calls("/meta")).toHaveLength(0);
 });
@@ -661,12 +720,12 @@ it("shares identical instance requests across roots while keeping their registra
     },
     { wrapper }
   );
-  await waitFor(() =>
+  await waitFor(() => {
     expect(
       first.result.current.data !== undefined &&
         second.result.current.data !== undefined
-    ).toBe(true)
-  );
+    ).toBe(true);
+  });
   expect(calls("/actions")).toHaveLength(1);
   first.unmount();
   expect(second.result.current.data).toEqual(withApp(instances));
@@ -678,9 +737,9 @@ it("discovers apps through useApps before resolving their instances", async () =
   const original = requireValue(
     vi.mocked(globalThis.fetch).getMockImplementation()
   );
-  vi.mocked(globalThis.fetch).mockImplementation((input, options) =>
+  vi.mocked(globalThis.fetch).mockImplementation(async (input, options) =>
     url(input).pathname.endsWith("/apps")
-      ? (() => {
+      ? await (async () => {
           const {
             promise: pendingPromise,
             resolve,
@@ -691,9 +750,9 @@ it("discovers apps through useApps before resolving their instances", async () =
           } catch (error) {
             rejectPending(error);
           }
-          return pendingPromise;
+          return await pendingPromise;
         })()
-      : original(input, options)
+      : await original(input, options)
   );
   const { result } = renderHook(
     () => {
@@ -702,11 +761,18 @@ it("discovers apps through useApps before resolving their instances", async () =
     },
     { wrapper }
   );
-  await waitFor(() => expect(calls("/apps")).toHaveLength(1));
+  await waitFor(() => {
+    expect(calls("/apps")).toHaveLength(1);
+  });
   expect(result.current.isPending).toBe(true);
   expect(calls("/backend/session")).toHaveLength(0);
-  await act(async () => await finishApps(Response.json([app])));
-  await waitFor(() => expect(result.current.data).toEqual(withApp(instances)));
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  await act(async () => {
+    finishApps(Response.json([app]));
+  });
+  await waitFor(() => {
+    expect(result.current.data).toEqual(withApp(instances));
+  });
 });
 
 it("aggregates apps in discovery order, resolves in parallel, and preserves duplicate keys", async () => {
@@ -724,10 +790,10 @@ it("aggregates apps in discovery order, resolves in parallel, and preserves dupl
   const original = requireValue(
     vi.mocked(globalThis.fetch).getMockImplementation()
   );
-  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
+
   vi.mocked(globalThis.fetch).mockImplementation(async (input, options) => {
     if (url(input).pathname.endsWith("/backend/session")) {
-      const { appId } = JSON.parse(String(options?.body));
+      const { appId } = await new Response(options?.body).json();
       return Response.json({
         expiresAt: Date.now() + 300_000,
         token: appId,
@@ -735,7 +801,8 @@ it("aggregates apps in discovery order, resolves in parallel, and preserves dupl
       });
     }
     if (url(input).pathname.endsWith("/actions")) {
-      return (() => {
+      const body = await new Response(options?.body).text();
+      return await (async () => {
         const {
           promise: pendingPromise,
           resolve,
@@ -743,17 +810,17 @@ it("aggregates apps in discovery order, resolves in parallel, and preserves dupl
         } = Promise.withResolvers<Response>();
         try {
           pending.push({
-            body: String(options?.body),
+            body,
             resolve,
             token: new Headers(options?.headers).get("authorization"),
           });
         } catch (error) {
           rejectPending(error);
         }
-        return pendingPromise;
+        return await pendingPromise;
       })();
     }
-    return original(input, options);
+    return await original(input, options);
   });
   const { result } = renderHook(
     () => {
@@ -762,7 +829,9 @@ it("aggregates apps in discovery order, resolves in parallel, and preserves dupl
     },
     { wrapper }
   );
-  await waitFor(() => expect(pending).toHaveLength(2));
+  await waitFor(() => {
+    expect(pending).toHaveLength(2);
+  });
   expect(pending.map(({ token }) => token)).toEqual([
     "Bearer app_1",
     "Bearer app_2",
@@ -772,15 +841,15 @@ it("aggregates apps in discovery order, resolves in parallel, and preserves dupl
     "/",
   ]);
   // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-  await act(async () =>
-    requireValue(pending[1]).resolve(Response.json({ json: instances }))
-  );
+  await act(async () => {
+    requireValue(pending[1]).resolve(Response.json({ json: instances }));
+  });
   expect(result.current.isPending).toBe(true);
   expect(result.current.data).toBeUndefined();
   // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-  await act(async () =>
-    requireValue(pending[0]).resolve(Response.json({ json: instances }))
-  );
+  await act(async () => {
+    requireValue(pending[0]).resolve(Response.json({ json: instances }));
+  });
   expect(result.current.data).toEqual([
     ...withApp(instances),
     ...withApp(instances, second),
@@ -793,7 +862,9 @@ it("returns an empty result without requests when there are no apps or registere
   const { result } = renderHook(() => client.useViews({ slot: "page" }), {
     wrapper,
   });
-  await waitFor(() => expect(result.current.data).toEqual([]));
+  await waitFor(() => {
+    expect(result.current.data).toEqual([]);
+  });
   expect(result.current.isPending).toBe(false);
   expect(globalThis.fetch).not.toHaveBeenCalled();
 });
@@ -807,7 +878,9 @@ it("returns an empty result with no app requests using the local contract", asyn
     },
     { wrapper }
   );
-  await waitFor(() => expect(result.current.data).toEqual([]));
+  await waitFor(() => {
+    expect(result.current.data).toEqual([]);
+  });
   expect(result.current.isPending).toBe(false);
   expect(calls("/meta")).toHaveLength(0);
   expect(calls("/apps")).toHaveLength(0);
@@ -821,12 +894,12 @@ it("exposes app discovery failures and retries them through fetch", async () => 
   const original = requireValue(
     vi.mocked(globalThis.fetch).getMockImplementation()
   );
-  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
+
   vi.mocked(globalThis.fetch).mockImplementation(async (input, options) => {
     if (fail && url(input).pathname.endsWith("/apps")) {
       return new Response(null, { status: 503 });
     }
-    return original(input, options);
+    return await original(input, options);
   });
   const { result } = renderHook(
     () => {
@@ -835,14 +908,20 @@ it("exposes app discovery failures and retries them through fetch", async () => 
     },
     { wrapper }
   );
-  await waitFor(() => expect(result.current.error).toBeInstanceOf(Error));
+  await waitFor(() => {
+    expect(result.current.error).toBeInstanceOf(Error);
+  });
   expect(result.current.error?.message).toContain(
     "Unable to fetch TailorKit apps"
   );
   expect(calls("/actions")).toHaveLength(0);
   fail = false;
-  await act(() => result.current.fetch());
-  await waitFor(() => expect(result.current.data).toEqual(withApp(instances)));
+  await act(async () => {
+    await result.current.fetch();
+  });
+  await waitFor(() => {
+    expect(result.current.data).toEqual(withApp(instances));
+  });
   expect(calls("/apps")).toHaveLength(2);
 });
 
@@ -856,9 +935,9 @@ it("cancels every app resolver and ignores late results when the app list change
   const original = requireValue(
     vi.mocked(globalThis.fetch).getMockImplementation()
   );
-  vi.mocked(globalThis.fetch).mockImplementation((input, options) =>
+  vi.mocked(globalThis.fetch).mockImplementation(async (input, options) =>
     url(input).pathname.endsWith("/actions")
-      ? (() => {
+      ? await (async () => {
           const {
             promise: pendingPromise,
             resolve,
@@ -869,9 +948,9 @@ it("cancels every app resolver and ignores late results when the app list change
           } catch (error) {
             rejectPending(error);
           }
-          return pendingPromise;
+          return await pendingPromise;
         })()
-      : original(input, options)
+      : await original(input, options)
   );
   const { result, rerender, unmount } = renderHook(
     () => {
@@ -880,11 +959,17 @@ it("cancels every app resolver and ignores late results when the app list change
     },
     { wrapper }
   );
-  await waitFor(() => expect(pending).toHaveLength(2));
+  await waitFor(() => {
+    expect(pending).toHaveLength(2);
+  });
   apps = [second];
   rerender();
-  await waitFor(() => expect(pending).toHaveLength(3));
-  expect(pending.slice(0, 2).every(({ signal }) => signal?.aborted)).toBe(true);
+  await waitFor(() => {
+    expect(pending).toHaveLength(3);
+  });
+  expect(
+    pending.slice(0, 2).every(({ signal }) => signal?.aborted === true)
+  ).toBe(true);
   // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
   await act(async () => {
     for (const request of pending.slice(0, 2)) {
@@ -893,14 +978,16 @@ it("cancels every app resolver and ignores late results when the app list change
   });
   expect(result.current.data).toBeUndefined();
   // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-  await act(async () =>
-    requireValue(pending[2]).resolve(Response.json({ json: instances }))
-  );
+  await act(async () => {
+    requireValue(pending[2]).resolve(Response.json({ json: instances }));
+  });
   expect(result.current.data).toEqual(withApp(instances, second));
-  await act(() => {
+  act(() => {
     void result.current.fetch();
   });
-  await waitFor(() => expect(pending).toHaveLength(4));
+  await waitFor(() => {
+    expect(pending).toHaveLength(4);
+  });
   unmount();
   expect(pending[3]?.signal?.aborted).toBe(true);
 });
@@ -914,9 +1001,9 @@ it("clears the aggregate and cancels remaining resolvers when any app fails", as
   const original = requireValue(
     vi.mocked(globalThis.fetch).getMockImplementation()
   );
-  vi.mocked(globalThis.fetch).mockImplementation((input, options) =>
+  vi.mocked(globalThis.fetch).mockImplementation(async (input, options) =>
     url(input).pathname.endsWith("/actions")
-      ? (() => {
+      ? await (async () => {
           const {
             promise: pendingPromise,
             resolve,
@@ -927,9 +1014,9 @@ it("clears the aggregate and cancels remaining resolvers when any app fails", as
           } catch (error) {
             rejectPending(error);
           }
-          return pendingPromise;
+          return await pendingPromise;
         })()
-      : original(input, options)
+      : await original(input, options)
   );
   const { result } = renderHook(
     () => {
@@ -938,9 +1025,11 @@ it("clears the aggregate and cancels remaining resolvers when any app fails", as
     },
     { wrapper }
   );
-  await waitFor(() => expect(pending).toHaveLength(2));
+  await waitFor(() => {
+    expect(pending).toHaveLength(2);
+  });
   // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-  await act(async () =>
+  await act(async () => {
     requireValue(pending[0]).resolve(
       Response.json(
         {
@@ -952,9 +1041,11 @@ it("clears the aggregate and cancels remaining resolvers when any app fails", as
         },
         { status: 403 }
       )
-    )
-  );
-  await waitFor(() => expect(result.current.error).toBeInstanceOf(Error));
+    );
+  });
+  await waitFor(() => {
+    expect(result.current.error).toBeInstanceOf(Error);
+  });
   expect(result.current.error?.message).toBe("App unavailable");
   expect(result.current.data).toBeUndefined();
   expect(pending[1]?.signal?.aborted).toBe(true);
@@ -984,7 +1075,9 @@ it.each(["single", "default"] as const)(
       second,
     ];
     const { result } = renderHook(() => client.useViews({ slot }), { wrapper });
-    await waitFor(() => expect(result.current.data).toBeDefined());
+    await waitFor(() => {
+      expect(result.current.data).toBeDefined();
+    });
     expect(result.current.data).toEqual([{ app: first }, { app: second }]);
     expect(calls("/meta")).toHaveLength(0);
     expect(calls("/apps")).toHaveLength(0);
@@ -1013,9 +1106,9 @@ it.each(["loading", "error"] as const)(
       },
       { wrapper }
     );
-    await waitFor(() =>
-      expect(result.current.data).toEqual([{ app: singleApp }])
-    );
+    await waitFor(() => {
+      expect(result.current.data).toEqual([{ app: singleApp }]);
+    });
     expect(calls("/backend/session")).toHaveLength(0);
     expect(calls("/actions")).toHaveLength(0);
   }
@@ -1040,18 +1133,26 @@ it("intersects scope and app filters and updates supplied single-slot apps", asy
     }) => client.useViews({ appIds, scopes, slot: "single" }),
     { initialProps: { appIds: ["app_1", "app_3"], scopes: ["user"] }, wrapper }
   );
-  await waitFor(() => expect(result.current.data).toEqual([{ app: first }]));
+  await waitFor(() => {
+    expect(result.current.data).toEqual([{ app: first }]);
+  });
   rerender({ appIds: ["app_3"], scopes: undefined });
-  await waitFor(() => expect(result.current.data).toEqual([{ app: unscoped }]));
+  await waitFor(() => {
+    expect(result.current.data).toEqual([{ app: unscoped }]);
+  });
   rerender({ appIds: undefined, scopes: [] });
-  await waitFor(() => expect(result.current.data).toEqual([]));
+  await waitFor(() => {
+    expect(result.current.data).toEqual([]);
+  });
   rerender({ appIds: [], scopes: undefined });
-  await waitFor(() => expect(result.current.data).toEqual([]));
+  await waitFor(() => {
+    expect(result.current.data).toEqual([]);
+  });
   apps = [{ ...second, name: "Updated" }];
   rerender({ appIds: undefined, scopes: undefined });
-  await waitFor(() =>
-    expect(result.current.data).toEqual([{ app: requireValue(apps)[0] }])
-  );
+  await waitFor(() => {
+    expect(result.current.data).toEqual([{ app: requireValue(apps)[0] }]);
+  });
   expect(calls("/apps")).toHaveLength(0);
   expect(calls("/meta")).toHaveLength(0);
   expect(calls("/actions")).toHaveLength(0);
@@ -1078,12 +1179,14 @@ it("shares app discovery with useApps and fetch refreshes single-slot entries", 
     }),
     { wrapper }
   );
-  await waitFor(() =>
-    expect(result.current.slot.data).toEqual([{ app: discovered[0] }])
-  );
+  await waitFor(() => {
+    expect(result.current.slot.data).toEqual([{ app: discovered[0] }]);
+  });
   expect(calls("/apps")).toHaveLength(1);
   discovered = [{ ...requireValue(discovered[0]), id: "new-app" }];
-  await act(() => result.current.slot.fetch());
+  await act(async () => {
+    await result.current.slot.fetch();
+  });
   expect(result.current.slot.data).toEqual([{ app: discovered[0] }]);
   expect(result.current.apps.data).toEqual(discovered);
   expect(calls("/apps")).toHaveLength(2);
@@ -1105,11 +1208,14 @@ it("filters multiple-slot apps before authorizing and resolving them", async () 
     },
     { wrapper }
   );
-  await waitFor(() =>
-    expect(result.current.data).toEqual(withApp(instances, selected))
-  );
+  await waitFor(() => {
+    expect(result.current.data).toEqual(withApp(instances, selected));
+  });
   expect(calls("/backend/session")).toHaveLength(1);
-  expect(JSON.parse(String(calls("/backend/session")[0]?.[1]?.body))).toEqual({
+
+  expect(
+    await new Response(calls("/backend/session")[0]?.[1]?.body).json()
+  ).toEqual({
     appId: selected.id,
   });
   expect(calls("/actions")).toHaveLength(1);
@@ -1124,7 +1230,9 @@ it("retains single-slot entries when registered context changes", async () => {
     },
     { initialProps: { userId: "u1" }, wrapper }
   );
-  await waitFor(() => expect(result.current.data).toBeDefined());
+  await waitFor(() => {
+    expect(result.current.data).toBeDefined();
+  });
   const previous = result.current.data;
   rerender({ userId: "u2" });
   await act(async () => {});
@@ -1149,17 +1257,15 @@ it.each(["page", "single"] as const)(
     const original = requireValue(
       vi.mocked(globalThis.fetch).getMockImplementation()
     );
-    vi.mocked(globalThis.fetch).mockImplementation((input, options) => {
+    vi.mocked(globalThis.fetch).mockImplementation(async (input, options) => {
       const path = url(input).pathname;
       if (path.endsWith("/apps")) {
-        return Promise.resolve(
-          fail
-            ? new Response(null, { status: 503 })
-            : Response.json([discovered, excluded])
-        );
+        return fail
+          ? new Response(null, { status: 503 })
+          : Response.json([discovered, excluded]);
       }
       if (path.endsWith("/actions")) {
-        return (() => {
+        return await (async () => {
           const {
             promise: pendingPromise,
             resolve,
@@ -1170,10 +1276,10 @@ it.each(["page", "single"] as const)(
           } catch (error) {
             rejectPending(error);
           }
-          return pendingPromise;
+          return await pendingPromise;
         })();
       }
-      return original(input, options);
+      return await original(input, options);
     });
     const { result } = renderHook(
       () => {
@@ -1186,7 +1292,9 @@ it.each(["page", "single"] as const)(
       },
       { wrapper }
     );
-    await waitFor(() => expect(result.current.error).toBeInstanceOf(Error));
+    await waitFor(() => {
+      expect(result.current.error).toBeInstanceOf(Error);
+    });
     fail = false;
     let complete = false;
     let pending!: Promise<void>;
@@ -1197,14 +1305,18 @@ it.each(["page", "single"] as const)(
     });
     expect(calls("/meta")).toHaveLength(0);
     if (slot === "page") {
-      await waitFor(() => expect(calls("/actions")).toHaveLength(1));
+      await waitFor(() => {
+        expect(calls("/actions")).toHaveLength(1);
+      });
       expect(complete).toBe(false);
       // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
       await act(async () => {
         finishInstances(Response.json({ json: instances }));
       });
     }
-    await act(() => pending);
+    await act(async () => {
+      await pending;
+    });
     expect(complete).toBe(true);
     expect(result.current.isPending).toBe(false);
     expect(result.current.isRefetching).toBe(false);

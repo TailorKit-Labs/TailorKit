@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-call, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { DatabaseSync } from "node:sqlite";
 
 import {
@@ -68,10 +69,11 @@ const fixture = () => {
       let rows: unknown[][] = [];
       if (statement.columns().length) {
         // SAFETY: setReturnArrays(true) forces positional rows; Node's declarations still describe records.
-        // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- Node's SQLite declaration does not reflect setReturnArrays.
+        // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- Node's SQLite declaration does not reflect setReturnArrays. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
         rows = statement.all(...(params as never[])) as unknown as unknown[][];
       } else {
         // SAFETY: This test supplies the SQLite-compatible parameters used by its fixture queries.
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
         statement.run(...(params as never[]));
       }
       return {
@@ -118,6 +120,7 @@ const fixture = () => {
         expect(input).toBeUndefined();
         db.insert(todos).values({ id: "invalid", title: "rollback" }).run();
         // SAFETY: This negative test deliberately returns data outside its declared result schema to verify rejection.
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
         return { ok: false } as never;
       }),
     joined: query({
@@ -304,6 +307,7 @@ it("deduplicates accepted writes and rejects reused IDs with different identity 
   ).toThrow("already used");
   // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   expect(
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     (execution.query({ args: {}, name: "list" }, identity).value as unknown[])
       .length
   ).toBe(1);
@@ -476,7 +480,7 @@ it("runs action database calls locally and notifies only committed writes before
     list: fn.query.handler(({ db }) => db.select().from(todos).all()),
   };
   let release!: () => void;
-  const external = (() => {
+  const external = (async () => {
     const {
       promise: pendingPromise,
       resolve,
@@ -487,10 +491,10 @@ it("runs action database calls locally and notifies only committed writes before
     } catch (error) {
       rejectPending(error);
     }
-    return pendingPromise;
+    await pendingPromise;
   })();
   let ready!: () => void;
-  const committed = (() => {
+  const committed = (async () => {
     const {
       promise: pendingPromise,
       resolve,
@@ -501,7 +505,7 @@ it("runs action database calls locally and notifies only committed writes before
     } catch (error) {
       rejectPending(error);
     }
-    return pendingPromise;
+    await pendingPromise;
   })();
   const requestId = crypto.randomUUID();
   const app = defineServer({
@@ -520,7 +524,7 @@ it("runs action database calls locally and notifies only committed writes before
           await queries.records.list();
         }
         await external;
-        return queries.records.list();
+        return await queries.records.list();
       }),
   });
   const execution = createExecution(app, persistence);
@@ -638,7 +642,7 @@ it("runs nested relational queries and preserves scope, permissions and invalida
   );
   const scope = databaseScope(persistence, false, relations);
   const usersQuery = scope.db.query.users;
-  if (!usersQuery) {
+  if (!(usersQuery !== undefined && usersQuery !== null)) {
     throw new Error("Missing users query");
   }
   const prepared = usersQuery.findMany().prepare();

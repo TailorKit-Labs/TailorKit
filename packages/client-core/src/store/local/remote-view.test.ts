@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-argument -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { createRemoteUiStore } from "@tailorkit/sandbox/host";
 import type {
   IframeUiHost,
@@ -37,11 +38,16 @@ const setup = () => {
       // SAFETY: The test provides a DOM stand-in with the members exercised by this scenario; unrelated browser members are never used.
       const host: IframeUiHost = {
         ...source,
-        destroy: vi.fn(),
-        dispatch: vi.fn(),
+
+        destroy: vi.fn<IframeUiHost["destroy"]>(),
+
+        dispatch: vi.fn<IframeUiHost["dispatch"]>(),
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
         iframe: {} as HTMLIFrameElement,
-        mount: vi.fn(),
-        setProps: vi.fn(),
+
+        mount: vi.fn<IframeUiHost["mount"]>(),
+
+        setProps: vi.fn<IframeUiHost["setProps"]>(),
         subscribe: vi.fn((listener) => {
           listeners.push(listener);
           return source.subscribe(listener);
@@ -68,7 +74,10 @@ it("publishes host status and native node selectors together without a rendering
     root: store.nodes.root.get(),
     status: store.state.get().status,
   }));
-  const stopRoot = store.nodes.root.listen(listener);
+
+  const stopRoot = store.nodes.root.listen(() => {
+    listener();
+  });
   requireValue(records[0]).host.setSnapshot(tree, 1);
   expect(listener).toHaveLastReturnedWith({ root: "root", status: "ready" });
   expect(store.nodes.selectNode("root").get()).toEqual(tree);
@@ -100,7 +109,7 @@ it("updates only changed component selectors without recreating the host", () =>
   requireValue(records[0]).host.setSnapshot(tree, 1);
   const snapshot = store.nodes.state.get();
   const component = store.selectComponent("Button");
-  const listener = vi.fn();
+  const listener = vi.fn<Parameters<typeof component.listen>[0]>();
   const stopComponent = component.listen(listener);
   store.setComponents({ Button: first, Input: () => null });
   expect(listener).not.toHaveBeenCalled();
@@ -132,6 +141,7 @@ it("retains the latest props and shares callback payload construction", () => {
   );
   const props = createRemoteElementProps(tree, store.dispatch);
   // SAFETY: The fixture registers this callback before reading it back, and the test checks the dispatched callback arguments.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
   (props.onSelect as (...args: unknown[]) => void)("selected value", {
     synthetic: "event",
   });
@@ -144,6 +154,7 @@ it("retains the latest props and shares callback payload construction", () => {
   expect(tree.props).toEqual({ label: "Button" });
   stop();
   // SAFETY: The fixture registers this callback before reading it back, and the test checks the dispatched callback arguments.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
   (props.onSelect as (...args: unknown[]) => void)("after stop");
   expect(requireValue(records[0]).host.dispatch).toHaveBeenCalledOnce();
 });
@@ -163,8 +174,13 @@ it("isolates dispatch, component registries, and trees between remote views", ()
   requireValue(records[0]).host.setSnapshot(tree, 1);
   expect(second.nodes.root.get()).toBeNull();
   // SAFETY: The fixture registers this callback before reading it back, and the test checks the dispatched callback arguments.
-  const operation = createRemoteElementProps(tree, second.dispatch)
-    .onSelect as (...args: unknown[]) => void;
+
+  const operation =
+    /* oxlint-disable typescript/no-unsafe-type-assertion -- The fixture registers this callback before reading it back, and the test checks the dispatched callback arguments. */
+    createRemoteElementProps(tree, second.dispatch).onSelect as (
+      ...args: unknown[]
+    ) => void;
+  /* oxlint-enable typescript/no-unsafe-type-assertion */
   operation("second");
   expect(requireValue(records[0]).host.dispatch).not.toHaveBeenCalled();
   expect(requireValue(records[1]).host.dispatch).toHaveBeenCalledOnce();
@@ -207,13 +223,17 @@ it("reports startup failures, releases partial hosts, and recovers on the next m
     // SAFETY: The test provides a DOM stand-in with the members exercised by this scenario; unrelated browser members are never used.
     const host: IframeUiHost = {
       ...source,
-      destroy: vi.fn(),
-      dispatch: vi.fn(),
+
+      destroy: vi.fn<IframeUiHost["destroy"]>(),
+
+      dispatch: vi.fn<IframeUiHost["dispatch"]>(),
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
       iframe: {} as HTMLIFrameElement,
       mount: () => {
         throw failure;
       },
-      setProps: vi.fn(),
+
+      setProps: vi.fn<IframeUiHost["setProps"]>(),
     };
     records.push({ host, listeners: [], options });
     return host;

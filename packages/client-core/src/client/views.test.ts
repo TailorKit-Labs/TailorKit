@@ -1,14 +1,16 @@
+/* oxlint-disable typescript/no-unsafe-return, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { expect, it, vi } from "vite-plus/test";
 
-import { createSlotStore } from "../store/fetch/slot";
-import { createTailorKitStore } from "../store/store";
-import { testContract } from "../test-contract";
+import { createSlotStore } from "#store/fetch/slot";
+import { createTailorKitStore } from "#store/store";
+import { testContract } from "#test-contract";
+
 import { createTailorKitFetchClient } from "./fetch-client";
 import { refetchViews } from "./views";
 
 const deferredResponse = () => {
   let resolve!: (response: Response) => void;
-  const promise = (() => {
+  const promise = (async () => {
     const {
       promise: pendingPromise,
       resolve: done,
@@ -19,14 +21,16 @@ const deferredResponse = () => {
     } catch (error) {
       rejectPending(error);
     }
-    return pendingPromise;
+    return await pendingPromise;
   })();
   return { promise, resolve };
 };
 
 it("joins discovery and resolves single slots from the imported contract without metadata", async () => {
   const discovery = deferredResponse();
-  const fetch = vi.fn<typeof globalThis.fetch>(() => discovery.promise);
+  const fetch = vi.fn<typeof globalThis.fetch>(
+    async () => await discovery.promise
+  );
   const client = createTailorKitFetchClient({
     baseUrl: "https://host.test",
     fetch,

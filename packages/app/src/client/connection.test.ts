@@ -1,4 +1,5 @@
 import { expect, it, vi } from "vite-plus/test";
+import { z } from "zod";
 
 import { createClient, reference } from "./connection";
 
@@ -8,6 +9,17 @@ const session = {
   url: "https://runtime.test/rpc/",
 };
 
+const readMutationRequest = async (init: RequestInit | undefined) =>
+  z
+    .object({
+      json: z.object({
+        args: z.unknown().optional(),
+        name: z.string(),
+        requestId: z.string(),
+      }),
+    })
+    .parse(await new Response(init?.body).json());
+
 it("routes normal calls over authenticated HTTP without opening a WebSocket", async () => {
   const fetch = vi
     .fn<typeof globalThis.fetch>()
@@ -16,7 +28,8 @@ it("routes normal calls over authenticated HTTP without opening a WebSocket", as
   const client = createClient({
     connect,
     fetch,
-    getSession: () => Promise.resolve(session),
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    getSession: async () => session,
   });
   const requestId = crypto.randomUUID();
   try {
@@ -35,7 +48,12 @@ it("routes normal calls over authenticated HTTP without opening a WebSocket", as
     expect(await client.action(reference("tasks.import", "action"))).toBe(
       "done"
     );
-    expect(fetch.mock.calls.map(([url]) => String(url))).toEqual([
+
+    expect(
+      fetch.mock.calls.map(([url]) =>
+        url instanceof Request ? url.url : String(url)
+      )
+    ).toEqual([
       "https://runtime.test/rpc/queries",
       "https://runtime.test/rpc/mutations",
       "https://runtime.test/rpc/actions",
@@ -50,7 +68,9 @@ it("routes normal calls over authenticated HTTP without opening a WebSocket", as
     expect(
       new Headers(fetch.mock.calls[0]?.[1]?.headers).get("authorization")
     ).toBe("Bearer token");
-    expect(JSON.parse(String(fetch.mock.calls[1]?.[1]?.body)).json).toEqual({
+
+    const requestPayload = await readMutationRequest(fetch.mock.calls[1]?.[1]);
+    expect(requestPayload.json).toEqual({
       args: { text: "todo" },
       name: "todos.add",
       requestId,
@@ -76,7 +96,8 @@ it("preserves runtime errors without retrying actions", async () => {
   );
   const client = createClient({
     fetch,
-    getSession: () => Promise.resolve(session),
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    getSession: async () => session,
   });
   try {
     await expect(
@@ -93,7 +114,7 @@ it("preserves runtime errors without retrying actions", async () => {
 
 it("aborts pending HTTP calls when closed", async () => {
   let started!: () => void;
-  const ready = (() => {
+  const ready = (async () => {
     const {
       promise: pendingPromise,
       resolve,
@@ -104,31 +125,35 @@ it("aborts pending HTTP calls when closed", async () => {
     } catch (error) {
       rejectPending(error);
     }
-    return pendingPromise;
+    await pendingPromise;
   })();
-  const fetch = vi.fn<typeof globalThis.fetch>((_url, init) =>
-    (() => {
-      const {
-        promise: pendingPromise,
-        resolve: _resolve,
-        reject,
-      } = Promise.withResolvers<Response>();
-      try {
-        init?.signal?.addEventListener(
-          "abort",
-          () => reject(new DOMException("Cancelled", "AbortError")),
-          { once: true }
-        );
-        started();
-      } catch (error) {
-        reject(error);
-      }
-      return pendingPromise;
-    })()
+  const fetch = vi.fn<typeof globalThis.fetch>(
+    async (_url, init) =>
+      await (async () => {
+        const {
+          promise: pendingPromise,
+          resolve: _resolve,
+          reject,
+        } = Promise.withResolvers<Response>();
+        try {
+          init?.signal?.addEventListener(
+            "abort",
+            () => {
+              reject(new DOMException("Cancelled", "AbortError"));
+            },
+            { once: true }
+          );
+          started();
+        } catch (error) {
+          reject(error);
+        }
+        return await pendingPromise;
+      })()
   );
   const client = createClient({
     fetch,
-    getSession: () => Promise.resolve(session),
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    getSession: async () => session,
   });
   const call = client.action(reference("import", "action"));
   const assertion = expect(call).rejects.toMatchObject({ code: "UNAVAILABLE" });
@@ -141,19 +166,24 @@ it("retries a lost mutation response with the same ID and frozen arguments", asy
   vi.useFakeTimers();
   const receipts = new Map<string, string>();
   let writes = 0;
-  const fetch = vi.fn<typeof globalThis.fetch>((_url, init) => {
-    const { json } = JSON.parse(String(init?.body));
+
+  const fetch = vi.fn<typeof globalThis.fetch>(async (_url, init) => {
+    const { json } = await readMutationRequest(init);
     const prior = receipts.get(json.requestId);
-    if (prior) {
-      return Promise.resolve(Response.json({ json: prior }));
+    if (prior !== undefined && prior !== null && prior !== "") {
+      return Response.json({ json: prior });
     }
     writes += 1;
-    receipts.set(json.requestId, json.args.text);
-    return Promise.reject(new TypeError("Response lost after committing"));
+    receipts.set(
+      json.requestId,
+      z.object({ text: z.string() }).parse(json.args).text
+    );
+    throw new TypeError("Response lost after committing");
   });
   const client = createClient({
     fetch,
-    getSession: () => Promise.resolve(session),
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    getSession: async () => session,
   });
   try {
     const args = { text: "original" };
@@ -164,12 +194,15 @@ it("retries a lost mutation response with the same ID and frozen arguments", asy
     await vi.advanceTimersByTimeAsync(1000);
     expect(await result).toBe("original");
     expect(writes).toBe(1);
-    const bodies = fetch.mock.calls.map(
-      ([, init]) => JSON.parse(String(init?.body)).json
+    const bodies = await Promise.all(
+      fetch.mock.calls.map(async ([, init]) => {
+        const request = await readMutationRequest(init);
+        return request.json;
+      })
     );
     expect(bodies).toHaveLength(2);
     expect(bodies[1]).toEqual(bodies[0]);
-    expect(bodies[0].requestId).toMatch(/^[0-9a-f-]{36}$/u);
+    expect(bodies[0]?.requestId).toMatch(/^[0-9a-f-]{36}$/u);
   } finally {
     client.close();
     vi.useRealTimers();
@@ -186,7 +219,8 @@ it("backs off transient mutation failures and preserves an explicit request ID",
     .mockResolvedValueOnce(Response.json({ json: "saved" }));
   const client = createClient({
     fetch,
-    getSession: () => Promise.resolve(session),
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    getSession: async () => session,
   });
   try {
     const requestId = crypto.randomUUID();
@@ -201,11 +235,13 @@ it("backs off transient mutation failures and preserves an explicit request ID",
     expect(fetch).toHaveBeenCalledTimes(3);
     await vi.advanceTimersByTimeAsync(4000);
     expect(await result).toBe("saved");
-    expect(
-      fetch.mock.calls.map(
-        ([, init]) => JSON.parse(String(init?.body)).json.requestId
-      )
-    ).toEqual([requestId, requestId, requestId, requestId]);
+    const requestIds = await Promise.all(
+      fetch.mock.calls.map(async ([, init]) => {
+        const request = await readMutationRequest(init);
+        return request.json.requestId;
+      })
+    );
+    expect(requestIds).toEqual([requestId, requestId, requestId, requestId]);
   } finally {
     client.close();
     vi.useRealTimers();
@@ -229,7 +265,8 @@ it.each([
     );
   const client = createClient({
     fetch,
-    getSession: () => Promise.resolve(session),
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    getSession: async () => session,
   });
   try {
     await expect(
@@ -242,12 +279,11 @@ it.each([
 });
 
 it("refreshes authentication once for a mutation without changing its request ID", async () => {
-  const getSession = vi.fn(({ refresh }: { refresh: boolean }) =>
-    Promise.resolve({
-      ...session,
-      token: refresh ? "fresh" : "expired",
-    })
-  );
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  const getSession = vi.fn(async ({ refresh }: { refresh: boolean }) => ({
+    ...session,
+    token: refresh ? "fresh" : "expired",
+  }));
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(
@@ -275,19 +311,19 @@ it("refreshes authentication once for a mutation without changing its request ID
 });
 
 it("stops when refreshed authentication is still rejected", async () => {
-  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(() =>
-    Promise.resolve(
-      Response.json(
-        {
-          json: { code: "UNAUTHORIZED", defined: false, message: "Rejected" },
-        },
-        { status: 401 }
-      )
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async () =>
+    Response.json(
+      {
+        json: { code: "UNAUTHORIZED", defined: false, message: "Rejected" },
+      },
+      { status: 401 }
     )
   );
   const client = createClient({
     fetch,
-    getSession: () => Promise.resolve(session),
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    getSession: async () => session,
   });
   try {
     await expect(
@@ -308,7 +344,8 @@ it("cancels a mutation waiting to retry when the client closes", async () => {
     .mockRejectedValue(new TypeError("Offline"));
   const client = createClient({
     fetch,
-    getSession: () => Promise.resolve(session),
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    getSession: async () => session,
   });
   try {
     const assertion = expect(
@@ -337,7 +374,8 @@ it.each(["query", "action"] as const)(
       .mockRejectedValue(new TypeError("Offline"));
     const client = createClient({
       fetch,
-      getSession: () => Promise.resolve(session),
+      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+      getSession: async () => session,
     });
     try {
       const result =
@@ -368,7 +406,8 @@ it("retries when the connection drops while reading a mutation response body", a
     .mockResolvedValueOnce(Response.json({ json: "saved" }));
   const client = createClient({
     fetch,
-    getSession: () => Promise.resolve(session),
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    getSession: async () => session,
   });
   try {
     const result = client.mutate(reference("save", "mutation"));
@@ -388,22 +427,30 @@ it("keeps reconnecting an active subscription beyond three failures", async () =
     readyState: 1,
     send: vi.fn(),
   });
-  const connect = vi.fn(() => {
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  const connect = vi.fn(async () => {
     if (connect.mock.calls.length <= 5) {
-      return Promise.reject(new Error("Offline"));
+      throw new Error("Offline");
     }
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    return Promise.resolve(socket as unknown as WebSocket);
+    // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+    return socket as unknown as WebSocket;
   });
   const client = createClient({
     connect,
-    getSession: () => Promise.resolve(session),
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    getSession: async () => session,
     retryDelayMs: 0,
   });
-  const stop = client.subscribe(reference("todos.list", "query"), {}, vi.fn());
+  const stop = client.subscribe(
+    reference("todos.list", "query"),
+    {},
+    vi.fn<NonNullable<Parameters<typeof client.subscribe>[2]>>()
+  );
   try {
-    await vi.waitFor(() => expect(connect).toHaveBeenCalledTimes(6));
+    await vi.waitFor(() => {
+      expect(connect).toHaveBeenCalledTimes(6);
+    });
   } finally {
     stop();
     client.close();

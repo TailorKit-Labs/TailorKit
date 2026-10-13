@@ -4,6 +4,7 @@
     "lib": ["ESNext", "DOM"],
     "strictNullChecks": true,
     "types": ["vite/client"],
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "noEmit": true
   }
 }

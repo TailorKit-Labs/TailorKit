@@ -18,7 +18,14 @@ export const authorizePreviewSocket = async (
   role: "uploader" | "viewer"
 ): Promise<PreviewWebSocketContext | null> => {
   const kv = getKV();
-  if (!kv || !env.AUTH_SECRET) {
+  if (
+    !kv ||
+    !(
+      env.AUTH_SECRET !== undefined &&
+      env.AUTH_SECRET !== null &&
+      env.AUTH_SECRET !== ""
+    )
+  ) {
     return null;
   }
   const session = await db.query.previewSession.findFirst({

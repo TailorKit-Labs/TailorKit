@@ -5,7 +5,8 @@ import path from "node:path";
 
 import { expect, it } from "vite-plus/test";
 
-import { createDatabaseTestApp } from "../test-utils";
+import { createDatabaseTestApp } from "#test-utils";
+
 import { readAppMigrations } from "./migrations";
 
 const requireValue = <T>(value: T | null | undefined): T => {

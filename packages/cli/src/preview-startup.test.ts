@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-argument, typescript/no-unsafe-member-access, typescript/no-unsafe-call -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -118,25 +119,30 @@ it.each([
   // End the session after the first upload so its manifest can be inspected.
   const heartbeat = Promise.withResolvers<{ accepted: boolean }>();
   mocks.heartbeat.mockReturnValue(heartbeat.promise);
-  mocks.commitBuild.mockImplementation(() => {
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  mocks.commitBuild.mockImplementation(async () => {
     heartbeat.reject({ code: "UNAUTHORIZED", message });
-    return Promise.resolve({ accepted: true });
+    return { accepted: true };
   });
 
   await runPreview({ cwd, outDir: "output" });
   const [socket] = PreviewSocket.instances;
   socket?.open();
-  await vi.waitFor(() => expect(mocks.commitBuild).toHaveBeenCalledOnce());
+  await vi.waitFor(() => {
+    expect(mocks.commitBuild).toHaveBeenCalledOnce();
+  });
   expect(
     mocks.beginBuild.mock.calls[0]?.[0].manifest.files.map(
       (file: { path: string }) => file.path
     )
   ).toEqual(["client.js"]);
-  await vi.waitFor(() => expect(mocks.close).toHaveBeenCalledOnce());
+  await vi.waitFor(() => {
+    expect(mocks.close).toHaveBeenCalledOnce();
+  });
   expect(socket?.closed).toBe(true);
   expect(process.listeners("SIGINT")).toEqual(signalListeners.SIGINT);
   expect(process.listeners("SIGTERM")).toEqual(signalListeners.SIGTERM);
-  await (() => {
+  await (async () => {
     const {
       promise: pendingPromise,
       resolve,
@@ -147,7 +153,7 @@ it.each([
     } catch (error) {
       rejectPending(error);
     }
-    return pendingPromise;
+    return await pendingPromise;
   })();
   expect(PreviewSocket.instances).toHaveLength(1);
 });
@@ -162,7 +168,9 @@ afterEach(async () => {
     }
   }
   await Promise.all(
-    dirs.splice(0).map((dir) => rm(dir, { force: true, recursive: true }))
+    dirs.splice(0).map(async (dir) => {
+      await rm(dir, { force: true, recursive: true });
+    })
   );
 });
 

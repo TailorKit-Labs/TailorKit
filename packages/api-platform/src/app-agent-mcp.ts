@@ -41,7 +41,7 @@ export const handleAppAgentMcpRequest = async (
   request: Request,
   context: Context
 ): Promise<Response> => {
-  if (context.runtimeService || context.agentToken) {
+  if (context.runtimeService === true || context.agentToken) {
     return new Response("Forbidden", { status: 403 });
   }
   if (request.method !== "POST") {
@@ -55,7 +55,7 @@ export const handleAppAgentMcpRequest = async (
   try {
     const encoded = request.headers.get("x-tailorkit-context");
     if (
-      !encoded ||
+      !(encoded !== undefined && encoded !== null && encoded !== "") ||
       encoded.length > 8192 ||
       !/^[A-Za-z0-9_-]+$/u.test(encoded)
     ) {
@@ -76,7 +76,12 @@ export const handleAppAgentMcpRequest = async (
       throw new Error("Invalid host URL");
     }
     const origin = request.headers.get("origin");
-    if (origin && origin !== host.origin) {
+    if (
+      origin !== undefined &&
+      origin !== null &&
+      origin !== "" &&
+      origin !== host.origin
+    ) {
       return new Response("Forbidden origin", { status: 403 });
     }
   } catch {
@@ -91,7 +96,13 @@ export const handleAppAgentMcpRequest = async (
   ) => {
     execution.signal.throwIfAborted();
     const app = await findAppInScopes(context.project.id, appId, scopes);
-    if (!env.AUTH_SECRET) {
+    if (
+      !(
+        env.AUTH_SECRET !== undefined &&
+        env.AUTH_SECRET !== null &&
+        env.AUTH_SECRET !== ""
+      )
+    ) {
       throw new ORPCError("SERVICE_UNAVAILABLE");
     }
     // Reuse the existing CLI/JWT boundary for this agent's one-hour, single-scope grant.
@@ -133,7 +144,11 @@ export const handleAppAgentMcpRequest = async (
       const attributes: AgentRunAttributes = {
         "tailorkit.projectId": context.project.id,
       };
-      if (input.subjectId) {
+      if (
+        input.subjectId !== undefined &&
+        input.subjectId !== null &&
+        input.subjectId !== ""
+      ) {
         attributes["tailorkit.subjectId"] = input.subjectId;
       }
       run = await start(
@@ -157,7 +172,9 @@ export const handleAppAgentMcpRequest = async (
         try {
           return await completed;
         } catch (error) {
-          return controller.abort(error);
+          controller.abort(error);
+          /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+          return undefined;
         }
       })();
       await execution.onProgress({
@@ -210,7 +227,10 @@ export const handleAppAgentMcpRequest = async (
 
   const handler = createAppAgentMcp(
     {
-      async createApp({ scope: scopeName, prompt, ...metadata }, execution) {
+      createApp: async (
+        { scope: scopeName, prompt, ...metadata },
+        execution
+      ) => {
         execution.signal.throwIfAborted();
         const scope = authorizedScopes.find(
           (scopeValue) => scopeValue.name === scopeName
@@ -229,15 +249,17 @@ export const handleAppAgentMcpRequest = async (
           },
           true
         );
-        return runAgent(app.id, prompt, execution);
+        return await runAgent(app.id, prompt, execution);
       },
-      editApp: ({ appId, prompt }, execution) =>
-        call(
-          protectedRouter.handler(() => runAgent(appId, prompt, execution)),
+      editApp: async ({ appId, prompt }, execution) =>
+        await call(
+          protectedRouter.handler(
+            async () => await runAgent(appId, prompt, execution)
+          ),
           undefined,
           { context }
         ),
-      async listApps(pagination) {
+      listApps: async (pagination) => {
         const { body } = await call(
           appRouter.list,
           { body: { ...pagination, scopes: authorizedScopes } },

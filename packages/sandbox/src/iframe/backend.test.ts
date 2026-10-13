@@ -10,7 +10,7 @@ const require = <T>(value: T | null | undefined): T => {
 };
 
 it("correlates scoped JWT requests, forwards renewal and ignores unsolicited responses", async () => {
-  const send = vi.fn();
+  const send = vi.fn<NonNullable<Parameters<typeof createIframeBackend>[0]>>();
   const bridge = createIframeBackend(send);
   const initial = bridge.getSession({ refresh: false });
   const refresh = bridge.getSession({ refresh: true });
@@ -47,7 +47,7 @@ it("rejects pending JWT requests and further calls when the sandbox is destroyed
 });
 
 it("preserves transient session errors for mutation retry", async () => {
-  const send = vi.fn();
+  const send = vi.fn<Parameters<typeof createIframeBackend>[0]>();
   const bridge = createIframeBackend(send);
   const session = bridge.getSession({ refresh: false });
   bridge.receive({

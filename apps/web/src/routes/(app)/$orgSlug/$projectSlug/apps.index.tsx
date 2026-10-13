@@ -216,20 +216,22 @@ const AppsTable = ({
               className="cursor-pointer"
               key={row.id}
               tabIndex={0}
-              onClick={() =>
-                navigate({
-                  params: {
-                    appId: row.original.publicId,
-                    orgSlug,
-                    projectSlug,
-                  },
-                  to: "/$orgSlug/$projectSlug/apps/$appId",
-                })
-              }
+              onClick={() => {
+                void (async () => {
+                  await navigate({
+                    params: {
+                      appId: row.original.publicId,
+                      orgSlug,
+                      projectSlug,
+                    },
+                    to: "/$orgSlug/$projectSlug/apps/$appId",
+                  });
+                })();
+              }}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
-                  navigate({
+                  void navigate({
                     params: {
                       appId: row.original.publicId,
                       orgSlug,
@@ -282,7 +284,8 @@ const AppsIndexPage = () => {
   useEffect(() => {
     const loadMoreElement = loadMoreRef.current;
     if (!loadMoreElement || !hasNextPage) {
-      return;
+      /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+      return undefined;
     }
 
     const observer = new IntersectionObserver((entries) => {
@@ -290,13 +293,15 @@ const AppsIndexPage = () => {
         entries.some((entry) => entry.isIntersecting) &&
         !isFetchingNextPage
       ) {
-        fetchNextPage();
+        void fetchNextPage();
       }
     });
 
     observer.observe(loadMoreElement);
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+    };
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const apps = data?.pages.flatMap((page) => page.items) ?? [];
@@ -308,7 +313,9 @@ const AppsIndexPage = () => {
           placeholder="Search apps"
           type="search"
           value={search}
-          onChange={(event) => setSearch(event.target.value)}
+          onChange={(event) => {
+            setSearch(event.target.value);
+          }}
         />
         <InputGroupAddon>
           <SearchIcon />
@@ -326,7 +333,13 @@ const AppsIndexPage = () => {
         </div>
       </CardFrame>
     );
-  } else if (apps.length === 0 && !normalizedSearch && projectApiKey) {
+  } else if (
+    apps.length === 0 &&
+    !normalizedSearch &&
+    projectApiKey !== undefined &&
+    projectApiKey !== null &&
+    projectApiKey !== ""
+  ) {
     content = <ProjectKeyEnv key={projectApiKey} apiKey={projectApiKey} />;
   } else if (apps.length === 0) {
     content = (
@@ -369,7 +382,7 @@ const AppsIndexPage = () => {
     content = (
       <AppsTable
         apps={apps}
-        hasNextPage={Boolean(hasNextPage)}
+        hasNextPage={hasNextPage}
         isFetchingNextPage={isFetchingNextPage}
         loadMoreRef={loadMoreRef}
         orgSlug={orgSlug}
@@ -395,8 +408,8 @@ const AppsIndexPage = () => {
 
 export const Route = createFileRoute("/(app)/$orgSlug/$projectSlug/apps/")({
   component: AppsIndexPage,
-  loader: ({ context, params }) =>
-    context.queryClient.infiniteQuery(
+  loader: async ({ context, params }) =>
+    await context.queryClient.infiniteQuery(
       appsListQueryOptions({
         appsList: context.orpc.apps.list,
         orgSlug: params.orgSlug,

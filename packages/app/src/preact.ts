@@ -44,7 +44,12 @@ export const ClientProvider = ({
       ),
     [client]
   );
-  useLayoutEffect(() => () => store.dispose(), [store]);
+  useLayoutEffect(
+    () => () => {
+      store.dispose();
+    },
+    [store]
+  );
   return h(Context.Provider, { value: store }, children);
 };
 
@@ -85,7 +90,11 @@ export const useQuery = <I, O>(
   const key = `${name}\0${serialized}`;
   // SAFETY: serializeInput produced serialized from this reference's own input; this parses local transport-normalized input rather than external JSON.
   const stableInput = useMemo(
-    () => (JSON.parse(serialized) as { input: I }).input,
+    () =>
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- serializeInput produced serialized from this reference's own input; this parses local transport-normalized input rather than external JSON. */
+      (JSON.parse(serialized) as { input: I })
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
+        .input,
     [serialized]
   );
   const stableReference = useMemo(
@@ -98,18 +107,20 @@ export const useQuery = <I, O>(
       computed(
         store.state,
         (queries) =>
+          /* oxlint-disable typescript/no-unsafe-type-assertion -- This cache key identifies the same reference and serialized input, so its state is populated only by that reference's O-typed subscription. */
           (enabled
             ? (queries.get(key) ?? pendingQuery)
             : pendingQuery) as QueryState<O>
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
       ),
     [store, key, enabled]
   );
   const state = useStore(query);
-  useEffect(() => {
-    if (enabled) {
-      return store.watch(key, stableReference, stableInput);
-    }
-  }, [store, key, enabled, stableInput, stableReference]);
+  useEffect(
+    () =>
+      enabled ? store.watch(key, stableReference, stableInput) : undefined,
+    [store, key, enabled, stableInput, stableReference]
+  );
   return {
     ...state,
     isError: state.status === "error",
@@ -177,7 +188,10 @@ const useCall = <K extends "mutation" | "action", I, O>(
       const { sequence } = current.current;
       const settings = callbacks.current;
       // SAFETY: InputArguments requires an I value unless I includes undefined; destructuring its conditional tuple loses that relationship.
-      const args = input as I;
+      const args =
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- InputArguments requires an I value unless I includes undefined; destructuring its conditional tuple loses that relationship. */
+        input as I;
+      /* oxlint-enable typescript/no-unsafe-type-assertion */
       const isCurrent = () =>
         current.current.mounted &&
         current.current.identity === identity &&
@@ -224,6 +238,9 @@ const useCall = <K extends "mutation" | "action", I, O>(
         } catch {
           /* Intentionally no action is needed. */
         }
+
+        /* oxlint-disable-next-line unicorn/no-useless-undefined -- Missing results use the same undefined sentinel as the optional return type. */
+        return undefined;
       })();
     },
     [runAsync]

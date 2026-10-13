@@ -33,7 +33,7 @@ export const contract = defineContract({
     todos: {
       add: tool
         .client()
-        .input(type({ title: "string > 0 <= 160" }))
+        .input(type({ title: "0 < string <= 160" }))
         .output(todo),
       list: tool.client().output(todo.array()),
       remove: tool

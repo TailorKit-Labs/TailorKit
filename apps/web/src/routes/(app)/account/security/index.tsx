@@ -111,7 +111,7 @@ const formatPasskeyCreated = (
   locale: string,
   timeZone: string
 ) => {
-  if (!value) {
+  if (value === undefined || value === null || value === "") {
     return null;
   }
 
@@ -139,7 +139,7 @@ const ActiveSessionsSkeleton = () =>
   ));
 
 const getDeviceDetails = (userAgent?: string | null) => {
-  if (!userAgent) {
+  if (!(userAgent !== undefined && userAgent !== null && userAgent !== "")) {
     return {
       browser: "Unknown browser",
       isMobile: false,
@@ -204,7 +204,8 @@ const ActiveSessions = ({
   } = useQuery(orpc.user.listSessions.queryOptions());
 
   const revokeMutation = useMutation({
-    mutationFn: (token: string) => client.user.revokeSession({ token }),
+    mutationFn: async (token: string) =>
+      await client.user.revokeSession({ token }),
     onError: (mutationError) => {
       toastManager.add({
         description: mutationError.message,
@@ -225,7 +226,7 @@ const ActiveSessions = ({
   });
 
   const revokeOtherMutation = useMutation({
-    mutationFn: () => client.user.revokeOtherSessions(),
+    mutationFn: async () => await client.user.revokeOtherSessions(),
     onError: (mutationError) => {
       toastManager.add({
         description: mutationError.message,
@@ -265,7 +266,12 @@ const ActiveSessions = ({
         Active sessions could not be loaded. Please try again.
       </p>
     );
-  } else if (sortedSessions?.length) {
+  } else if (
+    sortedSessions?.length !== undefined &&
+    sortedSessions?.length !== null &&
+    sortedSessions?.length !== 0 &&
+    !Number.isNaN(sortedSessions?.length)
+  ) {
     sessionsContent = sortedSessions.map((session) => {
       const device = getDeviceDetails(session.userAgent);
       const isCurrent = session.token === currentSession?.token;
@@ -301,7 +307,9 @@ const ActiveSessions = ({
                 revokeMutation.isPending &&
                 revokeMutation.variables === session.token
               }
-              onClick={() => revokeMutation.mutate(session.token)}
+              onClick={() => {
+                revokeMutation.mutate(session.token);
+              }}
               size="sm"
               type="button"
               variant="destructive-outline"
@@ -329,12 +337,16 @@ const ActiveSessions = ({
               <span>Active sessions</span>
               <Button
                 disabled={
-                  !sortedSessions?.some(
-                    (session) => session.token !== currentSession?.token
+                  !(
+                    sortedSessions?.some(
+                      (session) => session.token !== currentSession?.token
+                    ) === true
                   )
                 }
                 loading={revokeOtherMutation.isPending}
-                onClick={() => revokeOtherMutation.mutate()}
+                onClick={() => {
+                  revokeOtherMutation.mutate();
+                }}
                 size="sm"
                 type="button"
                 variant="destructive-outline"
@@ -383,7 +395,7 @@ const SecurityPage = () => {
     queryFn: async () => {
       const result = await authClient.passkey.listUserPasskeys();
       if (result.error) {
-        throw new Error(result.error.message || "Failed to load passkeys");
+        throw new Error(result.error.message ?? "Failed to load passkeys");
       }
       return result.data;
     },
@@ -400,15 +412,24 @@ const SecurityPage = () => {
     (account) => account.providerId === "credential"
   );
   const passkeys = passkeysQuery.data ?? [];
+  const primaryAccountError =
+    error_description ?? error ?? accountsQuery.error?.message ?? "";
+  const accountErrorMessage =
+    primaryAccountError === ""
+      ? passkeysQuery.error?.message
+      : primaryAccountError;
   const signInMethodCount = (accountsQuery.data?.length ?? 0) + passkeys.length;
   const canUnlinkGoogle = Boolean(googleAccount && signInMethodCount > 1);
   const canUnlinkGitHub = Boolean(githubAccount && signInMethodCount > 1);
   let githubStatus = "Sign in with GitHub";
 
   if (githubAccount) {
-    githubStatus = githubAccount.githubUsername
-      ? `@${githubAccount.githubUsername}`
-      : "GitHub account linked";
+    githubStatus =
+      githubAccount.githubUsername !== undefined &&
+      githubAccount.githubUsername !== null &&
+      githubAccount.githubUsername !== ""
+        ? `@${githubAccount.githubUsername}`
+        : "GitHub account linked";
   }
 
   const linkSocial = async (provider: "github" | "google") => {
@@ -440,7 +461,11 @@ const SecurityPage = () => {
     accountId: string | undefined,
     provider: "github" | "google"
   ) => {
-    if (!accountId || signInMethodCount <= 1 || unlinkPending !== null) {
+    if (
+      !(accountId !== undefined && accountId !== null && accountId !== "") ||
+      signInMethodCount <= 1 ||
+      unlinkPending !== null
+    ) {
       return;
     }
 
@@ -482,7 +507,7 @@ const SecurityPage = () => {
       const result = await authClient.passkey.addPasskey({ name });
       if (result.error) {
         toastManager.add({
-          description: result.error.message || "Failed to add passkey",
+          description: result.error.message ?? "Failed to add passkey",
           title: "Couldn't add passkey",
           type: "error",
         });
@@ -518,7 +543,7 @@ const SecurityPage = () => {
       const result = await authClient.passkey.deletePasskey({ id });
       if (result.error) {
         toastManager.add({
-          description: result.error.message || "Failed to remove passkey",
+          description: result.error.message ?? "Failed to remove passkey",
           title: "Couldn't remove passkey",
           type: "error",
         });
@@ -619,7 +644,7 @@ const SecurityPage = () => {
                 onSubmit={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  form.handleSubmit();
+                  void form.handleSubmit();
                 }}
               >
                 <CardPanel className="max-w-lg">
@@ -674,15 +699,10 @@ const SecurityPage = () => {
               </CardHeader>
 
               <CardPanel>
-                {(error_description ||
-                  error ||
-                  accountsQuery.error ||
+                {(Boolean(error_description ?? error ?? accountsQuery.error) ||
                   passkeysQuery.error) && (
                   <p className="mb-4 text-sm text-destructive" role="alert">
-                    {error_description ||
-                      error ||
-                      accountsQuery.error?.message ||
-                      passkeysQuery.error?.message}
+                    {accountErrorMessage}
                   </p>
                 )}
 
@@ -690,7 +710,9 @@ const SecurityPage = () => {
                   <LinkedAccountsSkeleton />
                 ) : (
                   <div className="flex flex-col gap-3">
-                    {(googleAccount || socialProvidersQuery.data?.google) && (
+                    {Boolean(
+                      googleAccount ?? socialProvidersQuery.data?.google
+                    ) && (
                       <div className="flex items-center gap-3 rounded-xl border p-4">
                         <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
                           <GoogleIcon className="size-5" />
@@ -710,9 +732,11 @@ const SecurityPage = () => {
                               !canUnlinkGoogle || unlinkPending !== null
                             }
                             loading={unlinkPending === googleAccount.id}
-                            onClick={() =>
-                              unlinkSocial(googleAccount.id, "google")
-                            }
+                            onClick={() => {
+                              void (async () => {
+                                await unlinkSocial(googleAccount.id, "google");
+                              })();
+                            }}
                             size="sm"
                             title={
                               canUnlinkGoogle
@@ -729,7 +753,11 @@ const SecurityPage = () => {
                               linkPending !== null && linkPending !== "google"
                             }
                             loading={linkPending === "google"}
-                            onClick={() => linkSocial("google")}
+                            onClick={() => {
+                              void (async () => {
+                                await linkSocial("google");
+                              })();
+                            }}
                             size="sm"
                             variant="outline"
                           >
@@ -739,7 +767,9 @@ const SecurityPage = () => {
                       </div>
                     )}
 
-                    {(githubAccount || socialProvidersQuery.data?.github) && (
+                    {Boolean(
+                      githubAccount ?? socialProvidersQuery.data?.github
+                    ) && (
                       <div className="flex items-center gap-3 rounded-xl border p-4">
                         <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
                           <GitHubIcon />
@@ -757,9 +787,11 @@ const SecurityPage = () => {
                               !canUnlinkGitHub || unlinkPending !== null
                             }
                             loading={unlinkPending === githubAccount.id}
-                            onClick={() =>
-                              unlinkSocial(githubAccount.id, "github")
-                            }
+                            onClick={() => {
+                              void (async () => {
+                                await unlinkSocial(githubAccount.id, "github");
+                              })();
+                            }}
                             size="sm"
                             title={
                               canUnlinkGitHub
@@ -776,7 +808,11 @@ const SecurityPage = () => {
                               linkPending !== null && linkPending !== "github"
                             }
                             loading={linkPending === "github"}
-                            onClick={() => linkSocial("github")}
+                            onClick={() => {
+                              void (async () => {
+                                await linkSocial("github");
+                              })();
+                            }}
                             size="sm"
                             variant="outline"
                           >
@@ -817,7 +853,9 @@ const SecurityPage = () => {
                         <Button
                           disabled={passkeyPending !== null}
                           loading={passkeyPending === "add"}
-                          onClick={() => setPasskeyDialogOpen(true)}
+                          onClick={() => {
+                            setPasskeyDialogOpen(true);
+                          }}
                           size="sm"
                           variant="outline"
                         >
@@ -842,22 +880,28 @@ const SecurityPage = () => {
                                 >
                                   <div className="min-w-0 flex-1">
                                     <p className="truncate text-sm font-medium">
-                                      {passkey.name || "Passkey"}
+                                      {passkey.name ?? "Passkey"}
                                     </p>
-                                    {createdAt ? (
+                                    {createdAt !== undefined &&
+                                    createdAt !== null &&
+                                    createdAt !== "" ? (
                                       <p className="text-sm text-muted-foreground">
                                         Created {createdAt}
                                       </p>
                                     ) : null}
                                   </div>
                                   <Button
-                                    aria-label={`Remove ${passkey.name || "passkey"}`}
+                                    aria-label={`Remove ${passkey.name ?? "passkey"}`}
                                     disabled={
                                       signInMethodCount <= 1 ||
                                       passkeyPending !== null
                                     }
                                     loading={passkeyPending === passkey.id}
-                                    onClick={() => deletePasskey(passkey.id)}
+                                    onClick={() => {
+                                      void (async () => {
+                                        await deletePasskey(passkey.id);
+                                      })();
+                                    }}
                                     size="icon-sm"
                                     title={
                                       signInMethodCount > 1
@@ -913,7 +957,9 @@ const SecurityPage = () => {
                     <Input
                       autoFocus
                       id="passkey-name"
-                      onChange={(event) => setPasskeyName(event.target.value)}
+                      onChange={(event) => {
+                        setPasskeyName(event.target.value);
+                      }}
                       placeholder="e.g. MacBook Pro"
                       value={passkeyName}
                     />

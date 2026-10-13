@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-assignment -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import type { ORPCError } from "@orpc/server";
 import { call } from "@orpc/server";
@@ -29,13 +30,14 @@ const testState = vi.hoisted(() => ({
   db: undefined as unknown,
   env: { APP_RUNTIME_URL: undefined as string | undefined },
   issueToken: vi.fn(
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
     async (_identity: {
       userId: string;
       installationId: string;
       projectId: string;
       appId: string;
       deploymentId: string;
-    }) => await { expiresAt: Date.now() + 300_000, token: "platform-token" }
+    }) => ({ expiresAt: Date.now() + 300_000, token: "platform-token" })
   ),
   publishMetadata: vi.fn(),
 }));
@@ -162,8 +164,9 @@ describe("platform appRouter", () => {
       { apps: appRouter },
       { plugins: [new RateLimitHandlerPlugin()] }
     );
-    const handle = <TInput>(path: string, body: TInput) =>
-      handler.handle(
+    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This fixture must represent malformed input so the runtime validation boundary can be tested.
+    const handle = async (path: string, body: unknown) =>
+      await handler.handle(
         new Request(`https://example.com/api/platform${path}`, {
           body: JSON.stringify(body),
           headers: { "content-type": "application/json" },
@@ -180,6 +183,7 @@ describe("platform appRouter", () => {
     expect(created.response?.status).toBe(200);
     expect(created.response?.headers.get("ratelimit-limit")).toBe("100");
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     const app = (await created.response?.json()) as { id: string };
 
     const found = await handle(`/apps/${app.id}/lookup`, {
@@ -220,6 +224,7 @@ describe("platform appRouter", () => {
         description: "Embedded inbox",
         name: "Inbox",
         projectId,
+        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
         publicId: expect.stringMatching(/^[0-9a-z]{12}$/u),
         scope: productionScope,
       })

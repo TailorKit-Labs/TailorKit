@@ -7,8 +7,7 @@ import {
   ActionCapability,
 } from "./actions";
 
-// oxlint-disable-next-line unicorn/consistent-function-scoping -- Keep the generator or mutable callback with its owning test or cancellation lifecycle.
-vi.mock("cloudflare:workers", () => ({ RpcTarget: function RpcTarget() {} }));
+vi.mock("cloudflare:workers", () => ({ RpcTarget: vi.fn() }));
 
 const identity = {
   appId: "app",
@@ -72,13 +71,15 @@ it.each([
   "https://host.internal",
   "https://user:password@example.com",
 ])("blocks action egress to %s", (url) => {
-  expect(() => actionDestination(new URL(url))).toThrow("public HTTPS");
+  expect(() => {
+    actionDestination(new URL(url));
+  }).toThrow("public HTTPS");
 });
 
 it("allows HTTPS Internet destinations", () => {
-  expect(() =>
-    actionDestination(new URL("https://api.example.com/path"))
-  ).not.toThrow();
+  expect(() => {
+    actionDestination(new URL("https://api.example.com/path"));
+  }).not.toThrow();
 });
 
 it("cancels all active actions on deployment replacement", () => {
@@ -119,7 +120,10 @@ it("sends the verified app session directly to the product and rejects redirects
         redirect: "manual",
       },
     ]);
-    expect(JSON.parse(String(fetch.mock.calls[0]?.[1]?.body))).toMatchObject({
+
+    expect(
+      await new Response(fetch.mock.calls[0]?.[1]?.body).json()
+    ).toMatchObject({
       input: { id: "customer" },
       path: "customers.read",
     });

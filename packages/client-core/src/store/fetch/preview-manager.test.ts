@@ -4,9 +4,10 @@ import { createHash } from "node:crypto";
 import type { PreviewEvent } from "@tailorkit/client-platform/preview";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
-import { testContract } from "../../test-contract";
-import type { TailorKitApp } from "../../types";
-import { createTailorKitStore } from "../store";
+import { createTailorKitStore } from "#store/store";
+import { testContract } from "#test-contract";
+import type { TailorKitApp } from "#types";
+
 import { createPreviewManager } from "./preview-manager";
 
 // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
@@ -16,29 +17,29 @@ const state = vi.hoisted(() => ({
   hold: false,
   release: undefined as (() => void) | undefined,
 }));
+
+const previewEvents = async function* previewEvents() {
+  yield* state.batches.shift() ?? state.events;
+  if (state.hold) {
+    await (async () => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers<ReturnType<() => void>>();
+      try {
+        state.release = resolve;
+      } catch (error) {
+        rejectPending(error);
+      }
+      await pendingPromise;
+    })();
+  }
+};
 vi.mock("@tailorkit/client-platform/preview", async (original) => ({
   ...(await original()),
   createPreviewWebSocketClient: () => ({
-    subscribe: async () =>
-      // oxlint-disable-next-line unicorn/consistent-function-scoping -- Keep the generator or mutable callback with its owning test or cancellation lifecycle.
-      (async function* subscribe() {
-        yield* state.batches.shift() ?? state.events;
-        if (state.hold) {
-          await (() => {
-            const {
-              promise: pendingPromise,
-              resolve,
-              reject: rejectPending,
-            } = Promise.withResolvers<ReturnType<() => void>>();
-            try {
-              state.release = resolve;
-            } catch (error) {
-              rejectPending(error);
-            }
-            return pendingPromise;
-          })();
-        }
-      })(),
+    subscribe: async () => previewEvents(),
   }),
 }));
 
@@ -125,13 +126,23 @@ it("publishes preview source and views together without notifying on subscriptio
   });
   const previewListener = vi.fn(snapshot);
   const appsListener = vi.fn(snapshot);
-  const stopPreview = store.previews.subscribe(app, previewListener);
-  const stopApps = store.subscribeApps(appsListener);
+
+  const stopPreview = store.previews.subscribe(app, () => {
+    previewListener();
+  });
+
+  const stopApps = store.subscribeApps(() => {
+    appsListener();
+  });
   expect(previewListener).not.toHaveBeenCalled();
   expect(appsListener).not.toHaveBeenCalled();
-  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
+  await vi.waitFor(() => {
+    expect(FakeSocket.instances).toHaveLength(1);
+  });
   FakeSocket.instances[0]?.open();
-  await vi.waitFor(() => expect(previewListener).toHaveBeenCalledOnce());
+  await vi.waitFor(() => {
+    expect(previewListener).toHaveBeenCalledOnce();
+  });
   expect(appsListener).toHaveBeenCalledOnce();
   const appsSnapshot = store.getAppsSnapshot();
   const published = { preview: { revision: 1, source }, views };
@@ -162,7 +173,8 @@ it("refreshes the viewer token and reconnects when its stream ends", async () =>
       ok: true,
     }))
   );
-  const onEnded = vi.fn();
+  const onEnded =
+    vi.fn<NonNullable<Parameters<typeof createPreviewManager>[1]>>();
   const manager = createPreviewManager(
     new URL("https://host.test/api/tailorkit/"),
     onEnded
@@ -177,15 +189,24 @@ it("refreshes the viewer token and reconnects when its stream ends", async () =>
         websocketUrl: "wss://platform.test/preview",
       },
     },
-    vi.fn()
+    vi.fn<NonNullable<Parameters<typeof manager.subscribe>[1]>>()
   );
-  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
+  await vi.waitFor(() => {
+    expect(FakeSocket.instances).toHaveLength(1);
+  });
   expect(FakeSocket.instances[0]?.protocol).toBe("token-1");
   FakeSocket.instances[0]?.open();
-  await vi.waitFor(() => expect(FakeSocket.instances[0]?.closed).toBe(true));
-  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(2), {
-    timeout: 2500,
+  await vi.waitFor(() => {
+    expect(FakeSocket.instances[0]?.closed).toBe(true);
   });
+  await vi.waitFor(
+    () => {
+      expect(FakeSocket.instances).toHaveLength(2);
+    },
+    {
+      timeout: 2500,
+    }
+  );
   expect(FakeSocket.instances[1]?.protocol).toBe("token-2");
   expect(onEnded).not.toHaveBeenCalled();
   unsubscribe();
@@ -215,7 +236,7 @@ it("reuses a still-valid refreshed token when the next metadata request fails", 
   );
   const manager = createPreviewManager(
     new URL("https://host.test/api/tailorkit/"),
-    vi.fn()
+    vi.fn<NonNullable<Parameters<typeof createPreviewManager>[1]>>()
   );
   const unsubscribe = manager.subscribe(
     {
@@ -227,14 +248,21 @@ it("reuses a still-valid refreshed token when the next metadata request fails", 
         websocketUrl: "wss://platform.test/preview",
       },
     },
-    vi.fn()
+    vi.fn<NonNullable<Parameters<typeof manager.subscribe>[1]>>()
   );
-  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
+  await vi.waitFor(() => {
+    expect(FakeSocket.instances).toHaveLength(1);
+  });
   expect(FakeSocket.instances[0]?.protocol).toBe(refreshedToken);
   FakeSocket.instances[0]?.close();
-  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(2), {
-    timeout: 2500,
-  });
+  await vi.waitFor(
+    () => {
+      expect(FakeSocket.instances).toHaveLength(2);
+    },
+    {
+      timeout: 2500,
+    }
+  );
   expect(FakeSocket.instances[1]?.protocol).toBe(refreshedToken);
   unsubscribe();
 });
@@ -252,7 +280,7 @@ it("uses updated app metadata after a failed refresh without replacing the subsc
   );
   const manager = createPreviewManager(
     new URL("https://host.test/api/tailorkit/"),
-    vi.fn()
+    vi.fn<NonNullable<Parameters<typeof createPreviewManager>[1]>>()
   );
   const app = (token: string) => ({
     id: "app",
@@ -263,13 +291,23 @@ it("uses updated app metadata after a failed refresh without replacing the subsc
       websocketUrl: "wss://platform.test/preview",
     },
   });
-  const unsubscribe = manager.subscribe(app(oldToken), vi.fn());
-  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
+  const unsubscribe = manager.subscribe(
+    app(oldToken),
+    vi.fn<NonNullable<Parameters<typeof manager.subscribe>[1]>>()
+  );
+  await vi.waitFor(() => {
+    expect(FakeSocket.instances).toHaveLength(1);
+  });
   manager.updateApp(app(newToken));
   FakeSocket.instances[0]?.close();
-  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(2), {
-    timeout: 2500,
-  });
+  await vi.waitFor(
+    () => {
+      expect(FakeSocket.instances).toHaveLength(2);
+    },
+    {
+      timeout: 2500,
+    }
+  );
   expect(FakeSocket.instances[1]?.protocol).toBe(newToken);
   unsubscribe();
 });
@@ -338,10 +376,11 @@ it("keeps the last complete build through a corrupt transfer and recovers after 
     buildEvents(2, "replacement", "REPLACEMENT"),
     buildEvents(2, "replacement", "replacement"),
   ];
-  const onViews = vi.fn();
+  const onViews =
+    vi.fn<NonNullable<Parameters<typeof createPreviewManager>[2]>>();
   const manager = createPreviewManager(
     new URL("https://host.test/api/tailorkit/"),
-    vi.fn(),
+    vi.fn<NonNullable<Parameters<typeof createPreviewManager>[1]>>(),
     onViews
   );
   const unsubscribe = manager.subscribe(
@@ -354,22 +393,31 @@ it("keeps the last complete build through a corrupt transfer and recovers after 
         websocketUrl: "wss://platform.test/preview",
       },
     },
-    vi.fn()
+    vi.fn<NonNullable<Parameters<typeof manager.subscribe>[1]>>()
   );
-  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
+  await vi.waitFor(() => {
+    expect(FakeSocket.instances).toHaveLength(1);
+  });
   FakeSocket.instances[0]?.open();
-  await vi.waitFor(() =>
+  await vi.waitFor(() => {
     expect(manager.getSnapshot("session")).toEqual({
       revision: 1,
       source: "original",
-    })
-  );
-  FakeSocket.instances[0]?.close();
-  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(2), {
-    timeout: 2500,
+    });
   });
+  FakeSocket.instances[0]?.close();
+  await vi.waitFor(
+    () => {
+      expect(FakeSocket.instances).toHaveLength(2);
+    },
+    {
+      timeout: 2500,
+    }
+  );
   FakeSocket.instances[1]?.open();
-  await vi.waitFor(() => expect(state.batches).toHaveLength(1));
+  await vi.waitFor(() => {
+    expect(state.batches).toHaveLength(1);
+  });
   expect(manager.getSnapshot("session")).toEqual({
     revision: 1,
     source: "original",
@@ -379,16 +427,21 @@ it("keeps the last complete build through a corrupt transfer and recovers after 
     { path: "/revision-1", slot: "page" },
   ]);
   FakeSocket.instances[1]?.close();
-  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(3), {
-    timeout: 2500,
-  });
+  await vi.waitFor(
+    () => {
+      expect(FakeSocket.instances).toHaveLength(3);
+    },
+    {
+      timeout: 2500,
+    }
+  );
   FakeSocket.instances[2]?.open();
-  await vi.waitFor(() =>
+  await vi.waitFor(() => {
     expect(manager.getSnapshot("session")).toEqual({
       revision: 2,
       source: "replacement",
-    })
-  );
+    });
+  });
   expect(onViews).toHaveBeenCalledTimes(2);
   expect(onViews).toHaveBeenLastCalledWith("app", [
     { path: "/revision-2", slot: "page" },
@@ -448,15 +501,17 @@ it("keeps a reconnect's candidate when an older checksum finishes", async () => 
   let digestCalls = 0;
   vi.stubGlobal("crypto", {
     subtle: {
-      digest: () =>
-        (digestCalls += 1) === 1 ? oldDigest.promise : newDigest.promise,
+      digest: async () =>
+        (digestCalls += 1) === 1
+          ? await oldDigest.promise
+          : await newDigest.promise,
     },
   });
   const buildEvents = buildEventsImplementation2;
   state.batches = [buildEvents(1, "old"), buildEvents(2, "new")];
   const manager = createPreviewManager(
     new URL("https://host.test/api/tailorkit/"),
-    vi.fn()
+    vi.fn<NonNullable<Parameters<typeof createPreviewManager>[1]>>()
   );
   const unsubscribe = manager.subscribe(
     {
@@ -468,21 +523,32 @@ it("keeps a reconnect's candidate when an older checksum finishes", async () => 
         websocketUrl: "wss://platform.test/preview",
       },
     },
-    vi.fn()
+    vi.fn<NonNullable<Parameters<typeof manager.subscribe>[1]>>()
   );
-  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
-  FakeSocket.instances[0]?.open();
-  await vi.waitFor(() => expect(digestCalls).toBe(1));
-  FakeSocket.instances[0]?.close();
-  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(2), {
-    timeout: 2500,
+  await vi.waitFor(() => {
+    expect(FakeSocket.instances).toHaveLength(1);
   });
+  FakeSocket.instances[0]?.open();
+  await vi.waitFor(() => {
+    expect(digestCalls).toBe(1);
+  });
+  FakeSocket.instances[0]?.close();
+  await vi.waitFor(
+    () => {
+      expect(FakeSocket.instances).toHaveLength(2);
+    },
+    {
+      timeout: 2500,
+    }
+  );
   FakeSocket.instances[1]?.open();
-  await vi.waitFor(() => expect(digestCalls).toBe(2));
+  await vi.waitFor(() => {
+    expect(digestCalls).toBe(2);
+  });
   oldDigest.resolve(
     Uint8Array.from(createHash("sha256").update("old").digest()).buffer
   );
-  await (() => {
+  await (async () => {
     const {
       promise: pendingPromise,
       resolve,
@@ -493,17 +559,17 @@ it("keeps a reconnect's candidate when an older checksum finishes", async () => 
     } catch (error) {
       rejectPending(error);
     }
-    return pendingPromise;
+    return await pendingPromise;
   })();
   newDigest.resolve(
     Uint8Array.from(createHash("sha256").update("new").digest()).buffer
   );
-  await vi.waitFor(() =>
+  await vi.waitFor(() => {
     expect(manager.getSnapshot("session")).toEqual({
       revision: 2,
       source: "new",
-    })
-  );
+    });
+  });
   unsubscribe();
 });
 
@@ -576,9 +642,13 @@ it("clears the published preview before refreshing apps when a session ends", as
       }
     }
   );
-  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
+  await vi.waitFor(() => {
+    expect(FakeSocket.instances).toHaveLength(1);
+  });
   FakeSocket.instances[0]?.open();
-  await vi.waitFor(() => expect(onEnded).toHaveBeenCalledOnce());
+  await vi.waitFor(() => {
+    expect(onEnded).toHaveBeenCalledOnce();
+  });
   expect(endedSnapshots).toEqual([{ revision: 0, source: null }]);
   expect(snapshots).toEqual([
     { revision: 1, source },
@@ -632,7 +702,7 @@ it("shares one socket, applies only complete checksummed revisions, and closes o
   ];
   const manager = createPreviewManager(
     new URL("https://host.test/api/tailorkit/"),
-    vi.fn()
+    vi.fn<NonNullable<Parameters<typeof createPreviewManager>[1]>>()
   );
   const app = {
     id: "app",
@@ -643,14 +713,19 @@ it("shares one socket, applies only complete checksummed revisions, and closes o
       websocketUrl: "wss://platform.test/preview",
     },
   };
-  const listener = vi.fn();
+  const listener = vi.fn<Parameters<typeof manager.subscribe>[1]>();
   const first = manager.subscribe(app, listener);
-  const second = manager.subscribe(app, vi.fn());
-  await vi.waitFor(() => expect(FakeSocket.instances).toHaveLength(1));
-  FakeSocket.instances[0]?.open();
-  await vi.waitFor(() =>
-    expect(manager.getSnapshot("session")).toEqual({ revision: 1, source })
+  const second = manager.subscribe(
+    app,
+    vi.fn<NonNullable<Parameters<typeof manager.subscribe>[1]>>()
   );
+  await vi.waitFor(() => {
+    expect(FakeSocket.instances).toHaveLength(1);
+  });
+  FakeSocket.instances[0]?.open();
+  await vi.waitFor(() => {
+    expect(manager.getSnapshot("session")).toEqual({ revision: 1, source });
+  });
   first();
   first();
   expect(FakeSocket.instances[0]?.closed).toBe(false);
@@ -660,7 +735,7 @@ it("shares one socket, applies only complete checksummed revisions, and closes o
 
 it("does not open a socket after disposal while metadata is pending", async () => {
   let resolve!: (response: Response) => void;
-  const response = (() => {
+  const response = (async () => {
     const {
       promise: pendingPromise,
       resolve: done,
@@ -671,16 +746,16 @@ it("does not open a socket after disposal while metadata is pending", async () =
     } catch (error) {
       rejectPending(error);
     }
-    return pendingPromise;
+    return await pendingPromise;
   })();
   vi.stubGlobal("WebSocket", FakeSocket);
   vi.stubGlobal(
     "fetch",
-    vi.fn(() => response)
+    vi.fn(async () => await response)
   );
   const manager = createPreviewManager(
     new URL("https://host.test/api/tailorkit/"),
-    vi.fn()
+    vi.fn<NonNullable<Parameters<typeof createPreviewManager>[1]>>()
   );
   const stop = manager.subscribe(
     {
@@ -692,7 +767,7 @@ it("does not open a socket after disposal while metadata is pending", async () =
         websocketUrl: "wss://platform.test/preview",
       },
     },
-    vi.fn()
+    vi.fn<NonNullable<Parameters<typeof manager.subscribe>[1]>>()
   );
   manager.dispose();
   resolve(new Response(null, { status: 503 }));

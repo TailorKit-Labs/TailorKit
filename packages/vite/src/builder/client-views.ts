@@ -26,6 +26,7 @@ process.exit(0);
 
 export const readClientManifest = async (filename: string) => {
   try {
+    // oxlint-disable-next-line typescript/strict-void-return -- Node explicitly supports promisify(execFile); its ChildProcess return is intentionally ignored by the callback-to-Promise adapter.
     const { stdout } = await promisify(execFile)(
       process.execPath,
       ["--input-type=module", "--eval", inspectClient, filename],

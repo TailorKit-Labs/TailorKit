@@ -55,13 +55,13 @@ export const PaginationLink = ({
   ...props
 }: PaginationLinkProps): React.ReactElement => {
   const defaultProps = {
-    "aria-current": isActive ? ("page" as const) : undefined,
+    "aria-current": isActive === true ? ("page" as const) : undefined,
     className: render
       ? className
       : cn(
           buttonVariants({
             size,
-            variant: isActive ? "outline" : "ghost",
+            variant: isActive === true ? "outline" : "ghost",
           }),
           className
         ),

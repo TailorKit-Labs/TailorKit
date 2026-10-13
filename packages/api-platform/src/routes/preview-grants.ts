@@ -167,7 +167,7 @@ export const accepted = protectedRouter
     for (const grantId of input.body.grantIds) {
       // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
       const raw = await kv.get(grantKey(grantId));
-      if (!raw) {
+      if (!(raw !== undefined && raw !== null && raw !== "")) {
         continue;
       }
       let grant: Grant;

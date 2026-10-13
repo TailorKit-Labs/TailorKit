@@ -34,7 +34,12 @@ export const wireError = (cause: unknown) => {
   const failure = parsed.success ? parsed.data : undefined;
   const code = failure?.code ?? "INTERNAL_SERVER_ERROR";
   return new ORPCError(code, {
-    message: failure?.code ? failure.message : "App function failed",
+    message:
+      failure?.code !== undefined &&
+      failure?.code !== null &&
+      failure?.code !== ""
+        ? failure.message
+        : "App function failed",
   });
 };
 
@@ -52,7 +57,9 @@ export const rpcErrorResponse = (cause: unknown) => {
   return Response.json(
     { json: failure.toJSON() },
     {
-      status: rpcStatusByCode.get(failure.code) ?? 500,
+      status:
+        rpcStatusByCode.get(z.string().safeParse(failure.code).data ?? "") ??
+        500,
     }
   );
 };
@@ -69,6 +76,7 @@ export interface Installation {
 
 const base = implement(appContract);
 const errors = middlewareGen(function* errors({ next }) {
+  // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
   return yield* next().pipe(Effect.mapError(wireError));
 });
 const http = base.$context<{ installation: Installation }>().use(errors);
@@ -80,18 +88,21 @@ const subscriptions = base
 export const router = base.router({
   actions: http.actions.handler(
     handlerGen(function* actions({ input, context, signal }) {
+      // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
       return yield* context.installation.action(input, signal);
     })
   ),
 
   mutations: http.mutations.handler(
     handlerGen(function* mutations({ input, context }) {
+      // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
       return yield* context.installation.mutate(input);
     })
   ),
 
   queries: http.queries.handler(
     handlerGen(function* queries({ input, context }) {
+      // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
       return yield* context.installation.query(input);
     })
   ),
@@ -99,6 +110,7 @@ export const router = base.router({
   // The public pass-through output schema preserves the hibernation callback.
   subscribe: subscriptions.subscribe.handler(
     handlerGen(function* subscribe({ input, context }) {
+      // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context, effecttsgo/unknown-in-effect-catch -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
       return yield* Effect.try({
         catch: (err3) => err3,
         try: () => context.subscribe(input),
@@ -155,25 +167,26 @@ export const routeInstallation = <Identity, Error>(
         .get("authorization")
         ?.match(/^Bearer (?<token>\S+)$/u)?.[1];
     }
-    if (!token) {
+    if (!(token !== undefined && token !== null && token !== "")) {
       return yield* Effect.fail(
         new ORPCError("UNAUTHORIZED", { message: "App token required" })
       );
     }
     const identity = yield* options.verify(token);
+    // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context, effecttsgo/unknown-in-effect-catch -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
     return yield* Effect.tryPromise({
       catch: (err4) => err4,
-      try: () => {
+      try: async () => {
         if (route === "subscriptions") {
           const headers = new Headers(request.headers);
           headers.set("authorization", `Bearer ${token}`);
-          return options
+          return await options
             .installation(identity)
             .fetch(
               new Request(request.url, { headers, signal: request.signal })
             );
         }
-        return options.installation(identity).fetch(request);
+        return await options.installation(identity).fetch(request);
       },
     });
   });
@@ -191,7 +204,8 @@ export const createInstallationHandler = () =>
         onError((err5) => {
           if (
             !(err5 instanceof ORPCError) ||
-            ["INTERNAL_SERVER_ERROR", "UNAVAILABLE"].includes(err5.code)
+            err5.code === "INTERNAL_SERVER_ERROR" ||
+            err5.code === "UNAVAILABLE"
           ) {
             console.error(err5);
           }
@@ -210,15 +224,17 @@ export const createSubscriptionHandler = () => {
     }
   );
   return {
-    close: (socket: {
+    close: async (socket: {
       send: (data: string | Uint8Array<ArrayBuffer>) => void;
-    }) => handler.close(socket),
-    message(
+    }) => {
+      await handler.close(socket);
+    },
+    message: async (
       socket: { send: (data: string | Uint8Array<ArrayBuffer>) => void },
       message: string | ArrayBuffer,
       subscribe: (input: Invocation) => HibernationAsyncIteratorClass<unknown>,
       cancel: (id: string) => Promise<void>
-    ) {
+    ) => {
       const dispatched = handler.message(socket, message, {
         context: { subscribe },
       });
@@ -228,11 +244,12 @@ export const createSubscriptionHandler = () => {
         isStringValue(message) ? message : new Uint8Array(message)
       );
       if (decoded.matched && isPeerCancelMessage(decoded.message)) {
-        return (async () => {
+        await (async () => {
           await Promise.all([dispatched, cancel(decoded.message.id)]);
         })();
+        return;
       }
-      return (async () => {
+      await (async () => {
         await dispatched;
       })();
     },
@@ -243,9 +260,10 @@ export const createSubscriptionHandler = () => {
 export const subscriptionStream = (
   register: (id: string) => Effect.Effect<void, unknown>
 ) =>
-  new HibernationAsyncIteratorClass<unknown>((id: string) =>
-    Effect.runPromise(register(id))
-  );
+  new HibernationAsyncIteratorClass<unknown>(async (id: string) => {
+    // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
+    await Effect.runPromise(register(id));
+  });
 
 export const deliverSubscription = (
   connection: SubscriptionConnection,
@@ -253,6 +271,7 @@ export const deliverSubscription = (
   value: Parameters<typeof encodeHibernationRPCEvent>[1],
   err6 = false
 ) =>
+  // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context, effecttsgo/unknown-in-effect-catch -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
   Effect.tryPromise({
     catch: (cause: unknown) => cause,
     try: async () => {

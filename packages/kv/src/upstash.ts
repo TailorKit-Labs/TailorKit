@@ -66,13 +66,13 @@ redis.call("DEL", KEYS[2])
 return 1
 `;
 
-const subscribe = (
+const subscribe = async (
   redis: Redis,
   channel: string,
   handler: MessageHandler
 ): Promise<Unsubscribe> => {
   const subscriber = redis.subscribe<string>(channel);
-  return (() => {
+  return await (async () => {
     const {
       promise: pendingPromise,
       resolve,
@@ -99,7 +99,9 @@ const subscribe = (
         void finishSetupFailure(error);
       };
 
-      subscriber.on("message", ({ message }) => handler(message));
+      subscriber.on("message", ({ message }) => {
+        handler(message);
+      });
 
       subscriber.on("subscribe", () => {
         if (setupSettled) {
@@ -128,14 +130,17 @@ const subscribe = (
     } catch (error) {
       reject(error);
     }
-    return pendingPromise;
+    return await pendingPromise;
   })();
 };
 
 export const createUpstashKV = (): KV<"upstash"> => {
   const token = env.KV_REST_API_TOKEN;
   const url = env.KV_REST_API_URL;
-  if (!token || !url) {
+  if (
+    !(token !== undefined && token !== null && token !== "") ||
+    !(url !== undefined && url !== null && url !== "")
+  ) {
     throw new Error(
       "KV_REST_API_TOKEN and KV_REST_API_URL are required for Upstash"
     );
@@ -150,8 +155,8 @@ export const createUpstashKV = (): KV<"upstash"> => {
   });
 
   return {
-    claimUpload: (ownerKey, endedKey, expectedOwner, newOwner, ttl) =>
-      withSpan(
+    claimUpload: async (ownerKey, endedKey, expectedOwner, newOwner, ttl) =>
+      await withSpan(
         "kv.claim_upload",
         { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
         async () => {
@@ -173,16 +178,16 @@ export const createUpstashKV = (): KV<"upstash"> => {
       await withSpan(
         "kv.delete",
         { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
-        () => redis.del(key)
+        async () => await redis.del(key)
       );
     },
     engine: redis,
-    get: (key, options?: GetOptions) =>
-      withSpan(
+    get: async (key, options?: GetOptions) =>
+      await withSpan(
         "kv.get",
         { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
-        () =>
-          withTimeout(
+        async () =>
+          await withTimeout(
             (async () => {
               const value = await redis.get<string>(key);
               return value ?? null;
@@ -190,8 +195,8 @@ export const createUpstashKV = (): KV<"upstash"> => {
             options?.timeout
           )
       ),
-    getAndDelete: (key) =>
-      withSpan(
+    getAndDelete: async (key) =>
+      await withSpan(
         "kv.get_and_delete",
         { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
         async () => {
@@ -199,8 +204,8 @@ export const createUpstashKV = (): KV<"upstash"> => {
           return value ?? null;
         }
       ),
-    increment: (key, ttl) =>
-      withSpan(
+    increment: async (key, ttl) =>
+      await withSpan(
         "kv.increment",
         {
           attributes: {
@@ -221,14 +226,14 @@ export const createUpstashKV = (): KV<"upstash"> => {
           );
         }
       ),
-    keepPreviewSessionIfDeveloperPresent: (
+    keepPreviewSessionIfDeveloperPresent: async (
       presenceKey,
       seenKey,
       endedKey,
       endedTtl,
       expireUnseen
     ) =>
-      withSpan(
+      await withSpan(
         "kv.keep_preview_session_if_developer_present",
         { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
         async () =>
@@ -236,11 +241,11 @@ export const createUpstashKV = (): KV<"upstash"> => {
             await redis.eval(
               KEEP_PREVIEW_SESSION_IF_DEVELOPER_PRESENT_SCRIPT,
               [presenceKey, seenKey, endedKey],
-              [endedTtl, expireUnseen ? "1" : "0"]
+              [endedTtl, expireUnseen === true ? "1" : "0"]
             )
           ) === 1
       ),
-    promoteIfOwnerAndNewer: (
+    promoteIfOwnerAndNewer: async (
       pointerKey,
       ownerKey,
       endedKey,
@@ -249,7 +254,7 @@ export const createUpstashKV = (): KV<"upstash"> => {
       revision,
       ttl
     ) =>
-      withSpan(
+      await withSpan(
         "kv.promote_if_owner_and_newer",
         { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
         async () => {
@@ -274,14 +279,19 @@ export const createUpstashKV = (): KV<"upstash"> => {
           );
         }
       ),
-    publish: (channel, message) =>
-      withSpan(
+    publish: async (channel, message) =>
+      await withSpan(
         "kv.publish",
         { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
-        () => redis.publish(channel, message)
+        async () => await redis.publish(channel, message)
       ),
     set: async (key, value, options?: SetOptions) => {
-      if (options?.ttl) {
+      if (
+        options?.ttl !== undefined &&
+        options?.ttl !== null &&
+        options?.ttl !== 0 &&
+        !Number.isNaN(options?.ttl)
+      ) {
         const { ttl } = options;
         await withSpan(
           "kv.set",
@@ -292,17 +302,17 @@ export const createUpstashKV = (): KV<"upstash"> => {
               "tailorkit.package": "kv",
             },
           },
-          () => redis.set(key, value, { ex: ttl })
+          async () => await redis.set(key, value, { ex: ttl })
         );
       } else {
         await withSpan(
           "kv.set",
           { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
-          () => redis.set(key, value)
+          async () => await redis.set(key, value)
         );
       }
     },
-    setPreviewPresenceIfActive: (
+    setPreviewPresenceIfActive: async (
       presenceKey,
       seenKey,
       endedKey,
@@ -310,7 +320,7 @@ export const createUpstashKV = (): KV<"upstash"> => {
       presenceTtl,
       seenTtl
     ) =>
-      withSpan(
+      await withSpan(
         "kv.set_preview_presence_if_active",
         { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
         async () =>
@@ -322,11 +332,11 @@ export const createUpstashKV = (): KV<"upstash"> => {
             )
           ) === 1
       ),
-    subscribe: (channel: string, handler: MessageHandler) =>
-      withSpan(
+    subscribe: async (channel: string, handler: MessageHandler) =>
+      await withSpan(
         "kv.subscribe",
         { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
-        () => subscribe(redis, channel, handler)
+        async () => await subscribe(redis, channel, handler)
       ),
     type: "upstash",
   };

@@ -12,7 +12,7 @@ import {
   o,
   requireCliDeployToken,
   requireHostAuth,
-} from "../procedures";
+} from "#server/procedures";
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";

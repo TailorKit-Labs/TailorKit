@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-argument, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import type { WorkflowAgent } from "@ai-sdk/workflow";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
@@ -54,10 +55,11 @@ const sandboxName = "app-agent-run-1";
 
 beforeEach(() => {
   vi.resetAllMocks();
-  mocks.sleep.mockImplementation(() => Promise.withResolvers().promise);
-  mocks.stream.mockImplementation(({ messages }) =>
-    Promise.resolve({ messages })
+  mocks.sleep.mockImplementation(
+    async () => await Promise.withResolvers().promise
   );
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  mocks.stream.mockImplementation(async ({ messages }) => ({ messages }));
 });
 
 describe("app agent workflow", () => {
@@ -150,12 +152,14 @@ describe("app agent workflow", () => {
     mocks.stream.mockReturnValue(agent.promise);
     mocks.sleep.mockReturnValueOnce(timer.promise);
     const run = appAgent(input);
-    await vi.waitFor(() => expect(mocks.stream).toHaveBeenCalled());
+    await vi.waitFor(() => {
+      expect(mocks.stream).toHaveBeenCalled();
+    });
     expect(mocks.deleteSandbox).not.toHaveBeenCalled();
     timer.resolve();
-    await vi.waitFor(() =>
-      expect(mocks.renewSandbox).toHaveBeenCalledWith(sandboxName)
-    );
+    await vi.waitFor(() => {
+      expect(mocks.renewSandbox).toHaveBeenCalledWith(sandboxName);
+    });
     expect(mocks.sleep).toHaveBeenCalledWith("5m");
     expect(mocks.deleteSandbox).not.toHaveBeenCalled();
     agent.resolve({ messages: input.messages });
@@ -171,7 +175,9 @@ describe("app agent workflow", () => {
     mocks.sleep.mockResolvedValueOnce(undefined);
     mocks.renewSandbox.mockReturnValue(renewal.promise);
     const run = appAgent(input);
-    await vi.waitFor(() => expect(mocks.renewSandbox).toHaveBeenCalled());
+    await vi.waitFor(() => {
+      expect(mocks.renewSandbox).toHaveBeenCalled();
+    });
     agent.resolve({ messages: input.messages });
     await Promise.resolve();
     expect(mocks.deleteSandbox).not.toHaveBeenCalled();
@@ -189,9 +195,9 @@ describe("app agent workflow", () => {
     const run = appAgent(input);
     // Attach the rejection handler before settling the deferred model promise.
     const rejected = expect(run).rejects.toThrow("Sandbox expired");
-    await vi.waitFor(() =>
-      expect(mocks.stream.mock.lastCall?.[0].abortSignal.aborted).toBe(true)
-    );
+    await vi.waitFor(() => {
+      expect(mocks.stream.mock.lastCall?.[0].abortSignal.aborted).toBe(true);
+    });
     expect(mocks.deleteSandbox).not.toHaveBeenCalled();
     agent.resolve({ messages: input.messages });
     await rejected;

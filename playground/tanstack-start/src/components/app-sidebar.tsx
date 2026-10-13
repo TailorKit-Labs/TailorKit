@@ -86,7 +86,9 @@ export const AppSidebar = ({
             <SidebarMenuItem key={app.id}>
               <SidebarMenuButton
                 isActive={selectedApp?.id === app.id}
-                onClick={() => onSelectApp(app)}
+                onClick={() => {
+                  onSelectApp(app);
+                }}
               >
                 <Blocks aria-hidden="true" />
                 <span>{app.name ?? "App"}</span>

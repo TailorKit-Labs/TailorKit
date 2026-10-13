@@ -36,7 +36,9 @@ export const SetHeaderActions = ({ children }: { children: ReactNode }) => {
   const { setActions } = useHeaderActions();
   useEffect(() => {
     setActions(children);
-    return () => setActions(null);
+    return () => {
+      setActions(null);
+    };
   });
   return null;
 };

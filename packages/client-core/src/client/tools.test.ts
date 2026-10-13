@@ -1,8 +1,10 @@
+/* oxlint-disable typescript/no-unsafe-return, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { defineContract, tool } from "@tailorkit/core/schema";
 import { expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
-import type { TailorKitApp } from "../types";
+import type { TailorKitApp } from "#types";
+
 import { createEndpointClient } from "./endpoints";
 
 // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
@@ -35,9 +37,9 @@ it("binds client tool calls to the installation and validates transformed inputs
   const client = createEndpointClient({
     baseUrl: "https://product.test/api/tailorkit/",
     contract,
-    // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
+
     fetch: async (_url, options) => {
-      bodies.push(JSON.parse(String(options?.body)));
+      bodies.push(await new Response(options?.body).json());
       return Response.json({
         expiresAt: identity.expiresAt,
         identity,
@@ -76,6 +78,7 @@ it("binds client tool calls to the installation and validates transformed inputs
     "Invalid tool payload"
   );
   // SAFETY: This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
   implementation.mockImplementation(() => "invalid" as never);
   await expect(bridge.client("ui.select", "test")).rejects.toThrow(
     "Invalid tool payload"
@@ -86,8 +89,8 @@ it("discards a pending credential when the session cache is cleared", async () =
   const client = createEndpointClient({
     baseUrl: "https://product.test/api/tailorkit/",
     contract,
-    fetch: () =>
-      (() => {
+    fetch: async () =>
+      await (async () => {
         const {
           promise: pendingPromise,
           resolve,
@@ -98,7 +101,7 @@ it("discards a pending credential when the session cache is cleared", async () =
         } catch (error) {
           rejectPending(error);
         }
-        return pendingPromise;
+        return await pendingPromise;
       })(),
   });
   const pending = client.getToolBridge(app).session("data.read");

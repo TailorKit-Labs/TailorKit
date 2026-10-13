@@ -51,7 +51,9 @@ export const SidebarUserMenu = () => {
         render={<Button variant="ghost" />}
       >
         <Avatar className="size-6">
-          {image && <AvatarImage alt={name} src={image} />}
+          {image !== undefined && image !== null && image !== "" && (
+            <AvatarImage alt={name} src={image} />
+          )}
           <AvatarFallback>{initials}</AvatarFallback>
         </Avatar>
         <div className="flex min-w-0 flex-1 flex-col text-left text-sm leading-tight">
@@ -65,7 +67,9 @@ export const SidebarUserMenu = () => {
           <DropdownMenuLabel>
             <div className="flex items-center gap-2 px-1 py-1.5">
               <Avatar className="size-6">
-                {image && <AvatarImage alt={name} src={image} />}
+                {image !== undefined && image !== null && image !== "" && (
+                  <AvatarImage alt={name} src={image} />
+                )}
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
               <div className="flex min-w-0 flex-1 flex-col text-sm leading-tight">
@@ -129,15 +133,19 @@ export const SidebarUserMenu = () => {
                 setTheme(nextTheme);
                 void (async () => {
                   try {
-                    return await (async () => {
+                    await (async () => {
                       // SAFETY: The server declares theme as an additional user field and isAppTheme admits only its supported values; the client update overload omits additional fields.
-                      const result = await authClient.updateUser({
-                        theme: nextTheme,
-                      } as Parameters<typeof authClient.updateUser>[0]);
+                      const result = await authClient.updateUser(
+                        /* oxlint-disable typescript/no-unsafe-type-assertion -- The server declares theme as an additional user field and isAppTheme admits only its supported values; the client update overload omits additional fields. */
+                        {
+                          theme: nextTheme,
+                        } as Parameters<typeof authClient.updateUser>[0]
+                        /* oxlint-enable typescript/no-unsafe-type-assertion */
+                      );
                       if (result.error) {
                         toastManager.add({
                           description:
-                            result.error.message || "Failed to update theme",
+                            result.error.message ?? "Failed to update theme",
                           title: "Theme not saved",
                           type: "error",
                         });

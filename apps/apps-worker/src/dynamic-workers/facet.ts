@@ -11,14 +11,16 @@ import { installFetchGuard } from "../runtime/context";
 installFetchGuard();
 
 export class AppFacet extends DurableObject<Record<string, never>> {
-  #execution = this.ctx.blockConcurrencyWhile(async () => {
+  readonly #execution = this.ctx.blockConcurrencyWhile(async () => {
     const application = await import("application.js");
     return createApplicationExecution(application, {
       execute: (sql, params) => {
         // SAFETY: The database adapter supplies SQLite-compatible positional parameters; this boundary bridges the Workers SQL declaration.
         const cursor = this.ctx.storage.sql.exec(
           sql,
-          ...(params as SqlStorageValue[])
+          .../* oxlint-disable typescript/no-unsafe-type-assertion -- The database adapter supplies SQLite-compatible positional parameters; this boundary bridges the Workers SQL declaration. */
+          (params as SqlStorageValue[])
+          /* oxlint-enable typescript/no-unsafe-type-assertion */
         );
         return {
           changes: cursor.rowsWritten,
@@ -49,7 +51,9 @@ export class AppFacet extends DurableObject<Record<string, never>> {
     const execution = await this.#execution;
     const controller = new AbortController();
     const reader = cancellation.getReader();
-    const cancel = () => controller.abort();
+    const cancel = () => {
+      controller.abort();
+    };
     void (async () => {
       try {
         await reader.read();
@@ -58,14 +62,16 @@ export class AppFacet extends DurableObject<Record<string, never>> {
       }
       cancel();
     })();
-    return Effect.runPromise(
+    return await Effect.runPromise(
       execution
         .action(
           input,
           identity,
           {
-            committed: (tables) => capability.committed(tables),
-            fetch: (inputValue, init) => {
+            committed: async (tables) => {
+              await capability.committed(tables);
+            },
+            fetch: async (inputValue, init) => {
               const request = new Request(inputValue, init);
               const { signal } = request;
               signal.throwIfAborted();
@@ -76,26 +82,27 @@ export class AppFacet extends DurableObject<Record<string, never>> {
                 method: request.method,
                 redirect: request.redirect,
               });
-              return abortable(
+              return await abortable(
                 capability.fetch(transferable, cancellationStream(signal)),
                 signal
               );
             },
-            tool: (path, inputValue2) => capability.tool(path, inputValue2),
+            tool: async (path, inputValue2) =>
+              await capability.tool(path, inputValue2),
           },
           controller.signal
         )
         .pipe(
           Effect.ensuring(
-            Effect.promise(() =>
-              (async () => {
+            Effect.promise(async () => {
+              await (async () => {
                 try {
-                  return await reader.cancel();
+                  await reader.cancel();
                 } catch {
                   /* Intentionally no action is needed. */
                 }
-              })()
-            )
+              })();
+            })
           )
         )
     );

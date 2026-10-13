@@ -46,18 +46,18 @@ const parseConnection = (raw: string): PreviewConnection | null => {
 
 /** Stores a renewable CLI presence lease. Socket closes are not session ends. */
 export const createPreviewPresence = (kv: KV) => ({
-  async get(sessionId: string): Promise<PreviewConnection | null> {
+  get: async (sessionId: string): Promise<PreviewConnection | null> => {
     assertSessionId(sessionId);
     const raw = await kv.get(connectionKey(sessionId));
-    if (!raw) {
+    if (!(raw !== undefined && raw !== null && raw !== "")) {
       return null;
     }
     return parseConnection(raw);
   },
-  async heartbeat(
+  heartbeat: async (
     sessionId: string,
     connection: PreviewConnection
-  ): Promise<void> {
+  ): Promise<void> => {
     assertSessionId(sessionId);
     assertConnection(connection);
     await kv.set(connectionKey(sessionId), JSON.stringify(connection), {
@@ -75,13 +75,13 @@ export const createPreviewPresence = (kv: KV) => ({
       // The lease is authoritative; pub/sub only reduces update latency.
     }
   },
-  async heartbeatIfActive(
+  heartbeatIfActive: async (
     sessionId: string,
     connection: PreviewConnection,
     seenKey: string,
     endedKey: string,
     seenTtl: number
-  ): Promise<boolean> {
+  ): Promise<boolean> => {
     assertSessionId(sessionId);
     assertConnection(connection);
     const value = JSON.stringify(connection);
@@ -107,12 +107,12 @@ export const createPreviewPresence = (kv: KV) => ({
    * best effort; callers must call `get` after subscribing to close the race
    * between loading the lease and opening their Redis subscription.
    */
-  subscribe(
+  subscribe: async (
     sessionId: string,
     handler: (connection: PreviewConnection) => void
-  ): Promise<Unsubscribe> {
+  ): Promise<Unsubscribe> => {
     assertSessionId(sessionId);
-    return kv.subscribe(connectionChannel(sessionId), (message) => {
+    return await kv.subscribe(connectionChannel(sessionId), (message) => {
       const connection = parseConnection(message);
       if (connection) {
         handler(connection);

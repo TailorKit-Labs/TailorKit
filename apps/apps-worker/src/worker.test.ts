@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-argument, typescript/no-unsafe-assignment, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 // oxlint-disable-next-line max-classes-per-file -- These related adapter or mock classes implement one runtime boundary.
 import { issueAppToken, APP_AUDIENCE } from "@tailorkit/api-utils/app-auth";
 import { AppError } from "@tailorkit/app/server";
@@ -123,15 +124,15 @@ const setup = () => {
   );
   let version: string | undefined;
   const facetQuery = vi.fn(
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
     async (
       _input: Parameters<AppFacet["query"]>[0],
       _identity: Parameters<AppFacet["query"]>[1]
-    ) =>
-      await {
-        committed: false,
-        result: { ok: true, value: "result" },
-        tables: [],
-      }
+    ) => ({
+      committed: false,
+      result: { ok: true, value: "result" },
+      tables: [],
+    })
   );
   const startup = vi.fn();
   const abort = vi.fn();
@@ -149,13 +150,16 @@ const setup = () => {
   );
   const id = { equals: vi.fn(() => true), toString: () => "installation-id" };
   // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-  // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-  const ctx = {
-    facets: { abort, get },
-    getWebSockets: () => [],
-    id,
-    storage: { kv: { get: () => version, put } },
-  } as unknown as DurableObjectState;
+
+  const ctx =
+    /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
+    {
+      facets: { abort, get },
+      getWebSockets: () => [],
+      id,
+      storage: { kv: { get: () => version, put } },
+    } as unknown as DurableObjectState;
+  /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
 
   const getClass = vi.fn(() => "facet-class");
   const load = vi.fn(
@@ -169,29 +173,35 @@ const setup = () => {
   );
 
   const routeFetch = vi.fn(
-    async (_request: Request) =>
-      await new Response("forwarded", { status: 202 })
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    async (_request: Request) => new Response("forwarded", { status: 202 })
   );
   const getByName = vi.fn((_name: string) => ({ fetch: routeFetch }));
   const idFromName = vi.fn(() => id);
 
   // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-  // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-  const env = {
-    APP_RUNTIME_PUBLIC_KEYS: publicKeys,
-    ASSET_DOMAIN: "tailorkit.app",
-    BUNDLES: {
-      get: async () => ({
-        body: requireValue(new Response(await source.code()).body),
-      }),
-    },
-    // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-    DEPLOYMENTS: { get: vi.fn(async () => null), put: vi.fn(async () => {}) },
-    LOADER: { get: load },
-    PLATFORM_URL: signing.issuer,
-    RUNTIME_SERVICE_TOKEN: "private",
-    STORES: { getByName, idFromName },
-  } as unknown as Env;
+
+  const env =
+    /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
+    {
+      APP_RUNTIME_PUBLIC_KEYS: publicKeys,
+      ASSET_DOMAIN: "tailorkit.app",
+      BUNDLES: {
+        get: async () => ({
+          body: requireValue(new Response(await source.code()).body),
+        }),
+      },
+
+      DEPLOYMENTS: {
+        get: vi.fn<() => Promise<null>>().mockResolvedValue(null),
+        put: vi.fn(async () => {}),
+      },
+      LOADER: { get: load },
+      PLATFORM_URL: signing.issuer,
+      RUNTIME_SERVICE_TOKEN: "private",
+      STORES: { getByName, idFromName },
+    } as unknown as Env;
+  /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
 
   return {
     abort,
@@ -229,27 +239,29 @@ const request = async (
 };
 
 // Gateway tests use hosted paths; installation tests retain the private normalized /rpc paths.
-// oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
+
 const fetchWorker = async (requestValue: Request, env: Env) => {
   const url = new URL(requestValue.url);
   if (url.hostname === "runtime.test" && url.pathname.startsWith("/rpc")) {
     const token = requestValue.headers.get("authorization")?.slice(7);
-    const payload = token
-      ? JSON.parse(
-          atob(
-            requireValue(token.split(".")[1])
-              .replaceAll("-", "+")
-              .replaceAll("_", "/")
+    const payload =
+      token !== undefined && token !== null && token !== ""
+        ? JSON.parse(
+            atob(
+              requireValue(token.split(".")[1])
+                .replaceAll("-", "+")
+                .replaceAll("_", "/")
+            )
           )
-        )
-      : identity;
+        : identity;
     url.hostname = `${identity.publicTeamId}.tailorkit.app`;
     url.pathname = `/p/${payload.projectId}/a/${identity.appPublicId}${url.pathname}`;
   }
   // SAFETY: This test supplies the context members read by the handler; unrelated request context services are outside this scenario.
-  return worker.fetch(
+  return await worker.fetch(
     new Request(url, requestValue),
     { ...env, ASSET_DOMAIN: env.ASSET_DOMAIN ?? "tailorkit.app" },
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     {} as ExecutionContext
   );
 };
@@ -258,6 +270,7 @@ it("answers a preflight without accessing authentication or storage", async () =
   // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   const response = await fetchWorker(
     new Request("https://runtime.test/rpc/queries", { method: "OPTIONS" }),
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     {} as Parameters<typeof worker.fetch>[1]
   );
 
@@ -381,8 +394,10 @@ it("loads isolated code, passes only the verified identity and caches a warm dep
       env: {},
       globalOutbound: null,
       limits: { cpuMs: 10, subRequests: 64 },
+      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
       modules: expect.objectContaining({
         "application.js": "code",
+        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
         "bootstrap.js": expect.any(String),
       }),
     })
@@ -472,11 +487,13 @@ it("rechecks authentication and rejects the wrong supervisor before looking up a
 it("accepts metadata publication only with the shared service credential", async () => {
   const { env, getByName } = setup();
   env.RUNTIME_SERVICE_TOKEN = "x".repeat(32);
-  const publish = <TInput>(
+  const publish = async (
     token: string,
-    body: TInput | Record<never, never> = deployment
+
+    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This fixture must represent malformed input so the runtime validation boundary can be tested.
+    body: unknown = deployment
   ) =>
-    fetchWorker(
+    await fetchWorker(
       new Request(
         `https://internal.tailorkit.app/p/${identity.projectId}/a/${identity.appPublicId}/new-deployment`,
         {
@@ -496,6 +513,7 @@ it("accepts metadata publication only with the shared service credential", async
   expect(awaitedResult13.status).toBe(400);
   const awaitedResult14 = await publish(env.RUNTIME_SERVICE_TOKEN);
   expect(awaitedResult14.status).toBe(204);
+  // oxlint-disable-next-line typescript/unbound-method -- This assertion inspects a spy reference without invoking the method or changing its receiver.
   expect(env.DEPLOYMENTS.put).toHaveBeenCalledWith(
     JSON.stringify([deployment.projectId, deployment.appId]),
     expect.any(String),
@@ -505,6 +523,7 @@ it("accepts metadata publication only with the shared service credential", async
   expect(
     JSON.parse(
       requireValue(
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
         (env.DEPLOYMENTS.put as ReturnType<typeof vi.fn>).mock.calls[0]
       )[1]
     )

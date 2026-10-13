@@ -1,4 +1,5 @@
-import type { TailorKitSchemaSpec } from "../spec/index";
+import type { TailorKitSchemaSpec } from "#spec/index";
+
 import type {
   ComponentDefinitions,
   NoComponentFieldCallbackConflicts,
@@ -19,6 +20,7 @@ import type {
 const isBooleanValue = <TValue>(value: TValue): value is TValue & boolean =>
   typeof value === "boolean";
 
+// oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
 type EmptyToolMap = Record<never, never>;
 
 export interface TailorKitSchema<
@@ -65,6 +67,9 @@ const contextMayBeOmitted = (schema: Schema): boolean => {
       } catch {
         /* Intentionally no action is needed. */
       }
+
+      /* oxlint-disable-next-line unicorn/no-useless-undefined -- Missing results use the same undefined sentinel as the optional return type. */
+      return undefined;
     })();
     return true;
   }
@@ -95,20 +100,24 @@ export const createTailorKitSchema = <
     }
   }
   // SAFETY: These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes.
-  const components = {} as TailorKitSchema<
-    TComponents,
-    TViews,
-    TTools
-  >["$internal"]["components"];
+  const components =
+    /* oxlint-disable typescript/no-unsafe-type-assertion -- These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes. */
+    {} as TailorKitSchema<
+      TComponents,
+      TViews,
+      TTools
+    >["$internal"]["components"];
+  /* oxlint-enable typescript/no-unsafe-type-assertion */
   // SAFETY: These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes.
-  const views = {} as TailorKitSchema<
-    TComponents,
-    TViews,
-    TTools
-  >["$internal"]["views"];
+  const views =
+    /* oxlint-disable typescript/no-unsafe-type-assertion -- These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes. */
+    {} as TailorKitSchema<TComponents, TViews, TTools>["$internal"]["views"];
+  /* oxlint-enable typescript/no-unsafe-type-assertion */
 
   for (const [name, definition] of Object.entries(
+    /* oxlint-disable typescript/no-unsafe-type-assertion -- These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes. */
     schema.components as ComponentDefinitions
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
   )) {
     // SAFETY: These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes.
     components[name as keyof TComponents] = resolveComponentMetadata(
@@ -117,11 +126,13 @@ export const createTailorKitSchema = <
     );
   }
 
-  for (const [name, context] of Object.entries(
-    (schema.views ?? {}) as ContextDefinitions
-  )) {
+  for (const [name, context] of Object.entries(schema.views ?? {})) {
     // SAFETY: These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes.
-    views[name as keyof TViews] = { context };
+    views[
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes. */
+      name as keyof TViews
+      /* oxlint-enable typescript/no-unsafe-type-assertion */
+    ] = { context };
   }
 
   const serialize = (
@@ -199,18 +210,27 @@ export const createTailorKitSchema = <
   return {
     $internal: {
       components,
-      tools: (schema.tools ?? {}) as TTools,
+      tools:
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes. */
+        (schema.tools ?? {}) as TTools,
+      /* oxlint-enable typescript/no-unsafe-type-assertion */
       views,
     },
     components: schema.components,
     serialize,
     slots: schema.slots ?? {},
-    tools: (schema.tools ?? {}) as TTools,
-    views: (schema.views ?? {}) as TViews,
+    tools:
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes. */
+      (schema.tools ?? {}) as TTools,
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
+    views:
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes. */
+      (schema.views ?? {}) as TViews,
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
   };
 };
 
-export type { TailorKitTheme } from "../primitives/theme";
+export type { TailorKitTheme } from "#primitives/theme";
 
 export { tool } from "./tools";
 

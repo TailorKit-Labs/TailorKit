@@ -65,7 +65,11 @@ const LastUsedLabel = ({
 }) => (
   <span className="shrink-0 text-xs text-muted-foreground">
     Last used{" "}
-    {lastRequest ? <DateAgo className="inline" date={lastRequest} /> : "never"}
+    {lastRequest !== undefined && lastRequest !== null && lastRequest !== "" ? (
+      <DateAgo className="inline" date={lastRequest} />
+    ) : (
+      "never"
+    )}
   </span>
 );
 
@@ -100,8 +104,8 @@ const ProjectApiKeysPage = () => {
   );
 
   const rotateMutation = useMutation({
-    mutationFn: () =>
-      client.project.rotateApiKey({
+    mutationFn: async () =>
+      await client.project.rotateApiKey({
         gracePeriodSeconds: Number(gracePeriodSeconds),
         orgSlug,
         projectSlug,
@@ -131,11 +135,17 @@ const ProjectApiKeysPage = () => {
   const activeKey = apiKeys.active[0] ?? null;
   const expiringKeys = apiKeys.rotating;
   const projectKeyPanel = (() => {
-    if (!activeKey) {
+    if (!(activeKey !== undefined && activeKey !== null)) {
       return <p className="text-sm text-muted-foreground">No API key yet.</p>;
     }
 
-    if (!storedApiKey) {
+    if (
+      !(
+        storedApiKey !== undefined &&
+        storedApiKey !== null &&
+        storedApiKey !== ""
+      )
+    ) {
       return (
         <div className="min-w-0 rounded-lg border bg-muted px-3 py-2">
           <div className="flex min-w-0 items-center gap-3">
@@ -173,7 +183,9 @@ const ProjectApiKeysPage = () => {
                     size="icon-xs"
                     type="button"
                     variant="ghost"
-                    onClick={() => setShowStoredApiKey((value) => !value)}
+                    onClick={() => {
+                      setShowStoredApiKey((value) => !value);
+                    }}
                   />
                 }
               >
@@ -191,7 +203,11 @@ const ProjectApiKeysPage = () => {
                     size="icon-xs"
                     type="button"
                     variant="ghost"
-                    onClick={() => copyApiKey(storedApiKey)}
+                    onClick={() => {
+                      void (async () => {
+                        await copyApiKey(storedApiKey);
+                      })();
+                    }}
                   />
                 }
               >
@@ -239,7 +255,9 @@ const ProjectApiKeysPage = () => {
                         size="icon-xs"
                         type="button"
                         variant="ghost"
-                        onClick={() => setShowNewApiKey((value) => !value)}
+                        onClick={() => {
+                          setShowNewApiKey((value) => !value);
+                        }}
                       />
                     }
                   >
@@ -254,13 +272,23 @@ const ProjectApiKeysPage = () => {
                     render={
                       <Button
                         aria-label="Copy API key"
-                        disabled={!newApiKey}
+                        disabled={
+                          !(
+                            newApiKey !== undefined &&
+                            newApiKey !== null &&
+                            newApiKey !== ""
+                          )
+                        }
                         size="icon-xs"
                         type="button"
                         variant="ghost"
                         onClick={() => {
-                          if (newApiKey) {
-                            copyApiKey(newApiKey);
+                          if (
+                            newApiKey !== undefined &&
+                            newApiKey !== null &&
+                            newApiKey !== ""
+                          ) {
+                            void copyApiKey(newApiKey);
                           }
                         }}
                       />
@@ -323,7 +351,9 @@ const ProjectApiKeysPage = () => {
             <Button
               disabled={rotateMutation.isPending}
               type="button"
-              onClick={() => rotateMutation.mutate()}
+              onClick={() => {
+                rotateMutation.mutate();
+              }}
             >
               <RefreshCwIcon />
               {rotateMutation.isPending ? "Rotating…" : "Rotate key"}
@@ -344,7 +374,9 @@ const ProjectApiKeysPage = () => {
               size="sm"
               type="button"
               variant="destructive-outline"
-              onClick={() => setRotateDialogOpen(true)}
+              onClick={() => {
+                setRotateDialogOpen(true);
+              }}
             >
               <RefreshCwIcon />
               Rotate
@@ -389,8 +421,8 @@ export const Route = createFileRoute(
   "/(app)/$orgSlug/$projectSlug/settings/api-keys"
 )({
   component: ProjectApiKeysPage,
-  loader: ({ context, params }) =>
-    context.queryClient.query(
+  loader: async ({ context, params }) =>
+    await context.queryClient.query(
       context.orpc.project.apiKeys.queryOptions({
         input: { orgSlug: params.orgSlug, projectSlug: params.projectSlug },
       })

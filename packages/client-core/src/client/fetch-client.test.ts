@@ -1,8 +1,9 @@
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
-import { createSlotStore } from "../store/fetch/slot";
-import { createTailorKitStore } from "../store/store";
-import { testContract } from "../test-contract";
+import { createSlotStore } from "#store/fetch/slot";
+import { createTailorKitStore } from "#store/store";
+import { testContract } from "#test-contract";
+
 import { createTailorKitFetchClient } from "./fetch-client";
 
 afterEach(() => {
@@ -11,13 +12,12 @@ afterEach(() => {
 });
 
 it("shares endpoint responses across roots without sharing local view registrations", async () => {
-  const fetchMock = vi.fn((input) =>
-    Promise.resolve(
-      Response.json(
-        String(input).endsWith("/apps")
-          ? [{ id: "app" }]
-          : { schema: { views: {} } }
-      )
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  const fetchMock = vi.fn(async (input) =>
+    Response.json(
+      String(input).endsWith("/apps")
+        ? [{ id: "app" }]
+        : { schema: { views: {} } }
     )
   );
   const client = createTailorKitFetchClient({
@@ -36,7 +36,9 @@ it("shares endpoint responses across roots without sharing local view registrati
     client,
     contract: testContract(),
   });
-  const stop = second.subscribeApps(vi.fn());
+  const stop = second.subscribeApps(
+    vi.fn<NonNullable<Parameters<typeof second.subscribeApps>[0]>>()
+  );
   await Promise.all([first.fetchApps(), second.fetchApps()]);
   expect(fetchMock).toHaveBeenCalledOnce();
   expect(second.getAppsSnapshot().apps).toBe(first.getAppsSnapshot().apps);
@@ -75,11 +77,10 @@ it("keeps supplied discovery data local while another root fetches", async () =>
 
 it("honors app freshness defaults", async () => {
   vi.useFakeTimers();
-  const fetchMock = vi.fn((input) =>
-    Promise.resolve(
-      Response.json(
-        String(input).endsWith("/apps") ? [{ id: "app" }] : { schema: {} }
-      )
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  const fetchMock = vi.fn(async (input) =>
+    Response.json(
+      String(input).endsWith("/apps") ? [{ id: "app" }] : { schema: {} }
     )
   );
   const client = createTailorKitFetchClient({
@@ -122,30 +123,27 @@ it("isolates authenticated clients at the same endpoint and clears credentials w
 });
 
 it("deduplicates instance requests and sessions across framework-neutral consumers", async () => {
-  const fetchMock = vi.fn((input) => {
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  const fetchMock = vi.fn(async (input) => {
     const path = new URL(String(input)).pathname;
     if (path.endsWith("/meta")) {
-      return Promise.resolve(
-        Response.json({
-          schema: {
-            slots: { page: { multiple: true, views: ["/"] } },
-            views: { "/": {} },
-          },
-        })
-      );
+      return Response.json({
+        schema: {
+          slots: { page: { multiple: true, views: ["/"] } },
+          views: { "/": {} },
+        },
+      });
     }
     if (path.endsWith("/backend/session")) {
-      return Promise.resolve(
-        Response.json({
-          expiresAt: Date.now() + 300_000,
-          token: "token",
-          url: "https://runtime.test/rpc",
-        })
-      );
+      return Response.json({
+        expiresAt: Date.now() + 300_000,
+        token: "token",
+        url: "https://runtime.test/rpc",
+      });
     }
-    return Promise.resolve(
-      Response.json({ json: [{ data: {}, key: "overview", metadata: {} }] })
-    );
+    return Response.json({
+      json: [{ data: {}, key: "overview", metadata: {} }],
+    });
   });
   const client = createTailorKitFetchClient({
     baseUrl: "https://host.test/",
@@ -169,8 +167,12 @@ it("deduplicates instance requests and sessions across framework-neutral consume
   };
   const first = createSlotStore(client, contract, options);
   const second = createSlotStore(client, contract, options);
-  const stopFirst = first.subscribe(vi.fn());
-  const stopSecond = second.subscribe(vi.fn());
+  const stopFirst = first.subscribe(
+    vi.fn<NonNullable<Parameters<typeof first.subscribe>[0]>>()
+  );
+  const stopSecond = second.subscribe(
+    vi.fn<NonNullable<Parameters<typeof second.subscribe>[0]>>()
+  );
   const pending = first.fetch();
   expect(second.fetch()).toBe(pending);
   await pending;

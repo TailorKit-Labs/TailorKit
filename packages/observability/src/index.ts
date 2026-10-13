@@ -59,7 +59,7 @@ globalState[stateKey] ??= { started: false };
 const state = globalState[stateKey];
 
 const isTracingDisabled = () =>
-  env.TAILORKIT_OTEL_DISABLED || env.NODE_ENV === "test";
+  env.TAILORKIT_OTEL_DISABLED ?? env.NODE_ENV === "test";
 
 const resolveServiceName = (serviceName?: string) =>
   serviceName ?? env.OTEL_SERVICE_NAME ?? "tailorkit-web";
@@ -68,8 +68,9 @@ const resolveDeploymentEnvironment = () => env.VERCEL_ENV ?? env.NODE_ENV;
 
 const resolveServiceVersion = () => env.VERCEL_GIT_COMMIT_SHA;
 
-export const safeAttributeValue = <TValue>(
-  value: TValue
+export const safeAttributeValue = (
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser, serializer, or runtime adapter handles arbitrary values before validating or encoding their domain representation.
+  value: unknown
 ): string | number | boolean | undefined => {
   if (value === null || value === undefined) {
     return undefined;
@@ -83,12 +84,12 @@ export const safeAttributeValue = <TValue>(
     return value.toISOString();
   }
 
+  // oxlint-disable-next-line typescript/no-base-to-string -- Telemetry deliberately records the string representation of nonprimitive values after preserving primitives and dates.
   return String(value);
 };
 
-export const safeAttributes = <TAttributes extends object>(
-  attributes?: TAttributes
-): Attributes =>
+// oxlint-disable-next-line anti-slop/no-object-parameters -- This structural adapter enumerates caller-owned fields; a concrete domain shape would exclude supported schema or attribute objects.
+export const safeAttributes = (attributes?: object): Attributes =>
   Object.fromEntries(
     Object.entries(attributes ?? {})
       .filter(([key]) => !sensitiveAttributePattern.test(key))
@@ -112,7 +113,13 @@ const resolveSampleRate = () => {
   const configuredRate =
     env.TAILORKIT_OTEL_SAMPLE_RATE ?? env.OTEL_TRACES_SAMPLER_ARG;
 
-  if (!configuredRate) {
+  if (
+    !(
+      configuredRate !== undefined &&
+      configuredRate !== null &&
+      configuredRate !== ""
+    )
+  ) {
     return 1;
   }
 
@@ -167,7 +174,8 @@ export const initializeObservability = async (serviceName?: string) => {
   }
 
   if (state.initializing) {
-    return state.initializing;
+    await state.initializing;
+    return;
   }
 
   if (isTracingDisabled()) {
@@ -178,12 +186,15 @@ export const initializeObservability = async (serviceName?: string) => {
   state.serviceName = resolvedServiceName;
 
   state.initializing = (async () => {
-    if (!env.VERCEL) {
+    if (!(env.VERCEL === true)) {
       return;
     }
 
     // SAFETY: This module owns the telemetry symbol state and initializes it with TelemetryState; the optional SDK import is the installed @vercel/otel API.
-    const { registerOTel } = (await import("@vercel/otel")) as VercelOtelModule;
+    const { registerOTel } =
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- This module owns the telemetry symbol state and initializes it with TelemetryState; the optional SDK import is the installed @vercel/otel API. */
+      (await import("@vercel/otel")) as VercelOtelModule;
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
     registerOTel({
       attributes: createResourceAttributes(resolvedServiceName),
       instrumentations: createInstrumentations(),
@@ -211,19 +222,16 @@ export const shutdownObservability = () => {
 
 export const getTracer = (name = "tailorkit") => trace.getTracer(name);
 
-export const setSpanAttributes = <TAttributes extends object>(
-  attributes: TAttributes
-) => {
+// oxlint-disable-next-line anti-slop/no-object-parameters -- This structural adapter enumerates caller-owned fields; a concrete domain shape would exclude supported schema or attribute objects.
+export const setSpanAttributes = (attributes: object) => {
   const span = trace.getActiveSpan();
   if (span) {
     span.setAttributes(safeAttributes(attributes));
   }
 };
 
-export const recordException = <TAttributes extends object>(
-  cause: unknown,
-  attributes?: TAttributes
-) => {
+// oxlint-disable-next-line anti-slop/no-object-parameters -- This structural adapter enumerates caller-owned fields; a concrete domain shape would exclude supported schema or attribute objects.
+export const recordException = (cause: unknown, attributes?: object) => {
   const span = trace.getActiveSpan();
   if (!span) {
     return;
@@ -243,7 +251,7 @@ export const recordException = <TAttributes extends object>(
   span.setStatus({ code: SpanStatusCode.ERROR });
 };
 
-export const withSpan = <T>(
+export const withSpan = async <T>(
   name: string,
   optionsOrHandler: SpanOptions | ((span: Span) => Promise<T> | T),
   maybeHandler?: (span: Span) => Promise<T> | T
@@ -260,32 +268,36 @@ export const withSpan = <T>(
     throw new Error("withSpan requires a handler.");
   }
 
-  return tracer.startActiveSpan(name, options ?? {}, async (span: Span) => {
-    span.setAttributes(
-      safeAttributes({
-        "operation.name": name,
-        "resource.name": name,
-        ...options?.attributes,
-      })
-    );
+  return await tracer.startActiveSpan(
+    name,
+    options ?? {},
+    async (span: Span) => {
+      span.setAttributes(
+        safeAttributes({
+          "operation.name": name,
+          "resource.name": name,
+          ...options?.attributes,
+        })
+      );
 
-    try {
-      const result = await handler(span);
-      span.setStatus({ code: SpanStatusCode.OK });
-      return result;
-    } catch (error) {
-      recordException(error);
-      throw error;
-    } finally {
-      span.end();
+      try {
+        const result = await handler(span);
+        span.setStatus({ code: SpanStatusCode.OK });
+        return result;
+      } catch (error) {
+        recordException(error);
+        throw error;
+      } finally {
+        span.end();
+      }
     }
-  });
+  );
 };
 
 const headersToCarrier = (headers: Headers): Record<string, string> =>
   Object.fromEntries(headers.entries());
 
-export const withRequestSpan = <T>(
+export const withRequestSpan = async <T>(
   request: Request,
   name: string,
   optionsOrHandler: SpanOptions | ((span: Span) => Promise<T> | T),
@@ -294,7 +306,7 @@ export const withRequestSpan = <T>(
   const carrier = headersToCarrier(request.headers);
   const parentContext = propagation.extract(context.active(), carrier);
 
-  return context.with(parentContext, () => {
+  return await context.with(parentContext, async () => {
     const url = new URL(request.url);
     const options = isSpanHandler(optionsOrHandler)
       ? undefined
@@ -307,7 +319,7 @@ export const withRequestSpan = <T>(
       throw new Error("withRequestSpan requires a handler.");
     }
 
-    return withSpan(
+    return await withSpan(
       name,
       {
         kind: SpanKind.SERVER,

@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-member-access -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import {
   Client,
   StreamableHTTPClientTransport,
@@ -60,17 +61,23 @@ it("connects an ordinary MCP client directly to the platform with standard heade
   try {
     await client.connect(
       new StreamableHTTPClientTransport(new URL(url), {
-        fetch: (input, init) => {
+        fetch: async (input, init) => {
           const request = new Request(input, init);
           expect(request.url).toBe(
             "https://platform.test/api/platform/app-agent/mcp"
           );
           expect(request.headers.get("authorization")).toBe("Bearer host-key");
           // SAFETY: This test supplies the context members read by the handler; unrelated request context services are outside this scenario.
-          return handleAppAgentMcpRequest(request, {
-            organization: { id: "org" },
-            project: { id: "project" },
-          } as Context);
+
+          return await handleAppAgentMcpRequest(
+            request,
+            /* oxlint-disable typescript/no-unsafe-type-assertion -- This test supplies the context members read by the handler; unrelated request context services are outside this scenario. */
+            {
+              organization: { id: "org" },
+              project: { id: "project" },
+            } as Context
+            /* oxlint-enable typescript/no-unsafe-type-assertion */
+          );
         },
         requestInit: { headers },
       })

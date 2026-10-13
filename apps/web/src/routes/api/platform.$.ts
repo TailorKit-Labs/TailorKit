@@ -39,14 +39,16 @@ const handle = async ({ request }: { request: Request }) => {
     return publicResponse;
   }
 
-  const context = await createContext({ request }).catch((error) => {
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- JavaScript may reject with arbitrary values; this boundary records or preserves the original failure.
+  const context = await createContext({ request }).catch((error: unknown) => {
     recordException(error, { "tailorkit.adapter": "orpc-openapi" });
     console.error("OpenAPI authorization failed", sanitizeErrorForLog(error));
+    // oxlint-disable-next-line typescript/only-throw-error -- Preserve the transport failure object, including its code and metadata, for the existing downstream error mapping.
     throw contextErrorResponse(error);
   });
 
   if (new URL(request.url).pathname === "/api/platform/app-agent/mcp") {
-    return handleAppAgentMcpRequest(request, context);
+    return await handleAppAgentMcpRequest(request, context);
   }
 
   const rpcResult = await handler.handle(request, {

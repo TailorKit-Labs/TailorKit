@@ -5,9 +5,8 @@ import type { Persistence } from "./database/driver";
 import { AppError } from "./errors";
 import { createExecution } from "./execution";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 const bundle = z.object({
   default: z.custom<AppDefinition>(

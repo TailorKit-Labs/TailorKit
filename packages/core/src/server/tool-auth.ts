@@ -1,13 +1,6 @@
 import { z } from "zod";
 
-import type { ToolIdentity } from "../schema/tools";
-
-const isStringValue = <TValue>(value: TValue): value is TValue & string =>
-  typeof value === "string";
-
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+import type { ToolIdentity } from "#schema/tools";
 
 const audience = "tailorkit-app";
 const decode = (part: string) =>
@@ -26,10 +19,10 @@ export const createToolVerifier = (options: {
     | undefined;
   let refreshing: Promise<void> | undefined;
   let nextUnknownKeyRefresh = 0;
-  const refreshKeys = (): Promise<void> => {
+  const refreshKeys = async (): Promise<void> => {
     refreshing ??= (async () => {
       try {
-        return await (async () => {
+        await (async () => {
           const response = await options.fetch(`${issuer}/runtime/keys`, {
             redirect: "manual",
           });
@@ -49,7 +42,7 @@ export const createToolVerifier = (options: {
                       x: z.string().min(1),
                       y: z.string().min(1),
                     })
-                    .passthrough()
+                    .loose()
                 )
                 .min(1)
                 .max(32),
@@ -65,7 +58,7 @@ export const createToolVerifier = (options: {
         refreshing = undefined;
       }
     })();
-    return refreshing;
+    await refreshing;
   };
   // oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
   return async (token: string, toolUrl: string): Promise<ToolIdentity> => {
@@ -73,24 +66,29 @@ export const createToolVerifier = (options: {
       throw new Error("Invalid tool credential");
     }
     const parts = token.split(".");
-    if (parts.length !== 3) {
-      throw new Error("Invalid tool credential");
-    }
-    // SAFETY: Token parsing checks the three JWT segments before decoding them; their order is header, payload, and signature.
-    const [headerPart, payloadPart, signaturePart] = parts as [
-      string,
-      string,
-      string,
-    ];
-    const header = JSON.parse(new TextDecoder().decode(decode(headerPart)));
+    const [headerPart, payloadPart, signaturePart] = parts;
     if (
-      header.alg !== "ES256" ||
-      header.typ !== "JWT" ||
-      !isStringValue(header.kid) ||
-      header.crit
+      parts.length !== 3 ||
+      headerPart === undefined ||
+      payloadPart === undefined ||
+      signaturePart === undefined
     ) {
       throw new Error("Invalid tool credential");
     }
+    const parsedHeader = z
+      .object({
+        alg: z.literal("ES256"),
+        crit: z
+          .union([z.literal(false), z.literal(0), z.literal(""), z.null()])
+          .optional(),
+        kid: z.string(),
+        typ: z.literal("JWT"),
+      })
+      .safeParse(JSON.parse(new TextDecoder().decode(decode(headerPart))));
+    if (!parsedHeader.success) {
+      throw new Error("Invalid tool credential");
+    }
+    const header = parsedHeader.data;
     let refreshed = false;
     if (!cached || cached.expiresAt <= Date.now()) {
       await refreshKeys();
@@ -126,14 +124,34 @@ export const createToolVerifier = (options: {
     ) {
       throw new Error("Invalid signature");
     }
-    const claims = JSON.parse(new TextDecoder().decode(decode(payloadPart)));
+    const identifier = z.string().min(1).max(256);
+    const parsedClaims = z
+      .object({
+        appId: identifier,
+        appPublicId: identifier,
+        aud: z.literal(audience),
+        deploymentId: identifier,
+        exp: z.number().int(),
+        iat: z.number().int(),
+        installationId: identifier,
+        iss: z.literal(issuer),
+        projectId: identifier,
+        publicTeamId: identifier,
+        scope: z.object({
+          name: z.string().min(1),
+          value: z.record(z.string(), z.json()),
+        }),
+        sub: z.string(),
+        subjectId: identifier.optional(),
+        toolUrl: z.literal(toolUrl),
+      })
+      .safeParse(JSON.parse(new TextDecoder().decode(decode(payloadPart))));
+    if (!parsedClaims.success) {
+      throw new Error("Invalid tool claims");
+    }
+    const claims = parsedClaims.data;
     const now = Math.floor(Date.now() / 1000);
     if (
-      claims.iss !== issuer ||
-      claims.aud !== audience ||
-      claims.toolUrl !== toolUrl ||
-      !Number.isInteger(claims.exp) ||
-      !Number.isInteger(claims.iat) ||
       claims.exp <= now ||
       claims.iat > now ||
       claims.exp <= claims.iat ||
@@ -142,35 +160,7 @@ export const createToolVerifier = (options: {
     ) {
       throw new Error("Invalid tool claims");
     }
-    for (const name of [
-      "installationId",
-      "appId",
-      "projectId",
-      "deploymentId",
-      "publicTeamId",
-      "appPublicId",
-    ]) {
-      if (
-        !isStringValue(claims[name]) ||
-        !claims[name] ||
-        claims[name].length > 256
-      ) {
-        throw new Error("Invalid installation identity");
-      }
-    }
-    if (
-      claims.appId !== claims.installationId ||
-      (claims.subjectId !== undefined &&
-        (!isStringValue(claims.subjectId) ||
-          !claims.subjectId ||
-          claims.subjectId.length > 256)) ||
-      !claims.scope ||
-      !isStringValue(claims.scope.name) ||
-      !claims.scope.name ||
-      !claims.scope.value ||
-      !isObjectValue(claims.scope.value) ||
-      Array.isArray(claims.scope.value)
-    ) {
+    if (claims.appId !== claims.installationId) {
       throw new Error("Invalid scope identity");
     }
     return Object.freeze({

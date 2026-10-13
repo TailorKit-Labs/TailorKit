@@ -168,26 +168,32 @@ export const appsRouter = {
     }),
 
   list: protectedProcedure
-    .input(projectInput.merge(paginationInput))
+    .input(projectInput.extend(paginationInput.shape))
     .use(requireProject())
     .handler(async ({ context, input }) => {
       const page = input.page ?? 1;
       const pageSize = input.pageSize ?? 25;
       const search = input.search?.trim().toLowerCase();
       const offset = (page - 1) * pageSize;
-      const searchPattern = search ? `%${search}%` : undefined;
-      const where = searchPattern
-        ? and(
-            eq(app.projectId, context.project.id),
-            or(
-              ilike(app.name, searchPattern),
-              ilike(app.publicId, searchPattern),
-              sql`${app.scope}::text ILIKE ${searchPattern}`,
-              ilike(app.description, searchPattern),
-              sql`${app.id}::text ILIKE ${searchPattern}`
+      const searchPattern =
+        search !== undefined && search !== null && search !== ""
+          ? `%${search}%`
+          : undefined;
+      const where =
+        searchPattern !== undefined &&
+        searchPattern !== null &&
+        searchPattern !== ""
+          ? and(
+              eq(app.projectId, context.project.id),
+              or(
+                ilike(app.name, searchPattern),
+                ilike(app.publicId, searchPattern),
+                sql`${app.scope}::text ILIKE ${searchPattern}`,
+                ilike(app.description, searchPattern),
+                sql`${app.id}::text ILIKE ${searchPattern}`
+              )
             )
-          )
-        : eq(app.projectId, context.project.id);
+          : eq(app.projectId, context.project.id);
       const pageItems = await db
         .select()
         .from(app)
@@ -254,9 +260,13 @@ export const appsRouter = {
           return withAppAssetUrl(
             {
               ...publicApp,
-              currentDeployment: item.currentDeploymentId
-                ? (currentDeploymentById.get(item.currentDeploymentId) ?? null)
-                : null,
+              currentDeployment:
+                item.currentDeploymentId !== undefined &&
+                item.currentDeploymentId !== null &&
+                item.currentDeploymentId !== ""
+                  ? (currentDeploymentById.get(item.currentDeploymentId) ??
+                    null)
+                  : null,
               deploymentCount: deploymentCountByAppId.get(item.id) ?? 0,
               latestDeployment: latestDeploymentByAppId.get(item.id) ?? null,
             },
@@ -284,6 +294,6 @@ export const appsRouter = {
       if (!enabled) {
         return "disabled" as const;
       }
-      return getAppAgentWorkspaceStatus(selectedApp.id);
+      return await getAppAgentWorkspaceStatus(selectedApp.id);
     }),
 };

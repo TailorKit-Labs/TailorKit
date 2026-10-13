@@ -99,8 +99,8 @@ export const createRedisKV = (url: string): KV<"redis"> => {
   const redis = new IORedis(url);
 
   return {
-    claimUpload: (ownerKey, endedKey, expectedOwner, newOwner, ttl) =>
-      withSpan(
+    claimUpload: async (ownerKey, endedKey, expectedOwner, newOwner, ttl) =>
+      await withSpan(
         "kv.claim_upload",
         { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
         async () => {
@@ -126,24 +126,24 @@ export const createRedisKV = (url: string): KV<"redis"> => {
       await withSpan(
         "kv.delete",
         { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
-        () => redis.del(key)
+        async () => await redis.del(key)
       );
     },
     engine: redis,
-    get: (key, options?: GetOptions) =>
-      withSpan(
+    get: async (key, options?: GetOptions) =>
+      await withSpan(
         "kv.get",
         { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
-        () => withTimeout(redis.get(key), options?.timeout)
+        async () => await withTimeout(redis.get(key), options?.timeout)
       ),
-    getAndDelete: (key) =>
-      withSpan(
+    getAndDelete: async (key) =>
+      await withSpan(
         "kv.get_and_delete",
         { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
-        () => redis.getdel(key)
+        async () => await redis.getdel(key)
       ),
-    increment: (key, ttl) =>
-      withSpan(
+    increment: async (key, ttl) =>
+      await withSpan(
         "kv.increment",
         {
           attributes: {
@@ -164,14 +164,14 @@ export const createRedisKV = (url: string): KV<"redis"> => {
           );
         }
       ),
-    keepPreviewSessionIfDeveloperPresent: (
+    keepPreviewSessionIfDeveloperPresent: async (
       presenceKey,
       seenKey,
       endedKey,
       endedTtl,
       expireUnseen
     ) =>
-      withSpan(
+      await withSpan(
         "kv.keep_preview_session_if_developer_present",
         { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
         async () =>
@@ -183,11 +183,11 @@ export const createRedisKV = (url: string): KV<"redis"> => {
               seenKey,
               endedKey,
               endedTtl,
-              expireUnseen ? "1" : "0"
+              expireUnseen === true ? "1" : "0"
             )
           ) === 1
       ),
-    promoteIfOwnerAndNewer: (
+    promoteIfOwnerAndNewer: async (
       pointerKey,
       ownerKey,
       endedKey,
@@ -196,7 +196,7 @@ export const createRedisKV = (url: string): KV<"redis"> => {
       revision,
       ttl
     ) =>
-      withSpan(
+      await withSpan(
         "kv.promote_if_owner_and_newer",
         { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
         async () => {
@@ -227,14 +227,19 @@ export const createRedisKV = (url: string): KV<"redis"> => {
           );
         }
       ),
-    publish: (channel, message) =>
-      withSpan(
+    publish: async (channel, message) =>
+      await withSpan(
         "kv.publish",
         { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
-        () => redis.publish(channel, message)
+        async () => await redis.publish(channel, message)
       ),
     set: async (key, value, options?: SetOptions) => {
-      if (options?.ttl) {
+      if (
+        options?.ttl !== undefined &&
+        options?.ttl !== null &&
+        options?.ttl !== 0 &&
+        !Number.isNaN(options?.ttl)
+      ) {
         const { ttl } = options;
         await withSpan(
           "kv.set",
@@ -245,17 +250,17 @@ export const createRedisKV = (url: string): KV<"redis"> => {
               "tailorkit.package": "kv",
             },
           },
-          () => redis.setex(key, ttl, value)
+          async () => await redis.setex(key, ttl, value)
         );
       } else {
         await withSpan(
           "kv.set",
           { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
-          () => redis.set(key, value)
+          async () => await redis.set(key, value)
         );
       }
     },
-    setPreviewPresenceIfActive: (
+    setPreviewPresenceIfActive: async (
       presenceKey,
       seenKey,
       endedKey,
@@ -263,7 +268,7 @@ export const createRedisKV = (url: string): KV<"redis"> => {
       presenceTtl,
       seenTtl
     ) =>
-      withSpan(
+      await withSpan(
         "kv.set_preview_presence_if_active",
         { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
         async () =>
@@ -280,11 +285,11 @@ export const createRedisKV = (url: string): KV<"redis"> => {
             )
           ) === 1
       ),
-    subscribe: (channel: string, handler: MessageHandler) =>
-      withSpan(
+    subscribe: async (channel: string, handler: MessageHandler) =>
+      await withSpan(
         "kv.subscribe",
         { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
-        () => subscribe(redis, channel, handler)
+        async () => await subscribe(redis, channel, handler)
       ),
     type: "redis",
   };

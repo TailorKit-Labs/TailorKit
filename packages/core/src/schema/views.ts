@@ -14,7 +14,8 @@ export interface ResolvedViewMetadata {
 type OwnContext<T> =
   T extends StandardSchemaV1<unknown, infer TOutput>
     ? TOutput
-    : Record<never, never>;
+    : // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
+      Record<never, never>;
 type ContextKeys<T> = T extends Record<string, never> ? never : keyof T;
 type Ancestors<T, P extends string> = {
   [K in keyof T & string]: K extends P

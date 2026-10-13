@@ -4,6 +4,16 @@
   "private": true,
   "license": "BUSL-1.1",
   "type": "module",
+  "imports": {
+    "#env": "./src/env.ts",
+    "#*": [
+      "./src/*",
+      "./src/*.ts",
+      "./src/*.tsx",
+      "./src/*/index.ts",
+      "./src/*/index.tsx"
+    ]
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.mts",
@@ -26,14 +36,16 @@
   "scripts": {
     "build": "vp pack src/index.ts src/workflows.ts src/mcp.ts src/source-export.ts --format esm --dts --clean",
     "check-types": "tsc --noEmit",
-    "test": "vp test run"
+    "test": "vp test run",
+    "lint": "vp lint .",
+    "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
-    "@ai-sdk/workflow": "2.0.58",
+    "@ai-sdk/workflow": "2.0.69",
     "@modelcontextprotocol/server": "2.3.1",
-    "@vercel/sandbox": "3.5.1",
+    "@vercel/sandbox": "3.6.1",
     "ai": "catalog:",
-    "workflow": "5.0.1",
+    "workflow": "5.2.0",
     "zod": "catalog:"
   },
   "devDependencies": {

@@ -40,23 +40,21 @@ const createTemporaryHome = async (): Promise<string> => {
   return directory;
 };
 
-const loadAuthModule = (homeDirectory: string) => {
+const loadAuthModule = async (homeDirectory: string) => {
   vi.resetModules();
   vi.doMock("node:os", async (importOriginal) => ({
     ...(await importOriginal<typeof nodeOs>()),
     homedir: () => homeDirectory,
   }));
 
-  return import("./auth");
+  return await import("./auth");
 };
 
 const authStorePath = (homeDirectory: string) =>
   path.join(homeDirectory, ".tailorkit", "auth.json");
 
-const writeAuthStoreFixture = async <TInput>(
-  homeDirectory: string,
-  value: TInput
-) => {
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- This fixture must represent malformed input so the runtime validation boundary can be tested.
+const writeAuthStoreFixture = async (homeDirectory: string, value: unknown) => {
   const filePath = authStorePath(homeDirectory);
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, JSON.stringify(value));
@@ -75,9 +73,9 @@ describe("auth store", () => {
     vi.doUnmock("node:os");
 
     await Promise.all(
-      temporaryDirectories
-        .splice(0)
-        .map((directory) => rm(directory, { force: true, recursive: true }))
+      temporaryDirectories.splice(0).map(async (directory) => {
+        await rm(directory, { force: true, recursive: true });
+      })
     );
   });
 
@@ -259,13 +257,17 @@ describe("auth store", () => {
     });
     const verifyToken = vi.fn().mockResolvedValue({ scope });
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    vi.mocked(createTailorKitClient).mockReturnValue({
-      cliAuth: { poll, start, verifyToken },
-    } as unknown as ReturnType<typeof createTailorKitClient>);
+
+    vi.mocked(createTailorKitClient).mockReturnValue(
+      /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
+      {
+        cliAuth: { poll, start, verifyToken },
+      } as unknown as ReturnType<typeof createTailorKitClient>
+      /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
+    );
     const { runLogin, runWhoami, runLogout, getDeployToken } =
       await loadAuthModule(homeDirectory);
-    const onUserCode = vi.fn();
+    const onUserCode = vi.fn<Parameters<typeof runLogin>[1]>();
     const options = { cwd: homeDirectory, host: `${hostUrl}/` };
     const login = runLogin(options, onUserCode);
     await vi.advanceTimersByTimeAsync(2000);
@@ -310,15 +312,19 @@ describe("auth store", () => {
       root: homeDirectory,
     });
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    vi.mocked(createTailorKitClient).mockReturnValue({
-      cliAuth: {
-        verifyToken: vi.fn().mockResolvedValue({
-          data: undefined,
-          error: { code: "UNAUTHORIZED", message: "token expired" },
-        }),
-      },
-    } as unknown as ReturnType<typeof createTailorKitClient>);
+
+    vi.mocked(createTailorKitClient).mockReturnValue(
+      /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
+      {
+        cliAuth: {
+          verifyToken: vi.fn().mockResolvedValue({
+            data: undefined,
+            error: { code: "UNAUTHORIZED", message: "token expired" },
+          }),
+        },
+      } as unknown as ReturnType<typeof createTailorKitClient>
+      /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
+    );
     await writeAuthStoreFixture(homeDirectory, {
       hosts: {
         "https://example.com": {
@@ -373,10 +379,14 @@ describe("auth store", () => {
       verifyToken.mockResolvedValue({ error });
     }
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    vi.mocked(createTailorKitClient).mockReturnValue({
-      cliAuth: { verifyToken },
-    } as unknown as ReturnType<typeof createTailorKitClient>);
+
+    vi.mocked(createTailorKitClient).mockReturnValue(
+      /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
+      {
+        cliAuth: { verifyToken },
+      } as unknown as ReturnType<typeof createTailorKitClient>
+      /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
+    );
     const fixture = {
       hosts: { "https://example.com": { deployToken: "deploy-token" } },
     };
@@ -397,19 +407,23 @@ describe("auth store", () => {
       root: homeDirectory,
     });
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    vi.mocked(createTailorKitClient).mockReturnValue({
-      cliAuth: {
-        verifyToken: vi.fn().mockResolvedValue({
-          data: {
-            scope: {
-              name: "organization",
-              value: { orgId: "org-1", userId: "user-1" },
+
+    vi.mocked(createTailorKitClient).mockReturnValue(
+      /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
+      {
+        cliAuth: {
+          verifyToken: vi.fn().mockResolvedValue({
+            data: {
+              scope: {
+                name: "organization",
+                value: { orgId: "org-1", userId: "user-1" },
+              },
             },
-          },
-        }),
-      },
-    } as unknown as ReturnType<typeof createTailorKitClient>);
+          }),
+        },
+      } as unknown as ReturnType<typeof createTailorKitClient>
+      /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
+    );
     await writeAuthStoreFixture(homeDirectory, {
       hosts: { "https://example.com": { deployToken: "deploy-token" } },
     });
@@ -432,14 +446,18 @@ describe("auth store", () => {
       root: homeDirectory,
     });
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    vi.mocked(createTailorKitClient).mockReturnValue({
-      cliAuth: {
-        verifyToken: vi
-          .fn()
-          .mockResolvedValue({ data: { scopeId: "legacy-scope" } }),
-      },
-    } as unknown as ReturnType<typeof createTailorKitClient>);
+
+    vi.mocked(createTailorKitClient).mockReturnValue(
+      /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
+      {
+        cliAuth: {
+          verifyToken: vi
+            .fn()
+            .mockResolvedValue({ data: { scopeId: "legacy-scope" } }),
+        },
+      } as unknown as ReturnType<typeof createTailorKitClient>
+      /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
+    );
     const filePath = await writeAuthStoreFixture(homeDirectory, {
       hosts: { "https://example.com": { deployToken: "deploy-token" } },
     });
@@ -481,6 +499,7 @@ describe("auth store", () => {
       .spyOn(globalThis, "fetch")
       .mockImplementation(async (input) => {
         // SAFETY: The exercised fetch call constructs this Request; the test inspects the captured request after asserting the call occurred.
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
         const request = input as Request;
         expect(request.url).toBe(
           "https://platform.test/api/platform/cli-auth/verify-token"
@@ -489,7 +508,7 @@ describe("auth store", () => {
         expect(await request.json()).toEqual({ deployToken: jwt });
         return Response.json({ scope });
       });
-    const onCode = vi.fn();
+    const onCode = vi.fn<Parameters<typeof runLogin>[1]>();
     expect(await runLogin({ host: "http://localhost:1" }, onCode)).toEqual({
       hostUrl: "https://platform.test/api/platform",
       scope,

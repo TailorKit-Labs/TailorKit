@@ -8,7 +8,9 @@ export const createSnapshotStore = <T>(
 ) => {
   const state = atom(getSnapshot());
   let stop: (() => void) | undefined;
-  const sync = () => state.set(getSnapshot());
+  const sync = () => {
+    state.set(getSnapshot());
+  };
   state.get = () => {
     sync();
     return state.value;

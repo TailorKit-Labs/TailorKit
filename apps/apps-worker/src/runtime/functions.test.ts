@@ -11,8 +11,8 @@ import { resolveFunction } from "./functions";
 
 const actionRunner = (app: AppDefinition, calls: ActionCalls) => {
   const run = createActionExecution(app);
-  return (input: Invocation, identity: Identity, signal?: AbortSignal) =>
-    run(input, identity, calls, signal);
+  return async (input: Invocation, identity: Identity, signal?: AbortSignal) =>
+    await run(input, identity, calls, signal);
 };
 
 it("dispatches nested functions and preserves their names, identity, execution and typed action calls", async () => {
@@ -59,10 +59,10 @@ it("dispatches nested functions and preserves their names, identity, execution a
       identity
     ).value
   ).toBe("rows");
-  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-  const query = vi.fn(async () => "rows");
-  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-  const mutate = vi.fn(async () => "saved");
+
+  const query = vi.fn<() => Promise<string>>().mockResolvedValue("rows");
+
+  const mutate = vi.fn<() => Promise<string>>().mockResolvedValue("saved");
   const run = actionRunner(app, { mutate, query });
   await expect(run({ name: api.tasks.run.name }, identity)).resolves.toEqual({
     rows: "rows",
@@ -72,6 +72,7 @@ it("dispatches nested functions and preserves their names, identity, execution a
   expect(mutate).toHaveBeenCalledWith({
     args: undefined,
     name: "todos.save",
+    // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
     requestId: expect.any(String),
   });
 });

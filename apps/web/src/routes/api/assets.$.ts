@@ -2,8 +2,8 @@ import { handleAssetRequest } from "@tailorkit/api-platform/assets";
 import { getStorage } from "@tailorkit/storage";
 import { createFileRoute } from "@tanstack/react-router";
 
-const handle = ({ request }: { request: Request }) =>
-  handleAssetRequest(request, getStorage());
+const handle = async ({ request }: { request: Request }) =>
+  await handleAssetRequest(request, getStorage());
 
 export const Route = createFileRoute("/api/assets/$")({
   server: {

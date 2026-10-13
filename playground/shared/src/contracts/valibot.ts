@@ -22,7 +22,9 @@ const primitiveComponents = Object.fromEntries(
       ...component,
       // SAFETY: These component fields are the Valibot schemas declared in this file; the shared Standard Schema component interface erases the Valibot-specific schema members required by the JSON converter.
       fields: json(
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- These component fields are the Valibot schemas declared in this file; the shared Standard Schema component interface erases the Valibot-specific schema members required by the JSON converter. */
         component.fields as v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
       ),
     },
   ])

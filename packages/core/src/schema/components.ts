@@ -1,10 +1,10 @@
 import type { CallbackMap, Callbacks, InferCallbacks } from "./callbacks";
 import type { EmptyObject, InferSchema, MergeProps, Schema } from "./shared";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
+// oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
 type EmptyCallbackMap = Record<never, never>;
 
 export type Fields = Schema;
@@ -21,8 +21,7 @@ export interface ComponentDefinition<
 
 type AnyComponentDefinition = ComponentDefinition<
   Schema | undefined,
-  CallbackMap,
-  boolean | undefined
+  CallbackMap
 >;
 
 export type ComponentDefinitions = Record<string, AnyComponentDefinition>;
@@ -61,8 +60,7 @@ type NoFieldCallbackConflicts<TFields, TCallbacks> =
 export type NoComponentFieldCallbackConflicts<TComponents> = {
   [TName in keyof TComponents]: TComponents[TName] extends ComponentDefinition<
     infer TFields,
-    infer TCallbacks,
-    boolean | undefined
+    infer TCallbacks
   >
     ? NoFieldCallbackConflicts<TFields, TCallbacks>
     : unknown;
@@ -75,14 +73,14 @@ const getObjectKeys = (value: Schema | undefined): string[] => {
 
   if ("shape" in value) {
     const fields = value.shape;
-    if (fields && isObjectValue(fields)) {
+    if (isObjectValue(fields)) {
       return Object.keys(fields);
     }
   }
 
   if ("entries" in value) {
     const { entries } = value;
-    if (entries && isObjectValue(entries)) {
+    if (isObjectValue(entries)) {
       return Object.keys(entries);
     }
   }

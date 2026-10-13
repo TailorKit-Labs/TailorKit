@@ -1,7 +1,8 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
-import type { TailorKitScope } from "../server/types";
-import type { TailorKitSchemaSpec } from "../spec/index";
+import type { TailorKitScope } from "#server/types";
+import type { TailorKitSchemaSpec } from "#spec/index";
+
 import type { Schema, SchemaSerializer } from "./shared";
 import { serializeSchema } from "./shared";
 
@@ -40,7 +41,7 @@ export const tool = {
   server: () => build<"server", undefined, undefined>("server"),
 };
 export type InferToolInput<T> =
-  T extends ContractTool<ToolKind, infer I, Schema | undefined>
+  T extends ContractTool<ToolKind, infer I>
     ? I extends Schema
       ? StandardSchemaV1.InferInput<I>
       : undefined
@@ -157,7 +158,10 @@ export const flattenTools = (
     const path = prefix + name;
     if (isContractTool(value)) {
       const leaf = value;
-      if (!["client", "server"].includes(leaf.kind) || !leaf.definition) {
+      if (
+        !["client", "server"].includes(leaf.kind) ||
+        !(leaf.definition !== undefined && leaf.definition !== null)
+      ) {
         throw new Error(`Invalid tool declaration "${path}"`);
       }
       result.set(path, leaf);
@@ -175,7 +179,7 @@ export const serializeTools = (
 ): TailorKitSchemaSpec["tools"] => {
   const result: TailorKitSchemaSpec["tools"] = {};
   for (const [name, value] of Object.entries(tools)) {
-    if (!value) {
+    if (!(value !== undefined && value !== null)) {
       continue;
     }
     if (isContractTool(value)) {
@@ -205,12 +209,20 @@ export const validateToolValue = async <TSchema extends Schema | undefined>(
       throw new Error("Tool expects no value");
     }
     // SAFETY: Without a schema, the only admitted value is undefined and the corresponding output branch is undefined.
-    return undefined as ParsedToolValue<TSchema>;
+    return (
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- Without a schema, the only admitted value is undefined and the corresponding output branch is undefined. */
+      undefined as ParsedToolValue<TSchema>
+      /* oxlint-enable typescript/no-unsafe-type-assertion */
+    );
   }
   const result = await schema["~standard"].validate(value);
   if (result.issues) {
     throw new Error("Invalid tool payload");
   }
   // SAFETY: This exact schema produced result.value after reporting no validation issues.
-  return result.value as ParsedToolValue<TSchema>;
+  return (
+    /* oxlint-disable typescript/no-unsafe-type-assertion -- This exact schema produced result.value after reporting no validation issues. */
+    result.value as ParsedToolValue<TSchema>
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
+  );
 };

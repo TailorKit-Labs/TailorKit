@@ -45,7 +45,8 @@ const metadata = {
 };
 
 const fetchInstallation = vi.fn(
-  async (_request: Request) => await new Response("result")
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  async (_request: Request) => new Response("result")
 );
 
 const getByName = vi.fn(() => ({ fetch: fetchInstallation }));
@@ -53,23 +54,29 @@ const getByName = vi.fn(() => ({ fetch: fetchInstallation }));
 const put = vi.fn(async () => {});
 
 // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-// oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-const env = {
-  ASSET_DOMAIN: "tailorkit.app",
-  DEPLOYMENTS: { put },
-  PLATFORM_URL: "https://platform.test/api/platform",
-  RUNTIME_SERVICE_TOKEN: secret,
-  STORES: { getByName },
-} as unknown as Env;
+
+const env =
+  /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
+  {
+    ASSET_DOMAIN: "tailorkit.app",
+    DEPLOYMENTS: { put },
+    PLATFORM_URL: "https://platform.test/api/platform",
+    RUNTIME_SERVICE_TOKEN: secret,
+    STORES: { getByName },
+  } as unknown as Env;
+/* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
 
 // SAFETY: This test supplies the context members read by the handler; unrelated request context services are outside this scenario.
+// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
 const ctx = {} as ExecutionContext;
 
-const call = (request: Request) => worker.fetch(request, env, ctx);
+const call = async (request: Request) => await worker.fetch(request, env, ctx);
 
-const post = <TInput>(
+const post = (
   url: string,
-  body: TInput | Record<never, never> = metadata,
+
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This fixture must represent malformed input so the runtime validation boundary can be tested.
+  body: unknown = metadata,
   token = secret
 ) =>
   new Request(url, {

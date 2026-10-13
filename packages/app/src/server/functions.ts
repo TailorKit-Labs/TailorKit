@@ -1,9 +1,9 @@
 import type { AnyRelations, EmptyRelations } from "drizzle-orm/relations";
 import type { z } from "zod";
 
-import type { TailorKitServerTools } from "../client/tools";
-import type { DatabaseDefinition } from "../database/definition";
-import type { QueryDatabase, MutationDatabase } from "../database/types";
+import type { TailorKitServerTools } from "#client/tools";
+import type { DatabaseDefinition } from "#database/definition";
+import type { QueryDatabase, MutationDatabase } from "#database/types";
 
 export interface Identity {
   readonly subjectId?: string;
@@ -52,6 +52,7 @@ export type FunctionCalls<F, K extends "query" | "mutation"> = {
       : never;
 };
 
+// oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
 export interface ActionContext<F extends Functions = Record<never, never>> {
   readonly identity: Identity;
   readonly tools: TailorKitServerTools;
@@ -66,6 +67,7 @@ export interface FunctionDefinition<
   K extends FunctionKind,
   A extends z.ZodType,
   O,
+  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
   F extends Functions = Record<never, never>,
   D extends AnyRelations = EmptyRelations,
 > {
@@ -89,6 +91,7 @@ export const query = <
   const D extends AnyRelations = EmptyRelations,
 >(
   definition: Omit<
+    // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
     FunctionDefinition<"query", A, O, Record<never, never>, D>,
     "kind"
   > & {
@@ -96,6 +99,7 @@ export const query = <
       "query",
       A,
       O,
+      // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
       Record<never, never>,
       D
     >["handler"] &
@@ -112,6 +116,7 @@ export const mutation = <
   const D extends AnyRelations = EmptyRelations,
 >(
   definition: Omit<
+    // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
     FunctionDefinition<"mutation", A, O, Record<never, never>, D>,
     "kind"
   > & {
@@ -119,6 +124,7 @@ export const mutation = <
       "mutation",
       A,
       O,
+      // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
       Record<never, never>,
       D
     >["handler"] &
@@ -133,6 +139,7 @@ export const mutation = <
 export const action = <
   A extends z.ZodType,
   O,
+  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
   const F extends Functions = Record<never, never>,
 >(
   definition: Omit<FunctionDefinition<"action", A, O, F>, "kind"> & {

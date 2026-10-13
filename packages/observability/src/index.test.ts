@@ -15,7 +15,7 @@ const mockEnv = vi.hoisted(() => ({
   OTEL_TRACES_SAMPLER_ARG: undefined as string | undefined,
   TAILORKIT_OTEL_DISABLED: false,
   TAILORKIT_OTEL_SAMPLE_RATE: undefined as string | undefined,
-  VERCEL: undefined as string | undefined,
+  VERCEL: undefined as boolean | undefined,
   VERCEL_ENV: undefined as "production" | "preview" | "development" | undefined,
   VERCEL_GIT_COMMIT_SHA: undefined as string | undefined,
   VERCEL_REGION: undefined as string | undefined,
@@ -30,6 +30,7 @@ vi.mock("#env", () => ({
 }));
 
 describe("observability helpers", () => {
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
   afterEach(async () => {
     Object.assign(mockEnv, {
       NODE_ENV: "development",
@@ -43,7 +44,7 @@ describe("observability helpers", () => {
       VERCEL_REGION: undefined,
     });
     registerOTel.mockReset();
-    await shutdownObservability();
+    shutdownObservability();
   });
 
   it("drops sensitive attributes", () => {
@@ -75,7 +76,7 @@ describe("observability helpers", () => {
 
   it("deduplicates concurrent initialization", async () => {
     mockEnv.NODE_ENV = "production";
-    mockEnv.VERCEL = "1";
+    mockEnv.VERCEL = true;
     mockEnv.VERCEL_ENV = "preview";
     mockEnv.VERCEL_GIT_COMMIT_SHA = "abc123";
     mockEnv.TAILORKIT_OTEL_SAMPLE_RATE = "0.25";
@@ -89,11 +90,13 @@ describe("observability helpers", () => {
     expect(registerOTel).toHaveBeenCalledTimes(1);
     expect(registerOTel).toHaveBeenCalledWith(
       expect.objectContaining({
+        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
         attributes: expect.objectContaining({
           "deployment.environment.name": "preview",
           "service.name": "test-service",
           "service.version": "abc123",
         }),
+        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
         instrumentations: expect.arrayContaining(["auto"]),
         serviceName: "test-service",
       })
@@ -102,7 +105,7 @@ describe("observability helpers", () => {
 
   it("resets initialization state after registration failure", async () => {
     mockEnv.NODE_ENV = "production";
-    mockEnv.VERCEL = "1";
+    mockEnv.VERCEL = true;
     registerOTel.mockImplementationOnce(() => {
       throw new Error("registration failed");
     });

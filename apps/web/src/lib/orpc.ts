@@ -23,7 +23,7 @@ export const getQueryClient = () =>
 const getORPCClient = createIsomorphicFn()
   .server(() =>
     createRouterClient(appRouter, {
-      context: () => createContext({ request: getRequest() }),
+      context: async () => await createContext({ request: getRequest() }),
     })
   )
   .client((): RouterClient<typeof appRouter> => {

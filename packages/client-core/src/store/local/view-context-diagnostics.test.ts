@@ -136,7 +136,7 @@ it("waits for asynchronous validation and ignores results for replaced or unmoun
     "~standard": {
       validate: async (input) => {
         const value = base.parse(input);
-        await (() => {
+        await (async () => {
           const {
             promise: pendingPromise,
             resolve,
@@ -147,7 +147,7 @@ it("waits for asynchronous validation and ignores results for replaced or unmoun
           } catch (error) {
             rejectPending(error);
           }
-          return pendingPromise;
+          await pendingPromise;
         })();
         return { value: { name: value.name.toUpperCase() } };
       },
@@ -165,16 +165,18 @@ it("waits for asynchronous validation and ignores results for replaced or unmoun
   });
   store.register({ context: { name: "new" }, id, view: "/" });
   requireValue(pending[1])();
-  await vi.waitFor(() =>
-    expect(store.state.get()?.layers[0]?.context).toEqual({ name: "NEW" })
-  );
+  await vi.waitFor(() => {
+    expect(store.state.get()?.layers[0]?.context).toEqual({ name: "NEW" });
+  });
   requireValue(pending[0])();
   await Promise.resolve();
   expect(store.state.get()?.layers[0]?.context).toEqual({ name: "NEW" });
   store.register({ context: { name: "unmounted" }, id, view: "/" });
   store.unregister(id);
   requireValue(pending[2])();
-  await vi.waitFor(() => expect(store.state.get()).toBeNull());
+  await vi.waitFor(() => {
+    expect(store.state.get()).toBeNull();
+  });
 });
 
 it("handles rejected and thrown validators without leaking context", async () => {
@@ -183,7 +185,10 @@ it("handles rejected and thrown validators without leaking context", async () =>
     () => {
       throw new Error("failed");
     },
-    () => Promise.reject(new Error("failed")),
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    async () => {
+      throw new Error("failed");
+    },
   ]) {
     const schema: Schema = {
       "~standard": {
@@ -195,9 +200,9 @@ it("handles rejected and thrown validators without leaking context", async () =>
     const store = setup(schema);
     store.register({ context: {}, id: Symbol("identity"), view: "/" });
     // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-    await vi.waitFor(() =>
-      expect(store.state.get()?.layers[0]?.status).toBe("error")
-    );
+    await vi.waitFor(() => {
+      expect(store.state.get()?.layers[0]?.status).toBe("error");
+    });
   }
   expect(error).toHaveBeenCalledTimes(2);
 });

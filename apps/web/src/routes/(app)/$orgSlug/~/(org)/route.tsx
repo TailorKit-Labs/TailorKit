@@ -133,7 +133,7 @@ const OrgLayout = () => {
 
   useEffect(() => {
     sessionStorage.setItem("active-org-id", orgSlug);
-    window.cookieStore.set({
+    void window.cookieStore.set({
       name: "active-org-id",
       path: "/",
       value: orgSlug,

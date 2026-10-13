@@ -12,8 +12,9 @@ import path from "node:path";
 import { build } from "vite";
 import { expect, it } from "vite-plus/test";
 
-import { tailorkit } from "../index";
-import { linkTestDependencies } from "../test-utils";
+import { tailorkit } from "#index";
+import { linkTestDependencies } from "#test-utils";
+
 import { readClientManifest } from "./client-views";
 import {
   discoverFileRoutes,
@@ -28,7 +29,10 @@ const buildFixture = async (options: {
   watch?: boolean;
 }) => {
   const result = await build({
-    build: { outDir: options.outDir, watch: options.watch ? {} : null },
+    build: {
+      outDir: options.outDir,
+      watch: options.watch === true ? {} : null,
+    },
     configFile: false,
     plugins: [
       tailorkit({
@@ -263,6 +267,7 @@ it("builds file routes with extracted instances and discovers additions, renames
       await readFile(path.join(root, ".tailorkit/server/server.js"), "utf-8")
     ).toContain("PRIVATE_RESOLVER");
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     const watcher = (await buildFixture({ cwd: root, watch: true })) as {
       close: () => Promise<void>;
     };

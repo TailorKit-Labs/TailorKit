@@ -13,7 +13,7 @@ import {
 } from "@tailorkit/ui/dialog";
 import { useAppForm } from "@tailorkit/ui/form";
 import { toastManager } from "@tailorkit/ui/toast";
-import { useStore } from "@tanstack/react-form";
+import { useSelector } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
@@ -87,8 +87,8 @@ export const CreateOrgDialog = ({
   };
 
   const createMutation = useMutation({
-    mutationFn: (input: { name: string; slug: string }) =>
-      client.user.createOrg(input),
+    mutationFn: async (input: { name: string; slug: string }) =>
+      await client.user.createOrg(input),
     onError: (cause: unknown) => {
       const message =
         cause instanceof Error
@@ -97,11 +97,11 @@ export const CreateOrgDialog = ({
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: (data, input) => {
-      queryClient.invalidateQueries(orpc.user.getOrgs.queryOptions());
+      void queryClient.invalidateQueries(orpc.user.getOrgs.queryOptions());
       const orgSlug = data?.slug ?? input.slug;
       setOpen(false);
       resetForm();
-      navigate({ params: { orgSlug }, to: "/$orgSlug/~/projects" });
+      void navigate({ params: { orgSlug }, to: "/$orgSlug/~/projects" });
     },
   });
 
@@ -132,7 +132,7 @@ export const CreateOrgDialog = ({
     validators: { onSubmit: orgSchema },
   });
 
-  const slug = useStore(form.store, (state) => state.values.slug);
+  const slug = useSelector(form.store, (state) => state.values.slug);
 
   const slugAvailability = useOrgSlugAvailability(slug);
 
@@ -162,7 +162,7 @@ export const CreateOrgDialog = ({
           onSubmit={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            form.handleSubmit();
+            void form.handleSubmit();
           }}
         >
           <DialogPanel>

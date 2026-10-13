@@ -1,11 +1,10 @@
 import { z } from "zod";
 
-import { AppError } from "../errors";
-import type { Identity } from "../server/functions";
+import { AppError } from "#errors";
+import type { Identity } from "#server/functions";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 const identitySchema = z.object({
   appId: z.string(),
@@ -42,7 +41,7 @@ export interface Session {
 }
 
 const freezeIdentity = <T>(value: T): T => {
-  if (value && isObjectValue(value) && !Object.isFrozen(value)) {
+  if (isObjectValue(value) && !Object.isFrozen(value)) {
     for (const child of Object.values(value)) {
       freezeIdentity(child);
     }
@@ -66,13 +65,13 @@ export const createSessionProvider = (options: {
   }
   let cached: Session | undefined;
   let pending: Promise<Session> | undefined;
-  return (input: { refresh: boolean }): Promise<Session> => {
+  return async (input: { refresh: boolean }): Promise<Session> => {
     if (
       !input.refresh &&
       cached &&
       cached.expiresAt > Date.now() + APP_SESSION_RENEWAL_MS
     ) {
-      return Promise.resolve(cached);
+      return cached;
     }
     pending ??= (async () => {
       try {
@@ -116,6 +115,6 @@ export const createSessionProvider = (options: {
         pending = undefined;
       }
     })();
-    return pending;
+    return await pending;
   };
 };

@@ -8,7 +8,8 @@ import {
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
-const json = <T>(data: T, status = 200) => Response.json(data, { status });
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser, serializer, or runtime adapter handles arbitrary values before validating or encoding their domain representation.
+const json = (data: unknown, status = 200) => Response.json(data, { status });
 
 const handle = async ({ request }: { request: Request }) => {
   const session = getDemoSessionFromRequest(request);

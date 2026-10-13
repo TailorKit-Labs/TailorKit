@@ -106,7 +106,7 @@ export const Command = ({
 
 export const CommandInput = ({
   className,
-  placeholder = undefined,
+  placeholder,
   ...props
 }: React.ComponentProps<typeof AutocompleteInput>): React.ReactElement => (
   <div className="px-2.5 py-1.5">

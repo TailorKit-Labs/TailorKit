@@ -7,9 +7,10 @@ const moduleId = "virtual:tailorkit-iframe";
 
 /** Bundle the isolated runtime as an inline script, with no runtime network imports. */
 export const iframeRuntimePlugin = (): Plugin => ({
-  async load(id) {
+  load: async (id) => {
     if (id !== `\0${moduleId}`) {
-      return;
+      /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+      return undefined;
     }
     const result = await build({
       build: {
@@ -35,9 +36,5 @@ export const iframeRuntimePlugin = (): Plugin => ({
     return `export default ${JSON.stringify(chunk.code)};`;
   },
   name: "tailorkit-iframe",
-  resolveId(id) {
-    if (id === moduleId) {
-      return `\0${moduleId}`;
-    }
-  },
+  resolveId: (id) => (id === moduleId ? `\0${moduleId}` : undefined),
 });

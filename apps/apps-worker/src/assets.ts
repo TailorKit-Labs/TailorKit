@@ -41,18 +41,23 @@ const loadAsset = (
   ctx: ExecutionContext
 ) =>
   Effect.gen(function* loadAssetValue() {
+    const effectContext = yield* Effect.context();
+
     // Node/DOM ambient types omit Cloudflare's default edge cache.
     // SAFETY: Cloudflare Workers provides caches.default; the standard DOM CacheStorage declaration omits this Workers-only cache.
-    const edgeCache = caches as CacheStorage & { readonly default: Cache };
+    const edgeCache =
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- Cloudflare Workers provides caches.default; the standard DOM CacheStorage declaration omits this Workers-only cache. */
+      caches as CacheStorage & { readonly default: Cache };
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
     // Cache the stored representation, then negotiate for each downstream request.
     const cacheKey = new Request(request.url, {
       headers: { "Accept-Encoding": "gzip" },
     });
-    const cached = yield* Effect.tryPromise(() =>
-      edgeCache.default.match(cacheKey)
+    const cached = yield* Effect.tryPromise(
+      async () => await edgeCache.default.match(cacheKey)
     ).pipe(
       // oxlint-disable-next-line unicorn/no-useless-undefined -- Effect.succeed requires a value argument.
-      catchEffect(() => Effect.succeed(undefined))
+      Effect.orElseSucceed(() => undefined)
     );
     if (cached) {
       return downstreamResponse(cached, request);
@@ -61,7 +66,7 @@ const loadAsset = (
     if (request.method === "HEAD") {
       const object = yield* Effect.tryPromise({
         catch: () => new AssetDeliveryError(503),
-        try: () => env.BUNDLES.head(identity.key),
+        try: async () => await env.BUNDLES.head(identity.key),
       });
       const contentLength = yield* assetSize(object?.size);
       return downstreamResponse(
@@ -79,7 +84,7 @@ const loadAsset = (
 
     const object = yield* Effect.tryPromise({
       catch: () => new AssetDeliveryError(503),
-      try: () => env.BUNDLES.get(identity.key),
+      try: async () => await env.BUNDLES.get(identity.key),
     });
     const contentLength = yield* assetSize(object?.size);
     if (!object) {
@@ -95,15 +100,15 @@ const loadAsset = (
       }),
     });
     // workerd clones reset encodeBody; keep cached bytes compressed exactly once.
-    const cacheWrite = Effect.tryPromise(() =>
-      edgeCache.default.put(
+    const cacheWrite = Effect.tryPromise(async () => {
+      await edgeCache.default.put(
         cacheKey,
         new Response(response.clone().body, {
           encodeBody: "manual",
           headers: response.headers,
         })
-      )
-    ).pipe(
+      );
+    }).pipe(
       catchEffect(() =>
         Effect.sync(() => {
           console.error(
@@ -112,17 +117,19 @@ const loadAsset = (
         })
       )
     );
-    yield* Effect.sync(() => ctx.waitUntil(Effect.runPromise(cacheWrite)));
+    yield* Effect.sync(() => {
+      ctx.waitUntil(Effect.runPromiseWith(effectContext)(cacheWrite));
+    });
     return downstreamResponse(response, request);
   });
 
 export default {
-  fetch(request, env, ctx) {
+  fetch: async (request, env, ctx) => {
     const program = serveAssetRequest(request, {
       identity: hostedAssetRequest(request, env.ASSET_DOMAIN),
       load: (identity) => loadAsset(request, identity, env, ctx),
     });
-    return Effect.runPromise(
+    return await Effect.runPromise(
       assetResponse(program, () => {
         console.error(
           JSON.stringify({

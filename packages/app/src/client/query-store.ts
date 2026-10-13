@@ -1,13 +1,13 @@
 import { atom } from "nanostores";
 
-import type { AppError } from "../errors";
-import { appError } from "../errors";
+import type { AppError } from "#errors";
+import { appError } from "#errors";
+
 import type { Client } from "./connection";
 import type { Reference } from "./reference";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 export interface QueryState<T> {
   data: T | undefined;
@@ -21,13 +21,14 @@ export const pendingQuery: QueryState<never> = {
   status: "pending",
 };
 
-export const serializeInput = <TInput>(input: TInput): string =>
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser, serializer, or runtime adapter handles arbitrary values before validating or encoding their domain representation.
+export const serializeInput = (input: unknown): string =>
   JSON.stringify(
     { defined: input !== undefined, input },
     // Native JSON serialization supplies arbitrary values; this boundary only normalizes object key order.
     // oxlint-disable-next-line anti-slop/no-unknown-parameters -- These are serializer inputs, not unparsed domain-handler arguments.
     (_key, value: unknown) => {
-      if (value && isObjectValue(value) && !Array.isArray(value)) {
+      if (isObjectValue(value) && !Array.isArray(value)) {
         return Object.fromEntries(
           Object.entries(value).toSorted(([a], [b]) => a.localeCompare(b))
         );
@@ -83,7 +84,10 @@ export class QueryStore {
         }
         // SAFETY: The entry is created and updated by this query reference's typed subscription; the shared cache erases its output generic.
         publish({
-          data: this.state.get().get(key)?.data as O | undefined,
+          data:
+            /* oxlint-disable typescript/no-unsafe-type-assertion -- The entry is created and updated by this query reference's typed subscription; the shared cache erases its output generic. */
+            this.state.get().get(key)?.data as O | undefined,
+          /* oxlint-enable typescript/no-unsafe-type-assertion */
           error,
           status: "error",
         });
@@ -93,7 +97,9 @@ export class QueryStore {
         current.stop = this.client.subscribe(
           ref,
           input,
-          (data) => publish({ data, error: null, status: "success" }),
+          (data) => {
+            publish({ data, error: null, status: "success" });
+          },
           { onError }
         );
       } catch (error) {

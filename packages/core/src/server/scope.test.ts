@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-assignment -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { type as arktype } from "arktype";
 import * as v from "valibot";
@@ -10,9 +11,8 @@ import {
   validateTailorKitScopes,
 } from "./scope";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 interface CyclicScopeFixture {
   ok: boolean;
@@ -66,13 +66,15 @@ describe("TailorKit named scope validation", () => {
       { workspaceId: string }
     > = {
       "~standard": {
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
         types: {} as StandardSchemaV1.Types<
           { workspaceId: string },
           { workspaceId: string }
         >,
         validate: (value) =>
           isObjectValue(value) && value !== null && "workspaceId" in value
-            ? { value: value as { workspaceId: string } }
+            ? // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+              { value: value as { workspaceId: string } }
             : { issues: [{ message: "workspaceId is required" }] },
         vendor: "scope-test",
         version: 1,

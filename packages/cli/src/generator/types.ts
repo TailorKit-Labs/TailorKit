@@ -8,7 +8,7 @@ import {
 import { isViewAncestor } from "@tailorkit/core/views";
 import { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
 
-import { isMissingFile } from "../utils/fs-errors";
+import { isMissingFile } from "#utils/fs-errors";
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
@@ -19,9 +19,8 @@ const isNumberValue = <TValue>(value: TValue): value is TValue & number =>
 const isBooleanValue = <TValue>(value: TValue): value is TValue & boolean =>
   typeof value === "boolean";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 interface JsonSchema {
   additionalProperties?: boolean | JsonSchema;
@@ -106,7 +105,8 @@ const toPropertyKey = (value: string): string => {
   return quote(value);
 };
 
-const toLiteralType = <TInput>(value: TInput): string => {
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser, serializer, or runtime adapter handles arbitrary values before validating or encoding their domain representation.
+const toLiteralType = (value: unknown): string => {
   if (isStringValue(value)) {
     return quote(value);
   }
@@ -147,9 +147,10 @@ const toObjectType = (schema: JsonSchema, depth: number): string => {
   const required = new Set(schema.required);
   // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
   const catchallType = toTypeScriptType(
-    schema.additionalProperties === true
+    schema.additionalProperties === true ||
+      schema.additionalProperties === false
       ? undefined
-      : schema.additionalProperties || undefined,
+      : (schema.additionalProperties ?? undefined),
     depth
   );
   const additionalValueTypes = [catchallType];
@@ -258,7 +259,10 @@ const toTypeScriptType = (
     return "boolean";
   }
   if (schemaType === "array") {
-    const items = isObjectValue(schema.items) ? schema.items : undefined;
+    const items =
+      schema.items === true || schema.items === false
+        ? undefined
+        : schema.items;
     if (schema.prefixItems !== undefined) {
       const tupleItems = schema.prefixItems.map((item, index) => {
         const type = toTypeScriptType(item, depth);
@@ -450,7 +454,7 @@ const renderViewProps = (views: Record<string, SerializedView>): string => {
       .filter(([, layer]) => layer.context !== undefined)
       .map(([, layer]) => {
         const context = toTypeScriptType(layer.context, 4);
-        return layer.contextOptional ? `Partial<${context}>` : context;
+        return layer.contextOptional === true ? `Partial<${context}>` : context;
       })
       .filter((context) => context !== "Record<string, never>");
     const context =
@@ -621,7 +625,11 @@ export const tools = ${renderToolRuntime(schema.tools ?? {})} as TailorKitTools;
     renderTypeAliases(components, fieldAliases),
   ];
 
-  if (options.serverModule) {
+  if (
+    options.serverModule !== undefined &&
+    options.serverModule !== null &&
+    options.serverModule !== ""
+  ) {
     chunks.splice(
       1,
       0,

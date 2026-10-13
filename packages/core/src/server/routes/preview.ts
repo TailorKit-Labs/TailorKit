@@ -3,23 +3,25 @@ import { previewStart, previewStop } from "@tailorkit/client-platform/client";
 import { ACTIVE_PREVIEW_CONFLICT_REASON } from "@tailorkit/client-platform/preview";
 import { z } from "zod";
 
-import { getCliDeployToken, o, requireCliDeployToken } from "../procedures";
+import {
+  getCliDeployToken,
+  o,
+  requireCliDeployToken,
+} from "#server/procedures";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
 
 export const isActivePreviewConflict = (cause: unknown): boolean => {
-  if (!cause || !isObjectValue(cause)) {
+  if (!isObjectValue(cause)) {
     return false;
   }
 
   if (
     "data" in cause &&
-    cause.data &&
     isObjectValue(cause.data) &&
     "reason" in cause.data &&
     cause.data.reason === ACTIVE_PREVIEW_CONFLICT_REASON

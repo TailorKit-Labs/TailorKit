@@ -5,13 +5,17 @@
 
   const indent = 12;
 
+  /** @type {HTMLElement | null | undefined} */
   let currentList;
 
+  /** @type {number | undefined} */
   let frame;
 
+  // oxlint-disable-next-line eslint/complexity -- Keep this validation or rendering lifecycle together: its guards share the same state, cleanup, and error handling.
   const draw = () => {
     frame = undefined;
-    const list = document.querySelector("#table-of-contents .toc");
+    const candidate = document.querySelector("#table-of-contents .toc");
+    const list = candidate instanceof HTMLElement ? candidate : null;
     if (list !== currentList) {
       // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
       resizeObserver.disconnect();
@@ -25,9 +29,9 @@
       return;
     }
 
-    const items = [...list.querySelectorAll(".toc-item")].filter((item) =>
-      item.querySelector(":scope > a")
-    );
+    const items = [...list.querySelectorAll(".toc-item")]
+      .filter((item) => item instanceof HTMLElement)
+      .filter((item) => item.querySelector(":scope > a") !== null);
     if (!items.length) {
       list.querySelector(".tailorkit-toc-rail")?.remove();
       delete list.dataset.tailorkitRail;
@@ -47,7 +51,11 @@
     const rows = items.map((item) => {
       // A parent li contains its nested list. Measure only the heading link,
       // otherwise its bottom extends past the children and the path doubles back.
-      const rect = item.querySelector(":scope > a").getBoundingClientRect();
+      const link = item.querySelector(":scope > a");
+      if (link === null) {
+        throw new Error("TOC item lost its heading link during drawing");
+      }
+      const rect = link.getBoundingClientRect();
       return {
         active: Object.hasOwn(item.dataset, "activeDeepest"),
         bottom: rect.bottom - bounds.top,
@@ -56,15 +64,22 @@
       };
     });
     const existing = list.querySelector(".tailorkit-toc-rail");
-    const svg = existing || document.createElementNS(namespace, "svg");
+    const svg = existing ?? document.createElementNS(namespace, "svg");
     svg.setAttribute("class", "tailorkit-toc-rail");
     svg.setAttribute("aria-hidden", "true");
-    svg.setAttribute("width", Math.max(...rows.map((row) => row.x)) + 1);
-    svg.setAttribute("height", bounds.height);
+    svg.setAttribute(
+      "width",
+      String(Math.max(...rows.map((row) => row.x)) + 1)
+    );
+    svg.setAttribute("height", String(bounds.height));
 
     let activeTop = 0;
     let activeBottom = bounds.height;
-    let track = `M ${rows[0].x} ${rows[0].top}`;
+    const [firstRow] = rows;
+    if (firstRow === undefined) {
+      return;
+    }
+    let track = `M ${firstRow.x} ${firstRow.top}`;
     for (const [index, row] of rows.entries()) {
       const previous = rows[index - 1];
       // Fit a 45-degree join between heading rows, including wrapped titles.
@@ -88,14 +103,17 @@
       "tailorkit-toc-rail-active",
     ]) {
       let path = svg.querySelector(`.${className}`);
-      if (!path) {
+      if (!(path instanceof SVGPathElement)) {
         path = document.createElementNS(namespace, "path");
         path.setAttribute("class", className);
         svg.append(path);
       }
       path.setAttribute("d", track);
       if (className === "tailorkit-toc-rail-active") {
-        path.style.clipPath = `inset(${activeTop}px 0px ${activeBottom}px 0px) view-box`;
+        path.setAttribute(
+          "style",
+          `clip-path: inset(${activeTop}px 0px ${activeBottom}px 0px) view-box`
+        );
       }
     }
     if (!existing) {
@@ -104,7 +122,7 @@
   };
 
   const schedule = () => {
-    if (frame) {
+    if (frame !== undefined) {
       return;
     }
     frame = requestAnimationFrame(draw);
@@ -117,10 +135,14 @@
       records.some((record) => {
         // Ignore our SVG writes to avoid a mutation/redraw loop.
         if (record.type === "attributes") {
-          return record.target.matches("#table-of-contents .toc-item");
+          return (
+            record.target instanceof Element &&
+            record.target.matches("#table-of-contents .toc-item")
+          );
         }
         return [...record.addedNodes, ...record.removedNodes].some(
-          (node) => node.nodeType === 1 && !node.matches(".tailorkit-toc-rail")
+          (node) =>
+            node instanceof Element && !node.matches(".tailorkit-toc-rail")
         );
       })
     ) {

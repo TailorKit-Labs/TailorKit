@@ -6,7 +6,8 @@ import type {
 } from "@tailorkit/client-core";
 import { useMemo } from "react";
 
-import { useTailorkitContext } from "../components/context";
+import { useTailorkitContext } from "#components/context";
+
 import { useQueryResult } from "./use-query-result";
 import type { UseQueryResult } from "./use-query-result";
 

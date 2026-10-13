@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-assignment -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { describe, expect, it } from "vite-plus/test";
 
 import { canonicalizeScope, scopeMatches, scopeSchema } from "./scope";

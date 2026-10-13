@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 import { z } from "zod";
 
-import { TailorKitSchemaSpec } from "../spec/spec";
+import { TailorKitSchemaSpec } from "#spec/spec";
+
 import { createTailorKitSchema } from "./schema";
 
 describe("slot view contracts", () => {

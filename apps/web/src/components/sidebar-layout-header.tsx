@@ -20,7 +20,7 @@ export const SidebarLayoutHeader = () => {
         </>
       )}
       <NavBreadcrumb />
-      {actions && <div className="ml-auto">{actions}</div>}
+      {Boolean(actions) && <div className="ml-auto">{actions}</div>}
     </header>
   );
 };

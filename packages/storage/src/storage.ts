@@ -3,12 +3,18 @@ import { env } from "#env";
 import { createS3CompatibleStorage } from "./s3.js";
 import type { Storage } from "./types.js";
 
-type StorageInstance = Storage<"s3"> | null;
+type StorageInstance = Storage | null;
 
 let instance: StorageInstance | undefined;
 
 const createStorage = (): StorageInstance => {
-  if (!env.BLOB_BUCKET) {
+  if (
+    !(
+      env.BLOB_BUCKET !== undefined &&
+      env.BLOB_BUCKET !== null &&
+      env.BLOB_BUCKET !== ""
+    )
+  ) {
     return null;
   }
 

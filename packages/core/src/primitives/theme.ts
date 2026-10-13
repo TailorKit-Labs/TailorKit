@@ -223,7 +223,10 @@ const resolveTokens = (
 
   for (const [key, value] of Object.entries(defaultTokenGroups)) {
     // SAFETY: The token group name is checked against the declared default token groups before indexing that table.
-    const tokenKey = key as keyof typeof defaultTokenGroups;
+    const tokenKey =
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- The token group name is checked against the declared default token groups before indexing that table. */
+      key as keyof typeof defaultTokenGroups;
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
     tokens[tokenKey] ??= value;
   }
 

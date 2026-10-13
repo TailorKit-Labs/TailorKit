@@ -1,9 +1,8 @@
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 export const formatFieldErrors = (issueors: unknown[] = []): string =>
   issueors
     .flatMap((issue) => {

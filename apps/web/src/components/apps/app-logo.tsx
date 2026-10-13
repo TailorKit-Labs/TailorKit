@@ -21,7 +21,7 @@ export const AppLogo = ({ className, logoPaths, name }: AppLogoProps) => {
 
   return (
     <Avatar className={className}>
-      {logoPath ? (
+      {logoPath !== undefined && logoPath !== null && logoPath !== "" ? (
         <AvatarImage
           alt={`${name} logo`}
           className="object-contain"

@@ -21,7 +21,7 @@ export const createContext = async ({
 }): Promise<Context> => {
   await initializeObservability("tailorkit-web");
 
-  return withSpan("api.create_context", async () => {
+  return await withSpan("api.create_context", async () => {
     const sessionData = await auth.api.getSession({
       headers: request.headers,
     });

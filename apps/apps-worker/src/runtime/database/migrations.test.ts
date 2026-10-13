@@ -49,10 +49,11 @@ const fixture = () => {
       let rows: unknown[][] = [];
       if (statement.columns().length) {
         // SAFETY: setReturnArrays(true) forces positional rows; Node's declarations still describe records.
-        // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- Node's SQLite declaration does not reflect setReturnArrays.
+        // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- Node's SQLite declaration does not reflect setReturnArrays. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
         rows = statement.all(...(params as never[])) as unknown as unknown[][];
       } else {
         // SAFETY: This test supplies the SQLite-compatible parameters used by its fixture queries.
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
         statement.run(...(params as never[]));
       }
       return {
@@ -104,9 +105,9 @@ it("rolls back the entire pending upgrade and journal if a migration fails, and 
   const { sqlite, persistence } = fixture();
   migrateDatabase(persistence, [initial]);
   sqlite.exec("INSERT INTO todos (id, text) VALUES ('one', 'Persisted')");
-  expect(() =>
-    migrateDatabase(persistence, [initial, priority, required])
-  ).toThrow();
+  expect(() => {
+    migrateDatabase(persistence, [initial, priority, required]);
+  }).toThrow();
   expect(
     sqlite
       .prepare("PRAGMA table_info(todos)")
@@ -130,8 +131,12 @@ it("rolls back the entire pending upgrade and journal if a migration fails, and 
 it("allows older migration prefixes but rejects changed, inserted or reordered history", () => {
   const { sqlite, persistence } = fixture();
   migrateDatabase(persistence, [initial, priority]);
-  expect(() => migrateDatabase(persistence, [])).not.toThrow();
-  expect(() => migrateDatabase(persistence, [initial])).not.toThrow();
+  expect(() => {
+    migrateDatabase(persistence, []);
+  }).not.toThrow();
+  expect(() => {
+    migrateDatabase(persistence, [initial]);
+  }).not.toThrow();
   expect(
     sqlite
       .prepare("PRAGMA table_info(todos)")
@@ -143,16 +148,16 @@ it("allows older migration prefixes but rejects changed, inserted or reordered h
     [{ ...initial, hash: "a".repeat(64) }, priority],
     [{ ...initial, id: "20260901000000_inserted" }, initial, priority],
   ]) {
-    expect(() => migrateDatabase(persistence, history)).toThrow(
-      "must not be changed"
-    );
+    expect(() => {
+      migrateDatabase(persistence, history);
+    }).toThrow("must not be changed");
   }
-  expect(() => migrateDatabase(persistence, [priority, initial])).toThrow(
-    "Invalid app migration history"
-  );
-  expect(() => migrateDatabase(persistence, [initial, initial])).toThrow(
-    "Invalid app migration history"
-  );
+  expect(() => {
+    migrateDatabase(persistence, [priority, initial]);
+  }).toThrow("Invalid app migration history");
+  expect(() => {
+    migrateDatabase(persistence, [initial, initial]);
+  }).toThrow("Invalid app migration history");
   expect(
     sqlite.prepare("SELECT COUNT(*) AS n FROM tailorkit_migrations").get()
   ).toMatchObject({

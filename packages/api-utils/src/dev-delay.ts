@@ -9,7 +9,7 @@ export const devDelayMiddleware = os.middleware(async ({ path, next }) => {
   if (env.NODE_ENV === "development") {
     // artificial delay in dev 100-500ms
     const waitMs = Math.floor(Math.random() * 400) + 100;
-    await (() => {
+    await (async () => {
       const {
         promise: pendingPromise,
         resolve,
@@ -20,7 +20,7 @@ export const devDelayMiddleware = os.middleware(async ({ path, next }) => {
       } catch (error) {
         rejectPending(error);
       }
-      return pendingPromise;
+      return await pendingPromise;
     })();
   }
 

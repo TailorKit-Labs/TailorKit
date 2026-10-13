@@ -52,11 +52,14 @@ export const BooleanField = ({
       <div className="flex flex-col gap-1">
         <FieldLabel htmlFor={id}>
           {label}{" "}
-          {required && <span className="text-destructive-foreground">*</span>}
+          {required === true && (
+            <span className="text-destructive-foreground">*</span>
+          )}
         </FieldLabel>
-        {description && !isError && (
-          <FieldDescription>{description}</FieldDescription>
-        )}
+        {description !== undefined &&
+          description !== null &&
+          description !== "" &&
+          !isError && <FieldDescription>{description}</FieldDescription>}
         {isError && <FieldError>{errorMessage}</FieldError>}
       </div>
     </Field>

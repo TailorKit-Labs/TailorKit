@@ -41,10 +41,21 @@ if (Boolean(env.GOOGLE_CLIENT_ID) !== Boolean(env.GOOGLE_CLIENT_SECRET)) {
 }
 
 const hasSocialProvider =
-  (env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET) ||
-  (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
+  (env.GITHUB_CLIENT_ID !== undefined &&
+    env.GITHUB_CLIENT_ID !== null &&
+    env.GITHUB_CLIENT_ID !== "" &&
+    env.GITHUB_CLIENT_SECRET) ??
+  (env.GOOGLE_CLIENT_ID !== undefined &&
+    env.GOOGLE_CLIENT_ID !== null &&
+    env.GOOGLE_CLIENT_ID !== "" &&
+    env.GOOGLE_CLIENT_SECRET);
 
-if (env.VERCEL_ENV === "preview" && hasSocialProvider) {
+if (
+  env.VERCEL_ENV === "preview" &&
+  hasSocialProvider !== undefined &&
+  hasSocialProvider !== null &&
+  hasSocialProvider !== ""
+) {
   warnIfMissing("auth", {
     AUTH_PRODUCTION_URL: resolveProductionUrl(env),
     OAUTH_PROXY_SECRET: env.OAUTH_PROXY_SECRET,

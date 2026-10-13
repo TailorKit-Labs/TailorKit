@@ -179,6 +179,7 @@ describe("userRouter", () => {
         organizationId: orgId,
         permissions: { invitation: ["read"] },
       },
+      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
       headers: expect.any(Headers),
     });
   });
@@ -333,6 +334,7 @@ describe("userRouter", () => {
     expect(invitations[0]).toEqual(
       expect.objectContaining({
         email: "ada@example.com",
+        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
         organization: expect.objectContaining({ id: orgId }),
         status: "pending",
       })

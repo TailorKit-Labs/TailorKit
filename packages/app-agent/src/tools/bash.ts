@@ -1,7 +1,8 @@
 import { tool } from "ai";
 import { z } from "zod";
 
-import { sandboxIdleTimeoutMs } from "../sandbox";
+import { sandboxIdleTimeoutMs } from "#sandbox";
+
 import {
   commandResultSchema,
   sandboxContextSchema,

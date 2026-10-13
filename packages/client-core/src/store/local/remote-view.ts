@@ -80,16 +80,19 @@ export const createRemoteViewStore = (
 
   return {
     components,
-    destroy() {
+    destroy: () => {
       if (current) {
         stop(current);
       }
       reset();
     },
-    dispatch(payload: HostToIframePayload) {
+    dispatch: (payload: HostToIframePayload) => {
       current?.host?.dispatch(payload);
     },
-    mount({ appUrl, ...hostOptions }: RemoteViewMountOptions): () => void {
+    mount: ({
+      appUrl,
+      ...hostOptions
+    }: RemoteViewMountOptions): (() => void) => {
       if (current) {
         stop(current);
       }
@@ -149,9 +152,10 @@ export const createRemoteViewStore = (
     nodes,
     selectComponent: (name: string) =>
       computed(components, (registry) => registry[name]),
-    setComponents: (registry: RemoteComponentRegistry) =>
-      components.set(registry),
-    setProps(next: RemoteProps | undefined) {
+    setComponents: (registry: RemoteComponentRegistry) => {
+      components.set(registry);
+    },
+    setProps: (next: RemoteProps | undefined) => {
       props = next;
       current?.host?.setProps(next);
     },

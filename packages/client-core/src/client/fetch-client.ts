@@ -3,8 +3,9 @@ import type {
   ToolImplementations,
 } from "@tailorkit/core/schema";
 
-import { createFetchCache } from "../store/fetch/cache";
-import type { FetchCacheOptions } from "../store/fetch/cache";
+import { createFetchCache } from "#store/fetch/cache";
+import type { FetchCacheOptions } from "#store/fetch/cache";
+
 import { createEndpointClient } from "./endpoints";
 
 export interface TailorKitCacheOptions extends FetchCacheOptions {
@@ -37,7 +38,7 @@ export const createTailorKitFetchClient = (
     baseUrl,
     cache,
     cacheOptions: options.cache,
-    clear() {
+    clear: () => {
       cache.clear();
       endpoints.clearSessions();
     },

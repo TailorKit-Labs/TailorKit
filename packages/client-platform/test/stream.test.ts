@@ -5,12 +5,14 @@ import { createSseClient } from "../src/client/core/serverSentEvents.gen";
 describe("generated SSE cancellation", () => {
   it("handles a body that rejects cancellation when the connection closes", async () => {
     const controller = new AbortController();
-    const cancel = vi.fn(() =>
-      Promise.reject(new DOMException("Connection closed", "AbortError"))
-    );
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    const cancel = vi.fn(async () => {
+      throw new DOMException("Connection closed", "AbortError");
+    });
     const { stream } = createSseClient({
+      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
       fetch: async () =>
-        await new Response(
+        new Response(
           new ReadableStream({
             cancel,
             start(output) {
@@ -30,7 +32,7 @@ describe("generated SSE cancellation", () => {
     expect(await stream.next()).toMatchObject({ done: true });
     // Let rejected cancellation promises settle; the test runner detects any
     // unhandled rejection rather than merely checking the generated source.
-    await (() => {
+    await (async () => {
       const {
         promise: pendingPromise,
         resolve,
@@ -41,7 +43,7 @@ describe("generated SSE cancellation", () => {
       } catch (error) {
         rejectPending(error);
       }
-      return pendingPromise;
+      return await pendingPromise;
     })();
     expect(cancel).toHaveBeenCalledOnce();
   });

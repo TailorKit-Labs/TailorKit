@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-call, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { beforeEach, expect, it, vi } from "vite-plus/test";
 
 import { deployTool } from "./deploy";
@@ -13,7 +14,8 @@ const requireValue = <T>(value: T | null | undefined): T => {
 const mocks = vi.hoisted(() => ({ runCommand: vi.fn() }));
 vi.mock("./utils", async (original) => ({
   ...(await original<typeof utilsModule>()),
-  toolNativeSandbox: async () => await { runCommand: mocks.runCommand },
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  toolNativeSandbox: async () => ({ runCommand: mocks.runCommand }),
 }));
 const context = {
   agentToken: "private-token",
@@ -69,7 +71,8 @@ it("returns failures for the agent to address and redacts echoed credentials", a
     exitCode: 1,
     // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
     stderr: async () => `Rejected ${context.agentToken}`,
-    stdout: async () => await context.agentToken,
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    stdout: async () => context.agentToken,
   });
   expect(
     await requireValue(deployTool.execute)(

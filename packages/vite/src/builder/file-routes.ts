@@ -7,9 +7,8 @@ import type { ESTree, Plugin } from "vite";
 
 import { createDefineViewMatcher } from "./define-view";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 const clientRuntimeImport = "tailorkit:file-client-runtime";
 
@@ -32,11 +31,13 @@ export const fileViewLocation = (filename: string, root: string) => {
     relative[0] === ".." ||
     !filename.endsWith(".view.tsx")
   ) {
-    return;
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
   }
   const [slot, ...routeSegments] = relative;
-  if (!slot) {
-    return;
+  if (!(slot !== undefined && slot !== null && slot !== "")) {
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
   }
   const basename = routeSegments.join("/").slice(0, -".view.tsx".length);
   return { path: routePath(basename, filename), slot };
@@ -95,9 +96,13 @@ export const inferFileView = (
     for (const value of Object.values(node)) {
       const children = Array.isArray(value) ? value : [value];
       for (const child of children) {
-        if (isObjectValue(child) && child && "type" in child) {
+        if (isObjectValue(child) && Boolean(child) && "type" in child) {
           // SAFETY: These children come from the parsed ESTree AST, and only objects carrying a node type are visited.
-          visit(child as ESTree.Node);
+          visit(
+            /* oxlint-disable typescript/no-unsafe-type-assertion -- These children come from the parsed ESTree AST, and only objects carrying a node type are visited. */
+            child as ESTree.Node
+            /* oxlint-enable typescript/no-unsafe-type-assertion */
+          );
         }
       }
     }
@@ -139,9 +144,16 @@ export const discoverFileRoutes = async (root: string) => {
         await scan(
           filename,
           slot ?? entry.name,
-          slot ? `${prefix}${entry.name}/` : ""
+          slot !== undefined && slot !== null && slot !== ""
+            ? `${prefix}${entry.name}/`
+            : ""
         );
-      } else if (entry.isFile() && slot) {
+      } else if (
+        entry.isFile() &&
+        slot !== undefined &&
+        slot !== null &&
+        slot !== ""
+      ) {
         if (entry.name.endsWith(".view.tsx")) {
           fileViewLocation(filename, root);
           views.push({ filename, slot });
@@ -261,7 +273,7 @@ export const createFileRouteEntry = async (
       })
     : undefined;
   return {
-    async close() {
+    close: async () => {
       closed = true;
       if (timer) {
         clearTimeout(timer);
@@ -282,19 +294,19 @@ export const fileRoutesPlugin = (root: () => string): Plugin => ({
   name: "tailorkit-file-routes",
   async resolveId(id) {
     if (id !== clientRuntimeImport) {
-      return;
+      /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+      return undefined;
     }
     // Resolve from the app even when its build output is outside the project.
     const importer = path.join(root(), "src/root.tsx");
-    return (
-      (await this.resolve("tailorkit/client", importer, {
-        skipSelf: true,
-      })) ?? this.resolve("@tailorkit/app/client", importer, { skipSelf: true })
-    );
+    return await ((await this.resolve("tailorkit/client", importer, {
+      skipSelf: true,
+    })) ?? this.resolve("@tailorkit/app/client", importer, { skipSelf: true }));
   },
-  transform(source, filename) {
+  transform: (source, filename) => {
     if (!filename.endsWith(".view.tsx")) {
-      return;
+      /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+      return undefined;
     }
     const code = inferFileView(source, filename, root());
     return code === source ? undefined : { code, map: null };

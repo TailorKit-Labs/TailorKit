@@ -69,16 +69,17 @@ export const orgRouter = {
         invitation: ["create"],
       })
     )
-    .handler(({ input, context }) =>
-      auth.api.createInvitation({
-        body: {
-          email: input.email,
-          organizationId: context.org.id,
-          resend: true,
-          role: input.role,
-        },
-        headers: context.headers,
-      })
+    .handler(
+      async ({ input, context }) =>
+        await auth.api.createInvitation({
+          body: {
+            email: input.email,
+            organizationId: context.org.id,
+            resend: true,
+            role: input.role,
+          },
+          headers: context.headers,
+        })
     ),
 
   /**
@@ -92,14 +93,15 @@ export const orgRouter = {
   removeMember: protectedProcedure
     .input(z.object({ memberId: z.string(), orgSlug: z.string() }))
     .use(requireOrg({ member: ["delete"] }))
-    .handler(({ input, context }) =>
-      auth.api.removeMember({
-        body: {
-          memberIdOrEmail: input.memberId,
-          organizationId: context.org.id,
-        },
-        headers: context.headers,
-      })
+    .handler(
+      async ({ input, context }) =>
+        await auth.api.removeMember({
+          body: {
+            memberIdOrEmail: input.memberId,
+            organizationId: context.org.id,
+          },
+          headers: context.headers,
+        })
     ),
 
   /**

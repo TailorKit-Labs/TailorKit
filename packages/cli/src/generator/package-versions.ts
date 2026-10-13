@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import packageJson from "../../package.json" with { type: "json" };
+import packageJson from "#package.json" with { type: "json" };
 
 export interface TemplatePackageVersions {
   drizzleKit: string;
@@ -53,7 +53,11 @@ const parseStableVersion = (version: string): SemverVersion | undefined => {
     return undefined;
   }
   const { major, minor, patch } = match.groups;
-  if (!major || !minor || !patch) {
+  if (
+    !(major !== undefined && major !== null && major !== "") ||
+    !(minor !== undefined && minor !== null && minor !== "") ||
+    !(patch !== undefined && patch !== null && patch !== "")
+  ) {
     return undefined;
   }
   return {
@@ -79,7 +83,13 @@ const satisfiesCaretMatcher = (
   matcher: string
 ): boolean => {
   const match = /^\^(?<major>\d+)(?:\.(?<minor>\d+))?/u.exec(matcher);
-  if (!match?.groups?.major) {
+  if (
+    !(
+      match?.groups?.major !== undefined &&
+      match?.groups?.major !== null &&
+      match?.groups?.major !== ""
+    )
+  ) {
     return false;
   }
   const minMajor = Math.trunc(Number(match.groups.major));
@@ -105,7 +115,7 @@ const resolvePackageVersion = async ({
     const data = z
       .object({
         time: z.record(z.string(), z.string()).optional(),
-        versions: z.record(z.string(), z.object({}).passthrough()).optional(),
+        versions: z.record(z.string(), z.object({}).loose()).optional(),
       })
       .parse(await res.json());
     const latest = Object.keys(data.versions ?? {})

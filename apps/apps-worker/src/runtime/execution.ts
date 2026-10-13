@@ -16,9 +16,8 @@ import { AppError, appError, failedResult } from "./errors";
 import type { InvocationResult } from "./errors";
 import { prepareFunction, functionValue } from "./functions";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 export { invocationSchema } from "@tailorkit/app/protocol";
 export type { Invocation } from "@tailorkit/app/protocol";
@@ -56,9 +55,13 @@ export const createExecution = (
     try {
       // SAFETY: prepareFunction validated args using this registered function, and this transaction supplies its matching database capability.
       const value = inExecutionContext({ active: true, kind }, () =>
-        fn.handler({ args, db: scope.db, identity } as never)
+        fn.handler(
+          /* oxlint-disable typescript/no-unsafe-type-assertion -- prepareFunction validated args using this registered function, and this transaction supplies its matching database capability. */
+          { args, db: scope.db, identity } as never
+          /* oxlint-enable typescript/no-unsafe-type-assertion */
+        )
       );
-      if (value && isObjectValue(value) && "then" in value) {
+      if (isObjectValue(value) && "then" in value) {
         // Revoke DB access before any continuation can run outside the transaction.
         void (async () => {
           try {
@@ -66,6 +69,9 @@ export const createExecution = (
           } catch {
             /* Intentionally no action is needed. */
           }
+
+          /* oxlint-disable-next-line unicorn/no-useless-undefined -- Missing results use the same undefined sentinel as the optional return type. */
+          return undefined;
         })();
         throw new AppError("BAD_REQUEST", "App handlers must be synchronous");
       }
@@ -104,14 +110,20 @@ export const createExecution = (
         "SELECT fingerprint, result FROM tailorkit_receipts WHERE id = ?",
         [input.requestId]
       ).rows;
-      if (prior) {
+      if (prior !== undefined && prior !== null) {
         if (prior[0] !== fingerprint) {
           throw new AppError(
             "CONFLICT",
             "Mutation ID was already used for different arguments or identity"
           );
         }
-        return { ...JSON.parse(String(prior[1])), committed: false };
+        const stored = z
+          .object({
+            tables: z.array(z.string()),
+            value: z.unknown().optional(),
+          })
+          .parse(JSON.parse(z.string().parse(prior[1])));
+        return { committed: false, tables: stored.tables, value: stored.value };
       }
       const result = execute(input, identity, "mutation", tables);
       persistence.execute(
@@ -123,16 +135,16 @@ export const createExecution = (
   };
   const action = createActionExecution(app);
   return {
-    action(
+    action: (
       input: Invocation,
       identity: Identity,
       services: ActionServices,
       signal: AbortSignal
-    ): Effect.Effect<InvocationResult> {
-      return Effect.tryPromise({
+    ): Effect.Effect<InvocationResult> =>
+      Effect.tryPromise({
         catch: appError,
-        try: () =>
-          action(
+        try: async () =>
+          await action(
             input,
             identity,
             {
@@ -144,9 +156,9 @@ export const createExecution = (
                 }
                 return result.value;
               },
-              query: (call) =>
-                (async () => {
-                  void (await Promise.resolve());
+              query: async (call) =>
+                await (async () => {
+                  await Promise.resolve();
                   return execute(call, identity, "query").value;
                 })(),
               tool: services.tool,
@@ -167,14 +179,13 @@ export const createExecution = (
             tables: [],
           })
         )
-      );
-    },
-    call(
+      ),
+    call: (
       kind: "query" | "mutation",
       input: Invocation & { requestId?: string },
       identity: Identity
-    ): Effect.Effect<InvocationResult> {
-      return Effect.suspend(() => {
+    ): Effect.Effect<InvocationResult> =>
+      Effect.suspend(() => {
         const tables = new Set<string>();
         return Effect.try({
           catch: appError,
@@ -191,7 +202,9 @@ export const createExecution = (
             const result =
               kind === "mutation"
                 ? mutate(
+                    /* oxlint-disable typescript/no-unsafe-type-assertion -- kind selected the mutation schema above, which required a UUID requestId before parsed.data reaches this branch. */
                     parsed.data as Invocation & { requestId: string },
+                    /* oxlint-enable typescript/no-unsafe-type-assertion */
                     identity,
                     tables
                   )
@@ -211,8 +224,7 @@ export const createExecution = (
             })
           )
         );
-      });
-    },
+      }),
     mutate,
     query: (input: Invocation, identity: Identity) =>
       execute(input, identity, "query"),

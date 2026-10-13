@@ -1,14 +1,16 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { appsGet } from "@tailorkit/client-platform/client";
 import { createClient } from "@tailorkit/client-platform/client/client/index";
+import { z } from "zod";
 
-import type { TailorKitContract } from "../schema/contract";
+import type { TailorKitContract } from "#schema/contract";
 import type {
   ToolImplementations,
   ToolContext,
   ToolImplementationTree,
-} from "../schema/tools";
-import { flattenTools, validateToolValue } from "../schema/tools";
+} from "#schema/tools";
+import { flattenTools, validateToolValue } from "#schema/tools";
+
 import { normalizeBaseUrl } from "./base-url";
 import { createTailorKitServer } from "./handler";
 import { normalizeTailorKitNamedScope } from "./scope";
@@ -27,7 +29,7 @@ const isFunctionValue = <TValue>(
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
 
-export type { ToolImplementations } from "../schema/tools";
+export type { ToolImplementations } from "#schema/tools";
 export type ContractScopes<T extends TailorKitContract> = {
   [N in keyof T["scopes"]]: StandardSchemaV1.InferInput<T["scopes"][N]>;
 };
@@ -91,10 +93,14 @@ export const createServer = <const T extends TailorKitContract>(
     tools: T["tools"];
   };
   // SAFETY: The generic contract supplies the matching views, slots and tools; configuration supplies the remaining server options.
-  const server = createTailorKitServer<InternalOptions>({
-    ...configuration,
-    ...contract,
-  } as Parameters<typeof createTailorKitServer<InternalOptions>>[0]);
+  const server = createTailorKitServer<InternalOptions>(
+    /* oxlint-disable typescript/no-unsafe-type-assertion -- The generic contract supplies the matching views, slots and tools; configuration supplies the remaining server options. */
+    {
+      ...configuration,
+      ...contract,
+    } as Parameters<typeof createTailorKitServer<InternalOptions>>[0]
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
+  );
   const platformUrl = server.$internal.platformBaseUrl;
   const requestPlatform =
     configuration.$internal?.platformFetch ?? globalThis.fetch;
@@ -106,7 +112,9 @@ export const createServer = <const T extends TailorKitContract>(
   });
   const platformHeaders =
     configuration.$internal?.platformHeaders ??
-    (configuration.projectKey
+    (configuration.projectKey !== undefined &&
+    configuration.projectKey !== null &&
+    configuration.projectKey !== ""
       ? { authorization: `Bearer ${configuration.projectKey}` }
       : undefined);
   const verify = createToolVerifier({ fetch: requestPlatform, platformUrl });
@@ -115,11 +123,16 @@ export const createServer = <const T extends TailorKitContract>(
     ...server,
     contract,
     // oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
-    async handler(
+    handler: async (
       request: Request,
       handlerOptions: TailorKitHandlerOptions<Partial<ContractScopes<T>>>
-    ) {
-      if (!handlerOptions?.authenticate) {
+    ) => {
+      if (
+        !(
+          handlerOptions?.authenticate !== undefined &&
+          handlerOptions?.authenticate !== null
+        )
+      ) {
         throw new Error("Supply authenticate to the handler");
       }
       const url = new URL(request.url);
@@ -141,9 +154,16 @@ export const createServer = <const T extends TailorKitContract>(
         }
         let input: { path: string; input?: unknown; requestId: string };
         try {
-          input = await request.json();
+          input = z
+            .object({
+              input: z.unknown().optional(),
+              path: z.string(),
+              requestId: z.string(),
+            })
+            .strict()
+            .parse(await request.json());
           if (
-            !input ||
+            !(input !== undefined && input !== null) ||
             !isStringValue(input.path) ||
             !isStringValue(input.requestId) ||
             !/^[0-9a-f-]{36}$/u.test(input.requestId) ||
@@ -166,7 +186,7 @@ export const createServer = <const T extends TailorKitContract>(
         let context: ToolContext;
         try {
           const authorization = request.headers.get("authorization");
-          if (!authorization?.startsWith("Bearer ")) {
+          if (!(authorization?.startsWith("Bearer ") === true)) {
             throw new Error("Invalid credential.");
           }
           const identity = await verify(
@@ -223,7 +243,10 @@ export const createServer = <const T extends TailorKitContract>(
             throw new Error("Tool implementation unavailable");
           }
           // SAFETY: This registered path owns the declaration that validated value above; the heterogeneous tree erases only its specific input type.
-          const toolInput = value as never;
+          const toolInput =
+            /* oxlint-disable typescript/no-unsafe-type-assertion -- This registered path owns the declaration that validated value above; the heterogeneous tree erases only its specific input type. */
+            value as never;
+          /* oxlint-enable typescript/no-unsafe-type-assertion */
           const result = await validateToolValue(
             declaration.definition.output,
             await implementation({ context, input: toolInput })
@@ -237,17 +260,12 @@ export const createServer = <const T extends TailorKitContract>(
         }
       }
       // SAFETY: ContractScopes derives each scope input from the same contract passed to createTailorKitServer.
-      return server.handler(
-        request,
-        handlerOptions as Parameters<typeof server.handler>[1]
-      );
+      return await server.handler(request, handlerOptions);
     },
     mcp: {
-      transport(
+      transport: async (
         optionsValue: TailorKitHostContext<Partial<ContractScopes<T>>>
-      ) {
-        return server.mcp.transport(optionsValue);
-      },
+      ) => await server.mcp.transport(optionsValue),
     },
   };
 };

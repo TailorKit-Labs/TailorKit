@@ -37,8 +37,10 @@ export { formOptions } from "@tanstack/react-form";
 export { formatFieldErrors } from "./field-errors";
 
 // export useFieldContext for use in your custom components
+/* oxlint-disable typescript/no-unsafe-assignment -- TanStack shared contexts erase form-specific generics; typed hooks restore them. */
 export const { fieldContext, formContext, useFieldContext, useFormContext } =
   createFormHookContexts();
+/* oxlint-enable typescript/no-unsafe-assignment */
 
 export type TextFieldProps = Omit<BaseTextFieldProps, "errors" | "value">;
 
@@ -104,7 +106,7 @@ export const SelectField = (props: SelectFieldProps) => {
       {...restProps}
       errors={field.state.meta.errors}
       onValueChange={(value) => {
-        field.setValue(value || field.state.value);
+        field.setValue(value ?? field.state.value);
         onValueChange?.(value);
       }}
       value={field.state.value}
@@ -141,8 +143,10 @@ export const SecretTextField = ({
     <Field disabled={disabled} invalid={isError}>
       <FieldLabel className="w-full">
         {label}{" "}
-        {required && <span className="text-destructive-foreground">*</span>}
-        {labelAction && <div className="ml-auto">{labelAction}</div>}
+        {required === true && (
+          <span className="text-destructive-foreground">*</span>
+        )}
+        {Boolean(labelAction) && <div className="ml-auto">{labelAction}</div>}
       </FieldLabel>
       <InputGroup>
         <InputGroupInput
@@ -150,7 +154,9 @@ export const SecretTextField = ({
           autoFocus={autoFocus}
           disabled={disabled}
           onBlur={field.handleBlur}
-          onChange={(e) => field.handleChange(e.target.value)}
+          onChange={(e) => {
+            field.handleChange(e.target.value);
+          }}
           placeholder={placeholder}
           required={required}
           type={showSecret ? "text" : "password"}
@@ -162,7 +168,9 @@ export const SecretTextField = ({
               render={
                 <Button
                   aria-label={showSecret ? "Hide secret" : "Show secret"}
-                  onClick={() => setShowSecret(!showSecret)}
+                  onClick={() => {
+                    setShowSecret(!showSecret);
+                  }}
                   size="icon-xs"
                   variant="ghost"
                 />
@@ -176,7 +184,11 @@ export const SecretTextField = ({
           </Tooltip>
         </InputGroupAddon>
       </InputGroup>
-      {description && <FieldDescription>{description}</FieldDescription>}
+      {description !== undefined &&
+        description !== null &&
+        description !== "" && (
+          <FieldDescription>{description}</FieldDescription>
+        )}
       {isError && <FieldError>{errorMessage}</FieldError>}
     </Field>
   );
@@ -193,7 +205,7 @@ export const BooleanField = (props: BooleanFieldProps) => {
   return (
     <BaseBooleanField
       {...props}
-      checked={Boolean(field.state.value)}
+      checked={field.state.value}
       errors={field.state.meta.errors}
       onBlur={field.handleBlur}
       onCheckedChange={field.handleChange}
@@ -263,6 +275,7 @@ export const { useAppForm, withForm } = createFormHook({
     TextField,
   },
 
+  // oxlint-disable-next-line typescript/no-unsafe-assignment -- TanStack Form shared contexts erase form-specific generics; the typed field and form hooks restore those relationships.
   fieldContext,
 
   formComponents: {
@@ -270,5 +283,6 @@ export const { useAppForm, withForm } = createFormHook({
     SubmitButton,
   },
 
+  // oxlint-disable-next-line typescript/no-unsafe-assignment -- TanStack Form shared contexts erase form-specific generics; the typed field and form hooks restore those relationships.
   formContext,
 });

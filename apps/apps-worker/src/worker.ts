@@ -20,18 +20,20 @@ import { metadataLifetimeSeconds, installationName } from "./supervisor/source";
 import { routeInstallation, rpcErrorResponse } from "./transport";
 
 export default {
-  async fetch(
+  fetch: async (
     request: Request,
     env: Env,
     ctx: ExecutionContext
-  ): Promise<Response> {
+  ): Promise<Response> => {
     const domain = env.ASSET_DOMAIN;
     const publication = parseDeploymentPublicationRoute(request, domain);
     const appRoute = parseHostedAppRoute(request, domain);
     if (!publication && !appRoute) {
       // SAFETY: The worker forwards the same platform Request to the asset adapter; the two Workers declaration packages describe that Request differently.
-      return assets.fetch(
+      return await assets.fetch(
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- The worker forwards the same platform Request to the asset adapter; the two Workers declaration packages describe that Request differently. */
         request as Parameters<typeof assets.fetch>[0],
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
         env,
         ctx
       );
@@ -52,8 +54,11 @@ export default {
           if (
             !(yield* Effect.tryPromise({
               catch: appError,
-              try: () =>
-                runtimeServiceAuthorized(request, env.RUNTIME_SERVICE_TOKEN),
+              try: async () =>
+                await runtimeServiceAuthorized(
+                  request,
+                  env.RUNTIME_SERVICE_TOKEN
+                ),
             }))
           ) {
             return yield* Effect.fail(
@@ -65,19 +70,18 @@ export default {
           }
           const text = yield* Effect.tryPromise({
             catch: appError,
-            try: () => request.text(),
+            try: async () => await request.text(),
           });
           if (text.length > 8192) {
             return yield* Effect.fail(
               new AppError("BAD_REQUEST", "Deployment metadata too large")
             );
           }
-          const value = yield* Effect.try({
+          const parsed = yield* Effect.try({
             catch: () =>
               new AppError("BAD_REQUEST", "Invalid deployment metadata"),
-            try: () => JSON.parse(text),
+            try: () => appDeploymentMetadata.safeParse(JSON.parse(text)),
           });
-          const parsed = appDeploymentMetadata.safeParse(value);
           if (!parsed.success) {
             return yield* Effect.fail(
               new AppError("BAD_REQUEST", "Invalid deployment metadata")
@@ -85,18 +89,21 @@ export default {
           }
           yield* Effect.try({
             catch: appError,
-            try: () => validateDeploymentPublication(parsed.data, publication),
+            try: () => {
+              validateDeploymentPublication(parsed.data, publication);
+            },
           });
           yield* Effect.tryPromise({
             catch: appError,
-            try: () =>
-              env.DEPLOYMENTS.put(
+            try: async () => {
+              await env.DEPLOYMENTS.put(
                 deploymentMetadataKey(parsed.data),
                 JSON.stringify(parsed.data),
                 {
                   expirationTtl: metadataLifetimeSeconds,
                 }
-              ),
+              );
+            },
           });
           return new Response(null, { status: 204 });
         }
@@ -106,6 +113,7 @@ export default {
         const url = new URL(request.url);
         url.pathname = appRoute.rpcPath;
         const routedRequest = new Request(url, request);
+        // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
         return yield* routeInstallation(routedRequest, {
           installation: (identity: Identity) =>
             env.STORES.getByName(

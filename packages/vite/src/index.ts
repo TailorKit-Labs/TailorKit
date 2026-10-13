@@ -5,6 +5,7 @@ import path from "node:path";
 import { validateLogoAsset } from "@tailorkit/asset-delivery/logo-validation";
 import type { LogoContentType } from "@tailorkit/asset-delivery/logo-validation";
 import type { Plugin, PluginOption, ResolvedConfig } from "vite";
+import { z } from "zod";
 
 import { readClientManifest } from "./builder/client-views";
 import { getBuildEnvironment } from "./builder/env";
@@ -16,9 +17,6 @@ import { createTailorKitUploadManifest } from "./builder/upload-manifest";
 import { loadTailorKitConfig } from "./config/loader";
 import type { LoadedTailorKitConfig } from "./config/loader";
 import { assertSupportedPreactVersion } from "./preact-version";
-
-const isStringValue = <TValue>(value: TValue): value is TValue & string =>
-  typeof value === "string";
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -38,7 +36,7 @@ export interface TailorKitPluginOptions {
 
 const flattenPlugins = async (option: PluginOption): Promise<Plugin[]> => {
   const plugin = await option;
-  if (!plugin) {
+  if (!(plugin !== undefined && plugin !== null && plugin !== false)) {
     return [];
   }
   if (Array.isArray(plugin)) {
@@ -53,9 +51,11 @@ const getInstalledPreactVersion = (root: string): string => {
 
   try {
     const packageJsonPath = require.resolve("preact/package.json");
-    const packageJson: { version?: unknown } = require(packageJsonPath);
+    const packageJson = z
+      .object({ version: z.string().optional() })
+      .parse(require(packageJsonPath));
 
-    if (isStringValue(packageJson.version)) {
+    if (packageJson.version !== undefined) {
       return packageJson.version;
     }
   } catch (error) {
@@ -136,7 +136,13 @@ export const tailorkit = (options: TailorKitPluginOptions = {}): Plugin[] => {
     const logoManifest: LogoManifest = {};
     for (const variant of ["light", "dark"] as const) {
       const configuredPath = loaded.config.logos?.[variant];
-      if (!configuredPath) {
+      if (
+        !(
+          configuredPath !== undefined &&
+          configuredPath !== null &&
+          configuredPath !== ""
+        )
+      ) {
         continue;
       }
       const extension = path.extname(configuredPath).toLowerCase().slice(1);
@@ -170,18 +176,18 @@ export const tailorkit = (options: TailorKitPluginOptions = {}): Plugin[] => {
   };
   const plugins: Plugin[] = [
     {
-      async buildEnd(error) {
+      buildEnd: async (error) => {
         if (error && !watching) {
           await cleanup();
         }
       },
-      async closeBundle() {
+      closeBundle: async () => {
         if (!watching) {
           await cleanup();
         }
       },
       closeWatcher: cleanup,
-      async config(config) {
+      config: async (config) => {
         const awaitedResult2 = await flattenPlugins(config.plugins ?? []);
         customPlugins = awaitedResult2.filter(
           (plugin) => !plugins.includes(plugin)
@@ -198,7 +204,7 @@ export const tailorkit = (options: TailorKitPluginOptions = {}): Plugin[] => {
             },
             minify: "oxc",
             outDir: path.join(outputDirectory, "client"),
-            rollupOptions: {
+            rolldownOptions: {
               output: {
                 comments: { annotation: false, jsdoc: false, legal: false },
                 inlineDynamicImports: true,
@@ -216,10 +222,13 @@ export const tailorkit = (options: TailorKitPluginOptions = {}): Plugin[] => {
           oxc: { jsx: { importSource: "preact" } },
         };
       },
-      async configResolved(config) {
-        const root = config.configFile
-          ? path.dirname(config.configFile)
-          : config.root;
+      configResolved: async (config) => {
+        const root =
+          config.configFile !== undefined &&
+          config.configFile !== null &&
+          config.configFile !== ""
+            ? path.dirname(config.configFile)
+            : config.root;
         loaded = await loadTailorKitConfig(
           path.resolve(root, options.configPath ?? "tailorkit.config.ts")
         );
@@ -243,7 +252,7 @@ export const tailorkit = (options: TailorKitPluginOptions = {}): Plugin[] => {
           requireValue(config.environments.client).build,
         ]) {
           build.outDir = clientOutDir;
-          if (build.lib) {
+          if (build.lib !== false) {
             build.lib.entry = fileEntry.entry;
           }
         }
@@ -251,7 +260,7 @@ export const tailorkit = (options: TailorKitPluginOptions = {}): Plugin[] => {
       },
       enforce: "pre",
       name: "tailorkit",
-      async writeBundle() {
+      writeBundle: async () => {
         await writeBuildExtras();
       },
     },
@@ -269,13 +278,16 @@ export const tailorkit = (options: TailorKitPluginOptions = {}): Plugin[] => {
           /^(?:@tailorkit\/app\/server$|tailorkit\/(?:server|app\/server)$|effect(?:\/|$))/u.test(
             id
           ) ||
-          (importer && path.resolve(path.dirname(importer), id) === serverEntry)
+          (importer !== undefined &&
+            importer !== null &&
+            importer !== "" &&
+            path.resolve(path.dirname(importer), id) === serverEntry)
         ) {
           throw new Error(
             "App server implementations cannot be imported into a browser bundle. Import api from #tailorkit and server types with import type."
           );
         }
-        if (importer) {
+        if (importer !== undefined && importer !== null && importer !== "") {
           const result = await this.resolve(id, importer, { skipSelf: true });
           if (result?.id.split("?")[0] === serverEntry) {
             throw new Error(
@@ -288,7 +300,7 @@ export const tailorkit = (options: TailorKitPluginOptions = {}): Plugin[] => {
     },
     {
       enforce: "pre",
-      load(id) {
+      load: (id) => {
         if (id === preactPackageJsonModuleId) {
           const version = JSON.stringify(preactVersion);
           return `export const version = ${version}; export default { version: ${version} };`;
@@ -296,9 +308,8 @@ export const tailorkit = (options: TailorKitPluginOptions = {}): Plugin[] => {
         return null;
       },
       name: "tailorkit-preact-package-json",
-      resolveId(id) {
-        return id === preactPackageJson ? preactPackageJsonModuleId : null;
-      },
+      resolveId: (id) =>
+        id === preactPackageJson ? preactPackageJsonModuleId : null,
     },
   ];
   for (const plugin of plugins) {

@@ -1,8 +1,7 @@
 import * as v from "valibot";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 // Valibot object schemas also accept arrays; the wire protocol requires objects.
 const ObjectInput = v.custom<object>(

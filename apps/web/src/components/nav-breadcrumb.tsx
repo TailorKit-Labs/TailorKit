@@ -10,6 +10,9 @@ import { Link, useMatches } from "@tanstack/react-router";
 import { Fragment } from "react";
 import { z } from "zod";
 
+const hasText = (value: string | null | undefined): value is string =>
+  value !== undefined && value !== null && value.length > 0;
+
 const breadcrumbMetadata = z.object({ name: z.string().optional() });
 
 interface BreadcrumbSegment {
@@ -122,12 +125,12 @@ const addStaticSegments = (
   }
 
   const accountLabel = accountRouteLabels.get(id);
-  if (accountLabel) {
+  if (hasText(accountLabel)) {
     segments.push({ label: accountLabel });
   }
 
   const settingsLabel = settingsRouteLabels.get(id);
-  if (settingsLabel) {
+  if (hasText(settingsLabel)) {
     segments.push({ label: settingsLabel });
   }
 };
@@ -165,7 +168,7 @@ export const NavBreadcrumb = () => {
         {segments.map((seg, i) => (
           <Fragment key={seg.label}>
             <BreadcrumbItem>
-              {seg.href ? (
+              {hasText(seg.href) ? (
                 <BreadcrumbLink render={<Link to={seg.href} />}>
                   {seg.label}
                 </BreadcrumbLink>

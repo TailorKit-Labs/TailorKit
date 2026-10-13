@@ -3,14 +3,14 @@ import { expect, it, vi } from "vite-plus/test";
 import { createSessionProvider } from "./session";
 
 it("deduplicates token requests, caches until renewal and sends only the host-bound app ID", async () => {
-  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(
-    async () =>
-      await Response.json({
-        expiresAt: Date.now() + 300_000,
-        subjectId: "principal",
-        token: "scoped",
-        url: "https://runtime.test/rpc",
-      })
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async () =>
+    Response.json({
+      expiresAt: Date.now() + 300_000,
+      subjectId: "principal",
+      token: "scoped",
+      url: "https://runtime.test/rpc",
+    })
   );
   const session = createSessionProvider({
     appId: "allowed",
@@ -23,9 +23,13 @@ it("deduplicates token requests, caches until renewal and sends only the host-bo
   ]);
   expect(first).toEqual(second);
   expect(fetch).toHaveBeenCalledTimes(1);
-  expect(fetch.mock.calls[0]?.[0].toString()).toBe(
-    "https://host.test/api/tailorkit/backend/session"
-  );
+
+  const requestedUrl = fetch.mock.calls[0]?.[0];
+  expect(
+    requestedUrl instanceof Request
+      ? requestedUrl.url
+      : requestedUrl?.toString()
+  ).toBe("https://host.test/api/tailorkit/backend/session");
   expect(fetch.mock.calls[0]?.[1]).toMatchObject({
     body: JSON.stringify({ appId: "allowed" }),
     credentials: "same-origin",
@@ -39,15 +43,17 @@ it("renews cached sessions when one minute remains", async () => {
   vi.useFakeTimers();
   vi.setSystemTime(0);
   try {
-    const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(
-      async () =>
-        await Response.json({
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+      .mockImplementation(async () =>
+        Response.json({
           expiresAt: Date.now() + 300_000,
           subjectId: "principal",
           token: "scoped",
           url: "https://runtime.test/rpc",
         })
-    );
+      );
     const session = createSessionProvider({
       appId: "allowed",
       baseUrl: "https://host.test/api",

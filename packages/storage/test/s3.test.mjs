@@ -23,7 +23,7 @@ const storage = createS3CompatibleStorage({
   secretAccessKey: "test",
 });
 
-test("presigned upload signs the exact checksum and content-type headers returned to clients", async () => {
+void test("presigned upload signs the exact checksum and content-type headers returned to clients", async () => {
   const checksum = Buffer.alloc(32).toString("base64");
   const result = await storage.createUploadUrl({
     checksumSha256: checksum,
@@ -42,7 +42,7 @@ test("presigned upload signs the exact checksum and content-type headers returne
   assert.equal(result.headers["content-type"], "application/javascript");
 });
 
-test("upload signing still supports callers without a checksum", async () => {
+void test("upload signing still supports callers without a checksum", async () => {
   const result = await storage.createUploadUrl({
     contentType: "application/javascript",
     key: "client.js",
@@ -55,7 +55,7 @@ test("upload signing still supports callers without a checksum", async () => {
   );
 });
 
-test("presigned gzip uploads sign and return content-encoding", async () => {
+void test("presigned gzip uploads sign and return content-encoding", async () => {
   const result = await storage.createUploadUrl({
     checksumSha256: Buffer.alloc(32).toString("base64"),
     contentEncoding: "gzip",

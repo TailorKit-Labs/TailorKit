@@ -1,6 +1,7 @@
 import { expect, it, vi } from "vite-plus/test";
 
-import { testContract } from "../test-contract";
+import { testContract } from "#test-contract";
+
 import { createComponentRegistry, createTailorKitClientConfig } from "./config";
 
 const require = <T>(value: T | null | undefined): T => {
@@ -37,10 +38,12 @@ it("builds reusable client configuration without initiating network requests", (
 
 it("clears shared app data and sessions through clearCache", async () => {
   let user = "first";
-  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(
-    async (input) =>
-      await Response.json(
-        String(input).endsWith("/apps")
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    .mockImplementation(async (input) =>
+      Response.json(
+        (input instanceof Request ? input.url : String(input)).endsWith("/apps")
           ? [{ id: user }]
           : {
               expiresAt: Date.now() + 300_000,
@@ -48,7 +51,7 @@ it("clears shared app data and sessions through clearCache", async () => {
               url: "https://runtime.test/rpc",
             }
       )
-  );
+    );
   const config = createTailorKitClientConfig({
     baseUrl: "https://host.test/api/",
     contract: testContract(),

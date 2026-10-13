@@ -116,7 +116,7 @@ cli
       await loginWithApproval(
         {
           configPath: options.config,
-          cwd: String(options.cwd ?? "."),
+          cwd: options.cwd ?? ".",
           host: options.host,
           timeout: timeoutSeconds * 1000,
         },
@@ -139,7 +139,7 @@ cli
     try {
       const result = await runLogout({
         configPath: options.config,
-        cwd: String(options.cwd ?? "."),
+        cwd: options.cwd ?? ".",
         host: options.host,
       });
 
@@ -164,7 +164,7 @@ cli
     try {
       const result = await runWhoami({
         configPath: options.config,
-        cwd: String(options.cwd ?? "."),
+        cwd: options.cwd ?? ".",
         host: options.host,
       });
 
@@ -196,13 +196,13 @@ cli
       const deployOptions: Parameters<typeof runDeploy>[0] = {
         appId: options.appId,
         configPath: options.config,
-        cwd: String(options.cwd ?? "."),
+        cwd: options.cwd ?? ".",
         mode: options.mode,
         onLoginRequired: async () => {
           deploySpinner.stop("Authentication required.");
           const auth = await loginWithApproval({
             configPath: options.config,
-            cwd: String(options.cwd ?? "."),
+            cwd: options.cwd ?? ".",
           });
           deploySpinner.start("Building and deploying app");
           return auth;
@@ -231,7 +231,7 @@ cli
             deploySpinner.start("Creating app and deploying");
           }
 
-          return shouldCreate === true;
+          return shouldCreate;
         },
         onTypecheckFailed: async ({ command, output }) => {
           deploySpinner.stop("Type check failed.");
@@ -254,7 +254,7 @@ cli
             deploySpinner.start("Uploading app");
           }
 
-          return shouldUpload === true;
+          return shouldUpload;
         },
         outDir: options.outDir,
       };
@@ -279,7 +279,11 @@ cli
           `  ${pc.cyan(file.path)} ${pc.dim(`${formatBytes(file.size)} raw, ${formatBytes(file.gzipSize)} gzip`)}`
         );
       }
-      if (result.status) {
+      if (
+        result.status !== undefined &&
+        result.status !== null &&
+        result.status !== ""
+      ) {
         log.info(`Status: ${pc.cyan(result.status)}`);
       }
       outro("Deployment published.");
@@ -306,7 +310,7 @@ cli
       const { generateAppMigrations } = await import("@tailorkit/vite/builder");
       const directory = await generateAppMigrations({
         configPath: options.config,
-        cwd: String(options.cwd ?? "."),
+        cwd: options.cwd ?? ".",
         name: options.name,
       });
       outro(`Migrations are up to date in ${pc.cyan(directory)}.`);
@@ -330,7 +334,7 @@ cli
     try {
       const outPath = await generateTypes({
         configPath: options.config,
-        cwd: String(options.cwd ?? "."),
+        cwd: options.cwd ?? ".",
         outFile: options.out,
         schemaPath: options.schema,
       });
@@ -360,7 +364,7 @@ cli
   .action(async (directory: string | undefined, options: CliOptions) => {
     intro(pc.bold("TailorKit"));
     try {
-      const cwd = String(options.cwd ?? ".");
+      const cwd = options.cwd ?? ".";
       const targetDirectory = await runInit({
         cwd,
         directory,
@@ -393,8 +397,8 @@ cli
       await runAgentCommand({
         appId: options.app,
         host: options.host,
-        onLoginRequired: () =>
-          loginWithApproval({
+        onLoginRequired: async () =>
+          await loginWithApproval({
             host: options.host,
           }),
         schemaPath: options.schema,

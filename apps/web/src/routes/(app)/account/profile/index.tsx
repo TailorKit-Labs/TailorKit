@@ -32,7 +32,7 @@ const ProfilePage = () => {
 
       if (result.error) {
         toastManager.add({
-          description: result.error.message || "Failed to update profile",
+          description: result.error.message ?? "Failed to update profile",
           title: "Error",
           type: "error",
         });
@@ -68,7 +68,7 @@ const ProfilePage = () => {
             onSubmit={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              form.handleSubmit();
+              void form.handleSubmit();
             }}
           >
             <CardPanel className="max-w-lg">

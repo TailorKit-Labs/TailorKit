@@ -4,7 +4,10 @@ import { defineConfig } from "tsup";
 
 const require = createRequire(import.meta.url);
 // SAFETY: Node resolves the installed Preact package manifest; its version string determines the bundled compatibility version.
-const preactPackageJson = require("preact/package.json") as { version: string };
+const preactPackageJson =
+  /* oxlint-disable typescript/no-unsafe-type-assertion -- Node resolves the installed Preact package manifest; its version string determines the bundled compatibility version. */
+  require("preact/package.json") as { version: string };
+/* oxlint-enable typescript/no-unsafe-type-assertion */
 
 export default defineConfig({
   clean: true,

@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-call, typescript/no-unsafe-assignment -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { z } from "zod";
 
 import { defineServer, fn } from "./server";
@@ -6,7 +7,8 @@ import { defineView } from "./views";
 const server = defineServer({
   reports: {
     count: fn.query.handler(() => 1),
-    fetch: fn.action.handler(() => Promise.resolve(null)),
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    fetch: fn.action.handler(async () => null),
     list: fn.query
       .input(z.object({ userId: z.string() }))
       .handler(({ input }) => [{ id: input.userId }]),
@@ -35,9 +37,9 @@ defineView({
       void installationId;
       void abort;
       // @ts-expect-error Query inputs are inferred from the server definition.
-      queries.reports.list({ userId: 123 });
+      void queries.reports.list({ userId: 123 });
       // @ts-expect-error Required query inputs cannot be omitted.
-      queries.reports.list();
+      void queries.reports.list();
       // @ts-expect-error Mutation functions are not exposed.
       queries.reports.write();
       // @ts-expect-error Action functions are not exposed.

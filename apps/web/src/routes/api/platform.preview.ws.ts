@@ -23,14 +23,15 @@ const upgradeSchema = z.object({
 });
 
 const hooks = defineHooks({
-  close(peer) {
-    handler.close(peer);
+  close: (peer) => {
+    void handler.close(peer);
     authorizations.delete(peer);
   },
-  async message(peer, message) {
+  message: async (peer, message) => {
     const state = authorizations.get(peer);
     if (!state) {
-      return peer.close();
+      peer.close();
+      return;
     }
     const payload = message.rawData;
     let size = Infinity;
@@ -41,12 +42,14 @@ const hooks = defineHooks({
     }
     if (size > 512 * 1024) {
       authorizations.delete(peer);
-      return peer.close();
+      peer.close();
+      return;
     }
     if (state.context === undefined) {
       if (state.pendingMessage) {
         authorizations.delete(peer);
-        return peer.close();
+        peer.close();
+        return;
       }
       state.pendingMessage = true;
       try {
@@ -60,14 +63,16 @@ const hooks = defineHooks({
     }
     const { context } = state;
     if (!context) {
-      return peer.close();
+      peer.close();
+      return;
     }
     await handler.message(peer, message, { context });
   },
-  async open(peer) {
+  open: async (peer) => {
     const parsed = upgradeSchema.safeParse(peer.context);
     if (!parsed.success) {
-      return peer.close();
+      peer.close();
+      return;
     }
     const { sessionId, role, token } = parsed.data;
     const state: AuthorizationState = {
@@ -88,10 +93,10 @@ const hooks = defineHooks({
     }
     state.context = context;
     if (!context) {
-      return peer.close();
+      peer.close();
     }
   },
-  upgrade(request) {
+  upgrade: (request) => {
     const url = new URL(request.url);
     const token = request.headers
       .get("sec-websocket-protocol")

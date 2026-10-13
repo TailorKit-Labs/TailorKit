@@ -10,8 +10,9 @@ import type { SlotDefinitions, ViewDefinition } from "@tailorkit/core/schema";
 import { useEffect, useId, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
-import { PrimitiveThemeContext } from "../primitives";
-import { RemoteViewHost } from "../remote-view";
+import { PrimitiveThemeContext } from "#primitives";
+import { RemoteViewHost } from "#remote-view";
+
 import { useTailorkitContext } from "./context";
 
 export type {
@@ -42,7 +43,9 @@ const SlotRenderer = (options: SlotRuntimeOptions): ReactNode => {
     setState({ runtime: createSlotRuntime(store, options), store });
   }
   const { runtime } = state;
-  useEffect(() => runtime.setInput(options), [runtime, options]);
+  useEffect(() => {
+    runtime.setInput(options);
+  }, [runtime, options]);
   const snapshot = useStore(runtime.state);
   const viewId = `tailorkit-view-${reactId.replaceAll(":", "")}`;
   const themeContext = useMemo(

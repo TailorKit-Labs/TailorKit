@@ -76,7 +76,12 @@ const setup = (
             },
           });
         }
-        if (options.status) {
+        if (
+          options.status !== undefined &&
+          options.status !== null &&
+          options.status !== 0 &&
+          !Number.isNaN(options.status)
+        ) {
           return new Response("Unavailable", { status: options.status });
         }
         const result = await platform.handle(request, {

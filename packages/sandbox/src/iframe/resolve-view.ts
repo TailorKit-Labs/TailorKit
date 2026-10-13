@@ -5,9 +5,11 @@ import type {
   ResolvedViewProps as ContextProps,
 } from "@tailorkit/core/views";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const hasText = (value: string | null | undefined): value is string =>
+  value !== undefined && value !== null && value.length > 0;
+
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 const isFunctionValue = <TValue>(
   value: TValue
@@ -68,15 +70,21 @@ const controlledViewProps = (
   return { context: request.context, status: "ready", view: request.view };
 };
 
+// oxlint-disable-next-line eslint/complexity -- Keep this validation or rendering lifecycle together: its guards share the same state, cleanup, and error handling.
 export const resolveView = (client: AppClient, request: ViewRequest) => {
   const views = client.slots[request.slot];
-  const selected =
-    views &&
-    (request.controlled ? [request.view] : getViewHierarchy(request.view)).find(
-      (path) =>
-        request.supportedViews.includes(path) && Object.hasOwn(views, path)
-    );
-  if (!selected || views[selected] === false) {
+  if (views === undefined) {
+    return null;
+  }
+  const selected = (
+    request.controlled === true
+      ? [request.view]
+      : getViewHierarchy(request.view)
+  ).find(
+    (path) =>
+      request.supportedViews.includes(path) && Object.hasOwn(views, path)
+  );
+  if (!hasText(selected) || views[selected] === false) {
     return null;
   }
   const definition = views[selected];
@@ -86,9 +94,10 @@ export const resolveView = (client: AppClient, request: ViewRequest) => {
     );
   }
 
-  const props = request.controlled
-    ? controlledViewProps(request)
-    : composeViewContext(selected, request);
+  const props =
+    request.controlled === true
+      ? controlledViewProps(request)
+      : composeViewContext(selected, request);
   if (props.status !== "ready") {
     return { component: definition.component, props };
   }
@@ -101,11 +110,11 @@ export const resolveView = (client: AppClient, request: ViewRequest) => {
     }
     const { instance } = request;
     if (
-      !instance ||
+      !(instance !== undefined && instance !== null) ||
       !isObjectValue(instance) ||
       !isStringValue(instance.key) ||
       !instance.key ||
-      !instance.metadata ||
+      !(instance.metadata !== undefined && instance.metadata !== null) ||
       !isObjectValue(instance.metadata) ||
       Array.isArray(instance.metadata)
     ) {
@@ -132,12 +141,10 @@ export const assertAppClient: (value: unknown) => asserts value is AppClient = (
   value
 ) => {
   if (
-    !value ||
     !isObjectValue(value) ||
     !("slots" in value) ||
-    !value.slots ||
+    !isObjectValue(value.slots) ||
     !("$runtime" in value) ||
-    !value.$runtime ||
     !isObjectValue(value.$runtime) ||
     !("h" in value.$runtime) ||
     !isFunctionValue(value.$runtime.h) ||

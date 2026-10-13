@@ -4,12 +4,13 @@ import type { Session } from "@tailorkit/app/client/connection";
 import * as v from "valibot";
 import iframeSource from "virtual:tailorkit-iframe";
 
-import { iframeReadyType, sandboxMessageType } from "../bridge";
+import { iframeReadyType, sandboxMessageType } from "#bridge";
 import type {
   RemoteProps,
   HostToIframePayload as HostToIframePayloadType,
-} from "../protocol.js";
-import { HostToIframePayload, IframeToHostPayload } from "../protocol.js";
+} from "#protocol";
+import { HostToIframePayload, IframeToHostPayload } from "#protocol";
+
 import { createRemoteUiStore } from "./store.js";
 import type { RemoteUiStore } from "./store.js";
 
@@ -98,7 +99,7 @@ const fetchSource = async (
       `Unable to load TailorKit app client from ${url.toString()}.`
     );
   }
-  return response.text();
+  return await response.text();
 };
 
 export const createIframeUiHost = (
@@ -204,31 +205,23 @@ export const createIframeUiHost = (
       const bridge = options.toolBridge;
       void (async () => {
         try {
-          return await (async () => {
-            try {
-              return await (async () => {
-                const output = await (() => {
-                  if (bridge) {
-                    if (kind === "client") {
-                      return bridge.client(path, input);
-                    }
-                    return bridge.session(path);
-                  }
-                  return Promise.reject(new Error("Tool bridge unavailable"));
-                })();
-                if (!destroyed) {
-                  postToIframe({ data: { id, output }, type: "toolResult" });
-                }
-              })();
-            } catch {
-              if (!destroyed) {
-                postToIframe({
-                  data: { error: "Tool request failed", id },
-                  type: "toolResult",
-                });
-              }
-            }
-          })();
+          if (!bridge) {
+            throw new Error("Tool bridge unavailable");
+          }
+          const output =
+            kind === "client"
+              ? await bridge.client(path, input)
+              : await bridge.session(path);
+          if (!destroyed) {
+            postToIframe({ data: { id, output }, type: "toolResult" });
+          }
+        } catch {
+          if (!destroyed) {
+            postToIframe({
+              data: { error: "Tool request failed", id },
+              type: "toolResult",
+            });
+          }
         } finally {
           toolCalls.delete(id);
         }
@@ -243,39 +236,33 @@ export const createIframeUiHost = (
       sessionCalls.add(id);
       void (async () => {
         try {
-          return await (async () => {
-            try {
-              return await (async () => {
-                const session = await (options.getBackendSession?.({
-                  refresh,
-                }) ??
-                  Promise.reject(new Error("App backend is not configured")));
-                if (!destroyed) {
-                  postToIframe({
-                    data: { id, session },
-                    type: "backendSessionResult",
-                  });
-                }
-              })();
-            } catch (error) {
-              const failure =
-                error instanceof AppError
-                  ? error
-                  : new AppError(
-                      "UNAVAILABLE",
-                      "Unable to authorize the app backend"
-                    );
-              if (!destroyed) {
-                postToIframe({
-                  data: {
-                    error: { code: failure.code, message: failure.message },
-                    id,
-                  },
-                  type: "backendSessionResult",
-                });
-              }
-            }
-          })();
+          if (!options.getBackendSession) {
+            throw new Error("App backend is not configured");
+          }
+          const session = await options.getBackendSession({ refresh });
+          if (!destroyed) {
+            postToIframe({
+              data: { id, session },
+              type: "backendSessionResult",
+            });
+          }
+        } catch (error) {
+          const failure =
+            error instanceof AppError
+              ? error
+              : new AppError(
+                  "UNAVAILABLE",
+                  "Unable to authorize the app backend"
+                );
+          if (!destroyed) {
+            postToIframe({
+              data: {
+                error: { code: failure.code, message: failure.message },
+                id,
+              },
+              type: "backendSessionResult",
+            });
+          }
         } finally {
           sessionCalls.delete(id);
         }
@@ -293,7 +280,7 @@ export const createIframeUiHost = (
 
   return {
     ...store,
-    destroy() {
+    destroy: () => {
       if (destroyed) {
         return;
       }
@@ -302,7 +289,7 @@ export const createIframeUiHost = (
       window.removeEventListener("message", handleMessage);
       iframe.remove();
     },
-    dispatch(payload) {
+    dispatch: (payload) => {
       v.parse(HostToIframePayload, payload);
       if (!iframeReady) {
         queuedPayloads.push(payload);
@@ -311,7 +298,7 @@ export const createIframeUiHost = (
       postToIframe(payload);
     },
     iframe,
-    mount() {
+    mount: () => {
       if (mounted || destroyed) {
         return;
       }
@@ -329,7 +316,7 @@ export const createIframeUiHost = (
         }
       })();
     },
-    setProps(props) {
+    setProps: (props) => {
       if (currentProps === props || destroyed) {
         return;
       }

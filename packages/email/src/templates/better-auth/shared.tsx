@@ -83,7 +83,9 @@ const AuthEmailFooter = ({
           for your {COMPANY_NAME} account. If you did not request this, you can
           ignore this email.
         </Text>
-        {unsubscribeUrl ? (
+        {unsubscribeUrl !== undefined &&
+        unsubscribeUrl !== null &&
+        unsubscribeUrl !== "" ? (
           <Text className="m-0 mt-5 text-center font-sans text-[11px] leading-4 text-muted-foreground">
             <Link
               href={unsubscribeUrl}

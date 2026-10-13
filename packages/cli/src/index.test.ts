@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-call -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { beforeEach, expect, it, vi } from "vite-plus/test";
 
 import type { runAgentCommand } from "./agent";
@@ -98,7 +99,7 @@ it("passes --schema through generate with its working directory and config", asy
 it("passes --schema through init while retaining the required host", async () => {
   mocks.init.mockResolvedValue("/workspace/app");
   // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-  // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+  // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
   const init = mocks.actions.get("init [directory]") as unknown as (
     directory: string,
     options: CliOptions
@@ -207,6 +208,7 @@ it("passes the explicit host through agent startup and automatic login", async (
   expect(mocks.agent).toHaveBeenCalledWith({
     appId: "app-one",
     host: "https://host.example",
+    // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
     onLoginRequired: expect.any(Function),
   });
   expect(mocks.login).toHaveBeenCalledWith(

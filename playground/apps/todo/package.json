@@ -16,13 +16,14 @@
     "generate": "tailorkit generate --schema ../../schema.json",
     "build": "vp build",
     "check-types": "tsc --noEmit",
-    "lint": "vp lint",
+    "lint": "vp lint .",
     "format": "vp fmt --check",
     "check": "vp check",
-    "fix": "vp check --fix"
+    "fix": "vp check --fix",
+    "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
-    "preact": "^11.0.0",
+    "preact": "^11.0.1",
     "tailorkit": "workspace:*"
   },
   "devDependencies": {

@@ -7,7 +7,8 @@ import {
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
-const json = <T>(data: T, init: ResponseInit = {}) => {
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser, serializer, or runtime adapter handles arbitrary values before validating or encoding their domain representation.
+const json = (data: unknown, init: ResponseInit = {}) => {
   const headers = new Headers(init.headers);
   headers.set("Content-Type", "application/json");
   return Response.json(data, { ...init, headers });

@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-return, typescript/no-unsafe-assignment, typescript/no-unsafe-member-access, typescript/no-unsafe-argument -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { os } from "@orpc/server";
 import { verifyAgentToken } from "@tailorkit/api-utils/agent-token";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
@@ -64,10 +65,14 @@ const { handleAppAgentMcpRequest } = await import("./app-agent-mcp");
 
 const scope = canonicalizeScope({ name: "org", value: { tenant: "one" } });
 // SAFETY: This test supplies the context members read by the handler; unrelated request context services are outside this scenario.
-const context = {
-  organization: { id: "org" },
-  project: { id: "project" },
-} as Context;
+
+const context =
+  /* oxlint-disable typescript/no-unsafe-type-assertion -- This test supplies the context members read by the handler; unrelated request context services are outside this scenario. */
+  {
+    organization: { id: "org" },
+    project: { id: "project" },
+  } as Context;
+/* oxlint-enable typescript/no-unsafe-type-assertion */
 const identity = { scopes: { org: scope.scope.value }, subjectId: "user" };
 const app = { id: "internal-app", publicId: "public-app", scope: scope.scope };
 
@@ -235,10 +240,13 @@ describe("platform MCP endpoint", () => {
       // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       const awaitedResult1 = await handleAppAgentMcpRequest(
         request("list_apps"),
+
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- This test supplies the context members read by the handler; unrelated request context services are outside this scenario. */
         {
           ...context,
           ...restricted,
         } as Context
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
       );
       expect(awaitedResult1.status).toBe(403);
     }
@@ -295,7 +303,7 @@ describe("platform MCP endpoint", () => {
 
   it("cancels the workflow and deletes its sandbox when the response closes", async () => {
     let revoked!: () => void;
-    const revocation = (() => {
+    const revocation = (async () => {
       const {
         promise: pendingPromise,
         resolve,
@@ -306,7 +314,7 @@ describe("platform MCP endpoint", () => {
       } catch (error) {
         rejectPending(error);
       }
-      return pendingPromise;
+      await pendingPromise;
     })();
     mocks.revoke.mockImplementation(revoked);
     mocks.start.mockResolvedValueOnce({
@@ -329,18 +337,20 @@ describe("platform MCP endpoint", () => {
 
   it("waits for workflow cleanup before sending the terminal result", async () => {
     let finish!: () => void;
-    const returnValue = (() => {
+    const returnValue = (async () => {
       const {
         promise: pendingPromise,
         resolve,
         reject: rejectPending,
       } = Promise.withResolvers<{ messages: [] }>();
       try {
-        finish = () => resolve({ messages: [] });
+        finish = () => {
+          resolve({ messages: [] });
+        };
       } catch (error) {
         rejectPending(error);
       }
-      return pendingPromise;
+      return await pendingPromise;
     })();
     mocks.start.mockResolvedValueOnce({
       cancel: mocks.cancel,
@@ -362,7 +372,7 @@ describe("platform MCP endpoint", () => {
     expect(mocks.revoke).not.toHaveBeenCalled();
     finish();
     await final;
-    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+
     while (true) {
       // oxlint-disable-next-line no-await-in-loop -- Read or renew in sequence; the next operation depends on this result.
       const chunk = await reader.read();

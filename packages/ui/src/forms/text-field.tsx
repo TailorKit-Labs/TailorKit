@@ -18,6 +18,9 @@ import {
 
 import { formatFieldErrors } from "./field-errors";
 
+const hasText = (value: string | null | undefined): value is string =>
+  value !== undefined && value !== null && value.length > 0;
+
 const emptyErrors: unknown[] = [];
 
 export interface TextFieldProps {
@@ -63,11 +66,19 @@ export const TextField = ({
       <div className="flex w-full items-center gap-2">
         <FieldLabel>
           {label}{" "}
-          {required && <span className="text-destructive-foreground">*</span>}
+          {required === true && (
+            <span className="text-destructive-foreground">*</span>
+          )}
         </FieldLabel>
-        {labelAction && <div className="ml-auto">{labelAction}</div>}
+        {Boolean(labelAction) && <div className="ml-auto">{labelAction}</div>}
       </div>
-      {endAdornment ? (
+      {endAdornment !== undefined &&
+      endAdornment !== null &&
+      endAdornment !== false &&
+      endAdornment !== "" &&
+      endAdornment !== 0 &&
+      !Number.isNaN(endAdornment) &&
+      endAdornment !== 0n ? (
         <InputGroup>
           <InputGroupInput
             aria-invalid={isError || undefined}
@@ -97,7 +108,7 @@ export const TextField = ({
           value={value ?? ""}
         />
       )}
-      {description && (!isError || showDescriptionWhenError) && (
+      {hasText(description) && (!isError || showDescriptionWhenError) && (
         <FieldDescription>{description}</FieldDescription>
       )}
       {isError && <FieldError>{errorMessage}</FieldError>}

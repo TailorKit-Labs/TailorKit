@@ -14,7 +14,13 @@ const createKV = (): KVInstance => {
   }
 
   if (env.KV_PROVIDER === "redis") {
-    if (!env.KV_REDIS_URL) {
+    if (
+      !(
+        env.KV_REDIS_URL !== undefined &&
+        env.KV_REDIS_URL !== null &&
+        env.KV_REDIS_URL !== ""
+      )
+    ) {
       throw new Error("KV_REDIS_URL is required when KV_PROVIDER is redis");
     }
 

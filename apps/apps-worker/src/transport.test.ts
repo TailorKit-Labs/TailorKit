@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import {
@@ -48,7 +49,7 @@ it("validates calls before dispatching installation operations", async () => {
 
 it("preserves procedure failures for Effect client recovery", async () => {
   const operations = installation();
-  // eslint-disable-next-line prefer-promise-reject-errors -- Verify serialized failures from the runtime boundary.
+
   operations.query = () =>
     Effect.fail({ code: "NOT_FOUND", message: "Missing query" });
   const client = createEffectClient(
@@ -76,7 +77,7 @@ it("preserves procedure failures for Effect client recovery", async () => {
 it("propagates cancellation through an Effect handler to the action", async () => {
   const controller = new AbortController();
   let started!: () => void;
-  const ready = (() => {
+  const ready = (async () => {
     const {
       promise: pendingPromise,
       resolve,
@@ -87,7 +88,7 @@ it("propagates cancellation through an Effect handler to the action", async () =
     } catch (error) {
       rejectPending(error);
     }
-    return pendingPromise;
+    await pendingPromise;
   })();
   let actionSignal: AbortSignal | undefined;
   const finalized = vi.fn();
@@ -98,23 +99,30 @@ it("propagates cancellation through an Effect handler to the action", async () =
     }
     actionSignal = signal;
     started();
+    // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context, effecttsgo/unknown-in-effect-catch -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
     return Effect.tryPromise({
       catch: (error) => error,
-      try: () =>
-        (() => {
+      try: async () =>
+        await (async () => {
           const {
             promise: pendingPromise,
             resolve: _resolve,
             reject,
           } = Promise.withResolvers();
           try {
-            signal.addEventListener("abort", () => reject(signal.reason), {
-              once: true,
-            });
+            signal.addEventListener(
+              "abort",
+              () => {
+                reject(signal.reason);
+              },
+              {
+                once: true,
+              }
+            );
           } catch (error) {
             reject(error);
           }
-          return pendingPromise;
+          return await pendingPromise;
         })(),
     }).pipe(Effect.ensuring(Effect.sync(finalized)));
   };
@@ -183,7 +191,7 @@ it("routes HTTP calls with shared client types, CORS and typed error statuses", 
     code: "BAD_REQUEST",
   });
   expect(operations.action).toHaveBeenCalledTimes(2);
-  // eslint-disable-next-line prefer-promise-reject-errors -- Verify serialized failures from the runtime boundary.
+
   operations.query = () =>
     Effect.fail({ code: "INCOMPATIBLE_VERSION", message: "Reload" });
   await expect(client.queries({ name: "list" })).rejects.toMatchObject({
@@ -208,10 +216,9 @@ it("routes HTTP calls with shared client types, CORS and typed error statuses", 
 it("encodes gateway authentication errors in the oRPC format", async () => {
   const client = createORPCClient<PlatformClient>(
     new RPCLink({
-      fetch: () =>
-        Promise.resolve(
-          rpcErrorResponse({ code: "UNAUTHORIZED", message: "Expired" })
-        ),
+      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+      fetch: async () =>
+        rpcErrorResponse({ code: "UNAUTHORIZED", message: "Expired" }),
       origin: "https://runtime.test",
       url: "/rpc",
     })

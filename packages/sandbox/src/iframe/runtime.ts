@@ -1,13 +1,14 @@
 import * as v from "valibot";
 
-import { iframeReadyType, sandboxMessageType } from "../bridge";
-import { readElementProps } from "../host/serialize";
-import { HostToIframePayload, RemotePropsSchema } from "../protocol";
+import { iframeReadyType, sandboxMessageType } from "#bridge";
+import { readElementProps } from "#host/serialize";
+import { HostToIframePayload, RemotePropsSchema } from "#protocol";
 import type {
   IframeToHostPayload,
   RemoteCallbackBinding,
   RemoteNode,
-} from "../protocol";
+} from "#protocol";
+
 import { createIframeBackend } from "./backend";
 import { assertAppClient, renderClient } from "./resolve-view";
 import type { AppClient, ViewRequest } from "./resolve-view";
@@ -20,7 +21,7 @@ const readCallbacksImplementation = (
 ): RemoteCallbackBinding[] => {
   // oxlint-disable-next-line unicorn/prefer-dom-node-dataset -- SVG Element does not expose dataset in this public DOM type.
   const value = element.getAttribute("data-tailorkit-callbacks");
-  if (!value) {
+  if (!(value !== undefined && value !== null && value !== "")) {
     return [];
   }
   try {
@@ -51,8 +52,13 @@ export const startIframeRuntime = (options: {
     root,
     channel,
     parentWindow = window.parent,
-    // oxlint-disable-next-line no-inline-comments -- Vite requires the inline import annotation for a sandbox-selected module URL.
-    importModule = (url) => import(/* @vite-ignore */ url),
+
+    importModule = async (url: string): Promise<{ default?: unknown }> =>
+      v.parse(
+        v.object({ default: v.optional(v.unknown()) }),
+        // oxlint-disable-next-line no-inline-comments -- Vite requires this directive inside import() to preserve remote module loading.
+        await import(/* @vite-ignore */ url)
+      ),
   } = options;
   const nodeIds = new WeakMap<Node, string>();
   const nodes = new Map<string, WeakRef<Node>>();
@@ -71,26 +77,31 @@ export const startIframeRuntime = (options: {
       );
     }
   };
-  const tools = createIframeTools((data) =>
-    send({ data, type: "toolRequest" })
-  );
-  const backend = createIframeBackend((data) =>
-    send({ data, type: "backendSessionRequest" })
-  );
+  const tools = createIframeTools((data) => {
+    send({ data, type: "toolRequest" });
+  });
+  const backend = createIframeBackend((data) => {
+    send({ data, type: "backendSessionRequest" });
+  });
   const backendGlobal = globalThis;
   backendGlobal.__tailorkitTools = tools.bridge;
   backendGlobal.__tailorkitBackendSession = backend.getSession;
-  const sendError = (cause: unknown) =>
+  const sendError = (cause: unknown) => {
+    let message = String(cause);
+    if (cause instanceof Error) {
+      message =
+        cause.stack !== undefined && cause.stack !== ""
+          ? cause.stack
+          : cause.message;
+    }
     send({
-      data: {
-        message:
-          cause instanceof Error ? cause.stack || cause.message : String(cause),
-      },
+      data: { message },
       type: "error",
     });
+  };
   const getNodeId = (node: Node): string => {
     let id = nodeIds.get(node);
-    if (!id) {
+    if (!(id !== undefined && id !== null && id !== "")) {
       id = `n:${(nextNodeId += 1) - 1}`;
       nodeIds.set(node, id);
       nodes.set(id, new WeakRef(node));
@@ -118,7 +129,7 @@ export const startIframeRuntime = (options: {
       kind: "fragment",
     };
   };
-  const sendSnapshot = () =>
+  const sendSnapshot = () => {
     send({
       data: {
         revision: (revision += 1),
@@ -130,6 +141,7 @@ export const startIframeRuntime = (options: {
       },
       type: "snapshot",
     });
+  };
   const observer = new MutationObserver(() => {
     if (!rendering) {
       sendSnapshot();
@@ -163,8 +175,14 @@ export const startIframeRuntime = (options: {
     rendering = true;
     try {
       // SAFETY: The adapter reconstructs the same runtime contract, but TypeScript cannot relate the erased generic parameters across this library boundary.
-      // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- The adapter reconstructs the same runtime contract, but TypeScript cannot relate the erased generic parameters across this library boundary.
-      renderClient(client, props as unknown as ViewRequest, root);
+
+      renderClient(
+        client,
+        /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- The adapter reconstructs the same runtime contract, but TypeScript cannot relate the erased generic parameters across this library boundary. */
+        props as unknown as ViewRequest,
+        /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
+        root
+      );
     } finally {
       observer.takeRecords();
       rendering = false;
@@ -172,19 +190,22 @@ export const startIframeRuntime = (options: {
     sendSnapshot();
   };
   let pendingLoad = Promise.resolve();
-  const handleMessage = (event: MessageEvent) => {
-    if (
-      event.source !== parentWindow ||
-      event.data?.channel !== channel ||
-      event.data.type !== sandboxMessageType
-    ) {
+  const handleMessage = (event: MessageEvent<unknown>) => {
+    if (event.source !== parentWindow) {
       return;
     }
-    const parsed = v.safeParse(HostToIframePayload, event.data.payload);
+    const parsed = v.safeParse(
+      v.object({
+        channel: v.literal(channel),
+        payload: HostToIframePayload,
+        type: v.literal(sandboxMessageType),
+      }),
+      event.data
+    );
     if (!parsed.success) {
       return;
     }
-    const payload = parsed.output;
+    const { payload } = parsed.output;
     if (payload?.type === "toolResult") {
       tools.receive(payload.data);
       return;

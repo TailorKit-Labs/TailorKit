@@ -57,7 +57,7 @@ const RouteComponent = () => {
   );
   const [step, setStep] = useState<Step>("email");
   const [visible, setVisible] = useState(true);
-  const [email, setEmail] = useState(emailFromSearch || "");
+  const [email, setEmail] = useState(emailFromSearch ?? "");
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [socialError, setSocialError] = useState<string | null>(null);
   const [socialPending, setSocialPending] = useState<
@@ -66,6 +66,10 @@ const RouteComponent = () => {
   const [passkeyError, setPasskeyError] = useState<string | null>(null);
   const [passkeyPending, setPasskeyPending] = useState(false);
   const authPending = socialPending !== null || passkeyPending;
+  const primarySignInError =
+    passkeyError ?? socialError ?? error_description ?? "";
+  const signInError =
+    primarySignInError === "" ? authenticationError : primarySignInError;
 
   const transition = (nextStep: Step, nextEmail?: string) => {
     setVisible(false);
@@ -80,9 +84,9 @@ const RouteComponent = () => {
   };
 
   const emailForm = useAppForm({
-    defaultValues: { email: emailFromSearch || "" },
+    defaultValues: { email: emailFromSearch ?? "" },
     onSubmit: async ({ value }) => {
-      await (() => {
+      await (async () => {
         const {
           promise: pendingPromise,
           resolve,
@@ -93,7 +97,7 @@ const RouteComponent = () => {
         } catch (error) {
           rejectPending(error);
         }
-        return pendingPromise;
+        return await pendingPromise;
       })();
       transition("password", value.email);
     },
@@ -112,7 +116,11 @@ const RouteComponent = () => {
 
     try {
       const returnPath = getSameOriginPath(return_to, window.location.origin);
-      if (returnPath) {
+      if (
+        returnPath !== undefined &&
+        returnPath !== null &&
+        returnPath !== ""
+      ) {
         window.sessionStorage.setItem(
           "tailorkit.two-factor-return-to",
           returnPath
@@ -135,8 +143,7 @@ const RouteComponent = () => {
 
       if (result.error) {
         setSocialError(
-          result.error.message ||
-            result.error.statusText ||
+          (result.error.message ?? result.error.statusText) ||
             `${providerName} sign in failed`
         );
         setSocialPending(null);
@@ -155,7 +162,7 @@ const RouteComponent = () => {
     try {
       const result = await authClient.signIn.passkey();
       if (result.error) {
-        setPasskeyError(result.error.message || "Passkey sign in failed");
+        setPasskeyError(result.error.message ?? "Passkey sign in failed");
         setPasskeyPending(false);
         return;
       }
@@ -174,7 +181,11 @@ const RouteComponent = () => {
     onSubmit: async ({ value }) => {
       setPasswordError(null);
       const returnPath = getSameOriginPath(return_to, window.location.origin);
-      if (returnPath) {
+      if (
+        returnPath !== undefined &&
+        returnPath !== null &&
+        returnPath !== ""
+      ) {
         window.sessionStorage.setItem(
           "tailorkit.two-factor-return-to",
           returnPath
@@ -187,7 +198,10 @@ const RouteComponent = () => {
         {
           onError: (errorValue2) => {
             if (errorValue2.error.code === "EMAIL_NOT_VERIFIED") {
-              navigate({ search: { email, return_to }, to: "/verify-email" });
+              void navigate({
+                search: { email, return_to },
+                to: "/verify-email",
+              });
               return;
             }
             setPasswordError(
@@ -197,7 +211,11 @@ const RouteComponent = () => {
             );
           },
           onSuccess: async (context) => {
-            if (context.data?.twoFactorRedirect) {
+            if (
+              z
+                .object({ twoFactorRedirect: z.literal(true) })
+                .safeParse(context.data).success
+            ) {
               return;
             }
 
@@ -207,10 +225,14 @@ const RouteComponent = () => {
               return_to,
               window.location.origin
             );
-            if (returnPathValue) {
+            if (
+              returnPathValue !== undefined &&
+              returnPathValue !== null &&
+              returnPathValue !== ""
+            ) {
               window.location.href = returnPathValue;
             } else {
-              navigate({ to: "/" });
+              void navigate({ to: "/" });
             }
           },
         }
@@ -250,44 +272,52 @@ const RouteComponent = () => {
                   onSubmit={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    emailForm.handleSubmit();
+                    void emailForm.handleSubmit();
                   }}
                 >
                   <CardPanel>
                     <div className="flex flex-col gap-4">
                       <div className="flex flex-col gap-2">
-                        {(passkeyError ||
-                          socialError ||
-                          error_description ||
-                          authenticationError) && (
+                        {((passkeyError ??
+                          socialError ??
+                          error_description ??
+                          "") !== "" ||
+                          (authenticationError !== undefined &&
+                            authenticationError !== null &&
+                            authenticationError !== "")) && (
                           <p className="text-sm text-destructive" role="alert">
-                            {passkeyError ||
-                              socialError ||
-                              error_description ||
-                              authenticationError}
+                            {signInError}
                           </p>
                         )}
-                        {socialProvidersQuery.data?.github && (
+                        {socialProvidersQuery.data?.github === true && (
                           <Button
                             type="button"
                             variant="outline"
                             className="w-full"
                             disabled={authPending && socialPending !== "github"}
                             loading={socialPending === "github"}
-                            onClick={() => signInWithSocial("github")}
+                            onClick={() => {
+                              void (async () => {
+                                await signInWithSocial("github");
+                              })();
+                            }}
                           >
                             <GitHubIcon />
                             Continue with GitHub
                           </Button>
                         )}
-                        {socialProvidersQuery.data?.google && (
+                        {socialProvidersQuery.data?.google === true && (
                           <Button
                             type="button"
                             variant="outline"
                             className="w-full"
                             disabled={authPending && socialPending !== "google"}
                             loading={socialPending === "google"}
-                            onClick={() => signInWithSocial("google")}
+                            onClick={() => {
+                              void (async () => {
+                                await signInWithSocial("google");
+                              })();
+                            }}
                           >
                             <GoogleIcon className="size-4 shrink-0" />
                             Continue with Google
@@ -299,7 +329,11 @@ const RouteComponent = () => {
                           className="w-full"
                           disabled={authPending && !passkeyPending}
                           loading={passkeyPending}
-                          onClick={() => signInWithPasskey()}
+                          onClick={() => {
+                            void (async () => {
+                              await signInWithPasskey();
+                            })();
+                          }}
                         >
                           <KeyRoundIcon
                             aria-hidden="true"
@@ -342,25 +376,29 @@ const RouteComponent = () => {
                   onSubmit={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    passwordForm.handleSubmit();
+                    void passwordForm.handleSubmit();
                   }}
                 >
                   <CardPanel>
                     <div className="flex flex-col gap-4">
                       <button
                         type="button"
-                        onClick={() => transition("email")}
+                        onClick={() => {
+                          transition("email");
+                        }}
                         className="flex w-fit items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
                       >
                         <ArrowLeftIcon className="size-3.5" />
                         <span>{email}</span>
                       </button>
 
-                      {passwordError && (
-                        <passwordForm.FormError>
-                          {passwordError}
-                        </passwordForm.FormError>
-                      )}
+                      {passwordError !== undefined &&
+                        passwordError !== null &&
+                        passwordError !== "" && (
+                          <passwordForm.FormError>
+                            {passwordError}
+                          </passwordForm.FormError>
+                        )}
 
                       <passwordForm.AppField name="password">
                         {(field) => (

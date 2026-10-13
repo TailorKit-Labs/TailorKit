@@ -1,6 +1,7 @@
 import type { Client as PlatformClient } from "@tailorkit/client-platform/client/client/index";
 
-import type { TailorKitSchema } from "../schema/index";
+import type { TailorKitSchema } from "#schema/index";
+
 import type { TailorKitScopeSchemas } from "./scope";
 import type { TailorKitPlatformOptions, TailorKitScopes } from "./types";
 

@@ -1,5 +1,10 @@
 import { readFile } from "node:fs/promises";
 
+import {
+  parsePackageManifest,
+  parsePrereleaseState,
+} from "./package-manifest.mjs";
+
 const publishablePackages = [
   "packages/tailorkit/package.json",
   "packages/app/package.json",
@@ -12,19 +17,19 @@ const publishablePackages = [
 ];
 
 const allowedPrerelease = /-(?:alpha|beta)(?:\.|$)/u;
-// oxlint-disable-next-line no-restricted-properties -- Read GitHub Actions metadata in a standalone release script.
+
 const releaseRepository =
   // oxlint-disable-next-line no-restricted-properties -- The standalone release script reads GitHub Actions metadata.
   process.env.GITHUB_REPOSITORY ?? "tailorkit-labs/TailorKit";
 const expectedRepositoryUrl = `git+https://github.com/${releaseRepository}.git`;
 const errors = [];
-const manifests = [];
+const manifests = await Promise.all(
+  publishablePackages.map(async (manifestPath) =>
+    parsePackageManifest(await readFile(manifestPath, "utf-8"))
+  )
+);
 
-for (const manifestPath of publishablePackages) {
-  // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
-  const manifest = JSON.parse(await readFile(manifestPath, "utf-8"));
-  manifests.push(manifest);
-
+for (const manifest of manifests) {
   if (manifest.private === true) {
     errors.push(`${manifest.name} is still private`);
   }
@@ -69,7 +74,9 @@ for (const manifest of manifests) {
   }
 }
 
-const preState = JSON.parse(await readFile(".changeset/pre.json", "utf-8"));
+const preState = parsePrereleaseState(
+  await readFile(".changeset/pre.json", "utf-8")
+);
 
 if (preState.mode !== "pre" || !["alpha", "beta"].includes(preState.tag)) {
   errors.push("Changesets must remain in alpha or beta prerelease mode");

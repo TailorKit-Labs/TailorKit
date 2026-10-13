@@ -41,7 +41,8 @@ it("uses existing platform deployment endpoints and scope from the agent JWT", a
   vi.stubEnv("TAILORKIT_AGENT_TOKEN", jwt);
   const fetch = vi
     .spyOn(globalThis, "fetch")
-    .mockImplementation(async () => await Response.json({}));
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    .mockImplementation(async () => Response.json({}));
   const client = createDeploymentClient("http://localhost:1", jwt);
   await client.deployments.create({
     appId: "app-one",
@@ -60,6 +61,7 @@ it("uses existing platform deployment endpoints and scope from the agent JWT", a
     rollout: true,
   });
   // SAFETY: The exercised fetch call constructs this Request; the test inspects the captured request after asserting the call occurred.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
   const requests = fetch.mock.calls.map(([input]) => input as Request);
   expect(requests.map((request) => request.url)).toEqual([
     "https://platform.test/api/platform/deployments",
@@ -73,6 +75,7 @@ it("uses existing platform deployment endpoints and scope from the agent JWT", a
   }
   await client.apps.create({ description: null, name: "App" });
   // SAFETY: The exercised fetch call constructs this Request; the test inspects the captured request after asserting the call occurred.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
   expect((requireValue(fetch.mock.lastCall)[0] as Request).url).toBe(
     "https://platform.test/api/platform/apps"
   );
@@ -102,12 +105,12 @@ it("does not fall back when an explicitly supplied JWT is invalid or empty", () 
 
 it("retains actionable platform authentication errors", async () => {
   vi.stubEnv("TAILORKIT_AGENT_TOKEN", await token());
-  vi.spyOn(globalThis, "fetch").mockImplementation(
-    async () =>
-      await Response.json(
-        { code: "UNAUTHORIZED", message: "Agent authorization revoked." },
-        { status: 401 }
-      )
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
+    Response.json(
+      { code: "UNAUTHORIZED", message: "Agent authorization revoked." },
+      { status: 401 }
+    )
   );
   const agent = requireValue(getAgentAuth());
   await expect(
@@ -153,6 +156,7 @@ it("routes every authenticated CLI surface through existing platform endpoints f
     // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
     .mockImplementation(async (input) => {
       // SAFETY: The exercised fetch call constructs this Request; the test inspects the captured request after asserting the call occurred.
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
       const request = input as Request;
       expect(request.headers.get("authorization")).toBe(`Bearer ${jwt}`);
       expect(request.redirect).toBe("error");
@@ -189,6 +193,7 @@ it("routes every authenticated CLI surface through existing platform endpoints f
     { type: "finish" },
   ]);
   // SAFETY: The exercised fetch call constructs this Request; the test inspects the captured request after asserting the call occurred.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
   expect(fetch.mock.calls.map(([input]) => (input as Request).url)).toEqual([
     "https://platform.test/api/platform/cli-auth/verify-token",
     "https://platform.test/api/platform/apps/list",
@@ -197,9 +202,9 @@ it("routes every authenticated CLI surface through existing platform endpoints f
     "https://platform.test/api/platform/preview/session-one/stop",
     "https://platform.test/api/platform/app-agent/chat",
   ]);
-  expect(() => client.apps.list({ scopes: ["other"] })).toThrow(
-    "Requested scope"
-  );
+  expect(() => {
+    void client.apps.list({ scopes: ["other"] });
+  }).toThrow("Requested scope");
 });
 
 it("discovers file authorization for all commands, with environment-token precedence", async () => {
@@ -219,6 +224,7 @@ it("discovers file authorization for all commands, with environment-token preced
     }).cliAuth.verifyToken({});
     // SAFETY: The exercised fetch call constructs this Request; the test inspects the captured request after asserting the call occurred.
     expect(
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
       (requireValue(fetch.mock.lastCall)[0] as Request).headers.get(
         "authorization"
       )

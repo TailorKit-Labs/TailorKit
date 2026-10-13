@@ -42,7 +42,7 @@ export const Progress = ({
     data-slot="progress"
     {...props}
   >
-    {children || (
+    {children ?? (
       <ProgressTrack>
         <ProgressIndicator />
       </ProgressTrack>

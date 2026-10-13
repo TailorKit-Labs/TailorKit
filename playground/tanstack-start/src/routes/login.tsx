@@ -9,5 +9,5 @@ const LoginPage = () => (
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
-  loader: () => loadSignInChoices(),
+  loader: async () => await loadSignInChoices(),
 });

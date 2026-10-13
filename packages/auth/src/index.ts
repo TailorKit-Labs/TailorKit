@@ -48,7 +48,8 @@ const noopWaitUntil = (promise: Promise<unknown>): void => {
 // then issue the same short-lived challenge used by the two-factor plugin.
 const enforceTwoFactorAfterSocialSignIn = createAuthMiddleware(async (ctx) => {
   if (ctx.path !== "/callback/:id" && ctx.path !== "/oauth-proxy-callback") {
-    return;
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
   }
 
   const { newSession } = ctx.context;
@@ -60,7 +61,8 @@ const enforceTwoFactorAfterSocialSignIn = createAuthMiddleware(async (ctx) => {
     !("twoFactorEnabled" in user) ||
     user.twoFactorEnabled !== true
   ) {
-    return;
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
   }
 
   deleteSessionCookie(ctx, true);
@@ -98,28 +100,45 @@ const createSecondaryStorage = (): SecondaryStorage | undefined => {
   const kv = getKV();
 
   if (!kv) {
-    return;
+    return undefined;
   }
 
   return {
-    delete: (key: string) => kv.delete(key),
-    get: (key: string) => kv.get(key),
-    getAndDelete: (key: string) => kv.getAndDelete(key),
-    increment: (key: string, ttl: number) => kv.increment(key, ttl),
-    set: (key: string, value: string, ttl?: number) =>
-      kv.set(key, value, { ttl }),
+    delete: async (key: string) => {
+      await kv.delete(key);
+    },
+    get: async (key: string) => await kv.get(key),
+    getAndDelete: async (key: string) => await kv.getAndDelete(key),
+    increment: async (key: string, ttl: number) => await kv.increment(key, ttl),
+    set: async (key: string, value: string, ttl?: number) => {
+      await kv.set(key, value, { ttl });
+    },
   };
 };
 
 const socialProviders: NonNullable<BetterAuthOptions["socialProviders"]> = {};
-if (env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET) {
+if (
+  env.GITHUB_CLIENT_ID !== undefined &&
+  env.GITHUB_CLIENT_ID !== null &&
+  env.GITHUB_CLIENT_ID !== "" &&
+  env.GITHUB_CLIENT_SECRET !== undefined &&
+  env.GITHUB_CLIENT_SECRET !== null &&
+  env.GITHUB_CLIENT_SECRET !== ""
+) {
   socialProviders.github = {
     clientId: env.GITHUB_CLIENT_ID,
     clientSecret: env.GITHUB_CLIENT_SECRET,
     scope: ["user:email"],
   };
 }
-if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
+if (
+  env.GOOGLE_CLIENT_ID !== undefined &&
+  env.GOOGLE_CLIENT_ID !== null &&
+  env.GOOGLE_CLIENT_ID !== "" &&
+  env.GOOGLE_CLIENT_SECRET !== undefined &&
+  env.GOOGLE_CLIENT_SECRET !== null &&
+  env.GOOGLE_CLIENT_SECRET !== ""
+) {
   socialProviders.google = {
     clientId: env.GOOGLE_CLIENT_ID,
     clientSecret: env.GOOGLE_CLIENT_SECRET,
@@ -134,7 +153,8 @@ export const getSocialProviderAvailability = () => ({
 const buildAuth = () => {
   const db = createDb();
 
-  const backgroundTaskHandler = env.VERCEL ? vercelWaitUntil : noopWaitUntil;
+  const backgroundTaskHandler =
+    env.VERCEL === true ? vercelWaitUntil : noopWaitUntil;
   const secondaryStorage = createSecondaryStorage();
   const productionUrl = getProductionUrl(env);
   const passkeyRpID =
@@ -216,9 +236,9 @@ const buildAuth = () => {
       emailOTP({
         expiresIn: 600,
         overrideDefaultEmailVerification: true,
-        sendVerificationOTP: ({ email, otp, type }) => {
+        // oxlint-disable-next-line eslint/require-await -- This asynchronous protocol method resolves synchronously but must preserve Promise results and rejected exceptions.
+        sendVerificationOTP: async ({ email, otp, type }) => {
           backgroundTaskHandler(sendBetterAuthOtpEmail({ email, otp, type }));
-          return Promise.resolve();
         },
         sendVerificationOnSignUp: false,
         storeOTP: "hashed",
@@ -227,8 +247,10 @@ const buildAuth = () => {
         ac,
         allowUserToCreateOrganization: false,
         organizationHooks: {
-          beforeCreateOrganization: ({ organization: organizationValue }) =>
-            Promise.resolve(initializePublicTeamId(organizationValue)),
+          // oxlint-disable-next-line eslint/require-await -- This asynchronous protocol method resolves synchronously but must preserve Promise results and rejected exceptions.
+          beforeCreateOrganization: async ({
+            organization: organizationValue,
+          }) => initializePublicTeamId(organizationValue),
         },
         roles,
         schema: {
@@ -273,14 +295,21 @@ const buildAuth = () => {
               storage: "database" as const,
             }),
       }),
-      ...(env.BETTER_AUTH_API_KEY
+      ...(env.BETTER_AUTH_API_KEY !== undefined &&
+      env.BETTER_AUTH_API_KEY !== null &&
+      env.BETTER_AUTH_API_KEY !== ""
         ? [
             dash({
               apiKey: env.BETTER_AUTH_API_KEY,
             }),
           ]
         : []),
-      ...(productionUrl && env.OAUTH_PROXY_SECRET
+      ...(productionUrl !== undefined &&
+      productionUrl !== null &&
+      productionUrl !== "" &&
+      env.OAUTH_PROXY_SECRET !== undefined &&
+      env.OAUTH_PROXY_SECRET !== null &&
+      env.OAUTH_PROXY_SECRET !== ""
         ? [
             oAuthProxy({
               productionURL: productionUrl,

@@ -43,12 +43,17 @@ export const getDemoSessionFromRequest = (
   request: Request
 ): DemoSession | null => {
   const value = getCookie(request.headers.get("cookie"), demoSessionCookie);
-  if (!value) {
+  if (!(value !== undefined && value !== null && value !== "")) {
     return null;
   }
 
   const [userId, teamId] = value.split(".");
-  if (!userId || !teamId) {
+  if (
+    userId === undefined ||
+    userId === "" ||
+    teamId === undefined ||
+    teamId === ""
+  ) {
     return null;
   }
 

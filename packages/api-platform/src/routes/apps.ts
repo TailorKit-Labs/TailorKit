@@ -150,7 +150,7 @@ export const createAppRecord = async (
     .insert(app)
     .values({
       createdByAgent,
-      description: input.description?.trim() || undefined,
+      description: input.description?.trim() ?? undefined,
       name: input.name.trim(),
       projectId: context.project.id,
       publicId: await createUniqueAppPublicId(context.project.id),
@@ -238,7 +238,7 @@ const updateApp = cliRouter
         description:
           input.body.description === undefined
             ? undefined
-            : input.body.description?.trim() || null,
+            : (input.body.description?.trim() ?? null),
         name: input.body.name?.trim(),
       })
       .where(eq(app.id, context.app.id))
@@ -317,7 +317,11 @@ const deploy = cliRouter
           status: "verified",
         },
       });
-      if (server?.checksum) {
+      if (
+        server?.checksum !== undefined &&
+        server?.checksum !== null &&
+        server?.checksum !== ""
+      ) {
         await publishRuntimeMetadata(
           {
             appId: context.app.id,

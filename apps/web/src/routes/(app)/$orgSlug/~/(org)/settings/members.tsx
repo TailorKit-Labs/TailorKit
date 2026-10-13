@@ -45,15 +45,15 @@ const OrgSettingsMembers = () => {
     currentMember?.role === "owner" || currentMember?.role === "admin";
 
   const removeMutation = useMutation({
-    mutationFn: (memberId: string) =>
-      client.org.removeMember({ memberId, orgSlug }),
+    mutationFn: async (memberId: string) =>
+      await client.org.removeMember({ memberId, orgSlug }),
     onError: (cause: unknown) => {
       const message =
         cause instanceof Error ? cause.message : "Failed to remove member";
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(
+      void queryClient.invalidateQueries(
         orpc.org.getMembers.queryOptions({ input: { orgSlug } })
       );
       toastManager.add({ title: "Member removed", type: "success" });
@@ -61,8 +61,8 @@ const OrgSettingsMembers = () => {
   });
 
   const resendMutation = useMutation({
-    mutationFn: ({ email, role }: { email: string; role: string }) =>
-      client.org.inviteMember({
+    mutationFn: async ({ email, role }: { email: string; role: string }) =>
+      await client.org.inviteMember({
         email,
         orgSlug,
         role: z.enum(["member", "admin"]).parse(role),
@@ -78,15 +78,15 @@ const OrgSettingsMembers = () => {
   });
 
   const revokeMutation = useMutation({
-    mutationFn: (invitationId: string) =>
-      client.org.revokeInvitation({ invitationId, orgSlug }),
+    mutationFn: async (invitationId: string) =>
+      await client.org.revokeInvitation({ invitationId, orgSlug }),
     onError: (cause: unknown) => {
       const message =
         cause instanceof Error ? cause.message : "Failed to revoke invitation";
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(
+      void queryClient.invalidateQueries(
         orpc.org.getOrgInvitations.queryOptions({ input: { orgSlug } })
       );
       toastManager.add({ title: "Invitation revoked", type: "success" });
@@ -109,10 +109,10 @@ const OrgSettingsMembers = () => {
   );
 
   const invalidateAll = useCallback(() => {
-    queryClient.invalidateQueries(
+    void queryClient.invalidateQueries(
       orpc.org.getMembers.queryOptions({ input: { orgSlug } })
     );
-    queryClient.invalidateQueries(
+    void queryClient.invalidateQueries(
       orpc.org.getOrgInvitations.queryOptions({ input: { orgSlug } })
     );
   }, [orgSlug, queryClient]);
@@ -171,7 +171,9 @@ const OrgSettingsMembers = () => {
                 placeholder="Search"
                 type="search"
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                }}
               />
               <InputGroupAddon>
                 <SearchIcon />

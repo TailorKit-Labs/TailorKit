@@ -20,6 +20,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
 
 const actionRunner = (app: AppDefinition, calls: ActionCalls) => {
   const run = createActionExecution(app);
+  // oxlint-disable-next-line typescript/promise-function-async -- These capability guards must throw synchronously before dispatching asynchronous work.
   return (input: Invocation, identity: Identity, signal?: AbortSignal) =>
     run(input, identity, calls, signal);
 };
@@ -58,7 +59,9 @@ it("awaits actions and exposes scoped calls instead of a database handle", async
         expect(Object.isFrozen(context.mutations)).toBe(true);
         expect(context.identity).toEqual(identity);
         const prior = await context.queries.read({});
-        return context.mutations.write({ value: prior + context.args.delta });
+        return await context.mutations.write({
+          value: prior + context.args.delta,
+        });
       },
       result: z.number(),
     }),
@@ -69,9 +72,11 @@ it("awaits actions and exposes scoped calls instead of a database handle", async
   expect(mutateCall).toHaveBeenCalledWith({
     args: { value: 6 },
     name: "write",
+    // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
     requestId: expect.any(String),
   });
 });
+
 it("validates kind, arguments, expiry and output", async () => {
   const calls = { mutate: vi.fn(), query: vi.fn() };
   // SAFETY: This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input.
@@ -79,6 +84,7 @@ it("validates kind, arguments, expiry and output", async () => {
     ...functions,
     invalid: action({
       args: z.object({ value: z.string() }),
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
       handler: () => 1 as never,
       result: z.string(),
     }),
@@ -108,6 +114,7 @@ it("validates kind, arguments, expiry and output", async () => {
   });
   expect(calls.query).not.toHaveBeenCalled();
 });
+
 it("does not retry actions or roll back earlier independent mutations after failure", async () => {
   const mutate = vi.fn().mockResolvedValue(1);
   const sideEffect = vi.fn();
@@ -140,6 +147,7 @@ it("does not retry actions or roll back earlier independent mutations after fail
   });
   expect(mutate).toHaveBeenCalledTimes(1);
 });
+
 it("revokes callbacks after completion and cancellation", async () => {
   let context!: ActionContext<typeof functions>;
   const mutate = vi.fn();
@@ -158,9 +166,9 @@ it("revokes callbacks after completion and cancellation", async () => {
     { args: {}, name: "capture" },
     identity
   );
-  expect(() => context.mutations.write({ value: 1 })).toThrow(
-    "Action has ended"
-  );
+  expect(() => {
+    void context.mutations.write({ value: 1 });
+  }).toThrow("Action has ended");
   const controller = new AbortController();
   controller.abort();
   await expect(
@@ -176,6 +184,7 @@ it("revokes callbacks after completion and cancellation", async () => {
 it("revokes a running action's callbacks before its asynchronous work finishes", async () => {
   let context!: ActionContext<typeof functions>;
   let finish!: () => void;
+  // oxlint-disable-next-line typescript/promise-function-async -- These capability guards must throw synchronously before dispatching asynchronous work.
   const external = (() => {
     const {
       promise: pendingPromise,
@@ -209,21 +218,21 @@ it("revokes a running action's callbacks before its asynchronous work finishes",
     controller.signal
   );
   controller.abort();
-  expect(() => context.mutations.write({ value: 1 })).toThrow(
-    "Action has ended"
-  );
+  expect(() => {
+    void context.mutations.write({ value: 1 });
+  }).toThrow("Action has ended");
   finish();
   await expect(running).rejects.toThrow("Action has ended");
   expect(mutate).not.toHaveBeenCalled();
 });
 
-// oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-it("rejects action call collections that are not registered under the same names", async () => {
+it("rejects action call collections that are not registered under the same names", () => {
   const calls = { mutate: vi.fn(), query: vi.fn() };
   const app = defineServer({
     bad: action({
       args: z.object({}),
       functions: { missing: functions.write },
+      // oxlint-disable-next-line typescript/promise-function-async -- These capability guards must throw synchronously before dispatching asynchronous work.
       handler: (ctx) => ctx.mutations.missing({ value: 1 }),
     }),
     write: functions.write,
@@ -238,6 +247,7 @@ it("reuses compiled nested bindings while isolating concurrent calls and retaine
   const nested = { records: { read: functions.read, write: functions.write } };
   const contexts: ActionContext<typeof nested>[] = [];
   let release!: () => void;
+  // oxlint-disable-next-line typescript/promise-function-async -- These capability guards must throw synchronously before dispatching asynchronous work.
   const waiting = (() => {
     const {
       promise: pendingPromise,
@@ -261,7 +271,7 @@ it("reuses compiled nested bindings while isolating concurrent calls and retaine
         expect(Object.keys(context.queries.records)).toEqual(["read"]);
         expect(Object.keys(context.mutations.records)).toEqual(["write"]);
         await waiting;
-        return context.queries.records.read({});
+        return await context.queries.records.read({});
       },
     }),
   });
@@ -290,9 +300,9 @@ it("reuses compiled nested bindings while isolating concurrent calls and retaine
     });
   }
   for (const context of contexts) {
-    expect(() => context.mutations.records.write({ value: 1 })).toThrow(
-      "Action has ended"
-    );
+    expect(() => {
+      void context.mutations.records.write({ value: 1 });
+    }).toThrow("Action has ended");
   }
 });
 
@@ -311,12 +321,15 @@ it("runs generated instance resolvers with all registered queries and no write c
           "signal",
         ]);
         // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
         const queries = context.queries as {
+          // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
           reports: { read: (args: Record<never, never>) => Promise<number> };
         };
         expect(Object.keys(queries.reports)).toEqual(["read"]);
         expect(context.context).toEqual({ subjectId: "user" });
         expect(context.identity).toEqual(identity);
+        // oxlint-disable-next-line typescript/promise-function-async -- These capability guards must throw synchronously before dispatching asynchronous work.
         retainedQuery = () => queries.reports.read({});
         const count = await retainedQuery();
         return [
@@ -508,27 +521,29 @@ it("binds backend tool calls to the active verified execution and closes escaped
   const implementation = defineServer({
     read: action({
       args: z.undefined(),
-      // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
+
       handler: async (ctx) => {
         expect(ctx.identity).toBe(identity);
         expect(ctx.scope).toBe(identity.scope);
-        // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-        escaped = () =>
-          (
-            ctx.tools as {
-              billing: {
-                read: (input: { id: string }) => Promise<{ amount: number }>;
-              };
-            }
-          ).billing.read({ id: "invoice" });
-        return escaped();
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- The dynamic tool registry erases this fixture-owned method signature. */
+        // SAFETY: This fixture installs billing.read in the tool registry before capturing this capability.
+        const billingTools = ctx.tools as {
+          billing: {
+            read: (input: { id: string }) => Promise<{ amount: number }>;
+          };
+        };
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
+        // oxlint-disable-next-line typescript/promise-function-async -- The captured capability must reject escaped access synchronously.
+        escaped = () => billingTools.billing.read({ id: "invoice" });
+        return await escaped();
       },
     }),
   });
   const calls = {
     mutate: async () => {},
     query: async () => {},
-    tool: vi.fn(async () => await { amount: 42 }),
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    tool: vi.fn(async () => ({ amount: 42 })),
   };
   const execute = createActionExecution(implementation);
   expect(await execute({ name: "read" }, identity, calls)).toEqual({
@@ -537,5 +552,7 @@ it("binds backend tool calls to the active verified execution and closes escaped
   expect(calls.tool).toHaveBeenCalledExactlyOnceWith("billing.read", {
     id: "invoice",
   });
-  expect(() => requireValue(escaped)()).toThrow("Action has ended");
+  expect(() => {
+    void requireValue(escaped)();
+  }).toThrow("Action has ended");
 });

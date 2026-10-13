@@ -2,8 +2,9 @@ import { createORPCClient } from "@orpc/client";
 import { RPCLink as FetchLink } from "@orpc/client/fetch";
 import { RPCLink } from "@orpc/client/websocket";
 
-import { AppError, appError } from "../errors";
-import type { PlatformClient, SubscriptionClient } from "../protocol";
+import { AppError, appError } from "#errors";
+import type { PlatformClient, SubscriptionClient } from "#protocol";
+
 import type { Reference } from "./reference";
 import { sessionRenewalDelay } from "./session";
 import type { Session } from "./session";
@@ -14,7 +15,7 @@ export { reference } from "./reference";
 
 export type { Reference, References } from "./reference";
 
-export { AppError } from "../errors";
+export { AppError } from "#errors";
 
 type InputArguments<I> = undefined extends I ? [args?: I] : [args: I];
 
@@ -71,11 +72,14 @@ const backendUrl = (session: Session, route: string) => {
   return url;
 };
 
-const waitForRetry = (signal: AbortSignal, delayMs: number): Promise<void> => {
+const waitForRetry = async (
+  signal: AbortSignal,
+  delayMs: number
+): Promise<void> => {
   if (signal.aborted) {
-    return Promise.resolve();
+    return;
   }
-  return (() => {
+  await (async () => {
     const {
       promise: pendingPromise,
       resolve,
@@ -96,7 +100,7 @@ const waitForRetry = (signal: AbortSignal, delayMs: number): Promise<void> => {
     } catch (error) {
       rejectPending(error);
     }
-    return pendingPromise;
+    await pendingPromise;
   })();
 };
 
@@ -118,12 +122,12 @@ export const createClient = (
   const requests = new Set<AbortController>();
   const getSession =
     options.getSession ??
-    ((request: { refresh: boolean }) => {
+    (async (request: { refresh: boolean }) => {
       const bridge = globalThis.__tailorkitBackendSession;
       if (!bridge) {
         throw new AppError("UNAVAILABLE", "The host JWT bridge is unavailable");
       }
-      return bridge(request);
+      return await bridge(request);
     });
   const wire = createORPCClient<SubscriptionClient>(
     new RPCLink({
@@ -226,14 +230,19 @@ export const createClient = (
               headers: { authorization: `Bearer ${session.token}` },
               origin: url.origin,
               // SAFETY: URL.pathname always starts with a slash for this HTTP session URL, satisfying the transport's absolute route-path type.
-              url: url.pathname as `/${string}`,
+              url:
+                /* oxlint-disable typescript/no-unsafe-type-assertion -- URL.pathname always starts with a slash for this HTTP session URL, satisfying the transport's absolute route-path type. */
+                url.pathname as `/${string}`,
+              /* oxlint-enable typescript/no-unsafe-type-assertion */
             })
           );
           if (kind === "mutations") {
             // SAFETY: The mutation branch assigned invocation.requestId before entering this retry loop.
             // oxlint-disable-next-line no-await-in-loop -- Each retry depends on the result of the previous attempt.
             return await http.mutations(
+              /* oxlint-disable typescript/no-unsafe-type-assertion -- The mutation branch assigned invocation.requestId before entering this retry loop. */
               invocation as typeof input & { requestId: string },
+              /* oxlint-enable typescript/no-unsafe-type-assertion */
               {
                 signal: controller.signal,
               }
@@ -273,9 +282,11 @@ export const createClient = (
   };
   return {
     // SAFETY: The action reference owns its output type, and the server validates that registered action before the shared transport returns its erased result.
-    action: (ref, ...[args]) =>
-      call("actions", { args, name: ref.name }) as Promise<never>,
-    close() {
+    action: async (ref, ...[args]) =>
+      await /* oxlint-disable typescript/no-unsafe-type-assertion -- The action reference owns its output type, and the server validates that registered action before the shared transport returns its erased result. */
+      (call("actions", { args, name: ref.name }) as Promise<never>),
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
+    close: () => {
       closed = true;
       for (const stop of stops) {
         stop();
@@ -287,16 +298,20 @@ export const createClient = (
       socket?.close();
     },
     // SAFETY: The mutation reference owns its output type, and the server validates that registered mutation before the shared transport returns its erased result.
-    mutate: (ref, ...[args, settings]) =>
-      call("mutations", {
+    mutate: async (ref, ...[args, settings]) =>
+      await /* oxlint-disable typescript/no-unsafe-type-assertion -- The mutation reference owns its output type, and the server validates that registered mutation before the shared transport returns its erased result. */
+      (call("mutations", {
         args,
         name: ref.name,
         requestId: settings?.requestId ?? crypto.randomUUID(),
-      }) as Promise<never>,
+      }) as Promise<never>),
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
     // SAFETY: The query reference owns its output type, and the server validates that registered query before the shared transport returns its erased result.
-    query: (ref, ...[args]) =>
-      call("queries", { args, name: ref.name }) as Promise<never>,
-    subscribe(ref, args, next, settings = {}) {
+    query: async (ref, ...[args]) =>
+      await /* oxlint-disable typescript/no-unsafe-type-assertion -- The query reference owns its output type, and the server validates that registered query before the shared transport returns its erased result. */
+      (call("queries", { args, name: ref.name }) as Promise<never>),
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
+    subscribe: (ref, args, next, settings = {}) => {
       if (closed) {
         throw new AppError("UNAVAILABLE", "App client closed");
       }
@@ -321,7 +336,11 @@ export const createClient = (
               }
               // SAFETY: This subscription was opened with ref.name and args; its listener receives only results from that same registered query, whose output generic is erased by the transport.
               // oxlint-disable-next-line node/callback-return -- This is a value listener or middleware continuation, not a Node-style completion callback.
-              next(value as never);
+              next(
+                /* oxlint-disable typescript/no-unsafe-type-assertion -- This subscription was opened with ref.name and args; its listener receives only results from that same registered query, whose output generic is erased by the transport. */
+                value as never
+                /* oxlint-enable typescript/no-unsafe-type-assertion */
+              );
             }
           } catch (error) {
             if (controller.signal.aborted || closed) {
@@ -350,7 +369,7 @@ export const createClient = (
       };
       void (async () => {
         try {
-          return await run();
+          await run();
         } catch (error) {
           stop();
           settings.onError?.(appError(error));

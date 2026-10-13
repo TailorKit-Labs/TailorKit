@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-argument, typescript/no-unsafe-member-access, typescript/no-unsafe-assignment, typescript/no-unsafe-call -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 /* oxlint-disable require-await, require-unicode-regexp, unicorn/no-await-expression-member -- the in-memory KV fake mirrors async adapter methods. */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -10,12 +11,17 @@ import {
   previewMessageBytes,
 } from "./preview-build-store.ts";
 
+/** @returns {Parameters<typeof createPreviewBuildStore>[0] & {advance: (milliseconds: number) => void}} In-memory adapter and its deterministic clock. */
 const fakeKV = () => {
+  /** @type {Map<string, string>} */
   const data = new Map();
+  /** @type {Map<string, number>} */
   const expiries = new Map();
+  /** @type {Map<string, Set<(message: string) => void>>} */
   const listeners = new Map();
   let revision = 0;
   let now = 0;
+  /** @param {string} key Fixture entry to read. */
   const get = (key) => {
     const expiresAt = expiries.get(key);
     if (expiresAt !== undefined && expiresAt <= now) {
@@ -24,14 +30,20 @@ const fakeKV = () => {
     }
     return data.get(key) ?? null;
   };
+  /** @param {string} key Fixture entry. @param {string} value Stored bytes. @param {{ttl?: number} | undefined} options Expiry policy. */
   const set = (key, value, options) => {
     data.set(key, value);
-    if (options?.ttl) {
+    if (
+      options?.ttl !== undefined &&
+      options?.ttl !== 0 &&
+      !Number.isNaN(options?.ttl)
+    ) {
       expiries.set(key, now + options.ttl * 1000);
     } else {
       expiries.delete(key);
     }
   };
+  /** @param {string} key Fixture entry to remove. */
   const remove = (key) => {
     data.delete(key);
     expiries.delete(key);
@@ -73,7 +85,10 @@ const fakeKV = () => {
         return false;
       }
       const current = get(key);
-      if (current && JSON.parse(current).revision >= revisionValue) {
+      if (
+        (current ?? "") !== "" &&
+        JSON.parse(current).revision >= revisionValue
+      ) {
         return false;
       }
       set(key, value, { ttl });
@@ -100,7 +115,9 @@ const fakeKV = () => {
   };
 };
 
+/** @param {Buffer} bytes Fixture bytes to hash. */
 const checksum = (bytes) => createHash("sha256").update(bytes).digest("hex");
+/** @param {[string, Buffer][]} files Named fixture assets. */
 const manifestFor = (files) => ({
   files: files.map(([path, bytes]) => ({
     chunks: Math.ceil(bytes.length / previewChunkBytes),
@@ -204,7 +221,15 @@ test("a failed pointer write leaves a verified build retryable with the same rev
       failPointer = false;
       throw new Error("pointer write failed");
     }
-    return write(key, ownerKey, endedKey, expectedOwner, value, revision, ttl);
+    return await write(
+      key,
+      ownerKey,
+      endedKey,
+      expectedOwner,
+      value,
+      revision,
+      ttl
+    );
   };
   await assert.rejects(store.commit("session", nextId), /pointer write failed/);
   assert.equal((await store.current("session")).buildId, firstId);
@@ -243,7 +268,7 @@ test("an older concurrent commit cannot replace a newer current revision", async
       entered.resolve();
       await release.promise;
     }
-    return write(key, value, options);
+    await write(key, value, options);
   };
   const older = store.commit("session", buildId);
   await entered.promise;
@@ -282,7 +307,7 @@ test("a cancelled upload cannot promote after a replacement begin", async () => 
       entered.resolve();
       await release.promise;
     }
-    return promote(...args);
+    return await promote(...args);
   };
   const pending = store.commit("session", interruptedId);
   await entered.promise;
@@ -325,7 +350,7 @@ test("an in-flight commit cannot restore a preview after session end", async () 
   kv.promoteIfOwnerAndNewer = async (...args) => {
     entered.resolve();
     await release.promise;
-    return promote(...args);
+    return await promote(...args);
   };
   const pending = store.commit("session", buildId);
   await entered.promise;
@@ -487,9 +512,9 @@ test("revision subscription can be released", async () => {
   const kv = fakeKV();
   const store = createPreviewBuildStore(kv);
   const revisions = [];
-  const unsubscribe = await store.subscribe("session", (revision) =>
-    revisions.push(revision)
-  );
+  const unsubscribe = await store.subscribe("session", (revision) => {
+    revisions.push(revision);
+  });
   const empty = manifestFor([["client.js", Buffer.alloc(0)]]);
   await store.commit("session", await store.begin("session", empty));
   await store.end("session");

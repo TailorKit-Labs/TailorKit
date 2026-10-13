@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-member-access -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { createHash } from "node:crypto";
 import {
   mkdir,
@@ -114,8 +115,10 @@ it("uploads gzip server and client code with metadata matching the stored bytes"
   expect(fetch).toHaveBeenCalledTimes(2);
   // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   const uploaded = fetch.mock.calls.map(([url, options]) => ({
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     code: gunzipSync(options?.body as Uint8Array).toString("utf-8"),
-    url: String(url),
+
+    url: url instanceof Request ? url.url : String(url),
   }));
   expect(uploaded).toContainEqual({
     code: "server-code",
@@ -127,8 +130,13 @@ it("uploads gzip server and client code with metadata matching the stored bytes"
   });
   for (const [uploadUrl, options] of fetch.mock.calls) {
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     const bytes = options?.body as Uint8Array;
-    const metadata = String(uploadUrl).endsWith("server")
+
+    const metadata = (uploadUrl instanceof Request
+      ? uploadUrl.url
+      : String(uploadUrl)
+    ).endsWith("server")
       ? mocks.create.mock.calls[0]?.[0].server
       : mocks.create.mock.calls[0]?.[0].assets[0];
     expect(metadata).toMatchObject({
@@ -308,10 +316,16 @@ it("typechecks file route roots, layouts and views without a manual client entry
 });
 
 it("does not publish when the server upload fails", async () => {
-  vi.spyOn(globalThis, "fetch").mockImplementation((url) =>
-    Promise.resolve(
-      new Response(null, { status: String(url).endsWith("server") ? 403 : 200 })
-    )
+  vi.spyOn(globalThis, "fetch").mockImplementation(
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    async (url) =>
+      new Response(null, {
+        status: (url instanceof Request ? url.url : String(url)).endsWith(
+          "server"
+        )
+          ? 403
+          : 200,
+      })
   );
   await expect(runDeploy({ cwd: root })).rejects.toThrow("Asset upload failed");
   expect(mocks.publish).not.toHaveBeenCalled();
@@ -341,9 +355,10 @@ it.each(["vite config", "option"])(
       mode === "option" ? { cwd: root, outDir: "output" } : { cwd: root }
     );
     const server = fetch.mock.calls.find(([url]) =>
-      String(url).endsWith("server")
+      (url instanceof Request ? url.url : String(url)).endsWith("server")
     );
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     expect(gunzipSync(server?.[1]?.body as Uint8Array).toString("utf-8")).toBe(
       "new-backend-code"
     );
@@ -471,15 +486,16 @@ it("preserves signed upload headers and uploads logos without gzip encoding", as
     .mockResolvedValue(new Response(null, { status: 200 }));
   await runDeploy({ cwd: root });
   const clientUpload = fetch.mock.calls.find(([url]) =>
-    String(url).endsWith("client")
+    (url instanceof Request ? url.url : String(url)).endsWith("client")
   );
   expect(
     new Headers(clientUpload?.[1]?.headers).get("x-amz-checksum-sha256")
   ).toBe("signed-client");
   const logoUpload = fetch.mock.calls.find(([url]) =>
-    String(url).endsWith("logo")
+    (url instanceof Request ? url.url : String(url)).endsWith("logo")
   );
   // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
   expect(new TextDecoder().decode(logoUpload?.[1]?.body as Uint8Array)).toBe(
     logo
   );

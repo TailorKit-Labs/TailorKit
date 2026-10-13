@@ -17,7 +17,10 @@ export const runtimeProjectAccess = async (
   }
 
   const projectId = request.headers.get("x-tailorkit-project-id");
-  if (!projectId || projectId.length > 256) {
+  if (
+    !(projectId !== undefined && projectId !== null && projectId !== "") ||
+    projectId.length > 256
+  ) {
     throw new Error("Runtime project required");
   }
 

@@ -62,14 +62,16 @@ export const SelectField = ({
   const errorMessage = formatFieldErrors(errors);
   const isError = errorMessage.length > 0;
   const isEmpty = items.length === 0;
-  const isDisabled = disabled || isEmpty;
+  const isDisabled = disabled ?? isEmpty;
   const [open, setOpen] = useState(false);
 
   return (
     <Field disabled={isDisabled}>
       <FieldLabel>
         {label}{" "}
-        {required && <span className="text-destructive-foreground">*</span>}
+        {required === true && (
+          <span className="text-destructive-foreground">*</span>
+        )}
       </FieldLabel>
       <Select
         disabled={isDisabled}
@@ -113,7 +115,11 @@ export const SelectField = ({
           ))}
         </SelectPopup>
       </Select>
-      {description && <FieldDescription>{description}</FieldDescription>}
+      {description !== undefined &&
+        description !== null &&
+        description !== "" && (
+          <FieldDescription>{description}</FieldDescription>
+        )}
       {isError && <FieldError>{errorMessage}</FieldError>}
     </Field>
   );

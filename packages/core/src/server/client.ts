@@ -21,7 +21,7 @@ export const createTailorKitClient = (
   const url = URL.canParse(options.url) ? new URL(options.url) : undefined;
   // SAFETY: The configured URL is normalized into a pathname before the client uses it as an absolute route path.
   const link = new RPCLink({
-    async fetch(urlValue, init) {
+    fetch: async (urlValue, init) => {
       const configuredHeaders = await (isFunctionValue(options.headers)
         ? options.headers()
         : options.headers);
@@ -30,15 +30,18 @@ export const createTailorKitClient = (
         headers.set(key, value);
       }
 
-      return (options.fetch ?? fetch)(urlValue, {
+      return await (options.fetch ?? fetch)(urlValue, {
         ...init,
         headers,
       });
     },
     origin: url?.origin,
-    url: (url
-      ? `${url.pathname}${url.search}${url.hash}`
-      : options.url) as `/${string}`,
+    url:
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- The configured URL is normalized into a pathname before the client uses it as an absolute route path. */
+      (url
+        ? `${url.pathname}${url.search}${url.hash}`
+        : options.url) as `/${string}`,
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
   });
 
   return createORPCClient<TailorKitRouterClient>(link);

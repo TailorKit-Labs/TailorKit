@@ -1,6 +1,5 @@
 import { useStore } from "@nanostores/react";
 import type { ToolBridge, Session } from "@tailorkit/app/client";
-/* oxlint-disable react(invariant) */
 import {
   createRemoteViewStore,
   createRemoteElementProps,
@@ -152,11 +151,13 @@ const RemoteElementViewComponent = ({
   if (component === undefined) {
     throw new Error(`TailorKit component "${node.type}" is not registered.`);
   }
-  const props = createRemoteElementProps(node, ctx.dispatch);
+  const props = createRemoteElementProps(node, ctx.dispatch.bind(ctx));
 
   // SAFETY: The renderer was supplied through the typed component registry; React's createElement overload erases its heterogeneous props.
   return createElement(
+    /* oxlint-disable typescript/no-unsafe-type-assertion -- The renderer was supplied through the typed component registry; React's createElement overload erases its heterogeneous props. */
     component as string | ComponentType<RemoteProps>,
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
     props,
     ...children
   );

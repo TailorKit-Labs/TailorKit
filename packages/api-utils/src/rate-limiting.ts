@@ -28,7 +28,7 @@ export const createRateLimiter = ({
       redis: kv.engine,
     });
     return new UpstashRateLimiter(upstashRatelimit, {
-      waitUntil: env.VERCEL ? vercelWaitUntil : undefined,
+      waitUntil: env.VERCEL === true ? vercelWaitUntil : undefined,
     });
   }
 
@@ -37,12 +37,12 @@ export const createRateLimiter = ({
     // Keep the shared ioredis connection through oRPC's Redis adapter base.
     class IORedisRateLimiter extends BaseRedisRateLimiter {
       // oxlint-disable-next-line class-methods-use-this -- The adapter overrides an instance method required by the upstream interface.
-      protected evalScript(
+      protected async evalScript(
         script: string,
         keys: string[],
         args: string[]
       ): ReturnType<typeof redis.eval> {
-        return redis.eval(script, keys.length, ...keys, ...args);
+        return await redis.eval(script, keys.length, ...keys, ...args);
       }
     }
 
@@ -62,6 +62,7 @@ export const ratelimitMiddleware = <
 >(
   limiter: RateLimiter,
   key: (
+    // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
     options: MiddlewareOptions<TInContext, unknown, Record<never, never>>,
     input: TInput
   ) => string

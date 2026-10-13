@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-return -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/websocket";
 import type { Invocation, SubscriptionClient } from "@tailorkit/app/protocol";
@@ -28,22 +29,22 @@ const setup = () => {
   const events = new EventTarget();
   const coordinator = Semaphore.makeUnsafe(1);
   const queue = {
-    run: <A>(operation: () => Promise<A>) =>
-      Effect.runPromise(
+    run: async <A>(operation: () => Promise<A>) =>
+      await Effect.runPromise(
         coordinator.withPermits(1)(
+          // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context, effecttsgo/unknown-in-effect-catch -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
           Effect.tryPromise({ catch: (error) => error, try: operation })
         )
       ),
   };
   const values = { private: 2, public: 1 };
   // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-  const query = vi.fn(
-    async (input: Invocation, identity: Identity) =>
-      await {
-        tables: [input.name],
-        value: `${identity.subjectId}:${values[input.name as keyof typeof values]}`,
-      }
-  );
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  const query = vi.fn(async (input: Invocation, identity: Identity) => ({
+    tables: [input.name],
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+    value: `${identity.subjectId}:${values[input.name as keyof typeof values]}`,
+  }));
   const connection = (user = "alice"): SubscriptionConnection => {
     records.set(
       user,
@@ -56,51 +57,66 @@ const setup = () => {
       read: () => {
         const record = records.get(user);
         // SAFETY: The serialized fixture is produced by this test from the matching session contract before it is read back.
-        return record ? (JSON.parse(record) as SubscriptionSession) : undefined;
+        return record !== undefined && record !== null && record !== ""
+          ? // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+            (JSON.parse(record) as SubscriptionSession)
+          : undefined;
       },
-      send: (data: string | Uint8Array<ArrayBuffer>) =>
-        events.dispatchEvent(new MessageEvent("message", { data })),
-      write: (session) => records.set(user, JSON.stringify(session)),
+      send: (data: string | Uint8Array<ArrayBuffer>) => {
+        events.dispatchEvent(new MessageEvent("message", { data }));
+      },
+      write: (session) => {
+        records.set(user, JSON.stringify(session));
+      },
     };
   };
   const socket = connection();
   const sockets = [socket];
   // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-  // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-  const ctx = {
-    getWebSockets: () =>
-      sockets.map((socketValue: SubscriptionConnection) => ({
-        close: vi.fn(),
-        deserializeAttachment: () =>
-          requireValue(socketValue.read()).identity.subjectId,
-        send: (data: string | Uint8Array<ArrayBuffer>) =>
-          socketValue.send(data),
-      })),
-    storage: {
-      kv: {
-        delete: (key: string) => records.delete(key.slice(7)),
-        get: (key: string) => {
-          const value = records.get(key.slice(7));
-          return value ? JSON.parse(value) : undefined;
+
+  const ctx =
+    /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This builder or fixture preserves the declared capabilities across an erased generic boundary. */
+    {
+      getWebSockets: () =>
+        sockets.map((socketValue: SubscriptionConnection) => ({
+          close: vi.fn(),
+          deserializeAttachment: () =>
+            requireValue(socketValue.read()).identity.subjectId,
+          send: (data: string | Uint8Array<ArrayBuffer>) => {
+            socketValue.send(data);
+          },
+        })),
+      storage: {
+        kv: {
+          delete: (key: string) => records.delete(key.slice(7)),
+          get: (key: string) => {
+            const value = records.get(key.slice(7));
+            return value !== undefined && value !== null && value !== ""
+              ? JSON.parse(value)
+              : undefined;
+          },
+          // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This fixture must represent malformed input so the runtime validation boundary can be tested.
+          put: (key: string, value: unknown) =>
+            records.set(key.slice(7), JSON.stringify(value)),
         },
-        put: <TInput>(key: string, value: TInput) =>
-          records.set(key.slice(7), JSON.stringify(value)),
       },
-    },
-  } as unknown as DurableObjectState;
+    } as unknown as DurableObjectState;
+  /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
   const create = () =>
     createSubscriptions(
       ctx,
       (input, identity) =>
+        // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context, effecttsgo/unknown-in-effect-catch -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
         Effect.tryPromise({
           catch: (error) => error,
-          try: () => query(input, identity),
+          try: async () => await query(input, identity),
         }),
       coordinator
     );
   let subscriptions = create();
   let handler = createSubscriptionHandler();
   const subscribe = (input: Invocation) =>
+    // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
     subscriptionStream((id) => subscriptions.subscribe(socket, input, id));
   const pending: Promise<void>[] = [];
   const client = createORPCClient<SubscriptionClient>(
@@ -115,7 +131,9 @@ const setup = () => {
               socket,
               isStringValue(data) ? data : new TextDecoder().decode(data),
               subscribe,
-              (id) => Effect.runPromise(subscriptions.cancel(socket, id))
+              async (id) => {
+                await Effect.runPromise(subscriptions.cancel(socket, id));
+              }
             )
           );
         },
@@ -135,14 +153,17 @@ const setup = () => {
       subscriptions = create();
       handler = createSubscriptionHandler();
     },
-    refresh: (tables: string[]) =>
-      Effect.runPromise(
+    refresh: async (tables: string[]) => {
+      await Effect.runPromise(
+        // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
         coordinator.withPermits(1)(subscriptions.refresh(tables))
-      ),
+      );
+    },
     socket,
     sockets,
     subscribe: (socketValue2: SubscriptionConnection, input: Invocation) =>
       subscriptionStream((id) =>
+        // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
         subscriptions.subscribe(socketValue2, input, id)
       ),
     values,
@@ -178,12 +199,12 @@ it("restores multiple subscriptions and cancellation after recreation with isola
 it("refreshes view subscriptions on table writes after recreation without broadening table subscriptions", async () => {
   const test = setup();
   // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-  test.query.mockImplementation((input, identity) =>
-    Promise.resolve({
-      tables: input.name === "public" ? ["*"] : ["private"],
-      value: `${identity.subjectId}:${test.values[input.name as keyof typeof test.values]}`,
-    })
-  );
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  test.query.mockImplementation(async (input, identity) => ({
+    tables: input.name === "public" ? ["*"] : ["private"],
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+    value: `${identity.subjectId}:${test.values[input.name as keyof typeof test.values]}`,
+  }));
   const viewStream = await test.client.subscribe({ name: "public" });
   const tableStream = await test.client.subscribe({ name: "private" });
   expect(await viewStream.next()).toMatchObject({ value: "alice:1" });
@@ -259,7 +280,7 @@ it("does not fail mutation delivery when a disconnected socket throws", async ()
 it("registers the first snapshot before a concurrent mutation and replaces dependencies", async () => {
   const test = setup();
   let ready!: () => void;
-  const started = (() => {
+  const started = (async () => {
     const {
       promise: pendingPromise,
       resolve,
@@ -270,10 +291,10 @@ it("registers the first snapshot before a concurrent mutation and replaces depen
     } catch (error) {
       rejectPending(error);
     }
-    return pendingPromise;
+    await pendingPromise;
   })();
   let finish!: (snapshot: { value: string; tables: string[] }) => void;
-  const initial = (() => {
+  const initial = (async () => {
     const {
       promise: pendingPromise,
       resolve,
@@ -284,11 +305,11 @@ it("registers the first snapshot before a concurrent mutation and replaces depen
     } catch (error) {
       rejectPending(error);
     }
-    return pendingPromise;
+    return await pendingPromise;
   })();
-  test.query.mockImplementationOnce(() => {
+  test.query.mockImplementationOnce(async () => {
     ready();
-    return initial;
+    return await initial;
   });
   test.query.mockResolvedValueOnce({ tables: ["private"], value: "alice:3" });
   const stream = await test.client.subscribe({ name: "public" });

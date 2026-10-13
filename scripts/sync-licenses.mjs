@@ -1,10 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import { parsePackageManifest } from "./package-manifest.mjs";
+
 const root = path.resolve(import.meta.dirname, "..");
 const licensesDir = path.join(root, "licenses");
 const checkOnly = process.argv.includes("--check");
 
+/** @param {string} directory @returns {string[]} */
 const findPackageManifests = (directory) => {
   const manifests = [];
 
@@ -32,6 +35,7 @@ const findPackageManifests = (directory) => {
   return manifests;
 };
 
+/** @param {string} filePath Path to display relative to the repository. */
 const relativeToRoot = (filePath) => path.relative(root, filePath) || ".";
 
 const errors = [];
@@ -42,12 +46,12 @@ const packages = findPackageManifests(root)
 
 for (const manifestPath of packages) {
   const packageDirectory = path.dirname(manifestPath);
-  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
+  const manifest = parsePackageManifest(fs.readFileSync(manifestPath, "utf-8"));
   const packageLabel = manifest.name ?? relativeToRoot(packageDirectory);
 
   // Private playground examples do not require per-package license copies.
   if (
-    manifest.private &&
+    manifest.private === true &&
     manifest.license === undefined &&
     relativeToRoot(packageDirectory).startsWith(`playground${path.sep}`)
   ) {

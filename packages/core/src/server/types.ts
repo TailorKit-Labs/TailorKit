@@ -10,7 +10,8 @@ import type {
   SlotDefinitions,
   SchemaSerializer,
   TailorKitSchema,
-} from "../schema/index";
+} from "#schema/index";
+
 import type { TailorKitRouter } from "./router";
 
 type HeaderInput = ConstructorParameters<typeof Headers>[0];
@@ -83,6 +84,7 @@ export interface TailorKitServerBaseOptions<
 export interface TailorKitServerSchemaOptions<
   TComponents extends ComponentDefinitions,
   TViews extends ContextDefinitions,
+  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
   TTools extends ContractTools = Record<never, never>,
 > {
   tools?: TTools & ContractTools;
@@ -104,6 +106,7 @@ export type InferTailorKitServerComponents<
 
 export type InferTailorKitServerViews<
   TOptions extends TailorKitServerInputOptions,
+  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
 > = TOptions extends { views: infer TViews } ? TViews : Record<never, never>;
 
 /** @deprecated Use InferTailorKitServerViews instead. */
@@ -113,6 +116,7 @@ export type InferTailorKitServerContexts<
 
 export type InferTailorKitServerTools<
   TOptions extends TailorKitServerInputOptions,
+  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
 > = TOptions extends { tools: infer TTools } ? TTools : Record<never, never>;
 
 export type TailorKitJsonValue =
@@ -151,11 +155,13 @@ export type InferTailorKitServerScopes<
           >;
         }>;
     }[keyof TSchemas]
-  : Record<never, never>;
+  : // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
+    Record<never, never>;
 
 export interface TailorKitServerOptions<
   TComponents extends ComponentDefinitions,
   TViews extends ContextDefinitions,
+  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
   TTools extends ContractTools = Record<never, never>,
   TScopes extends Record<string, StandardSchemaV1> = Record<
     string,
@@ -184,6 +190,7 @@ export type TailorKitHandlerContext<TScopes = TailorKitScopes> =
 export interface TailorKitServer<
   TComponents extends ComponentDefinitions,
   TViews extends ContextDefinitions,
+  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
   TTools extends ContractTools = Record<never, never>,
   TScopes = TailorKitScopes,
 > {

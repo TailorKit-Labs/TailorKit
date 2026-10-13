@@ -76,7 +76,7 @@ const RouteComponent = () => {
     setSending(false);
     if (result.error) {
       toastManager.add({
-        description: result.error.message || "Failed to send code",
+        description: result.error.message ?? "Failed to send code",
         title: "Error",
         type: "error",
       });
@@ -88,7 +88,7 @@ const RouteComponent = () => {
   useEffect(() => {
     if (!sentRef.current) {
       sentRef.current = true;
-      sendOtp();
+      void sendOtp();
     }
     return () => {
       if (timerRef.current) {
@@ -107,7 +107,7 @@ const RouteComponent = () => {
     if (result.error) {
       setInvalid(true);
       toastManager.add({
-        description: result.error.message || "Invalid or expired code",
+        description: result.error.message ?? "Invalid or expired code",
         title: "Verification failed",
         type: "error",
       });
@@ -123,10 +123,10 @@ const RouteComponent = () => {
     queryClient.clear();
 
     const returnPath = getSameOriginPath(return_to, window.location.origin);
-    if (returnPath) {
+    if (returnPath !== undefined && returnPath !== null && returnPath !== "") {
       window.location.href = returnPath;
     } else {
-      navigate({ to: "/" });
+      void navigate({ to: "/" });
     }
   };
 
@@ -135,7 +135,7 @@ const RouteComponent = () => {
     setInvalid(false);
 
     if (value.length === OTP_LENGTH) {
-      verifyOtp(value);
+      void verifyOtp(value);
     }
   };
 
@@ -189,7 +189,9 @@ const RouteComponent = () => {
                     <Button
                       variant="link"
                       size="sm"
-                      onClick={sendOtp}
+                      onClick={(...args: Parameters<typeof sendOtp>) => {
+                        void sendOtp(...args);
+                      }}
                       disabled={sending || resendCountdown > 0}
                       loading={sending}
                       className="h-auto"
@@ -207,7 +209,11 @@ const RouteComponent = () => {
                 className="w-full"
                 disabled={otp.length < OTP_LENGTH || verifying}
                 loading={verifying}
-                onClick={() => verifyOtp(otp)}
+                onClick={() => {
+                  void (async () => {
+                    await verifyOtp(otp);
+                  })();
+                }}
               >
                 Continue
               </Button>

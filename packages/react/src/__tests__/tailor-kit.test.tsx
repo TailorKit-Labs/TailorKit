@@ -28,11 +28,11 @@ import {
   vi,
 } from "vite-plus/test";
 
-import { useApps } from "../hooks/use-apps";
-import { RenderSlot } from "../index";
-import { RemoteViewHost } from "../remote-view";
-import { createClient } from "../tailorkit";
-import type { TailorKitApp } from "../tailorkit";
+import { useApps } from "#hooks/use-apps";
+import { RenderSlot } from "#index";
+import { RemoteViewHost } from "#remote-view";
+import { createClient } from "#tailorkit";
+import type { TailorKitApp } from "#tailorkit";
 
 const hostRecords: {
   appUrl: string;
@@ -70,29 +70,36 @@ vi.mock("@tailorkit/sandbox/host", () => ({
     let listener: (() => void) | null = null;
 
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-    return {
-      destroy: () => {},
-      dispatch: (_payload: HostToIframePayload) => {},
-      getSnapshot: () => tree,
-      iframe: document.createElement("iframe"),
-      mount: () => {
-        listener?.();
-      },
-      setProps: (props: RemoteProps | undefined) => {
-        record.props = props;
-      },
-      subscribe: (nextListener: () => void) => {
-        listener = nextListener;
-        return () => {
-          listener = null;
-        };
-      },
-    } as IframeUiHost;
+
+    return (
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below. */
+      {
+        destroy: () => {},
+        dispatch: (_payload: HostToIframePayload) => {},
+        getSnapshot: () => tree,
+        iframe: document.createElement("iframe"),
+        mount: () => {
+          listener?.();
+        },
+        setProps: (props: RemoteProps | undefined) => {
+          record.props = props;
+        },
+        subscribe: (nextListener: () => void) => {
+          listener = nextListener;
+          return () => {
+            listener = null;
+          };
+        },
+      } as IframeUiHost
+      /* oxlint-enable typescript/no-unsafe-type-assertion */
+    );
   },
 }));
 
 // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+// oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
 const emptySchema: StandardSchemaV1<unknown, Record<never, never>> &
+  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
   StandardJSONSchemaV1<unknown, Record<never, never>> = {
   "~standard": {
     jsonSchema: {
@@ -101,6 +108,7 @@ const emptySchema: StandardSchemaV1<unknown, Record<never, never>> &
     },
     validate: (
       value: Parameters<StandardSchemaV1["~standard"]["validate"]>[0]
+      // oxlint-disable-next-line typescript/no-generated-empty-object-type, typescript/no-unsafe-type-assertion -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     ) => ({ value: value as Record<never, never> }),
     vendor: "test",
     version: 1,
@@ -223,12 +231,11 @@ describe("tailorKitClient React adapter", () => {
   });
 
   it("keeps a preview subscription when an inline app is rendered again", async () => {
-    vi.mocked(globalThis.fetch).mockImplementation((input) =>
-      Promise.resolve(
-        input instanceof URL && input.pathname.endsWith("/preview/metadata")
-          ? new Response(null, { status: 503 })
-          : Response.json({ assetsBaseUrl: "http://assets.test/", schema: {} })
-      )
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    vi.mocked(globalThis.fetch).mockImplementation(async (input) =>
+      input instanceof URL && input.pathname.endsWith("/preview/metadata")
+        ? new Response(null, { status: 503 })
+        : Response.json({ assetsBaseUrl: "http://assets.test/", schema: {} })
     );
     class PreviewSocket extends EventTarget {
       static instances: PreviewSocket[] = [];
@@ -271,7 +278,9 @@ describe("tailorKitClient React adapter", () => {
       </tailor.Provider>
     );
     const view = render(content("initial-token"));
-    await waitFor(() => expect(PreviewSocket.instances).toHaveLength(1));
+    await waitFor(() => {
+      expect(PreviewSocket.instances).toHaveLength(1);
+    });
     const metadataRequest = vi
       .mocked(globalThis.fetch)
       .mock.calls.map(([input]) => input)
@@ -282,6 +291,7 @@ describe("tailorKitClient React adapter", () => {
     expect(metadataRequest).toBeInstanceOf(URL);
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     expect(
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
       new URL(metadataRequest as URL).searchParams.getAll("scopes")
     ).toEqual([]);
     const [socket] = PreviewSocket.instances;
@@ -289,9 +299,14 @@ describe("tailorKitClient React adapter", () => {
     expect(PreviewSocket.instances).toHaveLength(1);
     expect(socket?.closed).toBe(false);
     socket?.close();
-    await waitFor(() => expect(PreviewSocket.instances).toHaveLength(2), {
-      timeout: 2500,
-    });
+    await waitFor(
+      () => {
+        expect(PreviewSocket.instances).toHaveLength(2);
+      },
+      {
+        timeout: 2500,
+      }
+    );
     expect(PreviewSocket.instances[1]?.protocol).toBe("updated-token");
     view.unmount();
     expect(PreviewSocket.instances[1]?.closed).toBe(true);
@@ -333,6 +348,7 @@ describe("tailorKitClient React adapter", () => {
       new URL("apps", "http://runtime.test/api/tailorkit/"),
       expect.objectContaining({
         credentials: "same-origin",
+        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
         signal: expect.any(AbortSignal),
       })
     );
@@ -373,9 +389,9 @@ describe("tailorKitClient React adapter", () => {
         <AppList label="empty" scopes={[]} />
       </tailor.Provider>
     );
-    await waitFor(() =>
-      expect(testingView.getByText("all:ready:organization,user")).toBeTruthy()
-    );
+    await waitFor(() => {
+      expect(testingView.getByText("all:ready:organization,user")).toBeTruthy();
+    });
     expect(testingView.getByText("org:ready:organization")).toBeTruthy();
     expect(testingView.getByText("user:ready:user")).toBeTruthy();
     expect(testingView.getByText("empty:ready:")).toBeTruthy();
@@ -421,11 +437,14 @@ describe("tailorKitClient React adapter", () => {
       </tailor.Provider>
     );
 
-    await waitFor(() => expect(testingView.getByText("ready")).toBeTruthy());
+    await waitFor(() => {
+      expect(testingView.getByText("ready")).toBeTruthy();
+    });
     expect(globalThis.fetch).toHaveBeenCalledWith(
       new URL("apps", "http://runtime.test/api/tailorkit/"),
       expect.objectContaining({
         credentials: "same-origin",
+        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
         signal: expect.any(AbortSignal),
       })
     );
@@ -453,7 +472,7 @@ describe("tailorKitClient React adapter", () => {
       });
     });
 
-    await act(() => {
+    act(() => {
       view.rerender(<CurrentViewHost nested={false} tailor={tailor} />);
     });
 
@@ -576,6 +595,7 @@ describe("tailorKitClient React adapter", () => {
     ]);
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     expect(
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
       hostRecords.map((record) => (record.props?.layers as unknown[])?.[0])
     ).toEqual([
       { context: { page: { title: "home" } }, path: "/home", status: "ready" },
@@ -772,7 +792,7 @@ describe("tailorKitClient React adapter", () => {
       ).toBeTruthy();
     });
 
-    await act(() => {
+    act(() => {
       view.rerender(
         <tailor.Provider apps={[{ clientPath: "/apps/email.js", id: "email" }]}>
           <HomeSlot
@@ -807,42 +827,37 @@ const DetailImplementation = ({
   return null;
 };
 
+const Layers = ({
+  client,
+  detail = true,
+}: {
+  client: ReturnType<typeof createClient<typeof contract>>;
+  detail?: boolean;
+}) => {
+  const { useViewContext } = client;
+  // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
+  useViewContext("/", { context: { user: { id: "u1" } } });
+  // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
+  useViewContext("/home", { context: { page: { title: "Home" } } });
+  return (
+    <>
+      {detail ? <DetailImplementation client={client} /> : null}
+      <RenderSlot slot="navbar" app={{ clientPath: "/nav.js", id: "nav" }} />
+      <RenderSlot slot="panel" app={{ clientPath: "/panel.js", id: "panel" }} />
+    </>
+  );
+};
+
 describe("view registries", () => {
   beforeEach(() => {
     hostRecords.length = 0;
-    vi.spyOn(globalThis, "fetch").mockImplementation(() =>
-      Promise.resolve(Response.json({ schema: {} }))
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
+      Response.json({ schema: {} })
     );
   });
 
   afterEach(cleanup);
-
-  const Detail = DetailImplementation;
-
-  // oxlint-disable-next-line unicorn/consistent-function-scoping -- Keep the generator or mutable callback with its owning test or cancellation lifecycle.
-  const Layers = ({
-    client,
-    detail = true,
-  }: {
-    client: ReturnType<typeof createClient<typeof contract>>;
-    detail?: boolean;
-  }) => {
-    const { useViewContext } = client;
-    // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
-    useViewContext("/", { context: { user: { id: "u1" } } });
-    // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
-    useViewContext("/home", { context: { page: { title: "Home" } } });
-    return (
-      <>
-        {detail ? <Detail client={client} /> : null}
-        <RenderSlot slot="navbar" app={{ clientPath: "/nav.js", id: "nav" }} />
-        <RenderSlot
-          slot="panel"
-          app={{ clientPath: "/panel.js", id: "panel" }}
-        />
-      </>
-    );
-  };
 
   it("publishes the same active chain to simultaneous slots and removes unmounted layers", async () => {
     const client = createClient({
@@ -856,7 +871,9 @@ describe("view registries", () => {
         <Layers client={client} />
       </client.Provider>
     );
-    await waitFor(() => expect(hostRecords).toHaveLength(2));
+    await waitFor(() => {
+      expect(hostRecords).toHaveLength(2);
+    });
     expect(hostRecords.map((record) => record.props?.slot)).toEqual([
       "navbar",
       "panel",
@@ -878,7 +895,9 @@ describe("view registries", () => {
         <Layers client={client} detail={false} />
       </client.Provider>
     );
-    await waitFor(() => expect(hostRecords.at(-1)?.props?.view).toBe("/home"));
+    await waitFor(() => {
+      expect(hostRecords.at(-1)?.props?.view).toBe("/home");
+    });
     expect(hostRecords.at(-1)?.props?.layers).toHaveLength(2);
     // Context changes must not remount either slot.
     expect(hostRecords).toHaveLength(2);
@@ -912,11 +931,11 @@ describe("view registries", () => {
         </client.Provider>
       </StrictMode>
     );
-    await waitFor(() =>
+    await waitFor(() => {
       expect(
         hostRecords.some((record) => record.appUrl.endsWith("other.js"))
-      ).toBe(true)
-    );
+      ).toBe(true);
+    });
     const other = hostRecords.find((record) =>
       record.appUrl.endsWith("other.js")
     );
@@ -956,14 +975,13 @@ const ContentsImplementation = ({
 it("isolates a new client cache even when its endpoint is equivalent", async () => {
   const fetchMock = vi
     .spyOn(globalThis, "fetch")
-    .mockImplementation((input) => {
-      const url = new URL(input.toString());
-      return Promise.resolve(
-        Response.json(
-          url.pathname.endsWith("/apps")
-            ? [{ id: url.hostname }]
-            : { schema: {} }
-        )
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    .mockImplementation(async (input) => {
+      const url = new URL(
+        input instanceof Request ? input.url : input.toString()
+      );
+      return Response.json(
+        url.pathname.endsWith("/apps") ? [{ id: url.hostname }] : { schema: {} }
       );
     });
   const Contents = ContentsImplementation;
@@ -974,7 +992,9 @@ it("isolates a new client cache even when its endpoint is equivalent", async () 
       <Contents client={firstClient} />
     </firstClient.Provider>
   );
-  await waitFor(() => expect(testingView.getByText("first.test")).toBeTruthy());
+  await waitFor(() => {
+    expect(testingView.getByText("first.test")).toBeTruthy();
+  });
   const count = fetchMock.mock.calls.length;
   const equivalentClient = createRootClient(new URL("http://first.test/api/"));
   view.rerender(
@@ -982,19 +1002,21 @@ it("isolates a new client cache even when its endpoint is equivalent", async () 
       <Contents client={equivalentClient} />
     </equivalentClient.Provider>
   );
-  await waitFor(() => expect(fetchMock.mock.calls).toHaveLength(count + 1));
+  await waitFor(() => {
+    expect(fetchMock.mock.calls).toHaveLength(count + 1);
+  });
   const secondClient = createRootClient("http://second.test/api");
   view.rerender(
     <secondClient.Provider>
       <Contents client={secondClient} />
     </secondClient.Provider>
   );
-  await waitFor(() =>
-    expect(testingView.getByText("second.test")).toBeTruthy()
-  );
-  await waitFor(() =>
-    expect(hostRecords.at(-1)?.appUrl).toBe("http://second.test/api/client.js")
-  );
+  await waitFor(() => {
+    expect(testingView.getByText("second.test")).toBeTruthy();
+  });
+  await waitFor(() => {
+    expect(hostRecords.at(-1)?.appUrl).toBe("http://second.test/api/client.js");
+  });
   expect(hostRecords.at(-1)?.props?.view).toBe("/user");
   view.unmount();
 });
@@ -1007,14 +1029,12 @@ const ContentsImplementation2 = () => {
 it("keeps each provider bound to its client's fetch transport", async () => {
   const explicitFetch = vi
     .fn()
-    .mockImplementation(() =>
-      Promise.resolve(Response.json([{ id: "explicit-user" }]))
-    );
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    .mockImplementation(async () => Response.json([{ id: "explicit-user" }]));
   const fallbackFetch = vi
     .spyOn(globalThis, "fetch")
-    .mockImplementation(() =>
-      Promise.resolve(Response.json([{ id: "fallback-user" }]))
-    );
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    .mockImplementation(async () => Response.json([{ id: "fallback-user" }]));
   const client = createClient({
     baseUrl: "http://runtime.test/api",
     components,
@@ -1032,17 +1052,17 @@ it("keeps each provider bound to its client's fetch transport", async () => {
       <Contents />
     </client.Provider>
   );
-  await waitFor(() =>
-    expect(testingView.getByText("explicit-user")).toBeTruthy()
-  );
+  await waitFor(() => {
+    expect(testingView.getByText("explicit-user")).toBeTruthy();
+  });
   view.rerender(
     <fallback.Provider>
       <Contents />
     </fallback.Provider>
   );
-  await waitFor(() =>
-    expect(testingView.getByText("fallback-user")).toBeTruthy()
-  );
+  await waitFor(() => {
+    expect(testingView.getByText("fallback-user")).toBeTruthy();
+  });
   view.rerender(
     <fallback.Provider>
       <Contents />
@@ -1055,17 +1075,33 @@ it("keeps each provider bound to its client's fetch transport", async () => {
       <Contents />
     </client.Provider>
   );
-  await waitFor(() =>
-    expect(testingView.getByText("explicit-user")).toBeTruthy()
-  );
+  await waitFor(() => {
+    expect(testingView.getByText("explicit-user")).toBeTruthy();
+  });
   expect(explicitFetch).toHaveBeenCalledOnce();
   expect(fallbackFetch).toHaveBeenCalledOnce();
   view.unmount();
 });
 
+const controlledUserView = (
+  Provider: ReturnType<typeof createClient<typeof contract>>["Provider"],
+  userId: string
+) => (
+  <Provider>
+    <RenderSlot.Controlled
+      slot="panel"
+      view="/user"
+      context={{ userId }}
+      app={{ clientPath: "/client.js", id: "test" }}
+      status="ready"
+    />
+  </Provider>
+);
+
 it("retains equivalent explicit context identity and publishes changed values", async () => {
-  vi.spyOn(globalThis, "fetch").mockImplementation(() =>
-    Promise.resolve(Response.json({ schema: {} }))
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
+    Response.json({ schema: {} })
   );
   const client = createClient({
     assetsBaseUrl: "http://assets.test/",
@@ -1073,27 +1109,18 @@ it("retains equivalent explicit context identity and publishes changed values", 
     components,
     contract,
   });
-  // oxlint-disable-next-line unicorn/consistent-function-scoping -- Keep the generator or mutable callback with its owning test or cancellation lifecycle.
-  const content = (userId: string) => (
-    <client.Provider>
-      <RenderSlot.Controlled
-        slot="panel"
-        view="/user"
-        context={{ userId }}
-        app={{ clientPath: "/client.js", id: "test" }}
-        status="ready"
-      />
-    </client.Provider>
-  );
-  const view = render(content("u1"));
-  await waitFor(() => expect(hostRecords.at(-1)?.props?.view).toBe("/user"));
+
+  const view = render(controlledUserView(client.Provider, "u1"));
+  await waitFor(() => {
+    expect(hostRecords.at(-1)?.props?.view).toBe("/user");
+  });
   const initialProps = hostRecords.at(-1)?.props;
-  view.rerender(content("u1"));
+  view.rerender(controlledUserView(client.Provider, "u1"));
   expect(hostRecords.at(-1)?.props).toBe(initialProps);
-  view.rerender(content("u2"));
-  await waitFor(() =>
-    expect(hostRecords.at(-1)?.props?.context).toEqual({ userId: "u2" })
-  );
+  view.rerender(controlledUserView(client.Provider, "u2"));
+  await waitFor(() => {
+    expect(hostRecords.at(-1)?.props?.context).toEqual({ userId: "u2" });
+  });
   view.unmount();
 });
 
@@ -1107,7 +1134,14 @@ describe("supplied app discovery", () => {
     // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
     const { data, isPending, fetch } = client.useApps();
     return (
-      <button type="button" onClick={() => fetch()}>
+      <button
+        type="button"
+        onClick={() => {
+          void (async () => {
+            await fetch();
+          })();
+        }}
+      >
         {isPending ? "pending" : "ready"}:{data?.map((app) => app.id).join(",")}
       </button>
     );
@@ -1126,21 +1160,25 @@ describe("supplied app discovery", () => {
     expect(view.container.firstElementChild).toBe(
       testingView.getByRole("button")
     );
-    await act(() => testingView.getByRole("button").click());
+    act(() => {
+      testingView.getByRole("button").click();
+    });
     view.rerender(
       <client.Provider apps={[{ id: "second" }]}>
         <Apps />
       </client.Provider>
     );
-    await waitFor(() =>
-      expect(testingView.getByText("ready:second")).toBeTruthy()
-    );
+    await waitFor(() => {
+      expect(testingView.getByText("ready:second")).toBeTruthy();
+    });
     view.rerender(
       <client.Provider apps={[]}>
         <Apps />
       </client.Provider>
     );
-    await waitFor(() => expect(testingView.getByText("ready:")).toBeTruthy());
+    await waitFor(() => {
+      expect(testingView.getByText("ready:")).toBeTruthy();
+    });
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -1148,20 +1186,21 @@ describe("supplied app discovery", () => {
     let resolveRequest!: (response: Response) => void;
     const fetch = vi
       .spyOn(globalThis, "fetch")
-      .mockImplementationOnce(() =>
-        (() => {
-          const {
-            promise: pendingPromise,
-            resolve,
-            reject: rejectPending,
-          } = Promise.withResolvers<Response>();
-          try {
-            resolveRequest = resolve;
-          } catch (error) {
-            rejectPending(error);
-          }
-          return pendingPromise;
-        })()
+      .mockImplementationOnce(
+        async () =>
+          await (async () => {
+            const {
+              promise: pendingPromise,
+              resolve,
+              reject: rejectPending,
+            } = Promise.withResolvers<Response>();
+            try {
+              resolveRequest = resolve;
+            } catch (error) {
+              rejectPending(error);
+            }
+            return await pendingPromise;
+          })()
       )
       .mockResolvedValue(Response.json([{ id: "fresh" }]));
     const view = render(
@@ -1169,16 +1208,18 @@ describe("supplied app discovery", () => {
         <Apps />
       </client.Provider>
     );
-    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
     view.rerender(
       <client.Provider apps={[{ id: "provided" }]}>
         <Apps />
       </client.Provider>
     );
-    await waitFor(() =>
-      expect(testingView.getByText("ready:provided")).toBeTruthy()
-    );
-    await act(() => {
+    await waitFor(() => {
+      expect(testingView.getByText("ready:provided")).toBeTruthy();
+    });
+    act(() => {
       resolveRequest(Response.json([{ id: "stale" }]));
     });
     expect(testingView.getByText("ready:provided")).toBeTruthy();
@@ -1187,9 +1228,9 @@ describe("supplied app discovery", () => {
         <Apps />
       </client.Provider>
     );
-    await waitFor(() =>
-      expect(testingView.getByText("ready:fresh")).toBeTruthy()
-    );
+    await waitFor(() => {
+      expect(testingView.getByText("ready:fresh")).toBeTruthy();
+    });
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 });
@@ -1200,9 +1241,9 @@ it("updates component renderers without recreating the remote sandbox", async ()
   const { rerender } = render(
     <RemoteViewHost appUrl={appUrl} components={components} props={props} />
   );
-  await waitFor(() =>
-    expect(testingView.getByRole("button").textContent).toBe(appUrl)
-  );
+  await waitFor(() => {
+    expect(testingView.getByRole("button").textContent).toBe(appUrl);
+  });
   const mounted = hostRecords.length;
   const replacement = {
     Button: ({ children }: { children?: ReactNode }) =>
@@ -1211,9 +1252,9 @@ it("updates component renderers without recreating the remote sandbox", async ()
   rerender(
     <RemoteViewHost appUrl={appUrl} components={replacement} props={props} />
   );
-  await waitFor(() =>
-    expect(testingView.getByRole("link").textContent).toBe(appUrl)
-  );
+  await waitFor(() => {
+    expect(testingView.getByRole("link").textContent).toBe(appUrl);
+  });
   expect(hostRecords).toHaveLength(mounted);
   expect(testingView.queryByRole("button")).toBeNull();
 });

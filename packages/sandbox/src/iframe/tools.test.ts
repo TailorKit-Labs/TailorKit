@@ -10,7 +10,7 @@ const require = <T>(value: T | null | undefined): T => {
 };
 
 it("correlates client calls and server credentials and rejects pending calls on destroy", async () => {
-  const send = vi.fn();
+  const send = vi.fn<Parameters<typeof createIframeTools>[0]>();
   const tools = createIframeTools(send);
   const clientCall = tools.bridge.client("ui.open", { id: "customer" });
   const serverCall = tools.bridge.session("data.read");

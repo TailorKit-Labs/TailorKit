@@ -122,7 +122,7 @@ export const requireOrg = (permissions?: OrgPermissions) =>
         }
       }
 
-      return next({ context: { org } });
+      return await next({ context: { org } });
     }
   );
 
@@ -198,5 +198,5 @@ export const requireProject = (permissions?: OrgPermissions) =>
       }
     }
 
-    return next({ context: { org, project } });
+    return await next({ context: { org, project } });
   });

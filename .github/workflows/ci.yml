@@ -51,6 +51,9 @@ jobs:
       - name: Check package licenses
         run: vp run licenses:check
 
+      - name: Build
+        run: vp run build
+
       - name: Lint
         run: vp run lint
 
@@ -90,34 +93,3 @@ jobs:
 
       - name: Run tests
         run: vp run test
-
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup Vite+
-        uses: voidzero-dev/setup-vp@v1.21.1
-        with:
-          node-version: 24
-          cache: true
-          run-install: false
-
-      - name: Install dependencies
-        run: vp install --frozen-lockfile
-
-      - name: Set up Turborepo Remote Cache
-        # Cache availability must not prevent the verification steps from running.
-        continue-on-error: true
-        if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
-        uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
-        with:
-          team: ${{ vars.TURBO_TEAM }}
-
-      - name: Build
-        run: vp run build

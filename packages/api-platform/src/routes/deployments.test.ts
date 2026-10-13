@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-assignment -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 
@@ -212,9 +213,11 @@ describe("platform deployment uploads", () => {
     "uploads and verifies %s client and private server code",
     async (encoding) => {
       const context = publishContext("https://private.example/server");
-      const uploads = vi.fn(({ key }: { key: string }) =>
-        Promise.resolve({ key, uploadUrl: `https://uploads.example/${key}` })
-      );
+      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+      const uploads = vi.fn(async ({ key }: { key: string }) => ({
+        key,
+        uploadUrl: `https://uploads.example/${key}`,
+      }));
       context.storage.createUploadUrl = uploads;
       const currentApp = await db.query.app.findFirst();
       if (!currentApp) {
@@ -386,18 +389,19 @@ describe("platform deployment uploads", () => {
     const bytes = gzipSync(decoded);
     const checksum = createHash("sha256").update(bytes).digest("hex");
     const context = publishContext("https://uploads.example/client.js");
-    context.storage.createUploadUrl = vi.fn(({ key }) =>
-      Promise.resolve({ key, uploadUrl: `https://uploads.example/${key}` })
-    );
-    context.storage.head = vi.fn(({ key }) =>
-      Promise.resolve({
-        checksumSha256: Buffer.from(checksum, "hex").toString("base64"),
-        contentEncoding: "gzip",
-        contentLength: bytes.byteLength,
-        contentType: "application/javascript",
-        key,
-      })
-    );
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    context.storage.createUploadUrl = vi.fn(async ({ key }) => ({
+      key,
+      uploadUrl: `https://uploads.example/${key}`,
+    }));
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    context.storage.head = vi.fn(async ({ key }) => ({
+      checksumSha256: Buffer.from(checksum, "hex").toString("base64"),
+      contentEncoding: "gzip",
+      contentLength: bytes.byteLength,
+      contentType: "application/javascript",
+      key,
+    }));
     const currentApp = await db.query.app.findFirst();
     if (!currentApp) {
       throw new Error("Missing app");
@@ -467,6 +471,7 @@ describe("platform deployment uploads", () => {
       new URL("https://uploads.example/client.js"),
       expect.objectContaining({
         redirect: "error",
+        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
         signal: expect.any(AbortSignal),
       })
     );
@@ -562,12 +567,11 @@ describe("platform deployment uploads", () => {
   });
 
   it("creates optional logo assets alongside the client bundle", async () => {
-    const createUploadUrl = vi.fn(({ key }: { key: string }) =>
-      Promise.resolve({
-        key,
-        uploadUrl: `https://uploads.example/${key}`,
-      })
-    );
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    const createUploadUrl = vi.fn(async ({ key }: { key: string }) => ({
+      key,
+      uploadUrl: `https://uploads.example/${key}`,
+    }));
     const context = {
       organization: {
         createdAt: new Date(),
@@ -641,9 +645,12 @@ describe("platform deployment uploads", () => {
     );
     expect(result.body.deployment).toEqual(
       expect.objectContaining({
+        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
         clientEntryFileId: expect.any(String),
+        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
         logoDarkFileId: expect.any(String),
         logoDarkPath: `logos/${"b".repeat(64)}.svg`,
+        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
         logoLightFileId: expect.any(String),
         logoLightPath: `logos/${"b".repeat(64)}.svg`,
       })
@@ -652,9 +659,11 @@ describe("platform deployment uploads", () => {
   });
 
   it("reuses a matching app logo without creating another upload URL", async () => {
-    const createUploadUrl = vi.fn(({ key }: { key: string }) =>
-      Promise.resolve({ key, uploadUrl: `https://uploads.example/${key}` })
-    );
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    const createUploadUrl = vi.fn(async ({ key }: { key: string }) => ({
+      key,
+      uploadUrl: `https://uploads.example/${key}`,
+    }));
     const context = {
       organization: {
         createdAt: new Date(),
@@ -805,27 +814,26 @@ describe("platform deployment uploads", () => {
     vi.useFakeTimers();
     vi.stubGlobal(
       "fetch",
-      vi.fn((_url: URL, init?: RequestInit) =>
-        Promise.resolve({
-          arrayBuffer: () =>
-            (() => {
-              const {
-                promise: pendingPromise,
-                resolve: _resolve,
-                reject,
-              } = Promise.withResolvers<ArrayBuffer>();
-              try {
-                init?.signal?.addEventListener("abort", () =>
-                  reject(new DOMException("Aborted", "AbortError"))
-                );
-              } catch (error) {
-                reject(error);
-              }
-              return pendingPromise;
-            })(),
-          ok: true,
-        })
-      )
+      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+      vi.fn(async (_url: URL, init?: RequestInit) => ({
+        arrayBuffer: async () =>
+          await (async () => {
+            const {
+              promise: pendingPromise,
+              resolve: _resolve,
+              reject,
+            } = Promise.withResolvers<ArrayBuffer>();
+            try {
+              init?.signal?.addEventListener("abort", () => {
+                reject(new DOMException("Aborted", "AbortError"));
+              });
+            } catch (error) {
+              reject(error);
+            }
+            return await pendingPromise;
+          })(),
+        ok: true,
+      }))
     );
 
     const publish = call(

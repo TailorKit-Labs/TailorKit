@@ -1,5 +1,5 @@
 // Test fixtures use promise-shaped callbacks and assertions on known fixture values.
-/* eslint-disable require-await, typescript/no-non-null-assertion, unicorn/no-await-expression-member */
+/* eslint-disable require-await */
 import { beforeEach, expect, it, vi } from "vite-plus/test";
 
 import { handleBackendSession } from "./backend";
@@ -9,11 +9,16 @@ const session = {
   token: "platform-issued-token",
   url: "https://runtime.test/rpc",
 };
-const issueSession = vi.fn(async () => session);
-const authenticate = vi.fn(async () => ({
-  scopes: { workspace: { id: "authorized-workspace" } },
-}));
-const request = <TInput>(body: TInput, origin = "https://host.test") =>
+const issueSession = vi
+  .fn<() => Promise<typeof session>>()
+  .mockResolvedValue(session);
+const authenticate = vi
+  .fn<Parameters<typeof handleBackendSession>[1]>()
+  .mockResolvedValue({
+    scopes: { workspace: { id: "authorized-workspace" } },
+  });
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- This fixture must represent malformed input so the runtime validation boundary can be tested.
+const request = (body: unknown, origin = "https://host.test") =>
   new Request("https://host.test/api/tailorkit/backend/session", {
     body: JSON.stringify(body),
     headers: { "content-type": "application/json", origin },

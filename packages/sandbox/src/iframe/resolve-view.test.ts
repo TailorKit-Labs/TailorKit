@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import type { ViewLayer } from "@tailorkit/core/views";
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from "vite-plus/test";
@@ -7,8 +8,9 @@ import type { AppClient, ViewRequest } from "./resolve-view";
 
 const viewResolver = () => {
   const root = document.createElement("div");
-  return (client: AppClient, props: ViewRequest) =>
+  return (client: AppClient, props: ViewRequest) => {
     renderClient(client, props, root);
+  };
 };
 
 const viewClient = () => {
@@ -186,7 +188,9 @@ it("limits matching to supported views while retaining ancestor data", () => {
 it.each([null, undefined, { mount: () => {} }])(
   "rejects a module without a standard client (%j)",
   (client) => {
-    expect(() => assertAppClient(client)).toThrow("app builder");
+    expect(() => {
+      assertAppClient(client);
+    }).toThrow("app builder");
   }
 );
 
@@ -290,7 +294,7 @@ describe("controlled slot rendering", () => {
       const { client } = viewClient();
       expect(
         // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-        // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+        // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
         resolveView(client, { ...request, context } as unknown as ViewRequest)
           ?.props
       ).toEqual({
@@ -351,13 +355,18 @@ describe("instance rendering", () => {
       });
       expect(
         // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-        // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-        resolveView(client(), {
-          ...request,
-          context: undefined,
-          controlled: true,
-          status,
-        } as unknown as ViewRequest)?.props
+
+        resolveView(
+          client(),
+          /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
+          {
+            ...request,
+            context: undefined,
+            controlled: true,
+            status,
+          } as unknown as ViewRequest
+          /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
+        )?.props
       ).toEqual({ context: undefined, status, view: "/users/detail" });
     }
   );
@@ -379,10 +388,15 @@ describe("instance rendering", () => {
   ])("rejects malformed instances %j", (invalid) => {
     // SAFETY: The exercised fetch call constructs this Request; the test inspects the captured request after asserting the call occurred.
     expect(() =>
-      resolveView(client(), {
-        ...request,
-        instance: invalid,
-      } as ViewRequest)
+      resolveView(
+        client(),
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- The exercised fetch call constructs this Request; the test inspects the captured request after asserting the call occurred. */
+        {
+          ...request,
+          instance: invalid,
+        } as ViewRequest
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
+      )
     ).toThrow("Invalid instance");
   });
 });

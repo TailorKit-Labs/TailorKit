@@ -106,5 +106,5 @@ const OverviewPage = () => {
 
 export const Route = createFileRoute("/")({
   component: OverviewPage,
-  loader: () => loadOverview(),
+  loader: async () => await loadOverview(),
 });

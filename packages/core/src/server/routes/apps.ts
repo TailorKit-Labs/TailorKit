@@ -13,7 +13,7 @@ import {
   getTailorKitScopes,
   o,
   requireCliDeployToken,
-} from "../procedures";
+} from "#server/procedures";
 
 const paginationInput = z.object({
   page: z.number().int().min(1).optional(),

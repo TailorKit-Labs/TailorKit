@@ -1,7 +1,9 @@
+/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 // @vitest-environment happy-dom
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
-import { sandboxMessageType } from "../bridge";
+import { sandboxMessageType } from "#bridge";
+
 import type { AppClient, ViewRequest } from "./resolve-view";
 import { startIframeRuntime } from "./runtime";
 
@@ -15,16 +17,16 @@ afterEach(() => {
 const setup = (module: { default?: unknown; mount?: () => void }) => {
   const root = document.createElement("div");
   const parentWindow = { postMessage: vi.fn() };
-  const importModule = vi.fn(() => Promise.resolve(module));
+  const importModule = vi.fn(async () => await Promise.resolve(module));
   cleanups.push(
     startIframeRuntime({ channel: "test", importModule, parentWindow, root })
   );
-  const send = <TPayload>(payload: TPayload) => {
+  const send = (payload: MessageEvent<unknown>["data"]) => {
     window.dispatchEvent(
       new MessageEvent("message", {
         data: { channel: "test", payload, type: sandboxMessageType },
         // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-        // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+        // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
         source: parentWindow as unknown as Window,
       })
     );
@@ -56,8 +58,9 @@ it("imports once, publishes updates, clears unsupported slots, and dispatches ca
   const client: AppClient = {
     $runtime: {
       h: (component, props) => component(props),
-      render: (node, root) =>
-        root.replaceChildren(...(node ? [node as Node] : [])),
+      render: (node, root) => {
+        root.replaceChildren(...(node instanceof Node ? [node] : []));
+      },
     },
     slots: {
       panel: {
@@ -80,7 +83,9 @@ it("imports once, publishes updates, clears unsupported slots, and dispatches ca
   const runtime = setup({ default: client });
   const request = requestImplementation;
   runtime.update(request("first"));
-  await vi.waitFor(() => expect(runtime.root.textContent).toBe("first"));
+  await vi.waitFor(() => {
+    expect(runtime.root.textContent).toBe("first");
+  });
   const snapshot = runtime.parentWindow.postMessage.mock.calls.find(
     ([message]) => message.payload?.type === "snapshot"
   )?.[0].payload.data.tree;
@@ -91,12 +96,18 @@ it("imports once, publishes updates, clears unsupported slots, and dispatches ca
     data: { args: [], event: "click", nodeId: snapshot.children[0].id },
     type: "dispatchCallback",
   });
-  await vi.waitFor(() => expect(runtime.root.textContent).toBe("1"));
+  await vi.waitFor(() => {
+    expect(runtime.root.textContent).toBe("1");
+  });
   runtime.update(request("second"));
-  await vi.waitFor(() => expect(runtime.root.textContent).toBe("second"));
+  await vi.waitFor(() => {
+    expect(runtime.root.textContent).toBe("second");
+  });
   expect(runtime.importModule).toHaveBeenCalledTimes(1);
   runtime.update({ ...request("second"), slot: "unsupported" });
-  await vi.waitFor(() => expect(runtime.root.childNodes).toHaveLength(0));
+  await vi.waitFor(() => {
+    expect(runtime.root.childNodes).toHaveLength(0);
+  });
   expect(
     runtime.parentWindow.postMessage.mock.calls.at(-1)?.[0].payload.data.tree
       .children
@@ -104,7 +115,8 @@ it("imports once, publishes updates, clears unsupported slots, and dispatches ca
 });
 
 it("reports a mount-only module instead of bypassing view resolution", async () => {
-  const mount = vi.fn();
+  const mount =
+    vi.fn<NonNullable<NonNullable<Parameters<typeof setup>[0]>["mount"]>>();
   const runtime = setup({ mount });
   runtime.update({
     declaredViews: [],
@@ -113,17 +125,18 @@ it("reports a mount-only module instead of bypassing view resolution", async () 
     supportedViews: [],
     view: "/",
   });
-  await vi.waitFor(() =>
+  await vi.waitFor(() => {
     expect(runtime.parentWindow.postMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         payload: {
+          // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
           data: { message: expect.stringContaining("app builder") },
           type: "error",
         },
       }),
       "*"
-    )
-  );
+    );
+  });
   expect(mount).not.toHaveBeenCalled();
 });
 
@@ -132,8 +145,9 @@ it("renders controlled requests and updates their context without reimporting th
   const client: AppClient = {
     $runtime: {
       h: (component, props) => component(props),
-      render: (node, root) =>
-        root.replaceChildren(...(node ? [node as Node] : [])),
+      render: (node, root) => {
+        root.replaceChildren(...(node instanceof Node ? [node] : []));
+      },
     },
     slots: {
       panel: {
@@ -143,7 +157,7 @@ it("renders controlled requests and updates their context without reimporting th
               return null;
             }
             return document.createTextNode(
-              `${props.context.workspaceId}:${props.context.userId}`
+              `${String(props.context.workspaceId)}:${String(props.context.userId)}`
             );
           },
         },
@@ -161,15 +175,21 @@ it("renders controlled requests and updates their context without reimporting th
     view: "/users/detail",
   };
   runtime.update(request);
-  await vi.waitFor(() => expect(runtime.root.textContent).toBe("w1:u1"));
+  await vi.waitFor(() => {
+    expect(runtime.root.textContent).toBe("w1:u1");
+  });
   runtime.update({ ...request, context: { userId: "u2", workspaceId: "w1" } });
-  await vi.waitFor(() => expect(runtime.root.textContent).toBe("w1:u2"));
+  await vi.waitFor(() => {
+    expect(runtime.root.textContent).toBe("w1:u2");
+  });
   runtime.update({
     ...request,
     context: undefined,
     status: "loading" as const,
   });
-  await vi.waitFor(() => expect(runtime.root.childNodes).toHaveLength(0));
+  await vi.waitFor(() => {
+    expect(runtime.root.childNodes).toHaveLength(0);
+  });
   expect(runtime.importModule).toHaveBeenCalledTimes(1);
 });
 
@@ -178,8 +198,9 @@ it("forwards selected instances through the bridge and switches them without rei
   const client: AppClient = {
     $runtime: {
       h: (component, props) => component(props),
-      render: (node, root) =>
-        root.replaceChildren(...(node ? [node as Node] : [])),
+      render: (node, root) => {
+        root.replaceChildren(...(node instanceof Node ? [node] : []));
+      },
     },
     slots: {
       panel: {
@@ -207,27 +228,33 @@ it("forwards selected instances through the bridge and switches them without rei
     view: "/",
   };
   runtime.update(request);
-  await vi.waitFor(() =>
-    expect(runtime.root.textContent).toBe('overview:{"count":1}')
-  );
+  await vi.waitFor(() => {
+    expect(runtime.root.textContent).toBe('overview:{"count":1}');
+  });
   runtime.update({
     ...request,
     instance: { data: { count: 2 }, key: "summary", metadata: {} },
   });
-  await vi.waitFor(() =>
-    expect(runtime.root.textContent).toBe('summary:{"count":2}')
-  );
+  await vi.waitFor(() => {
+    expect(runtime.root.textContent).toBe('summary:{"count":2}');
+  });
   // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-  // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-  runtime.update({
-    ...request,
-    context: undefined,
-    status: "loading",
-  } as unknown as ViewRequest);
-  await vi.waitFor(() => expect(runtime.root.childNodes).toHaveLength(0));
-  runtime.update(request);
-  await vi.waitFor(() =>
-    expect(runtime.root.textContent).toBe('overview:{"count":1}')
+
+  runtime.update(
+    /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
+    {
+      ...request,
+      context: undefined,
+      status: "loading",
+    } as unknown as ViewRequest
+    /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
   );
+  await vi.waitFor(() => {
+    expect(runtime.root.childNodes).toHaveLength(0);
+  });
+  runtime.update(request);
+  await vi.waitFor(() => {
+    expect(runtime.root.textContent).toBe('overview:{"count":1}');
+  });
   expect(runtime.importModule).toHaveBeenCalledTimes(1);
 });

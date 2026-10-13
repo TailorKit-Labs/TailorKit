@@ -1,7 +1,9 @@
+/* oxlint-disable typescript/no-unsafe-call -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { z } from "zod";
 
-import type { Client } from "../client/connection";
-import type { References } from "../client/reference";
+import type { Client } from "#client/connection";
+import type { References } from "#client/reference";
+
 import { action, defineServer, mutation, query } from "./functions";
 
 const functions = {
@@ -30,9 +32,9 @@ const app = defineServer({
       // @ts-expect-error Mutations cannot appear in the query namespace.
       ctx.queries.write({ value: 1 });
       // @ts-expect-error Call arguments use schema inputs, before transformations.
-      ctx.queries.read({ raw: 4 });
+      void ctx.queries.read({ raw: 4 });
       // @ts-expect-error Mutation arguments retain their inferred schema types.
-      ctx.mutations.write({ value: "1" });
+      void ctx.mutations.write({ value: "1" });
       // @ts-expect-error Unknown functions are not callable.
       ctx.mutations.missing({});
       // @ts-expect-error Actions have no direct database access.
@@ -75,6 +77,6 @@ const nestedAction: Promise<number> = client.action(
   nestedReferences.tasks.save
 );
 // @ts-expect-error A nested mutation reference cannot be called as a query.
-client.query(nestedReferences.todos.write, { value: 1 });
+void client.query(nestedReferences.todos.write, { value: 1 });
 void nestedQuery;
 void nestedAction;

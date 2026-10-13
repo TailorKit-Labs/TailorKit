@@ -48,7 +48,7 @@ const buttonProps: ComponentProps<typeof tailor.components.Button> = {
 };
 void buttonProps;
 
-expectTypeOf<ComponentProps<typeof tailor.components.Button>>().toMatchTypeOf<{
+expectTypeOf<ComponentProps<typeof tailor.components.Button>>().toExtend<{
   variant: "default" | "secondary";
 }>();
 expectTypeOf<typeof tailor.components.Button.children>().toEqualTypeOf<true>();
@@ -75,16 +75,15 @@ const callbacks = createTailorKitSchema({
 
 const dialogProps: ComponentProps<typeof callbacks.components.Dialog> = {
   onClose: () => {},
-  onLoad: () => Promise.resolve({ ready: true as const }),
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  onLoad: async () => ({ ready: true as const }),
   onSave: (input) => {
     expectTypeOf(input).toEqualTypeOf<{ title: string; version: number }>();
     return { saved: true };
   },
 };
 void dialogProps;
-expectTypeOf<
-  ComponentProps<typeof callbacks.components.Dialog>
->().toMatchTypeOf<{
+expectTypeOf<ComponentProps<typeof callbacks.components.Dialog>>().toExtend<{
   onSave: (input: { title: string; version: number }) => { saved: boolean };
   onClose: () => void;
   onLoad: () => Promise<{ ready: true }>;

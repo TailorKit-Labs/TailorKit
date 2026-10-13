@@ -89,13 +89,24 @@ export const Calendar = ({
       "size-(--cell-size) p-0 text-xs font-medium text-muted-foreground/72",
   };
   const mergedClassNames: typeof defaultClassNames = { ...defaultClassNames };
+  /* oxlint-disable typescript/no-unsafe-type-assertion -- The public generic API establishes this relationship; its runtime registry erases the type parameters. */
   for (const key of Object.keys(
     defaultClassNames
-  ) as (keyof typeof defaultClassNames)[]) {
+  ) as (keyof typeof defaultClassNames)[]
+  /* oxlint-enable typescript/no-unsafe-type-assertion */
+  ) {
     // SAFETY: The wrapper retains DayPicker's original mode and selection props while adding shared presentation defaults; its declared class keys come from DayPicker.
-    const userClass = classNames?.[key as keyof typeof classNames];
+    const userClass =
+      classNames?.[
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- The wrapper retains DayPicker's original mode and selection props while adding shared presentation defaults; its declared class keys come from DayPicker. */
+        key as keyof typeof classNames
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
+      ];
     const baseClass = defaultClassNames[key];
-    mergedClassNames[key] = userClass ? cn(baseClass, userClass) : baseClass;
+    mergedClassNames[key] =
+      userClass !== undefined && userClass !== null && userClass !== ""
+        ? cn(baseClass, userClass)
+        : baseClass;
   }
 
   const defaultComponents = { Chevron: CalendarChevron };
@@ -126,7 +137,11 @@ export const Calendar = ({
   // SAFETY: The wrapper retains DayPicker's original mode and selection props while adding shared presentation defaults; its declared class keys come from DayPicker.
   return (
     <DayPicker
-      {...(dayPickerProps as React.ComponentProps<typeof DayPicker>)}
+      {
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- The wrapper retains DayPicker's original mode and selection props while adding shared presentation defaults; its declared class keys come from DayPicker. */
+        ...(dayPickerProps as React.ComponentProps<typeof DayPicker>)
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
+      }
     />
   );
 };

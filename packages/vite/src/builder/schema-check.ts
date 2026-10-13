@@ -11,10 +11,10 @@ import { drizzleGenerateArguments } from "./drizzle";
 import { getBuildEnvironment } from "./env";
 import { isMissingFile } from "./fs-errors";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
+// oxlint-disable-next-line typescript/strict-void-return -- Node explicitly supports promisify(execFile); its ChildProcess return is intentionally ignored by the callback-to-Promise adapter.
 const run = promisify(execFile);
 
 interface Snapshot {
@@ -37,8 +37,8 @@ const snapshot = async (directory: string): Promise<Snapshot | undefined> => {
     .map((entry) => entry.name)
     .toSorted()
     .at(-1);
-  if (!latest) {
-    return;
+  if (!(latest !== undefined && latest !== null && latest !== "")) {
+    return undefined;
   }
   const filename = path.join(directory, latest, "snapshot.json");
   const parsed = z
@@ -56,11 +56,12 @@ const snapshot = async (directory: string): Promise<Snapshot | undefined> => {
   return parsed.data;
 };
 
-const canonical = <TInput>(value: TInput): string => {
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser, serializer, or runtime adapter handles arbitrary values before validating or encoding their domain representation.
+const canonical = (value: unknown): string => {
   if (Array.isArray(value)) {
     return `[${value.map(canonical).join(",")}]`;
   }
-  if (value && isObjectValue(value)) {
+  if (isObjectValue(value)) {
     return `{${Object.entries(value)
       .toSorted(([left], [right]) => left.localeCompare(right))
       .map(([key, item]) => `${JSON.stringify(key)}:${canonical(item)}`)

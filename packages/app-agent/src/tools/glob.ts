@@ -17,7 +17,7 @@ export const globTool = tool({
     "use step";
     const sandbox = await toolSandbox(options);
     const { abortSignal } = options;
-    return sandbox.run({
+    return await sandbox.run({
       abortSignal,
       command: `rg --no-config --files --hidden --glob ${quote(pattern)}`,
       workingDirectory: resolvePath(path),

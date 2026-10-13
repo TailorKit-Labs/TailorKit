@@ -1,2 +1,1 @@
-export const isOrgCreationManaged =
-  import.meta.env.VITE_ORG_CREATION_MANAGED === true;
+export const isOrgCreationManaged = import.meta.env.VITE_ORG_CREATION_MANAGED;

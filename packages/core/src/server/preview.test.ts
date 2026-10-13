@@ -1,13 +1,11 @@
-/* oxlint-disable require-await -- the platform fetch mock has the Fetch promise shape. */
 import { describe, expect, it } from "vite-plus/test";
 import { z } from "zod";
 
 import { createTailorKitServer } from "./handler";
 import { isActivePreviewConflict } from "./routes/preview";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 const shareId = "s".repeat(43);
 const testScopeSchema = z.record(z.string(), z.string().min(1));
@@ -30,19 +28,19 @@ const server = (
         let body: z.output<ReturnType<typeof z.json>> | undefined;
         if (
           request.method !== "GET" &&
-          request.headers.get("content-type")?.includes("json")
+          request.headers.get("content-type")?.includes("json") === true
         ) {
           body = z.json().parse(await request.clone().json());
           platformBodies.push(body);
         }
         if (url.pathname.endsWith(`/preview/shares/${shareId}/accept`)) {
-          if (previewError) {
+          if (previewError !== undefined && previewError !== null) {
             return Response.json(previewError, { status: 503 });
           }
           return Response.json({ grantId, sessionId: "session" });
         }
         if (url.pathname.endsWith(`/preview/shares/${shareId}`)) {
-          if (previewError) {
+          if (previewError !== undefined && previewError !== null) {
             return Response.json(previewError, { status: 503 });
           }
           return Response.json({
@@ -53,7 +51,7 @@ const server = (
         }
         if (url.pathname.endsWith("/apps/list")) {
           const page = Number(
-            body && !Array.isArray(body) && isObjectValue(body)
+            Boolean(body) && !Array.isArray(body) && isObjectValue(body)
               ? body.page
               : undefined
           );
@@ -367,6 +365,7 @@ describe("preview host flow", () => {
     );
     expect(response.status).toBe(200);
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     const apps = (await response.json()) as {
       id: string;
       name: string;

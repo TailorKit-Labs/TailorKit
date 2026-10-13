@@ -43,7 +43,7 @@ const RouteComponent = () => {
   const navigate = useNavigate({ from: "/forgot-password" });
   const [step, setStep] = useState<Step>("email");
   const [visible, setVisible] = useState(true);
-  const [email, setEmail] = useState(emailFromSearch || "");
+  const [email, setEmail] = useState(emailFromSearch ?? "");
   const [otp, setOtp] = useState("");
   const [otpInvalid, setOtpInvalid] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(0);
@@ -84,7 +84,7 @@ const RouteComponent = () => {
     });
     if (result.error) {
       toastManager.add({
-        description: result.error.message || "Failed to send code",
+        description: result.error.message ?? "Failed to send code",
         title: "Error",
         type: "error",
       });
@@ -95,7 +95,7 @@ const RouteComponent = () => {
   };
 
   const emailForm = useAppForm({
-    defaultValues: { email: emailFromSearch || "" },
+    defaultValues: { email: emailFromSearch ?? "" },
     onSubmit: async ({ value }) => {
       const sent = await sendOtp(value.email);
       if (sent) {
@@ -128,7 +128,7 @@ const RouteComponent = () => {
         setOtp("");
       }
       toastManager.add({
-        description: result.error.message || "Failed to verify code",
+        description: result.error.message ?? "Failed to verify code",
         title: "Verification failed",
         type: "error",
       });
@@ -148,7 +148,7 @@ const RouteComponent = () => {
       });
       if (result.error) {
         toastManager.add({
-          description: result.error.message || "Failed to reset password",
+          description: result.error.message ?? "Failed to reset password",
           title: "Reset failed",
           type: "error",
         });
@@ -159,7 +159,7 @@ const RouteComponent = () => {
         title: "Password reset",
         type: "success",
       });
-      navigate({
+      void navigate({
         search: { email, return_to },
         to: "/login",
       });
@@ -211,7 +211,7 @@ const RouteComponent = () => {
           onSubmit={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            emailForm.handleSubmit();
+            void emailForm.handleSubmit();
           }}
         >
           <CardPanel>
@@ -255,7 +255,7 @@ const RouteComponent = () => {
                       setOtp(value);
                       setOtpInvalid(false);
                       if (value.length === OTP_LENGTH) {
-                        verifyOtp(value);
+                        void verifyOtp(value);
                       }
                     }}
                     disabled={verifyingOtp}
@@ -281,12 +281,14 @@ const RouteComponent = () => {
                     variant="link"
                     size="sm"
                     type="button"
-                    onClick={async () => {
-                      setResending(true);
-                      await sendOtp(email);
-                      setResending(false);
-                      setOtp("");
-                      setOtpInvalid(false);
+                    onClick={() => {
+                      void (async () => {
+                        setResending(true);
+                        await sendOtp(email);
+                        setResending(false);
+                        setOtp("");
+                        setOtpInvalid(false);
+                      })();
                     }}
                     disabled={resending || resendCountdown > 0}
                     loading={resending}
@@ -305,7 +307,11 @@ const RouteComponent = () => {
               className="w-full"
               disabled={otp.length < OTP_LENGTH || verifyingOtp}
               loading={verifyingOtp}
-              onClick={() => verifyOtp(otp)}
+              onClick={() => {
+                void (async () => {
+                  await verifyOtp(otp);
+                })();
+              }}
             >
               Continue
             </Button>
@@ -319,7 +325,7 @@ const RouteComponent = () => {
         onSubmit={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          resetForm.handleSubmit();
+          void resetForm.handleSubmit();
         }}
       >
         <CardPanel>

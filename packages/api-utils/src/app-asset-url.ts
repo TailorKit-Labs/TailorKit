@@ -2,6 +2,9 @@ import { getBaseUrl } from "@tailorkit/env";
 
 import { env } from "#env";
 
+const hasText = (value: string | null | undefined): value is string =>
+  value !== undefined && value !== null && value.length > 0;
+
 interface AppDeploymentAssets {
   views?: { slot: string; path: string; instances?: true; disabled?: true }[];
   clientEntryFileId: string | null;
@@ -27,22 +30,25 @@ export const withAppAssetUrl = <
     (env.NODE_ENV === "development"
       ? `${getBaseUrl(env)}/api/assets`
       : undefined);
-  const assetBaseUrl = nodeBaseUrl
+  const assetBaseUrl = hasText(nodeBaseUrl)
     ? `${nodeBaseUrl.replace(/\/$/u, "")}/t/${publicTeamId}`
     : `https://${publicTeamId}.${env.ASSET_DOMAIN}`;
   let clientPath: string | undefined;
   let logoPaths: { dark?: string; light?: string } | undefined;
 
-  if (deployment?.status === "published" && deployment.clientEntryFileId) {
+  if (
+    deployment?.status === "published" &&
+    hasText(deployment.clientEntryFileId)
+  ) {
     const appBase = `${assetBaseUrl}/p/${projectId}/a/${app.publicId}`;
     const deploymentBase = `${appBase}/d/${deployment.publicId}`;
     clientPath = `${deploymentBase}/client/client.js`;
     const getLogoUrl = (path: string) => `${deploymentBase}/${path}`;
     const logos: NonNullable<typeof logoPaths> = {};
-    if (deployment.logoDarkPath) {
+    if (hasText(deployment.logoDarkPath)) {
       logos.dark = getLogoUrl(deployment.logoDarkPath);
     }
-    if (deployment.logoLightPath) {
+    if (hasText(deployment.logoLightPath)) {
       logos.light = getLogoUrl(deployment.logoLightPath);
     }
 

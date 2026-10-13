@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { allTasks } from "nanostores";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
@@ -7,7 +8,7 @@ afterEach(() => vi.useRealTimers());
 
 const deferred = <T>() => {
   let resolve!: (value: T) => void;
-  const promise = (() => {
+  const promise = (async () => {
     const {
       promise: pendingPromise,
       resolve: done,
@@ -18,7 +19,7 @@ const deferred = <T>() => {
     } catch (error) {
       rejectPending(error);
     }
-    return pendingPromise;
+    return await pendingPromise;
   })();
   return { promise, resolve };
 };
@@ -27,10 +28,11 @@ describe("fetch cache", () => {
   it("shares in-flight requests and snapshots across equivalent keys", async () => {
     const cache = createFetchCache({ gcTime: Infinity });
     const response = deferred<string[]>();
-    const fetcher = vi.fn(() => response.promise);
+    const fetcher = vi.fn(async () => await response.promise);
     const first = cache.getStore(["apps", { a: 1, b: 2 }], fetcher);
     const second = cache.getStore(["apps", { a: 1, b: 2 }], fetcher);
-    const listener = vi.fn();
+    const listener =
+      vi.fn<NonNullable<Parameters<typeof second.subscribe>[0]>>();
     const stop = second.subscribe(listener);
     const pending = first.fetch();
     expect(second.fetch()).toBe(pending);
@@ -102,7 +104,9 @@ describe("fetch cache", () => {
     const cache = createFetchCache({ gcTime: 100, staleTime: Infinity });
     const fetcher = vi.fn().mockResolvedValue("data");
     const store = cache.getStore(["apps"], fetcher);
-    const stop = store.subscribe(vi.fn());
+    const stop = store.subscribe(
+      vi.fn<NonNullable<Parameters<typeof store.subscribe>[0]>>()
+    );
     await store.fetch();
     vi.advanceTimersByTime(200);
     expect(store.getSnapshot().data).toBe("data");
@@ -121,14 +125,18 @@ describe("fetch cache", () => {
     let signal!: AbortSignal;
     const store = cache.getStore(
       ["instances"],
-      (input) => {
+      async (input) => {
         signal = input;
-        return response.promise;
+        return await response.promise;
       },
       { abortOnUnsubscribe: true }
     );
-    const stopFirst = store.subscribe(vi.fn());
-    const stopLast = store.subscribe(vi.fn());
+    const stopFirst = store.subscribe(
+      vi.fn<NonNullable<Parameters<typeof store.subscribe>[0]>>()
+    );
+    const stopLast = store.subscribe(
+      vi.fn<NonNullable<Parameters<typeof store.subscribe>[0]>>()
+    );
     const pending = store.fetch();
     await Promise.resolve();
     stopFirst();
@@ -150,7 +158,8 @@ describe("fetch cache", () => {
     const gcTime = timerLimit + 1000;
     const store = createFetchCache({ gcTime, staleTime: Infinity }).getStore(
       ["apps"],
-      () => Promise.resolve("data")
+      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+      async () => "data"
     );
     await store.fetch();
     vi.advanceTimersByTime(timerLimit);
@@ -165,12 +174,16 @@ describe("fetch cache", () => {
     vi.useFakeTimers();
     const timerLimit = 2_147_483_647;
     const gcTime = timerLimit + 1000;
-    const store = createFetchCache({ gcTime }).getStore(["apps"], () =>
-      Promise.resolve("data")
+    const store = createFetchCache({ gcTime }).getStore(
+      ["apps"],
+      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+      async () => "data"
     );
     await store.fetch();
     vi.advanceTimersByTime(timerLimit);
-    const stop = store.subscribe(vi.fn());
+    const stop = store.subscribe(
+      vi.fn<NonNullable<Parameters<typeof store.subscribe>[0]>>()
+    );
     vi.advanceTimersByTime(gcTime);
     expect(store.getSnapshot().data).toBe("data");
     stop();
@@ -215,7 +228,9 @@ describe("fetch cache", () => {
     expect(fetcher).toHaveBeenCalledOnce();
     await store.fetch();
     expect(fetcher).toHaveBeenCalledTimes(2);
-    const stop = store.subscribe(vi.fn());
+    const stop = store.subscribe(
+      vi.fn<NonNullable<Parameters<typeof store.subscribe>[0]>>()
+    );
     await store.invalidate();
     expect(fetcher).toHaveBeenCalledTimes(3);
     stop();
@@ -252,12 +267,15 @@ describe("fetch cache", () => {
   it("isolates caches and clears pending requests without publishing late data", async () => {
     const response = deferred<string>();
     const cache = createFetchCache({ gcTime: Infinity });
-    const store = cache.getStore(["apps"], () => response.promise);
+    const store = cache.getStore(["apps"], async () => await response.promise);
     const other = createFetchCache({ gcTime: Infinity }).getStore(
       ["apps"],
-      () => Promise.resolve("other")
+      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+      async () => "other"
     );
-    const stop = store.subscribe(vi.fn());
+    const stop = store.subscribe(
+      vi.fn<NonNullable<Parameters<typeof store.subscribe>[0]>>()
+    );
     const pending = store.fetch();
     cache.clear();
     response.resolve("late");
@@ -271,9 +289,9 @@ describe("fetch cache", () => {
     const response = deferred<string>();
     const store = createFetchCache({ gcTime: Infinity }).getStore(
       ["tasks"],
-      () => response.promise
+      async () => await response.promise
     );
-    const listener = vi.fn();
+    const listener = vi.fn<Parameters<typeof store.state.listen>[0]>();
     const stop = store.state.listen(listener);
     void store.fetch();
     expect(store.state.get().isFetching).toBe(true);
@@ -302,7 +320,9 @@ describe("fetch cache", () => {
         abortOnUnsubscribe: true,
       }
     );
-    const stop = store.state.listen(vi.fn());
+    const stop = store.state.listen(
+      vi.fn<NonNullable<Parameters<typeof store.state.listen>[0]>>()
+    );
     const pending = store.fetch();
     stop();
     await pending;

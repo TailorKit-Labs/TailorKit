@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-member-access, typescript/no-unsafe-argument -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { issueAgentToken } from "@tailorkit/api-utils/agent-token";
 import { hashSecret } from "@tailorkit/api-utils/hashing";
@@ -65,9 +66,11 @@ let sameScopeAppId: string;
 let otherScopeAppId: string;
 let otherProjectAppId: string;
 
-const request = <TInput>(
+const request = (
   path: string,
-  body: TInput | Record<never, never> = {},
+
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This fixture must represent malformed input so the runtime validation boundary can be tested.
+  body: unknown = {},
   secret = jwt
 ) =>
   new Request(`https://platform.test/api/platform${path}`, {
@@ -78,9 +81,11 @@ const request = <TInput>(
     },
     method: "POST",
   });
-const post = async <TBody>(
+const post = async (
   path: string,
-  body: TBody | Record<never, never> = {}
+
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This fixture must represent malformed input so the runtime validation boundary can be tested.
+  body: unknown = {}
 ) => {
   const input = request(path, body);
   let context;

@@ -12,14 +12,13 @@ import {
   getTailorKitScopes,
   o,
   requireCliDeployToken,
-} from "../procedures";
+} from "#server/procedures";
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 const paginationInput = z.object({
   page: z.number().int().min(1).optional(),
@@ -63,10 +62,12 @@ const getErrorMessage = (cause: unknown): string | undefined => {
   if (isStringValue(cause)) {
     return cause;
   }
-  if (cause && isObjectValue(cause) && "message" in cause) {
+  if (isObjectValue(cause) && "message" in cause) {
     const { message } = cause;
     return isStringValue(message) ? message : undefined;
   }
+
+  return undefined;
 };
 
 const isNotFoundError = (cause: unknown): boolean =>
@@ -119,6 +120,9 @@ export const deploymentRouter = {
       } catch (error) {
         preservePlatformNotFound(error);
       }
+
+      /* oxlint-disable-next-line unicorn/no-useless-undefined -- Missing results use the same undefined sentinel as the optional return type. */
+      return undefined;
     }),
   get: o
     .use(requireCliDeployToken)
@@ -142,7 +146,7 @@ export const deploymentRouter = {
     .input(
       z
         .object({ appId: z.string(), scopes: z.array(z.string()).optional() })
-        .merge(paginationInput)
+        .extend(paginationInput.shape)
     )
     .handler(
       async ({ context, input }) =>

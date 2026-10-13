@@ -15,8 +15,8 @@ import {
   vi,
 } from "vite-plus/test";
 
-import { RenderSlot } from "../index";
-import { createClient } from "../tailorkit";
+import { RenderSlot } from "#index";
+import { createClient } from "#tailorkit";
 
 const requests: { appUrl: string; props: RemoteProps }[] = [];
 
@@ -32,6 +32,7 @@ const typedSchema = <T,>(): StandardSchemaV1<unknown, T> &
   StandardJSONSchemaV1<unknown, T> => ({
   "~standard": {
     jsonSchema: { input: () => ({}), output: () => ({}) },
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     validate: (value) => ({ value: value as T }),
     vendor: "test",
     version: 1,
@@ -97,7 +98,7 @@ describe("RenderSlot", () => {
   it("uses the registered hierarchy and removes unmounted contexts", async () => {
     const contents = contentsImplementation;
     const result = render(contents(true));
-    await waitFor(() =>
+    await waitFor(() => {
       expect(requests.at(-1)?.props).toMatchObject({
         layers: [
           {
@@ -110,10 +111,10 @@ describe("RenderSlot", () => {
         ],
         slot: "panel",
         view: "/customers/detail",
-      })
-    );
+      });
+    });
     result.rerender(contents(false));
-    await waitFor(() =>
+    await waitFor(() => {
       expect(requests.at(-1)?.props).toMatchObject({
         layers: [
           {
@@ -124,8 +125,8 @@ describe("RenderSlot", () => {
           { context: { canEdit: true }, path: "/customers", status: "ready" },
         ],
         view: "/customers",
-      })
-    );
+      });
+    });
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
@@ -156,9 +157,9 @@ describe("RenderSlot", () => {
         </client.Provider>
       </StrictMode>
     );
-    await waitFor(() =>
-      expect(requests.some(({ props }) => props.slot === "navbar")).toBe(true)
-    );
+    await waitFor(() => {
+      expect(requests.some(({ props }) => props.slot === "navbar")).toBe(true);
+    });
     expect(
       requests.every(({ appUrl }) => appUrl === "https://host.test/client.js")
     ).toBe(true);
@@ -224,7 +225,7 @@ describe("RenderSlot.Controlled", () => {
   it("renders supplied combined context without registrations and keeps equivalent context stable", async () => {
     const contents = contentsImplementation2;
     const result = render(contents("c1"));
-    await waitFor(() =>
+    await waitFor(() => {
       expect(requests.at(-1)?.props).toMatchObject({
         context: {
           canEdit: false,
@@ -235,18 +236,18 @@ describe("RenderSlot.Controlled", () => {
         slot: "panel",
         status: "ready",
         view: "/customers/detail",
-      })
-    );
+      });
+    });
     expect(requests.at(-1)?.props).not.toHaveProperty("layers");
     const initial = requests.at(-1)?.props;
     result.rerender(contents("c1"));
     expect(requests.at(-1)?.props).toBe(initial);
     result.rerender(contents("c2"));
-    await waitFor(() =>
+    await waitFor(() => {
       expect(requests.at(-1)?.props.context).toMatchObject({
         customer: { id: "c2" },
-      })
-    );
+      });
+    });
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
@@ -255,14 +256,16 @@ describe("RenderSlot.Controlled", () => {
   it("does not inherit or react to registered context", async () => {
     const contents = contentsImplementation3;
     const result = render(contents(true));
-    await waitFor(() =>
+    await waitFor(() => {
       expect(requests.at(-1)?.props.context).toEqual({
         canEdit: false,
         user: { id: "explicit" },
-      })
-    );
+      });
+    });
     const initial = requests.at(-1)?.props;
-    await act(() => result.rerender(contents(false)));
+    act(() => {
+      result.rerender(contents(false));
+    });
     expect(requests.at(-1)?.props).toBe(initial);
   });
 
@@ -271,16 +274,18 @@ describe("RenderSlot.Controlled", () => {
   it("drops ready context when explicitly switched to loading or error", async () => {
     const contents = contentsImplementation4;
     const result = render(contents("ready"));
-    await waitFor(() => expect(requests.at(-1)?.props.status).toBe("ready"));
+    await waitFor(() => {
+      expect(requests.at(-1)?.props.status).toBe("ready");
+    });
     for (const status of ["loading", "error"] as const) {
       result.rerender(contents(status));
       // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-      await waitFor(() =>
+      await waitFor(() => {
         expect(requests.at(-1)?.props).toMatchObject({
           context: undefined,
           status,
-        })
-      );
+        });
+      });
     }
   });
 });
@@ -342,9 +347,9 @@ it("resolves the key and sends a complete controlled instance through the render
   let finish!: (response: Response) => void;
   const fetch = vi
     .mocked(globalThis.fetch)
-    // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
+
     .mockImplementation(async (input) => {
-      const url = String(input);
+      const url = input instanceof Request ? input.url : String(input);
       if (url.endsWith("/backend/session")) {
         return Response.json({
           expiresAt: Date.now() + 300_000,
@@ -353,7 +358,7 @@ it("resolves the key and sends a complete controlled instance through the render
         });
       }
       if (url.endsWith("/actions")) {
-        return (() => {
+        return await (async () => {
           const {
             promise: pendingPromise,
             resolve,
@@ -364,22 +369,25 @@ it("resolves the key and sends a complete controlled instance through the render
           } catch (error) {
             rejectPending(error);
           }
-          return pendingPromise;
+          return await pendingPromise;
         })();
       }
       return Response.json({ schema: {} });
     });
   const content = contentImplementation;
   const view = render(content("overview"));
-  await waitFor(() =>
-    expect(screen.getByRole("status").textContent).toBe("Loading view…")
-  );
-  await waitFor(() => expect(finish).toBeTypeOf("function"));
+  await waitFor(() => {
+    expect(screen.getByRole("status").textContent).toBe("Loading view…");
+  });
+  await waitFor(() => {
+    expect(finish).toBeTypeOf("function");
+  });
   expect(requests).toHaveLength(0);
-  await act(
-    async () => await finish(Response.json({ json: [overview, summary] }))
-  );
-  await waitFor(() =>
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  await act(async () => {
+    finish(Response.json({ json: [overview, summary] }));
+  });
+  await waitFor(() => {
     expect(requests.at(-1)?.props).toMatchObject({
       context: { user: { id: "registered" } },
       controlled: true,
@@ -387,31 +395,37 @@ it("resolves the key and sends a complete controlled instance through the render
       slot: "page",
       status: "ready",
       view: "/",
-    })
-  );
+    });
+  });
   expect(requests.at(-1)?.props).not.toHaveProperty("layers");
   const initialProps = requests.at(-1)?.props;
   view.rerender(content("overview"));
   expect(requests.at(-1)?.props).toBe(initialProps);
   view.rerender(content("summary"));
-  await waitFor(() => expect(requests.at(-1)?.props.instance).toEqual(summary));
+  await waitFor(() => {
+    expect(requests.at(-1)?.props.instance).toEqual(summary);
+  });
   expect(
-    fetch.mock.calls.filter(([input]) => String(input).endsWith("/actions"))
+    fetch.mock.calls.filter(([input]) =>
+      (input instanceof Request ? input.url : String(input)).endsWith(
+        "/actions"
+      )
+    )
   ).toHaveLength(1);
   view.rerender(content("missing"));
   expect(screen.getByRole("alert").textContent).toBe(
     'View instance "missing" is unavailable.'
   );
   view.rerender(content("overview"));
-  await waitFor(() =>
-    expect(requests.at(-1)?.props.instance).toEqual(overview)
-  );
+  await waitFor(() => {
+    expect(requests.at(-1)?.props.instance).toEqual(overview);
+  });
 });
 
 it("reports resolver failures and missing keys without mounting stale instances", async () => {
   // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
   vi.mocked(globalThis.fetch).mockImplementation(async (input) => {
-    const url = String(input);
+    const url = input instanceof Request ? input.url : String(input);
     if (url.endsWith("/backend/session")) {
       return Response.json({
         expiresAt: Date.now() + 300_000,
@@ -439,9 +453,9 @@ it("reports resolver failures and missing keys without mounting stale instances"
       <client.RenderSlot app={instanceApp} slot="page" instanceKey="overview" />
     </client.Provider>
   );
-  await waitFor(() =>
-    expect(screen.getByRole("alert").textContent).toBe("No reports available")
-  );
+  await waitFor(() => {
+    expect(screen.getByRole("alert").textContent).toBe("No reports available");
+  });
   expect(requests).toHaveLength(0);
 });
 
@@ -452,11 +466,11 @@ it("requires a key for a dynamic managed view", async () => {
       <RenderSlot app={instanceApp} slot="page" />
     </client.Provider>
   );
-  await waitFor(() =>
+  await waitFor(() => {
     expect(screen.getByRole("alert").textContent).toContain(
       "Pass instanceKey to RenderSlot"
-    )
-  );
+    );
+  });
   expect(requests).toHaveLength(0);
 });
 
@@ -484,14 +498,14 @@ it.each([false, true])(
       </client.Provider>
     );
     if (dynamic) {
-      await waitFor(() =>
+      await waitFor(() => {
         expect(screen.getByRole("alert").textContent).toBe(
           'Slot "panel" does not support instances.'
-        )
-      );
+        );
+      });
       expect(requests).toHaveLength(0);
     } else {
-      await waitFor(() =>
+      await waitFor(() => {
         expect(requests.at(-1)?.props).toMatchObject({
           layers: [
             {
@@ -506,8 +520,8 @@ it.each([false, true])(
             },
           ],
           view: "/customers",
-        })
-      );
+        });
+      });
       expect(screen.queryByRole("alert")).toBeNull();
     }
   }
@@ -536,11 +550,13 @@ it("passes supplied instances without resolving them and clears them while loadi
     </client.Provider>
   );
   const view = render(content(overview, "ready"));
-  await waitFor(() =>
-    expect(requests.at(-1)?.props.instance).toEqual(overview)
-  );
+  await waitFor(() => {
+    expect(requests.at(-1)?.props.instance).toEqual(overview);
+  });
   view.rerender(content(summary, "ready"));
-  await waitFor(() => expect(requests.at(-1)?.props.instance).toEqual(summary));
+  await waitFor(() => {
+    expect(requests.at(-1)?.props.instance).toEqual(summary);
+  });
   view.rerender(content(summary, "loading"));
   expect(requests.at(-1)?.props).not.toHaveProperty("instance");
   expect(globalThis.fetch).not.toHaveBeenCalled();
@@ -565,9 +581,9 @@ it("reports a missing controlled instance and recovers when one is supplied", as
   );
   expect(requests).toHaveLength(0);
   view.rerender(content(overview));
-  await waitFor(() =>
-    expect(requests.at(-1)?.props.instance).toEqual(overview)
-  );
+  await waitFor(() => {
+    expect(requests.at(-1)?.props.instance).toEqual(overview);
+  });
 });
 
 it("rejects instance keys and controlled instances for single-instance slots at runtime", async () => {
@@ -581,11 +597,11 @@ it("rejects instance keys and controlled instances for single-instance slots at 
       <RenderSlot app={singleApp} slot="navbar" instanceKey="overview" />
     </client.Provider>
   );
-  await waitFor(() =>
+  await waitFor(() => {
     expect(screen.getByRole("alert").textContent).toBe(
       'Slot "navbar" does not support instances.'
-    )
-  );
+    );
+  });
   expect(requests).toHaveLength(0);
   rendered.rerender(
     <client.Provider>
@@ -599,10 +615,10 @@ it("rejects instance keys and controlled instances for single-instance slots at 
       />
     </client.Provider>
   );
-  await waitFor(() =>
+  await waitFor(() => {
     expect(screen.getByRole("alert").textContent).toBe(
       'Slot "navbar" does not support instances.'
-    )
-  );
+    );
+  });
   expect(requests).toHaveLength(0);
 });

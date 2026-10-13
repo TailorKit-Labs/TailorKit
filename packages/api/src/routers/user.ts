@@ -9,9 +9,8 @@ import { z } from "zod";
 import { env } from "#env";
 import { publicProcedure, protectedProcedure, requireOrg } from "#procedures";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
@@ -29,7 +28,11 @@ const getGitHubUsername = async (
   try {
     kv = getKV();
     const cachedUsername = kv ? await kv.get(key, { timeout: 1000 }) : null;
-    if (cachedUsername) {
+    if (
+      cachedUsername !== undefined &&
+      cachedUsername !== null &&
+      cachedUsername !== ""
+    ) {
       return cachedUsername;
     }
   } catch {
@@ -37,7 +40,9 @@ const getGitHubUsername = async (
   }
 
   const accessToken = await getAccessToken();
-  if (!accessToken) {
+  if (
+    !(accessToken !== undefined && accessToken !== null && accessToken !== "")
+  ) {
     return null;
   }
 
@@ -81,11 +86,12 @@ const getGitHubUsername = async (
 export const userRouter = {
   acceptInvitation: protectedProcedure
     .input(z.object({ invitationId: z.string() }))
-    .handler(({ input, context }) =>
-      auth.api.acceptInvitation({
-        body: { invitationId: input.invitationId },
-        headers: context.headers,
-      })
+    .handler(
+      async ({ input, context }) =>
+        await auth.api.acceptInvitation({
+          body: { invitationId: input.invitationId },
+          headers: context.headers,
+        })
     ),
 
   changePassword: protectedProcedure
@@ -96,8 +102,9 @@ export const userRouter = {
         revokeOtherSessions: z.boolean().optional(),
       })
     )
-    .handler(({ input, context }) =>
-      auth.api.changePassword({ body: input, headers: context.headers })
+    .handler(
+      async ({ input, context }) =>
+        await auth.api.changePassword({ body: input, headers: context.headers })
     ),
 
   checkOrgSlug: protectedProcedure
@@ -150,20 +157,32 @@ export const userRouter = {
 
   disableTwoFactor: protectedProcedure
     .input(z.object({ password: z.string() }))
-    .handler(({ input, context }) =>
-      auth.api.disableTwoFactor({ body: input, headers: context.headers })
+    .handler(
+      async ({ input, context }) =>
+        await auth.api.disableTwoFactor({
+          body: input,
+          headers: context.headers,
+        })
     ),
 
   enableTwoFactor: protectedProcedure
     .input(z.object({ method: z.literal("totp"), password: z.string() }))
-    .handler(({ input, context }) =>
-      auth.api.enableTwoFactor({ body: input, headers: context.headers })
+    .handler(
+      async ({ input, context }) =>
+        await auth.api.enableTwoFactor({
+          body: input,
+          headers: context.headers,
+        })
     ),
 
   generateBackupCodes: protectedProcedure
     .input(z.object({ password: z.string() }))
-    .handler(({ input, context }) =>
-      auth.api.generateBackupCodes({ body: input, headers: context.headers })
+    .handler(
+      async ({ input, context }) =>
+        await auth.api.generateBackupCodes({
+          body: input,
+          headers: context.headers,
+        })
     ),
 
   getOrg: protectedProcedure
@@ -215,8 +234,12 @@ export const userRouter = {
         provider: z.enum(["github", "google"]),
       })
     )
-    .handler(({ input, context }) =>
-      auth.api.linkSocialAccount({ body: input, headers: context.headers })
+    .handler(
+      async ({ input, context }) =>
+        await auth.api.linkSocialAccount({
+          body: input,
+          headers: context.headers,
+        })
     ),
 
   listAccounts: protectedProcedure.handler(async ({ context }) => {
@@ -247,27 +270,31 @@ export const userRouter = {
     }));
   }),
 
-  listSessions: protectedProcedure.handler(({ context }) =>
-    auth.api.listSessions({ headers: context.headers })
+  listSessions: protectedProcedure.handler(
+    async ({ context }) =>
+      await auth.api.listSessions({ headers: context.headers })
   ),
 
   rejectInvitation: protectedProcedure
     .input(z.object({ invitationId: z.string() }))
-    .handler(({ input, context }) =>
-      auth.api.rejectInvitation({
-        body: { invitationId: input.invitationId },
-        headers: context.headers,
-      })
+    .handler(
+      async ({ input, context }) =>
+        await auth.api.rejectInvitation({
+          body: { invitationId: input.invitationId },
+          headers: context.headers,
+        })
     ),
 
-  revokeOtherSessions: protectedProcedure.handler(({ context }) =>
-    auth.api.revokeOtherSessions({ headers: context.headers })
+  revokeOtherSessions: protectedProcedure.handler(
+    async ({ context }) =>
+      await auth.api.revokeOtherSessions({ headers: context.headers })
   ),
 
   revokeSession: protectedProcedure
     .input(z.object({ token: z.string() }))
-    .handler(({ input, context }) =>
-      auth.api.revokeSession({ body: input, headers: context.headers })
+    .handler(
+      async ({ input, context }) =>
+        await auth.api.revokeSession({ body: input, headers: context.headers })
     ),
 
   unlinkAccount: protectedProcedure
@@ -306,7 +333,8 @@ export const userRouter = {
 
   verifyTotp: protectedProcedure
     .input(z.object({ code: z.string().length(6) }))
-    .handler(({ input, context }) =>
-      auth.api.verifyTOTP({ body: input, headers: context.headers })
+    .handler(
+      async ({ input, context }) =>
+        await auth.api.verifyTOTP({ body: input, headers: context.headers })
     ),
 };

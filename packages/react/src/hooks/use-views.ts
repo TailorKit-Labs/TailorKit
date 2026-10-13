@@ -2,7 +2,8 @@ import { createValueMemo, createViewsQuery } from "@tailorkit/client-core";
 import type { SlotItem, ViewsQueryOptions } from "@tailorkit/client-core";
 import { useMemo } from "react";
 
-import { useTailorkitContext } from "../components/context";
+import { useTailorkitContext } from "#components/context";
+
 import { useQueryResult } from "./use-query-result";
 import type { UseQueryResult } from "./use-query-result";
 

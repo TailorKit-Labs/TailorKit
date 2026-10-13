@@ -8,7 +8,7 @@ export interface PreactVersionCheck {
 export const parsePreactVersion = (version: string): PreactVersionCheck => {
   const match = /^(?<major>\d+)\./u.exec(version);
 
-  if (!match?.[1]) {
+  if (!(match?.[1] !== undefined && match?.[1] !== null && match?.[1] !== "")) {
     throw new Error(`Unable to parse Preact version "${version}".`);
   }
 

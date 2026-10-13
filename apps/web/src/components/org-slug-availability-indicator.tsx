@@ -13,7 +13,10 @@ export const OrgSlugAvailabilityIndicator = ({
   availability,
   submitError,
 }: OrgSlugAvailabilityIndicatorProps) => {
-  const status = submitError ? "unavailable" : availability.status;
+  const status =
+    submitError !== undefined && submitError !== null && submitError !== ""
+      ? "unavailable"
+      : availability.status;
   const message = submitError ?? availability.message;
 
   if (status === "idle") {

@@ -5,7 +5,8 @@ import type { RuntimeManifest } from "@tailorkit/app/server";
 import { build } from "vite";
 import type { UserConfig } from "vite";
 
-import type { LoadedTailorKitConfig } from "../config/loader";
+import type { LoadedTailorKitConfig } from "#config/loader";
+
 import { appDatabasePaths } from "./database-paths";
 import { isMissingFile } from "./fs-errors";
 import {
@@ -68,7 +69,8 @@ export const buildServer = async (
 ) => {
   const config = loaded.config.server;
   if (!config) {
-    return;
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
   }
   const output = buildOutDir ?? path.resolve(loaded.root, ".tailorkit");
   const directory = path.join(output, "server");
@@ -87,7 +89,7 @@ export const buildServer = async (
   let watching = false;
   let ready: (() => void) | undefined;
   const initialBuild = watch
-    ? (() => {
+    ? (async () => {
         const {
           promise: pendingPromise,
           resolve,
@@ -98,7 +100,7 @@ export const buildServer = async (
         } catch (error) {
           rejectPending(error);
         }
-        return pendingPromise;
+        await pendingPromise;
       })()
     : undefined;
   try {
@@ -118,7 +120,7 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
         emptyOutDir: false,
         minify: "oxc",
         outDir: directory,
-        rollupOptions: {
+        rolldownOptions: {
           external: [],
           output: {
             entryFileNames: "server.js",
@@ -138,10 +140,13 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
         ...(viteConfig.plugins ?? []),
         instanceServerPlugin(loaded.root, instances),
         {
-          closeWatcher: () => rm(temporary, { force: true, recursive: true }),
+          closeWatcher: async () => {
+            await rm(temporary, { force: true, recursive: true });
+          },
           async load(id) {
             if (id !== "\0tailorkit:migrations") {
-              return;
+              /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+              return undefined;
             }
             const { migrations, files } = await readAppMigrations(
               migrationsDirectory,
@@ -165,11 +170,10 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
             return `export default ${JSON.stringify(migrations)};`;
           },
           name: "tailorkit-app-migrations",
-          resolveId(id) {
-            if (id === "tailorkit:migrations") {
-              return "\0tailorkit:migrations";
-            }
-          },
+          resolveId: (id) =>
+            id === "tailorkit:migrations"
+              ? "\0tailorkit:migrations"
+              : undefined,
         },
       ],
       resolve: viteConfig.resolve,
@@ -181,7 +185,7 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
       try {
         await Promise.race([
           initialBuild,
-          (() => {
+          (async () => {
             const {
               promise: pendingPromise,
               resolve: _,
@@ -199,7 +203,7 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
             } catch (error) {
               reject(error);
             }
-            return pendingPromise;
+            return await pendingPromise;
           })(),
         ]);
       } catch (error) {

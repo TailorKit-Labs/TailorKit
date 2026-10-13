@@ -39,7 +39,7 @@ const projectApiKeyMetadataSchema = z.object({
 type ProjectApiKeyMetadata = z.infer<typeof projectApiKeyMetadataSchema>;
 
 const toDate = (value: Date | string | null): Date | null => {
-  if (!value) {
+  if (value === null || value === "") {
     return null;
   }
   return value instanceof Date ? value : new Date(value);
@@ -53,17 +53,14 @@ const isKeyExpired = (key: { expiresAt: Date | string | null }) => {
 const parseProjectApiKeyMetadata = (
   metadata: Parameters<typeof projectApiKeyMetadataSchema.safeParse>[0]
 ) => {
-  const value = isStringValue(metadata)
-    ? (() => {
-        try {
-          return JSON.parse(metadata);
-        } catch {
-          return null;
-        }
-      })()
-    : metadata;
-  const result = projectApiKeyMetadataSchema.safeParse(value);
-  return result.success ? result.data : null;
+  try {
+    const result = projectApiKeyMetadataSchema.safeParse(
+      isStringValue(metadata) ? JSON.parse(metadata) : metadata
+    );
+    return result.success ? result.data : null;
+  } catch {
+    return null;
+  }
 };
 
 const listAllProjectApiKeys = async ({
@@ -130,7 +127,7 @@ const listProjectApiKeys = async ({
   };
 };
 
-const createProjectApiKey = ({
+const createProjectApiKey = async ({
   organizationId,
   projectId,
   userId,
@@ -139,7 +136,7 @@ const createProjectApiKey = ({
   projectId: string;
   userId: string;
 }) =>
-  auth.api.createApiKey({
+  await auth.api.createApiKey({
     body: {
       configId: projectApiKeyConfigId,
       metadata: {
@@ -160,12 +157,13 @@ export const projectRouter = {
   apiKeys: protectedProcedure
     .input(projectInput)
     .use(requireProject())
-    .handler(({ context }) =>
-      listProjectApiKeys({
-        headers: context.headers,
-        organizationId: context.org.id,
-        projectId: context.project.id,
-      })
+    .handler(
+      async ({ context }) =>
+        await listProjectApiKeys({
+          headers: context.headers,
+          organizationId: context.org.id,
+          projectId: context.project.id,
+        })
     ),
 
   create: protectedProcedure
@@ -233,14 +231,15 @@ export const projectRouter = {
       });
 
       await Promise.all(
-        keys.map((key) =>
-          auth.api.deleteApiKey({
-            body: {
-              configId: projectApiKeyConfigId,
-              keyId: key.id,
-            },
-            headers: context.headers,
-          })
+        keys.map(
+          async (key) =>
+            await auth.api.deleteApiKey({
+              body: {
+                configId: projectApiKeyConfigId,
+                keyId: key.id,
+              },
+              headers: context.headers,
+            })
         )
       );
 
@@ -293,32 +292,34 @@ export const projectRouter = {
       try {
         await (input.gracePeriodSeconds === 0
           ? Promise.all(
-              currentKeys.active.map((key) =>
-                auth.api.deleteApiKey({
-                  body: {
-                    configId: projectApiKeyConfigId,
-                    keyId: key.id,
-                  },
-                  headers: context.headers,
-                })
+              currentKeys.active.map(
+                async (key) =>
+                  await auth.api.deleteApiKey({
+                    body: {
+                      configId: projectApiKeyConfigId,
+                      keyId: key.id,
+                    },
+                    headers: context.headers,
+                  })
               )
             )
           : Promise.all(
-              currentKeys.active.map((key) =>
-                auth.api.updateApiKey({
-                  body: {
-                    configId: projectApiKeyConfigId,
-                    expiresIn: input.gracePeriodSeconds,
-                    keyId: key.id,
-                    metadata: {
-                      ...key.metadata,
-                      rotatedAt,
-                      rotatedToKeyId: apiKey.id,
-                      status: "rotating",
-                    } satisfies ProjectApiKeyMetadata,
-                  },
-                  headers: context.headers,
-                })
+              currentKeys.active.map(
+                async (key) =>
+                  await auth.api.updateApiKey({
+                    body: {
+                      configId: projectApiKeyConfigId,
+                      expiresIn: input.gracePeriodSeconds,
+                      keyId: key.id,
+                      metadata: {
+                        ...key.metadata,
+                        rotatedAt,
+                        rotatedToKeyId: apiKey.id,
+                        status: "rotating",
+                      } satisfies ProjectApiKeyMetadata,
+                    },
+                    headers: context.headers,
+                  })
               )
             ));
       } catch (error) {

@@ -2,7 +2,7 @@ import type { ViewName, ViewState } from "@tailorkit/client-core";
 import type { ViewDefinition } from "@tailorkit/core/schema";
 import { useEffect, useMemo } from "react";
 
-import { useTailorkitContext } from "../components/context";
+import { useTailorkitContext } from "#components/context";
 
 export type {
   ViewName,

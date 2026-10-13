@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vite-plus/test";
 
-import type { RemoteNode } from "../protocol.js";
+import type { RemoteNode } from "#protocol";
+
 import { createRemoteUiStore } from "./store.js";
 
 const tree = {
@@ -38,7 +39,7 @@ describe("createRemoteUiStore", () => {
 
   it("applies patch batches without replacing the entire remote tree over the wire", () => {
     const store = createRemoteUiStore();
-    const listener = vi.fn();
+    const listener = vi.fn<Parameters<typeof store.subscribe>[0]>();
     store.subscribe(listener);
     store.setSnapshot(tree, 1);
 

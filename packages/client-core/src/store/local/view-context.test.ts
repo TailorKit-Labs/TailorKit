@@ -18,7 +18,7 @@ describe("view context store", () => {
     const registry = createStore();
     const parent = Symbol("parent");
     const child = Symbol("child");
-    const listener = vi.fn();
+    const listener = vi.fn<Parameters<typeof registry.subscribe>[0]>();
     const stop = registry.subscribe(listener);
     registry.register({ context: { parent: true }, id: parent, view: "/home" });
     registry.register({

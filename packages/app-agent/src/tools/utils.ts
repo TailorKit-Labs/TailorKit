@@ -7,7 +7,7 @@ import type {
 import { FatalError } from "workflow";
 import { z } from "zod";
 
-import { getSandbox, sandboxIdleTimeoutMs } from "../sandbox";
+import { getSandbox, sandboxIdleTimeoutMs } from "#sandbox";
 
 const { posix } = nodePath;
 
@@ -47,12 +47,12 @@ export const toolSandbox = async (
 ) => {
   const session = await toolNativeSandbox(options);
   return {
-    async readTextFile({
+    readTextFile: async ({
       path,
       startLine,
       endLine,
       abortSignal,
-    }: Parameters<SandboxSession["readTextFile"]>[0]) {
+    }: Parameters<SandboxSession["readTextFile"]>[0]) => {
       const buffer = await session.readFileToBuffer(
         { path },
         { signal: abortSignal }
@@ -69,11 +69,11 @@ export const toolSandbox = async (
         .slice((startLine ?? 1) - 1, endLine)
         .join("\n");
     },
-    async run({
+    run: async ({
       command,
       workingDirectory,
       abortSignal,
-    }: Parameters<SandboxSession["run"]>[0]) {
+    }: Parameters<SandboxSession["run"]>[0]) => {
       const result = await session.runCommand({
         args: ["-c", command],
         cmd: "bash",
@@ -87,11 +87,11 @@ export const toolSandbox = async (
       ]);
       return { exitCode: result.exitCode, stderr, stdout };
     },
-    async writeTextFile({
+    writeTextFile: async ({
       path,
       content,
       abortSignal,
-    }: Parameters<SandboxSession["writeTextFile"]>[0]) {
+    }: Parameters<SandboxSession["writeTextFile"]>[0]) => {
       await session.runCommand({
         args: ["-p", posix.dirname(path)],
         cmd: "mkdir",

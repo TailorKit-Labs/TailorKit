@@ -12,12 +12,11 @@ import type { Storage } from "@tailorkit/storage";
 import { Effect } from "effect";
 import { z } from "zod";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 const storageFailure = (cause: unknown) => {
-  if (cause && isObjectValue(cause)) {
+  if (isObjectValue(cause)) {
     const parsed = z
       .object({
         $metadata: z
@@ -47,7 +46,7 @@ const loadAsset = (
     const { key } = identity;
     const object = yield* Effect.tryPromise({
       catch: storageFailure,
-      try: () => storage.head({ key }),
+      try: async () => await storage.head({ key }),
     });
     const contentLength = yield* assetSize(object.contentLength);
     const headers = assetHeaders({
@@ -59,7 +58,11 @@ const loadAsset = (
     // that decoded stream; the stored length and strong ETag describe gzip bytes.
     if (object.contentEncoding === "gzip") {
       headers.delete("Content-Length");
-      if (object.etag) {
+      if (
+        object.etag !== undefined &&
+        object.etag !== null &&
+        object.etag !== ""
+      ) {
         headers.set("ETag", `W/${object.etag}`);
       }
     }
@@ -68,11 +71,13 @@ const loadAsset = (
     }
     const download = yield* Effect.tryPromise({
       catch: storageFailure,
-      try: () => storage.createDownloadUrl({ expiresInSeconds: 60, key }),
+      try: async () =>
+        await storage.createDownloadUrl({ expiresInSeconds: 60, key }),
     });
     const upstream = yield* Effect.tryPromise({
       catch: storageFailure,
-      try: (signal) => fetch(download.url, { redirect: "error", signal }),
+      try: async (signal) =>
+        await fetch(download.url, { redirect: "error", signal }),
     });
     if (!upstream.ok) {
       return yield* Effect.fail(
@@ -86,7 +91,7 @@ const loadAsset = (
     return new Response(body, { headers });
   });
 
-export const handleAssetRequest = (
+export const handleAssetRequest = async (
   request: Request,
   storage: Storage | null
 ): Promise<Response> => {
@@ -100,5 +105,5 @@ export const handleAssetRequest = (
       load: (asset) => loadAsset(request, asset, storage),
     });
   });
-  return Effect.runPromise(assetResponse(program));
+  return await Effect.runPromise(assetResponse(program));
 };

@@ -65,7 +65,10 @@ export const getCliDeployToken = (request: Request): string => {
   const [scheme, token] =
     request.headers.get("authorization")?.split(" ") ?? [];
 
-  if (scheme !== "Bearer" || !token) {
+  if (
+    scheme !== "Bearer" ||
+    !(token !== undefined && token !== null && token !== "")
+  ) {
     throw new ORPCError("UNAUTHORIZED", {
       message: "Missing CLI deploy token.",
     });
@@ -103,7 +106,7 @@ export const requireCliDeployToken = o.middleware(async ({ context, next }) => {
       message: "Invalid CLI deploy token.",
     });
   }
-  return next({ context: { tailorkit: { scopes } } });
+  return await next({ context: { tailorkit: { scopes } } });
 });
 
 export const requireHostAuth = o.middleware(async ({ context, next }) => {
@@ -113,5 +116,5 @@ export const requireHostAuth = o.middleware(async ({ context, next }) => {
     throw new ORPCError("UNAUTHORIZED", { message: "Unauthorized." });
   }
 
-  return next({ context: { tailorkit } });
+  return await next({ context: { tailorkit } });
 });

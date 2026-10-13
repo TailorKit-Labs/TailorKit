@@ -1,9 +1,10 @@
 import { allTasks } from "nanostores";
 import { expect, it, vi } from "vite-plus/test";
 
-import { createTailorKitFetchClient } from "../client/fetch-client";
-import { testContract } from "../test-contract";
-import type { TailorKitApp } from "../types";
+import { createTailorKitFetchClient } from "#client/fetch-client";
+import { testContract } from "#test-contract";
+import type { TailorKitApp } from "#types";
+
 import {
   createAppsQuery,
   createAppViewsQuery,
@@ -37,20 +38,21 @@ const setup = (multiple = true, apps?: TailorKitApp[]) => {
 it("starts discovery only when observed and supplies filtered results and shared status flags", async () => {
   const { fetch, store } = setup();
   let resolve!: (response: Response) => void;
-  fetch.mockImplementation(() =>
-    (() => {
-      const {
-        promise: pendingPromise,
-        resolve: done,
-        reject: rejectPending,
-      } = Promise.withResolvers<Response>();
-      try {
-        resolve = done;
-      } catch (error) {
-        rejectPending(error);
-      }
-      return pendingPromise;
-    })()
+  fetch.mockImplementation(
+    async () =>
+      await (async () => {
+        const {
+          promise: pendingPromise,
+          resolve: done,
+          reject: rejectPending,
+        } = Promise.withResolvers<Response>();
+        try {
+          resolve = done;
+        } catch (error) {
+          rejectPending(error);
+        }
+        return await pendingPromise;
+      })()
   );
   const query = createAppsQuery(store, {
     appIds: ["included"],
@@ -62,7 +64,9 @@ it("starts discovery only when observed and supplies filtered results and shared
     isPending: true,
   });
   expect(fetch).not.toHaveBeenCalled();
-  const stop = query.state.listen(vi.fn());
+  const stop = query.state.listen(
+    vi.fn<NonNullable<Parameters<typeof query.state.listen>[0]>>()
+  );
   expect(query.state.get()).toMatchObject({
     isFetching: true,
     isLoading: true,
@@ -103,7 +107,9 @@ it("updates single-slot results from provided apps without observing context or 
   const { client, fetch, store, app } = setup(false, []);
   const instances = vi.spyOn(client.endpoints, "slotInstances");
   const query = createViewsQuery(store, { slot: "page" });
-  const stop = query.state.listen(vi.fn());
+  const stop = query.state.listen(
+    vi.fn<NonNullable<Parameters<typeof query.state.listen>[0]>>()
+  );
   await allTasks();
   expect(query.state.get().data).toEqual([]);
   store.setProvidedApps([app]);
@@ -134,8 +140,8 @@ it("switches instance queries on context changes and immediately cancels unobser
     ) => void;
   }[] = [];
   vi.spyOn(client.endpoints, "slotInstances").mockImplementation(
-    (_app, _input, signal) =>
-      (() => {
+    async (_app, _input, signal) =>
+      await (async () => {
         const {
           promise: pendingPromise,
           resolve,
@@ -152,19 +158,25 @@ it("switches instance queries on context changes and immediately cancels unobser
         } catch (error) {
           rejectPending(error);
         }
-        return pendingPromise;
+        return await pendingPromise;
       })()
   );
   const id = Symbol("view");
   store.views.register({ context: { customer: "first" }, id, view: "/" });
   await Promise.resolve();
   const query = createViewsQuery(store, { slot: "page" });
-  const stop = query.state.listen(vi.fn());
-  await vi.waitFor(() => expect(requests).toHaveLength(1));
+  const stop = query.state.listen(
+    vi.fn<NonNullable<Parameters<typeof query.state.listen>[0]>>()
+  );
+  await vi.waitFor(() => {
+    expect(requests).toHaveLength(1);
+  });
   store.views.register({ context: { customer: "second" }, id, view: "/" });
   await Promise.resolve();
   expect(requests[0]?.signal.aborted).toBe(true);
-  await vi.waitFor(() => expect(requests).toHaveLength(2));
+  await vi.waitFor(() => {
+    expect(requests).toHaveLength(2);
+  });
   expect(query.state.get().data).toBeUndefined();
   requests[1]?.resolve([
     {
@@ -173,9 +185,9 @@ it("switches instance queries on context changes and immediately cancels unobser
       metadata: {},
     },
   ]);
-  await vi.waitFor(() =>
-    expect(query.state.get().data?.[0]).toMatchObject({ app, key: "second" })
-  );
+  await vi.waitFor(() => {
+    expect(query.state.get().data?.[0]).toMatchObject({ app, key: "second" });
+  });
   requests[0]?.resolve([
     {
       data: {},
@@ -186,7 +198,9 @@ it("switches instance queries on context changes and immediately cancels unobser
   await allTasks();
   expect(query.state.get().data?.[0]).toMatchObject({ key: "second" });
   const pending = query.refetch();
-  await vi.waitFor(() => expect(requests).toHaveLength(3));
+  await vi.waitFor(() => {
+    expect(requests).toHaveLength(3);
+  });
   stop();
   expect(requests[2]?.signal.aborted).toBe(true);
   requests[2]?.resolve([
@@ -254,8 +268,12 @@ it("sends parsed native contract context to instance requests without calling me
   store.views.register({ context: original, id, view: "/" });
   await Promise.resolve();
   const query = createViewsQuery(store, { slot: "page" });
-  const stop = query.state.listen(vi.fn());
-  await vi.waitFor(() => expect(query.state.get().isSuccess).toBe(true));
+  const stop = query.state.listen(
+    vi.fn<NonNullable<Parameters<typeof query.state.listen>[0]>>()
+  );
+  await vi.waitFor(() => {
+    expect(query.state.get().isSuccess).toBe(true);
+  });
   expect(instances).toHaveBeenCalledExactlyOnceWith(
     app,
     {

@@ -1,8 +1,9 @@
 import type { AnyRelations, EmptyRelations } from "drizzle-orm/relations";
 import { z } from "zod";
 
-import type { DatabaseDefinition } from "../database/definition";
-import type { MutationDatabase, QueryDatabase } from "../database/types";
+import type { DatabaseDefinition } from "#database/definition";
+import type { MutationDatabase, QueryDatabase } from "#database/types";
+
 import type {
   ActionContext,
   FunctionKind,
@@ -62,6 +63,7 @@ class FunctionBuilder<
   K extends FunctionKind,
   A extends z.ZodType,
   R extends z.ZodType | undefined = undefined,
+  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
   F extends Functions = Record<never, never>,
   D extends AnyRelations = EmptyRelations,
 > {
@@ -146,24 +148,28 @@ class FunctionBuilder<
       metadata.functions = this.calls;
     }
     // SAFETY: The builder preserves its kind, schemas, database, and call definitions; optional metadata is added only for the matching generic branches.
-    return Object.freeze({
-      ...metadata,
-      args: this.args,
+    return (
+      /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This builder or fixture preserves the declared capabilities across an erased generic boundary. */
+      Object.freeze({
+        ...metadata,
+        args: this.args,
 
-      handler: (
-        context: Omit<HandlerContext<K, A, F, D>, "input"> & {
-          args: z.output<A>;
-        }
-      ) =>
-        // SAFETY: The adapter reconstructs the same runtime contract, but TypeScript cannot relate the erased generic parameters across this library boundary.
-        // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- The adapter reconstructs the same runtime contract, but TypeScript cannot relate the erased generic parameters across this library boundary.
-        handler({
-          ...context,
-          input: context.args,
-        } as unknown as HandlerContext<K, A, F, D>),
+        handler: (
+          context: Omit<HandlerContext<K, A, F, D>, "input"> & {
+            args: z.output<A>;
+          }
+        ) =>
+          // SAFETY: The adapter reconstructs the same runtime contract, but TypeScript cannot relate the erased generic parameters across this library boundary.
+          // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- The adapter reconstructs the same runtime contract, but TypeScript cannot relate the erased generic parameters across this library boundary.
+          handler({
+            ...context,
+            input: context.args,
+          } as unknown as HandlerContext<K, A, F, D>),
 
-      kind: this.kind,
-    }) as BuiltFunction<K, A, R, O, F, D>;
+        kind: this.kind,
+      }) as BuiltFunction<K, A, R, O, F, D>
+      /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
+    );
   }
 }
 

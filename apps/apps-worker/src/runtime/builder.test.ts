@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-argument -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import type { Invocation } from "@tailorkit/app/protocol";
 import { fn, defineServer } from "@tailorkit/app/server";
 import type { AppDefinition, Identity } from "@tailorkit/app/server";
@@ -11,8 +12,8 @@ import { createExecution, invocationSchema } from "./execution";
 
 const actionRunner = (app: AppDefinition, calls: ActionCalls) => {
   const run = createActionExecution(app);
-  return (input: Invocation, identity: Identity, signal?: AbortSignal) =>
-    run(input, identity, calls, signal);
+  return async (input: Invocation, identity: Identity, signal?: AbortSignal) =>
+    await run(input, identity, calls, signal);
 };
 
 const identity = {
@@ -95,7 +96,8 @@ it("keeps builders immutable and provides typed action calls using registered fu
   expect(save.args.safeParse(2).success).toBe(true);
   expect(save.args.safeParse("2").success).toBe(false);
   expect(other.args.safeParse("2").success).toBe(true);
-  const query = vi.fn(() => Promise.resolve(4));
+
+  const query = vi.fn<() => Promise<number>>().mockResolvedValue(4);
   const run = actionRunner(defineServer({ ...functions, save }), {
     mutate: vi.fn(),
     query,
@@ -126,12 +128,10 @@ it("uses undefined input and infers returns for mutations and async actions with
   expect(functions.save).not.toHaveProperty("result");
   expect(perform).not.toHaveProperty("result");
   const execute = createExecution(app, persistence);
-  const query = vi.fn((input) =>
-    Promise.resolve(execute.query(input, identity).value)
-  );
-  const mutate = vi.fn((input) =>
-    Promise.resolve(execute.mutate(input, identity).value)
-  );
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  const query = vi.fn(async (input) => execute.query(input, identity).value);
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  const mutate = vi.fn(async (input) => execute.mutate(input, identity).value);
   const run = actionRunner(app, { mutate, query });
   expect(await run({ name: "perform" }, identity)).toEqual({
     rows: [1, 2],
@@ -141,6 +141,7 @@ it("uses undefined input and infers returns for mutations and async actions with
   expect(mutate).toHaveBeenCalledWith({
     args: undefined,
     name: "save",
+    // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
     requestId: expect.any(String),
   });
   await expect(run({ args: {}, name: "perform" }, identity)).rejects.toThrow(
@@ -151,12 +152,12 @@ it("uses undefined input and infers returns for mutations and async actions with
 it("validates optional output schemas for synchronous and async actions", async () => {
   const app = defineServer({
     invalid: fn.action.output(z.number().min(10)).handler(() => 1),
-    invalidAsync: fn.action
-      .output(z.number().min(10))
-      .handler(() => Promise.resolve(1)),
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    invalidAsync: fn.action.output(z.number().min(10)).handler(async () => 1),
     transformed: fn.action
       .output(z.string().transform(Number))
-      .handler(() => Promise.resolve("4")),
+      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+      .handler(async () => "4"),
     valid: fn.action.output(z.number().min(10)).handler(() => 10),
   });
   const run = actionRunner(app, { mutate: vi.fn(), query: vi.fn() });

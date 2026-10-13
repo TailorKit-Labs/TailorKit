@@ -46,14 +46,25 @@ export interface SendOrganizationInvitationEmailInput {
 let cachedTransporter: Mail | undefined;
 
 const hasSesCredentials = () =>
-  Boolean(env.EMAIL_ACCESS_KEY_ID && env.EMAIL_SECRET_ACCESS_KEY);
+  Boolean(
+    env.EMAIL_ACCESS_KEY_ID !== undefined &&
+    env.EMAIL_ACCESS_KEY_ID !== null &&
+    env.EMAIL_ACCESS_KEY_ID !== "" &&
+    env.EMAIL_SECRET_ACCESS_KEY
+  );
 
 const resolveSesRegion = () => env.EMAIL_REGION ?? "us-east-1";
 
 const createSmtpTransport = (smtpUrl: string) => createTransport(smtpUrl);
 
 const resolveSmtpUrl = () => {
-  if (!env.EMAIL_SMTP_URL) {
+  if (
+    !(
+      env.EMAIL_SMTP_URL !== undefined &&
+      env.EMAIL_SMTP_URL !== null &&
+      env.EMAIL_SMTP_URL !== ""
+    )
+  ) {
     throw new Error("EMAIL_SMTP_URL is required when EMAIL_PROVIDER is smtp.");
   }
 
@@ -61,7 +72,16 @@ const resolveSmtpUrl = () => {
 };
 
 const resolveSesCredentials = () => {
-  if (!(env.EMAIL_ACCESS_KEY_ID && env.EMAIL_SECRET_ACCESS_KEY)) {
+  if (
+    !(
+      env.EMAIL_ACCESS_KEY_ID !== undefined &&
+      env.EMAIL_ACCESS_KEY_ID !== null &&
+      env.EMAIL_ACCESS_KEY_ID !== "" &&
+      env.EMAIL_SECRET_ACCESS_KEY !== undefined &&
+      env.EMAIL_SECRET_ACCESS_KEY !== null &&
+      env.EMAIL_SECRET_ACCESS_KEY !== ""
+    )
+  ) {
     throw new Error(
       "EMAIL_ACCESS_KEY_ID and EMAIL_SECRET_ACCESS_KEY are required when EMAIL_PROVIDER is ses."
     );
@@ -154,7 +174,7 @@ export const sendEmail = async ({
         "tailorkit.package": "email",
       },
     },
-    () => transporter.sendMail(message)
+    async () => await transporter.sendMail(message)
   );
 };
 
@@ -172,7 +192,7 @@ export const sendBetterAuthOtpEmail = async ({
         "tailorkit.package": "email",
       },
     },
-    () => renderBetterAuthOtpEmail({ otp, type })
+    async () => await renderBetterAuthOtpEmail({ otp, type })
   );
 
   await sendEmail({

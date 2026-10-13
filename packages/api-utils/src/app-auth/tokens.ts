@@ -81,8 +81,19 @@ export const parseAppPublicKeys = (
   value: Parameters<typeof publicKeysSchema.parse>[0]
 ) => publicKeysSchema.parse(value);
 
-const signingError = (cause: unknown): Error =>
-  cause instanceof Error ? cause : new Error("App token signing failed");
+class AppTokenSigningError extends Error {
+  readonly _tag = "AppTokenSigningError";
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = "AppTokenSigningError";
+  }
+}
+
+const signingError = (cause: unknown): AppTokenSigningError =>
+  new AppTokenSigningError(
+    cause instanceof Error ? cause.message : "App token signing failed",
+    { cause }
+  );
 
 /** Compose signing without starting a runtime; Promise callers use issueAppToken. */
 export const issueAppTokenEffect = (
@@ -94,7 +105,7 @@ export const issueAppTokenEffect = (
     const lifetime = options.lifetimeSeconds ?? maximum;
     if (!Number.isInteger(lifetime) || lifetime < 1 || lifetime > maximum) {
       return yield* Effect.fail(
-        new Error(`App tokens must last 1–${maximum} seconds`)
+        new AppTokenSigningError(`App tokens must last 1–${maximum} seconds`)
       );
     }
     const now = Math.floor((yield* Clock.currentTimeMillis) / 1000);
@@ -125,8 +136,8 @@ export const issueAppTokenEffect = (
     });
     const token = yield* Effect.tryPromise({
       catch: signingError,
-      try: () =>
-        new SignJWT({
+      try: async () =>
+        await new SignJWT({
           appId: identity.appId,
           appPublicId: identity.appPublicId,
           deploymentId: identity.deploymentId,
@@ -148,10 +159,10 @@ export const issueAppTokenEffect = (
     return { expiresAt: (now + lifetime) * 1000, token };
   });
 
-export const issueAppToken = (
+export const issueAppToken = async (
   options: AppSigningOptions,
   identity: AppTokenIdentity
-) => Effect.runPromise(issueAppTokenEffect(options, identity));
+) => await Effect.runPromise(issueAppTokenEffect(options, identity));
 
 /** Trust configuration is checked at construction; token failures use the typed error channel. */
 const invalidTokenImplementationImplementation = () =>
@@ -178,8 +189,8 @@ export const appTokenVerifierEffect = (trust: AppTokenTrust) => {
       const invalidToken = invalidTokenImplementation;
       const { payload } = yield* Effect.tryPromise({
         catch: invalidToken,
-        try: () =>
-          jwtVerify(token, keys, {
+        try: async () =>
+          await jwtVerify(token, keys, {
             algorithms: ["ES256"],
             audience: trust.audience,
             currentDate: new Date(now),
@@ -235,11 +246,14 @@ export const appTokenVerifierEffect = (trust: AppTokenTrust) => {
 
 export const appTokenVerifier = (trust: AppTokenTrust) => {
   const verify = appTokenVerifierEffect(trust);
-  return (token: string) => Effect.runPromise(verify(token));
+  return async (token: string) => await Effect.runPromise(verify(token));
 };
 export const bearerToken = (request: Request) => {
   const authorization = request.headers.get("authorization");
-  if (!authorization?.startsWith("Bearer ") || authorization.length > 8192) {
+  if (
+    !(authorization?.startsWith("Bearer ") === true) ||
+    authorization.length > 8192
+  ) {
     throw new AppError("UNAUTHORIZED", "App token required");
   }
   return authorization.slice(7);

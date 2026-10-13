@@ -46,8 +46,20 @@ export const AccountSidebar = () => {
         </SidebarHeaderRow>
         <SidebarBackButton
           label="Account"
-          params={backOrg?.slug ? { orgSlug: backOrg.slug } : undefined}
-          to={backOrg?.slug ? "/$orgSlug/~/projects" : "/"}
+          params={
+            backOrg?.slug !== undefined &&
+            backOrg?.slug !== null &&
+            backOrg?.slug !== ""
+              ? { orgSlug: backOrg.slug }
+              : undefined
+          }
+          to={
+            backOrg?.slug !== undefined &&
+            backOrg?.slug !== null &&
+            backOrg?.slug !== ""
+              ? "/$orgSlug/~/projects"
+              : "/"
+          }
         />
       </SidebarHeader>
 

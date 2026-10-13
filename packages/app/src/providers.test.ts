@@ -14,7 +14,7 @@ it("keeps the app wrapper mounted across view changes and cleans it up on unmoun
   const root = document.createElement("div");
   const Context = createContext("missing");
   const mount = vi.fn();
-  const cleanup = vi.fn();
+  const cleanup = vi.fn<() => void>();
   const client = createFileClient({
     layouts: [],
     root: {
@@ -35,13 +35,19 @@ it("keeps the app wrapper mounted across view changes and cleans it up on unmoun
   });
   const First = () => h("div", {}, `First: ${useContext(Context)}`);
   const Second = () => h("div", {}, `Second: ${useContext(Context)}`);
-  await act(() => client.$runtime.render(h(First, {}), root));
+  await act(() => {
+    client.$runtime.render(h(First, {}), root);
+  });
   expect(root.textContent).toBe("First: shared");
-  await act(() => client.$runtime.render(h(Second, {}), root));
+  await act(() => {
+    client.$runtime.render(h(Second, {}), root);
+  });
   expect(root.textContent).toBe("Second: shared");
   expect(mount).toHaveBeenCalledOnce();
   expect(cleanup).not.toHaveBeenCalled();
-  await act(() => client.$runtime.render(null, root));
+  await act(() => {
+    client.$runtime.render(null, root);
+  });
   expect(cleanup).toHaveBeenCalledOnce();
   expect(root.textContent).toBe("");
   await window.happyDOM.close();

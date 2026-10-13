@@ -1,28 +1,57 @@
-/* oxlint-disable max-classes-per-file -- These adapter doubles exercise the same Redis contract. */
+/* oxlint-disable max-classes-per-file -- Redis and Upstash doubles exercise distinct clients through the same adapter contract. */
 import { createHash } from "node:crypto";
 
 import type { Redis as UpstashRedis } from "@upstash/redis";
-/* oxlint-disable max-classes-per-file, no-useless-constructor, class-methods-use-this, require-await, typescript/no-explicit-any, typescript/no-non-null-assertion, unicorn/no-await-expression-member, import/first -- adapter mocks implement the Redis clients' asynchronous shape. */
+/* oxlint-disable max-classes-per-file, no-useless-constructor, class-methods-use-this, require-await, typescript/no-non-null-assertion, unicorn/no-await-expression-member, import/first -- adapter mocks implement the Redis clients' asynchronous shape. */
 import { describe, expect, it, vi } from "vite-plus/test";
+
+// oxlint-disable-next-line import/no-relative-parent-imports -- Adapter integration tests reuse built platform types without adding a cyclic workspace dependency.
+import type * as PreviewBuildModule from "../../api-platform/dist/preview-build-store.mjs";
 
 interface RecordValue {
   value: string;
   until: number | null;
 }
+interface RedisSubscriber {
+  channels: Set<string>;
+  handlers: Map<string, (...args: string[]) => void>;
+}
+interface UpstashSubscriber {
+  channel: string;
+  handlers: Map<string, (message?: { message: string }) => void>;
+}
+const pointerRevision = (source: string): number => {
+  const pointer: unknown = JSON.parse(source);
+
+  if (
+    // oxlint-disable-next-line anti-slop/no-runtime-typeof -- Validate the parsed JSON pointer object before reading its revision.
+    typeof pointer !== "object" ||
+    pointer === null ||
+    !("revision" in pointer) ||
+    // oxlint-disable-next-line anti-slop/no-runtime-typeof -- The Redis fixture requires a numeric revision before comparing it.
+    typeof pointer.revision !== "number"
+  ) {
+    throw new Error("Invalid revision pointer fixture");
+  }
+  return pointer.revision;
+};
 const state = vi.hoisted(() => ({
   redis: {
     clock: 0,
     data: new Map<string, RecordValue>(),
-    subscribers: new Set<any>(),
+    subscribers: new Set<RedisSubscriber>(),
   },
   upstash: {
     clock: 0,
     data: new Map<string, RecordValue>(),
-    subscribers: new Set<any>(),
+    subscribers: new Set<UpstashSubscriber>(),
   },
 }));
 
-const read = (store: typeof state.redis, key: string): string | null => {
+const read = (
+  store: Pick<typeof state.redis, "clock" | "data">,
+  key: string
+): string | null => {
   const record = store.data.get(key);
   if (!record || (record.until !== null && record.until <= store.clock)) {
     return null;
@@ -45,7 +74,7 @@ vi.mock("ioredis", () => ({
       this.handlers.set(name, handler);
     }
     removeAllListeners(name?: string) {
-      if (name) {
+      if (name !== undefined && name !== null && name !== "") {
         this.handlers.delete(name);
       } else {
         this.handlers.clear();
@@ -141,7 +170,12 @@ vi.mock("ioredis", () => ({
           return 0;
         }
         const current = read(state.redis, key);
-        if (current && JSON.parse(current).revision >= Number(args[4])) {
+        if (
+          current !== undefined &&
+          current !== null &&
+          current !== "" &&
+          pointerRevision(current) >= Number(args[4])
+        ) {
           return 0;
         }
         state.redis.data.set(key, {
@@ -183,7 +217,13 @@ vi.mock("@upstash/redis", () => ({
     }
     async set(key: string, value: string, options?: { ex?: number }) {
       state.upstash.data.set(key, {
-        until: options?.ex ? state.upstash.clock + options.ex * 1000 : null,
+        until:
+          options?.ex !== undefined &&
+          options?.ex !== null &&
+          options?.ex !== 0 &&
+          !Number.isNaN(options?.ex)
+            ? state.upstash.clock + options.ex * 1000
+            : null,
         value,
       });
       return "OK";
@@ -244,7 +284,12 @@ vi.mock("@upstash/redis", () => ({
           return 0;
         }
         const current = read(state.upstash, keys[0]!);
-        if (current && JSON.parse(current).revision >= Number(args[1])) {
+        if (
+          current !== undefined &&
+          current !== null &&
+          current !== "" &&
+          pointerRevision(current) >= Number(args[1])
+        ) {
           return 0;
         }
         state.upstash.data.set(keys[0]!, {
@@ -262,11 +307,14 @@ vi.mock("@upstash/redis", () => ({
       return value;
     }
     subscribe(channel: string) {
-      const handlers = new Map<string, (...args: any[]) => void>();
+      const handlers = new Map<
+        string,
+        (message?: { message: string }) => void
+      >();
       const subscriber = {
         channel,
         handlers,
-        on(name: string, handler: (...args: any[]) => void) {
+        on(name: string, handler: (message?: { message: string }) => void) {
           handlers.set(name, handler);
         },
         removeAllListeners() {
@@ -387,9 +435,9 @@ describe.each([
     expect(await reader.get("expiring")).toBeNull();
     expect(await reader.get("revision-pointer")).toBeNull();
     const messages: string[] = [];
-    const unsubscribe = await reader.subscribe("changes", (message) =>
-      messages.push(message)
-    );
+    const unsubscribe = await reader.subscribe("changes", (message) => {
+      messages.push(message);
+    });
     await writer.publish("changes", "revision-1");
     expect(messages).toEqual(["revision-1"]);
     await unsubscribe();
@@ -402,7 +450,12 @@ describe.each([
       "../../api-platform/src/preview-build-store.ts",
       import.meta.url
     ).href;
-    const { createPreviewBuildStore } = await import(moduleUrl);
+    /** The built declaration describes the source module loaded for this adapter integration test.
+     * @type {typeof PreviewBuildModule}
+     */
+    // oxlint-disable-next-line typescript/no-unsafe-assignment -- A fixed source URL selects this trusted workspace module; dynamic import cannot infer its declaration type.
+    const previewModule: typeof PreviewBuildModule = await import(moduleUrl);
+    const { createPreviewBuildStore } = previewModule;
     store.data.clear();
     store.subscribers.clear();
     store.clock = 0;
@@ -411,7 +464,10 @@ describe.each([
     const notifications: (number | null)[] = [];
     const unsubscribe = await viewer.subscribe(
       "session",
-      (revision: number | null) => notifications.push(revision)
+
+      (revision: number | null) => {
+        notifications.push(revision);
+      }
     );
     const bytes = Buffer.from("export default 1");
     const buildId = await uploader.begin("session", {
@@ -443,12 +499,17 @@ describe.each([
       "../../api-platform/src/preview-build-store.ts",
       import.meta.url
     ).href;
-    const { createPreviewBuildStore } = await import(moduleUrl);
+    /** The built declaration describes the source module loaded for this adapter integration test.
+     * @type {typeof PreviewBuildModule}
+     */
+    // oxlint-disable-next-line typescript/no-unsafe-assignment -- A fixed source URL selects this trusted workspace module; dynamic import cannot infer its declaration type.
+    const previewModule: typeof PreviewBuildModule = await import(moduleUrl);
+    const { createPreviewBuildStore } = previewModule;
     store.data.clear();
     store.clock = 0;
     let reads = 0;
     let releaseReads: (() => void) | undefined;
-    const bothRead = (() => {
+    const bothRead = (async () => {
       const {
         promise: pendingPromise,
         resolve,
@@ -459,7 +520,7 @@ describe.each([
       } catch (error) {
         rejectPending(error);
       }
-      return pendingPromise;
+      await pendingPromise;
     })();
     const withConcurrentRead = () => {
       const kv = create();
@@ -503,29 +564,37 @@ describe.each([
       message: "Preview upload was cancelled or superseded.",
     });
     const buildId = accepted[0]?.value;
+    if (buildId === undefined) {
+      throw new Error("Expected one accepted upload.");
+    }
     expect(await create().get("preview:uploading:session")).toBe(buildId);
-    await first.upload("session", buildId!, 0, 0, bytes.toString("base64"));
+    await first.upload("session", buildId, 0, 0, bytes.toString("base64"));
   });
   it("keeps a verified build retryable after the initial upload lease expires", async () => {
     const moduleUrl = new URL(
       "../../api-platform/src/preview-build-store.ts",
       import.meta.url
     ).href;
-    const { createPreviewBuildStore } = await import(moduleUrl);
+    /** The built declaration describes the source module loaded for this adapter integration test.
+     * @type {typeof PreviewBuildModule}
+     */
+    // oxlint-disable-next-line typescript/no-unsafe-assignment -- A fixed source URL selects this trusted workspace module; dynamic import cannot infer its declaration type.
+    const previewModule: typeof PreviewBuildModule = await import(moduleUrl);
+    const { createPreviewBuildStore } = previewModule;
     store.data.clear();
     store.clock = 0;
     const kv = create();
     let failPromotion = true;
     const uploader = createPreviewBuildStore({
       ...kv,
-      promoteIfOwnerAndNewer: (
+      promoteIfOwnerAndNewer: async (
         ...args: Parameters<typeof kv.promoteIfOwnerAndNewer>
       ) => {
         if (failPromotion) {
           failPromotion = false;
           throw new Error("Transient KV failure");
         }
-        return kv.promoteIfOwnerAndNewer(...args);
+        return await kv.promoteIfOwnerAndNewer(...args);
       },
     });
     const bytes = Buffer.from("export default 1");

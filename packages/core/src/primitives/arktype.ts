@@ -1,6 +1,7 @@
 import { type } from "arktype";
 
-import type { ComponentDefinition } from "../schema/index";
+import type { ComponentDefinition } from "#schema/index";
+
 import { primitiveDefinitions, mapPrimitiveDefinitions } from "./definition";
 import type { PrimitiveName, PrimitivePropDefinition } from "./definition";
 import { resolveTheme } from "./theme";
@@ -29,7 +30,11 @@ const responsive = (expr: string, theme: TailorKitTheme) => {
     fields[`${key}?`] = expr;
   }
   // SAFETY: expr comes from the predefined primitive validator table; this generic adapter constructs equivalent base and breakpoint validators, which Arktype cannot infer from a runtime definition.
-  return type(expr as never)
+  return type(
+    /* oxlint-disable typescript/no-unsafe-type-assertion -- expr comes from the predefined primitive validator table; this generic adapter constructs equivalent base and breakpoint validators, which Arktype cannot infer from a runtime definition. */
+    expr as never
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
+  )
     .or(fields)
     .onUndeclaredKey("reject");
 };
@@ -62,6 +67,7 @@ const primitiveFields = (
   Object.fromEntries(
     Object.entries(primitiveDefinitions[name]).map(([propName, definition]) => [
       `${propName}?`,
+      // oxlint-disable-next-line typescript/no-unsafe-argument -- Object.entries erases the schema registry value type; these definitions were created and validated by the contract builder.
       propExpr(definition, theme),
     ])
   );

@@ -92,7 +92,10 @@ const Toasts = ({
         data-slot="toast-viewport"
       >
         {toasts.map((toast) => {
-          const Icon = toast.type ? TOAST_ICONS.get(toast.type) : null;
+          const Icon =
+            toast.type !== undefined && toast.type !== null && toast.type !== ""
+              ? TOAST_ICONS.get(toast.type)
+              : null;
           const toastData = toast.data;
 
           return (
@@ -199,7 +202,10 @@ const AnchoredToasts = ({
         data-slot="toast-viewport-anchored"
       >
         {toasts.map((toast) => {
-          const Icon = toast.type ? TOAST_ICONS.get(toast.type) : null;
+          const Icon =
+            toast.type !== undefined && toast.type !== null && toast.type !== ""
+              ? TOAST_ICONS.get(toast.type)
+              : null;
           const toastData = toast.data;
           const tooltipStyle = toastData?.tooltipStyle ?? false;
           const { positionerProps } = toast;

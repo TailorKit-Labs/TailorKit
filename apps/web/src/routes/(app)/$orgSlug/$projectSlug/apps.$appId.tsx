@@ -165,7 +165,7 @@ const AppPage = () => {
     orpc.apps.sourceExportStatus.queryOptions({ input: sourceExportInput })
   );
   const sourceExportMutation = useMutation({
-    mutationFn: () => client.apps.exportSource(sourceExportInput),
+    mutationFn: async () => await client.apps.exportSource(sourceExportInput),
     onError: (cause: unknown) => {
       toastManager.add({
         description:
@@ -182,7 +182,9 @@ const AppPage = () => {
       link.download = fileName;
       link.href = downloadUrl;
       link.click();
-      setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
+      setTimeout(() => {
+        URL.revokeObjectURL(downloadUrl);
+      }, 0);
       toastManager.add({ title: "Source export downloaded", type: "success" });
     },
   });
@@ -197,7 +199,9 @@ const AppPage = () => {
           {sourceExportStatus === "available" ? (
             <Button
               disabled={sourceExportMutation.isPending}
-              onClick={() => sourceExportMutation.mutate()}
+              onClick={() => {
+                sourceExportMutation.mutate();
+              }}
               size="sm"
               variant="outline"
             >
@@ -222,7 +226,7 @@ const AppPage = () => {
           </Button>
         </div>
       }
-      description={app.description || "App and deployment details."}
+      description={app.description ?? "App and deployment details."}
       title={
         <span className="flex items-center gap-3">
           <AppLogo
@@ -308,8 +312,8 @@ export const Route = createFileRoute(
   "/(app)/$orgSlug/$projectSlug/apps/$appId"
 )({
   component: AppPage,
-  loader: ({ context, params }) =>
-    context.queryClient.query(
+  loader: async ({ context, params }) =>
+    await context.queryClient.query(
       context.orpc.apps.get.queryOptions({
         input: {
           appId: params.appId,

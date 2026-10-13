@@ -3,9 +3,8 @@ import { describe, expect, it, vi } from "vite-plus/test";
 
 import { renderGeneratedTypes } from "./types";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 describe("children-only components", () => {
   it("generates opt-in children and leaf component bindings", () => {
@@ -50,7 +49,7 @@ describe("children-only components", () => {
   });
 
   it("preserves callback dispatch alongside children", () => {
-    const onClick = vi.fn();
+    const onClick = vi.fn<() => void>();
     const Button = createRemoteComponent<{ onClick: () => void }, true>(
       "Button",
       {
@@ -63,10 +62,11 @@ describe("children-only components", () => {
       props: { children: "Save" },
       type: "tailorkit-button",
     });
-    if (!node || !isObjectValue(node) || !("props" in node)) {
+    if (!isObjectValue(node) || !("props" in node)) {
       throw new Error("Expected a remote component node");
     }
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     const props = node.props as {
       ontailorkitcallbackonclick: (event: { detail: unknown[] }) => void;
     };

@@ -33,11 +33,11 @@ export const grepTool = tool({
     if (literal) {
       args.push("--fixed-strings");
     }
-    if (glob) {
+    if (glob !== undefined && glob !== null && glob !== "") {
       args.push("--glob", glob);
     }
     args.push("--", pattern, resolvePath(path));
-    return sandbox.run({
+    return await sandbox.run({
       abortSignal,
       command: args.map(quote).join(" "),
       workingDirectory: appDirectory,

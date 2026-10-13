@@ -48,7 +48,11 @@ export const AuthScreen = ({ choices }: { choices: SignInChoice[] }) => {
               <Button
                 key={key}
                 loading={pending === key}
-                onClick={() => signIn(choice)}
+                onClick={() => {
+                  void (async () => {
+                    await signIn(choice);
+                  })();
+                }}
                 variant="outline"
                 className="h-auto min-h-16 w-full justify-start py-2 text-left whitespace-normal"
               >
@@ -64,7 +68,9 @@ export const AuthScreen = ({ choices }: { choices: SignInChoice[] }) => {
               </Button>
             );
           })}
-          {operationError ? (
+          {operationError !== undefined &&
+          operationError !== null &&
+          operationError !== "" ? (
             <p className="text-sm text-destructive" role="alert">
               {operationError}
             </p>

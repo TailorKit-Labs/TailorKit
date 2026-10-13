@@ -120,7 +120,7 @@ export const renderScopeControl = (
         `<option value="${escapeHtml(name)}"${name === selectedName ? " selected" : ""}>${escapeHtml(name)}</option>`
     )
     .join("");
-  const placeholder = `<option value="" disabled${selectedName ? "" : " selected"}>Choose a scope</option>`;
+  const placeholder = `<option value="" disabled${selectedName !== undefined && selectedName !== null && selectedName !== "" ? "" : " selected"}>Choose a scope</option>`;
   return `<label for="${controlId}">${label}</label><select id="${controlId}" name="scope" required>${placeholder}${options}</select>`;
 };
 
@@ -144,7 +144,7 @@ const renderCard = (state: ApprovalPageState): string => {
   return `<section class="card" aria-labelledby="title">
     <h1 id="title">Approve CLI login</h1>
     <p class="description">Enter the code from your terminal.</p>
-    ${state.error ? `<p class="error" role="alert">${escapeHtml(state.error)}</p>` : ""}
+    ${state.error !== undefined && state.error !== null && state.error !== "" ? `<p class="error" role="alert">${escapeHtml(state.error)}</p>` : ""}
     <form method="post">
       <fieldset>
         <legend>Confirmation code</legend>
@@ -647,7 +647,12 @@ export const handleCliAuthApprovalPage = async ({
     const url = new URL(request.url);
     const tailorkit = await authenticate({ request });
 
-    if (signInPath && !tailorkit) {
+    if (
+      signInPath !== undefined &&
+      signInPath !== null &&
+      signInPath.length > 0 &&
+      !tailorkit
+    ) {
       return redirectToSignIn({ approvalUrl: url, signInPath });
     }
 
@@ -666,11 +671,12 @@ export const handleCliAuthApprovalPage = async ({
   }
 
   const form = await request.formData();
-  const intent = String(form.get("intent") ?? "");
-  const userCode = String(form.get("userCode") ?? "").trim();
-  const selectedScopeName = isStringValue(form.get("scope"))
-    ? String(form.get("scope"))
-    : undefined;
+  const intentValue = form.get("intent");
+  const intent = isStringValue(intentValue) ? intentValue : "";
+  const codeValue = form.get("userCode");
+  const userCode = isStringValue(codeValue) ? codeValue.trim() : "";
+  const scopeValue = form.get("scope");
+  const selectedScopeName = isStringValue(scopeValue) ? scopeValue : undefined;
 
   const tailorkit = await authenticate({ request });
   if (!userCode) {

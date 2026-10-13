@@ -22,9 +22,8 @@ import { o, cliRouter } from "#procedures";
 
 import { previewGrantRoutes } from "./preview-grants";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -41,7 +40,13 @@ const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
 const hash = (value: string): string => {
-  if (!env.AUTH_SECRET) {
+  if (
+    !(
+      env.AUTH_SECRET !== undefined &&
+      env.AUTH_SECRET !== null &&
+      env.AUTH_SECRET !== ""
+    )
+  ) {
     throw new Error("AUTH_SECRET is required for preview credentials.");
   }
   return hashSecret(value, env.AUTH_SECRET);
@@ -159,7 +164,7 @@ const startPreview = cliRouter
             status: "active",
           },
         });
-        if (active && !input.body.replaceActive) {
+        if (active && !(input.body.replaceActive === true)) {
           throw new ORPCError("CONFLICT", {
             data: { reason: activePreviewConflictReason },
             message: "A preview is already running for this app.",
@@ -213,11 +218,8 @@ const startPreview = cliRouter
           throw error;
         }
         const candidate =
-          error && isObjectValue(error) && "cause" in error
-            ? error.cause
-            : error;
+          isObjectValue(error) && "cause" in error ? error.cause : error;
         if (
-          candidate &&
           isObjectValue(candidate) &&
           "code" in candidate &&
           candidate.code === "23505"
@@ -308,7 +310,7 @@ const stopPreview = cliRouter
           },
         });
     const sessionId = endedSession?.id ?? alreadyEnded?.id;
-    if (!sessionId) {
+    if (!(sessionId !== undefined && sessionId !== null && sessionId !== "")) {
       throw new ORPCError("NOT_FOUND", {
         message: "Preview session is unavailable.",
       });

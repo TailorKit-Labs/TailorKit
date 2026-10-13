@@ -3,10 +3,11 @@ import type {
   TailorKitContract,
 } from "@tailorkit/core/schema";
 
-import { createTailorKitFetchClient } from "../client/fetch-client";
-import type { TailorKitFetchClient } from "../client/fetch-client";
-import { toBaseUrl } from "../client/url";
-import type { TailorKitApp } from "../types";
+import { createTailorKitFetchClient } from "#client/fetch-client";
+import type { TailorKitFetchClient } from "#client/fetch-client";
+import { toBaseUrl } from "#client/url";
+import type { TailorKitApp } from "#types";
+
 import { createAppsStore } from "./fetch/apps";
 import { createPreviewManager } from "./fetch/preview-manager";
 import { createViewContextStore } from "./local/view-context";

@@ -12,7 +12,13 @@ import { z } from "zod";
 import { env } from "#env";
 
 const signingKey = () => {
-  if (!env.APP_RUNTIME_SIGNING_KEY) {
+  if (
+    !(
+      env.APP_RUNTIME_SIGNING_KEY !== undefined &&
+      env.APP_RUNTIME_SIGNING_KEY !== null &&
+      env.APP_RUNTIME_SIGNING_KEY !== ""
+    )
+  ) {
     throw new Error(
       "APP_RUNTIME_SIGNING_KEY is required for app runtime tokens"
     );
@@ -26,7 +32,7 @@ const signingKey = () => {
       x: z.string().min(1),
       y: z.string().min(1),
     })
-    .passthrough()
+    .loose()
     .safeParse(JSON.parse(env.APP_RUNTIME_SIGNING_KEY));
   if (!parsed.success) {
     throw new Error("Configure an ES256 private JWK with a kid");
@@ -59,9 +65,9 @@ export const appRuntimePublicKeys = () => {
   };
 };
 
-export const issueAppRuntimeToken = (identity: AppTokenIdentity) => {
+export const issueAppRuntimeToken = async (identity: AppTokenIdentity) => {
   const key = signingKey();
-  return issueAppToken(
+  return await issueAppToken(
     {
       audience: APP_AUDIENCE,
       issuer: appRuntimeIssuer(

@@ -2,8 +2,8 @@ import type { ViewInstance } from "@tailorkit/app/client";
 import type { SlotDefinitions, ViewDefinition } from "@tailorkit/core/schema";
 import type { ActiveView, ViewStatus } from "@tailorkit/core/views";
 
-import type { ViewContext, ViewName } from "../store/local/view-context-types";
-import type { TailorKitApp } from "../types";
+import type { ViewContext, ViewName } from "#store/local/view-context-types";
+import type { TailorKitApp } from "#types";
 
 type DefaultViews = Record<`/${string}`, ViewDefinition>;
 type ContextPaths<

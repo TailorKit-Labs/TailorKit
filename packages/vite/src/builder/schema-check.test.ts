@@ -15,7 +15,8 @@ import {
   linkTestDependencies,
   testSchema,
   generateTestMigrations,
-} from "../test-utils";
+} from "#test-utils";
+
 import { checkAppSchema } from "./schema-check";
 
 it("checks schema drift without rewriting committed migrations and allows apps without tables", async () => {
@@ -33,7 +34,9 @@ it("checks schema drift without rewriting committed migrations and allows apps w
       (name) => name.endsWith(".sql") || name.endsWith(".json")
     );
     const contents = await Promise.all(
-      files.map((file) => readFile(path.join(migrations, file), "utf-8"))
+      files.map(
+        async (file) => await readFile(path.join(migrations, file), "utf-8")
+      )
     );
     await expect(checkAppSchema(root, migrations)).resolves.toBeUndefined();
 
@@ -49,7 +52,9 @@ it("checks schema drift without rewriting committed migrations and allows apps w
     );
     expect(
       await Promise.all(
-        files.map((file) => readFile(path.join(migrations, file), "utf-8"))
+        files.map(
+          async (file) => await readFile(path.join(migrations, file), "utf-8")
+        )
       )
     ).toEqual(contents);
     const awaitedResult2 = await readdir(migrations, { recursive: true });

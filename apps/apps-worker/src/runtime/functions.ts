@@ -8,9 +8,8 @@ import { z } from "zod";
 
 import { AppError } from "./errors";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 export type Functions = AppDefinition["functions"];
 type RegisteredFunction = Exclude<Functions[string], Functions>;
@@ -26,19 +25,20 @@ export const resolveFunction = (
   let current: RegisteredFunction | Functions = functions;
   for (const part of name.split(".")) {
     if (isFunction(current) || !Object.hasOwn(current, part)) {
-      return;
+      return undefined;
     }
     const next: RegisteredFunction | Functions | undefined = current[part];
-    if (!next) {
-      return;
+    if (!(next !== undefined && next !== null)) {
+      return undefined;
     }
     current = next;
   }
   return isFunction(current) ? current : undefined;
 };
 
-const freezeIdentity = <TValue>(value: TValue): void => {
-  if (!value || !isObjectValue(value) || Object.isFrozen(value)) {
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser, serializer, or runtime adapter handles arbitrary values before validating or encoding their domain representation.
+const freezeIdentity = (value: unknown): void => {
+  if (!isObjectValue(value) || Object.isFrozen(value)) {
     return;
   }
   for (const child of Object.values(value)) {
@@ -71,9 +71,10 @@ export const prepareFunction = (
 /** Validate serialization before a mutation can commit or an action can return. */
 const jsonResultSchema = z.json();
 export type FunctionValue = z.output<typeof jsonResultSchema>;
-export const functionValue = <TValue>(
+export const functionValue = (
   fn: RegisteredFunction,
-  initialValue: TValue
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser, serializer, or runtime adapter handles arbitrary values before validating or encoding their domain representation.
+  initialValue: unknown
 ): FunctionValue => {
   let value: Parameters<RegisteredFunction["args"]["safeParse"]>[0] =
     initialValue;

@@ -40,27 +40,25 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-it("verifies configured public keys without making external requests", async () => {
-  const fetcher = vi.fn();
-  vi.stubGlobal("fetch", fetcher);
-  for (const keys of [publicKeys, JSON.stringify(publicKeys)]) {
+it.each([publicKeys, JSON.stringify(publicKeys)])(
+  "verifies configured public keys without external requests (%#)",
+  async (keys) => {
+    const fetcher = vi.fn();
+    vi.stubGlobal("fetch", fetcher);
     const verify = createAppRuntimeVerifierEffect({
       platformUrl: issuer,
       publicKeys: keys,
     });
-    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     const session = await issueAppToken(signing, identity);
-    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     expect(await Effect.runPromise(verify(session.token))).toMatchObject(
       identity
     );
-    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     expect(await Effect.runPromise(verify(session.token))).toMatchObject(
       identity
     );
+    expect(fetcher).not.toHaveBeenCalled();
   }
-  expect(fetcher).not.toHaveBeenCalled();
-});
+);
 
 it.each([{ issuer: "https://attacker.test" }, { audience: "other" }])(
   "rejects incorrect platform claims %j",

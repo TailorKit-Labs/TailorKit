@@ -1,7 +1,9 @@
+/* oxlint-disable typescript/no-unsafe-return -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { describe, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
-import { defineContract } from "../schema/contract";
+import { defineContract } from "#schema/contract";
+
 import { createServer } from "./contract";
 import { createTailorKitServer } from "./handler";
 
@@ -100,6 +102,7 @@ describe("MCP transport configuration", () => {
 
       // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       await expect(
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
         server.mcp.transport(value as { scopes: { org: { tenant: string } } })
       ).rejects.toThrow();
     }
@@ -125,9 +128,8 @@ describe("MCP transport configuration", () => {
   });
 
   it("resolves configured headers per call and requires a project credential", async () => {
-    const headers = vi.fn(
-      async () => await { authorization: "Bearer custom-key" }
-    );
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    const headers = vi.fn(async () => ({ authorization: "Bearer custom-key" }));
     const { server } = setup({ platformHeaders: headers });
     const awaitedResult1 = await server.mcp.transport({
       scopes: { org: { tenant: "one" } },

@@ -56,7 +56,7 @@ it("skips releases younger than three days", async () => {
 
 it("scaffolds against the CLI's SDK version", async () => {
   vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
-  const { default: packageJson } = await import("../../package.json", {
+  const { default: packageJson } = await import("#package.json", {
     with: { type: "json" },
   });
   const awaitedResult4 = await resolveTemplatePackageVersions();

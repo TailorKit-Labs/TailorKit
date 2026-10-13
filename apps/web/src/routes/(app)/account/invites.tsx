@@ -42,32 +42,32 @@ const InvitesPage = () => {
   );
 
   const acceptMutation = useMutation({
-    mutationFn: (invitationId: string) =>
-      client.user.acceptInvitation({ invitationId }),
+    mutationFn: async (invitationId: string) =>
+      await client.user.acceptInvitation({ invitationId }),
     onError: (cause: unknown) => {
       const message =
         cause instanceof Error ? cause.message : "Failed to accept invitation";
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(orpc.user.getOrgs.queryOptions());
-      queryClient.invalidateQueries(
+      void queryClient.invalidateQueries(orpc.user.getOrgs.queryOptions());
+      void queryClient.invalidateQueries(
         orpc.user.getPendingInvitations.queryOptions()
       );
-      navigate({ to: "/account/organizations" });
+      void navigate({ to: "/account/organizations" });
     },
   });
 
   const rejectMutation = useMutation({
-    mutationFn: (invitationId: string) =>
-      client.user.rejectInvitation({ invitationId }),
+    mutationFn: async (invitationId: string) =>
+      await client.user.rejectInvitation({ invitationId }),
     onError: (cause: unknown) => {
       const message =
         cause instanceof Error ? cause.message : "Failed to decline invitation";
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(
+      void queryClient.invalidateQueries(
         orpc.user.getPendingInvitations.queryOptions()
       );
     },
@@ -125,14 +125,18 @@ const InvitesPage = () => {
                         disabled={isMutating}
                         size="sm"
                         variant="outline"
-                        onClick={() => rejectMutation.mutate(invitation.id)}
+                        onClick={() => {
+                          rejectMutation.mutate(invitation.id);
+                        }}
                       >
                         Decline
                       </Button>
                       <Button
                         disabled={isMutating}
                         size="sm"
-                        onClick={() => acceptMutation.mutate(invitation.id)}
+                        onClick={() => {
+                          acceptMutation.mutate(invitation.id);
+                        }}
                       >
                         Accept
                       </Button>

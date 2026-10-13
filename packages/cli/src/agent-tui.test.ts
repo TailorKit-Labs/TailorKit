@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-call, typescript/no-unsafe-member-access -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import type { TailorKitRouterClient } from "@tailorkit/core/server";
 import type { UIMessage } from "ai";
 import { readUIMessageStream } from "ai";
@@ -9,6 +10,14 @@ import {
   it,
   vi,
 } from "vite-plus/test";
+
+const chatEvents = async function* chatEvents() {
+  yield { messageId: "run-2", type: "start" as const };
+  yield { id: "text", type: "text-start" as const };
+  yield { delta: "Continued", id: "text", type: "text-delta" as const };
+  yield { id: "text", type: "text-end" as const };
+  yield { type: "finish" as const };
+};
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -50,38 +59,37 @@ beforeEach(() => {
 });
 afterEach(() => vi.restoreAllMocks());
 
-const waitForAbort = (_host: string, signal: AbortSignal) =>
-  (() => {
+const waitForAbort = async (_host: string, signal: AbortSignal) =>
+  await (async () => {
     const {
       promise: pendingPromise,
       resolve: _resolve,
       reject,
     } = Promise.withResolvers<never>();
     try {
-      signal.addEventListener("abort", () => reject(signal.reason), {
-        once: true,
-      });
+      signal.addEventListener(
+        "abort",
+        () => {
+          reject(signal.reason);
+        },
+        {
+          once: true,
+        }
+      );
     } catch (error) {
       reject(error);
     }
-    return pendingPromise;
+    return await pendingPromise;
   })();
 
 describe("AI SDK terminal transport", () => {
   it("forwards the SDK's complete history and abort signal to the host client", async () => {
     const chat = vi.fn(
+      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
       async (
         _input: Parameters<TailorKitRouterClient["appAgent"]["chat"]>[0],
         _options?: Parameters<TailorKitRouterClient["appAgent"]["chat"]>[1]
-      ) =>
-        // oxlint-disable-next-line unicorn/consistent-function-scoping -- Keep the generator or mutable callback with its owning test or cancellation lifecycle.
-        await (async function* chatValue() {
-          yield { messageId: "run-2", type: "start" as const };
-          yield { id: "text", type: "text-start" as const };
-          yield { delta: "Continued", id: "text", type: "text-delta" as const };
-          yield { id: "text", type: "text-end" as const };
-          yield { type: "finish" as const };
-        })()
+      ) => chatEvents()
     );
     await openAgentTui({ appId, client: { appAgent: { chat } }, hostUrl });
     const [options] = requireValue(mocks.tui.mock.lastCall);
@@ -114,9 +122,11 @@ describe("AI SDK terminal transport", () => {
       expect.any(AbortSignal)
     );
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-    const schemaSignal = requireValue(
-      mocks.fetchSchema.mock.calls[0]
-    )[1] as AbortSignal;
+
+    const schemaSignal =
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below. */
+      requireValue(mocks.fetchSchema.mock.calls[0])[1] as AbortSignal;
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
     expect(schemaSignal.aborted).toBe(false);
     expect(chat).toHaveBeenCalledWith(
       { appId, hostUrl, messages, schema },
@@ -162,7 +172,7 @@ describe("AI SDK terminal transport", () => {
   it.each([undefined, new AbortController().signal])(
     "times out a stalled schema fetch, with user signal %s, before starting a remote run",
     async (abortSignal) => {
-      const { timeout } = AbortSignal;
+      const timeout = AbortSignal.timeout.bind(AbortSignal);
       const timeoutSpy = vi
         .spyOn(AbortSignal, "timeout")
         .mockImplementation(() => timeout(1));
@@ -175,6 +185,7 @@ describe("AI SDK terminal transport", () => {
           messages,
         })
       ).rejects.toMatchObject({
+        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
         cause: expect.objectContaining({ name: "TimeoutError" }),
         message: `Unable to fetch the host schema from ${hostUrl}: Timed out after 10 seconds.`,
       });

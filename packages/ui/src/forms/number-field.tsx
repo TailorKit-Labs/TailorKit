@@ -54,9 +54,11 @@ export const NumberField = ({
       <div className="flex w-full items-center gap-2">
         <FieldLabel>
           {label}{" "}
-          {required && <span className="text-destructive-foreground">*</span>}
+          {required === true && (
+            <span className="text-destructive-foreground">*</span>
+          )}
         </FieldLabel>
-        {labelAction && <div className="ml-auto">{labelAction}</div>}
+        {Boolean(labelAction) && <div className="ml-auto">{labelAction}</div>}
       </div>
       <PrimitiveNumberField
         disabled={disabled}
@@ -72,7 +74,11 @@ export const NumberField = ({
           <NumberFieldIncrement />
         </NumberFieldGroup>
       </PrimitiveNumberField>
-      {description && <FieldDescription>{description}</FieldDescription>}
+      {description !== undefined &&
+        description !== null &&
+        description !== "" && (
+          <FieldDescription>{description}</FieldDescription>
+        )}
       {isError && <FieldError>{errorMessage}</FieldError>}
     </Field>
   );

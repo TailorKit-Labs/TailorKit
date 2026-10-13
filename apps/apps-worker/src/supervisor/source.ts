@@ -136,7 +136,9 @@ export const deploymentSource = (
           // This prevents a stale KV replica from switching an installation backwards.
           if (
             !deployment ||
-            (runningDeploymentId &&
+            (runningDeploymentId !== undefined &&
+              runningDeploymentId !== null &&
+              runningDeploymentId !== "" &&
               deployment.deploymentId !== runningDeploymentId)
           ) {
             const base = new URL(
@@ -182,9 +184,10 @@ export const deploymentSource = (
             }
             await env.DEPLOYMENTS.put(key, JSON.stringify(deployment), {
               expirationTtl: metadataLifetimeSeconds,
-            }).catch((error) =>
-              console.error("Could not cache app deployment metadata", error)
-            );
+              // oxlint-disable-next-line anti-slop/no-unknown-parameters -- JavaScript may reject with arbitrary values; this boundary records or preserves the original failure.
+            }).catch((error: unknown) => {
+              console.error("Could not cache app deployment metadata", error);
+            });
           }
           if (
             deployment.projectId !== identity.projectId ||

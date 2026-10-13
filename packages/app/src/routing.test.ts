@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-return -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 // @vitest-environment happy-dom
 import { h, render } from "preact";
 import type { ComponentType, VNode } from "preact";
@@ -17,14 +18,18 @@ it("keeps app and slot shells and common layouts mounted, and isolates mounted s
   const Root = ({ children }: ShellProps) => {
     useLayoutEffect(() => {
       mounts("root");
-      return () => cleanup("root");
+      return () => {
+        cleanup("root");
+      };
     }, []);
     return h("section", {}, children);
   };
   const SlotRoot = () => {
     useLayoutEffect(() => {
       mounts("slot");
-      return () => cleanup("slot");
+      return () => {
+        cleanup("slot");
+      };
     }, []);
     return h("main", {}, h(Route, {}));
   };
@@ -32,12 +37,22 @@ it("keeps app and slot shells and common layouts mounted, and isolates mounted s
     const [count, setCount] = useState(0);
     useLayoutEffect(() => {
       mounts("layout");
-      return () => cleanup("layout");
+      return () => {
+        cleanup("layout");
+      };
     }, []);
     return h(
       "div",
       {},
-      h("button", { onClick: () => setCount(count + 1) }, `count:${count}`),
+      h(
+        "button",
+        {
+          onClick: () => {
+            setCount(count + 1);
+          },
+        },
+        `count:${count}`
+      ),
       h(Route, {})
     );
   };
@@ -73,15 +88,17 @@ it("keeps app and slot shells and common layouts mounted, and isolates mounted s
   });
   const container = document.createElement("div");
   const other = document.createElement("div");
-  const show = (view: "/" | "/users", target = container) =>
-    act(() => {
+  const show = async (view: "/" | "/users", target = container) => {
+    await act(() => {
       const definition = client.slots.panel?.[view];
-      if (!definition) {
+      if (!(definition !== undefined && definition !== false)) {
         throw new Error("Missing view");
       }
       // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
       client.$runtime.render(
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below. */
         h(
+          // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
           definition.component as ComponentType<{
             context: { userId: string; workspaceId: string };
             status: "ready";
@@ -93,28 +110,32 @@ it("keeps app and slot shells and common layouts mounted, and isolates mounted s
             view,
           }
         ) as VNode,
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
         target
       );
     });
+  };
   try {
     await show("/");
     await act(() => container.querySelector("button")?.click());
     await show("/users");
     expect(container.textContent).toBe("count:1users");
-    expect(mounts.mock.calls.map(([name]) => name).toSorted()).toEqual([
-      "layout",
-      "root",
-      "slot",
-    ]);
+    expect(
+      mounts.mock.calls
+        .map(([name]) => name)
+        .toSorted((left, right) => Number(left > right) - Number(left < right))
+    ).toEqual(["layout", "root", "slot"]);
     expect(cleanup).not.toHaveBeenCalled();
     await show("/users", other);
     expect(other.textContent).toBe("count:0users");
-    await act(() => client.$runtime.render(null, container));
-    expect(cleanup.mock.calls.map(([name]) => name).toSorted()).toEqual([
-      "layout",
-      "root",
-      "slot",
-    ]);
+    await act(() => {
+      client.$runtime.render(null, container);
+    });
+    expect(
+      cleanup.mock.calls
+        .map(([name]) => name)
+        .toSorted((left, right) => Number(left > right) - Number(left < right))
+    ).toEqual(["layout", "root", "slot"]);
   } finally {
     await act(() => {
       render(null, container);
@@ -164,23 +185,28 @@ it("matches layout prefixes at route boundaries and uses explicit view overrides
   const container = document.createElement("div");
   try {
     const definition = client.slots.panel?.["/users"];
-    if (!definition) {
+    if (!(definition !== undefined && definition !== false)) {
       throw new Error("Missing view");
     }
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-    await act(() =>
+    await act(() => {
       client.$runtime.render(
+        // SAFETY: This fixture controls the asserted value and verifies the runtime boundary below.
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below. */
         h(definition.component, {
           context: { userId: "u1", workspaceId: "w1" },
           status: "ready",
           view: "/users",
         }) as VNode,
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
         container
-      )
-    );
+      );
+    });
     expect(container.textContent).toBe("all:users:leaf");
   } finally {
-    await act(() => client.$runtime.render(null, container));
+    await act(() => {
+      client.$runtime.render(null, container);
+    });
   }
 });
 

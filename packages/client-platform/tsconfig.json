@@ -8,7 +8,11 @@
     "outDir": "dist",
     "tsBuildInfoFile": "./node_modules/.cache/tsconfig.tsbuildinfo",
     "composite": true,
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "allowJs": true,
+    "paths": {
+      "#*": ["./src/*"]
+    }
   },
-  "include": ["src", "openapi-ts.config.ts"]
+  "include": ["src", "scripts", "test"]
 }

@@ -5,7 +5,7 @@ import { build } from "vite";
 await build({
   build: {
     outDir: ".generated",
-    rollupOptions: {
+    rolldownOptions: {
       external: ["cloudflare:workers", "node:async_hooks", "application.js"],
       output: { entryFileNames: "bootstrap.js" },
     },

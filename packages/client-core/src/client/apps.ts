@@ -1,4 +1,4 @@
-import type { TailorKitApp } from "../types";
+import type { TailorKitApp } from "#types";
 
 export const matchesApp = (
   app: TailorKitApp,

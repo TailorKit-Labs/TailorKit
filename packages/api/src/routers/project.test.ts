@@ -31,11 +31,14 @@ vi.mock("@tailorkit/db", () => ({
 vi.mock("@tailorkit/auth", () => ({
   auth: {
     api: {
-      createApiKey: vi.fn(() =>
-        Promise.resolve({ id: "api-key-id", key: "tk_proj_secret" })
-      ),
+      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+      createApiKey: vi.fn(async () => ({
+        id: "api-key-id",
+        key: "tk_proj_secret",
+      })),
       deleteApiKey: vi.fn(),
-      hasPermission: vi.fn(() => Promise.resolve({ success: true })),
+      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+      hasPermission: vi.fn(async () => ({ success: true })),
       updateApiKey: vi.fn(),
     },
   },
@@ -197,6 +200,7 @@ describe("projectRouter", () => {
     );
 
     expect(auth.api.createApiKey).toHaveBeenCalledWith({
+      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
       body: expect.objectContaining({
         configId: "project-host",
         userId,
@@ -212,6 +216,7 @@ describe("projectRouter", () => {
     );
 
     expect(auth.api.createApiKey).toHaveBeenCalledWith({
+      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
       body: expect.objectContaining({
         configId: "project-host",
         rateLimitEnabled: true,
@@ -233,6 +238,7 @@ describe("projectRouter", () => {
     );
 
     expect(auth.api.createApiKey).toHaveBeenCalledWith({
+      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
       body: expect.objectContaining({
         name: "Project host key",
       }),

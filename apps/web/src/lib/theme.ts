@@ -24,7 +24,7 @@ export const getUserTheme = (
   user: User | null | undefined
 ): AppTheme | undefined => {
   if (!user) {
-    return;
+    return undefined;
   }
 
   const { theme } = user;
@@ -75,9 +75,10 @@ export const applyTheme = (
     return;
   }
 
-  const enableTransitions = options.disableTransitions
-    ? disableTransitionOnChange()
-    : undefined;
+  const enableTransitions =
+    options.disableTransitions === true
+      ? disableTransitionOnChange()
+      : undefined;
   const resolvedTheme = resolveTheme(theme);
 
   document.documentElement.classList.toggle("dark", resolvedTheme === "dark");
@@ -118,7 +119,8 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (theme !== "system") {
-      return;
+      /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+      return undefined;
     }
 
     const query = window.matchMedia("(prefers-color-scheme: dark)");
@@ -129,7 +131,9 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     };
 
     query.addEventListener("change", handleChange);
-    return () => query.removeEventListener("change", handleChange);
+    return () => {
+      query.removeEventListener("change", handleChange);
+    };
   }, [theme]);
 
   const value = useMemo(

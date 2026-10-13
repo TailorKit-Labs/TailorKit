@@ -17,9 +17,8 @@ import { getDeployToken, NotLoggedInError, runWhoami } from "./auth";
 import { buildProject } from "./build";
 import { createDeploymentClient, getAgentAuth } from "./deployment-client";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
@@ -122,22 +121,22 @@ const logoContentTypeByExtension = new Map<
   ["webp", "image/webp"],
 ]);
 
-const unwrapRpcResult = <TSchema extends z.ZodType, TResponse>(
+const unwrapRpcResult = <TSchema extends z.ZodType>(
   schema: TSchema,
-  result: TResponse
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser, serializer, or runtime adapter handles arbitrary values before validating or encoding their domain representation.
+  result: unknown
 ): z.output<TSchema> => {
   if (
-    result &&
     isObjectValue(result) &&
     "error" in result &&
     result.error !== undefined
   ) {
+    // oxlint-disable-next-line typescript/only-throw-error -- Preserve the transport failure object, including its code and metadata, for the existing downstream error mapping.
     throw result.error;
   }
 
-  const data =
-    result && isObjectValue(result) && "data" in result ? result.data : result;
-  const body = data && isObjectValue(data) && "body" in data ? data.body : data;
+  const data = isObjectValue(result) && "data" in result ? result.data : result;
+  const body = isObjectValue(data) && "body" in data ? data.body : data;
 
   return schema.parse(body);
 };
@@ -149,10 +148,12 @@ const getErrorMessage = (cause: unknown): string | undefined => {
   if (isStringValue(cause)) {
     return cause;
   }
-  if (cause && isObjectValue(cause) && "message" in cause) {
+  if (isObjectValue(cause) && "message" in cause) {
     const { message } = cause;
     return isStringValue(message) ? message : undefined;
   }
+
+  return undefined;
 };
 
 const isNotFoundError = (cause: unknown): boolean =>
@@ -174,7 +175,13 @@ const uploadAsset = async (
   content: Buffer,
   contentEncoding?: "gzip"
 ): Promise<void> => {
-  if (!asset.uploadUrl) {
+  if (
+    !(
+      asset.uploadUrl !== undefined &&
+      asset.uploadUrl !== null &&
+      asset.uploadUrl !== ""
+    )
+  ) {
     return;
   }
 
@@ -211,14 +218,22 @@ const resolveTsconfig = (root: string): string | undefined => {
       return filepath;
     }
   }
+
+  return undefined;
 };
 
 const typecheckAppEntries = async (
   loaded: LoadedTailorKitConfig
 ): Promise<TypecheckFailure | undefined> => {
   const baseTsconfig = resolveTsconfig(loaded.root);
-  if (!baseTsconfig) {
-    return;
+  if (
+    !(
+      baseTsconfig !== undefined &&
+      baseTsconfig !== null &&
+      baseTsconfig !== ""
+    )
+  ) {
+    return undefined;
   }
   const requireFromApp = createRequire(path.join(loaded.root, "package.json"));
   let compiler: string;
@@ -228,7 +243,7 @@ const typecheckAppEntries = async (
       "bin/tsc"
     );
   } catch {
-    return;
+    return undefined;
   }
   const { getClientSourceFiles } = await import("@tailorkit/vite/builder");
   const clientFiles = await getClientSourceFiles(loaded.root);
@@ -257,6 +272,7 @@ const typecheckAppEntries = async (
         include: [],
       })
     );
+    // oxlint-disable-next-line typescript/strict-void-return -- Node explicitly supports promisify(execFile); its ChildProcess return is intentionally ignored by the callback-to-Promise adapter.
     await promisify(execFile)(
       process.execPath,
       [compiler, "--noEmit", "--project", config, "--pretty", "false"],
@@ -276,13 +292,15 @@ const typecheckAppEntries = async (
       command: `tsc --noEmit ${clientFiles.map((file) => path.relative(loaded.root, file)).join(" ")}`,
       exitCode: isNumberValue(failure.code) ? failure.code : null,
       output:
-        `${failure.stdout ?? ""}${failure.stderr ?? ""}`.trim() ||
-        failure.message ||
+        (`${failure.stdout ?? ""}${failure.stderr ?? ""}`.trim() ||
+          failure.message) ??
         String(error),
     };
   } finally {
     await rm(temporary, { force: true, recursive: true });
   }
+
+  return undefined;
 };
 
 // Keep the request/build lifecycle and its failure paths together.
@@ -296,16 +314,22 @@ export const runDeploy = async (
   let createdApp = false;
 
   const auth = await runWhoami(options).catch(
-    (error: ErrorOptions["cause"]) => {
+    async (error: ErrorOptions["cause"]) => {
       if (error instanceof NotLoggedInError && options.onLoginRequired) {
-        return options.onLoginRequired();
+        return await options.onLoginRequired();
       }
       throw error;
     }
   );
   const storedAuth = await getDeployToken(auth.hostUrl);
 
-  if (!storedAuth?.deployToken) {
+  if (
+    !(
+      storedAuth?.deployToken !== undefined &&
+      storedAuth?.deployToken !== null &&
+      storedAuth?.deployToken !== ""
+    )
+  ) {
     throw new Error(
       `Not logged in for ${auth.hostUrl}. Run tailorkit login after checking host in tailorkit.config.ts.`
     );
@@ -330,7 +354,7 @@ export const runDeploy = async (
     const shouldContinue = await options.onTypecheckFailed?.(
       typecheckResult.value
     );
-    if (!shouldContinue) {
+    if (!(shouldContinue === true)) {
       throw new Error("Deployment cancelled because type check failed.");
     }
   }
@@ -350,10 +374,10 @@ export const runDeploy = async (
     ? await gzipAsync(serverAsset)
     : undefined;
   // SAFETY: The upload manifest validator permits only dark and light logo keys, with string asset paths; Object.entries loses those validated literal keys.
-  const logoEntries = Object.entries(manifest.assets.logos ?? {}) as [
-    "dark" | "light",
-    string,
-  ][];
+  const logoEntries =
+    /* oxlint-disable typescript/no-unsafe-type-assertion -- The upload manifest validator permits only dark and light logo keys, with string asset paths; Object.entries loses those validated literal keys. */
+    Object.entries(manifest.assets.logos ?? {}) as ["dark" | "light", string][];
+  /* oxlint-enable typescript/no-unsafe-type-assertion */
   const logoAssets = await Promise.all(
     logoEntries.map(async ([variant, filename]) => {
       const content = await readFile(path.join(outDir, filename));
@@ -388,7 +412,11 @@ export const runDeploy = async (
   const createLinkedApp = async (
     reason: "missing" | "not-found"
   ): Promise<string> => {
-    if (options.appId) {
+    if (
+      options.appId !== undefined &&
+      options.appId !== null &&
+      options.appId !== ""
+    ) {
       throw new Error("The requested deployment app was not found.");
     }
     const appName = await readAppName(loaded.root);
@@ -399,7 +427,7 @@ export const runDeploy = async (
       reason,
     });
 
-    if (!shouldCreateApp) {
+    if (!(shouldCreateApp === true)) {
       throw new Error("Deployment cancelled.");
     }
 
@@ -417,9 +445,7 @@ export const runDeploy = async (
     return appId;
   };
 
-  if (!appId) {
-    appId = await createLinkedApp("missing");
-  }
+  appId ??= await createLinkedApp("missing");
 
   const createDeployment = async (
     targetAppId: string
@@ -490,14 +516,14 @@ export const runDeploy = async (
       ? [uploadAsset(created.server, serverAssetGzip, "gzip")]
       : []),
     uploadAsset(created.assets[0], clientAssetGzip, "gzip"),
-    ...logoAssets.map((logo) => {
+    ...logoAssets.map(async (logo) => {
       const upload = created.logos?.[logo.variant];
       if (!upload) {
         throw new Error(
           `Deployment did not return an upload URL for the ${logo.variant} logo.`
         );
       }
-      return uploadAsset(upload, logo.content);
+      await uploadAsset(upload, logo.content);
     }),
   ]);
 

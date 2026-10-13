@@ -10,9 +10,8 @@ import { getAgentAuth } from "./agent-auth";
 import { createCliClient } from "./client";
 import { normalizeHostUrl } from "./utils/url";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 interface AuthOptions {
   host?: string;
@@ -96,10 +95,10 @@ const authStoreSchema = z
   .object({
     hosts: z.record(z.string(), storedHostAuthSchema).optional(),
   })
-  .passthrough();
+  .loose();
 
-const sleep = (milliseconds: number): Promise<void> =>
-  (() => {
+const sleep = async (milliseconds: number): Promise<void> => {
+  await (async () => {
     const {
       promise: pendingPromise,
       resolve,
@@ -110,16 +109,18 @@ const sleep = (milliseconds: number): Promise<void> =>
     } catch (error) {
       rejectPending(error);
     }
-    return pendingPromise;
+    await pendingPromise;
   })();
+};
 
-const throwRpcError = <TResponse>(result: TResponse) => {
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser, serializer, or runtime adapter handles arbitrary values before validating or encoding their domain representation.
+const throwRpcError = (result: unknown) => {
   if (
-    result &&
     isObjectValue(result) &&
     "error" in result &&
     result.error !== undefined
   ) {
+    // oxlint-disable-next-line typescript/only-throw-error -- Preserve the transport failure object, including its code and metadata, for the existing downstream error mapping.
     throw result.error;
   }
 };
@@ -130,12 +131,7 @@ const readAuthStore = async (): Promise<AuthStore> => {
       JSON.parse(await readFile(authStorePath, "utf-8"))
     );
   } catch (error) {
-    if (
-      error &&
-      isObjectValue(error) &&
-      "code" in error &&
-      error.code === "ENOENT"
-    ) {
+    if (isObjectValue(error) && "code" in error && error.code === "ENOENT") {
       return {};
     }
 
@@ -259,7 +255,13 @@ export const runWhoami = async (
   const hostUrl = await resolveHostUrl(options);
   const auth = await getDeployToken(hostUrl);
 
-  if (!auth?.deployToken) {
+  if (
+    !(
+      auth?.deployToken !== undefined &&
+      auth?.deployToken !== null &&
+      auth?.deployToken !== ""
+    )
+  ) {
     throw new NotLoggedInError(hostUrl);
   }
 
@@ -313,7 +315,7 @@ export const runLogin = async (
   }) => void
 ): Promise<{ hostUrl: string; scope: NamedScope }> => {
   if (getAgentAuth()) {
-    return runWhoami(options);
+    return await runWhoami(options);
   }
   const hostUrl = await resolveHostUrl(options);
   const client = createTailorKitClient({ url: hostUrl });

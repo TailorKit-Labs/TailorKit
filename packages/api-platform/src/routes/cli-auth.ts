@@ -26,7 +26,13 @@ const tokenExpiresInMilliseconds = 12 * 60 * 60 * 1000;
 const userCodeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 const hashCliSecret = (value: string): string => {
-  if (!env.AUTH_SECRET) {
+  if (
+    !(
+      env.AUTH_SECRET !== undefined &&
+      env.AUTH_SECRET !== null &&
+      env.AUTH_SECRET !== ""
+    )
+  ) {
     throw new Error("AUTH_SECRET is required for CLI auth secret hashing.");
   }
 
@@ -231,7 +237,14 @@ const pollCliAuth = protectedRouter
       return { body: { status: "pending" as const } };
     }
 
-    if (!session.scope || !session.scopeKey) {
+    if (
+      !session.scope ||
+      !(
+        session.scopeKey !== undefined &&
+        session.scopeKey !== null &&
+        session.scopeKey !== ""
+      )
+    ) {
       throw new ORPCError("BAD_REQUEST", {
         message: "Approved CLI auth session is missing scope.",
       });
@@ -268,7 +281,14 @@ const pollCliAuth = protectedRouter
         return null;
       }
 
-      if (!consumedSession.scope || !consumedSession.scopeKey) {
+      if (
+        !consumedSession.scope ||
+        !(
+          consumedSession.scopeKey !== undefined &&
+          consumedSession.scopeKey !== null &&
+          consumedSession.scopeKey !== ""
+        )
+      ) {
         throw new ORPCError("BAD_REQUEST", {
           message: "Approved CLI auth session is missing scope.",
         });

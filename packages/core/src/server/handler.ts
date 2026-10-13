@@ -14,8 +14,9 @@ import type {
   NoComponentFieldCallbackConflicts,
   ViewContextHierarchy,
   SlotDefinitions,
-} from "../schema/index";
-import { createTailorKitSchema } from "../schema/schema";
+} from "#schema/index";
+import { createTailorKitSchema } from "#schema/schema";
+
 import { handleBackendSession } from "./backend";
 import { normalizeBaseUrl } from "./base-url";
 import { handleCliAuthApprovalPage } from "./cli-auth-page";
@@ -92,7 +93,8 @@ export const createTailorKitServer = <
 > & {
   readonly $slots?: TOptions extends { slots: infer V }
     ? V
-    : Record<never, never>;
+    : // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
+      Record<never, never>;
 } => {
   const { basePath, publicOrigin } = normalizeBaseUrl(options.baseUrl);
   const scopeSchemas = validateTailorKitScopeSchemas(options.scopes);
@@ -116,7 +118,7 @@ export const createTailorKitServer = <
     components: options.components,
     scopes: options.scopes,
     slots: options.slots,
-    tools: options.tools as InferTailorKitServerTools<TOptions> | undefined,
+    tools: options.tools,
     views: options.views,
   });
   const platformBaseUrl =
@@ -129,7 +131,9 @@ export const createTailorKitServer = <
   });
   const platformHeaders =
     options.$internal?.platformHeaders ??
-    (options.projectKey
+    (options.projectKey !== undefined &&
+    options.projectKey !== null &&
+    options.projectKey !== ""
       ? { authorization: `Bearer ${options.projectKey}` }
       : undefined);
   const rpcHandler = new RPCHandler(tailorkitRouter);
@@ -175,7 +179,7 @@ export const createTailorKitServer = <
     const url = new URL(request.url);
     const previewPrefix = `${basePath}/preview/`;
     if (url.pathname === `${basePath}/backend/session`) {
-      return handleBackendSession(
+      return await handleBackendSession(
         request,
         authenticate,
         async (appId, scopes, subjectId) => {
@@ -235,7 +239,7 @@ export const createTailorKitServer = <
         schema,
         scopeSchemas,
       });
-      return handlePreviewConsent({
+      return await handlePreviewConsent({
         authenticate: context.authenticate,
         basePath,
         platform: context.platform,
@@ -371,7 +375,7 @@ export const createTailorKitServer = <
         scopeSchemas,
       });
 
-      return handleCliAuthApprovalPage({
+      return await handleCliAuthApprovalPage({
         authenticate: context.authenticate,
         platform: context.platform,
         platformHeaders: context.platformHeaders,
@@ -390,7 +394,10 @@ export const createTailorKitServer = <
         schema,
         scopeSchemas,
       }),
-      prefix: basePath as AbsolutePath,
+      prefix:
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- The server preserves the supplied typed tool table and normalizes the route base path before constructing its handler. */
+        basePath as AbsolutePath,
+      /* oxlint-enable typescript/no-unsafe-type-assertion */
     });
 
     if (rpcResult.response) {

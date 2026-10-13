@@ -9,13 +9,9 @@ import type { ComponentDefinition } from "@tailorkit/core/schema";
 import type { ViewContextValues } from "@tailorkit/core/views";
 import type { ReactNode } from "react";
 
-import type {
-  TailorKitInstance,
-  UseAppsResult,
-  UseViewsResult,
-} from "../index";
-import { components, createClient } from "../tailorkit";
-import type { TailorKitApp } from "../tailorkit";
+import type { TailorKitInstance, UseAppsResult, UseViewsResult } from "#index";
+import { components, createClient } from "#tailorkit";
+import type { TailorKitApp } from "#tailorkit";
 
 const requireValue = <T,>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -49,7 +45,7 @@ type OptionalChildrenComponent = ComponentDefinition<
 const optionalChildrenRenderer: ComponentRenderer<
   OptionalChildrenComponent,
   ReactNode
-> = ({ children }) => children;
+> = async ({ children }) => await children;
 void optionalChildrenRenderer;
 
 // oxlint-disable-next-line typescript/no-empty-object-type, typescript/ban-types -- This negative type case verifies a component with no declared children property.
@@ -71,6 +67,7 @@ const typedSchema = <TValue,>(): StandardSchemaV1<TValue, TValue> &
       },
       validate: (
         value: Parameters<StandardSchemaV1["~standard"]["validate"]>[0]
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
       ) => ({ value: value as TValue }),
       vendor: "test",
       version: 1,
@@ -142,9 +139,9 @@ const childrenSchema = childrenContract;
 createClient({
   baseUrl: "http://runtime.test",
   components: {
-    Button: ({ children }) => {
+    Button: async ({ children }) => {
       const content: ReactNode = children;
-      return content;
+      return await content;
     },
   },
   contract: childrenContract,
@@ -586,6 +583,7 @@ const transformedSchema: StandardSchemaV1<
     validate: (
       value: Parameters<StandardSchemaV1["~standard"]["validate"]>[0]
     ) => ({
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
       value: { count: Number((value as { count: string }).count) },
     }),
     vendor: "test",

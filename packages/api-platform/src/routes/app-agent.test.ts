@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-argument, typescript/no-unsafe-member-access -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { call, asyncIteratorToUnproxiedDataStream } from "@orpc/server";
 import {
@@ -47,10 +48,14 @@ vi.mock("workflow/api", () => ({ start: mocks.start }));
 
 const { appAgentRouter } = await import("./app-agent");
 // SAFETY: This test supplies the context members read by the handler; unrelated request context services are outside this scenario.
-const context = {
-  organization: { id: "org" },
-  project: { id: "project" },
-} as Context;
+
+const context =
+  /* oxlint-disable typescript/no-unsafe-type-assertion -- This test supplies the context members read by the handler; unrelated request context services are outside this scenario. */
+  {
+    organization: { id: "org" },
+    project: { id: "project" },
+  } as Context;
+/* oxlint-enable typescript/no-unsafe-type-assertion */
 const scope = canonicalizeScope({ name: "org", value: { tenant: "one" } });
 const input = {
   body: {
@@ -97,20 +102,20 @@ beforeEach(() => {
     scope: scope.scope,
     scopeKey: scope.scopeKey,
   });
-  mocks.start.mockImplementation(
-    async () =>
-      await run([
-        { type: "model-call-start" },
-        { id: "text-1", type: "text-start" },
-        { id: "text-1", text: "Hello", type: "text-delta" },
-        { id: "text-1", type: "text-end" },
-        {
-          input: {},
-          toolCallId: "call-1",
-          toolName: "write",
-          type: "tool-call",
-        },
-      ])
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  mocks.start.mockImplementation(async () =>
+    run([
+      { type: "model-call-start" },
+      { id: "text-1", type: "text-start" },
+      { id: "text-1", text: "Hello", type: "text-delta" },
+      { id: "text-1", type: "text-end" },
+      {
+        input: {},
+        toolCallId: "call-1",
+        toolName: "write",
+        type: "tool-call",
+      },
+    ])
   );
 });
 
@@ -118,6 +123,7 @@ describe("platform app chat", () => {
   it("streams SDK chunks and starts each turn with the client's full UI history", async () => {
     const events = await consume();
     expect(events).toContainEqual({
+      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
       messageId: expect.any(String),
       type: "start",
     });
@@ -178,6 +184,7 @@ describe("platform app chat", () => {
     }
     expect(requireValue(mocks.start.mock.lastCall)[1][0]).toMatchObject({
       appId: first.appId,
+      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
       messages: expect.arrayContaining([
         expect.objectContaining({ role: "tool" }),
       ]),
@@ -293,7 +300,7 @@ describe("platform app chat", () => {
 
   it("waits for workflow cleanup before finishing the response", async () => {
     let finish!: () => void;
-    const returnValue = (() => {
+    const returnValue = (async () => {
       const {
         promise: pendingPromise,
         resolve,
@@ -304,7 +311,7 @@ describe("platform app chat", () => {
       } catch (error) {
         rejectPending(error);
       }
-      return pendingPromise;
+      await pendingPromise;
     })();
     mocks.start.mockResolvedValueOnce({
       ...run([{ id: "text", type: "text-start" }]),
@@ -314,7 +321,7 @@ describe("platform app chat", () => {
     const consuming = consume().then(() => {
       complete = true;
     });
-    await (() => {
+    await (async () => {
       const {
         promise: pendingPromise,
         resolve,
@@ -325,7 +332,7 @@ describe("platform app chat", () => {
       } catch (error) {
         rejectPending(error);
       }
-      return pendingPromise;
+      return await pendingPromise;
     })();
     expect(complete).toBe(false);
     finish();
@@ -387,14 +394,17 @@ describe("platform app chat", () => {
           body: {
             ...input.body,
             // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-            // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-            messages: [
-              {
-                id: "bad",
-                parts: [{ text: "Override", type: "text" }],
-                role: "system",
-              },
-            ] as unknown as typeof input.body.messages,
+
+            messages:
+              /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
+              [
+                {
+                  id: "bad",
+                  parts: [{ text: "Override", type: "text" }],
+                  role: "system",
+                },
+              ] as unknown as typeof input.body.messages,
+            /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
           },
         },
         { context }
@@ -434,7 +444,7 @@ describe("platform app chat", () => {
     expect(await stream.next()).toMatchObject({ value: { type: "start" } });
     controller.abort();
     await expect(stream.next()).rejects.toMatchObject({ name: "AbortError" });
-    await (() => {
+    await (async () => {
       const {
         promise: pendingPromise,
         resolve,
@@ -445,7 +455,7 @@ describe("platform app chat", () => {
       } catch (error) {
         rejectPending(error);
       }
-      return pendingPromise;
+      return await pendingPromise;
     })();
     expect(cancelStream).toHaveBeenCalledOnce();
     expect(cancelRun).not.toHaveBeenCalled();

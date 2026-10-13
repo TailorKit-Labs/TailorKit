@@ -13,7 +13,13 @@ const tokenSchema = z.tuple([
 ]);
 
 const getSigningSecret = (): string => {
-  if (!env.AUTH_SECRET) {
+  if (
+    !(
+      env.AUTH_SECRET !== undefined &&
+      env.AUTH_SECRET !== null &&
+      env.AUTH_SECRET !== ""
+    )
+  ) {
     throw new Error("AUTH_SECRET is required for preview tokens.");
   }
   return env.AUTH_SECRET;

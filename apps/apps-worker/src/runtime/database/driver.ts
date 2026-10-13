@@ -56,9 +56,9 @@ export const databaseScope = (
     PreparedQueryConfig & { type: "sync" }
   > {
     private readonly relationalMapper: RelationalRowMapper | undefined;
-    private fields: SelectedFieldsOrdered | undefined;
-    private mapper: RowMapper | undefined;
-    private metadata: Metadata | undefined;
+    private readonly fields: SelectedFieldsOrdered | undefined;
+    private readonly mapper: RowMapper | undefined;
+    private readonly metadata: Metadata | undefined;
     constructor(
       query: Query,
       fields: SelectedFieldsOrdered | undefined,
@@ -148,6 +148,7 @@ export const databaseScope = (
           "Row mapper must return an array"
         );
       }
+      // oxlint-disable-next-line typescript/no-unsafe-return -- Drizzle determines the row type through its relational mapper; this generic driver implementation retains that validated mapper result.
       return result[0];
     }
   }

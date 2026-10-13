@@ -15,8 +15,8 @@ const getBrowserCommand = (url: string) => {
   return { args: [url], command: "xdg-open" };
 };
 
-export const openUrlInBrowser = (url: string): Promise<boolean> =>
-  (() => {
+export const openUrlInBrowser = async (url: string): Promise<boolean> =>
+  await (async () => {
     const {
       promise: pendingPromise,
       resolve,
@@ -41,5 +41,5 @@ export const openUrlInBrowser = (url: string): Promise<boolean> =>
     } catch (error) {
       rejectPending(error);
     }
-    return pendingPromise;
+    return await pendingPromise;
   })();

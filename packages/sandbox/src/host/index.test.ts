@@ -2,22 +2,23 @@
 
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { iframeReadyType, sandboxMessageType } from "../bridge";
+import { iframeReadyType, sandboxMessageType } from "#bridge";
+
 import { createIframeUiHost } from "./index.js";
 
 const getChannel = (iframe: HTMLIFrameElement): string => {
   const match = /data-tailorkit-channel="(?<channel>[a-f0-9]+)"/u.exec(
     iframe.srcdoc
   );
-  if (!match?.[1]) {
+  if (!(match?.[1] !== undefined && match?.[1] !== null && match?.[1] !== "")) {
     throw new Error("Unable to find iframe channel.");
   }
   return match[1];
 };
 
-const emitFromIframe = <TPayload>(
+const emitFromIframe = (
   iframe: HTMLIFrameElement,
-  data: TPayload
+  data: MessageEvent<unknown>["data"]
 ): void => {
   window.dispatchEvent(
     new MessageEvent("message", { data, source: iframe.contentWindow })
@@ -32,7 +33,7 @@ const getContentWindow = (iframe: HTMLIFrameElement): Window => {
 };
 
 const createFetch = (source = "// bundled app client") =>
-  vi.fn<typeof fetch>(() => Promise.resolve(new Response(source)));
+  vi.fn<typeof fetch>(async () => await Promise.resolve(new Response(source)));
 
 describe("createIframeUiHost", () => {
   afterEach(() => {
@@ -105,7 +106,12 @@ describe("createIframeUiHost", () => {
   });
 
   it("stores strictly validated snapshots received through the iframe bridge", () => {
-    const onError = vi.fn();
+    const onError =
+      vi.fn<
+        NonNullable<
+          NonNullable<Parameters<typeof createIframeUiHost>[1]>["onError"]
+        >
+      >();
     const host = createIframeUiHost("https://assets.test/app.js", {
       fetch: createFetch(),
       onError,
@@ -149,19 +155,30 @@ describe("createIframeUiHost", () => {
       type: "animationFrame" as const,
     };
 
-    expect(() => host.dispatch(invalid)).toThrow();
+    expect(() => {
+      host.dispatch(invalid);
+    }).toThrow();
     emitFromIframe(host.iframe, {
       channel: getChannel(host.iframe),
       type: iframeReadyType,
     });
-    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledTimes(1));
-    expect(() => host.dispatch(invalid)).toThrow();
+    await vi.waitFor(() => {
+      expect(postMessage).toHaveBeenCalledTimes(1);
+    });
+    expect(() => {
+      host.dispatch(invalid);
+    }).toThrow();
     expect(postMessage).toHaveBeenCalledTimes(1);
     host.destroy();
   });
 
   it("rejects messages from other windows", () => {
-    const onError = vi.fn();
+    const onError =
+      vi.fn<
+        NonNullable<
+          NonNullable<Parameters<typeof createIframeUiHost>[1]>["onError"]
+        >
+      >();
     const host = createIframeUiHost("https://assets.test/app.js", {
       fetch: createFetch(),
       onError,
@@ -198,9 +215,13 @@ it("updates a mounted slot without fetching its app bundle again", async () => {
   const postMessage = vi.spyOn(getContentWindow(host.iframe), "postMessage");
   const channel = getChannel(host.iframe);
   emitFromIframe(host.iframe, { channel, type: iframeReadyType });
-  await vi.waitFor(() => expect(postMessage).toHaveBeenCalledTimes(1));
+  await vi.waitFor(() => {
+    expect(postMessage).toHaveBeenCalledTimes(1);
+  });
   host.setProps({ slot: "navbar", view: "/users/detail" });
-  await vi.waitFor(() => expect(postMessage).toHaveBeenCalledTimes(2));
+  await vi.waitFor(() => {
+    expect(postMessage).toHaveBeenCalledTimes(2);
+  });
   expect(postMessage.mock.calls[1]?.[0]).toMatchObject({
     payload: {
       data: {
@@ -225,14 +246,21 @@ describe("backend JWT bridge", () => {
       url: "https://runtime.test/rpc",
     };
     const getBackendSession = vi.fn().mockResolvedValue(session);
-    const onError = vi.fn();
+    const onError =
+      vi.fn<
+        NonNullable<
+          NonNullable<Parameters<typeof createIframeUiHost>[1]>["onError"]
+        >
+      >();
     const host = createIframeUiHost("https://assets.test/app.js", {
       fetch: createFetch(),
       getBackendSession,
       onError,
     });
     host.mount();
-    await vi.waitFor(() => expect(host.iframe.isConnected).toBe(true));
+    await vi.waitFor(() => {
+      expect(host.iframe.isConnected).toBe(true);
+    });
     expect(host.iframe.srcdoc).toContain("connect-src http: https: ws: wss:");
     expect(host.iframe.srcdoc).not.toContain("scoped-token");
     const postMessage = vi.spyOn(getContentWindow(host.iframe), "postMessage");
@@ -256,7 +284,7 @@ describe("backend JWT bridge", () => {
       },
       type: sandboxMessageType,
     });
-    await vi.waitFor(() =>
+    await vi.waitFor(() => {
       expect(postMessage).toHaveBeenCalledWith(
         {
           channel,
@@ -267,8 +295,8 @@ describe("backend JWT bridge", () => {
           type: sandboxMessageType,
         },
         "*"
-      )
-    );
+      );
+    });
     expect(getBackendSession).toHaveBeenLastCalledWith({ refresh: true });
     host.destroy();
   });
@@ -281,7 +309,9 @@ describe("backend JWT bridge", () => {
       },
     });
     host.mount();
-    await vi.waitFor(() => expect(host.iframe.isConnected).toBe(true));
+    await vi.waitFor(() => {
+      expect(host.iframe.isConnected).toBe(true);
+    });
     expect(host.iframe.srcdoc).toContain("connect-src http: https: ws: wss:");
     host.destroy();
   });
@@ -296,7 +326,7 @@ it.each(["backend-first", "tools-first"])(
       url: "https://runtime.test/rpc",
     };
     let complete!: () => void;
-    const pending = (() => {
+    const pending = (async () => {
       const {
         promise: pendingPromise,
         resolve,
@@ -307,7 +337,7 @@ it.each(["backend-first", "tools-first"])(
       } catch (error) {
         rejectPending(error);
       }
-      return pendingPromise;
+      await pendingPromise;
     })();
     const client = vi.fn(async () => {
       await pending;
@@ -320,12 +350,16 @@ it.each(["backend-first", "tools-first"])(
     const host = createIframeUiHost("https://assets.test/app.js", {
       fetch: createFetch(),
       getBackendSession,
-      toolBridge: { client, session: async () => await session },
+      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+      toolBridge: { client, session: async () => session },
     });
     host.mount();
     const postMessage = vi.spyOn(getContentWindow(host.iframe), "postMessage");
     const channel = getChannel(host.iframe);
-    const send = (type: "toolRequest" | "backendSessionRequest", id: string) =>
+    const send = (
+      type: "toolRequest" | "backendSessionRequest",
+      id: string
+    ) => {
       emitFromIframe(host.iframe, {
         channel,
         payload: {
@@ -337,6 +371,7 @@ it.each(["backend-first", "tools-first"])(
         },
         type: sandboxMessageType,
       });
+    };
     try {
       const types =
         order === "backend-first"
@@ -361,12 +396,16 @@ it.each(["backend-first", "tools-first"])(
       expect(client).toHaveBeenCalledTimes(32);
       expect(getBackendSession).toHaveBeenCalledTimes(4);
       complete();
-      await vi.waitFor(() => expect(postMessage).toHaveBeenCalledTimes(36));
+      await vi.waitFor(() => {
+        expect(postMessage).toHaveBeenCalledTimes(36);
+      });
       send("toolRequest", "0");
       send("backendSessionRequest", "0");
       expect(client).toHaveBeenCalledTimes(33);
       expect(getBackendSession).toHaveBeenCalledTimes(5);
-      await vi.waitFor(() => expect(postMessage).toHaveBeenCalledTimes(38));
+      await vi.waitFor(() => {
+        expect(postMessage).toHaveBeenCalledTimes(38);
+      });
     } finally {
       complete();
       host.destroy();

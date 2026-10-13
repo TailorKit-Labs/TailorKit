@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-argument, typescript/no-unsafe-member-access -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { verifyAgentToken } from "@tailorkit/api-utils/agent-token";
 import { app } from "@tailorkit/db/schema/apps";
 import { organization } from "@tailorkit/db/schema/auth";
@@ -257,6 +258,7 @@ describe("MCP database authorization", () => {
     expect(grants).toHaveLength(3);
     expect(grant).toMatchObject({
       projectId,
+      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
       revokedAt: expect.any(Date),
       scope: scope.scope,
       scopeKey: scope.scopeKey,
@@ -312,6 +314,7 @@ describe("MCP database authorization", () => {
       )
     ).toMatchObject({
       projectId,
+      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
       revokedAt: expect.any(Date),
       scope: scope.scope,
     });

@@ -73,8 +73,8 @@ const ProjectSettingsPage = () => {
   );
 
   const updateMutation = useMutation({
-    mutationFn: (input: { name: string; slug: string }) =>
-      client.project.update({
+    mutationFn: async (input: { name: string; slug: string }) =>
+      await client.project.update({
         name: input.name.trim(),
         orgSlug,
         projectSlug,
@@ -100,7 +100,7 @@ const ProjectSettingsPage = () => {
       toastManager.add({ title: "Project updated", type: "success" });
 
       if (updatedProject.slug !== projectSlug) {
-        navigate({
+        void navigate({
           params: { orgSlug, projectSlug: updatedProject.slug },
           to: "/$orgSlug/$projectSlug/settings",
         });
@@ -109,7 +109,8 @@ const ProjectSettingsPage = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () => client.project.delete({ orgSlug, projectSlug }),
+    mutationFn: async () =>
+      await client.project.delete({ orgSlug, projectSlug }),
     onError: (cause: unknown) => {
       const message =
         cause instanceof Error ? cause.message : "Failed to delete project";
@@ -120,7 +121,7 @@ const ProjectSettingsPage = () => {
         orpc.project.list.queryOptions({ input: { orgSlug } })
       );
       toastManager.add({ title: "Project deleted", type: "success" });
-      navigate({ params: { orgSlug }, to: "/$orgSlug/~/projects" });
+      void navigate({ params: { orgSlug }, to: "/$orgSlug/~/projects" });
     },
   });
 
@@ -161,7 +162,7 @@ const ProjectSettingsPage = () => {
             onSubmit={(event) => {
               event.preventDefault();
               event.stopPropagation();
-              form.handleSubmit();
+              void form.handleSubmit();
             }}
           >
             <CardPanel className="max-w-lg">
@@ -181,9 +182,9 @@ const ProjectSettingsPage = () => {
                       description={`tailorkit.com/${orgSlug}/${field.state.value || "project-slug"}`}
                       label="Slug"
                       placeholder="amazing-project"
-                      onChange={(event) =>
-                        field.handleChange(toSlug(event.target.value))
-                      }
+                      onChange={(event) => {
+                        field.handleChange(toSlug(event.target.value));
+                      }}
                     />
                   )}
                 </form.AppField>
@@ -213,7 +214,9 @@ const ProjectSettingsPage = () => {
             size="sm"
             type="button"
             variant="destructive-outline"
-            onClick={() => setDeleteDialogOpen(true)}
+            onClick={() => {
+              setDeleteDialogOpen(true);
+            }}
           >
             <Trash2Icon />
             Delete project
@@ -246,9 +249,9 @@ const ProjectSettingsPage = () => {
               <Input
                 autoComplete="off"
                 value={deleteConfirmation}
-                onChange={(event) =>
-                  setDeleteConfirmation(toSlug(event.target.value))
-                }
+                onChange={(event) => {
+                  setDeleteConfirmation(toSlug(event.target.value));
+                }}
               />
               <FieldDescription>This action cannot be undone.</FieldDescription>
             </Field>
@@ -262,7 +265,9 @@ const ProjectSettingsPage = () => {
               loading={deleteMutation.isPending}
               type="button"
               variant="destructive"
-              onClick={() => deleteMutation.mutate()}
+              onClick={() => {
+                deleteMutation.mutate();
+              }}
             >
               Delete project
             </Button>

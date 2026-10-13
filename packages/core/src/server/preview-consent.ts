@@ -13,9 +13,8 @@ import {
 } from "./cli-auth-page";
 import type { TailorKitScopes } from "./types";
 
-const isObjectValue = <TValue>(
-  value: TValue
-): value is TValue & (object | null) => typeof value === "object";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
@@ -34,7 +33,7 @@ export const readPreviewGrantIds = (request: Request): string[] => {
     ?.split(";")
     .map((item) => item.trim())
     .find((item) => item.startsWith(`${previewCookieName}=`));
-  if (!pair) {
+  if (!(pair !== undefined && pair !== null && pair !== "")) {
     return [];
   }
   try {
@@ -143,9 +142,8 @@ export const handlePreviewConsent = async (
     }
     const form = await request.formData();
     const intent = consentIntentSchema.safeParse(form.get("intent"));
-    selectedScopeName = isStringValue(form.get("scope"))
-      ? String(form.get("scope"))
-      : undefined;
+    const scopeValue = form.get("scope");
+    selectedScopeName = isStringValue(scopeValue) ? scopeValue : undefined;
     if (intent.success && intent.data === "cancel") {
       return new Response(null, {
         headers: { ...headers, location: returnPath },
@@ -158,7 +156,11 @@ export const handlePreviewConsent = async (
   }
   const viewer = await authenticate({ request });
   if (!viewer) {
-    if (signInPath) {
+    if (
+      signInPath !== undefined &&
+      signInPath !== null &&
+      signInPath.length > 0
+    ) {
       const signIn = new URL(signInPath, url);
       if (signIn.origin !== url.origin) {
         throw new Error("Sign-in path must be same-origin.");

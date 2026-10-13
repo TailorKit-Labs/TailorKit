@@ -1,4 +1,4 @@
-import { Button } from "@tailorkit/ui/button";
+import { SidebarMenuButton } from "@tailorkit/ui/sidebar";
 import type { LinkProps } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
 import { ChevronLeftIcon } from "lucide-react";
@@ -9,14 +9,12 @@ export const SidebarBackButton = ({
   label,
   ...props
 }: SidebarBackButtonProps) => (
-  <Button
-    className="mb-1 w-full px-2.5 text-center text-sidebar-accent-foreground/75 hover:text-sidebar-accent-foreground"
+  <SidebarMenuButton
+    className="mb-1 h-10 text-center sm:h-9"
     render={<Link {...props} />}
-    size="lg"
-    variant="ghost"
   >
     <ChevronLeftIcon className="size-4" />
     <span className="grow truncate">{label}</span>
     <span className="size-4" aria-hidden="true" />
-  </Button>
+  </SidebarMenuButton>
 );

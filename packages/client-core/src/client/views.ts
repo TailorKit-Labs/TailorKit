@@ -1,5 +1,6 @@
-import { createSlotStore } from "../store/fetch/slot";
-import type { TailorKitStore } from "../store/store";
+import { createSlotStore } from "#store/fetch/slot";
+import type { TailorKitStore } from "#store/store";
+
 import { matchesApp } from "./apps";
 
 export interface ViewsQueryOptions<

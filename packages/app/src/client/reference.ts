@@ -1,6 +1,6 @@
 import type { z } from "zod";
 
-import type { FunctionResult, Functions } from "../server/functions";
+import type { FunctionResult, Functions } from "#server/functions";
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
@@ -29,16 +29,22 @@ export type References<F> = {
 export const createApi = <F extends Functions>(): References<F> => {
   // SAFETY: The proxy synthesizes every declared reference from its property path; its empty target is never used as an implemented reference.
   const group = (path: string): References<F> =>
-    new Proxy(Object.create(null) as References<F>, {
-      get(_target, name) {
-        if (!isStringValue(name) || name === "then") {
-          return;
-        }
-        if (name === "name" && path) {
-          return path;
-        }
-        return group(path ? `${path}.${name}` : name);
-      },
-    });
+    new Proxy(
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- The proxy synthesizes every declared reference from its property path; its empty target is never used as an implemented reference. */
+      Object.create(null) as References<F>,
+      /* oxlint-enable typescript/no-unsafe-type-assertion */
+      {
+        get: (_target, name) => {
+          if (!isStringValue(name) || name === "then") {
+            /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+            return undefined;
+          }
+          if (name === "name" && path) {
+            return path;
+          }
+          return group(path ? `${path}.${name}` : name);
+        },
+      }
+    );
   return group("");
 };

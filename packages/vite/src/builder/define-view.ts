@@ -30,6 +30,7 @@ const bindingNames = (node: ESTree.Node | null | undefined): string[] => {
   if (!node) {
     return [];
   }
+  /* oxlint-disable typescript/switch-exhaustiveness-check -- This syntax visitor handles selected node kinds; other kinds use its generic traversal or default branch. */
   switch (node.type) {
     case "Identifier": {
       return [node.name];
@@ -57,6 +58,7 @@ const bindingNames = (node: ESTree.Node | null | undefined): string[] => {
       return [];
     }
   }
+  /* oxlint-enable typescript/switch-exhaustiveness-check */
 };
 
 const bind = (node: ESTree.Node | null | undefined, scope: Scope) => {
@@ -83,6 +85,8 @@ const resolve = (
       return current.bindings.get(name);
     }
   }
+
+  return undefined;
 };
 
 const childNodes = (node: ESTree.Node): ESTree.Node[] =>
@@ -90,13 +94,21 @@ const childNodes = (node: ESTree.Node): ESTree.Node[] =>
     const children = Array.isArray(value) ? value : [value];
     return children.filter(
       (child): child is ESTree.Node =>
-        !!child && typeof child === "object" && "type" in child
+        child !== undefined &&
+        child !== null &&
+        child !== false &&
+        child !== "" &&
+        child !== 0 &&
+        !Number.isNaN(child) &&
+        child !== 0n &&
+        typeof child === "object" &&
+        "type" in child
     );
   });
 
 const bindImports = (node: ESTree.ImportDeclaration, scope: Scope) => {
   const sdk =
-    node.importKind !== "type" && clientImports.has(String(node.source.value));
+    node.importKind !== "type" && clientImports.has(node.source.value);
   for (const specifier of node.specifiers) {
     let binding: Binding = "local";
     if (sdk && specifier.type === "ImportNamespaceSpecifier") {
@@ -134,6 +146,7 @@ const callScopes = (program: ESTree.Program) => {
     let scope = initialScope;
 
     scopes.set(node, scope);
+    /* oxlint-disable typescript/switch-exhaustiveness-check -- This syntax visitor handles selected node kinds; other kinds use its generic traversal or default branch. */
     switch (node.type) {
       case "ImportDeclaration": {
         bindImports(node, scope);
@@ -189,6 +202,7 @@ const callScopes = (program: ESTree.Program) => {
         break;
       }
     }
+    /* oxlint-enable typescript/switch-exhaustiveness-check */
     for (const child of childNodes(node)) {
       visit(child, scope);
     }

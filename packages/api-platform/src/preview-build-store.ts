@@ -164,7 +164,19 @@ export const validatePreviewManifest = (
   }
 };
 
-export const createPreviewBuildStore = (kv: KV) => {
+export const createPreviewBuildStore = (
+  kv: Pick<
+    KV,
+    | "claimUpload"
+    | "delete"
+    | "get"
+    | "increment"
+    | "promoteIfOwnerAndNewer"
+    | "publish"
+    | "set"
+    | "subscribe"
+  >
+) => {
   const readBuild = async (sessionId: string, buildId: string) =>
     parse(await kv.get(buildKey(sessionId, buildId)), buildSchema);
   const removeUploadingBuild = async (
@@ -185,17 +197,17 @@ export const createPreviewBuildStore = (kv: KV) => {
     await kv.delete(buildKey(sessionId, buildId));
   };
   return {
-    async begin(
+    begin: async (
       sessionId: string,
       manifest: PreviewBuildManifest
-    ): Promise<string> {
+    ): Promise<string> => {
       requireId(sessionId);
-      if (await kv.get(endedKey(sessionId))) {
+      if (((await kv.get(endedKey(sessionId))) ?? "") !== "") {
         throw new Error("Preview session has ended.");
       }
       validatePreviewManifest(manifest);
       const previous = await kv.get(uploadingKey(sessionId));
-      if (previous) {
+      if (previous !== undefined && previous !== null && previous !== "") {
         requireId(previous);
       }
       const buildId = randomUUID();
@@ -217,7 +229,7 @@ export const createPreviewBuildStore = (kv: KV) => {
         await kv.delete(buildKey(sessionId, buildId));
         throw new Error("Preview upload was cancelled or superseded.");
       }
-      if (previous) {
+      if (previous !== undefined && previous !== null && previous !== "") {
         try {
           await removeUploadingBuild(sessionId, previous);
         } catch {
@@ -227,15 +239,15 @@ export const createPreviewBuildStore = (kv: KV) => {
       return buildId;
     },
 
-    async chunk(
+    chunk: async (
       sessionId: string,
       buildId: string,
       fileIndex: number,
       chunkIndex: number
-    ): Promise<string | null> {
+    ): Promise<string | null> => {
       requireId(sessionId);
       requireId(buildId);
-      if (await kv.get(endedKey(sessionId))) {
+      if (((await kv.get(endedKey(sessionId))) ?? "") !== "") {
         return null;
       }
       const build = await readBuild(sessionId, buildId);
@@ -264,7 +276,7 @@ export const createPreviewBuildStore = (kv: KV) => {
     ): Promise<CommittedPreviewBuild> {
       requireId(sessionId);
       requireId(buildId);
-      if (await kv.get(endedKey(sessionId))) {
+      if (((await kv.get(endedKey(sessionId))) ?? "") !== "") {
         throw new Error("Preview session has ended.");
       }
       if ((await kv.get(uploadingKey(sessionId))) !== buildId) {
@@ -418,15 +430,17 @@ export const createPreviewBuildStore = (kv: KV) => {
       return committed;
     },
 
-    async current(sessionId: string): Promise<CommittedPreviewBuild | null> {
+    current: async (
+      sessionId: string
+    ): Promise<CommittedPreviewBuild | null> => {
       requireId(sessionId);
-      if (await kv.get(endedKey(sessionId))) {
+      if (((await kv.get(endedKey(sessionId))) ?? "") !== "") {
         return null;
       }
       return parse(await kv.get(pointerKey(sessionId)), committedSchema);
     },
 
-    async end(sessionId: string): Promise<void> {
+    end: async (sessionId: string): Promise<void> => {
       requireId(sessionId);
       await kv.set(endedKey(sessionId), "1", { ttl: activeTtlSeconds });
       const active = parse(
@@ -434,7 +448,7 @@ export const createPreviewBuildStore = (kv: KV) => {
         committedSchema
       );
       const uploading = await kv.get(uploadingKey(sessionId));
-      if (uploading) {
+      if (uploading !== undefined && uploading !== null && uploading !== "") {
         requireId(uploading);
         await removeUploadingBuild(sessionId, uploading);
       }
@@ -458,12 +472,12 @@ export const createPreviewBuildStore = (kv: KV) => {
       }
     },
 
-    subscribe(
+    subscribe: async (
       sessionId: string,
       onRevision: (revision: number | null) => void
-    ) {
+    ) => {
       requireId(sessionId);
-      return kv.subscribe(channel(sessionId), (message) => {
+      return await kv.subscribe(channel(sessionId), (message) => {
         try {
           const value = notificationSchema.parse(JSON.parse(message));
           if ("ended" in value) {
@@ -477,16 +491,16 @@ export const createPreviewBuildStore = (kv: KV) => {
       });
     },
 
-    async upload(
+    upload: async (
       sessionId: string,
       buildId: string,
       fileIndex: number,
       chunkIndex: number,
       base64: string
-    ): Promise<void> {
+    ): Promise<void> => {
       requireId(sessionId);
       requireId(buildId);
-      if (await kv.get(endedKey(sessionId))) {
+      if (((await kv.get(endedKey(sessionId))) ?? "") !== "") {
         throw new Error("Preview session has ended.");
       }
       if ((await kv.get(uploadingKey(sessionId))) !== buildId) {

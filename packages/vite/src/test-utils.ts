@@ -39,6 +39,7 @@ export const linkTestDependencies = async (root: string): Promise<void> => {
 /** Generate real Drizzle migrations in disposable test storage. */
 export const generateTestMigrations = async (root: string): Promise<string> => {
   const directory = path.join(root, "src/db/migrations");
+  // oxlint-disable-next-line typescript/strict-void-return -- Node explicitly supports promisify(execFile); its ChildProcess return is intentionally ignored by the callback-to-Promise adapter.
   await promisify(execFile)(
     process.execPath,
     await drizzleGenerateArguments(root, directory, "init"),

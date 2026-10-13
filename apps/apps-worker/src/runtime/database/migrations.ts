@@ -46,7 +46,9 @@ export const migrateDatabase = (
       const migration = migrations[index];
       if (
         row[0] !== index ||
-        (migration && (row[1] !== migration.id || row[2] !== migration.hash))
+        (migration !== undefined &&
+          migration !== null &&
+          (row[1] !== migration.id || row[2] !== migration.hash))
       ) {
         throw new AppError(
           "INCOMPATIBLE_VERSION",

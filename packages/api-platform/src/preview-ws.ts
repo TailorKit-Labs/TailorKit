@@ -122,11 +122,14 @@ const requireRole = async (
 const beginBuild = o
   .input(z.object({ manifest }))
   .output(z.object({ buildId: id }))
-  .handler(({ context, input }) =>
-    logPreviewOperationFailure("begin", async () => {
-      const store = await requireRole(context, "uploader");
-      return { buildId: await store.begin(context.sessionId, input.manifest) };
-    })
+  .handler(
+    async ({ context, input }) =>
+      await logPreviewOperationFailure("begin", async () => {
+        const store = await requireRole(context, "uploader");
+        return {
+          buildId: await store.begin(context.sessionId, input.manifest),
+        };
+      })
   );
 const uploadChunk = o
   .input(
@@ -138,31 +141,33 @@ const uploadChunk = o
     })
   )
   .output(z.object({ accepted: z.literal(true) }))
-  .handler(({ context, input }) =>
-    logPreviewOperationFailure("upload_chunk", async () => {
-      if (Buffer.byteLength(JSON.stringify(input)) > previewMessageBytes) {
-        throw new ORPCError("PAYLOAD_TOO_LARGE");
-      }
-      const store = await requireRole(context, "uploader");
-      await store.upload(
-        context.sessionId,
-        input.buildId,
-        input.fileIndex,
-        input.chunkIndex,
-        input.base64
-      );
-      return { accepted: true as const };
-    })
+  .handler(
+    async ({ context, input }) =>
+      await logPreviewOperationFailure("upload_chunk", async () => {
+        if (Buffer.byteLength(JSON.stringify(input)) > previewMessageBytes) {
+          throw new ORPCError("PAYLOAD_TOO_LARGE");
+        }
+        const store = await requireRole(context, "uploader");
+        await store.upload(
+          context.sessionId,
+          input.buildId,
+          input.fileIndex,
+          input.chunkIndex,
+          input.base64
+        );
+        return { accepted: true as const };
+      })
   );
 const commitBuild = o
   .input(z.object({ buildId: id }))
   .output(z.object({ revision: z.number().int() }))
-  .handler(({ context, input }) =>
-    logPreviewOperationFailure("commit", async () => {
-      const store = await requireRole(context, "uploader");
-      const result = await store.commit(context.sessionId, input.buildId);
-      return { revision: result.revision };
-    })
+  .handler(
+    async ({ context, input }) =>
+      await logPreviewOperationFailure("commit", async () => {
+        const store = await requireRole(context, "uploader");
+        const result = await store.commit(context.sessionId, input.buildId);
+        return { revision: result.revision };
+      })
   );
 const heartbeat = o
   .output(z.object({ accepted: z.literal(true) }))
@@ -186,8 +191,8 @@ const subscribe = o
     requireFreshViewerToken(context);
     const store = await requireRole(context, "viewer");
     let wake: (() => void) | undefined;
-    const waitForSignal = () =>
-      (() => {
+    const waitForSignal = async () => {
+      await (async () => {
         const {
           promise: pendingPromise,
           resolve,
@@ -198,8 +203,9 @@ const subscribe = o
         } catch (error) {
           rejectPending(error);
         }
-        return pendingPromise;
+        await pendingPromise;
       })();
+    };
     let signalled = true;
     const notify = () => {
       signalled = true;

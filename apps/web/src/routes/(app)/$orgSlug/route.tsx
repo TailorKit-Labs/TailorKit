@@ -12,6 +12,7 @@ export const Route = createFileRoute("/(app)/$orgSlug")({
     );
     if (!orgs.some((org) => org.slug === params.orgSlug)) {
       await clearActiveOrg();
+      // oxlint-disable-next-line typescript/only-throw-error -- TanStack Router intercepts its redirect and not-found response objects when they are thrown from route loaders.
       throw redirect({
         reloadDocument: true,
         replace: true,
@@ -35,9 +36,11 @@ export const Route = createFileRoute("/(app)/$orgSlug")({
         }
 
         await clearActiveOrg();
+        // oxlint-disable-next-line typescript/only-throw-error -- TanStack Router intercepts its redirect and not-found response objects when they are thrown from route loaders.
         throw redirect({ reloadDocument: true, replace: true, to: "/" });
       });
-    if (!org) {
+    if (!(org !== undefined && org !== null)) {
+      // oxlint-disable-next-line typescript/only-throw-error -- TanStack Router intercepts its redirect and not-found response objects when they are thrown from route loaders.
       throw notFound();
     }
   },

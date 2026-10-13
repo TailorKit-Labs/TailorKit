@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { gzipSync, gunzipSync } from "node:zlib";
 
 import { assetHeaders, maxDeploymentBytes } from "@tailorkit/asset-delivery";
@@ -29,26 +30,29 @@ const bundle = "export default 'tenant bundle';";
 const get = vi.fn();
 const head = vi.fn();
 // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-const match = vi.fn((_request: Request) =>
-  Promise.resolve(undefined as Response | undefined)
+const match = vi.fn(
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  async (_request: Request) => undefined as Response | undefined
 );
-const put = vi.fn((_request: Request, _response: Response) =>
-  Promise.resolve()
-);
+const put = vi.fn(async (_request: Request, _response: Response) => {});
 const waitUntil = vi.fn();
 // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-// oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-const env = {
-  ASSET_DOMAIN: "tailorkit.app",
-  BUNDLES: { get, head },
-} as unknown as Env;
+
+const env =
+  /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
+  {
+    ASSET_DOMAIN: "tailorkit.app",
+    BUNDLES: { get, head },
+  } as unknown as Env;
+/* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
 // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-// oxlint-disable-next-line anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+// oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
 const ctx = { waitUntil } as unknown as ExecutionContext;
 
 // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-const fetchAsset = (request: Request) =>
-  worker.fetch(request as Parameters<typeof worker.fetch>[0], env, ctx);
+const fetchAsset = async (request: Request) =>
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+  await worker.fetch(request as Parameters<typeof worker.fetch>[0], env, ctx);
 
 const object = (body = bundle) => ({
   body: new Response(body).body,
@@ -349,7 +353,10 @@ it.each([undefined, "identity", "gzip;q=0, *;q=1"])(
     );
     const response = await fetchAsset(
       new Request(url, {
-        headers: encoding ? { "Accept-Encoding": encoding } : undefined,
+        headers:
+          encoding !== undefined && encoding !== null && encoding !== ""
+            ? { "Accept-Encoding": encoding }
+            : undefined,
       })
     );
     expect(await response.text()).toBe(bundle);

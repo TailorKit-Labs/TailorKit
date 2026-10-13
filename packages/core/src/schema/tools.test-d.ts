@@ -1,7 +1,9 @@
+/* oxlint-disable typescript/no-unsafe-call, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { expectTypeOf } from "vite-plus/test";
 import { z } from "zod";
 
-import { createServer } from "../server/contract";
+import { createServer } from "#server/contract";
+
 import { defineContract } from "./contract";
 import { tool } from "./tools";
 import type { ToolCallers, ToolImplementations } from "./tools";
@@ -30,7 +32,7 @@ expectTypeOf(backend.data.transformed()).toEqualTypeOf<Promise<number>>();
 // @ts-expect-error client tools are unavailable in backend callers
 backend.ui.open("details");
 // @ts-expect-error caller input uses the schema's input type
-backend.data.read(1);
+void backend.data.read(1);
 const implementations: ToolImplementations<typeof contract.tools, "server"> = {
   data: {
     read: ({ input }) => input + 1,
@@ -56,10 +58,10 @@ createServer({
   tools: implementations,
 });
 // @ts-expect-error handler authentication is required
-server.handler(new Request("https://example.com/api/tailorkit/apps"));
+void server.handler(new Request("https://example.com/api/tailorkit/apps"));
 // @ts-expect-error handler options must include authentication
-server.handler(new Request("https://example.com/api/tailorkit/apps"), {});
-server.handler(new Request("https://example.com/api/tailorkit/apps"), {
+void server.handler(new Request("https://example.com/api/tailorkit/apps"), {});
+void server.handler(new Request("https://example.com/api/tailorkit/apps"), {
   authenticate: () => null,
 });
 // @ts-expect-error declared server tools need implementations

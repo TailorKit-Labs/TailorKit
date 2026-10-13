@@ -51,8 +51,8 @@ const chooseApp = async (
   const selection = await autocomplete<string | null>({
     filter: (search, option) =>
       option.value === null ||
-      [option.label, option.hint, option.value].some((value) =>
-        value?.toLowerCase().includes(search.toLowerCase())
+      [option.label, option.hint, option.value].some(
+        (value) => value?.toLowerCase().includes(search.toLowerCase()) === true
       ),
     message: "Select an app or create a new one",
     options: [
@@ -67,7 +67,8 @@ const chooseApp = async (
   });
   if (isCancel(selection)) {
     cancel("Agent cancelled.");
-    return;
+
+    return undefined;
   }
   if (selection !== null) {
     return selection;
@@ -77,11 +78,13 @@ const chooseApp = async (
     initialValue: "My app",
     message: "App name",
     placeholder: "My app",
-    validate: (value) => (value?.trim() ? undefined : "Enter an app name."),
+    validate: (value) =>
+      (value?.trim() ?? "") === "" ? "Enter an app name." : undefined,
   });
   if (isCancel(name)) {
     cancel("Agent cancelled.");
-    return;
+
+    return undefined;
   }
   loading.start("Creating app");
   try {
@@ -101,13 +104,14 @@ export const runAgentCommand = async (options: AgentOptions) => {
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
     throw new Error("tailorkit agent requires an interactive terminal.");
   }
-  if (!options.host?.trim()) {
+  const host = options.host?.trim();
+  if (host === undefined || host === "") {
     throw new Error(
       "Missing TailorKit host URL. Use tailorkit agent --host <url>."
     );
   }
   let { appId } = options;
-  const hostUrl = normalizeHostUrl(options.host);
+  const hostUrl = normalizeHostUrl(host);
   const authUrl = await resolveHostUrl(options);
   try {
     await runWhoami(options);
@@ -123,9 +127,9 @@ export const runAgentCommand = async (options: AgentOptions) => {
     throw new NotLoggedInError(hostUrl);
   }
   const client = createCliClient({ token: auth.deployToken, url: authUrl });
-  if (!appId) {
+  if (!(appId !== undefined && appId !== null && appId !== "")) {
     appId = await chooseApp(client);
-    if (!appId) {
+    if (!(appId !== undefined && appId !== null && appId !== "")) {
       return;
     }
   }

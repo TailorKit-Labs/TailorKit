@@ -1,7 +1,8 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { describe, expect, it } from "vite-plus/test";
 
-import { createTailorKitSchema } from "../schema/schema";
+import { createTailorKitSchema } from "#schema/schema";
+
 import { primitives as arktypePrimitives } from "./arktype";
 import { primitives as valibotPrimitives } from "./valibot";
 import { primitives as zodPrimitives } from "./zod";

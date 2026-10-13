@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-import { AppError } from "../errors";
+import { AppError } from "#errors";
+
 import type { Session } from "./session";
 
 export interface ToolBridge<TInput = unknown, TOutput = unknown> {
@@ -19,10 +20,11 @@ declare global {
 // oxlint-disable-next-line typescript/no-empty-interface, typescript/no-empty-object-type -- Generated bindings augment this public interface through declaration merging.
 export interface TailorKitServerTools {}
 
-export const executeServerTool = async <TInput>(
+export const executeServerTool = async (
   session: Session,
   path: string,
-  input: TInput,
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser, serializer, or runtime adapter handles arbitrary values before validating or encoding their domain representation.
+  input: unknown,
   request: typeof fetch = globalThis.fetch,
   signal?: AbortSignal
 ) => {
@@ -57,21 +59,19 @@ export const executeServerTool = async <TInput>(
 };
 
 /** Generated callers delegate only transport; host/server declarations validate both directions. */
-export const callTool = (
+export const callTool = async (
   kind: "client" | "server",
   path: string,
   input?: Parameters<ToolBridge["client"]>[1]
 ): ReturnType<ToolBridge["client"]> => {
   const bridge = globalThis.__tailorkitTools;
   if (!bridge) {
-    return Promise.reject(
-      new AppError("UNAVAILABLE", "Tool bridge unavailable")
-    );
+    throw new AppError("UNAVAILABLE", "Tool bridge unavailable");
   }
   if (kind === "client") {
-    return bridge.client(path, input);
+    return await bridge.client(path, input);
   }
-  return bridge
+  return await bridge
     .session(path)
-    .then((session) => executeServerTool(session, path, input));
+    .then(async (session) => await executeServerTool(session, path, input));
 };

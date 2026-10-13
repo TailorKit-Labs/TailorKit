@@ -52,27 +52,39 @@ const createIdentity = (
   pathname: string
 ): AssetIdentity | undefined => {
   if (!teamIdPattern.test(publicTeamId)) {
-    return;
+    return undefined;
   }
 
   const match = deploymentAssetPath.exec(pathname);
   if (!match) {
-    return;
+    return undefined;
   }
   const [, projectId, appId, deploymentId, clientFilename, logoFilename] =
     match;
   const filename = clientFilename ?? logoFilename;
-  if (!projectId || !appId || !deploymentId || !filename) {
-    return;
+  if (
+    !(projectId !== undefined && projectId !== null && projectId !== "") ||
+    !(appId !== undefined && appId !== null && appId !== "") ||
+    !(
+      deploymentId !== undefined &&
+      deploymentId !== null &&
+      deploymentId !== ""
+    ) ||
+    !(filename !== undefined && filename !== null && filename !== "")
+  ) {
+    return undefined;
   }
   const appKey = `teams/${publicTeamId}/projects/${projectId}/apps/${appId}`;
   return {
     appId,
     contentType: getAssetContentType(filename),
     deploymentId,
-    key: clientFilename
-      ? `${appKey}/deployments/${deploymentId}/client/${filename}`
-      : `${appKey}/logos/${filename}`,
+    key:
+      clientFilename !== undefined &&
+      clientFilename !== null &&
+      clientFilename !== ""
+        ? `${appKey}/deployments/${deploymentId}/client/${filename}`
+        : `${appKey}/logos/${filename}`,
     projectId,
     publicTeamId,
   };
@@ -90,7 +102,7 @@ export const parseHostedAssetRequest = (
     url.search ||
     !url.hostname.endsWith(suffix)
   ) {
-    return;
+    return undefined;
   }
   return createIdentity(url.hostname.slice(0, -suffix.length), url.pathname);
 };
@@ -100,15 +112,26 @@ export const parseNodeAssetRequest = (
 ): AssetIdentity | undefined => {
   const url = new URL(request.url);
   if (url.search) {
-    return;
+    return undefined;
   }
   const match = nodeAssetPath.exec(url.pathname);
   if (!match) {
-    return;
+    return undefined;
   }
   const [, publicTeamId, assetPathname] = match;
-  if (!publicTeamId || !assetPathname) {
-    return;
+  if (
+    !(
+      publicTeamId !== undefined &&
+      publicTeamId !== null &&
+      publicTeamId !== ""
+    ) ||
+    !(
+      assetPathname !== undefined &&
+      assetPathname !== null &&
+      assetPathname !== ""
+    )
+  ) {
+    return undefined;
   }
   return createIdentity(publicTeamId, assetPathname);
 };
@@ -161,7 +184,7 @@ export const assetHeaders = (input: {
     headers.set("Content-Encoding", "gzip");
     headers.set("Vary", "Accept-Encoding");
   }
-  if (input.etag) {
+  if (input.etag !== undefined && input.etag !== null && input.etag !== "") {
     headers.set("ETag", input.etag);
   }
   return headers;
@@ -187,17 +210,28 @@ export const parseHostedAppRoute = (request: Request, assetDomain: string) => {
     !local &&
     (url.protocol !== "https:" || url.port || !url.hostname.endsWith(suffix))
   ) {
-    return;
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
   }
   const publicTeamId = local
     ? undefined
     : url.hostname.slice(0, -suffix.length);
-  if (!local && (!publicTeamId || !teamIdPattern.test(publicTeamId))) {
-    return;
+  if (
+    !local &&
+    (!(
+      publicTeamId !== undefined &&
+      publicTeamId !== null &&
+      publicTeamId !== ""
+    ) ||
+      !teamIdPattern.test(publicTeamId))
+  ) {
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
   }
   const match = hostedAppPath.exec(url.pathname);
   if (!match) {
-    return;
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
   }
   return {
     appPublicId: requireValue(match[2]),
@@ -219,11 +253,13 @@ export const parseDeploymentPublicationRoute = (
     url.search ||
     url.hostname !== `internal.${assetDomain}`
   ) {
-    return;
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
   }
   const match = publicationPath.exec(url.pathname);
   if (!match) {
-    return;
+    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+    return undefined;
   }
   return {
     appPublicId: requireValue(match[2]),
@@ -248,7 +284,7 @@ export const limitAssetBody = (
   let contentLength = 0;
   return body.pipeThrough(
     new TransformStream<Uint8Array, Uint8Array>({
-      transform(chunk, controller) {
+      transform: (chunk, controller) => {
         contentLength += chunk.byteLength;
         if (contentLength > maxAssetBytes) {
           controller.error(new AssetDeliveryError(404));
@@ -337,7 +373,13 @@ export const acceptsGzip = (request: Request): boolean => {
       const quality = parameters.find((parameter) =>
         parameter.startsWith("q=")
       );
-      return { name, quality: quality ? Number(quality.slice(2)) : 1 };
+      return {
+        name,
+        quality:
+          quality !== undefined && quality !== null && quality !== ""
+            ? Number(quality.slice(2))
+            : 1,
+      };
     });
   const encoding =
     encodings.find(({ name }) => name === "gzip") ??

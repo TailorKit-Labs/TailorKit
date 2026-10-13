@@ -9,7 +9,8 @@ import type {
   ToolImplementations,
 } from "@tailorkit/core/schema";
 
-import type { RemoteComponentRegistry } from "../store/local/remote-view";
+import type { RemoteComponentRegistry } from "#store/local/remote-view";
+
 import { createTailorKitFetchClient } from "./fetch-client";
 import type {
   TailorKitFetchClient,
@@ -28,8 +29,7 @@ const isToolHandler = (
 
 export type AnyComponentDefinition = ComponentDefinition<
   Schema | undefined,
-  CallbackMap,
-  boolean | undefined
+  CallbackMap
 >;
 
 export type ComponentRenderer<
@@ -137,7 +137,9 @@ export const createTailorKitClientConfig = (options: {
   return {
     assetsBaseUrl: options.assetsBaseUrl,
     baseUrl: options.baseUrl,
-    clearCache: () => fetchClient.clear(),
+    clearCache: () => {
+      fetchClient.clear();
+    },
     components: options.components ?? {},
     contract: options.contract,
     fetchClient,
@@ -160,9 +162,21 @@ export const createComponentRegistry = <
 ): WrappedComponentRegistry<TRenderer> => {
   const components: WrappedComponentRegistry<TRenderer> = {};
   for (const [name, renderer] of Object.entries(renderers)) {
-    if (renderer) {
+    if (
+      renderer !== undefined &&
+      renderer !== null &&
+      renderer !== false &&
+      renderer !== "" &&
+      renderer !== 0 &&
+      !Number.isNaN(renderer) &&
+      renderer !== 0n
+    ) {
       // SAFETY: Object.entries returns own values from renderers, and the truthy check excludes nullish entries before wrapping.
-      const component = wrap(renderer as NonNullable<T[keyof T]>);
+      const component = wrap(
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- Object.entries returns own values from renderers, and the truthy check excludes nullish entries before wrapping. */
+        renderer as NonNullable<T[keyof T]>
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
+      );
       components[name] = component;
       components[toComponentTagName(name)] = component;
     }

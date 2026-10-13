@@ -1,11 +1,12 @@
 import { computed } from "nanostores";
 import type { ReadableAtom } from "nanostores";
 
-import { matchesApp } from "../client/apps";
-import { normalizeScopeSelection } from "../client/scope-query";
-import { refetchViews } from "../client/views";
-import type { ViewsQueryOptions } from "../client/views";
-import type { TailorKitApp } from "../types";
+import { matchesApp } from "#client/apps";
+import { normalizeScopeSelection } from "#client/scope-query";
+import { refetchViews } from "#client/views";
+import type { ViewsQueryOptions } from "#client/views";
+import type { TailorKitApp } from "#types";
+
 import type { FetchSnapshot } from "./fetch/cache";
 import { serializeCacheKey } from "./fetch/cache";
 import { createSlotStore } from "./fetch/slot";
@@ -60,7 +61,9 @@ export const createAppsQuery = (
   store: TailorKitStore,
   options: AppsQueryOptions = {}
 ) => {
-  const refetch = () => store.fetchApps({ force: true });
+  const refetch = async () => {
+    await store.fetchApps({ force: true });
+  };
   let previous: ReturnType<typeof store.getAppsSnapshot> | undefined;
   let snapshot: QueryResult<TailorKitApp[]>;
   const state = createSnapshotStore(
@@ -101,10 +104,10 @@ const viewsQuery = (
   let previousError: Error | null | undefined;
   let selected: ReadableAtom<ViewsQueryResult>;
   let query: ReturnType<typeof createSlotStore>;
-  const refetch = () => {
+  const refetch = async () => {
     // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
     selection.get();
-    return app ? query.fetch({ force: true }) : refetchViews(store, options);
+    await (app ? query.fetch({ force: true }) : refetchViews(store, options));
   };
   const selection = computed(
     [store.fetch.apps.state, store.views.state],
@@ -178,7 +181,7 @@ const viewsQuery = (
     }
   );
   const source = switchStore(selection);
-  const state = createSnapshotStore(source.get, (listener) => {
+  const state = createSnapshotStore(source.get.bind(source), (listener) => {
     const stop = source.listen(listener);
     if (!app) {
       void store.fetchApps();
