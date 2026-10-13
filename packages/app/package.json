@@ -16,18 +16,6 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./config": {
-      "types": "./dist/config/index.d.ts",
-      "import": "./dist/config.js"
-    },
-    "./config/loader": {
-      "types": "./dist/config/loader.d.ts",
-      "import": "./dist/config-loader.js"
-    },
-    "./builder": {
-      "types": "./dist/builder/index.d.ts",
-      "import": "./dist/builder.js"
-    },
     "./client": {
       "types": "./dist/client.d.ts",
       "import": "./dist/client.js"
