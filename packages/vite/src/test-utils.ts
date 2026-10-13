@@ -1,7 +1,9 @@
-import { cp, mkdir, symlink, writeFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { drizzleGenerateArguments } from "./builder/drizzle";
+import { mkdir, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-export const testMigrations = path.resolve(import.meta.dirname, "../test/migrations");
 export const testSchema = `import { boolean, table, text } from "tailorkit/server";
 export const todos = table("todos", {
   id: text().primaryKey(),
@@ -51,5 +53,20 @@ export default defineServer({
     await mkdir(path.dirname(destination), { recursive: true });
     await writeFile(destination, source);
   }
-  await cp(testMigrations, path.join(root, "src/db/migrations"), { recursive: true });
+  await generateTestMigrations(root);
+}
+
+/** Generate real Drizzle migrations in disposable test storage. */
+export async function generateTestMigrations(root: string): Promise<string> {
+  const directory = path.join(root, "src/db/migrations");
+  await promisify(execFile)(
+    process.execPath,
+    await drizzleGenerateArguments(root, directory, "init"),
+    {
+      cwd: root,
+      timeout: 30_000,
+      env: { ...process.env, CI: "true" },
+    },
+  );
+  return directory;
 }

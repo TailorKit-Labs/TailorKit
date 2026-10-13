@@ -1,5 +1,5 @@
-import { linkTestDependencies, testSchema, testMigrations } from "../test-utils";
-import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { linkTestDependencies, testSchema, generateTestMigrations } from "../test-utils";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect, it } from "vite-plus/test";
@@ -14,7 +14,7 @@ it("checks schema drift without rewriting committed migrations and allows apps w
     await linkTestDependencies(root);
     const schema = testSchema;
     await writeFile(path.join(root, "src/db/schema.ts"), schema);
-    await cp(testMigrations, migrations, { recursive: true });
+    await generateTestMigrations(root);
     const files = (await readdir(migrations, { recursive: true })).filter(
       (name) => name.endsWith(".sql") || name.endsWith(".json"),
     );
