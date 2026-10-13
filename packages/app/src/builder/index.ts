@@ -148,7 +148,7 @@ export const buildApp = async (options: BuildAppOptions = {}): Promise<unknown> 
     },
     configFile: false,
     define: {
-      "process.env.NODE_ENV": JSON.stringify(options.mode ?? "production"),
+      "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV ?? "production"),
     },
     mode: options.mode,
     oxc: { jsx: { importSource: "preact" } },
