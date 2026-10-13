@@ -19,7 +19,7 @@ const preactPackageJson = "preact/package.json";
 const preactPackageJsonModuleId = "\0tailorkit-preact-package-json";
 
 export interface TailorKitPluginOptions {
-  /** Config file path relative to the directory containing vite.config.ts. */
+  /** Config file path relative to vite.config.ts. Defaults to ./tailorkit.config.ts. */
   configPath?: string;
 }
 

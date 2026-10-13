@@ -19,7 +19,7 @@ const tailorkitConfigSchema = z.strictObject({
 
 /**
  * App configuration exported from `tailorkit.config.ts`.
- * Relative paths are resolved from the directory containing the config file.
+ * Relative paths resolve from the app root: the Vite config directory when building.
  */
 export interface TailorKitConfig extends z.input<typeof tailorkitConfigSchema> {
   /**
