@@ -1,0 +1,341 @@
+playground/tanstack-start/src/routes/issues.$issueId.tsx
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-83
+packages/app/README.md
+  s_2f40b5dc18ecb8::t_41ad661aa48231 87,90,92-103,105,107,109,111,113
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 89,91,104,106,108,110,112,114
+packages/core/package.json
+  s_2f40b5dc18ecb8::t_41ad661aa48231 3
+packages/vite/src/builder/env.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-2
+packages/vite/src/builder/instances.test.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-151
+packages/cli/src/generator/templates/index.ts
+  s_2f40b5dc18ecb8::t_9db9f935ea54e4 2-3,7,9-14
+.changeset/pre/public-vite-plugin.md
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-7,9
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 8,10
+playground/tanstack-start/src/routes/issues.tsx
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-5
+apps/apps-worker/src/tests/fixtures/todos-init.sql
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-5
+playground/tanstack-start/src/lib/tailorkit-client.tsx
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-66
+playground/tanstack-start/src/styles.css
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-17
+playground/tanstack-start/src/components/app-sidebar.tsx
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-134
+playground/tanstack-start/src/lib/tailorkit-server.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-33
+playground/tanstack-start/src/routes/api/playground/todo-client.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-33
+packages/vite/src/builder/schema-check.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-115
+packages/react/package.json
+  s_2f40b5dc18ecb8::t_41ad661aa48231 3
+playground/README.md
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 3,26-27
+packages/app/package.json
+  s_2f40b5dc18ecb8::t_41ad661aa48231 3,59
+playground/tanstack-start/src/routes/api/auth.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-76
+packages/vite/src/builder/database-paths.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-6
+playground/tanstack-start/src/lib/issues.functions.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-68
+playground/tanstack-start/src/lib/auth.functions.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-14
+packages/cli/src/generator/package-versions.test.ts
+  s_2f40b5dc18ecb8::t_6280c9ce6818c3 48
+  s_2f40b5dc18ecb8::t_41ad661aa48231 13,19-24,38-42,44,46-47,49,52,55-58
+  s_2f40b5dc18ecb8::t_d1c94e913ba136 53,62
+  s_2f40b5dc18ecb8::t_71ca974c43cc7b 10,12,31,37,43,45,54,63
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 14-17,26,50-51,59-61
+  s_2f40b5dc18ecb8::t_239a88b2b7c7aa 25
+packages/react/CHANGELOG.md
+  s_2f40b5dc18ecb8::t_41ad661aa48231 3-16
+packages/vite/turbo.json
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-8
+packages/cli/vite.config.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 22
+playground/tanstack-start/src/routes/api/tailorkit.$.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-10
+packages/cli/src/deploy.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 10-12,207,286,307
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 17,283-284
+packages/cli/src/generator/templates/vite.config.ts.liquid
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-12
+playground/apps/todo/vite.config.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1,3-6
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 2
+packages/app/CHANGELOG.md
+  s_2f40b5dc18ecb8::t_41ad661aa48231 3-6,8,10-14
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 7,9
+packages/cli/src/agent.test.ts
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 44
+packages/cli/src/preview-startup.test.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 25,56-57,59
+  s_2f40b5dc18ecb8::t_71ca974c43cc7b 55
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 22,58
+apps/apps-worker/src/tests/integration.test.mjs
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 20,231-233,238
+  s_2f40b5dc18ecb8::t_41ad661aa48231 229-230,235-237,239-241,247
+packages/client-platform/CHANGELOG.md
+  s_2f40b5dc18ecb8::t_41ad661aa48231 3-6
+packages/client-platform/package.json
+  s_2f40b5dc18ecb8::t_41ad661aa48231 3
+packages/vite/src/builder/client-views.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-72
+packages/vite/src/builder/drizzle.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-39
+packages/vite/src/builder/server.test.ts
+  s_2f40b5dc18ecb8::t_9854f3e837a7a3 26,470
+  s_2f40b5dc18ecb8::t_d1c94e913ba136 29-35,359,366,430,515
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 1-8,13-18,22-23,25,27,43,47-50,53,113-115,143-146,148,164-171,220-225,239-242,244-248,251,253-258,261,264,322-329,370,390,459-464,468,544,547
+  s_2f40b5dc18ecb8::t_41ad661aa48231 9-12,19-21,24,28,37-40,42,44-46,51-52,54-55,66-67,69-85,87-112,116-142,147,149-163,172-211,213-214,216-219,226-238,243,249-250,252,259-260,262-263,265-321,330-358,360-363,365,367-369,373-389,393-429,431-458,465-467,469,471-485,490-500,507-514,516-543,545-546,548-552
+  s_2f40b5dc18ecb8::t_71ca974c43cc7b 58-63,86,212,215,486-489,501-506
+  s_2f40b5dc18ecb8::t_9db9f935ea54e4 56-57,64-65,364
+  s_2f40b5dc18ecb8::t_6280c9ce6818c3 36,41,68,371-372,391-392
+packages/vite/src/builder/instances.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-584,586-587,635,646-670
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 588,615-616
+  s_2f40b5dc18ecb8::t_6280c9ce6818c3 585,614
+  s_2f40b5dc18ecb8::t_9854f3e837a7a3 589-613,617-634,636-645
+packages/vite/src/config/config.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-80
+packages/cli/src/init.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 30,108,111-116,119-121,124-125,127,239,260,277
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 101-103,105-107,117-118,122-123,126,272
+packages/vite/src/builder/server.ts
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 4,7,66-67,116-132,135,147,156-166,177
+  s_2f40b5dc18ecb8::t_6280c9ce6818c3 140,154,168-173
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-3,5-6,8-65,68-115,133-134,136-139,141-146,148-153,155,167,174-176,178-218
+.changeset/config.json
+  s_2f40b5dc18ecb8::t_41ad661aa48231 14-15
+packages/cli/src/index.test.ts
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 114,124
+packages/vite/README.md
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 3,16-18
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-2,4-15
+packages/vite/src/preact-version.test.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-24
+playground/tanstack-start/src/routes/login.tsx
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-13
+packages/cli/src/generator/generate.ts
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 156,160-162,177
+  s_2f40b5dc18ecb8::t_41ad661aa48231 12,39,44-45,111
+apps/apps-worker/turbo.json
+  s_2f40b5dc18ecb8::t_41ad661aa48231 5
+.changeset/pre/bright-children-renderers.md
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-6
+packages/client-core/CHANGELOG.md
+  s_2f40b5dc18ecb8::t_41ad661aa48231 3-14
+oxlint.config.ts
+  s_2f40b5dc18ecb8::t_70064a5c5a5dd7 19,22
+packages/vite/src/preact-version.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-33
+packages/cli/src/test-utils.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-4,6-7,17-19,21
+  s_2f40b5dc18ecb8::t_71ca974c43cc7b 8-16
+  s_2f40b5dc18ecb8::t_6280c9ce6818c3 5,22
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 20
+playground/tanstack-start/package.json
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-42
+playground/tanstack-start/src/components/tailorkit-shell.tsx
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-129
+package.json
+  s_2f40b5dc18ecb8::t_41ad661aa48231 31,34,37,39
+packages/cli/src/build.ts
+  s_2f40b5dc18ecb8::t_71ca974c43cc7b 5,28,54-59,61-66,69-72
+  s_2f40b5dc18ecb8::t_9db9f935ea54e4 52-53
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 4,35,40,47,49,68,73-74
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-3,6-7,15-22,24-27,30-34,36-39,41-46,48,50-51,60,67
+  s_2f40b5dc18ecb8::t_6280c9ce6818c3 23,75
+  s_2f40b5dc18ecb8::t_d1c94e913ba136 8-14
+  s_2f40b5dc18ecb8::t_514d57cebbe000 29
+packages/tailorkit/package.json
+  s_2f40b5dc18ecb8::t_41ad661aa48231 3,56-59,66,73-74
+packages/core/CHANGELOG.md
+  s_2f40b5dc18ecb8::t_41ad661aa48231 3-8
+packages/sandbox/CHANGELOG.md
+  s_2f40b5dc18ecb8::t_41ad661aa48231 3-11
+packages/tailorkit/src/app-config.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1
+packages/cli/src/auth.test.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 27
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 15
+playground/tanstack-start/src/routes/index.tsx
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-110
+playground/tanstack-start/tsconfig.json
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-21
+playground/tanstack-start/src/lib/auth-client.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-80
+packages/cli/src/generator/types.ts
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 9
+playground/tanstack-start/src/routes/api/playground/todos.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-64
+packages/vite/src/config/loader.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-40
+packages/vite/src/builder/upload-manifest.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-51
+packages/cli/src/generator/generate.test.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 74,168
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 33-34,54,123-167,169
+packages/vite/LICENSE.md
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-74
+packages/cli/src/auth.ts
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 6
+playground/apps/todo/package.json
+  s_2f40b5dc18ecb8::t_41ad661aa48231 17-22,30-32
+apps/apps-worker/src/tests/backend.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-4,6-9,11-20,22-53,55
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 10,21,54
+  s_2f40b5dc18ecb8::t_6280c9ce6818c3 5,56
+packages/sandbox/package.json
+  s_2f40b5dc18ecb8::t_41ad661aa48231 3
+packages/vite/src/index.ts
+  s_2f40b5dc18ecb8::t_9854f3e837a7a3 10,28,35-41,44-66,167-169,172-174,205,239-241
+  s_2f40b5dc18ecb8::t_71ca974c43cc7b 43,69,102,146,150,179,234-237,301
+  s_2f40b5dc18ecb8::t_d1c94e913ba136 20-26,42,178
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 2-4,8,12,14,16-18,84-86,91-94,104-107,110,113-115,124,126-127,136-140,142-144,155-158,161,166,170-171,175-176,180,187-191,213-215,217,220-223,229-233,245-246,255,259,263,268,275,290-293,297-299
+  s_2f40b5dc18ecb8::t_6280c9ce6818c3 83,88,193,197,202-204,206-207,209
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1,5-7,9,11,13,15,19,27,29-34,67-68,70-82,87,89-90,95-101,103,108-109,111-112,116-123,125,128-135,141,145,147-149,151-154,159-160,162-165,177,181-186,192,194-196,198-201,208,210-212,216,218-219,224-228,238,242-244,247-254,256-258,260-262,264-267,269-274,276-289,294-296,300
+playground/tanstack-start/src/components/auth-screen.tsx
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-76
+packages/cli/src/init.test.ts
+  s_2f40b5dc18ecb8::t_71ca974c43cc7b 14,25
+  s_2f40b5dc18ecb8::t_41ad661aa48231 6,15-18,21,26,49,169-177,181,187-190,196,198,202-207,211-212
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 19-20,178-180,182-186,191-195,197,199-201,208-210
+packages/vite/src/builder/client-views.test.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-65
+packages/cli/src/generator/package-versions.ts
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 37-38,41-44,111-115,125,131-132,145-146,149
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-2,6-7,32,35-36,39,103-106,118,124,126-130,135-144,147
+  s_2f40b5dc18ecb8::t_71ca974c43cc7b 133-134
+playground/tanstack-start/src/env.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-4
+packages/vite/tsconfig.json
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-15
+playground/tanstack-start/vite.config.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-9
+playground/tanstack-start/src/routes/__root.tsx
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-60
+packages/vite/CHANGELOG.md
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 7,9
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-6,8,10-15
+packages/vite/src/builder/schema-check.test.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 9-13,19-30,34-83
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 1-8,14-18,33
+  s_2f40b5dc18ecb8::t_71ca974c43cc7b 32
+  s_2f40b5dc18ecb8::t_d1c94e913ba136 31
+packages/vite/vite.config.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-4,8-11,13-17
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 5-7,12
+packages/cli/package.json
+  s_2f40b5dc18ecb8::t_41ad661aa48231 3,36,46,49
+packages/vite/src/test-utils.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-3,8-17,19-20,32-34,36,38,54,56-58,60-69,72,80
+  s_2f40b5dc18ecb8::t_9854f3e837a7a3 7,39-53
+  s_2f40b5dc18ecb8::t_71ca974c43cc7b 21-31,73-79
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 4-6,35,59,70-71
+  s_2f40b5dc18ecb8::t_6280c9ce6818c3 18,37,55,81
+packages/vite/src/builder/index.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-5,10
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 6-9
+packages/vite/src/config/loader.test.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-62
+packages/vite/package.json
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-60
+apps/web/src/components/sidebar/org-switcher.tsx
+  s_2f40b5dc18ecb8::t_9db9f935ea54e4 22-26,49-51,53,69,99
+packages/tailorkit/src/vite.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1
+packages/vite/src/builder/file-routes.test.ts
+  s_2f40b5dc18ecb8::t_9854f3e837a7a3 17,266
+  s_2f40b5dc18ecb8::t_71ca974c43cc7b 46-51,192
+  s_2f40b5dc18ecb8::t_41ad661aa48231 9-12,15,23,25-28,30,32-34,39-40,42-43,54-55,57-191,193-261,268-329,334-338
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 1-8,13-14,16,18-22,31,35-38,41,262-265,267,330-333
+  s_2f40b5dc18ecb8::t_6280c9ce6818c3 24,29,56
+  s_2f40b5dc18ecb8::t_9db9f935ea54e4 44-45,52-53
+apps/apps-worker/src/runtime/database/migrations.test.ts
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 24
+packages/cli/src/index.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 306,354
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 374
+packages/vite/src/builder/migrations.ts
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 4
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-3,5-56
+playground/tanstack-start/src/router.tsx
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-17
+scripts/sync-licenses.mjs
+  s_2f40b5dc18ecb8::t_41ad661aa48231 38,48-56,74,98,100
+packages/vite/src/builder/file-routes.ts
+  s_2f40b5dc18ecb8::t_9854f3e837a7a3 275-297
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-274
+packages/client-core/package.json
+  s_2f40b5dc18ecb8::t_41ad661aa48231 3
+packages/app-agent/src/agent.ts
+  s_2f40b5dc18ecb8::t_9854f3e837a7a3 84
+packages/tailorkit/CHANGELOG.md
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 7,9
+  s_2f40b5dc18ecb8::t_41ad661aa48231 3-6,8,10-22
+packages/vite/src/builder/generate-migrations.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-69
+.changeset/pre/fn-export.md
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-6
+.changeset/ultracite-defaults.md
+  s_2f40b5dc18ecb8::t_70064a5c5a5dd7 10
+packages/vite/src/builder/migrations.test.ts
+  s_2f40b5dc18ecb8::t_d1c94e913ba136 11-17,28,32
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 8,19-21,24-26,36
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-7,9-10,18,22-23,27,29-31,33-35,37-66
+packages/vite/src/config/index.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-5
+packages/vite/src/builder/generate-migrations.test.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-6,8-41
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 7
+packages/app/turbo.json
+  s_2f40b5dc18ecb8::t_41ad661aa48231 5
+packages/vite/src/builder/define-view.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-247
+packages/vite/src/builder/database-paths.test.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-30
+packages/cli/src/generator/templates/package.json.liquid
+  s_2f40b5dc18ecb8::t_41ad661aa48231 9,12-18,28-30
+packages/cli/src/build.test.ts
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 1-8,11,13,15,26,29-32,39,48,64,70,76-78,82-84,86,96-98,100
+  s_2f40b5dc18ecb8::t_71ca974c43cc7b 69
+  s_2f40b5dc18ecb8::t_41ad661aa48231 9-10,12,14,16-25,27-28,33-38,40-47,49-63,65-68,71-75,79-81,85,87-95,99,101-102
+packages/cli/src/preview.ts
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 14,19
+  s_2f40b5dc18ecb8::t_41ad661aa48231 205-209
+packages/cli/CHANGELOG.md
+  s_2f40b5dc18ecb8::t_41ad661aa48231 3-6,8,10-17
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 7,9
+playground/tanstack-start/src/routes/issues.index.tsx
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-147
+packages/cli/src/deploy.test.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 34,74,227,249,315,323
+  s_2f40b5dc18ecb8::t_f7b3833c799c7c 20,31
+playground/tanstack-start/src/lib/local-apps.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-11
+playground/tanstack-start/src/routeTree.gen.ts
+  s_2f40b5dc18ecb8::t_41ad661aa48231 1-247
+pnpm-lock.yaml
+  s_2f40b5dc18ecb8::t_864b9bc327ba0a 764-766,911-913,936-938,945-947,1398-1400,1497-1539,1555-1597,1599,18744,18759,18776,18791
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6aa2275d30da5cef168aeea0684efc5b78d41e17",
+  "prompts": {},
+  "sessions": {
+    "s_2f40b5dc18ecb8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1335c-f897-7d11-a78a-d7756d0c881a",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
