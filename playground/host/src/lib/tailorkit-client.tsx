@@ -11,7 +11,7 @@ async function callTodos<T>(action: string, body?: Record<string, unknown>): Pro
     headers: { "Content-Type": "application/json" },
     method: body ? "POST" : "GET",
   });
-  const result = (await response.json()) as unknown;
+  const result = (await response.json().catch(() => null)) as unknown;
   if (!response.ok) {
     const message =
       typeof result === "object" && result !== null && "error" in result

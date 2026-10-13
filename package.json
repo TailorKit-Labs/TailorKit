@@ -31,7 +31,7 @@
     "release:build": "turbo run build --filter=tailorkit --filter=@tailorkit/app --filter=@tailorkit/cli --filter=@tailorkit/client-core --filter=@tailorkit/client-platform --filter=@tailorkit/core --filter=@tailorkit/react --filter=@tailorkit/sandbox",
     "release:publish": "vp run release:build && node ./scripts/check-prerelease.mjs && vp exec changeset publish",
     "tailorkit": "vp -C packages/cli build && node ./packages/cli/dist/index.js",
-    "playground:dev": "vp -C playground/apps/todo run build && vp -C playground/host run dev",
+    "playground:dev": "vp run playground:generate && vp -C playground/apps/todo run build && vp -C playground/host run dev",
     "playground:db:push": "vp -C playground/shared run db:push",
     "playground:db:seed": "vp -C playground/shared run db:seed",
     "playground:build": "vp -C packages/ui run build && vp -C playground/host run build && vp -C playground/apps/todo run build",

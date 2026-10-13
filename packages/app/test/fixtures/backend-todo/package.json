@@ -1,6 +1,7 @@
 {
   "name": "@tailorkit/test-fixture-backend-todo",
   "private": true,
+  "license": "Apache-2.0",
   "type": "module",
   "imports": {
     "#tailorkit": "./src/tailorkit.gen.ts"

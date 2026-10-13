@@ -1,6 +1,7 @@
 {
   "name": "@playground/todo",
   "private": true,
+  "license": "BUSL-1.1",
   "type": "module",
   "imports": {
     "#tailorkit": "./src/tailorkit.gen.ts",
