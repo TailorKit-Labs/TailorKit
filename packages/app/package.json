@@ -59,7 +59,7 @@
     "@orpc/contract": "catalog:",
     "cosmiconfig": "^10.0.1",
     "drizzle-orm": "catalog:",
-    "nanostores": "1.5.5",
+    "nanostores": "catalog:",
     "vite": "catalog:",
     "zod": "catalog:"
   },

@@ -49,6 +49,7 @@
     "botid": "1.5.11",
     "jose": "6.2.12",
     "nanoid": "^6.0.2",
+    "nanostores": "catalog:",
     "uuid": "^14.0.3",
     "zod": "catalog:"
   },

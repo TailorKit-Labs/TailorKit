@@ -22,8 +22,6 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
-    "@better-auth/infra": "^0.4.17",
-    "@better-auth/passkey": "1.7.7",
     "@orpc/client": "catalog:",
     "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
@@ -52,7 +50,6 @@
     "@tanstack/react-start": "catalog:",
     "@tanstack/react-table": "^9.2.8",
     "@vercel/functions": "^3.9.11",
-    "better-auth": "catalog:",
     "botid": "1.5.11",
     "crossws": "0.4.15",
     "drizzle-orm": "catalog:",
