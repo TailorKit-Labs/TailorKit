@@ -21,7 +21,7 @@ export const contract = defineContract({
     },
     Input: {
       callbacks: { onValueChange: { input: type({ value: "string" }) } },
-      fields: type({ value: "string", "placeholder?": "string" }),
+      fields: type({ "placeholder?": "string", value: "string" }),
     },
   },
   scopes: {
@@ -48,8 +48,8 @@ export const contract = defineContract({
   },
   views: {
     "/": type({
-      user: { id: "string", name: "string" },
       team: { id: "string", name: "string" },
+      user: { id: "string", name: "string" },
     }),
   },
 });

@@ -16,40 +16,45 @@ export interface DemoAuthState {
   choices: SignInChoice[];
 }
 
-async function readAuth(): Promise<DemoAuthState> {
+const readAuth = async (): Promise<DemoAuthState> => {
   const response = await fetch("/api/auth", { credentials: "same-origin" });
   if (!response.ok) {
     throw new Error("Could not load the local demo session");
   }
   return (await response.json()) as DemoAuthState;
-}
+};
 
-export function useAuthSession() {
+export const useAuthSession = () => {
   const [data, setData] = useState<DemoAuthState>();
-  const [error, setError] = useState<Error>();
+  const [err, setErr] = useState<Error>();
 
   useEffect(() => {
     let cancelled = false;
-    void readAuth().then(
-      (next) => {
+    void (async () => {
+      try {
+        const next = await readAuth();
         if (!cancelled) {
           setData(next);
         }
-      },
-      (error: unknown) => {
-        if (!cancelled)
-          setError(error instanceof Error ? error : new Error(String(error)));
+      } catch (error) {
+        if (!cancelled) {
+          setErr(error instanceof Error ? error : new Error(String(error)));
+        }
       }
-    );
+    })();
     return () => {
       cancelled = true;
     };
   }, []);
 
-  return { data, error, isPending: data === undefined && error === undefined };
-}
+  return {
+    data,
+    error: err,
+    isPending: data === undefined && err === undefined,
+  };
+};
 
-export async function signInDemoUser(userId: string, teamId: string) {
+export const signInDemoUser = async (userId: string, teamId: string) => {
   const response = await fetch("/api/auth", {
     body: JSON.stringify({ action: "sign-in", teamId, userId }),
     credentials: "same-origin",
@@ -60,9 +65,9 @@ export async function signInDemoUser(userId: string, teamId: string) {
     throw new Error("Could not start the local demo session");
   }
   return (await response.json()) as DemoAuthState;
-}
+};
 
-export async function signOutDemoUser() {
+export const signOutDemoUser = async () => {
   const response = await fetch("/api/auth", {
     body: JSON.stringify({ action: "sign-out" }),
     credentials: "same-origin",
@@ -72,4 +77,4 @@ export async function signOutDemoUser() {
   if (!response.ok) {
     throw new Error("Could not end the local demo session");
   }
-}
+};

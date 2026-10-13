@@ -12,22 +12,22 @@ afterEach(() => {
   }
 });
 
-function setup(module: { default?: unknown; mount?: () => void }) {
+const setup = (module: { default?: unknown; mount?: () => void }) => {
   const root = document.createElement("div");
   const parentWindow = { postMessage: vi.fn() };
   const importModule = vi.fn(() => Promise.resolve(module));
   cleanups.push(
     startIframeRuntime({ channel: "test", importModule, parentWindow, root })
   );
-  function send(payload: unknown) {
+  const send = (payload: unknown) => {
     window.dispatchEvent(
       new MessageEvent("message", {
         data: { channel: "test", payload, type: sandboxMessageType },
         source: parentWindow as unknown as Window,
       })
     );
-  }
-  function update(props: ViewRequest) {
+  };
+  const update = (props: ViewRequest) => {
     send({
       data: {
         appSource: "client",
@@ -36,9 +36,17 @@ function setup(module: { default?: unknown; mount?: () => void }) {
       },
       type: "init",
     });
-  }
+  };
   return { importModule, parentWindow, root, send, update };
-}
+};
+
+const requestImplementation = (name: string): ViewRequest => ({
+  declaredViews: ["/"],
+  layers: [{ context: { name }, path: "/", status: "ready" }],
+  slot: "panel",
+  supportedViews: ["/"],
+  view: "/",
+});
 
 it("imports once, publishes updates, clears unsupported slots, and dispatches callbacks", async () => {
   let clicks = 0;
@@ -54,12 +62,11 @@ it("imports once, publishes updates, clears unsupported slots, and dispatches ca
           component: (props) => {
             const button = document.createElement("tailorkit-button");
             button.textContent = String(props.context?.name);
-            button.setAttribute(
-              "data-tailorkit-callbacks",
-              JSON.stringify({ click: { callback: "onClick", inputCount: 0 } })
-            );
+            button.dataset.tailorkitCallbacks = JSON.stringify({
+              click: { callback: "onClick", inputCount: 0 },
+            });
             button.addEventListener("click", () => {
-              button.textContent = String(++clicks);
+              button.textContent = String((clicks += 1));
             });
             return button;
           },
@@ -68,13 +75,7 @@ it("imports once, publishes updates, clears unsupported slots, and dispatches ca
     },
   };
   const runtime = setup({ default: client });
-  const request = (name: string): ViewRequest => ({
-    declaredViews: ["/"],
-    layers: [{ path: "/", status: "ready", context: { name } }],
-    slot: "panel",
-    supportedViews: ["/"],
-    view: "/",
-  });
+  const request = requestImplementation;
   runtime.update(request("first"));
   await vi.waitFor(() => expect(runtime.root.textContent).toBe("first"));
   const snapshot = runtime.parentWindow.postMessage.mock.calls.find(
@@ -134,7 +135,9 @@ it("renders controlled requests and updates their context without reimporting th
       panel: {
         "/users/detail": {
           component: (props) => {
-            if (props.status !== "ready") return null;
+            if (props.status !== "ready") {
+              return null;
+            }
             return document.createTextNode(
               `${props.context.workspaceId}:${props.context.userId}`
             );

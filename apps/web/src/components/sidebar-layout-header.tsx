@@ -4,7 +4,7 @@ import { SidebarTrigger, useSidebar } from "@tailorkit/ui/sidebar";
 import { useHeaderActions } from "#components/header-actions";
 import { NavBreadcrumb } from "#components/nav-breadcrumb";
 
-export function SidebarLayoutHeader() {
+export const SidebarLayoutHeader = () => {
   const { open } = useSidebar();
   const { actions } = useHeaderActions();
   return (
@@ -23,4 +23,4 @@ export function SidebarLayoutHeader() {
       {actions && <div className="ml-auto">{actions}</div>}
     </header>
   );
-}
+};

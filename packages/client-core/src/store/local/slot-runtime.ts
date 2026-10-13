@@ -15,6 +15,13 @@ import { createAppViewsQuery } from "../query";
 import { createSnapshotStore } from "../snapshot-store";
 import type { TailorKitStore } from "../store";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 export type SlotRuntimeOptions = RuntimeRenderSlotProps &
   (
     | { mode: "managed" }
@@ -52,10 +59,10 @@ const failure = (message: string): SlotRuntimeSnapshot => ({
 });
 
 /** Resolve a managed or controlled slot; adapters only render its snapshot. */
-export function createSlotRuntime(
+export const createSlotRuntime = (
   store: TailorKitStore,
   initial: SlotRuntimeOptions
-) {
+) => {
   const memoInput = createValueMemo<SlotRuntimeOptions>();
   const input = atom(memoInput(initial));
   let queryKey: string | undefined;
@@ -89,6 +96,7 @@ export function createSlotRuntime(
     }
     return preview;
   };
+  // oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
   const resolve = (): SlotRuntimeSnapshot => {
     const options = input.get();
     const { app, slot } = options;
@@ -100,12 +108,12 @@ export function createSlotRuntime(
       }
       viewState = active;
       if (options.instanceKey !== undefined) {
-        const instances = getQuery()!.state.get();
+        const instances = requireValue(getQuery()).state.get();
         if (instances.isPending) {
           return loading;
         }
         if (instances.error) {
-          return { status: "error", error: instances.error };
+          return { error: instances.error, status: "error" };
         }
         const schema = store.contract;
         if (schema.slots[slot]?.multiple !== true) {
@@ -166,14 +174,18 @@ export function createSlotRuntime(
     }
     const schema = store.contract;
     const source = getPreview().get();
-    const appUrl = app.clientPath
-      ? new URL(app.clientPath, store.baseUrl)
-      : store.assetsBaseUrl && app.projectId && app.currentDeployment?.id
-        ? new URL(
-            `projects/${app.projectId}/apps/${app.id}/deployments/${app.currentDeployment.id}/client/client.js`,
-            toBaseUrl(store.assetsBaseUrl)
-          )
-        : null;
+    const appUrl = (() => {
+      if (app.clientPath) {
+        return new URL(app.clientPath, store.baseUrl);
+      }
+      if (store.assetsBaseUrl && app.projectId && app.currentDeployment?.id) {
+        return new URL(
+          `projects/${app.projectId}/apps/${app.id}/deployments/${app.currentDeployment.id}/client/client.js`,
+          toBaseUrl(store.assetsBaseUrl)
+        );
+      }
+      return null;
+    })();
     if (appUrl === null && source.source === null) {
       return hidden;
     }
@@ -283,6 +295,7 @@ export function createSlotRuntime(
             stopPrevious?.();
           }
           listener();
+          // oxlint-disable-next-line no-unmodified-loop-condition -- The callback invoked by the loop updates this shared lifecycle or validation flag.
         } while (queued && active);
         updating = false;
       };
@@ -305,4 +318,4 @@ export function createSlotRuntime(
     },
     state,
   };
-}
+};

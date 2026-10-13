@@ -24,10 +24,10 @@ it("exports the client API and public contract without importing private runtime
       logLevel: "silent",
       plugins: [
         {
-          name: "tailorkit-client-boundary-check",
           generateBundle() {
             modules.push(...this.getModuleIds());
           },
+          name: "tailorkit-client-boundary-check",
         },
       ],
     });

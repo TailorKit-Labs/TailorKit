@@ -1,6 +1,6 @@
 import type { TailorKitRouterClient } from "@tailorkit/core/server";
-import { readUIMessageStream } from "ai";
 import type { UIMessage } from "ai";
+import { readUIMessageStream } from "ai";
 import {
   afterEach,
   beforeEach,
@@ -10,6 +10,13 @@ import {
   vi,
 } from "vite-plus/test";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const mocks = vi.hoisted(() => ({ fetchSchema: vi.fn(), tui: vi.fn() }));
 vi.mock("@ai-sdk/tui", () => ({ runAgentTUI: mocks.tui }));
 vi.mock("./generator/types", () => ({
@@ -18,22 +25,22 @@ vi.mock("./generator/types", () => ({
 const { openAgentTui } = await import("./agent-tui");
 const appId = "a3e7568a-c4f7-4ac0-8c35-71ff0f4cd002";
 const messages: UIMessage[] = [
-  { id: "user-1", parts: [{ type: "text", text: "Build" }], role: "user" },
+  { id: "user-1", parts: [{ text: "Build", type: "text" }], role: "user" },
   {
     id: "assistant-1",
     parts: [
       {
-        type: "tool-write",
-        toolCallId: "tool-1",
-        state: "output-available",
         input: { path: "app.ts" },
         output: { success: true },
+        state: "output-available",
+        toolCallId: "tool-1",
+        type: "tool-write",
       },
-      { type: "text", text: "Built" },
+      { text: "Built", type: "text" },
     ],
     role: "assistant",
   },
-  { id: "user-2", parts: [{ type: "text", text: "Continue" }], role: "user" },
+  { id: "user-2", parts: [{ text: "Continue", type: "text" }], role: "user" },
 ];
 const hostUrl = "http://localhost:3000/api/tailorkit";
 const schema = { components: {}, slots: {}, tools: {}, version: 1, views: {} };
@@ -44,11 +51,21 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 const waitForAbort = (_host: string, signal: AbortSignal) =>
-  new Promise<never>((_resolve, reject) => {
-    signal.addEventListener("abort", () => reject(signal.reason), {
-      once: true,
-    });
-  });
+  (() => {
+    const {
+      promise: pendingPromise,
+      resolve: _resolve,
+      reject,
+    } = Promise.withResolvers<never>();
+    try {
+      signal.addEventListener("abort", () => reject(signal.reason), {
+        once: true,
+      });
+    } catch (error) {
+      reject(error);
+    }
+    return pendingPromise;
+  })();
 
 describe("AI SDK terminal transport", () => {
   it("forwards the SDK's complete history and abort signal to the host client", async () => {
@@ -57,7 +74,8 @@ describe("AI SDK terminal transport", () => {
         _input: Parameters<TailorKitRouterClient["appAgent"]["chat"]>[0],
         _options?: Parameters<TailorKitRouterClient["appAgent"]["chat"]>[1]
       ) =>
-        (async function* chat() {
+        // oxlint-disable-next-line unicorn/consistent-function-scoping -- Keep the generator or mutable callback with its owning test or cancellation lifecycle.
+        await (async function* chatValue() {
           yield { messageId: "run-2", type: "start" as const };
           yield { id: "text", type: "text-start" as const };
           yield { delta: "Continued", id: "text", type: "text-delta" as const };
@@ -66,7 +84,7 @@ describe("AI SDK terminal transport", () => {
         })()
     );
     await openAgentTui({ appId, client: { appAgent: { chat } }, hostUrl });
-    const options = mocks.tui.mock.lastCall![0];
+    const [options] = requireValue(mocks.tui.mock.lastCall);
     expect(options).toMatchObject({
       reasoning: "hidden",
       title: `TailorKit Agent · ${hostUrl}`,
@@ -95,7 +113,9 @@ describe("AI SDK terminal transport", () => {
       hostUrl,
       expect.any(AbortSignal)
     );
-    const schemaSignal = mocks.fetchSchema.mock.calls[0]![1] as AbortSignal;
+    const schemaSignal = requireValue(
+      mocks.fetchSchema.mock.calls[0]
+    )[1] as AbortSignal;
     expect(schemaSignal.aborted).toBe(false);
     expect(chat).toHaveBeenCalledWith(
       { appId, hostUrl, messages, schema },
@@ -114,7 +134,7 @@ describe("AI SDK terminal transport", () => {
     );
     controller.abort();
     expect(schemaSignal.aborted).toBe(true);
-    expect(chat.mock.calls[0]![1]?.signal?.aborted).toBe(true);
+    expect(requireValue(chat.mock.calls[0])[1]?.signal?.aborted).toBe(true);
     expect(
       await options.transport.reconnectToStream({ chatId: "sdk-chat-id" })
     ).toBeNull();
@@ -127,7 +147,9 @@ describe("AI SDK terminal transport", () => {
       mocks.fetchSchema.mockRejectedValueOnce(cause);
       await openAgentTui({ appId, client: { appAgent: { chat } }, hostUrl });
       await expect(
-        mocks.tui.mock.lastCall![0].transport.sendMessages({ messages })
+        requireValue(mocks.tui.mock.lastCall)[0].transport.sendMessages({
+          messages,
+        })
       ).rejects.toMatchObject({
         cause,
         message: `Unable to fetch the host schema from ${hostUrl}: Local host unavailable`,
@@ -147,7 +169,7 @@ describe("AI SDK terminal transport", () => {
       const chat = vi.fn();
       await openAgentTui({ appId, client: { appAgent: { chat } }, hostUrl });
       await expect(
-        mocks.tui.mock.lastCall![0].transport.sendMessages({
+        requireValue(mocks.tui.mock.lastCall)[0].transport.sendMessages({
           abortSignal,
           messages,
         })
@@ -165,7 +187,9 @@ describe("AI SDK terminal transport", () => {
     const chat = vi.fn();
     const controller = new AbortController();
     await openAgentTui({ appId, client: { appAgent: { chat } }, hostUrl });
-    const sending = mocks.tui.mock.lastCall![0].transport.sendMessages({
+    const sending = requireValue(
+      mocks.tui.mock.lastCall
+    )[0].transport.sendMessages({
       abortSignal: controller.signal,
       messages,
     });

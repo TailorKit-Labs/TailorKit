@@ -50,9 +50,9 @@ const parseStableVersion = (version: string): SemverVersion | undefined => {
     return undefined;
   }
   return {
-    major: Number.parseInt(major, 10),
-    minor: Number.parseInt(minor, 10),
-    patch: Number.parseInt(patch, 10),
+    major: Math.trunc(Number(major)),
+    minor: Math.trunc(Number(minor)),
+    patch: Math.trunc(Number(patch)),
     raw: version,
   };
 };
@@ -75,8 +75,8 @@ const satisfiesCaretMatcher = (
   if (!match?.groups?.major) {
     return false;
   }
-  const minMajor = Number.parseInt(match.groups.major, 10);
-  const minMinor = Number.parseInt(match.groups.minor ?? "0", 10);
+  const minMajor = Math.trunc(Number(match.groups.major));
+  const minMinor = Math.trunc(Number(match.groups.minor ?? "0"));
   return version.major === minMajor && version.minor >= minMinor;
 };
 

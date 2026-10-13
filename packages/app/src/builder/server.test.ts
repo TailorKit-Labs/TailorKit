@@ -25,6 +25,13 @@ import type {
 import { readClientManifest } from "./client-views";
 import { buildApp } from "./index";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 it("builds file routes with a configured server and blocks server imports from the browser", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-custom-entries-"));
   try {
@@ -42,6 +49,7 @@ it("builds file routes with a configured server and blocks server imports from t
       'export default { host: "https://host.example.com", server: { entry: "./backend/api.ts" } };'
     );
     for (const directory of ["src", "backend"]) {
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       await mkdir(path.join(root, directory));
     }
     await writeFile(
@@ -169,8 +177,10 @@ it("builds separate artifacts and rejects accidental imports of server code", as
       filename.endsWith("migration.sql")
     )) {
       expect(
+        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
         await readFile(path.join(root, ".tailorkit/migrations", file), "utf-8")
       ).toBe(
+        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
         await readFile(path.join(root, "src/db/migrations", file), "utf-8")
       );
     }
@@ -322,20 +332,20 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       ...new Set(manifest.instanceResolvers.map((entry) => entry.resolver)),
     ];
     expect(names).toHaveLength(1);
-    expect(Object.keys(internal.instances!)).toEqual(["resolve"]);
+    expect(Object.keys(requireValue(internal.instances))).toEqual(["resolve"]);
     expect(manifest.views).toEqual([
       { instances: true, path: "/", slot: "page" },
       { instances: true, path: "/", slot: "panel.links" },
     ]);
-    const fn = internal.instances!.resolve!;
+    const fn = requireValue(requireValue(internal.instances).resolve);
     expect(fn.kind).toBe("action");
-    expect(browser).toContain(names[0]!);
+    expect(browser).toContain(requireValue(names[0]));
     expect(Object.keys(fn.functions.reports as object)).toEqual(["list"]);
     const resolved = await fn.handler({
       args: fn.args.parse({
-        slot: "page",
-        path: "/",
         context: { userId: "user_123" },
+        path: "/",
+        slot: "page",
       }),
       identity: { userId: "user_123" },
       mutations: {},
@@ -353,9 +363,9 @@ it("builds colocated instance resolvers as query-only server actions", async () 
     ]);
     const shared = await fn.handler({
       args: fn.args.parse({
-        slot: "panel.links",
-        path: "/",
         context: { userId: "user_123" },
+        path: "/",
+        slot: "panel.links",
       }),
       identity: { userId: "user_123" },
       queries: {
@@ -393,7 +403,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
           }) as VNode,
           container as unknown as Element
         );
-      show((resolved as ViewInstance[])[0]!);
+      show(requireValue((resolved as ViewInstance[])[0]));
       expect(container.textContent).toBe(
         "BROWSER_COMPONENT_MUST_NOT_RUN:REPORT_123"
       );
@@ -433,7 +443,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       outDir: ".tailorkit/watched",
       watch: true,
     })) as {
-      close(): Promise<void>;
+      close: () => Promise<void>;
     };
     const watchedServer = path.join(
       root,
@@ -449,10 +459,10 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       );
       await expect
         .poll(
-          async () =>
-            (await readFile(watchedServer, "utf-8")).includes(
-              "PRIVATE_UPDATED"
-            ),
+          async () => {
+            const awaitedResult1 = await readFile(watchedServer, "utf-8");
+            return awaitedResult1.includes("PRIVATE_UPDATED");
+          },
           {
             timeout: 10_000,
           }
@@ -464,10 +474,12 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       );
       await expect
         .poll(
-          async () =>
-            (await readFile(watchedServer, "utf-8").catch(() => "")).includes(
-              "RESOLVER_UPDATED"
-            ),
+          async () => {
+            const awaitedResult2 = await readFile(watchedServer, "utf-8").catch(
+              () => ""
+            );
+            return awaitedResult2.includes("RESOLVER_UPDATED");
+          },
           { timeout: 10_000 }
         )
         .toBe(true);
@@ -476,7 +488,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
           path.join(root, ".tailorkit/watched/client/client.js"),
           "utf-8"
         )
-      ).toContain(names[0]!);
+      ).toContain(requireValue(names[0]));
       await rm(path.join(root, "src/slots/page/home.view.tsx"));
       await rm(path.join(root, "src/slots/panel.links/home.view.tsx"));
       await expect

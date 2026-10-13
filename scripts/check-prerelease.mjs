@@ -12,13 +12,16 @@ const publishablePackages = [
 ];
 
 const allowedPrerelease = /-(?:alpha|beta)(?:\.|$)/u;
+// oxlint-disable-next-line no-restricted-properties -- Read GitHub Actions metadata in a standalone release script.
 const releaseRepository =
+  // oxlint-disable-next-line no-restricted-properties -- The standalone release script reads GitHub Actions metadata.
   process.env.GITHUB_REPOSITORY ?? "tailorkit-labs/TailorKit";
 const expectedRepositoryUrl = `git+https://github.com/${releaseRepository}.git`;
 const errors = [];
 const manifests = [];
 
 for (const manifestPath of publishablePackages) {
+  // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
   const manifest = JSON.parse(await readFile(manifestPath, "utf-8"));
   manifests.push(manifest);
 

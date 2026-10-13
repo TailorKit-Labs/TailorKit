@@ -16,6 +16,7 @@ const JSONType = z.enum([
  * We're being strict just so we know exactly what we're dealing with. If we need
  * to support additional schema features, we can add them incrementally.
  */
+// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
 export const JsonSchema: z.ZodType<Record<string, unknown>> = z
   .object({
     $schema: z

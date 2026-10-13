@@ -108,7 +108,9 @@ const hasControlCharacters = (value: string): boolean => {
 };
 
 // oxlint-disable-next-line complexity -- path, file, and aggregate limits are checked together.
-export function validatePreviewManifest(manifest: PreviewBuildManifest): void {
+export const validatePreviewManifest = (
+  manifest: PreviewBuildManifest
+): void => {
   manifestSchema.parse(manifest);
   if (
     !Array.isArray(manifest.files) ||
@@ -160,16 +162,15 @@ export function validatePreviewManifest(manifest: PreviewBuildManifest): void {
   if (Buffer.byteLength(JSON.stringify({ manifest })) > previewMessageBytes) {
     throw new Error("Preview manifest exceeds the message limit.");
   }
-}
+};
 
-export function createPreviewBuildStore(kv: KV) {
-  async function readBuild(sessionId: string, buildId: string) {
-    return parse(await kv.get(buildKey(sessionId, buildId)), buildSchema);
-  }
-  async function removeUploadingBuild(
+export const createPreviewBuildStore = (kv: KV) => {
+  const readBuild = async (sessionId: string, buildId: string) =>
+    parse(await kv.get(buildKey(sessionId, buildId)), buildSchema);
+  const removeUploadingBuild = async (
     sessionId: string,
     buildId: string
-  ): Promise<void> {
+  ): Promise<void> => {
     const build = await readBuild(sessionId, buildId);
     const current = parse(await kv.get(pointerKey(sessionId)), committedSchema);
     if (!build || current?.buildId === buildId) {
@@ -177,11 +178,12 @@ export function createPreviewBuildStore(kv: KV) {
     }
     for (const [fileIndex, file] of build.manifest.files.entries()) {
       for (let chunkIndex = 0; chunkIndex < file.chunks; chunkIndex += 1) {
+        // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
         await kv.delete(chunkKey(sessionId, buildId, fileIndex, chunkIndex));
       }
     }
     await kv.delete(buildKey(sessionId, buildId));
-  }
+  };
   return {
     async begin(
       sessionId: string,
@@ -224,58 +226,37 @@ export function createPreviewBuildStore(kv: KV) {
       }
       return buildId;
     },
-    async upload(
+
+    async chunk(
       sessionId: string,
       buildId: string,
       fileIndex: number,
-      chunkIndex: number,
-      base64: string
-    ): Promise<void> {
+      chunkIndex: number
+    ): Promise<string | null> {
       requireId(sessionId);
       requireId(buildId);
       if (await kv.get(endedKey(sessionId))) {
-        throw new Error("Preview session has ended.");
-      }
-      if ((await kv.get(uploadingKey(sessionId))) !== buildId) {
-        throw new Error("Preview upload is unavailable.");
+        return null;
       }
       const build = await readBuild(sessionId, buildId);
-      if (build?.state !== "uploading") {
-        throw new Error("Preview upload is unavailable.");
+      if (build?.state !== "ready" && build?.state !== "committed") {
+        return null;
       }
-      const file = build.manifest.files[fileIndex];
       if (
-        !file ||
-        !Number.isInteger(fileIndex) ||
-        !Number.isInteger(chunkIndex) ||
+        !build.manifest.files[fileIndex] ||
         chunkIndex < 0 ||
-        chunkIndex >= file.chunks
+        chunkIndex >= build.manifest.files[fileIndex].chunks
       ) {
-        throw new Error("Invalid preview chunk index.");
+        return null;
       }
-      if (!base64Schema.safeParse(base64).success) {
-        throw new Error("Invalid preview chunk encoding.");
-      }
-      const bytes = Buffer.from(base64, "base64");
-      const expected = Math.min(
-        previewChunkBytes,
-        file.size - chunkIndex * previewChunkBytes
+      const value = await kv.get(
+        chunkKey(sessionId, buildId, fileIndex, chunkIndex)
       );
-      if (
-        bytes.length !== expected ||
-        Buffer.byteLength(
-          JSON.stringify({ base64, buildId, chunkIndex, fileIndex, sessionId })
-        ) > previewMessageBytes
-      ) {
-        throw new Error("Invalid preview chunk size.");
-      }
-      const key = chunkKey(sessionId, buildId, fileIndex, chunkIndex);
-      const existing = await kv.get(key);
-      if (existing !== null && existing !== base64) {
-        throw new Error("Conflicting preview chunk.");
-      }
-      await kv.set(key, base64, { ttl: uploadTtlSeconds });
+      return value !== null && base64Schema.safeParse(value).success
+        ? value
+        : null;
     },
+
     // oxlint-disable-next-line complexity -- commit verifies all chunks before advancing the pointer.
     async commit(
       sessionId: string,
@@ -299,6 +280,7 @@ export function createPreviewBuildStore(kv: KV) {
         for (const [fileIndex, file] of build.manifest.files.entries()) {
           const parts: Buffer[] = [];
           for (let chunkIndex = 0; chunkIndex < file.chunks; chunkIndex += 1) {
+            // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
             const value = await kv.get(
               chunkKey(sessionId, buildId, fileIndex, chunkIndex)
             );
@@ -332,10 +314,12 @@ export function createPreviewBuildStore(kv: KV) {
         for (const [fileIndex, file] of build.manifest.files.entries()) {
           for (let chunkIndex = 0; chunkIndex < file.chunks; chunkIndex += 1) {
             const key = chunkKey(sessionId, buildId, fileIndex, chunkIndex);
+            // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
             const value = await kv.get(key);
             if (value === null) {
               throw new Error("Preview build expired before commit.");
             }
+            // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
             await kv.set(key, value, { ttl: activeTtlSeconds });
           }
         }
@@ -410,8 +394,10 @@ export function createPreviewBuildStore(kv: KV) {
                   fileIndex,
                   chunkIndex
                 );
+                // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
                 const value = await kv.get(key);
                 if (value !== null) {
+                  // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
                   await kv.set(key, value, { ttl: committedTtlSeconds });
                 }
               }
@@ -431,6 +417,7 @@ export function createPreviewBuildStore(kv: KV) {
       }
       return committed;
     },
+
     async current(sessionId: string): Promise<CommittedPreviewBuild | null> {
       requireId(sessionId);
       if (await kv.get(endedKey(sessionId))) {
@@ -438,35 +425,39 @@ export function createPreviewBuildStore(kv: KV) {
       }
       return parse(await kv.get(pointerKey(sessionId)), committedSchema);
     },
-    async chunk(
-      sessionId: string,
-      buildId: string,
-      fileIndex: number,
-      chunkIndex: number
-    ): Promise<string | null> {
+
+    async end(sessionId: string): Promise<void> {
       requireId(sessionId);
-      requireId(buildId);
-      if (await kv.get(endedKey(sessionId))) {
-        return null;
-      }
-      const build = await readBuild(sessionId, buildId);
-      if (build?.state !== "ready" && build?.state !== "committed") {
-        return null;
-      }
-      if (
-        !build.manifest.files[fileIndex] ||
-        chunkIndex < 0 ||
-        chunkIndex >= build.manifest.files[fileIndex].chunks
-      ) {
-        return null;
-      }
-      const value = await kv.get(
-        chunkKey(sessionId, buildId, fileIndex, chunkIndex)
+      await kv.set(endedKey(sessionId), "1", { ttl: activeTtlSeconds });
+      const active = parse(
+        await kv.get(pointerKey(sessionId)),
+        committedSchema
       );
-      return value !== null && base64Schema.safeParse(value).success
-        ? value
-        : null;
+      const uploading = await kv.get(uploadingKey(sessionId));
+      if (uploading) {
+        requireId(uploading);
+        await removeUploadingBuild(sessionId, uploading);
+      }
+      if (active) {
+        for (const [fileIndex, file] of active.manifest.files.entries()) {
+          for (let chunkIndex = 0; chunkIndex < file.chunks; chunkIndex += 1) {
+            // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
+            await kv.delete(
+              chunkKey(sessionId, active.buildId, fileIndex, chunkIndex)
+            );
+          }
+        }
+        await kv.delete(buildKey(sessionId, active.buildId));
+      }
+      await kv.delete(uploadingKey(sessionId));
+      await kv.delete(pointerKey(sessionId));
+      try {
+        await kv.publish(channel(sessionId), JSON.stringify({ ended: true }));
+      } catch {
+        // The ended marker is authoritative; polling recovers missed notifications.
+      }
     },
+
     subscribe(
       sessionId: string,
       onRevision: (revision: number | null) => void
@@ -487,35 +478,58 @@ export function createPreviewBuildStore(kv: KV) {
         }
       });
     },
-    async end(sessionId: string): Promise<void> {
+
+    async upload(
+      sessionId: string,
+      buildId: string,
+      fileIndex: number,
+      chunkIndex: number,
+      base64: string
+    ): Promise<void> {
       requireId(sessionId);
-      await kv.set(endedKey(sessionId), "1", { ttl: activeTtlSeconds });
-      const active = parse(
-        await kv.get(pointerKey(sessionId)),
-        committedSchema
+      requireId(buildId);
+      if (await kv.get(endedKey(sessionId))) {
+        throw new Error("Preview session has ended.");
+      }
+      if ((await kv.get(uploadingKey(sessionId))) !== buildId) {
+        throw new Error("Preview upload is unavailable.");
+      }
+      const build = await readBuild(sessionId, buildId);
+      if (build?.state !== "uploading") {
+        throw new Error("Preview upload is unavailable.");
+      }
+      const file = build.manifest.files[fileIndex];
+      if (
+        !file ||
+        !Number.isInteger(fileIndex) ||
+        !Number.isInteger(chunkIndex) ||
+        chunkIndex < 0 ||
+        chunkIndex >= file.chunks
+      ) {
+        throw new Error("Invalid preview chunk index.");
+      }
+      if (!base64Schema.safeParse(base64).success) {
+        throw new Error("Invalid preview chunk encoding.");
+      }
+      const bytes = Buffer.from(base64, "base64");
+      const expected = Math.min(
+        previewChunkBytes,
+        file.size - chunkIndex * previewChunkBytes
       );
-      const uploading = await kv.get(uploadingKey(sessionId));
-      if (uploading) {
-        requireId(uploading);
-        await removeUploadingBuild(sessionId, uploading);
+      if (
+        bytes.length !== expected ||
+        Buffer.byteLength(
+          JSON.stringify({ base64, buildId, chunkIndex, fileIndex, sessionId })
+        ) > previewMessageBytes
+      ) {
+        throw new Error("Invalid preview chunk size.");
       }
-      if (active) {
-        for (const [fileIndex, file] of active.manifest.files.entries()) {
-          for (let chunkIndex = 0; chunkIndex < file.chunks; chunkIndex += 1) {
-            await kv.delete(
-              chunkKey(sessionId, active.buildId, fileIndex, chunkIndex)
-            );
-          }
-        }
-        await kv.delete(buildKey(sessionId, active.buildId));
+      const key = chunkKey(sessionId, buildId, fileIndex, chunkIndex);
+      const existing = await kv.get(key);
+      if (existing !== null && existing !== base64) {
+        throw new Error("Conflicting preview chunk.");
       }
-      await kv.delete(uploadingKey(sessionId));
-      await kv.delete(pointerKey(sessionId));
-      try {
-        await kv.publish(channel(sessionId), JSON.stringify({ ended: true }));
-      } catch {
-        // The ended marker is authoritative; polling recovers missed notifications.
-      }
+      await kv.set(key, base64, { ttl: uploadTtlSeconds });
     },
   };
-}
+};

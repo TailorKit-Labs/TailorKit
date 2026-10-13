@@ -39,7 +39,9 @@ import {
 
 void initializeObservability("tailorkit-web");
 
-const noopWaitUntil = (promise: Promise<unknown>) => void promise;
+const noopWaitUntil = (promise: Promise<unknown>): void => {
+  void promise;
+};
 
 // Better Auth only challenges credential sign-ins by default. Intercept direct
 // and OAuth-proxy callbacks before their newly created sessions become usable,
@@ -126,14 +128,12 @@ const socialProviders = {
     : {}),
 };
 
-export function getSocialProviderAvailability() {
-  return {
-    github: "github" in socialProviders,
-    google: "google" in socialProviders,
-  };
-}
+export const getSocialProviderAvailability = () => ({
+  github: "github" in socialProviders,
+  google: "google" in socialProviders,
+});
 
-function buildAuth() {
+const buildAuth = () => {
   const db = createDb();
 
   const backgroundTaskHandler = env.VERCEL ? vercelWaitUntil : noopWaitUntil;
@@ -145,13 +145,13 @@ function buildAuth() {
       : new URL(getBaseUrl(env)).hostname;
 
   return betterAuth({
-    appName: "TailorKit",
     account: {
       accountLinking: {
         allowDifferentEmails: true,
       },
       encryptOAuthTokens: true,
     },
+
     advanced: {
       backgroundTasks: {
         handler: backgroundTaskHandler,
@@ -166,36 +166,38 @@ function buildAuth() {
         ipAddressHeaders: ["x-vercel-forwarded-for", "x-forwarded-for"],
       },
     },
+
+    appName: "TailorKit",
+
     baseURL: getBaseUrl(env),
+
     database: drizzleAdapter(db, {
       provider: "pg",
       schema,
       transaction: true,
     }),
-    // Better Auth still resolves the session model through the DB adapter in
-    // some auth flows when secondaryStorage is configured.
-    session: {
-      storeSessionInDatabase: true,
-    },
-    secondaryStorage,
+
     emailAndPassword: {
       enabled: true,
       minPasswordLength: 12,
       requireEmailVerification: true,
       revokeSessionsOnPasswordReset: true,
     },
+
     emailVerification: {
       sendOnSignUp: false,
     },
+
     hooks: {
       after: enforceTwoFactorAfterSocialSignIn,
     },
+
     onAPIError: {
       // Keep OAuth failures in the application instead of Better Auth's
       // development-oriented default error page.
       errorURL: "/auth/error",
     },
-    socialProviders,
+
     plugins: [
       captcha({
         checkBotId,
@@ -227,8 +229,8 @@ function buildAuth() {
         ac,
         allowUserToCreateOrganization: false,
         organizationHooks: {
-          beforeCreateOrganization: ({ organization }) =>
-            Promise.resolve(initializePublicTeamId(organization)),
+          beforeCreateOrganization: ({ organization: organizationValue }) =>
+            Promise.resolve(initializePublicTeamId(organizationValue)),
         },
         roles,
         schema: {
@@ -290,8 +292,21 @@ function buildAuth() {
         : []),
       tanstackStartCookies(),
     ],
+
+    secondaryStorage,
+
     secret: env.AUTH_SECRET,
+
+    // Better Auth still resolves the session model through the DB adapter in
+    // some auth flows when secondaryStorage is configured.
+    session: {
+      storeSessionInDatabase: true,
+    },
+
+    socialProviders,
+
     trustedOrigins: getTrustedOrigins(env),
+
     user: {
       additionalFields: {
         theme: {
@@ -303,11 +318,9 @@ function buildAuth() {
       },
     },
   });
-}
+};
 
-export function createAuth(): ReturnType<typeof buildAuth> {
-  return buildAuth();
-}
+export const createAuth = (): ReturnType<typeof buildAuth> => buildAuth();
 
 export const auth: ReturnType<typeof buildAuth> = createAuth();
 

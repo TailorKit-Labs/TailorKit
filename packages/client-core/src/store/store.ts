@@ -1,4 +1,7 @@
-import type { TailorKitContract } from "@tailorkit/core/schema";
+import type {
+  ToolImplementations,
+  TailorKitContract,
+} from "@tailorkit/core/schema";
 
 import { createTailorKitFetchClient } from "../client/fetch-client";
 import type { TailorKitFetchClient } from "../client/fetch-client";
@@ -11,17 +14,14 @@ import { createViewContextStore } from "./local/view-context";
 export type TailorKitStore = ReturnType<typeof createTailorKitStore>;
 
 /** Compose independent fetch stores and local view state for one root. */
-export function createTailorKitStore(options: {
+export const createTailorKitStore = (options: {
   baseUrl: string | URL;
   contract: TailorKitContract;
-  tools?: import("@tailorkit/core/schema").ToolImplementations<
-    TailorKitContract["tools"],
-    "client"
-  >;
+  tools?: ToolImplementations<TailorKitContract["tools"], "client">;
   apps?: TailorKitApp[];
   client?: TailorKitFetchClient;
   assetsBaseUrl?: string | URL;
-}) {
+}) => {
   const { baseUrl, contract, assetsBaseUrl, apps: initialApps } = options;
   const client =
     options.client ??
@@ -52,4 +52,4 @@ export function createTailorKitStore(options: {
     subscribeApps: apps.subscribe,
     views: createViewContextStore(contract),
   };
-}
+};

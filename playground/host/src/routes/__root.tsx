@@ -1,4 +1,5 @@
 import {
+  useRouteContext,
   HeadContent,
   Outlet,
   Scripts,
@@ -10,6 +11,30 @@ import { TailorKitShell } from "#components/tailorkit-shell";
 import { loadSession } from "#lib/auth.functions";
 
 import css from "../styles.css?url";
+
+const AppShell = () => {
+  const { session } = useRouteContext({ from: "__root__" });
+  if (!session) {
+    return <Outlet />;
+  }
+  return (
+    <TailorKitShell session={session}>
+      <Outlet />
+    </TailorKitShell>
+  );
+};
+
+const RootDocument = ({ children }: { children: React.ReactNode }) => (
+  <html lang="en">
+    <head>
+      <HeadContent />
+    </head>
+    <body>
+      {children}
+      <Scripts />
+    </body>
+  </html>
+);
 
 export const Route = createRootRoute({
   beforeLoad: async ({ location }) => {
@@ -24,38 +49,12 @@ export const Route = createRootRoute({
   },
   component: AppShell,
   head: () => ({
+    links: [{ href: css, rel: "stylesheet" }],
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { content: "width=device-width, initial-scale=1", name: "viewport" },
       { title: "TailorKit Playground" },
     ],
-    links: [{ rel: "stylesheet", href: css }],
   }),
   shellComponent: RootDocument,
 });
-
-function AppShell() {
-  const { session } = Route.useRouteContext();
-  if (!session) {
-    return <Outlet />;
-  }
-  return (
-    <TailorKitShell session={session}>
-      <Outlet />
-    </TailorKitShell>
-  );
-}
-
-function RootDocument({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  );
-}

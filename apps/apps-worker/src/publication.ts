@@ -2,10 +2,10 @@ import type { AppDeploymentMetadata } from "@tailorkit/api-utils/app-auth";
 import { AppError } from "@tailorkit/app/server";
 
 /** Public URL identifiers must describe the same private bundle as the payload. */
-export function validateDeploymentPublication(
+export const validateDeploymentPublication = (
   metadata: AppDeploymentMetadata,
   publication: { projectId: string; appPublicId: string }
-): void {
+): void => {
   const segments = metadata.objectKey.split("/");
   if (
     metadata.projectId !== publication.projectId ||
@@ -24,4 +24,4 @@ export function validateDeploymentPublication(
       "Deployment metadata does not match the route"
     );
   }
-}
+};

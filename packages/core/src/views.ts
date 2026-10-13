@@ -12,7 +12,7 @@ export interface ActiveView {
 }
 
 /** Includes the requested path, followed by its parents through the root. */
-export function getViewHierarchy(path: string): string[] {
+export const getViewHierarchy = (path: string): string[] => {
   const hierarchy = [path];
   let current = path;
   while (current !== "/") {
@@ -21,27 +21,23 @@ export function getViewHierarchy(path: string): string[] {
     hierarchy.push(current);
   }
   return hierarchy;
-}
+};
 
-export function isViewAncestor(ancestor: string, path: string): boolean {
-  return (
-    ancestor === "/" || ancestor === path || path.startsWith(`${ancestor}/`)
-  );
-}
+export const isViewAncestor = (ancestor: string, path: string): boolean =>
+  ancestor === "/" || ancestor === path || path.startsWith(`${ancestor}/`);
 
-export function getViewDepth(path: string): number {
-  return path.split("/").filter(Boolean).length;
-}
+export const getViewDepth = (path: string): number =>
+  path.split("/").filter(Boolean).length;
 
 /** Context supplied to the selected view after combining its registered ancestors. */
 export type ResolvedViewProps =
   | { view: string; status: "ready"; context: Record<string, unknown> }
   | { view: string; status: "loading" | "error"; context?: never };
 
-export function composeViewContext(
+export const composeViewContext = (
   selected: string,
   request: { layers: readonly ViewLayer[]; declaredViews: readonly string[] }
-): ResolvedViewProps {
+): ResolvedViewProps => {
   let status: ViewStatus = "ready";
   const context: Record<string, unknown> = {};
   for (const path of getViewHierarchy(selected).toReversed()) {
@@ -85,4 +81,4 @@ export function composeViewContext(
       ? { context, status, view: selected }
       : { context: undefined, status, view: selected };
   return props;
-}
+};

@@ -166,6 +166,28 @@ it("detects the default server file without server configuration and removes sta
   }
 });
 
+const responsiveConstUnionImplementationImplementation = (
+  ...values: string[]
+) => ({
+  anyOf: [
+    {
+      anyOf: values.map((value) => ({ const: value, type: "string" })),
+    },
+    {
+      additionalProperties: false,
+      properties: {
+        base: {
+          anyOf: values.map((value) => ({ const: value, type: "string" })),
+        },
+        md: {
+          anyOf: values.map((value) => ({ const: value, type: "string" })),
+        },
+      },
+      type: "object",
+    },
+  ],
+});
+
 describe("renderGeneratedTypes", () => {
   it("preserves nullable view context fields through schema serialization and generation", () => {
     const schema = createTailorKitSchema({
@@ -173,13 +195,13 @@ describe("renderGeneratedTypes", () => {
       slots: { sidebar: { views: ["/"] } },
       views: {
         "/": z.object({
-          customer: z.object({ id: z.string(), name: z.string() }).nullable(),
-          label: z.string().nullable(),
           count: z.number().nullable(),
-          enabled: z.boolean().nullable(),
-          empty: z.null(),
-          labels: z.array(z.string().nullable()),
+          customer: z.object({ id: z.string(), name: z.string() }).nullable(),
           customers: z.array(z.object({ id: z.string() }).nullable()),
+          empty: z.null(),
+          enabled: z.boolean().nullable(),
+          label: z.string().nullable(),
+          labels: z.array(z.string().nullable()),
           tags: z.array(z.string()).nullable(),
         }),
       },
@@ -379,26 +401,11 @@ describe("renderGeneratedTypes", () => {
     expect(output).toContain("margin?: Margin;");
   });
 
+  const responsiveConstUnionImplementation =
+    responsiveConstUnionImplementationImplementation;
+
   it("generates literal responsive primitive props from const unions", () => {
-    const responsiveConstUnion = (...values: string[]) => ({
-      anyOf: [
-        {
-          anyOf: values.map((value) => ({ const: value, type: "string" })),
-        },
-        {
-          additionalProperties: false,
-          properties: {
-            base: {
-              anyOf: values.map((value) => ({ const: value, type: "string" })),
-            },
-            md: {
-              anyOf: values.map((value) => ({ const: value, type: "string" })),
-            },
-          },
-          type: "object",
-        },
-      ],
-    });
+    const responsiveConstUnion = responsiveConstUnionImplementation;
 
     const output = renderGeneratedTypes({
       components: {
@@ -584,7 +591,7 @@ it("composes independent ancestor contexts and generates slot names", () => {
     },
   });
   expect(generated).toContain(
-    'interface TailorKitSlots { "panel": { views: "/" | "/users" | "/users/detail"; multiple: true }; "navbar": { views: "/"; multiple: false }; }'
+    'interface TailorKitSlots { "navbar": { views: "/"; multiple: false }; "panel": { views: "/" | "/users" | "/users/detail"; multiple: true }; }'
   );
   const detail = generated.slice(
     generated.indexOf('"/users/detail":'),

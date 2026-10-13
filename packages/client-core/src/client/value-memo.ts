@@ -1,5 +1,5 @@
 /** Retain equivalent serialized values without involving a framework's rendering API. */
-export function createValueMemo<T>() {
+export const createValueMemo = <T>() => {
   let initialized = false;
   let previousKey: string | undefined;
   let previous: T;
@@ -12,4 +12,4 @@ export function createValueMemo<T>() {
     }
     return previous;
   };
-}
+};

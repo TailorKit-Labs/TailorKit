@@ -13,7 +13,7 @@ export type OrgSlugAvailability =
   | { status: "unavailable"; message: string }
   | { status: "error"; message: string };
 
-export async function checkOrgSlugAvailability(slug: string) {
+export const checkOrgSlugAvailability = async (slug: string) => {
   const result = validateOrgSlug(slug);
   if (!result.valid) {
     return {
@@ -28,22 +28,25 @@ export async function checkOrgSlugAvailability(slug: string) {
     available: availability.available,
     message: availability.available ? null : ORG_SLUG_TAKEN_MESSAGE,
   };
-}
+};
 
-export function useOrgSlugAvailability(slug: string) {
+export const useOrgSlugAvailability = (slug: string) => {
   const [availability, setAvailability] = useState<OrgSlugAvailability>({
     message: null,
     status: "idle",
   });
 
+  const [checkedSlug, setCheckedSlug] = useState(slug);
+  if (checkedSlug !== slug) {
+    setCheckedSlug(slug);
+    setAvailability({ message: null, status: slug ? "checking" : "idle" });
+  }
   useEffect(() => {
     if (!slug) {
-      setAvailability({ message: null, status: "idle" });
       return;
     }
 
     let cancelled = false;
-    setAvailability({ message: null, status: "checking" });
 
     const timeout = window.setTimeout(async () => {
       try {
@@ -95,4 +98,4 @@ export function useOrgSlugAvailability(slug: string) {
   }, [slug]);
 
   return availability;
-}
+};

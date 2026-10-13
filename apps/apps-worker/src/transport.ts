@@ -20,16 +20,16 @@ import { Effect } from "effect";
 
 import type { SubscriptionConnection } from "./supervisor/subscriptions";
 
-export function wireError(error: unknown) {
-  if (error instanceof ORPCError) {
-    return error;
+export const wireError = (err: unknown) => {
+  if (err instanceof ORPCError) {
+    return err;
   }
-  const failure = error as { code?: string; message?: string } | undefined;
+  const failure = err as { code?: string; message?: string } | undefined;
   const code = failure?.code ?? "INTERNAL_SERVER_ERROR";
   return new ORPCError(code, {
     message: failure?.code ? failure.message : "App function failed",
   });
-}
+};
 
 export const errorStatusMap = {
   ...COMMON_ERROR_STATUS_MAP,
@@ -38,8 +38,8 @@ export const errorStatusMap = {
 };
 
 /** Authentication failures must use the same oRPC wire format as procedure errors. */
-export function rpcErrorResponse(error: unknown) {
-  const failure = wireError(error);
+export const rpcErrorResponse = (err2: unknown) => {
+  const failure = wireError(err2);
   return Response.json(
     { json: failure.toJSON() },
     {
@@ -47,16 +47,16 @@ export function rpcErrorResponse(error: unknown) {
         errorStatusMap[failure.code as keyof typeof errorStatusMap] ?? 500,
     }
   );
-}
+};
 
 /** The installation supplies these operations with its verified identity captured. */
 export interface Installation {
-  query(input: Invocation): Effect.Effect<unknown, unknown>;
-  mutate(input: MutationInvocation): Effect.Effect<unknown, unknown>;
-  action(
+  query: (input: Invocation) => Effect.Effect<unknown, unknown>;
+  mutate: (input: MutationInvocation) => Effect.Effect<unknown, unknown>;
+  action: (
     input: Invocation,
     signal?: AbortSignal
-  ): Effect.Effect<unknown, unknown>;
+  ) => Effect.Effect<unknown, unknown>;
 }
 
 const base = implement(appContract);
@@ -70,26 +70,29 @@ const subscriptions = base
   }>()
   .use(errors);
 export const router = base.router({
-  queries: http.queries.handler(
-    handlerGen(function* queries({ input, context }) {
-      return yield* context.installation.query(input);
-    })
-  ),
-  mutations: http.mutations.handler(
-    handlerGen(function* mutations({ input, context }) {
-      return yield* context.installation.mutate(input);
-    })
-  ),
   actions: http.actions.handler(
     handlerGen(function* actions({ input, context, signal }) {
       return yield* context.installation.action(input, signal);
     })
   ),
+
+  mutations: http.mutations.handler(
+    handlerGen(function* mutations({ input, context }) {
+      return yield* context.installation.mutate(input);
+    })
+  ),
+
+  queries: http.queries.handler(
+    handlerGen(function* queries({ input, context }) {
+      return yield* context.installation.query(input);
+    })
+  ),
+
   // The public pass-through output schema preserves the hibernation callback.
   subscribe: subscriptions.subscribe.handler(
     handlerGen(function* subscribe({ input, context }) {
       return yield* Effect.try({
-        catch: (error) => error,
+        catch: (err3) => err3,
         try: () => context.subscribe(input),
       });
     })
@@ -97,7 +100,7 @@ export const router = base.router({
 });
 
 /** The gateway and installation accept the same procedure routes. */
-export function requestRoute(request: Request) {
+export const requestRoute = (request: Request) => {
   const path = new URL(request.url).pathname.replace(/\/$/u, "");
   if (request.headers.get("upgrade")?.toLowerCase() === "websocket") {
     return request.method === "GET" && path === "/rpc/queries"
@@ -109,19 +112,19 @@ export function requestRoute(request: Request) {
     ["/rpc/queries", "/rpc/mutations", "/rpc/actions"].includes(path)
     ? "http"
     : undefined;
-}
+};
 
 /** Authenticate before selecting an installation; WebSocket JWTs arrive as subprotocols. */
-export function routeInstallation<Identity, Error>(
+export const routeInstallation = <Identity, Error>(
   request: Request,
   options: {
-    verify(token: string): Effect.Effect<Identity, Error>;
-    installation(identity: Identity): {
-      fetch(request: Request): Promise<Response>;
+    verify: (token: string) => Effect.Effect<Identity, Error>;
+    installation: (identity: Identity) => {
+      fetch: (request: Request) => Promise<Response>;
     };
   }
-) {
-  return Effect.gen(function* () {
+) =>
+  Effect.gen(function* routeInstallationValue() {
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204 });
     }
@@ -142,7 +145,7 @@ export function routeInstallation<Identity, Error>(
     } else {
       token = request.headers
         .get("authorization")
-        ?.match(/^Bearer (\S+)$/u)?.[1];
+        ?.match(/^Bearer (?<token>\S+)$/u)?.[1];
     }
     if (!token) {
       return yield* Effect.fail(
@@ -151,7 +154,7 @@ export function routeInstallation<Identity, Error>(
     }
     const identity = yield* options.verify(token);
     return yield* Effect.tryPromise({
-      catch: (error) => error,
+      catch: (err4) => err4,
       try: () => {
         if (route === "subscriptions") {
           const headers = new Headers(request.headers);
@@ -166,10 +169,9 @@ export function routeInstallation<Identity, Error>(
       },
     });
   });
-}
 
-export function createInstallationHandler() {
-  return new FetchHandler(
+export const createInstallationHandler = () =>
+  new FetchHandler(
     {
       actions: router.actions,
       mutations: router.mutations,
@@ -178,22 +180,21 @@ export function createInstallationHandler() {
     {
       errorStatusMap,
       interceptors: [
-        onError((error) => {
+        onError((err5) => {
           if (
-            !(error instanceof ORPCError) ||
-            ["INTERNAL_SERVER_ERROR", "UNAVAILABLE"].includes(error.code)
+            !(err5 instanceof ORPCError) ||
+            ["INTERNAL_SERVER_ERROR", "UNAVAILABLE"].includes(err5.code)
           ) {
-            console.error(error);
+            console.error(err5);
           }
         }),
       ],
       plugins: [new CORSHandlerPlugin()],
     }
   );
-}
 
 /** Call message immediately from the host's socket event to preserve oRPC ordering. */
-export function createSubscriptionHandler() {
+export const createSubscriptionHandler = () => {
   const handler = new WebSocketHandler(
     { subscribe: router.subscribe },
     {
@@ -202,10 +203,10 @@ export function createSubscriptionHandler() {
   );
   return {
     close: (socket: {
-      send(data: string | Uint8Array<ArrayBuffer>): unknown;
+      send: (data: string | Uint8Array<ArrayBuffer>) => unknown;
     }) => handler.close(socket),
     message(
-      socket: { send(data: string | Uint8Array<ArrayBuffer>): unknown },
+      socket: { send: (data: string | Uint8Array<ArrayBuffer>) => unknown },
       message: string | ArrayBuffer,
       subscribe: (input: Invocation) => HibernationAsyncIteratorClass<unknown>,
       cancel: (id: string) => Promise<void>
@@ -219,40 +220,40 @@ export function createSubscriptionHandler() {
         typeof message === "string" ? message : new Uint8Array(message)
       );
       if (decoded.matched && isPeerCancelMessage(decoded.message)) {
-        return Promise.all([dispatched, cancel(decoded.message.id)]).then(
-          () => {}
-        );
+        return (async () => {
+          await Promise.all([dispatched, cancel(decoded.message.id)]);
+        })();
       }
-      return dispatched.then(() => {});
+      return (async () => {
+        await dispatched;
+      })();
     },
   };
-}
+};
 
 /** Promise/iterator conversion belongs at the oRPC transport boundary. */
-export function subscriptionStream(
+export const subscriptionStream = (
   register: (id: string) => Effect.Effect<void, unknown>
-) {
-  return new HibernationAsyncIteratorClass<unknown>((id) =>
+) =>
+  new HibernationAsyncIteratorClass<unknown>((id: string) =>
     Effect.runPromise(register(id))
   );
-}
 
-export function deliverSubscription(
+export const deliverSubscription = (
   connection: SubscriptionConnection,
   id: string,
   value: unknown,
-  error = false
-) {
-  return Effect.tryPromise({
-    catch: (error) => error,
+  err6 = false
+) =>
+  Effect.tryPromise({
+    catch: (errorValue: unknown) => errorValue,
     try: async () => {
       connection.send(
         await encodeHibernationRPCEvent(
           id,
-          error ? wireError(value) : value,
-          error ? { event: "error" } : undefined
+          err6 ? wireError(value) : value,
+          err6 ? { event: "error" } : undefined
         )
       );
     },
   });
-}

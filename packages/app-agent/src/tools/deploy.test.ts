@@ -1,11 +1,19 @@
 import { beforeEach, expect, it, vi } from "vite-plus/test";
 
 import { deployTool } from "./deploy";
+import type * as utilsModule from "./utils";
+
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
 
 const mocks = vi.hoisted(() => ({ runCommand: vi.fn() }));
 vi.mock("./utils", async (original) => ({
-  ...(await original<typeof import("./utils")>()),
-  toolNativeSandbox: async () => ({ runCommand: mocks.runCommand }),
+  ...(await original<typeof utilsModule>()),
+  toolNativeSandbox: async () => await { runCommand: mocks.runCommand },
 }));
 const context = {
   agentToken: "private-token",
@@ -20,10 +28,12 @@ beforeEach(() => {
 it("pins the authorized app and injects credentials only into the deploy process", async () => {
   mocks.runCommand.mockResolvedValue({
     exitCode: 0,
+    // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
     stderr: async () => "",
+    // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
     stdout: async () => "Deployment: published-one",
   });
-  const result = await deployTool.execute!(
+  const result = await requireValue(deployTool.execute)(
     {},
     { context, messages: [], toolCallId: "deploy-one" }
   );
@@ -32,7 +42,7 @@ it("pins the authorized app and injects credentials only into the deploy process
     stderr: "",
     stdout: "Deployment: published-one",
   });
-  const command = mocks.runCommand.mock.lastCall![0];
+  const [command] = requireValue(mocks.runCommand.mock.lastCall);
   expect(command).toMatchObject({
     args: [
       "--dir",
@@ -57,11 +67,12 @@ it("pins the authorized app and injects credentials only into the deploy process
 it("returns failures for the agent to address and redacts echoed credentials", async () => {
   mocks.runCommand.mockResolvedValue({
     exitCode: 1,
+    // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
     stderr: async () => `Rejected ${context.agentToken}`,
-    stdout: async () => context.agentToken,
+    stdout: async () => await context.agentToken,
   });
   expect(
-    await deployTool.execute!(
+    await requireValue(deployTool.execute)(
       {},
       { context, messages: [], toolCallId: "deploy-one" }
     )
@@ -77,7 +88,7 @@ it("redacts credentials from command transport failures", async () => {
     new Error(`Command failed: ${context.agentToken}`)
   );
   expect(
-    await deployTool.execute!(
+    await requireValue(deployTool.execute)(
       {},
       { context, messages: [], toolCallId: "deploy-one" }
     )

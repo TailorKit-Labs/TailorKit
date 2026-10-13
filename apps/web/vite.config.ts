@@ -1,4 +1,4 @@
-import { resolve } from "node:path";
+import nodePath from "node:path";
 
 import tailwindcss from "@tailwindcss/vite";
 import { devtools } from "@tanstack/devtools-vite";
@@ -9,6 +9,8 @@ import { defineConfig } from "vite-plus";
 import { workflow } from "workflow/vite";
 
 import { env } from "#env";
+
+const { resolve } = nodePath;
 
 const serverPackages = [
   "@tailorkit/api",
@@ -47,24 +49,16 @@ export default defineConfig(({ mode }) => {
           tailwindcss(),
           tanstackStart(),
           nitro({
-            // Workflow's Nitro builder must resolve package IDs from the same
-            // app root as its Vite transform, rather than the monorepo root.
-            workspaceDir: import.meta.dirname,
-            serverDir: false,
             // Preview uploads and viewer revisions share this Nitro deployment.
             // KV leases give the CLI 75 seconds to reconnect after an upgrade.
             features: { websocket: !isTest },
+
             // Nitro's dev server otherwise treats client.js as a Vite static asset.
             // Forward this prefix to Start, which owns the endpoint and its handlers.
             handlers: [
               { env: "dev", handler: "#start-assets", route: "/api/assets/**" },
             ],
-            virtual: {
-              "#start-assets": `
-            import { fetchViteEnv } from "nitro/vite/runtime";
-            export default ({ req }) => fetchViteEnv("ssr", req);
-          `,
-            },
+
             routeRules: {
               "/sign-in": {
                 redirect: {
@@ -85,6 +79,19 @@ export default defineConfig(({ mode }) => {
                 },
               },
             },
+
+            serverDir: false,
+
+            virtual: {
+              "#start-assets": `
+            import { fetchViteEnv } from "nitro/vite/runtime";
+            export default ({ req }) => fetchViteEnv("ssr", req);
+          `,
+            },
+
+            // Workflow's Nitro builder must resolve package IDs from the same
+            // app root as its Vite transform, rather than the monorepo root.
+            workspaceDir: import.meta.dirname,
           }),
           reactPlugin,
         ],

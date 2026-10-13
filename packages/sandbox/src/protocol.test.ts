@@ -125,7 +125,7 @@ describe("sandbox protocol", () => {
       type: "snapshot",
     },
     {
-      data: { patches: [{ op: "unknown", nodeId: "text" }], revision: 1 },
+      data: { patches: [{ nodeId: "text", op: "unknown" }], revision: 1 },
       type: "patches",
     },
     {
@@ -165,9 +165,9 @@ describe("sandbox protocol", () => {
         data: {
           patches: [
             {
+              callbacks: [Object.assign([], callback)],
               nodeId: "button",
               op: "setCallbacks",
-              callbacks: [Object.assign([], callback)],
             },
           ],
           revision: 1,

@@ -58,7 +58,7 @@ describe("permanent public team identity", () => {
       const inserted = await client.query<{ id: string; public_id: string }>(
         "INSERT INTO organization (name, slug, public_id) VALUES ('Team', 'team', 'abc123def45678') RETURNING id, public_id"
       );
-      const team = inserted.rows[0];
+      const [team] = inserted.rows;
       if (!team) {
         throw new Error("Missing inserted team");
       }
@@ -68,6 +68,7 @@ describe("permanent public team identity", () => {
         "a------------z",
         "0123456789abcd",
       ]) {
+        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
         await client.query(
           "INSERT INTO organization (slug, public_id) VALUES ($1, $2)",
           [valid, valid]
@@ -114,6 +115,7 @@ describe("permanent public team identity", () => {
         "abc_23def45678",
         "ABC123DEF45678",
       ]) {
+        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
         await expect(
           client.query(
             "INSERT INTO organization (slug, public_id) VALUES ($1, $2)",

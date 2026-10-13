@@ -33,7 +33,7 @@ export interface NumberFieldProps {
   value?: number | null;
 }
 
-export function NumberField({
+export const NumberField = ({
   description,
   disabled,
   errors = emptyErrors,
@@ -44,7 +44,7 @@ export function NumberField({
   placeholder,
   required,
   value,
-}: NumberFieldProps) {
+}: NumberFieldProps) => {
   const errorMessage = formatFieldErrors(errors);
   const isError = errorMessage.length > 0;
 
@@ -75,4 +75,4 @@ export function NumberField({
       {isError && <FieldError>{errorMessage}</FieldError>}
     </Field>
   );
-}
+};

@@ -12,10 +12,10 @@ export interface ViewsQueryOptions<
 }
 
 /** Refresh discovery or instances and join queries created by the resulting state. */
-export async function refetchViews(
+export const refetchViews = async (
   store: TailorKitStore,
   { slot, scopes, appIds }: ViewsQueryOptions
-): Promise<void> {
+): Promise<void> => {
   const queryOptions = () => {
     const schema = store.contract;
     return {
@@ -43,4 +43,4 @@ export async function refetchViews(
     return;
   }
   await createSlotStore(store.client, store.contract, queryOptions()).fetch();
-}
+};

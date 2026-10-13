@@ -20,6 +20,7 @@ interface ViewRequestMetadata {
 
 type LayeredViewRequest = ViewRequestMetadata &
   ActiveView & { controlled?: false };
+
 export type ViewRequest =
   | LayeredViewRequest
   | (ViewRequestMetadata & ResolvedViewProps & { controlled: true });
@@ -40,7 +41,23 @@ export interface AppClient {
   };
 }
 
-export function resolveView(client: AppClient, request: ViewRequest) {
+const controlledViewProps = (
+  request: Extract<ViewRequest, { controlled: true }>
+): ResolvedViewProps => {
+  if (request.status !== "ready") {
+    return { context: undefined, status: request.status, view: request.view };
+  }
+  if (
+    request.context === null ||
+    typeof request.context !== "object" ||
+    Array.isArray(request.context)
+  ) {
+    return { context: undefined, status: "error", view: request.view };
+  }
+  return { context: request.context, status: "ready", view: request.view };
+};
+
+export const resolveView = (client: AppClient, request: ViewRequest) => {
   const views = client.slots[request.slot];
   const selected =
     views &&
@@ -86,37 +103,23 @@ export function resolveView(client: AppClient, request: ViewRequest) {
     return { component: definition.component, props: { ...props, instance } };
   }
   return { component: definition.component, props };
-}
+};
 
-function controlledViewProps(
-  request: Extract<ViewRequest, { controlled: true }>
-): ResolvedViewProps {
-  if (request.status !== "ready") {
-    return { context: undefined, status: request.status, view: request.view };
-  }
-  if (
-    request.context === null ||
-    typeof request.context !== "object" ||
-    Array.isArray(request.context)
-  ) {
-    return { context: undefined, status: "error", view: request.view };
-  }
-  return { context: request.context, status: "ready", view: request.view };
-}
-
-export function renderClient(
+export const renderClient = (
   client: AppClient,
   request: ViewRequest,
   root: Element
-): void {
+): void => {
   const selected = resolveView(client, request);
   client.$runtime.render(
     selected ? client.$runtime.h(selected.component, selected.props) : null,
     root
   );
-}
+};
 
-export function assertAppClient(value: unknown): asserts value is AppClient {
+export const assertAppClient: (value: unknown) => asserts value is AppClient = (
+  value
+) => {
   const client = value as Partial<AppClient> | null | undefined;
   if (
     !client?.slots ||
@@ -128,4 +131,4 @@ export function assertAppClient(value: unknown): asserts value is AppClient {
       "TailorKit app must be built with the app builder and include slots and its bundled runtime."
     );
   }
-}
+};

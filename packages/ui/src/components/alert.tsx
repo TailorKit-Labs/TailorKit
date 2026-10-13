@@ -24,63 +24,55 @@ const alertVariants = cva(
   }
 );
 
-export function Alert({
+export const Alert = ({
   className,
   variant,
   ...props
 }: React.ComponentProps<"div"> &
-  VariantProps<typeof alertVariants>): React.ReactElement {
-  return (
-    <div
-      className={cn(alertVariants({ variant }), className)}
-      data-slot="alert"
-      role="alert"
-      {...props}
-    />
-  );
-}
+  VariantProps<typeof alertVariants>): React.ReactElement => (
+  <div
+    className={cn(alertVariants({ variant }), className)}
+    data-slot="alert"
+    role="alert"
+    {...props}
+  />
+);
 
-export function AlertTitle({
+export const AlertTitle = ({
   className,
   ...props
-}: React.ComponentProps<"div">): React.ReactElement {
-  return (
-    <div
-      className={cn("font-medium [svg~&]:col-start-2", className)}
-      data-slot="alert-title"
-      {...props}
-    />
-  );
-}
+}: React.ComponentProps<"div">): React.ReactElement => (
+  <div
+    className={cn("font-medium [svg~&]:col-start-2", className)}
+    data-slot="alert-title"
+    {...props}
+  />
+);
 
-export function AlertDescription({
+export const AlertDescription = ({
   className,
   ...props
-}: React.ComponentProps<"div">): React.ReactElement {
-  return (
-    <div
-      className={cn(
-        "text-muted-foreground flex flex-col gap-2.5 [svg~&]:col-start-2",
-        className
-      )}
-      data-slot="alert-description"
-      {...props}
-    />
-  );
-}
+}: React.ComponentProps<"div">): React.ReactElement => (
+  <div
+    className={cn(
+      "text-muted-foreground flex flex-col gap-2.5 [svg~&]:col-start-2",
+      className
+    )}
+    data-slot="alert-description"
+    {...props}
+  />
+);
 
-export function AlertAction({
+export const AlertAction = ({
   className,
   ...props
-}: React.ComponentProps<"div">): React.ReactElement {
-  return (
-    <div
-      className={cn(
-        "flex gap-1 max-sm:col-start-2 max-sm:mt-2 sm:row-start-1 sm:row-end-3 sm:self-center sm:[[data-slot=alert-description]~&]:col-start-2 sm:[[data-slot=alert-title]~&]:col-start-2 sm:[svg~&]:col-start-2 sm:[svg~[data-slot=alert-description]~&]:col-start-3 sm:[svg~[data-slot=alert-title]~&]:col-start-3",
-        className
-      )}
-      data-slot="alert-action"
-      {...props}
-    />
-  );
-}
+}: React.ComponentProps<"div">): React.ReactElement => (
+  <div
+    className={cn(
+      "flex gap-1 max-sm:col-start-2 max-sm:mt-2 sm:row-start-1 sm:row-end-3 sm:self-center sm:[[data-slot=alert-description]~&]:col-start-2 sm:[[data-slot=alert-title]~&]:col-start-2 sm:[svg~&]:col-start-2 sm:[svg~[data-slot=alert-description]~&]:col-start-3 sm:[svg~[data-slot=alert-title]~&]:col-start-3",
+      className
+    )}
+    data-slot="alert-action"
+    {...props}
+  />
+);

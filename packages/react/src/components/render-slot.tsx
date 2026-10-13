@@ -7,7 +7,7 @@ import type {
   SlotRuntimeOptions,
 } from "@tailorkit/client-core";
 import type { SlotDefinitions, ViewDefinition } from "@tailorkit/core/schema";
-import { useEffect, useId, useMemo } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
 import { PrimitiveThemeContext } from "../primitives";
@@ -21,6 +21,7 @@ export type {
 } from "@tailorkit/client-core";
 
 type DefaultViews = Record<`/${string}`, ViewDefinition>;
+
 export type RenderSlotComponent<
   TViews extends Record<string, ViewDefinition> = DefaultViews,
   TSlots extends SlotDefinitions = SlotDefinitions,
@@ -28,41 +29,37 @@ export type RenderSlotComponent<
   Controlled: (props: ControlledRenderSlotProps<TViews, TSlots>) => ReactNode;
 };
 
-function ManagedRenderSlot(props: RuntimeRenderSlotProps): ReactNode {
-  return <SlotRenderer mode="managed" {...props} />;
-}
-
-function ControlledRenderSlot(props: ControlledRenderSlotProps): ReactNode {
-  return <SlotRenderer mode="controlled" {...props} />;
-}
-
-export const RenderSlot: RenderSlotComponent = Object.assign(
-  ManagedRenderSlot,
-  {
-    Controlled: ControlledRenderSlot,
-  }
-);
-
-function SlotRenderer(options: SlotRuntimeOptions): ReactNode {
+const SlotRenderer = (options: SlotRuntimeOptions): ReactNode => {
   const { store, client } = useTailorkitContext(
     options.mode === "managed" ? "RenderSlot" : "RenderSlot.Controlled"
   );
   const reactId = useId();
-  const runtime = useMemo(() => createSlotRuntime(store, options), [store]);
+  const [state, setState] = useState(() => ({
+    runtime: createSlotRuntime(store, options),
+    store,
+  }));
+  if (state.store !== store) {
+    setState({ runtime: createSlotRuntime(store, options), store });
+  }
+  const { runtime } = state;
   useEffect(() => runtime.setInput(options), [runtime, options]);
   const snapshot = useStore(runtime.state);
+  const viewId = `tailorkit-view-${reactId.replaceAll(":", "")}`;
+  const themeContext = useMemo(
+    () => ({ theme: client.theme, viewId }),
+    [client.theme, viewId]
+  );
   if (snapshot.status === "hidden") {
     return null;
   }
   if (snapshot.status === "loading") {
-    return <div role="status">{snapshot.message}</div>;
+    return <output>{snapshot.message}</output>;
   }
   if (snapshot.status === "error") {
     return <div role="alert">{snapshot.error.message}</div>;
   }
-  const viewId = `tailorkit-view-${reactId.replaceAll(":", "")}`;
   return (
-    <PrimitiveThemeContext.Provider value={{ theme: client.theme, viewId }}>
+    <PrimitiveThemeContext.Provider value={themeContext}>
       <div data-tailorkit-view={viewId}>
         <style data-tailorkit-theme-style={viewId}>
           {buildThemeCss(viewId, client.theme)}
@@ -79,4 +76,19 @@ function SlotRenderer(options: SlotRuntimeOptions): ReactNode {
       </div>
     </PrimitiveThemeContext.Provider>
   );
-}
+};
+
+const ManagedRenderSlot = (props: RuntimeRenderSlotProps): ReactNode => (
+  <SlotRenderer mode="managed" {...props} />
+);
+
+const ControlledRenderSlot = (props: ControlledRenderSlotProps): ReactNode => (
+  <SlotRenderer mode="controlled" {...props} />
+);
+
+export const RenderSlot: RenderSlotComponent = Object.assign(
+  ManagedRenderSlot,
+  {
+    Controlled: ControlledRenderSlot,
+  }
+);

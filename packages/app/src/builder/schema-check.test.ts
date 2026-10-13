@@ -38,7 +38,8 @@ it("checks schema drift without rewriting committed migrations and allows apps w
     await cp(path.join(example, "src/db/migrations"), migrations, {
       recursive: true,
     });
-    const files = (await readdir(migrations, { recursive: true })).filter(
+    const awaitedResult1 = await readdir(migrations, { recursive: true });
+    const files = awaitedResult1.filter(
       (name) => name.endsWith(".sql") || name.endsWith(".json")
     );
     const contents = await Promise.all(
@@ -61,8 +62,9 @@ it("checks schema drift without rewriting committed migrations and allows apps w
         files.map((file) => readFile(path.join(migrations, file), "utf-8"))
       )
     ).toEqual(contents);
+    const awaitedResult2 = await readdir(migrations, { recursive: true });
     expect(
-      (await readdir(migrations, { recursive: true })).filter(
+      awaitedResult2.filter(
         (name) => name.endsWith(".sql") || name.endsWith(".json")
       )
     ).toEqual(files);

@@ -42,7 +42,7 @@ it("routes normal calls over authenticated HTTP without opening a WebSocket", as
     ]);
     expect(fetch.mock.calls[0]?.[1]).toMatchObject({
       body: JSON.stringify({
-        json: { name: "todos.list", args: { filter: "open" } },
+        json: { args: { filter: "open" }, name: "todos.list" },
       }),
       credentials: "omit",
       method: "POST",
@@ -93,19 +93,38 @@ it("preserves runtime errors without retrying actions", async () => {
 
 it("aborts pending HTTP calls when closed", async () => {
   let started!: () => void;
-  const ready = new Promise<void>((resolve) => {
-    started = resolve;
-  });
-  const fetch = vi.fn<typeof globalThis.fetch>(
-    (_url, init) =>
-      new Promise((_resolve, reject) => {
+  const ready = (() => {
+    const {
+      promise: pendingPromise,
+      resolve,
+      reject: rejectPending,
+    } = Promise.withResolvers<ReturnType<() => void>>();
+    try {
+      started = resolve;
+    } catch (error) {
+      rejectPending(error);
+    }
+    return pendingPromise;
+  })();
+  const fetch = vi.fn<typeof globalThis.fetch>((_url, init) =>
+    (() => {
+      const {
+        promise: pendingPromise,
+        resolve: _resolve,
+        reject,
+      } = Promise.withResolvers<Response>();
+      try {
         init?.signal?.addEventListener(
           "abort",
           () => reject(new DOMException("Cancelled", "AbortError")),
           { once: true }
         );
         started();
-      })
+      } catch (error) {
+        reject(error);
+      }
+      return pendingPromise;
+    })()
   );
   const client = createClient({
     fetch,

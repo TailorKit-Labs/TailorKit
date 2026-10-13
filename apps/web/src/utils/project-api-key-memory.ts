@@ -1,17 +1,15 @@
 const projectApiKeys = new Map<string, string>();
 
-function projectApiKeyId(orgSlug: string, projectSlug: string) {
-  return `${orgSlug}:${projectSlug}`;
-}
+const projectApiKeyId = (orgSlug: string, projectSlug: string) =>
+  `${orgSlug}:${projectSlug}`;
 
-export function getProjectApiKey(orgSlug: string, projectSlug: string) {
-  return projectApiKeys.get(projectApiKeyId(orgSlug, projectSlug)) ?? null;
-}
+export const getProjectApiKey = (orgSlug: string, projectSlug: string) =>
+  projectApiKeys.get(projectApiKeyId(orgSlug, projectSlug)) ?? null;
 
-export function setProjectApiKey(
+export const setProjectApiKey = (
   orgSlug: string,
   projectSlug: string,
   apiKey: string
-) {
+) => {
   projectApiKeys.set(projectApiKeyId(orgSlug, projectSlug), apiKey);
-}
+};

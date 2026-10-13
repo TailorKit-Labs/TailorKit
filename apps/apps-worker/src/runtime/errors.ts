@@ -18,22 +18,21 @@ export interface InvocationResult {
   committed: boolean;
 }
 
-export function failedResult(error: unknown): FunctionResult {
+export const failedResult = (error: unknown): FunctionResult => {
   const failure = appError(error);
   return { error: { code: failure.code, message: failure.message }, ok: false };
-}
+};
 
-export function resultValue(result: FunctionResult) {
+export const resultValue = (result: FunctionResult) => {
   if (!result.ok) {
     throw appError(result.error);
   }
   return result.value;
-}
+};
 
-export function resultEffect(
+export const resultEffect = (
   result: FunctionResult
-): Effect.Effect<unknown, AppError> {
-  return result.ok
+): Effect.Effect<unknown, AppError> =>
+  result.ok
     ? Effect.succeed(result.value)
     : Effect.fail(appError(result.error));
-}

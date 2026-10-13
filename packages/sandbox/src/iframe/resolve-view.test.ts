@@ -5,13 +5,13 @@ import { describe, expect, it, vi } from "vite-plus/test";
 import { assertAppClient, renderClient, resolveView } from "./resolve-view";
 import type { AppClient, ViewRequest } from "./resolve-view";
 
-function viewResolver() {
+const viewResolver = () => {
   const root = document.createElement("div");
   return (client: AppClient, props: ViewRequest) =>
     renderClient(client, props, root);
-}
+};
 
-function viewClient() {
+const viewClient = () => {
   const render = vi.fn();
   const navigation = { component: vi.fn() };
   const general = { component: vi.fn() };
@@ -32,7 +32,7 @@ function viewClient() {
     navigation,
     render,
   };
-}
+};
 
 const viewLayers: [ViewLayer, ViewLayer, ViewLayer] = [
   { context: { workspaceId: "w1" }, path: "/", status: "ready" },
@@ -40,16 +40,13 @@ const viewLayers: [ViewLayer, ViewLayer, ViewLayer] = [
   { context: { userId: "u1" }, path: "/users/detail", status: "ready" },
 ];
 
-function resolveProps(slot: string, layers: ViewLayer[] = viewLayers) {
-  return {
-    declaredViews: viewLayers.map((layer) => layer.path),
-    layers,
-    slot,
-    supportedViews:
-      slot === "navbar" ? ["/"] : ["/", "/users", "/users/detail"],
-    view: "/users/detail",
-  };
-}
+const resolveProps = (slot: string, layers: ViewLayer[] = viewLayers) => ({
+  declaredViews: viewLayers.map((layer) => layer.path),
+  layers,
+  slot,
+  supportedViews: slot === "navbar" ? ["/"] : ["/", "/users", "/users/detail"],
+  view: "/users/detail",
+});
 
 describe("slot view resolution", () => {
   it("selects one view per slot and composes only its ancestors", () => {
@@ -300,6 +297,18 @@ describe("controlled slot rendering", () => {
   );
 });
 
+const clientImplementation = () => {
+  const { client: clientValue, detail } = viewClient();
+  return {
+    ...clientValue,
+    slots: {
+      panel: {
+        "/users/detail": { ...detail, instances: { resolver: "compiled" } },
+      },
+    },
+  };
+};
+
 describe("instance rendering", () => {
   const instance = {
     data: { reportId: "r1" },
@@ -307,17 +316,7 @@ describe("instance rendering", () => {
     metadata: { title: "Overview" },
   };
   const request = { ...resolveProps("panel"), instance };
-  function client() {
-    const { client, detail } = viewClient();
-    return {
-      ...client,
-      slots: {
-        panel: {
-          "/users/detail": { ...detail, instances: { resolver: "compiled" } },
-        },
-      },
-    };
-  }
+  const client = clientImplementation;
 
   it("passes the selected instance alongside the matched context", () => {
     expect(resolveView(client(), request)?.props).toEqual({

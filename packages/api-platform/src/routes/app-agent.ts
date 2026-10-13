@@ -24,15 +24,23 @@ import { authenticateCliRequest } from "../cli-token";
 import { findAppInScopes, o, cliRouter } from "../procedures";
 import { canonicalizeScope } from "../scope";
 
+const require = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const APP_AGENT_MODEL = "xiaomi/mimo-v2.6-pro";
 
 const chunkSchema = asSchema(uiMessageChunkSchema);
 
 /** Use the SDK's validator so transport parts stay aligned with its protocol. */
 const agentChunkSchema = z
-  .custom<UIMessageChunk>(
-    async (value) => (await chunkSchema.validate?.(value))?.success === true
-  )
+  .custom<UIMessageChunk>(async (value) => {
+    const awaitedResult1 = await chunkSchema.validate?.(value);
+    return awaitedResult1?.success === true;
+  })
   .describe("An AI SDK UIMessageChunk. Fields depend on the chunk type.");
 
 /** Parts stay extensible; the platform validates their SDK shapes before running. */
@@ -85,12 +93,12 @@ const chat = cliRouter
           context.agentToken?.token ??
           (await issueAgentToken(
             {
-              projectId: context.project.id,
               appId: app.id,
               cliTokenId: token.id,
+              projectId: context.project.id,
               scope: token.scope,
             },
-            env.AUTH_SECRET!,
+            require(env.AUTH_SECRET),
             env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform"
           )),
         appId: app.id,

@@ -22,7 +22,13 @@ const identity = {
 };
 const endpoint = "https://example.com";
 
-function setup() {
+const callsImplementation = (value: string) => ({
+  committed: vi.fn(async () => {}),
+  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
+  fetch: vi.fn(async () => new Response(value)),
+});
+
+const setup = () => {
   installFetchGuard();
   // Like an SDK: capture fetch once, then use it from nested async helpers.
   const captured = globalThis.fetch;
@@ -38,9 +44,19 @@ function setup() {
   let release!: () => void;
   const app = defineServer({
     ended: fn.action.handler(() => {
-      detached = new Promise<void>((resolve) => {
-        release = resolve;
-      }).then(() => captured(endpoint));
+      detached = (() => {
+        const {
+          promise: pendingPromise,
+          resolve,
+          reject: rejectPending,
+        } = Promise.withResolvers<ReturnType<() => void>>();
+        try {
+          release = resolve;
+        } catch (error) {
+          rejectPending(error);
+        }
+        return pendingPromise;
+      })().then(() => captured(endpoint));
       detached.catch(() => {});
       return "done";
     }),
@@ -58,7 +74,6 @@ function setup() {
       }),
     read,
     run: fn.action.handler(async () => {
-      await Promise.resolve();
       const response = await captured(endpoint);
       return response.text();
     }),
@@ -68,20 +83,14 @@ function setup() {
     execute: () => ({ changes: 0, columns: [], rows: [] }),
     transaction: (run) => run(),
   });
-  const calls = (value: string) => ({
-    committed: vi.fn(async () => {}),
-    fetch: vi.fn(async () => {
-      await Promise.resolve();
-      return new Response(value);
-    }),
-  });
+  const calls = callsImplementation;
   return {
     calls,
     detached: () => detached,
     execution,
     release: () => release(),
   };
-}
+};
 
 it("guards queries, mutations and missing contexts, including nested calls", async () => {
   const { execution, calls } = setup();

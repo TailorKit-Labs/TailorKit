@@ -7,6 +7,13 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { handleAssetRequest } from "./assets";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const teamId = "abc123def45678";
 const projectId = "22222222-2222-4222-8222-222222222222";
 const appId = "app000000001";
@@ -15,22 +22,20 @@ const url = `http://localhost:3000/api/assets/t/${teamId}/p/${projectId}/a/${app
 const key = `teams/${teamId}/projects/${projectId}/apps/${appId}/deployments/${deploymentId}/client/client.js`;
 const bundle = "export default 'local asset';";
 
-function storage(): Storage {
-  return {
-    createDownloadUrl: vi
-      .fn()
-      .mockResolvedValue({ key, url: "http://127.0.0.1:8333/file" }),
-    createUploadUrl: vi.fn(),
-    delete: vi.fn(),
-    head: vi.fn().mockResolvedValue({
-      key,
-      contentLength: new TextEncoder().encode(bundle).byteLength,
-      contentType: "application/javascript",
-      etag: '"asset-etag"',
-    }),
-    type: "s3",
-  };
-}
+const storage = (): Storage => ({
+  createDownloadUrl: vi
+    .fn()
+    .mockResolvedValue({ key, url: "http://127.0.0.1:8333/file" }),
+  createUploadUrl: vi.fn(),
+  delete: vi.fn(),
+  head: vi.fn().mockResolvedValue({
+    contentLength: new TextEncoder().encode(bundle).byteLength,
+    contentType: "application/javascript",
+    etag: '"asset-etag"',
+    key,
+  }),
+  type: "s3",
+});
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -46,6 +51,7 @@ describe("Node asset delivery", () => {
       "migration.sql",
     ]) {
       for (const method of ["GET", "HEAD", "OPTIONS"]) {
+        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
         const response = await handleAssetRequest(
           new Request(url.replace("client.js", suffix), { method }),
           backend
@@ -142,10 +148,20 @@ it("serves Node fetch's decoded gzip body with consistent GET and HEAD metadata"
     });
     response.end(bytes);
   });
-  await new Promise<void>((resolve, reject) => {
-    origin.once("error", reject);
-    origin.listen(0, "127.0.0.1", resolve);
-  });
+  await (() => {
+    const {
+      promise: pendingPromise,
+      resolve,
+      reject,
+    } = Promise.withResolvers<ReturnType<() => void>>();
+    try {
+      origin.once("error", reject);
+      origin.listen(0, "127.0.0.1", resolve);
+    } catch (error) {
+      reject(error);
+    }
+    return pendingPromise;
+  })();
   try {
     const address = origin.address();
     if (!address || typeof address === "string") {
@@ -175,9 +191,19 @@ it("serves Node fetch's decoded gzip body with consistent GET and HEAD metadata"
     expect([...head.headers]).toEqual([...response.headers]);
     expect(await head.text()).toBe("");
   } finally {
-    await new Promise<void>((resolve, reject) =>
-      origin.close((error) => (error ? reject(error) : resolve()))
-    );
+    await (() => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject,
+      } = Promise.withResolvers<ReturnType<() => void>>();
+      try {
+        origin.close((error) => (error ? reject(error) : resolve()));
+      } catch (error) {
+        reject(error);
+      }
+      return pendingPromise;
+    })();
   }
 });
 
@@ -197,15 +223,16 @@ it("limits decoded gzip assets and cancels the upstream stream on overflow", asy
         cancel,
         pull(controller) {
           controller.enqueue(
-            new Uint8Array(chunks++ === 0 ? maxDeploymentBytes : 1)
+            new Uint8Array((chunks += 1) - 1 === 0 ? maxDeploymentBytes : 1)
           );
         },
       })
     )
   );
   const response = await handleAssetRequest(new Request(url), backend);
-  const reader = response.body!.getReader();
-  expect((await reader.read()).value?.byteLength).toBe(maxDeploymentBytes);
+  const reader = requireValue(response.body).getReader();
+  const awaitedResult1 = await reader.read();
+  expect(awaitedResult1.value?.byteLength).toBe(maxDeploymentBytes);
   await expect(reader.read()).rejects.toThrow("Asset delivery failed (404)");
   await vi.waitFor(() => expect(cancel).toHaveBeenCalledOnce());
 });
@@ -222,5 +249,6 @@ it("serves decoded gzip assets at exactly the 3 MiB limit", async () => {
     new Response(new Uint8Array(maxDeploymentBytes))
   );
   const response = await handleAssetRequest(new Request(url), backend);
-  expect((await response.arrayBuffer()).byteLength).toBe(maxDeploymentBytes);
+  const awaitedResult2 = await response.arrayBuffer();
+  expect(awaitedResult2.byteLength).toBe(maxDeploymentBytes);
 });

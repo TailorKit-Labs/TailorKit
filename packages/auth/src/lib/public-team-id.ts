@@ -8,9 +8,8 @@ const createMiddle = customAlphabet(
   12
 );
 
-export function createPublicTeamId() {
-  return `${createEdge()}${createMiddle()}${createEdge()}`;
-}
+export const createPublicTeamId = () =>
+  `${createEdge()}${createMiddle()}${createEdge()}`;
 
 export const publicTeamIdField = {
   input: false,
@@ -19,7 +18,6 @@ export const publicTeamIdField = {
   unique: true,
 } as const;
 
-export function initializePublicTeamId<T extends object>(organization: T) {
+export const initializePublicTeamId = <T extends object>(organization: T) =>
   // Never trust a caller-supplied identity, even in server-side API calls.
-  return { data: { ...organization, publicId: createPublicTeamId() } };
-}
+  ({ data: { ...organization, publicId: createPublicTeamId() } });

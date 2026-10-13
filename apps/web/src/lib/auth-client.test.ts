@@ -76,7 +76,8 @@ describe("auth client BotID initialization", () => {
 
   it("does not initialize BotID during server rendering", async () => {
     vi.stubEnv("PROD", true);
-    vi.stubGlobal("window");
+    // oxlint-disable-next-line unicorn/no-useless-undefined -- Preserve the original explicit argument and argument-count semantics.
+    vi.stubGlobal("window", undefined);
 
     await import("./auth-client");
 

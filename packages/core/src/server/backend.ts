@@ -2,7 +2,7 @@ import type { TailorKitScopes } from "./types";
 
 // Keep the request/build lifecycle and its failure paths together.
 // eslint-disable-next-line complexity
-export async function handleBackendSession(
+export const handleBackendSession = async (
   request: Request,
   authenticate: (input: {
     request: Request;
@@ -13,7 +13,7 @@ export async function handleBackendSession(
     subjectId?: string
   ) => Promise<{ token: string; expiresAt: number; url: string } | Response>,
   publicOrigin = new URL(request.url).origin
-) {
+) => {
   const headers = { "cache-control": "no-store" };
   const origin = request.headers.get("origin");
   if (
@@ -37,12 +37,14 @@ export async function handleBackendSession(
     const decoder = new TextDecoder();
     let bytes = 0;
     for (;;) {
+      // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
       const chunk = await reader.read();
       if (chunk.done) {
         break;
       }
       bytes += chunk.value.byteLength;
       if (bytes > 4096) {
+        // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
         await reader.cancel();
         return new Response("Too large", { headers, status: 413 });
       }
@@ -84,4 +86,4 @@ export async function handleBackendSession(
     { ...session, subjectId: viewer.subjectId },
     { headers }
   );
-}
+};

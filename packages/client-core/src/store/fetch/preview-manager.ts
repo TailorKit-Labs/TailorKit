@@ -34,23 +34,23 @@ interface Entry {
   delay: number;
 }
 
-function viewerTokenExpiresAt(
+const viewerTokenExpiresAt = (
   metadata: NonNullable<TailorKitApp["preview"]>
-): number {
+): number => {
   const expiresAt = Number(metadata.token.split(".", 1)[0]);
   return Number.isSafeInteger(expiresAt) ? expiresAt : 0;
-}
+};
 
-function bytesFromBase64(value: string): Uint8Array {
+const bytesFromBase64 = (value: string): Uint8Array => {
   const raw = atob(value);
   const bytes = new Uint8Array(raw.length);
-  for (let index = 0; index < raw.length; index++) {
+  for (let index = 0; index < raw.length; index += 1) {
     bytes[index] = raw.codePointAt(index) ?? 0;
   }
   return bytes;
-}
+};
 
-async function verify(candidate: Candidate): Promise<string | null> {
+const verify = async (candidate: Candidate): Promise<string | null> => {
   let source: string | null = null;
   for (const [fileIndex, file] of candidate.manifest.files.entries()) {
     const parts = candidate.files[fileIndex];
@@ -74,6 +74,7 @@ async function verify(candidate: Candidate): Promise<string | null> {
       return null;
     }
     const digest = [
+      // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
       ...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
     ]
       .map((byte) => byte.toString(16).padStart(2, "0"))
@@ -86,14 +87,14 @@ async function verify(candidate: Candidate): Promise<string | null> {
     }
   }
   return source;
-}
+};
 
-export function createPreviewManager(
+export const createPreviewManager = (
   baseUrl: URL,
   onEnded: () => void,
   onViews?: (appId: string, views: NonNullable<TailorKitApp["views"]>) => void,
   refreshMetadata = createEndpointClient({ baseUrl }).previewMetadata
-) {
+) => {
   const entries = new Map<string, Entry>();
   const close = (entry: Entry) => {
     if (entry.reconnect) {
@@ -258,20 +259,22 @@ export function createPreviewManager(
     subscribe: (app: TailorKitApp, listener: () => void): (() => void) => {
       const sessionId = app.preview?.sessionId;
       if (!sessionId) {
-        return () => {};
+        return () => {
+          /* Intentionally no action is needed. */
+        };
       }
       let entry = entries.get(sessionId);
       if (!entry) {
         entry = {
           app,
-          metadata: null,
           candidate: null,
-          subscribers: 0,
-          state: atom(empty),
-          socket: null,
           connecting: false,
-          reconnect: null,
           delay: 1000,
+          metadata: null,
+          reconnect: null,
+          socket: null,
+          state: atom(empty),
+          subscribers: 0,
         };
         entries.set(sessionId, entry);
       }
@@ -282,13 +285,17 @@ export function createPreviewManager(
       void connect(entry);
       let active = true;
       return () => {
-        if (!active) return;
+        if (!active) {
+          return;
+        }
         active = false;
         unsubscribe();
         current.subscribers = Math.max(0, current.subscribers - 1);
         if (!current.subscribers) {
           close(current);
-          if (entries.get(sessionId) === current) entries.delete(sessionId);
+          if (entries.get(sessionId) === current) {
+            entries.delete(sessionId);
+          }
         }
       };
     },
@@ -310,9 +317,11 @@ export function createPreviewManager(
           const app = getApp();
           return app.preview?.sessionId === sessionId
             ? manager.subscribe(app, listener)
-            : () => {};
+            : () => {
+                /* Intentionally no action is needed. */
+              };
         }
       );
     },
   };
-}
+};

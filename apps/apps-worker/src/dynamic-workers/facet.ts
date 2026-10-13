@@ -49,7 +49,14 @@ export class AppFacet extends DurableObject<Record<string, never>> {
     const controller = new AbortController();
     const reader = cancellation.getReader();
     const cancel = () => controller.abort();
-    void reader.read().then(cancel, cancel);
+    void (async () => {
+      try {
+        await reader.read();
+      } catch {
+        /* Either settlement cancels the action. */
+      }
+      cancel();
+    })();
     return Effect.runPromise(
       execution
         .action(
@@ -57,15 +64,15 @@ export class AppFacet extends DurableObject<Record<string, never>> {
           identity,
           {
             committed: (tables) => capability.committed(tables),
-            fetch: (input, init) => {
-              const request = new Request(input, init);
-              const signal = request.signal;
+            fetch: (inputValue, init) => {
+              const request = new Request(inputValue, init);
+              const { signal } = request;
               signal.throwIfAborted();
               // Attached AbortSignals cannot be serialized by Workers RPC.
               const transferable = new Request(request.url, {
-                method: request.method,
-                headers: request.headers,
                 body: request.body,
+                headers: request.headers,
+                method: request.method,
                 redirect: request.redirect,
               });
               return abortable(
@@ -73,12 +80,22 @@ export class AppFacet extends DurableObject<Record<string, never>> {
                 signal
               );
             },
-            tool: (path, input) => capability.tool(path, input),
+            tool: (path, inputValue2) => capability.tool(path, inputValue2),
           },
           controller.signal
         )
         .pipe(
-          Effect.ensuring(Effect.promise(() => reader.cancel().catch(() => {})))
+          Effect.ensuring(
+            Effect.promise(() =>
+              (async () => {
+                try {
+                  return await reader.cancel();
+                } catch {
+                  /* Intentionally no action is needed. */
+                }
+              })()
+            )
+          )
         )
     );
   }

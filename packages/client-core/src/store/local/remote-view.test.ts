@@ -8,6 +8,13 @@ import { afterEach, expect, it, vi } from "vite-plus/test";
 
 import { createRemoteElementProps, createRemoteViewStore } from "./remote-view";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const tree: RemoteElementNode = {
   callbacks: [{ callback: "onSelect", event: "selected", inputCount: 1 }],
   children: [],
@@ -17,7 +24,7 @@ const tree: RemoteElementNode = {
   type: "Button",
 };
 
-function setup() {
+const setup = () => {
   const records: {
     host: IframeUiHost;
     options: IframeUiHostOptions;
@@ -44,7 +51,7 @@ function setup() {
     }
   );
   return { createHost, records };
-}
+};
 afterEach(() => vi.restoreAllMocks());
 
 it("publishes host status and native node selectors together without a rendering framework", () => {
@@ -61,28 +68,35 @@ it("publishes host status and native node selectors together without a rendering
     status: store.state.get().status,
   }));
   const stopRoot = store.nodes.root.listen(listener);
-  records[0]!.host.setSnapshot(tree, 1);
+  requireValue(records[0]).host.setSnapshot(tree, 1);
   expect(listener).toHaveLastReturnedWith({ root: "root", status: "ready" });
   expect(store.nodes.selectNode("root").get()).toEqual(tree);
   const ready = store.state.get();
-  records[0]!.host.setSnapshot({ ...tree, props: { label: "Updated" } }, 2);
+  requireValue(records[0]).host.setSnapshot(
+    { ...tree, props: { label: "Updated" } },
+    2
+  );
   expect(store.state.get()).toBe(ready);
   stopRoot();
   stop();
   expect(store.nodes.root.get()).toBeNull();
-  expect(records[0]!.host.destroy).toHaveBeenCalledOnce();
+  expect(requireValue(records[0]).host.destroy).toHaveBeenCalledOnce();
 });
+
+const secondImplementation = () => "second";
+
+const firstImplementation = () => "first";
 
 it("updates only changed component selectors without recreating the host", () => {
   const { createHost, records } = setup();
-  const first = () => "first";
-  const second = () => "second";
+  const first = firstImplementation;
+  const second = secondImplementation;
   const store = createRemoteViewStore(
     { components: { Button: first } },
     createHost
   );
   const stop = store.mount({ appUrl: "https://host.test/app.js" });
-  records[0]!.host.setSnapshot(tree, 1);
+  requireValue(records[0]).host.setSnapshot(tree, 1);
   const snapshot = store.nodes.state.get();
   const component = store.selectComponent("Button");
   const listener = vi.fn();
@@ -107,24 +121,28 @@ it("retains the latest props and shares callback payload construction", () => {
     appUrl: "https://host.test/app.js",
     sourceText: "source",
   });
-  expect(records[0]!.options).toMatchObject({
+  expect(requireValue(records[0]).options).toMatchObject({
     props: latest,
     sourceText: "source",
   });
   store.setProps(undefined);
-  expect(records[0]!.host.setProps).toHaveBeenCalledWith(undefined);
+  expect(requireValue(records[0]).host.setProps).toHaveBeenCalledWith(
+    undefined
+  );
   const props = createRemoteElementProps(tree, store.dispatch);
   (props.onSelect as (...args: unknown[]) => void)("selected value", {
     synthetic: "event",
   });
-  expect(records[0]!.host.dispatch).toHaveBeenCalledExactlyOnceWith({
+  expect(
+    requireValue(records[0]).host.dispatch
+  ).toHaveBeenCalledExactlyOnceWith({
     data: { args: ["selected value"], event: "selected", nodeId: "root" },
     type: "dispatchCallback",
   });
   expect(tree.props).toEqual({ label: "Button" });
   stop();
   (props.onSelect as (...args: unknown[]) => void)("after stop");
-  expect(records[0]!.host.dispatch).toHaveBeenCalledOnce();
+  expect(requireValue(records[0]).host.dispatch).toHaveBeenCalledOnce();
 });
 
 it("isolates dispatch, component registries, and trees between remote views", () => {
@@ -139,14 +157,13 @@ it("isolates dispatch, component registries, and trees between remote views", ()
   );
   const stopFirst = first.mount({ appUrl: "https://host.test/first.js" });
   const stopSecond = second.mount({ appUrl: "https://host.test/second.js" });
-  records[0]!.host.setSnapshot(tree, 1);
+  requireValue(records[0]).host.setSnapshot(tree, 1);
   expect(second.nodes.root.get()).toBeNull();
-  const callback = createRemoteElementProps(tree, second.dispatch).onSelect as (
-    ...args: unknown[]
-  ) => void;
-  callback("second");
-  expect(records[0]!.host.dispatch).not.toHaveBeenCalled();
-  expect(records[1]!.host.dispatch).toHaveBeenCalledOnce();
+  const operation = createRemoteElementProps(tree, second.dispatch)
+    .onSelect as (...args: unknown[]) => void;
+  operation("second");
+  expect(requireValue(records[0]).host.dispatch).not.toHaveBeenCalled();
+  expect(requireValue(records[1]).host.dispatch).toHaveBeenCalledOnce();
   expect(first.components.get()).toEqual({ Button: "first" });
   expect(second.components.get()).toEqual({ Button: "second" });
   stopFirst();
@@ -154,29 +171,31 @@ it("isolates dispatch, component registries, and trees between remote views", ()
 });
 
 it("ignores stale host events and cleanup after a replacement mount", () => {
-  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  const err = vi.spyOn(console, "error").mockImplementation(() => {});
   const { createHost, records } = setup();
   const store = createRemoteViewStore({}, createHost);
   const stopFirst = store.mount({ appUrl: "https://host.test/first.js" });
-  records[0]!.host.setSnapshot(tree, 1);
+  requireValue(records[0]).host.setSnapshot(tree, 1);
   const stopSecond = store.mount({ appUrl: "https://host.test/second.js" });
-  expect(records[0]!.host.destroy).toHaveBeenCalledOnce();
+  expect(requireValue(records[0]).host.destroy).toHaveBeenCalledOnce();
   expect(store.nodes.root.get()).toBeNull();
-  records[0]!.listeners[0]!();
-  records[0]!.options.onError!(new Error("Stale failure"));
+  requireValue(requireValue(records[0]).listeners[0])();
+  requireValue(requireValue(records[0]).options.onError)(
+    new Error("Stale failure")
+  );
   stopFirst();
-  expect(error).not.toHaveBeenCalled();
+  expect(err).not.toHaveBeenCalled();
   expect(store.state.get().status).toBe("starting");
-  expect(records[1]!.host.destroy).not.toHaveBeenCalled();
-  records[1]!.host.setSnapshot(tree, 1);
+  expect(requireValue(records[1]).host.destroy).not.toHaveBeenCalled();
+  requireValue(records[1]).host.setSnapshot(tree, 1);
   expect(store.state.get()).toMatchObject({ generation: 2, status: "ready" });
   stopSecond();
   stopSecond();
-  expect(records[1]!.host.destroy).toHaveBeenCalledOnce();
+  expect(requireValue(records[1]).host.destroy).toHaveBeenCalledOnce();
 });
 
 it("reports startup failures, releases partial hosts, and recovers on the next mount", () => {
-  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  const err2 = vi.spyOn(console, "error").mockImplementation(() => {});
   const { createHost, records } = setup();
   const failure = new Error("Failed to start");
   createHost.mockImplementationOnce((_url, options = {}) => {
@@ -197,13 +216,13 @@ it("reports startup failures, releases partial hosts, and recovers on the next m
   const store = createRemoteViewStore({}, createHost);
   store.mount({ appUrl: "https://host.test/first.js" });
   expect(store.state.get()).toMatchObject({ error: failure, status: "error" });
-  expect(error).toHaveBeenCalledExactlyOnceWith(
+  expect(err2).toHaveBeenCalledExactlyOnceWith(
     "TailorKit remote app failed",
     failure
   );
-  expect(records[0]!.host.destroy).toHaveBeenCalledOnce();
+  expect(requireValue(records[0]).host.destroy).toHaveBeenCalledOnce();
   const stop = store.mount({ appUrl: "https://host.test/second.js" });
-  records[1]!.host.setSnapshot(tree, 1);
+  requireValue(records[1]).host.setSnapshot(tree, 1);
   expect(store.state.get()).toMatchObject({ error: null, status: "ready" });
   stop();
 });

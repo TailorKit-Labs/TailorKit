@@ -12,13 +12,13 @@ import { env } from "#env";
 
 export { RateLimitHandlerPlugin } from "@orpc/ratelimit";
 
-export function createRateLimiter({
+export const createRateLimiter = ({
   maxRequests,
   window,
 }: {
   maxRequests: number;
   window: number;
-}): RateLimiter {
+}): RateLimiter => {
   const kv = getKV();
 
   if (kv?.type === "upstash") {
@@ -36,6 +36,7 @@ export function createRateLimiter({
     const redis = kv.engine;
     // Keep the shared ioredis connection through oRPC's Redis adapter base.
     class IORedisRateLimiter extends BaseRedisRateLimiter {
+      // oxlint-disable-next-line class-methods-use-this -- The adapter overrides an instance method required by the upstream interface.
       protected evalScript(
         script: string,
         keys: string[],
@@ -53,7 +54,7 @@ export function createRateLimiter({
   }
 
   return new MemoryRateLimiter({ maxRequests, window });
-}
+};
 
 export const ratelimitMiddleware = <
   TInContext extends Context,

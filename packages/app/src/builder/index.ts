@@ -9,6 +9,7 @@ import { build as viteBuild } from "vite";
 import { loadTailorKitConfig } from "../config/loader";
 import { assertSupportedPreactVersion } from "../preact-version";
 import { readClientManifest } from "./client-views";
+import { getBuildEnvironment } from "./env";
 import { createFileRouteEntry, fileRoutesPlugin } from "./file-routes";
 import { instanceExtractionPlugin } from "./instances";
 import type { InstanceModule } from "./instances";
@@ -22,12 +23,14 @@ export {
 } from "./upload-manifest";
 
 const preactPackageJson = "preact/package.json";
+
 const preactPackageJsonModuleId = "\0tailorkit-preact-package-json";
 
 export {
   generateAppMigrations,
   type GenerateAppMigrationsOptions,
 } from "./generate-migrations";
+
 export { getClientSourceFiles } from "./file-routes";
 
 export interface BuildAppOptions {
@@ -37,6 +40,26 @@ export interface BuildAppOptions {
   outDir?: string;
   watch?: boolean;
 }
+
+const getInstalledPreactVersion = (root: string): string => {
+  const require = createRequire(path.join(root, "package.json"));
+
+  try {
+    const packageJsonPath = require.resolve("preact/package.json");
+    const packageJson = require(packageJsonPath) as { version?: unknown };
+
+    if (typeof packageJson.version === "string") {
+      return packageJson.version;
+    }
+  } catch (error) {
+    throw new Error(
+      `TailorKit requires Preact to build an app. Install preact@^11 and try again.`,
+      { cause: error }
+    );
+  }
+
+  throw new Error("Unable to read the installed Preact version.");
+};
 
 // Keep the request/build lifecycle and its failure paths together.
 // eslint-disable-next-line complexity
@@ -78,7 +101,7 @@ export const buildApp = async (
         names: module.names.filter((name) => resolverNames.has(name)),
       }))
       .filter((module) => module.names.length)
-      .sort((a, b) => a.filename.localeCompare(b.filename));
+      .toSorted((a, b) => a.filename.localeCompare(b.filename));
     if (
       activeModules.reduce(
         (count, module) => count + module.names.length,
@@ -116,9 +139,11 @@ export const buildApp = async (
           `The ${variant} logo must be an SVG, PNG, or WebP file.`
         );
       }
+      // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
       const content = await readFile(path.resolve(loaded.root, configuredPath));
       validateLogoAsset(content, contentType);
       const filename = `logo-${variant}.${extension}`;
+      // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
       await writeFile(path.join(clientOutDir, filename), content);
       logoManifest[variant] = `client/${filename}`;
     }
@@ -134,12 +159,28 @@ export const buildApp = async (
   };
   let firstBuildDone: (() => void) | undefined;
   let firstBuildFailed: ((error: Error) => void) | undefined;
-  const firstBuild = new Promise<void>((resolve, reject) => {
-    firstBuildDone = resolve;
-    firstBuildFailed = reject;
-  });
+  const firstBuild = (() => {
+    const {
+      promise: pendingPromise,
+      resolve,
+      reject,
+    } = Promise.withResolvers<ReturnType<() => void>>();
+    try {
+      firstBuildDone = resolve;
+      firstBuildFailed = reject;
+    } catch (error) {
+      reject(error);
+    }
+    return pendingPromise;
+  })();
   if (!options.watch) {
-    void firstBuild.catch(() => {});
+    void (async () => {
+      try {
+        return await firstBuild;
+      } catch {
+        /* Intentionally no action is needed. */
+      }
+    })();
   }
   const completeBuild = async () => {
     try {
@@ -152,107 +193,111 @@ export const buildApp = async (
       throw error;
     }
   };
-  const result = await viteBuild({
-    build: {
-      emptyOutDir: true,
-      lib: {
-        entry,
-        fileName: "client",
-        formats: ["es"],
-      },
-      minify: "oxc",
-      outDir: clientOutDir,
-      rollupOptions: {
-        output: {
-          comments: {
-            annotation: false,
-            jsdoc: false,
-            legal: false,
+  const result = await (async () => {
+    try {
+      return await viteBuild({
+        build: {
+          emptyOutDir: true,
+          lib: {
+            entry,
+            fileName: "client",
+            formats: ["es"],
           },
-          minify: true,
-          minifyInternalExports: true,
+          minify: "oxc",
+          outDir: clientOutDir,
+          rollupOptions: {
+            output: {
+              comments: {
+                annotation: false,
+                jsdoc: false,
+                legal: false,
+              },
+              minify: true,
+              minifyInternalExports: true,
+            },
+          },
+          watch: options.watch ? {} : null,
         },
-      },
-      watch: options.watch ? {} : null,
-    },
-    configFile: false,
-    define: {
-      "process.env.NODE_ENV": JSON.stringify(
-        process.env.NODE_ENV ?? "production"
-      ),
-    },
-    mode: options.mode,
-    oxc: { jsx: { importSource: "preact" } },
-    plugins: [
-      fileRoutesPlugin(loaded.root),
-      instanceExtractionPlugin(
-        loaded.root,
-        Boolean(loaded.config.server),
-        instanceModules
-      ),
-      {
-        enforce: "pre",
-        name: "tailorkit-browser-server-boundary",
-        async resolveId(id, importer) {
-          if (
-            /^(?:@tailorkit\/app\/server$|tailorkit\/(?:server|app\/server)$|effect(?:\/|$))/u.test(
-              id
-            ) ||
-            (importer &&
-              path.resolve(path.dirname(importer), id) === serverEntry)
-          ) {
-            throw new Error(
-              "App server implementations cannot be imported into a browser bundle. Import api from #tailorkit and server types with import type."
-            );
-          }
-          if (importer) {
-            const resolved = await this.resolve(id, importer, {
-              skipSelf: true,
-            });
-            if (resolved?.id.split("?")[0] === serverEntry) {
-              throw new Error(
-                "App server implementations cannot be imported into a browser bundle. Import api from #tailorkit and server types with import type."
-              );
-            }
-          }
-          return null;
+        configFile: false,
+        define: {
+          "process.env.NODE_ENV": JSON.stringify(
+            getBuildEnvironment().NODE_ENV ?? "production"
+          ),
         },
-      },
-      {
-        name: "tailorkit-preview-build-ready",
-        async writeBundle() {
-          await completeBuild();
-        },
-      },
-      {
-        enforce: "pre",
-        load(id) {
-          if (id === preactPackageJsonModuleId) {
-            const version = JSON.stringify(preactVersion);
+        mode: options.mode,
+        oxc: { jsx: { importSource: "preact" } },
+        plugins: [
+          fileRoutesPlugin(loaded.root),
+          instanceExtractionPlugin(
+            loaded.root,
+            Boolean(loaded.config.server),
+            instanceModules
+          ),
+          {
+            enforce: "pre",
+            name: "tailorkit-browser-server-boundary",
+            async resolveId(id, importer) {
+              if (
+                /^(?:@tailorkit\/app\/server$|tailorkit\/(?:server|app\/server)$|effect(?:\/|$))/u.test(
+                  id
+                ) ||
+                (importer &&
+                  path.resolve(path.dirname(importer), id) === serverEntry)
+              ) {
+                throw new Error(
+                  "App server implementations cannot be imported into a browser bundle. Import api from #tailorkit and server types with import type."
+                );
+              }
+              if (importer) {
+                const resolved = await this.resolve(id, importer, {
+                  skipSelf: true,
+                });
+                if (resolved?.id.split("?")[0] === serverEntry) {
+                  throw new Error(
+                    "App server implementations cannot be imported into a browser bundle. Import api from #tailorkit and server types with import type."
+                  );
+                }
+              }
+              return null;
+            },
+          },
+          {
+            name: "tailorkit-preview-build-ready",
+            async writeBundle() {
+              await completeBuild();
+            },
+          },
+          {
+            enforce: "pre",
+            load(id) {
+              if (id === preactPackageJsonModuleId) {
+                const version = JSON.stringify(preactVersion);
 
-            return `export const version = ${version}; export default { version: ${version} };`;
-          }
+                return `export const version = ${version}; export default { version: ${version} };`;
+              }
 
-          return null;
-        },
-        name: "tailorkit-preact-package-json",
-        resolveId(id) {
-          if (id === preactPackageJson) {
-            return preactPackageJsonModuleId;
-          }
+              return null;
+            },
+            name: "tailorkit-preact-package-json",
+            resolveId(id) {
+              if (id === preactPackageJson) {
+                return preactPackageJsonModuleId;
+              }
 
-          return null;
-        },
-      },
-    ],
-    root: loaded.root,
-  }).catch(async (error: unknown) => {
-    await fileEntry.close();
-    if (serverWatcher && "close" in serverWatcher) {
-      await serverWatcher.close();
+              return null;
+            },
+          },
+        ],
+        root: loaded.root,
+      });
+    } catch (error) {
+      await fileEntry.close();
+      if (serverWatcher && "close" in serverWatcher) {
+        await serverWatcher.close();
+      }
+      throw error;
     }
-    throw error;
-  });
+  })();
   if (options.watch) {
     if (result && typeof result === "object" && "on" in result) {
       (
@@ -262,7 +307,7 @@ export const buildApp = async (
             listener: (event: { code: string; error?: Error }) => void
           ) => void;
         }
-      ).on("event", (event) => {
+      ).on("event", (event: { code: string; error?: Error }) => {
         if (event.code === "ERROR") {
           firstBuildFailed?.(
             event.error ?? new Error("Initial app build failed.")
@@ -274,7 +319,7 @@ export const buildApp = async (
       await firstBuild;
     } catch (error) {
       if (result && typeof result === "object" && "close" in result) {
-        await (result as { close(): Promise<void> }).close();
+        await (result as { close: () => Promise<void> }).close();
       }
       if (serverWatcher && "close" in serverWatcher) {
         await serverWatcher.close();
@@ -284,14 +329,15 @@ export const buildApp = async (
     }
     if (result && "close" in result) {
       const clientWatcher = result as {
-        close(): Promise<void>;
-        on(name: string, listener: (...args: unknown[]) => void): void;
+        close: () => Promise<void>;
+        on: (name: string, listener: (...args: unknown[]) => void) => void;
       };
       return {
         async close() {
           await clientWatcher.close();
-          if (serverWatcher && "close" in serverWatcher)
+          if (serverWatcher && "close" in serverWatcher) {
             await serverWatcher.close();
+          }
           await fileEntry.close();
         },
         on: clientWatcher.on.bind(clientWatcher),
@@ -303,23 +349,3 @@ export const buildApp = async (
 
   return result;
 };
-
-function getInstalledPreactVersion(root: string): string {
-  const require = createRequire(path.join(root, "package.json"));
-
-  try {
-    const packageJsonPath = require.resolve("preact/package.json");
-    const packageJson = require(packageJsonPath) as { version?: unknown };
-
-    if (typeof packageJson.version === "string") {
-      return packageJson.version;
-    }
-  } catch (error) {
-    throw new Error(
-      `TailorKit requires Preact to build an app. Install preact@^11 and try again.`,
-      { cause: error }
-    );
-  }
-
-  throw new Error("Unable to read the installed Preact version.");
-}

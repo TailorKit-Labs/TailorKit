@@ -54,7 +54,9 @@ const namedScopeSchema = z.object({
   name: z.string().min(1),
   value: z.record(z.string(), z.unknown()),
 });
+
 const legacyFlatScopeSchema = z.record(z.string(), z.string());
+
 const storedScopeSchema = z.preprocess(
   (value) =>
     value !== null &&
@@ -68,17 +70,21 @@ const storedScopeSchema = z.preprocess(
 );
 
 const authStorePath = path.join(homedir(), ".tailorkit", "auth.json");
+
 const defaultLoginTimeoutMs = 30 * 60 * 1000;
+
 const pollIntervalMs = 2000;
 
 const storedHostAuthSchema = z.object({
   deployToken: z.string().min(1),
   scope: storedScopeSchema,
 });
+
 const approvedCliAuthResultSchema = z.object({
   deployToken: z.string().min(1),
   scope: namedScopeSchema,
 });
+
 const verifiedCliAuthResultSchema = z.object({ scope: namedScopeSchema });
 
 const authStoreSchema = z
@@ -88,7 +94,19 @@ const authStoreSchema = z
   .passthrough();
 
 const sleep = (milliseconds: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, milliseconds));
+  (() => {
+    const {
+      promise: pendingPromise,
+      resolve,
+      reject: rejectPending,
+    } = Promise.withResolvers<ReturnType<() => void>>();
+    try {
+      setTimeout(resolve, milliseconds);
+    } catch (error) {
+      rejectPending(error);
+    }
+    return pendingPromise;
+  })();
 
 const throwRpcError = (result: unknown) => {
   if (
@@ -165,7 +183,7 @@ export const createCliAuthApprovalUrl = (
   hostUrl: string,
   userCode: string
 ): string => {
-  const url = new URL(hostUrl);
+  const url: URL = new URL(hostUrl);
   const pathname = url.pathname.replace(/\/+$/u, "");
 
   url.pathname = `${pathname}/cli-auth/approve`;
@@ -229,73 +247,6 @@ export const getDeployToken = async (
   return store.hosts?.[hostUrl];
 };
 
-/** Verify a supplied JWT, or use the existing host approval flow for a CLI session. */
-export const runLogin = async (
-  options: LoginOptions,
-  onUserCode: (details: {
-    expiresAt: Date;
-    hostUrl: string;
-    userCode: string;
-  }) => void
-): Promise<{ hostUrl: string; scope: NamedScope }> => {
-  if (getAgentAuth()) {
-    return runWhoami(options);
-  }
-  const hostUrl = await resolveHostUrl(options);
-  const client = createTailorKitClient({ url: hostUrl });
-  const startResult = await client.cliAuth.start({});
-  throwRpcError(startResult);
-
-  const started = (
-    "data" in startResult ? startResult.data : startResult
-  ) as CliAuthStartResult;
-  const expiresAt = new Date(started.expiresAt);
-  const timeoutAt = Date.now() + (options.timeout ?? defaultLoginTimeoutMs);
-
-  onUserCode({ expiresAt, hostUrl, userCode: started.userCode });
-
-  while (Date.now() < timeoutAt && Date.now() < expiresAt.getTime()) {
-    await sleep(pollIntervalMs);
-    const pollResult = await client.cliAuth.poll({
-      deviceCode: started.deviceCode,
-    });
-    throwRpcError(pollResult);
-
-    const result = (
-      "data" in pollResult ? pollResult.data : pollResult
-    ) as CliAuthPollResult;
-
-    switch (result.status) {
-      case "pending": {
-        continue;
-      }
-      case "denied": {
-        throw new Error("CLI login was denied.");
-      }
-      case "expired": {
-        throw new Error("CLI login expired.");
-      }
-      case "approved": {
-        const approved = approvedCliAuthResultSchema.parse(result);
-        await saveDeployToken(hostUrl, {
-          deployToken: approved.deployToken,
-          scope: approved.scope,
-        });
-
-        return {
-          hostUrl,
-          scope: approved.scope,
-        };
-      }
-      default: {
-        throw new Error("Unexpected CLI login status.");
-      }
-    }
-  }
-
-  throw new Error("Timed out waiting for CLI login approval.");
-};
-
 /** Verify the selected credential at its authority and persist only normal CLI sessions. */
 export const runWhoami = async (
   options: AuthOptions
@@ -323,11 +274,12 @@ export const runWhoami = async (
       "code" in error &&
       error.code === "UNAUTHORIZED"
     ) {
-      if (getAgentAuth())
+      if (getAgentAuth()) {
         throw new Error(
           "Agent authorization expired or revoked. Start a new agent turn.",
           { cause: error }
         );
+      }
       throw new NotLoggedInError(hostUrl);
     }
     throw error;
@@ -344,6 +296,76 @@ export const runWhoami = async (
     hostUrl,
     scope: result.scope,
   };
+};
+
+/** Verify a supplied JWT, or use the existing host approval flow for a CLI session. */
+export const runLogin = async (
+  options: LoginOptions,
+  onUserCode: (details: {
+    expiresAt: Date;
+    hostUrl: string;
+    userCode: string;
+  }) => void
+): Promise<{ hostUrl: string; scope: NamedScope }> => {
+  if (getAgentAuth()) {
+    return runWhoami(options);
+  }
+  const hostUrl = await resolveHostUrl(options);
+  const client = createTailorKitClient({ url: hostUrl });
+  const startResult = await client.cliAuth.start({});
+  throwRpcError(startResult);
+
+  const started = (
+    "data" in startResult ? startResult.data : startResult
+  ) as CliAuthStartResult;
+  const expiresAt = new Date(started.expiresAt);
+  const timeoutAt = Date.now() + (options.timeout ?? defaultLoginTimeoutMs);
+
+  onUserCode({ expiresAt, hostUrl, userCode: started.userCode });
+
+  while (Date.now() < timeoutAt && Date.now() < expiresAt.getTime()) {
+    // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
+    await sleep(pollIntervalMs);
+    // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
+    const pollResult = await client.cliAuth.poll({
+      deviceCode: started.deviceCode,
+    });
+    throwRpcError(pollResult);
+
+    const result = (
+      "data" in pollResult ? pollResult.data : pollResult
+    ) as CliAuthPollResult;
+
+    switch (result.status) {
+      case "pending": {
+        continue;
+      }
+      case "denied": {
+        throw new Error("CLI login was denied.");
+      }
+      case "expired": {
+        throw new Error("CLI login expired.");
+      }
+      case "approved": {
+        const approved = approvedCliAuthResultSchema.parse(result);
+        // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
+        await saveDeployToken(hostUrl, {
+          deployToken: approved.deployToken,
+          scope: approved.scope,
+        });
+
+        return {
+          hostUrl,
+          scope: approved.scope,
+        };
+      }
+      default: {
+        throw new Error("Unexpected CLI login status.");
+      }
+    }
+  }
+
+  throw new Error("Timed out waiting for CLI login approval.");
 };
 
 /** Remove a stored host session; environment/file JWTs remain managed by their caller. */

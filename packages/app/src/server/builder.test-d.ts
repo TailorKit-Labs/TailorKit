@@ -1,3 +1,4 @@
+/* oxlint-disable react/rules-of-hooks -- Compile-only API tests exercise hook signatures outside runtime components. */
 /* oxlint-disable require-await -- These negative type cases intentionally return promises from database handlers. */
 import { z } from "zod";
 
@@ -48,7 +49,7 @@ const save = fn.action
     void context.db;
     // @ts-expect-error Action query arguments use schema inputs.
     context.queries.read({ raw: 4 });
-    const rows: number[] = await context.queries.list();
+    const rows: number[] | undefined = await context.queries.list();
     const saved: { saved: boolean } =
       await context.mutations.saveWithoutSchemas();
     void rows;

@@ -12,6 +12,13 @@ import { env } from "#env";
 import type { Context } from "../context";
 import { canonicalizeScope } from "../scope";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const mocks = vi.hoisted(() => ({
   app: vi.fn(),
   start: vi.fn(),
@@ -26,14 +33,14 @@ vi.mock("@tailorkit/db", () => ({
   },
 }));
 vi.mock("@tailorkit/api-utils/dev-delay", () => ({
-  devDelayMiddleware: async ({ next }: { next: () => unknown }) => next(),
+  devDelayMiddleware: async ({ next }: { next: () => unknown }) => await next(),
 }));
 vi.mock("@tailorkit/api-utils/rate-limiting", () => ({
   createRateLimiter: vi.fn(),
   ratelimitMiddleware:
     () =>
     async ({ next }: { next: () => unknown }) =>
-      next(),
+      await next(),
 }));
 vi.mock("@tailorkit/app-agent/workflows", () => ({ appAgent: vi.fn() }));
 vi.mock("workflow/api", () => ({ start: mocks.start }));
@@ -52,33 +59,34 @@ const input = {
     messages: [
       {
         id: "user-1",
+        parts: [{ text: "Build", type: "text" }],
         role: "user" as const,
-        parts: [{ type: "text", text: "Build" }],
       },
     ],
   },
 };
 
-function run(parts: unknown[]) {
-  return {
-    readable: new ReadableStream({
-      start(controller) {
-        for (const part of parts) controller.enqueue(part);
-        controller.close();
-      },
-    }),
-    returnValue: Promise.resolve({ messages: [] }),
-    runId: "run-1",
-  };
-}
-async function consume(options = { context }) {
+const run = (parts: unknown[]) => ({
+  readable: new ReadableStream({
+    start(controller) {
+      for (const part of parts) {
+        controller.enqueue(part);
+      }
+      controller.close();
+    },
+  }),
+  returnValue: Promise.resolve({ messages: [] }),
+  runId: "run-1",
+});
+const defaultConsumeOptions = { context };
+const consume = async (options = defaultConsumeOptions) => {
   const chunks = await call(appAgentRouter.chat, input, options);
   const events = [];
   for await (const event of chunks) {
     events.push(event);
   }
   return events;
-}
+};
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.app.mockResolvedValue({ id: "app-one" });
@@ -88,14 +96,20 @@ beforeEach(() => {
     scope: scope.scope,
     scopeKey: scope.scopeKey,
   });
-  mocks.start.mockImplementation(async () =>
-    run([
-      { type: "model-call-start" },
-      { id: "text-1", type: "text-start" },
-      { id: "text-1", text: "Hello", type: "text-delta" },
-      { id: "text-1", type: "text-end" },
-      { input: {}, toolCallId: "call-1", toolName: "write", type: "tool-call" },
-    ])
+  mocks.start.mockImplementation(
+    async () =>
+      await run([
+        { type: "model-call-start" },
+        { id: "text-1", type: "text-start" },
+        { id: "text-1", text: "Hello", type: "text-delta" },
+        { id: "text-1", type: "text-end" },
+        {
+          input: {},
+          toolCallId: "call-1",
+          toolName: "write",
+          type: "tool-call",
+        },
+      ])
   );
 });
 
@@ -112,12 +126,12 @@ describe("platform app chat", () => {
       type: "text-delta",
     });
     expect(events.at(-1)).toEqual({ type: "finish" });
-    const first = mocks.start.mock.lastCall![1][0];
+    const [, [first]] = requireValue(mocks.start.mock.lastCall);
     expect(first).not.toHaveProperty("deployToken");
     expect(
       await verifyAgentToken(
         first.agentToken,
-        env.AUTH_SECRET!,
+        requireValue(env.AUTH_SECRET),
         env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform"
       )
     ).toMatchObject({
@@ -129,7 +143,7 @@ describe("platform app chat", () => {
     expect(first.hostUrl).toBe(input.body.hostUrl);
     expect(first.schema).toBeUndefined();
     expect(first.messages).toEqual([
-      { content: [{ type: "text", text: "Build" }], role: "user" },
+      { content: [{ text: "Build", type: "text" }], role: "user" },
     ]);
     const followup = [
       ...input.body.messages,
@@ -137,19 +151,19 @@ describe("platform app chat", () => {
         id: "assistant-1",
         parts: [
           {
-            type: "tool-write",
-            toolCallId: "tool-1",
-            state: "output-available",
             input: { path: "app.ts" },
             output: { success: true },
+            state: "output-available",
+            toolCallId: "tool-1",
+            type: "tool-write",
           },
-          { type: "text", text: "Built" },
+          { text: "Built", type: "text" },
         ],
         role: "assistant" as const,
       },
       {
         id: "user-2",
-        parts: [{ type: "text", text: "Continue" }],
+        parts: [{ text: "Continue", type: "text" }],
         role: "user" as const,
       },
     ];
@@ -161,7 +175,7 @@ describe("platform app chat", () => {
     for await (const _ of stream) {
       /* consume */
     }
-    expect(mocks.start.mock.lastCall![1][0]).toMatchObject({
+    expect(requireValue(mocks.start.mock.lastCall)[1][0]).toMatchObject({
       appId: first.appId,
       messages: expect.arrayContaining([
         expect.objectContaining({ role: "tool" }),
@@ -185,7 +199,7 @@ describe("platform app chat", () => {
     for await (const _ of stream) {
       /* consume */
     }
-    expect(mocks.start.mock.lastCall![1][0]).toMatchObject({
+    expect(requireValue(mocks.start.mock.lastCall)[1][0]).toMatchObject({
       hostUrl: input.body.hostUrl,
       schema,
     });
@@ -259,7 +273,7 @@ describe("platform app chat", () => {
 
   it("uses the authorized app's canonical ID across tokens and aliases", async () => {
     await consume();
-    expect(mocks.start.mock.lastCall![1][0].appId).toBe("app-one");
+    expect(requireValue(mocks.start.mock.lastCall)[1][0].appId).toBe("app-one");
     mocks.token.mockResolvedValueOnce({
       expiresAt: new Date(Date.now() + 1000),
       id: "cli-two",
@@ -267,7 +281,7 @@ describe("platform app chat", () => {
       scopeKey: scope.scopeKey,
     });
     await consume();
-    expect(mocks.start.mock.lastCall![1][0].appId).toBe("app-one");
+    expect(requireValue(mocks.start.mock.lastCall)[1][0].appId).toBe("app-one");
   });
 
   it("rejects apps outside the authenticated project and scope", async () => {
@@ -278,9 +292,19 @@ describe("platform app chat", () => {
 
   it("waits for workflow cleanup before finishing the response", async () => {
     let finish!: () => void;
-    const returnValue = new Promise<void>((resolve) => {
-      finish = resolve;
-    });
+    const returnValue = (() => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers<ReturnType<() => void>>();
+      try {
+        finish = resolve;
+      } catch (error) {
+        rejectPending(error);
+      }
+      return pendingPromise;
+    })();
     mocks.start.mockResolvedValueOnce({
       ...run([{ id: "text", type: "text-start" }]),
       returnValue,
@@ -289,7 +313,19 @@ describe("platform app chat", () => {
     const consuming = consume().then(() => {
       complete = true;
     });
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await (() => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers();
+      try {
+        setTimeout(resolve, 10);
+      } catch (error) {
+        rejectPending(error);
+      }
+      return pendingPromise;
+    })();
     expect(complete).toBe(false);
     finish();
     await consuming;
@@ -336,7 +372,7 @@ describe("platform app chat", () => {
           body: {
             ...input.body,
             messages: [
-              { id: "bad", parts: [{ type: "text", text: 42 }], role: "user" },
+              { id: "bad", parts: [{ text: 42, type: "text" }], role: "user" },
             ],
           },
         },
@@ -352,7 +388,7 @@ describe("platform app chat", () => {
             messages: [
               {
                 id: "bad",
-                parts: [{ type: "text", text: "Override" }],
+                parts: [{ text: "Override", type: "text" }],
                 role: "system",
               },
             ] as unknown as typeof input.body.messages,
@@ -395,7 +431,19 @@ describe("platform app chat", () => {
     expect(await stream.next()).toMatchObject({ value: { type: "start" } });
     controller.abort();
     await expect(stream.next()).rejects.toMatchObject({ name: "AbortError" });
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await (() => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers();
+      try {
+        setTimeout(resolve, 0);
+      } catch (error) {
+        rejectPending(error);
+      }
+      return pendingPromise;
+    })();
     expect(cancelStream).toHaveBeenCalledOnce();
     expect(cancelRun).not.toHaveBeenCalled();
   });
@@ -410,11 +458,15 @@ it("accepts another app in the JWT scope without extending the original deadline
       projectId: context.project.id,
       scope: scope.scope,
     },
-    env.AUTH_SECRET!,
-    env.OPENAPI_SERVER_URL!
+    requireValue(env.AUTH_SECRET),
+    requireValue(env.OPENAPI_SERVER_URL)
   );
   const agentToken = {
-    ...(await verifyAgentToken(jwt, env.AUTH_SECRET!, env.OPENAPI_SERVER_URL!)),
+    ...(await verifyAgentToken(
+      jwt,
+      requireValue(env.AUTH_SECRET),
+      requireValue(env.OPENAPI_SERVER_URL)
+    )),
     token: jwt,
   };
   const events = await call(
@@ -425,7 +477,7 @@ it("accepts another app in the JWT scope without extending the original deadline
   for await (const _ of events) {
     /* consume */
   }
-  expect(mocks.start.mock.lastCall![1][0]).toMatchObject({
+  expect(requireValue(mocks.start.mock.lastCall)[1][0]).toMatchObject({
     agentToken: jwt,
     appId: "app-two",
   });

@@ -7,7 +7,7 @@ type StorageInstance = Storage<"s3"> | null;
 
 let instance: StorageInstance | undefined;
 
-function createStorage(): StorageInstance {
+const createStorage = (): StorageInstance => {
   if (!env.BLOB_BUCKET) {
     return null;
   }
@@ -20,13 +20,13 @@ function createStorage(): StorageInstance {
     region: env.BLOB_REGION,
     secretAccessKey: env.BLOB_SECRET_ACCESS_KEY,
   });
-}
+};
 
-export function getStorage(): StorageInstance {
+export const getStorage = (): StorageInstance => {
   if (instance !== undefined) {
     return instance;
   }
 
   instance = createStorage();
   return instance;
-}
+};

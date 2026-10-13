@@ -6,44 +6,36 @@ import { z } from "zod";
 import { env } from "#env";
 
 const viewerTokenLifetimeMs = 5 * 60 * 1000;
+
 const tokenSchema = z.tuple([
   z.coerce.number().int().positive(),
   z.string().min(1),
 ]);
 
-function getSigningSecret(): string {
+const getSigningSecret = (): string => {
   if (!env.AUTH_SECRET) {
     throw new Error("AUTH_SECRET is required for preview tokens.");
   }
   return env.AUTH_SECRET;
-}
+};
 
-function signature(sessionId: string, expiresAt: number): string {
-  return hashSecret(`${sessionId}.${expiresAt}`, getSigningSecret());
-}
+const signature = (sessionId: string, expiresAt: number): string =>
+  hashSecret(`${sessionId}.${expiresAt}`, getSigningSecret());
 
 /** A short-lived, bearer URL credential for an already scope-authorized preview asset request. */
-export function createPreviewViewerToken(
+export const createPreviewViewerToken = (
   sessionId: string,
   now = Date.now()
-): string {
+): string => {
   const expiresAt = now + viewerTokenLifetimeMs;
   return `${expiresAt}.${signature(sessionId, expiresAt)}`;
-}
+};
 
-export function verifyPreviewViewerToken(
+export const previewViewerTokenExpiresAt = (
   sessionId: string,
   token: string,
   now = Date.now()
-): boolean {
-  return previewViewerTokenExpiresAt(sessionId, token, now) !== null;
-}
-
-export function previewViewerTokenExpiresAt(
-  sessionId: string,
-  token: string,
-  now = Date.now()
-): number | null {
+): number | null => {
   const parsed = tokenSchema.safeParse(token.split("."));
   if (!parsed.success) {
     return null;
@@ -60,4 +52,10 @@ export function previewViewerTokenExpiresAt(
     timingSafeEqual(received, expected)
     ? expiresAt
     : null;
-}
+};
+
+export const verifyPreviewViewerToken = (
+  sessionId: string,
+  token: string,
+  now = Date.now()
+): boolean => previewViewerTokenExpiresAt(sessionId, token, now) !== null;

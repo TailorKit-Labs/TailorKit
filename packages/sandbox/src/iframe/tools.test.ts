@@ -2,13 +2,20 @@ import { expect, it, vi } from "vite-plus/test";
 
 import { createIframeTools } from "./tools";
 
+const require = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 it("correlates client calls and server credentials and rejects pending calls on destroy", async () => {
   const send = vi.fn();
   const tools = createIframeTools(send);
   const clientCall = tools.bridge.client("ui.open", { id: "customer" });
   const serverCall = tools.bridge.session("data.read");
-  const first = send.mock.calls[0]![0];
-  const second = send.mock.calls[1]![0];
+  const [first] = require(send.mock.calls[0]);
+  const [second] = require(send.mock.calls[1]);
   expect(first).toMatchObject({
     input: { id: "customer" },
     kind: "client",

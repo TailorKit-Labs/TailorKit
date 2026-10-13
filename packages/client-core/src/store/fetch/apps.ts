@@ -12,18 +12,22 @@ export interface TailorKitAppsSnapshot {
   isFetching: boolean;
 }
 
-export function createAppsStore(
+const suppliedSnapshotImplementation = (
+  apps: TailorKitApp[]
+): TailorKitAppsSnapshot => ({
+  apps,
+  error: null,
+  isFetching: false,
+  status: "ready",
+});
+
+export const createAppsStore = (
   client: TailorKitFetchClient,
   initialApps?: TailorKitApp[]
-) {
+) => {
   const query = client.apps();
   const provided = atom(initialApps);
-  const suppliedSnapshot = (apps: TailorKitApp[]): TailorKitAppsSnapshot => ({
-    apps,
-    error: null,
-    isFetching: false,
-    status: "ready",
-  });
+  const suppliedSnapshot = suppliedSnapshotImplementation;
   let supplied =
     initialApps === undefined ? null : suppliedSnapshot(initialApps);
   let last: FetchSnapshot<TailorKitApp[]> | undefined;
@@ -37,15 +41,17 @@ export function createAppsStore(
       return supplied ? Promise.resolve() : query.fetch(options);
     },
     getSnapshot(): TailorKitAppsSnapshot {
-      if (supplied) return supplied;
+      if (supplied) {
+        return supplied;
+      }
       const current = query.getSnapshot();
       if (current !== last) {
         const apps = current.data ?? empty;
         snapshot = {
           apps,
           error: current.error,
-          status: current.status,
           isFetching: current.isFetching,
+          status: current.status,
         };
         last = current;
       }
@@ -56,21 +62,28 @@ export function createAppsStore(
       return requested ? store.fetch({ force: true }) : Promise.resolve();
     },
     setProvidedApps(apps: TailorKitApp[] | undefined) {
-      if (provided.get() === apps) return;
+      if (provided.get() === apps) {
+        return;
+      }
       supplied = apps === undefined ? null : suppliedSnapshot(apps);
       provided.set(apps);
-      if (!supplied && requested && subscribers)
+      if (!supplied && requested && subscribers) {
         void store.fetch({ force: true });
+      }
     },
     subscribe(listener: () => void) {
       subscribers += 1;
       const stopProvided = provided.listen(listener);
       const stopQuery = query.subscribe(() => {
-        if (!supplied) listener();
+        if (!supplied) {
+          listener();
+        }
       });
       let active = true;
       return () => {
-        if (!active) return;
+        if (!active) {
+          return;
+        }
         active = false;
         stopProvided();
         stopQuery();
@@ -96,4 +109,4 @@ export function createAppsStore(
     ...store,
     state: createSnapshotStore(store.getSnapshot, store.subscribe),
   };
-}
+};

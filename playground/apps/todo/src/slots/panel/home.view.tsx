@@ -9,96 +9,104 @@ interface Todo {
   done: boolean;
 }
 
-const view = defineView({ component: TodoPanel, slot: "panel", view: "/" });
+const errorMessage = (err: unknown) =>
+  err instanceof Error ? err.message : "Todo request failed";
 
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Todo request failed";
-}
-
-function TodoPanel() {
+const TodoPanel = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [title, setTitle] = useState("");
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [err2, setErr2] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    void tools.todos
-      .list()
-      .then((result) => {
-        if (active) {
-          setTodos(result);
-        }
-      })
-      .catch((error: unknown) => {
-        if (active) setError(errorMessage(error));
-      })
-      .finally(() => {
+    void (async () => {
+      // oxlint-disable-next-line react/todo -- Oxlint’s React compiler cannot lower try/finally; preserve cleanup after failed requests.
+      try {
+        return await (async () => {
+          try {
+            return await (async () => {
+              const result = await tools.todos.list();
+              if (active) {
+                setTodos(result);
+              }
+            })();
+          } catch (error) {
+            if (active) {
+              setErr2(errorMessage(error));
+            }
+          }
+        })();
+      } finally {
         if (active) {
           setLoading(false);
         }
-      });
+      }
+    })();
 
     return () => {
       active = false;
     };
   }, []);
 
-  async function addTodo() {
+  const addTodo = async () => {
     const trimmedTitle = title.trim();
     if (!trimmedTitle || loading || pending) {
       return;
     }
 
     setPending(true);
-    setError(null);
+    setErr2(null);
     try {
       const todo = await tools.todos.add({ title: trimmedTitle });
       setTodos((current) => [...current, todo]);
       setTitle("");
     } catch (error) {
-      setError(errorMessage(error));
+      setErr2(errorMessage(error));
+      // oxlint-disable-next-line react/todo -- Oxlint’s React compiler does not support try/finally; cleanup must also run after failures.
     } finally {
       setPending(false);
     }
-  }
+  };
 
-  async function toggleTodo(todo: Todo) {
+  const toggleTodo = async (todo: Todo) => {
     if (pending) {
       return;
     }
 
     setPending(true);
-    setError(null);
+    setErr2(null);
     try {
       const updated = await tools.todos.toggle({ id: todo.id });
       setTodos((current) =>
         current.map((item) => (item.id === updated.id ? updated : item))
       );
     } catch (error) {
-      setError(errorMessage(error));
+      setErr2(errorMessage(error));
+      // oxlint-disable-next-line react/todo -- Oxlint’s React compiler does not support try/finally; cleanup must also run after failures.
     } finally {
       setPending(false);
     }
-  }
+  };
 
-  async function removeTodo(todo: Todo) {
+  const removeTodo = async (todo: Todo) => {
     if (pending) {
       return;
     }
 
     setPending(true);
-    setError(null);
+    setErr2(null);
     try {
       await tools.todos.remove({ id: todo.id });
       setTodos((current) => current.filter((item) => item.id !== todo.id));
     } catch (error) {
-      setError(errorMessage(error));
+      setErr2(errorMessage(error));
+      // oxlint-disable-next-line react/todo -- Oxlint’s React compiler does not support try/finally; cleanup must also run after failures.
     } finally {
       setPending(false);
     }
-  }
+  };
 
   return (
     <Box padding="md" width="full">
@@ -118,13 +126,13 @@ function TodoPanel() {
           />
           <Button
             disabled={loading || !title.trim() || pending}
-            onClick={() => void addTodo()}
+            onClick={() => addTodo()}
           >
             Add
           </Button>
         </Flex>
 
-        {error ? <Box textColor="muted">{error}</Box> : null}
+        {err2 ? <Box textColor="muted">{err2}</Box> : null}
         {loading ? <Box textColor="muted">Loading todos…</Box> : null}
         {!loading && todos.length === 0 ? (
           <Box textColor="muted">No todos yet.</Box>
@@ -136,14 +144,14 @@ function TodoPanel() {
               <Box grow="1">{todo.done ? `✓ ${todo.title}` : todo.title}</Box>
               <Button
                 disabled={pending}
-                onClick={() => void toggleTodo(todo)}
+                onClick={() => toggleTodo(todo)}
                 variant="secondary"
               >
                 {todo.done ? "Reopen" : "Done"}
               </Button>
               <Button
                 disabled={pending}
-                onClick={() => void removeTodo(todo)}
+                onClick={() => removeTodo(todo)}
                 variant="ghost"
               >
                 Remove
@@ -154,6 +162,8 @@ function TodoPanel() {
       </Flex>
     </Box>
   );
-}
+};
+
+const view = defineView({ component: TodoPanel, slot: "panel", view: "/" });
 
 export default view;

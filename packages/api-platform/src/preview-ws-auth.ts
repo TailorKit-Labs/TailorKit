@@ -12,11 +12,11 @@ import {
 import { previewViewerTokenExpiresAt } from "./preview-token";
 import type { PreviewWebSocketContext } from "./preview-ws";
 
-export async function authorizePreviewSocket(
+export const authorizePreviewSocket = async (
   sessionId: string,
   token: string,
   role: "uploader" | "viewer"
-): Promise<PreviewWebSocketContext | null> {
+): Promise<PreviewWebSocketContext | null> => {
   const kv = getKV();
   if (!kv || !env.AUTH_SECRET) {
     return null;
@@ -45,4 +45,4 @@ export async function authorizePreviewSocket(
   return session.tunnelTokenHash === hashSecret(token, env.AUTH_SECRET)
     ? { role, sessionId }
     : null;
-}
+};

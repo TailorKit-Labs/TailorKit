@@ -16,13 +16,11 @@ import {
 } from "./transport";
 import type { Installation } from "./transport";
 
-function installation(): Installation {
-  return {
-    action: vi.fn(() => Effect.succeed("action")),
-    mutate: vi.fn((input) => Effect.succeed(input.requestId)),
-    query: vi.fn((input) => Effect.succeed(input.name)),
-  };
-}
+const installation = (): Installation => ({
+  action: vi.fn(() => Effect.succeed("action")),
+  mutate: vi.fn((input) => Effect.succeed(input.requestId)),
+  query: vi.fn((input) => Effect.succeed(input.name)),
+});
 
 it("validates calls before dispatching installation operations", async () => {
   const operations = installation();
@@ -78,9 +76,19 @@ it("preserves procedure failures for Effect client recovery", async () => {
 it("propagates cancellation through an Effect handler to the action", async () => {
   const controller = new AbortController();
   let started!: () => void;
-  const ready = new Promise<void>((resolve) => {
-    started = resolve;
-  });
+  const ready = (() => {
+    const {
+      promise: pendingPromise,
+      resolve,
+      reject: rejectPending,
+    } = Promise.withResolvers<ReturnType<() => void>>();
+    try {
+      started = resolve;
+    } catch (error) {
+      rejectPending(error);
+    }
+    return pendingPromise;
+  })();
   let actionSignal: AbortSignal | undefined;
   const finalized = vi.fn();
   const operations = installation();
@@ -93,11 +101,21 @@ it("propagates cancellation through an Effect handler to the action", async () =
     return Effect.tryPromise({
       catch: (error) => error,
       try: () =>
-        new Promise((_resolve, reject) =>
-          signal.addEventListener("abort", () => reject(signal.reason), {
-            once: true,
-          })
-        ),
+        (() => {
+          const {
+            promise: pendingPromise,
+            resolve: _resolve,
+            reject,
+          } = Promise.withResolvers();
+          try {
+            signal.addEventListener("abort", () => reject(signal.reason), {
+              once: true,
+            });
+          } catch (error) {
+            reject(error);
+          }
+          return pendingPromise;
+        })(),
     }).pipe(Effect.ensuring(Effect.sync(finalized)));
   };
   const client = createRouterClient(
@@ -127,8 +145,8 @@ it("routes HTTP calls with shared client types, CORS and typed error statuses", 
     new RPCLink({
       fetch: async (url, init) => {
         const result = await handler.handle(new Request(url, init), {
-          prefix: "/rpc",
           context: { installation: operations },
+          prefix: "/rpc",
         });
         expect(result.matched).toBe(true);
         if (!result.response) {

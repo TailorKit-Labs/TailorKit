@@ -5,30 +5,31 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { iframeReadyType, sandboxMessageType } from "../bridge";
 import { createIframeUiHost } from "./index.js";
 
-function getChannel(iframe: HTMLIFrameElement): string {
-  const match = /data-tailorkit-channel="([a-f0-9]+)"/u.exec(iframe.srcdoc);
+const getChannel = (iframe: HTMLIFrameElement): string => {
+  const match = /data-tailorkit-channel="(?<channel>[a-f0-9]+)"/u.exec(
+    iframe.srcdoc
+  );
   if (!match?.[1]) {
     throw new Error("Unable to find iframe channel.");
   }
   return match[1];
-}
+};
 
-function emitFromIframe(iframe: HTMLIFrameElement, data: unknown): void {
+const emitFromIframe = (iframe: HTMLIFrameElement, data: unknown): void => {
   window.dispatchEvent(
     new MessageEvent("message", { data, source: iframe.contentWindow })
   );
-}
+};
 
-function getContentWindow(iframe: HTMLIFrameElement): Window {
+const getContentWindow = (iframe: HTMLIFrameElement): Window => {
   if (!iframe.contentWindow) {
     throw new Error("Expected iframe content window.");
   }
   return iframe.contentWindow;
-}
+};
 
-function createFetch(source = "// bundled app client") {
-  return vi.fn<typeof fetch>(() => Promise.resolve(new Response(source)));
-}
+const createFetch = (source = "// bundled app client") =>
+  vi.fn<typeof fetch>(() => Promise.resolve(new Response(source)));
 
 describe("createIframeUiHost", () => {
   afterEach(() => {
@@ -271,6 +272,7 @@ describe("backend JWT bridge", () => {
   it("keeps client-only apps working when no backend session exists", async () => {
     const host = createIframeUiHost("https://assets.test/app.js", {
       fetch: createFetch(),
+      // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
       getBackendSession: async () => {
         throw new Error("No backend");
       },
@@ -291,9 +293,19 @@ it.each(["backend-first", "tools-first"])(
       url: "https://runtime.test/rpc",
     };
     let complete!: () => void;
-    const pending = new Promise<void>((resolve) => {
-      complete = resolve;
-    });
+    const pending = (() => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers<ReturnType<() => void>>();
+      try {
+        complete = resolve;
+      } catch (error) {
+        rejectPending(error);
+      }
+      return pendingPromise;
+    })();
     const client = vi.fn(async () => {
       await pending;
       return "output";
@@ -305,7 +317,7 @@ it.each(["backend-first", "tools-first"])(
     const host = createIframeUiHost("https://assets.test/app.js", {
       fetch: createFetch(),
       getBackendSession,
-      toolBridge: { client, session: async () => session },
+      toolBridge: { client, session: async () => await session },
     });
     host.mount();
     const postMessage = vi.spyOn(getContentWindow(host.iframe), "postMessage");
@@ -316,7 +328,7 @@ it.each(["backend-first", "tools-first"])(
         payload: {
           data:
             type === "toolRequest"
-              ? { id, kind: "client", path: "ui.open", input: "input" }
+              ? { id, input: "input", kind: "client", path: "ui.open" }
               : { id, refresh: false },
           type,
         },
@@ -331,7 +343,7 @@ it.each(["backend-first", "tools-first"])(
         for (
           let index = 0;
           index < (type === "toolRequest" ? 32 : 4);
-          index++
+          index += 1
         ) {
           send(type, String(index));
         }

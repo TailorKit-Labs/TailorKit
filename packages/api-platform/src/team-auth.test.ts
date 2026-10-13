@@ -70,8 +70,8 @@ describe("Better Auth public team identity", () => {
     const response = await auth.handler(
       new Request("http://localhost:3000/api/auth/organization/update", {
         body: JSON.stringify({
-          organizationId: created.id,
           data: { name: "HTTP rename", publicId: "attacker00" },
+          organizationId: created.id,
         }),
         headers: {
           ...Object.fromEntries(headers),

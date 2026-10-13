@@ -2,25 +2,22 @@
 // active-section attributes so scrolling and anchor navigation stay native.
 (() => {
   const namespace = "http://www.w3.org/2000/svg";
+
   const indent = 12;
+
   let currentList;
+
   let frame;
-  const resizeObserver = new ResizeObserver(schedule);
 
-  function schedule() {
-    if (frame) {
-      return;
-    }
-    frame = requestAnimationFrame(draw);
-  }
-
-  function draw() {
+  const draw = () => {
     frame = undefined;
     const list = document.querySelector("#table-of-contents .toc");
     if (list !== currentList) {
+      // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
       resizeObserver.disconnect();
       currentList = list;
       if (list) {
+        // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
         resizeObserver.observe(list);
       }
     }
@@ -52,7 +49,7 @@
       // otherwise its bottom extends past the children and the path doubles back.
       const rect = item.querySelector(":scope > a").getBoundingClientRect();
       return {
-        active: item.hasAttribute("data-active-deepest"),
+        active: Object.hasOwn(item.dataset, "activeDeepest"),
         bottom: rect.bottom - bounds.top,
         top: rect.top - bounds.top,
         x: 1 + Math.max(0, Number(item.dataset.depth) || 0) * indent,
@@ -68,7 +65,7 @@
     let activeTop = 0;
     let activeBottom = bounds.height;
     let track = `M ${rows[0].x} ${rows[0].top}`;
-    rows.forEach((row, index) => {
+    for (const [index, row] of rows.entries()) {
       const previous = rows[index - 1];
       // Fit a 45-degree join between heading rows, including wrapped titles.
       const join = previous
@@ -83,7 +80,7 @@
         activeTop = row.top + join;
         activeBottom = bounds.height - row.bottom;
       }
-    });
+    }
     // Keep both paths mounted. CSS moves a clipping window along a bright
     // copy of the full rail, including its angled joins.
     for (const className of [
@@ -104,7 +101,16 @@
     if (!existing) {
       list.append(svg);
     }
-  }
+  };
+
+  const schedule = () => {
+    if (frame) {
+      return;
+    }
+    frame = requestAnimationFrame(draw);
+  };
+
+  const resizeObserver = new ResizeObserver(schedule);
 
   new MutationObserver((records) => {
     if (
@@ -113,12 +119,9 @@
         if (record.type === "attributes") {
           return record.target.matches("#table-of-contents .toc-item");
         }
-        return [...record.addedNodes]
-          .concat([...record.removedNodes])
-          .some(
-            (node) =>
-              node.nodeType === 1 && !node.matches(".tailorkit-toc-rail")
-          );
+        return [...record.addedNodes, ...record.removedNodes].some(
+          (node) => node.nodeType === 1 && !node.matches(".tailorkit-toc-rail")
+        );
       })
     ) {
       schedule();
@@ -129,7 +132,13 @@
     childList: true,
     subtree: true,
   });
+
   window.addEventListener("resize", schedule, { passive: true });
-  document.fonts?.ready.then(schedule);
+
+  void (async () => {
+    await document.fonts?.ready;
+    schedule();
+  })();
+
   schedule();
 })();

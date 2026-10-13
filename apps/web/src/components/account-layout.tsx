@@ -25,7 +25,7 @@ import { SidebarBrand } from "#components/sidebar/sidebar-brand";
 import { SidebarUserMenu } from "#components/sidebar/sidebar-user-menu";
 import { orpc } from "#lib/orpc";
 
-export function AccountSidebar() {
+export const AccountSidebar = () => {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
@@ -102,20 +102,18 @@ export function AccountSidebar() {
       </SidebarFooter>
     </Sidebar>
   );
-}
+};
 
-export function AccountLayout({ children }: { children?: ReactNode }) {
-  return (
-    <HeaderActionsProvider>
-      <SidebarProvider>
-        <AccountSidebar />
-        <SidebarInset>
-          <SidebarLayoutHeader />
-          <main className="flex flex-1 flex-col gap-4 p-4">
-            {children ?? <Outlet />}
-          </main>
-        </SidebarInset>
-      </SidebarProvider>
-    </HeaderActionsProvider>
-  );
-}
+export const AccountLayout = ({ children }: { children?: ReactNode }) => (
+  <HeaderActionsProvider>
+    <SidebarProvider>
+      <AccountSidebar />
+      <SidebarInset>
+        <SidebarLayoutHeader />
+        <main className="flex flex-1 flex-col gap-4 p-4">
+          {children ?? <Outlet />}
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
+  </HeaderActionsProvider>
+);

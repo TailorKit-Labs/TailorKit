@@ -10,6 +10,13 @@ import { z } from "zod";
 
 import { renderGeneratedTypes } from "./types";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 type JsonSchema = NonNullable<
   NonNullable<
     Parameters<typeof renderGeneratedTypes>[0]["views"]
@@ -186,11 +193,11 @@ const cases: {
   },
   {
     expected:
-      '{ kind: "text"; text: string; } | { kind: "count"; count: number; }',
+      '{ kind: "text"; text: string; } | { count: number; kind: "count"; }',
     name: "discriminated union",
     schema: z.discriminatedUnion("kind", [
       z.object({ kind: z.literal("text"), text: z.string() }),
-      z.object({ kind: z.literal("count"), count: z.number() }),
+      z.object({ count: z.number(), kind: z.literal("count") }),
     ]),
   },
   {
@@ -379,19 +386,20 @@ const renderDeclaration = (context: JsonSchema): string => {
   );
 };
 
-const declarations = cases.map(({ schema }) =>
-  renderDeclaration(
-    z
-      .object({ value: schema })
-      ["~standard"].jsonSchema.output({ target: "draft-2020-12" }) as JsonSchema
-  )
-);
+const declarations = cases.map(({ schema }) => {
+  const wrapped = z.object({ value: schema });
+  return renderDeclaration(
+    wrapped["~standard"].jsonSchema.output({
+      target: "draft-2020-12",
+    }) as JsonSchema
+  );
+});
 
 describe("JSON Schema type generation", () => {
   it.each(cases.map((testCase, index) => ({ ...testCase, index })))(
     "generates $name",
     ({ expected, optional, index }) => {
-      expect(normalize(declarations[index]!)).toBe(
+      expect(normalize(requireValue(declarations[index]))).toBe(
         expected === "never"
           ? 'export interface ViewPropsByPath { "/": { context: never; }; }'
           : `export interface ViewPropsByPath { "/": { context: { value${optional ? "?" : ""}: ${expected}; }; }; }`
@@ -517,7 +525,10 @@ describe("JSON Schema type generation", () => {
       "type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;",
       "type Assert<T extends true> = T;",
       ...cases.flatMap(({ expected, optional }, index) => [
-        declarations[index]!.replace("ViewPropsByPath", `Case${index}`),
+        requireValue(declarations[index]).replace(
+          "ViewPropsByPath",
+          `Case${index}`
+        ),
         `type Check${index} = Assert<Equal<Case${index}["/"]["context"]["value"], ${expected}${optional ? " | undefined" : ""}>>;`,
       ]),
       ...tupleReviewCases.flatMap(({ schema, expected }, index) => [
@@ -553,9 +564,9 @@ describe("JSON Schema type generation", () => {
           files: ["generated.ts"],
         })
       );
-      const require = createRequire(import.meta.url);
+      const requireValueValue = createRequire(import.meta.url);
       const compiler = path.join(
-        path.dirname(require.resolve("typescript/package.json")),
+        path.dirname(requireValueValue.resolve("typescript/package.json")),
         "bin/tsc"
       );
       const result = await promisify(execFile)(process.execPath, [

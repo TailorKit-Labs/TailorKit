@@ -6,6 +6,6 @@ export const localPlaygroundApps: TailorKitApp[] = [
     description: "A small team checklist for the current workspace.",
     id: "playground-todo",
     name: "Todo",
-    views: [{ slot: "panel", path: "/" }],
+    views: [{ path: "/", slot: "panel" }],
   },
 ];

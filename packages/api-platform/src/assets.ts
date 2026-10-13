@@ -11,7 +11,7 @@ import type { AssetIdentity } from "@tailorkit/asset-delivery";
 import type { Storage } from "@tailorkit/storage";
 import { Effect } from "effect";
 
-function storageFailure(error: unknown) {
+const storageFailure = (error: unknown) => {
   if (error && typeof error === "object") {
     const value = error as {
       name?: string;
@@ -26,14 +26,14 @@ function storageFailure(error: unknown) {
     }
   }
   return new AssetDeliveryError(503);
-}
+};
 
-function loadAsset(
+const loadAsset = (
   request: Request,
   identity: AssetIdentity,
   storage: Storage
-) {
-  return Effect.gen(function* () {
+) =>
+  Effect.gen(function* loadAssetValue() {
     const { key } = identity;
     const object = yield* Effect.tryPromise({
       catch: storageFailure,
@@ -58,7 +58,7 @@ function loadAsset(
     }
     const download = yield* Effect.tryPromise({
       catch: storageFailure,
-      try: () => storage.createDownloadUrl({ key, expiresInSeconds: 60 }),
+      try: () => storage.createDownloadUrl({ expiresInSeconds: 60, key }),
     });
     const upstream = yield* Effect.tryPromise({
       catch: storageFailure,
@@ -75,12 +75,11 @@ function loadAsset(
         : upstream.body;
     return new Response(body, { headers });
   });
-}
 
-export function handleAssetRequest(
+export const handleAssetRequest = (
   request: Request,
   storage: Storage | null
-): Promise<Response> {
+): Promise<Response> => {
   const program = Effect.gen(function* program() {
     const identity = yield* nodeAssetRequest(request);
     if (!storage) {
@@ -92,4 +91,4 @@ export function handleAssetRequest(
     });
   });
   return Effect.runPromise(assetResponse(program));
-}
+};

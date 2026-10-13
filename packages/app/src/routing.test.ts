@@ -14,21 +14,21 @@ const { defineView } = await import("./views");
 it("keeps app and slot shells and common layouts mounted, and isolates mounted slots", async () => {
   const mounts = vi.fn();
   const cleanup = vi.fn();
-  function Root({ children }: ShellProps) {
+  const Root = ({ children }: ShellProps) => {
     useLayoutEffect(() => {
       mounts("root");
       return () => cleanup("root");
     }, []);
     return h("section", {}, children);
-  }
-  function SlotRoot() {
+  };
+  const SlotRoot = () => {
     useLayoutEffect(() => {
       mounts("slot");
       return () => cleanup("slot");
     }, []);
     return h("main", {}, h(Route, {}));
-  }
-  function Layout() {
+  };
+  const Layout = () => {
     const [count, setCount] = useState(0);
     useLayoutEffect(() => {
       mounts("layout");
@@ -40,7 +40,7 @@ it("keeps app and slot shells and common layouts mounted, and isolates mounted s
       h("button", { onClick: () => setCount(count + 1) }, `count:${count}`),
       h(Route, {})
     );
-  }
+  };
   const first = defineView({
     component: () => "first",
     slot: "panel",
@@ -53,7 +53,7 @@ it("keeps app and slot shells and common layouts mounted, and isolates mounted s
   });
   const client = createFileClient({
     layouts: [
-      { slot: "panel", path: "/", filename: "layout.tsx", definition: Layout },
+      { definition: Layout, filename: "layout.tsx", path: "/", slot: "panel" },
     ],
     root: {
       definition: defineRoute({ shellComponent: Root }),
@@ -61,14 +61,14 @@ it("keeps app and slot shells and common layouts mounted, and isolates mounted s
     },
     roots: [
       {
-        slot: "panel",
-        filename: "src/slots/panel/root.tsx",
         definition: defineRoute({ shellComponent: SlotRoot }),
+        filename: "src/slots/panel/root.tsx",
+        slot: "panel",
       },
     ],
     views: [
-      { slot: "panel", filename: "home.view.tsx", definition: first },
-      { slot: "panel", filename: "users.view.tsx", definition: users },
+      { definition: first, filename: "home.view.tsx", slot: "panel" },
+      { definition: users, filename: "users.view.tsx", slot: "panel" },
     ],
   });
   const container = document.createElement("div");
@@ -124,32 +124,32 @@ it("matches layout prefixes at route boundaries and uses explicit view overrides
   const client = createFileClient({
     layouts: [
       {
-        slot: "panel",
-        path: "/users",
-        filename: "users.layout.tsx",
         definition: ({ children }: ShellProps) =>
           h("div", {}, "users:", children),
+        filename: "users.layout.tsx",
+        path: "/users",
+        slot: "panel",
       },
       {
-        slot: "panel",
-        path: "/",
-        filename: "layout.tsx",
         definition: ({ children }: ShellProps) =>
           h("div", {}, "all:", children),
+        filename: "layout.tsx",
+        path: "/",
+        slot: "panel",
       },
       {
-        slot: "panel",
-        path: "/user",
-        filename: "user.layout.tsx",
         definition: () => "wrong",
+        filename: "user.layout.tsx",
+        path: "/user",
+        slot: "panel",
       },
     ],
     roots: [],
     views: [
       {
-        slot: "panel",
-        filename: "descriptive-name.view.tsx",
         definition: view,
+        filename: "descriptive-name.view.tsx",
+        slot: "panel",
       },
     ],
   });

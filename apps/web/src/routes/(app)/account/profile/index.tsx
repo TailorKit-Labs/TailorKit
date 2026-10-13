@@ -18,11 +18,7 @@ import { PageLayout } from "#components/page-layout";
 import { authClient } from "#lib/auth-client";
 import { orpc } from "#lib/orpc.ts";
 
-export const Route = createFileRoute("/(app)/account/profile/")({
-  component: ProfilePage,
-});
-
-function ProfilePage() {
+const ProfilePage = () => {
   const { data: session } = useQuery(orpc.user.getSession.queryOptions());
 
   const form = useAppForm({
@@ -98,4 +94,8 @@ function ProfilePage() {
       </CardFrame>
     </PageLayout>
   );
-}
+};
+
+export const Route = createFileRoute("/(app)/account/profile/")({
+  component: ProfilePage,
+});

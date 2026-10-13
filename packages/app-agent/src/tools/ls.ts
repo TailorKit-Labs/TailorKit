@@ -19,9 +19,9 @@ export const lsTool = tool({
     const sandbox = await toolSandbox(options);
     const { abortSignal } = options;
     return sandbox.run({
+      abortSignal,
       command: `ls -la -- ${quote(resolvePath(path))}`,
       workingDirectory: appDirectory,
-      abortSignal,
     });
   },
   inputSchema: z.object({

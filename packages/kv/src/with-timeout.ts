@@ -1,9 +1,9 @@
 const DEFAULT_GET_TIMEOUT_MS = 5000;
 
-export function withTimeout<T>(
+export const withTimeout = <T>(
   promise: Promise<T>,
   timeout: number | undefined = DEFAULT_GET_TIMEOUT_MS
-): Promise<T> {
+): Promise<T> => {
   if (
     !Number.isSafeInteger(timeout) ||
     timeout <= 0 ||
@@ -15,16 +15,26 @@ export function withTimeout<T>(
   }
 
   let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timer = setTimeout(
-      () => reject(new Error(`KV get timed out after ${timeout}ms.`)),
-      timeout
-    );
-  });
+  const timeoutPromise = (() => {
+    const {
+      promise: pendingPromise,
+      resolve: _,
+      reject,
+    } = Promise.withResolvers<never>();
+    try {
+      timer = setTimeout(
+        () => reject(new Error(`KV get timed out after ${timeout}ms.`)),
+        timeout
+      );
+    } catch (error) {
+      reject(error);
+    }
+    return pendingPromise;
+  })();
 
   return Promise.race([promise, timeoutPromise]).finally(() => {
     if (timer) {
       clearTimeout(timer);
     }
   });
-}
+};

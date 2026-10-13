@@ -6,33 +6,31 @@ import {
 } from "./preview-presence.js";
 import type { KV } from "./types.js";
 
-function createKV(values = new Map<string, string>()): KV {
-  return {
-    claimUpload: vi.fn(),
-    delete: vi.fn((key: string) => {
-      values.delete(key);
-      return Promise.resolve();
-    }),
-    engine: {} as never,
-    get: vi.fn((key: string) => Promise.resolve(values.get(key) ?? null)),
-    getAndDelete: vi.fn((key: string) => {
-      const value = values.get(key) ?? null;
-      values.delete(key);
-      return Promise.resolve(value);
-    }),
-    increment: vi.fn(),
-    keepPreviewSessionIfDeveloperPresent: vi.fn(),
-    promoteIfOwnerAndNewer: vi.fn(),
-    publish: vi.fn(),
-    set: vi.fn((key: string, value: string) => {
-      values.set(key, value);
-      return Promise.resolve();
-    }),
-    setPreviewPresenceIfActive: vi.fn(),
-    subscribe: vi.fn(),
-    type: "redis",
-  };
-}
+const createKV = (values = new Map<string, string>()): KV => ({
+  claimUpload: vi.fn(),
+  delete: vi.fn((key: string) => {
+    values.delete(key);
+    return Promise.resolve();
+  }),
+  engine: {} as never,
+  get: vi.fn((key: string) => Promise.resolve(values.get(key) ?? null)),
+  getAndDelete: vi.fn((key: string) => {
+    const value = values.get(key) ?? null;
+    values.delete(key);
+    return Promise.resolve(value);
+  }),
+  increment: vi.fn(),
+  keepPreviewSessionIfDeveloperPresent: vi.fn(),
+  promoteIfOwnerAndNewer: vi.fn(),
+  publish: vi.fn(),
+  set: vi.fn((key: string, value: string) => {
+    values.set(key, value);
+    return Promise.resolve();
+  }),
+  setPreviewPresenceIfActive: vi.fn(),
+  subscribe: vi.fn(),
+  type: "redis",
+});
 describe("preview presence", () => {
   it("uses a renewing TTL lease rather than a durable connection record", async () => {
     const kv = createKV();

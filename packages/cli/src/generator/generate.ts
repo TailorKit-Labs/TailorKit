@@ -25,6 +25,13 @@ import {
 import { generateTypes } from "./types";
 import type { TailorKitSchemaFile } from "./types";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 export interface GenerateAppOptions {
   targetDirectory: string;
   force: boolean;
@@ -56,7 +63,7 @@ const isFilenameSegment = (segment: string) =>
   segment !== ".." &&
   !invalidFilenameCharacters.test(segment);
 
-function getViewModulePath(slotName: string, viewPath: string) {
+const getViewModulePath = (slotName: string, viewPath: string) => {
   const viewSegments =
     viewPath === "/" ? ["home"] : viewPath.slice(1).split("/");
   const routeName = viewSegments.join(".");
@@ -71,7 +78,7 @@ function getViewModulePath(slotName: string, viewPath: string) {
     );
   }
   return ["slots", slotName, routeName].join("/");
-}
+};
 
 const renderTemplate = (
   template: string,
@@ -79,7 +86,10 @@ const renderTemplate = (
 ): Promise<string> => engine.parseAndRender(template, data);
 
 const ensureDirectory = (directory: string): Promise<void> =>
-  mkdir(directory, { recursive: true }).then(() => {});
+  (async () => {
+    void (await mkdir(directory, { recursive: true }));
+    /* Intentionally no action is needed. */
+  })();
 
 const writeTemplateFile = async (
   filepath: string,
@@ -107,9 +117,9 @@ export const generateApp = async (
     useWorkspaceDependencies,
   } = options;
 
-  const slots = Object.keys(schema.slots ?? {}).sort();
+  const slots = Object.keys(schema.slots ?? {}).toSorted();
   const viewPath = Object.keys(schema.views ?? {})
-    .sort()
+    .toSorted()
     .find((view) =>
       slots.some((slot) => schema.slots?.[slot]?.views.includes(view))
     );
@@ -118,9 +128,9 @@ export const generateApp = async (
       "The host schema has no views supported by a slot. Add a view and slot before running tailorkit init."
     );
   }
-  const slotName = slots.find((slot) =>
-    schema.slots?.[slot]?.views.includes(viewPath)
-  )!;
+  const slotName = requireValue(
+    slots.find((slot) => schema.slots?.[slot]?.views.includes(viewPath))
+  );
   const viewModulePath = getViewModulePath(slotName, viewPath);
   const viewFile = path.join("src", `${viewModulePath}.view.tsx`);
   const box = schema.components?.Box;

@@ -5,18 +5,19 @@ import type { ActiveView } from "@tailorkit/core/views";
 import type { TailorKitApp } from "../types";
 
 /** Select the supported view without reading or composing its context. */
-export function selectSlotView(
+export const selectSlotView = (
   views: NonNullable<TailorKitApp["views"]>,
   slot: string,
   activePath: string,
   schema: Pick<TailorKitContract, "slots" | "views">
-) {
+) => {
   const supported = schema.slots[slot]?.views ?? [];
   const path = getViewHierarchy(activePath).find(
-    (path) =>
-      supported.includes(path) &&
+    (pathValue) =>
+      supported.includes(pathValue) &&
       views.some(
-        (view) => view.slot === slot && view.path === path && !view.disabled
+        (view) =>
+          view.slot === slot && view.path === pathValue && !view.disabled
       )
   );
   return (
@@ -24,15 +25,15 @@ export function selectSlotView(
       (view) => view.slot === slot && view.path === path && !view.disabled
     ) ?? null
   );
-}
+};
 
 /** Match the same path and compose the same ancestor context as the sandbox renderer. */
-export function resolveSlotView(
+export const resolveSlotView = (
   views: NonNullable<TailorKitApp["views"]>,
   slot: string,
   activeView: ActiveView,
   schema: Pick<TailorKitContract, "slots" | "views">
-) {
+) => {
   const view = selectSlotView(views, slot, activeView.view, schema);
   if (!view) {
     return null;
@@ -44,4 +45,4 @@ export function resolveSlotView(
     }),
     instances: Boolean(view.instances),
   };
-}
+};

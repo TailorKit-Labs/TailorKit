@@ -62,9 +62,11 @@ describe("slot view contracts", () => {
     expect(() =>
       createTailorKitSchema({
         components: {},
-        views: { "/": z.object({}) },
+
         // @ts-expect-error Exercise runtime validation for JavaScript hosts.
         slots: { page: { multiple: "true", views: ["/"] } },
+
+        views: { "/": z.object({}) },
       })
     ).toThrow("multiple must be a boolean");
   });
@@ -73,9 +75,11 @@ describe("slot view contracts", () => {
     expect(() =>
       createTailorKitSchema({
         components: {},
-        views: { "/": z.object({}) },
+
         // @ts-expect-error Exercise runtime validation for JavaScript hosts.
         slots: { panel: { views: ["/missing"] } },
+
+        views: { "/": z.object({}) },
       })
     ).toThrow('references undeclared view "/missing"');
   });

@@ -7,6 +7,13 @@ import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { createClient } from "../index";
 import type { TailorKitApp } from "../index";
 
+const requireValue = <T,>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const schema = {
   "~standard": {
     jsonSchema: { input: () => ({}), output: () => ({}) },
@@ -27,15 +34,15 @@ const contract = defineContract({
   views: { "/": schema, "/customers": schema, "/customers/detail": schema },
 });
 const client = createClient({
-  contract,
   baseUrl: "https://host.test/api/tailorkit/",
+  contract,
 });
 const app: TailorKitApp = {
   currentDeployment: { id: "deployment_1" },
   id: "app_1",
   views: [
-    { slot: "page", path: "/", instances: true },
-    { slot: "page", path: "/customers/detail", instances: true },
+    { instances: true, path: "/", slot: "page" },
+    { instances: true, path: "/customers/detail", slot: "page" },
   ],
 };
 const instances = [
@@ -49,19 +56,17 @@ let apps: TailorKitApp[] | undefined;
 const wrapper = ({ children }: { children: ReactNode }) => (
   <client.Provider apps={apps}>{children}</client.Provider>
 );
-function withApp(
-  instances: { key: string; metadata: object; data: object }[],
+const withApp = (
+  instancesValue: { key: string; metadata: object; data: object }[],
   source = app
-) {
-  return instances.map((instance) => ({ ...instance, app: source }));
-}
+) => instancesValue.map((instance) => ({ ...instance, app: source }));
 
-function url(input: Parameters<typeof fetch>[0]) {
-  return new URL(input instanceof Request ? input.url : String(input));
-}
+const url = (input: Parameters<typeof fetch>[0]) =>
+  new URL(input instanceof Request ? input.url : String(input));
 
-function mockFetch() {
-  return vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+const mockFetch = () =>
+  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
     const path = url(input).pathname;
     if (path.endsWith("/apps")) {
       return Response.json([app]);
@@ -78,13 +83,11 @@ function mockFetch() {
     }
     throw new Error(`Unexpected request: ${path}`);
   });
-}
 
-function calls(path: string) {
-  return vi
+const calls = (path: string) =>
+  vi
     .mocked(globalThis.fetch)
     .mock.calls.filter(([input]) => url(input).pathname.endsWith(path));
-}
 
 beforeEach(() => {
   apps = [app];
@@ -96,10 +99,10 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function useDetail(
+const useDetail = (
   status: "ready" | "loading" | "error" = "ready",
   userId = "u1"
-) {
+) => {
   client.useViewContext("/", { context: { user: { id: userId } } });
   client.useViewContext("/customers", { context: { canEdit: true } });
   client.useViewContext("/customers/detail", {
@@ -107,7 +110,7 @@ function useDetail(
     error: status === "error" ? new Error("Failed to load context") : null,
     loading: status === "loading",
   });
-}
+};
 
 it.each(["apps", "single", "page"] as const)(
   "exposes only the simplified %s result and distinguishes pending from refetching",
@@ -118,12 +121,26 @@ it.each(["apps", "single", "page"] as const)(
       views: kind === "single" ? [{ path: "/", slot: "single" }] : app.views,
     };
     const pending: ((response: Response) => void)[] = [];
-    const original = vi.mocked(globalThis.fetch).getMockImplementation()!;
+    const original = requireValue(
+      vi.mocked(globalThis.fetch).getMockImplementation()
+    );
     const requestPath = kind === "page" ? "/actions" : "/apps";
     vi.mocked(globalThis.fetch).mockImplementation((input, options) => {
       const path = url(input).pathname;
       if (path.endsWith(requestPath)) {
-        return new Promise((resolve) => pending.push(resolve));
+        return (() => {
+          const {
+            promise: pendingPromise,
+            resolve,
+            reject: rejectPending,
+          } = Promise.withResolvers<Response>();
+          try {
+            pending.push(resolve);
+          } catch (error) {
+            rejectPending(error);
+          }
+          return pendingPromise;
+        })();
       }
       if (path.endsWith("/apps")) {
         return Promise.resolve(Response.json([discovered]));
@@ -151,7 +168,8 @@ it.each(["apps", "single", "page"] as const)(
       isRefetching: false,
     });
     const { fetch } = result.current;
-    await act(async () => pending[0]!(response()));
+    // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
+    await act(async () => requireValue(pending[0])(response()));
     await waitFor(() => expect(result.current.data).toBeDefined());
     expect(result.current.isPending).toBe(false);
     expect(result.current.isRefetching).toBe(false);
@@ -170,7 +188,7 @@ it.each(["apps", "single", "page"] as const)(
     expect(result.current.data).toEqual(ready.data);
     expect(result.current.fetch).toBe(fetch);
     await act(async () => {
-      pending[1]!(response());
+      requireValue(pending[1])(response());
       await refresh;
     });
     expect(Object.keys(result.current).toSorted()).toEqual(keys);
@@ -195,7 +213,7 @@ it("fetches the matched view's instances over authenticated HTTP with combined c
     body: JSON.stringify({ appId: "app_1" }),
     method: "POST",
   });
-  const [, options] = calls("/actions")[0]!;
+  const [, options] = requireValue(calls("/actions")[0]);
   expect(new Headers(options?.headers).get("authorization")).toBe(
     "Bearer app-token"
   );
@@ -222,7 +240,9 @@ it("uses the closest supported ancestor and excludes deeper loading context", as
     { wrapper }
   );
   await waitFor(() =>
-    expect(result.current.data).toEqual(withApp(instances, apps![0]!))
+    expect(result.current.data).toEqual(
+      withApp(instances, requireValue(requireValue(apps)[0]))
+    )
   );
   expect(JSON.parse(String(calls("/actions")[0]?.[1]?.body)).json.args).toEqual(
     {
@@ -320,6 +340,7 @@ it.each(["missing", "error", "invalid", "duplicate"] as const)(
   }
 );
 
+// oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
 it("stays idle for multiple slots without a registered view and never calls a resolver", async () => {
   const { result } = renderHook(() => client.useViews({ slot: "page" }), {
     wrapper,
@@ -391,12 +412,24 @@ it("clears previous data and ignores late responses after context changes", asyn
     resolve: (response: Response) => void;
     signal: AbortSignal | null | undefined;
   }[] = [];
-  const original = vi.mocked(globalThis.fetch).getMockImplementation()!;
+  const original = requireValue(
+    vi.mocked(globalThis.fetch).getMockImplementation()
+  );
   vi.mocked(globalThis.fetch).mockImplementation((input, options) =>
     url(input).pathname.endsWith("/actions")
-      ? new Promise((resolve) =>
-          pending.push({ resolve, signal: options?.signal })
-        )
+      ? (() => {
+          const {
+            promise: pendingPromise,
+            resolve,
+            reject: rejectPending,
+          } = Promise.withResolvers<Response>();
+          try {
+            pending.push({ resolve, signal: options?.signal });
+          } catch (error) {
+            rejectPending(error);
+          }
+          return pendingPromise;
+        })()
       : original(input, options)
   );
   const { result, rerender, unmount } = renderHook(
@@ -410,35 +443,43 @@ it("clears previous data and ignores late responses after context changes", asyn
   rerender({ userId: "u2" });
   await waitFor(() => expect(pending).toHaveLength(2));
   expect(pending[0]?.signal?.aborted).toBe(true);
+  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
   await act(async () =>
-    pending[0]!.resolve(Response.json({ json: instances }))
+    requireValue(pending[0]).resolve(Response.json({ json: instances }))
   );
   expect(result.current.data).toBeUndefined();
   expect(result.current.isPending).toBe(true);
   const fresh = [{ data: { userId: "u2" }, key: "fresh", metadata: {} }];
-  await act(async () => pending[1]!.resolve(Response.json({ json: fresh })));
+  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
+  await act(async () =>
+    requireValue(pending[1]).resolve(Response.json({ json: fresh }))
+  );
   expect(result.current.data).toEqual(withApp(fresh));
   rerender({ userId: "u3" });
   await waitFor(() => expect(pending).toHaveLength(3));
   expect(result.current.data).toBeUndefined();
   unmount();
   expect(pending[2]?.signal?.aborted).toBe(true);
+  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
   await act(async () =>
-    pending[2]!.resolve(Response.json({ json: instances }))
+    requireValue(pending[2]).resolve(Response.json({ json: instances }))
   );
 });
 
 it("exposes resolver errors and allows retry through fetch", async () => {
-  const original = vi.mocked(globalThis.fetch).getMockImplementation()!;
+  const original = requireValue(
+    vi.mocked(globalThis.fetch).getMockImplementation()
+  );
   let fail = true;
+  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
   vi.mocked(globalThis.fetch).mockImplementation(async (input, options) => {
     if (fail && url(input).pathname.endsWith("/actions")) {
       return Response.json(
         {
           json: {
             code: "FORBIDDEN",
-            message: "Reports unavailable",
             defined: false,
+            message: "Reports unavailable",
           },
         },
         { status: 403 }
@@ -464,11 +505,14 @@ it("exposes resolver errors and allows retry through fetch", async () => {
 });
 
 it("exposes session failures without sending an unauthenticated resolver call", async () => {
-  const original = vi.mocked(globalThis.fetch).getMockImplementation()!;
-  vi.mocked(globalThis.fetch).mockImplementation(async (input, options) =>
-    url(input).pathname.endsWith("/backend/session")
-      ? new Response(null, { status: 401 })
-      : original(input, options)
+  const original = requireValue(
+    vi.mocked(globalThis.fetch).getMockImplementation()
+  );
+  vi.mocked(globalThis.fetch).mockImplementation(
+    async (input, options) =>
+      await (url(input).pathname.endsWith("/backend/session")
+        ? new Response(null, { status: 401 })
+        : original(input, options))
   );
   const { result } = renderHook(
     () => {
@@ -509,12 +553,14 @@ it("reauthorizes when the discovered app or deployment changes", async () => {
   expect(result.current.data?.[0]?.app).toEqual(apps[0]);
 });
 
+const strictWrapperImplementation = ({ children }: { children: ReactNode }) => (
+  <StrictMode>
+    <client.Provider apps={apps}>{children}</client.Provider>
+  </StrictMode>
+);
+
 it("works in Strict Mode and isolates different roots", async () => {
-  const strictWrapper = ({ children }: { children: ReactNode }) => (
-    <StrictMode>
-      <client.Provider apps={apps}>{children}</client.Provider>
-    </StrictMode>
-  );
+  const strictWrapper = strictWrapperImplementation;
   const first = renderHook(
     () => {
       useDetail("ready", "u1");
@@ -540,7 +586,7 @@ it("works in Strict Mode and isolates different roots", async () => {
       ([, options]) =>
         JSON.parse(String(options?.body)).json.args.context.user.id
     )
-    .sort();
+    .toSorted();
   expect(users).toEqual(["u1", "u2"]);
 });
 
@@ -549,7 +595,8 @@ it("rejects a hook used outside a Provider or under another client", () => {
   expect(() => renderHook(() => client.useViews({ slot: "page" }))).toThrow(
     "useViews must be rendered inside a TailorKit Provider"
   );
-  const other = createClient({ contract, baseUrl: "https://other.test/api/" });
+  const other = createClient({ baseUrl: "https://other.test/api/", contract });
+  // oxlint-disable-next-line unicorn/consistent-function-scoping -- Keep the generator or mutable callback with its owning test or cancellation lifecycle.
   const wrongWrapper = ({ children }: { children: ReactNode }) => (
     <other.Provider>{children}</other.Provider>
   );
@@ -620,12 +667,24 @@ it("shares identical instance requests across roots while keeping their registra
 it("discovers apps through useApps before resolving their instances", async () => {
   apps = undefined;
   let finishApps!: (response: Response) => void;
-  const original = vi.mocked(globalThis.fetch).getMockImplementation()!;
+  const original = requireValue(
+    vi.mocked(globalThis.fetch).getMockImplementation()
+  );
   vi.mocked(globalThis.fetch).mockImplementation((input, options) =>
     url(input).pathname.endsWith("/apps")
-      ? new Promise((resolve) => {
-          finishApps = resolve;
-        })
+      ? (() => {
+          const {
+            promise: pendingPromise,
+            resolve,
+            reject: rejectPending,
+          } = Promise.withResolvers<Response>();
+          try {
+            finishApps = resolve;
+          } catch (error) {
+            rejectPending(error);
+          }
+          return pendingPromise;
+        })()
       : original(input, options)
   );
   const { result } = renderHook(
@@ -638,7 +697,7 @@ it("discovers apps through useApps before resolving their instances", async () =
   await waitFor(() => expect(calls("/apps")).toHaveLength(1));
   expect(result.current.isPending).toBe(true);
   expect(calls("/backend/session")).toHaveLength(0);
-  await act(async () => finishApps(Response.json([app])));
+  await act(async () => await finishApps(Response.json([app])));
   await waitFor(() => expect(result.current.data).toEqual(withApp(instances)));
 });
 
@@ -654,7 +713,10 @@ it("aggregates apps in discovery order, resolves in parallel, and preserves dupl
     body: string;
     resolve: (response: Response) => void;
   }[] = [];
-  const original = vi.mocked(globalThis.fetch).getMockImplementation()!;
+  const original = requireValue(
+    vi.mocked(globalThis.fetch).getMockImplementation()
+  );
+  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
   vi.mocked(globalThis.fetch).mockImplementation(async (input, options) => {
     if (url(input).pathname.endsWith("/backend/session")) {
       const { appId } = JSON.parse(String(options?.body));
@@ -665,13 +727,23 @@ it("aggregates apps in discovery order, resolves in parallel, and preserves dupl
       });
     }
     if (url(input).pathname.endsWith("/actions")) {
-      return new Promise((resolve) =>
-        pending.push({
-          token: new Headers(options?.headers).get("authorization"),
-          body: String(options?.body),
+      return (() => {
+        const {
+          promise: pendingPromise,
           resolve,
-        })
-      );
+          reject: rejectPending,
+        } = Promise.withResolvers<Response>();
+        try {
+          pending.push({
+            body: String(options?.body),
+            resolve,
+            token: new Headers(options?.headers).get("authorization"),
+          });
+        } catch (error) {
+          rejectPending(error);
+        }
+        return pendingPromise;
+      })();
     }
     return original(input, options);
   });
@@ -691,13 +763,15 @@ it("aggregates apps in discovery order, resolves in parallel, and preserves dupl
     "/customers/detail",
     "/",
   ]);
+  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
   await act(async () =>
-    pending[1]!.resolve(Response.json({ json: instances }))
+    requireValue(pending[1]).resolve(Response.json({ json: instances }))
   );
   expect(result.current.isPending).toBe(true);
   expect(result.current.data).toBeUndefined();
+  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
   await act(async () =>
-    pending[0]!.resolve(Response.json({ json: instances }))
+    requireValue(pending[0]).resolve(Response.json({ json: instances }))
   );
   expect(result.current.data).toEqual([
     ...withApp(instances),
@@ -736,7 +810,10 @@ it("returns an empty result with no app requests using the local contract", asyn
 it("exposes app discovery failures and retries them through fetch", async () => {
   apps = undefined;
   let fail = true;
-  const original = vi.mocked(globalThis.fetch).getMockImplementation()!;
+  const original = requireValue(
+    vi.mocked(globalThis.fetch).getMockImplementation()
+  );
+  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
   vi.mocked(globalThis.fetch).mockImplementation(async (input, options) => {
     if (fail && url(input).pathname.endsWith("/apps")) {
       return new Response(null, { status: 503 });
@@ -768,12 +845,24 @@ it("cancels every app resolver and ignores late results when the app list change
     resolve: (response: Response) => void;
     signal: AbortSignal | null | undefined;
   }[] = [];
-  const original = vi.mocked(globalThis.fetch).getMockImplementation()!;
+  const original = requireValue(
+    vi.mocked(globalThis.fetch).getMockImplementation()
+  );
   vi.mocked(globalThis.fetch).mockImplementation((input, options) =>
     url(input).pathname.endsWith("/actions")
-      ? new Promise((resolve) =>
-          pending.push({ resolve, signal: options?.signal })
-        )
+      ? (() => {
+          const {
+            promise: pendingPromise,
+            resolve,
+            reject: rejectPending,
+          } = Promise.withResolvers<Response>();
+          try {
+            pending.push({ resolve, signal: options?.signal });
+          } catch (error) {
+            rejectPending(error);
+          }
+          return pendingPromise;
+        })()
       : original(input, options)
   );
   const { result, rerender, unmount } = renderHook(
@@ -788,14 +877,16 @@ it("cancels every app resolver and ignores late results when the app list change
   rerender();
   await waitFor(() => expect(pending).toHaveLength(3));
   expect(pending.slice(0, 2).every(({ signal }) => signal?.aborted)).toBe(true);
+  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
   await act(async () => {
     for (const request of pending.slice(0, 2)) {
       request.resolve(Response.json({ json: instances }));
     }
   });
   expect(result.current.data).toBeUndefined();
+  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
   await act(async () =>
-    pending[2]!.resolve(Response.json({ json: instances }))
+    requireValue(pending[2]).resolve(Response.json({ json: instances }))
   );
   expect(result.current.data).toEqual(withApp(instances, second));
   await act(() => {
@@ -812,12 +903,24 @@ it("clears the aggregate and cancels remaining resolvers when any app fails", as
     resolve: (response: Response) => void;
     signal: AbortSignal | null | undefined;
   }[] = [];
-  const original = vi.mocked(globalThis.fetch).getMockImplementation()!;
+  const original = requireValue(
+    vi.mocked(globalThis.fetch).getMockImplementation()
+  );
   vi.mocked(globalThis.fetch).mockImplementation((input, options) =>
     url(input).pathname.endsWith("/actions")
-      ? new Promise((resolve) =>
-          pending.push({ resolve, signal: options?.signal })
-        )
+      ? (() => {
+          const {
+            promise: pendingPromise,
+            resolve,
+            reject: rejectPending,
+          } = Promise.withResolvers<Response>();
+          try {
+            pending.push({ resolve, signal: options?.signal });
+          } catch (error) {
+            rejectPending(error);
+          }
+          return pendingPromise;
+        })()
       : original(input, options)
   );
   const { result } = renderHook(
@@ -828,8 +931,9 @@ it("clears the aggregate and cancels remaining resolvers when any app fails", as
     { wrapper }
   );
   await waitFor(() => expect(pending).toHaveLength(2));
+  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
   await act(async () =>
-    pending[0]!.resolve(
+    requireValue(pending[0]).resolve(
       Response.json(
         {
           json: {
@@ -937,7 +1041,9 @@ it("intersects scope and app filters and updates supplied single-slot apps", asy
   await waitFor(() => expect(result.current.data).toEqual([]));
   apps = [{ ...second, name: "Updated" }];
   rerender({ appIds: undefined, scopes: undefined });
-  await waitFor(() => expect(result.current.data).toEqual([{ app: apps![0] }]));
+  await waitFor(() =>
+    expect(result.current.data).toEqual([{ app: requireValue(apps)[0] }])
+  );
   expect(calls("/apps")).toHaveLength(0);
   expect(calls("/meta")).toHaveLength(0);
   expect(calls("/actions")).toHaveLength(0);
@@ -948,11 +1054,14 @@ it("shares app discovery with useApps and fetch refreshes single-slot entries", 
   let discovered: TailorKitApp[] = [
     { ...app, views: [{ path: "/", slot: "single" }] },
   ];
-  const original = vi.mocked(globalThis.fetch).getMockImplementation()!;
-  vi.mocked(globalThis.fetch).mockImplementation(async (input, options) =>
-    url(input).pathname.endsWith("/apps")
-      ? Response.json(discovered)
-      : original(input, options)
+  const original = requireValue(
+    vi.mocked(globalThis.fetch).getMockImplementation()
+  );
+  vi.mocked(globalThis.fetch).mockImplementation(
+    async (input, options) =>
+      await (url(input).pathname.endsWith("/apps")
+        ? Response.json(discovered)
+        : original(input, options))
   );
   const { result } = renderHook(
     () => ({
@@ -965,7 +1074,7 @@ it("shares app discovery with useApps and fetch refreshes single-slot entries", 
     expect(result.current.slot.data).toEqual([{ app: discovered[0] }])
   );
   expect(calls("/apps")).toHaveLength(1);
-  discovered = [{ ...discovered[0]!, id: "new-app" }];
+  discovered = [{ ...requireValue(discovered[0]), id: "new-app" }];
   await act(() => result.current.slot.fetch());
   expect(result.current.slot.data).toEqual([{ app: discovered[0] }]);
   expect(result.current.apps.data).toEqual(discovered);
@@ -1029,7 +1138,9 @@ it.each(["page", "single"] as const)(
       views: slot === "page" ? app.views : [{ path: "/", slot }],
     };
     const excluded: TailorKitApp = { ...discovered, id: "excluded" };
-    const original = vi.mocked(globalThis.fetch).getMockImplementation()!;
+    const original = requireValue(
+      vi.mocked(globalThis.fetch).getMockImplementation()
+    );
     vi.mocked(globalThis.fetch).mockImplementation((input, options) => {
       const path = url(input).pathname;
       if (path.endsWith("/apps")) {
@@ -1040,9 +1151,19 @@ it.each(["page", "single"] as const)(
         );
       }
       if (path.endsWith("/actions")) {
-        return new Promise((resolve) => {
-          finishInstances = resolve;
-        });
+        return (() => {
+          const {
+            promise: pendingPromise,
+            resolve,
+            reject: rejectPending,
+          } = Promise.withResolvers<Response>();
+          try {
+            finishInstances = resolve;
+          } catch (error) {
+            rejectPending(error);
+          }
+          return pendingPromise;
+        })();
       }
       return original(input, options);
     });
@@ -1070,6 +1191,7 @@ it.each(["page", "single"] as const)(
     if (slot === "page") {
       await waitFor(() => expect(calls("/actions")).toHaveLength(1));
       expect(complete).toBe(false);
+      // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
       await act(async () => {
         finishInstances(Response.json({ json: instances }));
       });

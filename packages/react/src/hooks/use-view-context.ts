@@ -21,10 +21,13 @@ export type UseViewContext<TViews extends Record<string, ViewDefinition>> = <
   options: ViewState<TViews, NoInfer<TView>>
 ) => void;
 
-export function useViewContext<
+export const useViewContext = <
   TViews extends Record<string, ViewDefinition> = DefaultViews,
   TView extends ViewName<TViews> = ViewName<TViews>,
->(view: TView, options: ViewState<TViews, NoInfer<TView>>): void {
+>(
+  view: TView,
+  options: ViewState<TViews, NoInfer<TView>>
+): void => {
   const { store } = useTailorkitContext("useViewContext");
   const id = useMemo(() => Symbol("tailorkit-current-view"), []);
   const { context, loading, error } = options;
@@ -39,4 +42,4 @@ export function useViewContext<
   useEffect(() => {
     store.views.register({ context, error, id, loading, view });
   }, [id, view, context, loading, error, store]);
-}
+};

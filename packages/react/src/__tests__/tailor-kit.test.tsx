@@ -125,17 +125,18 @@ const contract = defineContract({
 
 const components = {
   Button: ({ children }: { children?: ReactNode }) =>
-    createElement("button", null, children),
+    createElement("button", { type: "button" }, children),
 };
 
-function CurrentViewRoute({
+const CurrentViewRoute = ({
   nested,
   tailor,
 }: {
   nested: boolean;
   tailor: ReturnType<typeof createClient<typeof contract>>;
-}) {
+}) => {
   const { useViewContext } = tailor;
+  // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
   useViewContext(
     nested ? "/home/detail" : "/home",
     nested
@@ -153,33 +154,32 @@ function CurrentViewRoute({
       app={{ clientPath: "/apps/todo.js", id: "todo" }}
     />
   );
-}
+};
 
-function CurrentViewHost({
+const CurrentViewHost = ({
   nested,
   tailor,
 }: {
   nested: boolean;
   tailor: ReturnType<typeof createClient<typeof contract>>;
-}) {
-  return (
-    <tailor.Provider apps={[{ clientPath: "/apps/todo.js", id: "todo" }]}>
-      <CurrentViewRoute nested={nested} tailor={tailor} />
-    </tailor.Provider>
-  );
-}
+}) => (
+  <tailor.Provider apps={[{ clientPath: "/apps/todo.js", id: "todo" }]}>
+    <CurrentViewRoute nested={nested} tailor={tailor} />
+  </tailor.Provider>
+);
 
-function HomeSlot({
+const HomeSlot = ({
   app,
   tailor,
 }: {
   app: TailorKitApp;
   tailor: ReturnType<typeof createClient<typeof contract>>;
-}) {
+}) => {
   const { useViewContext } = tailor;
+  // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
   useViewContext("/home", { context: { page: { title: "home" } } });
   return <RenderSlot slot="panel" app={app} />;
-}
+};
 
 describe("tailorKitClient React adapter", () => {
   it("recreates the sandbox when a complete preview source revision changes", () => {
@@ -243,9 +243,9 @@ describe("tailorKitClient React adapter", () => {
     }
     vi.stubGlobal("WebSocket", PreviewSocket);
     const tailor = createClient({
-      contract,
       baseUrl: "http://runtime.test/api/tailorkit",
       components,
+      contract,
     });
     const suppliedApps: TailorKitApp[] = [];
     const content = (token: string) => (
@@ -278,7 +278,7 @@ describe("tailorKitClient React adapter", () => {
     expect(
       new URL(metadataRequest as URL).searchParams.getAll("scopes")
     ).toEqual([]);
-    const socket = PreviewSocket.instances[0];
+    const [socket] = PreviewSocket.instances;
     view.rerender(content("updated-token"));
     expect(PreviewSocket.instances).toHaveLength(1);
     expect(socket?.closed).toBe(false);
@@ -296,12 +296,12 @@ describe("tailorKitClient React adapter", () => {
       Response.json([{ id: "todo", name: "Todo", scope: { name: "user" } }])
     );
     const tailor = createClient({
-      contract,
       baseUrl: "http://runtime.test/api/tailorkit",
       components,
+      contract,
     });
 
-    function AppList() {
+    const AppList = () => {
       const { data, isPending } = tailor.useApps({
         scopes: ["organization", "user"],
       });
@@ -310,7 +310,7 @@ describe("tailorKitClient React adapter", () => {
         null,
         `${isPending ? "pending" : "ready"}:${(data ?? []).map((app) => app.id).join(",")}`
       );
-    }
+    };
 
     render(
       <tailor.Provider>
@@ -340,17 +340,17 @@ describe("tailorKitClient React adapter", () => {
       ])
     );
     const tailor = createClient({
-      contract,
       baseUrl: "http://runtime.test/api/tailorkit",
       components,
+      contract,
     });
-    function AppList({
+    const AppList = ({
       label,
       scopes,
     }: {
       label: string;
       scopes?: readonly ("organization" | "user")[];
-    }) {
+    }) => {
       const { data, isPending } = tailor.useApps({ scopes });
       return (
         <p>
@@ -358,7 +358,7 @@ describe("tailorKitClient React adapter", () => {
           {data?.map((app) => app.id).join(",")}
         </p>
       );
-    }
+    };
     render(
       <tailor.Provider>
         <AppList label="org" scopes={["organization"]} />
@@ -400,14 +400,14 @@ describe("tailorKitClient React adapter", () => {
   it("defaults to all scopes when useApps omits a selection", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json([]));
     const tailor = createClient({
-      contract,
       baseUrl: "http://runtime.test/api/tailorkit",
+      contract,
     });
 
-    function AppList() {
+    const AppList = () => {
       const { isPending } = tailor.useApps();
       return createElement("p", null, isPending ? "pending" : "ready");
-    }
+    };
 
     render(
       <tailor.Provider>
@@ -427,10 +427,10 @@ describe("tailorKitClient React adapter", () => {
 
   it("derives the hierarchy from the current view and reuses its extended context", async () => {
     const tailor = createClient({
-      contract,
-      baseUrl: "http://runtime.test",
       assetsBaseUrl: "http://assets.test/",
+      baseUrl: "http://runtime.test",
       components,
+      contract,
     });
 
     const view = render(<CurrentViewHost nested tailor={tailor} />);
@@ -466,14 +466,15 @@ describe("tailorKitClient React adapter", () => {
 
   it("publishes loading and error states without stale context", async () => {
     const tailor = createClient({
-      contract,
-      baseUrl: "http://runtime.test",
       assetsBaseUrl: "http://assets.test/",
+      baseUrl: "http://runtime.test",
       components,
+      contract,
     });
 
-    function Route({ status }: { status: "error" | "loading" }) {
+    const Route = ({ status }: { status: "error" | "loading" }) => {
       const { useViewContext } = tailor;
+      // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
       useViewContext("/home/detail", {
         context: undefined,
         error: status === "error" ? new Error("Failed to load context") : null,
@@ -485,7 +486,7 @@ describe("tailorKitClient React adapter", () => {
           app={{ clientPath: "/apps/todo.js", id: "todo" }}
         />
       );
-    }
+    };
 
     const view = render(
       <tailor.Provider apps={[{ clientPath: "/apps/todo.js", id: "todo" }]}>
@@ -517,14 +518,15 @@ describe("tailorKitClient React adapter", () => {
   it("renders the current match for multiple direct app props", async () => {
     hostRecords.length = 0;
     const tailor = createClient({
-      contract,
-      baseUrl: "http://runtime.test",
       assetsBaseUrl: "http://assets.test/",
+      baseUrl: "http://runtime.test",
       components,
+      contract,
     });
 
-    function Route() {
+    const Route = () => {
       const { useViewContext } = tailor;
+      // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
       useViewContext("/home", { context: { page: { title: "home" } } });
       return (
         <>
@@ -542,7 +544,7 @@ describe("tailorKitClient React adapter", () => {
           />
         </>
       );
-    }
+    };
 
     render(
       <tailor.Provider
@@ -576,10 +578,10 @@ describe("tailorKitClient React adapter", () => {
 
   it("renders a controlled view without a registered current view", async () => {
     const tailor = createClient({
-      contract,
-      baseUrl: "http://runtime.test",
       assetsBaseUrl: "http://assets.test/",
+      baseUrl: "http://runtime.test",
       components,
+      contract,
     });
     const { RenderSlot: ClientRenderSlot } = tailor;
 
@@ -607,15 +609,15 @@ describe("tailorKitClient React adapter", () => {
 
   it("rejects a client RenderSlot rendered under a different client Provider", () => {
     const tailor = createClient({
-      contract,
-      baseUrl: "http://runtime.test",
       assetsBaseUrl: "http://assets.test/",
+      baseUrl: "http://runtime.test",
       components,
+      contract,
     });
     const otherTailor = createClient({
-      contract,
       baseUrl: "http://other-runtime.test",
       components,
+      contract,
     });
     const { RenderSlot: ClientRenderSlot } = tailor;
     vi.spyOn(console, "error").mockImplementation(() => {});
@@ -637,20 +639,22 @@ describe("tailorKitClient React adapter", () => {
   it("warns when multiple hooks register views at the same hierarchy depth", async () => {
     const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const tailor = createClient({
-      contract,
-      baseUrl: "http://runtime.test",
       assetsBaseUrl: "http://assets.test/",
+      baseUrl: "http://runtime.test",
       components,
+      contract,
     });
 
-    function HomeRoute() {
+    const HomeRoute = () => {
       const { useViewContext } = tailor;
+      // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
       useViewContext("/home", { context: { page: { title: "home" } } });
       return null;
-    }
+    };
 
-    function UserRoute() {
+    const UserRoute = () => {
       const { useViewContext } = tailor;
+      // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
       useViewContext("/user", { context: { userId: "user_1" } });
       return (
         <RenderSlot
@@ -658,7 +662,7 @@ describe("tailorKitClient React adapter", () => {
           app={{ clientPath: "/apps/todo.js", id: "todo" }}
         />
       );
-    }
+    };
 
     render(
       <tailor.Provider apps={[{ clientPath: "/apps/todo.js", id: "todo" }]}>
@@ -676,10 +680,10 @@ describe("tailorKitClient React adapter", () => {
 
   it("passes primitive theme tokens into mounted views", async () => {
     const tailor = createClient({
-      contract,
-      baseUrl: "http://runtime.test",
       assetsBaseUrl: "http://assets.test/",
+      baseUrl: "http://runtime.test",
       components,
+      contract,
       theme: {
         tokens: {
           background: {
@@ -711,9 +715,9 @@ describe("tailorKitClient React adapter", () => {
       .spyOn(console, "error")
       .mockImplementation(() => {});
     const tailor = createClient({
-      contract,
-      baseUrl: "http://runtime.test",
       assetsBaseUrl: "http://assets.test/",
+      baseUrl: "http://runtime.test",
+      contract,
     });
 
     render(
@@ -736,10 +740,10 @@ describe("tailorKitClient React adapter", () => {
   it("clears a missing component error when switching apps", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const tailor = createClient({
-      contract,
-      baseUrl: "http://runtime.test",
       assetsBaseUrl: "http://assets.test/",
+      baseUrl: "http://runtime.test",
       components,
+      contract,
     });
 
     const view = render(
@@ -785,6 +789,17 @@ describe("tailorKitClient React adapter", () => {
   });
 });
 
+const DetailImplementation = ({
+  client,
+}: {
+  client: ReturnType<typeof createClient<typeof contract>>;
+}) => {
+  const { useViewContext } = client;
+  // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
+  useViewContext("/home/detail", { context: undefined, loading: true });
+  return null;
+};
+
 describe("view registries", () => {
   beforeEach(() => {
     hostRecords.length = 0;
@@ -792,17 +807,23 @@ describe("view registries", () => {
       Promise.resolve(Response.json({ schema: {} }))
     );
   });
+
   afterEach(cleanup);
 
-  function Layers({
+  const Detail = DetailImplementation;
+
+  // oxlint-disable-next-line unicorn/consistent-function-scoping -- Keep the generator or mutable callback with its owning test or cancellation lifecycle.
+  const Layers = ({
     client,
     detail = true,
   }: {
     client: ReturnType<typeof createClient<typeof contract>>;
     detail?: boolean;
-  }) {
+  }) => {
     const { useViewContext } = client;
+    // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
     useViewContext("/", { context: { user: { id: "u1" } } });
+    // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
     useViewContext("/home", { context: { page: { title: "Home" } } });
     return (
       <>
@@ -814,23 +835,14 @@ describe("view registries", () => {
         />
       </>
     );
-  }
-  function Detail({
-    client,
-  }: {
-    client: ReturnType<typeof createClient<typeof contract>>;
-  }) {
-    const { useViewContext } = client;
-    useViewContext("/home/detail", { context: undefined, loading: true });
-    return null;
-  }
+  };
 
   it("publishes the same active chain to simultaneous slots and removes unmounted layers", async () => {
     const client = createClient({
-      contract,
-      baseUrl: "http://runtime.test",
       assetsBaseUrl: "http://assets.test/",
+      baseUrl: "http://runtime.test",
       components,
+      contract,
     });
     const view = render(
       <client.Provider>
@@ -844,10 +856,10 @@ describe("view registries", () => {
     ]);
     expect(hostRecords[0]?.props).toMatchObject({
       layers: [
-        { path: "/", context: { user: { id: "u1" } }, status: "ready" },
+        { context: { user: { id: "u1" } }, path: "/", status: "ready" },
         {
-          path: "/home",
           context: { page: { title: "Home" } },
+          path: "/home",
           status: "ready",
         },
         { path: "/home/detail", status: "loading" },
@@ -861,18 +873,20 @@ describe("view registries", () => {
     );
     await waitFor(() => expect(hostRecords.at(-1)?.props?.view).toBe("/home"));
     expect(hostRecords.at(-1)?.props?.layers).toHaveLength(2);
-    expect(hostRecords).toHaveLength(2); // Context changes must not remount either slot.
+    // Context changes must not remount either slot.
+    expect(hostRecords).toHaveLength(2);
   });
 
   it("isolates roots sharing a client and survives Strict Mode effect replay", async () => {
     const client = createClient({
-      contract,
-      baseUrl: "http://runtime.test",
       assetsBaseUrl: "http://assets.test/",
+      baseUrl: "http://runtime.test",
       components,
+      contract,
     });
-    function OtherRoute() {
+    const OtherRoute = () => {
       const { useViewContext } = client;
+      // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
       useViewContext("/user", { context: { userId: "other" } });
       return (
         <RenderSlot
@@ -880,7 +894,7 @@ describe("view registries", () => {
           app={{ clientPath: "/other.js", id: "other" }}
         />
       );
-    }
+    };
     render(
       <StrictMode>
         <client.Provider>
@@ -900,7 +914,7 @@ describe("view registries", () => {
       record.appUrl.endsWith("other.js")
     );
     expect(other?.props).toMatchObject({
-      layers: [{ path: "/user", context: { userId: "other" } }],
+      layers: [{ context: { userId: "other" }, path: "/user" }],
       view: "/user",
     });
     expect(other?.props?.layers).toHaveLength(1);
@@ -910,6 +924,27 @@ describe("view registries", () => {
     ).toBe("/home/detail");
   });
 });
+
+const createRootClientImplementation = (baseUrl: string | URL) =>
+  createClient({ baseUrl, components, contract });
+
+const ContentsImplementation = ({
+  client,
+}: {
+  client: ReturnType<typeof createClient<typeof contract>>;
+}) => {
+  const { useApps: useAppsValue, useViewContext } = client;
+  // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
+  const { data } = useAppsValue();
+  // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
+  useViewContext("/user", { context: { userId: "u1" } });
+  return (
+    <>
+      <span>{data?.[0]?.id}</span>
+      <RenderSlot slot="panel" app={{ clientPath: "client.js", id: "test" }} />
+    </>
+  );
+};
 
 it("isolates a new client cache even when its endpoint is equivalent", async () => {
   const fetchMock = vi
@@ -924,26 +959,8 @@ it("isolates a new client cache even when its endpoint is equivalent", async () 
         )
       );
     });
-  function Contents({
-    client,
-  }: {
-    client: ReturnType<typeof createClient<typeof contract>>;
-  }) {
-    const { useApps, useViewContext } = client;
-    const { data } = useApps();
-    useViewContext("/user", { context: { userId: "u1" } });
-    return (
-      <>
-        <span>{data?.[0]?.id}</span>
-        <RenderSlot
-          slot="panel"
-          app={{ clientPath: "client.js", id: "test" }}
-        />
-      </>
-    );
-  }
-  const createRootClient = (baseUrl: string | URL) =>
-    createClient({ contract, baseUrl, components });
+  const Contents = ContentsImplementation;
+  const createRootClient = createRootClientImplementation;
   const firstClient = createRootClient("http://first.test/api");
   const view = render(
     <firstClient.Provider>
@@ -975,6 +992,11 @@ it("isolates a new client cache even when its endpoint is equivalent", async () 
   view.unmount();
 });
 
+const ContentsImplementation2 = () => {
+  const { data } = useApps();
+  return <span>{data?.[0]?.id}</span>;
+};
+
 it("keeps each provider bound to its client's fetch transport", async () => {
   const explicitFetch = vi
     .fn()
@@ -987,20 +1009,17 @@ it("keeps each provider bound to its client's fetch transport", async () => {
       Promise.resolve(Response.json([{ id: "fallback-user" }]))
     );
   const client = createClient({
-    contract,
     baseUrl: "http://runtime.test/api",
     components,
+    contract,
     fetch: explicitFetch,
   });
   const fallback = createClient({
-    contract,
     baseUrl: client.baseUrl,
     components,
+    contract,
   });
-  function Contents() {
-    const { data } = useApps();
-    return <span>{data?.[0]?.id}</span>;
-  }
+  const Contents = ContentsImplementation2;
   const view = render(
     <client.Provider>
       <Contents />
@@ -1042,11 +1061,12 @@ it("retains equivalent explicit context identity and publishes changed values", 
     Promise.resolve(Response.json({ schema: {} }))
   );
   const client = createClient({
-    contract,
-    baseUrl: "http://runtime.test",
     assetsBaseUrl: "http://assets.test/",
+    baseUrl: "http://runtime.test",
     components,
+    contract,
   });
+  // oxlint-disable-next-line unicorn/consistent-function-scoping -- Keep the generator or mutable callback with its owning test or cancellation lifecycle.
   const content = (userId: string) => (
     <client.Provider>
       <RenderSlot.Controlled
@@ -1076,15 +1096,16 @@ describe("supplied app discovery", () => {
     cleanup();
     vi.restoreAllMocks();
   });
-  function Apps() {
+  const Apps = () => {
+    // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
     const { data, isPending, fetch } = client.useApps();
     return (
-      <button onClick={() => void fetch()}>
+      <button type="button" onClick={() => fetch()}>
         {isPending ? "pending" : "ready"}:{data?.map((app) => app.id).join(",")}
       </button>
     );
-  }
-  const client = createClient({ contract, baseUrl: "https://apps.test/api/" });
+  };
+  const client = createClient({ baseUrl: "https://apps.test/api/", contract });
 
   it("uses supplied apps for discovery, including updates and empty lists, without fetching", async () => {
     const fetch = vi.spyOn(globalThis, "fetch");
@@ -1120,11 +1141,20 @@ describe("supplied app discovery", () => {
     let resolveRequest!: (response: Response) => void;
     const fetch = vi
       .spyOn(globalThis, "fetch")
-      .mockImplementationOnce(
-        () =>
-          new Promise((resolve) => {
+      .mockImplementationOnce(() =>
+        (() => {
+          const {
+            promise: pendingPromise,
+            resolve,
+            reject: rejectPending,
+          } = Promise.withResolvers<Response>();
+          try {
             resolveRequest = resolve;
-          })
+          } catch (error) {
+            rejectPending(error);
+          }
+          return pendingPromise;
+        })()
       )
       .mockResolvedValue(Response.json([{ id: "fresh" }]));
     const view = render(

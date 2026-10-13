@@ -9,7 +9,7 @@ import { project } from "@tailorkit/db/schema/project";
 import { getBaseUrl } from "@tailorkit/env";
 import { getKV } from "@tailorkit/kv";
 import { and, count, eq, lt } from "drizzle-orm";
-import z from "zod";
+import { z } from "zod";
 
 import { env } from "#env";
 
@@ -22,6 +22,13 @@ import {
 import { o, cliRouter } from "../procedures";
 import { previewGrantRoutes } from "./preview-grants";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const previewSessionLifetimeMs = 8 * 60 * 60 * 1000;
 const firstConnectionGraceMs = 2 * 60 * 1000;
 const maxActivePreviewsPerScope = 5;
@@ -29,16 +36,14 @@ const activePreviewConflictReason = "ACTIVE_PREVIEW_EXISTS";
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
-function hash(value: string): string {
+const hash = (value: string): string => {
   if (!env.AUTH_SECRET) {
     throw new Error("AUTH_SECRET is required for preview credentials.");
   }
   return hashSecret(value, env.AUTH_SECRET);
-}
+};
 
-function createSecret(): string {
-  return randomBytes(32).toString("base64url");
-}
+const createSecret = (): string => randomBytes(32).toString("base64url");
 
 const startPreview = cliRouter
   .meta(openapi({ method: "POST", path: "/start" }))
@@ -74,15 +79,17 @@ const startPreview = cliRouter
 
     const previewApp = await db.query.app.findFirst({
       where: {
-        RAW: (fields, { and, eq }) =>
-          and(
-            eq(fields.projectId, context.project.id),
-            eq(fields.scopeKey, token.scopeKey),
-            eq(fields.scope, token.scope),
-            uuidPattern.test(input.body.appId)
-              ? eq(fields.id, input.body.appId)
-              : eq(fields.publicId, input.body.appId)
-          )!,
+        RAW: (fields, { and: andValue, eq: eqValue }) =>
+          requireValue(
+            andValue(
+              eqValue(fields.projectId, context.project.id),
+              eqValue(fields.scopeKey, token.scopeKey),
+              eqValue(fields.scope, token.scope),
+              uuidPattern.test(input.body.appId)
+                ? eqValue(fields.id, input.body.appId)
+                : eqValue(fields.publicId, input.body.appId)
+            )
+          ),
       },
     });
     if (!previewApp) {
@@ -93,17 +100,20 @@ const startPreview = cliRouter
 
     const activeSessions = await db.query.previewSession.findMany({
       where: {
-        RAW: (fields, { and, eq }) =>
-          and(
-            eq(fields.projectId, context.project.id),
-            eq(fields.scopeKey, token.scopeKey),
-            eq(fields.scope, token.scope),
-            eq(fields.status, "active")
-          )!,
+        RAW: (fields, { and: andValue2, eq: eqValue2 }) =>
+          requireValue(
+            andValue2(
+              eqValue2(fields.projectId, context.project.id),
+              eqValue2(fields.scopeKey, token.scopeKey),
+              eqValue2(fields.scope, token.scope),
+              eqValue2(fields.status, "active")
+            )
+          ),
       },
     });
     for (const activeSession of activeSessions) {
       if (activeSession.expiresAt > now) {
+        // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
         await ensurePreviewDeveloperGrace(
           kv,
           activeSession.id,
@@ -229,6 +239,7 @@ const startPreview = cliRouter
       ...started.replacedSessions,
     ]) {
       try {
+        // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
         await builds.end(ended.id);
       } catch {
         // Existing KV TTLs bound cleanup if the store is temporarily unavailable.
@@ -279,15 +290,17 @@ const stopPreview = cliRouter
       ? null
       : await db.query.previewSession.findFirst({
           where: {
-            RAW: (fields, { and, eq }) =>
-              and(
-                eq(fields.id, input.params.sessionId),
-                eq(fields.projectId, context.project.id),
-                eq(fields.cliTokenId, token.id),
-                eq(fields.scopeKey, token.scopeKey),
-                eq(fields.scope, token.scope),
-                eq(fields.status, "ended")
-              )!,
+            RAW: (fields, { and: andValue3, eq: eqValue3 }) =>
+              requireValue(
+                andValue3(
+                  eqValue3(fields.id, input.params.sessionId),
+                  eqValue3(fields.projectId, context.project.id),
+                  eqValue3(fields.cliTokenId, token.id),
+                  eqValue3(fields.scopeKey, token.scopeKey),
+                  eqValue3(fields.scope, token.scope),
+                  eqValue3(fields.status, "ended")
+                )
+              ),
           },
         });
     const sessionId = endedSession?.id ?? alreadyEnded?.id;

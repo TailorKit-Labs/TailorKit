@@ -13,14 +13,14 @@ import { cn } from "#ui";
 const buttonClassNames =
   "relative flex size-(--cell-size) text-base sm:text-sm items-center justify-center rounded-lg text-foreground not-in-data-selected:hover:bg-accent disabled:pointer-events-none disabled:opacity-64 [&_svg:not([class*='opacity-'])]:opacity-80 [&_svg:not([class*='size-'])]:size-4.5 sm:[&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0";
 
-function CalendarChevron({
+const CalendarChevron = ({
   className,
   orientation,
   ...props
 }: {
   className?: string;
   orientation?: "left" | "right" | "up" | "down";
-}): React.ReactElement {
+}): React.ReactElement => {
   if (orientation === "left") {
     return (
       <ChevronLeftIcon
@@ -44,16 +44,16 @@ function CalendarChevron({
   return (
     <ChevronsUpDownIcon aria-hidden="true" className={className} {...props} />
   );
-}
+};
 
-export function Calendar({
+export const Calendar = ({
   className,
   classNames,
   showOutsideDays = true,
   components: userComponents,
   mode = "single",
   ...props
-}: React.ComponentProps<typeof DayPicker>): React.ReactElement {
+}: React.ComponentProps<typeof DayPicker>): React.ReactElement => {
   const defaultClassNames = {
     button_next: buttonClassNames,
     button_previous: buttonClassNames,
@@ -87,22 +87,14 @@ export function Calendar({
     weekday:
       "size-(--cell-size) p-0 text-xs font-medium text-muted-foreground/72",
   };
-  const mergedClassNames: typeof defaultClassNames = Object.keys(
+  const mergedClassNames: typeof defaultClassNames = { ...defaultClassNames };
+  for (const key of Object.keys(
     defaultClassNames
-  ).reduce(
-    (acc, key) => {
-      const userClass = classNames?.[key as keyof typeof classNames];
-      const baseClass =
-        defaultClassNames[key as keyof typeof defaultClassNames];
-
-      acc[key as keyof typeof defaultClassNames] = userClass
-        ? cn(baseClass, userClass)
-        : baseClass;
-
-      return acc;
-    },
-    { ...defaultClassNames } as typeof defaultClassNames
-  );
+  ) as (keyof typeof defaultClassNames)[]) {
+    const userClass = classNames?.[key as keyof typeof classNames];
+    const baseClass = defaultClassNames[key];
+    mergedClassNames[key] = userClass ? cn(baseClass, userClass) : baseClass;
+  }
 
   const defaultComponents = { Chevron: CalendarChevron };
 
@@ -133,4 +125,4 @@ export function Calendar({
       {...(dayPickerProps as React.ComponentProps<typeof DayPicker>)}
     />
   );
-}
+};

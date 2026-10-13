@@ -12,18 +12,16 @@ export const appDeploymentMetadata = z.object({
 });
 export type AppDeploymentMetadata = z.infer<typeof appDeploymentMetadata>;
 
-export function deploymentMetadataKey(identity: {
+export const deploymentMetadataKey = (identity: {
   projectId: string;
   appId: string;
-}) {
-  return JSON.stringify([identity.projectId, identity.appId]);
-}
+}) => JSON.stringify([identity.projectId, identity.appId]);
 
 /** The same service credential authenticates both directions, independent of user JWTs. */
-export async function runtimeServiceAuthorized(
+export const runtimeServiceAuthorized = async (
   request: Request,
   secret: string | undefined
-) {
+) => {
   const authorization = request.headers.get("authorization");
   if (
     !secret ||
@@ -41,8 +39,8 @@ export async function runtimeServiceAuthorized(
   const left = new Uint8Array(expected);
   const right = new Uint8Array(supplied);
   let difference = 0;
-  for (let index = 0; index < left.length; index++) {
+  for (let index = 0; index < left.length; index += 1) {
     difference += Math.abs((left[index] ?? 0) - (right[index] ?? 0));
   }
   return difference === 0;
-}
+};

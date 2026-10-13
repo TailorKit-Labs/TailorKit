@@ -11,13 +11,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 
-function requireSession() {
+const requireSession = () => {
   const session = getDemoSessionFromRequest(getRequest());
   if (!session) {
     throw new Error("Sign in to continue");
   }
   return session;
-}
+};
 
 export const loadOverview = createServerFn({ method: "GET" }).handler(() => {
   const { team } = requireSession();

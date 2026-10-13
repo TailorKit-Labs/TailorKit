@@ -46,9 +46,19 @@ beforeEach(() => {
 it("waits for authorization before handling an early message", async () => {
   let resolveAuthorization;
   mocks.authorize.mockReturnValueOnce(
-    new Promise((resolve) => {
-      resolveAuthorization = resolve;
-    })
+    (() => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers();
+      try {
+        resolveAuthorization = resolve;
+      } catch (error) {
+        rejectPending(error);
+      }
+      return pendingPromise;
+    })()
   );
   const peer = { close: vi.fn(), context: { ...context, token: "token" } };
   const message = { rawData: "{}" };
@@ -67,9 +77,19 @@ it("waits for authorization before handling an early message", async () => {
 it("closes an early message when authorization fails", async () => {
   let resolveAuthorization;
   mocks.authorize.mockReturnValueOnce(
-    new Promise((resolve) => {
-      resolveAuthorization = resolve;
-    })
+    (() => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers();
+      try {
+        resolveAuthorization = resolve;
+      } catch (error) {
+        rejectPending(error);
+      }
+      return pendingPromise;
+    })()
   );
   const peer = { close: vi.fn(), context: { ...context, token: "invalid" } };
 
@@ -84,9 +104,19 @@ it("closes an early message when authorization fails", async () => {
 it("closes a peer that sends multiple frames before authorization finishes", async () => {
   let resolveAuthorization;
   mocks.authorize.mockReturnValueOnce(
-    new Promise((resolve) => {
-      resolveAuthorization = resolve;
-    })
+    (() => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers();
+      try {
+        resolveAuthorization = resolve;
+      } catch (error) {
+        rejectPending(error);
+      }
+      return pendingPromise;
+    })()
   );
   const peer = { close: vi.fn(), context: { ...context, token: "token" } };
   const opening = socket.open(peer);

@@ -33,7 +33,7 @@ const testState = vi.hoisted(() => ({
       projectId: string;
       appId: string;
       deploymentId: string;
-    }) => ({ token: "platform-token", expiresAt: Date.now() + 300_000 })
+    }) => await { expiresAt: Date.now() + 300_000, token: "platform-token" }
   ),
   publishMetadata: vi.fn(),
 }));
@@ -71,35 +71,36 @@ const productionScope = {
 };
 const stagingScope = { name: "environment", value: { environment: "staging" } };
 
-function createContext(overrides: Partial<Context> = {}): Context {
-  return {
-    organization: {
-      createdAt: new Date("2026-01-01T00:00:00.000Z"),
-      id: orgId,
-      logo: null,
-      metadata: null,
-      name: "Analytical Engines",
-      publicId: "team0000000001",
-      slug: "analytical-engines",
-    },
-    project: {
-      createdAt: new Date("2026-01-02T00:00:00.000Z"),
-      id: projectId,
-      name: "Compiler",
-      organizationId: orgId,
-      slug: "compiler",
-      updatedAt: new Date("2026-01-02T00:00:00.000Z"),
-    },
-    storage: {
-      createDownloadUrl: vi.fn(),
-      createUploadUrl: vi.fn(),
-      delete: vi.fn(),
-      head: vi.fn(),
-      type: "s3",
-    },
-    ...overrides,
-  };
-}
+const createContext = (overrides: Partial<Context> = {}): Context => ({
+  organization: {
+    createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    id: orgId,
+    logo: null,
+    metadata: null,
+    name: "Analytical Engines",
+    publicId: "team0000000001",
+    slug: "analytical-engines",
+  },
+  project: {
+    createdAt: new Date("2026-01-02T00:00:00.000Z"),
+    id: projectId,
+    name: "Compiler",
+    organizationId: orgId,
+    slug: "compiler",
+    updatedAt: new Date("2026-01-02T00:00:00.000Z"),
+  },
+  storage: {
+    createDownloadUrl: vi.fn(),
+    createUploadUrl: vi.fn(),
+    delete: vi.fn(),
+    head: vi.fn(),
+    type: "s3",
+  },
+  ...overrides,
+});
+
+const createdAtImplementationImplementation = (day: number) =>
+  new Date(`2026-01-${String(day).padStart(2, "0")}T00:00:00.000Z`);
 
 describe("platform appRouter", () => {
   let client: Awaited<ReturnType<typeof createTestDb>>["client"];
@@ -108,8 +109,8 @@ describe("platform appRouter", () => {
   beforeEach(async () => {
     testState.env.APP_RUNTIME_URL = undefined;
     const testDb = await createTestDb();
-    client = testDb.client;
-    db = testDb.db;
+    ({ client } = testDb);
+    ({ db } = testDb);
     testState.db = db;
 
     await db.insert(user).values({
@@ -308,13 +309,14 @@ describe("platform appRouter", () => {
     );
   });
 
+  const createdAtImplementation = createdAtImplementationImplementation;
+
   it("lists apps across selected named scopes with global ordering and pagination", async () => {
     const context = createContext();
     const teamScope = { name: "team", value: { teamId: "team_1" } };
     const userScope = { name: "user", value: { userId: "user_1" } };
     const excludedScope = { name: "team", value: { teamId: "team_2" } };
-    const createdAt = (day: number) =>
-      new Date(`2026-01-${String(day).padStart(2, "0")}T00:00:00.000Z`);
+    const createdAt = createdAtImplementation;
 
     await db.insert(appTable).values([
       {
@@ -653,6 +655,7 @@ describe("platform appRouter", () => {
         [stagingScope, productionScope],
         [productionScope, stagingScope],
       ]) {
+        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
         await call(
           appRouter.runtimeSession,
           { body: { scopes, toolUrl: input.body.toolUrl }, params: { appId } },
@@ -670,6 +673,7 @@ describe("platform appRouter", () => {
       "https://runtime.test#fragment",
     ]) {
       testState.env.APP_RUNTIME_URL = runtimeUrl;
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       await expect(
         call(appRouter.runtimeSession, input, { context })
       ).rejects.toMatchObject({

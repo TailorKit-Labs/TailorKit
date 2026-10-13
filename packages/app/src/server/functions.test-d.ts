@@ -50,8 +50,8 @@ void result;
 const nestedApp = defineServer({
   tasks: {
     save: action({
-      functions: { todos: functions },
       args: z.undefined(),
+      functions: { todos: functions },
       async handler(ctx) {
         const read: number = await ctx.queries.todos.read({ raw: "4" });
         const written: number = await ctx.mutations.todos.write({

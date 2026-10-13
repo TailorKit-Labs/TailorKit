@@ -6,12 +6,10 @@ export interface Reference<K extends "query" | "mutation" | "action", I, O> {
   readonly name: string;
   readonly $types?: { kind: K; input: I; output: O };
 }
-export function reference<K extends "query" | "mutation" | "action", I, O>(
+export const reference = <K extends "query" | "mutation" | "action", I, O>(
   name: string,
   _kind: K
-): Reference<K, I, O> {
-  return Object.freeze({ name });
-}
+): Reference<K, I, O> => Object.freeze({ name });
 export type References<F> = {
   readonly [N in keyof F]: F[N] extends {
     kind: infer K extends "query" | "mutation" | "action";
@@ -25,9 +23,9 @@ export type References<F> = {
 };
 
 /** Browser references inferred directly from the server's exported function type. */
-export function createApi<F extends Functions>(): References<F> {
-  function group(path: string): References<F> {
-    return new Proxy(Object.create(null) as References<F>, {
+export const createApi = <F extends Functions>(): References<F> => {
+  const group = (path: string): References<F> =>
+    new Proxy(Object.create(null) as References<F>, {
       get(_target, name) {
         if (typeof name !== "string" || name === "then") {
           return;
@@ -38,6 +36,5 @@ export function createApi<F extends Functions>(): References<F> {
         return group(path ? `${path}.${name}` : name);
       },
     });
-  }
   return group("");
-}
+};

@@ -49,7 +49,7 @@ interface InvitationColumnsOptions {
   revokePending: boolean;
 }
 
-function createInvitationColumns({
+const createInvitationColumns = ({
   canManage,
   onResend,
   onRevoke,
@@ -58,95 +58,93 @@ function createInvitationColumns({
 }: InvitationColumnsOptions): ColumnDef<
   typeof dataTableFeatures,
   InvitationRow
->[] {
-  return [
-    {
-      accessorKey: "email",
-      cell: ({
-        row,
-      }: CellContext<typeof dataTableFeatures, InvitationRow, unknown>) => {
-        const initials = row.original.email.slice(0, 2).toUpperCase();
-        return (
-          <div className="flex items-center gap-3">
-            <Avatar className="size-7">
-              <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-            </Avatar>
-            <p className="truncate text-sm font-medium">{row.original.email}</p>
-          </div>
-        );
-      },
-      header: "Email",
-      size: 280,
+>[] => [
+  {
+    accessorKey: "email",
+    cell: ({
+      row,
+    }: CellContext<typeof dataTableFeatures, InvitationRow, unknown>) => {
+      const initials = row.original.email.slice(0, 2).toUpperCase();
+      return (
+        <div className="flex items-center gap-3">
+          <Avatar className="size-7">
+            <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+          </Avatar>
+          <p className="truncate text-sm font-medium">{row.original.email}</p>
+        </div>
+      );
     },
-    {
-      accessorKey: "role",
-      cell: ({
-        row,
-      }: CellContext<typeof dataTableFeatures, InvitationRow, unknown>) => {
-        const role = row.original.role ?? "member";
-        return (
-          <Badge variant={getRoleBadgeVariant(role)} size="lg">
-            {role.charAt(0).toUpperCase() + role.slice(1)}
-          </Badge>
-        );
-      },
-      header: "Role",
-      size: 110,
+    header: "Email",
+    size: 280,
+  },
+  {
+    accessorKey: "role",
+    cell: ({
+      row,
+    }: CellContext<typeof dataTableFeatures, InvitationRow, unknown>) => {
+      const role = row.original.role ?? "member";
+      return (
+        <Badge variant={getRoleBadgeVariant(role)} size="lg">
+          {role.charAt(0).toUpperCase() + role.slice(1)}
+        </Badge>
+      );
     },
-    {
-      accessorKey: "expiresAt",
-      cell: ({
-        row,
-      }: CellContext<typeof dataTableFeatures, InvitationRow, unknown>) => (
-        <DateAgo date={row.original.expiresAt} />
-      ),
-      header: "Expires",
-      size: 140,
-      sortFn: "datetime",
-    },
-    {
-      cell: ({
-        row,
-      }: CellContext<typeof dataTableFeatures, InvitationRow, unknown>) =>
-        canManage ? (
-          <div className="flex items-center justify-end gap-1">
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={<Button size="icon-sm" variant="ghost" />}
+    header: "Role",
+    size: 110,
+  },
+  {
+    accessorKey: "expiresAt",
+    cell: ({
+      row,
+    }: CellContext<typeof dataTableFeatures, InvitationRow, unknown>) => (
+      <DateAgo date={row.original.expiresAt} />
+    ),
+    header: "Expires",
+    size: 140,
+    sortFn: "datetime",
+  },
+  {
+    cell: ({
+      row,
+    }: CellContext<typeof dataTableFeatures, InvitationRow, unknown>) =>
+      canManage ? (
+        <div className="flex items-center justify-end gap-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<Button size="icon-sm" variant="ghost" />}
+            >
+              <MoreHorizontalIcon className="size-4" />
+              <span className="sr-only">Open invitation actions</span>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem
+                disabled={resendPending}
+                onClick={() => onResend(row.original)}
               >
-                <MoreHorizontalIcon className="size-4" />
-                <span className="sr-only">Open invitation actions</span>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuItem
-                  disabled={resendPending}
-                  onClick={() => onResend(row.original)}
-                >
-                  <SendIcon />
-                  Resend email
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  disabled={revokePending}
-                  variant="destructive"
-                  onClick={() => onRevoke(row.original.id)}
-                >
-                  <TrashIcon />
-                  Revoke invite
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        ) : null,
-      enableSorting: false,
-      header: () => null,
-      id: "actions",
-      size: 80,
-    },
-  ];
-}
+                <SendIcon />
+                Resend email
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                disabled={revokePending}
+                variant="destructive"
+                onClick={() => onRevoke(row.original.id)}
+              >
+                <TrashIcon />
+                Revoke invite
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ) : null,
+    enableSorting: false,
+    header: () => null,
+    id: "actions",
+    size: 80,
+  },
+];
 
-export function InvitationsTable({
+export const InvitationsTable = ({
   invitations,
   canManage,
   onResend,
@@ -160,7 +158,7 @@ export function InvitationsTable({
   onRevoke: (invitationId: string) => void;
   resendPending: boolean;
   revokePending: boolean;
-}) {
+}) => {
   const [sorting, setSorting] = useState<SortingState>([
     { desc: false, id: "email" },
   ]);
@@ -230,4 +228,4 @@ export function InvitationsTable({
       </Table>
     </CardFrame>
   );
-}
+};

@@ -14,17 +14,19 @@ afterEach(() => {
   }
 });
 
-function root() {
+const root = () => {
   const element = document.createElement("div");
   roots.push(element);
   return element;
-}
+};
 
 it("supplies instance data and context, updates data, and resets component state when the key changes", async () => {
   const view = defineView({
-    component: (): ComponentChild => {
+    // oxlint-disable-next-line func-name-matching -- The named function is a React-compatible test component supplied through a component property.
+    component: function ViewComponent(): ComponentChild {
       const instance = view.useInstance();
       const context = view.useContext();
+      // oxlint-disable-next-line react/hook-use-state -- The test reads the initial state without exposing a setter.
       const [initialKey] = useState(instance.key);
       return h(
         "span",
@@ -100,10 +102,10 @@ it("reports missing instances and useInstance outside its view", () => {
       root()
     )
   ).toThrow("requires a selected instance");
-  function Outside() {
+  const Outside = () => {
     view.useInstance();
     return null;
-  }
+  };
   expect(() => render(h(Outside, {}), root())).toThrow(
     "View instance is only available"
   );

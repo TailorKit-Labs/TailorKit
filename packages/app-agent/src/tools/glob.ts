@@ -18,20 +18,20 @@ export const globTool = tool({
     const sandbox = await toolSandbox(options);
     const { abortSignal } = options;
     return sandbox.run({
+      abortSignal,
       command: `rg --no-config --files --hidden --glob ${quote(pattern)}`,
       workingDirectory: resolvePath(path),
-      abortSignal,
     });
   },
   inputSchema: z.object({
-    pattern: z
-      .string()
-      .min(1)
-      .describe("A ripgrep glob, such as *.ts or src/**/*.tsx."),
     path: z
       .string()
       .default(".")
       .describe("Search directory relative to /workspace/app, or absolute."),
+    pattern: z
+      .string()
+      .min(1)
+      .describe("A ripgrep glob, such as *.ts or src/**/*.tsx."),
   }),
   outputSchema: commandResultSchema,
 });

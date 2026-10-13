@@ -48,10 +48,13 @@ it("verifies configured public keys without making external requests", async () 
       platformUrl: issuer,
       publicKeys: keys,
     });
+    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     const session = await issueAppToken(signing, identity);
+    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     expect(await Effect.runPromise(verify(session.token))).toMatchObject(
       identity
     );
+    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     expect(await Effect.runPromise(verify(session.token))).toMatchObject(
       identity
     );

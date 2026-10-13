@@ -57,7 +57,7 @@ const authorScope = { name: "user", value: { userId: "author" } };
 const otherHostScope = { name: "user", value: { userId: "other" } };
 const viewerScope = { name: "user", value: { userId: "viewer" } };
 
-function fakeKV() {
+const fakeKV = () => {
   const data = new Map<string, string>();
   return {
     delete: async (key: string) => {
@@ -105,7 +105,7 @@ function fakeKV() {
     },
     subscribe: async () => async () => {},
   };
-}
+};
 
 const context: Context = {
   organization: {
@@ -134,13 +134,20 @@ const context: Context = {
   },
 };
 
+const startImplementation = () =>
+  call(
+    previewRouter.start,
+    { body: { appId: "authapp00001", deployToken: "deploy-token" } },
+    { context }
+  );
+
 describe("platform preview lifecycle and grants", () => {
   let client: Awaited<ReturnType<typeof createTestDb>>["client"];
   let db: Awaited<ReturnType<typeof createTestDb>>["db"];
   beforeEach(async () => {
     const testDb = await createTestDb();
-    client = testDb.client;
-    db = testDb.db;
+    ({ client } = testDb);
+    ({ db } = testDb);
     state.db = db;
     state.kv = fakeKV();
     await db.insert(organization).values({
@@ -161,10 +168,14 @@ describe("platform preview lifecycle and grants", () => {
     const { hashSecret } = await import("@tailorkit/api-utils/hashing");
     await db.insert(cliToken).values({
       id: tokenId,
+
       projectId,
+
       ...canonicalizeScope(authorScope),
-      tokenHash: hashSecret("deploy-token", authSecret),
+
       expiresAt: new Date(Date.now() + 60_000),
+
+      tokenHash: hashSecret("deploy-token", authSecret),
     });
     await db.insert(appTable).values([
       {
@@ -186,12 +197,7 @@ describe("platform preview lifecycle and grants", () => {
     vi.clearAllMocks();
   });
 
-  const start = () =>
-    call(
-      previewRouter.start,
-      { body: { appId: "authapp00001", deployToken: "deploy-token" } },
-      { context }
-    );
+  const start = startImplementation;
 
   it("serves prefixed GET routes with validated path parameters", async () => {
     const started = await start();
@@ -382,8 +388,8 @@ describe("platform preview lifecycle and grants", () => {
         manifest: {
           files: [],
           views: [
-            { slot: "page", path: "/", instances: true },
-            { slot: "page", path: "/disabled", disabled: true },
+            { instances: true, path: "/", slot: "page" },
+            { disabled: true, path: "/disabled", slot: "page" },
           ],
         },
         revision: 1,
@@ -550,10 +556,14 @@ describe("platform preview lifecycle and grants", () => {
     const { hashSecret } = await import("@tailorkit/api-utils/hashing");
     await db.insert(cliToken).values({
       id: "44444444-4444-4444-8444-444444444444",
+
       projectId,
+
       ...canonicalizeScope(otherHostScope),
-      tokenHash: hashSecret("other-token", authSecret),
+
       expiresAt: new Date(Date.now() + 60_000),
+
+      tokenHash: hashSecret("other-token", authSecret),
     });
     const otherScope = await call(
       previewRouter.start,
@@ -641,7 +651,11 @@ describe("platform preview lifecycle and grants", () => {
       { context: { ...context, agentToken }, prefix: "/api/platform" }
     );
     expect(response.response!.status).toBe(200);
-    const started = await response.response!.json();
+    const started = (await response.response!.json()) as {
+      expiresAt: string;
+      sessionId: string;
+      tunnelToken: string;
+    };
     expect(new Date(started.expiresAt).getTime()).toBe(agentToken.exp * 1000);
     await db
       .update(cliToken)

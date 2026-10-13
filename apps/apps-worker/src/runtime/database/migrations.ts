@@ -3,20 +3,27 @@ import type { AppMigration } from "@tailorkit/app/protocol";
 import { AppError } from "../errors";
 import type { Persistence } from "./driver";
 
+const require = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 export type { AppMigration } from "@tailorkit/app/protocol";
 
 /** Runs synchronously during facet initialization, before database handlers are available. */
-export function migrateDatabase(
+export const migrateDatabase = (
   persistence: Persistence,
   migrations: readonly AppMigration[]
-) {
-  for (let index = 0; index < migrations.length; index++) {
-    const migration = migrations[index]!;
+) => {
+  for (let index = 0; index < migrations.length; index += 1) {
+    const migration = require(migrations[index]);
     if (
       !/^\d{14}_[\w-]+$/u.test(migration.id) ||
       !/^[a-f0-9]{64}$/u.test(migration.hash) ||
       !migration.statements.length ||
-      (index > 0 && migrations[index - 1]!.id >= migration.id)
+      (index > 0 && require(migrations[index - 1]).id >= migration.id)
     ) {
       throw new AppError(
         "INCOMPATIBLE_VERSION",
@@ -47,8 +54,8 @@ export function migrateDatabase(
         );
       }
     }
-    for (let index = applied.length; index < migrations.length; index++) {
-      const migration = migrations[index]!;
+    for (let index = applied.length; index < migrations.length; index += 1) {
+      const migration = require(migrations[index]);
       for (const statement of migration.statements) {
         persistence.execute(statement, []);
       }
@@ -58,4 +65,4 @@ export function migrateDatabase(
       );
     }
   });
-}
+};

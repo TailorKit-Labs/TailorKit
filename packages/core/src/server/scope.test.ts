@@ -13,7 +13,7 @@ import {
 describe("TailorKit named scope validation", () => {
   it("sorts object keys recursively while preserving array order", () => {
     const input = {
-      orgs: [{ z: 1, a: 2 }, { b: { z: 3, a: 4 } }],
+      orgs: [{ a: 2, z: 1 }, { b: { a: 4, z: 3 } }],
       userId: "user_1",
     };
     const scope = normalizeTailorKitScope(input);
@@ -26,7 +26,7 @@ describe("TailorKit named scope validation", () => {
     expect(scope).not.toBe(input);
     expect(Object.isFrozen(scope)).toBe(true);
     expect(input).toEqual({
-      orgs: [{ z: 1, a: 2 }, { b: { z: 3, a: 4 } }],
+      orgs: [{ a: 2, z: 1 }, { b: { a: 4, z: 3 } }],
       userId: "user_1",
     });
   });
@@ -206,7 +206,8 @@ describe("TailorKit named scope validation", () => {
       groups: Array.from({ length: 5 }, () =>
         Array.from({ length: 100 }, () => 0)
       ),
-    }; // root + groups + five arrays + 500 items + extra + four items = 512
+      // root + groups + five arrays + 500 items + extra + four items = 512
+    };
     const beyondNodeLimit = { ...withinNodeLimit, extra: [0, 0, 0, 0, 0] };
 
     expect(() => normalizeTailorKitScope(tooManyKeys)).toThrow(/at most 32/u);

@@ -7,6 +7,13 @@ import { expect, it } from "vite-plus/test";
 
 import { readAppMigrations } from "./migrations";
 
+const require = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const example = path.resolve(
   import.meta.dirname,
   "../../test/fixtures/backend-todo/src/db/migrations"
@@ -15,10 +22,10 @@ const example = path.resolve(
 it("packages generated SQL with stable checksums and tracks the source files", async () => {
   const { migrations, files } = await readAppMigrations(example);
   expect(migrations).toHaveLength(1);
-  const sql = await readFile(files[1]!, "utf-8");
+  const sql = await readFile(require(files[1]), "utf-8");
   expect(migrations[0]).toEqual({
     hash: createHash("sha256").update(sql).digest("hex"),
-    id: path.basename(path.dirname(files[1]!)),
+    id: path.basename(path.dirname(require(files[1]))),
     statements: [sql.trim()],
   });
 });
@@ -29,7 +36,8 @@ it("allows an absent default directory but fails for missing configured migratio
   );
   try {
     const missing = path.join(root, "missing");
-    expect((await readAppMigrations(missing, true)).migrations).toEqual([]);
+    const awaitedResult1 = await readAppMigrations(missing, true);
+    expect(awaitedResult1.migrations).toEqual([]);
     await expect(readAppMigrations(missing)).rejects.toThrow(
       "Run tailorkit db generate"
     );

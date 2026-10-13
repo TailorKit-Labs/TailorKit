@@ -13,7 +13,7 @@ export class AppAgentWorkspaceBusyError extends Error {
   }
 }
 
-async function findAppDrive(appId: string) {
+const findAppDrive = async (appId: string) => {
   const name = `${drivePrefix}${appId}`;
   const { drives } = await Drive.list({
     limit: 1,
@@ -21,22 +21,22 @@ async function findAppDrive(appId: string) {
     sortBy: "name",
   });
   return drives.find((drive) => drive.name === name) ?? null;
-}
+};
 
-export async function getAppAgentWorkspaceStatus(
+export const getAppAgentWorkspaceStatus = async (
   appId: string
-): Promise<"missing" | "busy" | "available"> {
+): Promise<"missing" | "busy" | "available"> => {
   const drive = await findAppDrive(appId);
   if (!drive) {
     return "missing";
   }
   return drive.currentSandboxName ? "busy" : "available";
-}
+};
 
 /** Export the persistent app-agent workspace as a source archive. */
-export async function exportAppAgentWorkspace(
+export const exportAppAgentWorkspace = async (
   appId: string
-): Promise<Buffer | null> {
+): Promise<Buffer | null> => {
   const drive = await findAppDrive(appId);
   if (!drive) {
     return null;
@@ -90,4 +90,4 @@ export async function exportAppAgentWorkspace(
         console.warn("App source export sandbox cleanup failed", error);
       });
   }
-}
+};

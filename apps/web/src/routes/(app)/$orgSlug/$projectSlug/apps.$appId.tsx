@@ -25,7 +25,7 @@ import {
 import { toastManager } from "@tailorkit/ui/toast";
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 /* oxlint-disable react/no-unstable-nested-components */
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute, useParams } from "@tanstack/react-router";
 import { flexRender, useTable } from "@tanstack/react-table";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
 import { ArrowLeftIcon, DownloadIcon, RocketIcon } from "lucide-react";
@@ -37,33 +37,9 @@ import { PageLayout } from "#components/page-layout";
 import { client, orpc } from "#lib/orpc";
 import { dataTableFeatures } from "#lib/table";
 
-export const Route = createFileRoute(
-  "/(app)/$orgSlug/$projectSlug/apps/$appId"
-)({
-  component: AppPage,
-  loader: ({ context, params }) =>
-    context.queryClient.query(
-      context.orpc.apps.get.queryOptions({
-        input: {
-          appId: params.appId,
-          orgSlug: params.orgSlug,
-          projectSlug: params.projectSlug,
-        },
-      })
-    ),
-});
-
-interface DeploymentRow {
-  id: string;
-  publicId: string;
-  status: string;
-  createdAt: Date | string;
-  updatedAt: Date | string;
-}
-
-function getDeploymentStatusVariant(
+const getDeploymentStatusVariant = (
   status: string
-): "info" | "outline" | "success" | "warning" {
+): "info" | "outline" | "success" | "warning" => {
   if (status === "published") {
     return "success";
   }
@@ -74,15 +50,15 @@ function getDeploymentStatusVariant(
     return "info";
   }
   return "outline";
-}
+};
 
-function DeploymentsTable({
+const DeploymentsTable = ({
   currentDeploymentId,
   deployments,
 }: {
   currentDeploymentId: string | null;
   deployments: DeploymentRow[];
-}) {
+}) => {
   const [sorting, setSorting] = useState<SortingState>([
     { desc: true, id: "createdAt" },
   ]);
@@ -177,10 +153,12 @@ function DeploymentsTable({
       </Table>
     </CardFrame>
   );
-}
+};
 
-function AppPage() {
-  const { appId, orgSlug, projectSlug } = Route.useParams();
+const AppPage = () => {
+  const { appId, orgSlug, projectSlug } = useParams({
+    from: "/(app)/$orgSlug/$projectSlug/apps/$appId",
+  });
   const sourceExportInput = { appId, orgSlug, projectSlug };
   const { data: sourceExportStatus } = useQuery(
     orpc.apps.sourceExportStatus.queryOptions({ input: sourceExportInput })
@@ -323,4 +301,28 @@ function AppPage() {
       )}
     </PageLayout>
   );
+};
+
+export const Route = createFileRoute(
+  "/(app)/$orgSlug/$projectSlug/apps/$appId"
+)({
+  component: AppPage,
+  loader: ({ context, params }) =>
+    context.queryClient.query(
+      context.orpc.apps.get.queryOptions({
+        input: {
+          appId: params.appId,
+          orgSlug: params.orgSlug,
+          projectSlug: params.projectSlug,
+        },
+      })
+    ),
+});
+
+interface DeploymentRow {
+  id: string;
+  publicId: string;
+  status: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }

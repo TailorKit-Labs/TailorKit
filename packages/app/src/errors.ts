@@ -9,16 +9,16 @@ export type ErrorCode =
   | "INTERNAL_SERVER_ERROR";
 
 export class AppError extends Error {
-  constructor(
-    readonly code: ErrorCode,
-    message: string = code
-  ) {
+  readonly code: ErrorCode;
+  constructor(code: ErrorCode, message: string = code) {
     super(message);
+    this.code = code;
+
     this.name = "AppError";
   }
 }
 
-export function appError(error: unknown): AppError {
+export const appError = (error: unknown): AppError => {
   if (error instanceof AppError) {
     return error;
   }
@@ -53,4 +53,4 @@ export function appError(error: unknown): AppError {
     );
   }
   return new AppError("INTERNAL_SERVER_ERROR", "App function failed");
-}
+};

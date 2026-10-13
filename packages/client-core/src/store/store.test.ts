@@ -8,13 +8,23 @@ import { createTailorKitStore } from "./store";
 
 afterEach(() => vi.unstubAllGlobals());
 
-function deferredResponse() {
+const deferredResponse = () => {
   let resolve!: (response: Response) => void;
-  const promise = new Promise<Response>((done) => {
-    resolve = done;
-  });
+  const promise = (() => {
+    const {
+      promise: pendingPromise,
+      resolve: done,
+      reject: rejectPending,
+    } = Promise.withResolvers<Response>();
+    try {
+      resolve = done;
+    } catch (error) {
+      rejectPending(error);
+    }
+    return pendingPromise;
+  })();
   return { promise, resolve };
-}
+};
 
 describe("client stores", () => {
   it("normalizes endpoints without changing the input URL", () => {
@@ -38,8 +48,8 @@ describe("client stores", () => {
       const apps = vi.spyOn(client, "apps");
       expect(() =>
         createTailorKitStore({
-          baseUrl,
           apps: undefined,
+          baseUrl,
           client,
           contract: testContract(),
         })
@@ -57,8 +67,8 @@ describe("client stores", () => {
         baseUrl: "https://host.test/api/",
       });
       const store = createTailorKitStore({
-        baseUrl,
         apps: undefined,
+        baseUrl,
         client,
         contract: testContract(),
       });

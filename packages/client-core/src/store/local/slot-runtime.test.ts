@@ -8,7 +8,14 @@ import { createTailorKitStore } from "../store";
 import { createSlotRuntime } from "./slot-runtime";
 import type { SlotRuntimeOptions } from "./slot-runtime";
 
-function setup(multiple = false) {
+const require = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
+const setup = (multiple = false) => {
   const fetch = vi.fn<typeof globalThis.fetch>();
   const client = createTailorKitFetchClient({
     baseUrl: "https://host.test/api/",
@@ -26,11 +33,11 @@ function setup(multiple = false) {
     id: "app",
     projectId: "project",
     views: [
-      { slot: "page", path: "/", ...(multiple ? { instances: true } : {}) },
+      { path: "/", slot: "page", ...(multiple ? { instances: true } : {}) },
     ],
   };
   return { app, client, fetch, store };
-}
+};
 
 it("waits for an active managed view and constructs deployment URL and hierarchy props in core", async () => {
   const { client, store, app, fetch } = setup();
@@ -52,7 +59,7 @@ it("waits for an active managed view and constructs deployment URL and hierarchy
     props: {
       declaredViews: ["/"],
       layers: [
-        { path: "/", status: "ready", context: { customer: "registered" } },
+        { context: { customer: "registered" }, path: "/", status: "ready" },
       ],
       slot: "page",
       supportedViews: ["/"],
@@ -209,7 +216,10 @@ it("keeps preview subscriptions across context changes and switches sessions wit
   expect(first.lc).toBe(1);
   runtime.setInput({
     ...options,
-    app: { ...app, preview: { ...app.preview!, sessionId: "second" } },
+    app: {
+      ...app,
+      preview: { ...require(app.preview), sessionId: "second" },
+    },
   });
   expect(stopped).toHaveBeenCalledOnce();
   const switched = runtime.state.get();
@@ -234,9 +244,21 @@ it("cancels an instance request when switching to a controlled slot", async () =
   vi.spyOn(client.endpoints, "slotInstances").mockImplementation(
     (_app, _input, abort) => {
       signal = abort;
-      return new Promise((resolve) => {
-        respond = resolve;
-      });
+      return (() => {
+        const {
+          promise: pendingPromise,
+          resolve,
+          reject: rejectPending,
+        } = Promise.withResolvers<
+          Awaited<ReturnType<typeof client.endpoints.slotInstances>>
+        >();
+        try {
+          respond = resolve;
+        } catch (error) {
+          rejectPending(error);
+        }
+        return pendingPromise;
+      })();
     }
   );
   const id = Symbol("view");

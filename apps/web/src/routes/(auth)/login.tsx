@@ -14,7 +14,12 @@ import {
 import { useAppForm } from "@tailorkit/ui/form";
 import { Logo } from "@tailorkit/ui/logo";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
+import {
+  useNavigate,
+  createFileRoute,
+  Link,
+  useSearch,
+} from "@tanstack/react-router";
 import { ArrowLeftIcon, KeyRoundIcon } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
@@ -28,16 +33,6 @@ import {
   getSameOriginUrl,
 } from "#lib/safe-return-url";
 
-export const Route = createFileRoute("/(auth)/login")({
-  component: RouteComponent,
-  validateSearch: z.object({
-    email: z.string().optional(),
-    error: z.string().optional(),
-    error_description: z.string().optional(),
-    return_to: z.string().optional(),
-  }),
-});
-
 const GitHubIcon = () => (
   <svg
     viewBox="0 0 24 24"
@@ -48,16 +43,15 @@ const GitHubIcon = () => (
   </svg>
 );
 
-type Step = "email" | "password";
-
-function RouteComponent() {
+// oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
+const RouteComponent = () => {
   const {
     email: emailFromSearch,
-    error,
+    error: authenticationError,
     error_description,
     return_to,
   } = useSearch({ from: "/(auth)/login" });
-  const navigate = Route.useNavigate();
+  const navigate = useNavigate({ from: "/login" });
   const socialProvidersQuery = useQuery(
     orpc.user.getSocialProviders.queryOptions()
   );
@@ -88,7 +82,19 @@ function RouteComponent() {
   const emailForm = useAppForm({
     defaultValues: { email: emailFromSearch || "" },
     onSubmit: async ({ value }) => {
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      await (() => {
+        const {
+          promise: pendingPromise,
+          resolve,
+          reject: rejectPending,
+        } = Promise.withResolvers();
+        try {
+          setTimeout(resolve, 300);
+        } catch (error) {
+          rejectPending(error);
+        }
+        return pendingPromise;
+      })();
       transition("password", value.email);
     },
     validators: {
@@ -179,13 +185,15 @@ function RouteComponent() {
       await authClient.signIn.email(
         { email, password: value.password },
         {
-          onError: (error) => {
-            if (error.error.code === "EMAIL_NOT_VERIFIED") {
+          onError: (errorValue2) => {
+            if (errorValue2.error.code === "EMAIL_NOT_VERIFIED") {
               navigate({ search: { email, return_to }, to: "/verify-email" });
               return;
             }
             setPasswordError(
-              error.error.message || error.error.statusText || "Sign in failed"
+              errorValue2.error.message ||
+                errorValue2.error.statusText ||
+                "Sign in failed"
             );
           },
           onSuccess: async (context) => {
@@ -195,12 +203,12 @@ function RouteComponent() {
 
             window.sessionStorage.removeItem("tailorkit.two-factor-return-to");
             await queryClient.invalidateQueries();
-            const returnPath = getSameOriginPath(
+            const returnPathValue = getSameOriginPath(
               return_to,
               window.location.origin
             );
-            if (returnPath) {
-              window.location.href = returnPath;
+            if (returnPathValue) {
+              window.location.href = returnPathValue;
             } else {
               navigate({ to: "/" });
             }
@@ -250,12 +258,12 @@ function RouteComponent() {
                       {(passkeyError ||
                         socialError ||
                         error_description ||
-                        error) && (
+                        authenticationError) && (
                         <p className="text-destructive text-sm" role="alert">
                           {passkeyError ||
                             socialError ||
                             error_description ||
-                            error}
+                            authenticationError}
                         </p>
                       )}
                       {socialProvidersQuery.data?.github && (
@@ -265,7 +273,7 @@ function RouteComponent() {
                           className="w-full"
                           disabled={authPending && socialPending !== "github"}
                           loading={socialPending === "github"}
-                          onClick={() => void signInWithSocial("github")}
+                          onClick={() => signInWithSocial("github")}
                         >
                           <GitHubIcon />
                           Continue with GitHub
@@ -278,7 +286,7 @@ function RouteComponent() {
                           className="w-full"
                           disabled={authPending && socialPending !== "google"}
                           loading={socialPending === "google"}
-                          onClick={() => void signInWithSocial("google")}
+                          onClick={() => signInWithSocial("google")}
                         >
                           <GoogleIcon className="size-4 shrink-0" />
                           Continue with Google
@@ -290,7 +298,7 @@ function RouteComponent() {
                         className="w-full"
                         disabled={authPending && !passkeyPending}
                         loading={passkeyPending}
-                        onClick={() => void signInWithPasskey()}
+                        onClick={() => signInWithPasskey()}
                       >
                         <KeyRoundIcon
                           aria-hidden="true"
@@ -385,7 +393,7 @@ function RouteComponent() {
 
           <CardFrameFooter className="relative">
             <p className="text-muted-foreground text-sm">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link
                 search={{ email, return_to }}
                 to="/sign-up"
@@ -399,4 +407,16 @@ function RouteComponent() {
       </div>
     </div>
   );
-}
+};
+
+export const Route = createFileRoute("/(auth)/login")({
+  component: RouteComponent,
+  validateSearch: z.object({
+    email: z.string().optional(),
+    error: z.string().optional(),
+    error_description: z.string().optional(),
+    return_to: z.string().optional(),
+  }),
+});
+
+type Step = "email" | "password";

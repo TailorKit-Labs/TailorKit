@@ -10,6 +10,9 @@ import type { HostToIframePayload as HostToIframePayloadType } from "../protocol
 import { createRemoteUiStore } from "./store.js";
 import type { RemoteUiStore } from "./store.js";
 
+export { type RemoteUiStore } from "./store.js";
+export { createRemoteUiStore } from "./store.js";
+
 interface IframeBridgeMessage {
   channel: string;
   payload?: unknown;
@@ -17,11 +20,11 @@ interface IframeBridgeMessage {
 }
 
 export interface IframeUiHost extends RemoteUiStore {
-  destroy(): void;
-  dispatch(payload: HostToIframePayloadType): void;
+  destroy: () => void;
+  dispatch: (payload: HostToIframePayloadType) => void;
   iframe: HTMLIFrameElement;
-  mount(): void;
-  setProps(props: Record<string, unknown> | undefined): void;
+  mount: () => void;
+  setProps: (props: Record<string, unknown> | undefined) => void;
 }
 
 export interface IframeUiHostOptions {
@@ -37,10 +40,68 @@ export interface IframeUiHostOptions {
   getBackendSession?: (options: { refresh: boolean }) => Promise<Session>;
 }
 
-export function createIframeUiHost(
+const createChannelId = (): string => {
+  const bytes = new Uint8Array(16);
+  globalThis.crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
+    ""
+  );
+};
+
+const toUrl = (value: string | URL): URL =>
+  value instanceof URL ? value : new URL(value, globalThis.location?.href);
+
+const createIframeDocument = (channel: string): string =>
+  `<!doctype html>
+<html data-tailorkit-channel="${channel}">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' data:; worker-src 'none'; connect-src http: https: ws: wss:; img-src 'none'; style-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'">
+  </head>
+  <body>
+    <div id="tailorkit-root"></div>
+    <script>${iframeSource.replaceAll("</script", "<\\/script")}</script>
+  </body>
+</html>`;
+
+const configureIframe = (iframe: HTMLIFrameElement, channel: string): void => {
+  iframe.hidden = true;
+  iframe.tabIndex = -1;
+  iframe.title = "TailorKit extension sandbox";
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.setAttribute("referrerpolicy", "no-referrer");
+  iframe.setAttribute("sandbox", "allow-scripts");
+  iframe.srcdoc = createIframeDocument(channel);
+};
+
+const isBridgeMessage = (
+  value: unknown,
+  channel: string
+): value is IframeBridgeMessage =>
+  typeof value === "object" &&
+  value !== null &&
+  "channel" in value &&
+  value.channel === channel &&
+  "type" in value &&
+  typeof value.type === "string";
+
+const fetchSource = async (
+  fetchImplementation: typeof globalThis.fetch,
+  url: URL
+): Promise<string> => {
+  const response = await fetchImplementation(url, { credentials: "omit" });
+  if (!response.ok) {
+    throw new Error(
+      `Unable to load TailorKit app client from ${url.toString()}.`
+    );
+  }
+  return response.text();
+};
+
+export const createIframeUiHost = (
   appUrl: string | URL,
   options: IframeUiHostOptions = {}
-): IframeUiHost {
+): IframeUiHost => {
   if (typeof document === "undefined" || typeof window === "undefined") {
     throw new TypeError(
       "TailorKit's iframe sandbox requires a browser environment."
@@ -64,10 +125,8 @@ export function createIframeUiHost(
 
   configureIframe(iframe, channel);
 
-  const reportError = (error: unknown): void => {
-    options.onError?.(
-      error instanceof Error ? error : new Error(String(error))
-    );
+  const reportError = (err: unknown): void => {
+    options.onError?.(err instanceof Error ? err : new Error(String(err)));
   };
 
   const postToIframe = (payload: HostToIframePayloadType): void => {
@@ -81,7 +140,8 @@ export function createIframeUiHost(
     if (!mounted || !iframeReady || destroyed) {
       return;
     }
-    const revision = ++initRevision;
+    initRevision += 1;
+    const revision = initRevision;
     const appSource = await appSourcePromise;
     if (destroyed || appSource === null || revision !== initRevision) {
       return;
@@ -108,7 +168,13 @@ export function createIframeUiHost(
     }
     if (event.data.type === iframeReadyType) {
       iframeReady = true;
-      void sendInit().catch(reportError);
+      void (async () => {
+        try {
+          await sendInit();
+        } catch (error) {
+          reportError(error);
+        }
+      })();
       return;
     }
     if (event.data.type !== sandboxMessageType) {
@@ -131,27 +197,37 @@ export function createIframeUiHost(
       }
       toolCalls.add(id);
       const bridge = options.toolBridge;
-      void (
-        bridge
-          ? kind === "client"
-            ? bridge.client(path, input)
-            : bridge.session(path)
-          : Promise.reject(new Error("Tool bridge unavailable"))
-      )
-        .then((output) => {
-          if (!destroyed) {
-            postToIframe({ type: "toolResult", data: { id, output } });
-          }
-        })
-        .catch(() => {
-          if (!destroyed) {
-            postToIframe({
-              type: "toolResult",
-              data: { id, error: "Tool request failed" },
-            });
-          }
-        })
-        .finally(() => toolCalls.delete(id));
+      void (async () => {
+        try {
+          return await (async () => {
+            try {
+              return await (async () => {
+                const output = await (() => {
+                  if (bridge) {
+                    if (kind === "client") {
+                      return bridge.client(path, input);
+                    }
+                    return bridge.session(path);
+                  }
+                  return Promise.reject(new Error("Tool bridge unavailable"));
+                })();
+                if (!destroyed) {
+                  postToIframe({ data: { id, output }, type: "toolResult" });
+                }
+              })();
+            } catch {
+              if (!destroyed) {
+                postToIframe({
+                  data: { error: "Tool request failed", id },
+                  type: "toolResult",
+                });
+              }
+            }
+          })();
+        } finally {
+          toolCalls.delete(id);
+        }
+      })();
       return;
     }
     if (result.output.type === "backendSessionRequest") {
@@ -160,37 +236,45 @@ export function createIframeUiHost(
         return;
       }
       sessionCalls.add(id);
-      void (
-        options.getBackendSession?.({ refresh }) ??
-        Promise.reject(new Error("App backend is not configured"))
-      )
-        .then((session) => {
-          if (!destroyed) {
-            postToIframe({
-              data: { id, session },
-              type: "backendSessionResult",
-            });
-          }
-        })
-        .catch((error: unknown) => {
-          const failure =
-            error instanceof AppError
-              ? error
-              : new AppError(
-                  "UNAVAILABLE",
-                  "Unable to authorize the app backend"
-                );
-          if (!destroyed) {
-            postToIframe({
-              data: {
-                error: { code: failure.code, message: failure.message },
-                id,
-              },
-              type: "backendSessionResult",
-            });
-          }
-        })
-        .finally(() => sessionCalls.delete(id));
+      void (async () => {
+        try {
+          return await (async () => {
+            try {
+              return await (async () => {
+                const session = await (options.getBackendSession?.({
+                  refresh,
+                }) ??
+                  Promise.reject(new Error("App backend is not configured")));
+                if (!destroyed) {
+                  postToIframe({
+                    data: { id, session },
+                    type: "backendSessionResult",
+                  });
+                }
+              })();
+            } catch (error) {
+              const failure =
+                error instanceof AppError
+                  ? error
+                  : new AppError(
+                      "UNAVAILABLE",
+                      "Unable to authorize the app backend"
+                    );
+              if (!destroyed) {
+                postToIframe({
+                  data: {
+                    error: { code: failure.code, message: failure.message },
+                    id,
+                  },
+                  type: "backendSessionResult",
+                });
+              }
+            }
+          })();
+        } finally {
+          sessionCalls.delete(id);
+        }
+      })();
       return;
     }
     try {
@@ -232,82 +316,26 @@ export function createIframeUiHost(
           ? fetchSource(fetchImplementation, resolvedAppUrl)
           : Promise.resolve(options.sourceText);
       (options.mountTarget ?? document.body).append(iframe);
-      void sendInit().catch(reportError);
+      void (async () => {
+        try {
+          await sendInit();
+        } catch (error) {
+          reportError(error);
+        }
+      })();
     },
     setProps(props) {
       if (currentProps === props || destroyed) {
         return;
       }
       currentProps = props;
-      void sendInit().catch(reportError);
+      void (async () => {
+        try {
+          await sendInit();
+        } catch (error) {
+          reportError(error);
+        }
+      })();
     },
   };
-}
-
-function configureIframe(iframe: HTMLIFrameElement, channel: string): void {
-  iframe.hidden = true;
-  iframe.tabIndex = -1;
-  iframe.title = "TailorKit extension sandbox";
-  iframe.setAttribute("aria-hidden", "true");
-  iframe.setAttribute("referrerpolicy", "no-referrer");
-  iframe.setAttribute("sandbox", "allow-scripts");
-  iframe.srcdoc = createIframeDocument(channel);
-}
-
-function createIframeDocument(channel: string): string {
-  return `<!doctype html>
-<html data-tailorkit-channel="${channel}">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' data:; worker-src 'none'; connect-src http: https: ws: wss:; img-src 'none'; style-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'">
-  </head>
-  <body>
-    <div id="tailorkit-root"></div>
-    <script>${iframeSource.replaceAll("</script", "<\\/script")}</script>
-  </body>
-</html>`;
-}
-
-async function fetchSource(
-  fetchImplementation: typeof globalThis.fetch,
-  url: URL
-): Promise<string> {
-  const response = await fetchImplementation(url, { credentials: "omit" });
-  if (!response.ok) {
-    throw new Error(
-      `Unable to load TailorKit app client from ${url.toString()}.`
-    );
-  }
-  return response.text();
-}
-
-function createChannelId(): string {
-  const bytes = new Uint8Array(16);
-  globalThis.crypto.getRandomValues(bytes);
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
-    ""
-  );
-}
-
-function isBridgeMessage(
-  value: unknown,
-  channel: string
-): value is IframeBridgeMessage {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "channel" in value &&
-    value.channel === channel &&
-    "type" in value &&
-    typeof value.type === "string"
-  );
-}
-
-function toUrl(value: string | URL): URL {
-  return value instanceof URL
-    ? value
-    : new URL(value, globalThis.location?.href);
-}
-
-export { createRemoteUiStore };
-export type { RemoteUiStore };
+};

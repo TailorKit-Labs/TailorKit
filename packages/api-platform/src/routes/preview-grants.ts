@@ -5,7 +5,7 @@ import { ORPCError } from "@orpc/server";
 import { db } from "@tailorkit/db";
 import { getBaseUrl } from "@tailorkit/env";
 import { getKV } from "@tailorkit/kv";
-import z from "zod";
+import { z } from "zod";
 
 import { env } from "#env";
 
@@ -165,6 +165,7 @@ export const accepted = protectedRouter
     const items = [];
     const seen = new Set<string>();
     for (const grantId of input.body.grantIds) {
+      // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
       const raw = await kv.get(grantKey(grantId));
       if (!raw) {
         continue;
@@ -181,6 +182,7 @@ export const accepted = protectedRouter
       ) {
         continue;
       }
+      // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
       const session = await db.query.previewSession.findFirst({
         where: {
           id: grant.sessionId,
@@ -197,6 +199,7 @@ export const accepted = protectedRouter
         !session?.app ||
         session.expiresAt <= new Date() ||
         seen.has(session.app.id) ||
+        // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
         !(await ensurePreviewDeveloperGrace(kv, session.id))
       ) {
         continue;
@@ -208,6 +211,7 @@ export const accepted = protectedRouter
       );
       websocketUrl.searchParams.set("session", session.id);
       websocketUrl.searchParams.set("role", "viewer");
+      // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
       const build = await createPreviewBuildStore(kv).current(session.id);
       items.push({
         app: {

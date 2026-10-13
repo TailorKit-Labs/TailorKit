@@ -39,24 +39,24 @@ import type { ReactNode } from "react";
 import { client, orpc } from "#lib/orpc";
 
 const OTP_LENGTH = 6;
+
 const OTP_SLOT_KEYS = Array.from(
   { length: OTP_LENGTH },
   (_, index) => `slot-${index}`
 );
 
-function getErrorMessage(error: unknown, fallback: string) {
-  return error instanceof Error ? error.message : fallback;
-}
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
 
-function getTotpSecret(totpURI: string) {
+const getTotpSecret = (totpURI: string) => {
   try {
     return new URL(totpURI).searchParams.get("secret") ?? totpURI;
   } catch {
     return totpURI;
   }
-}
+};
 
-function TwoFactorSetupDialog({
+const TwoFactorSetupDialog = ({
   backupCodes,
   backupCodesSaved,
   code,
@@ -100,7 +100,7 @@ function TwoFactorSetupDialog({
   showVerificationStep: boolean;
   totpURI: string | null;
   verifying: boolean;
-}) {
+}) => {
   let title = "Set up two-factor authentication";
   let description = "Confirm your password to begin.";
   let panelContent: ReactNode = (
@@ -122,7 +122,7 @@ function TwoFactorSetupDialog({
       <Button
         disabled={!password}
         loading={enabling}
-        onClick={() => void onEnable()}
+        onClick={() => onEnable()}
         size="sm"
         type="button"
       >
@@ -161,7 +161,7 @@ function TwoFactorSetupDialog({
               render={
                 <Button
                   aria-label="Copy setup key"
-                  onClick={() => void onCopyTotpSecret()}
+                  onClick={() => onCopyTotpSecret()}
                   size="icon-xs"
                   type="button"
                   variant="ghost"
@@ -260,7 +260,7 @@ function TwoFactorSetupDialog({
           </FramePanel>
           <FrameFooter className="flex justify-end gap-1 py-2">
             <Button
-              onClick={() => void onCopyBackupCodes()}
+              onClick={() => onCopyBackupCodes()}
               size="sm"
               type="button"
               variant="ghost"
@@ -325,15 +325,15 @@ function TwoFactorSetupDialog({
       </DialogPopup>
     </Dialog>
   );
-}
+};
 
-function TwoFactorStatus({
+const TwoFactorStatus = ({
   isLoading,
   sessionError,
 }: {
   isLoading: boolean;
   sessionError: Error | null;
-}) {
+}) => {
   if (isLoading) {
     return null;
   }
@@ -347,9 +347,133 @@ function TwoFactorStatus({
   }
 
   return null;
-}
+};
 
-export function TwoFactorSettings({
+const DisableTwoFactorDialog = ({
+  disabling,
+  error,
+  onDisable,
+  onOpenChange,
+  onPasswordChange,
+  open,
+  password,
+}: {
+  disabling: boolean;
+  error: string | null;
+  onDisable: () => void;
+  onOpenChange: (open: boolean) => void;
+  onPasswordChange: (password: string) => void;
+  open: boolean;
+  password: string;
+}) => (
+  <Dialog onOpenChange={onOpenChange} open={open}>
+    <DialogPopup className="max-w-md">
+      <DialogHeader>
+        <DialogTitle>Disable two-factor authentication</DialogTitle>
+        <DialogDescription>
+          Enter your password to remove authenticator-app protection.
+        </DialogDescription>
+      </DialogHeader>
+      <DialogPanel>
+        <Field>
+          <FieldLabel>Password</FieldLabel>
+          <Input
+            autoComplete="current-password"
+            onChange={(event) => onPasswordChange(event.target.value)}
+            type="password"
+            value={password}
+          />
+        </Field>
+        {error ? (
+          <p className="text-destructive mt-3 text-sm" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </DialogPanel>
+      <DialogFooter>
+        <DialogClose
+          render={<Button size="sm" type="button" variant="ghost" />}
+        >
+          Cancel
+        </DialogClose>
+        <Button
+          disabled={!password}
+          loading={disabling}
+          onClick={() => onDisable()}
+          size="sm"
+          type="button"
+          variant="destructive-outline"
+        >
+          Disable 2FA
+        </Button>
+      </DialogFooter>
+    </DialogPopup>
+  </Dialog>
+);
+
+const RegenerateBackupCodesDialog = ({
+  error,
+  loading,
+  onOpenChange,
+  onPasswordChange,
+  onRegenerate,
+  open,
+  password,
+}: {
+  error: string | null;
+  loading: boolean;
+  onOpenChange: (open: boolean) => void;
+  onPasswordChange: (password: string) => void;
+  onRegenerate: () => void;
+  open: boolean;
+  password: string;
+}) => (
+  <Dialog onOpenChange={onOpenChange} open={open}>
+    <DialogPopup className="max-w-md">
+      <DialogHeader>
+        <DialogTitle>Regenerate recovery codes</DialogTitle>
+        <DialogDescription>
+          Your current recovery codes will stop working. Enter your password to
+          generate a new set.
+        </DialogDescription>
+      </DialogHeader>
+      <DialogPanel>
+        <Field>
+          <FieldLabel>Password</FieldLabel>
+          <Input
+            autoComplete="current-password"
+            onChange={(event) => onPasswordChange(event.target.value)}
+            type="password"
+            value={password}
+          />
+        </Field>
+        {error ? (
+          <p className="text-destructive mt-3 text-sm" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </DialogPanel>
+      <DialogFooter>
+        <DialogClose
+          render={<Button size="sm" type="button" variant="ghost" />}
+        >
+          Cancel
+        </DialogClose>
+        <Button
+          disabled={!password}
+          loading={loading}
+          onClick={() => onRegenerate()}
+          size="sm"
+          type="button"
+        >
+          Regenerate codes
+        </Button>
+      </DialogFooter>
+    </DialogPopup>
+  </Dialog>
+);
+
+export const TwoFactorSettings = ({
   hasCredentialAccount,
   isLoading,
   sessionUser,
@@ -362,7 +486,7 @@ export function TwoFactorSettings({
     | null
     | undefined;
   sessionError: Error | null;
-}) {
+}) => {
   const queryClient = useQueryClient();
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
@@ -706,132 +830,4 @@ export function TwoFactorSettings({
       />
     </CardFrame>
   );
-}
-
-function RegenerateBackupCodesDialog({
-  error,
-  loading,
-  onOpenChange,
-  onPasswordChange,
-  onRegenerate,
-  open,
-  password,
-}: {
-  error: string | null;
-  loading: boolean;
-  onOpenChange: (open: boolean) => void;
-  onPasswordChange: (password: string) => void;
-  onRegenerate: () => void;
-  open: boolean;
-  password: string;
-}) {
-  return (
-    <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogPopup className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Regenerate recovery codes</DialogTitle>
-          <DialogDescription>
-            Your current recovery codes will stop working. Enter your password
-            to generate a new set.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogPanel>
-          <Field>
-            <FieldLabel>Password</FieldLabel>
-            <Input
-              autoComplete="current-password"
-              onChange={(event) => onPasswordChange(event.target.value)}
-              type="password"
-              value={password}
-            />
-          </Field>
-          {error ? (
-            <p className="text-destructive mt-3 text-sm" role="alert">
-              {error}
-            </p>
-          ) : null}
-        </DialogPanel>
-        <DialogFooter>
-          <DialogClose
-            render={<Button size="sm" type="button" variant="ghost" />}
-          >
-            Cancel
-          </DialogClose>
-          <Button
-            disabled={!password}
-            loading={loading}
-            onClick={() => void onRegenerate()}
-            size="sm"
-            type="button"
-          >
-            Regenerate codes
-          </Button>
-        </DialogFooter>
-      </DialogPopup>
-    </Dialog>
-  );
-}
-
-function DisableTwoFactorDialog({
-  disabling,
-  error,
-  onDisable,
-  onOpenChange,
-  onPasswordChange,
-  open,
-  password,
-}: {
-  disabling: boolean;
-  error: string | null;
-  onDisable: () => void;
-  onOpenChange: (open: boolean) => void;
-  onPasswordChange: (password: string) => void;
-  open: boolean;
-  password: string;
-}) {
-  return (
-    <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogPopup className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Disable two-factor authentication</DialogTitle>
-          <DialogDescription>
-            Enter your password to remove authenticator-app protection.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogPanel>
-          <Field>
-            <FieldLabel>Password</FieldLabel>
-            <Input
-              autoComplete="current-password"
-              onChange={(event) => onPasswordChange(event.target.value)}
-              type="password"
-              value={password}
-            />
-          </Field>
-          {error ? (
-            <p className="text-destructive mt-3 text-sm" role="alert">
-              {error}
-            </p>
-          ) : null}
-        </DialogPanel>
-        <DialogFooter>
-          <DialogClose
-            render={<Button size="sm" type="button" variant="ghost" />}
-          >
-            Cancel
-          </DialogClose>
-          <Button
-            disabled={!password}
-            loading={disabling}
-            onClick={() => void onDisable()}
-            size="sm"
-            type="button"
-            variant="destructive-outline"
-          >
-            Disable 2FA
-          </Button>
-        </DialogFooter>
-      </DialogPopup>
-    </Dialog>
-  );
-}
+};

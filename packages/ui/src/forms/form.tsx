@@ -1,8 +1,4 @@
-import {
-  createFormHook,
-  createFormHookContexts,
-  formOptions,
-} from "@tanstack/react-form";
+import { createFormHook, createFormHookContexts } from "@tanstack/react-form";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
@@ -33,7 +29,8 @@ import { SelectField as BaseSelectField } from "./select-field";
 import type { TextFieldProps as BaseTextFieldProps } from "./text-field";
 import { TextField as BaseTextField } from "./text-field";
 
-export { formOptions };
+export { formOptions } from "@tanstack/react-form";
+
 export { formatFieldErrors } from "./field-errors";
 
 // export useFieldContext for use in your custom components
@@ -42,7 +39,7 @@ export const { fieldContext, formContext, useFieldContext, useFormContext } =
 
 export type TextFieldProps = Omit<BaseTextFieldProps, "errors" | "value">;
 
-export function TextField({ onBlur, onChange, ...props }: TextFieldProps) {
+export const TextField = ({ onBlur, onChange, ...props }: TextFieldProps) => {
   const field = useFieldContext<string>();
 
   return (
@@ -60,11 +57,15 @@ export function TextField({ onBlur, onChange, ...props }: TextFieldProps) {
       value={field.state.value}
     />
   );
-}
+};
 
 export type NumberFieldProps = Omit<BaseNumberFieldProps, "errors" | "value">;
 
-export function NumberField({ onBlur, onChange, ...props }: NumberFieldProps) {
+export const NumberField = ({
+  onBlur,
+  onChange,
+  ...props
+}: NumberFieldProps) => {
   const field = useFieldContext<number | null>();
 
   return (
@@ -87,11 +88,11 @@ export function NumberField({ onBlur, onChange, ...props }: NumberFieldProps) {
       value={typeof field.state.value === "number" ? field.state.value : null}
     />
   );
-}
+};
 
 export type SelectFieldProps = Omit<BaseSelectFieldProps, "errors" | "value">;
 
-export function SelectField(props: SelectFieldProps) {
+export const SelectField = (props: SelectFieldProps) => {
   const field = useFieldContext<string>();
   const { onValueChange, ...restProps } = props;
 
@@ -106,7 +107,7 @@ export function SelectField(props: SelectFieldProps) {
       value={field.state.value}
     />
   );
-}
+};
 
 export interface SecretTextFieldProps {
   autoFocus?: boolean;
@@ -118,7 +119,7 @@ export interface SecretTextFieldProps {
   required?: boolean;
 }
 
-export function SecretTextField({
+export const SecretTextField = ({
   autoFocus,
   description,
   disabled,
@@ -126,7 +127,7 @@ export function SecretTextField({
   labelAction,
   placeholder,
   required,
-}: SecretTextFieldProps) {
+}: SecretTextFieldProps) => {
   const field = useFieldContext<string>();
   const [showSecret, setShowSecret] = useState(false);
   const { errors } = field.state.meta;
@@ -176,14 +177,14 @@ export function SecretTextField({
       {isError && <FieldError>{errorMessage}</FieldError>}
     </Field>
   );
-}
+};
 
 export type BooleanFieldProps = Omit<
   BaseBooleanFieldProps,
   "checked" | "errors" | "onBlur" | "onCheckedChange"
 >;
 
-export function BooleanField(props: BooleanFieldProps) {
+export const BooleanField = (props: BooleanFieldProps) => {
   const field = useFieldContext<boolean>();
 
   return (
@@ -195,7 +196,7 @@ export function BooleanField(props: BooleanFieldProps) {
       onCheckedChange={field.handleChange}
     />
   );
-}
+};
 
 interface SubmitButtonState {
   canSubmit: boolean;
@@ -203,13 +204,13 @@ interface SubmitButtonState {
   isValidating: boolean;
 }
 
-function SubmitButton({
+const SubmitButton = ({
   children,
   variant,
   className,
   disabled = false,
   ...props
-}: Omit<ButtonProps, "type" | "loading">) {
+}: Omit<ButtonProps, "type" | "loading">) => {
   const form = useFormContext();
   return (
     <form.Subscribe<SubmitButtonState>
@@ -233,9 +234,9 @@ function SubmitButton({
       )}
     </form.Subscribe>
   );
-}
+};
 
-function FormError({ children }: { children?: ReactNode }) {
+const FormError = ({ children }: { children?: ReactNode }) => {
   const errorMessage = formatFieldErrors([children]);
 
   if (!errorMessage) {
@@ -247,11 +248,9 @@ function FormError({ children }: { children?: ReactNode }) {
       <FieldError>{errorMessage}</FieldError>
     </Field>
   );
-}
+};
 
 export const { useAppForm, withForm } = createFormHook({
-  fieldContext,
-  formContext,
   // We'll learn more about these options later
   fieldComponents: {
     BooleanField,
@@ -260,8 +259,13 @@ export const { useAppForm, withForm } = createFormHook({
     SelectField,
     TextField,
   },
+
+  fieldContext,
+
   formComponents: {
     FormError,
     SubmitButton,
   },
+
+  formContext,
 });

@@ -3,7 +3,7 @@ import type { RouterClient } from "@orpc/server";
 import { db } from "@tailorkit/db";
 import { getKV } from "@tailorkit/kv";
 import { sanitizeErrorForLog } from "@tailorkit/observability";
-import z from "zod";
+import { z } from "zod";
 
 import {
   createPreviewBuildStore,
@@ -48,10 +48,10 @@ const event = z.discriminatedUnion("type", [
   z.object({ type: z.literal("ended") }),
 ]);
 
-async function logPreviewOperationFailure<T>(
+const logPreviewOperationFailure = async <T>(
   operation: string,
   run: () => Promise<T>
-): Promise<T> {
+): Promise<T> => {
   try {
     return await run();
   } catch (error) {
@@ -61,7 +61,7 @@ async function logPreviewOperationFailure<T>(
     });
     throw error;
   }
-}
+};
 
 export type PreviewWebSocketContext =
   | {
@@ -74,13 +74,13 @@ export type PreviewWebSocketContext =
       viewerTokenExpiresAt: number;
     };
 
-function requireFreshViewerToken(context: PreviewWebSocketContext): void {
+const requireFreshViewerToken = (context: PreviewWebSocketContext): void => {
   if (context.role !== "viewer" || context.viewerTokenExpiresAt <= Date.now()) {
     throw new ORPCError("UNAUTHORIZED", {
       message: "Preview viewer token expired.",
     });
   }
-}
+};
 
 const o = os.$context<PreviewWebSocketContext>();
 const requireRole = async (
@@ -187,9 +187,19 @@ const subscribe = o
     const store = await requireRole(context, "viewer");
     let wake: (() => void) | undefined;
     const waitForSignal = () =>
-      new Promise<void>((resolve) => {
-        wake = resolve;
-      });
+      (() => {
+        const {
+          promise: pendingPromise,
+          resolve,
+          reject: rejectPending,
+        } = Promise.withResolvers<ReturnType<() => void>>();
+        try {
+          wake = resolve;
+        } catch (error) {
+          rejectPending(error);
+        }
+        return pendingPromise;
+      })();
     let signalled = true;
     const notify = () => {
       signalled = true;
@@ -214,27 +224,40 @@ const subscribe = o
     try {
       for (;;) {
         if (!signalled) {
+          // oxlint-disable-next-line no-await-in-loop -- Stream reads and cancellation must stay ordered and bounded.
           await waitForSignal();
         }
         wake = undefined;
         signalled = false;
         requireFreshViewerToken(context);
         try {
+          // oxlint-disable-next-line no-await-in-loop -- Stream reads and cancellation must stay ordered and bounded.
           await requireRole(context, "viewer");
         } catch {
           yield { type: "ended" as const };
           break;
         }
+        // oxlint-disable-next-line no-await-in-loop -- Stream reads and cancellation must stay ordered and bounded.
         const build = await store.current(context.sessionId);
         if (!build || build.revision <= lastRevision) {
           continue;
         }
-        const { buildId, manifest, revision } = build;
+        const { buildId, manifest: manifestValue, revision } = build;
         requireFreshViewerToken(context);
-        yield { buildId, manifest, revision, type: "begin" as const };
+        yield {
+          buildId,
+          manifest: manifestValue,
+          revision,
+          type: "begin" as const,
+        };
         let complete = true;
-        for (const [fileIndex, file] of manifest.files.entries()) {
-          for (let chunkIndex = 0; chunkIndex < file.chunks; chunkIndex += 1) {
+        for (const [fileIndex, fileValue] of manifestValue.files.entries()) {
+          for (
+            let chunkIndex = 0;
+            chunkIndex < fileValue.chunks;
+            chunkIndex += 1
+          ) {
+            // oxlint-disable-next-line no-await-in-loop -- Stream reads and cancellation must stay ordered and bounded.
             const base64 = await store.chunk(
               context.sessionId,
               buildId,

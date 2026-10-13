@@ -53,7 +53,7 @@ afterEach(() => {
   }
   connections.length = 0;
 });
-function fixture() {
+const fixture = () => {
   const sqlite = new DatabaseSync(":memory:");
   connections.push(sqlite);
   // Disposable schema setup, not app migration distribution.
@@ -61,8 +61,8 @@ function fixture() {
     "CREATE TABLE todos (id TEXT PRIMARY KEY, title TEXT NOT NULL, done INTEGER NOT NULL DEFAULT 0); CREATE TABLE users (id TEXT PRIMARY KEY, title TEXT NOT NULL)"
   );
   const persistence: Persistence = {
-    execute(sql, params) {
-      const statement = sqlite.prepare(sql);
+    execute(sqlValue, params) {
+      const statement = sqlite.prepare(sqlValue);
       statement.setReturnArrays(true);
       const rows = statement.columns().length
         ? (statement.all(...(params as never[])) as unknown as unknown[][])
@@ -143,14 +143,16 @@ function fixture() {
       .input(z.enum(["bigint", "cycle"]))
       .handler(({ input, db }) => {
         db.insert(todos).values({ id: input, title: "rollback" }).run();
-        if (input === "bigint") return 1n;
+        if (input === "bigint") {
+          return 1n;
+        }
         const value: { self?: unknown } = {};
         value.self = value;
         return value;
       }),
   });
   return { execution: createExecution(app, persistence), persistence, sqlite };
-}
+};
 it("distinguishes omitted and null mutation arguments when checking a replay receipt", () => {
   const { execution } = fixture();
   const requestId = crypto.randomUUID();
@@ -168,7 +170,7 @@ it("executes typed Drizzle operations and tracks read tables including empty joi
     value: [],
   });
   expect(
-    execution.query({ args: {}, name: "joined" }, identity).tables.sort()
+    execution.query({ args: {}, name: "joined" }, identity).tables.toSorted()
   ).toEqual(["todos", "users"]);
   const accepted = execution.mutate(
     {
@@ -256,8 +258,8 @@ it("rolls back all writes and receipts when handlers or result validation fail",
     expect(() =>
       execution.mutate(
         {
-          name,
           args: name === "fail" ? {} : undefined,
+          name,
           requestId: crypto.randomUUID(),
         },
         identity
@@ -464,13 +466,33 @@ it("runs action database calls locally and notifies only committed writes before
     list: fn.query.handler(({ db }) => db.select().from(todos).all()),
   };
   let release!: () => void;
-  const external = new Promise<void>((resolve) => {
-    release = resolve;
-  });
+  const external = (() => {
+    const {
+      promise: pendingPromise,
+      resolve,
+      reject: rejectPending,
+    } = Promise.withResolvers<ReturnType<() => void>>();
+    try {
+      release = resolve;
+    } catch (error) {
+      rejectPending(error);
+    }
+    return pendingPromise;
+  })();
   let ready!: () => void;
-  const committed = new Promise<void>((resolve) => {
-    ready = resolve;
-  });
+  const committed = (() => {
+    const {
+      promise: pendingPromise,
+      resolve,
+      reject: rejectPending,
+    } = Promise.withResolvers<ReturnType<() => void>>();
+    try {
+      ready = resolve;
+    } catch (error) {
+      rejectPending(error);
+    }
+    return pendingPromise;
+  })();
   const requestId = crypto.randomUUID();
   const app = defineServer({
     records,
@@ -483,7 +505,8 @@ it("runs action database calls locally and notifies only committed writes before
         await expect(mutations.records.fail()).rejects.toMatchObject({
           code: "CONFLICT",
         });
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 100; i += 1) {
+          // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
           await queries.records.list();
         }
         await external;
@@ -491,6 +514,7 @@ it("runs action database calls locally and notifies only committed writes before
       }),
   });
   const execution = createExecution(app, persistence);
+  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
   const notify = vi.fn(async (tables: string[]) => {
     expect(tables).toEqual(["todos"]);
     expect(
@@ -541,8 +565,8 @@ it("runs nested relational queries and preserves scope, permissions and invalida
           db.query.todos.findFirst({ where: { id: "missing" } }).sync() ?? null
       ),
     first: query({
-      database,
       args: z.undefined(),
+      database,
       handler: ({ db }) =>
         db.query.todos
           .findFirst({ where: { id: "one" }, with: { user: true } })
@@ -553,7 +577,7 @@ it("runs nested relational queries and preserves scope, permissions and invalida
       .input(z.string())
       .handler(({ db, input }) => {
         db.insert(todos)
-          .values({ id: input, title: "Nested todo", done: true })
+          .values({ done: true, id: input, title: "Nested todo" })
           .run();
         return db.query.todos
           .findFirst({ where: { id: input }, with: { user: true } })
@@ -563,7 +587,7 @@ it("runs nested relational queries and preserves scope, permissions and invalida
       .database(database)
       .handler(({ db }) =>
         db.query.users
-          .findMany({ with: { todos: true }, orderBy: { id: "asc" } })
+          .findMany({ orderBy: { id: "asc" }, with: { todos: true } })
           .sync()
       ),
     writeInQuery: fn.query.database(database).handler(({ db }) => {
@@ -574,7 +598,7 @@ it("runs nested relational queries and preserves scope, permissions and invalida
   });
   const execution = createExecution(app, persistence);
   expect(execution.query({ name: "list" }, identity)).toEqual({
-    tables: ["users", "todos"],
+    tables: ["todos", "users"],
     value: [],
   });
   sqlite.exec("INSERT INTO users VALUES ('one', 'Author')");

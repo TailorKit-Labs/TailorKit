@@ -80,7 +80,7 @@ export interface FunctionDefinition<
   ) => K extends "action" ? O | Promise<O> : O;
 }
 
-export function query<
+export const query = <
   A extends z.ZodType,
   O,
   const D extends AnyRelations = EmptyRelations,
@@ -102,10 +102,8 @@ export function query<
           ? never
           : unknown);
   }
-) {
-  return Object.freeze({ ...definition, kind: "query" as const });
-}
-export function mutation<
+) => Object.freeze({ ...definition, kind: "query" as const });
+export const mutation = <
   A extends z.ZodType,
   O,
   const D extends AnyRelations = EmptyRelations,
@@ -127,11 +125,9 @@ export function mutation<
           ? never
           : unknown);
   }
-) {
-  return Object.freeze({ ...definition, kind: "mutation" as const });
-}
+) => Object.freeze({ ...definition, kind: "mutation" as const });
 
-export function action<
+export const action = <
   A extends z.ZodType,
   O,
   const F extends Functions = Record<never, never>,
@@ -139,9 +135,7 @@ export function action<
   definition: Omit<FunctionDefinition<"action", A, O, F>, "kind"> & {
     functions?: F;
   }
-) {
-  return Object.freeze({ ...definition, kind: "action" as const });
-}
+) => Object.freeze({ ...definition, kind: "action" as const });
 
 // Erasure is private to dispatch; the generic definitions preserve app argument/result types.
 export interface RegisteredFunction {
@@ -156,13 +150,12 @@ export interface Functions {
   readonly [name: string]: RegisteredFunction | Functions;
 }
 
-export function isFunction(
+export const isFunction = (
   value: RegisteredFunction | Functions
-): value is RegisteredFunction {
-  return typeof value.kind === "string" && typeof value.handler === "function";
-}
+): value is RegisteredFunction =>
+  typeof value.kind === "string" && typeof value.handler === "function";
 
-export function defineServer<const F extends Functions>(functions: F) {
+export const defineServer = <const F extends Functions>(functions: F) => {
   for (const [name, value] of Object.entries(functions)) {
     if (!/^[a-zA-Z][a-zA-Z0-9_]{0,63}$/u.test(name)) {
       throw new Error("Invalid function name");
@@ -172,5 +165,5 @@ export function defineServer<const F extends Functions>(functions: F) {
     }
   }
   return Object.freeze({ functions });
-}
+};
 export type AppDefinition = ReturnType<typeof defineServer>;

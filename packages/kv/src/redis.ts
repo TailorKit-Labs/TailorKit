@@ -64,11 +64,11 @@ redis.call("DEL", KEYS[2])
 return 1
 `;
 
-async function subscribe(
+const subscribe = async (
   redis: IORedis,
   channel: string,
   handler: MessageHandler
-): Promise<Unsubscribe> {
+): Promise<Unsubscribe> => {
   // Redis connections in subscriber mode cannot execute ordinary commands.
   // Keep the KV client's command connection separate from each subscription.
   const subscriber = redis.duplicate();
@@ -93,16 +93,16 @@ async function subscribe(
       subscriber.disconnect();
     }
   };
-}
+};
 
-export function createRedisKV(url: string): KV<"redis"> {
+export const createRedisKV = (url: string): KV<"redis"> => {
   const redis = new IORedis(url);
 
   return {
     claimUpload: (ownerKey, endedKey, expectedOwner, newOwner, ttl) =>
       withSpan(
         "kv.claim_upload",
-        { attributes: { "tailorkit.package": "kv", "kv.type": "redis" } },
+        { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
         async () => {
           if (!Number.isInteger(ttl) || ttl <= 0) {
             throw new TypeError("KV upload TTL must be a positive integer.");
@@ -125,7 +125,7 @@ export function createRedisKV(url: string): KV<"redis"> {
     delete: async (key) => {
       await withSpan(
         "kv.delete",
-        { attributes: { "tailorkit.package": "kv", "kv.type": "redis" } },
+        { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
         () => redis.del(key)
       );
     },
@@ -133,13 +133,13 @@ export function createRedisKV(url: string): KV<"redis"> {
     get: (key, options?: GetOptions) =>
       withSpan(
         "kv.get",
-        { attributes: { "tailorkit.package": "kv", "kv.type": "redis" } },
+        { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
         () => withTimeout(redis.get(key), options?.timeout)
       ),
     getAndDelete: (key) =>
       withSpan(
         "kv.get_and_delete",
-        { attributes: { "tailorkit.package": "kv", "kv.type": "redis" } },
+        { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
         () => redis.getdel(key)
       ),
     increment: (key, ttl) =>
@@ -147,9 +147,9 @@ export function createRedisKV(url: string): KV<"redis"> {
         "kv.increment",
         {
           attributes: {
-            "tailorkit.package": "kv",
-            "kv.type": "redis",
             "kv.ttl_seconds": ttl,
+            "kv.type": "redis",
+            "tailorkit.package": "kv",
           },
         },
         async () => {
@@ -173,7 +173,7 @@ export function createRedisKV(url: string): KV<"redis"> {
     ) =>
       withSpan(
         "kv.keep_preview_session_if_developer_present",
-        { attributes: { "tailorkit.package": "kv", "kv.type": "redis" } },
+        { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
         async () =>
           Number(
             await redis.eval(
@@ -198,7 +198,7 @@ export function createRedisKV(url: string): KV<"redis"> {
     ) =>
       withSpan(
         "kv.promote_if_owner_and_newer",
-        { attributes: { "tailorkit.package": "kv", "kv.type": "redis" } },
+        { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
         async () => {
           if (
             !Number.isSafeInteger(revision) ||
@@ -230,19 +230,19 @@ export function createRedisKV(url: string): KV<"redis"> {
     publish: (channel, message) =>
       withSpan(
         "kv.publish",
-        { attributes: { "tailorkit.package": "kv", "kv.type": "redis" } },
+        { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
         () => redis.publish(channel, message)
       ),
     set: async (key, value, options?: SetOptions) => {
       if (options?.ttl) {
-        const ttl = options.ttl;
+        const { ttl } = options;
         await withSpan(
           "kv.set",
           {
             attributes: {
-              "tailorkit.package": "kv",
-              "kv.type": "redis",
               "kv.ttl_seconds": ttl,
+              "kv.type": "redis",
+              "tailorkit.package": "kv",
             },
           },
           () => redis.setex(key, ttl, value)
@@ -250,7 +250,7 @@ export function createRedisKV(url: string): KV<"redis"> {
       } else {
         await withSpan(
           "kv.set",
-          { attributes: { "tailorkit.package": "kv", "kv.type": "redis" } },
+          { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
           () => redis.set(key, value)
         );
       }
@@ -265,7 +265,7 @@ export function createRedisKV(url: string): KV<"redis"> {
     ) =>
       withSpan(
         "kv.set_preview_presence_if_active",
-        { attributes: { "tailorkit.package": "kv", "kv.type": "redis" } },
+        { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
         async () =>
           Number(
             await redis.eval(
@@ -280,12 +280,12 @@ export function createRedisKV(url: string): KV<"redis"> {
             )
           ) === 1
       ),
-    subscribe: (channel, handler) =>
+    subscribe: (channel: string, handler: MessageHandler) =>
       withSpan(
         "kv.subscribe",
-        { attributes: { "tailorkit.package": "kv", "kv.type": "redis" } },
+        { attributes: { "kv.type": "redis", "tailorkit.package": "kv" } },
         () => subscribe(redis, channel, handler)
       ),
     type: "redis",
   };
-}
+};

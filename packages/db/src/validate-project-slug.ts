@@ -1,6 +1,6 @@
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 
-export function validateProjectSlug(slug: string) {
+export const validateProjectSlug = (slug: string) => {
   if (slug.length < 3) {
     return {
       reason: `Slug "${slug}" must be at least 3 characters long.`,
@@ -23,4 +23,4 @@ export function validateProjectSlug(slug: string) {
   }
 
   return { valid: true } as const;
-}
+};

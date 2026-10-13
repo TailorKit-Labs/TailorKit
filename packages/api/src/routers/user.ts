@@ -4,7 +4,7 @@ import { account } from "@tailorkit/db/schema/auth";
 import { validateOrgSlug } from "@tailorkit/db/validate-org-slug";
 import { getKV } from "@tailorkit/kv";
 import { and, eq } from "drizzle-orm";
-import z from "zod";
+import { z } from "zod";
 
 import { env } from "#env";
 
@@ -13,10 +13,10 @@ import { publicProcedure, protectedProcedure, requireOrg } from "../procedures";
 const MANUAL_ORG_ONBOARDING_MESSAGE =
   "We're currently onboarding users manually. Contact us to create an organisation for your account.";
 
-async function getGitHubUsername(
+const getGitHubUsername = async (
   accountId: string,
   getAccessToken: () => Promise<string | null>
-) {
+) => {
   const key = `tailorkit:github-username:${accountId}`;
   let kv: ReturnType<typeof getKV> = null;
 
@@ -62,13 +62,19 @@ async function getGitHubUsername(
       return null;
     }
 
-    void kv?.set(key, username, { ttl: 86_400 }).catch(() => {});
+    void (async () => {
+      try {
+        await kv?.set(key, username, { ttl: 86_400 });
+      } catch {
+        /* The cache write is best effort. */
+      }
+    })();
     return username;
   } catch {
     // Account management should remain available if GitHub is temporarily unavailable.
     return null;
   }
-}
+};
 
 export const userRouter = {
   acceptInvitation: protectedProcedure
@@ -182,8 +188,8 @@ export const userRouter = {
     const invitations = await db.query.invitation.findMany({
       where: {
         email: context.user.email,
-        status: "pending",
         expiresAt: { gt: new Date() },
+        status: "pending",
       },
       with: { organization: true },
     });

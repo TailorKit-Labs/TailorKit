@@ -12,7 +12,14 @@ import type {
   SubscriptionSession,
 } from "./subscriptions";
 
-function setup() {
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
+const setup = () => {
   // Model durable records: reads copy data, rather than retaining live object references.
   const records = new Map<string, string>();
   const events = new EventTarget();
@@ -26,11 +33,14 @@ function setup() {
       ),
   };
   const values = { private: 2, public: 1 };
-  const query = vi.fn(async (input: Invocation, identity: Identity) => ({
-    tables: [input.name],
-    value: `${identity.subjectId}:${values[input.name as keyof typeof values]}`,
-  }));
-  function connection(user = "alice"): SubscriptionConnection {
+  const query = vi.fn(
+    async (input: Invocation, identity: Identity) =>
+      await {
+        tables: [input.name],
+        value: `${identity.subjectId}:${values[input.name as keyof typeof values]}`,
+      }
+  );
+  const connection = (user = "alice"): SubscriptionConnection => {
     records.set(
       user,
       JSON.stringify({
@@ -43,19 +53,21 @@ function setup() {
         const record = records.get(user);
         return record ? (JSON.parse(record) as SubscriptionSession) : undefined;
       },
-      send: (data) =>
+      send: (data: string | Uint8Array<ArrayBuffer>) =>
         events.dispatchEvent(new MessageEvent("message", { data })),
       write: (session) => records.set(user, JSON.stringify(session)),
     };
-  }
+  };
   const socket = connection();
   const sockets = [socket];
   const ctx = {
     getWebSockets: () =>
-      sockets.map((socket) => ({
+      sockets.map((socketValue: SubscriptionConnection) => ({
         close: vi.fn(),
-        deserializeAttachment: () => socket.read()!.identity.subjectId,
-        send: (data: string | Uint8Array<ArrayBuffer>) => socket.send(data),
+        deserializeAttachment: () =>
+          requireValue(socketValue.read()).identity.subjectId,
+        send: (data: string | Uint8Array<ArrayBuffer>) =>
+          socketValue.send(data),
       })),
     storage: {
       kv: {
@@ -90,10 +102,13 @@ function setup() {
         addEventListener: events.addEventListener.bind(events),
         readyState: 1,
         removeEventListener: events.removeEventListener.bind(events),
-        send: (data: string | ArrayBuffer) => {
+        send: (data: string | Uint8Array<ArrayBuffer>) => {
           pending.push(
-            handler.message(socket, data, subscribe, (id) =>
-              Effect.runPromise(subscriptions.cancel(socket, id))
+            handler.message(
+              socket,
+              typeof data === "string" ? data : new TextDecoder().decode(data),
+              subscribe,
+              (id) => Effect.runPromise(subscriptions.cancel(socket, id))
             )
           );
         },
@@ -119,11 +134,13 @@ function setup() {
       ),
     socket,
     sockets,
-    subscribe: (socket: SubscriptionConnection, input: Invocation) =>
-      subscriptionStream((id) => subscriptions.subscribe(socket, input, id)),
+    subscribe: (socketValue2: SubscriptionConnection, input: Invocation) =>
+      subscriptionStream((id) =>
+        subscriptions.subscribe(socketValue2, input, id)
+      ),
     values,
   };
-}
+};
 
 it("restores multiple subscriptions and cancellation after recreation with isolated dependencies", async () => {
   const test = setup();
@@ -132,7 +149,7 @@ it("restores multiple subscriptions and cancellation after recreation with isola
   expect(await publicStream.next()).toMatchObject({ value: "alice:1" });
   expect(await privateStream.next()).toMatchObject({ value: "alice:2" });
   await test.flush();
-  expect(test.socket.read()!.subscriptions).toHaveLength(2);
+  expect(requireValue(test.socket.read()).subscriptions).toHaveLength(2);
   test.recreate();
   test.values.public = 3;
   test.query.mockClear();
@@ -141,14 +158,14 @@ it("restores multiple subscriptions and cancellation after recreation with isola
   expect(test.query).toHaveBeenCalledTimes(1);
   await publicStream.return?.();
   await test.flush();
-  expect(test.socket.read()!.subscriptions).toHaveLength(1);
+  expect(requireValue(test.socket.read()).subscriptions).toHaveLength(1);
   test.recreate();
   test.values.private = 4;
   await test.refresh(["private"]);
   expect(await privateStream.next()).toMatchObject({ value: "alice:4" });
   await privateStream.return?.();
   await test.flush();
-  expect(test.socket.read()!.subscriptions).toHaveLength(0);
+  expect(requireValue(test.socket.read()).subscriptions).toHaveLength(0);
 });
 
 it("refreshes view subscriptions on table writes after recreation without broadening table subscriptions", async () => {
@@ -200,11 +217,12 @@ it("delivers typed errors and removes failed subscriptions after recreation", as
     code: "UNAUTHORIZED",
     message: "Expired",
   });
-  expect(test.socket.read()!.subscriptions).toHaveLength(0);
+  expect(requireValue(test.socket.read()).subscriptions).toHaveLength(0);
 });
 
 it("does not register a snapshot after the connection disappears during its query", async () => {
   const test = setup();
+  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
   test.query.mockImplementationOnce(async () => {
     test.records.delete("alice");
     return { tables: ["public"], value: "gone" };
@@ -225,7 +243,7 @@ it("does not fail mutation delivery when a disconnected socket throws", async ()
     throw new Error("Socket closed");
   };
   await expect(test.refresh(["public"])).resolves.toBeUndefined();
-  expect(test.socket.read()!.subscriptions).toHaveLength(0);
+  expect(requireValue(test.socket.read()).subscriptions).toHaveLength(0);
   await stream.return?.();
   await test.flush();
 });
@@ -233,15 +251,33 @@ it("does not fail mutation delivery when a disconnected socket throws", async ()
 it("registers the first snapshot before a concurrent mutation and replaces dependencies", async () => {
   const test = setup();
   let ready!: () => void;
-  const started = new Promise<void>((resolve) => {
-    ready = resolve;
-  });
-  let finish!: (snapshot: { value: string; tables: string[] }) => void;
-  const initial = new Promise<{ value: string; tables: string[] }>(
-    (resolve) => {
-      finish = resolve;
+  const started = (() => {
+    const {
+      promise: pendingPromise,
+      resolve,
+      reject: rejectPending,
+    } = Promise.withResolvers<ReturnType<() => void>>();
+    try {
+      ready = resolve;
+    } catch (error) {
+      rejectPending(error);
     }
-  );
+    return pendingPromise;
+  })();
+  let finish!: (snapshot: { value: string; tables: string[] }) => void;
+  const initial = (() => {
+    const {
+      promise: pendingPromise,
+      resolve,
+      reject: rejectPending,
+    } = Promise.withResolvers<{ value: string; tables: string[] }>();
+    try {
+      finish = resolve;
+    } catch (error) {
+      rejectPending(error);
+    }
+    return pendingPromise;
+  })();
   test.query.mockImplementationOnce(() => {
     ready();
     return initial;
@@ -268,7 +304,7 @@ it("reruns as each stored identity and isolates failures on different connection
   await stream.next();
   const bob = test.connection("bob");
   test.sockets.push(bob);
-  await test.subscribe(bob, { name: "public" })["~callback"]!(
+  await requireValue(test.subscribe(bob, { name: "public" })["~callback"])(
     "bob-subscription"
   );
   await test.flush();
@@ -281,8 +317,8 @@ it("reruns as each stored identity and isolates failures on different connection
     "alice",
     "bob",
   ]);
-  expect(test.socket.read()!.subscriptions).toHaveLength(0);
-  expect(bob.read()!.subscriptions).toHaveLength(1);
+  expect(requireValue(test.socket.read()).subscriptions).toHaveLength(0);
+  expect(requireValue(bob.read()).subscriptions).toHaveLength(1);
 });
 
 it("reports an initial query error through the stream and removes its persisted registration", async () => {
@@ -297,12 +333,12 @@ it("reports an initial query error through the stream and removes its persisted 
     message: "Missing query",
   });
   await test.flush();
-  expect(test.socket.read()!.subscriptions).toHaveLength(0);
+  expect(requireValue(test.socket.read()).subscriptions).toHaveLength(0);
 });
 
 it("enforces the installation subscription limit using persisted state", async () => {
   const test = setup();
-  const session = test.socket.read()!;
+  const session = requireValue(test.socket.read());
   session.subscriptions = Array.from({ length: 256 }, (_, index) => ({
     id: String(index),
     input: { name: "public" },
@@ -313,6 +349,6 @@ it("enforces the installation subscription limit using persisted state", async (
   const stream = await test.client.subscribe({ name: "public" });
   await expect(stream.next()).rejects.toMatchObject({ code: "BAD_REQUEST" });
   await test.flush();
-  expect(test.socket.read()!.subscriptions).toHaveLength(256);
+  expect(requireValue(test.socket.read()).subscriptions).toHaveLength(256);
   expect(test.query).not.toHaveBeenCalled();
 });

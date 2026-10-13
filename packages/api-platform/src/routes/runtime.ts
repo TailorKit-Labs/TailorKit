@@ -7,27 +7,15 @@ import {
 } from "@tailorkit/api-utils/app-auth";
 import { db } from "@tailorkit/db";
 import { Effect } from "effect";
-import z from "zod";
+import { catch as catchEffect } from "effect/Effect";
+import { z } from "zod";
 
 import { env } from "../env";
 import { o, protectedRouter, requireAppInScopes } from "../procedures";
 import { appRuntimePublicKeys, issueAppRuntimeToken } from "../runtime/auth";
 import { scopeSchema, scopesSchema } from "../scope";
 
-/** Public routes must be dispatched before constructing the authenticated platform context. */
-export function handlePublicRuntimeRequest(
-  request: Request
-): Response | undefined {
-  if (
-    request.method !== "GET" ||
-    new URL(request.url).pathname !== "/api/platform/runtime/keys"
-  ) {
-    return undefined;
-  }
-  return appRuntimeKeysResponse();
-}
-
-export function appRuntimeKeysResponse(): ReturnType<typeof Response.json> {
+export const appRuntimeKeysResponse = (): ReturnType<typeof Response.json> => {
   try {
     return Response.json(appRuntimePublicKeys(), {
       headers: {
@@ -40,7 +28,20 @@ export function appRuntimeKeysResponse(): ReturnType<typeof Response.json> {
       status: 503,
     });
   }
-}
+};
+
+/** Public routes must be dispatched before constructing the authenticated platform context. */
+export const handlePublicRuntimeRequest = (
+  request: Request
+): Response | undefined => {
+  if (
+    request.method !== "GET" ||
+    new URL(request.url).pathname !== "/api/platform/runtime/keys"
+  ) {
+    return undefined;
+  }
+  return appRuntimeKeysResponse();
+};
 
 // Hosts authenticate with their project key and assert membership using verified scopes.
 export const runtimeSession = protectedRouter
@@ -71,14 +72,14 @@ export const runtimeSession = protectedRouter
       body: z.object({
         expiresAt: z.number(),
         identity: z.object({
-          subjectId: z.string().optional(),
-          installationId: z.string(),
           appId: z.string(),
-          projectId: z.string(),
           deploymentId: z.string(),
-          scope: scopeSchema,
-          toolUrl: z.url(),
           expiresAt: z.number(),
+          installationId: z.string(),
+          projectId: z.string(),
+          scope: scopeSchema,
+          subjectId: z.string().optional(),
+          toolUrl: z.url(),
         }),
         token: z.string(),
         toolUrl: z.url(),
@@ -201,13 +202,13 @@ export const getRuntimeBundle = protectedRouter
   });
 
 /** Cache publication failures do not undo a published deployment; worker misses use the API. */
-export function publishRuntimeMetadata(
+export const publishRuntimeMetadata = (
   metadata: AppDeploymentMetadata,
   appPublicId: string
-) {
-  return Effect.runPromise(
+) =>
+  Effect.runPromise(
     Effect.tryPromise({
-      catch: (error) => error,
+      catch: (err) => err,
       try: async () => {
         if (!env.APP_RUNTIME_SERVICE_TOKEN) {
           return;
@@ -221,12 +222,12 @@ export function publishRuntimeMetadata(
           throw new Error("App runtime URL requires HTTPS");
         }
         const response = await fetch(url, {
-          method: "POST",
+          body: JSON.stringify(metadata),
           headers: {
             authorization: `Bearer ${env.APP_RUNTIME_SERVICE_TOKEN}`,
             "content-type": "application/json",
           },
-          body: JSON.stringify(metadata),
+          method: "POST",
           redirect: "error",
           signal: AbortSignal.timeout(10_000),
         });
@@ -237,11 +238,11 @@ export function publishRuntimeMetadata(
         }
       },
     }).pipe(
-      Effect.catch((error) =>
+      // oxlint-disable-next-line promise/prefer-await-to-callbacks -- This is an Effect recovery operator or transport callback, not a Node-style completion callback.
+      catchEffect((err) =>
         Effect.sync(() =>
-          console.error("Could not publish app runtime metadata", error)
+          console.error("Could not publish app runtime metadata", err)
         )
       )
     )
   );
-}

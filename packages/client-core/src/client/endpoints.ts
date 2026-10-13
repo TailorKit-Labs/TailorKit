@@ -14,6 +14,13 @@ import { flattenTools, validateToolValue } from "@tailorkit/core/schema";
 import type { TailorKitApp } from "../types";
 import { toBaseUrl } from "./url";
 
+const require = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 export interface SlotInstancesInput {
   slot: string;
   path: string;
@@ -27,12 +34,12 @@ const resolveInstances = reference<
 >("_tailorkit.instances.resolve", "action");
 
 /** Endpoint transport owns no response stores. */
-export function createEndpointClient(options: {
+export const createEndpointClient = (options: {
   baseUrl: string | URL;
   fetch?: typeof fetch;
   contract?: TailorKitContract;
   tools?: ToolImplementations<TailorKitContract["tools"], "client">;
-}) {
+}) => {
   const baseUrl = toBaseUrl(options.baseUrl);
   const request: typeof fetch = (input, init) =>
     (options.fetch ?? globalThis.fetch)(input, init);
@@ -50,7 +57,7 @@ export function createEndpointClient(options: {
   const declarations = flattenTools(options.contract?.tools ?? {});
   const sessions = new Map<string, SessionEntry>();
   const clearSessions = () => {
-    generation++;
+    generation += 1;
     for (const entry of sessions.values()) {
       entry.session = undefined;
     }
@@ -58,7 +65,7 @@ export function createEndpointClient(options: {
   };
   const createSessionEntry = (appId: string, key?: string): SessionEntry => ({
     key,
-    session: createSessionProvider({ appId, baseUrl, fetch: request }),
+
     // Mounted consumers keep this wrapper, so resolve the current provider on every call.
     provider: async (input) => {
       let current = sessions.get(appId);
@@ -66,13 +73,15 @@ export function createEndpointClient(options: {
         current = createSessionEntry(appId);
         sessions.set(appId, current);
       }
-      const session = current.session!;
+      const session = require(current.session);
       const value = await session(input);
       if (current.session !== session) {
         throw new DOMException("The app session was invalidated", "AbortError");
       }
       return value;
     },
+
+    session: createSessionProvider({ appId, baseUrl, fetch: request }),
   });
   const getSessionProvider = (app: TailorKitApp) => {
     const key = JSON.stringify([
@@ -126,36 +135,43 @@ export function createEndpointClient(options: {
       async client(path, input) {
         const admitted = generation;
         const leaf = declarations.get(path);
-        if (leaf?.kind !== "client") throw new Error("Not a client tool");
+        if (leaf?.kind !== "client") {
+          throw new Error("Not a client tool");
+        }
         let implementation: unknown = options.tools;
         for (const part of path.split(".")) {
           if (
             !implementation ||
             typeof implementation !== "object" ||
             !Object.hasOwn(implementation, part)
-          )
+          ) {
             throw new Error("Missing client tool");
+          }
           implementation = (implementation as Record<string, unknown>)[part];
         }
-        if (typeof implementation !== "function")
-          throw new Error("Missing client tool");
+        if (typeof implementation !== "function") {
+          throw new TypeError("Missing client tool");
+        }
         const value = await validateToolValue(leaf.definition.input, input);
         const credential = await session(path);
         const output = await implementation({
-          input: value,
           context: Object.freeze({
             identity: credential.identity,
-            scope: credential.identity.scope,
             requestId: crypto.randomUUID(),
+            scope: credential.identity.scope,
           }),
+          input: value,
         });
         const result = await validateToolValue(leaf.definition.output, output);
-        if (admitted !== generation) throw new Error("Tool identity changed");
+        if (admitted !== generation) {
+          throw new Error("Tool identity changed");
+        }
         return result;
       },
-      session: (path) => {
-        if (declarations.get(path)?.kind !== "server")
+      session: (path: string) => {
+        if (declarations.get(path)?.kind !== "server") {
           return Promise.reject(new Error("Not a server tool"));
+        }
         return session(path);
       },
     };
@@ -165,13 +181,14 @@ export function createEndpointClient(options: {
   return {
     async apps(signal: AbortSignal): Promise<TailorKitApp[]> {
       const response = await request(new URL("apps", baseUrl), {
-        signal,
         credentials: "same-origin",
+        signal,
       });
-      if (!response.ok)
+      if (!response.ok) {
         throw new Error(
           `Unable to fetch TailorKit apps from ${baseUrl.toString()}.`
         );
+      }
       return (await response.json()) as TailorKitApp[];
     },
     baseUrl,
@@ -184,9 +201,12 @@ export function createEndpointClient(options: {
       const url = new URL("preview/metadata", baseUrl);
       url.searchParams.set("sessionId", sessionId);
       const response = await request(url, { credentials: "same-origin" });
-      if (response.status === 404) return null;
-      if (!response.ok)
+      if (response.status === 404) {
+        return null;
+      }
+      if (!response.ok) {
         throw new Error("Unable to refresh TailorKit preview metadata.");
+      }
       return previewMetadataSchema.parse(await response.json());
     },
     async slotInstances(
@@ -196,8 +216,8 @@ export function createEndpointClient(options: {
     ) {
       signal.throwIfAborted();
       const backend = createClient({
-        getSession: getSessionProvider(app),
         fetch: request,
+        getSession: getSessionProvider(app),
       });
       const abort = () => backend.close();
       signal.addEventListener("abort", abort, { once: true });
@@ -209,6 +229,6 @@ export function createEndpointClient(options: {
       }
     },
   };
-}
+};
 
 export type EndpointClient = ReturnType<typeof createEndpointClient>;

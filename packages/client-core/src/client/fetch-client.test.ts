@@ -40,7 +40,7 @@ it("shares endpoint responses across roots without sharing local view registrati
   await Promise.all([first.fetchApps(), second.fetchApps()]);
   expect(fetchMock).toHaveBeenCalledOnce();
   expect(second.getAppsSnapshot().apps).toBe(first.getAppsSnapshot().apps);
-  first.views.register({ context: {}, id: Symbol(), view: "/" });
+  first.views.register({ context: {}, id: Symbol("identity"), view: "/" });
   await Promise.resolve();
   expect(second.views.getSnapshot()).toBeNull();
   stop();
@@ -128,8 +128,8 @@ it("deduplicates instance requests and sessions across framework-neutral consume
       return Promise.resolve(
         Response.json({
           schema: {
+            slots: { page: { multiple: true, views: ["/"] } },
             views: { "/": {} },
-            slots: { page: { views: ["/"], multiple: true } },
           },
         })
       );
@@ -137,9 +137,9 @@ it("deduplicates instance requests and sessions across framework-neutral consume
     if (path.endsWith("/backend/session")) {
       return Promise.resolve(
         Response.json({
+          expiresAt: Date.now() + 300_000,
           token: "token",
           url: "https://runtime.test/rpc",
-          expiresAt: Date.now() + 300_000,
         })
       );
     }
@@ -155,14 +155,14 @@ it("deduplicates instance requests and sessions across framework-neutral consume
   const options = {
     activeView: {
       layers: [
-        { path: "/", context: { userId: "user" }, status: "ready" as const },
+        { context: { userId: "user" }, path: "/", status: "ready" as const },
       ],
       view: "/",
     },
     apps: [
       {
         id: "app",
-        views: [{ slot: "page", path: "/", instances: true as const }],
+        views: [{ instances: true as const, path: "/", slot: "page" }],
       },
     ],
     slot: "page",

@@ -4,6 +4,13 @@ import type { Client as PlatformClient } from "@tailorkit/client-platform/client
 import { selectTailorKitScopes } from "./scope";
 import type { TailorKitNamedScope, TailorKitScopes } from "./types";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 type HeaderInput = ConstructorParameters<typeof Headers>[0];
 
 interface TailorKitRuntimeContext {
@@ -34,137 +41,13 @@ type ApprovalPageState =
   | { status: "approved" }
   | { status: "denied" };
 
-export async function handleCliAuthApprovalPage({
-  authenticate,
-  platform,
-  platformHeaders,
-  request,
-  signInPath,
-}: CliAuthApprovalPageOptions): Promise<Response> {
-  if (request.method === "GET") {
-    const url = new URL(request.url);
-    const tailorkit = await authenticate({ request });
-
-    if (signInPath && !tailorkit) {
-      return redirectToSignIn({ approvalUrl: url, signInPath });
-    }
-
-    return renderCliAuthApprovalPage({
-      code: url.searchParams.get("code") ?? "",
-      scopes: tailorkit?.scopes,
-      status: "idle",
-    });
-  }
-
-  if (request.method !== "POST") {
-    return new Response("Method not allowed", {
-      headers: { allow: "GET, POST" },
-      status: 405,
-    });
-  }
-
-  const form = await request.formData();
-  const intent = String(form.get("intent") ?? "");
-  const userCode = String(form.get("userCode") ?? "").trim();
-  const selectedScopeName =
-    typeof form.get("scope") === "string"
-      ? String(form.get("scope"))
-      : undefined;
-
-  const tailorkit = await authenticate({ request });
-  if (!userCode) {
-    return renderCliAuthApprovalPage({
-      code: userCode,
-      error: "Enter the code shown in your terminal.",
-      scopes: tailorkit?.scopes,
-      selectedScopeName,
-      status: "idle",
-    });
-  }
-
-  if (!tailorkit) {
-    return renderCliAuthApprovalPage({
-      code: userCode,
-      error: "You need to sign in before approving this CLI login.",
-      selectedScopeName,
-      status: "idle",
-    });
-  }
-
-  try {
-    if (intent === "approve") {
-      const scope = selectOneScope(
-        tailorkit.scopes,
-        selectedScopeName,
-        "Choose one scope for this CLI login."
-      );
-      await cliAuthApprove({
-        body: {
-          scope,
-          userCode,
-        },
-        client: platform,
-        headers: platformHeaders,
-      });
-
-      return renderCliAuthApprovalPage({ status: "approved" });
-    }
-
-    if (intent === "deny") {
-      await cliAuthDeny({
-        body: {
-          userCode,
-        },
-        client: platform,
-        headers: platformHeaders,
-      });
-
-      return renderCliAuthApprovalPage({ status: "denied" });
-    }
-  } catch (error) {
-    return renderCliAuthApprovalPage({
-      code: userCode,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Unable to finish this CLI login request.",
-      scopes: tailorkit.scopes,
-      selectedScopeName,
-      status: "idle",
-    });
-  }
-
-  return renderCliAuthApprovalPage({
-    code: userCode,
-    error: "Choose whether to approve or deny this CLI login.",
-    scopes: tailorkit.scopes,
-    selectedScopeName,
-    status: "idle",
-  });
-}
-
-export function selectOneScope(
-  scopes: TailorKitScopes,
-  selectedName: string | undefined,
-  errorMessage: string
-): TailorKitNamedScope {
-  const availableNames = Object.keys(scopes);
-  const name =
-    selectedName ??
-    (availableNames.length === 1 ? availableNames[0]! : undefined);
-  if (name === undefined) {
-    throw new TypeError(errorMessage);
-  }
-  return selectTailorKitScopes(scopes, [name])[0]!;
-}
-
-function redirectToSignIn({
+const redirectToSignIn = ({
   approvalUrl,
   signInPath,
 }: {
   approvalUrl: URL;
   signInPath: `/${string}`;
-}): Response {
+}): Response => {
   const signInUrl = new URL(signInPath, approvalUrl);
 
   if (signInUrl.origin !== approvalUrl.origin) {
@@ -184,35 +67,61 @@ function redirectToSignIn({
     },
     status: 302,
   });
-}
+};
 
-function renderCliAuthApprovalPage(state: ApprovalPageState): Response {
-  return new Response(`<!doctype html>${renderHtml(state)}`, {
-    headers: {
-      "content-type": "text/html; charset=utf-8",
-    },
-  });
-}
+const normalizeCode = (code: string): string =>
+  code
+    .replaceAll(/[^a-zA-Z0-9]/gu, "")
+    .slice(0, 9)
+    .toUpperCase();
 
-function renderHtml(state: ApprovalPageState): string {
-  return `<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Approve TailorKit CLI</title>
-  <style>${approvalStyles}</style>
-</head>
-<body>
-  <main class="page">
-    ${renderCard(state)}
-    <p class="footer-link">Powered by <a href="https://tailorkit.dev/home">TailorKit</a></p>
-  </main>
-  ${state.status === "idle" ? `<script>${script}</script>` : ""}
-</body>
-</html>`;
-}
+export const escapeHtml = (value: string): string =>
+  value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 
-function renderCard(state: ApprovalPageState): string {
+const renderOtpInputs = (code: string): string =>
+  Array.from({ length: 9 }, (_, index) => {
+    const autocomplete = index === 0 ? "one-time-code" : "off";
+    const character = code[index] ?? "";
+    const separator =
+      index === 2 || index === 5
+        ? `<span class="otp-separator" aria-hidden="true">-</span>`
+        : "";
+
+    return `<input class="otp-input" type="text" inputmode="text" autocomplete="${autocomplete}" maxlength="1" aria-label="Code character ${index + 1}" value="${escapeHtml(character)}">${separator}`;
+  }).join("");
+
+const formatCode = (code: string): string =>
+  normalizeCode(code).replaceAll(/(?<section>.{3})(?=.)/gu, "$<section>-");
+
+export const renderScopeControl = (
+  scopes: TailorKitScopes | undefined,
+  selectedName: string | undefined,
+  controlId: string,
+  label: string
+): string => {
+  const names = Object.keys(scopes ?? {});
+  if (names.length === 0) {
+    return "";
+  }
+  if (names.length === 1) {
+    return `<input type="hidden" name="scope" value="${escapeHtml(requireValue(names[0]))}">`;
+  }
+  const options = names
+    .map(
+      (name) =>
+        `<option value="${escapeHtml(name)}"${name === selectedName ? " selected" : ""}>${escapeHtml(name)}</option>`
+    )
+    .join("");
+  const placeholder = `<option value="" disabled${selectedName ? "" : " selected"}>Choose a scope</option>`;
+  return `<label for="${controlId}">${label}</label><select id="${controlId}" name="scope" required>${placeholder}${options}</select>`;
+};
+
+const renderCard = (state: ApprovalPageState): string => {
   if (state.status === "approved") {
     return `<section class="card" aria-labelledby="title">
       <h1 id="title" class="status-title"><span class="status-icon success" aria-hidden="true">✓</span>CLI login approved</h1>
@@ -256,63 +165,7 @@ function renderCard(state: ApprovalPageState): string {
       <p id="loadingMessage">Loading...</p>
     </div>
   </section>`;
-}
-
-export function renderScopeControl(
-  scopes: TailorKitScopes | undefined,
-  selectedName: string | undefined,
-  controlId: string,
-  label: string
-): string {
-  const names = Object.keys(scopes ?? {});
-  if (names.length === 0) {
-    return "";
-  }
-  if (names.length === 1) {
-    return `<input type="hidden" name="scope" value="${escapeHtml(names[0]!)}">`;
-  }
-  const options = names
-    .map(
-      (name) =>
-        `<option value="${escapeHtml(name)}"${name === selectedName ? " selected" : ""}>${escapeHtml(name)}</option>`
-    )
-    .join("");
-  const placeholder = `<option value="" disabled${selectedName ? "" : " selected"}>Choose a scope</option>`;
-  return `<label for="${controlId}">${label}</label><select id="${controlId}" name="scope" required>${placeholder}${options}</select>`;
-}
-
-function renderOtpInputs(code: string): string {
-  return Array.from({ length: 9 }, (_, index) => {
-    const autocomplete = index === 0 ? "one-time-code" : "off";
-    const character = code[index] ?? "";
-    const separator =
-      index === 2 || index === 5
-        ? `<span class="otp-separator" aria-hidden="true">-</span>`
-        : "";
-
-    return `<input class="otp-input" type="text" inputmode="text" autocomplete="${autocomplete}" maxlength="1" aria-label="Code character ${index + 1}" value="${escapeHtml(character)}">${separator}`;
-  }).join("");
-}
-
-function normalizeCode(code: string): string {
-  return code
-    .replaceAll(/[^a-zA-Z0-9]/gu, "")
-    .slice(0, 9)
-    .toUpperCase();
-}
-
-function formatCode(code: string): string {
-  return normalizeCode(code).replaceAll(/(.{3})(?=.)/gu, "$1-");
-}
-
-export function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
+};
 
 export const approvalStyles = `
 :root {
@@ -740,3 +593,151 @@ form?.addEventListener("submit", (event) => {
 syncHidden();
 inputs.find((input) => !input.value)?.focus();
 `;
+
+const renderHtml = (state: ApprovalPageState): string =>
+  `<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Approve TailorKit CLI</title>
+  <style>${approvalStyles}</style>
+</head>
+<body>
+  <main class="page">
+    ${renderCard(state)}
+    <p class="footer-link">Powered by <a href="https://tailorkit.dev/home">TailorKit</a></p>
+  </main>
+  ${state.status === "idle" ? `<script>${script}</script>` : ""}
+</body>
+</html>`;
+
+const renderCliAuthApprovalPage = (state: ApprovalPageState): Response =>
+  new Response(`<!doctype html>${renderHtml(state)}`, {
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+    },
+  });
+
+export const selectOneScope = (
+  scopes: TailorKitScopes,
+  selectedName: string | undefined,
+  errorMessage: string
+): TailorKitNamedScope => {
+  const availableNames = Object.keys(scopes);
+  const name =
+    selectedName ??
+    (availableNames.length === 1 ? requireValue(availableNames[0]) : undefined);
+  if (name === undefined) {
+    throw new TypeError(errorMessage);
+  }
+  return requireValue(selectTailorKitScopes(scopes, [name])[0]);
+};
+
+export const handleCliAuthApprovalPage = async ({
+  authenticate,
+  platform,
+  platformHeaders,
+  request,
+  signInPath,
+}: CliAuthApprovalPageOptions): Promise<Response> => {
+  if (request.method === "GET") {
+    const url = new URL(request.url);
+    const tailorkit = await authenticate({ request });
+
+    if (signInPath && !tailorkit) {
+      return redirectToSignIn({ approvalUrl: url, signInPath });
+    }
+
+    return renderCliAuthApprovalPage({
+      code: url.searchParams.get("code") ?? "",
+      scopes: tailorkit?.scopes,
+      status: "idle",
+    });
+  }
+
+  if (request.method !== "POST") {
+    return new Response("Method not allowed", {
+      headers: { allow: "GET, POST" },
+      status: 405,
+    });
+  }
+
+  const form = await request.formData();
+  const intent = String(form.get("intent") ?? "");
+  const userCode = String(form.get("userCode") ?? "").trim();
+  const selectedScopeName =
+    typeof form.get("scope") === "string"
+      ? String(form.get("scope"))
+      : undefined;
+
+  const tailorkit = await authenticate({ request });
+  if (!userCode) {
+    return renderCliAuthApprovalPage({
+      code: userCode,
+      error: "Enter the code shown in your terminal.",
+      scopes: tailorkit?.scopes,
+      selectedScopeName,
+      status: "idle",
+    });
+  }
+
+  if (!tailorkit) {
+    return renderCliAuthApprovalPage({
+      code: userCode,
+      error: "You need to sign in before approving this CLI login.",
+      selectedScopeName,
+      status: "idle",
+    });
+  }
+
+  try {
+    if (intent === "approve") {
+      const scope = selectOneScope(
+        tailorkit.scopes,
+        selectedScopeName,
+        "Choose one scope for this CLI login."
+      );
+      await cliAuthApprove({
+        body: {
+          scope,
+          userCode,
+        },
+        client: platform,
+        headers: platformHeaders,
+      });
+
+      return renderCliAuthApprovalPage({ status: "approved" });
+    }
+
+    if (intent === "deny") {
+      await cliAuthDeny({
+        body: {
+          userCode,
+        },
+        client: platform,
+        headers: platformHeaders,
+      });
+
+      return renderCliAuthApprovalPage({ status: "denied" });
+    }
+  } catch (error) {
+    return renderCliAuthApprovalPage({
+      code: userCode,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unable to finish this CLI login request.",
+      scopes: tailorkit.scopes,
+      selectedScopeName,
+      status: "idle",
+    });
+  }
+
+  return renderCliAuthApprovalPage({
+    code: userCode,
+    error: "Choose whether to approve or deny this CLI login.",
+    scopes: tailorkit.scopes,
+    selectedScopeName,
+    status: "idle",
+  });
+};

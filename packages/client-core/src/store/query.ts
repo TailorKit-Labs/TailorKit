@@ -34,35 +34,32 @@ export type ViewsQueryResult<TMultiple extends boolean = boolean> = QueryResult<
   SlotItem<TMultiple>[]
 >;
 
-export function appsQueryKey(options: AppsQueryOptions): string {
-  return serializeCacheKey([
+export const appsQueryKey = (options: AppsQueryOptions): string =>
+  serializeCacheKey([
     normalizeScopeSelection(options.scopes).key,
     normalizeScopeSelection(options.appIds).key,
   ]);
-}
 
-function result<T>(
+const result = <T>(
   snapshot: Pick<FetchSnapshot<T>, "data" | "error" | "status" | "isFetching">,
   refetch: () => Promise<void>
-): QueryResult<T> {
-  return {
-    data: snapshot.data,
-    error: snapshot.error,
-    isError: snapshot.status === "error",
-    isFetching: snapshot.isFetching,
-    isLoading: snapshot.status === "loading",
-    isPending: snapshot.status === "idle" || snapshot.status === "loading",
-    isSuccess: snapshot.status === "ready",
-    refetch,
-    status: snapshot.status,
-  };
-}
+): QueryResult<T> => ({
+  data: snapshot.data,
+  error: snapshot.error,
+  isError: snapshot.status === "error",
+  isFetching: snapshot.isFetching,
+  isLoading: snapshot.status === "loading",
+  isPending: snapshot.status === "idle" || snapshot.status === "loading",
+  isSuccess: snapshot.status === "ready",
+  refetch,
+  status: snapshot.status,
+});
 
 /** Discover and filter apps, with the same result shape in every framework. */
-export function createAppsQuery(
+export const createAppsQuery = (
   store: TailorKitStore,
   options: AppsQueryOptions = {}
-) {
+) => {
   const refetch = () => store.fetchApps({ force: true });
   let previous: ReturnType<typeof store.getAppsSnapshot> | undefined;
   let snapshot: QueryResult<TailorKitApp[]>;
@@ -93,48 +90,36 @@ export function createAppsQuery(
     }
   );
   return { fetch: store.fetchApps, refetch, state };
-}
+};
 
-/** Resolve a slot reactively as discovery and registered context change. */
-export function createViewsQuery(
-  store: TailorKitStore,
-  options: ViewsQueryOptions
-) {
-  return viewsQuery(store, options);
-}
-
-/** Resolve an explicitly supplied app without initiating discovery. */
-export function createAppViewsQuery(
-  store: TailorKitStore,
-  app: TailorKitApp,
-  slot: string
-) {
-  return viewsQuery(store, { slot }, app);
-}
-
-function viewsQuery(
+const viewsQuery = (
   store: TailorKitStore,
   options: ViewsQueryOptions,
   app?: TailorKitApp
-) {
+) => {
   let previousKey: string | undefined;
   let previousError: Error | null | undefined;
   let selected: ReadableAtom<ViewsQueryResult>;
   let query: ReturnType<typeof createSlotStore>;
   const refetch = () => {
+    // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
     selection.get();
     return app ? query.fetch({ force: true }) : refetchViews(store, options);
   };
   const selection = computed(
     [store.fetch.apps.state, store.views.state],
     (discovery, active) => {
-      const apps = app
-        ? [app]
-        : discovery.status === "ready"
-          ? discovery.apps.filter((candidate) =>
-              matchesApp(candidate, options.scopes, options.appIds)
-            )
-          : [];
+      const apps = (() => {
+        if (app) {
+          return [app];
+        }
+        if (discovery.status === "ready") {
+          return discovery.apps.filter((candidate) =>
+            matchesApp(candidate, options.scopes, options.appIds)
+          );
+        }
+        return [];
+      })();
       const appsStatus = app ? "ready" : discovery.status;
       const appsError = app ? null : discovery.error;
       const activeView =
@@ -177,7 +162,9 @@ function viewsQuery(
           (listener) => {
             const stopSlot = slot.state.listen(listener);
             const stopApps = app
-              ? () => {}
+              ? () => {
+                  /* Intentionally no action is needed. */
+                }
               : store.fetch.apps.state.listen(listener);
             void slot.fetch();
             return () => {
@@ -199,4 +186,17 @@ function viewsQuery(
     return stop;
   });
   return { refetch, state };
-}
+};
+
+/** Resolve a slot reactively as discovery and registered context change. */
+export const createViewsQuery = (
+  store: TailorKitStore,
+  options: ViewsQueryOptions
+) => viewsQuery(store, options);
+
+/** Resolve an explicitly supplied app without initiating discovery. */
+export const createAppViewsQuery = (
+  store: TailorKitStore,
+  app: TailorKitApp,
+  slot: string
+) => viewsQuery(store, { slot }, app);

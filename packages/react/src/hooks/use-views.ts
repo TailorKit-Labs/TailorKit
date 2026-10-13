@@ -1,4 +1,4 @@
-import { appsQueryKey, createViewsQuery } from "@tailorkit/client-core";
+import { createValueMemo, createViewsQuery } from "@tailorkit/client-core";
 import type { SlotItem, ViewsQueryOptions } from "@tailorkit/client-core";
 import { useMemo } from "react";
 
@@ -15,12 +15,23 @@ export type UseViewsResult<TMultiple extends boolean = boolean> =
   UseQueryResult<SlotItem<TMultiple>[]>;
 
 /** Subscribe to the shared views query using React's lifecycle. */
-export function useViews(options: UseViewsOptions): UseViewsResult {
+export const useViews = (options: UseViewsOptions): UseViewsResult => {
   const { store } = useTailorkitContext("useViews");
-  const key = appsQueryKey(options);
+  const memoOptions = useMemo(() => createValueMemo<UseViewsOptions>(), []);
+  const stableOptions = memoOptions({
+    appIds:
+      options.appIds === undefined
+        ? undefined
+        : [...new Set(options.appIds)].toSorted(),
+    scopes:
+      options.scopes === undefined
+        ? undefined
+        : [...new Set(options.scopes)].toSorted(),
+    slot: options.slot,
+  });
   const query = useMemo(
-    () => createViewsQuery(store, options),
-    [store, key, options.slot]
+    () => createViewsQuery(store, stableOptions),
+    [store, stableOptions]
   );
   return useQueryResult(query.state);
-}
+};

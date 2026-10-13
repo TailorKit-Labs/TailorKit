@@ -17,6 +17,13 @@ import { env } from "./env";
 import { canonicalizeScope } from "./scope";
 import { createTestDb } from "./test/pglite";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const state = vi.hoisted(() => ({ db: undefined as unknown, start: vi.fn() }));
 vi.mock("@tailorkit/db", () => ({
   get db() {
@@ -30,14 +37,14 @@ vi.mock("@tailorkit/app-agent/workflows", () => ({
 }));
 vi.mock("workflow/api", () => ({ start: state.start }));
 vi.mock("@tailorkit/api-utils/dev-delay", () => ({
-  devDelayMiddleware: async ({ next }: { next: () => unknown }) => next(),
+  devDelayMiddleware: async ({ next }: { next: () => unknown }) => await next(),
 }));
 vi.mock("@tailorkit/api-utils/rate-limiting", () => ({
   createRateLimiter: vi.fn(),
   ratelimitMiddleware:
     () =>
     async ({ next }: { next: () => unknown }) =>
-      next(),
+      await next(),
 }));
 const { handleAppAgentMcpRequest } = await import("./app-agent-mcp");
 
@@ -47,23 +54,23 @@ const otherProjectId = "33333333-3333-4333-8333-333333333333";
 const scope = canonicalizeScope({ name: "org", value: { tenant: "one" } });
 const otherScope = canonicalizeScope({ name: "org", value: { tenant: "two" } });
 
-function request(name: string, args: Record<string, unknown> = {}) {
-  return new Request("https://platform.test/api/platform/app-agent/mcp", {
+const request = (name: string, args: Record<string, unknown> = {}) =>
+  new Request("https://platform.test/api/platform/app-agent/mcp", {
     body: JSON.stringify({
-      jsonrpc: "2.0",
       id: 1,
+      jsonrpc: "2.0",
       method: "tools/call",
       params: {
-        name,
-        arguments: args,
         _meta: {
-          "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+          "io.modelcontextprotocol/clientCapabilities": {},
           "io.modelcontextprotocol/clientInfo": {
             name: "isolation-test",
             version: "1",
           },
-          "io.modelcontextprotocol/clientCapabilities": {},
+          "io.modelcontextprotocol/protocolVersion": "2026-07-28",
         },
+        arguments: args,
+        name,
       },
     }),
     headers: {
@@ -74,15 +81,14 @@ function request(name: string, args: Record<string, unknown> = {}) {
       "mcp-protocol-version": "2026-07-28",
       "x-tailorkit-context": Buffer.from(
         JSON.stringify({
+          hostUrl: "https://host.test/api/tailorkit",
           scopes: { org: scope.scope.value },
           subjectId: "user",
-          hostUrl: "https://host.test/api/tailorkit",
         })
       ).toString("base64url"),
     },
     method: "POST",
   });
-}
 
 describe("MCP database authorization", () => {
   let database: Awaited<ReturnType<typeof createTestDb>>;
@@ -120,8 +126,8 @@ describe("MCP database authorization", () => {
       ])
       .returning();
     context = {
-      organization: org!,
-      project: ownProject!,
+      organization: requireValue(org),
+      project: requireValue(ownProject),
       storage: {
         createDownloadUrl: vi.fn(),
         createUploadUrl: vi.fn(),
@@ -130,7 +136,7 @@ describe("MCP database authorization", () => {
         type: "s3",
       },
     };
-    otherContext = { ...context, project: otherProject! };
+    otherContext = { ...context, project: requireValue(otherProject) };
     const apps = await database.db
       .insert(app)
       .values([
@@ -149,21 +155,31 @@ describe("MCP database authorization", () => {
         },
       ])
       .returning();
-    [ownApp, foreignApp, outOfScopeApp] = [apps[0]!, apps[1]!, apps[2]!];
+    [ownApp, foreignApp, outOfScopeApp] = [
+      requireValue(apps[0]),
+      requireValue(apps[1]),
+      requireValue(apps[2]),
+    ];
     existingGrants = await database.db
       .insert(cliToken)
       .values([
         {
           projectId,
+
           ...scope,
-          tokenHash: "own-existing",
+
           expiresAt: new Date(Date.now() + 60_000),
+
+          tokenHash: "own-existing",
         },
         {
           projectId: otherProjectId,
+
           ...scope,
-          tokenHash: "foreign-existing",
+
           expiresAt: new Date(Date.now() + 60_000),
+
+          tokenHash: "foreign-existing",
         },
       ])
       .returning();
@@ -208,10 +224,12 @@ describe("MCP database authorization", () => {
     const initialApps = await database.db.select().from(app);
     for (const deniedApp of [foreignApp, outOfScopeApp]) {
       for (const appId of [deniedApp.id, deniedApp.publicId]) {
+        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
         const response = await handleAppAgentMcpRequest(
           request("edit_app", { appId, prompt: "Change it" }),
           context
         );
+        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
         expect(await response.text()).toContain('"isError":true');
       }
     }
@@ -238,17 +256,19 @@ describe("MCP database authorization", () => {
       scope: scope.scope,
       scopeKey: scope.scopeKey,
     });
-    expect(grants.filter(({ id }) => id !== grant!.id)).toEqual(existingGrants);
-    const input = state.start.mock.lastCall![1][0];
+    expect(grants.filter(({ id }) => id !== requireValue(grant).id)).toEqual(
+      existingGrants
+    );
+    const [, [input]] = requireValue(state.start.mock.lastCall);
     expect(
       await verifyAgentToken(
         input.agentToken,
-        env.AUTH_SECRET!,
-        env.OPENAPI_SERVER_URL!
+        requireValue(env.AUTH_SECRET),
+        requireValue(env.OPENAPI_SERVER_URL)
       )
     ).toMatchObject({
       appId: ownApp.id,
-      cliTokenId: grant!.id,
+      cliTokenId: requireValue(grant).id,
       projectId,
       scope: scope.scope,
     });
@@ -272,7 +292,9 @@ describe("MCP database authorization", () => {
       scope: scope.scope,
       scopeKey: scope.scopeKey,
     });
-    expect(state.start.mock.lastCall![1][0].appId).toBe(created!.id);
+    expect(requireValue(state.start.mock.lastCall)[1][0].appId).toBe(
+      requireValue(created).id
+    );
     const grants = await database.db.select().from(cliToken);
     expect(
       grants.filter(({ id }) =>

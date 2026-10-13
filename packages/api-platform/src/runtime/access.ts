@@ -1,9 +1,9 @@
 import { runtimeServiceAuthorized } from "@tailorkit/api-utils/app-auth";
 /** Only the trusted runtime can select projects for private bundle metadata lookups. */
-export async function runtimeProjectAccess(
+export const runtimeProjectAccess = async (
   request: Request,
   secret: string | undefined
-) {
+) => {
   if (!(await runtimeServiceAuthorized(request, secret))) {
     return null;
   }
@@ -22,4 +22,4 @@ export async function runtimeProjectAccess(
   }
 
   return projectId;
-}
+};

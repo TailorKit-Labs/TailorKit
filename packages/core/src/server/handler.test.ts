@@ -12,18 +12,42 @@ const tailor = createTailorKitServer({
 });
 const optionalSchemaTailor = tailor;
 
+const authenticateImplementation2Implementation = () => ({
+  scopes: { org: { tenant: "workspace" } },
+});
+
+const authenticateImplementationImplementation = () => ({
+  scopes: {
+    org: { tenant: "org" },
+    userOrg: { tenant: "user_org" },
+  },
+});
+
+const requestImplementationImplementation = (origin: string) =>
+  new Request("http://internal:3000/custom/tailorkit/backend/session", {
+    body: JSON.stringify({ appId: "app" }),
+    headers: {
+      "content-type": "application/json",
+      origin,
+      "x-forwarded-host": "attacker.test",
+      "x-forwarded-proto": "https",
+    },
+    method: "POST",
+  });
+
 describe("createTailorKitServer", () => {
   it("requests app backend tokens from the platform with host credentials and verified scopes", async () => {
     const requests: Request[] = [];
     const server = createTailorKitServer({
       $internal: {
+        // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
         platformFetch: async (input, init) => {
           requests.push(
             input instanceof Request ? input : new Request(input, init)
           );
           return Response.json({
-            token: "platform-token",
             expiresAt: 123,
+            token: "platform-token",
             url: "https://runtime.test/rpc",
           });
         },
@@ -49,7 +73,7 @@ describe("createTailorKitServer", () => {
       token: "platform-token",
       url: "https://runtime.test/rpc",
     });
-    const issuedRequest = requests[0];
+    const [issuedRequest] = requests;
     if (!issuedRequest) {
       throw new Error("Expected a platform token request");
     }
@@ -65,17 +89,20 @@ describe("createTailorKitServer", () => {
     });
   });
 
+  const requestImplementation = requestImplementationImplementation;
+
   it("issues the public tool destination and checks the browser origin behind a proxy", async () => {
     const requests: Request[] = [];
     const server = createTailorKitServer({
       $internal: {
+        // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
         platformFetch: async (input, init) => {
           requests.push(
             input instanceof Request ? input : new Request(input, init)
           );
           return Response.json({
-            token: "platform-token",
             expiresAt: 123,
+            token: "platform-token",
             url: "https://runtime.test/rpc",
           });
         },
@@ -85,35 +112,28 @@ describe("createTailorKitServer", () => {
       projectKey: "project-key",
       scopes: { org: testScopeSchema },
     });
-    const request = (origin: string) =>
-      new Request("http://internal:3000/custom/tailorkit/backend/session", {
-        body: JSON.stringify({ appId: "app" }),
-        headers: {
-          "content-type": "application/json",
-          origin,
-          "x-forwarded-host": "attacker.test",
-          "x-forwarded-proto": "https",
-        },
-        method: "POST",
-      });
+    const request = requestImplementation;
     const authentication = {
       authenticate: () => ({ scopes: { org: { tenant: "verified" } } }),
     };
-    expect(
-      (await server.handler(request("https://host.test"), authentication))
-        .status
-    ).toBe(200);
+    const awaitedResult1 = await server.handler(
+      request("https://host.test"),
+      authentication
+    );
+    expect(awaitedResult1.status).toBe(200);
     expect(await requests[0]?.json()).toMatchObject({
       toolUrl: "https://host.test/custom/tailorkit/tools/execute",
     });
-    expect(
-      (await server.handler(request("https://attacker.test"), authentication))
-        .status
-    ).toBe(400);
-    expect(
-      (await server.handler(request("http://internal:3000"), authentication))
-        .status
-    ).toBe(400);
+    const awaitedResult2 = await server.handler(
+      request("https://attacker.test"),
+      authentication
+    );
+    expect(awaitedResult2.status).toBe(400);
+    const awaitedResult3 = await server.handler(
+      request("http://internal:3000"),
+      authentication
+    );
+    expect(awaitedResult3.status).toBe(400);
     expect(requests).toHaveLength(1);
   });
 
@@ -151,8 +171,8 @@ describe("createTailorKitServer", () => {
               ).json()
             );
             return Response.json({
-              token: "token",
               expiresAt: 123,
+              token: "token",
               url: "https://runtime.test/rpc",
             });
           },
@@ -165,14 +185,12 @@ describe("createTailorKitServer", () => {
         authenticate: () => ({ scopes: { org: { tenant: "verified" } } }),
       };
       for (const route of ["schema", "meta"]) {
-        expect(
-          (
-            await server.handler(
-              new Request(`https://request.test${prefix}/${route}`),
-              authentication
-            )
-          ).status
-        ).toBe(200);
+        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+        const awaitedResult4 = await server.handler(
+          new Request(`https://request.test${prefix}/${route}`),
+          authentication
+        );
+        expect(awaitedResult4.status).toBe(200);
       }
       const response = await server.handler(
         new Request(`https://request.test${prefix}/backend/session`, {
@@ -223,6 +241,7 @@ describe("createTailorKitServer", () => {
     const requests: Request[] = [];
     const server = createTailorKitServer({
       $internal: {
+        // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
         platformFetch: async (input, init) => {
           requests.push(
             input instanceof Request ? input : new Request(input, init)
@@ -252,6 +271,8 @@ describe("createTailorKitServer", () => {
     expect(requests).toHaveLength(1);
   });
 
+  const authenticateImplementation = authenticateImplementationImplementation;
+
   it("selects only requested authenticated scope names for host app reads", async () => {
     const platformBodies: unknown[] = [];
     const server = createTailorKitServer({
@@ -270,12 +291,7 @@ describe("createTailorKitServer", () => {
       components: {},
       scopes: { org: testScopeSchema, userOrg: testScopeSchema },
     });
-    const authenticate = () => ({
-      scopes: {
-        org: { tenant: "org" },
-        userOrg: { tenant: "user_org" },
-      },
-    });
+    const authenticate = authenticateImplementation;
 
     const response = await server.handler(
       new Request(
@@ -300,6 +316,8 @@ describe("createTailorKitServer", () => {
     expect(platformBodies).toHaveLength(1);
   });
 
+  const authenticateImplementation2 = authenticateImplementation2Implementation;
+
   it("treats scopes= as an empty app and preview selection", async () => {
     let platformCalls = 0;
     const server = createTailorKitServer({
@@ -313,7 +331,7 @@ describe("createTailorKitServer", () => {
       components: {},
       scopes: { org: testScopeSchema },
     });
-    const authenticate = () => ({ scopes: { org: { tenant: "workspace" } } });
+    const authenticate = authenticateImplementation2;
     const apps = await server.handler(
       new Request("https://example.com/api/tailorkit/apps?scopes="),
       { authenticate }
@@ -447,8 +465,8 @@ describe("createTailorKitServer", () => {
       new Request("https://example.com/api/tailorkit/cli-auth/approve", {
         body: new URLSearchParams({
           intent: "approve",
-          userCode: "",
           scope: "userOrg",
+          userCode: "",
         }),
         headers: { "content-type": "application/x-www-form-urlencoded" },
         method: "POST",
@@ -768,6 +786,7 @@ describe("createTailorKitServer", () => {
     const requests: Request[] = [];
     const server = createTailorKitServer({
       $internal: {
+        // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
         platformFetch: async (input, init) => {
           const request =
             input instanceof Request ? input : new Request(input, init);
@@ -778,8 +797,8 @@ describe("createTailorKitServer", () => {
             });
           }
           return Response.json({
-            deployment: { id: "deployment" },
             assets: [],
+            deployment: { id: "deployment" },
           });
         },
       },
@@ -789,7 +808,7 @@ describe("createTailorKitServer", () => {
     });
     const client = createTailorKitClient({
       fetch: async (input, init) =>
-        server.handler(
+        await server.handler(
           input instanceof Request ? input : new Request(input, init),
           {
             authenticate: () => {
@@ -809,11 +828,11 @@ describe("createTailorKitServer", () => {
       appId: "app",
       assets: [
         {
-          objectKey: "client.js",
           checksum: "0".repeat(64),
           contentLength: 1,
           contentType: "application/javascript",
           encoding: "utf-8",
+          objectKey: "client.js",
         },
       ],
       views,

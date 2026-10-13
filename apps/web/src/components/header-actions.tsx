@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { useMemo, createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 interface HeaderActionsContextValue {
@@ -8,27 +8,35 @@ interface HeaderActionsContextValue {
 
 const HeaderActionsContext = createContext<HeaderActionsContextValue>({
   actions: null,
-  setActions: () => {},
+  setActions: () => {
+    /* Intentionally no action is needed. */
+  },
 });
 
-export function HeaderActionsProvider({ children }: { children: ReactNode }) {
+export const HeaderActionsProvider = ({
+  children,
+}: {
+  children: ReactNode;
+}) => {
   const [actions, setActions] = useState<ReactNode>(null);
+  const contextValue1 = useMemo(
+    () => ({ actions, setActions }),
+    [actions, setActions]
+  );
   return (
-    <HeaderActionsContext value={{ actions, setActions }}>
+    <HeaderActionsContext value={contextValue1}>
       {children}
     </HeaderActionsContext>
   );
-}
+};
 
-export function useHeaderActions() {
-  return useContext(HeaderActionsContext);
-}
+export const useHeaderActions = () => useContext(HeaderActionsContext);
 
-export function SetHeaderActions({ children }: { children: ReactNode }) {
+export const SetHeaderActions = ({ children }: { children: ReactNode }) => {
   const { setActions } = useHeaderActions();
   useEffect(() => {
     setActions(children);
     return () => setActions(null);
   });
   return null;
-}
+};

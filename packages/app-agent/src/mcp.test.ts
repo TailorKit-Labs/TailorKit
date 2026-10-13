@@ -7,21 +7,32 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { createAppAgentMcp } from "./mcp";
 import type { AppAgentMcpBackend } from "./mcp";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const cleanup: (() => Promise<void>)[] = [];
 afterEach(async () => {
   for (const close of cleanup.splice(0)) {
+    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     await close();
   }
 });
 
-async function connect(overrides: Partial<AppAgentMcpBackend> = {}) {
+const connect = async (overrides: Partial<AppAgentMcpBackend> = {}) => {
   const backend = {
-    createApp: vi.fn(async () => ({ appId: "new-app" })),
-    editApp: vi.fn(async () => ({ appId: "existing-app" })),
-    listApps: vi.fn(async () => ({
-      items: [],
-      pagination: { hasMore: false },
-    })),
+    createApp: vi.fn(async () => await { appId: "new-app" }),
+    editApp: vi.fn(async () => await { appId: "existing-app" }),
+    listApps: vi.fn(
+      async () =>
+        await {
+          items: [],
+          pagination: { hasMore: false },
+        }
+    ),
     ...overrides,
   };
   const handler = createAppAgentMcp(backend, ["org"]);
@@ -36,6 +47,7 @@ async function connect(overrides: Partial<AppAgentMcpBackend> = {}) {
   const requests: Request[] = [];
   await client.connect(
     new StreamableHTTPClientTransport(new URL("https://host.test/mcp"), {
+      // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
       fetch: async (input, init) => {
         const request = new Request(input, init);
         requests.push(request.clone());
@@ -44,7 +56,7 @@ async function connect(overrides: Partial<AppAgentMcpBackend> = {}) {
     })
   );
   return { backend, client, handler, requests };
-}
+};
 
 describe("app agent MCP", () => {
   it("discovers only three tools over the current protocol and explains agent creation", async () => {
@@ -72,9 +84,19 @@ describe("app agent MCP", () => {
   it("streams progress before the final agent result", async () => {
     const events: unknown[] = [];
     let received!: () => void;
-    const progressReceived = new Promise<void>((resolve) => {
-      received = resolve;
-    });
+    const progressReceived = (() => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers<ReturnType<() => void>>();
+      try {
+        received = resolve;
+      } catch (error) {
+        rejectPending(error);
+      }
+      return pendingPromise;
+    })();
     const { client } = await connect({
       async editApp(input, execution) {
         expect(input).toEqual({ appId: "app", prompt: "Change it" });
@@ -90,7 +112,7 @@ describe("app agent MCP", () => {
       { arguments: { appId: "app", prompt: "Change it" }, name: "edit_app" },
       {
         onprogress: (progress) => {
-          events.push(JSON.parse(progress.message!));
+          events.push(JSON.parse(requireValue(progress.message)));
           received();
         },
       }
@@ -110,13 +132,13 @@ describe("app agent MCP", () => {
     const legacy = await handler.fetch(
       new Request("https://host.test/mcp", {
         body: JSON.stringify({
-          jsonrpc: "2.0",
           id: 1,
+          jsonrpc: "2.0",
           method: "initialize",
           params: {
-            protocolVersion: "2025-11-25",
-            clientInfo: { name: "old", version: "1" },
             capabilities: {},
+            clientInfo: { name: "old", version: "1" },
+            protocolVersion: "2025-11-25",
           },
         }),
         headers: {
@@ -127,7 +149,7 @@ describe("app agent MCP", () => {
       })
     );
     expect(legacy.status).toBe(400);
-    const valid = requests[0]!;
+    const valid = requireValue(requests[0]);
     const headers = new Headers(valid.headers);
     headers.set("mcp-method", "tools/call");
     const mismatch = await handler.fetch(
@@ -156,22 +178,42 @@ describe("app agent MCP", () => {
 
   it("propagates response cancellation to the running tool", async () => {
     let cancelled!: () => void;
-    const cancellation = new Promise<void>((resolve) => {
-      cancelled = resolve;
-    });
+    const cancellation = (() => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers<ReturnType<() => void>>();
+      try {
+        cancelled = resolve;
+      } catch (error) {
+        rejectPending(error);
+      }
+      return pendingPromise;
+    })();
     const { client } = await connect({
       async editApp(_input, execution) {
         await execution.onProgress({ status: "started" });
-        await new Promise<void>((resolve) =>
-          execution.signal.addEventListener(
-            "abort",
-            () => {
-              cancelled();
-              resolve();
-            },
-            { once: true }
-          )
-        );
+        await (() => {
+          const {
+            promise: pendingPromise,
+            resolve,
+            reject: rejectPending,
+          } = Promise.withResolvers<ReturnType<() => void>>();
+          try {
+            execution.signal.addEventListener(
+              "abort",
+              () => {
+                cancelled();
+                resolve();
+              },
+              { once: true }
+            );
+          } catch (error) {
+            rejectPending(error);
+          }
+          return pendingPromise;
+        })();
         return {};
       },
     });

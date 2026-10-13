@@ -6,13 +6,13 @@ import {
 } from "@playground/shared/auth";
 import { createFileRoute } from "@tanstack/react-router";
 
-function json(data: unknown, init: ResponseInit = {}) {
+const json = (data: unknown, init: ResponseInit = {}) => {
   const headers = new Headers(init.headers);
   headers.set("Content-Type", "application/json");
   return Response.json(data, { ...init, headers });
-}
+};
 
-async function handle({ request }: { request: Request }) {
+const handle = async ({ request }: { request: Request }) => {
   if (request.method === "GET") {
     return json({
       choices: listSignInChoices(),
@@ -69,7 +69,7 @@ async function handle({ request }: { request: Request }) {
       },
     }
   );
-}
+};
 
 export const Route = createFileRoute("/api/auth")({
   server: { handlers: { GET: handle, POST: handle } },

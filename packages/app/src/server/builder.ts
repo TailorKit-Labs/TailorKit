@@ -130,11 +130,16 @@ class FunctionBuilder<
     handler: (context: HandlerContext<K, A, F, D>) => HandlerOutput<K, O>
   ): BuiltFunction<K, A, R, O, F, D> {
     return Object.freeze({
-      kind: this.kind,
       args: this.args,
+
+      kind: this.kind,
+
       ...(this.databaseDefinition ? { database: this.databaseDefinition } : {}),
+
       ...(this.result ? { result: this.result } : {}),
+
       ...(this.kind === "action" ? { functions: this.calls } : {}),
+
       handler: (
         context: Omit<HandlerContext<K, A, F, D>, "input"> & {
           args: z.output<A>;

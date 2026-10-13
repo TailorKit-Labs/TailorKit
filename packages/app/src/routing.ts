@@ -15,30 +15,29 @@ export interface RouteDefinition {
 }
 
 /** Define the shell in an app or slot root.tsx. */
-export function defineRoute(options: RouteDefinition): RouteDefinition {
+export const defineRoute = (options: RouteDefinition): RouteDefinition => {
   if (typeof options.shellComponent !== "function") {
     throw new TypeError("defineRoute requires a shellComponent.");
   }
   return Object.freeze({ shellComponent: options.shellComponent });
-}
+};
 
 const Outlet = createContext<ComponentChildren>(undefined);
 
 /** Render the next layout or selected view inside a root shell or layout. */
-export function Route() {
+export const Route = () => {
   const children = useContext(Outlet);
   if (children === undefined) {
     throw new Error("Route must be rendered inside a root or layout.");
   }
   return children;
-}
+};
 
-function Shell({
+const Shell = ({
   shell,
   children,
-}: ShellProps & { shell: ComponentType<ShellProps> }) {
-  return h(Outlet.Provider, { value: children }, h(shell, { children }));
-}
+}: ShellProps & { shell: ComponentType<ShellProps> }) =>
+  h(Outlet.Provider, { value: children }, h(shell, { children }));
 
 export interface RouteModule {
   filename: string;
@@ -68,10 +67,10 @@ interface FileViewDefinition {
   instances?: { resolver: string };
 }
 
-function shellComponent(
+const shellComponent = (
   module: RouteModule,
   root: boolean
-): ComponentType<ShellProps> {
+): ComponentType<ShellProps> => {
   const { definition } = module;
   if (!root && typeof definition === "function") {
     return definition as ComponentType<ShellProps>;
@@ -87,17 +86,17 @@ function shellComponent(
   throw new TypeError(
     `${module.filename} must default-export ${root ? "defineRoute({ shellComponent })" : "a layout component or defineRoute({ shellComponent })"}.`
   );
-}
+};
 
 /** The app builder generates this registration; apps only export their files.
  * @internal
  */
-export function createFileClient(options: {
+export const createFileClient = (options: {
   root?: RouteModule;
   roots: (RouteModule & { slot: string })[];
   layouts: FileLayoutModule[];
   views: FileViewModule[];
-}): TailorKitClientWithMeta {
+}): TailorKitClientWithMeta => {
   const rootShell = options.root
     ? shellComponent(options.root, true)
     : undefined;
@@ -129,7 +128,8 @@ export function createFileClient(options: {
         `${module.filename} declares slot "${view.slot}" but is in "${module.slot}".`
       );
     }
-    const slot = (definitions[module.slot] ??= Object.create(null));
+    definitions[module.slot] ??= Object.create(null);
+    const slot = definitions[module.slot] as Record<string, FileViewDefinition>;
     if (Object.hasOwn(slot, view.path)) {
       throw new Error(
         `Duplicate view "${view.path}" in slot "${module.slot}" (${module.filename}).`
@@ -205,4 +205,4 @@ export function createFileClient(options: {
     },
     slots: slots as TailorKitClientWithMeta["slots"],
   };
-}
+};

@@ -1,4 +1,4 @@
-import z from "zod";
+import { z } from "zod";
 
 export type JsonValue =
   | string
@@ -29,12 +29,12 @@ export const scopeNameSchema = z
   .regex(/^[A-Za-z][A-Za-z0-9_-]{0,63}$/u);
 export const scopeKeySchema = z.string().regex(/^[a-f0-9]{32}$/u);
 
-function quotedByteLength(value: string) {
+const quotedByteLength = (value: string) => {
   const json = JSON.stringify(value);
   return json ? new TextEncoder().encode(json).byteLength : 0;
-}
+};
 
-function preflightScopeValue(value: unknown): string | null {
+const preflightScopeValue = (value: unknown): string | null => {
   if (
     value === null ||
     typeof value !== "object" ||
@@ -45,8 +45,10 @@ function preflightScopeValue(value: unknown): string | null {
     return "Scope value must be a nonempty plain object.";
   }
 
-  let nodes = 1; // Include the root object, as the platform canonicalizer does.
-  let bytes = 2; // root object braces
+  // Include the root object, as the platform canonicalizer does.
+  let nodes = 1;
+  // root object braces
+  let bytes = 2;
   let valid = true;
   let issue: string | null = null;
   const fail = (message: string) => {
@@ -60,6 +62,7 @@ function preflightScopeValue(value: unknown): string | null {
       fail("Scope value exceeds 16 KiB of JSON.");
     }
   };
+  // oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
   const visit = (current: unknown, depth: number): number => {
     nodes += 1;
     if (nodes > maxNodes) {
@@ -113,6 +116,7 @@ function preflightScopeValue(value: unknown): string | null {
       if (keys.length !== current.length + 1 || !keys.includes("length")) {
         fail("Scope arrays must be dense and contain no extra properties.");
       }
+      // oxlint-disable-next-line no-unmodified-loop-condition -- The callback invoked by the loop updates this shared lifecycle or validation flag.
       for (let index = 0; index < current.length && valid; index += 1) {
         const descriptor = Object.getOwnPropertyDescriptor(
           current,
@@ -136,6 +140,7 @@ function preflightScopeValue(value: unknown): string | null {
       if (keys.length > maxObjectEntries) {
         fail("Scope objects cannot exceed 32 entries.");
       }
+      // oxlint-disable-next-line no-unmodified-loop-condition -- The callback invoked by the loop updates this shared lifecycle or validation flag.
       for (let index = 0; index < keys.length && valid; index += 1) {
         const key = keys[index];
         if (
@@ -169,6 +174,7 @@ function preflightScopeValue(value: unknown): string | null {
   if (rootKeys.length === 0 || rootKeys.length > maxObjectEntries) {
     return "Scope value must contain 1–32 entries.";
   }
+  // oxlint-disable-next-line no-unmodified-loop-condition -- The callback invoked by the loop updates this shared lifecycle or validation flag.
   for (let index = 0; index < rootKeys.length && valid; index += 1) {
     const key = rootKeys[index];
     if (
@@ -189,7 +195,7 @@ function preflightScopeValue(value: unknown): string | null {
     addBytes(quotedByteLength(key) + 1 + visit(descriptor.value, 1));
   }
   return valid ? null : (issue ?? "Invalid scope value.");
-}
+};
 
 const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
   z.union([

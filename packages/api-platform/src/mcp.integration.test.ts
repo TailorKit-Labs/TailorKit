@@ -7,6 +7,13 @@ import { expect, it, vi } from "vite-plus/test";
 
 import type { Context } from "./context";
 
+const require = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const calls = vi.hoisted(() => ({ list: vi.fn() }));
 vi.mock("@tailorkit/db", () => ({ db: {} }));
 vi.mock("./routes/apps.ts", () => ({
@@ -18,14 +25,14 @@ vi.mock("@tailorkit/app-agent/workflows", () => ({
 }));
 vi.mock("workflow/api", () => ({ start: vi.fn() }));
 vi.mock("@tailorkit/api-utils/dev-delay", () => ({
-  devDelayMiddleware: async ({ next }: { next: () => unknown }) => next(),
+  devDelayMiddleware: async ({ next }: { next: () => unknown }) => await next(),
 }));
 vi.mock("@tailorkit/api-utils/rate-limiting", () => ({
   createRateLimiter: vi.fn(),
   ratelimitMiddleware:
     () =>
     async ({ next }: { next: () => unknown }) =>
-      next(),
+      await next(),
 }));
 const { handleAppAgentMcpRequest } = await import("./app-agent-mcp");
 
@@ -59,23 +66,26 @@ it("connects an ordinary MCP client directly to the platform with standard heade
           );
           expect(request.headers.get("authorization")).toBe("Bearer host-key");
           return handleAppAgentMcpRequest(request, {
-            project: { id: "project" },
             organization: { id: "org" },
+            project: { id: "project" },
           } as Context);
         },
         requestInit: { headers },
       })
     );
     expect(client.getProtocolEra()).toBe("modern");
-    expect((await client.listTools()).tools.map(({ name }) => name)).toEqual([
+    const awaitedResult1 = await client.listTools();
+    expect(awaitedResult1.tools.map(({ name }) => name)).toEqual([
       "list_apps",
       "create_app",
       "edit_app",
     ]);
-    expect(
-      (await client.callTool({ arguments: {}, name: "list_apps" })).isError
-    ).not.toBe(true);
-    expect(calls.list.mock.lastCall![0].input.body.scopes).toEqual([
+    const awaitedResult2 = await client.callTool({
+      arguments: {},
+      name: "list_apps",
+    });
+    expect(awaitedResult2.isError).not.toBe(true);
+    expect(require(calls.list.mock.lastCall)[0].input.body.scopes).toEqual([
       { name: "org", value: { tenant: "墨尔本" } },
     ]);
   } finally {

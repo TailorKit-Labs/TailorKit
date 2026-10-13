@@ -38,9 +38,9 @@ export interface CreateContextOptions {
     | Promise<TailorKitRuntimeContext | null>;
 }
 
-export async function createContext(
+export const createContext = async (
   options: CreateContextOptions
-): Promise<Context> {
+): Promise<Context> => {
   const configuredHeaders = await (typeof options.platformHeaders === "function"
     ? options.platformHeaders()
     : options.platformHeaders);
@@ -55,4 +55,4 @@ export async function createContext(
     schema: options.schema,
     scopeSchemas: options.scopeSchemas,
   };
-}
+};

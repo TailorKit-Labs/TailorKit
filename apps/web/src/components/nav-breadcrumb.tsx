@@ -28,17 +28,16 @@ const settingsRouteLabels: Record<string, string> = {
   "/(app)/$orgSlug/~/(org)/settings/members": "Members",
 };
 
-function toLabel(segment: string) {
-  return segment
+const toLabel = (segment: string) =>
+  segment
     .split("-")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
-}
 
-function addOrgSegment(
+const addOrgSegment = (
   params: Record<string, string>,
   segments: BreadcrumbSegment[]
-) {
+) => {
   if (
     !("orgSlug" in params) ||
     segments.some((s) => s.label === toLabel(params.orgSlug))
@@ -50,13 +49,13 @@ function addOrgSegment(
     href: `/${params.orgSlug}/~/projects`,
     label: toLabel(params.orgSlug),
   });
-}
+};
 
-function addProjectSegment(
+const addProjectSegment = (
   id: string,
   params: Record<string, string>,
   segments: BreadcrumbSegment[]
-) {
+) => {
   if (
     !("projectSlug" in params) ||
     segments.some((s) => s.label === toLabel(params.projectSlug))
@@ -69,14 +68,14 @@ function addProjectSegment(
     href: isLast ? undefined : `/${params.orgSlug}/${params.projectSlug}`,
     label: toLabel(params.projectSlug),
   });
-}
+};
 
-function addStaticSegments(
+const addStaticSegments = (
   id: string,
   params: Record<string, string>,
   segments: BreadcrumbSegment[],
   loaderData: unknown
-) {
+) => {
   if (id.includes("/account") && !segments.some((s) => s.label === "Account")) {
     segments.push({ href: "/account/profile", label: "Account" });
   }
@@ -134,9 +133,9 @@ function addStaticSegments(
   if (settingsLabel) {
     segments.push({ label: settingsLabel });
   }
-}
+};
 
-export function NavBreadcrumb() {
+export const NavBreadcrumb = () => {
   const matches = useMatches();
   const segments: BreadcrumbSegment[] = [];
 
@@ -177,4 +176,4 @@ export function NavBreadcrumb() {
       </BreadcrumbList>
     </Breadcrumb>
   );
-}
+};

@@ -58,7 +58,7 @@ export const previewSession = pgTable(
     tunnelTokenHash: text("tunnel_token_hash").notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [
@@ -80,6 +80,7 @@ export const previewSession = pgTable(
   ]
 );
 
+// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
 export const PreviewSession = createSelectSchema(previewSession, {
   scope: scopeSchema,
   scopeKey: scopeKeySchema,

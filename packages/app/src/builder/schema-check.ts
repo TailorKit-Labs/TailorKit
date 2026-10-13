@@ -6,6 +6,7 @@ import { promisify } from "node:util";
 
 import { appDatabasePaths } from "./database-paths";
 import { drizzleGenerateArguments } from "./drizzle";
+import { getBuildEnvironment } from "./env";
 
 const run = promisify(execFile);
 
@@ -15,7 +16,7 @@ interface Snapshot {
   ddl: unknown[];
 }
 
-async function snapshot(directory: string): Promise<Snapshot | undefined> {
+const snapshot = async (directory: string): Promise<Snapshot | undefined> => {
   const entries = await readdir(directory, { withFileTypes: true }).catch(
     (error: unknown) => {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
@@ -27,7 +28,7 @@ async function snapshot(directory: string): Promise<Snapshot | undefined> {
   const latest = entries
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
-    .sort()
+    .toSorted()
     .at(-1);
   if (!latest) {
     return;
@@ -46,26 +47,26 @@ async function snapshot(directory: string): Promise<Snapshot | undefined> {
     );
   }
   return value as Snapshot;
-}
+};
 
-function canonical(value: unknown): string {
+const canonical = (value: unknown): string => {
   if (Array.isArray(value)) {
     return `[${value.map(canonical).join(",")}]`;
   }
   if (value && typeof value === "object") {
     return `{${Object.entries(value)
-      .sort(([left], [right]) => left.localeCompare(right))
+      .toSorted(([left], [right]) => left.localeCompare(right))
       .map(([key, item]) => `${JSON.stringify(key)}:${canonical(item)}`)
       .join(",")}}`;
   }
   return JSON.stringify(value);
-}
+};
 
 /** Generate a fresh snapshot with Drizzle in disposable storage, leaving committed history unchanged. */
-export async function checkAppSchema(
+export const checkAppSchema = async (
   root: string,
   migrationsDirectory: string
-) {
+) => {
   const { schema } = appDatabasePaths(root);
   try {
     await access(schema);
@@ -84,7 +85,7 @@ export async function checkAppSchema(
       await drizzleGenerateArguments(root, temporary),
       {
         cwd: root,
-        env: { ...process.env, CI: "true" },
+        env: { ...getBuildEnvironment(), CI: "true" },
         maxBuffer: 1024 * 1024,
         timeout: 30_000,
       }
@@ -101,8 +102,8 @@ export async function checkAppSchema(
       );
     }
     const saved = await snapshot(migrationsDirectory);
-    const expected = (current?.ddl ?? []).map(canonical).sort();
-    const actual = (saved?.ddl ?? []).map(canonical).sort();
+    const expected = (current?.ddl ?? []).map(canonical).toSorted();
+    const actual = (saved?.ddl ?? []).map(canonical).toSorted();
     if (canonical(expected) !== canonical(actual)) {
       throw new Error(
         `App database migrations are missing or out of sync with ${path.relative(root, schema)}. Run tailorkit db generate, commit the generated files in ${path.relative(root, migrationsDirectory)}, then build again.`
@@ -111,4 +112,4 @@ export async function checkAppSchema(
   } finally {
     await rm(temporary, { force: true, recursive: true });
   }
-}
+};

@@ -14,7 +14,7 @@ import {
 } from "drizzle-orm/pg-core";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { createSelectSchema } from "drizzle-orm/zod";
-import z from "zod";
+import { z } from "zod";
 
 import { project } from "./project";
 import { scopeKeySchema, scopeSchema } from "./scope";
@@ -26,6 +26,7 @@ export const app = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     createdByAgent: boolean("created_by_agent").notNull().default(false),
     currentDeploymentId: uuid("current_deployment_id").references(
+      // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
       (): AnyPgColumn => appDeployment.id,
       { onDelete: "restrict" }
     ),
@@ -42,7 +43,7 @@ export const app = pgTable(
     scopeKey: text("scope_key").notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [
@@ -54,6 +55,7 @@ export const app = pgTable(
   ]
 );
 
+// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
 export const App = createSelectSchema(app, {
   description: z.string().max(255).nullable(),
   name: z.string().max(127),
@@ -76,6 +78,7 @@ export const appDeployment = pgTable(
       .notNull()
       .references(() => app.id, { onDelete: "cascade" }),
     clientEntryFileId: uuid("client_entry_file_id").references(
+      // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
       (): AnyPgColumn => appDeploymentFile.id,
       { onDelete: "restrict" }
     ),
@@ -84,6 +87,7 @@ export const appDeployment = pgTable(
       .default(sql`pg_catalog.gen_random_uuid()`)
       .primaryKey(),
     logoDarkFileId: uuid("logo_dark_file_id").references(
+      // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
       (): AnyPgColumn => appDeploymentFile.id,
       {
         onDelete: "restrict",
@@ -91,6 +95,7 @@ export const appDeployment = pgTable(
     ),
     logoDarkPath: text("logo_dark_path"),
     logoLightFileId: uuid("logo_light_file_id").references(
+      // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
       (): AnyPgColumn => appDeploymentFile.id,
       { onDelete: "restrict" }
     ),
@@ -99,7 +104,7 @@ export const appDeployment = pgTable(
     status: appDeploymentStatus("status").default("deploying").notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
     views: jsonb("views")
       .$type<
@@ -116,6 +121,7 @@ export const appDeployment = pgTable(
   ]
 );
 
+// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
 export const AppDeployment = createSelectSchema(appDeployment, {
   views: z
     .array(
@@ -165,7 +171,7 @@ export const appDeploymentFile = pgTable(
     status: appDeploymentFileStatus("status").default("uploading").notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [
@@ -176,6 +182,7 @@ export const appDeploymentFile = pgTable(
   ]
 );
 
+// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
 export const AppDeploymentFile = createSelectSchema(appDeploymentFile, {
   objectKey: z
     .string()

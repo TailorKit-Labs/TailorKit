@@ -3,7 +3,7 @@ import { auth } from "@tailorkit/auth";
 import { db } from "@tailorkit/db";
 import { invitation } from "@tailorkit/db/schema/index";
 import { and, eq } from "drizzle-orm";
-import z from "zod";
+import { z } from "zod";
 
 import { protectedProcedure, requireOrg } from "../procedures";
 
@@ -17,8 +17,8 @@ export const orgRouter = {
     .handler(async ({ input, context }) => {
       const org = await db.query.organization.findFirst({
         where: {
-          slug: input.orgSlug,
           members: { userId: context.user.id },
+          slug: input.orgSlug,
         },
         with: {
           members: { with: { user: true } },
@@ -43,12 +43,12 @@ export const orgRouter = {
     .use(requireOrg({ invitation: ["read"] }))
     .handler(({ context }) =>
       db.query.invitation.findMany({
+        orderBy: { createdAt: "desc" },
         where: {
+          expiresAt: { gt: new Date() },
           organizationId: context.org.id,
           status: "pending",
-          expiresAt: { gt: new Date() },
         },
-        orderBy: { createdAt: "desc" },
       })
     ),
 
@@ -59,8 +59,8 @@ export const orgRouter = {
   inviteMember: protectedProcedure
     .input(
       z.object({
-        orgSlug: z.string(),
         email: z.email(),
+        orgSlug: z.string(),
         role: z.enum(["member", "admin"]),
       })
     )
@@ -72,10 +72,10 @@ export const orgRouter = {
     .handler(({ input, context }) =>
       auth.api.createInvitation({
         body: {
-          organizationId: context.org.id,
           email: input.email,
-          role: input.role,
+          organizationId: context.org.id,
           resend: true,
+          role: input.role,
         },
         headers: context.headers,
       })
@@ -90,13 +90,13 @@ export const orgRouter = {
    * - Admins can only remove members, not other admins.
    */
   removeMember: protectedProcedure
-    .input(z.object({ orgSlug: z.string(), memberId: z.string() }))
+    .input(z.object({ memberId: z.string(), orgSlug: z.string() }))
     .use(requireOrg({ member: ["delete"] }))
     .handler(({ input, context }) =>
       auth.api.removeMember({
         body: {
-          organizationId: context.org.id,
           memberIdOrEmail: input.memberId,
+          organizationId: context.org.id,
         },
         headers: context.headers,
       })
@@ -106,7 +106,7 @@ export const orgRouter = {
    * Revoke a pending invitation for an org. Caller must be owner or admin.
    */
   revokeInvitation: protectedProcedure
-    .input(z.object({ orgSlug: z.string(), invitationId: z.string() }))
+    .input(z.object({ invitationId: z.string(), orgSlug: z.string() }))
     .use(requireOrg({ invitation: ["cancel"] }))
     .handler(async ({ input, context }) => {
       const [revoked] = await db

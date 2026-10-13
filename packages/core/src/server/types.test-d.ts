@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { createTailorKitServer } from "./handler";
 import type { TailorKitServerOptions, TailorKitHostContext } from "./types";
+
 expectTypeOf<TailorKitHostContext<{ org: { orgId: string } }>>().toEqualTypeOf<{
   scopes: { org: { orgId: string } };
   subjectId?: string;
@@ -18,11 +19,15 @@ createTailorKitServer({
 });
 createTailorKitServer({
   baseUrl: "https://example.com/api/tailorkit",
-  scopes: { account: z.object({ accountId: z.string() }) },
+
   components: {},
-  views: { "/": z.object({}) },
+
+  scopes: { account: z.object({ accountId: z.string() }) },
+
   // @ts-expect-error A slot cannot reference an undeclared global view.
   slots: { panel: { views: ["/missing"] } },
+
+  views: { "/": z.object({}) },
 });
 
 const namedScopes = {

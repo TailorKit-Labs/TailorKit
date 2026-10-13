@@ -8,15 +8,8 @@ import {
   CardTitle,
 } from "@tailorkit/ui/card";
 import { Logo } from "@tailorkit/ui/logo";
-import { createFileRoute } from "@tanstack/react-router";
+import { useSearch, createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-
-export const Route = createFileRoute("/auth/error")({
-  component: AuthErrorPage,
-  validateSearch: z.object({
-    error: z.string().optional(),
-  }),
-});
 
 const messages: Record<string, string> = {
   no_code: "The sign-in request was cancelled or did not complete.",
@@ -24,8 +17,8 @@ const messages: Record<string, string> = {
   state_not_found: "Your sign-in session expired. Please try again.",
 };
 
-function AuthErrorPage() {
-  const { error } = Route.useSearch();
+const AuthErrorPage = () => {
+  const { error } = useSearch({ from: "/auth/error" });
   const message = error ? messages[error] : undefined;
 
   return (
@@ -42,7 +35,7 @@ function AuthErrorPage() {
         <CardFrame className="w-full">
           <Card>
             <CardHeader>
-              <CardTitle>We couldn't complete sign in</CardTitle>
+              <CardTitle>We couldn&apos;t complete sign in</CardTitle>
             </CardHeader>
             <CardPanel className="flex flex-col gap-4">
               <p className="text-muted-foreground text-sm">
@@ -67,4 +60,11 @@ function AuthErrorPage() {
       </div>
     </div>
   );
-}
+};
+
+export const Route = createFileRoute("/auth/error")({
+  component: AuthErrorPage,
+  validateSearch: z.object({
+    error: z.string().optional(),
+  }),
+});

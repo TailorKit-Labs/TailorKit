@@ -17,8 +17,8 @@ export const pendingQuery: QueryState<never> = {
   status: "pending",
 };
 
-export function serializeInput(input: unknown): string {
-  return JSON.stringify(
+export const serializeInput = (input: unknown): string =>
+  JSON.stringify(
     { defined: input !== undefined, input },
     (_key, value: unknown) => {
       if (value && typeof value === "object" && !Array.isArray(value)) {
@@ -29,7 +29,6 @@ export function serializeInput(input: unknown): string {
       return value;
     }
   );
-}
 
 interface Entry {
   observers: number;
@@ -48,7 +47,9 @@ export class QueryStore {
   constructor(
     client: Client,
     ownsClient: boolean,
-    errorHandler: (error: AppError) => void = () => {}
+    errorHandler: (error: AppError) => void = () => {
+      /* Intentionally no action is needed. */
+    }
   ) {
     this.client = client;
     this.ownsClient = ownsClient;

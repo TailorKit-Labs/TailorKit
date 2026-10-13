@@ -11,6 +11,13 @@ import {
   appTokenVerifierEffect,
 } from "./tokens";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const { publicKey, privateKey } = await generateKeyPair("ES256", {
   extractable: true,
 });
@@ -43,7 +50,7 @@ const verify = appTokenVerifier({
 it("verifies platform-signed identity and installation access", async () => {
   const session = await issueAppToken(signing, identity);
   const claims = decodeJwt(session.token);
-  expect(claims.exp! - claims.iat!).toBe(300);
+  expect(requireValue(claims.exp) - requireValue(claims.iat)).toBe(300);
   expect(await verify(session.token)).toEqual({
     ...identity,
     expiresAt: session.expiresAt,
@@ -72,6 +79,7 @@ it("rejects wrong signature, issuer, audience, app, expiry, missing claims and e
     await issueAppToken(signing, { ...identity, projectId: "other" }),
   ];
   for (const { token } of invalid) {
+    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     await expect(verify(token)).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   }
   const sign = (claims: Record<string, unknown>) =>
@@ -102,6 +110,7 @@ it("rejects wrong signature, issuer, audience, app, expiry, missing claims and e
       installationId: "installation",
     },
   ]) {
+    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     await expect(verify(await sign(claims))).rejects.toMatchObject({
       code: "UNAUTHORIZED",
     });
@@ -110,11 +119,13 @@ it("rejects wrong signature, issuer, audience, app, expiry, missing claims and e
     code: "UNAUTHORIZED",
   });
 });
+// oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
 it("rejects symmetric keys, private verification keys and missing bearer credentials", async () => {
   expect(() =>
     appTokenVerifier({
       ...signing,
       appId: "app",
+      // oxlint-disable-next-line no-use-before-define -- The assertion callback runs after the imported signing key has initialized.
       publicKeys: { keys: [{ ...awaitPrivateKey, kid: "host-key" }] },
     })
   ).toThrow("public signing keys");
@@ -165,6 +176,7 @@ it("keeps invalid signing configuration in the recoverable Effect error channel"
   const program = issueAppTokenEffect(
     { ...signing, lifetimeSeconds: 301 },
     identity
+    // oxlint-disable-next-line promise/prefer-await-to-callbacks -- This is an Effect recovery operator or transport callback, not a Node-style completion callback.
   ).pipe(Effect.catch((error) => Effect.succeed(error.message)));
   await expect(Effect.runPromise(program)).resolves.toBe(
     "App tokens must last 1–300 seconds"
@@ -183,9 +195,10 @@ it("rejects a token that expires while its signature is being verified", async (
     Effect.provideService(Clock.Clock, {
       ...clock,
       currentTimeMillis: Effect.sync(() =>
-        ++reads === 1 ? session.expiresAt - 1 : session.expiresAt
+        (reads += 1) === 1 ? session.expiresAt - 1 : session.expiresAt
       ),
     }),
+    // oxlint-disable-next-line promise/prefer-await-to-callbacks -- This is an Effect recovery operator or transport callback, not a Node-style completion callback.
     Effect.catch((error) => Effect.succeed(error.code))
   );
   await expect(Effect.runPromise(program)).resolves.toBe("UNAUTHORIZED");
@@ -197,9 +210,12 @@ it.each(["projectId", "deploymentId", "publicTeamId", "appPublicId"])(
     const now = Math.floor(Date.now() / 1000);
     const claims = {
       ...identity,
+
       [field]: undefined,
-      iat: now,
+
       exp: now + 120,
+
+      iat: now,
     };
     const token = await new SignJWT(claims)
       .setProtectedHeader({ alg: "ES256", kid: "host-key", typ: "JWT" })
@@ -224,7 +240,7 @@ it("preserves arbitrary product principals in the shared app session", async () 
   const claims = decodeJwt(session.token);
   expect(claims.sub).toBe(identity.installationId);
   expect(claims.aud).toBe(signing.audience);
-  expect(claims.exp! - claims.iat!).toBe(300);
+  expect(requireValue(claims.exp) - requireValue(claims.iat)).toBe(300);
   const installation = await issueAppToken(signing, {
     ...identity,
     subjectId: undefined,

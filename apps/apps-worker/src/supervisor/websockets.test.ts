@@ -5,7 +5,14 @@ import { afterEach, expect, it, vi } from "vite-plus/test";
 import type { SubscriptionSession } from "./subscriptions";
 import { createSubscriptions } from "./subscriptions";
 
-function setup() {
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
+const setup = () => {
   const now = Date.now();
   const records = new Map<string, SubscriptionSession>();
   let alarm: number | null = null;
@@ -15,10 +22,11 @@ function setup() {
   const ctx = {
     getWebSockets: () => sockets,
     storage: {
+      // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
       deleteAlarm: async () => {
         alarm = null;
       },
-      getAlarm: async () => alarm,
+      getAlarm: async () => await alarm,
       kv: {
         delete: (key: string) => records.delete(key),
         get: (key: string) => records.get(key),
@@ -26,14 +34,15 @@ function setup() {
         put: (key: string, value: SubscriptionSession) =>
           records.set(key, value),
       },
+      // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
       setAlarm: async (time: number) => {
         alarm = time;
       },
     },
   } as unknown as DurableObjectState;
   vi.stubGlobal("WebSocket", { CLOSED: 3 });
-  function socket(id: string, expiresAt: number) {
-    const socket = {
+  const socket = (id: string, expiresAt: number) => {
+    const socketValue = {
       close: vi.fn(),
       deserializeAttachment: () => id,
       readyState: 2,
@@ -43,9 +52,9 @@ function setup() {
       identity: { expiresAt } as Identity,
       subscriptions: [],
     });
-    sockets.push(socket);
-    return socket;
-  }
+    sockets.push(socketValue);
+    return socketValue;
+  };
   return {
     cancel,
     create: () =>
@@ -61,7 +70,7 @@ function setup() {
     records,
     socket,
   };
-}
+};
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -92,9 +101,9 @@ it("expires idle connections after recreation and schedules the next durable ala
 it("rejects delivery for expired sessions and cannot recreate closed records", () => {
   const test = setup();
   test.socket("expired", test.now - 1);
-  const connection = test.create().connections()[0]!;
+  const connection = requireValue(test.create().connections()[0]);
   expect(() => connection.send("snapshot")).toThrow("App token expired");
-  const session = connection.read()!;
+  const session = requireValue(connection.read());
   test.records.clear();
   connection.write(session);
   expect(test.records.size).toBe(0);

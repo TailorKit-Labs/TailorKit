@@ -21,7 +21,7 @@ const addressSchema = z.object({
   slot: z.string().min(1).max(255),
 });
 
-function registeredQueries(functions: Functions): Functions {
+const registeredQueries = (functions: Functions): Functions => {
   const queries: Record<string, Functions[string]> = {};
   for (const [name, fn] of Object.entries(functions)) {
     if (isFunction(fn)) {
@@ -36,13 +36,13 @@ function registeredQueries(functions: Functions): Functions {
     }
   }
   return queries;
-}
+};
 
 /** Build-generated actions run through the existing authenticated action runtime. */
-export function withInstanceResolvers(
+export const withInstanceResolvers = (
   app: AppDefinition,
   resolvers: readonly InstanceResolver[]
-): AppDefinition {
+): AppDefinition => {
   if (Object.hasOwn(app.functions, "_tailorkit")) {
     throw new Error(
       "The _tailorkit function namespace is reserved by TailorKit."
@@ -87,22 +87,24 @@ export function withInstanceResolvers(
         context: z.record(z.string(), z.unknown()),
       }),
       functions: queries,
-      async handler({ args, identity, signal, queries }) {
+      async handler({ args, identity, signal, queries: queriesValue }) {
         const entry = registry.get(args.slot)?.get(args.path);
-        if (!entry)
+        if (!entry) {
           throw new AppError("NOT_FOUND", "Instance resolver not found");
+        }
         const value = await entry.resolver.resolve({
           context: args.context,
           identity,
+          queries: queriesValue,
           signal,
-          queries,
         });
         const result = entry.result.safeParse(value);
-        if (!result.success)
+        if (!result.success) {
           throw new AppError(
             "INTERNAL_SERVER_ERROR",
             "Invalid function result"
           );
+        }
         return result.data;
       },
     }),
@@ -112,4 +114,4 @@ export function withInstanceResolvers(
   return Object.freeze({
     functions: { ...app.functions, _tailorkit: internal.functions },
   });
-}
+};

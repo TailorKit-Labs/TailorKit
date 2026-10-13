@@ -11,12 +11,12 @@ const grantId = "g".repeat(43);
 const basePath = "/custom/tailorkit";
 const baseUrl = `https://host.test${basePath}`;
 
-function server(
+const server = (
   requests: string[],
   previewError?: unknown,
   platformBodies: unknown[] = []
-) {
-  return createTailorKitServer({
+) =>
+  createTailorKitServer({
     $internal: {
       platformFetch: async (input, init) => {
         const request =
@@ -54,9 +54,9 @@ function server(
               ? {
                   items: [
                     {
+                      clientPath: "https://assets.test/first.js",
                       id: "first",
                       name: "Published",
-                      clientPath: "https://assets.test/first.js",
                     },
                   ],
                   pagination: { hasMore: true, page: 1, pageSize: 100 },
@@ -73,19 +73,19 @@ function server(
               {
                 app: { id: "first", name: "Preview copy" },
                 preview: {
+                  expiresAt: "later",
                   sessionId: "session-1",
                   token: "t1",
                   websocketUrl: "wss://platform.test/ws",
-                  expiresAt: "later",
                 },
               },
               {
                 app: { id: "other", name: "Cross scope" },
                 preview: {
+                  expiresAt: "later",
                   sessionId: "session-2",
                   token: "t2",
                   websocketUrl: "wss://platform.test/ws",
-                  expiresAt: "later",
                 },
               },
             ],
@@ -101,7 +101,6 @@ function server(
     projectKey: "server-key",
     scopes: { org: testScopeSchema },
   });
-}
 
 describe("preview host flow", () => {
   it("identifies active preview conflicts by reason and supports legacy platform messages", () => {
@@ -313,7 +312,9 @@ describe("preview host flow", () => {
         expect(page.status).toBe(200);
         expect(page.headers.get("referrer-policy")).toBe("strict-origin");
         expect(page.headers.get("set-cookie")).toBeNull();
+        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
         expect(await page.text()).not.toContain('name="csrfToken"');
+        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
         const accepted = await tailor.handler(
           new Request(consentUrl, {
             body: "intent=accept",

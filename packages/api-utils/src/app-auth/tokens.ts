@@ -13,7 +13,7 @@ export type AppTokenIdentity = Omit<Identity, "expiresAt"> & {
 export type VerifiedAppTokenIdentity = Identity &
   Pick<AppTokenIdentity, "publicTeamId" | "appPublicId">;
 
-export function appRuntimeIssuer(platformUrl: string) {
+export const appRuntimeIssuer = (platformUrl: string) => {
   const url = new URL(platformUrl);
   if (
     url.protocol !== "https:" ||
@@ -27,7 +27,7 @@ export function appRuntimeIssuer(platformUrl: string) {
     );
   }
   return url.href.replace(/\/$/u, "");
-}
+};
 
 export interface AppSigningOptions {
   issuer: string;
@@ -77,20 +77,18 @@ const publicKeysSchema = z.object({
     .max(32),
 });
 
-export function parseAppPublicKeys(value: unknown) {
-  return publicKeysSchema.parse(value);
-}
+export const parseAppPublicKeys = (value: unknown) =>
+  publicKeysSchema.parse(value);
 
-function signingError(error: unknown): Error {
-  return error instanceof Error ? error : new Error("App token signing failed");
-}
+const signingError = (error: unknown): Error =>
+  error instanceof Error ? error : new Error("App token signing failed");
 
 /** Compose signing without starting a runtime; Promise callers use issueAppToken. */
-export function issueAppTokenEffect(
+export const issueAppTokenEffect = (
   options: AppSigningOptions,
   identity: AppTokenIdentity
-) {
-  return Effect.gen(function* issueToken() {
+) =>
+  Effect.gen(function* issueToken() {
     const maximum = APP_TOKEN_LIFETIME_SECONDS;
     const lifetime = options.lifetimeSeconds ?? maximum;
     if (!Number.isInteger(lifetime) || lifetime < 1 || lifetime > maximum) {
@@ -103,18 +101,18 @@ export function issueAppTokenEffect(
       catch: signingError,
       try: () =>
         access.parse({
-          publicTeamId: identity.publicTeamId,
+          appId: identity.appId,
           appPublicId: identity.appPublicId,
-          projectId: identity.projectId,
           deploymentId: identity.deploymentId,
+          exp: now + lifetime,
+          iat: now,
+          installationId: identity.installationId,
+          projectId: identity.projectId,
+          publicTeamId: identity.publicTeamId,
+          scope: identity.scope,
           sub: identity.installationId,
           subjectId: identity.subjectId,
-          scope: identity.scope,
           toolUrl: identity.toolUrl,
-          appId: identity.appId,
-          installationId: identity.installationId,
-          iat: now,
-          exp: now + lifetime,
         }),
     });
     const key = yield* Effect.tryPromise({
@@ -128,14 +126,14 @@ export function issueAppTokenEffect(
       catch: signingError,
       try: () =>
         new SignJWT({
-          publicTeamId: identity.publicTeamId,
-          appPublicId: identity.appPublicId,
-          projectId: identity.projectId,
-          deploymentId: identity.deploymentId,
           appId: identity.appId,
+          appPublicId: identity.appPublicId,
+          deploymentId: identity.deploymentId,
           installationId: identity.installationId,
-          subjectId: identity.subjectId,
+          projectId: identity.projectId,
+          publicTeamId: identity.publicTeamId,
           scope: identity.scope,
+          subjectId: identity.subjectId,
           toolUrl: identity.toolUrl,
         })
           .setProtectedHeader({ alg: "ES256", kid: options.keyId, typ: "JWT" })
@@ -148,17 +146,17 @@ export function issueAppTokenEffect(
     });
     return { expiresAt: (now + lifetime) * 1000, token };
   });
-}
 
-export function issueAppToken(
+export const issueAppToken = (
   options: AppSigningOptions,
   identity: AppTokenIdentity
-) {
-  return Effect.runPromise(issueAppTokenEffect(options, identity));
-}
+) => Effect.runPromise(issueAppTokenEffect(options, identity));
 
 /** Trust configuration is checked at construction; token failures use the typed error channel. */
-export function appTokenVerifierEffect(trust: AppTokenTrust) {
+const invalidTokenImplementationImplementation = () =>
+  new AppError("UNAUTHORIZED", "Invalid or expired app token");
+
+export const appTokenVerifierEffect = (trust: AppTokenTrust) => {
   let publicKeys;
   try {
     publicKeys = parseAppPublicKeys(trust.publicKeys);
@@ -171,19 +169,21 @@ export function appTokenVerifierEffect(trust: AppTokenTrust) {
   const keys = createLocalJWKSet({
     keys: publicKeys.keys.map((key) => ({ ...key, alg: "ES256", use: "sig" })),
   });
+  const invalidTokenImplementation = invalidTokenImplementationImplementation;
+
   return (token: string): Effect.Effect<VerifiedAppTokenIdentity, AppError> =>
     Effect.gen(function* verifyToken() {
       const now = yield* Clock.currentTimeMillis;
-      const invalidToken = () =>
-        new AppError("UNAUTHORIZED", "Invalid or expired app token");
+      const invalidToken = invalidTokenImplementation;
       const { payload } = yield* Effect.tryPromise({
         catch: invalidToken,
         try: () =>
           jwtVerify(token, keys, {
-            issuer: trust.issuer,
-            audience: trust.audience,
             algorithms: ["ES256"],
-            typ: "JWT",
+            audience: trust.audience,
+            currentDate: new Date(now),
+            issuer: trust.issuer,
+            maxTokenAge: APP_TOKEN_LIFETIME_SECONDS,
             requiredClaims: [
               "sub",
               "exp",
@@ -197,8 +197,7 @@ export function appTokenVerifierEffect(trust: AppTokenTrust) {
               "scope",
               "toolUrl",
             ],
-            maxTokenAge: APP_TOKEN_LIFETIME_SECONDS,
-            currentDate: new Date(now),
+            typ: "JWT",
           }),
       });
       const claims = yield* Effect.try({
@@ -231,16 +230,16 @@ export function appTokenVerifierEffect(trust: AppTokenTrust) {
         toolUrl: claims.toolUrl,
       });
     });
-}
+};
 
-export function appTokenVerifier(trust: AppTokenTrust) {
+export const appTokenVerifier = (trust: AppTokenTrust) => {
   const verify = appTokenVerifierEffect(trust);
   return (token: string) => Effect.runPromise(verify(token));
-}
-export function bearerToken(request: Request) {
+};
+export const bearerToken = (request: Request) => {
   const authorization = request.headers.get("authorization");
   if (!authorization?.startsWith("Bearer ") || authorization.length > 8192) {
     throw new AppError("UNAUTHORIZED", "App token required");
   }
   return authorization.slice(7);
-}
+};

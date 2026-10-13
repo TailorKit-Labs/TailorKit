@@ -16,6 +16,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useState,
 } from "react";
 import type { ReactNode } from "react";
 
@@ -35,7 +36,10 @@ class RemoteErrorBoundary extends Component<
   RemoteErrorBoundaryProps,
   RemoteErrorBoundaryState
 > {
-  state: RemoteErrorBoundaryState = { error: null };
+  constructor(props: RemoteErrorBoundaryProps) {
+    super(props);
+    this.state = { error: null };
+  }
 
   static getDerivedStateFromError(error: Error): RemoteErrorBoundaryState {
     return { error };
@@ -64,7 +68,13 @@ interface RemoteViewHostProps {
   props?: Record<string, unknown>;
 }
 
-export function RemoteViewHost({
+const RemoteRoot = ({ store }: { store: RemoteViewStore }): ReactNode => {
+  const rootId = useStore(store.nodes.root);
+  // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
+  return rootId === null ? null : <RemoteView nodeId={rootId} />;
+};
+
+export const RemoteViewHost = ({
   appUrl,
   sourceText,
   toolBridge,
@@ -72,12 +82,16 @@ export function RemoteViewHost({
   components,
   createIframe,
   props,
-}: RemoteViewHostProps): ReactNode {
+}: RemoteViewHostProps): ReactNode => {
   const appKey = appUrl.toString();
-  const store = useMemo(
-    () => createRemoteViewStore({ components, props }),
-    [appKey]
-  );
+  const [state, setState] = useState(() => ({
+    appKey,
+    store: createRemoteViewStore({ components, props }),
+  }));
+  if (state.appKey !== appKey) {
+    setState({ appKey, store: createRemoteViewStore({ components, props }) });
+  }
+  const { store } = state;
   const snapshot = useStore(store.state);
 
   useEffect(() => {
@@ -111,52 +125,45 @@ export function RemoteViewHost({
       </RemoteErrorBoundary>
     </RemoteUIContext.Provider>
   );
-}
-
-function RemoteRoot({ store }: { store: RemoteViewStore }): ReactNode {
-  const rootId = useStore(store.nodes.root);
-  return rootId === null ? null : <RemoteView nodeId={rootId} />;
-}
+};
 
 interface RemoteElementViewProps {
   ctx: RemoteViewStore;
   node: RemoteElementNode;
 }
 
-const RemoteElementView = memo(
-  ({ ctx, node }: RemoteElementViewProps): ReactNode => {
-    const componentStore = useMemo(
-      () => ctx.selectComponent(node.type),
-      [ctx, node.type]
-    );
-    const component = useStore(componentStore);
-    const children = node.children.map((child) => (
-      <RemoteView key={child.id} nodeId={child.id} />
-    ));
+const RemoteElementViewComponent = ({
+  ctx,
+  node,
+}: RemoteElementViewProps): ReactNode => {
+  const componentStore = useMemo(
+    () => ctx.selectComponent(node.type),
+    [ctx, node.type]
+  );
+  const component = useStore(componentStore);
+  const children = node.children.map((child) => (
+    // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
+    <RemoteView key={child.id} nodeId={child.id} />
+  ));
 
-    if (component === undefined) {
-      throw new Error(`TailorKit component "${node.type}" is not registered.`);
-    }
-    const props = createRemoteElementProps(node, ctx.dispatch);
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return createElement(component as any, props, ...children);
+  if (component === undefined) {
+    throw new Error(`TailorKit component "${node.type}" is not registered.`);
   }
-);
+  const props = createRemoteElementProps(node, ctx.dispatch);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return createElement(component as any, props, ...children);
+};
+const RemoteElementView = memo(RemoteElementViewComponent);
 
 interface RemoteViewProps {
   nodeId: string;
 }
 
-function RemoteViewComponent({ nodeId }: RemoteViewProps): ReactNode {
-  const ctx = useContext(RemoteUIContext);
-  return ctx === null ? null : <RemoteNodeView ctx={ctx} nodeId={nodeId} />;
-}
-
-function RemoteNodeView({
+const RemoteNodeView = ({
   ctx,
   nodeId,
-}: RemoteViewProps & { ctx: RemoteViewStore }): ReactNode {
+}: RemoteViewProps & { ctx: RemoteViewStore }): ReactNode => {
   const nodeStore = useMemo(() => ctx.nodes.selectNode(nodeId), [ctx, nodeId]);
   const node = useStore(nodeStore);
   if (node === null) {
@@ -168,6 +175,7 @@ function RemoteNodeView({
   }
 
   const childElements = node.children.map((child) => (
+    // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
     <RemoteView key={child.id} nodeId={child.id} />
   ));
 
@@ -176,6 +184,11 @@ function RemoteNodeView({
   }
 
   return <RemoteElementView node={node} ctx={ctx} />;
-}
+};
+
+const RemoteViewComponent = ({ nodeId }: RemoteViewProps): ReactNode => {
+  const ctx = useContext(RemoteUIContext);
+  return ctx === null ? null : <RemoteNodeView ctx={ctx} nodeId={nodeId} />;
+};
 
 export const RemoteView = memo(RemoteViewComponent);

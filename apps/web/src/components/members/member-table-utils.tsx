@@ -4,9 +4,9 @@ import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 
 import type { dataTableFeatures } from "#lib/table";
 
-export function renderSortableHeader<TData extends RowData>(
+export const renderSortableHeader = <TData extends RowData>(
   header: Header<typeof dataTableFeatures, TData, unknown>
-) {
+) => {
   if (header.isPlaceholder) {
     return null;
   }
@@ -38,11 +38,11 @@ export function renderSortableHeader<TData extends RowData>(
       }[header.column.getIsSorted() as string] ?? null}
     </button>
   );
-}
+};
 
-export function getRoleBadgeVariant(
+export const getRoleBadgeVariant = (
   role: string
-): "info" | "warning" | "outline" {
+): "info" | "warning" | "outline" => {
   if (role === "owner") {
     return "info";
   }
@@ -50,4 +50,4 @@ export function getRoleBadgeVariant(
     return "warning";
   }
   return "outline";
-}
+};

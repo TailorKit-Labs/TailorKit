@@ -8,6 +8,13 @@ import type { ESTree, Plugin } from "vite";
 import { createDefineViewMatcher } from "./define-view";
 import { inferFileView } from "./file-routes";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 type Node = ESTree.Node;
 type Import = ESTree.ImportDeclaration;
 type Property = Extract<
@@ -46,25 +53,31 @@ const browserGlobals = new Set([
   "sessionStorage",
 ]);
 
-function isNode(value: unknown): value is Node {
-  return !!value && typeof value === "object" && "type" in value;
-}
-function children(node: Node): Node[] {
-  return Object.values(node).flatMap((value) =>
-    Array.isArray(value) ? value.filter(isNode) : isNode(value) ? [value] : []
+const isNode = (value: unknown): value is Node =>
+  !!value && typeof value === "object" && "type" in value;
+const children = (node: Node): Node[] =>
+  Object.values(node).flatMap((value) =>
+    (() => {
+      if (Array.isArray(value)) {
+        return value.filter(isNode);
+      }
+      if (isNode(value)) {
+        return [value];
+      }
+      return [];
+    })()
   );
-}
-function walk(
+const walk = (
   node: Node,
   visit: (node: Node, ancestors: Node[]) => void,
   ancestors: Node[] = []
-) {
+) => {
   visit(node, ancestors);
   for (const child of children(node)) {
     walk(child, visit, [...ancestors, node]);
   }
-}
-function boundNames(node: Node | null | undefined): string[] {
+};
+const boundNames = (node: Node | null | undefined): string[] => {
   if (!node) {
     return [];
   }
@@ -90,8 +103,8 @@ function boundNames(node: Node | null | undefined): string[] {
       return [];
     }
   }
-}
-function declarations(node: Node): string[] {
+};
+const declarations = (node: Node): string[] => {
   if (node.type === "VariableDeclaration") {
     return node.declarations.flatMap((d) => boundNames(d.id));
   }
@@ -99,42 +112,20 @@ function declarations(node: Node): string[] {
     return boundNames(node.id);
   }
   return [];
-}
-function isFunction(node: Node) {
-  return [
+};
+const isFunction = (node: Node) =>
+  [
     "FunctionDeclaration",
     "FunctionExpression",
     "ArrowFunctionExpression",
   ].includes(node.type);
-}
 
 /** Lexical references, excluding property names and bindings local to a function/block. */
-function freeNames(root: Node): Set<string> {
+const freeNames = (root: Node): Set<string> => {
   const references = new Set<string>();
-  function pattern(node: Node, scope: Set<string>) {
-    if (node.type === "AssignmentPattern") {
-      visit(node.right, scope);
-      pattern(node.left, scope);
-    } else if (node.type === "ObjectPattern") {
-      for (const p of node.properties) {
-        if (p.type === "Property") {
-          if (p.computed) {
-            visit(p.key, scope);
-          }
-          pattern(p.value, scope);
-        } else {
-          pattern(p.argument, scope);
-        }
-      }
-    } else if (node.type === "ArrayPattern") {
-      for (const element of node.elements) {
-        if (element) pattern(element, scope);
-      }
-    } else if (node.type === "RestElement") {
-      pattern(node.argument, scope);
-    }
-  }
-  function visit(node: Node, parent: Set<string>) {
+
+  // oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
+  const visit = (node: Node, parent: Set<string>) => {
     if (node.type === "Identifier") {
       if (!parent.has(node.name)) {
         references.add(node.name);
@@ -159,7 +150,7 @@ function freeNames(root: Node): Set<string> {
         ...node.params.flatMap(boundNames),
       ]);
       // var declarations are function-scoped, including those inside nested blocks.
-      function hoisted(body: Node) {
+      const hoisted = (body: Node) => {
         if (isFunction(body)) {
           return;
         }
@@ -171,11 +162,12 @@ function freeNames(root: Node): Set<string> {
         for (const child of children(body)) {
           hoisted(child);
         }
-      }
+      };
       if (node.body) {
         hoisted(node.body);
       }
       for (const p of node.params) {
+        // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
         pattern(p, scope);
       }
       if (node.body) {
@@ -191,6 +183,7 @@ function freeNames(root: Node): Set<string> {
       return;
     }
     if (node.type === "VariableDeclarator") {
+      // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
       pattern(node.id, parent);
       if (node.init) {
         visit(node.init, parent);
@@ -220,6 +213,7 @@ function freeNames(root: Node): Set<string> {
     if (node.type === "CatchClause") {
       const scope = new Set([...parent, ...boundNames(node.param)]);
       if (node.param) {
+        // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
         pattern(node.param, scope);
       }
       visit(node.body, scope);
@@ -258,15 +252,43 @@ function freeNames(root: Node): Set<string> {
     for (const child of children(node)) {
       visit(child, parent);
     }
-  }
+  };
+
+  const pattern = (node: Node, scope: Set<string>) => {
+    if (node.type === "AssignmentPattern") {
+      visit(node.right, scope);
+      pattern(node.left, scope);
+    } else if (node.type === "ObjectPattern") {
+      for (const p of node.properties) {
+        if (p.type === "Property") {
+          if (p.computed) {
+            visit(p.key, scope);
+          }
+          pattern(p.value, scope);
+        } else {
+          pattern(p.argument, scope);
+        }
+      }
+    } else if (node.type === "ArrayPattern") {
+      for (const element of node.elements) {
+        if (element) {
+          pattern(element, scope);
+        }
+      }
+    } else if (node.type === "RestElement") {
+      pattern(node.argument, scope);
+    }
+  };
+
   visit(root, new Set());
+
   return references;
-}
-function property(
+};
+const property = (
   node: ESTree.ObjectExpression,
   name: string
-): Property | undefined {
-  return node.properties.find(
+): Property | undefined =>
+  node.properties.find(
     (p): p is Property =>
       p.type === "Property" &&
       !p.computed &&
@@ -274,8 +296,7 @@ function property(
         ? p.key.name === name
         : p.key.type === "Literal" && p.key.value === name)
   );
-}
-function parse(filename: string, source: string) {
+const parse = (filename: string, source: string) => {
   const result = parseSync(filename, source);
   if (result.errors.length) {
     throw new Error(
@@ -283,8 +304,8 @@ function parse(filename: string, source: string) {
     );
   }
   return result.program;
-}
-function units(program: ESTree.Program, source: string) {
+};
+const units = (program: ESTree.Program, source: string) => {
   const imports: Import[] = [];
   const statements: Unit[] = [];
   for (const statement of program.body) {
@@ -302,30 +323,30 @@ function units(program: ESTree.Program, source: string) {
     if (node.type === "VariableDeclaration") {
       for (const d of node.declarations) {
         statements.push({
-          node: d,
-          names: boundNames(d.id),
           code: `${exported ? "export " : ""}${node.kind} ${source.slice(d.start, d.end)};`,
           exported,
+          names: boundNames(d.id),
+          node: d,
         });
       }
     } else {
       statements.push({
-        node,
-        names: declarations(node),
         code: source.slice(statement.start, statement.end),
         exported,
+        names: declarations(node),
+        node,
       });
     }
   }
   return { imports, statements };
-}
-function closure(roots: Iterable<string>, statements: Unit[]) {
+};
+const closure = (roots: Iterable<string>, statements: Unit[]) => {
   const bindings = new Map(
     statements.flatMap((u) => u.names.map((name) => [name, u] as const))
   );
   const names = new Set<string>();
   const selected = new Set<Unit>();
-  function add(name: string) {
+  const add = (name: string) => {
     if (names.has(name)) {
       return;
     }
@@ -338,19 +359,19 @@ function closure(roots: Iterable<string>, statements: Unit[]) {
     for (const ref of freeNames(unit.node)) {
       add(ref);
     }
-  }
+  };
   for (const root of roots) {
     add(root);
   }
   return { names, selected };
-}
-function renderImports(
+};
+const renderImports = (
   imports: Import[],
   needed: (name: string) => boolean,
   source: string,
   sideEffects: boolean
-) {
-  return imports
+) =>
+  imports
     .flatMap((i) => {
       if (!i.specifiers.length) {
         return sideEffects ? [source.slice(i.start, i.end)] : [];
@@ -380,14 +401,15 @@ function renderImports(
       ];
     })
     .join("\n");
-}
 
-export async function extractInstances(
+export const extractInstances = async (
   filename: string,
-  source: string,
+  initialSource: string,
   root: string,
   includedNames?: string[]
-) {
+) => {
+  let source = initialSource;
+
   source = inferFileView(source, filename, root);
   const transformed = await transformWithOxc(source, filename, {
     jsx: { importSource: "preact" },
@@ -401,7 +423,7 @@ export async function extractInstances(
     if (!isDefineViewCall(node)) {
       return;
     }
-    const options = node.arguments[0];
+    const [options] = node.arguments;
     if (options?.type !== "ObjectExpression") {
       return;
     }
@@ -464,8 +486,8 @@ export async function extractInstances(
       call: node,
       instances,
       name,
-      resolve: resolve!,
-      schema: schema!,
+      resolve: requireValue(resolve),
+      schema: requireValue(schema),
       view: (view as ESTree.StringLiteral).value,
     });
   });
@@ -519,7 +541,7 @@ export async function extractInstances(
     `export const resolvers = { ${resolvers.map((r) => `${r.name}: { dataSchema: ${source.slice(r.schema.value.start, r.schema.value.end)}, resolve: ${source.slice(r.resolve.value.start, r.resolve.value.end)} }`).join(", ")} };`,
   ].join("\n");
   let browserSource = source;
-  for (const r of [...resolvers].sort(
+  for (const r of [...resolvers].toSorted(
     (a, b) => b.instances.value.start - a.instances.value.start
   )) {
     browserSource = `${browserSource.slice(
@@ -558,82 +580,82 @@ export async function extractInstances(
     names: resolvers.map((r) => r.name),
     server: serverSource,
   };
-}
+};
 
-export function instanceExtractionPlugin(
+export const instanceExtractionPlugin = (
   root: string,
   serverConfigured: boolean,
   modules: Map<string, InstanceModule>
-): Plugin {
-  return {
-    enforce: "pre",
-    name: "tailorkit-instance-extraction",
-    async transform(source, filename) {
-      if (
-        filename.includes("node_modules") ||
-        !/\.[cm]?[jt]sx?$/u.test(filename) ||
-        (!source.includes("instances") && !modules.has(filename))
-      )
-        return;
-      const result = await extractInstances(filename, source, root);
-      if (!result) {
-        modules.delete(filename);
-        return;
-      }
-      if (!serverConfigured)
-        throw new Error(
-          "View instances require server configuration in tailorkit.config.ts."
-        );
-      modules.set(filename, { filename, names: result.names });
-      return { code: result.browser, map: null };
-    },
-  };
-}
-export function instanceServerPlugin(
+): Plugin => ({
+  enforce: "pre",
+  name: "tailorkit-instance-extraction",
+  async transform(source, filename) {
+    if (
+      filename.includes("node_modules") ||
+      !/\.[cm]?[jt]sx?$/u.test(filename) ||
+      (!source.includes("instances") && !modules.has(filename))
+    ) {
+      return;
+    }
+    const result = await extractInstances(filename, source, root);
+    if (!result) {
+      modules.delete(filename);
+      return;
+    }
+    if (!serverConfigured) {
+      throw new Error(
+        "View instances require server configuration in tailorkit.config.ts."
+      );
+    }
+    modules.set(filename, { filename, names: result.names });
+    return { code: result.browser, map: null };
+  },
+});
+export const instanceServerPlugin = (
   root: string,
   modules: InstanceModule[]
-): Plugin {
-  return {
-    enforce: "pre",
-    async load(id) {
-      if (!id.endsWith(suffix)) return;
-      const filename = id.slice(0, -suffix.length);
-      this.addWatchFile(filename);
-      const names = modules.find(
-        (module) => module.filename === filename
-      )?.names;
-      const result = await extractInstances(
-        filename,
-        await readFile(filename, "utf8"),
-        root,
-        names
+): Plugin => ({
+  enforce: "pre",
+  async load(id) {
+    if (!id.endsWith(suffix)) {
+      return;
+    }
+    const filename = id.slice(0, -suffix.length);
+    this.addWatchFile(filename);
+    const names = modules.find((module) => module.filename === filename)?.names;
+    const result = await extractInstances(
+      filename,
+      await readFile(filename, "utf-8"),
+      root,
+      names
+    );
+    if (!result) {
+      throw new Error(
+        `Instance resolver missing from ${filename}; rebuild the app client.`
       );
-      if (!result)
-        throw new Error(
-          `Instance resolver missing from ${filename}; rebuild the app client.`
-        );
-      return result.server;
-    },
-    name: "tailorkit-instance-server-modules",
-    resolveId(id) {
-      if (id.endsWith(suffix)) return id;
-    },
-  };
-}
-export function instanceServerImports(modules: InstanceModule[]) {
-  return modules
+    }
+    return result.server;
+  },
+  name: "tailorkit-instance-server-modules",
+  resolveId(id) {
+    if (id.endsWith(suffix)) {
+      return id;
+    }
+  },
+});
+export const instanceServerImports = (modules: InstanceModule[]) =>
+  modules
     .map(
       (m, i) =>
         `import { resolvers as instances${i} } from ${JSON.stringify(m.filename + suffix)};`
     )
     .join("\n");
-}
 
-export function instanceServerBindings(
+export const instanceServerBindings = (
   modules: InstanceModule[],
   registrations: InstanceRegistration[]
-) {
-  return `[${registrations
+) =>
+  `[${registrations
     .map(({ slot, path: viewPath, resolver }) => {
       const index = modules.findIndex((module) =>
         module.names.includes(resolver)
@@ -646,4 +668,3 @@ export function instanceServerBindings(
       return `{ slot: ${JSON.stringify(slot)}, path: ${JSON.stringify(viewPath)}, ...instances${index}[${JSON.stringify(resolver)}] }`;
     })
     .join(", ")}]`;
-}

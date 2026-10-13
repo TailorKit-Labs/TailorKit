@@ -58,6 +58,7 @@ const defaultOptions = {
 
 afterEach(async () => {
   for (const directory of testDirectories.splice(0)) {
+    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     await rm(directory, { force: true, recursive: true });
   }
 });
@@ -85,6 +86,7 @@ describe("generateApp", () => {
     ];
 
     for (const file of files) {
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       await expect(
         readFile(path.join(targetDirectory, file), "utf-8")
       ).resolves.toBeDefined();
@@ -313,10 +315,12 @@ describe("generateApp", () => {
     await generateApp({ ...defaultOptions, targetDirectory });
 
     for (const variant of ["dark", "light"]) {
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       const content = await readFile(
         path.join(targetDirectory, `logo-${variant}.svg`),
         "utf-8"
       );
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       const brandMark = await readFile(
         new URL(
           `../../../../apps/web/public/brand/mark-${variant}.svg`,
@@ -330,16 +334,22 @@ describe("generateApp", () => {
 
   it("protects existing logos unless force is enabled", async () => {
     for (const variant of ["dark", "light"]) {
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       const targetDirectory = await createTempDir();
       const logoPath = path.join(targetDirectory, `logo-${variant}.svg`);
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       await writeFile(logoPath, "custom logo", "utf-8");
 
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       await expect(
         generateApp({ ...defaultOptions, targetDirectory })
       ).rejects.toThrow("already exists. Use --force to overwrite it.");
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       expect(await readFile(logoPath, "utf-8")).toBe("custom logo");
 
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       await generateApp({ ...defaultOptions, force: true, targetDirectory });
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       expect(await readFile(logoPath, "utf-8")).toContain("<svg");
     }
   });

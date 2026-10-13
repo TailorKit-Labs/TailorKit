@@ -23,16 +23,15 @@ interface OrgSwitcherProps {
   orgSlug: string;
 }
 
-function orgInitials(name: string) {
-  return name
+const orgInitials = (name: string) =>
+  name
     .split(" ")
     .map((w) => w[0])
     .slice(0, 2)
     .join("")
     .toUpperCase();
-}
 
-export function OrgSwitcher({ orgSlug }: OrgSwitcherProps) {
+export const OrgSwitcher = ({ orgSlug }: OrgSwitcherProps) => {
   const navigate = useNavigate();
   const { data: orgs } = useSuspenseQuery(orpc.user.getOrgs.queryOptions());
 
@@ -44,9 +43,9 @@ export function OrgSwitcher({ orgSlug }: OrgSwitcherProps) {
   return (
     <Combobox
       isItemEqualToValue={(a, b) => a.slug === b.slug}
-      itemToStringLabel={(org) => org.name}
+      itemToStringLabel={(org: (typeof orgs)[number] | null) => org.name}
       items={orgs ?? []}
-      onValueChange={(org) => {
+      onValueChange={(org: (typeof orgs)[number] | null) => {
         if (org) {
           navigate({
             params: { orgSlug: org.slug },
@@ -92,7 +91,7 @@ export function OrgSwitcher({ orgSlug }: OrgSwitcherProps) {
         </div>
         <ComboboxEmpty>No organisations found.</ComboboxEmpty>
         <ComboboxList>
-          {(org) => (
+          {(org: (typeof orgs)[number] | null) => (
             <ComboboxItem key={org.slug} value={org}>
               <Avatar className="mr-2 size-5 rounded-sm">
                 <AvatarFallback className="bg-input rounded-sm text-[10px]">
@@ -129,4 +128,4 @@ export function OrgSwitcher({ orgSlug }: OrgSwitcherProps) {
       </ComboboxPopup>
     </Combobox>
   );
-}
+};

@@ -20,31 +20,26 @@ import {
   OTPFieldSeparator,
 } from "@tailorkit/ui/otp-field";
 import { toastManager } from "@tailorkit/ui/toast";
-import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
+import {
+  useNavigate,
+  createFileRoute,
+  Link,
+  useSearch,
+} from "@tanstack/react-router";
 import { ChevronLeftIcon } from "lucide-react";
 import { Fragment, useRef, useState } from "react";
 import { z } from "zod";
 
 import { authClient } from "#lib/auth-client";
 
-export const Route = createFileRoute("/(auth)/forgot-password")({
-  component: RouteComponent,
-  validateSearch: (search) => ({
-    email: search.email as string | undefined,
-    return_to: search.return_to as string | undefined,
-  }),
-});
-
 const OTP_LENGTH = 6;
 const SLOT_KEYS = Array.from({ length: OTP_LENGTH }, (_, i) => `slot-${i}`);
 
-type Step = "email" | "otp" | "reset";
-
-function RouteComponent() {
+const RouteComponent = () => {
   const { email: emailFromSearch, return_to } = useSearch({
     from: "/(auth)/forgot-password",
   });
-  const navigate = Route.useNavigate();
+  const navigate = useNavigate({ from: "/forgot-password" });
   const [step, setStep] = useState<Step>("email");
   const [visible, setVisible] = useState(true);
   const [email, setEmail] = useState(emailFromSearch || "");
@@ -402,4 +397,14 @@ function RouteComponent() {
       </div>
     </div>
   );
-}
+};
+
+export const Route = createFileRoute("/(auth)/forgot-password")({
+  component: RouteComponent,
+  validateSearch: (search) => ({
+    email: search.email as string | undefined,
+    return_to: search.return_to as string | undefined,
+  }),
+});
+
+type Step = "email" | "otp" | "reset";

@@ -76,7 +76,6 @@ it.each([
   "http://[::1]/api/platform",
 ])("supports loopback development: %s", async (platformUrl) => {
   const jwt = await issueAgentToken(identity, secret, platformUrl);
-  expect((await verifyAgentToken(jwt, secret, platformUrl)).platformUrl).toBe(
-    platformUrl
-  );
+  const awaitedResult1 = await verifyAgentToken(jwt, secret, platformUrl);
+  expect(awaitedResult1.platformUrl).toBe(platformUrl);
 });

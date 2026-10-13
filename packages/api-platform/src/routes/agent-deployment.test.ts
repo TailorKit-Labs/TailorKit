@@ -12,6 +12,13 @@ import { env } from "#env";
 import { canonicalizeScope } from "../scope";
 import { createTestDb } from "../test/pglite";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const mocks = vi.hoisted(() => ({
   apiKey: vi.fn(),
   db: undefined as unknown,
@@ -58,8 +65,8 @@ let sameScopeAppId: string;
 let otherScopeAppId: string;
 let otherProjectAppId: string;
 
-function request(path: string, body: unknown = {}, secret = jwt) {
-  return new Request(`https://platform.test/api/platform${path}`, {
+const request = (path: string, body: unknown = {}, secret = jwt) =>
+  new Request(`https://platform.test/api/platform${path}`, {
     body: JSON.stringify(body),
     headers: {
       authorization: `Bearer ${secret}`,
@@ -67,8 +74,7 @@ function request(path: string, body: unknown = {}, secret = jwt) {
     },
     method: "POST",
   });
-}
-async function post(path: string, body: unknown = {}) {
+const post = async (path: string, body: unknown = {}) => {
   const input = request(path, body);
   let context;
   try {
@@ -85,7 +91,7 @@ async function post(path: string, body: unknown = {}) {
     throw new Error("Expected HTTP response");
   }
   return { body: await result.response.json(), status: result.response.status };
-}
+};
 const deploymentInput = (appId: string) => ({
   appId,
   assets: [
@@ -121,12 +127,15 @@ beforeEach(async () => {
     .insert(cliToken)
     .values({
       projectId,
+
       ...scope,
-      tokenHash: hashSecret(tokenSecret, env.AUTH_SECRET!),
+
       expiresAt: new Date(Date.now() + 3_600_000),
+
+      tokenHash: hashSecret(tokenSecret, requireValue(env.AUTH_SECRET)),
     })
     .returning();
-  sourceTokenId = source!.id;
+  sourceTokenId = requireValue(source).id;
   const apps = await db
     .insert(app)
     .values([
@@ -146,10 +155,10 @@ beforeEach(async () => {
       },
     ])
     .returning();
-  authorizedAppId = apps[0]!.id;
-  sameScopeAppId = apps[1]!.id;
-  otherScopeAppId = apps[2]!.id;
-  otherProjectAppId = apps[3]!.id;
+  authorizedAppId = requireValue(apps[0]).id;
+  sameScopeAppId = requireValue(apps[1]).id;
+  otherScopeAppId = requireValue(apps[2]).id;
+  otherProjectAppId = requireValue(apps[3]).id;
   jwt = await issueAgentToken(
     {
       appId: authorizedAppId,
@@ -157,8 +166,8 @@ beforeEach(async () => {
       projectId,
       scope: scope.scope,
     },
-    env.AUTH_SECRET!,
-    env.OPENAPI_SERVER_URL!
+    requireValue(env.AUTH_SECRET),
+    requireValue(env.OPENAPI_SERVER_URL)
   );
   mocks.storage.createUploadUrl.mockResolvedValue({
     uploadUrl: "https://uploads.test/client.js",
@@ -182,9 +191,11 @@ it("deploys with an agent JWT through the existing endpoint without a host key",
 
 it("keeps the one-hour grant valid after the source CLI token expires", async () => {
   await database.db.update(cliToken).set({ expiresAt: new Date(0) });
-  expect(
-    (await post("/deployments", deploymentInput(authorizedAppId))).status
-  ).toBe(200);
+  const awaitedResult1 = await post(
+    "/deployments",
+    deploymentInput(authorizedAppId)
+  );
+  expect(awaitedResult1.status).toBe(200);
 });
 
 it.each(["expired", "revoked", "invalid", "malformed-scope"])(
@@ -201,7 +212,7 @@ it.each(["expired", "revoked", "invalid", "malformed-scope"])(
       await database.db.update(cliToken).set({ scopeKey: "0".repeat(32) });
     }
     if (state === "invalid") {
-      jwt = jwt.slice(0, jwt.lastIndexOf(".") + 1) + "invalid";
+      jwt = `${jwt.slice(0, jwt.lastIndexOf(".") + 1)}invalid`;
     }
     expect(
       await post("/deployments", deploymentInput(authorizedAppId))
@@ -226,10 +237,12 @@ it("cannot change the authorized scope", async () => {
 
 it("rejects apps outside the scope or project", async () => {
   for (const appId of [otherScopeAppId, otherProjectAppId]) {
+    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     expect(await post("/deployments", deploymentInput(appId))).toMatchObject({
       body: { code: "NOT_FOUND" },
       status: 404,
     });
+    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     const [deployment] = await database.db
       .insert(appDeployment)
       .values({
@@ -239,7 +252,10 @@ it("rejects apps outside the scope or project", async () => {
       })
       .returning();
     expect(
-      await post(`/deployments/${deployment!.id}`, { scope: scope.scope })
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+      await post(`/deployments/${requireValue(deployment).id}`, {
+        scope: scope.scope,
+      })
     ).toMatchObject({
       body: { code: "NOT_FOUND" },
       status: 404,
@@ -300,16 +316,20 @@ it("uses the same CLI permissions for verification, listing, app creation, and d
     scope: scope.scope,
   });
   expect(created).toMatchObject({ body: { scope: scope.scope }, status: 200 });
-  expect(
-    (await post(`/apps/${sameScopeAppId}/lookup`, { scopes: [scope.scope] }))
-      .status
-  ).toBe(200);
-  expect(
-    (await post("/deployments", deploymentInput(sameScopeAppId))).status
-  ).toBe(200);
-  expect(
-    (await post("/deployments", deploymentInput(created.body.id))).status
-  ).toBe(200);
+  const awaitedResult2 = await post(`/apps/${sameScopeAppId}/lookup`, {
+    scopes: [scope.scope],
+  });
+  expect(awaitedResult2.status).toBe(200);
+  const awaitedResult3 = await post(
+    "/deployments",
+    deploymentInput(sameScopeAppId)
+  );
+  expect(awaitedResult3.status).toBe(200);
+  const awaitedResult4 = await post(
+    "/deployments",
+    deploymentInput(created.body.id)
+  );
+  expect(awaitedResult4.status).toBe(200);
 });
 
 it("reports database outages as 503 rather than rejecting a valid JWT", async () => {
@@ -342,7 +362,7 @@ it("keeps runtime-only metadata private from CLI credentials", async () => {
       prefix: "/api/platform",
     }
   );
-  expect(result.response!.status).toBe(403);
+  expect(requireValue(result.response).status).toBe(403);
 });
 
 it("validates all supplied scope selectors rather than accepting an authorized decoy", async () => {

@@ -1,4 +1,4 @@
-import { appsQueryKey, createAppsQuery } from "@tailorkit/client-core";
+import { createValueMemo, createAppsQuery } from "@tailorkit/client-core";
 import type {
   AppsQueryOptions,
   TailorKitApp,
@@ -12,17 +12,30 @@ import type { UseQueryResult } from "./use-query-result";
 
 export type UseAppsOptions<TScopeNames extends string = string> =
   AppsQueryOptions<TScopeNames>;
+
 export type UseAppsResult = UseQueryResult<TailorKitApp[]>;
 
-export function useApps(options: UseAppsOptions = {}): UseAppsResult {
-  return useAppsStore(useTailorkitContext("useApps").store, options);
-}
-
-export function useAppsStore(
+export const useAppsStore = (
   store: TailorKitStore,
   options: UseAppsOptions = {}
-): UseAppsResult {
-  const key = appsQueryKey(options);
-  const query = useMemo(() => createAppsQuery(store, options), [store, key]);
+): UseAppsResult => {
+  const memoOptions = useMemo(() => createValueMemo<AppsQueryOptions>(), []);
+  const stableOptions = memoOptions({
+    appIds:
+      options.appIds === undefined
+        ? undefined
+        : [...new Set(options.appIds)].toSorted(),
+    scopes:
+      options.scopes === undefined
+        ? undefined
+        : [...new Set(options.scopes)].toSorted(),
+  });
+  const query = useMemo(
+    () => createAppsQuery(store, stableOptions),
+    [store, stableOptions]
+  );
   return useQueryResult(query.state);
-}
+};
+
+export const useApps = (options: UseAppsOptions = {}): UseAppsResult =>
+  useAppsStore(useTailorkitContext("useApps").store, options);

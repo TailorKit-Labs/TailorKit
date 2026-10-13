@@ -32,17 +32,17 @@ const contextSchema = z.strictObject({
 });
 
 /** Standard MCP endpoint. Host project keys authenticate caller context carried in headers. */
-export async function handleAppAgentMcpRequest(
+export const handleAppAgentMcpRequest = async (
   request: Request,
   context: Context
-): Promise<Response> {
+): Promise<Response> => {
   if (context.runtimeService || context.agentToken) {
     return new Response("Forbidden", { status: 403 });
   }
   if (request.method !== "POST") {
     return new Response("Method not allowed", {
-      status: 405,
       headers: { allow: "POST" },
+      status: 405,
     });
   }
   let input: z.infer<typeof contextSchema>;
@@ -79,11 +79,11 @@ export async function handleAppAgentMcpRequest(
   }
   const authorizedScopes = scopes.map(({ scope }) => scope);
 
-  async function runAgent(
+  const runAgent = async (
     appId: string,
     prompt: string,
     execution: AppAgentMcpExecution
-  ) {
+  ) => {
     execution.signal.throwIfAborted();
     const app = await findAppInScopes(context.project.id, appId, scopes);
     if (!env.AUTH_SECRET) {
@@ -95,12 +95,15 @@ export async function handleAppAgentMcpRequest(
       .insert(cliToken)
       .values({
         projectId: context.project.id,
+
         ...canonicalizeScope(app.scope),
+
+        expiresAt: new Date(Date.now() + 3_600_000),
+
         tokenHash: hashSecret(
           randomBytes(32).toString("base64url"),
           env.AUTH_SECRET
         ),
-        expiresAt: new Date(Date.now() + 3_600_000),
       })
       .returning();
     if (!grant) {
@@ -129,7 +132,7 @@ export async function handleAppAgentMcpRequest(
             agentToken,
             appId: app.id,
             hostUrl: input.hostUrl,
-            messages: [{ role: "user", content: prompt }],
+            messages: [{ content: prompt, role: "user" }],
             model: "xiaomi/mimo-v2.6-pro",
           },
         ],
@@ -144,7 +147,13 @@ export async function handleAppAgentMcpRequest(
       );
       const completed = run.returnValue;
       // Setup can fail before the workflow opens its model stream.
-      void completed.catch((error: unknown) => controller.abort(error));
+      void (async () => {
+        try {
+          return await completed;
+        } catch (error) {
+          return controller.abort(error);
+        }
+      })();
       await execution.onProgress({
         appId: app.publicId,
         runId: run.runId,
@@ -191,24 +200,25 @@ export async function handleAppAgentMcpRequest(
           .where(eq(cliToken.id, grant.id));
       }
     }
-  }
+  };
 
   const handler = createAppAgentMcp(
     {
       async createApp({ scope: scopeName, prompt, ...metadata }, execution) {
         execution.signal.throwIfAborted();
         const scope = authorizedScopes.find(
-          (scope) => scope.name === scopeName
+          (scopeValue) => scopeValue.name === scopeName
         );
-        if (!scope)
+        if (!scope) {
           throw new ORPCError("FORBIDDEN", {
             message: "Scope is not authorized by the host.",
           });
+        }
         const app = await createAppRecord(
           context,
           {
-            name: metadata.name,
             description: metadata.description ?? null,
+            name: metadata.name,
             scope,
           },
           true
@@ -236,4 +246,4 @@ export async function handleAppAgentMcpRequest(
   response.headers.set("cache-control", "no-store");
   response.headers.set("x-accel-buffering", "no");
   return response;
-}
+};

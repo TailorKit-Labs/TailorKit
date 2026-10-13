@@ -7,18 +7,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@tailorkit/ui/card";
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { useLoaderData, Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowUpRight, CircleCheck, CircleDot, Plus } from "lucide-react";
 
 import { loadOverview } from "#lib/issues.functions";
 
-export const Route = createFileRoute("/")({
-  component: OverviewPage,
-  loader: () => loadOverview(),
-});
-
-function OverviewPage() {
-  const overview = Route.useLoaderData();
+const OverviewPage = () => {
+  const overview = useLoaderData({ from: "/" });
   const stats = [
     {
       icon: CircleDot,
@@ -107,4 +102,9 @@ function OverviewPage() {
       </Card>
     </div>
   );
-}
+};
+
+export const Route = createFileRoute("/")({
+  component: OverviewPage,
+  loader: () => loadOverview(),
+});

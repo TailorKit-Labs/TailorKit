@@ -32,7 +32,11 @@ import { Input } from "@tailorkit/ui/input";
 import { Skeleton } from "@tailorkit/ui/skeleton";
 import { toastManager } from "@tailorkit/ui/toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, useSearch } from "@tanstack/react-router";
+import {
+  useLoaderData,
+  createFileRoute,
+  useSearch,
+} from "@tanstack/react-router";
 import {
   ChevronDownIcon,
   KeyRoundIcon,
@@ -56,27 +60,85 @@ import {
 
 import { TwoFactorSettings } from "./-two-factor-settings";
 
-export const Route = createFileRoute("/(app)/account/security/")({
-  component: SecurityPage,
-  loader: async ({ context }) => {
-    await Promise.all([
-      context.queryClient.query(context.orpc.user.getSession.queryOptions()),
-      context.queryClient.query(
-        context.orpc.user.getSocialProviders.queryOptions()
-      ),
-      context.queryClient.query(context.orpc.user.listAccounts.queryOptions()),
-      context.queryClient.query(context.orpc.user.listSessions.queryOptions()),
-    ]);
+const GitHubIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5">
+    <path
+      fill="currentColor"
+      d="M12 2C6.48 2 2 6.58 2 12.23c0 4.52 2.87 8.35 6.84 9.71.5.1.68-.22.68-.49 0-.24-.01-1.05-.01-1.91-2.78.62-3.37-1.21-3.37-1.21-.46-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1.01.07 1.54 1.06 1.54 1.06.9 1.57 2.35 1.12 2.93.86.09-.67.35-1.12.64-1.38-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.05A9.38 9.38 0 0 1 12 6.93a9.4 9.4 0 0 1 2.5.35c1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.8-4.57 5.05.36.32.68.94.68 1.9 0 1.38-.01 2.49-.01 2.83 0 .27.18.59.69.49A10.26 10.26 0 0 0 22 12.23C22 6.58 17.52 2 12 2Z"
+    />
+  </svg>
+);
 
-    return { locale: getPreferredLocale(), timeZone: getPreferredTimeZone() };
-  },
-  validateSearch: z.object({
-    error: z.string().optional(),
-    error_description: z.string().optional(),
-  }),
-});
+const LinkedAccountsSkeleton = () => (
+  <div className="flex flex-col gap-3">
+    <div className="flex items-center gap-3 rounded-xl border p-4">
+      <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-full">
+        <GoogleIcon className="size-5" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium">Google</p>
+        <Skeleton className="mt-1 h-4 w-28" />
+      </div>
+      <Skeleton className="h-7 w-12" />
+    </div>
+    <div className="flex items-center gap-3 rounded-xl border p-4">
+      <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-full">
+        <GitHubIcon />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium">GitHub</p>
+        <Skeleton className="mt-1 h-4 w-28" />
+      </div>
+      <Skeleton className="h-7 w-12" />
+    </div>
+    <div className="flex items-center gap-3 rounded-xl border p-4">
+      <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-full">
+        <KeyRoundIcon aria-hidden="true" className="size-5" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium">Passkeys</p>
+        <div className="mt-1 py-2 sm:py-1.5">
+          <Skeleton className="h-4 w-44" />
+        </div>
+      </div>
+      <Skeleton className="h-8 w-16 sm:h-7" />
+    </div>
+  </div>
+);
 
-function getDeviceDetails(userAgent?: string | null) {
+const formatPasskeyCreated = (
+  value: Date | string | null | undefined,
+  locale: string,
+  timeZone: string
+) => {
+  if (!value) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium",
+    timeZone,
+  }).format(new Date(value));
+};
+
+const ActiveSessionsSkeleton = () =>
+  Array.from({ length: 3 }, (_, index) => (
+    <div
+      className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center"
+      key={`session-skeleton-${index}`}
+    >
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <Skeleton className="size-10 shrink-0 rounded-full" />
+        <div className="flex flex-1 flex-col gap-2">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-4 w-52" />
+        </div>
+      </div>
+      <Skeleton className="h-7 w-16 self-start sm:self-center" />
+    </div>
+  ));
+
+const getDeviceDetails = (userAgent?: string | null) => {
   if (!userAgent) {
     return {
       browser: "Unknown browser",
@@ -112,42 +174,26 @@ function getDeviceDetails(userAgent?: string | null) {
   }
 
   return { browser, isMobile, os };
-}
+};
 
-function formatLastActive(
+const formatLastActive = (
   value: Date | string,
   locale: string,
   timeZone: string
-) {
-  return new Intl.DateTimeFormat(locale, {
+) =>
+  new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
     timeZone,
   }).format(new Date(value));
-}
 
-function formatPasskeyCreated(
-  value: Date | string | null | undefined,
-  locale: string,
-  timeZone: string
-) {
-  if (!value) {
-    return null;
-  }
-
-  return new Intl.DateTimeFormat(locale, {
-    dateStyle: "medium",
-    timeZone,
-  }).format(new Date(value));
-}
-
-function ActiveSessions({
+const ActiveSessions = ({
   locale,
   timeZone,
 }: {
   locale: string;
   timeZone: string;
-}) {
+}) => {
   const queryClient = useQueryClient();
   const { data: sessionData } = useQuery(orpc.user.getSession.queryOptions());
   const currentSession = sessionData?.session ?? null;
@@ -248,7 +294,7 @@ function ActiveSessions({
             </div>
           </div>
 
-          {!isCurrent ? (
+          {isCurrent ? null : (
             <Button
               className="self-start sm:self-center"
               loading={
@@ -262,7 +308,7 @@ function ActiveSessions({
             >
               Sign out
             </Button>
-          ) : null}
+          )}
         </div>
       );
     });
@@ -308,80 +354,16 @@ function ActiveSessions({
       </Card>
     </CardFrame>
   );
-}
-
-function ActiveSessionsSkeleton() {
-  return Array.from({ length: 3 }, (_, index) => (
-    <div
-      className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center"
-      key={`session-skeleton-${index}`}
-    >
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <Skeleton className="size-10 shrink-0 rounded-full" />
-        <div className="flex flex-1 flex-col gap-2">
-          <Skeleton className="h-4 w-40" />
-          <Skeleton className="h-4 w-52" />
-        </div>
-      </div>
-      <Skeleton className="h-7 w-16 self-start sm:self-center" />
-    </div>
-  ));
-}
-
-function LinkedAccountsSkeleton() {
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-3 rounded-xl border p-4">
-        <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-full">
-          <GoogleIcon className="size-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium">Google</p>
-          <Skeleton className="mt-1 h-4 w-28" />
-        </div>
-        <Skeleton className="h-7 w-12" />
-      </div>
-      <div className="flex items-center gap-3 rounded-xl border p-4">
-        <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-full">
-          <GitHubIcon />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium">GitHub</p>
-          <Skeleton className="mt-1 h-4 w-28" />
-        </div>
-        <Skeleton className="h-7 w-12" />
-      </div>
-      <div className="flex items-center gap-3 rounded-xl border p-4">
-        <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-full">
-          <KeyRoundIcon aria-hidden="true" className="size-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium">Passkeys</p>
-          <div className="mt-1 py-2 sm:py-1.5">
-            <Skeleton className="h-4 w-44" />
-          </div>
-        </div>
-        <Skeleton className="h-8 w-16 sm:h-7" />
-      </div>
-    </div>
-  );
-}
-
-const GitHubIcon = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5">
-    <path
-      fill="currentColor"
-      d="M12 2C6.48 2 2 6.58 2 12.23c0 4.52 2.87 8.35 6.84 9.71.5.1.68-.22.68-.49 0-.24-.01-1.05-.01-1.91-2.78.62-3.37-1.21-3.37-1.21-.46-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1.01.07 1.54 1.06 1.54 1.06.9 1.57 2.35 1.12 2.93.86.09-.67.35-1.12.64-1.38-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.05A9.38 9.38 0 0 1 12 6.93a9.4 9.4 0 0 1 2.5.35c1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.8-4.57 5.05.36.32.68.94.68 1.9 0 1.38-.01 2.49-.01 2.83 0 .27.18.59.69.49A10.26 10.26 0 0 0 22 12.23C22 6.58 17.52 2 12 2Z"
-    />
-  </svg>
-);
+};
 
 // eslint-disable-next-line complexity -- This page coordinates independent account-security controls.
-function SecurityPage() {
+const SecurityPage = () => {
   const { error, error_description } = useSearch({
     from: "/(app)/account/security/",
   });
-  const { locale, timeZone } = Route.useLoaderData();
+  const { locale, timeZone } = useLoaderData({
+    from: "/(app)/account/security/",
+  });
   const queryClient = useQueryClient();
   const [linkPending, setLinkPending] = useState<"github" | "google" | null>(
     null
@@ -522,6 +504,7 @@ function SecurityPage() {
         title: "Couldn't add passkey",
         type: "error",
       });
+      // oxlint-disable-next-line react/todo -- Oxlint’s React compiler does not support try/finally; cleanup must also run after failures.
     } finally {
       setPasskeyPending(null);
     }
@@ -555,6 +538,7 @@ function SecurityPage() {
         title: "Couldn't remove passkey",
         type: "error",
       });
+      // oxlint-disable-next-line react/todo -- Oxlint’s React compiler does not support try/finally; cleanup must also run after failures.
     } finally {
       setPasskeyPending(null);
     }
@@ -723,7 +707,7 @@ function SecurityPage() {
                             }
                             loading={unlinkPending === googleAccount.id}
                             onClick={() =>
-                              void unlinkSocial(googleAccount.id, "google")
+                              unlinkSocial(googleAccount.id, "google")
                             }
                             size="sm"
                             title={
@@ -741,7 +725,7 @@ function SecurityPage() {
                               linkPending !== null && linkPending !== "google"
                             }
                             loading={linkPending === "google"}
-                            onClick={() => void linkSocial("google")}
+                            onClick={() => linkSocial("google")}
                             size="sm"
                             variant="outline"
                           >
@@ -770,7 +754,7 @@ function SecurityPage() {
                             }
                             loading={unlinkPending === githubAccount.id}
                             onClick={() =>
-                              void unlinkSocial(githubAccount.id, "github")
+                              unlinkSocial(githubAccount.id, "github")
                             }
                             size="sm"
                             title={
@@ -788,7 +772,7 @@ function SecurityPage() {
                               linkPending !== null && linkPending !== "github"
                             }
                             loading={linkPending === "github"}
-                            onClick={() => void linkSocial("github")}
+                            onClick={() => linkSocial("github")}
                             size="sm"
                             variant="outline"
                           >
@@ -870,9 +854,7 @@ function SecurityPage() {
                                       passkeyPending !== null
                                     }
                                     loading={passkeyPending === passkey.id}
-                                    onClick={() =>
-                                      void deletePasskey(passkey.id)
-                                    }
+                                    onClick={() => deletePasskey(passkey.id)}
                                     size="icon-sm"
                                     title={
                                       signInMethodCount > 1
@@ -961,4 +943,24 @@ function SecurityPage() {
       </PageLayout>
     </AccountLayout>
   );
-}
+};
+
+export const Route = createFileRoute("/(app)/account/security/")({
+  component: SecurityPage,
+  loader: async ({ context }) => {
+    await Promise.all([
+      context.queryClient.query(context.orpc.user.getSession.queryOptions()),
+      context.queryClient.query(
+        context.orpc.user.getSocialProviders.queryOptions()
+      ),
+      context.queryClient.query(context.orpc.user.listAccounts.queryOptions()),
+      context.queryClient.query(context.orpc.user.listSessions.queryOptions()),
+    ]);
+
+    return { locale: getPreferredLocale(), timeZone: getPreferredTimeZone() };
+  },
+  validateSearch: z.object({
+    error: z.string().optional(),
+    error_description: z.string().optional(),
+  }),
+});

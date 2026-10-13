@@ -15,15 +15,15 @@ interface AgentTuiOptions {
   schemaPath?: string;
 }
 
-export async function openAgentTui({
+export const openAgentTui = async ({
   client,
   hostUrl,
   appId,
   schemaPath,
-}: AgentTuiOptions) {
+}: AgentTuiOptions) => {
   const transport: ChatTransport<UIMessage> = {
-    async reconnectToStream() {
-      return null;
+    reconnectToStream() {
+      return Promise.resolve(null);
     },
     async sendMessages({ messages, abortSignal }) {
       const timeoutSignal = AbortSignal.timeout(schemaFetchTimeoutMs);
@@ -34,21 +34,25 @@ export async function openAgentTui({
       try {
         schemaSignal.throwIfAborted();
         schema =
-          schemaPath !== undefined
-            ? await readSchemaFile(schemaPath)
-            : await fetchSchemaFromHost(hostUrl, schemaSignal);
+          schemaPath === undefined
+            ? await fetchSchemaFromHost(hostUrl, schemaSignal)
+            : await readSchemaFile(schemaPath);
         schemaSignal.throwIfAborted();
       } catch (error) {
         abortSignal?.throwIfAborted();
-        const detail = timeoutSignal.aborted
-          ? "Timed out after 10 seconds."
-          : error instanceof Error
-            ? error.message
-            : String(error);
+        const detail = (() => {
+          if (timeoutSignal.aborted) {
+            return "Timed out after 10 seconds." as const;
+          }
+          if (error instanceof Error) {
+            return error.message;
+          }
+          return String(error);
+        })();
         throw new Error(
-          schemaPath !== undefined
-            ? `Unable to load the host schema snapshot ${schemaPath}: ${detail}`
-            : `Unable to fetch the host schema from ${hostUrl}: ${detail}`,
+          schemaPath === undefined
+            ? `Unable to fetch the host schema from ${hostUrl}: ${detail}`
+            : `Unable to load the host schema snapshot ${schemaPath}: ${detail}`,
           {
             cause: error,
           }
@@ -58,11 +62,11 @@ export async function openAgentTui({
         {
           appId,
           hostUrl,
-          schema,
           messages: messages.filter(
             (message): message is UIMessage & { role: "user" | "assistant" } =>
               message.role !== "system"
           ),
+          schema,
         },
         { signal: abortSignal }
       );
@@ -75,4 +79,4 @@ export async function openAgentTui({
     tools: "collapsed",
     transport,
   });
-}
+};

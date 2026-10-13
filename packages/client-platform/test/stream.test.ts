@@ -10,14 +10,14 @@ describe("generated SSE cancellation", () => {
     );
     const { stream } = createSseClient({
       fetch: async () =>
-        new Response(
+        await new Response(
           new ReadableStream({
+            cancel,
             start(output) {
               output.enqueue(
                 new TextEncoder().encode('data: {"type":"start"}\n\n')
               );
             },
-            cancel,
           })
         ),
       method: "POST",
@@ -30,7 +30,19 @@ describe("generated SSE cancellation", () => {
     expect(await stream.next()).toMatchObject({ done: true });
     // Let rejected cancellation promises settle; the test runner detects any
     // unhandled rejection rather than merely checking the generated source.
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await (() => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers();
+      try {
+        setTimeout(resolve, 0);
+      } catch (error) {
+        rejectPending(error);
+      }
+      return pendingPromise;
+    })();
     expect(cancel).toHaveBeenCalledOnce();
   });
 });

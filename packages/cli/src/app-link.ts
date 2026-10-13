@@ -19,6 +19,7 @@ export const readAppName = async (root: string): Promise<string> => {
   return path.basename(root);
 };
 
+// oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
 export const writeAppIdToConfig = async (
   configPath: string,
   appId: string
@@ -52,7 +53,7 @@ export const writeAppIdToConfig = async (
     initializer.callee.type === "Identifier" &&
     ["defineTailorKitConfig", "defineConfig"].includes(initializer.callee.name)
   ) {
-    const argument = initializer.arguments[0];
+    const [argument] = initializer.arguments;
     initializer = argument?.type === "SpreadElement" ? undefined : argument;
   }
   if (initializer?.type !== "ObjectExpression") {
@@ -82,7 +83,7 @@ export const writeAppIdToConfig = async (
 
   const position = initializer.start + 1;
   const rest = source.slice(position);
-  const newline = /^(\r?\n)([ \t]*)/u.exec(rest);
+  const newline = /^(?<newline>\r?\n)(?<indent>[ \t]*)/u.exec(rest);
   const appIdLine = newline
     ? `${newline[1]}${newline[2] || "  "}appId: ${JSON.stringify(appId)},`
     : ` appId: ${JSON.stringify(appId)},`;

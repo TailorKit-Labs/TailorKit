@@ -1,3 +1,4 @@
+// oxlint-disable-next-line max-classes-per-file -- These related adapter or mock classes implement one runtime boundary.
 import { APIError } from "@vercel/sandbox";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { FatalError } from "workflow";
@@ -45,8 +46,8 @@ beforeEach(() => {
   mocks.get.mockResolvedValue({
     currentSession: () => ({
       extendTimeout: mocks.extend,
-      writeFiles: mocks.writeFiles,
       runCommand: mocks.runCommand,
+      writeFiles: mocks.writeFiles,
     }),
     delete: mocks.delete,
     expiresAt: new Date(sandboxIdleTimeoutMs),

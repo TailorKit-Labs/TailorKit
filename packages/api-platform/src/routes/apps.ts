@@ -3,7 +3,7 @@ import { ORPCError } from "@orpc/server";
 import { db } from "@tailorkit/db";
 import { App, app, AppDeployment } from "@tailorkit/db/schema/apps";
 import { eq } from "drizzle-orm";
-import z from "zod";
+import { z } from "zod";
 
 import { withAppAssetUrl } from "../asset-url";
 import type { Context } from "../context";
@@ -29,9 +29,10 @@ export const AppWithCurrentDeployment = App.omit({ scopeKey: true }).extend({
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
-async function createUniqueAppPublicId(projectId: string) {
+const createUniqueAppPublicId = async (projectId: string) => {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const publicId = createPublicId();
+    // oxlint-disable-next-line no-await-in-loop -- Each retry depends on the result of the previous attempt.
     const existing = await db.query.app.findFirst({
       where: { projectId, publicId },
     });
@@ -42,7 +43,7 @@ async function createUniqueAppPublicId(projectId: string) {
   }
 
   throw new ORPCError("BAD_REQUEST", { message: "Failed to create app id." });
-}
+};
 
 const listApps = cliRouter
   .meta(
@@ -63,15 +64,18 @@ const listApps = cliRouter
         createdAt: "desc",
       },
       where: {
-        RAW: (fields, { and, eq, or }) =>
+        RAW: (fields, { and, eq: eqValue, or }) =>
           and(
-            eq(fields.projectId, context.project.id),
+            eqValue(fields.projectId, context.project.id),
             or(
               ...scopes.map(({ scope, scopeKey }) =>
-                and(eq(fields.scopeKey, scopeKey), eq(fields.scope, scope))
+                and(
+                  eqValue(fields.scopeKey, scopeKey),
+                  eqValue(fields.scope, scope)
+                )
               )
             )
-          ) ?? eq(fields.projectId, context.project.id),
+          ) ?? eqValue(fields.projectId, context.project.id),
       },
       with: {
         currentDeployment: {
@@ -135,11 +139,11 @@ const createAppInput = z.object({
   scope: scopeSchema,
 });
 
-export async function createAppRecord(
+export const createAppRecord = async (
   context: Context,
   input: z.infer<typeof createAppInput>,
   createdByAgent = false
-) {
+) => {
   const scope = canonicalizeScope(input.scope);
   const [createdApp] = await db
     .insert(app)
@@ -163,7 +167,7 @@ export async function createAppRecord(
     currentDeployment: null,
     views: [],
   };
-}
+};
 
 const createApp = cliRouter
   .meta(

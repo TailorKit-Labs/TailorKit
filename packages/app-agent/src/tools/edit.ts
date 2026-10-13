@@ -17,17 +17,24 @@ export const editTool = tool({
     "use step";
     const sandbox = await toolSandbox(options);
     const { abortSignal } = options;
-    path = resolvePath(path);
+    const resolvedPath = resolvePath(path);
 
     abortSignal?.throwIfAborted();
-    const file = await sandbox.readTextFile({ path, abortSignal });
-    if (file === null) throw new FatalError("File not found");
+    const file = await sandbox.readTextFile({
+      abortSignal,
+      path: resolvedPath,
+    });
+    if (file === null) {
+      throw new FatalError("File not found");
+    }
 
     // Match against the original file so replacement text cannot affect later edits.
     const matches = edits.map((edit, editIndex) => {
       const index = file.indexOf(edit.oldText);
-      if (index < 0) throw new FatalError(`Text not found: ${edit.oldText}`);
-      if (file.indexOf(edit.oldText, index + 1) >= 0) {
+      if (index === -1) {
+        throw new FatalError(`Text not found: ${edit.oldText}`);
+      }
+      if (file.includes(edit.oldText, index + 1)) {
         throw new FatalError(`Text occurs more than once: ${edit.oldText}`);
       }
       return { ...edit, editIndex, index };
@@ -51,25 +58,25 @@ export const editTool = tool({
 
     abortSignal?.throwIfAborted();
     await sandbox.writeTextFile({
-      path,
-      content,
       abortSignal,
+      content,
+      path: resolvedPath,
     });
-    return { success: true, path };
+    return { path: resolvedPath, success: true };
   },
   inputSchema: z.object({
+    edits: z
+      .array(
+        z.object({
+          newText: z.string(),
+          oldText: z.string().min(1),
+        })
+      )
+      .min(1),
     path: z
       .string()
       .min(1)
       .describe("Relative to /workspace/app, or an absolute path."),
-    edits: z
-      .array(
-        z.object({
-          oldText: z.string().min(1),
-          newText: z.string(),
-        })
-      )
-      .min(1),
   }),
   outputSchema: fileChangeResultSchema,
 });

@@ -5,20 +5,27 @@ import type { Context } from "./context";
 import { normalizeTailorKitNamedScope, selectTailorKitScopes } from "./scope";
 import type { TailorKitNamedScope, TailorKitScopes } from "./types";
 
+const require = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 export const o = os.$context<Context>();
 
-export function getTailorKitContext(context: Context) {
+export const getTailorKitContext = (context: Context) => {
   if (!context.tailorkit) {
     throw new ORPCError("UNAUTHORIZED", { message: "Unauthorized." });
   }
 
   return context.tailorkit;
-}
+};
 
-export function getTailorKitScope(
+export const getTailorKitScope = (
   context: Context,
   name?: string
-): TailorKitNamedScope {
+): TailorKitNamedScope => {
   const { scopes } = getTailorKitContext(context);
   const names = name === undefined ? Object.keys(scopes) : [name];
   if (names.length !== 1) {
@@ -27,7 +34,7 @@ export function getTailorKitScope(
     });
   }
   try {
-    return selectTailorKitScopes(scopes, names)[0]!;
+    return require(selectTailorKitScopes(scopes, names)[0]);
   } catch (error) {
     throw new ORPCError("BAD_REQUEST", {
       message:
@@ -36,12 +43,12 @@ export function getTailorKitScope(
           : "Invalid TailorKit scope selection.",
     });
   }
-}
+};
 
-export function getTailorKitScopes(
+export const getTailorKitScopes = (
   context: Context,
   names?: string[]
-): TailorKitNamedScope[] {
+): TailorKitNamedScope[] => {
   try {
     return selectTailorKitScopes(getTailorKitContext(context).scopes, names);
   } catch (error) {
@@ -52,9 +59,9 @@ export function getTailorKitScopes(
           : "Invalid TailorKit scope selection.",
     });
   }
-}
+};
 
-export function getCliDeployToken(request: Request): string {
+export const getCliDeployToken = (request: Request): string => {
   const [scheme, token] =
     request.headers.get("authorization")?.split(" ") ?? [];
 
@@ -65,7 +72,7 @@ export function getCliDeployToken(request: Request): string {
   }
 
   return token;
-}
+};
 
 export const requireCliDeployToken = o.middleware(async ({ context, next }) => {
   const result = await cliAuthVerifyToken({

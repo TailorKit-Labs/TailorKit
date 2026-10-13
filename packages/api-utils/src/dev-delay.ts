@@ -9,9 +9,22 @@ export const devDelayMiddleware = os.middleware(async ({ path, next }) => {
   if (env.NODE_ENV === "development") {
     // artificial delay in dev 100-500ms
     const waitMs = Math.floor(Math.random() * 400) + 100;
-    await new Promise((resolve) => setTimeout(resolve, waitMs));
+    await (() => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers();
+      try {
+        setTimeout(resolve, waitMs);
+      } catch (error) {
+        rejectPending(error);
+      }
+      return pendingPromise;
+    })();
   }
 
+  // oxlint-disable-next-line node/callback-return -- This is a value listener or middleware continuation, not a Node-style completion callback.
   const result = await next();
 
   const end = Date.now();

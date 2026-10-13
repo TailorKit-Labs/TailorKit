@@ -23,13 +23,7 @@ process.stdout.write("\\nTAILORKIT_VIEWS=" + JSON.stringify({ views, instanceRes
 process.exit(0);
 `;
 
-export async function readClientViews(filename: string) {
-  return (await readClientManifest(filename)).views.filter(
-    (view) => !view.disabled
-  );
-}
-
-export async function readClientManifest(filename: string) {
+export const readClientManifest = async (filename: string) => {
   try {
     const { stdout } = await promisify(execFile)(
       process.execPath,
@@ -70,4 +64,9 @@ export async function readClientManifest(filename: string) {
       { cause: error }
     );
   }
-}
+};
+
+export const readClientViews = async (filename: string) => {
+  const awaitedResult1 = await readClientManifest(filename);
+  return awaitedResult1.views.filter((view) => !view.disabled);
+};

@@ -4,6 +4,7 @@ import { AppError } from "@tailorkit/app/server";
 import type { Identity } from "@tailorkit/app/server";
 import { DurableObject } from "cloudflare:workers";
 import { Effect, Semaphore } from "effect";
+import { catch as catchEffect } from "effect/Effect";
 
 import bootstrap from "../.generated/bootstrap.txt";
 import type { AppFacet } from "./dynamic-workers/facet";
@@ -31,7 +32,7 @@ export class AppInstallation extends DurableObject<Env> {
 
   #subscriptions = createSubscriptions(
     this.ctx,
-    (input, identity) =>
+    (input: Invocation, identity: Identity) =>
       this.#databaseQuery(input, identity).pipe(
         Effect.flatMap((result) =>
           resultEffect(result.result).pipe(
@@ -44,7 +45,7 @@ export class AppInstallation extends DurableObject<Env> {
 
   fetch(request: Request): Promise<Response> {
     return Effect.runPromise(
-      Effect.gen({ self: this }, function* () {
+      Effect.gen({ self: this }, function* install() {
         const token = yield* Effect.try({
           catch: appError,
           try: () => bearerToken(request),
@@ -84,10 +85,10 @@ export class AppInstallation extends DurableObject<Env> {
           catch: appError,
           try: () =>
             this.#http.handle(request, {
-              prefix: "/rpc",
               context: {
                 installation: this.#operations(identity, token, request.signal),
               },
+              prefix: "/rpc",
             }),
         });
         if (matched) {
@@ -98,7 +99,8 @@ export class AppInstallation extends DurableObject<Env> {
         );
       }).pipe(
         Effect.mapError(appError),
-        Effect.catch((error) => Effect.succeed(rpcErrorResponse(error)))
+        // oxlint-disable-next-line promise/prefer-await-to-callbacks -- This is an Effect recovery operator or transport callback, not a Node-style completion callback.
+        catchEffect((err) => Effect.succeed(rpcErrorResponse(err)))
       )
     );
   }
@@ -136,7 +138,7 @@ export class AppInstallation extends DurableObject<Env> {
 
   #databaseQuery(input: Invocation, identity: Identity) {
     return this.#facet(identity).pipe(
-      Effect.flatMap((facet) =>
+      Effect.flatMap((facet: Pick<AppFacet, "query">) =>
         Effect.tryPromise({
           catch: appError,
           try: () => facet.query(input, identity),
@@ -166,17 +168,19 @@ export class AppInstallation extends DurableObject<Env> {
   }
 
   #refresh(tables: string[], facet: Pick<AppFacet, "query">) {
-    return this.#subscriptions.refresh(tables, (input, subscriber) =>
-      Effect.tryPromise({
-        catch: appError,
-        try: () => facet.query(input, subscriber),
-      }).pipe(
-        Effect.flatMap((result) =>
-          resultEffect(result.result).pipe(
-            Effect.map((value) => ({ tables: result.tables, value }))
+    return this.#subscriptions.refresh(
+      tables,
+      (input: Invocation, subscriber) =>
+        Effect.tryPromise({
+          catch: appError,
+          try: () => facet.query(input, subscriber),
+        }).pipe(
+          Effect.flatMap((result) =>
+            resultEffect(result.result).pipe(
+              Effect.map((value) => ({ tables: result.tables, value }))
+            )
           )
         )
-      )
     );
   }
 
@@ -226,11 +230,11 @@ export class AppInstallation extends DurableObject<Env> {
               () => ({
                 compatibilityDate: "2026-10-01",
                 compatibilityFlags: ["nodejs_als"],
-                mainModule: "bootstrap.js",
-                modules: { "bootstrap.js": bootstrap, "application.js": code },
-                globalOutbound: null,
                 env: {},
+                globalOutbound: null,
                 limits: { cpuMs: 10, subRequests: 64 },
+                mainModule: "bootstrap.js",
+                modules: { "application.js": code, "bootstrap.js": bootstrap },
               })
             );
 
@@ -270,7 +274,7 @@ export class AppInstallation extends DurableObject<Env> {
                 Effect.runPromise(
                   this.#queue.withPermits(1)(this.#refresh(tables, facet))
                 ),
-              { url: identity.toolUrl, token }
+              { token, url: identity.toolUrl }
             );
             return abortable(
               facet.action(

@@ -124,7 +124,7 @@ describe("primitive schema components", () => {
   });
 
   it("provides equivalent Valibot and ArkType primitive schemas", () => {
-    const theme = {
+    const themeValue = {
       breakpoints: {
         base: null,
         lg: "1024px",
@@ -143,9 +143,9 @@ describe("primitive schema components", () => {
     };
 
     const suites = [
-      zodPrimitives(theme),
-      valibotPrimitives(theme),
-      arktypePrimitives(theme),
+      zodPrimitives(themeValue),
+      valibotPrimitives(themeValue),
+      arktypePrimitives(themeValue),
     ];
     for (const primitiveSuite of suites) {
       expect(

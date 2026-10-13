@@ -62,5 +62,5 @@ it("builds responsive primitive CSS without rendering a component", () => {
   expect(css).toContain("align-items: flex-start");
   expect(css).toContain("justify-content: space-between");
   expect(css).toContain("@media (min-width: 1024px)");
-  expect(css.match(/@media/g)).toHaveLength(1);
+  expect(css.match(/@media/gu)).toHaveLength(1);
 });

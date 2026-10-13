@@ -9,8 +9,8 @@ const tree = {
       callbacks: [
         {
           callback: "onClick",
-          inputCount: 0,
           event: "tailorkitcallbackonclick",
+          inputCount: 0,
         },
       ],
       children: [{ id: "text", kind: "text", text: "Save" }],

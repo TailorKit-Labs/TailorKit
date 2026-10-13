@@ -3,29 +3,8 @@ import { z } from "zod";
 
 import { api, Box, Button, Flex } from "#tailorkit";
 
-const view = defineView({
-  component: View,
-  instances: {
-    dataSchema: z.object({ todoId: z.string().nullable() }),
-    resolve: async ({ queries }) => {
-      const todos = await queries.list();
-      return [
-        {
-          key: "all",
-          metadata: { title: "All todos" },
-          data: { todoId: null },
-        },
-        ...todos.map((todo) => ({
-          key: todo.id,
-          metadata: { title: todo.text },
-          data: { todoId: todo.id },
-        })),
-      ];
-    },
-  },
-  view: "/",
-});
-function View() {
+const View = () => {
+  // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
   const { data } = view.useInstance();
   const todos = useQuery(api.list);
   const add = useMutation(api.add);
@@ -97,5 +76,29 @@ function View() {
       </Flex>
     </Box>
   );
-}
+};
+
+const view = defineView({
+  component: View,
+  instances: {
+    dataSchema: z.object({ todoId: z.string().nullable() }),
+    resolve: async ({ queries }) => {
+      const todos = await queries.list();
+      return [
+        {
+          data: { todoId: null },
+          key: "all",
+          metadata: { title: "All todos" },
+        },
+        ...todos.map((todo) => ({
+          data: { todoId: todo.id },
+          key: todo.id,
+          metadata: { title: todo.text },
+        })),
+      ];
+    },
+  },
+  view: "/",
+});
+
 export default view;

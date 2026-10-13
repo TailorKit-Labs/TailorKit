@@ -35,13 +35,13 @@ const invitableRoles = Object.keys(roles).filter(
   (role) => role !== "owner"
 ) as (keyof typeof roles)[];
 
-export function InviteMembersDialog({
+export const InviteMembersDialog = ({
   orgSlug,
   onSuccess,
 }: {
   orgSlug: string;
   onSuccess: () => void;
-}) {
+}) => {
   const [open, setOpen] = useState(false);
   const [invites, setInvites] = useState<InviteRow[]>([
     { email: "", role: "member" },
@@ -53,8 +53,8 @@ export function InviteMembersDialog({
       const results = await Promise.allSettled(
         rows.map((row) =>
           client.org.inviteMember({
-            orgSlug,
             email: row.email.trim(),
+            orgSlug,
             role: row.role as "member" | "admin",
           })
         )
@@ -88,13 +88,13 @@ export function InviteMembersDialog({
     },
   });
 
-  function updateRow(index: number, field: keyof InviteRow, value: string) {
+  const updateRow = (index: number, field: keyof InviteRow, value: string) => {
     setInvites((prev) =>
       prev.map((row, i) => (i === index ? { ...row, [field]: value } : row))
     );
-  }
+  };
 
-  function handleSubmit(event: React.FormEvent) {
+  const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     const valid = invites.filter((row) => row.email.trim());
     if (valid.length === 0) {
@@ -102,15 +102,15 @@ export function InviteMembersDialog({
     }
     setErrors([]);
     mutation.mutate(valid);
-  }
+  };
 
-  function handleOpenChange(next: boolean) {
+  const handleOpenChange = (next: boolean) => {
     setOpen(next);
     if (!next) {
       setInvites([{ email: "", role: "member" }]);
       setErrors([]);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -218,4 +218,4 @@ export function InviteMembersDialog({
       </DialogPopup>
     </Dialog>
   );
-}
+};

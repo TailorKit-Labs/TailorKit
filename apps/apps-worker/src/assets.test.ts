@@ -12,6 +12,13 @@ import {
 
 import worker from "./assets";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const projectId = "22222222-2222-4222-8222-222222222222";
 const appId = "app000000001";
 const deploymentId = "deploy000001";
@@ -34,18 +41,15 @@ const env = {
 } as unknown as Env;
 const ctx = { waitUntil } as unknown as ExecutionContext;
 
-function fetchAsset(request: Request) {
-  return worker.fetch(request as Parameters<typeof worker.fetch>[0], env, ctx);
-}
+const fetchAsset = (request: Request) =>
+  worker.fetch(request as Parameters<typeof worker.fetch>[0], env, ctx);
 
-function object(body = bundle) {
-  return {
-    body: new Response(body).body,
-    httpEtag: '"etag"',
-    size: new TextEncoder().encode(body).byteLength,
-    writeHttpMetadata: vi.fn(),
-  };
-}
+const object = (body = bundle) => ({
+  body: new Response(body).body,
+  httpEtag: '"etag"',
+  size: new TextEncoder().encode(body).byteLength,
+  writeHttpMetadata: vi.fn(),
+});
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -67,6 +71,7 @@ describe("tenant asset gateway", () => {
       "../server/server.js",
     ]) {
       for (const method of ["GET", "HEAD", "OPTIONS"]) {
+        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
         const response = await fetchAsset(
           new Request(url.replace("client.js", suffix), { method })
         );
@@ -179,6 +184,7 @@ describe("tenant asset gateway", () => {
       url.replace("client.js", "secret.js"),
       url.replace(appId, "app-slug"),
     ]) {
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       await expect(fetchAsset(new Request(invalid))).resolves.toHaveProperty(
         "status",
         404
@@ -242,7 +248,7 @@ it("keeps the response usable when a background cache write fails", async () => 
   get.mockResolvedValueOnce(object());
   const log = vi.spyOn(console, "error").mockImplementation(() => {});
   const response = await fetchAsset(new Request(url));
-  await waitUntil.mock.calls[0]![0];
+  await requireValue(waitUntil.mock.calls[0])[0];
   expect(response.status).toBe(200);
   expect(await response.text()).toBe(bundle);
   expect(log).toHaveBeenCalledWith(
@@ -250,7 +256,7 @@ it("keeps the response usable when a background cache write fails", async () => 
   );
 });
 
-function gzipObject(body = bundle) {
+const gzipObject = (body = bundle) => {
   const bytes = gzipSync(body);
   return {
     ...object(),
@@ -258,7 +264,7 @@ function gzipObject(body = bundle) {
     httpMetadata: { contentEncoding: "gzip" },
     size: bytes.byteLength,
   };
-}
+};
 
 it("serves stored gzip bytes and caches them without double compression", async () => {
   const stored = gzipObject();
@@ -272,7 +278,7 @@ it("serves stored gzip bytes and caches them without double compression", async 
   expect(gunzipSync(Buffer.from(await response.arrayBuffer())).toString()).toBe(
     bundle
   );
-  const cached = put.mock.calls[0]![1];
+  const [, cached] = requireValue(put.mock.calls[0]);
   expect(cached.headers.get("Content-Encoding")).toBe("gzip");
   expect(gunzipSync(Buffer.from(await cached.arrayBuffer())).toString()).toBe(
     bundle
@@ -297,11 +303,12 @@ it.each(["R2", "cache"])(
       );
     }
     const response = await fetchAsset(new Request(url));
-    const reader = response.body!.getReader();
+    const reader = requireValue(response.body).getReader();
     let deliveredBytes = 0;
     await expect(
       (async () => {
         while (true) {
+          // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
           const { done, value } = await reader.read();
           if (done) {
             break;
@@ -317,7 +324,8 @@ it.each(["R2", "cache"])(
 it("serves a gzip bundle whose decoded size is exactly 3 MiB", async () => {
   get.mockResolvedValueOnce(gzipObject("a".repeat(maxDeploymentBytes)));
   const response = await fetchAsset(new Request(url));
-  expect((await response.arrayBuffer()).byteLength).toBe(maxDeploymentBytes);
+  const awaitedResult1 = await response.arrayBuffer();
+  expect(awaitedResult1.byteLength).toBe(maxDeploymentBytes);
 });
 
 it.each([undefined, "identity", "gzip;q=0, *;q=1"])(

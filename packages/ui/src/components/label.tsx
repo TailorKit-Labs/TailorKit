@@ -6,11 +6,11 @@ import type React from "react";
 
 import { cn } from "#ui";
 
-export function Label({
+export const Label = ({
   className,
   render,
   ...props
-}: useRender.ComponentProps<"label">): React.ReactElement {
+}: useRender.ComponentProps<"label">): React.ReactElement => {
   const defaultProps = {
     className: cn(
       "text-foreground inline-flex items-center gap-2 text-base/4.5 font-medium sm:text-sm/4",
@@ -24,4 +24,4 @@ export function Label({
     props: mergeProps<"label">(defaultProps, props),
     render,
   });
-}
+};

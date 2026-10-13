@@ -1,3 +1,4 @@
+// oxlint-disable-next-line max-classes-per-file -- These related adapter or mock classes implement one runtime boundary.
 import { createHash } from "node:crypto";
 
 /* oxlint-disable max-classes-per-file, no-useless-constructor, class-methods-use-this, require-await, typescript/no-explicit-any, typescript/no-non-null-assertion, unicorn/no-await-expression-member, import/first -- adapter mocks implement the Redis clients' asynchronous shape. */
@@ -20,13 +21,13 @@ const state = vi.hoisted(() => ({
   },
 }));
 
-function read(store: typeof state.redis, key: string): string | null {
+const read = (store: typeof state.redis, key: string): string | null => {
   const record = store.data.get(key);
   if (!record || (record.until !== null && record.until <= store.clock)) {
     return null;
   }
   return record.value;
-}
+};
 
 vi.mock("#env", () => ({
   env: { KV_REST_API_TOKEN: "token", KV_REST_API_URL: "https://kv.test" },
@@ -161,7 +162,7 @@ vi.mock("ioredis", () => ({
       for (const subscriber of state.redis.subscribers) {
         if (subscriber.channels.has(channel)) {
           subscriber.handlers.get("message")?.(channel, message);
-          count++;
+          count += 1;
         }
       }
       return count;
@@ -283,7 +284,7 @@ vi.mock("@upstash/redis", () => ({
       for (const subscriber of state.upstash.subscribers) {
         if (subscriber.channel === channel) {
           subscriber.handlers.get("message")?.({ message });
-          count++;
+          count += 1;
         }
       }
       return count;
@@ -446,16 +447,26 @@ describe.each([
     store.clock = 0;
     let reads = 0;
     let releaseReads: (() => void) | undefined;
-    const bothRead = new Promise<void>((resolve) => {
-      releaseReads = resolve;
-    });
+    const bothRead = (() => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers<ReturnType<() => void>>();
+      try {
+        releaseReads = resolve;
+      } catch (error) {
+        rejectPending(error);
+      }
+      return pendingPromise;
+    })();
     const withConcurrentRead = () => {
       const kv = create();
       return {
         ...kv,
         get: async (key: string) => {
           const value = await kv.get(key);
-          if (key === "preview:uploading:session" && ++reads <= 2) {
+          if (key === "preview:uploading:session" && (reads += 1) <= 2) {
             if (reads === 2) {
               releaseReads?.();
             }

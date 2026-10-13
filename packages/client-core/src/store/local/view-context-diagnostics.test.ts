@@ -4,6 +4,13 @@ import { z } from "zod";
 
 import { createViewContextStore } from "./view-context";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const requiredContext = z.object({ customer: z.object({ id: z.string() }) });
 const setup = (schema: Schema = requiredContext) =>
   createViewContextStore({ views: { "/": schema } });
@@ -16,7 +23,7 @@ it("strips nested extra fields using the original schema without mutating the in
     customer: { email: "private@example.com", id: "c1" },
     extra: true,
   };
-  store.register({ context, id: Symbol(), view: "/" });
+  store.register({ context, id: Symbol("identity"), view: "/" });
   await Promise.resolve();
   expect(store.state.get()?.layers).toEqual([
     { context: { customer: { id: "c1" } }, path: "/", status: "ready" },
@@ -27,7 +34,11 @@ it("strips nested extra fields using the original schema without mutating the in
 
 it("preserves the schema's transforms and refinements", async () => {
   const store = setup(z.object({ name: z.string().trim().min(1) }));
-  store.register({ context: { name: "  Alice  " }, id: Symbol(), view: "/" });
+  store.register({
+    context: { name: "  Alice  " },
+    id: Symbol("identity"),
+    view: "/",
+  });
   await Promise.resolve();
   expect(store.state.get()?.layers[0]?.context).toEqual({ name: "Alice" });
 });
@@ -37,8 +48,8 @@ it("honors explicitly loose and strict schemas", async () => {
   const loose = setup(z.looseObject({ name: z.string() }));
   const strict = setup(z.strictObject({ name: z.string() }));
   const context = { extra: true, name: "Alice" };
-  loose.register({ context, id: Symbol(), view: "/" });
-  strict.register({ context, id: Symbol(), view: "/" });
+  loose.register({ context, id: Symbol("identity"), view: "/" });
+  strict.register({ context, id: Symbol("identity"), view: "/" });
   await Promise.resolve();
   expect(loose.state.get()?.layers[0]?.context).toEqual(context);
   expect(strict.state.get()?.layers[0]).toMatchObject({
@@ -51,7 +62,7 @@ it("honors explicitly loose and strict schemas", async () => {
 it("logs missing required context once across synchronous cleanup and remount", async () => {
   const error = vi.spyOn(console, "error").mockImplementation(() => {});
   const store = setup();
-  const id = Symbol();
+  const id = Symbol("identity");
   const entry = { context: undefined, id, view: "/" };
   store.register(entry);
   store.unregister(id);
@@ -69,7 +80,7 @@ it("logs missing required context once across synchronous cleanup and remount", 
 
 it("allows omitted context through an optional native schema", async () => {
   const store = setup(requiredContext.optional());
-  store.register({ context: undefined, id: Symbol(), view: "/" });
+  store.register({ context: undefined, id: Symbol("identity"), view: "/" });
   await Promise.resolve();
   expect(store.state.get()?.layers[0]).toEqual({
     context: undefined,
@@ -81,7 +92,7 @@ it("allows omitted context through an optional native schema", async () => {
 it("skips validation while loading and lets request errors take precedence", async () => {
   const error = vi.spyOn(console, "error").mockImplementation(() => {});
   const store = setup();
-  const id = Symbol();
+  const id = Symbol("identity");
   store.register({ context: {}, id, loading: true, view: "/" });
   await Promise.resolve();
   expect(store.state.get()?.layers[0]?.status).toBe("loading");
@@ -102,7 +113,7 @@ it("reports native issue paths and withholds invalid context", async () => {
   const store = setup();
   store.register({
     context: { customer: { id: 123 } },
-    id: Symbol(),
+    id: Symbol("identity"),
     view: "/",
   });
   await Promise.resolve();
@@ -125,7 +136,19 @@ it("waits for asynchronous validation and ignores results for replaced or unmoun
     "~standard": {
       validate: async (input) => {
         const value = base.parse(input);
-        await new Promise<void>((resolve) => pending.push(resolve));
+        await (() => {
+          const {
+            promise: pendingPromise,
+            resolve,
+            reject: rejectPending,
+          } = Promise.withResolvers<ReturnType<() => void>>();
+          try {
+            pending.push(resolve);
+          } catch (error) {
+            rejectPending(error);
+          }
+          return pendingPromise;
+        })();
         return { value: { name: value.name.toUpperCase() } };
       },
       vendor: "async-test",
@@ -133,7 +156,7 @@ it("waits for asynchronous validation and ignores results for replaced or unmoun
     },
   };
   const store = setup(schema);
-  const id = Symbol();
+  const id = Symbol("identity");
   store.register({ context: { name: "old" }, id, view: "/" });
   await Promise.resolve();
   expect(store.state.get()?.layers[0]).toMatchObject({
@@ -141,16 +164,16 @@ it("waits for asynchronous validation and ignores results for replaced or unmoun
     status: "loading",
   });
   store.register({ context: { name: "new" }, id, view: "/" });
-  pending[1]!();
+  requireValue(pending[1])();
   await vi.waitFor(() =>
     expect(store.state.get()?.layers[0]?.context).toEqual({ name: "NEW" })
   );
-  pending[0]!();
+  requireValue(pending[0])();
   await Promise.resolve();
   expect(store.state.get()?.layers[0]?.context).toEqual({ name: "NEW" });
   store.register({ context: { name: "unmounted" }, id, view: "/" });
   store.unregister(id);
-  pending[2]!();
+  requireValue(pending[2])();
   await vi.waitFor(() => expect(store.state.get()).toBeNull());
 });
 
@@ -170,7 +193,8 @@ it("handles rejected and thrown validators without leaking context", async () =>
       },
     };
     const store = setup(schema);
-    store.register({ context: {}, id: Symbol(), view: "/" });
+    store.register({ context: {}, id: Symbol("identity"), view: "/" });
+    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     await vi.waitFor(() =>
       expect(store.state.get()?.layers[0]?.status).toBe("error")
     );

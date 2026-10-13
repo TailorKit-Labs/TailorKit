@@ -2,6 +2,13 @@ import { expect, it } from "vite-plus/test";
 
 import { extractInstances } from "./instances";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const source = `
 import { defineView as cv } from "tailorkit/client";
 import { z } from "zod";
@@ -26,20 +33,22 @@ export default view;
 it("extracts resolver dependencies without executing or retaining the component", async () => {
   const result = await extractInstances("/app/src/page.tsx", source, "/app");
   expect(result).toBeDefined();
-  expect(result!.server).toContain("SERVER_ONLY_SECRET");
-  expect(result!.server).toContain("./server-helper");
-  expect(result!.server).toContain("queries.reports.list");
-  expect(result!.server).not.toContain("./widget");
-  expect(result!.server).not.toContain("tailorkit/client");
-  expect(result!.server).not.toContain("preact");
-  expect(result!.browser).not.toContain("SERVER_ONLY_SECRET");
-  expect(result!.browser).not.toContain("serverHelper");
-  expect(result!.browser).not.toContain("queries.reports.list");
-  expect(result!.browser).not.toContain('from "zod"');
-  expect(result!.browser).toContain("./widget");
-  expect(result!.browser).toContain("Shared label");
-  expect(result!.server).toContain("Shared label");
-  expect(result!.browser).toContain(result!.names[0]!);
+  expect(requireValue(result).server).toContain("SERVER_ONLY_SECRET");
+  expect(requireValue(result).server).toContain("./server-helper");
+  expect(requireValue(result).server).toContain("queries.reports.list");
+  expect(requireValue(result).server).not.toContain("./widget");
+  expect(requireValue(result).server).not.toContain("tailorkit/client");
+  expect(requireValue(result).server).not.toContain("preact");
+  expect(requireValue(result).browser).not.toContain("SERVER_ONLY_SECRET");
+  expect(requireValue(result).browser).not.toContain("serverHelper");
+  expect(requireValue(result).browser).not.toContain("queries.reports.list");
+  expect(requireValue(result).browser).not.toContain('from "zod"');
+  expect(requireValue(result).browser).toContain("./widget");
+  expect(requireValue(result).browser).toContain("Shared label");
+  expect(requireValue(result).server).toContain("Shared label");
+  expect(requireValue(result).browser).toContain(
+    requireValue(requireValue(result).names[0])
+  );
 });
 
 it("extracts namespace defineView instances with inferred file routes", async () => {
@@ -82,7 +91,7 @@ it("keeps resolver references stable when component code or source positions cha
     `\n// changed\n${source.replace("Shared label", "Other label")}`,
     "/app"
   );
-  expect(second!.names).toEqual(first!.names);
+  expect(requireValue(second).names).toEqual(requireValue(first).names);
 });
 
 it("handles shadowed variables, destructuring defaults and Unicode source offsets", async () => {
@@ -93,8 +102,8 @@ it("handles shadowed variables, destructuring defaults and Unicode source offset
       "function inner(privateValue) { return privateValue; }\nconst { id = format('x') } = context;\nvoid inner(id);\nconst rows = await queries.reports.list"
     );
   const result = await extractInstances("/app/src/page.tsx", code, "/app");
-  expect(result!.server).toContain("Private 🐈");
-  expect(result!.browser).not.toContain("Private 🐈");
+  expect(requireValue(result).server).toContain("Private 🐈");
+  expect(requireValue(result).browser).not.toContain("Private 🐈");
 });
 
 it("rejects browser globals and captured view definitions in server resolvers", async () => {
@@ -135,7 +144,7 @@ it("rejects dynamic definitions rather than leaving a resolver in the browser", 
   await expect(
     extractInstances(
       "/app/page.tsx",
-      `function factory() { ${source.replaceAll(/^import .*$/gm, "").replace("export default view;", "return view;")} }\nimport { defineView as cv } from "tailorkit/client";`,
+      `function factory() { ${source.replaceAll(/^import .*$/gmu, "").replace("export default view;", "return view;")} }\nimport { defineView as cv } from "tailorkit/client";`,
       "/app"
     )
   ).rejects.toThrow("module scope");

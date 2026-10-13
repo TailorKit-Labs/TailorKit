@@ -1,4 +1,10 @@
+// oxlint-disable-next-line max-classes-per-file -- These related adapter or mock classes implement one runtime boundary.
+import { issueAppToken, APP_AUDIENCE } from "@tailorkit/api-utils/app-auth";
+import { AppError } from "@tailorkit/app/server";
 import { afterAll, beforeEach, expect, it, vi } from "vite-plus/test";
+
+import { AppInstallation } from "./installation";
+import worker from "./worker";
 
 vi.mock("cloudflare:workers", () => ({
   DurableObject: class {
@@ -10,18 +16,22 @@ vi.mock("cloudflare:workers", () => ({
       this.env = env;
     }
   },
+  // oxlint-disable-next-line typescript/no-extraneous-class -- The mock must be constructible because the runtime extends this base class.
   RpcTarget: class {},
+  // oxlint-disable-next-line typescript/no-extraneous-class -- The mock must be constructible because the runtime extends this base class.
   WorkerEntrypoint: class {},
 }));
 
-import { issueAppToken, APP_AUDIENCE } from "@tailorkit/api-utils/app-auth";
-import { AppError } from "@tailorkit/app/server";
-
-import { AppInstallation } from "./installation";
-import worker from "./worker";
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
 
 // Node requires a duplex hint for request streams; workerd does not.
 const NativeRequest = globalThis.Request;
+
 vi.stubGlobal(
   "Request",
   class extends NativeRequest {
@@ -50,17 +60,20 @@ const keys = await crypto.subtle.generateKey(
   true,
   ["sign", "verify"]
 );
+
 const signing = {
   audience: APP_AUDIENCE,
   issuer: "https://platform.test/api/platform",
   keyId: "host",
   privateKey: keys.privateKey,
 };
+
 const publicKeys = {
   keys: [
     { ...(await crypto.subtle.exportKey("jwk", keys.publicKey)), kid: "host" },
   ],
 };
+
 const identity = {
   appId: "app",
   appPublicId: "app000000001",
@@ -72,6 +85,7 @@ const identity = {
   subjectId: "user",
   toolUrl: "https://host.test/api/tailorkit/tools/execute",
 };
+
 const checksum = async (code: string) =>
   [
     ...new Uint8Array(
@@ -80,8 +94,11 @@ const checksum = async (code: string) =>
   ]
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
+
 const codeHash = await checksum("code");
+
 const nextHash = await checksum("new code");
+
 const deployment = {
   appId: "app",
   checksum: codeHash,
@@ -98,17 +115,20 @@ beforeEach(() => {
   source.code.mockResolvedValue("code");
 });
 
-function setup() {
+const setup = () => {
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => Response.json(await source.current()))
   );
   let version: string | undefined;
-  const facetQuery = vi.fn(async (_input: unknown, _identity: unknown) => ({
-    committed: false,
-    result: { ok: true, value: "result" },
-    tables: [],
-  }));
+  const facetQuery = vi.fn(
+    async (_input: unknown, _identity: unknown) =>
+      await {
+        committed: false,
+        result: { ok: true, value: "result" },
+        tables: [],
+      }
+  );
   const startup = vi.fn();
   const abort = vi.fn();
   const put = vi.fn((_key: string, value: string) => {
@@ -133,7 +153,8 @@ function setup() {
   });
 
   const routeFetch = vi.fn(
-    async (_request: Request) => new Response("forwarded", { status: 202 })
+    async (_request: Request) =>
+      await new Response("forwarded", { status: 202 })
   );
   const getByName = vi.fn((_name: string) => ({ fetch: routeFetch }));
   const idFromName = vi.fn(() => id);
@@ -142,8 +163,11 @@ function setup() {
     APP_RUNTIME_PUBLIC_KEYS: publicKeys,
     ASSET_DOMAIN: "tailorkit.app",
     BUNDLES: {
-      get: async () => ({ body: new Response(await source.code()).body! }),
+      get: async () => ({
+        body: requireValue(new Response(await source.code()).body),
+      }),
     },
+    // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
     DEPLOYMENTS: { get: vi.fn(async () => null), put: vi.fn(async () => {}) },
     LOADER: { get: load },
     PLATFORM_URL: signing.issuer,
@@ -165,13 +189,13 @@ function setup() {
     routeFetch,
     startup,
   };
-}
+};
 
-async function request(
+const request = async (
   overrides = {},
   path = "/rpc/queries",
   body = '{"json":{"name":"list"}}'
-) {
+) => {
   const session = await issueAppToken(signing, { ...identity, ...overrides });
 
   return new Request(`https://runtime.test${path}`, {
@@ -184,27 +208,32 @@ async function request(
     },
     method: "POST",
   });
-}
+};
 
 // Gateway tests use hosted paths; installation tests retain the private normalized /rpc paths.
-async function fetchWorker(request: Request, env: Env) {
-  const url = new URL(request.url);
+// oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
+const fetchWorker = async (requestValue: Request, env: Env) => {
+  const url = new URL(requestValue.url);
   if (url.hostname === "runtime.test" && url.pathname.startsWith("/rpc")) {
-    const token = request.headers.get("authorization")?.slice(7);
+    const token = requestValue.headers.get("authorization")?.slice(7);
     const payload = token
       ? JSON.parse(
-          atob(token.split(".")[1]!.replaceAll("-", "+").replaceAll("_", "/"))
+          atob(
+            requireValue(token.split(".")[1])
+              .replaceAll("-", "+")
+              .replaceAll("_", "/")
+          )
         )
       : identity;
     url.hostname = `${identity.publicTeamId}.tailorkit.app`;
     url.pathname = `/p/${payload.projectId}/a/${identity.appPublicId}${url.pathname}`;
   }
   return worker.fetch(
-    new Request(url, request),
+    new Request(url, requestValue),
     { ...env, ASSET_DOMAIN: env.ASSET_DOMAIN ?? "tailorkit.app" },
     {} as ExecutionContext
   );
-}
+};
 
 it("answers a preflight without accessing authentication or storage", async () => {
   const response = await fetchWorker(
@@ -234,14 +263,11 @@ it.each(["/rpc", "/rpc/query", "/rpc/unknown", "/rpc/queries/extra"])(
   "rejects unknown RPC route %s",
   async (path) => {
     const { env, getByName } = setup();
-    expect(
-      (
-        await fetchWorker(
-          new Request(`https://runtime.test${path}`, { method: "POST" }),
-          env
-        )
-      ).status
-    ).toBe(404);
+    const awaitedResult1 = await fetchWorker(
+      new Request(`https://runtime.test${path}`, { method: "POST" }),
+      env
+    );
+    expect(awaitedResult1.status).toBe(404);
     expect(getByName).not.toHaveBeenCalled();
   }
 );
@@ -251,7 +277,7 @@ it.each(["actions", "mutations", "queries"])(
   async (kind) => {
     const { env, routeFetch } = setup();
     await fetchWorker(await request({}, `/rpc/${kind}`), env);
-    expect(routeFetch.mock.calls[0]![0].url).toBe(
+    expect(requireValue(routeFetch.mock.calls[0])[0].url).toBe(
       `https://${identity.publicTeamId}.tailorkit.app/rpc/${kind}`
     );
   }
@@ -300,15 +326,15 @@ it("maps forwarding failures to a sanitized response with allowed-origin CORS", 
 it("accepts different signed projects and routes them to distinct installations", async () => {
   const { env, getByName } = setup();
 
-  expect((await fetchWorker(await request(), env)).status).toBe(202);
-  expect(
-    (
-      await fetchWorker(
-        await request({ projectId: "33333333-3333-4333-8333-333333333333" }),
-        env
-      )
-    ).status
-  ).toBe(202);
+  const awaitedResult2 = await fetchWorker(await request(), env);
+  expect(awaitedResult2.status).toBe(202);
+  const awaitedResult3 = await fetchWorker(
+    await request({
+      projectId: "33333333-3333-4333-8333-333333333333",
+    }),
+    env
+  );
+  expect(awaitedResult3.status).toBe(202);
   expect(getByName.mock.calls.map(([name]) => name)).toEqual([
     JSON.stringify([signing.issuer, identity.projectId, "app", "one"]),
     JSON.stringify([
@@ -349,7 +375,8 @@ it("loads isolated code, passes only the verified identity and caches a warm dep
     expect.objectContaining(identity)
   );
 
-  await (await installation.fetch(await request())).text();
+  const awaitedResult4 = await installation.fetch(await request());
+  await awaitedResult4.text();
 
   expect(source.current).toHaveBeenCalledTimes(2);
   expect(source.code).toHaveBeenCalledOnce();
@@ -360,7 +387,8 @@ it("loads isolated code, passes only the verified identity and caches a warm dep
 it("changes code on the same facet and accepts old client tokens without switching back", async () => {
   const fixtures = setup();
   const installation = new AppInstallation(fixtures.ctx, fixtures.env);
-  await (await installation.fetch(await request())).text();
+  const awaitedResult5 = await installation.fetch(await request());
+  await awaitedResult5.text();
 
   source.current.mockResolvedValue({
     ...deployment,
@@ -370,9 +398,10 @@ it("changes code on the same facet and accepts old client tokens without switchi
   });
   source.code.mockResolvedValue("new code");
 
-  await (
-    await installation.fetch(await request({ deploymentId: "v2" }))
-  ).text();
+  const awaitedResult6 = await installation.fetch(
+    await request({ deploymentId: "v2" })
+  );
+  await awaitedResult6.text();
 
   expect(fixtures.abort).toHaveBeenCalledOnce();
   expect(fixtures.abort).toHaveBeenCalledWith("app", "App deployment changed");
@@ -381,7 +410,8 @@ it("changes code on the same facet and accepts old client tokens without switchi
 
   const loads = source.code.mock.calls.length;
 
-  expect((await installation.fetch(await request())).status).toBe(200);
+  const awaitedResult7 = await installation.fetch(await request());
+  expect(awaitedResult7.status).toBe(200);
   expect(source.code).toHaveBeenCalledTimes(loads);
   expect(fixtures.abort).toHaveBeenCalledOnce();
 });
@@ -389,14 +419,16 @@ it("changes code on the same facet and accepts old client tokens without switchi
 it("keeps the running facet when replacement code fails verification", async () => {
   const fixtures = setup();
   const installation = new AppInstallation(fixtures.ctx, fixtures.env);
-  await (await installation.fetch(await request())).text();
+  const awaitedResult8 = await installation.fetch(await request());
+  await awaitedResult8.text();
 
   source.current.mockResolvedValue({ ...deployment, deploymentId: "v2" });
   source.code.mockRejectedValue(new AppError("NOT_FOUND", "Missing code"));
 
-  expect(
-    (await installation.fetch(await request({ deploymentId: "v2" }))).status
-  ).toBe(404);
+  const awaitedResult9 = await installation.fetch(
+    await request({ deploymentId: "v2" })
+  );
+  expect(awaitedResult9.status).toBe(404);
   expect(fixtures.abort).not.toHaveBeenCalled();
   expect(fixtures.put).toHaveBeenCalledOnce();
 });
@@ -405,13 +437,14 @@ it("rechecks authentication and rejects the wrong supervisor before looking up a
   const fixtures = setup();
   const installation = new AppInstallation(fixtures.ctx, fixtures.env);
 
-  expect(
-    (await installation.fetch(new Request("https://runtime.test/rpc/queries")))
-      .status
-  ).toBe(401);
+  const awaitedResult10 = await installation.fetch(
+    new Request("https://runtime.test/rpc/queries")
+  );
+  expect(awaitedResult10.status).toBe(401);
 
   fixtures.id.equals.mockReturnValue(false);
-  expect((await installation.fetch(await request())).status).toBe(403);
+  const awaitedResult11 = await installation.fetch(await request());
+  expect(awaitedResult11.status).toBe(403);
   expect(source.current).not.toHaveBeenCalled();
   expect(fixtures.load).not.toHaveBeenCalled();
 });
@@ -434,9 +467,12 @@ it("accepts metadata publication only with the shared service credential", async
       ),
       env
     );
-  expect((await publish("wrong")).status).toBe(401);
-  expect((await publish(env.RUNTIME_SERVICE_TOKEN, {})).status).toBe(400);
-  expect((await publish(env.RUNTIME_SERVICE_TOKEN)).status).toBe(204);
+  const awaitedResult12 = await publish("wrong");
+  expect(awaitedResult12.status).toBe(401);
+  const awaitedResult13 = await publish(env.RUNTIME_SERVICE_TOKEN, {});
+  expect(awaitedResult13.status).toBe(400);
+  const awaitedResult14 = await publish(env.RUNTIME_SERVICE_TOKEN);
+  expect(awaitedResult14.status).toBe(204);
   expect(env.DEPLOYMENTS.put).toHaveBeenCalledWith(
     JSON.stringify([deployment.projectId, deployment.appId]),
     expect.any(String),
@@ -444,7 +480,9 @@ it("accepts metadata publication only with the shared service credential", async
   );
   expect(
     JSON.parse(
-      (env.DEPLOYMENTS.put as ReturnType<typeof vi.fn>).mock.calls[0]![1]
+      requireValue(
+        (env.DEPLOYMENTS.put as ReturnType<typeof vi.fn>).mock.calls[0]
+      )[1]
     )
   ).toEqual(deployment);
   expect(getByName).not.toHaveBeenCalled();

@@ -24,16 +24,16 @@ const claimsSchema = identitySchema.extend({
   sub: z.string().min(1),
 });
 
-function signingKey(secret: string) {
+const signingKey = (secret: string) => {
   if (secret.length < 32) {
     throw new Error("AUTH_SECRET is required for agent tokens.");
   }
   return createHmac("sha256", secret)
     .update("tailorkit-agent-deploy-v1")
     .digest();
-}
+};
 
-function normalizePlatformUrl(value: string) {
+const normalizePlatformUrl = (value: string) => {
   const url = new URL(value);
   const loopback = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
   if (
@@ -46,38 +46,36 @@ function normalizePlatformUrl(value: string) {
     throw new Error("Invalid agent platform URL.");
   }
   return url.href.replace(/\/$/u, "");
-}
+};
 
 /** Issued only after the initiating CLI credential and selected app are authorized. */
-export async function issueAgentToken(
+export const issueAgentToken = async (
   identity: z.input<typeof identitySchema>,
   secret: string,
   platformUrl: string
-) {
+) => {
   const authorized = identitySchema.parse(identity);
   const now = Math.floor(Date.now() / 1000);
-  return (
-    new SignJWT({
-      ...authorized,
-      platformUrl: normalizePlatformUrl(platformUrl),
-    })
-      .setProtectedHeader({ alg: "HS256", typ: "tailorkit-agent+jwt" })
-      .setIssuer(issuer)
-      .setAudience(audience)
-      // CLI approval currently records no user subject; identify its credential explicitly.
-      .setSubject(`cli-token:${authorized.cliTokenId}`)
-      .setJti(randomUUID())
-      .setIssuedAt(now)
-      .setExpirationTime(now + lifetimeSeconds)
-      .sign(signingKey(secret))
-  );
-}
+  return await new SignJWT({
+    ...authorized,
+    platformUrl: normalizePlatformUrl(platformUrl),
+  })
+    .setProtectedHeader({ alg: "HS256", typ: "tailorkit-agent+jwt" })
+    .setIssuer(issuer)
+    .setAudience(audience)
+    // CLI approval currently records no user subject; identify its credential explicitly.
+    .setSubject(`cli-token:${authorized.cliTokenId}`)
+    .setJti(randomUUID())
+    .setIssuedAt(now)
+    .setExpirationTime(now + lifetimeSeconds)
+    .sign(signingKey(secret));
+};
 
-export async function verifyAgentToken(
+export const verifyAgentToken = async (
   token: string,
   secret: string,
   platformUrl: string
-) {
+) => {
   const { payload } = await jwtVerify(token, signingKey(secret), {
     algorithms: ["HS256"],
     audience,
@@ -96,6 +94,6 @@ export async function verifyAgentToken(
     throw new Error("Invalid agent token claims.");
   }
   return claims;
-}
+};
 
 export type AgentToken = Awaited<ReturnType<typeof verifyAgentToken>>;

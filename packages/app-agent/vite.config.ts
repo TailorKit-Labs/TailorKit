@@ -14,12 +14,12 @@ export default defineConfig({
     minify: false,
     plugins: [
       {
-        name: "instructions-raw",
         load(id) {
           if (id.endsWith(".md?raw")) {
-            return `export default ${JSON.stringify(readFileSync(id.slice(0, -4), "utf8"))};`;
+            return `export default ${JSON.stringify(readFileSync(id.slice(0, -4), "utf-8"))};`;
           }
         },
+        name: "instructions-raw",
       },
     ],
     sourcemap: true,

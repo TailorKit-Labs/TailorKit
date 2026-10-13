@@ -29,7 +29,7 @@ export interface S3CompatibleStorageOptions {
   forcePathStyle?: boolean;
 }
 
-function createS3Client(options: S3CompatibleStorageOptions): S3Client {
+const createS3Client = (options: S3CompatibleStorageOptions): S3Client => {
   const config: S3ClientConfig = {
     endpoint: options.endpoint,
     forcePathStyle: options.forcePathStyle ?? Boolean(options.endpoint),
@@ -44,11 +44,11 @@ function createS3Client(options: S3CompatibleStorageOptions): S3Client {
   }
 
   return new S3Client(config);
-}
+};
 
-export function createS3CompatibleStorage(
+export const createS3CompatibleStorage = (
   options: S3CompatibleStorageOptions
-): Storage<"s3"> {
+): Storage<"s3"> => {
   const client = createS3Client(options);
 
   return {
@@ -66,9 +66,9 @@ export function createS3CompatibleStorage(
           "storage.create_download_url",
           {
             attributes: {
-              "tailorkit.package": "storage",
-              "storage.type": "s3",
               "storage.expires_seconds": input.expiresInSeconds ?? 300,
+              "storage.type": "s3",
+              "tailorkit.package": "storage",
             },
           },
           () =>
@@ -83,33 +83,14 @@ export function createS3CompatibleStorage(
     ): Promise<CreateUploadUrlOutput> => {
       const command = new PutObjectCommand({
         Bucket: options.bucket,
-        Key: input.key,
         ChecksumSHA256: input.checksumSha256,
-        ContentType: input.contentType,
         ContentEncoding: input.contentEncoding,
+        ContentType: input.contentType,
+        Key: input.key,
         Metadata: input.metadata,
       });
 
       return {
-        key: input.key,
-        uploadUrl: await withSpan(
-          "storage.create_upload_url",
-          {
-            attributes: {
-              "tailorkit.package": "storage",
-              "storage.type": "s3",
-              "storage.expires_seconds": input.expiresInSeconds ?? 300,
-            },
-          },
-          () =>
-            getSignedUrl(client, command, {
-              expiresIn: input.expiresInSeconds ?? 300,
-              // The upload contract sends this checksum as a header. Keep it
-              // signed there instead of also hoisting it into the query string.
-              unhoistableHeaders: new Set(["x-amz-checksum-sha256"]),
-              signableHeaders: new Set(["content-type", "content-encoding"]),
-            })
-        ),
         headers: {
           ...(input.contentType ? { "content-type": input.contentType } : {}),
           ...(input.contentEncoding
@@ -119,13 +100,34 @@ export function createS3CompatibleStorage(
             ? { "x-amz-checksum-sha256": input.checksumSha256 }
             : {}),
         },
+        key: input.key,
+        uploadUrl: await withSpan(
+          "storage.create_upload_url",
+          {
+            attributes: {
+              "storage.expires_seconds": input.expiresInSeconds ?? 300,
+              "storage.type": "s3",
+              "tailorkit.package": "storage",
+            },
+          },
+          () =>
+            getSignedUrl(client, command, {
+              expiresIn: input.expiresInSeconds ?? 300,
+
+              signableHeaders: new Set(["content-type", "content-encoding"]),
+
+              // The upload contract sends this checksum as a header. Keep it
+              // signed there instead of also hoisting it into the query string.
+              unhoistableHeaders: new Set(["x-amz-checksum-sha256"]),
+            })
+        ),
       };
     },
     delete: async (input: DeleteObjectInput): Promise<void> => {
       await withSpan(
         "storage.delete",
         {
-          attributes: { "tailorkit.package": "storage", "storage.type": "s3" },
+          attributes: { "storage.type": "s3", "tailorkit.package": "storage" },
         },
         () =>
           client.send(
@@ -140,7 +142,7 @@ export function createS3CompatibleStorage(
       const result = await withSpan(
         "storage.head",
         {
-          attributes: { "tailorkit.package": "storage", "storage.type": "s3" },
+          attributes: { "storage.type": "s3", "tailorkit.package": "storage" },
         },
         () =>
           client.send(
@@ -153,15 +155,15 @@ export function createS3CompatibleStorage(
       );
 
       return {
-        key: input.key,
-        contentType: result.ContentType,
+        checksumSha256: result.ChecksumSHA256,
         contentEncoding: result.ContentEncoding,
         contentLength: result.ContentLength,
-        checksumSha256: result.ChecksumSHA256,
+        contentType: result.ContentType,
         etag: result.ETag,
+        key: input.key,
         metadata: result.Metadata,
       };
     },
     type: "s3",
   };
-}
+};

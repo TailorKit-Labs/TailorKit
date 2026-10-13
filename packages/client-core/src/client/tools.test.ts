@@ -34,15 +34,16 @@ it("binds client tool calls to the installation and validates transformed inputs
   const client = createEndpointClient({
     baseUrl: "https://product.test/api/tailorkit/",
     contract,
+    // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
     fetch: async (_url, options) => {
       bodies.push(JSON.parse(String(options?.body)));
       return Response.json({
-        subjectId: identity.subjectId,
-        token: "verified-token",
-        url: "https://runtime.test/rpc",
-        toolUrl: identity.toolUrl,
         expiresAt: identity.expiresAt,
         identity,
+        subjectId: identity.subjectId,
+        token: "verified-token",
+        toolUrl: identity.toolUrl,
+        url: "https://runtime.test/rpc",
       });
     },
     tools: { ui: { select: implementation } },
@@ -66,7 +67,10 @@ it("binds client tool calls to the installation and validates transformed inputs
     context: { identity, scope: identity.scope },
     input: 4,
   });
-  await expect(bridge.client("data.read")).rejects.toThrow("Not a client tool");
+  // oxlint-disable-next-line unicorn/no-useless-undefined -- The bridge input argument is required.
+  await expect(bridge.client("data.read", undefined)).rejects.toThrow(
+    "Not a client tool"
+  );
   await expect(bridge.client("ui.select", 1)).rejects.toThrow(
     "Invalid tool payload"
   );
@@ -81,9 +85,19 @@ it("discards a pending credential when the session cache is cleared", async () =
     baseUrl: "https://product.test/api/tailorkit/",
     contract,
     fetch: () =>
-      new Promise((resolve) => {
-        complete = resolve;
-      }),
+      (() => {
+        const {
+          promise: pendingPromise,
+          resolve,
+          reject: rejectPending,
+        } = Promise.withResolvers<Response>();
+        try {
+          complete = resolve;
+        } catch (error) {
+          rejectPending(error);
+        }
+        return pendingPromise;
+      })(),
   });
   const pending = client.getToolBridge(app).session("data.read");
   client.clearSessions();

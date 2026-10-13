@@ -3,8 +3,10 @@ import { readFileSync } from "node:fs";
 import { decodeJwt, decodeProtectedHeader } from "jose";
 import { z } from "zod";
 
+import { readAgentEnvironment } from "./env";
+
 /** Reject insecure platform routes before a credential can be attached. */
-export function validatePlatformUrl(value: string) {
+export const validatePlatformUrl = (value: string) => {
   const url = new URL(value);
   const loopback = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
   if (
@@ -19,7 +21,7 @@ export function validatePlatformUrl(value: string) {
     );
   }
   return url.href.replace(/\/$/u, "");
-}
+};
 
 const agentClaimsSchema = z.object({
   appId: z.string().min(1),
@@ -36,15 +38,16 @@ const agentClaimsSchema = z.object({
 });
 
 /** Decode routing data only. The platform verifies the signature and authorization. */
-export function getAgentAuth() {
-  let token = process.env.TAILORKIT_AGENT_TOKEN;
+export const getAgentAuth = () => {
+  const environment = readAgentEnvironment();
+  let token = environment.TAILORKIT_AGENT_TOKEN;
   if (
     token === undefined &&
-    process.env.TAILORKIT_AGENT_TOKEN_FILE !== undefined
+    environment.TAILORKIT_AGENT_TOKEN_FILE !== undefined
   ) {
     try {
       token = readFileSync(
-        process.env.TAILORKIT_AGENT_TOKEN_FILE,
+        environment.TAILORKIT_AGENT_TOKEN_FILE,
         "utf-8"
       ).trim();
     } catch {
@@ -52,12 +55,12 @@ export function getAgentAuth() {
     }
   }
   if (token === undefined) {
-    return undefined;
+    return;
   }
   try {
     const header = decodeProtectedHeader(token);
     if (header.alg !== "HS256" || header.typ !== "tailorkit-agent+jwt") {
-      throw new Error();
+      throw new Error("Invalid credential.");
     }
     const claims = agentClaimsSchema.parse(decodeJwt(token));
     const now = Math.floor(Date.now() / 1000);
@@ -67,7 +70,7 @@ export function getAgentAuth() {
       claims.exp <= claims.iat ||
       claims.exp - claims.iat > 3600
     ) {
-      throw new Error();
+      throw new Error("Invalid credential.");
     }
     if (claims.exp <= now) {
       throw new Error("Agent authorization expired. Start a new agent turn.");
@@ -82,6 +85,6 @@ export function getAgentAuth() {
       { cause: error }
     );
   }
-}
+};
 
 export type AgentAuth = NonNullable<ReturnType<typeof getAgentAuth>>;

@@ -6,14 +6,14 @@ import { z } from "zod";
 
 import { createActionExecution } from "./actions";
 import type { ActionCalls } from "./actions";
+import type { Persistence } from "./database/driver";
 import { createExecution, invocationSchema } from "./execution";
 
-function actionRunner(app: AppDefinition, calls: ActionCalls) {
+const actionRunner = (app: AppDefinition, calls: ActionCalls) => {
   const run = createActionExecution(app);
   return (input: Invocation, identity: Identity, signal?: AbortSignal) =>
     run(input, identity, calls, signal);
-}
-import type { Persistence } from "./database/driver";
+};
 
 const identity = {
   appId: "a",
@@ -25,6 +25,7 @@ const identity = {
   subjectId: "u",
   toolUrl: "https://host.test/api/tailorkit/tools/execute",
 };
+
 const persistence: Persistence = {
   execute: () => ({ changes: 0, columns: [], rows: [] }),
   transaction: (run) => run(),
@@ -162,6 +163,7 @@ it("validates optional output schemas for synchronous and async actions", async 
   expect(await run({ name: "valid" }, identity)).toBe(10);
   expect(await run({ name: "transformed" }, identity)).toBe(4);
   for (const name of ["invalid", "invalidAsync"]) {
+    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     await expect(run({ name }, identity)).rejects.toMatchObject({
       code: "INTERNAL_SERVER_ERROR",
       message: "Invalid function result",

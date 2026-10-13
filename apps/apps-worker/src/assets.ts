@@ -10,8 +10,9 @@ import {
 } from "@tailorkit/asset-delivery";
 import type { AssetIdentity } from "@tailorkit/asset-delivery";
 import { Effect } from "effect";
+import { catch as catchEffect } from "effect/Effect";
 
-function downstreamResponse(response: Response, request: Request) {
+const downstreamResponse = (response: Response, request: Request) => {
   const headers = new Headers(response.headers);
   // Keep browser reuse bounded when a deployment is removed.
   headers.set("Cache-Control", "private, max-age=3600");
@@ -31,15 +32,15 @@ function downstreamResponse(response: Response, request: Request) {
     headers,
     status: response.status,
   });
-}
+};
 
-function loadAsset(
+const loadAsset = (
   request: Request,
   identity: AssetIdentity,
   env: Env,
   ctx: ExecutionContext
-) {
-  return Effect.gen(function* () {
+) =>
+  Effect.gen(function* loadAssetValue() {
     // Node/DOM ambient types omit Cloudflare's default edge cache.
     const edgeCache = caches as CacheStorage & { readonly default: Cache };
     // Cache the stored representation, then negotiate for each downstream request.
@@ -48,7 +49,10 @@ function loadAsset(
     });
     const cached = yield* Effect.tryPromise(() =>
       edgeCache.default.match(cacheKey)
-    ).pipe(Effect.catch(() => Effect.succeed()));
+    ).pipe(
+      // oxlint-disable-next-line unicorn/no-useless-undefined -- Effect.succeed requires a value argument.
+      catchEffect(() => Effect.succeed(undefined))
+    );
     if (cached) {
       return downstreamResponse(cached, request);
     }
@@ -99,7 +103,7 @@ function loadAsset(
         })
       )
     ).pipe(
-      Effect.catch(() =>
+      catchEffect(() =>
         Effect.sync(() => {
           console.error(
             JSON.stringify({ message: "Asset cache write failed" })
@@ -110,7 +114,6 @@ function loadAsset(
     yield* Effect.sync(() => ctx.waitUntil(Effect.runPromise(cacheWrite)));
     return downstreamResponse(response, request);
   });
-}
 
 export default {
   fetch(request, env, ctx) {

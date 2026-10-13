@@ -46,11 +46,14 @@ const server = createServer({
 // @ts-expect-error the public base URL is required
 createServer({ contract, tools: implementations });
 createServer({
-  baseUrl: "https://example.com/api/tailorkit",
-  contract,
-  tools: implementations,
   // @ts-expect-error authentication belongs in handler options
   authenticate: () => null,
+
+  baseUrl: "https://example.com/api/tailorkit",
+
+  contract,
+
+  tools: implementations,
 });
 // @ts-expect-error handler authentication is required
 server.handler(new Request("https://example.com/api/tailorkit/apps"));

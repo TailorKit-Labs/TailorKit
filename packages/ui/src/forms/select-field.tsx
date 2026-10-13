@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/select";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../components/tooltip";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../components/tooltip";
 import { formatFieldErrors } from "./field-errors";
 
 const emptyErrors: unknown[] = [];
@@ -35,7 +35,7 @@ export interface SelectFieldProps {
   value?: string;
 }
 
-export function SelectField({
+export const SelectField = ({
   allowDeselect = false,
   description,
   disabled,
@@ -48,7 +48,7 @@ export function SelectField({
   placeholder,
   required,
   value,
-}: SelectFieldProps) {
+}: SelectFieldProps) => {
   const errorMessage = formatFieldErrors(errors);
   const isError = errorMessage.length > 0;
   const isEmpty = items.length === 0;
@@ -78,7 +78,7 @@ export function SelectField({
               placeholder={isEmpty ? emptyPlaceholder : placeholder}
             />
           </TooltipTrigger>
-          <TooltipContent>{emptyTooltip}</TooltipContent>
+          <TooltipPopup>{emptyTooltip}</TooltipPopup>
         </Tooltip>
         <SelectPopup>
           {items.map(({ label: itemLabel, value: itemValue }) => (
@@ -109,4 +109,4 @@ export function SelectField({
       {isError && <FieldError>{errorMessage}</FieldError>}
     </Field>
   );
-}
+};

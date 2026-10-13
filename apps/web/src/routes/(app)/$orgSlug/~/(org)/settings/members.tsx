@@ -7,7 +7,7 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { useParams, createFileRoute } from "@tanstack/react-router";
 import { SearchIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
@@ -19,30 +19,10 @@ import type { MemberRow } from "#components/members/members-table";
 import { PageLayout } from "#components/page-layout";
 import { client, orpc } from "#lib/orpc";
 
-export const Route = createFileRoute(
-  "/(app)/$orgSlug/~/(org)/settings/members"
-)({
-  component: OrgSettingsMembers,
-  loader: async ({ context, params }) => {
-    await Promise.all([
-      context.queryClient.query(
-        context.orpc.org.getMembers.queryOptions({
-          input: { orgSlug: params.orgSlug },
-        })
-      ),
-      context.queryClient
-        .query(
-          context.orpc.org.getOrgInvitations.queryOptions({
-            input: { orgSlug: params.orgSlug },
-          })
-        )
-        .catch(() => null),
-    ]);
-  },
-});
-
-function OrgSettingsMembers() {
-  const { orgSlug } = Route.useParams();
+const OrgSettingsMembers = () => {
+  const { orgSlug } = useParams({
+    from: "/(app)/$orgSlug/~/(org)/settings/members",
+  });
   const queryClient = useQueryClient();
   const { data: session } = useQuery(orpc.user.getSession.queryOptions());
   const { data: members } = useSuspenseQuery(
@@ -61,11 +41,11 @@ function OrgSettingsMembers() {
 
   const removeMutation = useMutation({
     mutationFn: (memberId: string) =>
-      client.org.removeMember({ orgSlug, memberId }),
+      client.org.removeMember({ memberId, orgSlug }),
     onError: (err: unknown) => {
       const message =
         err instanceof Error ? err.message : "Failed to remove member";
-      toastManager.add({ title: "Error", description: message, type: "error" });
+      toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(
@@ -78,14 +58,14 @@ function OrgSettingsMembers() {
   const resendMutation = useMutation({
     mutationFn: ({ email, role }: { email: string; role: string }) =>
       client.org.inviteMember({
-        orgSlug,
         email,
+        orgSlug,
         role: role as "member" | "admin",
       }),
     onError: (err: unknown) => {
       const message =
         err instanceof Error ? err.message : "Failed to resend invitation";
-      toastManager.add({ title: "Error", description: message, type: "error" });
+      toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: () => {
       toastManager.add({ title: "Invitation resent", type: "success" });
@@ -94,11 +74,11 @@ function OrgSettingsMembers() {
 
   const revokeMutation = useMutation({
     mutationFn: (invitationId: string) =>
-      client.org.revokeInvitation({ orgSlug, invitationId }),
+      client.org.revokeInvitation({ invitationId, orgSlug }),
     onError: (err: unknown) => {
       const message =
         err instanceof Error ? err.message : "Failed to revoke invitation";
-      toastManager.add({ title: "Error", description: message, type: "error" });
+      toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(
@@ -215,4 +195,26 @@ function OrgSettingsMembers() {
       </Tabs>
     </PageLayout>
   );
-}
+};
+
+export const Route = createFileRoute(
+  "/(app)/$orgSlug/~/(org)/settings/members"
+)({
+  component: OrgSettingsMembers,
+  loader: async ({ context, params }) => {
+    await Promise.all([
+      context.queryClient.query(
+        context.orpc.org.getMembers.queryOptions({
+          input: { orgSlug: params.orgSlug },
+        })
+      ),
+      context.queryClient
+        .query(
+          context.orpc.org.getOrgInvitations.queryOptions({
+            input: { orgSlug: params.orgSlug },
+          })
+        )
+        .catch(() => null),
+    ]);
+  },
+});

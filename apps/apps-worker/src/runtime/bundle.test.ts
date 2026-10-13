@@ -8,17 +8,17 @@ const application = {
   migrations: [],
   runtimeManifest: { apiVersion: 1, requires: ["database", "actions"] },
 };
-function persistence() {
+const persistence = () => {
   const transactions = vi.fn();
   return {
-    execute: vi.fn(() => ({ rows: [], columns: [], changes: 0 })),
+    execute: vi.fn(() => ({ changes: 0, columns: [], rows: [] })),
     transaction<T>(run: () => T): T {
       transactions();
       return run();
     },
     transactions,
   };
-}
+};
 it.each([
   [],
   ["database"],

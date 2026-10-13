@@ -17,8 +17,8 @@ const bundle = z.object({
   ),
   migrations: z.array(
     z.object({
-      id: z.string(),
       hash: z.string(),
+      id: z.string(),
       statements: z.array(z.string()),
     })
   ),
@@ -35,10 +35,10 @@ const supportedFeatures = new Set([
 ]);
 
 /** Check compatibility before creating tables or applying any application migrations. */
-export function createApplicationExecution(
+export const createApplicationExecution = (
   application: unknown,
   persistence: Persistence
-) {
+) => {
   const parsed = bundle.safeParse(application);
   if (!parsed.success) {
     throw new AppError(
@@ -63,4 +63,4 @@ export function createApplicationExecution(
     );
   }
   return createExecution(module.default, persistence, module.migrations);
-}
+};

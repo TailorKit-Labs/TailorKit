@@ -1,40 +1,39 @@
-export function formatFieldErrors(errors: unknown[] = []): string {
-  return errors
-    .flatMap((error) => {
-      if (typeof error === "string") {
-        return [error];
+export const formatFieldErrors = (issueors: unknown[] = []): string =>
+  issueors
+    .flatMap((issue) => {
+      if (typeof issue === "string") {
+        return [issue];
       }
 
       if (
-        typeof error === "object" &&
-        error !== null &&
-        "message" in error &&
-        typeof error.message === "string"
+        typeof issue === "object" &&
+        issue !== null &&
+        "message" in issue &&
+        typeof issue.message === "string"
       ) {
-        return [error.message];
+        return [issue.message];
       }
 
       if (
-        typeof error === "object" &&
-        error !== null &&
-        "issues" in error &&
-        Array.isArray(error.issues)
+        typeof issue === "object" &&
+        issue !== null &&
+        "issues" in issue &&
+        Array.isArray(issue.issues)
       ) {
-        return [formatFieldErrors(error.issues)];
+        return [formatFieldErrors(issue.issues)];
       }
 
       if (
-        typeof error === "object" &&
-        error !== null &&
-        "errors" in error &&
-        Array.isArray(error.errors)
+        typeof issue === "object" &&
+        issue !== null &&
+        "issueors" in issue &&
+        Array.isArray(issue.issueors)
       ) {
-        return [formatFieldErrors(error.errors)];
+        return [formatFieldErrors(issue.issueors)];
       }
 
-      return [String(error)];
+      return [String(issue)];
     })
-    .map((error) => error.trim())
+    .map((formattedMessage) => formattedMessage.trim())
     .filter(Boolean)
     .join(", ");
-}

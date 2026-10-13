@@ -28,34 +28,20 @@ import { PageLayout } from "#components/page-layout";
 import { isOrgCreationManaged } from "#lib/org-creation";
 import { orpc } from "#lib/orpc";
 
-export const Route = createFileRoute("/(app)/account/organizations")({
-  component: OrganizationsPage,
-  loader: async ({ context }) => {
-    await Promise.all([
-      context.queryClient.query(context.orpc.user.getOrgs.queryOptions()),
-      context.queryClient.query(
-        context.orpc.user.getPendingInvitations.queryOptions()
-      ),
-    ]);
-  },
-});
-
-function orgInitials(name: string) {
-  return name
+const orgInitials = (name: string) =>
+  name
     .split(" ")
     .map((word) => word[0])
     .slice(0, 2)
     .join("")
     .toUpperCase();
-}
 
-function formatDate(value: Date | string) {
-  return new Intl.DateTimeFormat(undefined, {
+const formatDate = (value: Date | string) =>
+  new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
   }).format(new Date(value));
-}
 
-function OrganizationsPage() {
+const OrganizationsPage = () => {
   const navigate = useNavigate();
   const { data: orgs } = useSuspenseQuery(orpc.user.getOrgs.queryOptions());
   const { data: invitations } = useSuspenseQuery(
@@ -205,4 +191,16 @@ function OrganizationsPage() {
       </PageLayout>
     </AccountLayout>
   );
-}
+};
+
+export const Route = createFileRoute("/(app)/account/organizations")({
+  component: OrganizationsPage,
+  loader: async ({ context }) => {
+    await Promise.all([
+      context.queryClient.query(context.orpc.user.getOrgs.queryOptions()),
+      context.queryClient.query(
+        context.orpc.user.getPendingInvitations.queryOptions()
+      ),
+    ]);
+  },
+});

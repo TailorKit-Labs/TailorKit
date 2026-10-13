@@ -13,25 +13,27 @@ export interface ContractTool<
   readonly $tailorkitToolDefinition: true;
   readonly kind: K;
   readonly definition: { input?: I; output?: O };
-  input<N extends Schema>(schema: N): ContractTool<K, N, O>;
-  output<N extends Schema>(schema: N): ContractTool<K, I, N>;
+  input: <N extends Schema>(schema: N) => ContractTool<K, N, O>;
+  output: <N extends Schema>(schema: N) => ContractTool<K, I, N>;
 }
 export interface ContractTools {
   [name: string]: ContractTool | ContractTools;
 }
-function build<
+const build = <
   K extends ToolKind,
   I extends Schema | undefined,
   O extends Schema | undefined,
->(kind: K, input?: I, output?: O): ContractTool<K, I, O> {
-  return {
-    $tailorkitToolDefinition: true,
-    definition: { input, output },
-    input: (schema) => build(kind, schema, output),
-    kind,
-    output: (schema) => build(kind, input, schema),
-  };
-}
+>(
+  kind: K,
+  input?: I,
+  output?: O
+): ContractTool<K, I, O> => ({
+  $tailorkitToolDefinition: true,
+  definition: { input, output },
+  input: (schema) => build(kind, schema, output),
+  kind,
+  output: (schema) => build(kind, input, schema),
+});
 export const tool = {
   client: () => build<"client", undefined, undefined>("client"),
   server: () => build<"server", undefined, undefined>("server"),
@@ -46,7 +48,7 @@ export type InferToolOutput<T> =
   T extends ContractTool<ToolKind, Schema | undefined, infer O>
     ? O extends Schema
       ? StandardSchemaV1.InferOutput<O>
-      : void
+      : ReturnType<() => void>
     : never;
 export interface ToolIdentity {
   readonly subjectId?: string;
@@ -65,10 +67,10 @@ export interface ToolContext {
 export interface ToolImplementationTree {
   [name: string]:
     | {
-        bivarianceHack(options: {
+        bivarianceHack: (options: {
           input: never;
           context: ToolContext;
-        }): unknown;
+        }) => unknown;
       }["bivarianceHack"]
     | ToolImplementationTree;
 }
@@ -96,8 +98,14 @@ export type ToolImplementations<
               : undefined;
             context: ToolContext;
           }) =>
-            | (O extends Schema ? StandardSchemaV1.InferInput<O> : void)
-            | Promise<O extends Schema ? StandardSchemaV1.InferInput<O> : void>
+            | (O extends Schema
+                ? StandardSchemaV1.InferInput<O>
+                : ReturnType<() => void>)
+            | Promise<
+                O extends Schema
+                  ? StandardSchemaV1.InferInput<O>
+                  : ReturnType<() => void>
+              >
         : ToolImplementations<Extract<T[N], ContractTools>, K>;
     };
 export interface ToolCallerTree {
@@ -125,10 +133,10 @@ export type ToolCallers<
           ) => Promise<InferToolOutput<T[N]>>
         : ToolCallers<Extract<T[N], ContractTools>, K>;
     };
-export function flattenTools(
+export const flattenTools = (
   tools: ContractTools,
   prefix = ""
-): Map<string, ContractTool> {
+): Map<string, ContractTool> => {
   const result = new Map<string, ContractTool>();
   for (const [name, value] of Object.entries(tools)) {
     if (
@@ -147,17 +155,18 @@ export function flattenTools(
     } else {
       for (const [key, leaf] of flattenTools(
         value as ContractTools,
-        path + "."
-      ))
+        `${path}.`
+      )) {
         result.set(key, leaf);
+      }
     }
   }
   return result;
-}
-export function serializeTools(
+};
+export const serializeTools = (
   tools: ContractTools,
   serializer?: SchemaSerializer
-): TailorKitSchemaSpec["tools"] {
+): TailorKitSchemaSpec["tools"] => {
   const result: TailorKitSchemaSpec["tools"] = {};
   for (const [name, value] of Object.entries(tools)) {
     if (!value) {
@@ -175,11 +184,11 @@ export function serializeTools(
     }
   }
   return result;
-}
-export async function validateToolValue(
+};
+export const validateToolValue = async (
   schema: Schema | undefined,
   value: unknown
-): Promise<unknown> {
+): Promise<unknown> => {
   if (!schema) {
     if (value !== undefined) {
       throw new Error("Tool expects no value");
@@ -191,4 +200,4 @@ export async function validateToolValue(
     throw new Error("Invalid tool payload");
   }
   return result.value;
-}
+};

@@ -105,9 +105,8 @@ cli
   .action(async (options: Record<string, unknown>) => {
     intro(pc.bold("TailorKit"));
     try {
-      const timeoutSeconds = Number.parseInt(
-        String(options.timeout ?? "1800"),
-        10
+      const timeoutSeconds = Math.trunc(
+        Number(String(options.timeout ?? "1800"))
       );
       if (!Number.isInteger(timeoutSeconds) || timeoutSeconds <= 0) {
         throw new Error("--timeout must be a positive integer.");

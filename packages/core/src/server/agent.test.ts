@@ -11,10 +11,17 @@ import { z } from "zod";
 import { createTailorKitClient } from "./client";
 import { createTailorKitServer } from "./handler";
 
+const require = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const messages = [
   {
     id: "user-1",
-    parts: [{ type: "text" as const, text: "Build an app" }],
+    parts: [{ text: "Build an app", type: "text" as const }],
     role: "user" as const,
   },
 ];
@@ -42,9 +49,9 @@ const events: AgentChunk[] = [
   { type: "finish" },
 ];
 
-function setup(
+const setup = (
   options: { events?: AgentChunk[]; status?: number; scopeName?: string } = {}
-) {
+) => {
   const requests: Request[] = [];
   const platform = new OpenAPIHandler({
     chat: os
@@ -69,8 +76,9 @@ function setup(
             },
           });
         }
-        if (options.status)
+        if (options.status) {
           return new Response("Unavailable", { status: options.status });
+        }
         const result = await platform.handle(request, {
           prefix: "/api/platform",
         });
@@ -86,12 +94,14 @@ function setup(
   });
   const client = createTailorKitClient({
     fetch: async (input, init) =>
-      server.handler(new Request(input, init), { authenticate: () => null }),
+      await server.handler(new Request(input, init), {
+        authenticate: () => null,
+      }),
     headers: { authorization: "Bearer cli-token" },
     url: "https://host.test/api/tailorkit",
   });
   return { client, requests, server };
-}
+};
 
 describe("host agent relay", () => {
   it("verifies CLI auth, uses the host project key, and round trips streamed events", async () => {
@@ -110,7 +120,9 @@ describe("host agent relay", () => {
         "Bearer host-project-key"
       );
     }
-    const chat = requests.find((request) => request.url.endsWith("/chat"))!;
+    const chat = require(
+      requests.find((request) => request.url.endsWith("/chat"))
+    );
     expect(await chat.json()).toEqual({
       appId,
       deployToken: "cli-token",
@@ -139,7 +151,9 @@ describe("host agent relay", () => {
     })) {
       /* consume */
     }
-    const chat = requests.find((request) => request.url.endsWith("/chat"))!;
+    const chat = require(
+      requests.find((request) => request.url.endsWith("/chat"))
+    );
     expect(await chat.json()).toEqual({
       appId,
       deployToken: "cli-token",
@@ -178,7 +192,9 @@ describe("host agent relay", () => {
     const { server, requests } = setup();
     const client = createTailorKitClient({
       fetch: async (input, init) =>
-        server.handler(new Request(input, init), { authenticate: () => null }),
+        await server.handler(new Request(input, init), {
+          authenticate: () => null,
+        }),
       url: "https://host.test/api/tailorkit",
     });
     await expect(

@@ -17,6 +17,7 @@ const replacements = [
   ],
   [
     "    record[key] = value;\n  }\n\n  let config",
+    // oxlint-disable-next-line no-template-curly-in-string -- This literal is emitted as source code; interpolation belongs to the generated function.
     '    if (record === null || typeof record !== "object" || Array.isArray(record)) {\n      throw new Error(`Cannot map fields into a non-object ${slot} parameter.`);\n    }\n    record[key] = value;\n  }\n\n  function writeRawSlot(slot: Slot, value: unknown): void {\n    if (slot === "body") {\n      if (bodyMode === "mapped") {\n        throw new Error("Cannot mix raw and mapped body parameters.");\n      }\n      bodyMode = "raw";\n      params.body = value;\n      return;\n    }\n    params[slot] = value as Record<string, unknown>;\n  }\n\n  let config',
   ],
   ["        params.body = arg;", '        writeRawSlot("body", arg);'],

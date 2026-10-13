@@ -2,7 +2,9 @@ import { resolveTheme } from "@tailorkit/core/primitives/theme";
 import type { TailorKitTheme } from "@tailorkit/core/schema";
 
 type Responsive<T> = T | Record<string, T | undefined>;
+
 type PrimitiveValue = number | string;
+
 export type PrimitiveProps = Record<string, unknown>;
 
 const tokenGroups = [
@@ -48,6 +50,29 @@ const toResponsiveEntries = <T>(
   return Object.entries(value as Record<string, T | undefined>).filter(
     (entry): entry is [string, T] => entry[1] !== undefined
   );
+};
+
+const toFlexAlignment = (value: PrimitiveValue): string => {
+  if (value === "start") {
+    return "flex-start";
+  }
+  if (value === "end") {
+    return "flex-end";
+  }
+  return String(value);
+};
+
+const toFlexJustification = (value: PrimitiveValue): string => {
+  if (value === "start") {
+    return "flex-start";
+  }
+  if (value === "end") {
+    return "flex-end";
+  }
+  if (value === "between") {
+    return "space-between";
+  }
+  return String(value);
 };
 
 const declarationsForProp = (prop: string, value: PrimitiveValue): string[] => {
@@ -114,29 +139,6 @@ const declarationsForProp = (prop: string, value: PrimitiveValue): string[] => {
     return [`flex-wrap: ${toCssValue("raw", value)};`];
   }
   return [];
-};
-
-const toFlexAlignment = (value: PrimitiveValue): string => {
-  if (value === "start") {
-    return "flex-start";
-  }
-  if (value === "end") {
-    return "flex-end";
-  }
-  return String(value);
-};
-
-const toFlexJustification = (value: PrimitiveValue): string => {
-  if (value === "start") {
-    return "flex-start";
-  }
-  if (value === "end") {
-    return "flex-end";
-  }
-  if (value === "between") {
-    return "space-between";
-  }
-  return String(value);
 };
 
 export const buildPrimitiveCss = ({

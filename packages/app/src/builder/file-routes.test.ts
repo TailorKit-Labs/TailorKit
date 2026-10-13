@@ -154,6 +154,7 @@ it("discovers only view and layout files, supports roots, and checks the same so
       "slots/panel.links/customers.details.view.tsx",
       "slots/panel.links/components/card.tsx",
     ]) {
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       await writeFile(path.join(root, "src", file), "export default {}; ");
     }
     const discovered = await discoverFileRoutes(root);
@@ -234,7 +235,7 @@ it("builds file routes with extracted instances and discovers additions, renames
       await readFile(path.join(root, ".tailorkit/server/server.js"), "utf-8")
     ).toContain("PRIVATE_RESOLVER");
     const watcher = (await buildApp({ cwd: root, watch: true })) as {
-      close(): Promise<void>;
+      close: () => Promise<void>;
     };
     try {
       const next = path.join(root, "src/slots/page/customers.details.view.tsx");

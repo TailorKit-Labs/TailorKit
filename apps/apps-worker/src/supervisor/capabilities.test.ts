@@ -3,9 +3,10 @@ import { expect, it, vi } from "vite-plus/test";
 import { cancellationStream } from "../runtime/cancellation";
 import { ActionCapability } from "./actions";
 
+// oxlint-disable-next-line unicorn/consistent-function-scoping -- Keep the generator or mutable callback with its owning test or cancellation lifecycle.
 vi.mock("cloudflare:workers", () => ({ RpcTarget: function RpcTarget() {} }));
 
-function setup() {
+const setup = () => {
   const controller = new AbortController();
   const notify = vi.fn(async (_tables: string[]) => {});
   const lease = { deadline: Date.now() + 30_000, signal: controller.signal };
@@ -15,7 +16,7 @@ function setup() {
     lease,
     notify,
   };
-}
+};
 
 it("reports committed tables even when the action is cancelled after committing", async () => {
   const { bridge, notify, controller } = setup();
@@ -110,7 +111,7 @@ it.each(["manual", "error"] as const)(
     const { bridge, controller } = setup();
     const fetch = vi.fn(
       async () =>
-        new Response(null, {
+        await new Response(null, {
           headers: { location: "https://example.com/final" },
           status: 302,
         })
@@ -122,7 +123,8 @@ it.each(["manual", "error"] as const)(
         cancellationStream(new AbortController().signal)
       );
       if (redirect === "manual") {
-        expect((await response).status).toBe(302);
+        const awaitedResult1 = await response;
+        expect(awaitedResult1.status).toBe(302);
       } else {
         await expect(response).rejects.toThrow("redirect");
       }

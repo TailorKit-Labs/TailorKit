@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { getCliDeployToken, o, requireCliDeployToken } from "../procedures";
 
-export function isActivePreviewConflict(error: unknown): boolean {
+export const isActivePreviewConflict = (error: unknown): boolean => {
   if (!error || typeof error !== "object") {
     return false;
   }
@@ -35,7 +35,7 @@ export function isActivePreviewConflict(error: unknown): boolean {
     ("error" in error && isActivePreviewConflict(error.error)) ||
     ("cause" in error && isActivePreviewConflict(error.cause))
   );
-}
+};
 
 /** Host route used by the CLI to start a scope-authorized preview session. */
 export const previewRouter = {

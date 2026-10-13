@@ -46,8 +46,27 @@ export interface TailorKitSchema<
   tools: TTools;
   components: TComponents;
   views: TViews;
-  serialize(schemaSerializer?: SchemaSerializer): TailorKitSchemaSpec;
+  serialize: (schemaSerializer?: SchemaSerializer) => TailorKitSchemaSpec;
 }
+
+// JSON Schema cannot represent undefined at its root. Preserve that information
+// separately before sending the schema to app type generation.
+const contextMayBeOmitted = (schema: Schema): boolean => {
+  // oxlint-disable-next-line unicorn/no-useless-undefined -- Probe whether the schema accepts an omitted context.
+  const result = schema["~standard"].validate(undefined);
+  if (result instanceof Promise) {
+    // Serialization is synchronous; conservatively allow omission for async schemas.
+    void (async () => {
+      try {
+        return await result;
+      } catch {
+        /* Intentionally no action is needed. */
+      }
+    })();
+    return true;
+  }
+  return !result.issues;
+};
 
 export const createTailorKitSchema = <
   const TComponents extends Record<string, unknown>,
@@ -136,9 +155,8 @@ export const createTailorKitSchema = <
     }
 
     return {
-      tools: serializeTools(schema.tools ?? {}, schemaSerializer),
       components: serializedComponents,
-      views: serializedViews,
+
       slots: Object.fromEntries(
         Object.entries(schema.slots ?? {}).map(([name, slot]) => [
           name,
@@ -148,6 +166,11 @@ export const createTailorKitSchema = <
           },
         ])
       ),
+
+      tools: serializeTools(schema.tools ?? {}, schemaSerializer),
+
+      views: serializedViews,
+
       ...(schema.scopes
         ? {
             scopes: Object.fromEntries(
@@ -158,6 +181,7 @@ export const createTailorKitSchema = <
             ),
           }
         : {}),
+
       version: 1,
     };
   };
@@ -177,7 +201,9 @@ export const createTailorKitSchema = <
 };
 
 export type { TailorKitTheme } from "../primitives/theme";
+
 export { tool } from "./tools";
+
 export type {
   ContractTool,
   ContractTools,
@@ -188,6 +214,7 @@ export type {
   InferToolInput,
   InferToolOutput,
 } from "./tools";
+
 export {
   type Callback,
   type CallbackDefinition,
@@ -196,6 +223,7 @@ export {
   type InferCallback,
   type InferCallbacks,
 } from "./callbacks";
+
 export {
   type Component,
   type ComponentDefinition,
@@ -206,6 +234,7 @@ export {
   type NoComponentFieldCallbackConflicts,
   type ResolvedComponentMetadata,
 } from "./components";
+
 export {
   type ResolvedViewMetadata,
   type View,
@@ -216,22 +245,11 @@ export {
   type Views,
   type SlotDefinitions,
 } from "./views";
+
 export {
   jsonSchemaSerializer,
   type Schema,
   type SchemaSerializer,
 } from "./shared";
-export type { TailorKitSchema as TailorKit };
 
-// JSON Schema cannot represent undefined at its root. Preserve that information
-// separately before sending the schema to app type generation.
-function contextMayBeOmitted(schema: Schema): boolean {
-  // oxlint-disable-next-line unicorn/no-useless-undefined -- Probe whether the schema accepts an omitted context.
-  const result = schema["~standard"].validate(undefined);
-  if (result instanceof Promise) {
-    // Serialization is synchronous; conservatively allow omission for async schemas.
-    void result.catch(() => {});
-    return true;
-  }
-  return !result.issues;
-}
+export type { TailorKitSchema as TailorKit };

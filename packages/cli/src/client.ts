@@ -31,7 +31,7 @@ type Input<
   : never;
 
 /** Adapt platform HTTP errors to the existing CLI RPC error contract. */
-async function request<T>(operation: Promise<T>): Promise<T> {
+const request = async <T>(operation: Promise<T>): Promise<T> => {
   try {
     return await operation;
   } catch (error) {
@@ -50,7 +50,7 @@ async function request<T>(operation: Promise<T>): Promise<T> {
     }
     throw new Error(String(error), { cause: error });
   }
-}
+};
 
 export type CliClient = Pick<
   TailorKitRouterClient,
@@ -60,11 +60,11 @@ export type CliClient = Pick<
 };
 
 /** All authenticated CLI commands share one credential selection and routing boundary. */
-export function createCliClient(options: {
+export const createCliClient = (options: {
   url: string;
   token: string;
   fetch?: typeof fetch;
-}): CliClient {
+}): CliClient => {
   const agent = getAgentAuth();
   if (!agent) {
     return createTailorKitClient({
@@ -91,129 +91,133 @@ export function createCliClient(options: {
   // These map the host RPC shapes to existing OpenAPI routes. Both return compact bodies.
   return {
     appAgent: {
-      chat: async function* (
+      async *chat(
         input: Input<"appAgent", "chat">,
-        options?: { signal?: AbortSignal }
+        optionsValue: { signal?: AbortSignal }
       ) {
         let streamError: unknown;
         let done = false;
         const { stream } = await appAgentChat({
-          client,
           body: { ...input, deployToken: agent.token },
-          signal: options?.signal,
-          sseMaxRetryAttempts: 1,
+          client,
           onSseError: (error) => {
             streamError = error;
           },
+          signal: optionsValue?.signal,
+          sseMaxRetryAttempts: 1,
         });
         for await (const chunk of stream) {
           const event = await agentChunkSchema.parseAsync(chunk);
-          if (event.type === "finish" || event.type === "error") done = true;
+          if (event.type === "finish" || event.type === "error") {
+            done = true;
+          }
           yield event;
         }
-        options?.signal?.throwIfAborted();
-        if (!done && !streamError)
+        optionsValue?.signal?.throwIfAborted();
+        if (!done && !streamError) {
           throw new Error("The agent stream ended unexpectedly. Try again.");
-        if (streamError)
+        }
+        if (streamError) {
           throw new Error("The app agent stream failed. Try again.", {
             cause: streamError,
           });
+        }
       },
     },
     apps: {
       create: (input: Input<"apps", "create">) =>
-        request(appsCreate({ client, body: { ...input, scope } })),
+        request(appsCreate({ body: { ...input, scope }, client })),
       delete: (input: Input<"apps", "delete">) =>
         request(
-          appsDelete({ client, path: { appId: input.appId }, body: { scope } })
+          appsDelete({ body: { scope }, client, path: { appId: input.appId } })
         ),
       deploy: (input: Input<"apps", "deploy">) =>
         request(
           appsDeploy({
+            body: { deploymentId: input.deploymentId, scope },
             client,
             path: { appId: input.appId },
-            body: { deploymentId: input.deploymentId, scope },
           })
         ),
       get: (input: Input<"apps", "get">) =>
         request(
           appsGet({
+            body: { scopes: scopes(input.scopes) },
             client,
             path: { appId: input.appId },
-            body: { scopes: scopes(input.scopes) },
           })
         ),
       list: (input?: Input<"apps", "list">) =>
         request(
           appsList({
-            client,
             body: {
               page: input?.page,
               pageSize: input?.pageSize,
               scopes: scopes(input?.scopes),
             },
+            client,
           })
         ),
       update: (input: Input<"apps", "update">) =>
         request(
           appsUpdate({
+            body: { description: input.description, name: input.name, scope },
             client,
             path: { appId: input.appId },
-            body: { name: input.name, description: input.description, scope },
           })
         ),
     },
     cliAuth: {
       verifyToken: () =>
         request(
-          cliAuthVerifyToken({ client, body: { deployToken: agent.token } })
+          cliAuthVerifyToken({ body: { deployToken: agent.token }, client })
         ),
     },
     deployments: {
       create: (input: Input<"deployments", "create">) =>
-        request(deploymentsCreate({ client, body: { ...input, scope } })),
+        request(deploymentsCreate({ body: { ...input, scope }, client })),
       get: (input: Input<"deployments", "get">) =>
         request(
           deploymentsGet({
+            body: { scopes: scopes(input.scopes) },
             client,
             path: { deploymentId: input.deploymentId },
-            body: { scopes: scopes(input.scopes) },
           })
         ),
       list: (input: Input<"deployments", "list">) =>
         request(
           deploymentsList({
-            client,
             body: {
               appId: input.appId,
               page: input.page,
               pageSize: input.pageSize,
               scopes: scopes(input.scopes),
             },
+            client,
           })
         ),
       publish: (input: Input<"deployments", "publish">) =>
         request(
           deploymentsPublish({
+            body: { rollout: input.rollout, scope },
             client,
             path: { deploymentId: input.deploymentId },
-            body: { rollout: input.rollout, scope },
           })
         ),
     },
     preview: {
       start: (input: Input<"preview", "start">) =>
         request(
-          previewStart({ client, body: { ...input, deployToken: agent.token } })
+          previewStart({ body: { ...input, deployToken: agent.token }, client })
         ),
       stop: (input: Input<"preview", "stop">) =>
         request(
           previewStop({
+            body: { deployToken: agent.token },
             client,
             path: { sessionId: input.sessionId },
-            body: { deployToken: agent.token },
           })
         ),
     },
   } as unknown as CliClient;
-}
+};

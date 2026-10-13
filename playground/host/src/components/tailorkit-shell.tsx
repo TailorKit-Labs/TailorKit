@@ -27,13 +27,19 @@ import {
   tailor,
 } from "#lib/tailorkit-client";
 
-function ShellContent({
+const signOutImplementation = async () => {
+  await signOutDemoUser();
+  tailor.clearCache();
+  window.location.assign("/login");
+};
+
+const ShellContent = ({
   children,
   session,
 }: {
   children: ReactNode;
   session: DemoSession;
-}) {
+}) => {
   const { data: apps, error: appsError, isPending: appsPending } = useApps();
   const installedApps = [
     ...localPlaygroundApps.map(
@@ -51,11 +57,7 @@ function ShellContent({
     },
   });
 
-  async function signOut() {
-    await signOutDemoUser();
-    tailor.clearCache();
-    window.location.assign("/login");
-  }
+  const signOut = signOutImplementation;
 
   return (
     <SidebarProvider>
@@ -66,7 +68,7 @@ function ShellContent({
         onSelectApp={setSelectedApp}
         selectedApp={selectedApp}
         session={session}
-        signOut={() => void signOut()}
+        signOut={() => signOut()}
       />
       <SidebarInset>
         <header className="flex h-14 items-center gap-3 border-b px-5">
@@ -112,18 +114,16 @@ function ShellContent({
       </Sheet>
     </SidebarProvider>
   );
-}
+};
 
-export function TailorKitShell({
+export const TailorKitShell = ({
   children,
   session,
 }: {
   children: ReactNode;
   session: DemoSession;
-}) {
-  return (
-    <TailorKitProvider>
-      <ShellContent session={session}>{children}</ShellContent>
-    </TailorKitProvider>
-  );
-}
+}) => (
+  <TailorKitProvider>
+    <ShellContent session={session}>{children}</ShellContent>
+  </TailorKitProvider>
+);

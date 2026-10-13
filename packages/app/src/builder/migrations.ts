@@ -5,7 +5,10 @@ import path from "node:path";
 import type { AppMigration } from "../protocol";
 
 /** Read the timestamped migration folders produced by the workspace's Drizzle Kit version. */
-export async function readAppMigrations(directory: string, optional = false) {
+export const readAppMigrations = async (
+  directory: string,
+  optional = false
+) => {
   const entries = await readdir(directory, { withFileTypes: true }).catch(
     (error: unknown) => {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
@@ -25,7 +28,7 @@ export async function readAppMigrations(directory: string, optional = false) {
   const names = entries
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
-    .sort();
+    .toSorted();
   for (const name of names) {
     if (!/^\d{14}_[\w-]+$/u.test(name)) {
       throw new Error(
@@ -33,6 +36,7 @@ export async function readAppMigrations(directory: string, optional = false) {
       );
     }
     const file = path.join(directory, name, "migration.sql");
+    // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
     const sql = await readFile(file, "utf-8");
     const statements = sql
       .split("--> statement-breakpoint")
@@ -49,4 +53,4 @@ export async function readAppMigrations(directory: string, optional = false) {
     files.push(file);
   }
   return { files, migrations };
-}
+};

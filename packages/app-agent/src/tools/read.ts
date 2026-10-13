@@ -12,14 +12,20 @@ export const readTool = tool({
     const sandbox = await toolSandbox(options);
     const { abortSignal } = options;
     return sandbox.readTextFile({
+      abortSignal,
+      endLine,
       path: resolvePath(path),
       startLine,
-      endLine,
-      abortSignal,
     });
   },
   inputSchema: z
     .object({
+      endLine: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe("1-based inclusive end line; clamps past EOF."),
       path: z
         .string()
         .min(1)
@@ -31,12 +37,6 @@ export const readTool = tool({
         .default(1)
         .optional()
         .describe("1-based inclusive start line."),
-      endLine: z
-        .number()
-        .int()
-        .positive()
-        .optional()
-        .describe("1-based inclusive end line; clamps past EOF."),
     })
     .refine(
       ({ startLine, endLine }) =>

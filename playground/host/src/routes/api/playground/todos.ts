@@ -7,11 +7,9 @@ import {
 } from "@playground/shared/todos";
 import { createFileRoute } from "@tanstack/react-router";
 
-function json(data: unknown, status = 200) {
-  return Response.json(data, { status });
-}
+const json = (data: unknown, status = 200) => Response.json(data, { status });
 
-async function handle({ request }: { request: Request }) {
+const handle = async ({ request }: { request: Request }) => {
   const session = getDemoSessionFromRequest(request);
   if (!session) {
     return json({ error: "Sign in to use the todo app" }, 401);
@@ -59,7 +57,7 @@ async function handle({ request }: { request: Request }) {
   }
 
   return json({ error: "Invalid todo action" }, 400);
-}
+};
 
 export const Route = createFileRoute("/api/playground/todos")({
   server: { handlers: { GET: handle, POST: handle } },

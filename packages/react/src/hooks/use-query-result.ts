@@ -13,9 +13,9 @@ export type UseQueryResult<T> = Pick<
   fetch: () => Promise<void>;
 };
 
-export function useQueryResult<T>(
+export const useQueryResult = <T>(
   state: ReadableAtom<QueryResult<T>>
-): UseQueryResult<T> {
+): UseQueryResult<T> => {
   const result = useStore(state);
   return useMemo(
     () => ({
@@ -27,4 +27,4 @@ export function useQueryResult<T>(
     }),
     [result]
   );
-}
+};

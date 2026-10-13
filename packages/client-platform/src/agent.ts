@@ -6,9 +6,10 @@ const chunkSchema = asSchema(uiMessageChunkSchema);
 
 /** Use the SDK's validator so transport parts stay aligned with its protocol. */
 export const agentChunkSchema = z
-  .custom<UIMessageChunk>(
-    async (value) => (await chunkSchema.validate?.(value))?.success === true
-  )
+  .custom<UIMessageChunk>(async (value) => {
+    const awaitedResult1 = await chunkSchema.validate?.(value);
+    return awaitedResult1?.success === true;
+  })
   .describe("An AI SDK UIMessageChunk. Fields depend on the chunk type.");
 
 export type AgentChunk = UIMessageChunk;

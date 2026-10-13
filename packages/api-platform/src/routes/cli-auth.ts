@@ -6,7 +6,7 @@ import { hashSecret } from "@tailorkit/api-utils/hashing";
 import { db } from "@tailorkit/db";
 import { cliAuthSession, cliToken } from "@tailorkit/db/schema/cli-auth";
 import { and, eq, gt } from "drizzle-orm";
-import z from "zod";
+import { z } from "zod";
 
 import { env } from "#env";
 
@@ -18,25 +18,26 @@ const deviceCodeBytes = 32;
 const deployTokenBytes = 32;
 const userCodeLength = 9;
 const userCodeSections = 3;
-const authExpiresInMilliseconds = 5 * 60 * 1000; // 5 minutes
-const tokenExpiresInMilliseconds = 12 * 60 * 60 * 1000; // 12 hours
+// 5 minutes
+const authExpiresInMilliseconds = 5 * 60 * 1000;
+// 12 hours
+const tokenExpiresInMilliseconds = 12 * 60 * 60 * 1000;
 
 // Skip out some characters to avoid confusion with similar characters (e.g. 0/O, 1/I, etc.)
 const userCodeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
-function hashCliSecret(value: string): string {
+const hashCliSecret = (value: string): string => {
   if (!env.AUTH_SECRET) {
     throw new Error("AUTH_SECRET is required for CLI auth secret hashing.");
   }
 
   return hashSecret(value, env.AUTH_SECRET);
-}
+};
 
-function generateSecret(bytes: number): string {
-  return randomBytes(bytes).toString("base64url");
-}
+const generateSecret = (bytes: number): string =>
+  randomBytes(bytes).toString("base64url");
 
-function generateUserCode(): string {
+const generateUserCode = (): string => {
   let code = "";
 
   for (let index = 0; index < userCodeLength; index += 1) {
@@ -51,11 +52,10 @@ function generateUserCode(): string {
   }
 
   return sections.join("-");
-}
+};
 
-function normalizeUserCode(userCode: string): string {
-  return userCode.trim().replaceAll("-", "").toUpperCase();
-}
+const normalizeUserCode = (userCode: string): string =>
+  userCode.trim().replaceAll("-", "").toUpperCase();
 
 const startCliAuth = protectedRouter
   .meta(

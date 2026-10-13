@@ -18,6 +18,7 @@ import { RenderSlot } from "../index";
 import { createClient } from "../tailorkit";
 
 const requests: { appUrl: string; props: Record<string, unknown> }[] = [];
+
 vi.mock("../remote-view", () => ({
   RemoteViewHost: (request: {
     appUrl: string;
@@ -37,6 +38,7 @@ const typedSchema = <T,>(): StandardSchemaV1<unknown, T> &
     version: 1,
   },
 });
+
 const contract = defineContract({
   components: {},
   scopes: { user: typedSchema<{ id: string }>() },
@@ -51,7 +53,9 @@ const contract = defineContract({
     "/customers/detail": typedSchema<{ customer: { id: string } }>(),
   },
 });
-const client = createClient({ contract, baseUrl: "https://host.test/api/" });
+
+const client = createClient({ baseUrl: "https://host.test/api/", contract });
+
 const app = { clientPath: "/client.js", id: "test" };
 
 beforeEach(() => {
@@ -60,43 +64,49 @@ beforeEach(() => {
     Response.json({ schema: {} })
   );
 });
+
 afterEach(() => {
   cleanup();
   client.clearCache();
   vi.restoreAllMocks();
 });
 
-function Context({ detail = true }: { detail?: boolean }) {
-  client.useViewContext("/", { context: { user: { id: "registered" } } });
-  client.useViewContext("/customers", { context: { canEdit: true } });
-  return detail ? <Detail /> : null;
-}
-function Detail() {
+const Detail = () => {
   client.useViewContext("/customers/detail", {
     context: undefined,
     loading: true,
   });
   return null;
-}
+};
+
+const Context = ({ detail = true }: { detail?: boolean }) => {
+  client.useViewContext("/", { context: { user: { id: "registered" } } });
+  client.useViewContext("/customers", { context: { canEdit: true } });
+  return detail ? <Detail /> : null;
+};
+
+const contentsImplementationImplementation = (detail: boolean) => (
+  <client.Provider>
+    <Context detail={detail} />
+    <client.RenderSlot app={app} slot="panel" />
+  </client.Provider>
+);
 
 describe("RenderSlot", () => {
+  const contentsImplementation = contentsImplementationImplementation;
+
   it("uses the registered hierarchy and removes unmounted contexts", async () => {
-    const contents = (detail: boolean) => (
-      <client.Provider>
-        <Context detail={detail} />
-        <client.RenderSlot app={app} slot="panel" />
-      </client.Provider>
-    );
+    const contents = contentsImplementation;
     const result = render(contents(true));
     await waitFor(() =>
       expect(requests.at(-1)?.props).toMatchObject({
         layers: [
           {
-            path: "/",
             context: { user: { id: "registered" } },
+            path: "/",
             status: "ready",
           },
-          { path: "/customers", context: { canEdit: true }, status: "ready" },
+          { context: { canEdit: true }, path: "/customers", status: "ready" },
           { path: "/customers/detail", status: "loading" },
         ],
         slot: "panel",
@@ -108,11 +118,11 @@ describe("RenderSlot", () => {
       expect(requests.at(-1)?.props).toMatchObject({
         layers: [
           {
-            path: "/",
             context: { user: { id: "registered" } },
+            path: "/",
             status: "ready",
           },
-          { path: "/customers", context: { canEdit: true }, status: "ready" },
+          { context: { canEdit: true }, path: "/customers", status: "ready" },
         ],
         view: "/customers",
       })
@@ -157,23 +167,63 @@ describe("RenderSlot", () => {
   });
 });
 
+const contentsImplementation4Implementation = (
+  status: "ready" | "loading" | "error"
+) => (
+  <client.Provider>
+    {status === "ready" ? (
+      <client.RenderSlot.Controlled
+        app={app}
+        slot="navbar"
+        view="/"
+        status="ready"
+        context={{ user: { id: "u1" } }}
+      />
+    ) : (
+      <client.RenderSlot.Controlled
+        app={app}
+        slot="navbar"
+        view="/"
+        status={status}
+      />
+    )}
+  </client.Provider>
+);
+
+const contentsImplementation3Implementation = (detail: boolean) => (
+  <client.Provider>
+    <Context detail={detail} />
+    <client.RenderSlot.Controlled
+      app={app}
+      slot="panel"
+      view="/customers"
+      status="ready"
+      context={{ canEdit: false, user: { id: "explicit" } }}
+    />
+  </client.Provider>
+);
+
+const contentsImplementation2Implementation = (id: string) => (
+  <client.Provider>
+    <client.RenderSlot.Controlled
+      app={app}
+      slot="panel"
+      view="/customers/detail"
+      status="ready"
+      context={{
+        canEdit: false,
+        customer: { id },
+        user: { id: "explicit" },
+      }}
+    />
+  </client.Provider>
+);
+
 describe("RenderSlot.Controlled", () => {
+  const contentsImplementation2 = contentsImplementation2Implementation;
+
   it("renders supplied combined context without registrations and keeps equivalent context stable", async () => {
-    const contents = (id: string) => (
-      <client.Provider>
-        <client.RenderSlot.Controlled
-          app={app}
-          slot="panel"
-          view="/customers/detail"
-          status="ready"
-          context={{
-            canEdit: false,
-            customer: { id },
-            user: { id: "explicit" },
-          }}
-        />
-      </client.Provider>
-    );
+    const contents = contentsImplementation2;
     const result = render(contents("c1"));
     await waitFor(() =>
       expect(requests.at(-1)?.props).toMatchObject({
@@ -201,19 +251,10 @@ describe("RenderSlot.Controlled", () => {
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
+  const contentsImplementation3 = contentsImplementation3Implementation;
+
   it("does not inherit or react to registered context", async () => {
-    const contents = (detail: boolean) => (
-      <client.Provider>
-        <Context detail={detail} />
-        <client.RenderSlot.Controlled
-          app={app}
-          slot="panel"
-          view="/customers"
-          status="ready"
-          context={{ canEdit: false, user: { id: "explicit" } }}
-        />
-      </client.Provider>
-    );
+    const contents = contentsImplementation3;
     const result = render(contents(true));
     await waitFor(() =>
       expect(requests.at(-1)?.props.context).toEqual({
@@ -226,31 +267,15 @@ describe("RenderSlot.Controlled", () => {
     expect(requests.at(-1)?.props).toBe(initial);
   });
 
+  const contentsImplementation4 = contentsImplementation4Implementation;
+
   it("drops ready context when explicitly switched to loading or error", async () => {
-    const contents = (status: "ready" | "loading" | "error") => (
-      <client.Provider>
-        {status === "ready" ? (
-          <client.RenderSlot.Controlled
-            app={app}
-            slot="navbar"
-            view="/"
-            status="ready"
-            context={{ user: { id: "u1" } }}
-          />
-        ) : (
-          <client.RenderSlot.Controlled
-            app={app}
-            slot="navbar"
-            view="/"
-            status={status}
-          />
-        )}
-      </client.Provider>
-    );
+    const contents = contentsImplementation4;
     const result = render(contents("ready"));
     await waitFor(() => expect(requests.at(-1)?.props.status).toBe("ready"));
     for (const status of ["loading", "error"] as const) {
       result.rerender(contents(status));
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       await waitFor(() =>
         expect(requests.at(-1)?.props).toMatchObject({
           context: undefined,
@@ -265,8 +290,8 @@ it.each(["managed", "controlled"] as const)(
   "rejects a %s RenderSlot under the wrong client",
   (mode) => {
     const other = createClient({
-      contract,
       baseUrl: "https://other.test/api/",
+      contract,
     });
     vi.spyOn(console, "error").mockImplementation(() => {});
     expect(() =>
@@ -294,50 +319,67 @@ const instanceApp = {
   ...app,
   views: [{ instances: true as const, path: "/", slot: "page" }],
 };
+
 const overview = {
   data: { reportId: "r1" },
   key: "overview",
   metadata: { title: "Overview" },
 };
+
 const summary = {
   data: { reportId: "r2" },
   key: "summary",
   metadata: { title: "Summary" },
 };
 
+const contentImplementation = (key: string) => (
+  <client.Provider>
+    <Context detail={false} />
+    <client.RenderSlot app={instanceApp} slot="page" instanceKey={key} />
+  </client.Provider>
+);
+
 it("resolves the key and sends a complete controlled instance through the renderer", async () => {
   let finish!: (response: Response) => void;
   const fetch = vi
     .mocked(globalThis.fetch)
+    // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
     .mockImplementation(async (input) => {
       const url = String(input);
       if (url.endsWith("/backend/session")) {
         return Response.json({
-          token: "token",
           expiresAt: Date.now() + 300_000,
+          token: "token",
           url: "https://runtime.test/rpc",
         });
       }
       if (url.endsWith("/actions")) {
-        return new Promise((resolve) => {
-          finish = resolve;
-        });
+        return (() => {
+          const {
+            promise: pendingPromise,
+            resolve,
+            reject: rejectPending,
+          } = Promise.withResolvers<Response>();
+          try {
+            finish = resolve;
+          } catch (error) {
+            rejectPending(error);
+          }
+          return pendingPromise;
+        })();
       }
       return Response.json({ schema: {} });
     });
-  const content = (key: string) => (
-    <client.Provider>
-      <Context detail={false} />
-      <client.RenderSlot app={instanceApp} slot="page" instanceKey={key} />
-    </client.Provider>
-  );
+  const content = contentImplementation;
   const view = render(content("overview"));
   await waitFor(() =>
     expect(screen.getByRole("status").textContent).toBe("Loading view…")
   );
   await waitFor(() => expect(finish).toBeTypeOf("function"));
   expect(requests).toHaveLength(0);
-  await act(async () => finish(Response.json({ json: [overview, summary] })));
+  await act(
+    async () => await finish(Response.json({ json: [overview, summary] }))
+  );
   await waitFor(() =>
     expect(requests.at(-1)?.props).toMatchObject({
       context: { user: { id: "registered" } },
@@ -368,12 +410,13 @@ it("resolves the key and sends a complete controlled instance through the render
 });
 
 it("reports resolver failures and missing keys without mounting stale instances", async () => {
+  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
   vi.mocked(globalThis.fetch).mockImplementation(async (input) => {
     const url = String(input);
     if (url.endsWith("/backend/session")) {
       return Response.json({
-        token: "token",
         expiresAt: Date.now() + 300_000,
+        token: "token",
         url: "https://runtime.test/rpc",
       });
     }
@@ -382,8 +425,8 @@ it("reports resolver failures and missing keys without mounting stale instances"
         {
           json: {
             code: "FORBIDDEN",
-            message: "No reports available",
             defined: false,
+            message: "No reports available",
           },
         },
         { status: 403 }
@@ -421,12 +464,12 @@ it("requires a key for a dynamic managed view", async () => {
 it.each([false, true])(
   "checks instance support without composing invalid context (dynamic: %s)",
   async (dynamic) => {
-    function DuplicateContext() {
+    const DuplicateContext = () => {
       client.useViewContext("/", { context: { user: { id: "registered" } } });
       const context = { canEdit: true, user: { id: "duplicate" } };
       client.useViewContext("/customers", { context });
       return null;
-    }
+    };
     const appWithViews = {
       ...app,
       views: [
@@ -455,13 +498,13 @@ it.each([false, true])(
         expect(requests.at(-1)?.props).toMatchObject({
           layers: [
             {
-              path: "/",
               context: { user: { id: "registered" } },
+              path: "/",
               status: "ready",
             },
             {
-              path: "/customers",
               context: { canEdit: true, user: { id: "duplicate" } },
+              path: "/customers",
               status: "ready",
             },
           ],

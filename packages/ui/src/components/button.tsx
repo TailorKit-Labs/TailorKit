@@ -56,7 +56,7 @@ export interface ButtonProps extends useRender.ComponentProps<"button"> {
   loading?: boolean;
 }
 
-export function Button({
+export const Button = ({
   className,
   variant,
   size,
@@ -65,8 +65,8 @@ export function Button({
   loading = false,
   disabled: disabledProp,
   ...props
-}: ButtonProps): React.ReactElement {
-  const isDisabled: boolean = Boolean(loading || disabledProp);
+}: ButtonProps): React.ReactElement => {
+  const isDisabled = Boolean(loading || disabledProp);
   const typeValue: React.ButtonHTMLAttributes<HTMLButtonElement>["type"] =
     render ? undefined : "button";
 
@@ -95,4 +95,4 @@ export function Button({
     props: mergeProps<"button">(defaultProps, props),
     render,
   });
-}
+};

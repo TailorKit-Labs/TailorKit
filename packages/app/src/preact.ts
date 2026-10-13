@@ -30,11 +30,11 @@ export interface ClientProviderProps {
   onError?: (error: AppError) => void;
 }
 
-export function ClientProvider({
+export const ClientProvider = ({
   children,
   client,
   onError,
-}: ClientProviderProps) {
+}: ClientProviderProps) => {
   const errorHandler = useRef(onError);
   errorHandler.current = onError;
   const store = useMemo(
@@ -46,9 +46,9 @@ export function ClientProvider({
   );
   useLayoutEffect(() => () => store.dispose(), [store]);
   return h(Context.Provider, { value: store }, children);
-}
+};
 
-function useQueryStore() {
+const useQueryStore = () => {
   const store = useContext(Context);
   if (!store) {
     throw new Error(
@@ -56,7 +56,7 @@ function useQueryStore() {
     );
   }
   return store;
-}
+};
 
 export interface QueryOptions {
   enabled?: boolean;
@@ -74,10 +74,10 @@ export interface QueryResult<T> extends QueryState<T> {
   isError: boolean;
 }
 
-export function useQuery<I, O>(
+export const useQuery = <I, O>(
   ref: Reference<"query", I, O>,
   ...[input, options]: QueryArguments<NoInfer<I>>
-): QueryResult<O> {
+): QueryResult<O> => {
   const store = useQueryStore();
   const enabled = options?.enabled ?? true;
   const { name } = ref;
@@ -115,7 +115,7 @@ export function useQuery<I, O>(
     isPending: state.status === "pending",
     isSuccess: state.status === "success",
   };
-}
+};
 
 export interface CallOptions<I, O> {
   onSuccess?: (data: O, input: I) => void;
@@ -134,11 +134,11 @@ export interface CallState<T> {
 
 const idleCall = { data: undefined, error: null, status: "idle" as const };
 
-function useCall<K extends "mutation" | "action", I, O>(
+const useCall = <K extends "mutation" | "action", I, O>(
   kind: K,
   ref: Reference<K, I, O>,
   options: CallOptions<I, O>
-) {
+) => {
   const store = useQueryStore();
   const { name } = ref;
   const identity = useMemo(
@@ -171,7 +171,8 @@ function useCall<K extends "mutation" | "action", I, O>(
   }, []);
   const runAsync = useCallback(
     async (...[input]: InputArguments<I>): Promise<O> => {
-      const sequence = ++current.current.sequence;
+      current.current.sequence += 1;
+      const { sequence } = current.current;
       const settings = callbacks.current;
       const args = input as I;
       const isCurrent = () =>
@@ -214,7 +215,13 @@ function useCall<K extends "mutation" | "action", I, O>(
   );
   const run = useCallback(
     (...args: InputArguments<I>) => {
-      void runAsync(...args).catch(() => {});
+      void (async () => {
+        try {
+          return await runAsync(...args);
+        } catch {
+          /* Intentionally no action is needed. */
+        }
+      })();
     },
     [runAsync]
   );
@@ -231,30 +238,30 @@ function useCall<K extends "mutation" | "action", I, O>(
     run,
     runAsync,
   };
-}
+};
 
 export interface MutationResult<I, O> extends CallState<O> {
   mutate: (...args: InputArguments<I>) => void;
   mutateAsync: (...args: InputArguments<I>) => Promise<O>;
 }
 
-export function useMutation<I, O>(
+export const useMutation = <I, O>(
   ref: Reference<"mutation", I, O>,
   options: CallOptions<I, O> = {}
-): MutationResult<I, O> {
+): MutationResult<I, O> => {
   const { run, runAsync, ...state } = useCall("mutation", ref, options);
   return { ...state, mutate: run, mutateAsync: runAsync };
-}
+};
 
 export interface ActionResult<I, O> extends CallState<O> {
   execute: (...args: InputArguments<I>) => void;
   executeAsync: (...args: InputArguments<I>) => Promise<O>;
 }
 
-export function useAction<I, O>(
+export const useAction = <I, O>(
   ref: Reference<"action", I, O>,
   options: CallOptions<I, O> = {}
-): ActionResult<I, O> {
+): ActionResult<I, O> => {
   const { run, runAsync, ...state } = useCall("action", ref, options);
   return { ...state, execute: run, executeAsync: runAsync };
-}
+};

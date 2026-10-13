@@ -36,10 +36,29 @@ import type {
 } from "./types";
 
 const defaultPlatformBaseUrl = "https://tailorkit.dev/api/platform";
+
 type AbsolutePath = `/${string}`;
+
 const previewShareIdPattern = /^[A-Za-z0-9_-]{43}$/u;
 
-export function createTailorKitServer<
+const resolveReadScopes = (url: URL, availableScopes: TailorKitScopes) => {
+  try {
+    const names = url.searchParams.getAll("scopes");
+    if (names.length === 1 && names[0] === "") {
+      return [];
+    }
+    return selectTailorKitScopes(
+      availableScopes,
+      names.length ? names : undefined
+    );
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Invalid scope selection.";
+    return new Response(message, { status: 400 });
+  }
+};
+
+export const createTailorKitServer = <
   const TOptions extends TailorKitServerInputOptions,
 >(
   options: TOptions & {
@@ -63,7 +82,7 @@ export function createTailorKitServer<
   readonly $slots?: TOptions extends { slots: infer V }
     ? V
     : Record<never, never>;
-} {
+} => {
   const { basePath, publicOrigin } = normalizeBaseUrl(options.baseUrl);
   const scopeSchemas = validateTailorKitScopeSchemas(options.scopes);
   const previewReturnPath = options.preview?.returnPath ?? "/";
@@ -116,8 +135,14 @@ export function createTailorKitServer<
       InferTailorKitServerScopes<TOptions>
     >
   ) => {
-    const authenticate = async ({ request }: { request: Request }) => {
-      const hostContext = await handlerOptions.authenticate({ request });
+    const authenticate = async ({
+      request: requestValue,
+    }: {
+      request: Request;
+    }) => {
+      const hostContext = await handlerOptions.authenticate({
+        request: requestValue,
+      });
       if (!hostContext) {
         return null;
       }
@@ -152,7 +177,7 @@ export function createTailorKitServer<
                 value,
               })),
               subjectId,
-              toolUrl: publicOrigin + basePath + "/tools/execute",
+              toolUrl: `${publicOrigin + basePath}/tools/execute`,
             },
             client: platform,
             headers,
@@ -282,6 +307,7 @@ export function createTailorKitServer<
       const items: Record<string, unknown>[] = [];
       let page = 1;
       for (;;) {
+        // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
         const result = await appsList({
           body: { page, pageSize: 100, scopes },
           client: context.platform,
@@ -361,21 +387,4 @@ export function createTailorKitServer<
     handler,
     mcp,
   };
-}
-
-function resolveReadScopes(url: URL, availableScopes: TailorKitScopes) {
-  try {
-    const names = url.searchParams.getAll("scopes");
-    if (names.length === 1 && names[0] === "") {
-      return [];
-    }
-    return selectTailorKitScopes(
-      availableScopes,
-      names.length ? names : undefined
-    );
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Invalid scope selection.";
-    return new Response(message, { status: 400 });
-  }
-}
+};

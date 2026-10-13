@@ -18,7 +18,7 @@ import {
 import type { Scope } from "@tailorkit/db/schema/scope";
 import { setSpanAttributes } from "@tailorkit/observability";
 import { and, eq } from "drizzle-orm";
-import z from "zod";
+import { z } from "zod";
 
 import type { Context } from "../context";
 import { paginatedOutput, paginationQuery } from "../pagination";
@@ -34,13 +34,17 @@ import {
 import { getRuntimeBundle, publishRuntimeMetadata } from "./runtime";
 
 const uploadUrlExpiresInSeconds = 15 * 60;
+
 const logoInspectionTimeoutMs = 10_000;
+
 const clientInspectionTimeoutMs = 10_000;
+
 const logoExtensionByContentType = {
   "image/png": "png",
   "image/svg+xml": "svg",
   "image/webp": "webp",
 } as const;
+
 const logoContentType = z.enum(logoContentTypes);
 
 const deploymentFileMetadataShape = {
@@ -108,7 +112,7 @@ const deploymentLogoUploads = z.object({
   light: deploymentLogoUpload.optional(),
 });
 
-function isNotFound(error: unknown) {
+const isNotFound = (error: unknown) => {
   if (!error || typeof error !== "object") {
     return false;
   }
@@ -122,13 +126,23 @@ function isNotFound(error: unknown) {
     value.name === "NotFound" ||
     value.$metadata?.httpStatusCode === 404
   );
-}
+};
 
-async function hasMatchingLogo(
+const hexToBase64 = (hex: string): string => {
+  const bytes = new Uint8Array(hex.length / 2);
+
+  for (let index = 0; index < bytes.length; index += 1) {
+    bytes[index] = Number.parseInt(hex.slice(index * 2, index * 2 + 2), 16);
+  }
+
+  return Buffer.from(bytes).toString("base64");
+};
+
+const hasMatchingLogo = async (
   storage: Context["storage"],
   logo: z.output<typeof createDeploymentLogoInput>,
   objectKey: string
-) {
+) => {
   try {
     const object = await storage.head({ key: objectKey });
     return (
@@ -142,12 +156,12 @@ async function hasMatchingLogo(
     }
     throw error;
   }
-}
+};
 
-async function inspectCompressedClient(
+const inspectCompressedClient = async (
   storage: Context["storage"],
   objectKey: string
-) {
+) => {
   const download = await storage.createDownloadUrl({
     expiresInSeconds: 60,
     key: objectKey,
@@ -175,12 +189,14 @@ async function inspectCompressedClient(
     let contentLength = 0;
     try {
       while (true) {
+        // oxlint-disable-next-line no-await-in-loop -- Stream reads and cancellation must stay ordered and bounded.
         const { done, value } = await reader.read();
         if (done) {
           break;
         }
         contentLength += value.byteLength;
         if (contentLength > maxDeploymentBytes) {
+          // oxlint-disable-next-line no-await-in-loop -- Stream reads and cancellation must stay ordered and bounded.
           await reader.cancel();
           throw new Error(
             `Decompressed client assets cannot exceed ${maxDeploymentBytes} bytes.`
@@ -197,12 +213,15 @@ async function inspectCompressedClient(
     controller.abort();
     clearTimeout(timeout);
   }
-}
+};
 
-export function mapReturnedFilesByAssetPath<
+export const mapReturnedFilesByAssetPath = <
   TAsset extends { asset: { objectKey: string }; fileId: string },
   TFile extends { id: string },
->(assets: readonly TAsset[], files: readonly TFile[]) {
+>(
+  assets: readonly TAsset[],
+  files: readonly TFile[]
+) => {
   const fileById = new Map(files.map((file) => [file.id, file]));
 
   return new Map(
@@ -216,7 +235,7 @@ export function mapReturnedFilesByAssetPath<
       return [asset.objectKey, file] as const;
     })
   );
-}
+};
 
 const requireDeployment = o.middleware(
   async (
@@ -287,16 +306,6 @@ const requireDeployment = o.middleware(
     return next({ context: { ...context, app: deploymentApp, deployment } });
   }
 );
-
-function hexToBase64(hex: string): string {
-  const bytes = new Uint8Array(hex.length / 2);
-
-  for (let index = 0; index < bytes.length; index += 1) {
-    bytes[index] = Number.parseInt(hex.slice(index * 2, index * 2 + 2), 16);
-  }
-
-  return Buffer.from(bytes).toString("base64");
-}
 
 const listAppDeployments = cliRouter
   .meta(
@@ -609,6 +618,7 @@ const publishAppDeployment = cliRouter
       })
     )
   )
+  // oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
   .handler(async ({ context, input }) => {
     const { deployment } = context;
     const files = await db.query.appDeploymentFile.findMany({
@@ -629,12 +639,14 @@ const publishAppDeployment = cliRouter
       .where(eq(appDeployment.id, deployment.id));
 
     for (const file of files) {
+      // oxlint-disable-next-line no-await-in-loop -- Stream reads and cancellation must stay ordered and bounded.
       await db
         .update(appDeploymentFile)
         .set({ status: "verifying" })
         .where(eq(appDeploymentFile.id, file.id));
 
       try {
+        // oxlint-disable-next-line no-await-in-loop -- Stream reads and cancellation must stay ordered and bounded.
         const object = await context.storage.head({ key: file.objectKey });
         const { contentLength } = object;
 
@@ -672,10 +684,12 @@ const publishAppDeployment = cliRouter
           file.encoding === "gzip" &&
           file.objectKey.endsWith("/client/client.js")
         ) {
+          // oxlint-disable-next-line no-await-in-loop -- Stream reads and cancellation must stay ordered and bounded.
           await inspectCompressedClient(context.storage, file.objectKey);
         }
 
         if (file.contentType !== "application/javascript") {
+          // oxlint-disable-next-line no-await-in-loop -- Stream reads and cancellation must stay ordered and bounded.
           const download = await context.storage.createDownloadUrl({
             expiresInSeconds: 60,
             key: file.objectKey,
@@ -690,6 +704,7 @@ const publishAppDeployment = cliRouter
             logoInspectionTimeoutMs
           );
           try {
+            // oxlint-disable-next-line no-await-in-loop -- Stream reads and cancellation must stay ordered and bounded.
             const response = await fetch(downloadUrl, {
               redirect: "error",
               signal: controller.signal,
@@ -698,6 +713,7 @@ const publishAppDeployment = cliRouter
               throw new Error("Failed to inspect uploaded logo.");
             }
             validateLogoAsset(
+              // oxlint-disable-next-line no-await-in-loop -- Stream reads and cancellation must stay ordered and bounded.
               new Uint8Array(await response.arrayBuffer()),
               file.contentType as LogoContentType
             );
@@ -706,15 +722,18 @@ const publishAppDeployment = cliRouter
           }
         }
 
+        // oxlint-disable-next-line no-await-in-loop -- Stream reads and cancellation must stay ordered and bounded.
         await db
           .update(appDeploymentFile)
           .set({ status: "verified" })
           .where(eq(appDeploymentFile.id, file.id));
       } catch (error) {
+        // oxlint-disable-next-line no-await-in-loop -- Stream reads and cancellation must stay ordered and bounded.
         await db
           .update(appDeploymentFile)
           .set({ status: "failed" })
           .where(eq(appDeploymentFile.id, file.id));
+        // oxlint-disable-next-line no-await-in-loop -- Stream reads and cancellation must stay ordered and bounded.
         await db
           .update(appDeployment)
           .set({ status: "uploading" })

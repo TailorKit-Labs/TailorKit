@@ -9,7 +9,17 @@ import { createDefineViewMatcher } from "./define-view";
 
 const clientRuntimeImport = "tailorkit:file-client-runtime";
 
-export function fileViewLocation(filename: string, root: string) {
+const routePath = (name: string, filename: string) => {
+  const segments = name.split(/[./]/u);
+  if (segments.some((segment) => !segment || segment === "..")) {
+    throw new Error(
+      `${filename} has an empty route segment. Use route.nested-route.view.tsx.`
+    );
+  }
+  return `/${segments.join("/")}`;
+};
+
+export const fileViewLocation = (filename: string, root: string) => {
   const relative = path
     .relative(path.join(root, "src/slots"), filename)
     .split(path.sep);
@@ -26,24 +36,16 @@ export function fileViewLocation(filename: string, root: string) {
   }
   const basename = routeSegments.join("/").slice(0, -".view.tsx".length);
   return { path: routePath(basename, filename), slot };
-}
-
-function routePath(name: string, filename: string) {
-  const segments = name.split(/[./]/u);
-  if (segments.some((segment) => !segment || segment === "..")) {
-    throw new Error(
-      `${filename} has an empty route segment. Use route.nested-route.view.tsx.`
-    );
-  }
-  return `/${segments.join("/")}`;
-}
+};
 
 /** Fill missing defineView options before instance extraction, on both build sides. */
-export function inferFileView(
-  source: string,
+export const inferFileView = (
+  initialSource: string,
   filename: string,
   root: string
-): string {
+): string => {
+  let source = initialSource;
+
   const location = fileViewLocation(filename, root);
   if (!location) {
     return source;
@@ -55,9 +57,9 @@ export function inferFileView(
   }
   const isDefineViewCall = createDefineViewMatcher(parsed.program);
   const edits: { position: number; text: string }[] = [];
-  function visit(node: ESTree.Node) {
+  const visit = (node: ESTree.Node) => {
     if (isDefineViewCall(node)) {
-      const options = node.arguments[0];
+      const [options] = node.arguments;
       if (options?.type !== "ObjectExpression") {
         throw new Error(
           `${filename}: file views require defineView with an inline options object.`
@@ -94,34 +96,41 @@ export function inferFileView(
         }
       }
     }
-  }
+  };
   visit(parsed.program);
   for (const edit of edits.toSorted((a, b) => b.position - a.position)) {
     source =
       source.slice(0, edit.position) + edit.text + source.slice(edit.position);
   }
   return source;
-}
+};
 
-export async function discoverFileRoutes(root: string) {
+export const discoverFileRoutes = async (root: string) => {
   const views: { filename: string; slot: string }[] = [];
   const roots: { filename: string; slot: string }[] = [];
   const layouts: { filename: string; slot: string; path: string }[] = [];
   const slotsDir = path.join(root, "src/slots");
-  async function scan(directory: string, slot?: string, prefix = "") {
-    const entries = await readdir(directory, { withFileTypes: true }).catch(
-      (error: NodeJS.ErrnoException) => {
-        if (error.code === "ENOENT") {
+  const scan = async (directory: string, slot?: string, prefix = "") => {
+    const entries = await (async () => {
+      try {
+        return await readdir(directory, { withFileTypes: true });
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          "code" in error &&
+          error.code === "ENOENT"
+        ) {
           return [];
         }
         throw error;
       }
-    );
+    })();
     for (const entry of entries.toSorted((a, b) =>
       a.name.localeCompare(b.name)
     )) {
       const filename = path.join(directory, entry.name);
       if (entry.isDirectory()) {
+        // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
         await scan(
           filename,
           slot ?? entry.name,
@@ -149,7 +158,7 @@ export async function discoverFileRoutes(root: string) {
         }
       }
     }
-  }
+  };
   await scan(slotsDir);
   const rootFile = path.join(root, "src/root.tsx");
   return {
@@ -158,10 +167,10 @@ export async function discoverFileRoutes(root: string) {
     roots,
     views,
   };
-}
+};
 
 /** Root, layout, view and binding sources to check before deployment. */
-export async function getClientSourceFiles(root: string) {
+export const getClientSourceFiles = async (root: string) => {
   const discovered = await discoverFileRoutes(root);
   const bindings = path.join(root, "src/tailorkit.gen.ts");
   return [
@@ -171,19 +180,19 @@ export async function getClientSourceFiles(root: string) {
     ...discovered.views.map((module) => module.filename),
     ...(existsSync(bindings) ? [bindings] : []),
   ];
-}
+};
 
-async function fileClientSource(root: string) {
+const fileClientSource = async (root: string) => {
   const discovered = await discoverFileRoutes(root);
   const imports = [
     `import { createFileClient } from ${JSON.stringify(clientRuntimeImport)};`,
   ];
   let index = 0;
-  function module(entry: { filename: string }) {
-    const binding = `module${index++}`;
+  const module = (entry: { filename: string }) => {
+    const binding = `module${(index += 1) - 1}`;
     imports.push(`import ${binding} from ${JSON.stringify(entry.filename)};`);
     return `{ filename: ${JSON.stringify(path.relative(root, entry.filename))}, definition: ${binding}`;
-  }
+  };
   const rootModule = discovered.root
     ? `${module(discovered.root)} }`
     : "undefined";
@@ -198,15 +207,15 @@ async function fileClientSource(root: string) {
     (entry) => `${module(entry)}, slot: ${JSON.stringify(entry.slot)} }`
   );
   return `${imports.join("\n")}\nexport default createFileClient({ root: ${rootModule}, roots: [${roots.join(",")}], layouts: [${layouts.join(",")}], views: [${views.join(",")}] });`;
-}
+};
 
 /** A generated entry in build output lets the bundler track imports normally.
  * Directory watching also covers routes that did not exist at the first build. */
-export async function createFileRouteEntry(
+export const createFileRouteEntry = async (
   root: string,
   output: string,
   watching: boolean
-) {
+) => {
   let source = await fileClientSource(root);
   const temporaryRoot = path.join(output, "tmp");
   await mkdir(temporaryRoot, { recursive: true });
@@ -216,7 +225,7 @@ export async function createFileRouteEntry(
   let pending = Promise.resolve();
   let closed = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
-  async function refresh() {
+  const refresh = async () => {
     if (closed) {
       return;
     }
@@ -232,14 +241,17 @@ export async function createFileRouteEntry(
     }
     source = next;
     await writeFile(entry, next);
-  }
+  };
   const watcher = watching
     ? watch(path.join(root, "src"), { recursive: true }, () => {
         if (timer) {
           clearTimeout(timer);
         }
         timer = setTimeout(() => {
-          pending = pending.then(refresh);
+          pending = (async () => {
+            await pending;
+            await refresh();
+          })();
         }, 25);
       })
     : undefined;
@@ -253,36 +265,33 @@ export async function createFileRouteEntry(
       try {
         await pending;
       } finally {
-        await rm(directory, { recursive: true, force: true });
+        await rm(directory, { force: true, recursive: true });
       }
     },
     entry,
   };
-}
+};
 
-export function fileRoutesPlugin(root: string): Plugin {
-  return {
-    enforce: "pre",
-    name: "tailorkit-file-routes",
-    async resolveId(id) {
-      if (id !== clientRuntimeImport) {
-        return;
-      }
-      // Resolve from the app even when its build output is outside the project.
-      const importer = path.join(root, "src/root.tsx");
-      return (
-        (await this.resolve("tailorkit/client", importer, {
-          skipSelf: true,
-        })) ??
-        this.resolve("@tailorkit/app/client", importer, { skipSelf: true })
-      );
-    },
-    transform(source, filename) {
-      if (!filename.endsWith(".view.tsx")) {
-        return;
-      }
-      const code = inferFileView(source, filename, root);
-      return code === source ? undefined : { code, map: null };
-    },
-  };
-}
+export const fileRoutesPlugin = (root: string): Plugin => ({
+  enforce: "pre",
+  name: "tailorkit-file-routes",
+  async resolveId(id) {
+    if (id !== clientRuntimeImport) {
+      return;
+    }
+    // Resolve from the app even when its build output is outside the project.
+    const importer = path.join(root, "src/root.tsx");
+    return (
+      (await this.resolve("tailorkit/client", importer, {
+        skipSelf: true,
+      })) ?? this.resolve("@tailorkit/app/client", importer, { skipSelf: true })
+    );
+  },
+  transform(source, filename) {
+    if (!filename.endsWith(".view.tsx")) {
+      return;
+    }
+    const code = inferFileView(source, filename, root);
+    return code === source ? undefined : { code, map: null };
+  },
+});

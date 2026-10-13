@@ -2,6 +2,13 @@ import { expect, it, vi } from "vite-plus/test";
 
 import { createIframeBackend } from "./backend";
 
+const require = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 it("correlates scoped JWT requests, forwards renewal and ignores unsolicited responses", async () => {
   const send = vi.fn();
   const bridge = createIframeBackend(send);
@@ -45,7 +52,7 @@ it("preserves transient session errors for mutation retry", async () => {
   const session = bridge.getSession({ refresh: false });
   bridge.receive({
     error: { code: "UNAVAILABLE", message: "Try again" },
-    id: send.mock.calls[0]![0].id,
+    id: require(send.mock.calls[0])[0].id,
   });
   await expect(session).rejects.toMatchObject({ code: "UNAVAILABLE" });
   bridge.close();

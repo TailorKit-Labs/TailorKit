@@ -10,7 +10,7 @@ import {
   previewMessageBytes,
 } from "./preview-build-store.ts";
 
-function fakeKV() {
+const fakeKV = () => {
   const data = new Map();
   const expiries = new Map();
   const listeners = new Map();
@@ -56,14 +56,14 @@ function fakeKV() {
       remove(key);
       return value;
     },
-    increment: async () => ++revision,
+    increment: async () => (revision += 1),
     promoteIfOwnerAndNewer: async (
       key,
       ownerKey,
       endedKey,
       expectedOwner,
       value,
-      revision,
+      revisionValue,
       ttl
     ) => {
       if (get(endedKey) !== null) {
@@ -73,7 +73,7 @@ function fakeKV() {
         return false;
       }
       const current = get(key);
-      if (current && JSON.parse(current).revision >= revision) {
+      if (current && JSON.parse(current).revision >= revisionValue) {
         return false;
       }
       set(key, value, { ttl });
@@ -90,15 +90,15 @@ function fakeKV() {
       set(key, value, options);
     },
     subscribe: async (channel, listener) => {
-      const set = listeners.get(channel) ?? new Set();
-      set.add(listener);
-      listeners.set(channel, set);
+      const setValue = listeners.get(channel) ?? new Set();
+      setValue.add(listener);
+      listeners.set(channel, setValue);
       return async () => {
-        set.delete(listener);
+        setValue.delete(listener);
       };
     },
   };
-}
+};
 
 const checksum = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const manifestFor = (files) => ({
@@ -369,7 +369,7 @@ test("large aggregate builds use bounded chunks and messages", async () => {
     for (
       let chunkIndex = 0;
       chunkIndex < Math.ceil(bytes.length / previewChunkBytes);
-      chunkIndex++
+      chunkIndex += 1
     ) {
       const base64 = bytes
         .subarray(
@@ -381,6 +381,7 @@ test("large aggregate builds use bounded chunks and messages", async () => {
         Buffer.byteLength(JSON.stringify({ base64, chunkIndex, fileIndex })) <
           previewMessageBytes
       );
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       await store.upload("session", id, fileIndex, chunkIndex, base64);
     }
   }

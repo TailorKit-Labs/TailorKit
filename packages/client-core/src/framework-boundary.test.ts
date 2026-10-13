@@ -18,10 +18,10 @@ it("bundles the core runtime without loading React or Preact modules in the host
     logLevel: "silent",
     plugins: [
       {
-        name: "framework-boundary",
         generateBundle() {
           modules.push(...this.getModuleIds());
         },
+        name: "framework-boundary",
       },
     ],
   });

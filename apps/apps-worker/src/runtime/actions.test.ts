@@ -11,11 +11,18 @@ import { z } from "zod";
 import { createActionExecution } from "./actions";
 import type { ActionCalls } from "./actions";
 
-function actionRunner(app: AppDefinition, calls: ActionCalls) {
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
+const actionRunner = (app: AppDefinition, calls: ActionCalls) => {
   const run = createActionExecution(app);
   return (input: Invocation, identity: Identity, signal?: AbortSignal) =>
     run(input, identity, calls, signal);
-}
+};
 
 const identity = {
   appId: "app",
@@ -168,9 +175,19 @@ it("revokes callbacks after completion and cancellation", async () => {
 it("revokes a running action's callbacks before its asynchronous work finishes", async () => {
   let context!: ActionContext<typeof functions>;
   let finish!: () => void;
-  const external = new Promise<void>((resolve) => {
-    finish = resolve;
-  });
+  const external = (() => {
+    const {
+      promise: pendingPromise,
+      resolve,
+      reject: rejectPending,
+    } = Promise.withResolvers<ReturnType<() => void>>();
+    try {
+      finish = resolve;
+    } catch (error) {
+      rejectPending(error);
+    }
+    return pendingPromise;
+  })();
   const mutate = vi.fn();
   const app = defineServer({
     ...functions,
@@ -199,12 +216,13 @@ it("revokes a running action's callbacks before its asynchronous work finishes",
   expect(mutate).not.toHaveBeenCalled();
 });
 
+// oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
 it("rejects action call collections that are not registered under the same names", async () => {
   const calls = { mutate: vi.fn(), query: vi.fn() };
   const app = defineServer({
     bad: action({
-      functions: { missing: functions.write },
       args: z.object({}),
+      functions: { missing: functions.write },
       handler: (ctx) => ctx.mutations.missing({ value: 1 }),
     }),
     write: functions.write,
@@ -219,9 +237,19 @@ it("reuses compiled nested bindings while isolating concurrent calls and retaine
   const nested = { records: { read: functions.read, write: functions.write } };
   const contexts: ActionContext<typeof nested>[] = [];
   let release!: () => void;
-  const waiting = new Promise<void>((resolve) => {
-    release = resolve;
-  });
+  const waiting = (() => {
+    const {
+      promise: pendingPromise,
+      resolve,
+      reject: rejectPending,
+    } = Promise.withResolvers<ReturnType<() => void>>();
+    try {
+      release = resolve;
+    } catch (error) {
+      rejectPending(error);
+    }
+    return pendingPromise;
+  })();
   const app = defineServer({
     ...nested,
     run: action({
@@ -256,8 +284,8 @@ it("reuses compiled nested bindings while isolating concurrent calls and retaine
   ]);
   for (const calls of [first, second]) {
     expect(calls.query).toHaveBeenCalledExactlyOnceWith({
-      name: "records.read",
       args: {},
+      name: "records.read",
     });
   }
   for (const context of contexts) {
@@ -275,7 +303,7 @@ it("runs generated instance resolvers with all registered queries and no write c
       dataSchema: z.object({ id: z.string() }),
       path: "/reports/annual.summary",
       resolve: async (context) => {
-        expect(Object.keys(context).sort()).toEqual([
+        expect(Object.keys(context).toSorted()).toEqual([
           "context",
           "identity",
           "queries",
@@ -291,9 +319,9 @@ it("runs generated instance resolvers with all registered queries and no write c
         const count = await retainedQuery();
         return [
           {
+            data: { id: "report" },
             key: "overview",
             metadata: { title: `Reports: ${count}` },
-            data: { id: "report" },
           },
         ];
       },
@@ -366,6 +394,7 @@ it("validates instance payloads and stable keys before returning resolver result
         slot: "page",
       },
     ]);
+    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     await expect(
       actionRunner(app, { mutate: vi.fn(), query: vi.fn() })(
         {
@@ -451,6 +480,7 @@ it("dispatches by exact slot/path pairs and validates against the selected data 
     ["missing", "/reports/annual.summary"],
     ["__proto__", "/constructor"],
   ]) {
+    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     await expect(
       run({ args: { context: {}, path, slot }, name }, identity)
     ).rejects.toMatchObject({
@@ -462,6 +492,7 @@ it("dispatches by exact slot/path pairs and validates against the selected data 
     { context: {}, path: "invalid", slot: "page.links" },
     { context: {}, path: "/", slot: "" },
   ]) {
+    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     await expect(run({ args, name }, identity)).rejects.toMatchObject({
       code: "BAD_REQUEST",
     });
@@ -475,13 +506,14 @@ it("binds backend tool calls to the active verified execution and closes escaped
   const implementation = defineServer({
     read: action({
       args: z.undefined(),
+      // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
       handler: async (ctx) => {
         expect(ctx.identity).toBe(identity);
         expect(ctx.scope).toBe(identity.scope);
         escaped = () =>
           (
             ctx.tools as unknown as {
-              billing: { read(input: unknown): Promise<unknown> };
+              billing: { read: (input: unknown) => Promise<unknown> };
             }
           ).billing.read({ id: "invoice" });
         return escaped();
@@ -489,9 +521,9 @@ it("binds backend tool calls to the active verified execution and closes escaped
     }),
   });
   const calls = {
-    mutate: async () => undefined,
-    query: async () => undefined,
-    tool: vi.fn(async () => ({ amount: 42 })),
+    mutate: async () => {},
+    query: async () => {},
+    tool: vi.fn(async () => await { amount: 42 }),
   };
   const execute = createActionExecution(implementation);
   expect(await execute({ name: "read" }, identity, calls)).toEqual({
@@ -500,5 +532,5 @@ it("binds backend tool calls to the active verified execution and closes escaped
   expect(calls.tool).toHaveBeenCalledExactlyOnceWith("billing.read", {
     id: "invoice",
   });
-  expect(() => escaped!()).toThrow("Action has ended");
+  expect(() => requireValue(escaped)()).toThrow("Action has ended");
 });

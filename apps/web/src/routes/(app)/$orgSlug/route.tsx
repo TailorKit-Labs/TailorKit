@@ -13,9 +13,9 @@ export const Route = createFileRoute("/(app)/$orgSlug")({
     if (!orgs.some((org) => org.slug === params.orgSlug)) {
       await clearActiveOrg();
       throw redirect({
-        to: orgs.length === 0 ? "/account/request-organization" : "/",
-        replace: true,
         reloadDocument: true,
+        replace: true,
+        to: orgs.length === 0 ? "/account/request-organization" : "/",
       });
     }
 
@@ -35,7 +35,7 @@ export const Route = createFileRoute("/(app)/$orgSlug")({
         }
 
         await clearActiveOrg();
-        throw redirect({ to: "/", replace: true, reloadDocument: true });
+        throw redirect({ reloadDocument: true, replace: true, to: "/" });
       });
     if (!org) {
       throw notFound();

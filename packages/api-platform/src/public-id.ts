@@ -1,7 +1,7 @@
 const alphabet = "0123456789abcdefghijklmnopqrstuvwxyz";
 const publicIdLength = 12;
 
-export function createPublicId() {
+export const createPublicId = () => {
   const bytes = crypto.getRandomValues(new Uint8Array(publicIdLength));
   let id = "";
 
@@ -10,4 +10,4 @@ export function createPublicId() {
   }
 
   return id;
-}
+};

@@ -1,3 +1,4 @@
+import { createApi } from "@tailorkit/app/client";
 import type { Invocation } from "@tailorkit/app/protocol";
 import { fn, defineServer } from "@tailorkit/app/server";
 import type { AppDefinition, Identity } from "@tailorkit/app/server";
@@ -8,12 +9,11 @@ import type { ActionCalls } from "./actions";
 import { createExecution, invocationSchema } from "./execution";
 import { resolveFunction } from "./functions";
 
-function actionRunner(app: AppDefinition, calls: ActionCalls) {
+const actionRunner = (app: AppDefinition, calls: ActionCalls) => {
   const run = createActionExecution(app);
   return (input: Invocation, identity: Identity, signal?: AbortSignal) =>
     run(input, identity, calls, signal);
-}
-import { createApi } from "@tailorkit/app/client";
+};
 
 it("dispatches nested functions and preserves their names, identity, execution and typed action calls", async () => {
   const todos = {
@@ -59,7 +59,9 @@ it("dispatches nested functions and preserves their names, identity, execution a
       identity
     ).value
   ).toBe("rows");
+  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
   const query = vi.fn(async () => "rows");
+  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
   const mutate = vi.fn(async () => "saved");
   const run = actionRunner(app, { mutate, query });
   await expect(run({ name: api.tasks.run.name }, identity)).resolves.toEqual({

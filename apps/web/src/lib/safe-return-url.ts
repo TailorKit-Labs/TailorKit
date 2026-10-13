@@ -1,7 +1,7 @@
-export function getSameOriginPath(
+export const getSameOriginPath = (
   value: string | undefined,
   currentOrigin: string
-) {
+) => {
   if (!value) {
     return;
   }
@@ -16,12 +16,12 @@ export function getSameOriginPath(
   } catch {
     // Invalid URLs are not safe redirect targets.
   }
-}
+};
 
-export function getSameOriginUrl(
+export const getSameOriginUrl = (
   value: string | undefined,
   currentOrigin: string
-) {
+) => {
   const path = getSameOriginPath(value, currentOrigin);
 
   if (!path) {
@@ -29,13 +29,13 @@ export function getSameOriginUrl(
   }
 
   return new URL(path, currentOrigin).href;
-}
+};
 
-export function getAuthErrorCallbackUrl(
+export const getAuthErrorCallbackUrl = (
   route: "/login" | "/sign-up",
   returnTo: string | undefined,
   currentOrigin: string
-) {
+) => {
   const callbackUrl = new URL(route, currentOrigin);
   const returnPath = getSameOriginPath(returnTo, currentOrigin);
 
@@ -44,4 +44,4 @@ export function getAuthErrorCallbackUrl(
   }
 
   return `${callbackUrl.pathname}${callbackUrl.search}`;
-}
+};

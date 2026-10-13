@@ -19,18 +19,22 @@ export const bashTool = tool({
     abortSignal?.throwIfAborted();
 
     const result = await sandbox.runCommand({
-      cmd: "bash",
       args: ["-c", command],
+
+      cmd: "bash",
+
       cwd: resolvePath(cwd),
+
+      signal: abortSignal,
+
       // Bound the subprocess too; aborting HTTP alone does not kill it.
       timeoutMs: Math.min(timeoutMs, sandboxIdleTimeoutMs),
-      signal: abortSignal,
     });
     const [stdout, stderr] = await Promise.all([
       result.stdout(),
       result.stderr(),
     ]);
-    return { exitCode: result.exitCode, stdout, stderr };
+    return { exitCode: result.exitCode, stderr, stdout };
   },
   inputSchema: z.object({
     command: z.string().min(1),

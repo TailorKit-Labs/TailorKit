@@ -22,7 +22,11 @@ import {
 } from "@tailorkit/ui/table";
 import { useInfiniteQuery } from "@tanstack/react-query";
 /* oxlint-disable react/no-unstable-nested-components */
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useNavigate,
+  useParams,
+} from "@tanstack/react-router";
 import { flexRender, useTable } from "@tanstack/react-table";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
 import { AppWindowIcon, ArrowUpRightIcon, SearchIcon } from "lucide-react";
@@ -39,7 +43,7 @@ import { getProjectApiKey } from "#utils/project-api-key-memory";
 
 const appsPageSize = 25;
 
-function appsListQueryOptions({
+const appsListQueryOptions = ({
   appsList,
   orgSlug,
   projectSlug,
@@ -49,8 +53,8 @@ function appsListQueryOptions({
   orgSlug: string;
   projectSlug: string;
   search: string;
-}) {
-  return appsList.infiniteOptions({
+}) =>
+  appsList.infiniteOptions({
     getNextPageParam: (lastPage) =>
       lastPage.pagination.hasMore ? lastPage.pagination.page + 1 : undefined,
     initialPageParam: 1,
@@ -62,35 +66,10 @@ function appsListQueryOptions({
       search,
     }),
   });
-}
 
-export const Route = createFileRoute("/(app)/$orgSlug/$projectSlug/apps/")({
-  component: AppsIndexPage,
-  loader: ({ context, params }) =>
-    context.queryClient.infiniteQuery(
-      appsListQueryOptions({
-        appsList: context.orpc.apps.list,
-        orgSlug: params.orgSlug,
-        projectSlug: params.projectSlug,
-        search: "",
-      })
-    ),
-});
-
-interface AppRow {
-  id: string;
-  publicId: string;
-  name: string;
-  scope: Scope;
-  createdAt: Date | string;
-  currentDeployment: { status: string } | null;
-  deploymentCount: number;
-  logoPaths?: { dark?: string; light?: string };
-}
-
-function getDeploymentStatusVariant(
+const getDeploymentStatusVariant = (
   status?: string
-): "info" | "outline" | "success" | "warning" {
+): "info" | "outline" | "success" | "warning" => {
   if (status === "published") {
     return "success";
   }
@@ -101,9 +80,9 @@ function getDeploymentStatusVariant(
     return "info";
   }
   return "outline";
-}
+};
 
-function AppsTable({
+const AppsTable = ({
   apps,
   hasNextPage,
   isFetchingNextPage,
@@ -117,7 +96,7 @@ function AppsTable({
   loadMoreRef: RefObject<HTMLDivElement | null>;
   orgSlug: string;
   projectSlug: string;
-}) {
+}) => {
   const navigate = useNavigate();
   const [sorting, setSorting] = useState<SortingState>([
     { desc: true, id: "createdAt" },
@@ -275,10 +254,12 @@ function AppsTable({
       )}
     </CardFrame>
   );
-}
+};
 
-function AppsIndexPage() {
-  const { orgSlug, projectSlug } = Route.useParams();
+const AppsIndexPage = () => {
+  const { orgSlug, projectSlug } = useParams({
+    from: "/(app)/$orgSlug/$projectSlug/apps/",
+  });
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState("");
   const normalizedSearch = search.trim();
@@ -358,6 +339,7 @@ function AppsIndexPage() {
             <Button
               render={
                 <a
+                  aria-label="Read the installation guide"
                   href="https://tailorkit.dev/docs/installation"
                   rel="noopener noreferrer"
                   target="_blank"
@@ -399,4 +381,28 @@ function AppsIndexPage() {
       {content}
     </PageLayout>
   );
+};
+
+export const Route = createFileRoute("/(app)/$orgSlug/$projectSlug/apps/")({
+  component: AppsIndexPage,
+  loader: ({ context, params }) =>
+    context.queryClient.infiniteQuery(
+      appsListQueryOptions({
+        appsList: context.orpc.apps.list,
+        orgSlug: params.orgSlug,
+        projectSlug: params.projectSlug,
+        search: "",
+      })
+    ),
+});
+
+interface AppRow {
+  id: string;
+  publicId: string;
+  name: string;
+  scope: Scope;
+  createdAt: Date | string;
+  currentDeployment: { status: string } | null;
+  deploymentCount: number;
+  logoPaths?: { dark?: string; light?: string };
 }

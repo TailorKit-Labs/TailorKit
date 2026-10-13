@@ -1,21 +1,23 @@
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import nodePath from "node:path";
 
 import { parse } from "dotenv";
 import * as z from "zod";
 
+const { dirname, resolve } = nodePath;
+
 type EnvShape = z.ZodRawShape;
 interface EnvValidator {
-  safeParse(
+  safeParse: (
     value: unknown
-  ):
+  ) =>
     | { success: true; data: unknown }
     | { success: false; error: { issues: { message: string }[] } };
 }
 
 const reportedWarnings = new Set<string>();
 
-function findWorkspaceRoot(startDirectory: string): string | undefined {
+const findWorkspaceRoot = (startDirectory: string): string | undefined => {
   let directory = startDirectory;
 
   while (true) {
@@ -30,9 +32,9 @@ function findWorkspaceRoot(startDirectory: string): string | undefined {
 
     directory = parentDirectory;
   }
-}
+};
 
-function readEnvironment(): Record<string, string | undefined> {
+const readEnvironment = (): Record<string, string | undefined> => {
   const workspaceRoot = findWorkspaceRoot(process.cwd()) ?? process.cwd();
   const webRoot = resolve(workspaceRoot, "apps/web");
   const dotenvFiles = [
@@ -51,9 +53,9 @@ function readEnvironment(): Record<string, string | undefined> {
 
   // Platform and shell variables take precedence over local dotenv files.
   return { ...fileValues, ...process.env };
-}
+};
 
-function warn(scope: string, message: string): void {
+const warn = (scope: string, message: string): void => {
   const key = `${scope}:${message}`;
   if (reportedWarnings.has(key)) {
     return;
@@ -61,9 +63,9 @@ function warn(scope: string, message: string): void {
 
   reportedWarnings.add(key);
   console.warn(`[env:${scope}] ${message}`);
-}
+};
 
-export function createEnv<const T extends EnvShape>({
+export const createEnv = <const T extends EnvShape>({
   scope,
   schema: schemaShape,
   warnings = {},
@@ -71,7 +73,7 @@ export function createEnv<const T extends EnvShape>({
   scope: string;
   schema: T;
   warnings?: Partial<Record<keyof T & string, string>>;
-}): Partial<z.output<z.ZodObject<T>>> {
+}): Partial<z.output<z.ZodObject<T>>> => {
   const schema = z.object(schemaShape);
   const source = readEnvironment();
   const missingWarnings = warnings as Record<string, string | undefined>;
@@ -104,12 +106,12 @@ export function createEnv<const T extends EnvShape>({
   }
 
   return parsedValues as Partial<z.output<z.ZodObject<T>>>;
-}
+};
 
-export function warnIfMissing(
+export const warnIfMissing = (
   scope: string,
   values: Record<string, unknown>
-): void {
+): void => {
   for (const [name, value] of Object.entries(values)) {
     if (value === undefined || value === "") {
       warn(
@@ -118,12 +120,12 @@ export function warnIfMissing(
       );
     }
   }
-}
+};
 
-export function resolveProductionUrl(values: {
+export const resolveProductionUrl = (values: {
   AUTH_PRODUCTION_URL?: string;
   VERCEL_PROJECT_PRODUCTION_URL?: string;
-}) {
+}) => {
   let value = values.AUTH_PRODUCTION_URL;
   if (!value && values.VERCEL_PROJECT_PRODUCTION_URL) {
     value = `https://${values.VERCEL_PROJECT_PRODUCTION_URL}`;
@@ -142,21 +144,19 @@ export function resolveProductionUrl(values: {
     return;
   }
   return url.href.replace(/\/$/u, "");
-}
+};
 
-export function getProductionUrl(values: {
+export const getProductionUrl = (values: {
   AUTH_PRODUCTION_URL?: string;
   VERCEL_PROJECT_PRODUCTION_URL?: string;
-}) {
-  return resolveProductionUrl(values);
-}
+}) => resolveProductionUrl(values);
 
-export function getBaseUrl(values: {
+export const getBaseUrl = (values: {
   PORT?: number;
   VERCEL_ENV?: string;
   VERCEL_PROJECT_PRODUCTION_URL?: string;
   VERCEL_URL?: string;
-}): string {
+}): string => {
   if (
     values.VERCEL_ENV === "production" &&
     values.VERCEL_PROJECT_PRODUCTION_URL
@@ -168,16 +168,16 @@ export function getBaseUrl(values: {
   }
 
   return `http://localhost:${values.PORT ?? 3000}`;
-}
+};
 
-export function getTrustedOrigins(values: {
+export const getTrustedOrigins = (values: {
   AUTH_TRUSTED_ORIGINS?: string;
   PORT?: number;
   VERCEL_ENV?: string;
   VERCEL_BRANCH_URL?: string;
   VERCEL_PROJECT_PRODUCTION_URL?: string;
   VERCEL_URL?: string;
-}): string[] {
+}): string[] => {
   const origins = new Set([getBaseUrl(values)]);
 
   for (const origin of values.AUTH_TRUSTED_ORIGINS?.split(",") ?? []) {
@@ -204,4 +204,4 @@ export function getTrustedOrigins(values: {
   }
 
   return [...origins];
-}
+};

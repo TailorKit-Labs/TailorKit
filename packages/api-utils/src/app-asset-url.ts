@@ -11,12 +11,16 @@ interface AppDeploymentAssets {
   status: string;
 }
 
-export function withAppAssetUrl<
+export const withAppAssetUrl = <
   T extends {
     currentDeployment: AppDeploymentAssets | null;
     publicId: string;
   },
->(app: T, publicTeamId: string, projectId: string) {
+>(
+  app: T,
+  publicTeamId: string,
+  projectId: string
+) => {
   const deployment = app.currentDeployment;
   const nodeBaseUrl =
     env.ASSET_BASE_URL ??
@@ -54,4 +58,4 @@ export function withAppAssetUrl<
     logoPaths,
     views: deployment?.status === "published" ? (deployment.views ?? []) : [],
   };
-}
+};

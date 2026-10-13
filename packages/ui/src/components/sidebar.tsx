@@ -34,15 +34,15 @@ export const SidebarContext = React.createContext<SidebarContextProps | null>(
   null
 );
 
-export function useSidebar(): SidebarContextProps {
+export const useSidebar = (): SidebarContextProps => {
   const context = React.useContext(SidebarContext);
   if (!context) {
     throw new Error("useSidebar must be used within a SidebarProvider.");
   }
   return context;
-}
+};
 
-export function SidebarProvider({
+export const SidebarProvider = ({
   defaultOpen = true,
   open: openProp,
   onOpenChange,
@@ -54,18 +54,18 @@ export function SidebarProvider({
   defaultOpen?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-}): React.ReactElement {
+}): React.ReactElement => {
   const isMobile = useMediaQuery("max-lg");
   const [openMobile, setOpenMobile] = React.useState(false);
-  const [_open, _setOpen] = React.useState(defaultOpen);
-  const open = openProp ?? _open;
+  const [internalOpen, setInternalOpen] = React.useState(defaultOpen);
+  const open = openProp ?? internalOpen;
 
   const setOpen = React.useCallback(
     (value: boolean) => {
       if (onOpenChange) {
         onOpenChange(value);
       } else {
-        _setOpen(value);
+        setInternalOpen(value);
       }
     },
     [onOpenChange]
@@ -116,13 +116,13 @@ export function SidebarProvider({
       </div>
     </SidebarContext.Provider>
   );
-}
+};
 
-export function Sidebar({
+export const Sidebar = ({
   className,
   children,
   ...props
-}: React.ComponentProps<"div">): React.ReactElement {
+}: React.ComponentProps<"div">): React.ReactElement => {
   const { isMobile, open, openMobile, setOpenMobile } = useSidebar();
 
   if (isMobile) {
@@ -181,32 +181,30 @@ export function Sidebar({
       </div>
     </div>
   );
-}
+};
 
-export function SidebarInset({
+export const SidebarInset = ({
   className,
   ...props
-}: React.ComponentProps<"main">): React.ReactElement {
-  return (
-    <main
-      className={cn(
-        "bg-background relative z-20 flex w-full flex-1 flex-col",
-        "md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ms-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm/5 md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ms-2",
-        "not-dark:bg-clip-padding lg:rounded-2xl lg:border lg:shadow-xs/5",
-        "mt-1 mr-1 mb-1 ml-1 lg:before:pointer-events-none lg:before:absolute lg:before:inset-0 lg:before:rounded-[calc(var(--radius-2xl)-1px)] lg:before:shadow-[0_1px_--theme(--color-black/4%)] dark:lg:before:shadow-[0_-1px_--theme(--color-white/6%)]",
-        className
-      )}
-      data-slot="sidebar-inset"
-      {...props}
-    />
-  );
-}
+}: React.ComponentProps<"main">): React.ReactElement => (
+  <main
+    className={cn(
+      "bg-background relative z-20 flex w-full flex-1 flex-col",
+      "md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ms-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm/5 md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ms-2",
+      "not-dark:bg-clip-padding lg:rounded-2xl lg:border lg:shadow-xs/5",
+      "mt-1 mr-1 mb-1 ml-1 lg:before:pointer-events-none lg:before:absolute lg:before:inset-0 lg:before:rounded-[calc(var(--radius-2xl)-1px)] lg:before:shadow-[0_1px_--theme(--color-black/4%)] dark:lg:before:shadow-[0_-1px_--theme(--color-white/6%)]",
+      className
+    )}
+    data-slot="sidebar-inset"
+    {...props}
+  />
+);
 
-export function SidebarTrigger({
+export const SidebarTrigger = ({
   className,
   onClick,
   ...props
-}: React.ComponentProps<typeof Button>): React.ReactElement {
+}: React.ComponentProps<typeof Button>): React.ReactElement => {
   const { toggleSidebar } = useSidebar();
   return (
     <Button
@@ -224,148 +222,130 @@ export function SidebarTrigger({
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   );
-}
+};
 
-export function SidebarHeader({
+export const SidebarHeader = ({
   className,
   ...props
-}: React.ComponentProps<"div">): React.ReactElement {
-  return (
-    <div
-      className={cn("flex flex-col gap-2 p-2", className)}
-      data-slot="sidebar-header"
-      {...props}
-    />
-  );
-}
+}: React.ComponentProps<"div">): React.ReactElement => (
+  <div
+    className={cn("flex flex-col gap-2 p-2", className)}
+    data-slot="sidebar-header"
+    {...props}
+  />
+);
 
-export function SidebarHeaderRow({
+export const SidebarHeaderRow = ({
   children,
   className,
   ...props
-}: React.ComponentProps<"div">): React.ReactElement {
-  return (
-    <div
-      className={cn("flex h-13 items-center justify-between pl-2", className)}
-      data-slot="sidebar-header-row"
-      {...props}
-    >
-      {children}
-      <SidebarTrigger />
-    </div>
-  );
-}
+}: React.ComponentProps<"div">): React.ReactElement => (
+  <div
+    className={cn("flex h-13 items-center justify-between pl-2", className)}
+    data-slot="sidebar-header-row"
+    {...props}
+  >
+    {children}
+    <SidebarTrigger />
+  </div>
+);
 
-export function SidebarFooter({
+export const SidebarFooter = ({
   className,
   ...props
-}: React.ComponentProps<"div">): React.ReactElement {
-  return (
-    <div
-      className={cn("flex flex-col gap-2 p-2", className)}
-      data-slot="sidebar-footer"
-      {...props}
-    />
-  );
-}
+}: React.ComponentProps<"div">): React.ReactElement => (
+  <div
+    className={cn("flex flex-col gap-2 p-2", className)}
+    data-slot="sidebar-footer"
+    {...props}
+  />
+);
 
-export function SidebarContent({
+export const SidebarContent = ({
   className,
   ...props
-}: React.ComponentProps<"div">): React.ReactElement {
-  return (
-    <ScrollArea
-      className="**:data-[slot=scroll-area-scrollbar]:hidden"
-      scrollFade
-    >
-      <div
-        className={cn(
-          "flex min-h-0 flex-1 flex-col gap-2 overflow-auto",
-          className
-        )}
-        data-slot="sidebar-content"
-        {...props}
-      />
-    </ScrollArea>
-  );
-}
-
-export function SidebarSeparator({
-  className,
-  ...props
-}: React.ComponentProps<typeof Separator>): React.ReactElement {
-  return (
-    <Separator
-      className={cn("bg-sidebar-border mx-2 w-auto", className)}
-      data-slot="sidebar-separator"
-      {...props}
-    />
-  );
-}
-
-export function SidebarGroup({
-  className,
-  ...props
-}: React.ComponentProps<"div">): React.ReactElement {
-  return (
-    <div
-      className={cn("relative flex w-full min-w-0 flex-col p-2", className)}
-      data-slot="sidebar-group"
-      {...props}
-    />
-  );
-}
-
-export function SidebarGroupLabel({
-  className,
-  ...props
-}: React.ComponentProps<"div">): React.ReactElement {
-  return (
+}: React.ComponentProps<"div">): React.ReactElement => (
+  <ScrollArea
+    className="**:data-[slot=scroll-area-scrollbar]:hidden"
+    scrollFade
+  >
     <div
       className={cn(
-        "text-sidebar-foreground/60 flex h-8 shrink-0 items-center rounded-lg px-2 text-xs font-medium",
+        "flex min-h-0 flex-1 flex-col gap-2 overflow-auto",
         className
       )}
-      data-slot="sidebar-group-label"
+      data-slot="sidebar-content"
       {...props}
     />
-  );
-}
+  </ScrollArea>
+);
 
-export function SidebarMenu({
+export const SidebarSeparator = ({
   className,
   ...props
-}: React.ComponentProps<"ul">): React.ReactElement {
-  return (
-    <ul
-      className={cn("flex w-full min-w-0 flex-col gap-1", className)}
-      data-slot="sidebar-menu"
-      {...props}
-    />
-  );
-}
+}: React.ComponentProps<typeof Separator>): React.ReactElement => (
+  <Separator
+    className={cn("bg-sidebar-border mx-2 w-auto", className)}
+    data-slot="sidebar-separator"
+    {...props}
+  />
+);
 
-export function SidebarMenuItem({
+export const SidebarGroup = ({
   className,
   ...props
-}: React.ComponentProps<"li">): React.ReactElement {
-  return (
-    <li
-      className={cn("group/menu-item relative", className)}
-      data-slot="sidebar-menu-item"
-      {...props}
-    />
-  );
-}
+}: React.ComponentProps<"div">): React.ReactElement => (
+  <div
+    className={cn("relative flex w-full min-w-0 flex-col p-2", className)}
+    data-slot="sidebar-group"
+    {...props}
+  />
+);
 
-export function SidebarMenuButton({
+export const SidebarGroupLabel = ({
+  className,
+  ...props
+}: React.ComponentProps<"div">): React.ReactElement => (
+  <div
+    className={cn(
+      "text-sidebar-foreground/60 flex h-8 shrink-0 items-center rounded-lg px-2 text-xs font-medium",
+      className
+    )}
+    data-slot="sidebar-group-label"
+    {...props}
+  />
+);
+
+export const SidebarMenu = ({
+  className,
+  ...props
+}: React.ComponentProps<"ul">): React.ReactElement => (
+  <ul
+    className={cn("flex w-full min-w-0 flex-col gap-1", className)}
+    data-slot="sidebar-menu"
+    {...props}
+  />
+);
+
+export const SidebarMenuItem = ({
+  className,
+  ...props
+}: React.ComponentProps<"li">): React.ReactElement => (
+  <li
+    className={cn("group/menu-item relative", className)}
+    data-slot="sidebar-menu-item"
+    {...props}
+  />
+);
+
+export const SidebarMenuButton = ({
   isActive = false,
   className,
   render,
   ...props
 }: useRender.ComponentProps<"button"> & {
   isActive?: boolean;
-}): React.ReactElement {
+}): React.ReactElement => {
   const defaultProps = {
     className: cn(
       "text-sidebar-accent-foreground/75 ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground active:bg-sidebar-accent active:text-sidebar-accent-foreground flex h-8 w-full items-center gap-2 overflow-hidden rounded-lg p-2 text-left text-sm outline-hidden transition-colors focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50",
@@ -382,7 +362,7 @@ export function SidebarMenuButton({
     props: mergeProps(defaultProps, props),
     render,
   });
-}
+};
 
 // --- Nested panel navigation ---
 
@@ -395,17 +375,18 @@ interface SidebarPanelsContextProps {
 const SidebarPanelsContext =
   React.createContext<SidebarPanelsContextProps | null>(null);
 
-function useSidebarPanels(): SidebarPanelsContextProps {
+const useSidebarPanels = (): SidebarPanelsContextProps => {
   const context = React.useContext(SidebarPanelsContext);
   if (!context) {
     throw new Error("useSidebarPanels must be used within SidebarPanels.");
   }
   return context;
-}
+};
 
-function getPanelNames(children: React.ReactNode): string[] {
+const getPanelNames = (children: React.ReactNode): string[] => {
   const names: string[] = [];
 
+  // oxlint-disable-next-line react/no-react-children -- The compound sidebar API accepts React fragments and arbitrary children; traverse them with React’s public API.
   React.Children.forEach(children, (child) => {
     if (
       !React.isValidElement<{ children?: React.ReactNode; name?: unknown }>(
@@ -426,9 +407,9 @@ function getPanelNames(children: React.ReactNode): string[] {
   });
 
   return names;
-}
+};
 
-export function SidebarPanels({
+export const SidebarPanels = ({
   defaultPanel,
   panel: panelProp,
   onPanelChange,
@@ -438,17 +419,17 @@ export function SidebarPanels({
   panel?: string;
   onPanelChange?: (panel: string) => void;
   children: React.ReactNode;
-}): React.ReactElement {
-  const [_panel, _setPanel] = React.useState(defaultPanel);
+}): React.ReactElement => {
+  const [internalPanel, setInternalPanel] = React.useState(defaultPanel);
   const panelOrder = React.useMemo(() => getPanelNames(children), [children]);
-  const activePanel = panelProp ?? _panel;
+  const activePanel = panelProp ?? internalPanel;
 
   const setActivePanel = React.useCallback(
     (panel: string) => {
       if (onPanelChange) {
         onPanelChange(panel);
       } else {
-        _setPanel(panel);
+        setInternalPanel(panel);
       }
     },
     [onPanelChange]
@@ -466,14 +447,14 @@ export function SidebarPanels({
       </div>
     </SidebarPanelsContext.Provider>
   );
-}
+};
 
-export function SidebarPanel({
+export const SidebarPanel = ({
   name,
   className,
   children,
   ...props
-}: React.ComponentProps<"div"> & { name: string }): React.ReactElement {
+}: React.ComponentProps<"div"> & { name: string }): React.ReactElement => {
   const { activePanel, panelOrder } = useSidebarPanels();
 
   const activeIndex = panelOrder.indexOf(activePanel);
@@ -502,9 +483,9 @@ export function SidebarPanel({
       {children}
     </div>
   );
-}
+};
 
-export function SidebarPanelTrigger({
+export const SidebarPanelTrigger = ({
   target,
   children,
   back = false,
@@ -516,7 +497,7 @@ export function SidebarPanelTrigger({
   isActive?: boolean;
   children: React.ReactNode;
   className?: string;
-}): React.ReactElement {
+}): React.ReactElement => {
   const { setActivePanel } = useSidebarPanels();
   return (
     <Button
@@ -537,4 +518,4 @@ export function SidebarPanelTrigger({
       {back && <span className="size-4" aria-hidden="true" />}
     </Button>
   );
-}
+};

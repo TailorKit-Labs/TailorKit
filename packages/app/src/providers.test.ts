@@ -19,7 +19,8 @@ it("keeps the app wrapper mounted across view changes and cleans it up on unmoun
     layouts: [],
     root: {
       definition: defineRoute({
-        shellComponent: ({ children }) => {
+        // oxlint-disable-next-line func-name-matching -- The named function is a React-compatible test component supplied through a component property.
+        shellComponent: function ShellComponent({ children }) {
           useEffect(() => {
             mount();
             return cleanup;
@@ -32,12 +33,8 @@ it("keeps the app wrapper mounted across view changes and cleans it up on unmoun
     roots: [],
     views: [],
   });
-  function First() {
-    return h("div", {}, `First: ${useContext(Context)}`);
-  }
-  function Second() {
-    return h("div", {}, `Second: ${useContext(Context)}`);
-  }
+  const First = () => h("div", {}, `First: ${useContext(Context)}`);
+  const Second = () => h("div", {}, `Second: ${useContext(Context)}`);
   await act(() => client.$runtime.render(h(First, {}), root));
   expect(root.textContent).toBe("First: shared");
   await act(() => client.$runtime.render(h(Second, {}), root));

@@ -13,7 +13,7 @@ it("round trips preview calls, full upload chunks, and streamed events over the 
     heartbeat: os.handler(() => ({ accepted: true as const })),
     subscribe: os
       .output(asyncIteratorObject(previewEventSchema))
-      .handler(async function* () {
+      .handler(async function* subscribe() {
         yield { type: "ended" as const };
       }),
     uploadChunk: os.input(upload).handler(({ input }) => {

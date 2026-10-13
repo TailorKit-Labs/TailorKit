@@ -3,12 +3,39 @@ import { FatalError } from "workflow";
 
 export const agentTokenPath = "/tmp/tailorkit-agent.token";
 
+export const sandboxIdleTimeoutMs = 15 * 60_000;
+
+/** Retrieve the existing VM and top up its remaining lifetime to 15 minutes. */
+export const getSandbox = async (name: string) => {
+  try {
+    const sandbox = await Sandbox.get({ name });
+    const expiresAt = sandbox.expiresAt?.getTime();
+    if (sandbox.status !== "running" || !expiresAt || expiresAt <= Date.now()) {
+      throw new FatalError("App agent sandbox is no longer running.");
+    }
+    const extension = Date.now() + sandboxIdleTimeoutMs - expiresAt;
+    // The Sandbox API rejects extensions shorter than one second. Near the
+    // 15-minute boundary, clock and request latency can produce a smaller top-up.
+    if (extension >= 1000) {
+      // Session methods cannot auto-resume a stopped VM and remount its Drive.
+      await sandbox.currentSession().extendTimeout(extension);
+    }
+    return sandbox;
+  } catch (error) {
+    if (error instanceof APIError) {
+      throw new FatalError(`Cannot access app sandbox: ${error.message}`);
+    }
+    throw error;
+  }
+};
+
 /** Provision ephemeral CLI authorization without putting the bearer in command arguments. */
-export async function writeAgentToken(sandboxName: string, token: string) {
+export const writeAgentToken = async (sandboxName: string, token: string) => {
   "use step";
-  const session = (await getSandbox(sandboxName)).currentSession();
+  const awaitedResult1 = await getSandbox(sandboxName);
+  const session = awaitedResult1.currentSession();
   await session.writeFiles([
-    { content: Buffer.from(token, "utf8"), path: agentTokenPath },
+    { content: Buffer.from(token, "utf-8"), path: agentTokenPath },
   ]);
   const result = await session.runCommand({
     args: ["600", agentTokenPath],
@@ -18,14 +45,14 @@ export async function writeAgentToken(sandboxName: string, token: string) {
   if (result.exitCode !== 0) {
     throw new FatalError("Could not secure agent authorization file.");
   }
-}
+};
 
 export const agentSchemaPath = "/workspace/tailorkit.schema.json";
 
-export async function writeAgentSchema(
+export const writeAgentSchema = async (
   sandboxName: string,
   schema: Record<string, unknown>
-) {
+) => {
   "use step";
   const sandbox = await getSandbox(sandboxName);
   await sandbox.currentSession().writeFiles([
@@ -34,15 +61,17 @@ export async function writeAgentSchema(
       path: agentSchemaPath,
     },
   ]);
-}
+};
 
-export const sandboxIdleTimeoutMs = 15 * 60_000;
-
-export async function prepareSandbox(driveName: string, sandboxName: string) {
+export const prepareSandbox = async (
+  driveName: string,
+  sandboxName: string
+) => {
   "use step";
   try {
     const drive = await Drive.getOrCreate({
-      maxSize: 5 * 1024 * 1024 * 1024, // 5 GiB
+      // 5 GiB
+      maxSize: 5 * 1024 * 1024 * 1024,
       name: driveName,
     });
     if (drive.currentSandboxName && drive.currentSandboxName !== sandboxName) {
@@ -67,39 +96,15 @@ export async function prepareSandbox(driveName: string, sandboxName: string) {
     }
     throw error;
   }
-}
+};
 
-/** Retrieve the existing VM and top up its remaining lifetime to 15 minutes. */
-export async function getSandbox(name: string) {
-  try {
-    const sandbox = await Sandbox.get({ name });
-    const expiresAt = sandbox.expiresAt?.getTime();
-    if (sandbox.status !== "running" || !expiresAt || expiresAt <= Date.now()) {
-      throw new FatalError("App agent sandbox is no longer running.");
-    }
-    const extension = Date.now() + sandboxIdleTimeoutMs - expiresAt;
-    // The Sandbox API rejects extensions shorter than one second. Near the
-    // 15-minute boundary, clock and request latency can produce a smaller top-up.
-    if (extension >= 1000) {
-      // Session methods cannot auto-resume a stopped VM and remount its Drive.
-      await sandbox.currentSession().extendTimeout(extension);
-    }
-    return sandbox;
-  } catch (error) {
-    if (error instanceof APIError) {
-      throw new FatalError(`Cannot access app sandbox: ${error.message}`);
-    }
-    throw error;
-  }
-}
-
-export async function renewSandbox(name: string) {
+export const renewSandbox = async (name: string) => {
   "use step";
   await getSandbox(name);
-}
+};
 
 /** Best-effort cleanup after a workflow finishes or its MCP request ends. Its Drive survives. */
-export async function deleteSandbox(name: string) {
+export const deleteSandbox = async (name: string) => {
   "use step";
   try {
     const sandbox = await Sandbox.get({ name });
@@ -113,4 +118,4 @@ export async function deleteSandbox(name: string) {
       error
     );
   }
-}
+};

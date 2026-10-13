@@ -37,7 +37,7 @@ export interface TextFieldProps {
   value?: string;
 }
 
-export function TextField({
+export const TextField = ({
   autoComplete,
   autoFocus,
   description,
@@ -53,7 +53,7 @@ export function TextField({
   showDescriptionWhenError = false,
   type,
   value,
-}: TextFieldProps) {
+}: TextFieldProps) => {
   const errorMessage = formatFieldErrors(errors);
   const isError = errorMessage.length > 0;
 
@@ -102,4 +102,4 @@ export function TextField({
       {isError && <FieldError>{errorMessage}</FieldError>}
     </Field>
   );
-}
+};

@@ -38,7 +38,7 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { useParams, createFileRoute } from "@tanstack/react-router";
 import { CopyIcon, EyeIcon, EyeOffIcon, RefreshCwIcon } from "lucide-react";
 import { useState } from "react";
 
@@ -49,17 +49,27 @@ import {
   setProjectApiKey,
 } from "#utils/project-api-key-memory";
 
-export const Route = createFileRoute(
-  "/(app)/$orgSlug/$projectSlug/settings/api-keys"
-)({
-  component: ProjectApiKeysPage,
-  loader: ({ context, params }) =>
-    context.queryClient.query(
-      context.orpc.project.apiKeys.queryOptions({
-        input: { orgSlug: params.orgSlug, projectSlug: params.projectSlug },
-      })
-    ),
-});
+const keyLabel = (key: {
+  id: string;
+  prefix?: string | null;
+  start?: string | null;
+}) => `${key.prefix ?? key.start ?? key.id}${"*".repeat(8)}`;
+
+const LastUsedLabel = ({
+  lastRequest,
+}: {
+  lastRequest?: Date | string | null;
+}) => (
+  <span className="text-muted-foreground shrink-0 text-xs">
+    Last used{" "}
+    {lastRequest ? <DateAgo className="inline" date={lastRequest} /> : "never"}
+  </span>
+);
+
+const copyApiKeyImplementation = async (value: string) => {
+  await navigator.clipboard.writeText(value);
+  toastManager.add({ title: "API key copied", type: "success" });
+};
 
 const gracePeriodOptions = [
   { label: "Immediately", value: "0" },
@@ -68,33 +78,10 @@ const gracePeriodOptions = [
   { label: "After 1 day", value: "86400" },
 ] as const;
 
-function keyLabel(key: {
-  id: string;
-  prefix?: string | null;
-  start?: string | null;
-}) {
-  return `${key.prefix ?? key.start ?? key.id}${"*".repeat(8)}`;
-}
-
-function LastUsedLabel({
-  lastRequest,
-}: {
-  lastRequest?: Date | string | null;
-}) {
-  return (
-    <span className="text-muted-foreground shrink-0 text-xs">
-      Last used{" "}
-      {lastRequest ? (
-        <DateAgo className="inline" date={lastRequest} />
-      ) : (
-        "never"
-      )}
-    </span>
-  );
-}
-
-function ProjectApiKeysPage() {
-  const { orgSlug, projectSlug } = Route.useParams();
+const ProjectApiKeysPage = () => {
+  const { orgSlug, projectSlug } = useParams({
+    from: "/(app)/$orgSlug/$projectSlug/settings/api-keys",
+  });
   const queryClient = useQueryClient();
   const [gracePeriodSeconds, setGracePeriodSeconds] = useState("3600");
   const [rotateDialogOpen, setRotateDialogOpen] = useState(false);
@@ -119,7 +106,7 @@ function ProjectApiKeysPage() {
     onError: (err: unknown) => {
       const message =
         err instanceof Error ? err.message : "Failed to rotate API key";
-      toastManager.add({ title: "Error", description: message, type: "error" });
+      toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: async (result) => {
       setNewApiKey(result.apiKey.key);
@@ -136,10 +123,7 @@ function ProjectApiKeysPage() {
     },
   });
 
-  async function copyApiKey(value: string) {
-    await navigator.clipboard.writeText(value);
-    toastManager.add({ title: "API key copied", type: "success" });
-  }
+  const copyApiKey = copyApiKeyImplementation;
 
   const activeKey = apiKeys.active[0] ?? null;
   const expiringKeys = apiKeys.rotating;
@@ -230,8 +214,8 @@ function ProjectApiKeysPage() {
           <DialogHeader>
             <DialogTitle>New API key</DialogTitle>
             <DialogDescription>
-              This key is only shown once. Copy it now — it won't be visible
-              again after you close this dialog.
+              This key is only shown once. Copy it now — it won&apos;t be
+              visible again after you close this dialog.
             </DialogDescription>
           </DialogHeader>
           <DialogPanel>
@@ -398,4 +382,16 @@ function ProjectApiKeysPage() {
       ) : null}
     </PageLayout>
   );
-}
+};
+
+export const Route = createFileRoute(
+  "/(app)/$orgSlug/$projectSlug/settings/api-keys"
+)({
+  component: ProjectApiKeysPage,
+  loader: ({ context, params }) =>
+    context.queryClient.query(
+      context.orpc.project.apiKeys.queryOptions({
+        input: { orgSlug: params.orgSlug, projectSlug: params.projectSlug },
+      })
+    ),
+});

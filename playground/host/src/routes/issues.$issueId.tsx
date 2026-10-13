@@ -1,32 +1,35 @@
 import { Badge } from "@tailorkit/ui/badge";
 import { Button } from "@tailorkit/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@tailorkit/ui/card";
-import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
+import {
+  useLoaderData,
+  Link,
+  createFileRoute,
+  useRouter,
+} from "@tanstack/react-router";
 import { ArrowLeft, Check, CircleDot } from "lucide-react";
 
 import { changeIssueStatus, loadIssue } from "#lib/issues.functions";
 
-export const Route = createFileRoute("/issues/$issueId")({
-  component: IssueDetailPage,
-  loader: ({ params }) => loadIssue({ data: { issueId: params.issueId } }),
-});
-
-function IssueDetailPage() {
-  const { issue, creatorName } = Route.useLoaderData();
+const IssueDetailPage = () => {
+  const { issue, creatorName } = useLoaderData({ from: "/issues/$issueId" });
   const router = useRouter();
-  const nextStatus =
-    issue.status === "Backlog"
-      ? "In Progress"
-      : issue.status === "In Progress"
-        ? "Done"
-        : "Backlog";
+  const nextStatus = (() => {
+    if (issue.status === "Backlog") {
+      return "In Progress" as const;
+    }
+    if (issue.status === "In Progress") {
+      return "Done" as const;
+    }
+    return "Backlog" as const;
+  })();
 
-  async function advanceStatus() {
+  const advanceStatus = async () => {
     await changeIssueStatus({
       data: { issueId: issue.id, status: nextStatus },
     });
     await router.invalidate();
-  }
+  };
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
@@ -61,7 +64,7 @@ function IssueDetailPage() {
         <p className="text-muted-foreground text-sm">
           Created by {creatorName}
         </p>
-        <Button onClick={() => void advanceStatus()} variant="outline">
+        <Button onClick={() => advanceStatus()} variant="outline">
           {issue.status === "Done" ? (
             <CircleDot aria-hidden="true" />
           ) : (
@@ -72,4 +75,9 @@ function IssueDetailPage() {
       </div>
     </div>
   );
-}
+};
+
+export const Route = createFileRoute("/issues/$issueId")({
+  component: IssueDetailPage,
+  loader: ({ params }) => loadIssue({ data: { issueId: params.issueId } }),
+});

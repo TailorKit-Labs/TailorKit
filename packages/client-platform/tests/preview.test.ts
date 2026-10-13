@@ -75,14 +75,16 @@ describe("preview message schemas", () => {
   });
 });
 
+const fileImplementation = (path: string, contentType = "text/javascript") => ({
+  chunks: 0,
+  contentType,
+  path,
+  sha256: "0".repeat(64),
+  size: 0,
+});
+
 describe("preview file manifest", () => {
-  const file = (path: string, contentType = "text/javascript") => ({
-    chunks: 0,
-    contentType,
-    path,
-    sha256: "0".repeat(64),
-    size: 0,
-  });
+  const file = fileImplementation;
 
   it("enforces the path limit in UTF-8 bytes", () => {
     expect(

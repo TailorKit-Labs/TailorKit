@@ -19,17 +19,19 @@ type BreakpointQuery =
   | `max-${Breakpoint}`
   | `${Breakpoint}:max-${Breakpoint}`;
 
-function resolveMin(value: Breakpoint | number): string {
+const resolveMin = (value: Breakpoint | number): string => {
   const px = typeof value === "number" ? value : BREAKPOINTS[value];
   return `(min-width: ${px}px)`;
-}
+};
 
-function resolveMax(value: Breakpoint | number): string {
+const resolveMax = (value: Breakpoint | number): string => {
   const px = typeof value === "number" ? value : BREAKPOINTS[value];
   return `(max-width: ${px - 1}px)`;
-}
+};
 
-function parseQuery(query: BreakpointQuery | MediaQueryInput | string): string {
+const parseQuery = (
+  query: BreakpointQuery | MediaQueryInput | string
+): string => {
   if (typeof query !== "string") {
     const parts: string[] = [];
     if (query.min !== undefined) {
@@ -67,11 +69,9 @@ function parseQuery(query: BreakpointQuery | MediaQueryInput | string): string {
   }
 
   return parts.length > 0 ? parts.join(" and ") : query;
-}
+};
 
-function getServerSnapshot(): boolean {
-  return false;
-}
+const getServerSnapshot = (): boolean => false;
 
 export interface MediaQueryInput {
   min?: Breakpoint | number;
@@ -80,19 +80,21 @@ export interface MediaQueryInput {
   pointer?: "coarse" | "fine";
 }
 
-export function useMediaQuery(
+export const useMediaQuery = (
   query: BreakpointQuery | MediaQueryInput | string
-): boolean {
+): boolean => {
   const mediaQuery = parseQuery(query);
 
   const subscribe = useCallback(
-    (callback: () => void) => {
+    (operation: () => void) => {
       if (typeof window === "undefined") {
-        return () => {};
+        return () => {
+          /* Intentionally no action is needed. */
+        };
       }
       const mql = window.matchMedia(mediaQuery);
-      mql.addEventListener("change", callback);
-      return () => mql.removeEventListener("change", callback);
+      mql.addEventListener("change", operation);
+      return () => mql.removeEventListener("change", operation);
     },
     [mediaQuery]
   );
@@ -105,8 +107,6 @@ export function useMediaQuery(
   }, [mediaQuery]);
 
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-}
+};
 
-export function useIsMobile(): boolean {
-  return useMediaQuery("max-md");
-}
+export const useIsMobile = (): boolean => useMediaQuery("max-md");

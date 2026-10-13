@@ -2,6 +2,7 @@ import { invocationSchema } from "@tailorkit/app/protocol";
 import type { Invocation } from "@tailorkit/app/protocol";
 import type { AppDefinition, Identity } from "@tailorkit/app/server";
 import { Effect } from "effect";
+import { catch as catchEffect } from "effect/Effect";
 import { z } from "zod";
 
 import { createActionExecution } from "./actions";
@@ -26,22 +27,22 @@ export interface MutationResult extends ExecutionResult {
   committed: boolean;
 }
 
-export function createExecution(
+export const createExecution = (
   app: AppDefinition,
   persistence: Persistence,
   migrations: readonly AppMigration[] = []
-) {
+) => {
   migrateDatabase(persistence, migrations);
   persistence.execute(
     "CREATE TABLE IF NOT EXISTS tailorkit_receipts (id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, result TEXT NOT NULL)",
     []
   );
-  function execute(
+  const execute = (
     input: Invocation,
     identity: Identity,
     kind: "query" | "mutation",
     tables?: Set<string>
-  ): ExecutionResult {
+  ): ExecutionResult => {
     const { fn, args } = prepareFunction(app, input, identity, kind);
     const scope = databaseScope(
       persistence,
@@ -54,7 +55,13 @@ export function createExecution(
       );
       if (value && typeof value === "object" && "then" in value) {
         // Revoke DB access before any continuation can run outside the transaction.
-        void Promise.resolve(value).catch(() => {});
+        void (async () => {
+          try {
+            return await Promise.resolve(value);
+          } catch {
+            /* Intentionally no action is needed. */
+          }
+        })();
         throw new AppError("BAD_REQUEST", "App handlers must be synchronous");
       }
       const result = {
@@ -68,12 +75,12 @@ export function createExecution(
       }
       scope.close();
     }
-  }
-  function mutate(
+  };
+  const mutate = (
     input: Invocation & { requestId: string },
     identity: Identity,
     tables?: Set<string>
-  ): MutationResult {
+  ): MutationResult => {
     if (identity.expiresAt <= Date.now()) {
       throw new AppError("UNAUTHORIZED", "App token expired");
     }
@@ -88,10 +95,10 @@ export function createExecution(
       ...(input.args === undefined ? ["undefined"] : []),
     ]);
     return persistence.transaction(() => {
-      const prior = persistence.execute(
+      const [prior] = persistence.execute(
         "SELECT fingerprint, result FROM tailorkit_receipts WHERE id = ?",
         [input.requestId]
-      ).rows[0];
+      ).rows;
       if (prior) {
         if (prior[0] !== fingerprint) {
           throw new AppError(
@@ -108,7 +115,7 @@ export function createExecution(
       );
       return { ...result, committed: true };
     });
-  }
+  };
   const action = createActionExecution(app);
   return {
     action(
@@ -118,17 +125,13 @@ export function createExecution(
       signal: AbortSignal
     ): Effect.Effect<InvocationResult> {
       return Effect.tryPromise({
+        catch: appError,
         try: () =>
           action(
             input,
             identity,
             {
               fetch: services.fetch,
-              tool: services.tool,
-              query: (call) =>
-                Promise.resolve().then(
-                  () => execute(call, identity, "query").value
-                ),
               mutate: async (call) => {
                 const result = mutate(call, identity);
                 if (result.committed && result.tables.length) {
@@ -136,21 +139,27 @@ export function createExecution(
                 }
                 return result.value;
               },
+              query: (call) =>
+                (async () => {
+                  void (await Promise.resolve());
+                  return execute(call, identity, "query").value;
+                })(),
+              tool: services.tool,
             },
             signal
           ),
-        catch: appError,
       }).pipe(
         Effect.map((value) => ({
+          committed: false,
           result: { ok: true as const, value },
           tables: [],
-          committed: false,
         })),
-        Effect.catch((error) =>
+        // oxlint-disable-next-line promise/prefer-await-to-callbacks -- This is an Effect recovery operator or transport callback, not a Node-style completion callback.
+        catchEffect((err) =>
           Effect.succeed({
-            result: failedResult(error),
-            tables: [],
             committed: false,
+            result: failedResult(err),
+            tables: [],
           })
         )
       );
@@ -163,6 +172,7 @@ export function createExecution(
       return Effect.suspend(() => {
         const tables = new Set<string>();
         return Effect.try({
+          catch: appError,
           try: () => {
             const parsed = (
               kind === "mutation"
@@ -181,18 +191,17 @@ export function createExecution(
                   )
                 : execute(parsed.data, identity, kind, tables);
             return {
+              committed: "committed" in result && result.committed === true,
               result: { ok: true as const, value: result.value },
               tables: result.tables,
-              committed: "committed" in result && result.committed === true,
             };
           },
-          catch: appError,
         }).pipe(
-          Effect.catch((error) =>
+          catchEffect((err2) =>
             Effect.succeed({
-              result: failedResult(error),
-              tables: [...tables],
               committed: false,
+              result: failedResult(err2),
+              tables: [...tables],
             })
           )
         );
@@ -202,4 +211,4 @@ export function createExecution(
     query: (input: Invocation, identity: Identity) =>
       execute(input, identity, "query"),
   };
-}
+};

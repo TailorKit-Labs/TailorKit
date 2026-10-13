@@ -1,3 +1,4 @@
+// oxlint-disable-next-line max-classes-per-file -- These related adapter or mock classes implement one runtime boundary.
 import type { MutationDatabase } from "@tailorkit/app/server";
 import type { Query } from "drizzle-orm";
 import { fillPlaceholders, getTableName, isView, isTable } from "drizzle-orm";
@@ -24,19 +25,19 @@ export interface SqlResult {
   changes: number;
 }
 export interface Persistence {
-  execute(sql: string, params: unknown[]): SqlResult;
-  transaction<T>(run: () => T): T;
+  execute: (sql: string, params: unknown[]) => SqlResult;
+  transaction: <T>(run: () => T) => T;
 }
 interface Metadata {
   type: "select" | "insert" | "update" | "delete";
   tables: string[];
 }
 
-export function databaseScope(
+export const databaseScope = (
   driver: Persistence,
   writable: boolean,
   relations: AnyRelations = {}
-) {
+) => {
   const reads = new Set<string>();
   const writes = new Set<string>();
   let active = true;
@@ -46,15 +47,22 @@ export function databaseScope(
     private readonly relationalMapper:
       | ((rows: Record<string, unknown>[]) => unknown)
       | undefined;
+    private fields: SelectedFieldsOrdered | undefined;
+    private mapper: ((rows: unknown[][]) => unknown) | undefined;
+    private metadata: Metadata | undefined;
     constructor(
       query: Query,
-      private fields: SelectedFieldsOrdered | undefined,
+      fields: SelectedFieldsOrdered | undefined,
       method: SQLiteExecuteMethod,
-      private mapper: ((rows: unknown[][]) => unknown) | undefined,
-      private metadata: Metadata | undefined,
+      mapper: ((rows: unknown[][]) => unknown) | undefined,
+      metadata: Metadata | undefined,
       relationalMapper?: (rows: Record<string, unknown>[]) => unknown
     ) {
       super("sync", method, query);
+      this.fields = fields;
+      this.mapper = mapper;
+      this.metadata = metadata;
+
       this.relationalMapper = relationalMapper;
     }
     private executeSql(values: Record<string, unknown> = {}) {
@@ -125,6 +133,7 @@ export function databaseScope(
     }
   }
   class Session extends SQLiteSession<"sync", { changes: number }> {
+    // oxlint-disable-next-line class-methods-use-this -- The adapter overrides an instance method required by the upstream interface.
     prepareQuery(
       query: Query,
       fields: SelectedFieldsOrdered | undefined,
@@ -134,6 +143,7 @@ export function databaseScope(
     ) {
       return new Prepared(query, fields, method, mapper, metadata);
     }
+    // oxlint-disable-next-line class-methods-use-this -- The adapter overrides an instance method required by the upstream interface.
     prepareRelationalQuery(
       query: Query,
       fields: SelectedFieldsOrdered | undefined,
@@ -162,6 +172,7 @@ export function databaseScope(
         mapper
       );
     }
+    // oxlint-disable-next-line class-methods-use-this -- The adapter overrides an instance method required by the upstream interface.
     transaction(): never {
       throw new AppError(
         "BAD_REQUEST",
@@ -192,4 +203,4 @@ export function databaseScope(
     reads,
     writes,
   };
-}
+};

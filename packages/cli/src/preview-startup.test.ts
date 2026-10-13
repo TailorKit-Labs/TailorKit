@@ -121,7 +121,7 @@ it.each([
   });
 
   await runPreview({ cwd, outDir: "output" });
-  const socket = PreviewSocket.instances[0];
+  const [socket] = PreviewSocket.instances;
   socket?.open();
   await vi.waitFor(() => expect(mocks.commitBuild).toHaveBeenCalledOnce());
   expect(
@@ -133,7 +133,19 @@ it.each([
   expect(socket?.closed).toBe(true);
   expect(process.listeners("SIGINT")).toEqual(signalListeners.SIGINT);
   expect(process.listeners("SIGTERM")).toEqual(signalListeners.SIGTERM);
-  await new Promise((resolve) => setTimeout(resolve, 1100));
+  await (() => {
+    const {
+      promise: pendingPromise,
+      resolve,
+      reject: rejectPending,
+    } = Promise.withResolvers();
+    try {
+      setTimeout(resolve, 1100);
+    } catch (error) {
+      rejectPending(error);
+    }
+    return pendingPromise;
+  })();
   expect(PreviewSocket.instances).toHaveLength(1);
 });
 

@@ -43,7 +43,11 @@ pnpm test
 pnpm build
 ```
 
-`pnpm check` runs formatting and lint checks. License files are checked with:
+`pnpm check` runs Oxlint and Oxfmt with Ultracite’s core and React presets. `pnpm fix` applies automatic lint fixes and formatting. Review automatic fixes for behavior changes, especially argument counts, property evaluation order, and asynchronous lifetimes. `pnpm exec ultracite doctor` checks the setup.
+
+The migration follows the [Ultracite migration guide](https://www.ultracite.ai/docs/migrate.md). The formatting commit is recorded in `.git-blame-ignore-revs`; configure `git config blame.ignoreRevsFile .git-blame-ignore-revs` to skip it locally. Preset rules stay enabled globally. Necessary exceptions are documented at the affected code, including sequential stream reads, generated declaration merging, and framework callback contracts. Remove each exception when a behavior-preserving refactor makes it unnecessary.
+
+License files are checked with:
 
 ```sh
 pnpm licenses:check

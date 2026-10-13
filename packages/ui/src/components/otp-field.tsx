@@ -6,61 +6,57 @@ import type * as React from "react";
 import { cn } from "#ui";
 import { Separator } from "#ui/separator";
 
-export function OTPField({
+export { OTPField as OTPFieldPrimitive } from "@base-ui/react/otp-field";
+
+export const OTPField = ({
   className,
   size = "default",
   ...props
 }: React.ComponentProps<typeof OTPFieldPrimitive.Root> & {
   size?: "default" | "lg";
-}): React.ReactElement {
-  return (
-    <OTPFieldPrimitive.Root
-      className={cn(
-        "flex items-center gap-2 has-disabled:opacity-64 has-disabled:**:data-[slot=otp-field-input]:shadow-none has-disabled:**:data-[slot=otp-field-input]:before:shadow-none!",
-        className
-      )}
-      data-size={size}
-      data-slot="otp-field"
-      {...props}
-    />
-  );
-}
+}): React.ReactElement => (
+  <OTPFieldPrimitive.Root
+    className={cn(
+      "flex items-center gap-2 has-disabled:opacity-64 has-disabled:**:data-[slot=otp-field-input]:shadow-none has-disabled:**:data-[slot=otp-field-input]:before:shadow-none!",
+      className
+    )}
+    data-size={size}
+    data-slot="otp-field"
+    {...props}
+  />
+);
 
-export function OTPFieldInput({
+export const OTPFieldInput = ({
   className,
   ...props
-}: React.ComponentProps<typeof OTPFieldPrimitive.Input>): React.ReactElement {
-  return (
-    <OTPFieldPrimitive.Input
-      className={cn(
-        "border-input bg-background text-foreground ring-ring/24 focus-visible:border-ring focus-visible:ring-ring/24 aria-invalid:border-destructive/36 aria-invalid:focus-visible:border-destructive/64 aria-invalid:focus-visible:ring-destructive/16 dark:bg-input/32 dark:aria-invalid:focus-visible:ring-destructive/24 relative size-9 min-w-0 rounded-lg border text-center text-base leading-9 shadow-xs/5 transition-shadow outline-none not-dark:bg-clip-padding before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] not-focus-visible:not-aria-invalid:before:shadow-[0_1px_--theme(--color-black/4%)] focus-visible:z-10 focus-visible:shadow-none focus-visible:ring-[3px] in-[[data-slot=otp-field][data-size=lg]]:size-10 in-[[data-slot=otp-field][data-size=lg]]:text-lg in-[[data-slot=otp-field][data-size=lg]]:leading-10 aria-invalid:shadow-none sm:size-8 sm:text-sm sm:leading-8 sm:in-[[data-slot=otp-field][data-size=lg]]:size-9 sm:in-[[data-slot=otp-field][data-size=lg]]:text-base sm:in-[[data-slot=otp-field][data-size=lg]]:leading-9 dark:not-focus-visible:not-aria-invalid:before:shadow-[0_-1px_--theme(--color-white/6%)]",
-        className
-      )}
-      data-slot="otp-field-input"
-      spellCheck={false}
-      {...props}
-    />
-  );
-}
+}: React.ComponentProps<
+  typeof OTPFieldPrimitive.Input
+>): React.ReactElement => (
+  <OTPFieldPrimitive.Input
+    className={cn(
+      "border-input bg-background text-foreground ring-ring/24 focus-visible:border-ring focus-visible:ring-ring/24 aria-invalid:border-destructive/36 aria-invalid:focus-visible:border-destructive/64 aria-invalid:focus-visible:ring-destructive/16 dark:bg-input/32 dark:aria-invalid:focus-visible:ring-destructive/24 relative size-9 min-w-0 rounded-lg border text-center text-base leading-9 shadow-xs/5 transition-shadow outline-none not-dark:bg-clip-padding before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] not-focus-visible:not-aria-invalid:before:shadow-[0_1px_--theme(--color-black/4%)] focus-visible:z-10 focus-visible:shadow-none focus-visible:ring-[3px] in-[[data-slot=otp-field][data-size=lg]]:size-10 in-[[data-slot=otp-field][data-size=lg]]:text-lg in-[[data-slot=otp-field][data-size=lg]]:leading-10 aria-invalid:shadow-none sm:size-8 sm:text-sm sm:leading-8 sm:in-[[data-slot=otp-field][data-size=lg]]:size-9 sm:in-[[data-slot=otp-field][data-size=lg]]:text-base sm:in-[[data-slot=otp-field][data-size=lg]]:leading-9 dark:not-focus-visible:not-aria-invalid:before:shadow-[0_-1px_--theme(--color-white/6%)]",
+      className
+    )}
+    data-slot="otp-field-input"
+    spellCheck={false}
+    {...props}
+  />
+);
 
-export function OTPFieldSeparator({
+export const OTPFieldSeparator = ({
   className,
   ...props
-}: React.ComponentProps<typeof Separator>): React.ReactElement {
-  return (
-    <OTPFieldPrimitive.Separator
-      render={
-        <Separator
-          className={cn(
-            "bg-input rounded-full data-[orientation=horizontal]:h-0.5 data-[orientation=horizontal]:w-3",
-            className
-          )}
-          orientation="horizontal"
-          {...props}
-        />
-      }
-    />
-  );
-}
-
-export { OTPFieldPrimitive };
+}: React.ComponentProps<typeof Separator>): React.ReactElement => (
+  <OTPFieldPrimitive.Separator
+    render={
+      <Separator
+        className={cn(
+          "bg-input rounded-full data-[orientation=horizontal]:h-0.5 data-[orientation=horizontal]:w-3",
+          className
+        )}
+        orientation="horizontal"
+        {...props}
+      />
+    }
+  />
+);

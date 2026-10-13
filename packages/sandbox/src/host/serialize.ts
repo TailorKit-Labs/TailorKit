@@ -1,4 +1,4 @@
-export function readElementProps(element: Element): Record<string, unknown> {
+export const readElementProps = (element: Element): Record<string, unknown> => {
   const canonicalPropNames: Readonly<Record<string, string>> = {
     bordercolor: "borderColor",
     minheight: "minHeight",
@@ -32,4 +32,4 @@ export function readElementProps(element: Element): Record<string, unknown> {
     props[canonicalPropNames[name] ?? attribute.name] = attribute.value;
   }
   return props;
-}
+};

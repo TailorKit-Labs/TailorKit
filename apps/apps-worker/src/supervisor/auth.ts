@@ -13,9 +13,9 @@ interface RuntimeVerifierOptions {
   publicKeys: unknown;
 }
 
-export function createAppRuntimeVerifierEffect(
+export const createAppRuntimeVerifierEffect = (
   options: RuntimeVerifierOptions
-) {
+) => {
   let verify: ReturnType<typeof appTokenVerifierEffect>;
   try {
     verify = appTokenVerifierEffect({
@@ -34,13 +34,13 @@ export function createAppRuntimeVerifierEffect(
       );
   }
   return (token: string) => verify(token);
-}
+};
 
 let cached:
   | { id: string; verify: ReturnType<typeof createAppRuntimeVerifierEffect> }
   | undefined;
 
-export function verifier(env: Env) {
+export const verifier = (env: Env) => {
   const id = JSON.stringify([env.PLATFORM_URL, env.APP_RUNTIME_PUBLIC_KEYS]);
 
   if (cached?.id !== id) {
@@ -54,4 +54,4 @@ export function verifier(env: Env) {
   }
 
   return cached.verify;
-}
+};

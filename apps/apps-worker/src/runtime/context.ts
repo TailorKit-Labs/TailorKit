@@ -14,7 +14,7 @@ export interface ExecutionContext {
 const context = new AsyncLocalStorage<ExecutionContext>();
 
 /** Install only in the untrusted runtime, before importing application modules. */
-export function installFetchGuard() {
+export const installFetchGuard = () => {
   globalThis.fetch = (input, init) => {
     const current = context.getStore();
     if (current?.kind !== "action") {
@@ -28,11 +28,9 @@ export function installFetchGuard() {
     }
     return current.fetch(input, init);
   };
-}
+};
 
-export function inExecutionContext<A>(
+export const inExecutionContext = <A>(
   scope: ExecutionContext,
   run: () => A
-): A {
-  return context.run(scope, run);
-}
+): A => context.run(scope, run);

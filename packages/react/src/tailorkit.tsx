@@ -13,7 +13,6 @@ import type {
   SlotMultiple,
   TailorKitCacheOptions,
 } from "@tailorkit/client-core";
-export type { TailorKitClientConfig } from "@tailorkit/client-core";
 import type {
   TailorKitTheme,
   ComponentDefinition,
@@ -23,7 +22,7 @@ import type {
   TailorKitContract,
   ToolImplementations,
 } from "@tailorkit/core/schema";
-import { createElement, useEffect, useMemo } from "react";
+import { createElement, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
 import { TailorkitContext, useTailorkitContext } from "./components/context";
@@ -44,6 +43,8 @@ import type {
 import { useViews as useRootViews } from "./hooks/use-views";
 import type { UseViewsOptions, UseViewsResult } from "./hooks/use-views";
 import type { primitives } from "./primitives";
+
+export type { TailorKitClientConfig } from "@tailorkit/client-core";
 
 export type { TailorKitApp } from "@tailorkit/client-core";
 
@@ -72,6 +73,7 @@ export interface TailorKitInstance<
 }
 
 type PrimitiveRenderers = typeof primitives;
+
 type CustomComponentRenderers<
   TComponents extends Record<string, AnyComponentDefinition>,
 > = {
@@ -80,16 +82,118 @@ type CustomComponentRenderers<
   ]?: ComponentRenderer<TComponents[TName], ReactNode>;
 };
 
-export function components<
+export const components = <
   TComponents extends Record<string, AnyComponentDefinition>,
 >(
   _contract: { components: TComponents },
   customComponents: CustomComponentRenderers<TComponents>
-): ComponentRenderers<TComponents, ReactNode> {
-  return customComponents as ComponentRenderers<TComponents, ReactNode>;
-}
+): ComponentRenderers<TComponents, ReactNode> =>
+  customComponents as ComponentRenderers<TComponents, ReactNode>;
 
-export function createClient<const TContract extends TailorKitContract>(
+const createReactTailorKitClient = <
+  TComponents extends Record<string, AnyComponentDefinition>,
+  TViews extends Record<string, ViewDefinition> = Record<string, never>,
+  TSlots extends SlotDefinitions = SlotDefinitions,
+  TScopeNames extends string = string,
+>(options: {
+  contract: TailorKitContract;
+  tools?: ToolImplementations<TailorKitContract["tools"], "client">;
+  assetsBaseUrl?: string | URL;
+  baseUrl: string | URL;
+  components?: ComponentRenderers<TComponents, ReactNode>;
+  theme?: TailorKitTheme;
+  cache?: TailorKitCacheOptions;
+  fetch?: typeof fetch;
+}): TailorKitInstance<TViews, TSlots, TScopeNames> => {
+  const wrappedComponents = createComponentRegistry(
+    options.components ?? {},
+    (renderer) =>
+      function TailorKitComponent({
+        children,
+        ...props
+      }: Record<string, unknown> & { children?: ReactNode }) {
+        const rendererArgs = {
+          props: props as ComponentProps<ComponentDefinition>,
+          ...(children === undefined ? {} : { children }),
+        };
+        return (renderer as (args: typeof rendererArgs) => ReactNode)(
+          rendererArgs
+        );
+      }
+  );
+
+  const clientConfig = createTailorKitClientConfig({
+    ...options,
+    components: wrappedComponents,
+  });
+
+  const ClientRenderSlot = (props: RenderSlotProps<TSlots>) => {
+    // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
+    useTailorkitContext("RenderSlot", client);
+    return createElement(ReactRenderSlot, props as RenderSlotProps);
+  };
+
+  const client: TailorKitInstance<TViews, TSlots, TScopeNames> = {
+    ...clientConfig,
+    Provider: function Provider({ children, apps }: TailorKitProviderProps) {
+      // oxlint-disable-next-line react/hook-use-state -- The provider owns one immutable store; prop updates are applied through the store API.
+      const [store] = useState(() =>
+        createTailorKitStore({
+          apps,
+          assetsBaseUrl: client.assetsBaseUrl,
+          baseUrl: client.baseUrl,
+          client: clientConfig.fetchClient,
+          contract: client.contract,
+          tools: client.tools,
+        })
+      );
+      useEffect(() => {
+        store.setProvidedApps(apps);
+      }, [store, apps]);
+      useEffect(() => () => store.previews.dispose(), [store]);
+      const context = useMemo(() => ({ client, store }), [store]);
+      return createElement(
+        TailorkitContext.Provider,
+        { value: context },
+        children
+      );
+    },
+    RenderSlot: Object.assign(ClientRenderSlot, {
+      Controlled: function Controlled(
+        props: ControlledRenderSlotProps<TViews, TSlots>
+      ) {
+        useTailorkitContext("RenderSlot.Controlled", client);
+        return createElement(
+          ReactRenderSlot.Controlled,
+          props as unknown as ControlledRenderSlotProps
+        );
+      },
+    }),
+    useApps: function useApps(optionsValue) {
+      useTailorkitContext("useApps", client);
+      return useRootApps(optionsValue);
+    },
+    useViewContext: function useViewContext<TView extends ViewName<TViews>>(
+      view: TView,
+      optionsValue2: ViewState<TViews, NoInfer<TView>>
+    ) {
+      useTailorkitContext("useViewContext", client);
+      useRootViewContext<TViews, TView>(view, optionsValue2);
+    },
+    useViews: function useViews<TSlot extends keyof TSlots & string>(
+      optionsValue3: UseViewsOptions<TScopeNames, TSlot>
+    ) {
+      useTailorkitContext("useViews", client);
+      return useRootViews(optionsValue3) as UseViewsResult<
+        SlotMultiple<TSlots[TSlot]>
+      >;
+    },
+  };
+
+  return client;
+};
+
+export const createClient = <const TContract extends TailorKitContract>(
   options: {
     contract: TContract;
     tools?: ToolImplementations<NoInfer<TContract["tools"]>, "client">;
@@ -109,117 +213,12 @@ export function createClient<const TContract extends TailorKitContract>(
   TContract["views"],
   TContract["slots"],
   keyof TContract["scopes"] & string
-> {
-  return createReactTailorKitClient<
+> =>
+  createReactTailorKitClient<
     TContract["components"],
     TContract["views"],
     TContract["slots"],
     keyof TContract["scopes"] & string
   >(options);
-}
-
-function createReactTailorKitClient<
-  TComponents extends Record<string, AnyComponentDefinition>,
-  TViews extends Record<string, ViewDefinition> = Record<string, never>,
-  TSlots extends SlotDefinitions = SlotDefinitions,
-  TScopeNames extends string = string,
->(options: {
-  contract: TailorKitContract;
-  tools?: ToolImplementations<TailorKitContract["tools"], "client">;
-  assetsBaseUrl?: string | URL;
-  baseUrl: string | URL;
-  components?: ComponentRenderers<TComponents, ReactNode>;
-  theme?: TailorKitTheme;
-  cache?: TailorKitCacheOptions;
-  fetch?: typeof fetch;
-}): TailorKitInstance<TViews, TSlots, TScopeNames> {
-  const wrappedComponents = createComponentRegistry(
-    options.components ?? {},
-    (renderer) =>
-      function TailorKitComponent({
-        children,
-        ...props
-      }: Record<string, unknown> & { children?: ReactNode }) {
-        const rendererArgs = {
-          props: props as ComponentProps<ComponentDefinition>,
-          ...(children === undefined ? {} : { children }),
-        };
-        return (renderer as (args: typeof rendererArgs) => ReactNode)(
-          rendererArgs
-        );
-      }
-  );
-  const clientConfig = createTailorKitClientConfig({
-    ...options,
-    components: wrappedComponents,
-  });
-  const client: TailorKitInstance<TViews, TSlots, TScopeNames> = {
-    ...clientConfig,
-    Provider: function TailorKitProvider({
-      children,
-      apps,
-    }: TailorKitProviderProps) {
-      const store = useMemo(
-        () =>
-          createTailorKitStore({
-            baseUrl: client.baseUrl,
-            contract: client.contract,
-            tools: client.tools,
-            apps,
-            client: clientConfig.fetchClient,
-            assetsBaseUrl: client.assetsBaseUrl,
-          }),
-        []
-      );
-      useEffect(() => {
-        store.setProvidedApps(apps);
-      }, [store, apps]);
-      useEffect(() => () => store.previews.dispose(), [store]);
-      const context = useMemo(() => ({ store, client }), [store]);
-      return createElement(
-        TailorkitContext.Provider,
-        { value: context },
-        children
-      );
-    },
-    RenderSlot: Object.assign(
-      function ClientRenderSlot(props: RenderSlotProps<TSlots>) {
-        useTailorkitContext("RenderSlot", client);
-        return createElement(ReactRenderSlot, props as RenderSlotProps);
-      },
-      {
-        Controlled: function ClientControlledRenderSlot(
-          props: ControlledRenderSlotProps<TViews, TSlots>
-        ) {
-          useTailorkitContext("RenderSlot.Controlled", client);
-          return createElement(
-            ReactRenderSlot.Controlled,
-            props as unknown as ControlledRenderSlotProps
-          );
-        },
-      }
-    ),
-    useApps: function useClientApps(options) {
-      useTailorkitContext("useApps", client);
-      return useRootApps(options);
-    },
-    useViewContext: function useClientViewContext<
-      TView extends ViewName<TViews>,
-    >(view: TView, options: ViewState<TViews, NoInfer<TView>>) {
-      useTailorkitContext("useViewContext", client);
-      useRootViewContext<TViews, TView>(view, options);
-    },
-    useViews: function useClientViews<TSlot extends keyof TSlots & string>(
-      options: UseViewsOptions<TScopeNames, TSlot>
-    ) {
-      useTailorkitContext("useViews", client);
-      return useRootViews(options) as UseViewsResult<
-        SlotMultiple<TSlots[TSlot]>
-      >;
-    },
-  };
-
-  return client;
-}
 
 export type { ViewOptions } from "./hooks/use-view-context";

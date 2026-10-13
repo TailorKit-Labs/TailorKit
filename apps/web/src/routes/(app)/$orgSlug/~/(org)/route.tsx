@@ -17,6 +17,7 @@ import {
   SidebarSeparator,
 } from "@tailorkit/ui/sidebar";
 import {
+  useParams,
   Outlet,
   createFileRoute,
   Link,
@@ -31,15 +32,7 @@ import { OrgSwitcher } from "#components/sidebar/org-switcher";
 import { SidebarBrand } from "#components/sidebar/sidebar-brand";
 import { SidebarUserMenu } from "#components/sidebar/sidebar-user-menu";
 
-export const Route = createFileRoute("/(app)/$orgSlug/~/(org)")({
-  component: OrgLayout,
-});
-
-interface AppSidebarProps {
-  orgSlug: string;
-}
-
-export function AppSidebar({ orgSlug }: AppSidebarProps) {
+export const AppSidebar = ({ orgSlug }: AppSidebarProps) => {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isActive = (path: string) =>
     pathname === path || pathname.startsWith(`${path}/`);
@@ -133,10 +126,10 @@ export function AppSidebar({ orgSlug }: AppSidebarProps) {
       </SidebarFooter>
     </Sidebar>
   );
-}
+};
 
-function OrgLayout() {
-  const { orgSlug } = Route.useParams();
+const OrgLayout = () => {
+  const { orgSlug } = useParams({ from: "/(app)/$orgSlug/~/(org)" });
 
   useEffect(() => {
     sessionStorage.setItem("active-org-id", orgSlug);
@@ -160,4 +153,12 @@ function OrgLayout() {
       </SidebarProvider>
     </HeaderActionsProvider>
   );
+};
+
+export const Route = createFileRoute("/(app)/$orgSlug/~/(org)")({
+  component: OrgLayout,
+});
+
+interface AppSidebarProps {
+  orgSlug: string;
 }

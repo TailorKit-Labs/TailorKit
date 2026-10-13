@@ -2,12 +2,15 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { canonicalizeScope, scopeMatches, scopeSchema } from "./scope";
 
+const parseImplementationImplementation = (value: unknown) =>
+  scopeSchema.safeParse({ name: "organization", value });
+
 describe("scope canonicalization", () => {
   it("sorts object properties recursively and preserves array order", () => {
     const first = canonicalizeScope({
       name: "organization",
       value: {
-        members: ["user_1", { last: "Lovelace", first: "Ada" }],
+        members: ["user_1", { first: "Ada", last: "Lovelace" }],
         orgId: "org_123",
         settings: { enabled: true, mode: "compact" },
       },
@@ -116,9 +119,10 @@ describe("scope canonicalization", () => {
     expect(() => canonicalizeScope(scope)).toThrow(/512 values/u);
   });
 
+  const parseImplementation = parseImplementationImplementation;
+
   it("reports the violated schema bound", () => {
-    const parse = (value: unknown) =>
-      scopeSchema.safeParse({ name: "organization", value });
+    const parse = parseImplementation;
     const tooManyKeys = Object.fromEntries(
       Array.from({ length: 33 }, (_, index) => [`key${index}`, index])
     );
@@ -146,7 +150,7 @@ describe("scope canonicalization", () => {
       scopeMatches(
         {
           name: "organization",
-          value: { labels: [{ b: 2, a: 1 }], teamId: "team_123" },
+          value: { labels: [{ a: 1, b: 2 }], teamId: "team_123" },
         },
         {
           name: "organization",

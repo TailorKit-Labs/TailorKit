@@ -12,10 +12,10 @@ export const TailorkitContext = createContext<TailorkitContextValue | null>(
   null
 );
 
-export function useTailorkitContext(
+export const useTailorkitContext = (
   component: string,
   expectedClient?: TailorKitClientConfig
-): TailorkitContextValue {
+): TailorkitContextValue => {
   const context = useContext(TailorkitContext);
   if (!context) {
     throw new Error(
@@ -28,4 +28,4 @@ export function useTailorkitContext(
     );
   }
   return context;
-}
+};

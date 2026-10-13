@@ -96,13 +96,13 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<AppTheme>(fallbackTheme);
+export const ThemeProvider = ({ children }: { children: ReactNode }) => {
+  const [theme, setTheme] = useState<AppTheme>(fallbackTheme);
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
 
-  const setTheme = useCallback((nextTheme: AppTheme) => {
+  const updateTheme = useCallback((nextTheme: AppTheme) => {
     localStorage.setItem(themeStorageKey, nextTheme);
-    setThemeState(nextTheme);
+    setTheme(nextTheme);
     const nextResolvedTheme = resolveTheme(nextTheme);
     setResolvedTheme(nextResolvedTheme);
     applyTheme(nextTheme, { disableTransitions: true });
@@ -110,7 +110,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const storedTheme = getStoredTheme();
-    setThemeState(storedTheme);
+    // oxlint-disable-next-line react/set-state-in-effect -- Restore the persisted browser theme after hydration to preserve the server-rendered initial state.
+    setTheme(storedTheme);
     setResolvedTheme(resolveTheme(storedTheme));
     applyTheme(storedTheme);
   }, []);
@@ -132,12 +133,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [theme]);
 
   const value = useMemo(
-    () => ({ resolvedTheme, setTheme, theme }),
-    [resolvedTheme, setTheme, theme]
+    () => ({ resolvedTheme, setTheme: updateTheme, theme }),
+    [resolvedTheme, updateTheme, theme]
   );
 
   return createElement(ThemeContext.Provider, { value }, children);
-}
+};
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);

@@ -10,6 +10,13 @@ import {
 
 import { canonicalizeScope } from "./scope";
 
+const require = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const mocks = vi.hoisted(() => ({
   env: { AUTH_SECRET: "test-cli-token-secret" as string | undefined },
   findToken: vi.fn(),
@@ -24,16 +31,14 @@ const canonical = canonicalizeScope({
   value: { environment: "dev", tenant: "one" },
 });
 
-function validToken() {
-  return {
-    expiresAt: new Date(Date.now() + 60_000),
-    id: "cli-one",
-    projectId: "project-one",
-    revokedAt: null,
-    scope: { name: "org", value: { environment: "dev", tenant: "one" } },
-    scopeKey: canonical.scopeKey,
-  };
-}
+const validToken = () => ({
+  expiresAt: new Date(Date.now() + 60_000),
+  id: "cli-one",
+  projectId: "project-one",
+  revokedAt: null,
+  scope: { name: "org", value: { environment: "dev", tenant: "one" } },
+  scopeKey: canonical.scopeKey,
+});
 beforeEach(() => {
   vi.clearAllMocks();
   vi.useFakeTimers();
@@ -49,7 +54,7 @@ describe("shared platform CLI token authentication", () => {
     expect(mocks.findToken).toHaveBeenCalledWith({
       where: {
         projectId: "project-one",
-        tokenHash: hashSecret("deploy-token", mocks.env.AUTH_SECRET!),
+        tokenHash: hashSecret("deploy-token", require(mocks.env.AUTH_SECRET)),
       },
     });
     expect(token).toEqual({

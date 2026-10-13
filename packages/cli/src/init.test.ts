@@ -2,22 +2,25 @@ import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import type * as clackpromptsModule from "@clack/prompts";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
+import type * as generatorModule from "./generator";
 import { runInit } from "./init";
 
 vi.mock("./generator", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("./generator")>()),
-  resolveTemplatePackageVersions: async () => ({
-    oxfmt: "0.71.0",
-    oxlint: "1.86.0",
-    preact: "11.0.0",
-    tailorkit: "0.1.0-beta.16",
-    typescript: "6.0.3",
-  }),
+  ...(await importOriginal<typeof generatorModule>()),
+  resolveTemplatePackageVersions: async () =>
+    await {
+      oxfmt: "0.71.0",
+      oxlint: "1.86.0",
+      preact: "11.0.0",
+      tailorkit: "0.1.0-beta.16",
+      typescript: "6.0.3",
+    },
 }));
 vi.mock("@clack/prompts", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@clack/prompts")>()),
+  ...(await importOriginal<typeof clackpromptsModule>()),
   spinner: () => ({ start: vi.fn(), stop: vi.fn() }),
 }));
 
@@ -31,7 +34,7 @@ afterEach(async () => {
   );
 });
 
-async function initOptions() {
+const initOptions = async () => {
   const cwd = await mkdtemp(path.join(tmpdir(), "tailorkit-init-"));
   directories.push(cwd);
   return {
@@ -43,22 +46,23 @@ async function initOptions() {
     name: "example",
     packageManager: "pnpm",
   };
-}
+};
 
 it("fetches the host schema and generates real bindings even when installation is skipped", async () => {
-  const fetch = vi.fn(async () =>
-    Response.json({
-      components: { Box: { callbacks: {}, children: true } },
-      slots: { sidebar: { views: ["/people"] } },
-      views: {
-        "/people": {
-          context: {
-            properties: { customer: { type: "string" } },
-            type: "object",
+  const fetch = vi.fn(
+    async () =>
+      await Response.json({
+        components: { Box: { callbacks: {}, children: true } },
+        slots: { sidebar: { views: ["/people"] } },
+        views: {
+          "/people": {
+            context: {
+              properties: { customer: { type: "string" } },
+              type: "object",
+            },
           },
         },
-      },
-    })
+      })
   );
   vi.stubGlobal("fetch", fetch);
   const directory = await runInit(await initOptions());
@@ -93,7 +97,7 @@ it("reports schema fetch failures without creating a project", async () => {
     "fetch",
     vi.fn(
       async () =>
-        new Response("Unavailable", {
+        await new Response("Unavailable", {
           status: 503,
           statusText: "Service Unavailable",
         })

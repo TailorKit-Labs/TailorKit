@@ -61,35 +61,33 @@ const otherUserId = "22222222-2222-4222-8222-222222222222";
 const orgId = "33333333-3333-4333-8333-333333333333";
 const otherOrgId = "44444444-4444-4444-8444-444444444444";
 
-function createContext(overrides: Partial<Context> = {}): Context {
-  return {
-    headers: new Headers(),
-    ip: "127.0.0.1",
-    session: {
-      activeOrganizationId: null,
-      createdAt: new Date("2026-01-01T00:00:00.000Z"),
-      expiresAt: new Date("2026-02-01T00:00:00.000Z"),
-      id: "session-id",
-      ipAddress: null,
-      token: "session-token",
-      updatedAt: new Date("2026-01-01T00:00:00.000Z"),
-      userAgent: null,
-      userId,
-    },
-    user: {
-      createdAt: new Date("2026-01-01T00:00:00.000Z"),
-      email: "ada@example.com",
-      emailVerified: true,
-      id: userId,
-      image: null,
-      name: "Ada Lovelace",
-      theme: "system",
-      twoFactorEnabled: false,
-      updatedAt: new Date("2026-01-01T00:00:00.000Z"),
-    },
-    ...overrides,
-  };
-}
+const createContext = (overrides: Partial<Context> = {}): Context => ({
+  headers: new Headers(),
+  ip: "127.0.0.1",
+  session: {
+    activeOrganizationId: null,
+    createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    expiresAt: new Date("2026-02-01T00:00:00.000Z"),
+    id: "session-id",
+    ipAddress: null,
+    token: "session-token",
+    updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+    userAgent: null,
+    userId,
+  },
+  user: {
+    createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    email: "ada@example.com",
+    emailVerified: true,
+    id: userId,
+    image: null,
+    name: "Ada Lovelace",
+    theme: "system",
+    twoFactorEnabled: false,
+    updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+  },
+  ...overrides,
+});
 
 describe("userRouter", () => {
   let client: Awaited<ReturnType<typeof createTestDb>>["client"];
@@ -97,8 +95,8 @@ describe("userRouter", () => {
 
   beforeEach(async () => {
     const testDb = await createTestDb();
-    client = testDb.client;
-    db = testDb.db;
+    ({ client } = testDb);
+    ({ db } = testDb);
     testState.db = db;
     testState.env.VERCEL_ENV = undefined;
     vi.mocked(auth.api.createOrganization).mockReset();

@@ -6,7 +6,7 @@ import { project } from "@tailorkit/db/schema/project";
 import { validateProjectSlug } from "@tailorkit/db/validate-project-slug";
 import { and, desc, eq, ne } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
-import z from "zod";
+import { z } from "zod";
 
 import { protectedProcedure, requireOrg, requireProject } from "../procedures";
 
@@ -16,8 +16,11 @@ const projectInput = z.object({
 });
 
 const projectApiKeyConfigId = "project-host";
+
 const projectApiKeyRateLimitMax = 1000;
+
 const projectApiKeyRateLimitWindowMs = 1000;
+
 const createApiKeyPrefixSuffix = customAlphabet(
   "0123456789abcdefghijklmnopqrstuvwxyz",
   4
@@ -32,21 +35,21 @@ const projectApiKeyMetadataSchema = z.object({
 
 type ProjectApiKeyMetadata = z.infer<typeof projectApiKeyMetadataSchema>;
 
-function toDate(value: Date | string | null): Date | null {
+const toDate = (value: Date | string | null): Date | null => {
   if (!value) {
     return null;
   }
   return value instanceof Date ? value : new Date(value);
-}
+};
 
-function isKeyExpired(key: { expiresAt: Date | string | null }) {
+const isKeyExpired = (key: { expiresAt: Date | string | null }) => {
   const expiresAt = toDate(key.expiresAt);
   return Boolean(expiresAt && expiresAt.getTime() <= Date.now());
-}
+};
 
-function parseProjectApiKeyMetadata(
+const parseProjectApiKeyMetadata = (
   metadata: Record<string, unknown> | string | null
-) {
+) => {
   const value =
     typeof metadata === "string"
       ? (() => {
@@ -59,38 +62,15 @@ function parseProjectApiKeyMetadata(
       : metadata;
   const result = projectApiKeyMetadataSchema.safeParse(value);
   return result.success ? result.data : null;
-}
+};
 
-async function listProjectApiKeys({
-  organizationId,
-  projectId,
-}: {
-  headers: Headers;
-  organizationId: string;
-  projectId: string;
-}) {
-  const keys = await listAllProjectApiKeys({ organizationId, projectId });
-
-  const active = keys.find((key) => key.enabled && !isKeyExpired(key));
-  const previous = active
-    ? keys.filter(
-        (key) => key.id !== active.id && key.enabled && !isKeyExpired(key)
-      )
-    : [];
-
-  return {
-    active: active ? [active] : [],
-    rotating: previous,
-  };
-}
-
-async function listAllProjectApiKeys({
+const listAllProjectApiKeys = async ({
   organizationId,
   projectId,
 }: {
   organizationId: string;
   projectId: string;
-}) {
+}) => {
   const result = await db
     .select()
     .from(apikey)
@@ -123,9 +103,32 @@ async function listAllProjectApiKeys({
       };
     })
     .filter((key): key is NonNullable<typeof key> => !!key);
-}
+};
 
-function createProjectApiKey({
+const listProjectApiKeys = async ({
+  organizationId,
+  projectId,
+}: {
+  headers: Headers;
+  organizationId: string;
+  projectId: string;
+}) => {
+  const keys = await listAllProjectApiKeys({ organizationId, projectId });
+
+  const active = keys.find((key) => key.enabled && !isKeyExpired(key));
+  const previous = active
+    ? keys.filter(
+        (key) => key.id !== active.id && key.enabled && !isKeyExpired(key)
+      )
+    : [];
+
+  return {
+    active: active ? [active] : [],
+    rotating: previous,
+  };
+};
+
+const createProjectApiKey = ({
   organizationId,
   projectId,
   userId,
@@ -133,8 +136,8 @@ function createProjectApiKey({
   organizationId: string;
   projectId: string;
   userId: string;
-}) {
-  return auth.api.createApiKey({
+}) =>
+  auth.api.createApiKey({
     body: {
       configId: projectApiKeyConfigId,
       metadata: {
@@ -150,7 +153,6 @@ function createProjectApiKey({
       userId,
     },
   });
-}
 
 export const projectRouter = {
   apiKeys: protectedProcedure
@@ -167,8 +169,8 @@ export const projectRouter = {
   create: protectedProcedure
     .input(
       z.object({
-        orgSlug: z.string(),
         name: z.string().min(1),
+        orgSlug: z.string(),
         slug: z.string().min(1),
       })
     )
@@ -255,8 +257,8 @@ export const projectRouter = {
     .use(requireOrg())
     .handler(({ context }) =>
       db.query.project.findMany({
-        where: { organizationId: context.org.id },
         orderBy: { createdAt: "desc" },
+        where: { organizationId: context.org.id },
       })
     ),
 
@@ -287,38 +289,36 @@ export const projectRouter = {
       const rotatedAt = new Date().toISOString();
 
       try {
-        if (input.gracePeriodSeconds === 0) {
-          await Promise.all(
-            currentKeys.active.map((key) =>
-              auth.api.deleteApiKey({
-                body: {
-                  configId: projectApiKeyConfigId,
-                  keyId: key.id,
-                },
-                headers: context.headers,
-              })
+        await (input.gracePeriodSeconds === 0
+          ? Promise.all(
+              currentKeys.active.map((key) =>
+                auth.api.deleteApiKey({
+                  body: {
+                    configId: projectApiKeyConfigId,
+                    keyId: key.id,
+                  },
+                  headers: context.headers,
+                })
+              )
             )
-          );
-        } else {
-          await Promise.all(
-            currentKeys.active.map((key) =>
-              auth.api.updateApiKey({
-                body: {
-                  configId: projectApiKeyConfigId,
-                  expiresIn: input.gracePeriodSeconds,
-                  keyId: key.id,
-                  metadata: {
-                    ...key.metadata,
-                    rotatedAt,
-                    rotatedToKeyId: apiKey.id,
-                    status: "rotating",
-                  } satisfies ProjectApiKeyMetadata,
-                },
-                headers: context.headers,
-              })
-            )
-          );
-        }
+          : Promise.all(
+              currentKeys.active.map((key) =>
+                auth.api.updateApiKey({
+                  body: {
+                    configId: projectApiKeyConfigId,
+                    expiresIn: input.gracePeriodSeconds,
+                    keyId: key.id,
+                    metadata: {
+                      ...key.metadata,
+                      rotatedAt,
+                      rotatedToKeyId: apiKey.id,
+                      status: "rotating",
+                    } satisfies ProjectApiKeyMetadata,
+                  },
+                  headers: context.headers,
+                })
+              )
+            ));
       } catch (error) {
         await auth.api.deleteApiKey({
           body: {

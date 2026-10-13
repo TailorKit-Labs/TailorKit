@@ -10,13 +10,13 @@ import type { z } from "zod";
 
 import type { FunctionCalls, Identity } from "./server/functions";
 
-// oxlint-disable-next-line typescript-eslint/no-empty-interface, typescript-eslint/no-empty-object-type
+// oxlint-disable-next-line typescript/no-empty-interface, typescript/no-empty-object-type -- Generated bindings augment this interface.
 export interface TailorKitViews {}
 
-// oxlint-disable-next-line typescript-eslint/no-empty-interface, typescript-eslint/no-empty-object-type
+// oxlint-disable-next-line typescript/no-empty-interface, typescript/no-empty-object-type -- Generated bindings augment this interface.
 export interface TailorKitSlots {}
 // Filled by the generated host bindings using a type-only link to the app server.
-// oxlint-disable-next-line typescript-eslint/no-empty-interface, typescript-eslint/no-empty-object-type
+// oxlint-disable-next-line typescript/no-empty-interface, typescript/no-empty-object-type -- Generated bindings augment this interface.
 export interface TailorKitServerFunctions {}
 
 export interface ViewInstance<TData = unknown> {
@@ -182,6 +182,7 @@ export function defineView<
   options: ViewOptions<TPath, TSlot, TSchema>
 ): ViewDefinition<TPath, z.output<TSchema>, TSlot> &
   SlotInstanceDefinition<TSlot>;
+// oxlint-disable-next-line func-style -- TypeScript overloads require a function declaration.
 export function defineView<
   TPath extends AppViewPath,
   TSchema extends z.ZodType,
@@ -268,7 +269,10 @@ const componentTagPrefix = "tailorkit-";
 
 const toComponentTagName = (name: string): string =>
   `${componentTagPrefix}${name
-    .replaceAll(/([a-z0-9])([A-Z])/gu, "$1-$2")
+    .replaceAll(
+      /(?<lowercase>[a-z0-9])(?<uppercase>[A-Z])/gu,
+      "$<lowercase>-$<uppercase>"
+    )
     .replaceAll(/[\s_]+/gu, "-")
     .toLowerCase()}`;
 
@@ -297,16 +301,16 @@ export const createRemoteComponent = <
     > = {};
 
     for (const [key, inputCount] of Object.entries(callbacks)) {
-      const callback = nextProps[key];
+      const operation = nextProps[key];
       Reflect.deleteProperty(nextProps, key);
-      if (typeof callback !== "function") {
+      if (typeof operation !== "function") {
         continue;
       }
 
       const eventName = toCallbackEventName(key);
       callbackMap[eventName] = { callback: key, inputCount };
       nextProps[toEventProp(eventName)] = (event: { detail?: unknown[] }) => {
-        callback(...(event.detail ?? []).slice(0, inputCount));
+        operation(...(event.detail ?? []).slice(0, inputCount));
       };
     }
 

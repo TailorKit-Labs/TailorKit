@@ -18,6 +18,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 
 import { getClientSourceFiles } from "../../app/src/builder/file-routes";
 import { tailorkitUploadManifestSchema } from "../../app/src/builder/upload-manifest";
+import type * as authModule from "./auth";
 import { NotLoggedInError } from "./auth";
 
 const mocks = vi.hoisted(() => ({
@@ -41,7 +42,7 @@ vi.mock("@tailorkit/core/server", () => ({
   createTailorKitClient: mocks.client,
 }));
 vi.mock("./auth", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("./auth")>()),
+  ...(await importOriginal<typeof authModule>()),
   getDeployToken: mocks.token,
   runWhoami: mocks.whoami,
 }));
@@ -71,8 +72,8 @@ beforeEach(async () => {
       assets: { client: "client/client.js", server: "server/server.js" },
       version: 1,
       views: [
-        { slot: "page", path: "/", instances: true },
-        { slot: "page", path: "/disabled", disabled: true },
+        { instances: true, path: "/", slot: "page" },
+        { disabled: true, path: "/disabled", slot: "page" },
       ],
     })
   );
@@ -108,8 +109,8 @@ it("uploads gzip server and client code with metadata matching the stored bytes"
     assets: [{ objectKey: "client.js" }],
     server: { objectKey: "server.js" },
     views: [
-      { slot: "page", path: "/", instances: true },
-      { slot: "page", path: "/disabled", disabled: true },
+      { instances: true, path: "/", slot: "page" },
+      { disabled: true, path: "/disabled", slot: "page" },
     ],
   });
   expect(fetch).toHaveBeenCalledTimes(2);
@@ -195,6 +196,7 @@ it.each([
 
     const result = await runDeploy({
       cwd: root,
+      // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
       onMissingAppId: async () => true,
     });
 
@@ -273,6 +275,7 @@ it("typechecks file route roots, layouts and views without a manual client entry
     "src/slots/panel/home.view.tsx",
   ];
   for (const file of sources) {
+    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     await writeFile(path.join(root, file), "export default null;\n");
   }
   await writeFile(
@@ -297,6 +300,7 @@ it("typechecks file route roots, layouts and views without a manual client entry
   mocks.publish.mockClear();
   // Collect diagnostics for every entry in one compiler run.
   for (const file of sources) {
+    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     await writeFile(
       path.join(root, file),
       "const label: string = 42; export default label;\n"
@@ -371,6 +375,7 @@ it.each(["missing", "expired"])(
     mocks.token.mockResolvedValue(
       credentials === "missing" ? undefined : { deployToken: "expired-token" }
     );
+    // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
     const onLoginRequired = vi.fn().mockImplementation(async () => {
       expect(mocks.build).not.toHaveBeenCalled();
       expect(mocks.create).not.toHaveBeenCalled();
@@ -459,11 +464,11 @@ it("preserves signed upload headers and uploads logos without gzip encoding", as
   mocks.create.mockResolvedValue({
     assets: [
       {
-        uploadUrl: "https://uploads.example/client",
         headers: {
-          "x-amz-checksum-sha256": "signed-client",
           "content-encoding": "gzip",
+          "x-amz-checksum-sha256": "signed-client",
         },
+        uploadUrl: "https://uploads.example/client",
       },
     ],
     deployment: { id: "deployment" },
@@ -515,8 +520,8 @@ it.each(["client", "server"])(
   }
 );
 
-async function agentJwt(exp = Math.floor(Date.now() / 1000) + 3600) {
-  return new SignJWT({
+const agentJwt = async (exp = Math.floor(Date.now() / 1000) + 3600) =>
+  await new SignJWT({
     appId: "authorized-app",
     aud: "tailorkit-platform-cli",
     exp,
@@ -528,7 +533,6 @@ async function agentJwt(exp = Math.floor(Date.now() / 1000) + 3600) {
   })
     .setProtectedHeader({ alg: "HS256", typ: "tailorkit-agent+jwt" })
     .sign(new TextEncoder().encode("test-only-key"));
-}
 
 it("agent JWT deployment uses shared authentication and the configured app without host requests", async () => {
   const jwt = await agentJwt();
@@ -583,7 +587,7 @@ it("fails expired agent authorization before build without falling back to login
   );
   const onLoginRequired = vi.fn();
   await expect(runDeploy({ cwd: root, onLoginRequired })).rejects.toThrow(
-    /agent authorization/i
+    /agent authorization/iu
   );
   expect(mocks.build).not.toHaveBeenCalled();
   expect(mocks.whoami).not.toHaveBeenCalled();

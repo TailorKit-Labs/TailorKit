@@ -1,5 +1,8 @@
 minimumReleaseAge: 4320
 minimumReleaseAgeStrict: true
+# Temporary exception authorized for the Ultracite migration.
+minimumReleaseAgeExclude:
+  - ultracite@8.0.0
 virtualStoreType: global
 
 overrides:

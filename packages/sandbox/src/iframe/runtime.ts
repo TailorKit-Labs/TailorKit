@@ -15,16 +15,55 @@ import { createIframeTools } from "./tools";
 
 type InitData = Extract<HostToIframePayload, { type: "init" }>["data"];
 
-export function startIframeRuntime(options: {
+const readCallbacksImplementation = (
+  element: Element
+): RemoteCallbackBinding[] => {
+  // oxlint-disable-next-line unicorn/prefer-dom-node-dataset -- SVG Element does not expose dataset in this public DOM type.
+  const value = element.getAttribute("data-tailorkit-callbacks");
+  if (!value) {
+    return [];
+  }
+  try {
+    const callbacks = JSON.parse(value) as Record<
+      string,
+      Partial<RemoteCallbackBinding>
+    >;
+    if (
+      !callbacks ||
+      typeof callbacks !== "object" ||
+      Array.isArray(callbacks)
+    ) {
+      return [];
+    }
+    return Object.entries(callbacks).flatMap(([event, config]) =>
+      config &&
+      typeof config.callback === "string" &&
+      typeof config.inputCount === "number"
+        ? [
+            {
+              callback: config.callback,
+              event,
+              inputCount: config.inputCount,
+            },
+          ]
+        : []
+    );
+  } catch {
+    return [];
+  }
+};
+
+export const startIframeRuntime = (options: {
   root: HTMLElement;
   channel: string;
   parentWindow?: Pick<Window, "postMessage">;
   importModule?: (url: string) => Promise<{ default?: unknown }>;
-}): () => void {
+}): (() => void) => {
   const {
     root,
     channel,
     parentWindow = window.parent,
+    // oxlint-disable-next-line no-inline-comments -- Vite requires the inline import annotation for a sandbox-selected module URL.
     importModule = (url) => import(/* @vite-ignore */ url),
   } = options;
   const nodeIds = new WeakMap<Node, string>();
@@ -69,46 +108,13 @@ export function startIframeRuntime(options: {
   const getNodeId = (node: Node): string => {
     let id = nodeIds.get(node);
     if (!id) {
-      id = `n:${nextNodeId++}`;
+      id = `n:${(nextNodeId += 1) - 1}`;
       nodeIds.set(node, id);
       nodes.set(id, new WeakRef(node));
     }
     return id;
   };
-  const readCallbacks = (element: Element): RemoteCallbackBinding[] => {
-    const value = element.dataset.tailorkitCallbacks;
-    if (!value) {
-      return [];
-    }
-    try {
-      const callbacks = JSON.parse(value) as Record<
-        string,
-        Partial<RemoteCallbackBinding>
-      >;
-      if (
-        !callbacks ||
-        typeof callbacks !== "object" ||
-        Array.isArray(callbacks)
-      ) {
-        return [];
-      }
-      return Object.entries(callbacks).flatMap(([event, config]) =>
-        config &&
-        typeof config.callback === "string" &&
-        typeof config.inputCount === "number"
-          ? [
-              {
-                callback: config.callback,
-                event,
-                inputCount: config.inputCount,
-              },
-            ]
-          : []
-      );
-    } catch {
-      return [];
-    }
-  };
+  const readCallbacks = readCallbacksImplementation;
   const serializeNode = (node: Node): RemoteNode => {
     if (node instanceof Text) {
       return { id: getNodeId(node), kind: "text", text: node.data };
@@ -132,7 +138,7 @@ export function startIframeRuntime(options: {
   const sendSnapshot = () =>
     send({
       data: {
-        revision: ++revision,
+        revision: (revision += 1),
         tree: {
           children: Array.from(root.childNodes, serializeNode),
           id: getNodeId(root),
@@ -197,9 +203,14 @@ export function startIframeRuntime(options: {
     if (payload?.type === "backendSessionResult") {
       backend.receive(payload.data);
     } else if (payload?.type === "init") {
-      pendingLoad = pendingLoad
-        .then(() => loadApp(payload.data))
-        .catch(sendError);
+      pendingLoad = (async () => {
+        try {
+          await pendingLoad;
+          await loadApp(payload.data);
+        } catch (error) {
+          sendError(error);
+        }
+      })();
     } else if (payload?.type === "dispatchCallback") {
       const target = nodes.get(payload.data.nodeId)?.deref();
       if (!(target instanceof Element)) {
@@ -237,4 +248,4 @@ export function startIframeRuntime(options: {
     window.removeEventListener("message", handleMessage);
     nodes.clear();
   };
-}
+};

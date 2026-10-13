@@ -5,14 +5,16 @@ import { db, teamMembers, teams, users } from "./db";
 export const demoSessionCookie = "tailorkit_playground";
 
 export type DemoUser = typeof users.$inferSelect;
+
 export type DemoTeam = typeof teams.$inferSelect;
+
 export interface DemoSession {
   user: DemoUser;
   team: DemoTeam;
 }
 
-export function listSignInChoices() {
-  return db
+export const listSignInChoices = () =>
+  db
     .select({
       avatar: users.avatar,
       email: users.email,
@@ -26,11 +28,20 @@ export function listSignInChoices() {
     .innerJoin(users, eq(teamMembers.userId, users.id))
     .innerJoin(teams, eq(teamMembers.teamId, teams.id))
     .all();
-}
 
-export function getDemoSessionFromRequest(
+const getCookie = (cookieHeader: string | null, name: string) => {
+  for (const part of cookieHeader?.split(";") ?? []) {
+    const [key, ...value] = part.trim().split("=");
+    if (key === name) {
+      return decodeURIComponent(value.join("="));
+    }
+  }
+  return null;
+};
+
+export const getDemoSessionFromRequest = (
   request: Request
-): DemoSession | null {
+): DemoSession | null => {
   const value = getCookie(request.headers.get("cookie"), demoSessionCookie);
   if (!value) {
     return null;
@@ -50,22 +61,10 @@ export function getDemoSessionFromRequest(
     .get();
 
   return membership ?? null;
-}
+};
 
-export function serializeDemoSessionCookie(userId: string, teamId: string) {
-  return `${demoSessionCookie}=${encodeURIComponent(`${userId}.${teamId}`)}; Path=/; HttpOnly; SameSite=Lax`;
-}
+export const serializeDemoSessionCookie = (userId: string, teamId: string) =>
+  `${demoSessionCookie}=${encodeURIComponent(`${userId}.${teamId}`)}; Path=/; HttpOnly; SameSite=Lax`;
 
-export function clearDemoSessionCookie() {
-  return `${demoSessionCookie}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
-}
-
-function getCookie(cookieHeader: string | null, name: string) {
-  for (const part of cookieHeader?.split(";") ?? []) {
-    const [key, ...value] = part.trim().split("=");
-    if (key === name) {
-      return decodeURIComponent(value.join("="));
-    }
-  }
-  return null;
-}
+export const clearDemoSessionCookie = () =>
+  `${demoSessionCookie}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;

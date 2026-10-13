@@ -1,8 +1,10 @@
-import { resolve } from "node:path";
+import nodePath from "node:path";
 
 import { defineConfig } from "vite-plus";
 
 import { iframeRuntimePlugin } from "./iframe-plugin.ts";
+
+const { resolve } = nodePath;
 
 export default defineConfig({
   build: {

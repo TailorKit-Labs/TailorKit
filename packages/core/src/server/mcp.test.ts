@@ -5,15 +5,21 @@ import { defineContract } from "../schema/contract";
 import { createServer } from "./contract";
 import { createTailorKitServer } from "./handler";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const scopes = { org: z.object({ tenant: z.string().min(1) }) };
-function setup(
+const defaultSetupOptions = { projectKey: "host-key" };
+const setup = (
   options: {
     projectKey?: string;
     platformHeaders?: () => Promise<Record<string, string>>;
-  } = {
-    projectKey: "host-key",
-  }
-) {
+  } = defaultSetupOptions
+) => {
   const fetch = vi.fn();
   const server = createTailorKitServer({
     $internal: {
@@ -27,12 +33,14 @@ function setup(
     scopes,
   });
   return { fetch, server };
-}
-function context(headers: Record<string, string>) {
-  return JSON.parse(
-    Buffer.from(headers["x-tailorkit-context"]!, "base64url").toString("utf-8")
+};
+const context = (headers: Record<string, string>) =>
+  JSON.parse(
+    Buffer.from(
+      requireValue(headers["x-tailorkit-context"]),
+      "base64url"
+    ).toString("utf-8")
   );
-}
 
 describe("MCP transport configuration", () => {
   it("returns a direct platform URL and headers from scopes and optional subjectId", async () => {
@@ -56,7 +64,7 @@ describe("MCP transport configuration", () => {
   it("is exposed by createServer with the same object shape as authenticate returns", async () => {
     const server = createServer({
       baseUrl: "https://host.test/api/tailorkit",
-      contract: defineContract({ scopes, components: {} }),
+      contract: defineContract({ components: {}, scopes }),
       projectKey: "host-key",
     });
     const result = await server.mcp.transport({
@@ -88,6 +96,7 @@ describe("MCP transport configuration", () => {
       { scopes: { org: { tenant: "one" } }, subjectId: "" },
       { scopes: { org: { tenant: "one" } }, subjectId: "x".repeat(257) },
     ]) {
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       await expect(
         server.mcp.transport(value as { scopes: { org: { tenant: string } } })
       ).rejects.toThrow();
@@ -114,12 +123,14 @@ describe("MCP transport configuration", () => {
   });
 
   it("resolves configured headers per call and requires a project credential", async () => {
-    const headers = vi.fn(async () => ({ authorization: "Bearer custom-key" }));
+    const headers = vi.fn(
+      async () => await { authorization: "Bearer custom-key" }
+    );
     const { server } = setup({ platformHeaders: headers });
-    expect(
-      (await server.mcp.transport({ scopes: { org: { tenant: "one" } } }))
-        .headers.authorization
-    ).toBe("Bearer custom-key");
+    const awaitedResult1 = await server.mcp.transport({
+      scopes: { org: { tenant: "one" } },
+    });
+    expect(awaitedResult1.headers.authorization).toBe("Bearer custom-key");
     expect(headers).toHaveBeenCalledOnce();
     const missing = setup({}).server;
     await expect(

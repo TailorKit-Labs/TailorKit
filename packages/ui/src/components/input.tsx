@@ -5,6 +5,8 @@ import type * as React from "react";
 
 import { cn } from "#ui";
 
+export { Input as InputPrimitive } from "@base-ui/react/input";
+
 export type InputProps = Omit<
   InputPrimitive.Props & React.RefAttributes<HTMLInputElement>,
   "size"
@@ -14,14 +16,14 @@ export type InputProps = Omit<
   nativeInput?: boolean;
 };
 
-export function Input({
+export const Input = ({
   className,
   size = "default",
   unstyled = false,
   nativeInput = false,
   style,
   ...props
-}: InputProps): React.ReactElement {
+}: InputProps): React.ReactElement => {
   const inputClassName = cn(
     "text-foreground placeholder:text-muted-foreground/72 h-8.5 w-full min-w-0 rounded-[inherit] px-[calc(--spacing(3)-1px)] leading-8.5 outline-none [transition:background-color_5000000s_ease-in-out_0s] autofill:[-webkit-text-fill-color:var(--foreground)] sm:h-7.5 sm:leading-7.5",
     size === "sm" &&
@@ -64,6 +66,4 @@ export function Input({
       )}
     </span>
   );
-}
-
-export { InputPrimitive };
+};

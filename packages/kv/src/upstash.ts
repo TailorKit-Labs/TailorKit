@@ -66,67 +66,87 @@ redis.call("DEL", KEYS[2])
 return 1
 `;
 
-function subscribe(
+const subscribe = (
   redis: Redis,
   channel: string,
   handler: MessageHandler
-): Promise<Unsubscribe> {
+): Promise<Unsubscribe> => {
   const subscriber = redis.subscribe<string>(channel);
-  return new Promise((resolve, reject) => {
-    let setupSettled = false;
-    const rejectSetup = (error: Error): void => {
-      if (setupSettled) {
-        return;
-      }
-      setupSettled = true;
-      subscriber.removeAllListeners();
-      void finishSetupFailure(error);
-    };
-    const finishSetupFailure = async (error: Error): Promise<void> => {
-      try {
-        await subscriber.unsubscribe();
-      } catch {
-        // Keep the original subscription error.
-      }
-      reject(error);
-    };
-    subscriber.on("message", ({ message }) => handler(message));
-    subscriber.on("subscribe", () => {
-      if (setupSettled) {
-        return;
-      }
-      setupSettled = true;
-      resolve(async () => {
-        subscriber.removeAllListeners();
-        await subscriber.unsubscribe();
-      });
-    });
-    subscriber.on("error", (error) => {
-      if (setupSettled) {
-        // The subscription is already live; there is no setup promise left to
-        // reject. Surface the error instead of dropping it so a dead
-        // connection doesn't silently stop delivering messages.
-        console.error("Upstash subscription error", sanitizeErrorForLog(error));
-        return;
-      }
-      rejectSetup(error);
-    });
-  });
-}
+  return (() => {
+    const {
+      promise: pendingPromise,
+      resolve,
+      reject,
+    } = Promise.withResolvers<Unsubscribe>();
+    try {
+      let setupSettled = false;
 
-export function createUpstashKV(): KV<"upstash"> {
+      const finishSetupFailure = async (error: Error): Promise<void> => {
+        try {
+          await subscriber.unsubscribe();
+        } catch {
+          // Keep the original subscription error.
+        }
+        reject(error);
+      };
+
+      const rejectSetup = (error: Error): void => {
+        if (setupSettled) {
+          return;
+        }
+        setupSettled = true;
+        subscriber.removeAllListeners();
+        void finishSetupFailure(error);
+      };
+
+      subscriber.on("message", ({ message }) => handler(message));
+
+      subscriber.on("subscribe", () => {
+        if (setupSettled) {
+          return;
+        }
+        setupSettled = true;
+        resolve(async () => {
+          subscriber.removeAllListeners();
+          await subscriber.unsubscribe();
+        });
+      });
+
+      subscriber.on("error", (error) => {
+        if (setupSettled) {
+          // The subscription is already live; there is no setup promise left to
+          // reject. Surface the error instead of dropping it so a dead
+          // connection doesn't silently stop delivering messages.
+          console.error(
+            "Upstash subscription error",
+            sanitizeErrorForLog(error)
+          );
+          return;
+        }
+        rejectSetup(error);
+      });
+    } catch (error) {
+      reject(error);
+    }
+    return pendingPromise;
+  })();
+};
+
+export const createUpstashKV = (): KV<"upstash"> => {
   const redis = new Redis({
-    url: env.KV_REST_API_URL as string,
-    token: env.KV_REST_API_TOKEN as string,
     // The KV interface stores and returns raw strings; individual consumers parse JSON as needed.
     automaticDeserialization: false,
+
+    token: env.KV_REST_API_TOKEN as string,
+
+    url: env.KV_REST_API_URL as string,
   });
 
   return {
     claimUpload: (ownerKey, endedKey, expectedOwner, newOwner, ttl) =>
       withSpan(
         "kv.claim_upload",
-        { attributes: { "tailorkit.package": "kv", "kv.type": "upstash" } },
+        { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
         async () => {
           if (!Number.isInteger(ttl) || ttl <= 0) {
             throw new TypeError("KV upload TTL must be a positive integer.");
@@ -145,7 +165,7 @@ export function createUpstashKV(): KV<"upstash"> {
     delete: async (key) => {
       await withSpan(
         "kv.delete",
-        { attributes: { "tailorkit.package": "kv", "kv.type": "upstash" } },
+        { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
         () => redis.del(key)
       );
     },
@@ -153,17 +173,20 @@ export function createUpstashKV(): KV<"upstash"> {
     get: (key, options?: GetOptions) =>
       withSpan(
         "kv.get",
-        { attributes: { "tailorkit.package": "kv", "kv.type": "upstash" } },
+        { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
         () =>
           withTimeout(
-            redis.get<string>(key).then((value) => value ?? null),
+            (async () => {
+              const value = await redis.get<string>(key);
+              return value ?? null;
+            })(),
             options?.timeout
           )
       ),
     getAndDelete: (key) =>
       withSpan(
         "kv.get_and_delete",
-        { attributes: { "tailorkit.package": "kv", "kv.type": "upstash" } },
+        { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
         async () => {
           const value = await redis.getdel<string>(key);
           return value ?? null;
@@ -174,9 +197,9 @@ export function createUpstashKV(): KV<"upstash"> {
         "kv.increment",
         {
           attributes: {
-            "tailorkit.package": "kv",
-            "kv.type": "upstash",
             "kv.ttl_seconds": ttl,
+            "kv.type": "upstash",
+            "tailorkit.package": "kv",
           },
         },
         async () => {
@@ -200,7 +223,7 @@ export function createUpstashKV(): KV<"upstash"> {
     ) =>
       withSpan(
         "kv.keep_preview_session_if_developer_present",
-        { attributes: { "tailorkit.package": "kv", "kv.type": "upstash" } },
+        { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
         async () =>
           Number(
             await redis.eval(
@@ -221,7 +244,7 @@ export function createUpstashKV(): KV<"upstash"> {
     ) =>
       withSpan(
         "kv.promote_if_owner_and_newer",
-        { attributes: { "tailorkit.package": "kv", "kv.type": "upstash" } },
+        { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
         async () => {
           if (
             !Number.isSafeInteger(revision) ||
@@ -247,19 +270,19 @@ export function createUpstashKV(): KV<"upstash"> {
     publish: (channel, message) =>
       withSpan(
         "kv.publish",
-        { attributes: { "tailorkit.package": "kv", "kv.type": "upstash" } },
+        { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
         () => redis.publish(channel, message)
       ),
     set: async (key, value, options?: SetOptions) => {
       if (options?.ttl) {
-        const ttl = options.ttl;
+        const { ttl } = options;
         await withSpan(
           "kv.set",
           {
             attributes: {
-              "tailorkit.package": "kv",
-              "kv.type": "upstash",
               "kv.ttl_seconds": ttl,
+              "kv.type": "upstash",
+              "tailorkit.package": "kv",
             },
           },
           () => redis.set(key, value, { ex: ttl })
@@ -267,7 +290,7 @@ export function createUpstashKV(): KV<"upstash"> {
       } else {
         await withSpan(
           "kv.set",
-          { attributes: { "tailorkit.package": "kv", "kv.type": "upstash" } },
+          { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
           () => redis.set(key, value)
         );
       }
@@ -282,7 +305,7 @@ export function createUpstashKV(): KV<"upstash"> {
     ) =>
       withSpan(
         "kv.set_preview_presence_if_active",
-        { attributes: { "tailorkit.package": "kv", "kv.type": "upstash" } },
+        { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
         async () =>
           Number(
             await redis.eval(
@@ -292,12 +315,12 @@ export function createUpstashKV(): KV<"upstash"> {
             )
           ) === 1
       ),
-    subscribe: (channel, handler) =>
+    subscribe: (channel: string, handler: MessageHandler) =>
       withSpan(
         "kv.subscribe",
-        { attributes: { "tailorkit.package": "kv", "kv.type": "upstash" } },
+        { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
         () => subscribe(redis, channel, handler)
       ),
     type: "upstash",
   };
-}
+};

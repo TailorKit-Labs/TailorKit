@@ -10,19 +10,19 @@ export interface FlagEntities {
 }
 
 /** Evaluate a Vercel boolean flag with a safe fallback when it is unavailable. */
-export async function evaluateBooleanFlag(
+export const evaluateBooleanFlag = async (
   key: string,
   defaultValue = false,
   entities?: FlagEntities
-): Promise<boolean> {
+): Promise<boolean> => {
   try {
     const result = await flagsClient.evaluate<boolean>(
       key,
       defaultValue,
-      entities
+      entities ? { ...entities } : undefined
     );
     return result.value ?? defaultValue;
   } catch {
     return defaultValue;
   }
-}
+};

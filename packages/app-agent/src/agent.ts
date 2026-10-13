@@ -39,24 +39,35 @@ export interface AppAgentInput {
   model: string;
 }
 
-async function keepSandboxAlive(
+const keepSandboxAlive = async (
   sandboxName: string,
   finished: Promise<boolean>
-) {
-  while (!(await Promise.race([finished, sleep("5m").then(() => false)]))) {
+) => {
+  // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
+  while (
+    // oxlint-disable-next-line no-await-in-loop -- Read or renew in sequence; the next operation depends on this result.
+    !(await Promise.race([
+      finished,
+      (async () => {
+        void (await sleep("5m"));
+        return false;
+      })(),
+    ]))
+  ) {
+    // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
     await renewSandbox(sandboxName);
   }
-}
+};
 
 /** One editing turn. The Drive's exclusive mount rejects concurrent writers. */
-export async function appAgent({
+export const appAgent = async ({
   messages,
   model,
   appId,
   hostUrl,
   schema,
   agentToken,
-}: AppAgentInput) {
+}: AppAgentInput) => {
   "use workflow";
   const sandboxName = `app-agent-${getWorkflowMetadata().workflowRunId}`;
 
@@ -104,23 +115,32 @@ export async function appAgent({
     });
     const controller = new AbortController();
     const agentRun = agent.stream({
-      messages,
-      writable: getWritable<ModelCallStreamPart>(),
       abortSignal: controller.signal,
+
+      messages,
+
       // Bound a stalled agent without deleting its VM while it is still working.
       timeout: 30 * 60_000,
+
+      writable: getWritable<ModelCallStreamPart>(),
     });
-    const finished = agentRun.then(
-      () => true,
-      () => true
-    );
+    const finished = (async () => {
+      try {
+        await agentRun;
+      } catch {
+        /* Cleanup also waits for failed model calls. */
+      }
+      return true;
+    })();
     let renewalError: unknown;
-    const keepAlive = keepSandboxAlive(sandboxName, finished).catch(
-      (error: unknown) => {
+    const keepAlive = (async () => {
+      try {
+        return await keepSandboxAlive(sandboxName, finished);
+      } catch (error) {
         renewalError = error;
         controller.abort();
       }
-    );
+    })();
     let result: Awaited<typeof agentRun>;
     try {
       result = await agentRun;
@@ -139,4 +159,4 @@ export async function appAgent({
     // Never stop/snapshot between model calls or tool steps.
     await deleteSandbox(sandboxName);
   }
-}
+};

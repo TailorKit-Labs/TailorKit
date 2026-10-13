@@ -42,23 +42,25 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function setup() {
-  const client = createClient({ contract, baseUrl: "https://host.test" });
+const setup = () => {
+  const client = createClient({ baseUrl: "https://host.test", contract });
   const store = createTailorKitStore({
     apps: [],
     baseUrl: client.baseUrl,
     client: client.fetchClient,
-    contract: contract,
+    contract,
   });
+  const contextValue1 = { client, store };
   const wrapper = ({ children }: { children: ReactNode }) => (
     <StrictMode>
-      <TailorkitContext.Provider value={{ client, store }}>
+      {/* oxlint-disable-next-line react/jsx-no-constructed-context-values -- This fixture is created once outside the render callback and stays stable for the test. */}
+      <TailorkitContext.Provider value={contextValue1}>
         {children}
       </TailorkitContext.Provider>
     </StrictMode>
   );
   return { client, store, wrapper };
-}
+};
 
 it.each([
   { context: {}, options: { context: {} }, status: "ready" },
@@ -120,7 +122,7 @@ it.each([
     });
     await waitFor(() =>
       expect(store.views.getSnapshot()).toEqual({
-        layers: [{ path: "/", status, context }],
+        layers: [{ context, path: "/", status }],
         view: "/",
       })
     );
@@ -131,7 +133,7 @@ it.each([
 
 it("updates loading, error, and ready context as query results change", async () => {
   const { client, store, wrapper } = setup();
-  const { rerender } = renderHook<void, Options>(
+  const { rerender } = renderHook<ReturnType<() => void>, Options>(
     (options) => client.useViewContext("/", options),
     {
       initialProps: { context: undefined, loading: true },
@@ -169,7 +171,7 @@ it("updates loading, error, and ready context as query results change", async ()
 
 it("does not republish equivalent context or changes to ignored query data", async () => {
   const { client, store, wrapper } = setup();
-  const { rerender } = renderHook<void, Options>(
+  const { rerender } = renderHook<ReturnType<() => void>, Options>(
     (options) => client.useViewContext("/", options),
     {
       initialProps: { context: {} },

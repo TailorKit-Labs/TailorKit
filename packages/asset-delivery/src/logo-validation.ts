@@ -96,10 +96,10 @@ const validateSvg = (content: Uint8Array): void => {
   }
 };
 
-export function validateLogoAsset(
+export const validateLogoAsset = (
   content: Uint8Array,
   contentType: LogoContentType
-): { height?: number; width?: number } {
+): { height?: number; width?: number } => {
   if (content.byteLength < 1 || content.byteLength > maxLogoBytes) {
     throw new Error(`Logo must be between 1 and ${maxLogoBytes} bytes.`);
   }
@@ -123,4 +123,4 @@ export function validateLogoAsset(
     );
   }
   return dimensions;
-}
+};

@@ -9,16 +9,15 @@ import { AppError } from "./errors";
 
 export type Functions = AppDefinition["functions"];
 type RegisteredFunction = Exclude<Functions[string], Functions>;
-export function isFunction(
+export const isFunction = (
   value: Functions[string]
-): value is RegisteredFunction {
-  return typeof value.kind === "string" && typeof value.handler === "function";
-}
+): value is RegisteredFunction =>
+  typeof value.kind === "string" && typeof value.handler === "function";
 
-export function resolveFunction(
+export const resolveFunction = (
   functions: Functions,
   name: string
-): RegisteredFunction | undefined {
+): RegisteredFunction | undefined => {
   let current: RegisteredFunction | Functions = functions;
   for (const part of name.split(".")) {
     if (isFunction(current) || !Object.hasOwn(current, part)) {
@@ -31,9 +30,9 @@ export function resolveFunction(
     current = next;
   }
   return isFunction(current) ? current : undefined;
-}
+};
 
-function freezeIdentity(value: unknown): void {
+const freezeIdentity = (value: unknown): void => {
   if (!value || typeof value !== "object" || Object.isFrozen(value)) {
     return;
   }
@@ -41,14 +40,14 @@ function freezeIdentity(value: unknown): void {
     freezeIdentity(child);
   }
   Object.freeze(value);
-}
+};
 
-export function prepareFunction(
+export const prepareFunction = (
   app: AppDefinition,
   input: Invocation,
   identity: Identity,
   kind: FunctionKind
-) {
+) => {
   if (identity.expiresAt <= Date.now()) {
     throw new AppError("UNAUTHORIZED", "App token expired");
   }
@@ -62,10 +61,15 @@ export function prepareFunction(
     throw new AppError("BAD_REQUEST", "Invalid function arguments");
   }
   return { args: args.data, fn };
-}
+};
 
 /** Validate serialization before a mutation can commit or an action can return. */
-export function functionValue(fn: RegisteredFunction, value: unknown): unknown {
+export const functionValue = (
+  fn: RegisteredFunction,
+  initialValue: unknown
+): unknown => {
+  let value = initialValue;
+
   if (fn.result) {
     const result = fn.result.safeParse(value);
     if (!result.success) {
@@ -75,4 +79,4 @@ export function functionValue(fn: RegisteredFunction, value: unknown): unknown {
   }
   const serialized = JSON.stringify(value ?? null);
   return JSON.parse(serialized);
-}
+};

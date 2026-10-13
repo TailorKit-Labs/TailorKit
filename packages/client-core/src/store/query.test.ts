@@ -11,7 +11,7 @@ import {
 } from "./query";
 import { createTailorKitStore } from "./store";
 
-function setup(multiple = true, apps?: TailorKitApp[]) {
+const setup = (multiple = true, apps?: TailorKitApp[]) => {
   const fetch = vi.fn<typeof globalThis.fetch>();
   const client = createTailorKitFetchClient({
     baseUrl: "https://host.test/api/",
@@ -26,20 +26,33 @@ function setup(multiple = true, apps?: TailorKitApp[]) {
   const app: TailorKitApp = {
     id: "app",
     views: [
-      { path: "/", slot: "page", ...(multiple ? { instances: true } : {}) },
+      {
+        path: "/",
+        slot: "page",
+        ...(multiple ? { instances: true } : {}),
+      },
     ],
   };
   return { app, client, fetch, store };
-}
+};
 
 it("starts discovery only when observed and supplies filtered results and shared status flags", async () => {
   const { fetch, store } = setup();
   let resolve!: (response: Response) => void;
-  fetch.mockImplementation(
-    () =>
-      new Promise((done) => {
+  fetch.mockImplementation(() =>
+    (() => {
+      const {
+        promise: pendingPromise,
+        resolve: done,
+        reject: rejectPending,
+      } = Promise.withResolvers<Response>();
+      try {
         resolve = done;
-      })
+      } catch (error) {
+        rejectPending(error);
+      }
+      return pendingPromise;
+    })()
   );
   const query = createAppsQuery(store, {
     appIds: ["included"],
@@ -60,9 +73,18 @@ it("starts discovery only when observed and supplies filtered results and shared
   await Promise.resolve();
   resolve(
     Response.json([
-      { id: "included", scope: { context: {}, name: "user" } },
-      { id: "excluded", scope: { context: {}, name: "user" } },
-      { id: "other", scope: { context: {}, name: "organization" } },
+      {
+        id: "included",
+        scope: { context: {}, name: "user" },
+      },
+      {
+        id: "excluded",
+        scope: { context: {}, name: "user" },
+      },
+      {
+        id: "other",
+        scope: { context: {}, name: "organization" },
+      },
     ])
   );
   await allTasks();
@@ -105,13 +127,35 @@ it("switches instance queries on context changes and immediately cancels unobser
   store.setProvidedApps([app]);
   const requests: {
     signal: AbortSignal;
-    resolve: (value: { key: string; metadata: {}; data: {} }[]) => void;
+    resolve: (
+      value: {
+        key: string;
+        metadata: Record<string, never>;
+        data: Record<string, never>;
+      }[]
+    ) => void;
   }[] = [];
   vi.spyOn(client.endpoints, "slotInstances").mockImplementation(
     (_app, _input, signal) =>
-      new Promise((resolve) => {
-        requests.push({ resolve, signal });
-      })
+      (() => {
+        const {
+          promise: pendingPromise,
+          resolve,
+          reject: rejectPending,
+        } = Promise.withResolvers<
+          {
+            key: string;
+            metadata: Record<string, never>;
+            data: Record<string, never>;
+          }[]
+        >();
+        try {
+          requests.push({ resolve, signal });
+        } catch (error) {
+          rejectPending(error);
+        }
+        return pendingPromise;
+      })()
   );
   const id = Symbol("view");
   store.views.register({ context: { customer: "first" }, id, view: "/" });
@@ -124,18 +168,36 @@ it("switches instance queries on context changes and immediately cancels unobser
   expect(requests[0]?.signal.aborted).toBe(true);
   await vi.waitFor(() => expect(requests).toHaveLength(2));
   expect(query.state.get().data).toBeUndefined();
-  requests[1]?.resolve([{ data: {}, key: "second", metadata: {} }]);
+  requests[1]?.resolve([
+    {
+      data: {},
+      key: "second",
+      metadata: {},
+    },
+  ]);
   await vi.waitFor(() =>
     expect(query.state.get().data?.[0]).toMatchObject({ app, key: "second" })
   );
-  requests[0]?.resolve([{ data: {}, key: "late", metadata: {} }]);
+  requests[0]?.resolve([
+    {
+      data: {},
+      key: "late",
+      metadata: {},
+    },
+  ]);
   await allTasks();
   expect(query.state.get().data?.[0]).toMatchObject({ key: "second" });
   const pending = query.refetch();
   await vi.waitFor(() => expect(requests).toHaveLength(3));
   stop();
   expect(requests[2]?.signal.aborted).toBe(true);
-  requests[2]?.resolve([{ data: {}, key: "stopped", metadata: {} }]);
+  requests[2]?.resolve([
+    {
+      data: {},
+      key: "stopped",
+      metadata: {},
+    },
+  ]);
   await pending;
   store.views.unregister(id);
 });
@@ -186,7 +248,7 @@ it("sends parsed native contract context to instance requests without calling me
   const instances = vi
     .spyOn(client.endpoints, "slotInstances")
     .mockResolvedValue([]);
-  const id = Symbol();
+  const id = Symbol("identity");
   const original = {
     extra: true,
     user: { email: "private@example.com", id: "u1" },

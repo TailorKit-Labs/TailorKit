@@ -27,13 +27,14 @@ export interface Context {
   agentToken?: AgentToken & { token: string };
 }
 
-export async function createContext({
+export const createContext = async ({
   request,
 }: {
   request: Request;
-}): Promise<Context> {
+}): Promise<Context> => {
   await initializeObservability("tailorkit-web");
 
+  // oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
   return withSpan("api_platform.create_context", async () => {
     const storage = getStorage();
     if (!storage) {
@@ -103,7 +104,7 @@ export async function createContext({
       }
       // An authorized JWT has its own expiry; source revocation still applies.
       agentToken = { ...claims, scope: scope.scope, token: key };
-      projectId = agentToken.projectId;
+      ({ projectId } = agentToken);
     } else if (runtimeProject) {
       projectId = runtimeProject;
     } else {
@@ -150,10 +151,10 @@ export async function createContext({
       storage,
     };
   });
-}
+};
 
 /** Keep unavailable dependencies distinct from rejected credentials at the HTTP boundary. */
-export function contextErrorResponse(error: unknown) {
+export const contextErrorResponse = (error: unknown) => {
   const unauthorized =
     error instanceof ORPCError && error.code === "UNAUTHORIZED";
   return Response.json(
@@ -165,4 +166,4 @@ export function contextErrorResponse(error: unknown) {
         },
     { status: unauthorized ? 401 : 503 }
   );
-}
+};

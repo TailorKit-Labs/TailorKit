@@ -7,6 +7,7 @@ import {
   ActionCapability,
 } from "./actions";
 
+// oxlint-disable-next-line unicorn/consistent-function-scoping -- Keep the generator or mutable callback with its owning test or cancellation lifecycle.
 vi.mock("cloudflare:workers", () => ({ RpcTarget: function RpcTarget() {} }));
 
 const identity = {
@@ -40,7 +41,7 @@ it("expires actions on cancellation or token expiry", async () => {
   const leases = createActionLeases();
   const parent = new AbortController();
   const cancelled = leases.open(identity, parent.signal);
-  const waiting = abortable(new Promise(() => {}), cancelled.signal);
+  const waiting = abortable(Promise.withResolvers().promise, cancelled.signal);
   const assertion = expect(waiting).rejects.toBeDefined();
   parent.abort();
   await assertion;

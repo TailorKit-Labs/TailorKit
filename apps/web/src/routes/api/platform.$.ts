@@ -18,15 +18,16 @@ import { createFileRoute } from "@tanstack/react-router";
 
 const handler = new OpenAPIHandler(platformRouter, {
   interceptors: [
-    onError((error) => {
-      recordException(error, { "tailorkit.adapter": "orpc-openapi" });
-      console.error("OpenAPI request failed", sanitizeErrorForLog(error));
+    // oxlint-disable-next-line promise/prefer-await-to-callbacks -- The oRPC error interceptor is a synchronous callback required by the adapter API.
+    onError((err) => {
+      recordException(err, { "tailorkit.adapter": "orpc-openapi" });
+      console.error("OpenAPI request failed", sanitizeErrorForLog(err));
     }),
   ],
   plugins: [new RateLimitHandlerPlugin()],
 });
 
-async function handle({ request }: { request: Request }) {
+const handle = async ({ request }: { request: Request }) => {
   await initializeObservability("tailorkit-web");
   setSpanAttributes({
     "tailorkit.adapter": "orpc-openapi",
@@ -58,7 +59,7 @@ async function handle({ request }: { request: Request }) {
   }
 
   return new Response("Not found", { status: 404 });
-}
+};
 
 export const Route = createFileRoute("/api/platform/$")({
   server: {

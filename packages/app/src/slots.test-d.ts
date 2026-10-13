@@ -7,18 +7,24 @@ const root = defineView({ component: () => null, slot: "navbar", view: "/" });
 defineView({ component: () => null, slot: "panel", view: "/unknown" });
 
 defineView({
-  slot: "navbar",
-  view: "/",
   component: () => null,
+
   // @ts-expect-error Apps cannot provide loading components for host context.
   loading: () => null,
+
+  slot: "navbar",
+
+  view: "/",
 });
 defineView({
-  slot: "navbar",
-  view: "/",
   component: () => null,
+
   // @ts-expect-error Apps cannot provide error components for host context.
   error: () => null,
+
+  slot: "navbar",
+
+  view: "/",
 });
 
 // Internal loading and error states remain valid without context.
@@ -37,18 +43,24 @@ root.component({ context: { workspaceId: "w1" }, status: "error", view: "/" });
 // @ts-expect-error Multi-instance slots require instances in defineView.
 defineView({ component: () => null, slot: "page", view: "/" });
 defineView({
-  slot: "panel",
-  view: "/",
   component: () => null,
+
   // @ts-expect-error Single-instance slots reject instances.
   instances: { dataSchema: z.object({}), resolve: () => [] },
+
+  slot: "panel",
+
+  view: "/",
 });
 defineView({
-  slot: "navbar",
-  view: "/",
   component: () => null,
+
   // @ts-expect-error An omitted multiple flag also rejects instances.
   instances: { dataSchema: z.object({}), resolve: () => [] },
+
+  slot: "navbar",
+
+  view: "/",
 });
 // @ts-expect-error The slot must support the view path.
 defineView({ component: () => null, slot: "navbar", view: "/users" });

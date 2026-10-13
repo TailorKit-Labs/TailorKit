@@ -8,30 +8,30 @@ import {
   CardTitle,
 } from "@tailorkit/ui/card";
 import { Input } from "@tailorkit/ui/input";
-import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
+import {
+  useLoaderData,
+  Link,
+  createFileRoute,
+  useRouter,
+} from "@tanstack/react-router";
 import { ArrowUpRight, Plus } from "lucide-react";
 import { useState } from "react";
 
 import { addIssue, loadIssues } from "#lib/issues.functions";
 
-export const Route = createFileRoute("/issues/")({
-  component: IssuesPage,
-  loader: () => loadIssues(),
-});
-
-function IssuesPage() {
-  const issues = Route.useLoaderData();
+const IssuesPage = () => {
+  const issues = useLoaderData({ from: "/issues/" });
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string>();
+  const [operationError, setOperationError] = useState<string>();
 
-  async function create() {
+  const create = async () => {
     if (!title.trim()) {
       return;
     }
     setPending(true);
-    setError(undefined);
+    setOperationError(undefined);
     try {
       const issue = await addIssue({ data: { title } });
       setTitle("");
@@ -40,13 +40,14 @@ function IssuesPage() {
         to: "/issues/$issueId",
       });
     } catch (error) {
-      setError(
+      setOperationError(
         error instanceof Error ? error.message : "Could not create issue"
       );
+      // oxlint-disable-next-line react/todo -- Oxlint’s React compiler does not support try/finally; cleanup must also run after failures.
     } finally {
       setPending(false);
     }
-  }
+  };
 
   return (
     <div className="flex flex-col gap-7">
@@ -87,9 +88,9 @@ function IssuesPage() {
               Create issue
             </Button>
           </form>
-          {error ? (
+          {operationError ? (
             <p className="text-destructive mt-3 text-sm" role="alert">
-              {error}
+              {operationError}
             </p>
           ) : null}
         </CardContent>
@@ -138,4 +139,9 @@ function IssuesPage() {
       </Card>
     </div>
   );
-}
+};
+
+export const Route = createFileRoute("/issues/")({
+  component: IssuesPage,
+  loader: () => loadIssues(),
+});

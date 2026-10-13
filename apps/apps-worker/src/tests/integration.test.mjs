@@ -19,6 +19,21 @@ import { it } from "vite-plus/test";
 
 import { readAppMigrations } from "../../../../packages/app/src/builder/migrations.ts";
 
+const bundleImplementation = (version) =>
+  `import { env } from "cloudflare:workers";
+let globals = 0;
+export const runtimeManifest = { apiVersion: 1, requires: ["database", "actions"] };
+export const migrations = [];
+export default { functions: { probe: {
+ kind: "query", args: { safeParse: value => ({ success: true, data: value }) },
+ handler({ identity }) {
+   let networkBlocked = false;
+   try { fetch("https://example.com"); } catch { networkBlocked = true; }
+   return { globals: ++globals, version: ${version}, networkBlocked,
+     bindings: Object.keys(env), token: null, identity };
+ }
+} } }`;
+
 it("runs isolated app backends with persistent SQLite and two-client realtime updates", async () => {
   // Exercise precisely the workerd/Miniflare version bundled with this project's Wrangler.
   const require = createRequire(import.meta.url);
@@ -74,10 +89,10 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
     },
     kvNamespaces: ["DEPLOYMENTS"],
     modules: [
-      { type: "ESModule", path: path.join(dist, "index.js") },
+      { path: path.join(dist, "index.js"), type: "ESModule" },
       ...(await readdir(dist))
         .filter((name) => name.endsWith(".txt"))
-        .map((name) => ({ type: "Text", path: path.join(dist, name) })),
+        .map((name) => ({ path: path.join(dist, name), type: "Text" })),
     ],
     modulesRoot: dist,
     name: "tailorkit-runtime-test",
@@ -93,27 +108,32 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
         const verified = await appTokenVerifier({ ...signing, publicKeys })(
           token
         );
-        if (toolPath === "echo") return Response.json({ output: input });
+        if (toolPath === "echo") {
+          return Response.json({ output: input });
+        }
         return Response.json({
           output: {
-            subjectId: verified.subjectId,
             installationId: verified.installationId,
             scope: verified.scope,
+            subjectId: verified.subjectId,
           },
         });
       }
 
       if (request.url.startsWith("https://third-party.test/")) {
-        externalCalls++;
+        externalCalls += 1;
         assert.equal(request.headers.get("authorization"), null);
 
-        if (request.url.endsWith("/redirect"))
+        if (request.url.endsWith("/redirect")) {
           return new Response(null, {
-            status: 302,
             headers: { location: "https://127.0.0.1/private" },
+            status: 302,
           });
+        }
 
-        if (request.url.endsWith("/slow")) await pendingExternal;
+        if (request.url.endsWith("/slow")) {
+          await pendingExternal;
+        }
 
         return Response.json({ title: "Imported from external API" });
       }
@@ -126,7 +146,7 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
         request.headers.get("authorization"),
         `Bearer ${"x".repeat(32)}`
       );
-      metadataReads++;
+      metadataReads += 1;
       return Response.json(published);
     },
     r2Buckets: { BUNDLES: "private-apps" },
@@ -136,23 +156,9 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
 
   let mf;
 
-  function bundle(version) {
-    return `import { env } from "cloudflare:workers";
-let globals = 0;
-export const runtimeManifest = { apiVersion: 1, requires: ["database", "actions"] };
-export const migrations = [];
-export default { functions: { probe: {
- kind: "query", args: { safeParse: value => ({ success: true, data: value }) },
- handler({ identity }) {
-   let networkBlocked = false;
-   try { fetch("https://example.com"); } catch { networkBlocked = true; }
-   return { globals: ++globals, version: ${version}, networkBlocked,
-     bindings: Object.keys(env), token: null, identity };
- }
-} } }`;
-  }
+  const bundle = bundleImplementation;
 
-  async function publish(version) {
+  const publish = async (version) => {
     const code = bundle(version);
     const objectKey = `teams/${publicTeamId}/projects/${projectId}/apps/${appPublicId}/deployments/deploy00000${version}/server/server.js`;
     const bucket = await mf.getR2Bucket("BUNDLES");
@@ -181,15 +187,17 @@ export default { functions: { probe: {
       }
     );
     assert.equal(response.status, 204, await response.text());
-  }
+  };
 
-  async function invoke(
+  const defaultProbe = { name: "probe" };
+  const invoke = async (
     installationId,
     deploymentId = published.deploymentId,
     overrides = {},
     endpoint = "queries",
-    input = { name: "probe" }
-  ) {
+    rawInput = defaultProbe
+  ) => {
+    const input = rawInput ?? { name: "probe" };
     const session = await issueAppToken(signing, {
       appId: "app",
       appPublicId,
@@ -214,9 +222,9 @@ export default { functions: { probe: {
         method: "POST",
       }
     );
-  }
+  };
 
-  async function checkRpc() {
+  const checkRpc = async () => {
     const repo = path.resolve(import.meta.dirname, "../../../..");
     const { migrations } = await readAppMigrations(
       path.join(
@@ -227,7 +235,7 @@ export default { functions: { probe: {
 
     const entry = path.join(state, "fixture.ts");
 
-    async function publishRpc(history, deploymentId) {
+    const publishRpc = async (history, deploymentId) => {
       // Use the same migration bootstrap bundled into production server artifacts.
       const setup = `import app from ${JSON.stringify(path.join(repo, "packages/app/test/fixtures/backend-todo/src/server.ts"))};
 import { defineServer, action, query, table, text, integer, AppError } from ${JSON.stringify(path.join(repo, "packages/app/dist/server.js"))};
@@ -299,7 +307,7 @@ export const migrations = ${JSON.stringify(history)};`;
         JSON.stringify([published.projectId, published.appId]),
         JSON.stringify(published)
       );
-    }
+    };
 
     await publishRpc(migrations, "backend");
 
@@ -309,41 +317,42 @@ export const migrations = ${JSON.stringify(history)};`;
         connect: async (url, protocols) => {
           assert.equal(
             new URL(url).pathname,
-            new URL(rpcUrl).pathname + "/queries"
+            `${new URL(rpcUrl).pathname}/queries`
           );
           const response = await mf.dispatchFetch(
             url.replace("wss:", "https:"),
             {
               headers: {
-                upgrade: "websocket",
                 "sec-websocket-protocol": protocols.join(", "),
+                upgrade: "websocket",
               },
             }
           );
-          if (response.status !== 101)
+          if (response.status !== 101) {
             throw new Error(
               `WebSocket handshake ${response.status}: ${await response.text()}`
             );
+          }
           const socket = response.webSocket;
           socket.accept();
           return socket;
         },
         fetch: (url, init) => mf.dispatchFetch(String(url), init),
         getSession: async () => {
-          renewals++;
+          renewals += 1;
           const session = await issueAppToken(
             // Renew after five seconds while keeping the production one-minute renewal window.
             { ...signing, lifetimeSeconds: 65 },
             {
-              publicTeamId,
-              appPublicId,
-              scope: { name: "org", value: { id: "tenant" } },
-              toolUrl: "https://host.test/api/tailorkit/tools/execute",
-              subjectId: "user",
-              projectId,
               appId: "app",
-              installationId,
+              appPublicId,
               deploymentId: published.deploymentId,
+              installationId,
+              projectId,
+              publicTeamId,
+              scope: { name: "org", value: { id: "tenant" } },
+              subjectId: "user",
+              toolUrl: "https://host.test/api/tailorkit/tools/execute",
             }
           );
           appTokens.add(session.token);
@@ -360,11 +369,11 @@ export const migrations = ${JSON.stringify(history)};`;
     const errors = [];
     const stops = [first, second].map((client, index) =>
       client.subscribe(list, undefined, (rows) => snapshots[index].push(rows), {
-        onError: (error) => errors.push(error),
+        onError: (err) => errors.push(err),
       })
     );
 
-    async function wait(predicate, label) {
+    const wait = async (predicate, label) => {
       const until = Date.now() + 15_000;
       while (!predicate()) {
         if (Date.now() > until) {
@@ -372,9 +381,22 @@ export const migrations = ${JSON.stringify(history)};`;
             `Timeout: ${label}: ${JSON.stringify(errors.slice(-3))}`
           );
         }
-        await new Promise((resolve) => setTimeout(resolve, 25));
+        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+        await (() => {
+          const {
+            promise: pendingPromise,
+            resolve,
+            reject: rejectPending,
+          } = Promise.withResolvers();
+          try {
+            setTimeout(resolve, 25);
+          } catch (error) {
+            rejectPending(error);
+          }
+          return pendingPromise;
+        })();
       }
-    }
+    };
 
     try {
       await wait(
@@ -418,9 +440,19 @@ export const migrations = ${JSON.stringify(history)};`;
       assert.equal(errors.length, 0);
 
       {
-        pendingExternal = new Promise((resolve) => {
-          releaseExternal = resolve;
-        });
+        pendingExternal = (() => {
+          const {
+            promise: pendingPromise,
+            resolve,
+            reject: rejectPending,
+          } = Promise.withResolvers();
+          try {
+            releaseExternal = resolve;
+          } catch (error) {
+            rejectPending(error);
+          }
+          return pendingPromise;
+        })();
         const oldCalls = externalCalls;
         const action = first.action(reference("importTodo", "action"), {
           url: "https://third-party.test/slow",
@@ -514,7 +546,8 @@ export const migrations = ${JSON.stringify(history)};`;
         await assert.rejects(first.action(reference("list", "action"), {}));
 
         stops[1]();
-        await second.query(list); // Cancellation and this request share an ordered connection.
+        // Cancellation and this request share an ordered connection.
+        await second.query(list);
         const stoppedCount = snapshots[1].length;
         await first.mutate(add, { text: "After unsubscribe" });
         await wait(
@@ -537,7 +570,9 @@ export const migrations = ${JSON.stringify(history)};`;
         }
       }
     } finally {
-      stops.forEach((stop) => stop());
+      for (const stop of stops) {
+        stop();
+      }
       first.close?.();
       second.close?.();
     }
@@ -550,14 +585,12 @@ export const migrations = ${JSON.stringify(history)};`;
     try {
       assert.equal((await recovered.query(list)).length, 5);
 
-      {
-        await recovered.mutate(
-          add,
-          { text: "Both clients see this persisted mutation" },
-          { requestId: "00000000-0000-4000-8000-000000000001" }
-        );
-        assert.equal((await recovered.query(list)).length, 5);
-      }
+      await recovered.mutate(
+        add,
+        { text: "Both clients see this persisted mutation" },
+        { requestId: "00000000-0000-4000-8000-000000000001" }
+      );
+      assert.equal((await recovered.query(list)).length, 5);
     } finally {
       recovered.close?.();
     }
@@ -579,24 +612,38 @@ export const migrations = ${JSON.stringify(history)};`;
       undefined,
       (rows) => liveSnapshots.push(rows),
       {
-        onError: (error) => errors.push(error),
+        onError: (err2) => errors.push(err2),
       }
     );
     await wait(
       () => liveSnapshots.length === 1,
       "subscription before deployment change"
     );
-    pendingExternal = new Promise((resolve) => {
-      releaseExternal = resolve;
-    });
+    pendingExternal = (() => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers();
+      try {
+        releaseExternal = resolve;
+      } catch (error) {
+        rejectPending(error);
+      }
+      return pendingPromise;
+    })();
     const beforeUpgradeCalls = externalCalls;
     const oldAction = live.action(reference("importTodo", "action"), {
       url: "https://third-party.test/slow",
     });
-    const oldActionResult = oldAction.then(
-      () => "unexpected",
-      (error) => error.code
-    );
+    const oldActionResult = (async () => {
+      try {
+        await oldAction;
+        return "unexpected";
+      } catch (error) {
+        return error.code;
+      }
+    })();
     await wait(
       () => externalCalls > beforeUpgradeCalls,
       "action before deployment replacement"
@@ -704,7 +751,7 @@ export const migrations = ${JSON.stringify(history)};`;
       retried.close();
       fresh.close();
     }
-  }
+  };
 
   try {
     mf = new Miniflare(convertV4MiniflareOptions(options));
@@ -718,7 +765,8 @@ export const migrations = ${JSON.stringify(history)};`;
     await assets.put(clientKey, clientBytes, {
       httpMetadata: { contentEncoding: "gzip" },
     });
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       const compressed = await mf.dispatchFetch(
         `${assetBase}/client/client.js`,
         {
@@ -729,6 +777,7 @@ export const migrations = ${JSON.stringify(history)};`;
       assert.equal(compressed.headers.get("vary"), "Accept-Encoding");
       // Miniflare dispatchFetch decodes HTTP gzip and preserves its header here.
       assert.equal(
+        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
         await compressed.text(),
         "export default 'client';",
         `gzip request ${attempt}`

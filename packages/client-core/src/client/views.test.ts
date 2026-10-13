@@ -6,13 +6,23 @@ import { testContract } from "../test-contract";
 import { createTailorKitFetchClient } from "./fetch-client";
 import { refetchViews } from "./views";
 
-function deferredResponse() {
+const deferredResponse = () => {
   let resolve!: (response: Response) => void;
-  const promise = new Promise<Response>((done) => {
-    resolve = done;
-  });
+  const promise = (() => {
+    const {
+      promise: pendingPromise,
+      resolve: done,
+      reject: rejectPending,
+    } = Promise.withResolvers<Response>();
+    try {
+      resolve = done;
+    } catch (error) {
+      rejectPending(error);
+    }
+    return pendingPromise;
+  })();
   return { promise, resolve };
-}
+};
 
 it("joins discovery and resolves single slots from the imported contract without metadata", async () => {
   const discovery = deferredResponse();

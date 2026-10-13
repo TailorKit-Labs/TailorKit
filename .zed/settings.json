@@ -16,7 +16,7 @@
         "settings": {
           "configPath": null,
           "flags": {},
-          "fmt.configPath": "./vite.config.ts",
+          "fmt.configPath": null,
           "fmt.experimental": true,
           "run": "onSave",
           "typeAware": false,
@@ -30,8 +30,22 @@
           "disableNestedConfig": false,
           "fixKind": "safe_fix",
           "run": "onType",
-          "typeAware": true,
+          "typeAware": null,
           "unusedDisableDirectives": "deny"
+        }
+      }
+    },
+    "vtsls": {
+      "settings": {
+        "javascript": {
+          "preferences": {
+            "includePackageJsonAutoImports": "on"
+          }
+        },
+        "typescript": {
+          "preferences": {
+            "includePackageJsonAutoImports": "on"
+          }
         }
       }
     }

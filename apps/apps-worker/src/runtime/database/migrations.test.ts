@@ -11,14 +11,14 @@ import type { Persistence } from "./driver";
 import { migrateDatabase } from "./migrations";
 import type { AppMigration } from "./migrations";
 
-function migration(id: string, file: string): AppMigration {
+const migration = (id: string, file: string): AppMigration => {
   const sql = readFileSync(new URL(file, import.meta.url), "utf-8");
   return {
     hash: createHash("sha256").update(sql).digest("hex"),
     id,
     statements: sql.split("--> statement-breakpoint"),
   };
-}
+};
 const initial = migration(
   "20261001000000_init",
   "../../../../../packages/app/test/fixtures/backend-todo/src/db/migrations/20261001062220_init/migration.sql"
@@ -38,7 +38,7 @@ afterEach(() => {
   }
   connections.length = 0;
 });
-function fixture() {
+const fixture = () => {
   const sqlite = new DatabaseSync(":memory:");
   connections.push(sqlite);
   const persistence: Persistence = {
@@ -67,7 +67,7 @@ function fixture() {
     },
   };
   return { persistence, sqlite };
-}
+};
 
 it("initializes a fresh database and applies pending migrations without replaying or losing data", () => {
   const { sqlite, persistence } = fixture();
@@ -159,7 +159,7 @@ it("does not expose database handlers when initialization fails", () => {
   sqlite.exec("INSERT INTO todos (id, text) VALUES ('one', 'Persisted')");
   let calls = 0;
   const app = defineServer({
-    probe: query({ args: z.object({}), handler: () => ++calls }),
+    probe: query({ args: z.object({}), handler: () => (calls += 1) }),
   });
   expect(() =>
     createExecution(app, persistence, [initial, required])

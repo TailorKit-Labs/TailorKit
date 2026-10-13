@@ -2,6 +2,11 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { beforeEach, expect, it, vi } from "vite-plus/test";
 
 import type { Context } from "../context";
+import {
+  getRuntimeBundle,
+  handlePublicRuntimeRequest,
+  publishRuntimeMetadata,
+} from "./runtime";
 
 const state = vi.hoisted(() => ({
   env: {
@@ -11,11 +16,12 @@ const state = vi.hoisted(() => ({
   findApp: vi.fn(),
   findFile: vi.fn(),
   publicKeys: vi.fn(() => ({
-    keys: [{ kty: "EC", crv: "P-256", kid: "platform", x: "x", y: "y" }],
+    keys: [{ crv: "P-256", kid: "platform", kty: "EC", x: "x", y: "y" }],
   })),
 }));
 
 vi.mock("../env", () => ({ env: state.env }));
+
 vi.mock("@tailorkit/db", () => ({
   db: {
     query: {
@@ -24,17 +30,13 @@ vi.mock("@tailorkit/db", () => ({
     },
   },
 }));
+
 vi.mock("@tailorkit/kv", () => ({ getKV: () => {} }));
+
 vi.mock("../runtime/auth", () => ({
   appRuntimePublicKeys: state.publicKeys,
   issueAppRuntimeToken: vi.fn(),
 }));
-
-import {
-  getRuntimeBundle,
-  handlePublicRuntimeRequest,
-  publishRuntimeMetadata,
-} from "./runtime";
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -138,9 +140,9 @@ it("returns deployment metadata directly as the HTTP response body", async () =>
     }),
     {
       context: {
-        runtimeService: true,
-        project: { id: metadata.projectId },
         organization: { id: "organization", publicId: "team" },
+        project: { id: metadata.projectId },
+        runtimeService: true,
       } as Context,
       prefix: "/api/platform",
     }

@@ -79,5 +79,6 @@ it("does not invoke serialization for absent schemas or serializers", () => {
   const serializer = vi.fn(() => ({ type: "string" }));
   expect(serializeSchema(undefined, serializer)).toBeUndefined();
   expect(serializer).not.toHaveBeenCalled();
-  expect(serializeSchema(v.string())).toBeUndefined();
+  // oxlint-disable-next-line unicorn/no-useless-undefined -- Preserve the original explicit argument and argument-count semantics.
+  expect(serializeSchema(v.string(), undefined)).toBeUndefined();
 });

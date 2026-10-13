@@ -5,7 +5,7 @@ import { env } from "#env";
 
 import { relations } from "./relations";
 
-export function createDb(): NodePgDatabase<typeof relations> {
+export const createDb = (): NodePgDatabase<typeof relations> => {
   if (!env.DATABASE_URL) {
     throw new Error(
       "DATABASE_URL is required to create a database connection."
@@ -13,13 +13,12 @@ export function createDb(): NodePgDatabase<typeof relations> {
   }
 
   return drizzle(env.DATABASE_URL, { relations });
-}
+};
 
 let dbInstance: NodePgDatabase<typeof relations> | undefined;
 
-function getDb(): NodePgDatabase<typeof relations> {
-  return (dbInstance ??= createDb());
-}
+const getDb = (): NodePgDatabase<typeof relations> =>
+  (dbInstance ??= createDb());
 
 export const db = new Proxy({} as NodePgDatabase<typeof relations>, {
   get(_target, property) {

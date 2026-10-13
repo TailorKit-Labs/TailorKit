@@ -3,7 +3,6 @@ import { z } from "zod";
 export const tailorkitUploadManifestSchema = z.object({
   assets: z.object({
     client: z.literal("client/client.js"),
-    server: z.literal("server/server.js").optional(),
     logos: z
       .object({
         dark: z
@@ -16,15 +15,16 @@ export const tailorkitUploadManifestSchema = z.object({
           .optional(),
       })
       .optional(),
+    server: z.literal("server/server.js").optional(),
   }),
   version: z.literal(1),
   views: z
     .array(
       z.object({
-        slot: z.string().min(1).max(255),
-        path: z.string().startsWith("/").max(1024),
-        instances: z.literal(true).optional(),
         disabled: z.literal(true).optional(),
+        instances: z.literal(true).optional(),
+        path: z.string().startsWith("/").max(1024),
+        slot: z.string().min(1).max(255),
       })
     )
     .max(1000)

@@ -15,14 +15,48 @@ import type { InstanceModule, InstanceRegistration } from "./instances";
 import { readAppMigrations } from "./migrations";
 import { checkAppSchema } from "./schema-check";
 
+const containsImplementation = (parent: string, child: string) => {
+  const relative = path.relative(parent, child);
+  return (
+    relative === "" ||
+    (!path.isAbsolute(relative) &&
+      relative !== ".." &&
+      !relative.startsWith(`..${path.sep}`))
+  );
+};
+
+const overlaps = (source: string, destination: string) => {
+  const contains = containsImplementation;
+  return contains(source, destination) || contains(destination, source);
+};
+
+/** Check before either build can empty an output directory. */
+export const validateServerBuildOutput = (
+  loaded: LoadedTailorKitConfig,
+  output: string
+) => {
+  if (!loaded.config.server) {
+    return;
+  }
+  const migrationsDirectory = appDatabasePaths(
+    loaded.root,
+    loaded.config.server.migrations
+  ).migrations;
+  for (const name of ["server", "client", "migrations", "tmp"]) {
+    if (overlaps(migrationsDirectory, path.join(output, name))) {
+      throw new Error("App build output must not overlap migration source");
+    }
+  }
+};
+
 /** Bundle the private app backend and migrations. */
-export async function buildServer(
+export const buildServer = async (
   loaded: LoadedTailorKitConfig,
   watch = false,
   buildOutDir?: string,
   instances: InstanceModule[] = [],
   registrations: InstanceRegistration[] = []
-) {
+) => {
   const config = loaded.config.server;
   if (!config) {
     return;
@@ -46,9 +80,19 @@ export async function buildServer(
   let watching = false;
   let ready: (() => void) | undefined;
   const initialBuild = watch
-    ? new Promise<void>((resolve) => {
-        ready = resolve;
-      })
+    ? (() => {
+        const {
+          promise: pendingPromise,
+          resolve,
+          reject: rejectPending,
+        } = Promise.withResolvers<ReturnType<() => void>>();
+        try {
+          ready = resolve;
+        } catch (error) {
+          rejectPending(error);
+        }
+        return pendingPromise;
+      })()
     : undefined;
   try {
     await writeFile(
@@ -84,13 +128,7 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
       plugins: [
         instanceServerPlugin(loaded.root, instances),
         {
-          name: "tailorkit-app-migrations",
-          closeWatcher: () => rm(temporary, { recursive: true, force: true }),
-          resolveId(id) {
-            if (id === "tailorkit:migrations") {
-              return "\0tailorkit:migrations";
-            }
-          },
+          closeWatcher: () => rm(temporary, { force: true, recursive: true }),
           async load(id) {
             if (id !== "\0tailorkit:migrations") {
               return;
@@ -104,7 +142,7 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
             for (const file of files) {
               this.addWatchFile(file);
             }
-            await rm(migrationsOutput, { recursive: true, force: true });
+            await rm(migrationsOutput, { force: true, recursive: true });
             await mkdir(migrationsOutput, { recursive: true });
             await cp(migrationsDirectory, migrationsOutput, {
               recursive: true,
@@ -119,6 +157,12 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
             });
             return `export default ${JSON.stringify(migrations)};`;
           },
+          name: "tailorkit-app-migrations",
+          resolveId(id) {
+            if (id === "tailorkit:migrations") {
+              return "\0tailorkit:migrations";
+            }
+          },
         },
       ],
       root: loaded.root,
@@ -129,16 +173,26 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
       try {
         await Promise.race([
           initialBuild,
-          new Promise<never>((_, reject) =>
-            result.on("event", (event) => {
-              if (event.code === "ERROR") {
-                reject(event.error);
-              }
-              if (event.code === "END") {
-                ready?.();
-              }
-            })
-          ),
+          (() => {
+            const {
+              promise: pendingPromise,
+              resolve: _,
+              reject,
+            } = Promise.withResolvers<never>();
+            try {
+              result.on("event", (event) => {
+                if (event.code === "ERROR") {
+                  reject(event.error);
+                }
+                if (event.code === "END") {
+                  ready?.();
+                }
+              });
+            } catch (error) {
+              reject(error);
+            }
+            return pendingPromise;
+          })(),
         ]);
       } catch (error) {
         await result.close();
@@ -148,39 +202,7 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
     return result;
   } finally {
     if (!watching) {
-      await rm(temporary, { recursive: true, force: true });
+      await rm(temporary, { force: true, recursive: true });
     }
   }
-}
-
-/** Check before either build can empty an output directory. */
-export function validateServerBuildOutput(
-  loaded: LoadedTailorKitConfig,
-  output: string
-) {
-  if (!loaded.config.server) {
-    return;
-  }
-  const migrationsDirectory = appDatabasePaths(
-    loaded.root,
-    loaded.config.server.migrations
-  ).migrations;
-  for (const name of ["server", "client", "migrations", "tmp"]) {
-    if (overlaps(migrationsDirectory, path.join(output, name))) {
-      throw new Error("App build output must not overlap migration source");
-    }
-  }
-}
-
-function overlaps(source: string, destination: string) {
-  const contains = (parent: string, child: string) => {
-    const relative = path.relative(parent, child);
-    return (
-      relative === "" ||
-      (!path.isAbsolute(relative) &&
-        relative !== ".." &&
-        !relative.startsWith(`..${path.sep}`))
-    );
-  };
-  return contains(source, destination) || contains(destination, source);
-}
+};

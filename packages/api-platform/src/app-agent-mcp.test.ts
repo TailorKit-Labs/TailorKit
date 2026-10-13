@@ -6,6 +6,13 @@ import type { Context } from "./context";
 import { env } from "./env";
 import { canonicalizeScope } from "./scope";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const mocks = vi.hoisted(() => ({
   app: vi.fn(),
   cancel: vi.fn(),
@@ -21,6 +28,7 @@ vi.mock("@tailorkit/db", () => ({
     insert: () => ({
       values: (value: unknown) => {
         mocks.grant(value);
+        // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
         return { returning: async () => [{ id: "grant" }] };
       },
     }),
@@ -40,14 +48,14 @@ vi.mock("@tailorkit/app-agent/workflows", () => ({
 }));
 vi.mock("workflow/api", () => ({ start: mocks.start }));
 vi.mock("@tailorkit/api-utils/dev-delay", () => ({
-  devDelayMiddleware: async ({ next }: { next: () => unknown }) => next(),
+  devDelayMiddleware: async ({ next }: { next: () => unknown }) => await next(),
 }));
 vi.mock("@tailorkit/api-utils/rate-limiting", () => ({
   createRateLimiter: vi.fn(),
   ratelimitMiddleware:
     () =>
     async ({ next }: { next: () => unknown }) =>
-      next(),
+      await next(),
 }));
 const { handleAppAgentMcpRequest } = await import("./app-agent-mcp");
 
@@ -59,31 +67,31 @@ const context = {
 const identity = { scopes: { org: scope.scope.value }, subjectId: "user" };
 const app = { id: "internal-app", publicId: "public-app", scope: scope.scope };
 
-function request(
+const request = (
   name: string,
   args: Record<string, unknown> = {},
   overrides = {},
   headers = {}
-) {
-  const context = {
+) => {
+  const contextValue = {
     ...identity,
     hostUrl: "https://host.test/api/tailorkit",
     ...overrides,
   };
   return new Request("https://platform.test/api/platform/app-agent/mcp", {
     body: JSON.stringify({
-      jsonrpc: "2.0",
       id: 1,
+      jsonrpc: "2.0",
       method: "tools/call",
       params: {
-        name,
-        arguments: args,
         _meta: {
-          "io.modelcontextprotocol/protocolVersion": "2026-07-28",
-          "io.modelcontextprotocol/clientInfo": { name: "test", version: "1" },
           "io.modelcontextprotocol/clientCapabilities": {},
+          "io.modelcontextprotocol/clientInfo": { name: "test", version: "1" },
+          "io.modelcontextprotocol/protocolVersion": "2026-07-28",
           progressToken: "progress",
         },
+        arguments: args,
+        name,
       },
     }),
     headers: {
@@ -93,14 +101,14 @@ function request(
       "mcp-name": name,
       "mcp-protocol-version": "2026-07-28",
       "x-tailorkit-context": Buffer.from(
-        JSON.stringify(context),
-        "utf8"
+        JSON.stringify(contextValue),
+        "utf-8"
       ).toString("base64url"),
       ...headers,
     },
     method: "POST",
   });
-}
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -114,9 +122,9 @@ beforeEach(() => {
     readable: new ReadableStream({
       start(controller) {
         controller.enqueue({
-          type: "text-delta",
           id: "text",
           text: "Building",
+          type: "text-delta",
         });
         controller.close();
       },
@@ -134,7 +142,7 @@ describe("platform MCP endpoint", () => {
     );
     expect(response.status).toBe(200);
     expect(await response.text()).toContain("public-app");
-    expect(mocks.list.mock.lastCall![0].input.body).toEqual({
+    expect(requireValue(mocks.list.mock.lastCall)[0].input.body).toEqual({
       page: 1,
       pageSize: 100,
       scopes: [scope.scope],
@@ -151,7 +159,7 @@ describe("platform MCP endpoint", () => {
     expect(events).toContain("notifications/progress");
     expect(events).toContain("Building");
     expect(mocks.start).toHaveBeenCalledOnce();
-    const input = mocks.start.mock.lastCall![1][0];
+    const [, [input]] = requireValue(mocks.start.mock.lastCall);
     expect(input).toMatchObject({
       appId: app.id,
       hostUrl: "https://host.test/api/tailorkit",
@@ -160,8 +168,8 @@ describe("platform MCP endpoint", () => {
     expect(
       await verifyAgentToken(
         input.agentToken,
-        env.AUTH_SECRET!,
-        env.OPENAPI_SERVER_URL!
+        requireValue(env.AUTH_SECRET),
+        requireValue(env.OPENAPI_SERVER_URL)
       )
     ).toMatchObject({
       appId: app.id,
@@ -170,10 +178,12 @@ describe("platform MCP endpoint", () => {
       scope: scope.scope,
     });
     expect(input.schema).toBeUndefined();
-    expect(mocks.start.mock.lastCall![2].attributes).toMatchObject({
-      "tailorkit.subjectId": "user",
-    });
-    expect(mocks.grant.mock.lastCall![0]).toMatchObject({
+    expect(requireValue(mocks.start.mock.lastCall)[2].attributes).toMatchObject(
+      {
+        "tailorkit.subjectId": "user",
+      }
+    );
+    expect(requireValue(mocks.grant.mock.lastCall)[0]).toMatchObject({
       projectId: "project",
       scope: scope.scope,
       scopeKey: scope.scopeKey,
@@ -188,12 +198,12 @@ describe("platform MCP endpoint", () => {
       context
     );
     await response.text();
-    expect(mocks.create.mock.lastCall![1]).toEqual({
+    expect(requireValue(mocks.create.mock.lastCall)[1]).toEqual({
       description: null,
       name: "Todo",
       scope: scope.scope,
     });
-    expect(mocks.create.mock.lastCall![2]).toBe(true);
+    expect(requireValue(mocks.create.mock.lastCall)[2]).toBe(true);
     expect(mocks.start).toHaveBeenCalledOnce();
   });
 
@@ -216,42 +226,39 @@ describe("platform MCP endpoint", () => {
 
   it("rejects service/agent credentials and malformed host identities", async () => {
     for (const restricted of [{ runtimeService: true }, { agentToken: {} }]) {
-      expect(
-        (
-          await handleAppAgentMcpRequest(request("list_apps"), {
-            ...context,
-            ...restricted,
-          } as Context)
-        ).status
-      ).toBe(403);
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+      const awaitedResult1 = await handleAppAgentMcpRequest(
+        request("list_apps"),
+        {
+          ...context,
+          ...restricted,
+        } as Context
+      );
+      expect(awaitedResult1.status).toBe(403);
     }
     for (const invalid of [
       { scopes: {} },
       { subjectId: "" },
       { scopes: { org: {} } },
     ]) {
-      expect(
-        (
-          await handleAppAgentMcpRequest(
-            request("list_apps", {}, invalid),
-            context
-          )
-        ).status
-      ).toBe(400);
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+      const awaitedResult2 = await handleAppAgentMcpRequest(
+        request("list_apps", {}, invalid),
+        context
+      );
+      expect(awaitedResult2.status).toBe(400);
     }
     expect(mocks.list).not.toHaveBeenCalled();
   });
 
   it("rejects malformed/oversized context headers and cross-origin requests", async () => {
     for (const encoded of ["", "not+base64", "eyJ9=", "x".repeat(8193), "_w"]) {
-      expect(
-        (
-          await handleAppAgentMcpRequest(
-            request("list_apps", {}, {}, { "x-tailorkit-context": encoded }),
-            context
-          )
-        ).status
-      ).toBe(400);
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+      const awaitedResult3 = await handleAppAgentMcpRequest(
+        request("list_apps", {}, {}, { "x-tailorkit-context": encoded }),
+        context
+      );
+      expect(awaitedResult3.status).toBe(400);
     }
     const unexpected = await handleAppAgentMcpRequest(
       request("list_apps", {}, { schema: {} }),
@@ -282,21 +289,31 @@ describe("platform MCP endpoint", () => {
 
   it("cancels the workflow and deletes its sandbox when the response closes", async () => {
     let revoked!: () => void;
-    const revocation = new Promise<void>((resolve) => {
-      revoked = resolve;
-    });
+    const revocation = (() => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers<ReturnType<() => void>>();
+      try {
+        revoked = resolve;
+      } catch (error) {
+        rejectPending(error);
+      }
+      return pendingPromise;
+    })();
     mocks.revoke.mockImplementation(revoked);
     mocks.start.mockResolvedValueOnce({
       cancel: mocks.cancel,
       readable: new ReadableStream(),
-      returnValue: new Promise(() => {}),
+      returnValue: Promise.withResolvers().promise,
       runId: "run",
     });
     const response = await handleAppAgentMcpRequest(
       request("edit_app", { appId: "public-app", prompt: "Change" }),
       context
     );
-    const reader = response.body!.getReader();
+    const reader = requireValue(response.body).getReader();
     await reader.read();
     await reader.cancel();
     await revocation;
@@ -306,9 +323,19 @@ describe("platform MCP endpoint", () => {
 
   it("waits for workflow cleanup before sending the terminal result", async () => {
     let finish!: () => void;
-    const returnValue = new Promise<{ messages: [] }>((resolve) => {
-      finish = () => resolve({ messages: [] });
-    });
+    const returnValue = (() => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers<{ messages: [] }>();
+      try {
+        finish = () => resolve({ messages: [] });
+      } catch (error) {
+        rejectPending(error);
+      }
+      return pendingPromise;
+    })();
     mocks.start.mockResolvedValueOnce({
       cancel: mocks.cancel,
       readable: new ReadableStream({
@@ -323,13 +350,19 @@ describe("platform MCP endpoint", () => {
       request("edit_app", { appId: "public-app", prompt: "Change" }),
       context
     );
-    const reader = response.body!.getReader();
+    const reader = requireValue(response.body).getReader();
     await reader.read();
     const final = reader.read();
     expect(mocks.revoke).not.toHaveBeenCalled();
     finish();
     await final;
-    while (!(await reader.read()).done) {
+    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+    while (true) {
+      // oxlint-disable-next-line no-await-in-loop -- Read or renew in sequence; the next operation depends on this result.
+      const chunk = await reader.read();
+      if (chunk.done) {
+        break;
+      }
       /* drain */
     }
     expect(mocks.revoke).toHaveBeenCalledOnce();
@@ -347,7 +380,7 @@ describe("platform MCP endpoint", () => {
           controller.error(new Error("Agent stream failed"));
         },
       }),
-      returnValue: new Promise(() => {}),
+      returnValue: Promise.withResolvers().promise,
       runId: "run",
     });
     const response = await handleAppAgentMcpRequest(input, context);
@@ -368,7 +401,7 @@ describe("platform MCP endpoint", () => {
           controller.error(new Error("Agent stream failed"));
         },
       }),
-      returnValue: new Promise(() => {}),
+      returnValue: Promise.withResolvers().promise,
       runId: "run",
     });
     try {

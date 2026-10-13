@@ -34,7 +34,7 @@ const contract = defineContract({
       increment: tool
         .server()
         .input(z.string().transform(Number))
-        .output(z.object({ value: z.number(), principal: z.string() })),
+        .output(z.object({ principal: z.string(), value: z.number() })),
       transformed: tool
         .server()
         .output(z.string().transform(Number).pipe(z.number())),
@@ -46,18 +46,19 @@ const server = createServer({
   $internal: {
     platformBaseUrl: issuer,
     platformFetch: async (url, init) => {
-      if (String(url).endsWith("/runtime/keys"))
+      if (String(url).endsWith("/runtime/keys")) {
         return Response.json({ keys: [{ ...jwk, kid: "platform" }] });
+      }
       const request = url instanceof Request ? url : new Request(url, init);
       expect(request.headers.get("authorization")).toBe(
         "Bearer product-project-key"
       );
-      expect(request.url).toBe(issuer + "/apps/app/lookup");
+      expect(request.url).toBe(`${issuer}/apps/app/lookup`);
       expect(await request.json()).toEqual({ scopes: [identity.scope] });
       return Response.json({
+        currentDeployment: { id: "deployment" },
         id: "app",
         projectId: "project",
-        currentDeployment: { id: "deployment" },
       });
     },
     platformHeaders: { authorization: "Bearer product-project-key" },
@@ -111,15 +112,15 @@ it("uses the authentication supplied for each handler call", async () => {
 });
 
 const encode = (value: Uint8Array) =>
-  btoa(String.fromCharCode(...value))
+  btoa(String.fromCodePoint(...value))
     .replaceAll("+", "-")
     .replaceAll("/", "_")
     .replaceAll("=", "");
-async function token(
+const token = async (
   overrides: Record<string, unknown> = {},
   privateKey = pair.privateKey,
   kid = "platform"
-) {
+) => {
   const now = Math.floor(Date.now() / 1000);
   const data = new TextEncoder();
   const header = encode(
@@ -144,24 +145,25 @@ async function token(
   return `${header}.${body}.${encode(
     new Uint8Array(
       await crypto.subtle.sign(
-        { name: "ECDSA", hash: "SHA-256" },
+        { hash: "SHA-256", name: "ECDSA" },
         privateKey,
-        data.encode(header + "." + body)
+        data.encode(`${header}.${body}`)
       )
     )
   )}`;
-}
-async function execute(
+};
+// oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
+const execute = async (
   credential: string,
   path = "math.increment",
   ...args: [input?: unknown]
-) {
+) => {
   const input = args.length ? args[0] : "41";
   return server.handler(
     new Request(toolUrl, {
       body: JSON.stringify({
-        path,
         input,
+        path,
         requestId: "1a5febf3-e3af-4a01-89a7-35a4f1846114",
       }),
       headers: {
@@ -172,7 +174,7 @@ async function execute(
     }),
     { authenticate: () => null }
   );
-}
+};
 it("validates transformed inputs and exposes verified installation, principal, scope and request ID", async () => {
   const response = await execute(await token());
   expect(response.status).toBe(200);
@@ -208,13 +210,10 @@ it.each([
   { installationId: "victim" },
 ])("rejects invalid signed claims %j", async (claims) => {
   const before = handler.mock.calls.length;
-  expect(
-    (
-      await execute(
-        await token(typeof claims === "function" ? claims() : claims)
-      )
-    ).status
-  ).toBe(401);
+  const awaitedResult1 = await execute(
+    await token(typeof claims === "function" ? claims() : claims)
+  );
+  expect(awaitedResult1.status).toBe(401);
   expect(handler.mock.calls.length).toBe(before);
 });
 it("rejects a signature from an untrusted key", async () => {
@@ -223,14 +222,17 @@ it("rejects a signature from an untrusted key", async () => {
     true,
     ["sign", "verify"]
   );
-  expect((await execute(await token({}, attacker.privateKey))).status).toBe(
-    401
-  );
+  const awaitedResult2 = await execute(await token({}, attacker.privateKey));
+  expect(awaitedResult2.status).toBe(401);
 });
 it("validates both directions and dispatches only declared server tools", async () => {
-  expect((await execute(await token(), "math.increment", {})).status).toBe(400);
-  expect((await execute(await token(), "math.broken")).status).toBe(500);
-  expect((await execute(await token(), "ui.open")).status).toBe(404);
+  const awaitedResult3 = await execute(await token(), "math.increment", {});
+  expect(awaitedResult3.status).toBe(400);
+  // oxlint-disable-next-line unicorn/no-useless-undefined -- Preserve the original explicit argument and argument-count semantics.
+  const awaitedResult4 = await execute(await token(), "math.broken", undefined);
+  expect(awaitedResult4.status).toBe(500);
+  const awaitedResult5 = await execute(await token(), "ui.open");
+  expect(awaitedResult5.status).toBe(404);
 });
 it("serializes nested kinds and schemas without implementations", () => {
   const metadata = server.$internal.schema.serialize();
@@ -260,15 +262,19 @@ it("permits sandbox HTTP preflights without cookie credentials", async () => {
 });
 
 it("validates and transforms implementation output before returning it to callers", async () => {
-  const response = await execute(await token(), "math.transformed");
+  // oxlint-disable-next-line unicorn/no-useless-undefined -- Preserve the original explicit argument and argument-count semantics.
+  const response = await execute(await token(), "math.transformed", undefined);
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual({ output: 42 });
 });
 
 it("accepts the same app session JWT across declared server tools", async () => {
   const session = await token();
-  expect((await execute(session)).status).toBe(200);
-  expect(await (await execute(session, "math.transformed")).json()).toEqual({
+  const awaitedResult6 = await execute(session);
+  expect(awaitedResult6.status).toBe(200);
+  // oxlint-disable-next-line unicorn/no-useless-undefined -- Preserve the original explicit argument and argument-count semantics.
+  const awaitedResult7 = await execute(session, "math.transformed", undefined);
+  expect(await awaitedResult7.json()).toEqual({
     output: 42,
   });
 });
@@ -278,13 +284,13 @@ it("uses the trusted public origin to verify tool destinations behind a proxy", 
     $internal: {
       platformBaseUrl: issuer,
       platformFetch: async (url) =>
-        String(url).endsWith("/runtime/keys")
+        await (String(url).endsWith("/runtime/keys")
           ? Response.json({ keys: [{ ...jwk, kid: "platform" }] })
           : Response.json({
+              currentDeployment: { id: "deployment" },
               id: "app",
               projectId: "project",
-              currentDeployment: { id: "deployment" },
-            }),
+            })),
     },
     baseUrl: new URL("https://product.test/custom/tailorkit/"),
     contract,
@@ -296,8 +302,8 @@ it("uses the trusted public origin to verify tool destinations behind a proxy", 
   const request = (credential: string) =>
     new Request(internalUrl, {
       body: JSON.stringify({
-        path: "math.increment",
         input: "41",
+        path: "math.increment",
         requestId: crypto.randomUUID(),
       }),
       headers: {
@@ -306,25 +312,22 @@ it("uses the trusted public origin to verify tool destinations behind a proxy", 
       },
       method: "POST",
     });
-  expect(
-    (
-      await proxied.handler(
-        request(
-          await token({
-            toolUrl: "https://product.test/custom/tailorkit/tools/execute",
-          })
-        ),
-        { authenticate: () => null }
-      )
-    ).status
-  ).toBe(200);
-  expect(
-    (
-      await proxied.handler(request(await token({ toolUrl: internalUrl })), {
-        authenticate: () => null,
+  const awaitedResult8 = await proxied.handler(
+    request(
+      await token({
+        toolUrl: "https://product.test/custom/tailorkit/tools/execute",
       })
-    ).status
-  ).toBe(401);
+    ),
+    { authenticate: () => null }
+  );
+  expect(awaitedResult8.status).toBe(200);
+  const awaitedResult9 = await proxied.handler(
+    request(await token({ toolUrl: internalUrl })),
+    {
+      authenticate: () => null,
+    }
+  );
+  expect(awaitedResult9.status).toBe(401);
 });
 
 it("refreshes once for a rotated key, coalesces requests and throttles unknown key IDs", async () => {
@@ -341,8 +344,9 @@ it("refreshes once for a rotated key, coalesces requests and throttles unknown k
       .mockResolvedValueOnce(
         Response.json({ keys: [{ ...jwk, kid: "platform" }] })
       )
-      .mockImplementation(async () =>
-        Response.json({ keys: [{ ...rotatedJwk, kid: "rotated" }] })
+      .mockImplementation(
+        async () =>
+          await Response.json({ keys: [{ ...rotatedJwk, kid: "rotated" }] })
       );
     const verify = createToolVerifier({
       fetch: fetchKeys,
@@ -356,7 +360,9 @@ it("refreshes once for a rotated key, coalesces requests and throttles unknown k
     ]);
     expect(fetchKeys).toHaveBeenCalledTimes(2);
     for (const kid of ["forged-a", "forged-b"]) {
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       await expect(
+        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
         verify(await token({}, pair.privateKey, kid), toolUrl)
       ).rejects.toThrow("Unknown signing key");
     }
@@ -387,8 +393,11 @@ it("keeps valid cached keys when a refresh returns invalid keys, and still expir
       .mockResolvedValueOnce(
         Response.json({ keys: [{ ...jwk, kid: "platform" }] })
       )
-      .mockImplementation(async () =>
-        Response.json({ keys: [{ ...jwk, d: "private", kid: "rotated" }] })
+      .mockImplementation(
+        async () =>
+          await Response.json({
+            keys: [{ ...jwk, d: "private", kid: "rotated" }],
+          })
       );
     const verify = createToolVerifier({
       fetch: fetchKeys,
@@ -414,8 +423,8 @@ it("keeps valid cached keys when a refresh returns invalid keys, and still expir
 it("rejects an unknown key after one fetch when the key cache is empty", async () => {
   const fetchKeys = vi
     .fn<typeof fetch>()
-    .mockImplementation(async () =>
-      Response.json({ keys: [{ ...jwk, kid: "platform" }] })
+    .mockImplementation(
+      async () => await Response.json({ keys: [{ ...jwk, kid: "platform" }] })
     );
   const verify = createToolVerifier({ fetch: fetchKeys, platformUrl: issuer });
   await expect(

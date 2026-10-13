@@ -26,10 +26,10 @@ export interface SchemaSerializerOptions {
 
 export type SchemaSerializer = {
   // Native converters need their library's schema metadata beyond Standard Schema.
-  serialize(
+  serialize: (
     schema: Schema,
     options?: SchemaSerializerOptions
-  ): SerializedSchema | undefined;
+  ) => SerializedSchema | undefined;
 }["serialize"];
 
 export const jsonSchemaSerializer: SchemaSerializer = (schema, options) => {
@@ -47,7 +47,7 @@ export const jsonSchemaSerializer: SchemaSerializer = (schema, options) => {
 
 export const serializeSchema = (
   schema: Schema | undefined,
-  schemaSerializer: SchemaSerializer | undefined,
+  schemaSerializer?: SchemaSerializer,
   typeMode: SchemaSerializerOptions["typeMode"] = "output"
 ): Record<string, unknown> | undefined => {
   if (schema === undefined || schemaSerializer === undefined) {

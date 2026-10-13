@@ -10,13 +10,13 @@ export interface InvitationTemplateProps {
   role?: string;
 }
 
-export function InvitationTemplate({
+export const InvitationTemplate = ({
   acceptUrl,
   inviterName,
   logoBaseUrl,
   organizationName,
   role = "member",
-}: InvitationTemplateProps) {
+}: InvitationTemplateProps) => {
   const preview = `${inviterName ?? "Someone"} invited you to join ${organizationName}`;
 
   return (
@@ -47,4 +47,4 @@ export function InvitationTemplate({
       </Text>
     </AuthEmailLayout>
   );
-}
+};

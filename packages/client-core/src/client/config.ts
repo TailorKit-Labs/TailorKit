@@ -30,8 +30,8 @@ export type ComponentRenderer<
   } & ("children" extends keyof TComponent
     ? TComponent extends { children?: true }
       ? { children?: TNode }
-      : {}
-    : {})
+      : unknown
+    : unknown)
 ) => TNode;
 
 export type ComponentRenderers<
@@ -52,7 +52,10 @@ const componentTagPrefix = "tailorkit-";
 
 export const toComponentTagName = (name: string): string =>
   `${componentTagPrefix}${name
-    .replaceAll(/([a-z0-9])([A-Z])/gu, "$1-$2")
+    .replaceAll(
+      /(?<lowercase>[a-z0-9])(?<uppercase>[A-Z])/gu,
+      "$<lowercase>-$<uppercase>"
+    )
     .replaceAll(/[\s_]+/gu, "-")
     .toLowerCase()}`;
 
@@ -77,7 +80,7 @@ export type SlotMultiple<TSlot> = TSlot extends {
     : false;
 
 /** Build framework-independent client configuration after an adapter wraps its renderers. */
-export function createTailorKitClientConfig(options: {
+export const createTailorKitClientConfig = (options: {
   contract: TailorKitContract;
   tools?: ToolImplementations<TailorKitContract["tools"], "client">;
   assetsBaseUrl?: string | URL;
@@ -86,7 +89,7 @@ export function createTailorKitClientConfig(options: {
   theme?: TailorKitTheme;
   cache?: TailorKitCacheOptions;
   fetch?: typeof fetch;
-}): TailorKitClientConfig {
+}): TailorKitClientConfig => {
   const declarations = flattenTools(options.contract.tools);
   const visit = (tree: unknown, prefix = "") => {
     if (!tree || typeof tree !== "object") {
@@ -99,7 +102,7 @@ export function createTailorKitClientConfig(options: {
           throw new Error(`Undeclared client tool "${path}"`);
         }
       } else {
-        visit(value, path + ".");
+        visit(value, `${path}.`);
       }
     }
   };
@@ -116,7 +119,7 @@ export function createTailorKitClientConfig(options: {
           : undefined;
     }
     if (typeof value !== "function") {
-      throw new Error(`Missing client tool "${path}"`);
+      throw new TypeError(`Missing client tool "${path}"`);
     }
   }
   const fetchClient = createTailorKitFetchClient(options);
@@ -130,16 +133,16 @@ export function createTailorKitClientConfig(options: {
     theme: options.theme ?? {},
     tools: options.tools,
   };
-}
+};
 
 /** Register schema names and their remote element aliases with the same wrapped renderer. */
-export function createComponentRegistry<
+export const createComponentRegistry = <
   T extends Record<string, unknown>,
   TRenderer,
 >(
   renderers: T,
   wrap: (renderer: NonNullable<T[keyof T]>) => TRenderer
-): Record<string, TRenderer> {
+): Record<string, TRenderer> => {
   const components: Record<string, TRenderer> = {};
   for (const [name, renderer] of Object.entries(renderers)) {
     if (renderer) {
@@ -149,4 +152,4 @@ export function createComponentRegistry<
     }
   }
   return components;
-}
+};

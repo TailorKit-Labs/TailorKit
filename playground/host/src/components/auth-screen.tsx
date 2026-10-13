@@ -12,23 +12,25 @@ import { signInDemoUser } from "#lib/auth-client";
 import type { SignInChoice } from "#lib/auth-client";
 import { tailor } from "#lib/tailorkit-client";
 
-export function AuthScreen({ choices }: { choices: SignInChoice[] }) {
+export const AuthScreen = ({ choices }: { choices: SignInChoice[] }) => {
   const [pending, setPending] = useState<string>();
-  const [error, setError] = useState<string>();
+  const [operationError, setOperationError] = useState<string>();
 
-  async function signIn(choice: SignInChoice) {
+  const signIn = async (choice: SignInChoice) => {
     const key = `${choice.userId}-${choice.teamId}`;
     setPending(key);
-    setError(undefined);
+    setOperationError(undefined);
     try {
       await signInDemoUser(choice.userId, choice.teamId);
       tailor.clearCache();
       window.location.assign("/");
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Could not sign in");
+      setOperationError(
+        error instanceof Error ? error.message : "Could not sign in"
+      );
       setPending(undefined);
     }
-  }
+  };
 
   return (
     <main className="bg-muted/40 grid min-h-svh place-items-center p-6">
@@ -46,7 +48,7 @@ export function AuthScreen({ choices }: { choices: SignInChoice[] }) {
               <Button
                 key={key}
                 loading={pending === key}
-                onClick={() => void signIn(choice)}
+                onClick={() => signIn(choice)}
                 variant="outline"
                 className="h-auto min-h-16 w-full justify-start py-2 text-left whitespace-normal"
               >
@@ -62,13 +64,13 @@ export function AuthScreen({ choices }: { choices: SignInChoice[] }) {
               </Button>
             );
           })}
-          {error ? (
+          {operationError ? (
             <p className="text-destructive text-sm" role="alert">
-              {error}
+              {operationError}
             </p>
           ) : null}
         </CardContent>
       </Card>
     </main>
   );
-}
+};

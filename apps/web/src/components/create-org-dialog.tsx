@@ -27,13 +27,12 @@ import {
 } from "#lib/org-slug-availability";
 import { orpc, client } from "#lib/orpc";
 
-function toSlug(name: string) {
-  return name
+const toSlug = (name: string) =>
+  name
     .toLowerCase()
     .trim()
     .replaceAll(/[^a-z0-9]+/gu, "-")
     .replaceAll(/^-+|-+$/gu, "");
-}
 
 const orgSchema = z.object({
   name: z.string().min(1, "Name is required."),
@@ -54,20 +53,38 @@ interface CreateOrgDialogProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-export function CreateOrgDialog({
+export const CreateOrgDialog = ({
   children,
   open: openProp,
   onOpenChange,
-}: CreateOrgDialogProps) {
+}: CreateOrgDialogProps) => {
   const navigate = useNavigate();
+
   const queryClient = useQueryClient();
+
   const [openInternal, setOpenInternal] = useState(false);
+
   const [slugSubmitError, setSlugSubmitError] = useState<string | null>(null);
+
   const slugTouched = useRef(false);
 
   const isControlled = openProp !== undefined;
+
   const open = isControlled ? openProp : openInternal;
-  const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setOpenInternal;
+
+  const setOpen = isControlled
+    ? (onOpenChange ??
+      (() => {
+        /* Intentionally no action is needed. */
+      }))
+    : setOpenInternal;
+
+  const resetForm = () => {
+    slugTouched.current = false;
+    setSlugSubmitError(null);
+    // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
+    form.reset();
+  };
 
   const createMutation = useMutation({
     mutationFn: (input: { name: string; slug: string }) =>
@@ -75,7 +92,7 @@ export function CreateOrgDialog({
     onError: (err: unknown) => {
       const message =
         err instanceof Error ? err.message : "Failed to create organisation";
-      toastManager.add({ title: "Error", description: message, type: "error" });
+      toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: (data, input) => {
       queryClient.invalidateQueries(orpc.user.getOrgs.queryOptions());
@@ -114,20 +131,15 @@ export function CreateOrgDialog({
   });
 
   const slug = useStore(form.store, (state) => state.values.slug);
+
   const slugAvailability = useOrgSlugAvailability(slug);
 
-  function resetForm() {
-    slugTouched.current = false;
-    setSlugSubmitError(null);
-    form.reset();
-  }
-
-  function handleOpenChange(nextOpen: boolean) {
+  const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
     if (!nextOpen) {
       resetForm();
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -217,4 +229,4 @@ export function CreateOrgDialog({
       </DialogPopup>
     </Dialog>
   );
-}
+};

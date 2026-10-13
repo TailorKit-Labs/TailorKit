@@ -28,7 +28,11 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+  useParams,
+  createFileRoute,
+  useNavigate,
+} from "@tanstack/react-router";
 import { Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
@@ -36,17 +40,12 @@ import { z } from "zod";
 import { PageLayout } from "#components/page-layout";
 import { client, orpc } from "#lib/orpc";
 
-export const Route = createFileRoute("/(app)/$orgSlug/$projectSlug/settings/")({
-  component: ProjectSettingsPage,
-});
-
-function toSlug(value: string) {
-  return value
+const toSlug = (value: string) =>
+  value
     .toLowerCase()
     .trim()
     .replaceAll(/[^a-z0-9]+/gu, "-")
     .replaceAll(/^-+|-+$/gu, "");
-}
 
 const projectSettingsSchema = z.object({
   name: z.string().min(1, "Name is required."),
@@ -61,8 +60,10 @@ const projectSettingsSchema = z.object({
   }),
 });
 
-function ProjectSettingsPage() {
-  const { orgSlug, projectSlug } = Route.useParams();
+const ProjectSettingsPage = () => {
+  const { orgSlug, projectSlug } = useParams({
+    from: "/(app)/$orgSlug/$projectSlug/settings/",
+  });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -82,7 +83,7 @@ function ProjectSettingsPage() {
     onError: (err: unknown) => {
       const message =
         err instanceof Error ? err.message : "Failed to update project";
-      toastManager.add({ title: "Error", description: message, type: "error" });
+      toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: async (updatedProject) => {
       await Promise.all([
@@ -112,7 +113,7 @@ function ProjectSettingsPage() {
     onError: (err: unknown) => {
       const message =
         err instanceof Error ? err.message : "Failed to delete project";
-      toastManager.add({ title: "Error", description: message, type: "error" });
+      toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries(
@@ -265,4 +266,8 @@ function ProjectSettingsPage() {
       </Dialog>
     </PageLayout>
   );
-}
+};
+
+export const Route = createFileRoute("/(app)/$orgSlug/$projectSlug/settings/")({
+  component: ProjectSettingsPage,
+});

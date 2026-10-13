@@ -133,23 +133,23 @@ const acceptedOutput = z.object({ accepted: z.literal(true) });
 const commitOutput = z.object({ revision: z.number().int().positive() });
 
 export interface PreviewWebSocketClient {
-  beginBuild(
+  beginBuild: (
     input: z.input<typeof beginInput>
-  ): Promise<z.infer<typeof buildIdOutput>>;
-  uploadChunk(
+  ) => Promise<z.infer<typeof buildIdOutput>>;
+  uploadChunk: (
     input: z.input<typeof uploadInput>
-  ): Promise<z.infer<typeof acceptedOutput>>;
-  commitBuild(input: {
+  ) => Promise<z.infer<typeof acceptedOutput>>;
+  commitBuild: (input: {
     buildId: string;
-  }): Promise<z.infer<typeof commitOutput>>;
-  heartbeat(): Promise<z.infer<typeof acceptedOutput>>;
-  subscribe(): Promise<AsyncIterable<PreviewEvent>>;
+  }) => Promise<z.infer<typeof commitOutput>>;
+  heartbeat: () => Promise<z.infer<typeof acceptedOutput>>;
+  subscribe: () => Promise<AsyncIterable<PreviewEvent>>;
 }
 
 /** Validates every preview WebSocket request, response, and streamed event. */
-export function createPreviewWebSocketClient(
+export const createPreviewWebSocketClient = (
   websocket: WebSocket
-): PreviewWebSocketClient {
+): PreviewWebSocketClient => {
   const rpc = createORPCClient(
     new RPCLink({ connect: () => websocket })
   ) as unknown as PreviewWebSocketClient;
@@ -163,7 +163,7 @@ export function createPreviewWebSocketClient(
     heartbeat: async () => acceptedOutput.parse(await rpc.heartbeat()),
     subscribe: async () => {
       const stream = await rpc.subscribe();
-      return (async function* () {
+      return (async function* subscribe() {
         for await (const value of stream) {
           yield previewEventSchema.parse(value);
         }
@@ -172,4 +172,4 @@ export function createPreviewWebSocketClient(
     uploadChunk: async (input) =>
       acceptedOutput.parse(await rpc.uploadChunk(uploadInput.parse(input))),
   };
-}
+};

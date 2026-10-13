@@ -2,17 +2,19 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { validateLogoAsset } from "./logo-validation";
 
+const pngImplementation = (width: number, height: number): Uint8Array => {
+  const content = new Uint8Array(33);
+  content.set([137, 80, 78, 71, 13, 10, 26, 10]);
+  content.set([73, 72, 68, 82], 12);
+  const view = new DataView(content.buffer);
+  view.setUint32(8, 13);
+  view.setUint32(16, width);
+  view.setUint32(20, height);
+  return content;
+};
+
 describe("logo validation", () => {
-  const png = (width: number, height: number): Uint8Array => {
-    const content = new Uint8Array(33);
-    content.set([137, 80, 78, 71, 13, 10, 26, 10]);
-    content.set([73, 72, 68, 82], 12);
-    const view = new DataView(content.buffer);
-    view.setUint32(8, 13);
-    view.setUint32(16, width);
-    view.setUint32(20, height);
-    return content;
-  };
+  const png = pngImplementation;
 
   it("accepts safe SVG logos", () => {
     const content = new TextEncoder().encode(

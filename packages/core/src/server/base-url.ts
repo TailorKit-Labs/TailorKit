@@ -1,5 +1,5 @@
 /** Resolve the required public URL into a route prefix and trusted origin. */
-export function normalizeBaseUrl(baseUrl: string | URL) {
+export const normalizeBaseUrl = (baseUrl: string | URL) => {
   const value = String(baseUrl);
   if (!/^https?:\/\/[^/]/iu.test(value) || /[\\\s]/u.test(value)) {
     throw new Error("baseUrl must be an absolute HTTP(S) URL");
@@ -20,4 +20,4 @@ export function normalizeBaseUrl(baseUrl: string | URL) {
     basePath: url.pathname.replace(/\/+$/u, ""),
     publicOrigin: url.origin,
   };
-}
+};

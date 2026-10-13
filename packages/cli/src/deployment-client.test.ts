@@ -8,10 +8,17 @@ import { afterEach, expect, it, vi } from "vite-plus/test";
 import { createCliClient } from "./client";
 import { createDeploymentClient, getAgentAuth } from "./deployment-client";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const now = Math.floor(Date.now() / 1000);
 const scope = { name: "user", value: { userId: "one" } };
-async function token(overrides = {}) {
-  return new SignJWT({
+const token = async (overrides = {}) =>
+  await new SignJWT({
     appId: "app-one",
     aud: "tailorkit-platform-cli",
     exp: now + 3600,
@@ -24,7 +31,6 @@ async function token(overrides = {}) {
   })
     .setProtectedHeader({ alg: "HS256", typ: "tailorkit-agent+jwt" })
     .sign(new TextEncoder().encode("test-only-signing-key"));
-}
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllEnvs();
@@ -35,7 +41,7 @@ it("uses existing platform deployment endpoints and scope from the agent JWT", a
   vi.stubEnv("TAILORKIT_AGENT_TOKEN", jwt);
   const fetch = vi
     .spyOn(globalThis, "fetch")
-    .mockImplementation(async () => Response.json({}));
+    .mockImplementation(async () => await Response.json({}));
   const client = createDeploymentClient("http://localhost:1", jwt);
   await client.deployments.create({
     appId: "app-one",
@@ -61,10 +67,11 @@ it("uses existing platform deployment endpoints and scope from the agent JWT", a
   for (const request of requests) {
     expect(request.headers.get("authorization")).toBe(`Bearer ${jwt}`);
     expect(request.redirect).toBe("error");
+    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     expect(await request.json()).toMatchObject({ scope });
   }
   await client.apps.create({ description: null, name: "App" });
-  expect((fetch.mock.lastCall![0] as Request).url).toBe(
+  expect((requireValue(fetch.mock.lastCall)[0] as Request).url).toBe(
     "https://platform.test/api/platform/apps"
   );
 });
@@ -81,7 +88,7 @@ it.each([
   { platformUrl: "http://localhost.evil.test/api/platform" },
 ])("rejects malformed or expired agent authorization %j", async (overrides) => {
   vi.stubEnv("TAILORKIT_AGENT_TOKEN", await token(overrides));
-  expect(getAgentAuth).toThrow(/agent authorization/i);
+  expect(getAgentAuth).toThrow(/agent authorization/iu);
 });
 
 it("does not fall back when an explicitly supplied JWT is invalid or empty", () => {
@@ -93,13 +100,14 @@ it("does not fall back when an explicitly supplied JWT is invalid or empty", () 
 
 it("retains actionable platform authentication errors", async () => {
   vi.stubEnv("TAILORKIT_AGENT_TOKEN", await token());
-  vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
-    Response.json(
-      { code: "UNAUTHORIZED", message: "Agent authorization revoked." },
-      { status: 401 }
-    )
+  vi.spyOn(globalThis, "fetch").mockImplementation(
+    async () =>
+      await Response.json(
+        { code: "UNAUTHORIZED", message: "Agent authorization revoked." },
+        { status: 401 }
+      )
   );
-  const agent = getAgentAuth()!;
+  const agent = requireValue(getAgentAuth());
   await expect(
     createDeploymentClient(
       "http://localhost:1",
@@ -120,7 +128,7 @@ it.each([
   "http://[::1]/api/platform",
 ])("allows secure or loopback destinations: %s", async (platformUrl) => {
   vi.stubEnv("TAILORKIT_AGENT_TOKEN", await token({ platformUrl }));
-  expect(getAgentAuth()!.platformUrl).toBe(platformUrl);
+  expect(requireValue(getAgentAuth()).platformUrl).toBe(platformUrl);
 });
 
 it("rejects insecure routing before creating a client or sending requests", async () => {
@@ -140,6 +148,7 @@ it("routes every authenticated CLI surface through existing platform endpoints f
   vi.stubEnv("TAILORKIT_AGENT_TOKEN", jwt);
   const fetch = vi
     .spyOn(globalThis, "fetch")
+    // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
     .mockImplementation(async (input) => {
       const request = input as Request;
       expect(request.headers.get("authorization")).toBe(`Bearer ${jwt}`);
@@ -166,7 +175,7 @@ it("routes every authenticated CLI surface through existing platform endpoints f
     appId: "app-one",
     hostUrl: "http://localhost:1",
     messages: [
-      { id: "user", role: "user", parts: [{ type: "text", text: "Build" }] },
+      { id: "user", parts: [{ text: "Build", type: "text" }], role: "user" },
     ],
     schema: {},
   })) {
@@ -196,7 +205,7 @@ it("discovers file authorization for all commands, with environment-token preced
     const file = path.join(root, "token");
     await writeFile(file, jwt, { mode: 0o600 });
     vi.stubEnv("TAILORKIT_AGENT_TOKEN_FILE", file);
-    expect(getAgentAuth()!.token).toBe(jwt);
+    expect(requireValue(getAgentAuth()).token).toBe(jwt);
     const fetch = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(Response.json({ scope }));
@@ -205,11 +214,14 @@ it("discovers file authorization for all commands, with environment-token preced
       url: "http://localhost:1",
     }).cliAuth.verifyToken({});
     expect(
-      (fetch.mock.lastCall![0] as Request).headers.get("authorization")
+      (requireValue(fetch.mock.lastCall)[0] as Request).headers.get(
+        "authorization"
+      )
     ).toBe(`Bearer ${jwt}`);
     vi.stubEnv("TAILORKIT_AGENT_TOKEN", "");
     expect(getAgentAuth).toThrow("Invalid agent authorization");
-    vi.stubEnv("TAILORKIT_AGENT_TOKEN");
+    // oxlint-disable-next-line unicorn/no-useless-undefined -- Vitest requires the environment value argument.
+    vi.stubEnv("TAILORKIT_AGENT_TOKEN", undefined);
     vi.stubEnv("TAILORKIT_AGENT_TOKEN_FILE", path.join(root, "missing"));
     expect(getAgentAuth).toThrow("Unable to read agent authorization file");
   } finally {

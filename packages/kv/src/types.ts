@@ -2,7 +2,8 @@ import type { Redis as UpstashRedis } from "@upstash/redis";
 import type IORedis from "ioredis";
 
 export interface SetOptions {
-  ttl?: number; // seconds
+  // seconds
+  ttl?: number;
 }
 
 export interface GetOptions {

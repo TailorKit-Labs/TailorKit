@@ -10,16 +10,12 @@ import {
 } from "@tailorkit/ui/card";
 import { Field, FieldLabel } from "@tailorkit/ui/field";
 import { Input } from "@tailorkit/ui/input";
-import { createFileRoute } from "@tanstack/react-router";
+import { useParams, createFileRoute } from "@tanstack/react-router";
 
 import { PageLayout } from "#components/page-layout";
 
-export const Route = createFileRoute("/(app)/$orgSlug/~/(org)/settings/")({
-  component: OrgSettingsGeneral,
-});
-
-function OrgSettingsGeneral() {
-  const { orgSlug } = Route.useParams();
+const OrgSettingsGeneral = () => {
+  const { orgSlug } = useParams({ from: "/(app)/$orgSlug/~/(org)/settings/" });
   const orgName = orgSlug.charAt(0).toUpperCase() + orgSlug.slice(1);
 
   return (
@@ -55,4 +51,8 @@ function OrgSettingsGeneral() {
       </CardFrame>
     </PageLayout>
   );
-}
+};
+
+export const Route = createFileRoute("/(app)/$orgSlug/~/(org)/settings/")({
+  component: OrgSettingsGeneral,
+});

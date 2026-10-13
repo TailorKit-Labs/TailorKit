@@ -2,48 +2,59 @@ import type { ToolIdentity } from "../schema/tools";
 
 const audience = "tailorkit-app";
 const decode = (part: string) =>
-  Uint8Array.from(atob(part.replaceAll("-", "+").replaceAll("_", "/")), (c) =>
-    c.charCodeAt(0)
+  Uint8Array.from(
+    atob(part.replaceAll("-", "+").replaceAll("_", "/")),
+    (c) => c.codePointAt(0) ?? 0
   );
 /** Only configured platform keys are trusted. Never follow URLs from token headers. */
-export function createToolVerifier(options: {
+export const createToolVerifier = (options: {
   platformUrl: string;
   fetch: typeof fetch;
-}) {
+}) => {
   const issuer = options.platformUrl.replace(/\/$/u, "");
   let cached:
     | { expiresAt: number; keys: (JsonWebKey & { kid: string })[] }
     | undefined;
   let refreshing: Promise<void> | undefined;
   let nextUnknownKeyRefresh = 0;
-  function refreshKeys(): Promise<void> {
+  const refreshKeys = (): Promise<void> => {
     refreshing ??= (async () => {
-      const response = await options.fetch(`${issuer}/runtime/keys`, {
-        redirect: "manual",
-      });
-      if (!response.ok) {
-        throw new Error("Signing keys unavailable");
+      try {
+        return await (async () => {
+          const response = await options.fetch(`${issuer}/runtime/keys`, {
+            redirect: "manual",
+          });
+          if (!response.ok) {
+            throw new Error("Signing keys unavailable");
+          }
+          const result = (await response.json()) as {
+            keys: (JsonWebKey & { kid: string })[];
+          };
+          if (
+            !Array.isArray(result.keys) ||
+            !result.keys.length ||
+            result.keys.length > 32 ||
+            result.keys.some(
+              (k) =>
+                k.kty !== "EC" ||
+                k.crv !== "P-256" ||
+                k.d ||
+                !k.x ||
+                !k.y ||
+                !k.kid
+            )
+          ) {
+            throw new Error("Invalid signing keys");
+          }
+          cached = { expiresAt: Date.now() + 60_000, keys: result.keys };
+        })();
+      } finally {
+        refreshing = undefined;
       }
-      const result = (await response.json()) as {
-        keys: (JsonWebKey & { kid: string })[];
-      };
-      if (
-        !Array.isArray(result.keys) ||
-        !result.keys.length ||
-        result.keys.length > 32 ||
-        result.keys.some(
-          (k) =>
-            k.kty !== "EC" || k.crv !== "P-256" || k.d || !k.x || !k.y || !k.kid
-        )
-      ) {
-        throw new Error("Invalid signing keys");
-      }
-      cached = { expiresAt: Date.now() + 60_000, keys: result.keys };
-    })().finally(() => {
-      refreshing = undefined;
-    });
+    })();
     return refreshing;
-  }
+  };
+  // oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
   return async (token: string, toolUrl: string): Promise<ToolIdentity> => {
     if (token.length > 8192) {
       throw new Error("Invalid tool credential");
@@ -129,8 +140,9 @@ export function createToolVerifier(options: {
         typeof claims[name] !== "string" ||
         !claims[name] ||
         claims[name].length > 256
-      )
+      ) {
         throw new Error("Invalid installation identity");
+      }
     }
     if (
       claims.appId !== claims.installationId ||
@@ -157,4 +169,4 @@ export function createToolVerifier(options: {
       subjectId: claims.subjectId,
     });
   };
-}
+};

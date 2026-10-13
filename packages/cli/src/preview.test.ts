@@ -25,7 +25,7 @@ it("discards a stale snapshot that finishes after a later rebuild", async () => 
   const published: string[] = [];
   let attempts = 0;
   const capture = createLatestPreviewCapture(
-    () => (++attempts === 1 ? older.promise : newer.promise),
+    () => ((attempts += 1) === 1 ? older.promise : newer.promise),
     (snapshot) => published.push(snapshot),
     () => {}
   );
@@ -44,7 +44,8 @@ it("uploads a build larger than 4.5 MiB in sequential bounded messages", async (
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-preview-"));
   dirs.push(root);
   await writeFile(path.join(root, "client.js"), Buffer.alloc(900_000, 1));
-  for (let index = 0; index < 5; index++) {
+  for (let index = 0; index < 5; index += 1) {
+    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     await writeFile(
       path.join(root, `asset-${index}.js`),
       Buffer.alloc(900_000, index + 2)
@@ -91,21 +92,33 @@ it("uploads a build larger than 4.5 MiB in sequential bounded messages", async (
           largestViewerMessage,
           Buffer.byteLength(
             JSON.stringify({
-              id: 1,
               event: {
-                type: "chunk",
-                revision: 1,
-                fileIndex: input.fileIndex,
-                chunkIndex: input.chunkIndex,
                 base64: input.base64,
+                chunkIndex: input.chunkIndex,
+                fileIndex: input.fileIndex,
+                revision: 1,
+                type: "chunk",
               },
+              id: 1,
             })
           )
         );
         expect(Buffer.from(input.base64, "base64").length).toBeLessThanOrEqual(
           256 * 1024
         );
-        await new Promise((resolve) => setTimeout(resolve, 0));
+        await (() => {
+          const {
+            promise: pendingPromise,
+            resolve,
+            reject: rejectPending,
+          } = Promise.withResolvers();
+          try {
+            setTimeout(resolve, 0);
+          } catch (error) {
+            rejectPending(error);
+          }
+          return pendingPromise;
+        })();
         awaitingAck = false;
         return { accepted: true as const };
       }
@@ -123,7 +136,8 @@ it("uploads a build larger than 4.5 MiB in sequential bounded messages", async (
 it("chunks exact boundaries and the largest allowed aggregate build", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-preview-"));
   dirs.push(root);
-  for (let index = 0; index < 10; index++) {
+  for (let index = 0; index < 10; index += 1) {
+    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     await writeFile(
       path.join(root, index === 0 ? "client.js" : `asset-${index}.js`),
       Buffer.alloc(1024 * 1024, index)
@@ -141,6 +155,7 @@ it("chunks exact boundaries and the largest allowed aggregate build", async () =
     beginBuild: async () => ({ buildId: "build" }),
     commitBuild: async () => ({ revision: 1 }),
     heartbeat: async () => ({ accepted: true as const }),
+    // oxlint-disable-next-line unicorn/consistent-function-scoping -- Keep the generator or mutable callback with its owning test or cancellation lifecycle.
     subscribe: async () => (async function* empty() {})(),
     uploadChunk: async (input: {
       fileIndex: number;

@@ -31,7 +31,7 @@ export interface TailorKitContract<
 }
 
 /** Define the browser-safe interface shared by a host server and its clients. */
-export function defineContract<
+export const defineContract = <
   const TComponents extends ComponentDefinitions = Record<never, never>,
   const TViews extends ContextDefinitions = Record<never, never>,
   const TSlots extends SlotDefinitions = Record<never, never>,
@@ -44,10 +44,11 @@ export function defineContract<
   slots?: TSlots & SlotDefinitions<keyof NoInfer<TViews> & string>;
   tools?: TTools;
   scopes?: TScopes;
-}): TailorKitContract<TComponents, TViews, TSlots, TTools, TScopes> {
+}): TailorKitContract<TComponents, TViews, TSlots, TTools, TScopes> => {
   for (const name of Object.keys(definition)) {
-    if (!["components", "views", "slots", "tools", "scopes"].includes(name))
+    if (!["components", "views", "slots", "tools", "scopes"].includes(name)) {
       throw new Error(`Unknown contract field "${name}"`);
+    }
   }
   flattenTools(definition.tools ?? {});
   for (const [name, slot] of Object.entries(definition.slots ?? {})) {
@@ -67,4 +68,4 @@ export function defineContract<
     tools: (definition.tools ?? {}) as TTools,
     views: (definition.views ?? {}) as TViews,
   };
-}
+};

@@ -23,14 +23,19 @@ export const appAgentRouter = {
         let done = false;
         const { stream } = await appAgentChat({
           body: { ...input, deployToken: getCliDeployToken(context.request) },
+
           client: context.platform,
+
           headers: context.platformHeaders,
-          signal,
-          // Replaying a POST could start the agent twice. V1 has no reconnection.
-          sseMaxRetryAttempts: 1,
+
           onSseError: (error) => {
             streamError = error;
           },
+
+          signal,
+
+          // Replaying a POST could start the agent twice. V1 has no reconnection.
+          sseMaxRetryAttempts: 1,
         });
         for await (const value of stream) {
           const event = await agentChunkSchema.parseAsync(value);

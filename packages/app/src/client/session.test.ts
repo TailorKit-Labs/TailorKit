@@ -3,13 +3,14 @@ import { expect, it, vi } from "vite-plus/test";
 import { createSessionProvider } from "./session";
 
 it("deduplicates token requests, caches until renewal and sends only the host-bound app ID", async () => {
-  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async () =>
-    Response.json({
-      expiresAt: Date.now() + 300_000,
-      subjectId: "principal",
-      token: "scoped",
-      url: "https://runtime.test/rpc",
-    })
+  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(
+    async () =>
+      await Response.json({
+        expiresAt: Date.now() + 300_000,
+        subjectId: "principal",
+        token: "scoped",
+        url: "https://runtime.test/rpc",
+      })
   );
   const session = createSessionProvider({
     appId: "allowed",
@@ -38,16 +39,15 @@ it("renews cached sessions when one minute remains", async () => {
   vi.useFakeTimers();
   vi.setSystemTime(0);
   try {
-    const fetch = vi
-      .fn<typeof globalThis.fetch>()
-      .mockImplementation(async () =>
-        Response.json({
+    const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(
+      async () =>
+        await Response.json({
           expiresAt: Date.now() + 300_000,
           subjectId: "principal",
           token: "scoped",
           url: "https://runtime.test/rpc",
         })
-      );
+    );
     const session = createSessionProvider({
       appId: "allowed",
       baseUrl: "https://host.test/api",

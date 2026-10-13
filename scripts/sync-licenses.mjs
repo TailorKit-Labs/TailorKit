@@ -5,7 +5,7 @@ const root = path.resolve(import.meta.dirname, "..");
 const licensesDir = path.join(root, "licenses");
 const checkOnly = process.argv.includes("--check");
 
-function findPackageManifests(directory) {
+const findPackageManifests = (directory) => {
   const manifests = [];
 
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
@@ -30,11 +30,9 @@ function findPackageManifests(directory) {
   }
 
   return manifests;
-}
+};
 
-function relativeToRoot(filePath) {
-  return path.relative(root, filePath) || ".";
-}
+const relativeToRoot = (filePath) => path.relative(root, filePath) || ".";
 
 const errors = [];
 const packages = findPackageManifests(root)

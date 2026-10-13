@@ -40,38 +40,38 @@ export interface AppAgentMcpBackend {
   ) => Promise<Record<string, unknown>>;
 }
 
-function execution(context: ServerContext): AppAgentMcpExecution {
+const execution = (context: ServerContext): AppAgentMcpExecution => {
   let progress = 0;
   const progressToken = context.mcpReq._meta?.progressToken;
   return {
     async onProgress(event) {
       context.mcpReq.signal.throwIfAborted();
-      if (progressToken === undefined) return;
+      if (progressToken === undefined) {
+        return;
+      }
       await context.mcpReq.notify({
         method: "notifications/progress",
         params: {
-          progressToken,
-          progress: ++progress,
           message: JSON.stringify(event),
+          progress: (progress += 1),
+          progressToken,
         },
       });
     },
     signal: context.mcpReq.signal,
   };
-}
+};
 
-function result(value: Record<string, unknown>) {
-  return {
-    content: [{ text: JSON.stringify(value), type: "text" as const }],
-    structuredContent: value,
-  };
-}
+const result = (value: Record<string, unknown>) => ({
+  content: [{ text: JSON.stringify(value), type: "text" as const }],
+  structuredContent: value,
+});
 
 /** MCP 2026-07-28 only: stateless HTTP, request-scoped SSE, no legacy sessions. */
-export function createAppAgentMcp(
+export const createAppAgentMcp = (
   backend: AppAgentMcpBackend,
   scopeNames: readonly string[]
-) {
+) => {
   if (!scopeNames.length) {
     throw new Error("At least one host scope is required.");
   }
@@ -141,4 +141,4 @@ export function createAppAgentMcp(
     },
     { legacy: "reject", responseMode: "sse" }
   );
-}
+};

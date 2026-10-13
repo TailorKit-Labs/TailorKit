@@ -38,6 +38,13 @@ it("uses the existing ioredis connection with prefixed keys and a millisecond wi
   });
 });
 
+const requestImplementation = () =>
+  new Request("https://example.com/rpc/ping", {
+    body: JSON.stringify({ json: null }),
+    headers: { "content-type": "application/json" },
+    method: "POST",
+  });
+
 it("deduplicates the limiter per request and returns HTTP 429 with retry headers", async () => {
   const limiter = createRateLimiter({ maxRequests: 1, window: 60_000 });
   const limit = vi.spyOn(limiter, "limit");
@@ -51,12 +58,7 @@ it("deduplicates the limiter per request and returns HTTP 429 with retry headers
     },
     { plugins: [new RateLimitHandlerPlugin()] }
   );
-  const request = () =>
-    new Request("https://example.com/rpc/ping", {
-      body: JSON.stringify({ json: null }),
-      headers: { "content-type": "application/json" },
-      method: "POST",
-    });
+  const request = requestImplementation;
 
   const first = await handler.handle(request(), {
     context: {},

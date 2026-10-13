@@ -13,7 +13,7 @@ interface AppLogoProps {
   name: string;
 }
 
-export function AppLogo({ className, logoPaths, name }: AppLogoProps) {
+export const AppLogo = ({ className, logoPaths, name }: AppLogoProps) => {
   const { resolvedTheme } = useTheme();
   const logoPath =
     resolvedTheme === "dark"
@@ -34,4 +34,4 @@ export function AppLogo({ className, logoPaths, name }: AppLogoProps) {
       </AvatarFallback>
     </Avatar>
   );
-}
+};

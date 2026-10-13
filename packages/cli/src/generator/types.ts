@@ -78,6 +78,7 @@ import { createRemoteComponent } from "tailorkit/client";
 `;
 
 const fallbackObjectType = "Record<string, never>";
+
 const primitiveComponentNames = new Set(["Box", "Flex", "Grid", "Inline"]);
 
 const quote = (value: string): string => JSON.stringify(value);
@@ -105,6 +106,81 @@ const toLiteralType = (value: unknown): string => {
   return "unknown";
 };
 
+const isNeverSchema = (schema: JsonSchema): boolean =>
+  schema.not !== undefined && Object.keys(schema.not).length === 0;
+
+const toArrayType = (itemType: string): string =>
+  `${itemType.includes(" | ") || itemType.includes(" & ") ? `(${itemType})` : itemType}[]`;
+
+const isNeverOnlyObject = (schema: JsonSchema): boolean => {
+  const properties = schema.properties ?? {};
+  const propertyEntries = Object.values(properties);
+
+  return (
+    (Array.isArray(schema.type)
+      ? schema.type.includes("object")
+      : schema.type === "object") &&
+    propertyEntries.length > 0 &&
+    propertyEntries.every(isNeverSchema)
+  );
+};
+
+const toObjectType = (schema: JsonSchema, depth: number): string => {
+  const properties = schema.properties ?? {};
+  const propertyEntries = Object.entries(properties);
+
+  if (isNeverOnlyObject(schema)) {
+    return "never";
+  }
+
+  const required = new Set(schema.required);
+  // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
+  const catchallType = toTypeScriptType(
+    schema.additionalProperties === true
+      ? undefined
+      : schema.additionalProperties || undefined,
+    depth
+  );
+  const additionalValueTypes = [catchallType];
+  if (catchallType !== "unknown") {
+    for (const [key, propertySchema] of propertyEntries) {
+      // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
+      additionalValueTypes.push(toTypeScriptType(propertySchema, depth));
+      if (!required.has(key)) {
+        additionalValueTypes.push("undefined");
+      }
+    }
+  }
+  const additionalType =
+    schema.additionalProperties === false ||
+    schema.additionalProperties === undefined
+      ? undefined
+      : `Record<string, ${[...new Set(additionalValueTypes)].join(" | ")}>`;
+
+  if (propertyEntries.length === 0) {
+    return additionalType ?? fallbackObjectType;
+  }
+
+  const currentIndent = " ".repeat(depth);
+  const propertyIndent = " ".repeat(depth + 2);
+  const lines = ["{"];
+
+  for (const [key, propertySchema] of propertyEntries) {
+    const optional = required.has(key) ? "" : "?";
+    lines.push(
+      // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
+      `${propertyIndent}${toPropertyKey(key)}${optional}: ${toTypeScriptType(propertySchema, depth + 2)};`
+    );
+  }
+
+  lines.push(`${currentIndent}}`);
+  const objectType = lines.join("\n");
+  return additionalType === undefined
+    ? objectType
+    : `${objectType} & ${additionalType}`;
+};
+
+// oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
 const toTypeScriptType = (
   schema: JsonSchema | undefined,
   depth = 0
@@ -199,77 +275,6 @@ const toTypeScriptType = (
   }
 
   return "unknown";
-};
-
-const toArrayType = (itemType: string): string =>
-  `${itemType.includes(" | ") || itemType.includes(" & ") ? `(${itemType})` : itemType}[]`;
-
-const isNeverSchema = (schema: JsonSchema): boolean =>
-  schema.not !== undefined && Object.keys(schema.not).length === 0;
-
-const isNeverOnlyObject = (schema: JsonSchema): boolean => {
-  const properties = schema.properties ?? {};
-  const propertyEntries = Object.values(properties);
-
-  return (
-    (Array.isArray(schema.type)
-      ? schema.type.includes("object")
-      : schema.type === "object") &&
-    propertyEntries.length > 0 &&
-    propertyEntries.every(isNeverSchema)
-  );
-};
-
-const toObjectType = (schema: JsonSchema, depth: number): string => {
-  const properties = schema.properties ?? {};
-  const propertyEntries = Object.entries(properties);
-
-  if (isNeverOnlyObject(schema)) {
-    return "never";
-  }
-
-  const required = new Set(schema.required);
-  const catchallType = toTypeScriptType(
-    schema.additionalProperties === true
-      ? undefined
-      : schema.additionalProperties || undefined,
-    depth
-  );
-  const additionalValueTypes = [catchallType];
-  if (catchallType !== "unknown") {
-    for (const [key, propertySchema] of propertyEntries) {
-      additionalValueTypes.push(toTypeScriptType(propertySchema, depth));
-      if (!required.has(key)) {
-        additionalValueTypes.push("undefined");
-      }
-    }
-  }
-  const additionalType =
-    schema.additionalProperties === false ||
-    schema.additionalProperties === undefined
-      ? undefined
-      : `Record<string, ${[...new Set(additionalValueTypes)].join(" | ")}>`;
-
-  if (propertyEntries.length === 0) {
-    return additionalType ?? fallbackObjectType;
-  }
-
-  const currentIndent = " ".repeat(depth);
-  const propertyIndent = " ".repeat(depth + 2);
-  const lines = ["{"];
-
-  for (const [key, propertySchema] of propertyEntries) {
-    const optional = required.has(key) ? "" : "?";
-    lines.push(
-      `${propertyIndent}${toPropertyKey(key)}${optional}: ${toTypeScriptType(propertySchema, depth + 2)};`
-    );
-  }
-
-  lines.push(`${currentIndent}}`);
-  const objectType = lines.join("\n");
-  return additionalType === undefined
-    ? objectType
-    : `${objectType} & ${additionalType}`;
 };
 
 const toIdentifier = (name: string): string => {
@@ -439,7 +444,7 @@ const renderViewProps = (views: Record<string, SerializedView>): string => {
       .filter((context) => context !== "Record<string, never>");
     const context =
       contexts.length > 1
-        ? contexts.map((context) => `(${context})`).join(" & ")
+        ? contexts.map((contextValue) => `(${contextValue})`).join(" & ")
         : (contexts[0] ?? "Record<string, never>");
     const contextLines = context.split("\n");
     lines.push(`  ${quote(viewPath)}: {`, `    context: ${contextLines[0]}`);
@@ -496,9 +501,9 @@ const renderComponent = (
 
   lines.push(
     `export const ${toIdentifier(name)} = /* @__PURE__ */ createRemoteComponent<${propsName}, ${component.children === true}>(${quote(name)}, {`,
-    `  children: ${component.children === true}${callbackOptions},`
+    `  children: ${component.children === true}${callbackOptions},`,
+    "});"
   );
-  lines.push("});");
 
   return lines.join("\n");
 };
@@ -539,9 +544,9 @@ const renderTools = (
       const nested = renderTools(value, depth + 2, serverOnly).split("\n");
       lines.push(
         `${propertyIndent}${toPropertyKey(key)}: ${nested[0]}`,
-        ...nested.slice(1, -1)
+        ...nested.slice(1, -1),
+        `${nested.at(-1)};`
       );
-      lines.push(`${nested.at(-1)};`);
     }
   }
 
@@ -556,18 +561,18 @@ const renderToolRuntime = (
   const lines = ["{"];
 
   for (const [key, value] of Object.entries(tools)) {
-    const path = [...pathParts, key];
+    const pathValue = [...pathParts, key];
     if (isSerializedTool(value)) {
       lines.push(
-        `  ${toPropertyKey(key)}: (input?: unknown) => callTool(${quote(value.kind)}, ${quote(path.join("."))}, input),`
+        `  ${toPropertyKey(key)}: (input?: unknown) => callTool(${quote(value.kind)}, ${quote(pathValue.join("."))}, input),`
       );
     } else {
-      const nested = renderToolRuntime(value, path).split("\n");
+      const nested = renderToolRuntime(value, pathValue).split("\n");
       lines.push(
         `  ${toPropertyKey(key)}: ${nested[0]}`,
-        ...nested.slice(1).map((line) => `  ${line}`)
+        ...nested.slice(1).map((line) => `  ${line}`),
+        ","
       );
-      lines.push(",");
     }
   }
 

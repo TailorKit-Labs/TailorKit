@@ -15,7 +15,7 @@ import { env } from "../env";
 
 type PublicKey = AppTokenTrust["publicKeys"]["keys"][number];
 
-function signingKey() {
+const signingKey = () => {
   if (!env.APP_RUNTIME_SIGNING_KEY) {
     throw new Error(
       "APP_RUNTIME_SIGNING_KEY is required for app runtime tokens"
@@ -26,9 +26,9 @@ function signingKey() {
     throw new Error("Configure an ES256 private JWK with a kid");
   }
   return key;
-}
+};
 
-export function appRuntimePublicKeys() {
+export const appRuntimePublicKeys = () => {
   const key = signingKey();
   const publicKey = createPublicKey(
     createPrivateKey({ format: "jwk", key })
@@ -50,9 +50,9 @@ export function appRuntimePublicKeys() {
       ...previous.keys,
     ],
   };
-}
+};
 
-export function issueAppRuntimeToken(identity: AppTokenIdentity) {
+export const issueAppRuntimeToken = (identity: AppTokenIdentity) => {
   const key = signingKey();
   return issueAppToken(
     {
@@ -65,4 +65,4 @@ export function issueAppRuntimeToken(identity: AppTokenIdentity) {
     },
     identity
   );
-}
+};

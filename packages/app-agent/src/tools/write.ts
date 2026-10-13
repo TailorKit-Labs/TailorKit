@@ -15,16 +15,16 @@ export const writeTool = tool({
     "use step";
     const sandbox = await toolSandbox(options);
     const { abortSignal } = options;
-    path = resolvePath(path);
-    await sandbox.writeTextFile({ path, content, abortSignal });
-    return { success: true, path };
+    const resolvedPath = resolvePath(path);
+    await sandbox.writeTextFile({ abortSignal, content, path: resolvedPath });
+    return { path: resolvedPath, success: true };
   },
   inputSchema: z.object({
+    content: z.string(),
     path: z
       .string()
       .min(1)
       .describe("Relative to /workspace/app, or an absolute path."),
-    content: z.string(),
   }),
   outputSchema: fileChangeResultSchema,
 });

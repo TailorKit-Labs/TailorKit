@@ -12,7 +12,7 @@ export interface Session {
   url: string;
 }
 
-function freezeIdentity<T>(value: T): T {
+const freezeIdentity = <T>(value: T): T => {
   if (value && typeof value === "object" && !Object.isFrozen(value)) {
     for (const child of Object.values(value)) {
       freezeIdentity(child);
@@ -20,18 +20,17 @@ function freezeIdentity<T>(value: T): T {
     Object.freeze(value);
   }
   return value;
-}
+};
 
-export function sessionRenewalDelay(session: Session) {
-  return Math.max(500, session.expiresAt - Date.now() - APP_SESSION_RENEWAL_MS);
-}
+export const sessionRenewalDelay = (session: Session) =>
+  Math.max(500, session.expiresAt - Date.now() - APP_SESSION_RENEWAL_MS);
 
 /** Host-owned provider: project credentials never cross into the sandbox. */
-export function createSessionProvider(options: {
+export const createSessionProvider = (options: {
   baseUrl: string | URL;
   appId: string;
   fetch?: typeof fetch;
-}) {
+}) => {
   const base = new URL(options.baseUrl, globalThis.location?.href);
   if (!base.pathname.endsWith("/")) {
     base.pathname += "/";
@@ -47,51 +46,59 @@ export function createSessionProvider(options: {
       return Promise.resolve(cached);
     }
     pending ??= (async () => {
-      const response = await (options.fetch ?? fetch)(
-        new URL("backend/session", base),
-        {
-          body: JSON.stringify({ appId: options.appId }),
-          credentials: "same-origin",
-          headers: { "content-type": "application/json" },
-          method: "POST",
-        }
-      ).catch(() => {
-        throw new AppError(
-          "UNAVAILABLE",
-          "Unable to reach the app session provider"
-        );
-      });
-      if (!response.ok) {
-        const code = response.status === 403 ? "FORBIDDEN" : "UNAVAILABLE";
-        throw new AppError(
-          response.status === 401 ? "UNAUTHORIZED" : code,
-          "Unable to authorize the app backend"
-        );
+      try {
+        return await (async () => {
+          const response = await (async () => {
+            try {
+              return await (options.fetch ?? fetch)(
+                new URL("backend/session", base),
+                {
+                  body: JSON.stringify({ appId: options.appId }),
+                  credentials: "same-origin",
+                  headers: { "content-type": "application/json" },
+                  method: "POST",
+                }
+              );
+            } catch {
+              throw new AppError(
+                "UNAVAILABLE",
+                "Unable to reach the app session provider"
+              );
+            }
+          })();
+          if (!response.ok) {
+            const code = response.status === 403 ? "FORBIDDEN" : "UNAVAILABLE";
+            throw new AppError(
+              response.status === 401 ? "UNAUTHORIZED" : code,
+              "Unable to authorize the app backend"
+            );
+          }
+          const value = (await response.json()) as Partial<Session>;
+          if (
+            typeof value.token !== "string" ||
+            typeof value.expiresAt !== "number" ||
+            typeof value.url !== "string"
+          ) {
+            throw new AppError("UNAVAILABLE", "Invalid app session");
+          }
+          cached = {
+            ...(value.toolUrl === undefined ? {} : { toolUrl: value.toolUrl }),
+            ...(value.identity === undefined
+              ? {}
+              : { identity: freezeIdentity(value.identity) }),
+            expiresAt: value.expiresAt,
+            token: value.token,
+            url: value.url,
+            ...(value.subjectId === undefined
+              ? {}
+              : { subjectId: value.subjectId }),
+          };
+          return cached;
+        })();
+      } finally {
+        pending = undefined;
       }
-      const value = (await response.json()) as Partial<Session>;
-      if (
-        typeof value.token !== "string" ||
-        typeof value.expiresAt !== "number" ||
-        typeof value.url !== "string"
-      ) {
-        throw new AppError("UNAVAILABLE", "Invalid app session");
-      }
-      cached = {
-        ...(value.toolUrl === undefined ? {} : { toolUrl: value.toolUrl }),
-        ...(value.identity === undefined
-          ? {}
-          : { identity: freezeIdentity(value.identity) }),
-        expiresAt: value.expiresAt,
-        token: value.token,
-        url: value.url,
-        ...(value.subjectId === undefined
-          ? {}
-          : { subjectId: value.subjectId }),
-      };
-      return cached;
-    })().finally(() => {
-      pending = undefined;
-    });
+    })();
     return pending;
   };
-}
+};

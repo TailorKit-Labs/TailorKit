@@ -1,19 +1,22 @@
 import { APP_AUDIENCE, appTokenVerifier } from "@tailorkit/api-utils/app-auth";
 import { expect, it, vi } from "vite-plus/test";
 
+import { appRuntimePublicKeys, issueAppRuntimeToken } from "./auth";
+
 const settings = vi.hoisted(() => ({
   APP_RUNTIME_PREVIOUS_PUBLIC_KEYS: undefined as string | undefined,
   APP_RUNTIME_SIGNING_KEY: "",
   OPENAPI_SERVER_URL: "https://platform.test/api/platform",
 }));
+
 vi.mock("../env", () => ({ env: settings }));
-import { appRuntimePublicKeys, issueAppRuntimeToken } from "./auth";
 
 const pair = await crypto.subtle.generateKey(
   { name: "ECDSA", namedCurve: "P-256" },
   true,
   ["sign", "verify"]
 );
+
 settings.APP_RUNTIME_SIGNING_KEY = JSON.stringify({
   ...(await crypto.subtle.exportKey("jwk", pair.privateKey)),
   kid: "platform",

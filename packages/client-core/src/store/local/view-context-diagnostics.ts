@@ -9,10 +9,10 @@ export interface ViewContextDiagnostic {
 export type ViewContextResult = { value: unknown } | ViewContextDiagnostic;
 
 /** Validate through the original schema and preserve its parsed output. */
-export function validateViewContext(
+export const validateViewContext = (
   entry: ViewEntry,
   schema: Schema | undefined
-): ViewContextResult | Promise<ViewContextResult> {
+): ViewContextResult | Promise<ViewContextResult> => {
   if (entry.status !== "ready") {
     return { value: undefined };
   }
@@ -46,5 +46,7 @@ export function validateViewContext(
         };
   };
   const result = schema["~standard"].validate(context);
-  return "then" in result ? result.then(classify) : classify(result);
-}
+  return "then" in result
+    ? (async () => classify(await result))()
+    : classify(result);
+};

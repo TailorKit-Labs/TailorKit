@@ -31,89 +31,83 @@ const inputGroupAddonVariants = cva(
   }
 );
 
-export function InputGroup({
+export const InputGroup = ({
   className,
   ...props
-}: React.ComponentProps<"div">): React.ReactElement {
-  return (
-    <div
-      className={cn(
-        "border-input bg-background text-foreground ring-ring/24 has-[input:focus-visible,textarea:focus-visible]:has-[input[aria-invalid],textarea[aria-invalid]]:border-destructive/64 has-[input:focus-visible,textarea:focus-visible]:has-[input[aria-invalid],textarea[aria-invalid]]:ring-destructive/16 has-[input:focus-visible,textarea:focus-visible]:border-ring has-[input[aria-invalid],textarea[aria-invalid]]:border-destructive/36 has-autofill:bg-foreground/4 dark:bg-input/32 dark:has-autofill:bg-foreground/8 dark:has-[input[aria-invalid],textarea[aria-invalid]]:ring-destructive/24 relative inline-flex w-full min-w-0 items-center rounded-lg border text-base shadow-xs/5 transition-shadow not-dark:bg-clip-padding before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] not-has-[input:disabled,textarea:disabled]:not-has-[input:focus-visible,textarea:focus-visible]:not-has-[input[aria-invalid],textarea[aria-invalid]]:before:shadow-[0_1px_--theme(--color-black/4%)] has-data-[align=block-end]:h-auto has-data-[align=block-end]:flex-col has-data-[align=block-start]:h-auto has-data-[align=block-start]:flex-col has-[input:disabled,textarea:disabled]:opacity-64 has-[input:disabled,textarea:disabled,input:focus-visible,textarea:focus-visible,input[aria-invalid],textarea[aria-invalid]]:shadow-none has-[input:focus-visible,textarea:focus-visible]:ring-[3px] has-[textarea]:h-auto sm:text-sm dark:not-has-[input:disabled,textarea:disabled]:not-has-[input:focus-visible,textarea:focus-visible]:not-has-[input[aria-invalid],textarea[aria-invalid]]:before:shadow-[0_-1px_--theme(--color-white/6%)] has-data-[align=inline-end]:**:[[data-size=sm]_input]:pe-1.5 has-data-[align=inline-start]:**:[[data-size=sm]_input]:ps-1.5 *:[[data-slot=input-control],[data-slot=textarea-control]]:contents *:[[data-slot=input-control],[data-slot=textarea-control]]:before:hidden has-data-[align=block-end]:**:[input]:pt-1.5 has-data-[align=block-start]:**:[input]:pb-1.5 has-data-[align=inline-end]:**:[input]:pe-2 has-data-[align=inline-start]:**:[input]:ps-2 has-[[data-align=block-start],[data-align=block-end]]:**:[input]:h-auto **:[textarea_button]:rounded-[calc(var(--radius-md)-1px)] **:[textarea]:min-h-20.5 **:[textarea]:resize-none **:[textarea]:py-[calc(--spacing(3)-1px)] **:[textarea]:max-sm:min-h-23.5",
-        className
-      )}
-      data-slot="input-group"
-      // A generic group is intentional here: InputGroup can contain an input,
-      // textarea, or other composite control, so fieldset would be misleading.
-      // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
-      role="group"
-      {...props}
-    />
-  );
-}
+}: React.ComponentProps<"div">): React.ReactElement => (
+  <div
+    className={cn(
+      "border-input bg-background text-foreground ring-ring/24 has-[input:focus-visible,textarea:focus-visible]:has-[input[aria-invalid],textarea[aria-invalid]]:border-destructive/64 has-[input:focus-visible,textarea:focus-visible]:has-[input[aria-invalid],textarea[aria-invalid]]:ring-destructive/16 has-[input:focus-visible,textarea:focus-visible]:border-ring has-[input[aria-invalid],textarea[aria-invalid]]:border-destructive/36 has-autofill:bg-foreground/4 dark:bg-input/32 dark:has-autofill:bg-foreground/8 dark:has-[input[aria-invalid],textarea[aria-invalid]]:ring-destructive/24 relative inline-flex w-full min-w-0 items-center rounded-lg border text-base shadow-xs/5 transition-shadow not-dark:bg-clip-padding before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] not-has-[input:disabled,textarea:disabled]:not-has-[input:focus-visible,textarea:focus-visible]:not-has-[input[aria-invalid],textarea[aria-invalid]]:before:shadow-[0_1px_--theme(--color-black/4%)] has-data-[align=block-end]:h-auto has-data-[align=block-end]:flex-col has-data-[align=block-start]:h-auto has-data-[align=block-start]:flex-col has-[input:disabled,textarea:disabled]:opacity-64 has-[input:disabled,textarea:disabled,input:focus-visible,textarea:focus-visible,input[aria-invalid],textarea[aria-invalid]]:shadow-none has-[input:focus-visible,textarea:focus-visible]:ring-[3px] has-[textarea]:h-auto sm:text-sm dark:not-has-[input:disabled,textarea:disabled]:not-has-[input:focus-visible,textarea:focus-visible]:not-has-[input[aria-invalid],textarea[aria-invalid]]:before:shadow-[0_-1px_--theme(--color-white/6%)] has-data-[align=inline-end]:**:[[data-size=sm]_input]:pe-1.5 has-data-[align=inline-start]:**:[[data-size=sm]_input]:ps-1.5 *:[[data-slot=input-control],[data-slot=textarea-control]]:contents *:[[data-slot=input-control],[data-slot=textarea-control]]:before:hidden has-data-[align=block-end]:**:[input]:pt-1.5 has-data-[align=block-start]:**:[input]:pb-1.5 has-data-[align=inline-end]:**:[input]:pe-2 has-data-[align=inline-start]:**:[input]:ps-2 has-[[data-align=block-start],[data-align=block-end]]:**:[input]:h-auto **:[textarea_button]:rounded-[calc(var(--radius-md)-1px)] **:[textarea]:min-h-20.5 **:[textarea]:resize-none **:[textarea]:py-[calc(--spacing(3)-1px)] **:[textarea]:max-sm:min-h-23.5",
+      className
+    )}
+    data-slot="input-group"
+    // A generic group is intentional here: InputGroup can contain an input,
+    // textarea, or other composite control, so fieldset would be misleading.
+    // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
+    role="group"
+    {...props}
+  />
+);
 
-export function InputGroupAddon({
+export const InputGroupAddon = ({
   className,
   align = "inline-start",
   ...props
 }: React.ComponentProps<"div"> &
-  VariantProps<typeof inputGroupAddonVariants>): React.ReactElement {
-  return (
-    <div
-      className={cn(inputGroupAddonVariants({ align }), className)}
-      data-align={align}
-      data-slot="input-group-addon"
-      role="presentation"
-      onMouseDown={(e: React.MouseEvent<HTMLDivElement>) => {
-        const target = e.target as Element;
-        if (!e.currentTarget.contains(target)) {
-          return;
-        }
+  VariantProps<typeof inputGroupAddonVariants>): React.ReactElement => (
+  <div
+    className={cn(inputGroupAddonVariants({ align }), className)}
+    data-align={align}
+    data-slot="input-group-addon"
+    role="presentation"
+    onMouseDown={(e: React.MouseEvent<HTMLDivElement>) => {
+      const target = e.target as Element;
+      if (!e.currentTarget.contains(target)) {
+        return;
+      }
 
-        const isInteractive = target.closest(
-          "button, a, input, select, textarea, [role='button'], [role='combobox'], [role='listbox'], [data-slot='select-trigger']"
-        );
-        if (isInteractive) {
-          return;
-        }
-        e.preventDefault();
-        const parent = e.currentTarget.parentElement;
-        const input = parent?.querySelector<
-          HTMLInputElement | HTMLTextAreaElement
-        >("input, textarea");
-        if (input && !parent?.querySelector("input:focus, textarea:focus")) {
-          input.focus();
-        }
-      }}
-      {...props}
-    />
-  );
-}
+      const isInteractive = target.closest(
+        "button, a, input, select, textarea, [role='button'], [role='combobox'], [role='listbox'], [data-slot='select-trigger']"
+      );
+      if (isInteractive) {
+        return;
+      }
+      e.preventDefault();
+      const parent = e.currentTarget.parentElement;
+      const input = parent?.querySelector<
+        HTMLInputElement | HTMLTextAreaElement
+      >("input, textarea");
+      if (input && !parent?.querySelector("input:focus, textarea:focus")) {
+        input.focus();
+      }
+    }}
+    {...props}
+  />
+);
 
-export function InputGroupText({
+export const InputGroupText = ({
   className,
   ...props
-}: React.ComponentProps<"span">): React.ReactElement {
-  return (
-    <span
-      className={cn(
-        "text-muted-foreground flex items-center gap-2 truncate [&_svg]:pointer-events-none [&_svg]:-mx-0.5 in-[[data-slot=input-group]:has([data-slot=input-control],[data-slot=textarea-control])]:[&_svg:not([class*='size-'])]:size-4.5 sm:in-[[data-slot=input-group]:has([data-slot=input-control],[data-slot=textarea-control])]:[&_svg:not([class*='size-'])]:size-4",
-        className
-      )}
-      {...props}
-    />
-  );
-}
+}: React.ComponentProps<"span">): React.ReactElement => (
+  <span
+    className={cn(
+      "text-muted-foreground flex items-center gap-2 truncate [&_svg]:pointer-events-none [&_svg]:-mx-0.5 in-[[data-slot=input-group]:has([data-slot=input-control],[data-slot=textarea-control])]:[&_svg:not([class*='size-'])]:size-4.5 sm:in-[[data-slot=input-group]:has([data-slot=input-control],[data-slot=textarea-control])]:[&_svg:not([class*='size-'])]:size-4",
+      className
+    )}
+    {...props}
+  />
+);
 
-export function InputGroupInput({
+export const InputGroupInput = ({
   className,
   ...props
-}: InputProps): React.ReactElement {
-  return <Input className={className} unstyled {...props} />;
-}
+}: InputProps): React.ReactElement => (
+  <Input className={className} unstyled {...props} />
+);
 
-export function InputGroupTextarea({
+export const InputGroupTextarea = ({
   className,
   ...props
-}: TextareaProps): React.ReactElement {
-  return <Textarea className={className} unstyled {...props} />;
-}
+}: TextareaProps): React.ReactElement => (
+  <Textarea className={className} unstyled {...props} />
+);

@@ -25,7 +25,7 @@ export interface BooleanFieldProps {
   required?: boolean;
 }
 
-export function BooleanField({
+export const BooleanField = ({
   checked,
   description,
   disabled,
@@ -34,7 +34,7 @@ export function BooleanField({
   onBlur,
   onCheckedChange,
   required,
-}: BooleanFieldProps) {
+}: BooleanFieldProps) => {
   const id = useId();
   const errorMessage = formatFieldErrors(errors);
   const isError = errorMessage.length > 0;
@@ -60,4 +60,4 @@ export function BooleanField({
       </div>
     </Field>
   );
-}
+};

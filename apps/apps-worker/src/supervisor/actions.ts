@@ -2,7 +2,7 @@ import { AppError } from "@tailorkit/app/server";
 import { RpcTarget } from "cloudflare:workers";
 
 /** Tracks active actions only for cancellation and token expiry. */
-export function createActionLeases() {
+export const createActionLeases = () => {
   const active = new Set<AbortController>();
   return {
     closeAll() {
@@ -24,20 +24,30 @@ export function createActionLeases() {
         : controller.signal;
       active.add(controller);
       return {
-        deadline,
-        signal,
         close: () => {
           clearTimeout(timer);
           active.delete(controller);
           cancel();
         },
+        deadline,
+        signal,
       };
     },
   };
-}
+};
+
+const privateIPv4 = ([first = 0, second = 0]: number[]) =>
+  first === 0 ||
+  first === 10 ||
+  first === 127 ||
+  first >= 224 ||
+  (first === 169 && second === 254) ||
+  (first === 192 && second === 168) ||
+  (first === 172 && second >= 16 && second <= 31) ||
+  (first === 100 && second >= 64 && second <= 127);
 
 /** HTTPS Internet access only; validate every redirect rather than forwarding it implicitly. */
-export function actionDestination(url: URL) {
+export const actionDestination = (url: URL) => {
   const host = url.hostname.toLowerCase();
   const octets = /^\d+\.\d+\.\d+\.\d+$/u.test(host)
     ? host.split(".").map(Number)
@@ -48,7 +58,7 @@ export function actionDestination(url: URL) {
     url.username ||
     url.password ||
     (!host.includes(".") && !host.startsWith("[")) ||
-    /(^|\.)(localhost|local|internal)$/u.test(host) ||
+    /(?:^|\.)(?:localhost|local|internal)$/u.test(host) ||
     (host.startsWith("[") && !/^\[[23][a-f\d]{3}:/u.test(host)) ||
     (octets && privateIPv4(octets))
   ) {
@@ -57,20 +67,7 @@ export function actionDestination(url: URL) {
       "Action destination must be a public HTTPS endpoint"
     );
   }
-}
-
-function privateIPv4([first = 0, second = 0]: number[]) {
-  return (
-    first === 0 ||
-    first === 10 ||
-    first === 127 ||
-    first >= 224 ||
-    (first === 169 && second === 254) ||
-    (first === 192 && second === 168) ||
-    (first === 172 && second >= 16 && second <= 31) ||
-    (first === 100 && second >= 64 && second <= 127)
-  );
-}
+};
 
 /** Trusted outbound fetch and committed-write notification; database calls stay in the facet. */
 export class ActionCapability extends RpcTarget {
@@ -105,7 +102,7 @@ export class ActionCapability extends RpcTarget {
     }
     actionDestination(new URL(credential.url));
     const response = await fetch(credential.url, {
-      body: JSON.stringify({ path, input, requestId: crypto.randomUUID() }),
+      body: JSON.stringify({ input, path, requestId: crypto.randomUUID() }),
       headers: {
         authorization: `Bearer ${credential.token}`,
         "content-type": "application/json",
@@ -136,7 +133,13 @@ export class ActionCapability extends RpcTarget {
     const reader = cancellation.getReader();
     const cleanup = () => {
       this.lease.signal.removeEventListener("abort", cleanup);
-      void reader.cancel().catch(() => {});
+      void (async () => {
+        try {
+          return await reader.cancel();
+        } catch {
+          /* Intentionally no action is needed. */
+        }
+      })();
     };
     // Keep per-request cancellation alive while the returned body is being read.
     // The action lease bounds all readers, including responses abandoned by app code.
@@ -145,7 +148,14 @@ export class ActionCapability extends RpcTarget {
       controller.abort();
       cleanup();
     };
-    void reader.read().then(cancel, cancel);
+    void (async () => {
+      try {
+        await reader.read();
+      } catch {
+        /* Either settlement cancels the action. */
+      }
+      cancel();
+    })();
     try {
       return await this.#fetch(request, controller.signal);
     } catch (error) {
@@ -157,12 +167,13 @@ export class ActionCapability extends RpcTarget {
   async #fetch(request: Request, signal: AbortSignal): Promise<Response> {
     let next = new Request(request, { redirect: "manual" });
 
-    for (let redirect = 0; redirect <= 4; redirect++) {
+    for (let redirect = 0; redirect <= 4; redirect += 1) {
       actionDestination(new URL(next.url));
       if (this.lease.signal.aborted || this.lease.deadline <= Date.now()) {
         throw new AppError("UNAVAILABLE", "Action has ended");
       }
       const backup = next.clone();
+      // oxlint-disable-next-line no-await-in-loop -- Each retry depends on the result of the previous attempt.
       const response = await fetch(next, {
         signal: AbortSignal.any([
           signal,
@@ -179,6 +190,7 @@ export class ActionCapability extends RpcTarget {
       if (request.redirect === "manual") {
         return response;
       }
+      // oxlint-disable-next-line no-await-in-loop -- Each retry depends on the result of the previous attempt.
       await response.body?.cancel();
       if (request.redirect === "error") {
         throw new TypeError("Fetch encountered a redirect");

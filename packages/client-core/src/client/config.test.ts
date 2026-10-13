@@ -3,6 +3,13 @@ import { expect, it, vi } from "vite-plus/test";
 import { testContract } from "../test-contract";
 import { createComponentRegistry, createTailorKitClientConfig } from "./config";
 
+const require = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 it("wraps each renderer once and shares it with remote component aliases", () => {
   const renderer = { id: "renderer" };
   const wrap = vi.fn((value: typeof renderer) => ({ wrapped: value }));
@@ -30,10 +37,9 @@ it("builds reusable client configuration without initiating network requests", (
 
 it("clears shared app data and sessions through clearCache", async () => {
   let user = "first";
-  const fetch = vi
-    .fn<typeof globalThis.fetch>()
-    .mockImplementation(async (input) =>
-      Response.json(
+  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(
+    async (input) =>
+      await Response.json(
         String(input).endsWith("/apps")
           ? [{ id: user }]
           : {
@@ -42,13 +48,13 @@ it("clears shared app data and sessions through clearCache", async () => {
               url: "https://runtime.test/rpc",
             }
       )
-    );
+  );
   const config = createTailorKitClientConfig({
     baseUrl: "https://host.test/api/",
     contract: testContract(),
     fetch,
   });
-  const client = config.fetchClient!;
+  const client = require(config.fetchClient);
   const apps = client.apps();
   const session = client.endpoints.getSessionProvider({ id: "app" });
   await apps.fetch();

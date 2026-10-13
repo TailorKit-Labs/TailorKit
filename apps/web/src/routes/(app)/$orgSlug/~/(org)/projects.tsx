@@ -26,7 +26,12 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+  useParams,
+  createFileRoute,
+  Link,
+  useNavigate,
+} from "@tanstack/react-router";
 import { FolderIcon, FolderPlusIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import type { ReactNode } from "react";
@@ -37,43 +42,10 @@ import { PageLayout } from "#components/page-layout";
 import { client, orpc } from "#lib/orpc";
 import { setProjectApiKey } from "#utils/project-api-key-memory";
 
-export const Route = createFileRoute("/(app)/$orgSlug/~/(org)/projects")({
-  component: ProjectsPage,
-  loader: ({ context, params }) =>
-    context.queryClient.query(
-      context.orpc.project.list.queryOptions({
-        input: { orgSlug: params.orgSlug },
-      })
-    ),
-});
-
-function toSlug(name: string) {
-  return name
-    .toLowerCase()
-    .trim()
-    .replaceAll(/[^a-z0-9]+/gu, "-")
-    .replaceAll(/^-+|-+$/gu, "");
-}
-
-const projectSchema = z.object({
-  name: z.string().min(1, "Name is required."),
-  slug: z
-    .string()
-    .min(3, "Slug must be at least 3 characters long.")
-    .max(64, "Slug must be at most 64 characters long."),
-});
-
-type ProjectSlugAvailability =
-  | { status: "idle"; message: string | null }
-  | { status: "checking"; message: string | null }
-  | { status: "available"; message: null }
-  | { status: "unavailable"; message: string }
-  | { status: "error"; message: string };
-
-function getProjectSlugAvailability(
+const getProjectSlugAvailability = (
   slug: string,
   existingProjectSlugs: ReadonlySet<string>
-): ProjectSlugAvailability {
+): ProjectSlugAvailability => {
   if (!slug) {
     return { message: null, status: "idle" };
   }
@@ -100,19 +72,28 @@ function getProjectSlugAvailability(
   }
 
   return { message: null, status: "available" };
-}
+};
 
-interface CreateProjectDialogProps {
-  children: ReactNode;
-  existingProjectSlugs: ReadonlySet<string>;
-  orgSlug: string;
-}
+const toSlug = (name: string) =>
+  name
+    .toLowerCase()
+    .trim()
+    .replaceAll(/[^a-z0-9]+/gu, "-")
+    .replaceAll(/^-+|-+$/gu, "");
 
-function CreateProjectDialog({
+const projectSchema = z.object({
+  name: z.string().min(1, "Name is required."),
+  slug: z
+    .string()
+    .min(3, "Slug must be at least 3 characters long.")
+    .max(64, "Slug must be at most 64 characters long."),
+});
+
+const CreateProjectDialog = ({
   children,
   existingProjectSlugs,
   orgSlug,
-}: CreateProjectDialogProps) {
+}: CreateProjectDialogProps) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [slugSubmitError, setSlugSubmitError] = useState<string | null>(null);
@@ -128,13 +109,14 @@ function CreateProjectDialog({
     onError: (err: unknown) => {
       const message =
         err instanceof Error ? err.message : "Failed to create project";
-      toastManager.add({ title: "Error", description: message, type: "error" });
+      toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: (project) => {
       queryClient.invalidateQueries(
         orpc.project.list.queryOptions({ input: { orgSlug } })
       );
       setProjectApiKey(orgSlug, project.slug, project.apiKey.key);
+      // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
       form.reset();
       slugTouched.current = false;
       navigate({
@@ -179,11 +161,11 @@ function CreateProjectDialog({
     existingProjectSlugs
   );
 
-  function resetForm() {
+  const resetForm = () => {
     slugTouched.current = false;
     setSlugSubmitError(null);
     form.reset();
-  }
+  };
 
   return (
     <Dialog onOpenChange={(open) => !open && resetForm()}>
@@ -263,10 +245,10 @@ function CreateProjectDialog({
       </DialogPopup>
     </Dialog>
   );
-}
+};
 
-function ProjectsPage() {
-  const { orgSlug } = Route.useParams();
+const ProjectsPage = () => {
+  const { orgSlug } = useParams({ from: "/(app)/$orgSlug/~/(org)/projects" });
   const { data: projects } = useSuspenseQuery(
     orpc.project.list.queryOptions({ input: { orgSlug } })
   );
@@ -332,4 +314,27 @@ function ProjectsPage() {
       )}
     </PageLayout>
   );
+};
+
+export const Route = createFileRoute("/(app)/$orgSlug/~/(org)/projects")({
+  component: ProjectsPage,
+  loader: ({ context, params }) =>
+    context.queryClient.query(
+      context.orpc.project.list.queryOptions({
+        input: { orgSlug: params.orgSlug },
+      })
+    ),
+});
+
+type ProjectSlugAvailability =
+  | { status: "idle"; message: string | null }
+  | { status: "checking"; message: string | null }
+  | { status: "available"; message: null }
+  | { status: "unavailable"; message: string }
+  | { status: "error"; message: string };
+
+interface CreateProjectDialogProps {
+  children: ReactNode;
+  existingProjectSlugs: ReadonlySet<string>;
+  orgSlug: string;
 }

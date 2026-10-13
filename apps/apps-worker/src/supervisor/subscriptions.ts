@@ -3,6 +3,7 @@ import type { Identity } from "@tailorkit/app/server";
 import { AppError } from "@tailorkit/app/server";
 import { Effect } from "effect";
 import type { Semaphore } from "effect";
+import { catch as catchEffect } from "effect/Effect";
 
 import { ALL_DATABASE_TABLES } from "../runtime/database/dependencies";
 import {
@@ -16,49 +17,62 @@ export interface SubscriptionSession {
   subscriptions: { id: string; input: Invocation; tables: string[] }[];
 }
 export interface SubscriptionConnection {
-  read(): SubscriptionSession | undefined;
-  write(session: SubscriptionSession): void;
-  send(data: string | Uint8Array<ArrayBuffer>): unknown;
+  read: () => SubscriptionSession | undefined;
+  write: (session: SubscriptionSession) => void;
+  send: (data: string | Uint8Array<ArrayBuffer>) => unknown;
 }
 
 /** Dependency tracking is independent of socket encoding and provider storage. */
-export function createSubscriptions(
+const removeImplementation = (
+  connectionValue: SubscriptionConnection,
+  id: string
+) =>
+  Effect.sync(() => {
+    const session = connectionValue.read();
+    if (!session) {
+      return;
+    }
+    session.subscriptions = session.subscriptions.filter(
+      (subscription) => subscription.id !== id
+    );
+    connectionValue.write(session);
+  });
+
+const keyImplementation = (socket: WebSocket) =>
+  `socket:${socket.deserializeAttachment() as string}`;
+
+export const createSubscriptions = (
   ctx: DurableObjectState,
   query: (
     input: Invocation,
     identity: Identity
   ) => Effect.Effect<{ value: unknown; tables: string[] }, unknown>,
   queue: Semaphore.Semaphore
-) {
+) => {
   const handler = createSubscriptionHandler();
-  function key(socket: WebSocket) {
-    return `socket:${socket.deserializeAttachment() as string}`;
-  }
-  function connection(socket: WebSocket): SubscriptionConnection {
-    return {
-      read: () => ctx.storage.kv.get<SubscriptionSession>(key(socket)),
-      send: (data) => {
-        const session = ctx.storage.kv.get<SubscriptionSession>(key(socket));
-        if (!session || session.identity.expiresAt <= Date.now()) {
-          socket.close(1008, "Authentication expired");
-          throw new AppError("UNAUTHORIZED", "App token expired");
-        }
-        socket.send(data);
-      },
-      write: (session) => {
-        if (ctx.storage.kv.get(key(socket))) {
-          ctx.storage.kv.put(key(socket), session);
-        }
-      },
-    };
-  }
-  function connections() {
-    return ctx
+  const key = keyImplementation;
+  const connection = (socket: WebSocket): SubscriptionConnection => ({
+    read: () => ctx.storage.kv.get<SubscriptionSession>(key(socket)),
+    send: (data) => {
+      const session = ctx.storage.kv.get<SubscriptionSession>(key(socket));
+      if (!session || session.identity.expiresAt <= Date.now()) {
+        socket.close(1008, "Authentication expired");
+        throw new AppError("UNAUTHORIZED", "App token expired");
+      }
+      socket.send(data);
+    },
+    write: (session) => {
+      if (ctx.storage.kv.get(key(socket))) {
+        ctx.storage.kv.put(key(socket), session);
+      }
+    },
+  });
+  const connections = () =>
+    ctx
       .getWebSockets()
       .map(connection)
       .filter((current) => current.read());
-  }
-  async function arm() {
+  const arm = async () => {
     // Read after the await so concurrently accepted sockets are included.
     const current = await ctx.storage.getAlarm();
     const expiries = connections().flatMap((socket) => {
@@ -73,26 +87,15 @@ export function createSubscriptions(
     if (current !== next) {
       await ctx.storage.setAlarm(next);
     }
-  }
-  function remove(connection: SubscriptionConnection, id: string) {
-    return Effect.sync(() => {
-      const session = connection.read();
-      if (!session) {
-        return;
-      }
-      session.subscriptions = session.subscriptions.filter(
-        (subscription) => subscription.id !== id
-      );
-      connection.write(session);
-    });
-  }
-  function deliver(
-    connection: SubscriptionConnection,
+  };
+  const remove = removeImplementation;
+  const deliver = (
+    connectionValue2: SubscriptionConnection,
     id: string,
     execute = query
-  ): Effect.Effect<void, unknown> {
-    return Effect.gen(function* deliverSnapshot() {
-      const session = connection.read();
+  ): Effect.Effect<void, unknown> =>
+    Effect.gen(function* deliverSnapshot() {
+      const session = connectionValue2.read();
       const subscription = session?.subscriptions.find(
         (entry) => entry.id === id
       );
@@ -100,31 +103,31 @@ export function createSubscriptions(
         return;
       }
       const snapshot = yield* execute(subscription.input, session.identity);
-      const current = connection.read();
+      const current = connectionValue2.read();
       const active = current?.subscriptions.find((entry) => entry.id === id);
       if (!current || !active) {
         return;
       }
       active.tables = snapshot.tables;
-      connection.write(current);
-      yield* deliverSubscription(connection, id, snapshot.value);
+      connectionValue2.write(current);
+      yield* deliverSubscription(connectionValue2, id, snapshot.value);
     }).pipe(
-      Effect.catch((error) =>
-        remove(connection, id).pipe(
-          Effect.andThen(deliverSubscription(connection, id, error, true))
+      // oxlint-disable-next-line promise/prefer-await-to-callbacks -- This is an Effect recovery operator or transport callback, not a Node-style completion callback.
+      catchEffect((err) =>
+        remove(connectionValue2, id).pipe(
+          Effect.andThen(deliverSubscription(connectionValue2, id, err, true))
         )
       ),
-      Effect.catch(() => Effect.void)
+      catchEffect(() => Effect.void)
     );
-  }
-  function subscribe(
-    connection: SubscriptionConnection,
+  const subscribe = (
+    connectionValue3: SubscriptionConnection,
     input: Invocation,
     id: string
-  ) {
-    return queue.withPermits(1)(
-      Effect.gen(function* subscribe() {
-        const session = connection.read();
+  ) =>
+    queue.withPermits(1)(
+      Effect.gen(function* subscribeValue() {
+        const session = connectionValue3.read();
         if (!session) {
           return;
         }
@@ -135,7 +138,7 @@ export function createSubscriptions(
         );
         if (count >= 256) {
           yield* deliverSubscription(
-            connection,
+            connectionValue3,
             id,
             new AppError(
               "BAD_REQUEST",
@@ -146,11 +149,10 @@ export function createSubscriptions(
           return;
         }
         session.subscriptions.push({ id, input, tables: [] });
-        connection.write(session);
-        yield* deliver(connection, id);
+        connectionValue3.write(session);
+        yield* deliver(connectionValue3, id);
       })
     );
-  }
   return {
     async alarm() {
       const sockets = ctx.getWebSockets();
@@ -169,8 +171,8 @@ export function createSubscriptions(
       }
       await arm();
     },
-    cancel: (connection: SubscriptionConnection, id: string) =>
-      queue.withPermits(1)(remove(connection, id)),
+    cancel: (connectionValue4: SubscriptionConnection, id: string) =>
+      queue.withPermits(1)(remove(connectionValue4, id)),
     async close(socket: WebSocket, code = 1000, reason = "") {
       ctx.storage.kv.delete(key(socket));
       if (socket.readyState !== WebSocket.CLOSED) {
@@ -212,9 +214,9 @@ export function createSubscriptions(
       } satisfies SubscriptionSession);
       await arm();
       return new Response(null, {
+        headers: { "sec-websocket-protocol": "tailorkit" },
         status: 101,
         webSocket: client,
-        headers: { "sec-websocket-protocol": "tailorkit" },
       });
     },
     /** External mutations and local action notifications serialize subscriber refreshes. */
@@ -223,15 +225,16 @@ export function createSubscriptions(
         return Effect.void;
       }
       return Effect.gen(function* refresh() {
-        for (const connection of connections()) {
-          for (const subscription of connection.read()?.subscriptions ?? []) {
+        for (const connectionValue5 of connections()) {
+          for (const subscription of connectionValue5.read()?.subscriptions ??
+            []) {
             if (
               subscription.tables.some(
                 (table) =>
                   table === ALL_DATABASE_TABLES || tables.includes(table)
               )
             ) {
-              yield* deliver(connection, subscription.id, execute);
+              yield* deliver(connectionValue5, subscription.id, execute);
             }
           }
         }
@@ -239,4 +242,4 @@ export function createSubscriptions(
     },
     subscribe,
   };
-}
+};

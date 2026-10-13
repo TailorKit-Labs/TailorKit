@@ -14,11 +14,11 @@ export interface Context {
   headers: Headers;
 }
 
-export async function createContext({
+export const createContext = async ({
   request,
 }: {
   request: Request;
-}): Promise<Context> {
+}): Promise<Context> => {
   await initializeObservability("tailorkit-web");
 
   return withSpan("api.create_context", async () => {
@@ -39,4 +39,4 @@ export async function createContext({
       user: sessionData?.user,
     };
   });
-}
+};

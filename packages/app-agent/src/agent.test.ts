@@ -2,6 +2,13 @@ import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { appAgent } from "./agent";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const mocks = vi.hoisted(() => ({
   configure: vi.fn(),
   deleteSandbox: vi.fn(),
@@ -39,14 +46,14 @@ const input = {
   agentToken: "private-cli-token",
   appId: "app-123",
   hostUrl: "http://localhost:3000/api/tailorkit",
-  messages: [{ role: "user" as const, content: "Build my app" }],
+  messages: [{ content: "Build my app", role: "user" as const }],
   model: "test-model",
 };
 const sandboxName = "app-agent-run-1";
 
 beforeEach(() => {
   vi.resetAllMocks();
-  mocks.sleep.mockImplementation(() => new Promise(() => {}));
+  mocks.sleep.mockImplementation(() => Promise.withResolvers().promise);
   mocks.stream.mockImplementation(({ messages }) =>
     Promise.resolve({ messages })
   );
@@ -69,14 +76,14 @@ describe("app agent workflow", () => {
       writable: mocks.writable,
     });
     expect(Object.keys(mocks.configure.mock.lastCall?.[0].tools)).toEqual([
+      "bash",
       "deploy",
+      "edit",
+      "glob",
+      "grep",
+      "ls",
       "read",
       "write",
-      "edit",
-      "bash",
-      "grep",
-      "glob",
-      "ls",
     ]);
     expect(mocks.configure.mock.lastCall?.[0].toolsContext.write).toEqual({
       sandboxName,
@@ -89,7 +96,7 @@ describe("app agent workflow", () => {
     expect(mocks.deleteSandbox).toHaveBeenCalledWith(sandboxName);
     expect(mocks.renewSandbox).not.toHaveBeenCalled();
     expect(mocks.writeAgentSchema).not.toHaveBeenCalled();
-    const { instructions } = mocks.configure.mock.lastCall![0];
+    const [{ instructions }] = requireValue(mocks.configure.mock.lastCall);
     expect(instructions).not.toContain(input.agentToken);
     expect(instructions).toContain(
       "--host 'http://localhost:3000/api/tailorkit'"
@@ -115,7 +122,7 @@ describe("app agent workflow", () => {
     });
     await appAgent({ ...input, schema });
     expect(mocks.writeAgentSchema).toHaveBeenCalledOnce();
-    const { instructions } = mocks.configure.mock.lastCall![0];
+    const [{ instructions }] = requireValue(mocks.configure.mock.lastCall);
     expect(instructions).toContain(
       "--host 'http://localhost:3000/api/tailorkit' --schema /workspace/tailorkit.schema.json"
     );
@@ -138,7 +145,7 @@ describe("app agent workflow", () => {
 
   it("renews during a long model call and deletes only after that call settles", async () => {
     const agent = Promise.withResolvers<{ messages: typeof input.messages }>();
-    const timer = Promise.withResolvers<void>();
+    const timer = Promise.withResolvers<ReturnType<() => void>>();
     mocks.stream.mockReturnValue(agent.promise);
     mocks.sleep.mockReturnValueOnce(timer.promise);
     const run = appAgent(input);
@@ -157,9 +164,10 @@ describe("app agent workflow", () => {
 
   it("finishes an in-flight renewal before deleting the completed agent's sandbox", async () => {
     const agent = Promise.withResolvers<{ messages: typeof input.messages }>();
-    const renewal = Promise.withResolvers<void>();
+    const renewal = Promise.withResolvers<ReturnType<() => void>>();
     mocks.stream.mockReturnValue(agent.promise);
-    mocks.sleep.mockResolvedValueOnce();
+    // oxlint-disable-next-line unicorn/no-useless-undefined -- Vitest requires the resolved value argument.
+    mocks.sleep.mockResolvedValueOnce(undefined);
     mocks.renewSandbox.mockReturnValue(renewal.promise);
     const run = appAgent(input);
     await vi.waitFor(() => expect(mocks.renewSandbox).toHaveBeenCalled());
@@ -174,7 +182,8 @@ describe("app agent workflow", () => {
   it("aborts on lost renewal but waits for the agent to settle before cleanup", async () => {
     const agent = Promise.withResolvers<{ messages: typeof input.messages }>();
     mocks.stream.mockReturnValue(agent.promise);
-    mocks.sleep.mockResolvedValueOnce();
+    // oxlint-disable-next-line unicorn/no-useless-undefined -- Vitest requires the resolved value argument.
+    mocks.sleep.mockResolvedValueOnce(undefined);
     mocks.renewSandbox.mockRejectedValue(new Error("Sandbox expired"));
     const run = appAgent(input);
     // Attach the rejection handler before settling the deferred model promise.

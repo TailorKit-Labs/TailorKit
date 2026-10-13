@@ -55,7 +55,7 @@ const hooks = defineHooks({
     if (authorizations.get(peer) !== state) {
       return;
     }
-    const context = state.context;
+    const { context } = state;
     if (!context) {
       return peer.close();
     }
@@ -68,9 +68,15 @@ const hooks = defineHooks({
     }
     const { sessionId, role, token } = parsed.data;
     const state: AuthorizationState = {
-      promise: authorizePreviewSocket(sessionId, token, role).catch(() => null),
       context: undefined,
       pendingMessage: false,
+      promise: (async () => {
+        try {
+          return await authorizePreviewSocket(sessionId, token, role);
+        } catch {
+          return null;
+        }
+      })(),
     };
     authorizations.set(peer, state);
     const context = await state.promise;
@@ -90,8 +96,8 @@ const hooks = defineHooks({
       ?.trim();
     return {
       context: {
-        sessionId: url.searchParams.get("session"),
         role: url.searchParams.get("role"),
+        sessionId: url.searchParams.get("session"),
         token,
       },
       protocol: token,

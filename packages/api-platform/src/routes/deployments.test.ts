@@ -23,6 +23,13 @@ import {
 import type { Context } from "../context";
 import { createTestDb } from "../test/pglite";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 vi.mock("@tailorkit/kv", () => ({ getKV: () => null }));
 
 const testState = vi.hoisted(() => ({ db: undefined as unknown }));
@@ -47,14 +54,45 @@ const productionScope = {
   value: { environment: "production" },
 };
 
+const publishContextImplementation = (downloadUrl: string): Context => ({
+  organization: {
+    createdAt: new Date(),
+    id: organizationId,
+    logo: null,
+    metadata: null,
+    name: "Analytical Engines",
+    publicId: "team0000000001",
+    slug: "analytical-engines",
+  },
+  project: {
+    createdAt: new Date(),
+    id: projectId,
+    name: "Compiler",
+    organizationId,
+    slug: "compiler",
+    updatedAt: new Date(),
+  },
+  storage: {
+    createDownloadUrl: vi.fn().mockResolvedValue({ url: downloadUrl }),
+    createUploadUrl: vi.fn(),
+    delete: vi.fn(),
+    head: vi.fn().mockResolvedValue({
+      checksumSha256: logoChecksumBase64,
+      contentLength: 11,
+      contentType: "image/svg+xml",
+    }),
+    type: "s3",
+  },
+});
+
 describe("platform deployment uploads", () => {
   let client: Awaited<ReturnType<typeof createTestDb>>["client"];
   let db: Awaited<ReturnType<typeof createTestDb>>["db"];
 
   beforeEach(async () => {
     const testDb = await createTestDb();
-    client = testDb.client;
-    db = testDb.db;
+    ({ client } = testDb);
+    ({ db } = testDb);
     testState.db = db;
 
     await db.insert(organization).values({
@@ -114,36 +152,7 @@ describe("platform deployment uploads", () => {
     return deployment;
   };
 
-  const publishContext = (downloadUrl: string): Context => ({
-    organization: {
-      createdAt: new Date(),
-      id: organizationId,
-      logo: null,
-      metadata: null,
-      name: "Analytical Engines",
-      publicId: "team0000000001",
-      slug: "analytical-engines",
-    },
-    project: {
-      createdAt: new Date(),
-      id: projectId,
-      name: "Compiler",
-      organizationId,
-      slug: "compiler",
-      updatedAt: new Date(),
-    },
-    storage: {
-      createDownloadUrl: vi.fn().mockResolvedValue({ url: downloadUrl }),
-      createUploadUrl: vi.fn(),
-      delete: vi.fn(),
-      head: vi.fn().mockResolvedValue({
-        checksumSha256: logoChecksumBase64,
-        contentLength: 11,
-        contentType: "image/svg+xml",
-      }),
-      type: "s3",
-    },
-  });
+  const publishContext = publishContextImplementation;
 
   it("hides a deployment when its app has a malformed stored scope", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -225,8 +234,8 @@ describe("platform deployment uploads", () => {
             scope: productionScope,
             server: { ...metadata, objectKey: "server.js" },
             views: [
-              { slot: "page", path: "/", instances: true },
-              { slot: "page", path: "/disabled", disabled: true },
+              { instances: true, path: "/", slot: "page" },
+              { disabled: true, path: "/disabled", slot: "page" },
             ],
           },
         },
@@ -278,7 +287,7 @@ describe("platform deployment uploads", () => {
           checksumSha256: logoChecksumBase64,
           contentLength: 11,
           contentType: "application/javascript",
-          key: created.body.assets[0]!.file.objectKey,
+          key: requireValue(created.body.assets[0]).file.objectKey,
         });
         await expect(
           call(
@@ -346,7 +355,7 @@ describe("platform deployment uploads", () => {
           context.storage.createDownloadUrl
         ).toHaveBeenCalledExactlyOnceWith({
           expiresInSeconds: 60,
-          key: created.body.assets[0]!.file.objectKey,
+          key: requireValue(created.body.assets[0]).file.objectKey,
         });
         expect(fetchMock).toHaveBeenCalledOnce();
       } else {
@@ -417,7 +426,7 @@ describe("platform deployment uploads", () => {
       {
         cancel,
         pull(controller) {
-          controller.enqueue(chunks[position++]!);
+          controller.enqueue(requireValue(chunks[(position += 1) - 1]));
         },
       },
       { highWaterMark: 0 }
@@ -787,11 +796,21 @@ describe("platform deployment uploads", () => {
       vi.fn((_url: URL, init?: RequestInit) =>
         Promise.resolve({
           arrayBuffer: () =>
-            new Promise<ArrayBuffer>((_resolve, reject) => {
-              init?.signal?.addEventListener("abort", () =>
-                reject(new DOMException("Aborted", "AbortError"))
-              );
-            }),
+            (() => {
+              const {
+                promise: pendingPromise,
+                resolve: _resolve,
+                reject,
+              } = Promise.withResolvers<ArrayBuffer>();
+              try {
+                init?.signal?.addEventListener("abort", () =>
+                  reject(new DOMException("Aborted", "AbortError"))
+                );
+              } catch (error) {
+                reject(error);
+              }
+              return pendingPromise;
+            })(),
           ok: true,
         })
       )

@@ -26,17 +26,17 @@ const contentTypes: Record<string, string> = {
   ".json": "application/json; charset=utf-8",
   ".map": "application/json; charset=utf-8",
 };
-const errorMessage = (error: unknown): string =>
-  error instanceof Error ? error.message : String(error);
-const isEndedSessionError = (error: unknown): boolean =>
-  error !== null &&
-  typeof error === "object" &&
-  "code" in error &&
-  error.code === "UNAUTHORIZED" &&
-  "message" in error &&
-  typeof error.message === "string" &&
+const errorMessage = (err: unknown): string =>
+  err instanceof Error ? err.message : String(err);
+const isEndedSessionError = (err2: unknown): boolean =>
+  err2 !== null &&
+  typeof err2 === "object" &&
+  "code" in err2 &&
+  err2.code === "UNAUTHORIZED" &&
+  "message" in err2 &&
+  typeof err2.message === "string" &&
   /Preview session is unavailable|Preview developer reconnect grace expired|Preview CLI token is unavailable/u.test(
-    error.message
+    err2.message
   );
 
 export interface PreviewOptions {
@@ -52,7 +52,9 @@ interface Snapshot {
   fingerprint: string;
 }
 
-export async function capturePreviewSnapshot(root: string): Promise<Snapshot> {
+export const capturePreviewSnapshot = async (
+  root: string
+): Promise<Snapshot> => {
   const actualRoot = await realpath(root);
   const outputEntries = await readdir(actualRoot, {
     recursive: true,
@@ -72,6 +74,7 @@ export async function capturePreviewSnapshot(root: string): Promise<Snapshot> {
   const manifest: PreviewBuildManifest = { files: [] };
   let total = 0;
   for (const entry of entries) {
+    // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
     const resolved = await realpath(path.join(entry.parentPath, entry.name));
     const relative = path
       .relative(actualRoot, resolved)
@@ -79,6 +82,7 @@ export async function capturePreviewSnapshot(root: string): Promise<Snapshot> {
     if (!relative || relative.startsWith("../") || path.isAbsolute(relative)) {
       throw new Error("Preview file escapes the build output.");
     }
+    // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
     const bytes = await readFile(resolved);
     if (bytes.length > 1024 * 1024) {
       throw new Error(`Preview file ${relative} exceeds 1 MiB.`);
@@ -112,16 +116,17 @@ export async function capturePreviewSnapshot(root: string): Promise<Snapshot> {
       .digest("hex"),
     manifest,
   };
-}
+};
 
-export function createLatestPreviewCapture<T>(
+export const createLatestPreviewCapture = <T>(
   captureSnapshot: () => Promise<T>,
   onSnapshot: (snapshot: T) => void,
   onError: (error: unknown) => void
-): () => Promise<void> {
+): (() => Promise<void>) => {
   let generation = 0;
   return async () => {
-    const current = ++generation;
+    generation += 1;
+    const current = generation;
     try {
       const snapshot = await captureSnapshot();
       if (current === generation) {
@@ -133,19 +138,20 @@ export function createLatestPreviewCapture<T>(
       }
     }
   };
-}
+};
 
-export async function uploadPreviewSnapshot(
+export const uploadPreviewSnapshot = async (
   client: PreviewWebSocketClient,
   current: Snapshot
-): Promise<void> {
+): Promise<void> => {
   const { buildId } = await client.beginBuild({ manifest: current.manifest });
   for (const [fileIndex, bytes] of current.files.entries()) {
     for (
       let chunkIndex = 0;
       chunkIndex < (current.manifest.files[fileIndex]?.chunks ?? 0);
-      chunkIndex++
+      chunkIndex += 1
     ) {
+      // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
       await client.uploadChunk({
         base64: bytes
           .subarray(chunkIndex * chunkBytes, (chunkIndex + 1) * chunkBytes)
@@ -157,7 +163,7 @@ export async function uploadPreviewSnapshot(
     }
   }
   await client.commitBuild({ buildId });
-}
+};
 
 const previewOptionsSchema = z.object({
   config: z.string().optional(),
@@ -179,46 +185,65 @@ export const toPreviewOptions = (
   };
 };
 
-export async function runPreview(options: PreviewOptions): Promise<void> {
+export const runPreview = async (options: PreviewOptions): Promise<void> => {
   const loaded = await loadTailorKitConfig(options.configPath, options.cwd);
+
   if (!loaded.config.appId) {
     throw new Error(
       "Missing appId. Deploy once before starting a remote preview."
     );
   }
+
   const auth = await runWhoami(options);
+
   const stored = await getDeployToken(auth.hostUrl);
+
   if (!stored?.deployToken) {
     throw new Error("Not logged in. Run tailorkit login first.");
   }
+
   const { buildApp } = await import("@tailorkit/app/builder");
+
   const watcher = await buildApp({ ...options, watch: true });
+
   const closeWatcher = async (): Promise<void> => {
     if (watcher && typeof watcher === "object" && "close" in watcher) {
       await (watcher as { close: () => Promise<void> | void }).close();
     }
   };
+
   const client = createCliClient({
     token: stored.deployToken,
     url: auth.hostUrl,
   });
-  const result = await client.preview
-    .start({ appId: loaded.config.appId, replaceActive: options.replace })
-    .catch(async (error: unknown) => {
+
+  const previewAppId = loaded.config.appId;
+  const result = await (async () => {
+    try {
+      return await client.preview.start({
+        appId: previewAppId,
+        replaceActive: options.replace,
+      });
+    } catch (error) {
       await closeWatcher();
       throw error;
-    });
+    }
+  })();
+
   const data = "data" in result ? result.data : result;
+
   if (!data) {
     await closeWatcher();
     throw new Error("Unable to start preview session.");
   }
+
   const cleanupClient = createCliClient({
     fetch: (input, init) =>
       fetch(input, { ...init, signal: AbortSignal.timeout(5000) }),
     token: stored.deployToken,
     url: auth.hostUrl,
   });
+
   const stop = async () => {
     try {
       await cleanupClient.preview.stop({ sessionId: data.sessionId });
@@ -226,12 +251,16 @@ export async function runPreview(options: PreviewOptions): Promise<void> {
       log.warn(`Unable to end preview session: ${errorMessage(error)}`);
     }
   };
+
   const outDir = path.resolve(
     loaded.root,
     options.outDir ?? loaded.config.build?.outDir ?? ".tailorkit"
   );
+
   let root: string;
+
   let latest: Snapshot;
+
   try {
     root = await realpath(path.join(outDir, "client"));
     latest = await capturePreviewSnapshot(root);
@@ -244,17 +273,62 @@ export async function runPreview(options: PreviewOptions): Promise<void> {
     await stop();
     throw error;
   }
+
   let uploadedFingerprint: string | undefined;
+
   let activeClient: PreviewWebSocketClient | undefined;
+
   let activeSocket: WebSocket | undefined;
+
   let closed = false;
+
   let uploading = false;
+
   let idleTimer: ReturnType<typeof setTimeout> | undefined;
+
   let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+
   let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
+
   let lastUploadStart = 0;
+
   let reconnectDelay = 1000;
+
   let connectionGeneration = 0;
+
+  const handleSignal = () => {
+    if (closed) {
+      return;
+    }
+    closed = true;
+    process.off("SIGINT", handleSignal);
+    process.off("SIGTERM", handleSignal);
+    void (async () => {
+      try {
+        return await closeWatcher();
+      } catch (error) {
+        log.warn(`Unable to close preview watcher: ${errorMessage(error)}`);
+      }
+    })();
+    if (idleTimer) {
+      clearTimeout(idleTimer);
+    }
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+    }
+    if (heartbeatTimer) {
+      clearInterval(heartbeatTimer);
+    }
+    activeSocket?.close();
+    void (async () => {
+      try {
+        return await stop();
+      } finally {
+        process.exit(0);
+      }
+    })();
+  };
+
   const endTerminalSession = () => {
     if (closed) {
       return;
@@ -272,11 +346,16 @@ export async function runPreview(options: PreviewOptions): Promise<void> {
       clearInterval(heartbeatTimer);
     }
     activeSocket?.close();
-    void closeWatcher().catch((error: unknown) => {
-      log.warn(`Unable to close preview watcher: ${errorMessage(error)}`);
-    });
+    void (async () => {
+      try {
+        return await closeWatcher();
+      } catch (error) {
+        log.warn(`Unable to close preview watcher: ${errorMessage(error)}`);
+      }
+    })();
     log.warn("Preview session ended. Start a new preview to continue.");
   };
+
   const scheduleUpload = () => {
     if (closed || !activeClient || uploading) {
       return;
@@ -295,29 +374,38 @@ export async function runPreview(options: PreviewOptions): Promise<void> {
         const generation = connectionGeneration;
         uploading = true;
         lastUploadStart = Date.now();
-        void uploadPreviewSnapshot(wsClient, current)
-          .then(() => {
-            if (generation === connectionGeneration) {
-              uploadedFingerprint = current.fingerprint;
-            }
-          })
-          .catch((error: unknown) => {
-            if (!closed) {
-              log.warn(`Preview upload interrupted: ${errorMessage(error)}`);
-            }
-          })
-          .finally(() => {
+        void (async () => {
+          try {
+            return await (async () => {
+              try {
+                return await (async () => {
+                  void (await uploadPreviewSnapshot(wsClient, current));
+                  if (generation === connectionGeneration) {
+                    uploadedFingerprint = current.fingerprint;
+                  }
+                })();
+              } catch (error) {
+                if (!closed) {
+                  log.warn(
+                    `Preview upload interrupted: ${errorMessage(error)}`
+                  );
+                }
+              }
+            })();
+          } finally {
             if (generation === connectionGeneration) {
               uploading = false;
               if (latest.fingerprint !== uploadedFingerprint) {
                 scheduleUpload();
               }
             }
-          });
+          }
+        })();
       },
       Math.max(500, 500 - (Date.now() - lastUploadStart))
     );
   };
+
   const capture = createLatestPreviewCapture(
     () => capturePreviewSnapshot(root),
     (snapshot) => {
@@ -327,23 +415,25 @@ export async function runPreview(options: PreviewOptions): Promise<void> {
       latest = snapshot;
       scheduleUpload();
     },
-    (error) => {
+    (err7) => {
       if (!closed) {
-        log.warn(`Keeping the last successful preview: ${errorMessage(error)}`);
+        log.warn(`Keeping the last successful preview: ${errorMessage(err7)}`);
       }
     }
   );
+
   if (watcher && typeof watcher === "object" && "on" in watcher) {
     (
       watcher as {
         on: (name: string, listener: (event: { code: string }) => void) => void;
       }
-    ).on("event", (event) => {
+    ).on("event", (event: { code: string }) => {
       if (event.code === "BUNDLE_END") {
         void capture();
       }
     });
   }
+
   const connect = () => {
     if (closed) {
       return;
@@ -356,8 +446,10 @@ export async function runPreview(options: PreviewOptions): Promise<void> {
       connectionGeneration += 1;
       reconnectDelay = 1000;
       activeClient = createPreviewWebSocketClient(socket);
-      const sendHeartbeat = () =>
-        void activeClient?.heartbeat().catch((error: unknown) => {
+      const sendHeartbeat = async () => {
+        try {
+          await activeClient?.heartbeat();
+        } catch (error) {
           if (activeSocket !== socket || closed) {
             return;
           }
@@ -366,7 +458,8 @@ export async function runPreview(options: PreviewOptions): Promise<void> {
           } else {
             socket.close();
           }
-        });
+        }
+      };
       sendHeartbeat();
       heartbeatTimer = setInterval(sendHeartbeat, 20_000);
       scheduleUpload();
@@ -388,33 +481,18 @@ export async function runPreview(options: PreviewOptions): Promise<void> {
     });
     socket.addEventListener("error", () => socket.close());
   };
+
   connect();
-  const handleSignal = () => {
-    if (closed) {
-      return;
-    }
-    closed = true;
-    process.off("SIGINT", handleSignal);
-    process.off("SIGTERM", handleSignal);
-    void closeWatcher().catch((error: unknown) => {
-      log.warn(`Unable to close preview watcher: ${errorMessage(error)}`);
-    });
-    if (idleTimer) {
-      clearTimeout(idleTimer);
-    }
-    if (reconnectTimer) {
-      clearTimeout(reconnectTimer);
-    }
-    if (heartbeatTimer) {
-      clearInterval(heartbeatTimer);
-    }
-    activeSocket?.close();
-    void stop().finally(() => process.exit(0));
-  };
+
   process.once("SIGINT", handleSignal);
+
   process.once("SIGTERM", handleSignal);
+
   const shareUrl = new URL(loaded.config.host ?? auth.hostUrl);
+
   shareUrl.pathname = `${shareUrl.pathname.replace(/\/+$/u, "")}/preview/${data.shareId}`;
+
   log.info(pc.green(`Host preview: ${shareUrl.href}`));
+
   log.info(pc.dim(`Uploading built app assets from ${root}`));
-}
+};

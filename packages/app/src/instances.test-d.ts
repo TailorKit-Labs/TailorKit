@@ -15,6 +15,7 @@ const server = defineServer({
 });
 type ServerFunctions = typeof server.functions;
 declare module "./views" {
+  // oxlint-disable-next-line typescript/no-empty-object-type, typescript/no-empty-interface -- Generated bindings augment this public interface through declaration merging.
   interface TailorKitServerFunctions extends ServerFunctions {}
 }
 
@@ -46,9 +47,9 @@ defineView({
       // @ts-expect-error Resolver context has no mutation capability.
       void other.mutations;
       return reports.map((report) => ({
+        data: { reportId: report.id },
         key: report.id,
         metadata: { title: "Report" },
-        data: { reportId: report.id },
       }));
     },
   },
@@ -60,7 +61,7 @@ defineView({
   instances: {
     dataSchema: z.object({ reportId: z.string() }),
     // @ts-expect-error Each instance's data must match dataSchema.
-    resolve: () => [{ key: "overview", metadata: {}, data: { reportId: 123 } }],
+    resolve: () => [{ data: { reportId: 123 }, key: "overview", metadata: {} }],
   },
   slot: "page",
   view: "/",
@@ -70,7 +71,7 @@ const instanceView = defineView({
   component: () => null,
   instances: {
     dataSchema: z.object({ count: z.string().transform(Number) }),
-    resolve: () => [{ key: "summary", metadata: {}, data: { count: "42" } }],
+    resolve: () => [{ data: { count: "42" }, key: "summary", metadata: {} }],
   },
   slot: "page",
   view: "/",

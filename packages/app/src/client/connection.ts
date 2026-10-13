@@ -9,37 +9,98 @@ import { sessionRenewalDelay } from "./session";
 import type { Session } from "./session";
 
 export type { Session } from "./session";
+
 export { reference } from "./reference";
+
 export type { Reference, References } from "./reference";
+
 export { AppError } from "../errors";
 
 type InputArguments<I> = undefined extends I ? [args?: I] : [args: I];
+
 type MutationArguments<I> = undefined extends I
   ? [args?: I, options?: { requestId?: string }]
   : [args: I, options?: { requestId?: string }];
 
 export interface Client {
-  query<I, O>(
+  query: <I, O>(
     reference: Reference<"query", I, O>,
     ...args: InputArguments<NoInfer<I>>
-  ): Promise<O>;
-  mutate<I, O>(
+  ) => Promise<O>;
+  mutate: <I, O>(
     reference: Reference<"mutation", I, O>,
     ...args: MutationArguments<NoInfer<I>>
-  ): Promise<O>;
-  action<I, O>(
+  ) => Promise<O>;
+  action: <I, O>(
     reference: Reference<"action", I, O>,
     ...args: InputArguments<NoInfer<I>>
-  ): Promise<O>;
-  subscribe<I, O>(
+  ) => Promise<O>;
+  subscribe: <I, O>(
     reference: Reference<"query", I, O>,
     args: NoInfer<I>,
     next: (value: O) => void,
     options?: { onError?: (error: AppError) => void }
-  ): () => void;
-  close(): void;
+  ) => () => void;
+  close: () => void;
 }
-export function createClient(
+
+const backendUrl = (session: Session, route: string) => {
+  const url = new URL(session.url);
+  if (url.username || url.password || url.search || url.hash) {
+    throw new AppError("BAD_REQUEST", "Invalid app backend URL");
+  }
+  if (url.protocol === "wss:") {
+    url.protocol = "https:";
+  }
+  if (url.protocol === "ws:") {
+    url.protocol = "http:";
+  }
+  if (
+    url.protocol !== "https:" &&
+    !(
+      url.protocol === "http:" &&
+      ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)
+    )
+  ) {
+    throw new AppError("BAD_REQUEST", "App backends require HTTPS");
+  }
+  if (session.expiresAt <= Date.now() + 1000) {
+    throw new AppError("UNAUTHORIZED", "App token expired");
+  }
+  url.pathname = `${url.pathname.replace(/\/$/u, "")}/${route}`;
+  return url;
+};
+
+const waitForRetry = (signal: AbortSignal, delayMs: number): Promise<void> => {
+  if (signal.aborted) {
+    return Promise.resolve();
+  }
+  return (() => {
+    const {
+      promise: pendingPromise,
+      resolve,
+      reject: rejectPending,
+    } = Promise.withResolvers<ReturnType<() => void>>();
+    try {
+      const wake = () => {
+        // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
+        clearTimeout(timer);
+        signal.removeEventListener("abort", wake);
+        resolve();
+      };
+      const timer: ReturnType<typeof setTimeout> | undefined = setTimeout(
+        wake,
+        delayMs
+      );
+      signal.addEventListener("abort", wake, { once: true });
+    } catch (error) {
+      rejectPending(error);
+    }
+    return pendingPromise;
+  })();
+};
+
+export const createClient = (
   options: {
     getSession?: (options: { refresh: boolean }) => Promise<Session>;
     connect?: (
@@ -49,7 +110,7 @@ export function createClient(
     fetch?: typeof fetch;
     retryDelayMs?: number;
   } = {}
-): Client {
+): Client => {
   let closed = false;
   let socket: WebSocket | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -83,7 +144,8 @@ export function createClient(
         const url = backendUrl(session, "queries");
         url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
         socket = await (
-          options.connect ?? ((url, protocols) => new WebSocket(url, protocols))
+          options.connect ??
+          ((urlValue: string, protocols) => new WebSocket(urlValue, protocols))
         )(url.href, ["tailorkit", `jwt.${session.token}`]);
         // Reconnect one minute before expiry. Active subscriptions obtain fresh snapshots automatically.
         clearTimeout(timer);
@@ -100,10 +162,10 @@ export function createClient(
       },
     })
   );
-  async function call(
+  const call = async (
     kind: "queries" | "mutations" | "actions",
     input: { name: string; args?: unknown; requestId?: string }
-  ) {
+  ) => {
     if (closed) {
       throw new AppError("UNAVAILABLE", "App client closed");
     }
@@ -120,6 +182,7 @@ export function createClient(
           if (closed) {
             throw new AppError("UNAVAILABLE", "App client closed");
           }
+          // oxlint-disable-next-line no-await-in-loop -- Each retry depends on the result of the previous attempt.
           const session = await getSession({ refresh });
           refresh = false;
           if (closed) {
@@ -131,10 +194,10 @@ export function createClient(
             .replace(/\/$/u, "");
           const http = createORPCClient<PlatformClient>(
             new FetchLink({
-              fetch: async (url, init) => {
+              fetch: async (urlValue2: string, init) => {
                 let response: Response;
                 try {
-                  response = await (options.fetch ?? fetch)(url, {
+                  response = await (options.fetch ?? fetch)(urlValue2, {
                     ...init,
                     credentials: "omit",
                   });
@@ -154,8 +217,8 @@ export function createClient(
                 if (kind === "mutations" && response.body) {
                   try {
                     return new Response(await response.arrayBuffer(), {
-                      status: response.status,
                       headers: response.headers,
+                      status: response.status,
                     });
                   } catch {
                     throw new AppError(
@@ -172,6 +235,7 @@ export function createClient(
             })
           );
           if (kind === "mutations") {
+            // oxlint-disable-next-line no-await-in-loop -- Each retry depends on the result of the previous attempt.
             return await http.mutations(
               invocation as typeof input & { requestId: string },
               {
@@ -179,6 +243,7 @@ export function createClient(
               }
             );
           }
+          // oxlint-disable-next-line no-await-in-loop -- Each retry depends on the result of the previous attempt.
           return await http[kind](invocation, { signal: controller.signal });
         } catch (error) {
           const failure = appError(error);
@@ -193,10 +258,12 @@ export function createClient(
           if (failure.code !== "UNAVAILABLE") {
             throw failure;
           }
+          // oxlint-disable-next-line no-await-in-loop -- Each retry depends on the result of the previous attempt.
           await waitForRetry(
             controller.signal,
             Math.min(
-              (options.retryDelayMs ?? 1000) * 2 ** Math.min(attempt++, 5),
+              (options.retryDelayMs ?? 1000) *
+                2 ** Math.min((attempt += 1) - 1, 5),
               30_000
             )
           );
@@ -207,10 +274,10 @@ export function createClient(
     } finally {
       requests.delete(controller);
     }
-  }
+  };
   return {
     action: (ref, ...[args]) =>
-      call("actions", { name: ref.name, args }) as Promise<never>,
+      call("actions", { args, name: ref.name }) as Promise<never>,
     close() {
       closed = true;
       for (const stop of stops) {
@@ -224,12 +291,12 @@ export function createClient(
     },
     mutate: (ref, ...[args, settings]) =>
       call("mutations", {
-        name: ref.name,
         args,
+        name: ref.name,
         requestId: settings?.requestId ?? crypto.randomUUID(),
       }) as Promise<never>,
     query: (ref, ...[args]) =>
-      call("queries", { name: ref.name, args }) as Promise<never>,
+      call("queries", { args, name: ref.name }) as Promise<never>,
     subscribe(ref, args, next, settings = {}) {
       if (closed) {
         throw new AppError("UNAVAILABLE", "App client closed");
@@ -243,14 +310,17 @@ export function createClient(
       const run = async () => {
         while (!controller.signal.aborted) {
           try {
+            // oxlint-disable-next-line no-await-in-loop -- Each retry depends on the result of the previous attempt.
             const stream = await wire.subscribe(
-              { name: ref.name, args },
+              { args, name: ref.name },
               { signal: controller.signal }
             );
+            // oxlint-disable-next-line no-await-in-loop -- Each retry depends on the result of the previous attempt.
             for await (const value of stream) {
               if (controller.signal.aborted || closed) {
                 break;
               }
+              // oxlint-disable-next-line node/callback-return -- This is a value listener or middleware continuation, not a Node-style completion callback.
               next(value as never);
             }
           } catch (error) {
@@ -272,60 +342,23 @@ export function createClient(
             }
           }
           if (!controller.signal.aborted && !closed) {
+            // oxlint-disable-next-line no-await-in-loop -- Each retry depends on the result of the previous attempt.
             await waitForRetry(controller.signal, options.retryDelayMs ?? 1000);
           }
         }
         stop();
       };
-      void run().catch((error) => {
-        stop();
-        settings.onError?.(appError(error));
-      });
+      void (async () => {
+        try {
+          return await run();
+        } catch (error) {
+          stop();
+          settings.onError?.(appError(error));
+        }
+      })();
       return stop;
     },
   };
-}
+};
 
 export { createSessionProvider } from "./session";
-
-function backendUrl(session: Session, route: string) {
-  const url = new URL(session.url);
-  if (url.username || url.password || url.search || url.hash) {
-    throw new AppError("BAD_REQUEST", "Invalid app backend URL");
-  }
-  if (url.protocol === "wss:") {
-    url.protocol = "https:";
-  }
-  if (url.protocol === "ws:") {
-    url.protocol = "http:";
-  }
-  if (
-    url.protocol !== "https:" &&
-    !(
-      url.protocol === "http:" &&
-      ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)
-    )
-  ) {
-    throw new AppError("BAD_REQUEST", "App backends require HTTPS");
-  }
-  if (session.expiresAt <= Date.now() + 1000) {
-    throw new AppError("UNAUTHORIZED", "App token expired");
-  }
-  url.pathname = `${url.pathname.replace(/\/$/u, "")}/${route}`;
-  return url;
-}
-
-function waitForRetry(signal: AbortSignal, delayMs: number): Promise<void> {
-  if (signal.aborted) {
-    return Promise.resolve();
-  }
-  return new Promise((resolve) => {
-    const wake = () => {
-      clearTimeout(timer);
-      signal.removeEventListener("abort", wake);
-      resolve();
-    };
-    const timer = setTimeout(wake, delayMs);
-    signal.addEventListener("abort", wake, { once: true });
-  });
-}

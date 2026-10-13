@@ -574,11 +574,9 @@ const reservedOrgSlugs = new Set([
   "latest",
 ]);
 
-export function isOrgSlugReserved(slug: string) {
-  return reservedOrgSlugs.has(slug);
-}
+export const isOrgSlugReserved = (slug: string) => reservedOrgSlugs.has(slug);
 
-export function validateOrgSlug(slug: string) {
+export const validateOrgSlug = (slug: string) => {
   if (isOrgSlugReserved(slug)) {
     return {
       reason: `Slug "${slug}" is reserved and cannot be used.`,
@@ -611,4 +609,4 @@ export function validateOrgSlug(slug: string) {
   return {
     valid: true,
   };
-}
+};

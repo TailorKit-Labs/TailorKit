@@ -49,7 +49,7 @@ export const cliToken = pgTable(
 
     updatedAt: timestamp("updated_at")
       .defaultNow()
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [
@@ -90,7 +90,7 @@ export const cliAuthSession = pgTable(
 
     updatedAt: timestamp("updated_at")
       .defaultNow()
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
 
     userCodeHash: text("user_code_hash").notNull(),
@@ -115,6 +115,7 @@ export const cliAuthSession = pgTable(
   ]
 );
 
+// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
 export const CliToken = createSelectSchema(cliToken, {
   scope: scopeSchema,
   scopeKey: scopeKeySchema,
@@ -122,6 +123,7 @@ export const CliToken = createSelectSchema(cliToken, {
 
 export type CliToken = z.output<typeof CliToken>;
 
+// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
 export const CliAuthSession = createSelectSchema(cliAuthSession, {
   scope: scopeSchema.nullable(),
   scopeKey: scopeKeySchema.nullable(),

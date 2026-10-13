@@ -36,25 +36,23 @@ import { orpc } from "#lib/orpc";
 import { getSameOriginPath } from "#lib/safe-return-url";
 
 const OTP_LENGTH = 6;
+
 const BACKUP_CODE_LENGTH = 10;
+
 const OTP_SLOT_KEYS = Array.from(
   { length: OTP_LENGTH },
   (_, index) => `otp-slot-${index}`
 );
+
 const BACKUP_CODE_SLOT_KEYS = Array.from(
   { length: BACKUP_CODE_LENGTH },
   (_, index) => `backup-code-slot-${index}`
 );
 
-function formatBackupCode(code: string) {
-  return `${code.slice(0, 5)}-${code.slice(5)}`;
-}
+const formatBackupCode = (code: string) =>
+  `${code.slice(0, 5)}-${code.slice(5)}`;
 
-export const Route = createFileRoute("/(auth)/two-factor")({
-  component: TwoFactorPage,
-});
-
-function TwoFactorPage() {
+const TwoFactorPage = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [code, setCode] = useState("");
@@ -83,6 +81,7 @@ function TwoFactorPage() {
     }
   };
 
+  // oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
   const verify = async (verificationCode: string, useBackupCode = false) => {
     const expectedLength = useBackupCode ? BACKUP_CODE_LENGTH : OTP_LENGTH;
     const verificationInProgressRef = useBackupCode
@@ -151,6 +150,7 @@ function TwoFactorPage() {
           "Unable to verify that authentication code. Please try again."
         );
       }
+      // oxlint-disable-next-line react/todo -- Oxlint’s React compiler does not support try/finally; cleanup must also run after failures.
     } finally {
       verificationInProgressRef.current = false;
       if (!redirecting) {
@@ -233,7 +233,7 @@ function TwoFactorPage() {
               <Button
                 disabled={code.length !== OTP_LENGTH || isTotpPending}
                 loading={isTotpPending}
-                onClick={() => void verify(code)}
+                onClick={() => verify(code)}
                 type="button"
               >
                 Verify
@@ -323,7 +323,7 @@ function TwoFactorPage() {
                 backupCode.length !== BACKUP_CODE_LENGTH || isBackupCodePending
               }
               loading={isBackupCodePending}
-              onClick={() => void verify(backupCode, true)}
+              onClick={() => verify(backupCode, true)}
               size="sm"
               type="button"
             >
@@ -334,4 +334,8 @@ function TwoFactorPage() {
       </Dialog>
     </div>
   );
-}
+};
+
+export const Route = createFileRoute("/(auth)/two-factor")({
+  component: TwoFactorPage,
+});

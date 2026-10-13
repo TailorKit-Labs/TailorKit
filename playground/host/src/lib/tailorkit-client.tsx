@@ -4,10 +4,10 @@ import { Button } from "@tailorkit/ui/button";
 import { Input } from "@tailorkit/ui/input";
 import { createClient, primitives as reactPrimitives } from "tailorkit/react";
 
-async function callTodos<T>(
+const callTodos = async <T,>(
   action: string,
   body?: Record<string, unknown>
-): Promise<T> {
+): Promise<T> => {
   const response = await fetch("/api/playground/todos", {
     body: body ? JSON.stringify({ action, ...body }) : undefined,
     credentials: "same-origin",
@@ -23,7 +23,7 @@ async function callTodos<T>(
     throw new Error(message);
   }
   return result as T;
-}
+};
 
 interface Todo {
   id: string;

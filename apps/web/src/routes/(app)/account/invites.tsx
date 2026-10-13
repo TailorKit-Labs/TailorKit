@@ -29,22 +29,12 @@ import { AccountLayout } from "#components/account-layout";
 import { PageLayout } from "#components/page-layout";
 import { client, orpc } from "#lib/orpc";
 
-export const Route = createFileRoute("/(app)/account/invites")({
-  component: InvitesPage,
-  loader: async ({ context }) => {
-    await context.queryClient.query(
-      context.orpc.user.getPendingInvitations.queryOptions()
-    );
-  },
-});
-
-function formatDate(value: Date | string) {
-  return new Intl.DateTimeFormat(undefined, {
+const formatDate = (value: Date | string) =>
+  new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
   }).format(new Date(value));
-}
 
-function InvitesPage() {
+const InvitesPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: invitations } = useSuspenseQuery(
@@ -57,7 +47,7 @@ function InvitesPage() {
     onError: (err: unknown) => {
       const message =
         err instanceof Error ? err.message : "Failed to accept invitation";
-      toastManager.add({ title: "Error", description: message, type: "error" });
+      toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries(orpc.user.getOrgs.queryOptions());
@@ -80,7 +70,7 @@ function InvitesPage() {
     onError: (err: unknown) => {
       const message =
         err instanceof Error ? err.message : "Failed to decline invitation";
-      toastManager.add({ title: "Error", description: message, type: "error" });
+      toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(
@@ -160,4 +150,13 @@ function InvitesPage() {
       </PageLayout>
     </AccountLayout>
   );
-}
+};
+
+export const Route = createFileRoute("/(app)/account/invites")({
+  component: InvitesPage,
+  loader: async ({ context }) => {
+    await context.queryClient.query(
+      context.orpc.user.getPendingInvitations.queryOptions()
+    );
+  },
+});

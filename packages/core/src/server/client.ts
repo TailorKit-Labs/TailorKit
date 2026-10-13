@@ -11,21 +11,21 @@ export interface TailorKitClientOptions {
   url: string;
 }
 
-export function createTailorKitClient(
+export const createTailorKitClient = (
   options: TailorKitClientOptions
-): TailorKitRouterClient {
+): TailorKitRouterClient => {
   const url = URL.canParse(options.url) ? new URL(options.url) : undefined;
   const link = new RPCLink({
-    async fetch(url, init) {
+    async fetch(urlValue, init) {
       const configuredHeaders = await (typeof options.headers === "function"
         ? options.headers()
         : options.headers);
       const headers = new Headers(configuredHeaders);
-      new Headers(init.headers).forEach((value, key) => {
+      for (const [key, value] of new Headers(init.headers)) {
         headers.set(key, value);
-      });
+      }
 
-      return (options.fetch ?? fetch)(url, {
+      return (options.fetch ?? fetch)(urlValue, {
         ...init,
         headers,
       });
@@ -37,4 +37,4 @@ export function createTailorKitClient(
   });
 
   return createORPCClient<TailorKitRouterClient>(link);
-}
+};

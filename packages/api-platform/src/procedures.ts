@@ -12,29 +12,38 @@ import { setSpanAttributes } from "@tailorkit/observability";
 import type { Context } from "./context";
 import { canonicalizeScope, canonicalizeScopes, scopeMatches } from "./scope";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const rateLimiter = createRateLimiter({ maxRequests: 100, window: 1000 });
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 type CanonicalScope = ReturnType<typeof canonicalizeScope>;
 
-export async function findAppInScopes(
+export const findAppInScopes = async (
   projectId: string,
   appId: string,
   scopes: CanonicalScope[]
-) {
+) => {
   const find = (identifier: "id" | "publicId") =>
     db.query.app.findFirst({
       where: {
         RAW: (fields, { and, eq, or }) =>
-          and(
-            eq(fields.projectId, projectId),
-            eq(fields[identifier], appId),
-            or(
-              ...scopes.map(({ scope, scopeKey }) =>
-                and(eq(fields.scopeKey, scopeKey), eq(fields.scope, scope))
+          requireValue(
+            and(
+              eq(fields.projectId, projectId),
+              eq(fields[identifier], appId),
+              or(
+                ...scopes.map(({ scope, scopeKey }) =>
+                  and(eq(fields.scopeKey, scopeKey), eq(fields.scope, scope))
+                )
               )
             )
-          )!,
+          ),
       },
       with: { currentDeployment: { where: { status: "published" } } },
     });
@@ -46,7 +55,7 @@ export async function findAppInScopes(
     throw new ORPCError("NOT_FOUND");
   }
   return app;
-}
+};
 
 export const o = os.$context<Context>().meta(
   openapi({
@@ -80,7 +89,8 @@ export const cliRouter = authenticatedRouter.use(
           if (
             !scopes.length ||
             scopes.some(
-              ({ scope }) => !scopeMatches(scope, context.agentToken!.scope)
+              ({ scope }) =>
+                !scopeMatches(scope, requireValue(context.agentToken).scope)
             )
           ) {
             throw new Error("Scope not authorized");
@@ -92,7 +102,7 @@ export const cliRouter = authenticatedRouter.use(
         }
       }
     }
-    return next();
+    return await next();
   }
 );
 
@@ -101,7 +111,7 @@ export const protectedRouter = authenticatedRouter.use(
     if (context.agentToken) {
       throw new ORPCError("FORBIDDEN");
     }
-    return next();
+    return await next();
   }
 );
 

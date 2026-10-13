@@ -3,37 +3,45 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("../src/", import.meta.url));
-async function exists(value) {
+const exists = async (value) => {
   try {
     await stat(value);
     return true;
   } catch {
     return false;
   }
-}
-async function visit(dir) {
+};
+const visit = async (dir) => {
   for (const entry of await readdir(dir, { withFileTypes: true })) {
     const filename = path.join(dir, entry.name);
     if (entry.isDirectory()) {
+      // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
       await visit(filename);
       continue;
     }
     if (!entry.name.endsWith(".ts")) {
       continue;
     }
+    // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
     const input = await readFile(filename, "utf-8");
     let output = input;
-    for (const match of input.matchAll(/from\s+(["'])(\.\.?\/[^"']+)\1/gu)) {
-      const specifier = match[2];
+    for (const match of input.matchAll(
+      /from\s+(?<quote>["'])(?<specifier>\.\.?\/[^"']+)\k<quote>/gu
+    )) {
+      const { specifier } = match.groups;
       if (specifier.endsWith(".js")) {
         continue;
       }
       const target = path.resolve(dir, specifier);
-      const replacement = (await exists(`${target}.ts`))
-        ? `${specifier}.js`
-        : (await exists(path.join(target, "index.ts")))
-          ? `${specifier}/index.js`
-          : null;
+      // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
+      let replacement = null;
+      // oxlint-disable-next-line no-await-in-loop -- The replacement depends on the first existing module path.
+      if (await exists(`${target}.ts`)) {
+        replacement = `${specifier}.js`;
+        // oxlint-disable-next-line no-await-in-loop -- Try the directory module only after the file module.
+      } else if (await exists(path.join(target, "index.ts"))) {
+        replacement = `${specifier}/index.js`;
+      }
       if (!replacement) {
         throw new Error(
           `Unresolved relative import ${specifier} in ${filename}`
@@ -45,8 +53,9 @@ async function visit(dir) {
       );
     }
     if (output !== input) {
+      // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
       await writeFile(filename, output);
     }
   }
-}
+};
 await visit(root);

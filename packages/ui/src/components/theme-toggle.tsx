@@ -11,14 +11,14 @@ export interface ClassicProps extends Omit<
   [key: `data-${string}`]: string | number | boolean | null | undefined;
 }
 
-export function ThemeToggle({
+export const ThemeToggle = ({
   duration = 400,
   className,
   type = "button",
   title = "Toggle theme",
   "aria-label": ariaLabel = "Toggle theme",
   ...props
-}: ClassicProps) {
+}: ClassicProps) => {
   const toggleId = useId();
 
   const clipMainId = `toggles.dev-classic-main-${toggleId}`;
@@ -134,4 +134,4 @@ export function ThemeToggle({
       </svg>
     </Button>
   );
-}
+};

@@ -56,7 +56,7 @@ export const contract = defineContract({
         onValueChange: { input: json(v.object({ value: v.string() })) },
       },
       fields: json(
-        v.object({ value: v.string(), placeholder: v.optional(v.string()) })
+        v.object({ placeholder: v.optional(v.string()), value: v.string() })
       ),
     },
   },
@@ -91,8 +91,8 @@ export const contract = defineContract({
   views: {
     "/": json(
       v.object({
-        user: v.object({ id: v.string(), name: v.string() }),
         team: v.object({ id: v.string(), name: v.string() }),
+        user: v.object({ id: v.string(), name: v.string() }),
       })
     ),
   },

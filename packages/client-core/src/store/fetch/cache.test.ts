@@ -5,13 +5,23 @@ import { createFetchCache, serializeCacheKey } from "./cache";
 
 afterEach(() => vi.useRealTimers());
 
-function deferred<T>() {
+const deferred = <T>() => {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>((done) => {
-    resolve = done;
-  });
+  const promise = (() => {
+    const {
+      promise: pendingPromise,
+      resolve: done,
+      reject: rejectPending,
+    } = Promise.withResolvers<T>();
+    try {
+      resolve = done;
+    } catch (error) {
+      rejectPending(error);
+    }
+    return pendingPromise;
+  })();
   return { promise, resolve };
-}
+};
 
 describe("fetch cache", () => {
   it("shares in-flight requests and snapshots across equivalent keys", async () => {
@@ -183,7 +193,7 @@ describe("fetch cache", () => {
     );
     const first = store.fetch();
     await Promise.resolve();
-    const second = store.fetch({ force: true });
+    const second: Promise<void> | undefined = store.fetch({ force: true });
     expect(fetcher.mock.calls[0]?.[0].aborted).toBe(true);
     fresh.resolve("fresh");
     await second;

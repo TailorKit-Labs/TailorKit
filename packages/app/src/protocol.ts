@@ -27,11 +27,14 @@ const procedure = oc.errors({
 
 /** Public wire contract; implementations and clients both depend on this definition. */
 export const appContract = {
-  queries: procedure.input(invocationSchema).output(type<unknown>()),
+  actions: procedure.input(invocationSchema).output(type<unknown>()),
+
   mutations: procedure
     .input(invocationSchema.extend({ requestId: z.uuid() }))
     .output(type<unknown>()),
-  actions: procedure.input(invocationSchema).output(type<unknown>()),
+
+  queries: procedure.input(invocationSchema).output(type<unknown>()),
+
   // A pass-through type schema preserves the private hibernation iterator instance.
   subscribe: procedure
     .input(invocationSchema)

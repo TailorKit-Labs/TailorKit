@@ -40,34 +40,32 @@ const expectedScope = {
 };
 const expectedScopeKey = "83f6cbb3372e91fda7451be1728a9e91";
 
-function createContext(): Context {
-  return {
-    organization: {
-      createdAt: new Date("2026-01-01T00:00:00.000Z"),
-      id: organizationId,
-      logo: null,
-      metadata: null,
-      name: "Analytical Engines",
-      publicId: "team0000000001",
-      slug: "analytical-engines",
-    },
-    project: {
-      createdAt: new Date("2026-01-02T00:00:00.000Z"),
-      id: projectId,
-      name: "Compiler",
-      organizationId,
-      slug: "compiler",
-      updatedAt: new Date("2026-01-02T00:00:00.000Z"),
-    },
-    storage: {
-      createDownloadUrl: vi.fn(),
-      createUploadUrl: vi.fn(),
-      delete: vi.fn(),
-      head: vi.fn(),
-      type: "s3",
-    },
-  };
-}
+const createContext = (): Context => ({
+  organization: {
+    createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    id: organizationId,
+    logo: null,
+    metadata: null,
+    name: "Analytical Engines",
+    publicId: "team0000000001",
+    slug: "analytical-engines",
+  },
+  project: {
+    createdAt: new Date("2026-01-02T00:00:00.000Z"),
+    id: projectId,
+    name: "Compiler",
+    organizationId,
+    slug: "compiler",
+    updatedAt: new Date("2026-01-02T00:00:00.000Z"),
+  },
+  storage: {
+    createDownloadUrl: vi.fn(),
+    createUploadUrl: vi.fn(),
+    delete: vi.fn(),
+    head: vi.fn(),
+    type: "s3",
+  },
+});
 
 describe("platform CLI auth scopes", () => {
   let client: Awaited<ReturnType<typeof createTestDb>>["client"];
@@ -80,8 +78,8 @@ describe("platform CLI auth scopes", () => {
       );
     }
     const testDb = await createTestDb();
-    client = testDb.client;
-    db = testDb.db;
+    ({ client } = testDb);
+    ({ db } = testDb);
     testState.db = db;
 
     await db.insert(organization).values({

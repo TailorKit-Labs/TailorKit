@@ -1,4 +1,4 @@
-import { posix } from "node:path";
+import nodePath from "node:path";
 
 import type {
   Experimental_SandboxSession as SandboxSession,
@@ -8,6 +8,8 @@ import { FatalError } from "workflow";
 import { z } from "zod";
 
 import { getSandbox, sandboxIdleTimeoutMs } from "../sandbox";
+
+const { posix } = nodePath;
 
 export const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
 export const appDirectory = "/workspace/app";
@@ -27,21 +29,22 @@ export const sandboxContextSchema = z.object({
   sandboxName: z.string().min(1),
 });
 
-export async function toolNativeSandbox(
+export const toolNativeSandbox = async (
   options: ToolExecutionOptions<z.infer<typeof sandboxContextSchema>>
-) {
+) => {
   const name = options.context?.sandboxName;
   if (!name) {
     throw new FatalError("App agent sandbox context is missing.");
   }
   options.abortSignal?.throwIfAborted();
-  return (await getSandbox(name)).currentSession();
-}
+  const awaitedResult1 = await getSandbox(name);
+  return awaitedResult1.currentSession();
+};
 
 /** The tools' file/command surface, pinned to one VM with no automatic resume. */
-export async function toolSandbox(
+export const toolSandbox = async (
   options: ToolExecutionOptions<z.infer<typeof sandboxContextSchema>>
-) {
+) => {
   const session = await toolNativeSandbox(options);
   return {
     async readTextFile({
@@ -54,9 +57,13 @@ export async function toolSandbox(
         { path },
         { signal: abortSignal }
       );
-      if (buffer === null) return null;
+      if (buffer === null) {
+        return null;
+      }
       const text = buffer.toString("utf-8");
-      if (startLine === undefined && endLine === undefined) return text;
+      if (startLine === undefined && endLine === undefined) {
+        return text;
+      }
       return text
         .split("\n")
         .slice((startLine ?? 1) - 1, endLine)
@@ -68,8 +75,8 @@ export async function toolSandbox(
       abortSignal,
     }: Parameters<SandboxSession["run"]>[0]) {
       const result = await session.runCommand({
-        cmd: "bash",
         args: ["-c", command],
+        cmd: "bash",
         cwd: workingDirectory,
         signal: abortSignal,
         timeoutMs: sandboxIdleTimeoutMs,
@@ -78,7 +85,7 @@ export async function toolSandbox(
         result.stdout(),
         result.stderr(),
       ]);
-      return { exitCode: result.exitCode, stdout, stderr };
+      return { exitCode: result.exitCode, stderr, stdout };
     },
     async writeTextFile({
       path,
@@ -86,17 +93,17 @@ export async function toolSandbox(
       abortSignal,
     }: Parameters<SandboxSession["writeTextFile"]>[0]) {
       await session.runCommand({
-        cmd: "mkdir",
         args: ["-p", posix.dirname(path)],
+        cmd: "mkdir",
         signal: abortSignal,
         timeoutMs: 30_000,
       });
       await session.writeFiles(
-        [{ path, content: Buffer.from(content, "utf-8") }],
+        [{ content: Buffer.from(content, "utf-8"), path }],
         {
           signal: abortSignal,
         }
       );
     },
   };
-}
+};

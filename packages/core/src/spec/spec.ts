@@ -17,6 +17,7 @@ const toolRecord: z.ZodType<ToolRecord> = z.lazy(() =>
   z.record(z.string(), z.union([toolLeaf, toolRecord]))
 );
 
+// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
 export const TailorKitSchemaSpec = z
   .strictObject({
     components: componentRecord,
@@ -25,8 +26,8 @@ export const TailorKitSchemaSpec = z
       .record(
         z.string().min(1),
         z.object({
-          views: z.array(z.string().startsWith("/")),
           multiple: z.boolean().optional(),
+          views: z.array(z.string().startsWith("/")),
         })
       )
       .default({}),
@@ -36,7 +37,7 @@ export const TailorKitSchemaSpec = z
   })
   .superRefine((schema, ctx) => {
     for (const [name, slot] of Object.entries(schema.slots)) {
-      slot.views.forEach((view, index) => {
+      for (const [index, view] of slot.views.entries()) {
         if (!Object.hasOwn(schema.views, view)) {
           ctx.addIssue({
             code: "custom",
@@ -44,7 +45,7 @@ export const TailorKitSchemaSpec = z
             path: ["slots", name, "views", index],
           });
         }
-      });
+      }
     }
   });
 

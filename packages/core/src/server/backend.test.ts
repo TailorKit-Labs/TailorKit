@@ -33,9 +33,15 @@ it("uses existing host authentication and passes only verified scopes to the pla
   expect(response.headers.get("cache-control")).toBe("no-store");
   expect(await response.json()).toEqual(session);
   expect(authenticate).toHaveBeenCalledWith({ request: input });
-  expect(issueSession).toHaveBeenCalledExactlyOnceWith("installed-app", {
-    workspace: { id: "authorized-workspace" },
-  });
+  // oxlint-disable unicorn/no-useless-undefined -- The exact mock call includes its optional subject argument.
+  expect(issueSession).toHaveBeenCalledExactlyOnceWith(
+    "installed-app",
+    {
+      workspace: { id: "authorized-workspace" },
+    },
+    undefined
+  );
+  // oxlint-enable unicorn/no-useless-undefined
 });
 
 it("rejects unauthenticated requests before issuing tokens", async () => {

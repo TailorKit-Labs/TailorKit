@@ -16,6 +16,10 @@ import {
 import type { BetterAuthEmailType } from "./templates/better-auth";
 import { InvitationTemplate } from "./templates/better-auth/invitation";
 
+export { type BetterAuthEmailType } from "./templates/better-auth";
+
+export { BetterAuthOtpTemplate } from "./templates/better-auth";
+
 export interface SendEmailInput {
   from?: string;
   html: string;
@@ -223,5 +227,4 @@ export const sendOrganizationInvitationEmail = async ({
   });
 };
 
-export { BetterAuthOtpTemplate, InvitationTemplate };
-export type { BetterAuthEmailType };
+export { InvitationTemplate } from "./templates/better-auth/invitation";

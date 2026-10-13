@@ -17,7 +17,7 @@ interface DateAgoProps {
   className?: string;
 }
 
-export function DateAgo({ date, className }: DateAgoProps) {
+export const DateAgo = ({ date, className }: DateAgoProps) => {
   const d = dayjs(date);
   return (
     <TooltipProvider>
@@ -29,4 +29,4 @@ export function DateAgo({ date, className }: DateAgoProps) {
       </Tooltip>
     </TooltipProvider>
   );
-}
+};

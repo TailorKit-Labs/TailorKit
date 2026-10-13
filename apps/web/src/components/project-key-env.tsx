@@ -17,11 +17,11 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from "@tailorkit/ui/tooltip";
 import { CopyIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import { useState } from "react";
 
-export function ProjectKeyEnv({ apiKey }: { apiKey: string }) {
+export const ProjectKeyEnv = ({ apiKey }: { apiKey: string }) => {
   const [showApiKey, setShowApiKey] = useState(false);
   const revealLabel = showApiKey ? "Hide API key" : "Show API key";
 
-  async function copyEnv() {
+  const copyEnv = async () => {
     try {
       await navigator.clipboard.writeText(`TAILORKIT_PROJECT_KEY=${apiKey}`);
       toastManager.add({ title: ".env copied", type: "success" });
@@ -32,7 +32,7 @@ export function ProjectKeyEnv({ apiKey }: { apiKey: string }) {
         type: "error",
       });
     }
-  }
+  };
 
   return (
     <Card>
@@ -108,4 +108,4 @@ export function ProjectKeyEnv({ apiKey }: { apiKey: string }) {
       </CardPanel>
     </Card>
   );
-}
+};

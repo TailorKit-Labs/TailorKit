@@ -8,6 +8,13 @@ import type { TailorKitApp } from "../../types";
 import { createSnapshotStore } from "../snapshot-store";
 import type { FetchCacheOptions, FetchOptions, FetchSnapshot } from "./cache";
 
+const require = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 const contractIds = new WeakMap<TailorKitContract, number>();
 let nextContractId = 0;
 
@@ -41,11 +48,11 @@ interface Result {
 }
 
 /** Match all app contexts before authorizing any app or sending instance requests. */
-export function createSlotStore(
+export const createSlotStore = (
   client: TailorKitFetchClient,
   contract: TailorKitContract,
   options: SlotStoreOptions
-) {
+) => {
   const {
     apps,
     slot,
@@ -57,7 +64,7 @@ export function createSlotStore(
   } = options;
   let contractId = contractIds.get(contract);
   if (contractId === undefined) {
-    contractId = nextContractId++;
+    contractId = (nextContractId += 1) - 1;
     contractIds.set(contract, contractId);
   }
   const enabled = appsStatus === "ready";
@@ -86,12 +93,12 @@ export function createSlotStore(
         app.views?.some((view) => view.slot === slot && !view.disabled)
       );
       if (!candidates.length) {
-        return { status: "ready", data: [] };
+        return { data: [], status: "ready" };
       }
       const schema = contract;
       const definition = schema.slots[slot];
       if (!definition) {
-        return { status: "ready", data: [] };
+        return { data: [], status: "ready" };
       }
       if (definition.multiple !== true) {
         return {
@@ -164,15 +171,19 @@ export function createSlotStore(
     fetch: (fetchOptions: FetchOptions = {}) =>
       enabled ? query.fetch(fetchOptions) : Promise.resolve(),
     getSnapshot(): SlotSnapshot {
-      if (!enabled) return waiting;
+      if (!enabled) {
+        return waiting;
+      }
       const current = query.getSnapshot();
       if (current !== last) {
         snapshot = {
           data: current.data?.data,
           error: current.error,
-          status:
-            current.status === "ready" ? current.data!.status : current.status,
           isFetching: current.isFetching,
+          status:
+            current.status === "ready"
+              ? require(current.data).status
+              : current.status,
         };
         last = current;
       }
@@ -180,10 +191,14 @@ export function createSlotStore(
     },
     invalidate: () => (enabled ? query.invalidate() : Promise.resolve()),
     subscribe: (listener: () => void) =>
-      enabled ? query.subscribe(listener) : () => {},
+      enabled
+        ? query.subscribe(listener)
+        : () => {
+            /* Intentionally no action is needed. */
+          },
   };
   return {
     ...store,
     state: createSnapshotStore(store.getSnapshot, store.subscribe),
   };
-}
+};

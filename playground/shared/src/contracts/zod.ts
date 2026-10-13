@@ -27,8 +27,8 @@ export const contract = defineContract({
     Input: {
       callbacks: { onValueChange: { input: z.object({ value: z.string() }) } },
       fields: z.object({
-        value: z.string(),
         placeholder: z.string().optional(),
+        value: z.string(),
       }),
     },
   },
@@ -56,8 +56,8 @@ export const contract = defineContract({
   },
   views: {
     "/": z.object({
-      user: z.object({ id: z.string(), name: z.string() }),
       team: z.object({ id: z.string(), name: z.string() }),
+      user: z.object({ id: z.string(), name: z.string() }),
     }),
   },
 });

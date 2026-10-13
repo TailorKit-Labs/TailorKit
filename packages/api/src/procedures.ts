@@ -76,8 +76,8 @@ type OrgPermissions = Partial<{
  *   .use(requireOrg({ member: ["invite"] }).adaptInput(input => ({ orgSlug: input.slug })))
  *   .handler(async ({ context }) => context.org)
  */
-export function requireOrg(permissions?: OrgPermissions) {
-  return o.middleware(
+export const requireOrg = (permissions?: OrgPermissions) =>
+  o.middleware(
     async (
       { context, next },
       input: { orgSlug: string } | { orgId: string }
@@ -125,7 +125,6 @@ export function requireOrg(permissions?: OrgPermissions) {
       return next({ context: { org } });
     }
   );
-}
 
 type ProjectInput = ({ orgSlug: string } | { orgId: string }) &
   ({ projectSlug: string } | { projectId: string });
@@ -134,8 +133,8 @@ type ProjectInput = ({ orgSlug: string } | { orgId: string }) &
  * Resolves a project inside an org the caller belongs to and adds both to context.
  * Optionally checks org-scoped project permissions.
  */
-export function requireProject(permissions?: OrgPermissions) {
-  return o.middleware(async ({ context, next }, input: ProjectInput) => {
+export const requireProject = (permissions?: OrgPermissions) =>
+  o.middleware(async ({ context, next }, input: ProjectInput) => {
     setSpanAttributes({
       "tailorkit.middleware": "require_project",
       "tailorkit.package": "api",
@@ -201,4 +200,3 @@ export function requireProject(permissions?: OrgPermissions) {
 
     return next({ context: { org, project } });
   });
-}

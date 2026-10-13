@@ -7,11 +7,11 @@ import { env } from "#env";
 import type { Context } from "./context";
 import { canonicalizeScope } from "./scope";
 
-export async function authenticateCli(
+export const authenticateCli = async (
   projectId: string,
   deployToken: string,
   runtimeService?: boolean
-) {
+) => {
   if (runtimeService) {
     throw new ORPCError("FORBIDDEN");
   }
@@ -40,12 +40,19 @@ export async function authenticateCli(
     });
   }
   return { ...token, scope: scope.scope, scopeKey: scope.scopeKey };
-}
+};
 
 /** Authenticate either the existing host-forwarded CLI token or a verified JWT context. */
-export async function authenticateCliRequest(context: Context, token: string) {
+export const authenticateCliRequest = async (
+  context: Context,
+  token: string
+) => {
   if (!context.agentToken) {
-    return authenticateCli(context.project.id, token, context.runtimeService);
+    return await authenticateCli(
+      context.project.id,
+      token,
+      context.runtimeService
+    );
   }
   const agent = context.agentToken;
   if (token !== agent.token || context.runtimeService) {
@@ -57,4 +64,4 @@ export async function authenticateCliRequest(context: Context, token: string) {
     ...canonicalizeScope(agent.scope),
     expiresAt: new Date(agent.exp * 1000),
   };
-}
+};

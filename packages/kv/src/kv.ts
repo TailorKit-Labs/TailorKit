@@ -8,7 +8,7 @@ type KVInstance = KV<"upstash"> | KV<"redis"> | null;
 
 let instance: KVInstance | undefined;
 
-function createKV(): KVInstance {
+const createKV = (): KVInstance => {
   if (env.KV_PROVIDER === "upstash") {
     return createUpstashKV();
   }
@@ -22,13 +22,13 @@ function createKV(): KVInstance {
   }
 
   return null;
-}
+};
 
-export function getKV(): KVInstance {
+export const getKV = (): KVInstance => {
   if (instance !== undefined) {
     return instance;
   }
 
   instance = createKV();
   return instance;
-}
+};

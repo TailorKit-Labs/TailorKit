@@ -14,11 +14,14 @@ import {
 import type { TailorKitScopes } from "./types";
 
 export const previewCookieName = "tailorkit_preview_grants";
+
 const grantIdSchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/u);
+
 const grantIdsSchema = z.array(grantIdSchema).max(20);
+
 const consentIntentSchema = z.enum(["accept", "cancel"]);
 
-export function readPreviewGrantIds(request: Request): string[] {
+export const readPreviewGrantIds = (request: Request): string[] => {
   const pair = request.headers
     .get("cookie")
     ?.split(";")
@@ -36,7 +39,7 @@ export function readPreviewGrantIds(request: Request): string[] {
   } catch {
     return [];
   }
-}
+};
 
 interface ConsentOptions {
   request: Request;
@@ -60,9 +63,48 @@ const headers = {
   "referrer-policy": "strict-origin",
 };
 
-export async function handlePreviewConsent(
+const html = (
+  title: string,
+  description: string,
+  controls: string,
+  status = 200
+): Response =>
+  new Response(
+    `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title><style>${approvalStyles}</style></head><body><main class="page"><section class="card"><h1>${title}</h1><p class="description">${description}</p>${controls}</section><p class="footer-link">Powered by <a href="https://tailorkit.dev/home">TailorKit</a></p></main></body></html>`,
+    {
+      headers: { ...headers, "content-type": "text/html; charset=utf-8" },
+      status,
+    }
+  );
+
+const previewErrorResponse = (error: unknown): Response => {
+  const details = error !== null && typeof error === "object" ? error : null;
+  const code = details && "code" in details ? details.code : undefined;
+  let message = "";
+  if (error instanceof Error) {
+    ({ message } = error);
+  } else if (
+    details &&
+    "message" in details &&
+    typeof details.message === "string"
+  ) {
+    ({ message } = details);
+  } else if (typeof error === "string") {
+    message = error;
+  }
+  return code === "SERVICE_UNAVAILABLE" ||
+    /storage is unavailable|SERVICE_UNAVAILABLE/u.test(message)
+    ? new Response("Preview storage is unavailable: configure KV.", {
+        headers,
+        status: 503,
+      })
+    : new Response("Preview unavailable", { headers, status: 404 });
+};
+
+// oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
+export const handlePreviewConsent = async (
   options: ConsentOptions
-): Promise<Response> {
+): Promise<Response> => {
   const {
     request,
     shareId,
@@ -189,43 +231,4 @@ export async function handlePreviewConsent(
   } catch (error) {
     return previewErrorResponse(error);
   }
-}
-
-function previewErrorResponse(error: unknown): Response {
-  const details = error !== null && typeof error === "object" ? error : null;
-  const code = details && "code" in details ? details.code : undefined;
-  let message = "";
-  if (error instanceof Error) {
-    message = error.message;
-  } else if (
-    details &&
-    "message" in details &&
-    typeof details.message === "string"
-  ) {
-    message = details.message;
-  } else if (typeof error === "string") {
-    message = error;
-  }
-  return code === "SERVICE_UNAVAILABLE" ||
-    /storage is unavailable|SERVICE_UNAVAILABLE/u.test(message)
-    ? new Response("Preview storage is unavailable: configure KV.", {
-        headers,
-        status: 503,
-      })
-    : new Response("Preview unavailable", { headers, status: 404 });
-}
-
-function html(
-  title: string,
-  description: string,
-  controls: string,
-  status = 200
-): Response {
-  return new Response(
-    `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title><style>${approvalStyles}</style></head><body><main class="page"><section class="card"><h1>${title}</h1><p class="description">${description}</p>${controls}</section><p class="footer-link">Powered by <a href="https://tailorkit.dev/home">TailorKit</a></p></main></body></html>`,
-    {
-      headers: { ...headers, "content-type": "text/html; charset=utf-8" },
-      status,
-    }
-  );
-}
+};

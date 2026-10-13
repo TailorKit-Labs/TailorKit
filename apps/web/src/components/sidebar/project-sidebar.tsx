@@ -26,7 +26,10 @@ interface ProjectSidebarProps {
   projectSlug: string;
 }
 
-export function ProjectSidebar({ orgSlug, projectSlug }: ProjectSidebarProps) {
+export const ProjectSidebar = ({
+  orgSlug,
+  projectSlug,
+}: ProjectSidebarProps) => {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const base = `/${orgSlug}/${projectSlug}`;
   const isActive = (path: string) =>
@@ -105,4 +108,4 @@ export function ProjectSidebar({ orgSlug, projectSlug }: ProjectSidebarProps) {
       </SidebarFooter>
     </Sidebar>
   );
-}
+};

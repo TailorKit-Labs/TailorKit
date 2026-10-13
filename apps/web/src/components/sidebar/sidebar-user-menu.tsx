@@ -29,7 +29,7 @@ import { authClient } from "#lib/auth-client";
 import { orpc } from "#lib/orpc.ts";
 import { fallbackTheme, getUserTheme, isAppTheme, useTheme } from "#lib/theme";
 
-export function SidebarUserMenu() {
+export const SidebarUserMenu = () => {
   const { data: session } = useQuery(orpc.user.getSession.queryOptions());
   const { setTheme, theme } = useTheme();
 
@@ -91,7 +91,7 @@ export function SidebarUserMenu() {
             render={
               <a
                 href="https://tailorkit.dev/home"
-                rel="noopener"
+                rel="noopener noreferrer"
                 target="_blank"
               >
                 <HomeIcon />
@@ -104,7 +104,7 @@ export function SidebarUserMenu() {
             render={
               <a
                 href="https://tailorkit.dev/docs"
-                rel="noopener"
+                rel="noopener noreferrer"
                 target="_blank"
               >
                 <BookOpenIcon />
@@ -127,34 +127,36 @@ export function SidebarUserMenu() {
               value={[selectedTheme]}
               variant="default"
               onValueChange={(value) => {
-                const nextTheme = value[0];
+                const [nextTheme] = value;
 
                 if (!isAppTheme(nextTheme)) {
                   return;
                 }
 
                 setTheme(nextTheme);
-                void authClient
-                  .updateUser({ theme: nextTheme } as Parameters<
-                    typeof authClient.updateUser
-                  >[0])
-                  .then((result) => {
-                    if (result.error) {
-                      toastManager.add({
-                        description:
-                          result.error.message || "Failed to update theme",
-                        title: "Theme not saved",
-                        type: "error",
-                      });
-                    }
-                  })
-                  .catch(() => {
+                void (async () => {
+                  try {
+                    return await (async () => {
+                      const result = await authClient.updateUser({
+                        theme: nextTheme,
+                      } as Parameters<typeof authClient.updateUser>[0]);
+                      if (result.error) {
+                        toastManager.add({
+                          description:
+                            result.error.message || "Failed to update theme",
+                          title: "Theme not saved",
+                          type: "error",
+                        });
+                      }
+                    })();
+                  } catch {
                     toastManager.add({
                       description: "Failed to update theme",
                       title: "Theme not saved",
                       type: "error",
                     });
-                  });
+                  }
+                })();
               }}
             >
               <ToggleGroupItem
@@ -192,4 +194,4 @@ export function SidebarUserMenu() {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+};

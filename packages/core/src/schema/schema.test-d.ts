@@ -134,25 +134,33 @@ createTailorKitSchema({
 });
 createTailorKitSchema({
   components: {},
-  views: { "/": z.object({}) },
+
   // @ts-expect-error Slot lists can only reference declared views.
   slots: { panel: { views: ["/missing"] } },
+
+  views: { "/": z.object({}) },
 });
 
 createTailorKitSchema({
   components: {},
   views: {
-    // @ts-expect-error Context composition requires named fields.
-    "/number": z.number(),
-    // @ts-expect-error Strings must be wrapped in an object field.
-    "/string": z.string(),
     // @ts-expect-error Arrays must be wrapped in an object field.
     "/array": z.array(z.string()),
-    // @ts-expect-error Every member of a context union must be an object.
-    "/union": z.union([z.object({ id: z.string() }), z.number()]),
+
+    "/empty": z.object({}),
+
     // @ts-expect-error Null is not an object context.
     "/null": z.object({ id: z.string() }).nullable(),
+
+    // @ts-expect-error Context composition requires named fields.
+    "/number": z.number(),
+
     "/optional": z.object({ id: z.string() }).optional(),
-    "/empty": z.object({}),
+
+    // @ts-expect-error Strings must be wrapped in an object field.
+    "/string": z.string(),
+
+    // @ts-expect-error Every member of a context union must be an object.
+    "/union": z.union([z.object({ id: z.string() }), z.number()]),
   },
 });

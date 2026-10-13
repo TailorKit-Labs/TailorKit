@@ -9,10 +9,10 @@ interface OrgSlugAvailabilityIndicatorProps {
   submitError?: string | null;
 }
 
-export function OrgSlugAvailabilityIndicator({
+export const OrgSlugAvailabilityIndicator = ({
   availability,
   submitError,
-}: OrgSlugAvailabilityIndicatorProps) {
+}: OrgSlugAvailabilityIndicatorProps) => {
   const status = submitError ? "unavailable" : availability.status;
   const message = submitError ?? availability.message;
 
@@ -41,4 +41,4 @@ export function OrgSlugAvailabilityIndicator({
       <TooltipPopup>{tooltip}</TooltipPopup>
     </Tooltip>
   );
-}
+};

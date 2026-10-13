@@ -26,17 +26,25 @@ const member = ac.newRole({
 
 const admin = ac.newRole({
   apiKey: ["create", "read", "update", "delete"],
-  projectApiKey: ["create", "read", "update", "delete"],
+
   project: ["create", "update"],
+
+  projectApiKey: ["create", "read", "update", "delete"],
+
   ...adminAc.statements,
+
   invitation: [...adminAc.statements.invitation, "read"],
 });
 
 const owner = ac.newRole({
   apiKey: ["create", "read", "update", "delete"],
-  projectApiKey: ["create", "read", "update", "delete"],
+
   project: ["create", "update", "delete"],
+
+  projectApiKey: ["create", "read", "update", "delete"],
+
   ...ownerAc.statements,
+
   invitation: [...ownerAc.statements.invitation, "read"],
 });
 

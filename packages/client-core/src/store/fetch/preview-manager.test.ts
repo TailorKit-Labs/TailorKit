@@ -19,12 +19,23 @@ vi.mock("@tailorkit/client-platform/preview", async (original) => ({
   ...(await original()),
   createPreviewWebSocketClient: () => ({
     subscribe: async () =>
+      // oxlint-disable-next-line unicorn/consistent-function-scoping -- Keep the generator or mutable callback with its owning test or cancellation lifecycle.
       (async function* subscribe() {
         yield* state.batches.shift() ?? state.events;
         if (state.hold) {
-          await new Promise<void>((resolve) => {
-            state.release = resolve;
-          });
+          await (() => {
+            const {
+              promise: pendingPromise,
+              resolve,
+              reject: rejectPending,
+            } = Promise.withResolvers<ReturnType<() => void>>();
+            try {
+              state.release = resolve;
+            } catch (error) {
+              rejectPending(error);
+            }
+            return pendingPromise;
+          })();
         }
       })(),
   }),
@@ -56,8 +67,8 @@ it("publishes preview source and views together without notifying on subscriptio
     vi.fn(async () => ({
       json: async () => ({
         sessionId: "session",
-        websocketUrl: "wss://platform.test/preview",
         token: "token",
+        websocketUrl: "wss://platform.test/preview",
       }),
       ok: true,
     }))
@@ -71,11 +82,11 @@ it("publishes preview source and views together without notifying on subscriptio
       manifest: {
         files: [
           {
-            path: "client.js",
-            contentType: "text/javascript",
-            size: bytes.length,
             chunks: 1,
+            contentType: "text/javascript",
+            path: "client.js",
             sha256: createHash("sha256").update(bytes).digest("hex"),
+            size: bytes.length,
           },
         ],
         views,
@@ -100,7 +111,7 @@ it("publishes preview source and views together without notifying on subscriptio
       token: "token",
       websocketUrl: "wss://platform.test/preview",
     },
-    views: [{ slot: "page", path: "/old" }],
+    views: [{ path: "/old", slot: "page" }],
   };
   const store = createTailorKitStore({
     apps: [app],
@@ -142,10 +153,10 @@ it("refreshes the viewer token and reconnects when its stream ends", async () =>
     "fetch",
     vi.fn(async () => ({
       json: async () => ({
-        sessionId,
-        websocketUrl: "wss://platform.test/preview",
-        token: `token-${++refreshes}`,
         expiresAt: "2030-01-01T00:00:00.000Z",
+        sessionId,
+        token: `token-${(refreshes += 1)}`,
+        websocketUrl: "wss://platform.test/preview",
       }),
       ok: true,
     }))
@@ -187,15 +198,15 @@ it("reuses a still-valid refreshed token when the next metadata request fails", 
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => {
-      if (++requests > 1) {
+      if ((requests += 1) > 1) {
         throw new Error("Metadata temporarily unavailable.");
       }
       return {
         json: async () => ({
-          sessionId,
-          websocketUrl: "wss://platform.test/preview",
-          token: refreshedToken,
           expiresAt: "2030-01-01T00:00:00.000Z",
+          sessionId,
+          token: refreshedToken,
+          websocketUrl: "wss://platform.test/preview",
         }),
         ok: true,
       };
@@ -272,6 +283,41 @@ afterEach(() => {
   state.batches = [];
 });
 
+const buildEventsImplementation = (
+  revision: number,
+  source: string,
+  chunk: string
+): PreviewEvent[] => {
+  const bytes = Buffer.from(source);
+  return [
+    {
+      buildId: `build-${revision}`,
+      manifest: {
+        files: [
+          {
+            chunks: 1,
+            contentType: "text/javascript",
+            path: "client.js",
+            sha256: createHash("sha256").update(bytes).digest("hex"),
+            size: bytes.length,
+          },
+        ],
+        views: [{ path: `/revision-${revision}`, slot: "page" }],
+      },
+      revision,
+      type: "begin",
+    },
+    {
+      base64: Buffer.from(chunk).toString("base64"),
+      chunkIndex: 0,
+      fileIndex: 0,
+      revision,
+      type: "chunk",
+    },
+    { revision, type: "complete" },
+  ];
+};
+
 it("keeps the last complete build through a corrupt transfer and recovers after reconnect", async () => {
   vi.stubGlobal("WebSocket", FakeSocket);
   vi.stubGlobal(
@@ -279,46 +325,13 @@ it("keeps the last complete build through a corrupt transfer and recovers after 
     vi.fn(async () => ({
       json: async () => ({
         sessionId: "session",
-        websocketUrl: "wss://platform.test/preview",
         token: "token",
+        websocketUrl: "wss://platform.test/preview",
       }),
       ok: true,
     }))
   );
-  const buildEvents = (
-    revision: number,
-    source: string,
-    chunk: string
-  ): PreviewEvent[] => {
-    const bytes = Buffer.from(source);
-    return [
-      {
-        buildId: `build-${revision}`,
-        manifest: {
-          files: [
-            {
-              path: "client.js",
-              contentType: "text/javascript",
-              size: bytes.length,
-              chunks: 1,
-              sha256: createHash("sha256").update(bytes).digest("hex"),
-            },
-          ],
-          views: [{ slot: "page", path: `/revision-${revision}` }],
-        },
-        revision,
-        type: "begin",
-      },
-      {
-        base64: Buffer.from(chunk).toString("base64"),
-        chunkIndex: 0,
-        fileIndex: 0,
-        revision,
-        type: "chunk",
-      },
-      { revision, type: "complete" },
-    ];
-  };
+  const buildEvents = buildEventsImplementation;
   state.batches = [
     buildEvents(1, "original", "original"),
     buildEvents(2, "replacement", "REPLACEMENT"),
@@ -383,6 +396,39 @@ it("keeps the last complete build through a corrupt transfer and recovers after 
   expect(FakeSocket.instances[2]?.closed).toBe(true);
 });
 
+const buildEventsImplementation2 = (
+  revision: number,
+  source: string
+): PreviewEvent[] => {
+  const bytes = Buffer.from(source);
+  return [
+    {
+      buildId: `build-${revision}`,
+      manifest: {
+        files: [
+          {
+            chunks: 1,
+            contentType: "text/javascript",
+            path: "client.js",
+            sha256: createHash("sha256").update(bytes).digest("hex"),
+            size: bytes.length,
+          },
+        ],
+      },
+      revision,
+      type: "begin",
+    },
+    {
+      base64: bytes.toString("base64"),
+      chunkIndex: 0,
+      fileIndex: 0,
+      revision,
+      type: "chunk",
+    },
+    { revision, type: "complete" },
+  ];
+};
+
 it("keeps a reconnect's candidate when an older checksum finishes", async () => {
   vi.stubGlobal("WebSocket", FakeSocket);
   vi.stubGlobal(
@@ -390,8 +436,8 @@ it("keeps a reconnect's candidate when an older checksum finishes", async () => 
     vi.fn(async () => ({
       json: async () => ({
         sessionId: "session",
-        websocketUrl: "wss://platform.test/preview",
         token: "token",
+        websocketUrl: "wss://platform.test/preview",
       }),
       ok: true,
     }))
@@ -402,38 +448,10 @@ it("keeps a reconnect's candidate when an older checksum finishes", async () => 
   vi.stubGlobal("crypto", {
     subtle: {
       digest: () =>
-        ++digestCalls === 1 ? oldDigest.promise : newDigest.promise,
+        (digestCalls += 1) === 1 ? oldDigest.promise : newDigest.promise,
     },
   });
-  const buildEvents = (revision: number, source: string): PreviewEvent[] => {
-    const bytes = Buffer.from(source);
-    return [
-      {
-        buildId: `build-${revision}`,
-        manifest: {
-          files: [
-            {
-              path: "client.js",
-              contentType: "text/javascript",
-              size: bytes.length,
-              chunks: 1,
-              sha256: createHash("sha256").update(bytes).digest("hex"),
-            },
-          ],
-        },
-        revision,
-        type: "begin",
-      },
-      {
-        base64: bytes.toString("base64"),
-        chunkIndex: 0,
-        fileIndex: 0,
-        revision,
-        type: "chunk",
-      },
-      { revision, type: "complete" },
-    ];
-  };
+  const buildEvents = buildEventsImplementation2;
   state.batches = [buildEvents(1, "old"), buildEvents(2, "new")];
   const manager = createPreviewManager(
     new URL("https://host.test/api/tailorkit/"),
@@ -463,7 +481,19 @@ it("keeps a reconnect's candidate when an older checksum finishes", async () => 
   oldDigest.resolve(
     Uint8Array.from(createHash("sha256").update("old").digest()).buffer
   );
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await (() => {
+    const {
+      promise: pendingPromise,
+      resolve,
+      reject: rejectPending,
+    } = Promise.withResolvers();
+    try {
+      setTimeout(resolve, 0);
+    } catch (error) {
+      rejectPending(error);
+    }
+    return pendingPromise;
+  })();
   newDigest.resolve(
     Uint8Array.from(createHash("sha256").update("new").digest()).buffer
   );
@@ -484,8 +514,8 @@ it("clears the published preview before refreshing apps when a session ends", as
     vi.fn(async () => ({
       json: async () => ({
         sessionId: "session",
-        websocketUrl: "wss://platform.test/preview",
         token: "token",
+        websocketUrl: "wss://platform.test/preview",
       }),
       ok: true,
     }))
@@ -498,11 +528,11 @@ it("clears the published preview before refreshing apps when a session ends", as
       manifest: {
         files: [
           {
-            path: "client.js",
-            contentType: "text/javascript",
-            size: bytes.length,
             chunks: 1,
+            contentType: "text/javascript",
+            path: "client.js",
             sha256: createHash("sha256").update(bytes).digest("hex"),
+            size: bytes.length,
           },
         ],
       },
@@ -521,6 +551,7 @@ it("clears the published preview before refreshing apps when a session ends", as
   const snapshots: { revision: number; source: string | null }[] = [];
   const endedSnapshots: { revision: number; source: string | null }[] = [];
   const onEnded = vi.fn(() => {
+    // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
     endedSnapshots.push(manager.getSnapshot("session"));
   });
   const manager = createPreviewManager(
@@ -564,8 +595,8 @@ it("shares one socket, applies only complete checksummed revisions, and closes o
     vi.fn(async () => ({
       json: async () => ({
         sessionId: "session",
-        websocketUrl: "wss://platform.test/preview",
         token: "token",
+        websocketUrl: "wss://platform.test/preview",
       }),
       ok: true,
     }))
@@ -578,11 +609,11 @@ it("shares one socket, applies only complete checksummed revisions, and closes o
       manifest: {
         files: [
           {
-            path: "client.js",
-            contentType: "text/javascript",
-            size: bytes.length,
             chunks: 1,
+            contentType: "text/javascript",
+            path: "client.js",
             sha256: createHash("sha256").update(bytes).digest("hex"),
+            size: bytes.length,
           },
         ],
       },
@@ -628,9 +659,19 @@ it("shares one socket, applies only complete checksummed revisions, and closes o
 
 it("does not open a socket after disposal while metadata is pending", async () => {
   let resolve!: (response: Response) => void;
-  const response = new Promise<Response>((done) => {
-    resolve = done;
-  });
+  const response = (() => {
+    const {
+      promise: pendingPromise,
+      resolve: done,
+      reject: rejectPending,
+    } = Promise.withResolvers<Response>();
+    try {
+      resolve = done;
+    } catch (error) {
+      rejectPending(error);
+    }
+    return pendingPromise;
+  })();
   vi.stubGlobal("WebSocket", FakeSocket);
   vi.stubGlobal(
     "fetch",

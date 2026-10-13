@@ -1,3 +1,4 @@
+/* oxlint-disable react/rules-of-hooks -- Compile-only API tests exercise hook signatures outside runtime components. */
 import type {
   StandardJSONSchemaV1,
   StandardSchemaV1,
@@ -14,6 +15,13 @@ import type {
 } from "../index";
 import { components, createClient } from "../tailorkit";
 import type { TailorKitApp } from "../tailorkit";
+
+const requireValue = <T,>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
 
 type ExpectedResultKeys =
   | "data"
@@ -32,13 +40,18 @@ type ViewsResultKeys = Assert<HasExactResultKeys<UseViewsResult>>;
 const resultKeys: [AppsResultKeys, ViewsResultKeys] = [true, true];
 void resultKeys;
 
-type OptionalChildrenComponent = ComponentDefinition<undefined, {}, true>;
+type OptionalChildrenComponent = ComponentDefinition<
+  undefined,
+  Record<string, never>,
+  true
+>;
 const optionalChildrenRenderer: ComponentRenderer<
   OptionalChildrenComponent,
   ReactNode
 > = ({ children }) => children;
 void optionalChildrenRenderer;
 
+// oxlint-disable-next-line typescript/no-empty-object-type, typescript/ban-types -- This negative type case verifies a component with no declared children property.
 const leafRenderer: ComponentRenderer<{}, ReactNode> = (args) => {
   // @ts-expect-error leaf component renderer arguments do not include children
   void args.children;
@@ -85,7 +98,7 @@ const contract = defineContract({
   },
 });
 
-const tailor = createClient({ contract, baseUrl: "http://runtime.test" });
+const tailor = createClient({ baseUrl: "http://runtime.test", contract });
 tailor.clearCache();
 const {
   Provider: TailorKitProvider,
@@ -142,12 +155,14 @@ const requiredComponentsContract = defineContract({
 });
 
 createClient({
-  contract: requiredComponentsContract,
   baseUrl: "http://runtime.test",
+
   // @ts-expect-error all contract components must have client renderers when components are provided
   components: {
     Button: () => null,
   },
+
+  contract: requiredComponentsContract,
 });
 
 components(childrenSchema, {
@@ -218,12 +233,18 @@ useViewContext("/user", { context: { page: { title: "Home" } } });
 // @ts-expect-error the context property is required
 useViewContext("/home", {});
 
-// @ts-expect-error loading still requires a complete context shape or undefined
-useViewContext("/home", { context: { page: {} }, loading: true });
-// @ts-expect-error errors still require a complete context shape or undefined
-useViewContext("/home", { context: { page: {} }, error: new Error("Failed") });
-// @ts-expect-error the context shape belongs to the selected view even while loading
+useViewContext("/home", {
+  // @ts-expect-error loading still requires a complete context shape or undefined
+  context: { page: {} },
+  loading: true,
+});
+useViewContext("/home", {
+  // @ts-expect-error errors still require a complete context shape or undefined
+  context: { page: {} },
+  error: new Error("Failed"),
+});
 useViewContext("/user", {
+  // @ts-expect-error the context shape belongs to the selected view even while loading
   context: { page: { title: "Home" } },
   loading: true,
 });
@@ -277,23 +298,25 @@ void viewsPending;
 void viewsError;
 void viewsRefetching;
 void viewsFetch;
-const requiredKey: string = instances.data![0]!.key;
+const requiredKey: string = requireValue(requireValue(instances.data)[0]).key;
 const single = useViews({ slot: "single" });
 // @ts-expect-error explicit single slots have no instance key
-void single.data![0]!.key;
+void requireValue(requireValue(single.data)[0]).key;
 const defaultSingle = useViews({ slot: "panel" });
 // @ts-expect-error slots with an omitted multiple flag have no instance key
-void defaultSingle.data![0]!.key;
-const requiredMetadata: Record<string, unknown> = instances.data![0]!.metadata;
+void requireValue(requireValue(defaultSingle.data)[0]).key;
+const requiredMetadata: Record<string, unknown> = requireValue(
+  requireValue(instances.data)[0]
+).metadata;
 // @ts-expect-error single slots have no instance metadata
-void single.data![0]!.metadata;
+void requireValue(requireValue(single.data)[0]).metadata;
 // @ts-expect-error single slots have no instance data
-void single.data![0]!.data;
+void requireValue(requireValue(single.data)[0]).data;
 const selectedSlot: "page" | "single" = Math.random() > 0.5 ? "page" : "single";
 const selectedItems = useViews({ slot: selectedSlot });
 // @ts-expect-error a union slot name requires narrowing before reading an instance key
-void selectedItems.data![0]!.key;
-const selectedItem = selectedItems.data![0]!;
+void requireValue(requireValue(selectedItems.data)[0]).key;
+const selectedItem = requireValue(requireValue(selectedItems.data)[0]);
 if ("key" in selectedItem) {
   const narrowedKey: string = selectedItem.key;
   const narrowedMetadata: Record<string, unknown> = selectedItem.metadata;
@@ -308,7 +331,9 @@ declare const optionalClient: TailorKitInstance<
   Record<string, never>,
   { optional: { views: readonly ["/"]; multiple?: true } }
 >;
-const optionalItem = optionalClient.useViews({ slot: "optional" }).data![0]!;
+const optionalItem = requireValue(
+  requireValue(optionalClient.useViews({ slot: "optional" }).data)[0]
+);
 // @ts-expect-error an optional multiple flag cannot guarantee an instance key
 void optionalItem.key;
 if ("key" in optionalItem) {
@@ -406,10 +431,10 @@ useViews({});
 />;
 // @ts-expect-error the navbar only supports root
 <RenderSlot.Controlled app={app} slot="navbar" view="/user" status="loading" />;
-// @ts-expect-error unknown views cannot be rendered
 <RenderSlot.Controlled
   app={app}
   slot="panel"
+  // @ts-expect-error unknown views cannot be rendered
   view="/missing"
   status="loading"
 />;
@@ -553,7 +578,7 @@ const transformedSchema: StandardSchemaV1<
   { count: number }
 > = {
   "~standard": {
-    validate: (value) => ({
+    validate: (value: unknown) => ({
       value: { count: Number((value as { count: string }).count) },
     }),
     vendor: "test",

@@ -4,6 +4,7 @@ import {
   deploymentMetadataKey,
   runtimeServiceAuthorized,
 } from "@tailorkit/api-utils/app-auth";
+import type { Identity } from "@tailorkit/app/server";
 import { AppError } from "@tailorkit/app/server";
 import {
   parseHostedAppRoute,
@@ -105,12 +106,12 @@ export default {
         url.pathname = appRoute.rpcPath;
         const routedRequest = new Request(url, request);
         return yield* routeInstallation(routedRequest, {
-          installation: (identity) =>
+          installation: (identity: Identity) =>
             env.STORES.getByName(
               installationName(identity, appRuntimeIssuer(env.PLATFORM_URL))
             ),
           verify: (token) =>
-            Effect.gen(function* () {
+            Effect.gen(function* verify() {
               const identity = yield* verifier(env)(token);
               if (
                 (appRoute.publicTeamId !== undefined &&
@@ -139,7 +140,9 @@ export default {
     }
 
     const headers = new Headers(response.headers);
-    cors.forEach((value, key) => headers.set(key, value));
+    for (const [key, value] of cors) {
+      headers.set(key, value);
+    }
 
     return new Response(response.body, { headers, status: response.status });
   },

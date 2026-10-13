@@ -4,6 +4,7 @@ import { JsonSchema } from "./json-schema";
 
 const viewKeyPattern = /^\/.*$/u;
 
+// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
 const ViewKey = z.string().regex(viewKeyPattern, {
   message: 'View keys must start with "/".',
 });

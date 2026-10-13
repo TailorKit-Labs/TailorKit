@@ -14,7 +14,12 @@ import {
 import { useAppForm } from "@tailorkit/ui/form";
 import { Logo } from "@tailorkit/ui/logo";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
+import {
+  useNavigate,
+  createFileRoute,
+  Link,
+  useSearch,
+} from "@tanstack/react-router";
 import { ArrowLeftIcon } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
@@ -27,16 +32,6 @@ import {
   getSameOriginUrl,
 } from "#lib/safe-return-url";
 
-export const Route = createFileRoute("/(auth)/sign-up")({
-  component: RouteComponent,
-  validateSearch: z.object({
-    email: z.string().optional(),
-    error: z.string().optional(),
-    error_description: z.string().optional(),
-    return_to: z.string().optional(),
-  }),
-});
-
 const GitHubIcon = () => (
   <svg
     viewBox="0 0 24 24"
@@ -47,16 +42,14 @@ const GitHubIcon = () => (
   </svg>
 );
 
-type Step = "email" | "details";
-
-function RouteComponent() {
+const RouteComponent = () => {
   const {
     email: emailFromSearch,
-    error,
+    error: authenticationError,
     error_description,
     return_to,
   } = useSearch({ from: "/(auth)/sign-up" });
-  const navigate = Route.useNavigate();
+  const navigate = useNavigate({ from: "/sign-up" });
   const socialProvidersQuery = useQuery(
     orpc.user.getSocialProviders.queryOptions()
   );
@@ -85,7 +78,19 @@ function RouteComponent() {
   const emailForm = useAppForm({
     defaultValues: { email: emailFromSearch || "" },
     onSubmit: async ({ value }) => {
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      await (() => {
+        const {
+          promise: pendingPromise,
+          resolve,
+          reject: rejectPending,
+        } = Promise.withResolvers();
+        try {
+          setTimeout(resolve, 300);
+        } catch (error) {
+          rejectPending(error);
+        }
+        return pendingPromise;
+      })();
       transition("details", value.email);
     },
     validators: {
@@ -100,9 +105,11 @@ function RouteComponent() {
       await authClient.signUp.email(
         { email, name: value.name, password: value.password },
         {
-          onError: (error) => {
+          onError: (errorValue2) => {
             setDetailsError(
-              error.error.message || error.error.statusText || "Sign up failed"
+              errorValue2.error.message ||
+                errorValue2.error.statusText ||
+                "Sign up failed"
             );
           },
           onSuccess: () => {
@@ -183,9 +190,13 @@ function RouteComponent() {
                   }}
                 >
                   <CardPanel className="flex flex-col gap-4">
-                    {(socialError || error_description || error) && (
+                    {(socialError ||
+                      error_description ||
+                      authenticationError) && (
                       <p className="text-destructive text-sm" role="alert">
-                        {socialError || error_description || error}
+                        {socialError ||
+                          error_description ||
+                          authenticationError}
                       </p>
                     )}
                     {(socialProvidersQuery.data?.google ||
@@ -201,7 +212,7 @@ function RouteComponent() {
                                 socialAuthPending && socialPending !== "github"
                               }
                               loading={socialPending === "github"}
-                              onClick={() => void signUpWithSocial("github")}
+                              onClick={() => signUpWithSocial("github")}
                             >
                               <GitHubIcon />
                               Continue with GitHub
@@ -216,7 +227,7 @@ function RouteComponent() {
                                 socialAuthPending && socialPending !== "google"
                               }
                               loading={socialPending === "google"}
-                              onClick={() => void signUpWithSocial("google")}
+                              onClick={() => signUpWithSocial("google")}
                             >
                               <GoogleIcon className="size-4 shrink-0" />
                               Continue with Google
@@ -327,4 +338,16 @@ function RouteComponent() {
       </div>
     </div>
   );
-}
+};
+
+export const Route = createFileRoute("/(auth)/sign-up")({
+  component: RouteComponent,
+  validateSearch: z.object({
+    email: z.string().optional(),
+    error: z.string().optional(),
+    error_description: z.string().optional(),
+    return_to: z.string().optional(),
+  }),
+});
+
+type Step = "email" | "details";

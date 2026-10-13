@@ -6,10 +6,13 @@ import {
   real as sqliteReal,
 } from "drizzle-orm/sqlite-core";
 
-export function table<
+export const table = <
   N extends string,
   C extends Record<string, ColumnBuilderBase>,
->(name: N, columns: C) {
+>(
+  name: N,
+  columns: C
+) => {
   if (
     !/^[a-zA-Z][a-zA-Z0-9_]{0,62}$/u.test(name) ||
     name.startsWith("sqlite_") ||
@@ -18,7 +21,7 @@ export function table<
     throw new Error("Invalid or reserved table name");
   }
   return sqliteTable(name, columns);
-}
+};
 
 export const text = (name = "") => sqliteText(name);
 export const integer = (name = "") => sqliteInteger(name);

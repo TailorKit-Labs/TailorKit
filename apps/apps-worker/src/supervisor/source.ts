@@ -10,35 +10,43 @@ import { Effect } from "effect";
 
 import { appError } from "../runtime/errors";
 
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 export type ServerDeployment = AppDeploymentMetadata;
 
 /** Deployment selects code, never the database. Issuer also separates trusted hosts. */
-export function installationName(identity: Identity, issuer: string) {
-  return JSON.stringify([
+export const installationName = (identity: Identity, issuer: string) =>
+  JSON.stringify([
     issuer,
     identity.projectId,
     identity.appId,
     identity.installationId,
   ]);
-}
 
 export const metadataLifetimeSeconds = 300;
 
 /** Bound stored and inflated bytes before allocating or executing bundle code. */
-async function readBundleBytes(
+const readBundleBytes = async (
   stream: ReadableStream<Uint8Array>
-): Promise<Uint8Array<ArrayBuffer>> {
+): Promise<Uint8Array<ArrayBuffer>> => {
   const reader = stream.getReader();
   const chunks: Uint8Array[] = [];
   let length = 0;
   try {
     for (;;) {
+      // oxlint-disable-next-line no-await-in-loop -- Stream reads and cancellation must stay ordered and bounded.
       const { done, value } = await reader.read();
       if (done) {
         break;
       }
       length += value.byteLength;
       if (length > maxDeploymentBytes) {
+        // oxlint-disable-next-line no-await-in-loop -- Stream reads and cancellation must stay ordered and bounded.
         await reader.cancel();
         throw new Error("Server bundle exceeds deployment size limit");
       }
@@ -54,21 +62,24 @@ async function readBundleBytes(
     offset += chunk.byteLength;
   }
   return bytes;
-}
+};
 
 /** Only this trusted service sees platform credentials or the private R2 binding. */
-export function deploymentSource(
+export const deploymentSource = (
   env: Pick<Env, "PLATFORM_URL" | "RUNTIME_SERVICE_TOKEN"> & {
     DEPLOYMENTS: Pick<KVNamespace, "get" | "put">;
     BUNDLES: {
-      get(key: string): Promise<{ body: ReadableStream<Uint8Array> } | null>;
+      get: (
+        key: string
+      ) => Promise<{ body: ReadableStream<Uint8Array> } | null>;
     };
   }
-) {
+) => {
   let cached: { version: string; code: string } | undefined;
   return {
     code: (deployment: ServerDeployment) =>
       Effect.tryPromise({
+        catch: appError,
         try: async () => {
           const version = `${deployment.deploymentId}:${deployment.checksum}:${deployment.contentEncoding ?? "utf-8"}`;
           if (cached?.version === version) {
@@ -97,7 +108,7 @@ export function deploymentSource(
           const decoded =
             deployment.contentEncoding === "gzip"
               ? await readBundleBytes(
-                  new Response(bytes).body!.pipeThrough(
+                  requireValue(new Response(bytes).body).pipeThrough(
                     new DecompressionStream("gzip")
                   )
                 )
@@ -105,14 +116,14 @@ export function deploymentSource(
           const code = new TextDecoder("utf-8", { fatal: true }).decode(
             decoded
           );
-          cached = { version, code };
+          cached = { code, version };
           return code;
         },
-        catch: appError,
       }),
 
     current: (identity: Identity, runningDeploymentId?: string) =>
       Effect.tryPromise({
+        catch: appError,
         try: async () => {
           const key = deploymentMetadataKey(identity);
           const cachedMetadata = appDeploymentMetadata.safeParse(
@@ -143,13 +154,13 @@ export function deploymentSource(
                 base
               ),
               {
-                method: "POST",
+                body: JSON.stringify({}),
                 headers: {
                   authorization: `Bearer ${env.RUNTIME_SERVICE_TOKEN}`,
                   "content-type": "application/json",
                   "x-tailorkit-project-id": identity.projectId,
                 },
-                body: JSON.stringify({}),
+                method: "POST",
                 redirect: "manual",
                 signal: AbortSignal.timeout(10_000),
               }
@@ -186,7 +197,6 @@ export function deploymentSource(
           }
           return deployment;
         },
-        catch: appError,
       }),
   };
-}
+};

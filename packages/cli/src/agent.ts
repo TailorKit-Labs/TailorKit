@@ -24,9 +24,9 @@ interface AgentOptions {
   onLoginRequired?: () => Promise<unknown>;
 }
 
-async function chooseApp(
+const chooseApp = async (
   client: Pick<TailorKitRouterClient, "apps">
-): Promise<string | undefined> {
+): Promise<string | undefined> => {
   const loading = spinner();
   const apps: Awaited<
     ReturnType<TailorKitRouterClient["apps"]["list"]>
@@ -36,9 +36,10 @@ async function chooseApp(
     let page = 1;
     let hasMore = true;
     while (hasMore) {
+      // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
       const result = await client.apps.list({ page, pageSize: 100 });
       apps.push(...result.items);
-      hasMore = result.pagination.hasMore;
+      ({ hasMore } = result.pagination);
       page += 1;
     }
     loading.stop(apps.length ? "Found apps." : "No apps found.");
@@ -56,11 +57,11 @@ async function chooseApp(
     message: "Select an app or create a new one",
     options: [
       ...apps.map((app) => ({
-        value: app.id,
-        label: app.name,
         hint: app.publicId,
+        label: app.name,
+        value: app.id,
       })),
-      { value: null, label: "Create a new app" },
+      { label: "Create a new app", value: null },
     ],
     placeholder: "Search by name or app ID",
   });
@@ -94,9 +95,9 @@ async function chooseApp(
     loading.stop("Unable to create app.");
     throw error;
   }
-}
+};
 
-export async function runAgentCommand(options: AgentOptions) {
+export const runAgentCommand = async (options: AgentOptions) => {
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
     throw new Error("tailorkit agent requires an interactive terminal.");
   }
@@ -136,4 +137,4 @@ export async function runAgentCommand(options: AgentOptions) {
     hostUrl,
     schemaPath: options.schemaPath,
   });
-}
+};

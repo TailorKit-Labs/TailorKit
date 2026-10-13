@@ -2,6 +2,7 @@ import { Effect } from "effect";
 import { expect, it, vi, afterEach } from "vite-plus/test";
 
 import { deploymentSource, installationName } from "./source";
+
 afterEach(() => vi.restoreAllMocks());
 
 const identity = {
@@ -39,6 +40,7 @@ it.each([
     const source = deploymentSource({
       BUNDLES: { get: load },
       DEPLOYMENTS: {
+        // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
         get: vi.fn(async () => null),
         put: vi.fn(async () => {}),
       } as unknown as KVNamespace,
@@ -60,6 +62,7 @@ it("rejects a token that expires while resolving deployment", async () => {
   const source = deploymentSource({
     BUNDLES: { get: vi.fn() },
     DEPLOYMENTS: {
+      // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
       get: vi.fn(async () => null),
       put: vi.fn(async () => {}),
     } as unknown as KVNamespace,

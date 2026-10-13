@@ -174,11 +174,21 @@ const promptForce = async (
 };
 
 const exec = (cmd: string, args: string[], cwd: string): Promise<number> =>
-  new Promise((resolve, reject) => {
-    const proc = spawn(cmd, args, { cwd, stdio: "inherit" });
-    proc.on("close", resolve);
-    proc.on("error", reject);
-  });
+  (() => {
+    const {
+      promise: pendingPromise,
+      resolve,
+      reject,
+    } = Promise.withResolvers<number>();
+    try {
+      const proc = spawn(cmd, args, { cwd, stdio: "inherit" });
+      proc.on("close", resolve);
+      proc.on("error", reject);
+    } catch (error) {
+      reject(error);
+    }
+    return pendingPromise;
+  })();
 
 const runInstall = async (
   targetDir: string,

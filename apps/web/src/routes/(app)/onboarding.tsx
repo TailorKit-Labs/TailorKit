@@ -1,5 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
+const Onboarding = () => null;
+
 export const Route = createFileRoute("/(app)/onboarding")({
   component: Onboarding,
   loader: async ({ context }) => {
@@ -14,7 +16,3 @@ export const Route = createFileRoute("/(app)/onboarding")({
     throw redirect({ to: "/account/request-organization" });
   },
 });
-
-function Onboarding() {
-  return null;
-}

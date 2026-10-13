@@ -24,27 +24,24 @@ import {
 } from "@tailorkit/ui/otp-field";
 import { toastManager } from "@tailorkit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
+import {
+  useNavigate,
+  createFileRoute,
+  Link,
+  useSearch,
+} from "@tanstack/react-router";
 import { ChevronLeftIcon } from "lucide-react";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 
 import { authClient } from "#lib/auth-client";
 import { getSameOriginPath } from "#lib/safe-return-url";
 
-export const Route = createFileRoute("/(auth)/verify-email")({
-  component: RouteComponent,
-  validateSearch: (search) => ({
-    email: search.email as string,
-    return_to: search.return_to as string | undefined,
-  }),
-});
-
 const OTP_LENGTH = 6;
 const SLOT_KEYS = Array.from({ length: OTP_LENGTH }, (_, i) => `slot-${i}`);
 
-function RouteComponent() {
+const RouteComponent = () => {
   const { email, return_to } = useSearch({ from: "/(auth)/verify-email" });
-  const navigate = Route.useNavigate();
+  const navigate = useNavigate({ from: "/verify-email" });
   const [otp, setOtp] = useState("");
   const [invalid, setInvalid] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -227,4 +224,12 @@ function RouteComponent() {
       </div>
     </div>
   );
-}
+};
+
+export const Route = createFileRoute("/(auth)/verify-email")({
+  component: RouteComponent,
+  validateSearch: (search) => ({
+    email: search.email as string,
+    return_to: search.return_to as string | undefined,
+  }),
+});

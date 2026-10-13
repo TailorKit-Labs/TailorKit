@@ -4,14 +4,13 @@ import type { TailorKitApp } from "../types";
 import { createEndpointClient } from "./endpoints";
 import { createTailorKitFetchClient } from "./fetch-client";
 
-function session(token: string) {
-  return Response.json({
+const session = (token: string) =>
+  Response.json({
     expiresAt: Date.now() + 300_000,
     subjectId: "principal",
     token,
     url: "https://runtime.test/rpc",
   });
-}
 
 const deployedApp: TailorKitApp = {
   currentDeployment: { id: "first" },
@@ -75,16 +74,27 @@ it.each([
   }
 );
 
+const respondImplementation = () => {};
+
 it("clears sessions for held consumers through the public client and shares replacement requests", async () => {
-  let respond: (response: Response) => void = () => {};
+  let respond: (response: Response) => void = respondImplementation;
   const request = vi
     .fn<typeof fetch>()
     .mockResolvedValueOnce(session("before"))
-    .mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
+    .mockImplementationOnce(() =>
+      (() => {
+        const {
+          promise: pendingPromise,
+          resolve,
+          reject: rejectPending,
+        } = Promise.withResolvers<Response>();
+        try {
           respond = resolve;
-        })
+        } catch (error) {
+          rejectPending(error);
+        }
+        return pendingPromise;
+      })()
     )
     .mockResolvedValueOnce(session("after-again"));
   const fetchClient = createTailorKitFetchClient({
@@ -115,15 +125,16 @@ it("clears sessions for held consumers through the public client and shares repl
 
 it("reauthorizes held consumers after host sign-out and account changes", async () => {
   let user: string | null = "first-user";
-  const request = vi.fn<typeof fetch>().mockImplementation(async () =>
-    user
-      ? Response.json({
-          expiresAt: Date.now() + 300_000,
-          subjectId: user,
-          token: `${user}-token`,
-          url: "https://runtime.test/rpc",
-        })
-      : new Response(null, { status: 401 })
+  const request = vi.fn<typeof fetch>().mockImplementation(
+    async () =>
+      await (user
+        ? Response.json({
+            expiresAt: Date.now() + 300_000,
+            subjectId: user,
+            token: `${user}-token`,
+            url: "https://runtime.test/rpc",
+          })
+        : new Response(null, { status: 401 }))
   );
   const fetchClient = createTailorKitFetchClient({
     baseUrl: "https://host.test/",
@@ -157,17 +168,28 @@ it("reauthorizes held consumers after host sign-out and account changes", async 
   expect(request).toHaveBeenCalledTimes(4);
 });
 
+const respondImplementation2 = () => {};
+
 it.each(["clear", "deployment", "preview"])(
   "rejects a late session response after %s invalidates its credentials",
   async (change) => {
-    let respond: (response: Response) => void = () => {};
+    let respond: (response: Response) => void = respondImplementation2;
     const request = vi
       .fn<typeof fetch>()
-      .mockImplementationOnce(
-        () =>
-          new Promise((resolve) => {
+      .mockImplementationOnce(() =>
+        (() => {
+          const {
+            promise: pendingPromise,
+            resolve,
+            reject: rejectPending,
+          } = Promise.withResolvers<Response>();
+          try {
             respond = resolve;
-          })
+          } catch (error) {
+            rejectPending(error);
+          }
+          return pendingPromise;
+        })()
       )
       .mockResolvedValueOnce(session("current"));
     const fetchClient = createTailorKitFetchClient({

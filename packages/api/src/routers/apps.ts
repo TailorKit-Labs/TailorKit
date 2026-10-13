@@ -9,7 +9,7 @@ import { db } from "@tailorkit/db";
 import { app, appDeployment } from "@tailorkit/db/schema/apps";
 import { evaluateBooleanFlag } from "@tailorkit/flags";
 import { and, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
-import z from "zod";
+import { z } from "zod";
 
 import { protectedProcedure, requireProject } from "../procedures";
 
@@ -31,7 +31,7 @@ const appInput = projectInput.extend({
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
-async function getProjectApp(projectId: string, appId: string) {
+const getProjectApp = async (projectId: string, appId: string) => {
   const appByPublicId = await db.query.app.findFirst({
     where: {
       projectId,
@@ -51,13 +51,13 @@ async function getProjectApp(projectId: string, appId: string) {
       },
     })) ?? null
   );
-}
+};
 
-async function getSourceExportApp(
+const getSourceExportApp = async (
   projectId: string,
   appId: string,
   user: { id: string; email: string }
-) {
+) => {
   const selectedApp = await getProjectApp(projectId, appId);
   if (!selectedApp) {
     throw new ORPCError("NOT_FOUND", { message: "App not found." });
@@ -71,7 +71,7 @@ async function getSourceExportApp(
   });
 
   return { app: selectedApp, enabled };
-}
+};
 
 export const appsRouter = {
   exportSource: protectedProcedure
@@ -281,7 +281,9 @@ export const appsRouter = {
         input.appId,
         context.user
       );
-      if (!enabled) return "disabled" as const;
+      if (!enabled) {
+        return "disabled" as const;
+      }
       return getAppAgentWorkspaceStatus(selectedApp.id);
     }),
 };

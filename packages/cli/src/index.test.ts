@@ -27,13 +27,13 @@ vi.mock("cac", () => ({
   cac: () => {
     const cli = {
       command: (name: string) => ({
-        option: () => cli.command(name),
         action: (
           action: (options: Record<string, unknown>) => Promise<void>
         ) => {
           mocks.actions.set(name, action);
           return cli;
         },
+        option: () => cli.command(name),
       }),
       help: vi.fn(),
       option: vi.fn(),
@@ -72,6 +72,7 @@ await import("./index");
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
   mocks.login.mockImplementation(async (_options, onUserCode) => {
     onUserCode({
       expiresAt: new Date("2030-01-01"),

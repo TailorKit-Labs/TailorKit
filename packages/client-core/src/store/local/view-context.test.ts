@@ -3,8 +3,8 @@ import { z } from "zod";
 
 import { createViewContextStore } from "./view-context";
 
-function createStore() {
-  return createViewContextStore({
+const createStore = () =>
+  createViewContextStore({
     views: {
       "/first": z.looseObject({}),
       "/home": z.looseObject({}),
@@ -12,7 +12,6 @@ function createStore() {
       "/last": z.looseObject({}),
     },
   });
-}
 
 describe("view context store", () => {
   it("publishes nested view registration once after synchronous updates settle", async () => {
@@ -33,8 +32,8 @@ describe("view context store", () => {
     expect(listener).toHaveBeenCalledOnce();
     expect(registry.getSnapshot()).toEqual({
       layers: [
-        { path: "/home", context: { parent: true }, status: "ready" },
-        { path: "/home/detail", context: undefined, status: "loading" },
+        { context: { parent: true }, path: "/home", status: "ready" },
+        { context: undefined, path: "/home/detail", status: "loading" },
       ],
       view: "/home/detail",
     });
