@@ -5,6 +5,7 @@
   "emmet.showExpandedAbbreviation": "never",
   "js/ts.tsdk.path": "node_modules/typescript/lib",
   "js/ts.tsdk.promptToUseWorkspaceVersion": true,
+  "tailwindCSS.classFunctions": ["cva", "cx", "cn", "clsx"],
   "[css]": {
     "editor.defaultFormatter": "oxc.oxc-vscode"
   },
