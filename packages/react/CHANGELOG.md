@@ -1,5 +1,16 @@
 # @tailorkit/react
 
+## 0.1.0-beta.33
+
+### Patch Changes
+
+- Updated dependencies [a215860]
+  - @tailorkit/core@0.1.0-beta.33
+  - @tailorkit/client-core@0.1.0-beta.33
+  - @tailorkit/sandbox@0.1.0-beta.33
+  - @tailorkit/app@0.1.0-beta.33
+  - @tailorkit/client-platform@0.1.0-beta.33
+
 ## 0.1.0-beta.32
 
 ### Patch Changes
