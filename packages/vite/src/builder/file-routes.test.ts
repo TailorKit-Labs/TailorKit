@@ -20,6 +20,7 @@ import {
   discoverFileRoutes,
   inferFileView,
   getClientSourceFiles,
+  fileViewLocation,
 } from "./file-routes";
 
 const buildFixture = async (options: {
@@ -59,7 +60,22 @@ const buildFixture = async (options: {
   return result;
 };
 
-it("infers dotted paths and literal slot names while preserving explicit overrides", () => {
+it.each([
+  ["index", "/"],
+  ["members/index", "/members"],
+  ["members.index", "/members"],
+  ["members/details", "/members/details"],
+  ["members.details.index", "/members/details"],
+  ["index.details", "/index/details"],
+  ["index.index", "/index"],
+  ["home", "/home"],
+])("maps %s.view.tsx to %s", (name, view) => {
+  expect(
+    fileViewLocation(`/app/src/slots/panel/${name}.view.tsx`, "/app")
+  ).toEqual({ path: view, slot: "panel" });
+});
+
+it("infers dotted paths and literal slot names while checking explicit declarations", () => {
   const filename = "/app/src/slots/panel.links/customers.details.view.tsx";
   const source =
     'import { defineView as view } from "tailorkit/client"; export default view({ component: () => null });';
@@ -67,16 +83,36 @@ it("infers dotted paths and literal slot names while preserving explicit overrid
   expect(inferred).toContain('slot: "panel.links"');
   expect(inferred).toContain('view: "/customers/details"');
   expect(inferFileView(inferred, filename, "/app")).toBe(inferred);
-  const override = source.replace("component:", 'view: "/", component:');
-  expect(inferFileView(override, filename, "/app")).not.toContain(
-    'view: "/customers/details"'
+  const explicit = source.replace(
+    "component:",
+    'slot: "panel.links", view: "/customers/details", component:'
   );
+  expect(inferFileView(explicit, filename, "/app")).toBe(explicit);
   expect(inferFileView(source, "/app/src/slots/panel/card.tsx", "/app")).toBe(
     source
   );
   expect(() =>
     inferFileView(source, "/app/src/slots/panel/a..b.view.tsx", "/app")
   ).toThrow("empty route segment");
+});
+
+it.each([
+  ['view: "/"', 'view must be "/customers/details"'],
+  ['view: "/customers"', 'view must be "/customers/details"'],
+  ['slot: "other"', 'slot must be "panel"'],
+  ["view: contextPath", 'view must be "/customers/details"'],
+  ['view: "/customers/details", ...options', "use named defineView properties"],
+  ['[field]: "/"', "use named defineView properties"],
+  ['get view() { return "/"; }', 'view must be "/customers/details"'],
+  ['["view"]: "/"', 'view must be "/customers/details"'],
+])("rejects file route declarations with %s", (properties, message) => {
+  expect(() =>
+    inferFileView(
+      `import { defineView } from "tailorkit/client"; export default defineView({ ${properties}, component: () => null });`,
+      "/app/src/slots/panel/customers.details.view.tsx",
+      "/app"
+    )
+  ).toThrow(message);
 });
 
 it.each([
@@ -93,11 +129,11 @@ it.each([
     expect(inferred).toContain('slot: "panel"');
     expect(inferred).toContain('view: "/customers/details"');
     expect(inferFileView(inferred, filename, "/app")).toBe(inferred);
-    const override = source.replace(
+    const explicit = source.replace(
       "component:",
-      'slot: "custom", view: "/", component:'
+      'slot: "panel", view: "/customers/details", component:'
     );
-    expect(inferFileView(override, filename, "/app")).toBe(override);
+    expect(inferFileView(explicit, filename, "/app")).toBe(explicit);
     expect(() =>
       inferFileView(
         source.replace("{ component: () => null }", "options"),
@@ -147,7 +183,7 @@ it.each([
     "const unrelated = class $name { static run() { return $call(options); } };",
   ],
 ])("ignores imported defineView names shadowed by a %s", (_scope, body) => {
-  const filename = "/app/src/slots/panel/home.view.tsx";
+  const filename = "/app/src/slots/panel/index.view.tsx";
   for (const [imports, name, call] of [
     ['import { defineView as view } from "tailorkit/client";', "view", "view"],
     [
@@ -162,7 +198,7 @@ it.each([
     expect(inferred).toContain(unrelated);
     expect(inferred.match(/slot:/gu)).toHaveLength(1);
     expect(inferred).toContain('slot: "panel"');
-    expect(inferred).toContain('view: "/home"');
+    expect(inferred).toContain('view: "/"');
   }
 });
 
@@ -173,7 +209,7 @@ it("keeps SDK references in closures and parameter defaults outside body declara
     export default view();`;
   const inferred = inferFileView(
     source,
-    "/app/src/slots/panel/home.view.tsx",
+    "/app/src/slots/panel/index.view.tsx",
     "/app"
   );
   expect(inferred.match(/slot:/gu)).toHaveLength(2);
@@ -246,7 +282,7 @@ it("builds file routes with extracted instances and discovers additions, renames
       'import { Route } from "tailorkit/client"; export default () => <Route />;'
     );
     await writeFile(
-      path.join(root, "src/slots/page/home.view.tsx"),
+      path.join(root, "src/slots/page/index.view.tsx"),
       `import * as client from "tailorkit/client"; import { z } from "zod";
       export default client.defineView({ view: "/", component: () => "leaf", instances: { dataSchema: z.object({}), resolve: () => [{ key: "all", metadata: { title: "PRIVATE_RESOLVER" }, data: {} }] } });`
     );
@@ -291,7 +327,7 @@ it("builds file routes with extracted instances and discovers additions, renames
       await expect
         .poll(paths, { timeout: 10_000 })
         .toEqual(["/", "/customers/summary"]);
-      await rm(path.join(root, "src/slots/page/home.view.tsx"));
+      await rm(path.join(root, "src/slots/page/index.view.tsx"));
       await expect
         .poll(paths, { timeout: 10_000 })
         .toEqual(["/customers/summary"]);
@@ -315,6 +351,60 @@ it("builds file routes with extracted instances and discovers additions, renames
   }
 }, 60_000);
 
+it.each([
+  ['view: "/index"', 'view must be "/"'],
+  ['slot: "other"', 'slot must be "panel"'],
+])(
+  "fails the build for a mismatched file route: %s",
+  async (declaration, message) => {
+    const root = await mkdtemp(path.join(tmpdir(), "tailorkit-invalid-route-"));
+    try {
+      await linkTestDependencies(root);
+      await mkdir(path.join(root, "src/slots/panel"), { recursive: true });
+      await writeFile(path.join(root, "package.json"), '{"type":"module"}');
+      await writeFile(
+        path.join(root, "tailorkit.config.mjs"),
+        'export default { host: "https://host.example.com" };'
+      );
+      await writeFile(
+        path.join(root, "src/slots/panel/index.view.tsx"),
+        `import { defineView } from "tailorkit/client"; export default defineView({ ${declaration}, component: () => "home" });`
+      );
+      await expect(buildFixture({ cwd: root })).rejects.toThrow(message);
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  }
+);
+
+it("checks re-exported view paths against their file locations during the build", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-reexport-route-"));
+  try {
+    await linkTestDependencies(root);
+    await mkdir(path.join(root, "src/slots/panel"), { recursive: true });
+    await writeFile(path.join(root, "package.json"), '{"type":"module"}');
+    await writeFile(
+      path.join(root, "tailorkit.config.mjs"),
+      'export default { host: "https://host.example.com" };'
+    );
+    const card = path.join(root, "src/slots/panel/card.tsx");
+    const source =
+      'import { defineView } from "tailorkit/client"; export default defineView({ slot: "panel", view: "/", component: () => "home" });';
+    await writeFile(card, source);
+    await writeFile(
+      path.join(root, "src/slots/panel/index.view.tsx"),
+      'export { default } from "./card";'
+    );
+    await buildFixture({ cwd: root });
+    await writeFile(card, source.replace('view: "/"', 'view: "/wrong"'));
+    await expect(buildFixture({ cwd: root })).rejects.toThrow(
+      "Unable to read app views"
+    );
+  } finally {
+    await rm(root, { force: true, recursive: true });
+  }
+});
+
 it("resolves the client runtime from the app when build output is outside the project", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-file-client-"));
   const output = await mkdtemp(
@@ -329,7 +419,7 @@ it("resolves the client runtime from the app when build output is outside the pr
       'export default { host: "https://host.example.com" };'
     );
     await writeFile(
-      path.join(root, "src/slots/panel/home.view.tsx"),
+      path.join(root, "src/slots/panel/index.view.tsx"),
       'import { defineView } from "tailorkit/client"; export default defineView({ view: "/", component: () => "home" });'
     );
     await buildFixture({ cwd: root, outDir: output });

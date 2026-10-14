@@ -21,6 +21,7 @@ import type { Experimental_SandboxSession } from "ai";
 import { expect, it, vi } from "vite-plus/test";
 
 import { createAppAgent } from "./agent";
+import { appAgentSkills } from "./skills";
 
 const authentication = vi.hoisted(() => {
   const env: Record<string, string> = {};
@@ -262,6 +263,17 @@ it.each(["api-key", "runtime-oidc"])(
       expect(state.continueFrom).toBeDefined();
       // Pi can begin the next model call before its host receives the step boundary.
       expect(requests.length).toBeGreaterThanOrEqual(1);
+      await Promise.all(
+        appAgentSkills.map(async (skill) => {
+          expect(requests[0]).toContain(skill.name);
+          expect(
+            await readFile(
+              join(sessionHome, ".agents/skills", skill.name, "SKILL.md"),
+              "utf-8"
+            )
+          ).toContain(skill.content.trim());
+        })
+      );
       expect(chunks.some((chunk) => chunk.type === "finish")).toBe(false);
       await rm(hostJournal, { force: true, recursive: true });
       state = await runHarnessAgentStep({

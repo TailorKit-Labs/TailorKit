@@ -337,7 +337,17 @@ describe("generateApp", () => {
   });
 
   it.each([
-    { file: "src/slots/panel/home.view.tsx", slot: "panel", view: "/" },
+    { file: "src/slots/panel/index.view.tsx", slot: "panel", view: "/" },
+    {
+      file: "src/slots/panel/members.view.tsx",
+      slot: "panel",
+      view: "/members",
+    },
+    {
+      file: "src/slots/panel/members.index.index.view.tsx",
+      slot: "panel",
+      view: "/members/index",
+    },
     {
       file: "src/slots/panel.links/customers.details.view.tsx",
       slot: "panel.links",
@@ -377,6 +387,7 @@ describe("generateApp", () => {
     { slot: "panel", view: "/.well-known" },
     { slot: "panel", view: "/customers/.details" },
     { slot: "panel", view: "/customers..details" },
+    { slot: "panel", view: "/customers.details" },
     { slot: "panel", view: "/customers." },
   ])(
     "rejects invalid view file paths before writing files: %j",

@@ -320,12 +320,12 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       export default view;
     `;
     await writeFile(
-      path.join(root, "src/slots/page/home.view.tsx"),
+      path.join(root, "src/slots/page/index.view.tsx"),
       viewSource
     );
     await writeFile(
-      path.join(root, "src/slots/panel.links/home.view.tsx"),
-      'import view from "../page/home.view"; export default { ...view, slot: "panel.links" };'
+      path.join(root, "src/slots/panel.links/index.view.tsx"),
+      'import view from "../page/index.view"; export default { ...view, slot: "panel.links" };'
     );
     await buildFixture({ cwd: root });
     const browser = await readFile(
@@ -545,7 +545,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
         )
         .toBe(true);
       await writeFile(
-        path.join(root, "src/slots/page/home.view.tsx"),
+        path.join(root, "src/slots/page/index.view.tsx"),
         viewSource.replace("PRIVATE_INITIALIZER", "RESOLVER_UPDATED")
       );
       await expect
@@ -571,8 +571,8 @@ it("builds colocated instance resolvers as query-only server actions", async () 
           { timeout: 10_000 }
         )
         .toContain(requireValue(names[0]));
-      await rm(path.join(root, "src/slots/page/home.view.tsx"));
-      await rm(path.join(root, "src/slots/panel.links/home.view.tsx"));
+      await rm(path.join(root, "src/slots/page/index.view.tsx"));
+      await rm(path.join(root, "src/slots/panel.links/index.view.tsx"));
       await expect
         .poll(
           async () => {
@@ -594,7 +594,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       await watcher.close();
     }
     await writeFile(
-      path.join(root, "src/slots/page/home.view.tsx"),
+      path.join(root, "src/slots/page/index.view.tsx"),
       viewSource
     );
     await writeFile(

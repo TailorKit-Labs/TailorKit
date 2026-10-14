@@ -183,7 +183,7 @@ type ViewOptions<
 }[TSlot];
 
 /** In .view.tsx files, the builder supplies the slot and filename-derived path.
- * Keep an explicit view for a custom path and precise host context typing. */
+ * An explicit view must match the file path and provides precise host context typing. */
 export function defineView<
   const TPath extends AppViewPath = AppViewPath,
   TSchema extends z.ZodType = z.ZodType,

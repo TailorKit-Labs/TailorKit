@@ -56,6 +56,7 @@ export interface RouteModule {
 
 export interface FileViewModule extends RouteModule {
   slot: string;
+  path: string;
 }
 
 export interface FileLayoutModule extends RouteModule {
@@ -142,6 +143,11 @@ export const createFileClient = (options: {
     if (view.slot !== module.slot) {
       throw new Error(
         `${module.filename} declares slot "${view.slot}" but is in "${module.slot}".`
+      );
+    }
+    if (view.path !== module.path) {
+      throw new Error(
+        `${module.filename} declares view "${view.path}" but its file location requires "${module.path}".`
       );
     }
     definitions[module.slot] ??= Object.create(null);

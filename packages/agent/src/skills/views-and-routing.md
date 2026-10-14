@@ -1,0 +1,13 @@
+# Views and file routing
+
+A slot is a named host UI surface. A view supplies an app's UI for one supported context path in that slot. Paths describe host context, not browser URLs; the host selects the deepest matching view and falls back through its ancestors. Without a match, the app renders nothing in that slot.
+
+- Put views in `src/slots/<slot>/**/*.view.tsx`. Default-export `defineView({ view, component })` from `tailorkit/client`, using an inline options object. The build infers the slot from the directory; an explicit `slot` must agree.
+- Dots and directories separate path segments: `members.detail.view.tsx` and `members/detail.view.tsx` map to `/members/detail`. A final `index` is omitted: `index.view.tsx` → `/`, `members/index.view.tsx` → `/members`. An explicit `view` must match and gives precise context typing. Mismatched declarations fail the build; move the file to change its path. Each slot/path pair must be unique and supported by the contract.
+- `src/root.tsx` wraps the app; `src/slots/<slot>/root.tsx` wraps that slot. Both default-export `defineRoute({ shellComponent: Shell })`. Shells render `<Route />` from `tailorkit/client` to continue the tree. Keep the app's `ClientProvider` around this outlet when using backend hooks.
+- `layout.tsx` wraps its directory path; `members.layout.tsx` wraps `/members` and its descendants. Layouts default-export a component or `defineRoute({ shellComponent })` and render `<Route />`. Nesting is app root → slot root → matching layouts → view. Shared shells and layouts persist across view changes.
+- Read typed page/record data with `view.useContext()` from the registered definition. Ancestor context fields are included; fallback views receive only their own and ancestor fields. Use the supplied context rather than parsing location or reaching into the host.
+- For slots declared `multiple: true`, provide `instances: { dataSchema, resolve }`. The resolver runs on the backend with `{ context, identity, signal, queries }` and can call registered queries, but no mutations or actions. Return stable, unique, non-empty `key`s, host-compatible `metadata`, and schema-valid `data`. Enable the backend for these resolvers too.
+- Read the selected instance with `view.useInstance()`. Metadata supplies host labels or placement hints; data supplies rendered values. Metadata does not create browser routes or position UI by itself. Single-instance slots omit `instances`.
+
+Before implementation, match the requested UI to a generated slot/context contract. Complete when the build accepts every view's file location, contract, and instance schema.
