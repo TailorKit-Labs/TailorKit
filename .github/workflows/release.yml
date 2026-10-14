@@ -58,6 +58,7 @@ jobs:
     needs: select-mode
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    environment: release-version
     permissions:
       contents: read
 
