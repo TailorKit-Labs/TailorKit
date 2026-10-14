@@ -1,0 +1,21 @@
+.coderabbit.yaml
+  s_6451adeaa6019d::t_937b5040aa6bf7 1-8
+cubic.yaml
+  s_6451adeaa6019d::t_6511e2af9d8c83 1-7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "82d2cbc0f2ec25aea1244fb337f999bcd0926529",
+  "prompts": {},
+  "sessions": {
+    "s_6451adeaa6019d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13cab-cd35-7f50-bfd9-84d9c76e8f13",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
