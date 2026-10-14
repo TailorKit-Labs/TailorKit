@@ -65,12 +65,6 @@
       "skillPath": "skills/turborepo/SKILL.md",
       "computedHash": "6a23ee82918e35f8848b6fc2ccbea699d740a30fee65f288201adb4e98bf3827"
     },
-    "ultracite": {
-      "source": "haydenbleasel/ultracite",
-      "sourceType": "github",
-      "skillPath": "skills/ultracite/SKILL.md",
-      "computedHash": "786edd8e07ffab37d1d27c68a1a991b0fe4d0ba911fc97d4f93d232115f0485e"
-    },
     "vercel-composition-patterns": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",
