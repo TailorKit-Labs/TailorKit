@@ -1,5 +1,13 @@
 # @tailorkit/sandbox
 
+## 0.1.0-beta.34
+
+### Patch Changes
+
+- Updated dependencies [82aa45f]
+  - @tailorkit/core@0.1.0-beta.34
+  - @tailorkit/app@0.1.0-beta.34
+
 ## 0.1.0-beta.33
 
 ### Patch Changes
