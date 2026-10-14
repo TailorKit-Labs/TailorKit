@@ -152,12 +152,12 @@ it("uses undefined input and infers returns for mutations and async actions with
 it("validates optional output schemas for synchronous and async actions", async () => {
   const app = defineServer({
     invalid: fn.action.output(z.number().min(10)).handler(() => 1),
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    invalidAsync: fn.action.output(z.number().min(10)).handler(async () => 1),
+    invalidAsync: fn.action
+      .output(z.number().min(10))
+      .handler(vi.fn<() => Promise<number>>().mockResolvedValue(1)),
     transformed: fn.action
       .output(z.string().transform(Number))
-      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-      .handler(async () => "4"),
+      .handler(vi.fn<() => Promise<string>>().mockResolvedValue("4")),
     valid: fn.action.output(z.number().min(10)).handler(() => 10),
   });
   const run = actionRunner(app, { mutate: vi.fn(), query: vi.fn() });

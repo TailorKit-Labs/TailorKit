@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { build } from "vite";
-import { expect, it } from "vite-plus/test";
+import { assert, expect, it } from "vite-plus/test";
 
 import { tailorkit } from "#index";
 import { linkTestDependencies } from "#test-utils";
@@ -302,11 +302,8 @@ it("builds file routes with extracted instances and discovers additions, renames
     expect(
       await readFile(path.join(root, ".tailorkit/server/server.js"), "utf-8")
     ).toContain("PRIVATE_RESOLVER");
-    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    const watcher = (await buildFixture({ cwd: root, watch: true })) as {
-      close: () => Promise<void>;
-    };
+    const watcher = await buildFixture({ cwd: root, watch: true });
+    assert("on" in watcher);
     try {
       const next = path.join(root, "src/slots/page/customers.details.view.tsx");
       await writeFile(

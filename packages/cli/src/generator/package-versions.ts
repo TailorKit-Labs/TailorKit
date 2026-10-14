@@ -144,8 +144,7 @@ export const resolveTemplatePackageVersions = async (
       : Promise.resolve(REQUESTS.vite.fallback),
     tooling === "vite-plus"
       ? resolvePackageVersion(REQUESTS.vitePlus)
-      : // oxlint-disable-next-line unicorn/no-useless-undefined -- Keep this branch typed as undefined rather than void.
-        Promise.resolve(undefined),
+      : undefined,
     resolvePackageVersion(REQUESTS.preact),
     resolvePackageVersion(REQUESTS.typescript),
     resolvePackageVersion(REQUESTS.zod),

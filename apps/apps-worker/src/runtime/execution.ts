@@ -65,13 +65,10 @@ export const createExecution = (
         // Revoke DB access before any continuation can run outside the transaction.
         void (async () => {
           try {
-            return await Promise.resolve(value);
+            await Promise.resolve(value);
           } catch {
             /* Intentionally no action is needed. */
           }
-
-          /* oxlint-disable-next-line unicorn/no-useless-undefined -- Missing results use the same undefined sentinel as the optional return type. */
-          return undefined;
         })();
         throw new AppError("BAD_REQUEST", "App handlers must be synchronous");
       }

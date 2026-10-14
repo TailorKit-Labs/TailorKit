@@ -63,13 +63,10 @@ const contextMayBeOmitted = (schema: Schema): boolean => {
     // Serialization is synchronous; conservatively allow omission for async schemas.
     void (async () => {
       try {
-        return await result;
+        await result;
       } catch {
         /* Intentionally no action is needed. */
       }
-
-      /* oxlint-disable-next-line unicorn/no-useless-undefined -- Missing results use the same undefined sentinel as the optional return type. */
-      return undefined;
     })();
     return true;
   }

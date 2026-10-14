@@ -142,6 +142,30 @@ const callScopes = (program: ESTree.Program) => {
     }
   };
 
+  const visitFunction = (
+    node: FunctionNode,
+    scope: Scope,
+    visit: (node: ESTree.Node, scope: Scope) => void
+  ) => {
+    if (node.type === "FunctionDeclaration") {
+      bind(node.id, scope);
+    }
+    const parameters = createScope(scope, true);
+    if (node.type !== "ArrowFunctionExpression") {
+      bind(node.id, parameters);
+    }
+    for (const parameter of node.params) {
+      bind(parameter, parameters);
+    }
+    for (const parameter of node.params) {
+      visit(parameter, parameters);
+    }
+    // Body declarations do not shadow references in parameter defaults.
+    if (node.body) {
+      visit(node.body, createScope(parameters, true));
+    }
+  };
+
   const visit = (node: ESTree.Node, initialScope: Scope) => {
     let scope = initialScope;
 
@@ -159,8 +183,7 @@ const callScopes = (program: ESTree.Program) => {
       case "FunctionDeclaration":
       case "FunctionExpression":
       case "ArrowFunctionExpression": {
-        // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
-        visitFunction(node, scope);
+        visitFunction(node, scope, visit);
         return;
       }
       case "ClassDeclaration":
@@ -205,26 +228,6 @@ const callScopes = (program: ESTree.Program) => {
     /* oxlint-enable typescript/switch-exhaustiveness-check */
     for (const child of childNodes(node)) {
       visit(child, scope);
-    }
-  };
-
-  const visitFunction = (node: FunctionNode, scope: Scope) => {
-    if (node.type === "FunctionDeclaration") {
-      bind(node.id, scope);
-    }
-    const parameters = createScope(scope, true);
-    if (node.type !== "ArrowFunctionExpression") {
-      bind(node.id, parameters);
-    }
-    for (const parameter of node.params) {
-      bind(parameter, parameters);
-    }
-    for (const parameter of node.params) {
-      visit(parameter, parameters);
-    }
-    // Body declarations do not shadow references in parameter defaults.
-    if (node.body) {
-      visit(node.body, createScope(parameters, true));
     }
   };
 

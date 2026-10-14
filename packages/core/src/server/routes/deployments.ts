@@ -118,11 +118,8 @@ export const deploymentRouter = {
           headers: context.platformHeaders,
         });
       } catch (error) {
-        preservePlatformNotFound(error);
+        return preservePlatformNotFound(error);
       }
-
-      /* oxlint-disable-next-line unicorn/no-useless-undefined -- Missing results use the same undefined sentinel as the optional return type. */
-      return undefined;
     }),
   get: o
     .use(requireCliDeployToken)
