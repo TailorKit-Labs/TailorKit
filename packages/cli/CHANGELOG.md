@@ -1,5 +1,18 @@
 # @tailorkit/cli
 
+## 0.1.0-beta.32
+
+### Minor Changes
+
+- 1929607: Start a new agent conversation for each CLI invocation by default. Follow-up messages reuse its thread, and `tailorkit agent --thread <id>` explicitly resumes a previous conversation. Add optional `threadId` to the chat protocol and return thread metadata in the stream.
+
+### Patch Changes
+
+- Updated dependencies [1929607]
+  - @tailorkit/client-platform@0.1.0-beta.32
+  - @tailorkit/core@0.1.0-beta.32
+  - @tailorkit/vite@0.1.0-beta.32
+
 ## 0.1.0-beta.31
 
 ### Patch Changes
