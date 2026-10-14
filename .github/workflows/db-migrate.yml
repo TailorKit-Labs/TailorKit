@@ -17,13 +17,13 @@ concurrency:
 jobs:
   migrate:
     name: Migrate production database
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     environment: production-platform
     if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: useblacksmith/checkout@v1
 
       - name: Setup Vite+
         uses: voidzero-dev/setup-vp@v1.21.1
