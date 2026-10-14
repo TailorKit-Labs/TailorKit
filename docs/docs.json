@@ -31,7 +31,7 @@
       },
       {
         "group": "Writing apps",
-        "pages": ["writing-apps/ui"]
+        "pages": ["writing-apps/overview", "writing-apps/ui"]
       }
     ],
     "global": {
