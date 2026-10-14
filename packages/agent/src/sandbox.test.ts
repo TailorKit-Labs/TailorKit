@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   get: vi.fn(),
   run: vi.fn(),
   stop: vi.fn(),
+  workspace: vi.fn(),
   write: vi.fn(),
 }));
 vi.mock("@vercel/sandbox", () => ({
@@ -28,6 +29,7 @@ vi.mock("@vercel/sandbox", () => ({
 vi.mock("@ai-sdk/sandbox-vercel", () => ({
   createVercelNetworkSandboxSessionFromNativeSandbox: mocks.adapter,
 }));
+vi.mock("./workspace", () => ({ prepareWorkspace: mocks.workspace }));
 
 const input: AppAgentInput = {
   agentToken: "private-token",
@@ -86,6 +88,14 @@ describe("Pi sandbox ownership", () => {
       cmd: "chmod",
       timeoutMs: 30_000,
     });
+    expect(mocks.workspace).toHaveBeenCalledWith(
+      expect.any(Object),
+      input,
+      undefined
+    );
+    expect(mocks.write.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.workspace.mock.invocationCallOrder[0] ?? 0
+    );
   });
 
   it("uses separate thread VMs with the same app source Drive", async () => {
@@ -106,6 +116,31 @@ describe("Pi sandbox ownership", () => {
     expect(mocks.create).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({ name: "agent-thread-thread-2" })
+    );
+  });
+
+  it("writes supplied host contracts before preparing the app", async () => {
+    const schema = {
+      components: {},
+      slots: {},
+      tools: {},
+      version: 1 as const,
+      views: {},
+    };
+    await prepareSandboxStep({ ...input, schema }, {});
+    expect(mocks.write).toHaveBeenLastCalledWith([
+      {
+        content: Buffer.from(JSON.stringify(schema)),
+        path: "/workspace/tailorkit.schema.json",
+      },
+    ]);
+    expect(mocks.workspace).toHaveBeenCalledWith(
+      expect.any(Object),
+      { ...input, schema },
+      "/workspace/tailorkit.schema.json"
+    );
+    expect(mocks.write.mock.invocationCallOrder.at(-1)).toBeLessThan(
+      mocks.workspace.mock.invocationCallOrder[0] ?? 0
     );
   });
 
