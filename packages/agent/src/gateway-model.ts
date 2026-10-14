@@ -1,7 +1,6 @@
+import type { HarnessV1AuthenticationEnvironment } from "@ai-sdk/harness";
 import type { PiHarnessSettings } from "@ai-sdk/harness-pi";
 import { z } from "zod";
-
-import { env } from "#env";
 
 const gatewayModelSchema = z.object({
   context_window: z.number().int().positive(),
@@ -20,16 +19,16 @@ const gatewayModelSchema = z.object({
 
 /** Gateway's catalog can contain models newer than Pi's bundled registry. */
 export const gatewayModelProviders = async (
-  modelId: string
+  modelId: string,
+  auth: HarnessV1AuthenticationEnvironment
 ): Promise<NonNullable<PiHarnessSettings["providers"]>> => {
-  if (
-    env.AI_GATEWAY_API_KEY === undefined &&
-    env.VERCEL_OIDC_TOKEN === undefined
-  ) {
+  const token = auth.AI_GATEWAY_API_KEY ?? auth.VERCEL_OIDC_TOKEN;
+  if (token === undefined) {
     return {};
   }
-  const baseUrl = env.AI_GATEWAY_BASE_URL ?? "https://ai-gateway.vercel.sh";
+  const baseUrl = auth.AI_GATEWAY_BASE_URL ?? "https://ai-gateway.vercel.sh";
   const response = await fetch(`${baseUrl.replace(/\/$/u, "")}/v1/models`, {
+    headers: { Authorization: `Bearer ${token}` },
     signal: AbortSignal.timeout(30_000),
   });
   if (!response.ok) {

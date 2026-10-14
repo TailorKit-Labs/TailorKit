@@ -572,6 +572,9 @@ importers:
       '@tailorkit/env':
         specifier: workspace:*
         version: link:../env
+      '@vercel/oidc':
+        specifier: 3.5.0
+        version: 3.5.0
       '@vercel/sandbox':
         specifier: 3.6.1
         version: 3.6.1
