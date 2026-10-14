@@ -5,8 +5,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "packages/db/src/migrations/**"
 
 permissions:
   contents: read
