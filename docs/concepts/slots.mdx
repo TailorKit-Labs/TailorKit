@@ -13,6 +13,10 @@ A slot is a named place for UI. It might be a side panel, part of a navbar, or a
 
 Give each area a name in your contract. This defines the two slots in the picture:
 
+<Tabs>
+
+<Tab title="Zod">
+
 ```ts title="tailorkit.ts"
 import { defineContract } from "tailorkit";
 import { z } from "zod";
@@ -25,6 +29,45 @@ export const contract = defineContract({
   },
 });
 ```
+
+</Tab>
+
+<Tab title="ArkType">
+
+```ts title="tailorkit.ts"
+import { defineContract } from "tailorkit";
+import { type } from "arktype";
+
+export const contract = defineContract({
+  views: { "/": type({}) },
+  slots: {
+    navbar: { views: ["/"] },
+    panel: { views: ["/"] },
+  },
+});
+```
+
+</Tab>
+
+<Tab title="Valibot">
+
+```ts title="tailorkit.ts"
+import { defineContract } from "tailorkit";
+import * as v from "valibot";
+import { toStandardJsonSchema } from "@valibot/to-json-schema";
+
+export const contract = defineContract({
+  views: { "/": toStandardJsonSchema(v.object({})) },
+  slots: {
+    navbar: { views: ["/"] },
+    panel: { views: ["/"] },
+  },
+});
+```
+
+</Tab>
+
+</Tabs>
 
 `/` is the default context. We'll come back to context below.
 
