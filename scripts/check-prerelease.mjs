@@ -14,6 +14,7 @@ const publishablePackages = [
   "packages/core/package.json",
   "packages/react/package.json",
   "packages/sandbox/package.json",
+  "packages/vite/package.json",
 ];
 
 const allowedPrerelease = /-(?:alpha|beta)(?:\.|$)/u;
