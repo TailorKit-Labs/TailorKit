@@ -91,7 +91,6 @@ const verifyCliDeployToken = async (context: Context) => {
     if (isORPCErrorJson(error)) {
       throw createORPCErrorFromJson(error);
     }
-    // oxlint-disable-next-line typescript/only-throw-error -- Preserve non-oRPC transport failures without classifying them as expired credentials.
     throw error;
   }
 };

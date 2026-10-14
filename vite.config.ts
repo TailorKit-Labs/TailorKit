@@ -129,6 +129,7 @@ export default defineConfig({
           property: "env",
         },
       ],
+      "typescript/only-throw-error": ["error", { allowRethrowing: true }],
     },
     settings: {
       shadcn: {
