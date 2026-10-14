@@ -1,7 +1,7 @@
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 
 import { PGlite } from "@electric-sql/pglite";
-import { appAgentSession } from "@tailorkit/db/schema/apps";
+import { appAgentLease, appAgentThread } from "@tailorkit/db/schema/apps";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import {
@@ -13,6 +13,7 @@ import {
   vi,
 } from "vite-plus/test";
 
+import { threadSandboxName } from "./identity";
 import {
   cancelAppAgent,
   loadResumeStep,
@@ -20,6 +21,7 @@ import {
   releaseSessionStep,
   renewSession,
 } from "./session-store";
+import { resolveAppAgentThread } from "./threads";
 
 const mocks = vi.hoisted(() => ({
   db: vi.fn<() => ReturnType<typeof drizzle>>(),
@@ -33,6 +35,7 @@ vi.mock("@tailorkit/db", () => ({
 vi.mock("./sandbox", () => ({ deleteSandbox: mocks.deleteSandbox }));
 
 const appId = "a3e7568a-c4f7-4ac0-8c35-71ff0f4cd002";
+const otherAppId = "dc0b71e8-8524-479f-b944-4590647e2af4";
 const resumeFrom = {
   data: { sessionFileName: "native-1.jsonl" },
   harnessId: "pi",
@@ -47,137 +50,211 @@ beforeEach(async () => {
   client = new PGlite();
   database = drizzle({ client });
   mocks.db.mockReturnValue(database);
-  // The fixture only needs app identity; session DDL is the generated migration.
+  // App identity is the fixture; both agent DDL changes come from Drizzle CLI.
   await client.exec("CREATE TABLE app (id uuid PRIMARY KEY)");
-  await client.exec(
-    await readFile(
-      new URL(
-        "../../db/src/migrations/20261013225457_app-agent-sessions/migration.sql",
-        import.meta.url
-      ),
-      "utf-8"
+  const root = new URL("../../db/src/migrations/", import.meta.url);
+  const migrations = await readdir(root);
+  const names = migrations
+    .filter(
+      (entry) =>
+        entry.endsWith("_app-agent-sessions") ||
+        entry.endsWith("_agent-threads")
+    )
+    .toSorted();
+  const changes = await Promise.all(
+    names.map(
+      async (name) =>
+        await readFile(new URL(`${name}/migration.sql`, root), "utf-8")
     )
   );
-  await client.query("INSERT INTO app (id) VALUES ($1)", [appId]);
+  for (const migration of changes) {
+    // oxlint-disable-next-line no-await-in-loop -- Apply generated migrations in schema order.
+    await client.exec(migration);
+  }
+  await client.query("INSERT INTO app (id) VALUES ($1), ($2)", [
+    appId,
+    otherAppId,
+  ]);
 });
-
 afterEach(async () => {
   await client.close();
 });
 
-const row = async () => {
-  const [session] = await database
+const lease = async () => {
+  const [row] = await database
     .select()
-    .from(appAgentSession)
-    .where(eq(appAgentSession.appId, appId));
-  return session;
+    .from(appAgentLease)
+    .where(eq(appAgentLease.appId, appId));
+  return row;
+};
+const thread = async (id: string) => {
+  const [row] = await database
+    .select()
+    .from(appAgentThread)
+    .where(eq(appAgentThread.id, id));
+  return row;
+};
+const complete = async (id: string, runId: string) => {
+  await loadResumeStep(appId, id, runId);
+  await persistResumeStep(appId, id, runId, resumeFrom, threadSandboxName(id));
+  await releaseSessionStep(appId, runId);
 };
 
-describe("durable agent session leases (Postgres)", () => {
-  it("atomically admits only one concurrent editing workflow", async () => {
+describe("agent threads and app workspace leases (Postgres)", () => {
+  it("creates independent threads by default and resumes only an explicit existing ID", async () => {
+    const first = await resolveAppAgentThread(appId);
+    const second = await resolveAppAgentThread(appId);
+    expect(second).not.toBe(first);
+    await expect(resolveAppAgentThread(appId, first)).resolves.toBe(first);
+    await expect(resolveAppAgentThread(otherAppId, first)).rejects.toThrow(
+      "Thread not found"
+    );
+    await expect(
+      resolveAppAgentThread(appId, "56f50b46-cc17-43ae-a04b-6a8c32a4c788")
+    ).rejects.toThrow("Thread not found");
+  });
+
+  it("atomically admits one writer even when the requests use different threads", async () => {
+    const first = await resolveAppAgentThread(appId);
+    const second = await resolveAppAgentThread(appId);
     const results = await Promise.allSettled([
-      loadResumeStep(appId, "run-a"),
-      loadResumeStep(appId, "run-b"),
+      loadResumeStep(appId, first, "run-a"),
+      loadResumeStep(appId, second, "run-b"),
     ]);
-    expect(
-      results.filter((result) => result.status === "fulfilled")
-    ).toHaveLength(1);
-    expect(
-      results.filter((result) => result.status === "rejected")
-    ).toHaveLength(1);
-    const session = await row();
-    expect(session?.activeRunId).toMatch(/^run-[ab]$/u);
+    expect(results.filter((item) => item.status === "fulfilled")).toHaveLength(
+      1
+    );
+    expect(results.filter((item) => item.status === "rejected")).toHaveLength(
+      1
+    );
     expect(mocks.deleteSandbox).not.toHaveBeenCalled();
   });
 
-  it("reclaims its own lease on step retry and resumes opaque state on a later turn", async () => {
-    await loadResumeStep(appId, "run-a");
-    await expect(loadResumeStep(appId, "run-a")).resolves.toEqual({
-      resumeFrom: undefined,
-      sandboxName: undefined,
-    });
-    await persistResumeStep(appId, "run-a", resumeFrom, `app-agent-${appId}`);
-    await releaseSessionStep(appId, "run-a");
-    await expect(loadResumeStep(appId, "run-b")).resolves.toEqual({
-      resumeFrom,
-      sandboxName: `app-agent-${appId}`,
-    });
-  });
-
-  it("starts a fresh Pi conversation for a completed legacy fx session", async () => {
-    await loadResumeStep(appId, "run-fx");
+  it("keeps each thread's resume state when switching conversations on one app", async () => {
+    const first = await resolveAppAgentThread(appId);
+    const second = await resolveAppAgentThread(appId);
+    await complete(first, "run-a");
+    const fresh = await loadResumeStep(appId, second, "run-b");
+    expect(fresh.resumeFrom).toBeUndefined();
     await persistResumeStep(
       appId,
-      "run-fx",
-      { ...resumeFrom, data: { acpSessionId: "legacy" }, harnessId: "fx" },
-      `app-agent-${appId}`
+      second,
+      "run-b",
+      { ...resumeFrom, data: { sessionFileName: "native-2.jsonl" } },
+      threadSandboxName(second)
     );
-    await releaseSessionStep(appId, "run-fx");
-    await expect(loadResumeStep(appId, "run-pi")).resolves.toEqual({});
-    const session = await row();
-    expect(session?.activeRunId).toBe("run-pi");
+    await releaseSessionStep(appId, "run-b");
+    await expect(loadResumeStep(appId, first, "run-c")).resolves.toMatchObject({
+      resumeFrom,
+      sandboxName: threadSandboxName(first),
+    });
+    expect(await thread(second)).toMatchObject({
+      resumeState: JSON.stringify({
+        ...resumeFrom,
+        data: { sessionFileName: "native-2.jsonl" },
+      }),
+    });
+  });
+
+  it("reclaims its own lease on step retry without resetting the conversation", async () => {
+    const id = await resolveAppAgentThread(appId);
+    await loadResumeStep(appId, id, "run-a");
+    await expect(loadResumeStep(appId, id, "run-a")).resolves.toMatchObject({
+      resumeFrom: undefined,
+    });
+    expect(await lease()).toMatchObject({
+      activeRunId: "run-a",
+      activeThreadId: id,
+    });
+  });
+
+  it("rejects unknown and foreign threads before claiming the workspace", async () => {
+    const foreign = await resolveAppAgentThread(otherAppId);
+    await expect(loadResumeStep(appId, foreign, "run-a")).rejects.toThrow(
+      "Thread not found"
+    );
+    expect(await lease()).toBeUndefined();
     expect(mocks.deleteSandbox).not.toHaveBeenCalled();
   });
 
-  it("prevents another run from saving, renewing, releasing or deleting the active session", async () => {
-    await loadResumeStep(appId, "run-a");
+  it("prevents another run or conversation from changing the owning lease and journal", async () => {
+    const first = await resolveAppAgentThread(appId);
+    const second = await resolveAppAgentThread(appId);
+    await loadResumeStep(appId, first, "run-a");
     await expect(
-      persistResumeStep(appId, "run-b", resumeFrom, "foreign-vm")
+      persistResumeStep(appId, first, "run-b", resumeFrom, "foreign")
+    ).rejects.toThrow("another editing turn");
+    await expect(
+      persistResumeStep(appId, second, "run-a", resumeFrom, "foreign")
     ).rejects.toThrow("another editing turn");
     await expect(renewSession(appId, "run-b")).rejects.toThrow(
       "no longer owns"
     );
     await releaseSessionStep(appId, "run-b");
     await cancelAppAgent(appId, "run-b");
-    const session = await row();
-    expect(session?.activeRunId).toBe("run-a");
+    expect(await lease()).toMatchObject({ activeRunId: "run-a" });
     expect(mocks.deleteSandbox).not.toHaveBeenCalled();
   });
 
-  it("removes a cancelled sandbox before clearing its lease and resume handle", async () => {
-    await loadResumeStep(appId, "run-a");
-    await persistResumeStep(appId, "run-a", resumeFrom, `app-agent-${appId}`);
+  it("cancels only the active thread and preserves other saved conversations", async () => {
+    const first = await resolveAppAgentThread(appId);
+    const second = await resolveAppAgentThread(appId);
+    await complete(first, "run-a");
+    await loadResumeStep(appId, second, "run-b");
     mocks.deleteSandbox.mockImplementation(async () => {
-      const session = await row();
-      expect(session?.activeRunId).toBe("run-a");
+      expect(await lease()).toMatchObject({ activeRunId: "run-b" });
     });
-    await cancelAppAgent(appId, "run-a");
-    expect(mocks.deleteSandbox).toHaveBeenCalledWith(`app-agent-${appId}`);
-    expect(await row()).toMatchObject({
-      activeRunId: null,
-      resumeState: null,
-      sandboxName: null,
+    await cancelAppAgent(appId, "run-b");
+    expect(mocks.deleteSandbox).toHaveBeenCalledExactlyOnceWith(
+      threadSandboxName(second)
+    );
+    await expect(resolveAppAgentThread(appId, second)).rejects.toThrow(
+      "no longer resumable"
+    );
+    await expect(loadResumeStep(appId, first, "run-c")).resolves.toMatchObject({
+      resumeFrom,
     });
   });
 
-  it("retains the lease when sandbox deletion fails", async () => {
-    await loadResumeStep(appId, "run-a");
+  it("retains the lease when sandbox cleanup fails", async () => {
+    const first = await resolveAppAgentThread(appId);
+    const second = await resolveAppAgentThread(appId);
+    await loadResumeStep(appId, first, "run-a");
     mocks.deleteSandbox.mockRejectedValueOnce(new Error("Cleanup unavailable"));
     await expect(cancelAppAgent(appId, "run-a")).rejects.toThrow(
       "Cleanup unavailable"
     );
-    await expect(loadResumeStep(appId, "run-b")).rejects.toThrow(
+    await expect(loadResumeStep(appId, second, "run-b")).rejects.toThrow(
       "already being edited"
     );
   });
 
-  it("recovers an abandoned lease without attaching to an uncheckpointed turn", async () => {
-    await loadResumeStep(appId, "run-a");
-    await persistResumeStep(appId, "run-a", resumeFrom, `app-agent-${appId}`);
+  it("recovers an abandoned writer without losing other threads or cleanup state on retry", async () => {
+    const first = await resolveAppAgentThread(appId);
+    const second = await resolveAppAgentThread(appId);
+    const third = await resolveAppAgentThread(appId);
+    await complete(third, "run-saved");
+    await loadResumeStep(appId, first, "run-a");
     await database
-      .update(appAgentSession)
+      .update(appAgentLease)
       .set({ leaseExpiresAt: new Date(0) })
-      .where(eq(appAgentSession.appId, appId));
-    await expect(loadResumeStep(appId, "run-b")).resolves.toEqual({
+      .where(eq(appAgentLease.appId, appId));
+    await expect(loadResumeStep(appId, first, "run-b")).rejects.toThrow(
+      "no longer resumable"
+    );
+    const saved = await loadResumeStep(appId, second, "run-b");
+    expect(saved).toMatchObject({
+      cleanupSandboxName: threadSandboxName(first),
       resumeFrom: undefined,
-      sandboxName: undefined,
     });
-    // Sandbox setup, after claiming the lease, discards the abandoned VM.
-    expect(mocks.deleteSandbox).not.toHaveBeenCalled();
-    expect(await row()).toMatchObject({
-      activeRunId: "run-b",
-      resumeState: null,
-      sandboxName: null,
+    await expect(loadResumeStep(appId, second, "run-b")).resolves.toEqual(
+      saved
+    );
+    await expect(resolveAppAgentThread(appId, first)).rejects.toThrow(
+      "no longer resumable"
+    );
+    expect(await thread(third)).toMatchObject({
+      resumeState: JSON.stringify(resumeFrom),
     });
   });
 });

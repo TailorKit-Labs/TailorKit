@@ -1,7 +1,7 @@
 import type { Sandbox } from "@vercel/sandbox";
 import { FatalError } from "workflow";
 
-import { appSandboxName } from "./identity";
+import { threadSandboxName } from "./identity";
 import type { AppAgentInput } from "./input";
 import type { HostSchemaDocument } from "./schema";
 import type { SavedAgentSession } from "./session-store";
@@ -84,7 +84,10 @@ export const prepareSandboxStep = async (
 ) => {
   "use step";
   const { Drive, Sandbox } = await import("@vercel/sandbox");
-  const sandboxName = appSandboxName(input.appId);
+  const sandboxName = threadSandboxName(input.threadId);
+  if (saved.cleanupSandboxName !== undefined) {
+    await deleteSandbox(saved.cleanupSandboxName);
+  }
   if (saved.resumeFrom) {
     // Never replace a missing snapshot with a blank VM and stale resume state.
     if (saved.sandboxName !== sandboxName) {

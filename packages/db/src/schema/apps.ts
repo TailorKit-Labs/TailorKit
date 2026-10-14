@@ -64,15 +64,35 @@ export const App = createSelectSchema(app, {
 });
 export type App = z.output<typeof App>;
 
-/** Opaque harness state and the exclusive lease for one app's editing turn. */
-export const appAgentSession = pgTable("app_agent_session", {
+/** Independent conversations for an app; their snapshots retain Pi journals. */
+export const appAgentThread = pgTable(
+  "app_agent_thread",
+  {
+    appId: uuid("app_id")
+      .notNull()
+      .references(() => app.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    id: uuid("id")
+      .default(sql`pg_catalog.gen_random_uuid()`)
+      .primaryKey(),
+    invalidatedAt: timestamp("invalidated_at"),
+    resumeState: text("resume_state"),
+    sandboxName: text("sandbox_name"),
+  },
+  (table) => [index("app_agent_thread_app_id_idx").on(table.appId)]
+);
+
+/** One writer per app workspace, independently of the selected conversation. */
+export const appAgentLease = pgTable("app_agent_lease", {
   activeRunId: text("active_run_id"),
+  activeThreadId: uuid("active_thread_id").references(() => appAgentThread.id, {
+    onDelete: "set null",
+  }),
   appId: uuid("app_id")
     .primaryKey()
     .references(() => app.id, { onDelete: "cascade" }),
+  cleanupSandboxName: text("cleanup_sandbox_name"),
   leaseExpiresAt: timestamp("lease_expires_at"),
-  resumeState: text("resume_state"),
-  sandboxName: text("sandbox_name"),
 });
 
 export const appDeploymentStatus = pgEnum("app_deployment_status", [

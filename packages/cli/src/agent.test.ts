@@ -126,6 +126,12 @@ describe("agent command", () => {
     expect(mocks.select).not.toHaveBeenCalled();
     expect(await readdir(root)).toEqual([]);
   });
+  it("forwards an explicit conversation ID to the TUI", async () => {
+    const threadId = "e773a870-df5a-4bea-9ebd-9be4c0b1897a";
+    await runAgentCommand({ appId: "app-one", host, threadId });
+    expect(requireValue(mocks.tui.mock.lastCall)[0].threadId).toBe(threadId);
+  });
+
   it("ignores an existing config when choosing an app", async () => {
     const source =
       'export default { host: "https://other.test", appId: "other-app" };\n';

@@ -35,8 +35,9 @@ const input: AppAgentInput = {
   hostUrl: "https://host.test/api/tailorkit",
   messages: [{ content: "Build", role: "user" }],
   model: "xiaomi/mimo-v2.6-pro",
+  threadId: "thread-1",
 };
-const sandboxName = "app-agent-app-1";
+const sandboxName = "agent-thread-thread-1";
 const resumeFrom = {
   data: {},
   harnessId: "pi",
@@ -85,6 +86,27 @@ describe("Pi sandbox ownership", () => {
       cmd: "chmod",
       timeoutMs: 30_000,
     });
+  });
+
+  it("uses separate thread VMs with the same app source Drive", async () => {
+    await prepareSandboxStep(input, {});
+    await prepareSandboxStep({ ...input, threadId: "thread-2" }, {});
+    expect(mocks.drive).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ name: "app-app-1" })
+    );
+    expect(mocks.drive).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ name: "app-app-1" })
+    );
+    expect(mocks.create).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ name: "agent-thread-thread-1" })
+    );
+    expect(mocks.create).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ name: "agent-thread-thread-2" })
+    );
   });
 
   it("reattaches the same sandbox for the next native conversation turn", async () => {

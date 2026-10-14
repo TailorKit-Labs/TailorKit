@@ -6,7 +6,7 @@ import type { ModelMessage } from "ai";
 import { FatalError, getWorkflowMetadata } from "workflow";
 
 import { agentStep } from "./agent-step";
-import { appSandboxName } from "./identity";
+import { threadSandboxName } from "./identity";
 import type { AppAgentInput } from "./input";
 import { prepareSandboxStep, stopSandboxStep } from "./sandbox";
 import {
@@ -16,19 +16,19 @@ import {
   releaseSessionStep,
 } from "./session-store";
 
-/** A durable user turn; the app identity resumes the same Pi conversation. */
+/** A durable user turn; the thread identity resumes its own Pi conversation. */
 export const appAgent = async (input: AppAgentInput) => {
   "use workflow";
   const runId = getWorkflowMetadata().workflowRunId;
   const deadline = Date.now() + 30 * 60_000;
   let completed = false;
   try {
-    const saved = await loadResumeStep(input.appId, runId);
+    const saved = await loadResumeStep(input.appId, input.threadId, runId);
     await prepareSandboxStep(input, saved);
     let state = createHarnessWorkflowState({
       messages: input.messages,
       resumeFrom: saved.resumeFrom,
-      sessionId: input.appId,
+      sessionId: input.threadId,
     });
     const messages: ModelMessage[] = [];
     do {
@@ -51,13 +51,14 @@ export const appAgent = async (input: AppAgentInput) => {
     }
     await persistResumeStep(
       input.appId,
+      input.threadId,
       runId,
       state.resumeFrom,
-      appSandboxName(input.appId)
+      threadSandboxName(input.threadId)
     );
-    await stopSandboxStep(appSandboxName(input.appId));
+    await stopSandboxStep(threadSandboxName(input.threadId));
     completed = true;
-    return { ...result, messages };
+    return { ...result, messages, threadId: input.threadId };
   } finally {
     await (completed
       ? releaseSessionStep(input.appId, runId)

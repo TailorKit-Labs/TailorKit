@@ -46,6 +46,7 @@ const input: AppAgentInput = {
   hostUrl: "https://host.test/api/tailorkit",
   messages: [{ content: "Build", role: "user" }],
   model: "xiaomi/mimo-v2.6-pro",
+  threadId: "thread-1",
 };
 const resumeFrom = {
   data: {},
@@ -97,7 +98,7 @@ describe("Pi step with the SDK workflow runner", () => {
     const result = await agentStep(
       createHarnessWorkflowState({
         messages: input.messages,
-        sessionId: input.appId,
+        sessionId: input.threadId,
       }),
       input,
       "run-1"
@@ -118,14 +119,14 @@ describe("Pi step with the SDK workflow runner", () => {
     const state = {
       ...createHarnessWorkflowState({
         messages: input.messages,
-        sessionId: input.appId,
+        sessionId: input.threadId,
       }),
       continueFrom,
       messages: undefined,
     };
     const result = await agentStep(state, input, "run-1");
     expect(mocks.createSession).toHaveBeenCalledWith(
-      expect.objectContaining({ continueFrom, sessionId: input.appId })
+      expect.objectContaining({ continueFrom, sessionId: input.threadId })
     );
     expect(mocks.continueStream).toHaveBeenCalledOnce();
     expect(mocks.stream).not.toHaveBeenCalled();
@@ -138,7 +139,7 @@ describe("Pi step with the SDK workflow runner", () => {
     const result = await agentStep(
       createHarnessWorkflowState({
         messages: input.messages,
-        sessionId: input.appId,
+        sessionId: input.threadId,
       }),
       input,
       "run-1"
@@ -175,7 +176,7 @@ describe("Pi step with the SDK workflow runner", () => {
       const pending = agentStep(
         createHarnessWorkflowState({
           messages: input.messages,
-          sessionId: input.appId,
+          sessionId: input.threadId,
         }),
         input,
         "run-1"

@@ -1,170 +1,256 @@
 import type { HarnessV1ResumeSessionState } from "@ai-sdk/harness";
-import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { FatalError } from "workflow";
 import { z } from "zod";
 
-import { appSandboxName } from "./identity";
+import { threadSandboxName } from "./identity";
 import { deleteSandbox } from "./sandbox";
 
 const sessionStore = async () => {
   const { db } = await import("@tailorkit/db");
-  const { appAgentSession } = await import("@tailorkit/db/schema/apps");
-  return { appAgentSession, db };
+  const { appAgentLease, appAgentThread } =
+    await import("@tailorkit/db/schema/apps");
+  return { appAgentLease, appAgentThread, db };
 };
 
 const leaseDurationMs = 60 * 60_000;
 const resumeEnvelope = z.object({
   data: z.json(),
-  harnessId: z.enum(["pi", "fx"]),
+  harnessId: z.literal("pi"),
   specificationVersion: z.literal("harness-v1"),
   type: z.literal("resume-session"),
 });
-// The adapter owns the opaque payload, including unfinished-turn settings.
-// Validate its envelope without stripping fields required by the adapter.
+// Validate without stripping the adapter's opaque unfinished-turn settings.
 const resumeSchema = z.custom<HarnessV1ResumeSessionState>(
   (value) => resumeEnvelope.safeParse(value).success
 );
 
 export interface SavedAgentSession {
+  cleanupSandboxName?: string;
   resumeFrom?: HarnessV1ResumeSessionState;
   sandboxName?: string;
 }
 
-/** Claim before touching the VM: two workflow runs must never share a session. */
+/** Conversations are independent; the lease excludes all writers for this app. */
 export const loadResumeStep = async (
   appId: string,
+  threadId: string,
   runId: string
 ): Promise<SavedAgentSession> => {
   "use step";
-  const { appAgentSession, db } = await sessionStore();
-  await db.insert(appAgentSession).values({ appId }).onConflictDoNothing();
-  const [claimed] = await db
-    .update(appAgentSession)
-    .set({
-      activeRunId: runId,
-      leaseExpiresAt: new Date(Date.now() + leaseDurationMs),
-      // Evaluate against the pre-update owner atomically. An abandoned turn
-      // cannot safely use the previous completed turn's session journal.
-      resumeState: sql`case when ${appAgentSession.activeRunId} is not null and ${appAgentSession.activeRunId} <> ${runId} then null else ${appAgentSession.resumeState} end`,
-      sandboxName: sql`case when ${appAgentSession.activeRunId} is not null and ${appAgentSession.activeRunId} <> ${runId} then null else ${appAgentSession.sandboxName} end`,
-    })
-    .where(
-      and(
-        eq(appAgentSession.appId, appId),
-        or(
-          isNull(appAgentSession.activeRunId),
-          eq(appAgentSession.activeRunId, runId),
-          lt(appAgentSession.leaseExpiresAt, new Date())
-        )
-      )
-    )
-    .returning();
-  if (!claimed) {
-    throw new FatalError(
-      "This app is already being edited. Retry after the active run finishes."
-    );
-  }
-  const resumeFrom =
-    claimed.resumeState === null
-      ? undefined
-      : resumeSchema.parse(JSON.parse(claimed.resumeState));
-  // fx journals cannot be imported into Pi. Sandbox setup replaces the VM,
-  // preserving app source on its Drive and starting a new Pi conversation.
-  if (resumeFrom?.harnessId === "fx") {
-    return {};
-  }
-  return { resumeFrom, sandboxName: claimed.sandboxName ?? undefined };
+  const { appAgentLease, appAgentThread, db } = await sessionStore();
+  return await db.transaction(async (tx) => {
+    await tx.insert(appAgentLease).values({ appId }).onConflictDoNothing();
+    const [lease] = await tx
+      .select()
+      .from(appAgentLease)
+      .where(eq(appAgentLease.appId, appId))
+      .for("update");
+    if (!lease) {
+      throw new FatalError("Could not claim the app workspace.");
+    }
+    if (lease.activeRunId === runId && lease.activeThreadId !== threadId) {
+      throw new FatalError("This editing run belongs to another thread.");
+    }
+    const otherRun = lease.activeRunId !== null && lease.activeRunId !== runId;
+    if (
+      otherRun &&
+      (lease.leaseExpiresAt === null ||
+        lease.leaseExpiresAt.getTime() >= Date.now())
+    ) {
+      throw new FatalError(
+        "This app is already being edited. Retry after the active run finishes."
+      );
+    }
+    const [thread] = await tx
+      .select()
+      .from(appAgentThread)
+      .where(
+        and(eq(appAgentThread.id, threadId), eq(appAgentThread.appId, appId))
+      );
+    if (
+      !thread ||
+      thread.invalidatedAt !== null ||
+      (otherRun && lease.activeThreadId === threadId)
+    ) {
+      throw new FatalError(
+        "Thread not found for this app or no longer resumable. Start a new thread."
+      );
+    }
+    // The previous worker may have mutated its journal beyond its checkpoint.
+    const abandonedThreadId = otherRun
+      ? (lease.activeThreadId ?? undefined)
+      : undefined;
+    if (abandonedThreadId !== undefined) {
+      await tx
+        .update(appAgentThread)
+        .set({
+          invalidatedAt: new Date(),
+          resumeState: null,
+          sandboxName: null,
+        })
+        .where(
+          and(
+            eq(appAgentThread.id, abandonedThreadId),
+            eq(appAgentThread.appId, appId)
+          )
+        );
+    }
+    const cleanupSandboxName =
+      abandonedThreadId === undefined
+        ? (lease.cleanupSandboxName ?? undefined)
+        : threadSandboxName(abandonedThreadId);
+    await tx
+      .update(appAgentLease)
+      .set({
+        activeRunId: runId,
+        activeThreadId: threadId,
+        cleanupSandboxName: cleanupSandboxName ?? null,
+        leaseExpiresAt: new Date(Date.now() + leaseDurationMs),
+      })
+      .where(eq(appAgentLease.appId, appId));
+    return {
+      cleanupSandboxName,
+      resumeFrom:
+        thread.resumeState === null
+          ? undefined
+          : resumeSchema.parse(JSON.parse(thread.resumeState)),
+      sandboxName: thread.sandboxName ?? undefined,
+    };
+  });
 };
 
 export const renewSession = async (appId: string, runId: string) => {
-  const { appAgentSession, db } = await sessionStore();
+  const { appAgentLease, db } = await sessionStore();
   const [owned] = await db
-    .update(appAgentSession)
+    .update(appAgentLease)
     .set({ leaseExpiresAt: new Date(Date.now() + leaseDurationMs) })
     .where(
-      and(
-        eq(appAgentSession.appId, appId),
-        eq(appAgentSession.activeRunId, runId)
-      )
+      and(eq(appAgentLease.appId, appId), eq(appAgentLease.activeRunId, runId))
     )
-    .returning({ appId: appAgentSession.appId });
+    .returning({ appId: appAgentLease.appId });
   if (!owned) {
     throw new FatalError("The app agent no longer owns this editing turn.");
   }
 };
 
-/** Persist before stopping the VM; keep the lease until its Drive is released. */
+/** Persist only the selected thread while keeping the app lease until VM stop. */
 export const persistResumeStep = async (
   appId: string,
+  threadId: string,
   runId: string,
   resumeFrom: HarnessV1ResumeSessionState,
   sandboxName: string
 ) => {
   "use step";
-  const { appAgentSession, db } = await sessionStore();
-  const [saved] = await db
-    .update(appAgentSession)
-    .set({ resumeState: JSON.stringify(resumeFrom), sandboxName })
-    .where(
-      and(
-        eq(appAgentSession.appId, appId),
-        eq(appAgentSession.activeRunId, runId)
+  const { appAgentLease, appAgentThread, db } = await sessionStore();
+  await db.transaction(async (tx) => {
+    const [owned] = await tx
+      .select()
+      .from(appAgentLease)
+      .where(
+        and(
+          eq(appAgentLease.appId, appId),
+          eq(appAgentLease.activeRunId, runId),
+          eq(appAgentLease.activeThreadId, threadId)
+        )
       )
-    )
-    .returning({ appId: appAgentSession.appId });
-  if (!saved) {
-    throw new FatalError(
-      "Cannot save a session owned by another editing turn."
-    );
-  }
+      .for("update");
+    if (!owned) {
+      throw new FatalError(
+        "Cannot save a session owned by another editing turn."
+      );
+    }
+    const [saved] = await tx
+      .update(appAgentThread)
+      .set({ resumeState: JSON.stringify(resumeFrom), sandboxName })
+      .where(
+        and(eq(appAgentThread.id, threadId), eq(appAgentThread.appId, appId))
+      )
+      .returning({ id: appAgentThread.id });
+    if (!saved) {
+      throw new FatalError("Cannot save an unknown thread.");
+    }
+  });
 };
 
 export const releaseSessionStep = async (appId: string, runId: string) => {
   "use step";
-  const { appAgentSession, db } = await sessionStore();
+  const { appAgentLease, db } = await sessionStore();
   await db
-    .update(appAgentSession)
-    .set({ activeRunId: null, leaseExpiresAt: null })
+    .update(appAgentLease)
+    .set({
+      activeRunId: null,
+      activeThreadId: null,
+      cleanupSandboxName: null,
+      leaseExpiresAt: null,
+    })
     .where(
-      and(
-        eq(appAgentSession.appId, appId),
-        eq(appAgentSession.activeRunId, runId)
-      )
+      and(eq(appAgentLease.appId, appId), eq(appAgentLease.activeRunId, runId))
     );
 };
 
-/** Hard cancellation skips workflow finally blocks, so callers must clean up. */
+/** Hard cancellation must invalidate only the owning run's conversation. */
 export const cancelAppAgent = async (appId: string, runId: string) => {
   "use step";
-  const { appAgentSession, db } = await sessionStore();
+  const { appAgentLease, appAgentThread, db } = await sessionStore();
   const [owned] = await db
-    .update(appAgentSession)
+    .update(appAgentLease)
     .set({ leaseExpiresAt: new Date(Date.now() + leaseDurationMs) })
     .where(
-      and(
-        eq(appAgentSession.appId, appId),
-        eq(appAgentSession.activeRunId, runId)
-      )
+      and(eq(appAgentLease.appId, appId), eq(appAgentLease.activeRunId, runId))
     )
-    .returning({ appId: appAgentSession.appId });
+    .returning({
+      cleanupSandboxName: appAgentLease.cleanupSandboxName,
+      threadId: appAgentLease.activeThreadId,
+    });
   if (!owned) {
     return;
   }
-  // Clear resume state only after deletion; a cleanup failure retains the
-  // lease so another turn cannot attach to a still-running cancelled sandbox.
-  await deleteSandbox(appSandboxName(appId));
-  await db
-    .update(appAgentSession)
-    .set({
-      activeRunId: null,
-      leaseExpiresAt: null,
-      resumeState: null,
-      sandboxName: null,
-    })
-    .where(
-      and(
-        eq(appAgentSession.appId, appId),
-        eq(appAgentSession.activeRunId, runId)
+  // Keep ownership when deletion fails so a new writer cannot race cleanup.
+  if (owned.cleanupSandboxName !== null) {
+    await deleteSandbox(owned.cleanupSandboxName);
+  }
+  if (owned.threadId !== null) {
+    await deleteSandbox(threadSandboxName(owned.threadId));
+  }
+  await db.transaction(async (tx) => {
+    const [lease] = await tx
+      .select()
+      .from(appAgentLease)
+      .where(
+        and(
+          eq(appAgentLease.appId, appId),
+          eq(appAgentLease.activeRunId, runId)
+        )
       )
-    );
+      .for("update");
+    if (!lease) {
+      return;
+    }
+    if (owned.threadId !== null) {
+      await tx
+        .update(appAgentThread)
+        .set({
+          invalidatedAt: new Date(),
+          resumeState: null,
+          sandboxName: null,
+        })
+        .where(
+          and(
+            eq(appAgentThread.id, owned.threadId),
+            eq(appAgentThread.appId, appId)
+          )
+        );
+    }
+    await tx
+      .update(appAgentLease)
+      .set({
+        activeRunId: null,
+        activeThreadId: null,
+        cleanupSandboxName: null,
+        leaseExpiresAt: null,
+      })
+      .where(eq(appAgentLease.appId, appId));
+  });
 };

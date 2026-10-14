@@ -26,8 +26,8 @@ export const agentStep = async (
     await import("./sandbox");
   const { renewSession } = await import("./session-store");
   await renewSession(input.appId, runId);
-  const { appSandboxName } = await import("./identity");
-  const sandboxName = appSandboxName(input.appId);
+  const { threadSandboxName } = await import("./identity");
+  const sandboxName = threadSandboxName(input.threadId);
   const sandboxSession = await networkSession(await getSandbox(sandboxName));
   // A resumed persistent VM may have dropped the ephemeral token file.
   await writeAgentToken(sandboxName, input.agentToken);

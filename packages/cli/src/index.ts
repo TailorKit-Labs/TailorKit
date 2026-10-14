@@ -386,6 +386,10 @@ cli
 cli
   .command("agent", "Chat with the TailorKit app agent")
   .option(
+    "--thread <id>",
+    "Resume an existing agent conversation (otherwise starts a new thread)"
+  )
+  .option(
     "--schema <path>",
     "Host schema snapshot for generation without host access"
   )
@@ -402,6 +406,7 @@ cli
             host: options.host,
           }),
         schemaPath: options.schema,
+        threadId: options.thread,
       });
     } catch (error) {
       log.error(error instanceof Error ? error.message : String(error));

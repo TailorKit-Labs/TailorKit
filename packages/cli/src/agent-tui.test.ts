@@ -12,6 +12,11 @@ import {
 } from "vite-plus/test";
 
 const chatEvents = async function* chatEvents() {
+  yield {
+    data: { threadId: "e773a870-df5a-4bea-9ebd-9be4c0b1897a" },
+    transient: true,
+    type: "data-thread" as const,
+  };
   yield { messageId: "run-2", type: "start" as const };
   yield { id: "text", type: "text-start" as const };
   yield { delta: "Continued", id: "text", type: "text-delta" as const };
@@ -129,7 +134,7 @@ describe("AI SDK terminal transport", () => {
     /* oxlint-enable typescript/no-unsafe-type-assertion */
     expect(schemaSignal.aborted).toBe(false);
     expect(chat).toHaveBeenCalledWith(
-      { appId, hostUrl, messages, schema },
+      { appId, hostUrl, messages, schema, threadId: undefined },
       { signal: controller.signal }
     );
 
@@ -140,7 +145,13 @@ describe("AI SDK terminal transport", () => {
       messages,
     });
     expect(chat).toHaveBeenLastCalledWith(
-      { appId, hostUrl, messages, schema: updatedSchema },
+      {
+        appId,
+        hostUrl,
+        messages,
+        schema: updatedSchema,
+        threadId: "e773a870-df5a-4bea-9ebd-9be4c0b1897a",
+      },
       { signal: controller.signal }
     );
     controller.abort();
@@ -149,6 +160,37 @@ describe("AI SDK terminal transport", () => {
     expect(
       await options.transport.reconnectToStream({ chatId: "sdk-chat-id" })
     ).toBeNull();
+  });
+
+  it("starts each CLI chat without a thread ID unless explicitly resumed", async () => {
+    const chat = vi.fn(
+      async (
+        _input: Parameters<TailorKitRouterClient["appAgent"]["chat"]>[0]
+      ) => await Promise.resolve(chatEvents())
+    );
+    await openAgentTui({ appId, client: { appAgent: { chat } }, hostUrl });
+    const first = requireValue(mocks.tui.mock.lastCall)[0].transport;
+    const stream = await first.sendMessages({ messages });
+    for await (const _ of stream) {
+      /* consume */
+    }
+    expect(requireValue(chat.mock.calls[0])[0].threadId).toBeUndefined();
+    await openAgentTui({ appId, client: { appAgent: { chat } }, hostUrl });
+    await requireValue(mocks.tui.mock.lastCall)[0].transport.sendMessages({
+      messages,
+    });
+    expect(requireValue(chat.mock.lastCall)[0].threadId).toBeUndefined();
+    const threadId = "e773a870-df5a-4bea-9ebd-9be4c0b1897a";
+    await openAgentTui({
+      appId,
+      client: { appAgent: { chat } },
+      hostUrl,
+      threadId,
+    });
+    await requireValue(mocks.tui.mock.lastCall)[0].transport.sendMessages({
+      messages,
+    });
+    expect(requireValue(chat.mock.lastCall)[0].threadId).toBe(threadId);
   });
 
   it.each([new Error("Local host unavailable"), "Local host unavailable"])(

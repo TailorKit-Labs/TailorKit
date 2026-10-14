@@ -34,9 +34,10 @@ const input: AppAgentInput = {
   hostUrl: "https://host.test/api/tailorkit",
   messages: [{ content: "Build the app", role: "user" }],
   model: "xiaomi/mimo-v2.6-pro",
+  threadId: "thread-1",
 };
 const resumeFrom = {
-  data: { acpSessionId: "native-session" },
+  data: { sessionFileName: "native-session.jsonl" },
   harnessId: "pi",
   specificationVersion: "harness-v1" as const,
   type: "resume-session" as const,
@@ -48,10 +49,10 @@ beforeEach(() => {
   mocks.step.mockResolvedValue({
     messages: [{ content: "Built", role: "assistant" }],
     state: {
-      finalResult: { finishReason: "stop", sessionId: input.appId },
+      finalResult: { finishReason: "stop", sessionId: input.threadId },
       prompt: "",
       resumeFrom,
-      sessionId: input.appId,
+      sessionId: input.threadId,
       status: "finished",
     },
   });
@@ -61,7 +62,7 @@ describe("durable Pi turns", () => {
   it("loads native history and saves the next handle before stopping and releasing the Drive", async () => {
     mocks.load.mockResolvedValue({
       resumeFrom,
-      sandboxName: "app-agent-app-1",
+      sandboxName: "agent-thread-thread-1",
     });
     const result = await appAgent(input);
     expect(result.messages).toEqual([{ content: "Built", role: "assistant" }]);
@@ -69,16 +70,17 @@ describe("durable Pi turns", () => {
       expect.objectContaining({
         messages: input.messages,
         resumeFrom,
-        sessionId: input.appId,
+        sessionId: input.threadId,
       }),
       input,
       "run-1"
     );
     expect(mocks.persist).toHaveBeenCalledWith(
       input.appId,
+      input.threadId,
       "run-1",
       resumeFrom,
-      "app-agent-app-1"
+      "agent-thread-thread-1"
     );
     expect(mocks.persist.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.stop.mock.invocationCallOrder[0] ?? 0
@@ -96,7 +98,7 @@ describe("durable Pi turns", () => {
       state: {
         continueFrom,
         prompt: "",
-        sessionId: input.appId,
+        sessionId: input.threadId,
         status: "ready_for_next_step",
       },
     });
@@ -121,7 +123,7 @@ describe("durable Pi turns", () => {
       state: {
         error: "Bridge lost",
         prompt: "",
-        sessionId: input.appId,
+        sessionId: input.threadId,
         status: "failed",
       },
     });
@@ -141,13 +143,13 @@ describe("durable Pi turns", () => {
     mocks.step.mockResolvedValueOnce({
       messages: [],
       state: {
-        finalResult: { finishReason: "tool-calls", sessionId: input.appId },
+        finalResult: { finishReason: "tool-calls", sessionId: input.threadId },
         prompt: "",
         resumeFrom: {
           ...resumeFrom,
           continueFrom: { ...resumeFrom, type: "continue-turn" },
         },
-        sessionId: input.appId,
+        sessionId: input.threadId,
         status: "awaiting_tool_approval",
       },
     });

@@ -158,6 +158,13 @@ it("streams typed Pi file tools and restores a multi-turn conversation without t
   const sessionHome = join(directory, "home");
   const sessionId = randomUUID();
   const hostJournal = join(tmpdir(), "ai-sdk-harness", "pi", sessionId);
+  const otherSessionId = randomUUID();
+  const otherHostJournal = join(
+    tmpdir(),
+    "ai-sdk-harness",
+    "pi",
+    otherSessionId
+  );
   await mkdir(workspace);
   await mkdir(sessionHome);
   const requests: string[] = [];
@@ -178,10 +185,11 @@ it("streams typed Pi file tools and restores a multi-turn conversation without t
   );
   const input = {
     agentToken: "private-token",
-    appId: sessionId,
+    appId: randomUUID(),
     hostUrl: "https://host.test/api/tailorkit",
     messages: [],
     model: modelId,
+    threadId: sessionId,
   };
   const sandboxSession = localSession(workspace, sessionHome);
   let session:
@@ -239,10 +247,34 @@ it("streams typed Pi file tools and restores a multi-turn conversation without t
     expect(requests[2]).toContain("Build a file");
     expect(requests[2]).toContain("Built");
     expect(requests[2]).toContain("Now update it");
+    const continuedResume = await session.detach();
+    session = undefined;
+    const otherAgent = await createAppAgent(
+      { ...input, threadId: otherSessionId },
+      "other-fixture"
+    );
+    session = await otherAgent.createSession({
+      sandboxSession,
+      sessionId: otherSessionId,
+    });
+    await otherAgent.generate({ prompt: "Different task", session });
+    expect(requests[3]).not.toContain("Build a file");
+    expect(requests[3]).not.toContain("Now update it");
+    await session.destroy();
+    session = await nextAgent.createSession({
+      resumeFrom: continuedResume,
+      sandboxSession,
+      sessionId,
+    });
+    await nextAgent.generate({ prompt: "Back to first thread", session });
+    expect(requests[4]).toContain("Build a file");
+    expect(requests[4]).toContain("Now update it");
+    expect(requests[4]).not.toContain("Different task");
   } finally {
     await session?.destroy();
     vi.unstubAllGlobals();
     await rm(directory, { force: true, recursive: true });
     await rm(hostJournal, { force: true, recursive: true });
+    await rm(otherHostJournal, { force: true, recursive: true });
   }
 }, 30_000);

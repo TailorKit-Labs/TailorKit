@@ -1,1 +1,2 @@
-export const appSandboxName = (appId: string) => `app-agent-${appId}`;
+export const threadSandboxName = (threadId: string) =>
+  `agent-thread-${threadId}`;
