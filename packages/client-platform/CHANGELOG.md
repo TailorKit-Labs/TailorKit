@@ -1,5 +1,11 @@
 # @tailorkit/client-platform
 
+## 0.1.0-beta.36
+
+### Patch Changes
+
+- c0ce502: Restrict the agent command to apps created by AI, validate explicit app IDs, and mark apps created through the authenticated agent creation flow as AI-created. Reject caller-supplied provenance on general app creation.
+
 ## 0.1.0-beta.35
 
 No changes in this release.
