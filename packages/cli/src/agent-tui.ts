@@ -4,10 +4,10 @@ import { runAgentTUI } from "@ai-sdk/tui";
 import { log } from "@clack/prompts";
 import { asyncIteratorToUnproxiedDataStream } from "@orpc/client";
 import {
-  agentThreadChunkSchema,
   agentRunChunkSchema,
   agentRunCompleteChunkSchema,
 } from "@tailorkit/client-platform/agent";
+import type { AgentRunCursor } from "@tailorkit/client-platform/agent";
 import type { TailorKitRouterClient } from "@tailorkit/core/server";
 import type { ChatTransport, UIMessage, UIMessageChunk } from "ai";
 
@@ -33,8 +33,7 @@ export const openAgentTui = async ({
 }: AgentTuiOptions) => {
   let threadId = requestedThreadId;
   type ChatInput = Parameters<TailorKitRouterClient["appAgent"]["chat"]>[0];
-  let resume: ChatInput["resume"];
-  let pendingInput: ChatInput | undefined;
+  let resume: AgentRunCursor | undefined;
   const connect = async (
     input: ChatInput,
     signal?: AbortSignal
@@ -46,8 +45,13 @@ export const openAgentTui = async ({
     );
     return chunks;
   };
+  const connectResume = async (signal?: AbortSignal) => {
+    if (resume === undefined) {
+      throw new Error("Agent stream did not include its run identity.");
+    }
+    return await connect({ appId, type: "resume", ...resume }, signal);
+  };
   const readTurn = async function* readTurn(
-    input: ChatInput,
     signal?: AbortSignal,
     initial?: AsyncIterable<UIMessageChunk>
   ): AsyncGenerator<UIMessageChunk> {
@@ -58,42 +62,37 @@ export const openAgentTui = async ({
       signal?.throwIfAborted();
       const startIndex = resume?.startIndex ?? 0;
       try {
-        const request =
-          resume === undefined ? input : { ...input, resume, threadId };
-        const nextChunks = initialChunks ?? connect(request, signal);
+        const nextChunks = initialChunks ?? connectResume(signal);
         // oxlint-disable-next-line no-await-in-loop -- Connect sequentially from the last received chunk to avoid overlapping readers.
         const chunks = await nextChunks;
         initialChunks = undefined;
         // oxlint-disable-next-line no-await-in-loop -- Each chunk advances the reconnect cursor before reading the next one.
         for await (const chunk of chunks) {
-          const thread = agentThreadChunkSchema.safeParse(chunk);
           const run = agentRunChunkSchema.safeParse(chunk);
           const complete = agentRunCompleteChunkSchema.safeParse(chunk);
-          if (thread.success) {
-            ({ threadId } = thread.data.data);
-          } else if (run.success) {
+          if (run.success) {
+            ({ threadId } = run.data.data);
             resume = { ...run.data.data, startIndex };
-          } else if (complete.success) {
+          } else if (
+            complete.success &&
+            complete.data.data.runId === resume?.runId
+          ) {
             finished = true;
           } else {
             if (resume !== undefined) {
               resume = { ...resume, startIndex: resume.startIndex + 1 };
             }
             failures = 0;
-            if (chunk.type === "finish" || chunk.type === "error") {
-              finished = true;
-            }
             if (chunk.type === "error") {
+              finished = true;
               // The SDK may cancel consumption as soon as it sees this terminal error.
               resume = undefined;
-              pendingInput = undefined;
             }
           }
           yield chunk;
         }
         if (finished) {
           resume = undefined;
-          pendingInput = undefined;
           return;
         }
         throw new Error("The agent stream ended before the turn completed.");
@@ -111,16 +110,14 @@ export const openAgentTui = async ({
   const transport: ChatTransport<UIMessage> = {
     // oxlint-disable-next-line eslint/require-await -- ChatTransport requires a Promise although stream creation is synchronous.
     reconnectToStream: async ({ abortSignal }) =>
-      pendingInput === undefined || resume === undefined
+      resume === undefined
         ? null
-        : asyncIteratorToUnproxiedDataStream(
-            readTurn(pendingInput, abortSignal)
-          ),
+        : asyncIteratorToUnproxiedDataStream(readTurn(abortSignal)),
     sendMessages: async ({ messages, abortSignal }) => {
-      if (resume !== undefined && pendingInput !== undefined) {
+      if (resume !== undefined) {
         // Settle the disconnected turn before submitting this follow-up.
         // Its full history lives in Pi's journal, even if the terminal missed it.
-        for await (const _chunk of readTurn(pendingInput, abortSignal)) {
+        for await (const _chunk of readTurn(abortSignal)) {
           /* consume */
         }
       }
@@ -156,7 +153,7 @@ export const openAgentTui = async ({
           }
         );
       }
-      pendingInput = {
+      const input: ChatInput = {
         appId,
         hostUrl,
         messages: messages.filter(
@@ -165,11 +162,10 @@ export const openAgentTui = async ({
         ),
         schema,
         threadId,
+        type: "turn",
       };
-      const initial = await connect(pendingInput, abortSignal);
-      return asyncIteratorToUnproxiedDataStream(
-        readTurn(pendingInput, abortSignal, initial)
-      );
+      const initial = await connect(input, abortSignal);
+      return asyncIteratorToUnproxiedDataStream(readTurn(abortSignal, initial));
     },
   };
   await runAgentTUI({

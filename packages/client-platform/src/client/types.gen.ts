@@ -16,6 +16,7 @@ export type Schema0 =
 
 export type AppAgentChatData = {
   body: {
+    type: "turn";
     appId: string;
     hostUrl: string;
     messages: Array<{
@@ -27,15 +28,18 @@ export type AppAgentChatData = {
       }>;
       role: "user" | "assistant";
     }>;
-    resume?: {
-      runId: string;
-      startIndex: number;
-      token: string;
-    };
     schema?: {
       [key: string]: unknown;
     };
     threadId?: string;
+    deployToken: string;
+  } | {
+    type: "resume";
+    appId: string;
+    threadId: string;
+    runId: string;
+    startIndex: number;
+    token: string;
     deployToken: string;
   };
   path?: never;

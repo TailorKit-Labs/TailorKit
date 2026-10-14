@@ -24,7 +24,7 @@ export const appAgentRouter = {
         ? AbortSignal.any([clientSignal, controller.signal])
         : controller.signal;
       try {
-        let streamError: unknown;
+        let streamFailed = false;
         let done = false;
         const { stream } = await appAgentChat({
           body: { ...input, deployToken: getCliDeployToken(context.request) },
@@ -33,8 +33,8 @@ export const appAgentRouter = {
 
           headers: context.platformHeaders,
 
-          onSseError: (error) => {
-            streamError = error;
+          onSseError: () => {
+            streamFailed = true;
           },
 
           signal,
@@ -45,7 +45,6 @@ export const appAgentRouter = {
         for await (const value of stream) {
           const event = await agentChunkSchema.parseAsync(value);
           if (
-            event.type === "finish" ||
             event.type === "error" ||
             agentRunCompleteChunkSchema.safeParse(event).success
           ) {
@@ -54,15 +53,7 @@ export const appAgentRouter = {
           yield event;
         }
         signal?.throwIfAborted();
-        if (
-          streamError !== undefined &&
-          streamError !== null &&
-          streamError !== false &&
-          streamError !== "" &&
-          streamError !== 0 &&
-          !Number.isNaN(streamError) &&
-          streamError !== 0n
-        ) {
+        if (streamFailed) {
           throw new ORPCError("BAD_GATEWAY", {
             message: "The app agent stream failed. Try again.",
           });

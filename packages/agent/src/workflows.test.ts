@@ -47,14 +47,11 @@ beforeEach(() => {
   vi.resetAllMocks();
   mocks.load.mockResolvedValue({});
   mocks.step.mockResolvedValue({
-    messages: [{ content: "Built", role: "assistant" }],
-    state: {
-      finalResult: { finishReason: "stop", sessionId: input.threadId },
-      prompt: "",
-      resumeFrom,
-      sessionId: input.threadId,
-      status: "finished",
-    },
+    finalResult: { finishReason: "stop", sessionId: input.threadId },
+    prompt: "",
+    resumeFrom,
+    sessionId: input.threadId,
+    status: "finished",
   });
 });
 
@@ -65,7 +62,10 @@ describe("durable Pi turns", () => {
       sandboxName: "agent-thread-thread-1",
     });
     const result = await appAgent(input);
-    expect(result.messages).toEqual([{ content: "Built", role: "assistant" }]);
+    expect(result).toMatchObject({
+      finishReason: "stop",
+      threadId: input.threadId,
+    });
     expect(mocks.step).toHaveBeenCalledWith(
       expect.objectContaining({
         messages: input.messages,
@@ -94,13 +94,10 @@ describe("durable Pi turns", () => {
   it("passes the suspended turn to the next step without stopping its sandbox", async () => {
     const continueFrom = { ...resumeFrom, type: "continue-turn" };
     mocks.step.mockResolvedValueOnce({
-      messages: [{ content: "Working", role: "assistant" }],
-      state: {
-        continueFrom,
-        prompt: "",
-        sessionId: input.threadId,
-        status: "ready_for_next_step",
-      },
+      continueFrom,
+      prompt: "",
+      sessionId: input.threadId,
+      status: "ready_for_next_step",
     });
     const result = await appAgent(input);
     expect(mocks.step).toHaveBeenNthCalledWith(
@@ -110,7 +107,7 @@ describe("durable Pi turns", () => {
       "run-1"
     );
     expect(mocks.stop).toHaveBeenCalledOnce();
-    expect(result.messages).toHaveLength(2);
+    expect(result.finishReason).toBe("stop");
   });
 
   it("cleans up setup and runner failures without saving unusable handles", async () => {
@@ -119,13 +116,10 @@ describe("durable Pi turns", () => {
     expect(mocks.cancel).toHaveBeenCalledWith(input.appId, "run-1");
     expect(mocks.step).not.toHaveBeenCalled();
     mocks.step.mockResolvedValueOnce({
-      messages: [],
-      state: {
-        error: "Bridge lost",
-        prompt: "",
-        sessionId: input.threadId,
-        status: "failed",
-      },
+      error: "Bridge lost",
+      prompt: "",
+      sessionId: input.threadId,
+      status: "failed",
     });
     await expect(appAgent(input)).rejects.toThrow("Bridge lost");
     expect(mocks.persist).not.toHaveBeenCalled();
@@ -141,17 +135,14 @@ describe("durable Pi turns", () => {
 
   it("retains resumability for a tool approval continuation", async () => {
     mocks.step.mockResolvedValueOnce({
-      messages: [],
-      state: {
-        finalResult: { finishReason: "tool-calls", sessionId: input.threadId },
-        prompt: "",
-        resumeFrom: {
-          ...resumeFrom,
-          continueFrom: { ...resumeFrom, type: "continue-turn" },
-        },
-        sessionId: input.threadId,
-        status: "awaiting_tool_approval",
+      finalResult: { finishReason: "tool-calls", sessionId: input.threadId },
+      prompt: "",
+      resumeFrom: {
+        ...resumeFrom,
+        continueFrom: { ...resumeFrom, type: "continue-turn" },
       },
+      sessionId: input.threadId,
+      status: "awaiting_tool_approval",
     });
     await expect(appAgent(input)).resolves.toMatchObject({
       finishReason: "tool-calls",

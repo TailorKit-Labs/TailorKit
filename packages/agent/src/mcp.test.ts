@@ -112,7 +112,7 @@ describe("app agent MCP", () => {
           runId: "run",
         });
         await progressReceived;
-        return { appId: "app", messages: [], runId: "run" };
+        return { appId: "app", finishReason: "stop", runId: "run" };
       },
     });
     const result = await client.callTool(

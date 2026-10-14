@@ -25,25 +25,34 @@ export const agentMessagesSchema = z
   )
   .min(1);
 
-export const agentChatSchema = z.object({
+const agentTurnSchema = z.object({
   appId: z.string().min(1),
   hostUrl: z.url({ protocol: /^https?$/u }),
   messages: agentMessagesSchema,
-  resume: z
-    .object({
-      runId: z.string().startsWith("wrun_"),
-      startIndex: z.number().int().nonnegative(),
-      token: z.string().min(1),
-    })
-    .optional(),
   schema: z.record(z.string(), z.unknown()).optional(),
   threadId: z.uuid().optional(),
+  type: z.literal("turn"),
 });
+
+const agentResumeSchema = z.object({
+  appId: z.string().min(1),
+  runId: z.string().startsWith("wrun_"),
+  startIndex: z.number().int().nonnegative(),
+  threadId: z.uuid(),
+  token: z.string().min(1),
+  type: z.literal("resume"),
+});
+
+export const agentChatSchema = z.discriminatedUnion("type", [
+  agentTurnSchema,
+  agentResumeSchema,
+]);
 
 /** The signed run identity permits reconnecting without submitting another turn. */
 export const agentRunChunkSchema = z.object({
   data: z.object({
     runId: z.string().startsWith("wrun_"),
+    threadId: z.uuid(),
     token: z.string().min(1),
   }),
   transient: z.literal(true),
@@ -56,9 +65,6 @@ export const agentRunCompleteChunkSchema = z.object({
   type: z.literal("data-run-complete"),
 });
 
-/** Transient metadata communicates the server-selected conversation ID. */
-export const agentThreadChunkSchema = z.object({
-  data: z.object({ threadId: z.uuid() }),
-  transient: z.literal(true),
-  type: z.literal("data-thread"),
-});
+export type AgentRunCursor = z.infer<typeof agentRunChunkSchema>["data"] & {
+  startIndex: number;
+};

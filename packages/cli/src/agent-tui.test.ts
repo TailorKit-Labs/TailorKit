@@ -13,15 +13,24 @@ import {
 
 const chatEvents = async function* chatEvents() {
   yield {
-    data: { threadId: "e773a870-df5a-4bea-9ebd-9be4c0b1897a" },
+    data: {
+      runId: "wrun_test",
+      threadId: "e773a870-df5a-4bea-9ebd-9be4c0b1897a",
+      token: "signed-run",
+    },
     transient: true,
-    type: "data-thread" as const,
+    type: "data-run" as const,
   };
   yield { messageId: "run-2", type: "start" as const };
   yield { id: "text", type: "text-start" as const };
   yield { delta: "Continued", id: "text", type: "text-delta" as const };
   yield { id: "text", type: "text-end" as const };
   yield { type: "finish" as const };
+  yield {
+    data: { runId: "wrun_test" },
+    transient: true,
+    type: "data-run-complete" as const,
+  };
 };
 
 const requireValue = <T>(value: T | null | undefined): T => {
@@ -88,14 +97,49 @@ const waitForAbort = async (_host: string, signal: AbortSignal) =>
   })();
 
 describe("AI SDK terminal transport", () => {
+  it("reconnects after model finish until workspace cleanup completes", async () => {
+    const threadId = "e773a870-df5a-4bea-9ebd-9be4c0b1897a";
+    const run = { runId: "wrun_test", threadId, token: "signed-run" };
+    const chat = vi
+      .fn()
+      .mockResolvedValueOnce(
+        (async function* awaitingCleanup() {
+          yield { data: run, transient: true, type: "data-run" };
+          yield { messageId: "answer", type: "start" };
+          yield { type: "finish" };
+        })()
+      )
+      .mockResolvedValueOnce(
+        (async function* cleanedUp() {
+          yield { data: run, transient: true, type: "data-run" };
+          yield {
+            data: { runId: run.runId },
+            transient: true,
+            type: "data-run-complete",
+          };
+        })()
+      );
+    await openAgentTui({ appId, client: { appAgent: { chat } }, hostUrl });
+    const [options] = requireValue(mocks.tui.mock.lastCall);
+    const stream = await options.transport.sendMessages({ messages });
+    for await (const _chunk of stream) {
+      /* consume */
+    }
+    expect(chat).toHaveBeenCalledTimes(2);
+    expect(requireValue(chat.mock.lastCall)[0]).toEqual({
+      appId,
+      type: "resume",
+      ...run,
+      startIndex: 2,
+    });
+  });
   it("reconnects after a truncated stream without replaying chunks or starting another turn", async () => {
     const threadId = "e773a870-df5a-4bea-9ebd-9be4c0b1897a";
-    const run = { runId: "wrun_test", token: "signed-run" };
+    const run = { runId: "wrun_test", threadId, token: "signed-run" };
     const chat = vi
       .fn()
       .mockResolvedValueOnce(
         (async function* disconnected() {
-          yield { data: { threadId }, transient: true, type: "data-thread" };
           yield { data: run, transient: true, type: "data-run" };
           yield { messageId: "answer", type: "start" };
           yield { id: "text", type: "text-start" };
@@ -105,9 +149,13 @@ describe("AI SDK terminal transport", () => {
       )
       .mockImplementationOnce((input) =>
         (async function* resumed() {
-          expect(input.resume).toEqual({ ...run, startIndex: 3 });
+          expect(input).toEqual({
+            appId,
+            type: "resume",
+            ...run,
+            startIndex: 3,
+          });
           expect(input.threadId).toBe(threadId);
-          yield { data: { threadId }, transient: true, type: "data-thread" };
           yield { data: run, transient: true, type: "data-run" };
           yield { delta: "lo", id: "text", type: "text-delta" };
           yield { id: "text", type: "text-end" };
@@ -137,9 +185,9 @@ describe("AI SDK terminal transport", () => {
       type: "text",
     });
     expect(chat).toHaveBeenCalledTimes(2);
-    expect(requireValue(chat.mock.calls[0])[0].resume).toBeUndefined();
+    expect(requireValue(chat.mock.calls[0])[0].type).toBe("turn");
     await transport.sendMessages({ messages });
-    expect(requireValue(chat.mock.lastCall)[0].resume).toBeUndefined();
+    expect(requireValue(chat.mock.lastCall)[0].type).toBe("turn");
     expect(requireValue(chat.mock.lastCall)[0].threadId).toBe(threadId);
   });
 
@@ -147,9 +195,8 @@ describe("AI SDK terminal transport", () => {
     const threadId = "e773a870-df5a-4bea-9ebd-9be4c0b1897a";
     const chat = vi.fn().mockResolvedValue(
       (async function* disconnected() {
-        yield { data: { threadId }, transient: true, type: "data-thread" };
         yield {
-          data: { runId: "wrun_test", token: "signed-run" },
+          data: { runId: "wrun_test", threadId, token: "signed-run" },
           transient: true,
           type: "data-run",
         };
@@ -166,7 +213,6 @@ describe("AI SDK terminal transport", () => {
     });
     const reader = stream.getReader();
     await reader.read();
-    await reader.read();
     const pending = reader.read();
     abort.abort();
     await expect(pending).rejects.toMatchObject({ name: "AbortError" });
@@ -174,13 +220,12 @@ describe("AI SDK terminal transport", () => {
   });
 
   it("settles a disconnected turn before submitting a follow-up after retries are exhausted", async () => {
-    const run = { runId: "wrun_test", token: "signed-run" };
     const threadId = "e773a870-df5a-4bea-9ebd-9be4c0b1897a";
+    const run = { runId: "wrun_test", threadId, token: "signed-run" };
     const chat = vi
       .fn()
       .mockResolvedValueOnce(
         (async function* initial() {
-          yield { data: { threadId }, transient: true, type: "data-thread" };
           yield { data: run, transient: true, type: "data-run" };
           yield { messageId: "old-answer", type: "start" };
           throw new Error("Disconnected");
@@ -226,15 +271,17 @@ describe("AI SDK terminal transport", () => {
     expect(chat).toHaveBeenCalledTimes(6);
     const [oldRequest] = requireValue(chat.mock.calls[4]);
     const [newRequest] = requireValue(chat.mock.calls[5]);
-    expect(oldRequest).toMatchObject({
-      messages,
-      resume: { ...run, startIndex: 1 },
+    expect(oldRequest).toEqual({
+      appId,
+      type: "resume",
+      ...run,
+      startIndex: 1,
     });
     expect(newRequest).toMatchObject({
       messages: followup,
       threadId,
     });
-    expect(newRequest.resume).toBeUndefined();
+    expect(newRequest.type).toBe("turn");
   }, 15_000);
   it("forwards the SDK's complete history and abort signal to the host client", async () => {
     const chat = vi.fn(
@@ -282,7 +329,7 @@ describe("AI SDK terminal transport", () => {
     /* oxlint-enable typescript/no-unsafe-type-assertion */
     expect(schemaSignal.aborted).toBe(false);
     expect(chat).toHaveBeenCalledWith(
-      { appId, hostUrl, messages, schema, threadId: undefined },
+      { appId, hostUrl, messages, schema, threadId: undefined, type: "turn" },
       { signal: controller.signal }
     );
 
@@ -299,6 +346,7 @@ describe("AI SDK terminal transport", () => {
         messages,
         schema: updatedSchema,
         threadId: "e773a870-df5a-4bea-9ebd-9be4c0b1897a",
+        type: "turn",
       },
       { signal: controller.signal }
     );

@@ -162,7 +162,7 @@ it("routes every authenticated CLI surface through existing platform endpoints f
       expect(request.redirect).toBe("error");
       if (request.url.endsWith("/app-agent/chat")) {
         return new Response(
-          'data: {"type":"start","messageId":"one"}\n\ndata: {"type":"finish"}\n\n',
+          'data: {"type":"start","messageId":"one"}\n\ndata: {"type":"finish"}\n\ndata: {"type":"data-run-complete","data":{"runId":"wrun_test"},"transient":true}\n\n',
           { headers: { "content-type": "text/event-stream" } }
         );
       }
@@ -185,12 +185,18 @@ it("routes every authenticated CLI surface through existing platform endpoints f
       { id: "user", parts: [{ text: "Build", type: "text" }], role: "user" },
     ],
     schema: {},
+    type: "turn",
   })) {
     chunks.push(chunk);
   }
   expect(chunks).toEqual([
     { messageId: "one", type: "start" },
     { type: "finish" },
+    {
+      data: { runId: "wrun_test" },
+      transient: true,
+      type: "data-run-complete",
+    },
   ]);
   // SAFETY: The exercised fetch call constructs this Request; the test inspects the captured request after asserting the call occurred.
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.

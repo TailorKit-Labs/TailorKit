@@ -1,25 +1,18 @@
 import { runHarnessAgentStep } from "@ai-sdk/workflow-harness";
 import type {
-  HarnessWorkflowAgent,
   HarnessWorkflowChunk,
   HarnessWorkflowState,
 } from "@ai-sdk/workflow-harness";
-import type { ModelMessage } from "ai";
 import { getWritable } from "workflow";
 
 import type { AppAgentInput } from "./input";
-
-export interface AgentStepResult {
-  state: HarnessWorkflowState;
-  messages: ModelMessage[];
-}
 
 /** Only this module loads the agent and Node-heavy sandbox adapter. */
 export const agentStep = async (
   state: HarnessWorkflowState,
   input: AppAgentInput,
   runId: string
-): Promise<AgentStepResult> => {
+): Promise<HarnessWorkflowState> => {
   "use step";
   const { createAppAgent } = await import("./agent");
   const { getSandbox, networkSession, writeAgentToken } =
@@ -28,30 +21,15 @@ export const agentStep = async (
   await renewSession(input.appId, runId);
   const { threadSandboxName } = await import("./identity");
   const sandboxName = threadSandboxName(input.threadId);
-  const sandboxSession = await networkSession(await getSandbox(sandboxName));
+  const sandbox = await getSandbox(sandboxName);
   // A resumed persistent VM may have dropped the ephemeral token file.
-  await writeAgentToken(sandboxName, input.agentToken);
+  await writeAgentToken(sandbox, input.agentToken);
+  const sandboxSession = await networkSession(sandbox);
   const agent = await createAppAgent(input, sandboxName);
-  let result: Awaited<ReturnType<typeof agent.stream>> | undefined;
-  const runner: HarnessWorkflowAgent = {
-    continueStream: async (options) => {
-      result = await agent.continueStream(options);
-      return result;
-    },
-    createSession: async (options) => await agent.createSession(options),
-    stream: async (options) => {
-      result = await agent.stream(options);
-      return result;
-    },
-  };
-  const next = await runHarnessAgentStep({
-    agent: runner,
+  return await runHarnessAgentStep({
+    agent,
     sandboxSession,
     state,
     writable: getWritable<HarnessWorkflowChunk>(),
   });
-  const messages = result
-    ? await Promise.resolve(result.responseMessages).catch(() => [])
-    : [];
-  return { messages, state: next };
 };

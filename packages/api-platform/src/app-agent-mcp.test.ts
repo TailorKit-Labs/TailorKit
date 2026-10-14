@@ -142,15 +142,19 @@ beforeEach(() => {
     getReadable: () =>
       new ReadableStream({
         start(controller) {
-          controller.enqueue({
-            delta: "Building",
-            id: "text",
-            type: "text-delta",
-          });
+          for (const chunk of [
+            { messageId: "answer", type: "start" },
+            { id: "text", type: "text-start" },
+            { delta: "Building", id: "text", type: "text-delta" },
+            { id: "text", type: "text-end" },
+            { type: "finish" },
+          ]) {
+            controller.enqueue(chunk);
+          }
           controller.close();
         },
       }),
-    returnValue: Promise.resolve({ messages: [] }),
+    returnValue: Promise.resolve({ finishReason: "stop" }),
     runId: "run",
   });
 });
@@ -217,6 +221,7 @@ describe("platform MCP endpoint", () => {
     const events = await response.text();
     expect(events).toContain("notifications/progress");
     expect(events).toContain("Building");
+    expect(events).toContain('"text":"Building"');
     expect(mocks.start).toHaveBeenCalledOnce();
     const [, [input]] = requireValue(mocks.start.mock.lastCall);
     expect(input).toMatchObject({
@@ -392,10 +397,10 @@ describe("platform MCP endpoint", () => {
         promise: pendingPromise,
         resolve,
         reject: rejectPending,
-      } = Promise.withResolvers<{ messages: [] }>();
+      } = Promise.withResolvers<{ finishReason: "stop" }>();
       try {
         finish = () => {
-          resolve({ messages: [] });
+          resolve({ finishReason: "stop" });
         };
       } catch (error) {
         rejectPending(error);

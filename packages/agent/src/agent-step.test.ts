@@ -1,6 +1,5 @@
 import { createHarnessWorkflowState } from "@ai-sdk/workflow-harness";
 import type { HarnessWorkflowChunk } from "@ai-sdk/workflow-harness";
-import type { ModelMessage } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { agentStep } from "./agent-step";
@@ -55,10 +54,8 @@ const resumeFrom = {
   type: "resume-session" as const,
 };
 const continueFrom = { ...resumeFrom, type: "continue-turn" as const };
-const response: ModelMessage[] = [{ content: "Built", role: "assistant" }];
 const streamResult = (text: string) => ({
   finishReason: Promise.resolve("stop"),
-  responseMessages: Promise.resolve(response),
   toUIMessageStream: () =>
     new ReadableStream<HarnessWorkflowChunk>({
       start(controller) {
@@ -107,8 +104,8 @@ describe("Pi step with the SDK workflow runner", () => {
       expect.objectContaining({ messages: input.messages })
     );
     expect(result).toMatchObject({
-      messages: response,
-      state: { resumeFrom, status: "finished" },
+      resumeFrom,
+      status: "finished",
     });
     expect(chunks.filter((chunk) => chunk.type === "start")).toHaveLength(1);
     expect(chunks.filter((chunk) => chunk.type === "finish")).toHaveLength(1);
@@ -131,7 +128,7 @@ describe("Pi step with the SDK workflow runner", () => {
     expect(mocks.continueStream).toHaveBeenCalledOnce();
     expect(mocks.stream).not.toHaveBeenCalled();
     expect(chunks.some((chunk) => chunk.type === "start")).toBe(false);
-    expect(result.state.status).toBe("finished");
+    expect(result.status).toBe("finished");
   });
 
   it("suspends unfinished work and leaves the sandbox available for another step", async () => {
@@ -144,7 +141,7 @@ describe("Pi step with the SDK workflow runner", () => {
       input,
       "run-1"
     );
-    expect(result.state).toMatchObject({
+    expect(result).toMatchObject({
       continueFrom,
       status: "ready_for_next_step",
     });
