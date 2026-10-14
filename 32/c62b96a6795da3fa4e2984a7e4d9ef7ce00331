@@ -1,0 +1,113 @@
+apps/apps-worker/src/assets.test.ts
+  s_fcd91f4bc2b5a4::t_f04ba56c566100 75-90,92-93,179-206
+apps/apps-worker/src/runtime/actions.test.ts
+  s_fcd91f4bc2b5a4::t_d2d278e9ffb868 186-187,236-237,370,372-379,381-384,386-398,469-492
+apps/apps-worker/src/runtime/builder.test.ts
+  s_fcd91f4bc2b5a4::t_1d4000770fc8bb 166-173
+apps/web/src/lib/org-slug-availability.ts
+  s_56c6974c595a82::t_3df526d6557c9c 44
+apps/web/src/lib/safe-return-url.ts
+  s_56c6974c595a82::t_1a4a9f4d050a54 4,25
+apps/web/src/lib/theme.ts
+  s_56c6974c595a82::t_06984082981e20 120
+apps/web/src/routes/(app)/$orgSlug/$projectSlug/apps.index.tsx
+  s_56c6974c595a82::t_ca3ea2a1c5e8ed 284
+apps/web/src/routes/(app)/$orgSlug/$projectSlug/index.tsx
+  s_56c6974c595a82::t_3859639ba0de88 5-6
+apps/web/src/routes/(app)/$orgSlug/index.tsx
+  s_56c6974c595a82::t_444fa99939ece9 5-6
+apps/web/src/routes/(app)/$orgSlug/route.tsx
+  s_56c6974c595a82::t_5c19cf584b0bb6 15-16,39,42
+apps/web/src/routes/(app)/$orgSlug/~/(org)/index.tsx
+  s_56c6974c595a82::t_d012e16b362ee9 5-6
+apps/web/src/routes/(app)/account/route.ts
+  s_56c6974c595a82::t_ad956dc006df80 6
+apps/web/src/routes/(app)/onboarding.tsx
+  s_56c6974c595a82::t_f6be02b8295ddf 13,16
+apps/web/src/routes/(app)/route.tsx
+  s_56c6974c595a82::t_c2947e1d88a4f6 10-11
+apps/web/src/routes/(auth)/route.tsx
+  s_56c6974c595a82::t_d9734f3a0bf8b5 18
+apps/web/src/routes/index.tsx
+  s_56c6974c595a82::t_07c65ef9748cac 12-13,41-42,48
+apps/web/src/routes/logout.tsx
+  s_56c6974c595a82::t_fd53fb98fa1e45 19-20
+apps/web/src/tests/preview-ws.test.mjs
+  s_fcd91f4bc2b5a4::t_ee770e386b7e8e 48-50,66-68,80-82
+packages/api-platform/src/app-agent-mcp-isolation.test.ts
+  s_fcd91f4bc2b5a4::t_14720e1ea59460 232-242,244-245
+packages/api-platform/src/app-agent-mcp.test.ts
+  s_fcd91f4bc2b5a4::t_ae9d71199e0290 292-294,296-297,299-319,324-334
+packages/api-platform/src/assets.test.ts
+  s_fcd91f4bc2b5a4::t_91ff82374d4d47 49-64,66-67
+packages/asset-delivery/src/index.ts
+  s_56c6974c595a82::t_e252efcad6692d 203-213,255
+packages/cli/src/agent-auth.ts
+  s_56c6974c595a82::t_b1bfe82174c08f 41-43
+packages/cli/src/auth.test.ts
+  s_fcd91f4bc2b5a4::t_a59af546041112 501-504
+packages/cli/src/build.test.ts
+  s_fcd91f4bc2b5a4::t_2ce1a31795376b 68-75
+packages/cli/src/client.ts
+  s_56c6974c595a82::t_3471fa7ba2a7d3 148-151,158-159,166-167,174-175,185-186,195-196,201-206,213-214,225-226,235-236,242-243
+packages/cli/src/deploy.test.ts
+  s_fcd91f4bc2b5a4::t_2db0fa95222b12 271-275,297-304
+packages/cli/src/deployment-client.test.ts
+  s_fcd91f4bc2b5a4::t_90ee19f03e321b 74-81,212-216
+packages/cli/src/generator/generate.test.ts
+  s_fcd91f4bc2b5a4::t_f90bfdbad96d13 60-64,90-96,275-279,285,295,297-299,302,308,312,315
+packages/cli/src/preview.test.ts
+  s_fcd91f4bc2b5a4::t_d085123e3f27d4 54-61,152-159
+packages/client-core/src/store/local/view-context-diagnostics.test.ts
+  s_fcd91f4bc2b5a4::t_71dbe6d5e0022d 184-187,189-205
+packages/core/src/server/handler.test.ts
+  s_fcd91f4bc2b5a4::t_98300a61e4afc4 187-195
+packages/core/src/server/mcp.test.ts
+  s_fcd91f4bc2b5a4::t_799194c76cd0a7 94-102,104-109
+packages/core/src/server/preview.test.ts
+  s_fcd91f4bc2b5a4::t_b3da6f0bfc136e 317-339
+packages/env/src/index.ts
+  s_56c6974c595a82::t_3810dfaa084d82 128
+packages/react/src/__tests__/tailor-kit.test.tsx
+  s_fcd91f4bc2b5a4::t_6a9b6d9da02213 291-294
+packages/sandbox/iframe-plugin.ts
+  s_56c6974c595a82::t_ae4e2f0fd9d954 10
+packages/vite/src/builder/file-routes.test.ts
+  s_fcd91f4bc2b5a4::t_f4e50dc14b40ce 224-235
+packages/vite/src/builder/file-routes.ts
+  s_56c6974c595a82::t_0c866b087da4d1 28-31,342
+packages/vite/src/builder/instances.ts
+  s_56c6974c595a82::t_bcb3f0dff01899 424-426,610-613,640
+packages/vite/src/builder/server.test.ts
+  s_fcd91f4bc2b5a4::t_ac9e730c670725 94-98,218-231
+packages/vite/src/builder/server.ts
+  s_56c6974c595a82::t_313f592c5d1147 146
+playground/shared/src/issues.ts
+  s_56c6974c595a82::t_1b69b76f19d167 74
+playground/tanstack-start/src/routes/__root.tsx
+  s_56c6974c595a82::t_f1d7c286dae39b 43,46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "32c62b96a6795da3fa4e2984a7e4d9ef7ce00331",
+  "prompts": {},
+  "sessions": {
+    "s_56c6974c595a82": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13c51-ff76-7aa3-ae1e-e13edbc9af3a",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_fcd91f4bc2b5a4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13c8b-5edd-7f60-8508-2a13dbeaf259",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
