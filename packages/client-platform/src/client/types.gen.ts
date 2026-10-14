@@ -284,7 +284,6 @@ export type AppsCreateData = {
         [key: string]: Schema0;
       };
     };
-    createdByAgent?: boolean;
   };
   path?: never;
   query?: never;
@@ -1148,3 +1147,70 @@ export type PreviewAcceptedResponses = {
 };
 
 export type PreviewAcceptedResponse = PreviewAcceptedResponses[keyof PreviewAcceptedResponses];
+
+export type AppAgentCreateData = {
+  body: {
+    description: string | null;
+    name: string;
+    deployToken: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/app-agent/apps";
+};
+
+export type AppAgentCreateResponses = {
+  /**
+   * OK
+   */
+  200: {
+    createdAt: string;
+    createdByAgent: boolean;
+    currentDeploymentId: string | null;
+    description: string | null;
+    id: string;
+    name: string;
+    projectId: string;
+    publicId: string;
+    scope: {
+      name: string;
+      value: {
+        [key: string]: Schema0;
+      };
+    };
+    updatedAt: string;
+    clientPath?: string;
+    currentDeployment: {
+      appId: string;
+      clientEntryFileId: string | null;
+      createdAt: string;
+      id: string;
+      logoDarkFileId: string | null;
+      logoDarkPath: string | null;
+      logoLightFileId: string | null;
+      logoLightPath: string | null;
+      publicId: string;
+      status: "uploading" | "deploying" | "verifying" | "published";
+      updatedAt: string;
+      views: Array<{
+        disabled?: true;
+        instances?: true;
+        path: string;
+        slot: string;
+      }>;
+    } | null;
+    logoPaths?: {
+      dark?: string;
+      light?: string;
+    };
+    views: Array<{
+      disabled?: true;
+      instances?: true;
+      path: string;
+      slot: string;
+    }>;
+  };
+};
+
+export type AppAgentCreateResponse =
+  AppAgentCreateResponses[keyof AppAgentCreateResponses];

@@ -812,16 +812,25 @@ describe("createTailorKitServer", () => {
 
     await expect(
       client.apps.create({
-        createdByAgent: true,
         description: null,
         name: "Calendar",
       })
     ).resolves.toEqual({
       id: "app_1",
     });
+    const untrustedInput = {
+      createdByAgent: true,
+      description: null,
+      name: "Forged AI app",
+    };
+    await expect(client.apps.create(untrustedInput)).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    expect(
+      requests.filter((request) => request.url.endsWith("/apps"))
+    ).toHaveLength(1);
     expect(hostRequests[0]?.method).toBe("POST");
     await expect(requests[1]?.json()).resolves.toEqual({
-      createdByAgent: true,
       description: null,
       name: "Calendar",
       scope: { name: "org", value: { orgId: "org_1" } },

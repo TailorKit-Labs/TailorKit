@@ -2,6 +2,11 @@ import { asSchema, uiMessageChunkSchema } from "ai";
 import type { UIMessageChunk } from "ai";
 import { z } from "zod";
 
+export const agentCreateAppSchema = z.strictObject({
+  description: z.string().max(255).nullable(),
+  name: z.string().max(127),
+});
+
 const chunkSchema = asSchema(uiMessageChunkSchema);
 
 /** Use the SDK's validator so transport parts stay aligned with its protocol. */

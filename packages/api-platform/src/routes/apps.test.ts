@@ -2,6 +2,11 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import type { ORPCError } from "@orpc/server";
 import { call } from "@orpc/server";
+import {
+  issueAgentToken,
+  verifyAgentToken,
+} from "@tailorkit/api-utils/agent-token";
+import { hashSecret } from "@tailorkit/api-utils/hashing";
 import { RateLimitHandlerPlugin } from "@tailorkit/api-utils/rate-limiting";
 import {
   app as appTable,
@@ -9,6 +14,7 @@ import {
   appDeploymentFile,
 } from "@tailorkit/db/schema/apps";
 import { organization, user } from "@tailorkit/db/schema/auth";
+import { cliToken } from "@tailorkit/db/schema/cli-auth";
 import { project as projectTable } from "@tailorkit/db/schema/project";
 import { eq } from "drizzle-orm";
 import {
@@ -23,12 +29,16 @@ import {
 import type { Context } from "#context";
 import { createTestDb } from "#test/pglite";
 
+import { appAgentRouter } from "./app-agent";
 import type * as RuntimeModule from "./runtime";
 
 // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const testState = vi.hoisted(() => ({
   db: undefined as unknown,
-  env: { APP_RUNTIME_URL: undefined as string | undefined },
+  env: {
+    APP_RUNTIME_URL: undefined as string | undefined,
+    AUTH_SECRET: "test-only-agent-creation-secret-32-chars",
+  },
   issueToken: vi.fn(
     // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
     async (_identity: {
@@ -204,39 +214,158 @@ describe("platform appRouter", () => {
     expect(error).not.toHaveProperty("status");
   });
 
-  it("persists AI provenance when creating an app through the CLI API", async () => {
-    const context = createContext();
-    const created = await call(
-      appRouter.create,
-      {
-        body: {
+  it("rejects caller-supplied provenance on general app creation", async () => {
+    const handler = new OpenAPIHandler({ apps: appRouter });
+    const result = await handler.handle(
+      new Request("https://platform.test/api/platform/apps", {
+        body: JSON.stringify({
           createdByAgent: true,
           description: null,
-          name: "AI app",
+          name: "Forged AI app",
           scope: productionScope,
-        },
-      },
-      { context }
+        }),
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      }),
+      { context: createContext(), prefix: "/api/platform" }
     );
-    expect(created.body.createdByAgent).toBe(true);
-    const found = await call(
-      appRouter.get,
-      {
-        body: { scopes: [productionScope] },
-        params: { appId: created.body.id },
-      },
-      { context }
-    );
-    expect(found.body.createdByAgent).toBe(true);
-    const listed = await call(
-      appRouter.list,
-      { body: { scopes: [productionScope] } },
-      { context }
-    );
-    expect(listed.body.items).toEqual([
-      expect.objectContaining({ createdByAgent: true }),
-    ]);
+    expect(result.response?.status).toBe(400);
+    expect(await db.select().from(appTable)).toEqual([]);
   });
+
+  it.each([{ createdByAgent: true }, { scope: stagingScope }])(
+    "rejects caller-supplied agent creation fields %j",
+    async (untrustedFields) => {
+      const handler = new OpenAPIHandler({ appAgent: appAgentRouter });
+      const result = await handler.handle(
+        new Request("https://platform.test/api/platform/app-agent/apps", {
+          body: JSON.stringify({
+            ...untrustedFields,
+            deployToken: "cli-token",
+            description: null,
+            name: "Forged AI app",
+          }),
+          headers: { "content-type": "application/json" },
+          method: "POST",
+        }),
+        { context: createContext(), prefix: "/api/platform" }
+      );
+      expect(result.response?.status).toBe(400);
+      expect(await db.select().from(appTable)).toEqual([]);
+    }
+  );
+
+  it.each(["cli", "agent"] as const)(
+    "derives AI provenance and scope from an authenticated %s creation flow",
+    async (credential) => {
+      const secret = testState.env.AUTH_SECRET;
+      const [source] = await db
+        .insert(cliToken)
+        .values({
+          expiresAt: new Date(Date.now() + 3_600_000),
+          projectId,
+          ...canonicalizeScope(productionScope),
+          tokenHash: hashSecret("cli-token", secret),
+        })
+        .returning();
+      if (!source) {
+        throw new Error("Expected CLI credential.");
+      }
+      const context = createContext();
+      let deployToken = "cli-token";
+      if (credential === "agent") {
+        deployToken = await issueAgentToken(
+          {
+            appId: "initiating-app",
+            cliTokenId: source.id,
+            projectId,
+            scope: productionScope,
+          },
+          secret,
+          "https://platform.test/api/platform"
+        );
+        context.agentToken = {
+          ...(await verifyAgentToken(
+            deployToken,
+            secret,
+            "https://platform.test/api/platform"
+          )),
+          token: deployToken,
+        };
+        const manual = await call(
+          appRouter.create,
+          {
+            body: {
+              description: null,
+              name: "Manual app",
+              scope: productionScope,
+            },
+          },
+          { context }
+        );
+        expect(manual.body.createdByAgent).toBe(false);
+      }
+      const created = await call(
+        appAgentRouter.create,
+        {
+          body: { deployToken, description: null, name: "AI app" },
+        },
+        { context }
+      );
+      expect(created.body.createdByAgent).toBe(true);
+      expect(created.body.scope).toEqual(productionScope);
+      const found = await call(
+        appRouter.get,
+        {
+          body: { scopes: [productionScope] },
+          params: { appId: created.body.id },
+        },
+        { context }
+      );
+      expect(found.body.createdByAgent).toBe(true);
+      const listed = await call(
+        appRouter.list,
+        {
+          body: { scopes: [productionScope] },
+        },
+        { context }
+      );
+      expect(listed.body.items).toContainEqual(
+        expect.objectContaining({ createdByAgent: true, id: created.body.id })
+      );
+    }
+  );
+
+  it.each(["missing", "expired", "revoked", "foreign-project"])(
+    "rejects %s CLI credentials before creating an agent app",
+    async (credential) => {
+      await db.insert(cliToken).values({
+        expiresAt: new Date(
+          Date.now() + (credential === "expired" ? -1000 : 3_600_000)
+        ),
+        projectId:
+          credential === "foreign-project" ? otherProjectId : projectId,
+        revokedAt: credential === "revoked" ? new Date() : null,
+        ...canonicalizeScope(productionScope),
+        tokenHash: hashSecret("cli-token", testState.env.AUTH_SECRET),
+      });
+      await expect(
+        call(
+          appAgentRouter.create,
+          {
+            body: {
+              deployToken:
+                credential === "missing" ? "missing-token" : "cli-token",
+              description: null,
+              name: "AI app",
+            },
+          },
+          { context: createContext() }
+        )
+      ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+      expect(await db.select().from(appTable)).toEqual([]);
+    }
+  );
 
   it("creates and lists apps within the authenticated project and scope", async () => {
     const context = createContext();

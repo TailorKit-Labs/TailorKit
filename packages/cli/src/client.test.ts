@@ -73,8 +73,7 @@ it("uses existing platform deployment endpoints and scope from the agent JWT", a
     // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     expect(await request.json()).toMatchObject({ scope });
   }
-  await client.apps.create({
-    createdByAgent: true,
+  await client.appAgent.create({
     description: null,
     name: "App",
   });
@@ -82,12 +81,13 @@ it("uses existing platform deployment endpoints and scope from the agent JWT", a
   if (!(appRequest instanceof Request)) {
     throw new Error("Expected an app creation request.");
   }
-  expect(appRequest.url).toBe("https://platform.test/api/platform/apps");
+  expect(appRequest.url).toBe(
+    "https://platform.test/api/platform/app-agent/apps"
+  );
   expect(await appRequest.json()).toEqual({
-    createdByAgent: true,
+    deployToken: jwt,
     description: null,
     name: "App",
-    scope,
   });
 });
 

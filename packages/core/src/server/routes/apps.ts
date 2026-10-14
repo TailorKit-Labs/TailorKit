@@ -28,7 +28,7 @@ const appInput = z.object({
 export const appRouter = {
   create: o
     .use(requireCliDeployToken)
-    .input(appInput.extend({ createdByAgent: z.boolean().optional() }))
+    .input(appInput.strict())
     .handler(async ({ context, input }) => {
       const { data } = await appsCreate({
         body: { ...input, scope: getTailorKitScope(context) },

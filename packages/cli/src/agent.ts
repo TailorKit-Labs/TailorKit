@@ -26,7 +26,7 @@ interface AgentOptions {
 }
 
 const chooseApp = async (
-  client: Pick<TailorKitRouterClient, "apps">
+  client: Pick<TailorKitRouterClient, "apps" | "appAgent">
 ): Promise<string | undefined> => {
   const loading = spinner();
   const apps: Awaited<
@@ -91,8 +91,7 @@ const chooseApp = async (
   }
   loading.start("Creating app");
   try {
-    const app = await client.apps.create({
-      createdByAgent: true,
+    const app = await client.appAgent.create({
       description: null,
       name: name.trim(),
     });

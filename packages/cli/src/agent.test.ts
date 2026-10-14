@@ -87,8 +87,8 @@ beforeEach(async () => {
   mocks.whoami.mockResolvedValue({});
   mocks.token.mockResolvedValue({ deployToken: "cli-token" });
   mocks.client.mockReturnValue({
-    appAgent: { chat: vi.fn() },
-    apps: { create: mocks.create, get: mocks.get, list: mocks.list },
+    appAgent: { chat: vi.fn(), create: mocks.create },
+    apps: { get: mocks.get, list: mocks.list },
   });
   mocks.list.mockResolvedValue({ items: [], pagination: { hasMore: false } });
   mocks.get.mockResolvedValue({ createdByAgent: true });
@@ -222,7 +222,6 @@ describe("agent command", () => {
     expect(validate("  ")).toBe("Enter an app name.");
     expect(validate("New app")).toBeUndefined();
     expect(mocks.create).toHaveBeenCalledWith({
-      createdByAgent: true,
       description: null,
       name: "New app",
     });
