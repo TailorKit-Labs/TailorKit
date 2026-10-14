@@ -1,0 +1,100 @@
+---
+title: "Tools"
+description: "Define actions that run on the server or in the browser."
+---
+
+A tool is a named function with defined inputs and outputs. It can fetch a record, show a toast, or navigate to a page.
+
+## Server tools
+
+Server tools run on your backend. Use them for database access, secrets, and actions that need server-side permission checks.
+
+```ts title="tailorkit.ts"
+import { defineContract, tool } from "tailorkit";
+import { z } from "zod";
+
+export const contract = defineContract({
+  tools: {
+    readMember: tool
+      .server()
+      .input(z.object({ memberId: z.string() }))
+      .output(z.object({ name: z.string() })),
+  },
+});
+```
+
+Register the handler in `createServer`. Your `readMember` function should check access using the verified scope:
+
+```ts title="Server handler"
+import type { ToolImplementations } from "tailorkit";
+import { readMember } from "./members";
+import { contract } from "./tailorkit";
+
+export const tools: ToolImplementations<typeof contract.tools, "server"> = {
+  readMember: ({ input, context }) => readMember(context.scope, input.memberId),
+};
+```
+
+Pass this `tools` object to `createServer({ contract, tools, ... })` alongside your authentication configuration. See [Installation](/getting-started/installation#implement-the-server).
+
+## Client tools
+
+Client tools run in your frontend. Use them for actions such as showing a toast, opening a dialog, or navigating.
+
+Add a client tool alongside the server tool:
+
+```ts title="Inside your contract's tools"
+showToast: tool.client().input(z.object({ message: z.string() })),
+```
+
+Implement it in your existing `createClient` configuration:
+
+```ts title="Client handlers"
+tools: {
+  showToast: ({ input }) => {
+    toast.success(input.message);
+  },
+},
+```
+
+Here, `toast` is your toast library. The handler needs no output schema because it returns no value. Keep credentials and privileged operations on the server.
+
+See [Writing apps → UI](/writing-apps/ui#use-components-and-tools) for calling tools from UI.
+
+## SDK reference
+
+Import `tool` and `defineContract` from `tailorkit`. Register server handlers with `createServer` from `tailorkit/server`, and client handlers with `createClient` from `tailorkit/react`.
+
+| Method | Meaning |
+| --- | --- |
+| `tool.server()` | Declares a tool implemented on the server. |
+| `tool.client()` | Declares a tool implemented in the frontend. |
+| `.input(schema)` | Defines and validates its argument. Omit for no argument. |
+| `.output(schema)` | Defines and validates its return value. Omit for no return value. |
+
+Handlers receive `{ input, context }` and can return a value or a promise. `input` is the validated argument. `context` includes the verified installation identity, scope, and request ID.
+
+```ts
+export interface ToolContext {
+  readonly identity: ToolIdentity;
+  readonly scope: ToolIdentity["scope"];
+  readonly requestId: string;
+}
+```
+
+`identity` includes installation, app, project, and deployment IDs, plus an optional `subjectId` and an expiry. `scope` has a name and its scoped values. Apply your permission checks in the handler.
+
+Tools can be nested in objects, such as `tools.members.read`.
+
+## Frequently asked questions
+
+<AccordionGroup>
+  <Accordion title="Can a client tool access my database directly?">
+    Put database access in a server tool. Client tools run in the browser and
+    use the frontend APIs you explicitly provide.
+  </Accordion>
+  <Accordion title="Does input validation replace permission checks?">
+    No. Validation checks the shape of the data. Your server handler must still
+    check whether the verified identity and scope can perform the operation.
+  </Accordion>
+</AccordionGroup>

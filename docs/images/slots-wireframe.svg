@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 400" fill="none" role="img" aria-labelledby="title description">
+  <title id="title">Slots in your product</title>
+  <desc id="description">A simple app wireframe. A section of the top navbar and the side panel on the right are highlighted in green as places where apps can add UI.</desc>
+
+  <rect x="1" y="1" width="758" height="398" rx="14" fill="#ffffff" stroke="#d4d4d8" stroke-width="2"/>
+
+  <!-- Product navbar. Only the highlighted section is a slot. -->
+  <path d="M1 77H759" stroke="#d4d4d8" stroke-width="2"/>
+  <rect x="25" y="27" width="24" height="24" rx="6" fill="#e4e4e7"/>
+  <text x="61" y="45" fill="#52525b" font-family="system-ui, sans-serif" font-size="15" font-weight="600">Your product</text>
+  <path d="M204 39H259M281 39H326" stroke="#d4d4d8" stroke-width="7" stroke-linecap="round"/>
+
+  <rect x="466" y="19" width="266" height="40" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="2" stroke-dasharray="5 4"/>
+  <text x="599" y="44" text-anchor="middle" fill="#166534" font-family="system-ui, sans-serif" font-size="15" font-weight="600">Navbar slot</text>
+
+  <!-- Existing product content. -->
+  <text x="29" y="122" fill="#71717a" font-family="system-ui, sans-serif" font-size="16" font-weight="600">Customers</text>
+  <rect x="29" y="145" width="430" height="219" rx="8" stroke="#e4e4e7" stroke-width="2"/>
+  <path d="M29 191H459M29 248H459M29 305H459" stroke="#e4e4e7" stroke-width="2"/>
+  <g stroke="#d4d4d8" stroke-width="7" stroke-linecap="round">
+    <path d="M49 168H123M239 168H302M369 168H422"/>
+    <path d="M49 220H161M239 220H305M369 220H422"/>
+    <path d="M49 277H141M239 277H305M369 277H422"/>
+    <path d="M49 334H151M239 334H305M369 334H422"/>
+  </g>
+
+  <!-- A second slot in the side panel. -->
+  <rect x="486" y="100" width="246" height="264" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="2" stroke-dasharray="5 4"/>
+  <text x="609" y="239" text-anchor="middle" fill="#166534" font-family="system-ui, sans-serif" font-size="15" font-weight="600">Side panel slot</text>
+</svg>
