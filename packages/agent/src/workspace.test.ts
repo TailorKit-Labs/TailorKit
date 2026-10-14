@@ -77,6 +77,42 @@ it("preserves existing app files, dependencies and host identity", async () => {
   ]);
 });
 
+it("reuses the installed CLI for a completed app without package installation", async () => {
+  session.readFileToBuffer
+    .mockResolvedValueOnce(Buffer.from('{"name":"existing"}'))
+    .mockResolvedValueOnce(null)
+    .mockResolvedValueOnce(Buffer.from("#!/bin/sh\n"));
+  await prepareWorkspace(session, input);
+  expect(session.readFileToBuffer).toHaveBeenNthCalledWith(2, {
+    path: "/workspace/app/.tailorkit-setup-pending",
+  });
+  expect(session.readFileToBuffer).toHaveBeenNthCalledWith(3, {
+    path: "/tmp/tailorkit-cli/node_modules/.bin/tailorkit",
+  });
+  expect(session.runCommand).not.toHaveBeenCalled();
+  expect(session.writeFiles).not.toHaveBeenCalled();
+});
+
+it("fails preparation when a completed app's missing CLI cannot be installed", async () => {
+  session.readFileToBuffer.mockResolvedValueOnce(
+    Buffer.from('{"name":"existing"}')
+  );
+  session.runCommand.mockResolvedValueOnce({
+    exitCode: 1,
+    stderr: vi.fn().mockResolvedValue("Registry unavailable"),
+  });
+  await expect(prepareWorkspace(session, input)).rejects.toThrow(
+    "TailorKit CLI installation failed: Registry unavailable"
+  );
+  expect(session.runCommand).toHaveBeenCalledExactlyOnceWith({
+    args: ["add", "--save-exact", "tailorkit@beta"],
+    cmd: "pnpm",
+    cwd: "/tmp/tailorkit-cli",
+    env: { CI: "true" },
+    timeoutMs: 5 * 60_000,
+  });
+});
+
 it("passes the supplied schema to both scaffolding and generation without shell interpolation", async () => {
   const hostUrl =
     "https://host.test/api/tailorkit?value=$(touch /tmp/injected)";

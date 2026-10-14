@@ -26,6 +26,26 @@ export const prepareWorkspace = async (
   input: AppAgentInput,
   schemaPath?: string
 ) => {
+  const appExists = Boolean(
+    await session.readFileToBuffer({ path: "/workspace/app/package.json" })
+  );
+  const setupPending =
+    appExists &&
+    Boolean(
+      await session.readFileToBuffer({
+        path: `/workspace/app/${setupMarker}`,
+      })
+    );
+  const appReady = appExists && !setupPending;
+  if (
+    appReady &&
+    (await session.readFileToBuffer({
+      path: `${cliDirectory}/node_modules/.bin/tailorkit`,
+    }))
+  ) {
+    return;
+  }
+
   const run = async (
     cmd: string,
     args: string[],
@@ -65,21 +85,14 @@ export const prepareWorkspace = async (
     "TailorKit CLI installation"
   );
 
-  const appExists = Boolean(
-    await session.readFileToBuffer({ path: "/workspace/app/package.json" })
-  );
+  if (appReady) {
+    return;
+  }
+
   const schemaArguments =
     schemaPath === undefined ? [] : ["--schema", schemaPath];
 
-  if (appExists) {
-    if (
-      !(await session.readFileToBuffer({
-        path: `/workspace/app/${setupMarker}`,
-      }))
-    ) {
-      return;
-    }
-  } else {
+  if (!appExists) {
     // Rename a complete scaffold into place; the marker makes interrupted installs retryable.
     await run(
       "rm",
