@@ -11,9 +11,6 @@ import {
   validateTailorKitScopes,
 } from "./scope";
 
-const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
-  typeof value === "object" && value !== null;
-
 interface CyclicScopeFixture {
   ok: boolean;
   self?: CyclicScopeFixture;
@@ -60,22 +57,17 @@ describe("TailorKit named scope validation", () => {
   });
 
   it("accepts Standard Schema validators without a JSON Schema converter", async () => {
-    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     const schema: StandardSchemaV1<
       { workspaceId: string },
       { workspaceId: string }
     > = {
       "~standard": {
-        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-        types: {} as StandardSchemaV1.Types<
-          { workspaceId: string },
-          { workspaceId: string }
-        >,
-        validate: (value) =>
-          isObjectValue(value) && value !== null && "workspaceId" in value
-            ? // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-              { value: value as { workspaceId: string } }
-            : { issues: [{ message: "workspaceId is required" }] },
+        validate: (value) => {
+          const parsed = z.object({ workspaceId: z.string() }).safeParse(value);
+          return parsed.success
+            ? { value: parsed.data }
+            : { issues: [{ message: "workspaceId is required" }] };
+        },
         vendor: "scope-test",
         version: 1,
       },

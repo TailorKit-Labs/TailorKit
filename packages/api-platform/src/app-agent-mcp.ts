@@ -186,11 +186,9 @@ export const handleAppAgentMcpRequest = async (
       // Setup can fail before the workflow opens its model stream.
       void (async () => {
         try {
-          return await completed;
+          await completed;
         } catch (error) {
           controller.abort(error);
-          /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
-          return undefined;
         }
       })();
       await execution.onProgress({

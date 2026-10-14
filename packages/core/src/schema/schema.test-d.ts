@@ -1,4 +1,4 @@
-import { expectTypeOf } from "vite-plus/test";
+import { expectTypeOf, vi } from "vite-plus/test";
 import { z } from "zod";
 
 import { createTailorKitSchema } from "./schema";
@@ -75,8 +75,9 @@ const callbacks = createTailorKitSchema({
 
 const dialogProps: ComponentProps<typeof callbacks.components.Dialog> = {
   onClose: () => {},
-  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-  onLoad: async () => ({ ready: true as const }),
+  onLoad: vi
+    .fn<() => Promise<{ ready: true }>>()
+    .mockResolvedValue({ ready: true }),
   onSave: (input) => {
     expectTypeOf(input).toEqualTypeOf<{ title: string; version: number }>();
     return { saved: true };

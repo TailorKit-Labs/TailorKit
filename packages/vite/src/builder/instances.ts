@@ -137,6 +137,36 @@ const isFunction = (node: Node) =>
 const freeNames = (root: Node): Set<string> => {
   const references = new Set<string>();
 
+  const pattern = (
+    node: Node,
+    scope: Set<string>,
+    visit: (node: Node, scope: Set<string>) => void
+  ) => {
+    if (node.type === "AssignmentPattern") {
+      visit(node.right, scope);
+      pattern(node.left, scope, visit);
+    } else if (node.type === "ObjectPattern") {
+      for (const p of node.properties) {
+        if (p.type === "Property") {
+          if (p.computed) {
+            visit(p.key, scope);
+          }
+          pattern(p.value, scope, visit);
+        } else {
+          pattern(p.argument, scope, visit);
+        }
+      }
+    } else if (node.type === "ArrayPattern") {
+      for (const element of node.elements) {
+        if (element) {
+          pattern(element, scope, visit);
+        }
+      }
+    } else if (node.type === "RestElement") {
+      pattern(node.argument, scope, visit);
+    }
+  };
+
   // oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
   const visit = (node: Node, parent: Set<string>) => {
     if (node.type === "Identifier") {
@@ -180,8 +210,7 @@ const freeNames = (root: Node): Set<string> => {
         hoisted(node.body);
       }
       for (const p of node.params) {
-        // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
-        pattern(p, scope);
+        pattern(p, scope, visit);
       }
       if (node.body) {
         visit(node.body, scope);
@@ -196,8 +225,7 @@ const freeNames = (root: Node): Set<string> => {
       return;
     }
     if (node.type === "VariableDeclarator") {
-      // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
-      pattern(node.id, parent);
+      pattern(node.id, parent, visit);
       if (node.init) {
         visit(node.init, parent);
       }
@@ -226,8 +254,7 @@ const freeNames = (root: Node): Set<string> => {
     if (node.type === "CatchClause") {
       const scope = new Set([...parent, ...boundNames(node.param)]);
       if (node.param) {
-        // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
-        pattern(node.param, scope);
+        pattern(node.param, scope, visit);
       }
       visit(node.body, scope);
       return;
@@ -264,32 +291,6 @@ const freeNames = (root: Node): Set<string> => {
     }
     for (const child of children(node)) {
       visit(child, parent);
-    }
-  };
-
-  const pattern = (node: Node, scope: Set<string>) => {
-    if (node.type === "AssignmentPattern") {
-      visit(node.right, scope);
-      pattern(node.left, scope);
-    } else if (node.type === "ObjectPattern") {
-      for (const p of node.properties) {
-        if (p.type === "Property") {
-          if (p.computed) {
-            visit(p.key, scope);
-          }
-          pattern(p.value, scope);
-        } else {
-          pattern(p.argument, scope);
-        }
-      }
-    } else if (node.type === "ArrayPattern") {
-      for (const element of node.elements) {
-        if (element) {
-          pattern(element, scope);
-        }
-      }
-    } else if (node.type === "RestElement") {
-      pattern(node.argument, scope);
     }
   };
 
@@ -444,7 +445,7 @@ export const extractInstances = async (
     if (!instances) {
       return;
     }
-    const fail = (message: string): never => {
+    const fail: (message: string) => never = (message) => {
       throw new Error(`${filename}: ${message}`);
     };
     if (ancestors.some(isFunction)) {
@@ -462,11 +463,7 @@ export const extractInstances = async (
     if (instances.value.type !== "ObjectExpression") {
       fail("instances must be an inline object with dataSchema and resolve.");
     }
-    // SAFETY: The AST node kind and literal value are checked before this access; the compiler's node union loses that refinement across the helper.
-    const config =
-      /* oxlint-disable typescript/no-unsafe-type-assertion -- The AST node kind and literal value are checked before this access; the compiler's node union loses that refinement across the helper. */
-      instances.value as ESTree.ObjectExpression;
-    /* oxlint-enable typescript/no-unsafe-type-assertion */
+    const config = instances.value;
     if (
       config.properties.some(
         (p) => p.type !== "Property" || p.computed || p.kind !== "init"
@@ -488,14 +485,10 @@ export const extractInstances = async (
     ) {
       fail("instances requires dataSchema and an inline resolve function.");
     }
-    // SAFETY: The AST node kind and literal value are checked before this access; the compiler's node union loses that refinement across the helper.
     const name = `i${createHash("sha256")
       .update(
         `${path.relative(root, filename).split(path.sep).join("/")}\0${viewName}\0${
-          /* oxlint-disable typescript/no-unsafe-type-assertion -- The AST node kind and literal value are checked before this access; the compiler's node union loses that refinement across the helper. */
-          (view as ESTree.StringLiteral)
-            /* oxlint-enable typescript/no-unsafe-type-assertion */
-            .value
+          view.value
         }`
       )
       .digest("hex")
@@ -505,18 +498,13 @@ export const extractInstances = async (
         "Instance resolvers must have distinct module-level variable names."
       );
     }
-    // SAFETY: The AST node kind and literal value are checked before this access; the compiler's node union loses that refinement across the helper.
     resolvers.push({
       call: node,
       instances,
       name,
       resolve: requireValue(resolve),
       schema: requireValue(schema),
-      view:
-        /* oxlint-disable typescript/no-unsafe-type-assertion -- The AST node kind and literal value are checked before this access; the compiler's node union loses that refinement across the helper. */
-        (view as ESTree.StringLiteral)
-          /* oxlint-enable typescript/no-unsafe-type-assertion */
-          .value,
+      view: view.value,
     });
   });
   if (includedNames) {

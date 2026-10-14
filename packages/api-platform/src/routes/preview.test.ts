@@ -142,6 +142,7 @@ const startImplementation = async () =>
   );
 
 describe("platform preview lifecycle and grants", () => {
+  let kv: ReturnType<typeof fakeKV>;
   let client: Awaited<ReturnType<typeof createTestDb>>["client"];
   let db: Awaited<ReturnType<typeof createTestDb>>["db"];
   beforeEach(async () => {
@@ -149,7 +150,8 @@ describe("platform preview lifecycle and grants", () => {
     ({ client } = testDb);
     ({ db } = testDb);
     state.db = db;
-    state.kv = fakeKV();
+    kv = fakeKV();
+    state.kv = kv;
     await db.insert(organization).values({
       createdAt: new Date(),
       id: orgId,
@@ -244,9 +246,6 @@ describe("platform preview lifecycle and grants", () => {
       code: "CONFLICT",
       data: { reason: "ACTIVE_PREVIEW_EXISTS" },
     });
-    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    const kv = state.kv as ReturnType<typeof fakeKV>;
     const expiredBuildId = "expired_build";
     const manifest = {
       files: [
@@ -325,20 +324,11 @@ describe("platform preview lifecycle and grants", () => {
       where: { id: started.body.sessionId },
     });
     expect(session?.status).toBe("ended");
-    expect(
-      // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-      await (state.kv as ReturnType<typeof fakeKV>).get(
-        `preview:ended:${started.body.sessionId}`
-      )
-    ).toBe("1");
+    expect(await kv.get(`preview:ended:${started.body.sessionId}`)).toBe("1");
   });
 
   it("retires a disconnected developer before checking the app conflict", async () => {
     const first = await start();
-    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    const kv = state.kv as ReturnType<typeof fakeKV>;
     await kv.set(`preview:developer-seen:${first.body.sessionId}`, "1");
     await kv.set(
       `preview:developer-connection:${first.body.sessionId}`,
@@ -366,9 +356,6 @@ describe("platform preview lifecycle and grants", () => {
 
     const replacement = await start();
     expect(replacement.body.sessionId).not.toBe(first.body.sessionId);
-    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    const kv = state.kv as ReturnType<typeof fakeKV>;
     expect(await kv.get(`preview:ended:${first.body.sessionId}`)).toBe("1");
   });
 
@@ -388,9 +375,6 @@ describe("platform preview lifecycle and grants", () => {
       { context }
     );
     expect(wrongScope.body.items).toEqual([]);
-    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    const kv = state.kv as ReturnType<typeof fakeKV>;
     await kv.set(
       `preview:current:${started.body.sessionId}`,
       JSON.stringify({
@@ -434,9 +418,6 @@ describe("platform preview lifecycle and grants", () => {
 
   it("retries KV cleanup after the session was durably stopped", async () => {
     const started = await start();
-    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    const kv = state.kv as ReturnType<typeof fakeKV>;
     const buildId = "retry_build";
     const buildKey = `preview:build:${started.body.sessionId}:${buildId}`;
     const chunkKey = `${buildKey}:0:0`;
@@ -497,13 +478,8 @@ describe("platform preview lifecycle and grants", () => {
 
   it("ends an idle viewer stream when its bearer token expires", async () => {
     const started = await start();
-    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
-    const current = vi.spyOn(
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The test installs fakeKV into a KV service; the service signature erases the fake implementation methods inspected here. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-      state.kv as ReturnType<typeof fakeKV>,
-      "get"
-    );
+    const current = vi.spyOn(kv, "get");
     vi.useFakeTimers({
       toFake: [
         "Date",

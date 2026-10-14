@@ -305,12 +305,9 @@ it("deduplicates accepted writes and rejects reused IDs with different identity 
   expect(() =>
     execution.mutate(input, { ...identity, subjectId: "other" })
   ).toThrow("already used");
-  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   expect(
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    (execution.query({ args: {}, name: "list" }, identity).value as unknown[])
-      .length
-  ).toBe(1);
+    execution.query({ args: {}, name: "list" }, identity).value
+  ).toHaveLength(1);
 });
 it("validates input, function kind and expiry before execution", () => {
   const { execution } = fixture();

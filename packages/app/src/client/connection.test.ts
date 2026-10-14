@@ -285,11 +285,10 @@ it.each([
 });
 
 it("refreshes authentication once for a mutation without changing its request ID", async () => {
-  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-  const getSession = vi.fn(async ({ refresh }: { refresh: boolean }) => ({
-    ...session,
-    token: refresh ? "fresh" : "expired",
-  }));
+  const getSession = vi
+    .fn<({ refresh }: { refresh: boolean }) => Promise<typeof session>>()
+    .mockResolvedValueOnce({ ...session, token: "expired" })
+    .mockResolvedValue({ ...session, token: "fresh" });
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(

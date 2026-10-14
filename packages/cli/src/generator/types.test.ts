@@ -10,7 +10,7 @@ import {
 } from "@tailorkit/core/schema";
 import { createServer } from "@tailorkit/core/server";
 import { TailorKitSchemaSpec } from "@tailorkit/core/spec";
-import { describe, expect, it, vi } from "vite-plus/test";
+import { assert, describe, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
 import { generateTypes, readSchemaFile, renderGeneratedTypes } from "./types";
@@ -30,15 +30,12 @@ it.each([undefined, "{", '{"version":2,"components":{}}'])(
       } catch (error) {
         failure = error;
       }
-      expect(failure).toBeInstanceOf(Error);
-      // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-      const error = failure as Error;
-      expect(error.cause).toBeInstanceOf(Error);
-      // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+      assert(failure instanceof Error);
+
+      const error = failure;
+      assert(error.cause instanceof Error);
       expect(error.message).toBe(
-        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-        `Unable to read TailorKit schema from ${schemaPath}: ${(error.cause as Error).message}`
+        `Unable to read TailorKit schema from ${schemaPath}: ${error.cause.message}`
       );
     } finally {
       await rm(root, { force: true, recursive: true });
