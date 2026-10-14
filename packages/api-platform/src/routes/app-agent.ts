@@ -1,12 +1,15 @@
-import { createModelCallToUIChunkTransform } from "@ai-sdk/workflow";
 import { openapi } from "@orpc/openapi";
 import {
   eventIterator,
   ORPCError,
   streamToAsyncIteratorObject,
 } from "@orpc/server";
+import {
+  AppAgentThreadError,
+  resolveAppAgentThread,
+} from "@tailorkit/agent/threads";
+import { appAgent } from "@tailorkit/agent/workflows";
 import { issueAgentToken } from "@tailorkit/api-utils/agent-token";
-import { appAgent } from "@tailorkit/app-agent/workflows";
 import {
   asSchema,
   convertToModelMessages,
@@ -59,6 +62,7 @@ const agentChatSchema = z.object({
   hostUrl: z.url({ protocol: /^https?$/u }),
   messages: agentMessagesSchema,
   schema: z.record(z.string(), z.unknown()).optional(),
+  threadId: z.uuid().optional(),
 });
 
 const chat = cliRouter
@@ -84,6 +88,15 @@ const chat = cliRouter
         message: "Invalid agent messages.",
       });
     }
+    let threadId: string;
+    try {
+      threadId = await resolveAppAgentThread(app.id, input.body.threadId);
+    } catch (error) {
+      if (error instanceof AppAgentThreadError) {
+        throw new ORPCError("BAD_REQUEST", { message: error.message });
+      }
+      throw error;
+    }
     // JWTs carry the same project/scope permissions as CLI sessions, not an app-only grant.
     // Reuse the credential across authorized app selections without extending its expiry.
     const run = await start(appAgent, [
@@ -105,16 +118,27 @@ const chat = cliRouter
         messages,
         model: APP_AGENT_MODEL,
         schema: input.body.schema,
+        threadId,
       },
     ]);
     return streamToAsyncIteratorObject(
       createUIMessageStream({
         execute: async ({ writer }) => {
+          writer.write({
+            data: { threadId },
+            transient: true,
+            type: "data-thread",
+          });
           const controller = new AbortController();
           writer.merge(
-            run.readable.pipeThrough(createModelCallToUIChunkTransform(), {
-              signal: controller.signal,
-            })
+            run
+              .getReadable<UIMessageChunk>()
+              .pipeThrough(
+                new TransformStream<UIMessageChunk, UIMessageChunk>(),
+                {
+                  signal: controller.signal,
+                }
+              )
           );
           try {
             // Finish the response only after cleanup releases the app's Drive.

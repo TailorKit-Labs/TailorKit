@@ -1,7 +1,9 @@
 import { runAgentTUI } from "@ai-sdk/tui";
+import { log } from "@clack/prompts";
 import { asyncIteratorToUnproxiedDataStream } from "@orpc/client";
+import { agentThreadChunkSchema } from "@tailorkit/client-platform/agent";
 import type { TailorKitRouterClient } from "@tailorkit/core/server";
-import type { ChatTransport, UIMessage } from "ai";
+import type { ChatTransport, UIMessage, UIMessageChunk } from "ai";
 
 import { fetchSchemaFromHost, readSchemaFile } from "./generator/types";
 import type { TailorKitSchemaFile } from "./generator/types";
@@ -13,6 +15,7 @@ interface AgentTuiOptions {
   hostUrl: string;
   appId: string;
   schemaPath?: string;
+  threadId?: string;
 }
 
 export const openAgentTui = async ({
@@ -20,7 +23,9 @@ export const openAgentTui = async ({
   hostUrl,
   appId,
   schemaPath,
+  threadId: requestedThreadId,
 }: AgentTuiOptions) => {
+  let threadId = requestedThreadId;
   const transport: ChatTransport<UIMessage> = {
     // oxlint-disable-next-line eslint/require-await -- This asynchronous protocol method resolves synchronously but must preserve Promise results and rejected exceptions.
     reconnectToStream: async () => null,
@@ -67,11 +72,22 @@ export const openAgentTui = async ({
               message.role !== "system"
           ),
           schema,
+          threadId,
         },
         { signal: abortSignal }
       );
       // oxlint-disable-next-line typescript/no-unsafe-argument -- The generated client erases this event-stream type; the protocol parser validates the streamed chunks.
-      return asyncIteratorToUnproxiedDataStream(chunks);
+      return asyncIteratorToUnproxiedDataStream(chunks).pipeThrough(
+        new TransformStream<UIMessageChunk, UIMessageChunk>({
+          transform(chunk, controller) {
+            const metadata = agentThreadChunkSchema.safeParse(chunk);
+            if (metadata.success) {
+              ({ threadId } = metadata.data.data);
+            }
+            controller.enqueue(chunk);
+          },
+        })
+      );
     },
   };
   await runAgentTUI({
@@ -80,4 +96,7 @@ export const openAgentTui = async ({
     tools: "collapsed",
     transport,
   });
+  if (threadId !== undefined) {
+    log.info(`Thread: ${threadId} (resume with --thread ${threadId})`);
+  }
 };

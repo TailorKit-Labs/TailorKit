@@ -18,18 +18,19 @@ export type AppAgentChatData = {
   body: {
     appId: string;
     hostUrl: string;
-    schema?: {
-      [key: string]: unknown;
-    };
     messages: Array<{
       id: string;
-      role: "user" | "assistant";
+      metadata?: unknown;
       parts: Array<{
         type: string;
         [key: string]: unknown;
       }>;
-      metadata?: unknown;
+      role: "user" | "assistant";
     }>;
+    schema?: {
+      [key: string]: unknown;
+    };
+    threadId?: string;
     deployToken: string;
   };
   path?: never;

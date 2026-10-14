@@ -1,6 +1,8 @@
 /* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-argument, typescript/no-unsafe-member-access -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { call, asyncIteratorToUnproxiedDataStream } from "@orpc/server";
+import { AppAgentThreadError } from "@tailorkit/agent/threads";
+import type * as threadsModule from "@tailorkit/agent/threads";
 import {
   issueAgentToken,
   verifyAgentToken,
@@ -22,6 +24,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
 const mocks = vi.hoisted(() => ({
   app: vi.fn(),
   start: vi.fn(),
+  thread: vi.fn<(appId: string, threadId?: string) => Promise<string>>(),
   token: vi.fn(),
 }));
 vi.mock("@tailorkit/db", () => ({
@@ -43,7 +46,11 @@ vi.mock("@tailorkit/api-utils/rate-limiting", () => ({
     async <TResult>({ next }: { next: () => TResult }) =>
       await next(),
 }));
-vi.mock("@tailorkit/app-agent/workflows", () => ({ appAgent: vi.fn() }));
+vi.mock("@tailorkit/agent/workflows", () => ({ appAgent: vi.fn() }));
+vi.mock("@tailorkit/agent/threads", async (importOriginal) => ({
+  ...(await importOriginal<typeof threadsModule>()),
+  resolveAppAgentThread: mocks.thread,
+}));
 vi.mock("workflow/api", () => ({ start: mocks.start }));
 
 const { appAgentRouter } = await import("./app-agent");
@@ -73,14 +80,16 @@ const input = {
 };
 
 const run = (parts: unknown[]) => ({
-  readable: new ReadableStream({
-    start(controller) {
-      for (const part of parts) {
-        controller.enqueue(part);
-      }
-      controller.close();
-    },
-  }),
+  getReadable: () =>
+    new ReadableStream({
+      start(controller) {
+        for (const part of parts) {
+          controller.enqueue(part);
+        }
+        controller.enqueue({ type: "finish" });
+        controller.close();
+      },
+    }),
   returnValue: Promise.resolve({ messages: [] }),
   runId: "run-1",
 });
@@ -95,6 +104,10 @@ const consume = async (options = defaultConsumeOptions) => {
 };
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.thread.mockImplementation(
+    async (_appId, id) =>
+      await Promise.resolve(id ?? "e773a870-df5a-4bea-9ebd-9be4c0b1897a")
+  );
   mocks.app.mockResolvedValue({ id: "app-one" });
   mocks.token.mockResolvedValue({
     expiresAt: new Date(Date.now() + 3_600_000),
@@ -105,15 +118,15 @@ beforeEach(() => {
   // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
   mocks.start.mockImplementation(async () =>
     run([
-      { type: "model-call-start" },
+      { messageId: "assistant-1", type: "start" },
       { id: "text-1", type: "text-start" },
-      { id: "text-1", text: "Hello", type: "text-delta" },
+      { delta: "Hello", id: "text-1", type: "text-delta" },
       { id: "text-1", type: "text-end" },
       {
         input: {},
         toolCallId: "call-1",
-        toolName: "write",
-        type: "tool-call",
+        toolName: "write_file",
+        type: "tool-input-available",
       },
     ])
   );
@@ -124,7 +137,7 @@ describe("platform app chat", () => {
     const events = await consume();
     expect(events).toContainEqual({
       // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-      messageId: expect.any(String),
+      messageId: "assistant-1",
       type: "start",
     });
     expect(events).toContainEqual({
@@ -191,6 +204,58 @@ describe("platform app chat", () => {
     });
   });
 
+  it("starts a fresh thread by default and announces its ID in the stream", async () => {
+    const id = "e773a870-df5a-4bea-9ebd-9be4c0b1897a";
+    const events = await consume();
+    expect(mocks.thread).toHaveBeenCalledWith("app-one", undefined);
+    expect(events).toContainEqual({
+      data: { threadId: id },
+      transient: true,
+      type: "data-thread",
+    });
+    expect(requireValue(mocks.start.mock.lastCall)[1][0].threadId).toBe(id);
+  });
+
+  it("passes an explicit thread ID to the resolver and workflow", async () => {
+    const threadId = "266f1673-2079-4e0c-9f68-6cf3f0f98a40";
+    const stream = await call(
+      appAgentRouter.chat,
+      { body: { ...input.body, threadId } },
+      { context }
+    );
+    for await (const _ of stream) {
+      /* consume */
+    }
+    expect(mocks.thread).toHaveBeenCalledWith("app-one", threadId);
+    expect(requireValue(mocks.start.mock.lastCall)[1][0].threadId).toBe(
+      threadId
+    );
+  });
+
+  it("rejects an unavailable thread before starting a workflow", async () => {
+    const threadId = "266f1673-2079-4e0c-9f68-6cf3f0f98a40";
+    const error = new AppAgentThreadError();
+    mocks.thread.mockRejectedValueOnce(error);
+    const handler = new OpenAPIHandler({ appAgent: appAgentRouter });
+    const result = await handler.handle(
+      new Request("https://platform.test/api/platform/app-agent/chat", {
+        body: JSON.stringify({ ...input.body, threadId }),
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      }),
+      { context, prefix: "/api/platform" }
+    );
+    const response = requireValue(result.response);
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      code: "BAD_REQUEST",
+      defined: false,
+      message: error.message,
+    });
+    expect(mocks.thread).toHaveBeenCalledWith("app-one", threadId);
+    expect(mocks.start).not.toHaveBeenCalled();
+  });
+
   it("passes an optional schema snapshot to the workflow", async () => {
     const schema = {
       components: {},
@@ -241,22 +306,22 @@ describe("platform app chat", () => {
           input: {},
           toolCallId: "call-1",
           toolName: "write",
-          type: "tool-call",
+          type: "tool-input-available",
         },
         {
           input: {},
           output: { success: true },
           toolCallId: "call-1",
           toolName: "write",
-          type: "tool-result",
+          type: "tool-output-available",
         },
         { type: "finish-step" },
         { type: "start-step" },
         { id: "old", type: "text-start" },
-        { id: "old", text: "discard me", type: "text-delta" },
+        { delta: "discard me", id: "old", type: "text-delta" },
         { type: "reset-step" },
         { id: "new", type: "text-start" },
-        { id: "new", text: "Built", type: "text-delta" },
+        { delta: "Built", id: "new", type: "text-delta" },
         { id: "new", type: "text-end" },
       ])
     );
@@ -344,7 +409,7 @@ describe("platform app chat", () => {
     const cancelStream = vi.fn();
     mocks.start.mockResolvedValueOnce({
       ...run([]),
-      readable: new ReadableStream({ cancel: cancelStream }),
+      getReadable: () => new ReadableStream({ cancel: cancelStream }),
       get returnValue() {
         return Promise.reject(new Error("This app is already being edited."));
       },
@@ -415,7 +480,7 @@ describe("platform app chat", () => {
 
   it("passes workflow error parts through the standard SDK adapter", async () => {
     mocks.start.mockResolvedValueOnce(
-      run([{ error: "The builder agent failed.", type: "error" }])
+      run([{ errorText: "The builder agent failed.", type: "error" }])
     );
     expect(await consume()).toContainEqual({
       errorText: "The builder agent failed.",
@@ -429,17 +494,21 @@ describe("platform app chat", () => {
     mocks.start.mockResolvedValueOnce({
       ...run([]),
       cancel: cancelRun,
-      readable: new ReadableStream({
-        cancel: cancelStream,
-        start(controller) {
-          controller.enqueue({ type: "model-call-start" });
-        },
-      }),
+      getReadable: () =>
+        new ReadableStream({
+          cancel: cancelStream,
+          start(controller) {
+            controller.enqueue({ messageId: "assistant-1", type: "start" });
+          },
+        }),
     });
     const controller = new AbortController();
     const stream = await call(appAgentRouter.chat, input, {
       context,
       signal: controller.signal,
+    });
+    expect(await stream.next()).toMatchObject({
+      value: { type: "data-thread" },
     });
     expect(await stream.next()).toMatchObject({ value: { type: "start" } });
     controller.abort();

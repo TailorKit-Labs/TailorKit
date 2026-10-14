@@ -1,5 +1,7 @@
 /* oxlint-disable typescript/no-unsafe-return, typescript/no-unsafe-assignment, typescript/no-unsafe-member-access, typescript/no-unsafe-argument -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { os } from "@orpc/server";
+import { AppAgentThreadError } from "@tailorkit/agent/threads";
+import type * as threadsModule from "@tailorkit/agent/threads";
 import { verifyAgentToken } from "@tailorkit/api-utils/agent-token";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
@@ -23,6 +25,7 @@ const mocks = vi.hoisted(() => ({
   list: vi.fn(),
   revoke: vi.fn(),
   start: vi.fn(),
+  thread: vi.fn<(appId: string, threadId?: string) => Promise<string>>(),
 }));
 vi.mock("@tailorkit/db", () => ({
   db: {
@@ -45,9 +48,13 @@ vi.mock("./routes/apps", () => ({
   appRouter: { list: os.handler(mocks.list) },
   createAppRecord: mocks.create,
 }));
-vi.mock("@tailorkit/app-agent/workflows", () => ({
+vi.mock("@tailorkit/agent/workflows", () => ({
   appAgent: vi.fn(),
-  deleteSandbox: mocks.cleanup,
+  cancelAppAgent: mocks.cleanup,
+}));
+vi.mock("@tailorkit/agent/threads", async (importOriginal) => ({
+  ...(await importOriginal<typeof threadsModule>()),
+  resolveAppAgentThread: mocks.thread,
 }));
 vi.mock("workflow/api", () => ({ start: mocks.start }));
 vi.mock("@tailorkit/api-utils/dev-delay", () => ({
@@ -121,6 +128,10 @@ const request = (
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.thread.mockImplementation(
+    async (_appId, id) =>
+      await Promise.resolve(id ?? "e773a870-df5a-4bea-9ebd-9be4c0b1897a")
+  );
   mocks.app.mockResolvedValue(app);
   mocks.create.mockResolvedValue(app);
   mocks.list.mockResolvedValue({
@@ -128,16 +139,17 @@ beforeEach(() => {
   });
   mocks.start.mockResolvedValue({
     cancel: mocks.cancel,
-    readable: new ReadableStream({
-      start(controller) {
-        controller.enqueue({
-          id: "text",
-          text: "Building",
-          type: "text-delta",
-        });
-        controller.close();
-      },
-    }),
+    getReadable: () =>
+      new ReadableStream({
+        start(controller) {
+          controller.enqueue({
+            delta: "Building",
+            id: "text",
+            type: "text-delta",
+          });
+          controller.close();
+        },
+      }),
     returnValue: Promise.resolve({ messages: [] }),
     runId: "run",
   });
@@ -156,6 +168,44 @@ describe("platform MCP endpoint", () => {
       pageSize: 100,
       scopes: [scope.scope],
     });
+    expect(mocks.start).not.toHaveBeenCalled();
+  });
+
+  it("returns a new thread ID by default and accepts it for a follow-up", async () => {
+    const threadId = "e773a870-df5a-4bea-9ebd-9be4c0b1897a";
+    const first = await handleAppAgentMcpRequest(
+      request("edit_app", { appId: "public-app", prompt: "Build calendar" }),
+      context
+    );
+    expect(await first.text()).toContain(threadId);
+    expect(mocks.thread.mock.lastCall).toEqual([app.id, undefined]);
+    const next = await handleAppAgentMcpRequest(
+      request("edit_app", {
+        appId: "public-app",
+        prompt: "Make events draggable",
+        threadId,
+      }),
+      context
+    );
+    expect(await next.text()).toContain(threadId);
+    expect(mocks.thread).toHaveBeenLastCalledWith(app.id, threadId);
+    expect(requireValue(mocks.start.mock.lastCall)[1][0].threadId).toBe(
+      threadId
+    );
+  });
+
+  it("rejects an unavailable conversation without issuing an agent grant", async () => {
+    mocks.thread.mockRejectedValueOnce(new AppAgentThreadError());
+    const response = await handleAppAgentMcpRequest(
+      request("edit_app", {
+        appId: "public-app",
+        prompt: "Change it",
+        threadId: "266f1673-2079-4e0c-9f68-6cf3f0f98a40",
+      }),
+      context
+    );
+    expect(await response.text()).toContain("Thread not found");
+    expect(mocks.grant).not.toHaveBeenCalled();
     expect(mocks.start).not.toHaveBeenCalled();
   });
 
@@ -319,7 +369,7 @@ describe("platform MCP endpoint", () => {
     mocks.revoke.mockImplementation(revoked);
     mocks.start.mockResolvedValueOnce({
       cancel: mocks.cancel,
-      readable: new ReadableStream(),
+      getReadable: () => new ReadableStream(),
       returnValue: Promise.withResolvers().promise,
       runId: "run",
     });
@@ -332,7 +382,7 @@ describe("platform MCP endpoint", () => {
     await reader.cancel();
     await revocation;
     expect(mocks.cancel).toHaveBeenCalledOnce();
-    expect(mocks.cleanup).toHaveBeenCalledWith("app-agent-run");
+    expect(mocks.cleanup).toHaveBeenCalledWith(app.id, "run");
   });
 
   it("waits for workflow cleanup before sending the terminal result", async () => {
@@ -354,11 +404,12 @@ describe("platform MCP endpoint", () => {
     })();
     mocks.start.mockResolvedValueOnce({
       cancel: mocks.cancel,
-      readable: new ReadableStream({
-        start(controller) {
-          controller.close();
-        },
-      }),
+      getReadable: () =>
+        new ReadableStream({
+          start(controller) {
+            controller.close();
+          },
+        }),
       returnValue,
       runId: "run",
     });
@@ -391,11 +442,12 @@ describe("platform MCP endpoint", () => {
     });
     mocks.start.mockResolvedValueOnce({
       cancel: mocks.cancel,
-      readable: new ReadableStream({
-        start(controller) {
-          controller.error(new Error("Agent stream failed"));
-        },
-      }),
+      getReadable: () =>
+        new ReadableStream({
+          start(controller) {
+            controller.error(new Error("Agent stream failed"));
+          },
+        }),
       returnValue: Promise.withResolvers().promise,
       runId: "run",
     });
@@ -403,7 +455,7 @@ describe("platform MCP endpoint", () => {
     expect(await response.text()).toContain("Agent stream failed");
     expect(input.signal.aborted).toBe(false);
     expect(mocks.cancel).toHaveBeenCalledOnce();
-    expect(mocks.cleanup).toHaveBeenCalledWith("app-agent-run");
+    expect(mocks.cleanup).toHaveBeenCalledWith(app.id, "run");
     expect(mocks.revoke).toHaveBeenCalledOnce();
   });
 
@@ -412,11 +464,12 @@ describe("platform MCP endpoint", () => {
     mocks.cancel.mockRejectedValueOnce(new Error("Cancellation unavailable"));
     mocks.start.mockResolvedValueOnce({
       cancel: mocks.cancel,
-      readable: new ReadableStream({
-        start(controller) {
-          controller.error(new Error("Agent stream failed"));
-        },
-      }),
+      getReadable: () =>
+        new ReadableStream({
+          start(controller) {
+            controller.error(new Error("Agent stream failed"));
+          },
+        }),
       returnValue: Promise.withResolvers().promise,
       runId: "run",
     });
@@ -429,7 +482,7 @@ describe("platform MCP endpoint", () => {
       expect(events).toContain("Agent stream failed");
       expect(events).not.toContain("Cancellation unavailable");
       expect(warning).toHaveBeenCalledOnce();
-      expect(mocks.cleanup).toHaveBeenCalledWith("app-agent-run");
+      expect(mocks.cleanup).toHaveBeenCalledWith(app.id, "run");
       expect(mocks.revoke).toHaveBeenCalledOnce();
     } finally {
       warning.mockRestore();
@@ -439,7 +492,7 @@ describe("platform MCP endpoint", () => {
   it("surfaces setup failures without waiting for an unopened model stream", async () => {
     mocks.start.mockResolvedValueOnce({
       cancel: mocks.cancel,
-      readable: new ReadableStream(),
+      getReadable: () => new ReadableStream(),
       get returnValue() {
         return Promise.reject(new Error("This app is already being edited."));
       },

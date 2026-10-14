@@ -30,4 +30,12 @@ export const agentChatSchema = z.object({
   hostUrl: z.url({ protocol: /^https?$/u }),
   messages: agentMessagesSchema,
   schema: z.record(z.string(), z.unknown()).optional(),
+  threadId: z.uuid().optional(),
+});
+
+/** Transient metadata communicates the server-selected conversation ID. */
+export const agentThreadChunkSchema = z.object({
+  data: z.object({ threadId: z.uuid() }),
+  transient: z.literal(true),
+  type: z.literal("data-thread"),
 });

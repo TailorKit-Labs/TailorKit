@@ -1,15 +1,19 @@
 import { randomBytes } from "node:crypto";
 
-import { createModelCallToUIChunkTransform } from "@ai-sdk/workflow";
 import { call, ORPCError } from "@orpc/server";
+import { createAppAgentMcp } from "@tailorkit/agent/mcp";
+import type { AppAgentMcpExecution } from "@tailorkit/agent/mcp";
+import {
+  AppAgentThreadError,
+  resolveAppAgentThread,
+} from "@tailorkit/agent/threads";
+import { appAgent, cancelAppAgent } from "@tailorkit/agent/workflows";
 import { issueAgentToken } from "@tailorkit/api-utils/agent-token";
 import { hashSecret } from "@tailorkit/api-utils/hashing";
-import { createAppAgentMcp } from "@tailorkit/app-agent/mcp";
-import type { AppAgentMcpExecution } from "@tailorkit/app-agent/mcp";
-import { appAgent, deleteSandbox } from "@tailorkit/app-agent/workflows";
 import { db } from "@tailorkit/db";
 import { cliToken } from "@tailorkit/db/schema/cli-auth";
 import { sanitizeErrorForLog } from "@tailorkit/observability";
+import type { UIMessageChunk } from "ai";
 import { eq } from "drizzle-orm";
 import { start } from "workflow/api";
 import type { Run } from "workflow/api";
@@ -92,7 +96,8 @@ export const handleAppAgentMcpRequest = async (
   const runAgent = async (
     appId: string,
     prompt: string,
-    execution: AppAgentMcpExecution
+    execution: AppAgentMcpExecution,
+    requestedThreadId?: string
   ) => {
     execution.signal.throwIfAborted();
     const app = await findAppInScopes(context.project.id, appId, scopes);
@@ -104,6 +109,15 @@ export const handleAppAgentMcpRequest = async (
       )
     ) {
       throw new ORPCError("SERVICE_UNAVAILABLE");
+    }
+    let threadId: string;
+    try {
+      threadId = await resolveAppAgentThread(app.id, requestedThreadId);
+    } catch (error) {
+      if (error instanceof AppAgentThreadError) {
+        throw new ORPCError("BAD_REQUEST", { message: error.message });
+      }
+      throw error;
     }
     // Reuse the existing CLI/JWT boundary for this agent's one-hour, single-scope grant.
     // A source row keeps revocation checks identical to existing app agent turns.
@@ -160,6 +174,7 @@ export const handleAppAgentMcpRequest = async (
             hostUrl: input.hostUrl,
             messages: [{ content: prompt, role: "user" }],
             model: "xiaomi/mimo-v2.6-pro",
+            threadId,
           },
         ],
         {
@@ -181,22 +196,23 @@ export const handleAppAgentMcpRequest = async (
         appId: app.publicId,
         runId: run.runId,
         status: "started",
+        threadId,
       });
-      for await (const chunk of run.readable.pipeThrough(
-        createModelCallToUIChunkTransform(),
-        {
+      for await (const chunk of run
+        .getReadable<UIMessageChunk>()
+        .pipeThrough(new TransformStream<UIMessageChunk, UIMessageChunk>(), {
           signal,
-        }
-      )) {
+        })) {
         await execution.onProgress({
           appId: app.publicId,
           chunk,
           runId: run.runId,
+          threadId,
         });
       }
       const output = await completed;
       finished = true;
-      return { appId: app.publicId, runId: run.runId, ...output };
+      return { ...output, appId: app.publicId, runId: run.runId, threadId };
     } finally {
       controller.abort();
       try {
@@ -213,7 +229,7 @@ export const handleAppAgentMcpRequest = async (
               runId: run.runId,
             });
           } finally {
-            await deleteSandbox(`app-agent-${run.runId}`);
+            await cancelAppAgent(app.id, run.runId);
           }
         }
       } finally {
@@ -251,10 +267,10 @@ export const handleAppAgentMcpRequest = async (
         );
         return await runAgent(app.id, prompt, execution);
       },
-      editApp: async ({ appId, prompt }, execution) =>
+      editApp: async ({ appId, prompt, threadId }, execution) =>
         await call(
           protectedRouter.handler(
-            async () => await runAgent(appId, prompt, execution)
+            async () => await runAgent(appId, prompt, execution, threadId)
           ),
           undefined,
           { context }

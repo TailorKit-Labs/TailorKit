@@ -10,6 +10,12 @@ const promptSchema = z.string().trim().min(1).max(32_000);
 const editSchema = z.strictObject({
   appId: z.string().min(1),
   prompt: promptSchema,
+  threadId: z
+    .uuid()
+    .optional()
+    .describe(
+      "Continue this app’s existing conversation. Omit to start a new thread for an independent change."
+    ),
 });
 const createSchema = z.strictObject({
   description: z.string().trim().max(255).optional(),
@@ -125,7 +131,7 @@ export const createAppAgentMcp = (
             readOnlyHint: false,
           },
           description:
-            "Create a new app and create an autonomous app agent to build and deploy it from your prompt. The agent writes code, runs commands, and publishes the app. Wait for the streamed agent progress and final result. Each call starts a new agent; do not automatically retry a disconnected call.",
+            "Create a new app and create an autonomous app agent to build and deploy it from your prompt. The agent writes code, runs commands, and publishes the app. Wait for the streamed agent progress and final result. A new conversation is created and its threadId is returned. Continue it with edit_app and that threadId; do not automatically retry a disconnected call.",
           inputSchema: authorizedCreateSchema,
         },
         async (input, context) =>
@@ -141,7 +147,7 @@ export const createAppAgentMcp = (
             readOnlyHint: false,
           },
           description:
-            "Create an autonomous app agent to edit and deploy an existing app from your prompt. The agent writes code, runs commands, and publishes the changes. Wait for the streamed agent progress and final result. Each call starts a new agent; do not automatically retry a disconnected call.",
+            "Create an autonomous app agent to edit and deploy an existing app from your prompt. The agent writes code, runs commands, and publishes the changes. Wait for the streamed agent progress and final result. Omit threadId to start a new conversation; supply a returned threadId for a related follow-up. Do not automatically retry a disconnected call.",
           inputSchema: editSchema,
         },
         async (input, context) =>
