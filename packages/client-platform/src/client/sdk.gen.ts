@@ -13,6 +13,8 @@ import type {
   AppAgentChatData,
   AppAgentChatResponse,
   AppAgentChatResponses,
+  AppAgentCreateData,
+  AppAgentCreateResponses,
   AppsCreateData,
   AppsCreateResponses,
   AppsDeleteData,
@@ -342,6 +344,22 @@ export const previewAccepted = <ThrowOnError extends boolean = false>(
 ): RequestResult<PreviewAcceptedResponses, unknown, ThrowOnError> =>
   (options.client ?? client).post<PreviewAcceptedResponses, unknown, ThrowOnError>({
     url: "/preview/grants/resolve",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const appAgentCreate = <ThrowOnError extends boolean = false>(
+  options: Options<AppAgentCreateData, ThrowOnError>
+): RequestResult<AppAgentCreateResponses, unknown, ThrowOnError> =>
+  (options.client ?? client).post<
+    AppAgentCreateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/app-agent/apps",
     ...options,
     headers: {
       "Content-Type": "application/json",

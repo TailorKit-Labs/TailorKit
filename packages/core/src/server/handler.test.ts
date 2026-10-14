@@ -811,10 +811,24 @@ describe("createTailorKitServer", () => {
     });
 
     await expect(
-      client.apps.create({ description: null, name: "Calendar" })
+      client.apps.create({
+        description: null,
+        name: "Calendar",
+      })
     ).resolves.toEqual({
       id: "app_1",
     });
+    const untrustedInput = {
+      createdByAgent: true,
+      description: null,
+      name: "Forged AI app",
+    };
+    await expect(client.apps.create(untrustedInput)).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    expect(
+      requests.filter((request) => request.url.endsWith("/apps"))
+    ).toHaveLength(1);
     expect(hostRequests[0]?.method).toBe("POST");
     await expect(requests[1]?.json()).resolves.toEqual({
       description: null,
@@ -822,6 +836,54 @@ describe("createTailorKitServer", () => {
       scope: { name: "org", value: { orgId: "org_1" } },
     });
   });
+
+  it.each([true, false])(
+    "returns AI provenance from app lookups: %s",
+    async (createdByAgent) => {
+      const server = createTailorKitServer({
+        $internal: {
+          platformFetch: async (input, init) => {
+            const request =
+              input instanceof Request ? input : new Request(input, init);
+            if (request.url.endsWith("/cli-auth/verify-token")) {
+              return Response.json({
+                scope: { name: "org", value: { orgId: "org_1" } },
+              });
+            }
+            expect(request.url).toBe(
+              "https://tailorkit.dev/api/platform/apps/app_1/lookup"
+            );
+            expect(await request.json()).toEqual({
+              scopes: [{ name: "org", value: { orgId: "org_1" } }],
+            });
+            return Response.json({ createdByAgent, id: "app_1" });
+          },
+        },
+        baseUrl: "https://example.com/api/tailorkit",
+        components: {},
+        scopes: { org: testScopeSchema },
+      });
+      const client = createTailorKitClient({
+        fetch: async (input, init) =>
+          await server.handler(
+            input instanceof Request ? input : new Request(input, init),
+            {
+              authenticate: () => {
+                throw new Error(
+                  "Host authentication should not run for deploy-token routes."
+                );
+              },
+            }
+          ),
+        headers: { authorization: "Bearer cli-token" },
+        url: "https://example.com/api/tailorkit",
+      });
+      await expect(client.apps.get({ appId: "app_1" })).resolves.toEqual({
+        createdByAgent,
+        id: "app_1",
+      });
+    }
+  );
 
   it("preserves instance discovery when the CLI deploys through the host", async () => {
     const requests: Request[] = [];

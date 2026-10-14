@@ -17,6 +17,7 @@ import {
   previewStart,
   previewStop,
   appAgentChat,
+  appAgentCreate,
 } from "@tailorkit/client-platform/client";
 import { createClient } from "@tailorkit/client-platform/client/client/index";
 import { createTailorKitClient } from "@tailorkit/core/server";
@@ -143,6 +144,13 @@ export const createCliClient = (options: {
             });
           }
         },
+        create: async (input: Input<"appAgent", "create">) =>
+          await request(
+            appAgentCreate({
+              body: { ...input, deployToken: agent.token },
+              client,
+            })
+          ),
       },
       apps: {
         // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.

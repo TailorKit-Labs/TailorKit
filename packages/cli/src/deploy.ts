@@ -12,10 +12,11 @@ import type { LoadedTailorKitConfig } from "@tailorkit/vite/config/loader";
 import { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
 import { z } from "zod";
 
+import { getAgentAuth } from "./agent-auth";
 import { readAppName, writeAppIdToConfig } from "./app-link";
 import { getDeployToken, NotLoggedInError, runWhoami } from "./auth";
 import { buildProject } from "./build";
-import { createDeploymentClient, getAgentAuth } from "./deployment-client";
+import { createCliClient } from "./client";
 
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
   typeof value === "object" && value !== null;
@@ -407,7 +408,10 @@ export const runDeploy = async (
     );
   }
 
-  const client = createDeploymentClient(auth.hostUrl, storedAuth.deployToken);
+  const client = createCliClient({
+    token: storedAuth.deployToken,
+    url: auth.hostUrl,
+  });
 
   const createLinkedApp = async (
     reason: "missing" | "not-found"

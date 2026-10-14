@@ -2,6 +2,7 @@
 
 export {
   appAgentChat,
+  appAgentCreate,
   appsCreate,
   appsDelete,
   appsDeploy,
@@ -30,6 +31,9 @@ export type {
   AppAgentChatData,
   AppAgentChatResponse,
   AppAgentChatResponses,
+  AppAgentCreateData,
+  AppAgentCreateResponse,
+  AppAgentCreateResponses,
   AppsCreateData,
   AppsCreateResponse,
   AppsCreateResponses,

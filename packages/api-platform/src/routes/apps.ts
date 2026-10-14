@@ -177,7 +177,7 @@ const createApp = cliRouter
       path: "/apps",
     })
   )
-  .input(z.object({ body: createAppInput }))
+  .input(z.object({ body: createAppInput.strict() }))
   .output(z.object({ body: AppWithCurrentDeployment }))
   .handler(async ({ context, input }) => ({
     body: await createAppRecord(context, input.body),

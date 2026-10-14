@@ -5,8 +5,8 @@ import path from "node:path";
 import { SignJWT } from "jose";
 import { afterEach, assert, expect, it, vi } from "vite-plus/test";
 
+import { getAgentAuth } from "./agent-auth";
 import { createCliClient } from "./client";
-import { createDeploymentClient, getAgentAuth } from "./deployment-client";
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -48,7 +48,7 @@ it("uses existing platform deployment endpoints and scope from the agent JWT", a
     .spyOn(globalThis, "fetch")
     // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
     .mockImplementation(async () => Response.json({}));
-  const client = createDeploymentClient("http://localhost:1", jwt);
+  const client = createCliClient({ token: jwt, url: "http://localhost:1" });
   await client.deployments.create({
     appId: "app-one",
     assets: [
@@ -77,11 +77,19 @@ it("uses existing platform deployment endpoints and scope from the agent JWT", a
     // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
     expect(await request.json()).toMatchObject({ scope });
   }
-  await client.apps.create({ description: null, name: "App" });
-
-  expect(requireRequest(requireValue(fetch.mock.lastCall)[0]).url).toBe(
-    "https://platform.test/api/platform/apps"
+  await client.appAgent.create({
+    description: null,
+    name: "App",
+  });
+  const appRequest = requireRequest(requireValue(fetch.mock.lastCall)[0]);
+  expect(appRequest.url).toBe(
+    "https://platform.test/api/platform/app-agent/apps"
   );
+  expect(await appRequest.json()).toEqual({
+    deployToken: jwt,
+    description: null,
+    name: "App",
+  });
 });
 
 it.each([
@@ -116,10 +124,10 @@ it("retains actionable platform authentication errors", async () => {
   );
   const agent = requireValue(getAgentAuth());
   await expect(
-    createDeploymentClient(
-      "http://localhost:1",
-      agent.token
-    ).deployments.publish({
+    createCliClient({
+      token: agent.token,
+      url: "http://localhost:1",
+    }).deployments.publish({
       deploymentId: "deployment-one",
     })
   ).rejects.toMatchObject({
@@ -145,7 +153,7 @@ it("rejects insecure routing before creating a client or sending requests", asyn
   );
   const fetch = vi.spyOn(globalThis, "fetch");
   expect(() =>
-    createDeploymentClient("http://localhost:1", "stored-token")
+    createCliClient({ token: "stored-token", url: "http://localhost:1" })
   ).toThrow("Invalid agent authorization");
   expect(fetch).not.toHaveBeenCalled();
 });

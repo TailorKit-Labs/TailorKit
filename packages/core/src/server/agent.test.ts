@@ -70,6 +70,9 @@ const setup = (
       .handler(async function* chat() {
         yield* options.events ?? events;
       }),
+    create: os
+      .meta(openapi({ method: "POST", path: "/app-agent/apps" }))
+      .handler(() => ({ createdByAgent: true, id: appId })),
   });
   const server = createTailorKitServer({
     $internal: {
@@ -119,6 +122,26 @@ const setup = (
 };
 
 describe("host agent relay", () => {
+  it("creates agent apps through the authenticated agent endpoint without accepting provenance", async () => {
+    const { client, requests } = setup();
+    await expect(
+      client.appAgent.create({ description: null, name: "AI app" })
+    ).resolves.toEqual({ createdByAgent: true, id: appId });
+    const request = require(
+      requests.find((item) => item.url.endsWith("/app-agent/apps"))
+    );
+    expect(request.headers.get("authorization")).toBe(
+      "Bearer host-project-key"
+    );
+    expect(await request.json()).toEqual({
+      deployToken: "cli-token",
+      description: null,
+      name: "AI app",
+    });
+    expect(
+      requests.filter((item) => item.url.endsWith("/verify-token"))
+    ).toHaveLength(1);
+  });
   it("rejects a model finish without workflow cleanup completion", async () => {
     const { client, requests } = setup({ events: events.slice(0, -1) });
     await expect(
@@ -265,6 +288,9 @@ describe("host agent relay", () => {
         }),
       url: "https://host.test/api/tailorkit",
     });
+    await expect(
+      client.appAgent.create({ description: null, name: "AI app" })
+    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
     await expect(
       client.appAgent.chat({ appId, hostUrl, messages, type: "turn" })
     ).rejects.toMatchObject({

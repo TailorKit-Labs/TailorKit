@@ -34,8 +34,6 @@ Apply the generated `app-agent-sessions` and `agent-threads` migrations with `pn
 
 The agent exposes Pi’s typed `read`, `write`, `edit`, `bash`, `grep`, `glob`, and `ls` tools through AI SDK tool events, alongside the host-executed `deploy` tool. Deployment retains the platform’s short-lived CLI grant, app authorization, and credential redaction. Native file tools can read the app workspace, supplied schema, and installed CLI; writes stay in the workspace. The token file is denied to native file tools, which does not restrict shell commands. See the [Pi adapter](https://ai-sdk.dev/providers/ai-sdk-harnesses/pi).
 
-Legacy app-wide sessions start fresh threads. The generated migration retains the legacy sandbox name for cleanup when the next editing lease is claimed; app source is preserved.
-
 `run.getReadable<UIMessageChunk>()` already carries AI SDK UI chunks. Consume it directly without `createModelCallToUIChunkTransform()`. The CLI chat keeps running when its response disconnects; the existing MCP transport cancels its agent on disconnect.
 
 ## MCP

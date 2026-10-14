@@ -26,7 +26,7 @@ interface AgentOptions {
 }
 
 const chooseApp = async (
-  client: Pick<TailorKitRouterClient, "apps">
+  client: Pick<TailorKitRouterClient, "apps" | "appAgent">
 ): Promise<string | undefined> => {
   const loading = spinner();
   const apps: Awaited<
@@ -39,11 +39,13 @@ const chooseApp = async (
     while (hasMore) {
       // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
       const result = await client.apps.list({ page, pageSize: 100 });
-      apps.push(...result.items);
+      apps.push(...result.items.filter((app) => app.createdByAgent));
       ({ hasMore } = result.pagination);
       page += 1;
     }
-    loading.stop(apps.length ? "Found apps." : "No apps found.");
+    loading.stop(
+      apps.length ? "Found AI-created apps." : "No AI-created apps found."
+    );
   } catch (error) {
     loading.stop("Unable to list apps.");
     throw error;
@@ -55,7 +57,7 @@ const chooseApp = async (
       [option.label, option.hint, option.value].some(
         (value) => value?.toLowerCase().includes(search.toLowerCase()) === true
       ),
-    message: "Select an app or create a new one",
+    message: "Select an AI-created app or create a new one",
     options: [
       ...apps.map((app) => ({
         hint: app.publicId,
@@ -89,7 +91,7 @@ const chooseApp = async (
   }
   loading.start("Creating app");
   try {
-    const app = await client.apps.create({
+    const app = await client.appAgent.create({
       description: null,
       name: name.trim(),
     });
@@ -128,7 +130,14 @@ export const runAgentCommand = async (options: AgentOptions) => {
     throw new NotLoggedInError(hostUrl);
   }
   const client = createCliClient({ token: auth.deployToken, url: authUrl });
-  if (!(appId !== undefined && appId !== null && appId !== "")) {
+  if (appId !== undefined && appId !== null && appId !== "") {
+    const app = await client.apps.get({ appId });
+    if (!app.createdByAgent) {
+      throw new Error(
+        "The agent can only edit apps created by AI. Create a new app to continue."
+      );
+    }
+  } else {
     appId = await chooseApp(client);
     if (!(appId !== undefined && appId !== null && appId !== "")) {
       return;
