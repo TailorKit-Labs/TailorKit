@@ -2,6 +2,11 @@
   "format_on_save": "on",
   "formatter": "language_server",
   "lsp": {
+    "tailwindcss-language-server": {
+      "settings": {
+        "classFunctions": ["cva", "cx", "cn", "clsx"]
+      }
+    },
     "typescript-language-server": {
       "settings": {
         "typescript": {
