@@ -35,8 +35,7 @@ export const networkSession = async (sandbox: Sandbox) => {
   return session;
 };
 
-export const writeAgentToken = async (sandboxName: string, token: string) => {
-  const sandbox = await getSandbox(sandboxName);
+export const writeAgentToken = async (sandbox: Sandbox, token: string) => {
   const session = sandbox.currentSession();
   await session.writeFiles([
     { content: Buffer.from(token, "utf-8"), path: agentTokenPath },
@@ -52,10 +51,9 @@ export const writeAgentToken = async (sandboxName: string, token: string) => {
 };
 
 export const writeAgentSchema = async (
-  sandboxName: string,
+  sandbox: Sandbox,
   schema: HostSchemaDocument
 ) => {
-  const sandbox = await getSandbox(sandboxName);
   await sandbox.currentSession().writeFiles([
     {
       content: Buffer.from(JSON.stringify(schema), "utf-8"),
@@ -85,6 +83,7 @@ export const prepareSandboxStep = async (
   "use step";
   const { Drive, Sandbox } = await import("@vercel/sandbox");
   const sandboxName = threadSandboxName(input.threadId);
+  let sandbox: Sandbox;
   if (saved.cleanupSandboxName !== undefined) {
     await deleteSandbox(saved.cleanupSandboxName);
   }
@@ -95,7 +94,7 @@ export const prepareSandboxStep = async (
         "The saved app agent sandbox does not match its session."
       );
     }
-    await getSandbox(sandboxName);
+    sandbox = await getSandbox(sandboxName);
   } else {
     // With the database lease already held, discard an abandoned VM. Repeating
     // this setup step after a crash is safe because no agent turn has started.
@@ -113,7 +112,7 @@ export const prepareSandboxStep = async (
         "This app is already being edited. Retry after the active run finishes."
       );
     }
-    await Sandbox.getOrCreate({
+    sandbox = await Sandbox.getOrCreate({
       env: { TAILORKIT_AGENT_TOKEN_FILE: agentTokenPath },
       image: "vercel/sandbox/universal",
       keepLastSnapshots: { count: 1 },
@@ -124,12 +123,11 @@ export const prepareSandboxStep = async (
       timeout: sandboxIdleTimeoutMs,
     });
   }
-  await writeAgentToken(sandboxName, input.agentToken);
+  await writeAgentToken(sandbox, input.agentToken);
   if (input.schema !== undefined) {
-    await writeAgentSchema(sandboxName, input.schema);
+    await writeAgentSchema(sandbox, input.schema);
   }
   const { prepareWorkspace } = await import("./workspace");
-  const sandbox = await getSandbox(sandboxName);
   await prepareWorkspace(
     sandbox.currentSession(),
     input,

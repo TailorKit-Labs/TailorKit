@@ -147,6 +147,7 @@ describe("Pi sandbox ownership", () => {
   it("reattaches the same sandbox for the next native conversation turn", async () => {
     await prepareSandboxStep(input, { resumeFrom, sandboxName });
     expect(mocks.get).toHaveBeenCalledWith({ name: sandboxName, resume: true });
+    expect(mocks.get).toHaveBeenCalledOnce();
     expect(mocks.create).not.toHaveBeenCalled();
     expect(mocks.drive).not.toHaveBeenCalled();
   });

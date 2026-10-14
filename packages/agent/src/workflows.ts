@@ -2,7 +2,6 @@ import {
   createHarnessWorkflowState,
   finalizeHarnessWorkflow,
 } from "@ai-sdk/workflow-harness";
-import type { ModelMessage } from "ai";
 import { FatalError, getWorkflowMetadata } from "workflow";
 
 import { agentStep } from "./agent-step";
@@ -30,7 +29,6 @@ export const appAgent = async (input: AppAgentInput) => {
       resumeFrom: saved.resumeFrom,
       sessionId: input.threadId,
     });
-    const messages: ModelMessage[] = [];
     do {
       if (Date.now() >= deadline) {
         throw new FatalError(
@@ -38,9 +36,7 @@ export const appAgent = async (input: AppAgentInput) => {
         );
       }
       // oxlint-disable-next-line no-await-in-loop -- Each checkpoint continues the preceding unfinished turn.
-      const result = await agentStep(state, input, runId);
-      ({ state } = result);
-      messages.push(...result.messages);
+      state = await agentStep(state, input, runId);
     } while (state.status === "ready_for_next_step");
 
     const result = finalizeHarnessWorkflow(state);
@@ -58,7 +54,7 @@ export const appAgent = async (input: AppAgentInput) => {
     );
     await stopSandboxStep(threadSandboxName(input.threadId));
     completed = true;
-    return { ...result, messages, threadId: input.threadId };
+    return { ...result, threadId: input.threadId };
   } finally {
     await (completed
       ? releaseSessionStep(input.appId, runId)

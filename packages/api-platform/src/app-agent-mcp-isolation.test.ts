@@ -197,7 +197,7 @@ describe("MCP database authorization", () => {
             controller.close();
           },
         }),
-      returnValue: Promise.resolve({ messages: [] }),
+      returnValue: Promise.resolve({ finishReason: "stop" }),
       runId: "run",
     });
   });

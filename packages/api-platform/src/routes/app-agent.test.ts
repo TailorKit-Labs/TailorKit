@@ -10,6 +10,7 @@ import {
 import { readUIMessageStream } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
+import { createAgentStreamToken } from "#agent-stream-token";
 import type { Context } from "#context";
 import { env } from "#env";
 import { canonicalizeScope } from "#scope";
@@ -23,6 +24,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
 
 const mocks = vi.hoisted(() => ({
   app: vi.fn(),
+  getRun: vi.fn<(runId: string) => ReturnType<typeof run>>(),
   start: vi.fn(),
   thread: vi.fn<(appId: string, threadId?: string) => Promise<string>>(),
   token: vi.fn(),
@@ -51,7 +53,7 @@ vi.mock("@tailorkit/agent/threads", async (importOriginal) => ({
   ...(await importOriginal<typeof threadsModule>()),
   resolveAppAgentThread: mocks.thread,
 }));
-vi.mock("workflow/api", () => ({ start: mocks.start }));
+vi.mock("workflow/api", () => ({ getRun: mocks.getRun, start: mocks.start }));
 
 const { appAgentRouter } = await import("./app-agent");
 // SAFETY: This test supplies the context members read by the handler; unrelated request context services are outside this scenario.
@@ -76,6 +78,7 @@ const input = {
         role: "user" as const,
       },
     ],
+    type: "turn" as const,
   },
 };
 
@@ -90,8 +93,8 @@ const run = (parts: unknown[]) => ({
         controller.close();
       },
     }),
-  returnValue: Promise.resolve({ messages: [] }),
-  runId: "run-1",
+  returnValue: Promise.resolve({ finishReason: "stop" }),
+  runId: "wrun_test",
 });
 const defaultConsumeOptions = { context };
 const consume = async (options = defaultConsumeOptions) => {
@@ -133,6 +136,92 @@ beforeEach(() => {
 });
 
 describe("platform app chat", () => {
+  it("rejects the old untyped request before starting a workflow", async () => {
+    const handler = new OpenAPIHandler({ appAgent: appAgentRouter });
+    const result = await handler.handle(
+      new Request("https://platform.test/api/platform/app-agent/chat", {
+        body: JSON.stringify({ ...input.body, type: undefined }),
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      }),
+      { context, prefix: "/api/platform" }
+    );
+    expect(result.response?.status).toBe(400);
+    expect(mocks.start).not.toHaveBeenCalled();
+    expect(mocks.getRun).not.toHaveBeenCalled();
+  });
+  it("reconnects to a signed run at the exact cursor without starting another workflow", async () => {
+    const threadId = "e773a870-df5a-4bea-9ebd-9be4c0b1897a";
+    const getReadable = vi.fn(run([{ type: "finish" }]).getReadable);
+    mocks.getRun.mockReturnValue({ ...run([]), getReadable });
+    const resume = {
+      runId: "wrun_test",
+      startIndex: 12,
+      token: createAgentStreamToken("app-one", threadId, "wrun_test"),
+    };
+    const stream = await call(
+      appAgentRouter.chat,
+      {
+        body: {
+          appId: input.body.appId,
+          deployToken: input.body.deployToken,
+          ...resume,
+          threadId,
+          type: "resume",
+        },
+      },
+      { context }
+    );
+    const events = [];
+    for await (const event of stream) {
+      events.push(event);
+    }
+    expect(mocks.start).not.toHaveBeenCalled();
+    expect(mocks.thread).not.toHaveBeenCalled();
+    expect(mocks.getRun).toHaveBeenCalledWith("wrun_test");
+    expect(getReadable).toHaveBeenCalledWith({ startIndex: 12 });
+    expect(events).toContainEqual({
+      data: { runId: "wrun_test" },
+      transient: true,
+      type: "data-run-complete",
+    });
+  });
+
+  it.each(["app-two", "another-thread", "tampered"])(
+    "rejects a reconnect signed for %s before reading any run",
+    async (mismatch) => {
+      const threadId = "e773a870-df5a-4bea-9ebd-9be4c0b1897a";
+      const resume = {
+        runId: "wrun_test",
+        startIndex: 0,
+        token:
+          mismatch === "tampered"
+            ? "invalid"
+            : createAgentStreamToken(
+                mismatch === "app-two" ? mismatch : "app-one",
+                mismatch === "another-thread" ? mismatch : threadId,
+                "wrun_test"
+              ),
+      };
+      await expect(
+        call(
+          appAgentRouter.chat,
+          {
+            body: {
+              appId: input.body.appId,
+              deployToken: input.body.deployToken,
+              ...resume,
+              threadId,
+              type: "resume",
+            },
+          },
+          { context }
+        )
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      expect(mocks.start).not.toHaveBeenCalled();
+      expect(mocks.getRun).not.toHaveBeenCalled();
+    }
+  );
   it("streams SDK chunks and starts each turn with the client's full UI history", async () => {
     const events = await consume();
     expect(events).toContainEqual({
@@ -145,7 +234,11 @@ describe("platform app chat", () => {
       id: "text-1",
       type: "text-delta",
     });
-    expect(events.at(-1)).toEqual({ type: "finish" });
+    expect(events.at(-1)).toEqual({
+      data: { runId: "wrun_test" },
+      transient: true,
+      type: "data-run-complete",
+    });
     const [, [first]] = requireValue(mocks.start.mock.lastCall);
     expect(first).not.toHaveProperty("deployToken");
     expect(
@@ -209,9 +302,13 @@ describe("platform app chat", () => {
     const events = await consume();
     expect(mocks.thread).toHaveBeenCalledWith("app-one", undefined);
     expect(events).toContainEqual({
-      data: { threadId: id },
+      data: {
+        runId: "wrun_test",
+        threadId: id,
+        token: createAgentStreamToken("app-one", id, "wrun_test"),
+      },
       transient: true,
-      type: "data-thread",
+      type: "data-run",
     });
     expect(requireValue(mocks.start.mock.lastCall)[1][0].threadId).toBe(id);
   });
@@ -507,9 +604,7 @@ describe("platform app chat", () => {
       context,
       signal: controller.signal,
     });
-    expect(await stream.next()).toMatchObject({
-      value: { type: "data-thread" },
-    });
+    expect(await stream.next()).toMatchObject({ value: { type: "data-run" } });
     expect(await stream.next()).toMatchObject({ value: { type: "start" } });
     controller.abort();
     await expect(stream.next()).rejects.toMatchObject({ name: "AbortError" });

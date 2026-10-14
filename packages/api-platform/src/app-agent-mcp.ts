@@ -13,7 +13,8 @@ import { hashSecret } from "@tailorkit/api-utils/hashing";
 import { db } from "@tailorkit/db";
 import { cliToken } from "@tailorkit/db/schema/cli-auth";
 import { sanitizeErrorForLog } from "@tailorkit/observability";
-import type { UIMessageChunk } from "ai";
+import { readUIMessageStream } from "ai";
+import type { UIMessage, UIMessageChunk } from "ai";
 import { eq } from "drizzle-orm";
 import { start } from "workflow/api";
 import type { Run } from "workflow/api";
@@ -198,21 +199,37 @@ export const handleAppAgentMcpRequest = async (
         status: "started",
         threadId,
       });
-      for await (const chunk of run
-        .getReadable<UIMessageChunk>()
-        .pipeThrough(new TransformStream<UIMessageChunk, UIMessageChunk>(), {
-          signal,
-        })) {
-        await execution.onProgress({
-          appId: app.publicId,
-          chunk,
-          runId: run.runId,
-          threadId,
-        });
+      let message: UIMessage | undefined;
+      const { runId } = run;
+      const stream = run.getReadable<UIMessageChunk>().pipeThrough(
+        new TransformStream<UIMessageChunk, UIMessageChunk>({
+          async transform(chunk, writer) {
+            await execution.onProgress({
+              appId: app.publicId,
+              chunk,
+              runId,
+              threadId,
+            });
+            writer.enqueue(chunk);
+          },
+        }),
+        { signal }
+      );
+      for await (const update of readUIMessageStream({
+        stream,
+        terminateOnError: true,
+      })) {
+        message = update;
       }
       const output = await completed;
       finished = true;
-      return { ...output, appId: app.publicId, runId: run.runId, threadId };
+      return {
+        ...output,
+        appId: app.publicId,
+        message,
+        runId: run.runId,
+        threadId,
+      };
     } finally {
       controller.abort();
       try {

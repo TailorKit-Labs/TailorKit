@@ -26,6 +26,12 @@ import { AppAgentThreadError, resolveAppAgentThread } from "./threads";
 const mocks = vi.hoisted(() => ({
   db: vi.fn<() => ReturnType<typeof drizzle>>(),
   deleteSandbox: vi.fn(),
+  runStatus:
+    vi.fn<
+      () => Promise<
+        "pending" | "running" | "completed" | "failed" | "cancelled"
+      >
+    >(),
 }));
 vi.mock("@tailorkit/db", () => ({
   get db() {
@@ -33,6 +39,13 @@ vi.mock("@tailorkit/db", () => ({
   },
 }));
 vi.mock("./sandbox", () => ({ deleteSandbox: mocks.deleteSandbox }));
+vi.mock("workflow/api", () => ({
+  getRun: () => ({
+    get status() {
+      return mocks.runStatus();
+    },
+  }),
+}));
 
 const appId = "a3e7568a-c4f7-4ac0-8c35-71ff0f4cd002";
 const otherAppId = "dc0b71e8-8524-479f-b944-4590647e2af4";
@@ -47,6 +60,7 @@ let database: ReturnType<typeof drizzle>;
 
 beforeEach(async () => {
   vi.resetAllMocks();
+  mocks.runStatus.mockResolvedValue("running");
   client = new PGlite();
   database = drizzle({ client });
   mocks.db.mockReturnValue(database);
@@ -101,6 +115,80 @@ const complete = async (id: string, runId: string) => {
 };
 
 describe("agent threads and app workspace leases (Postgres)", () => {
+  it.each(["failed", "cancelled", "completed"] as const)(
+    "recovers a %s workflow's unexpired lease without trusting its journal",
+    async (status) => {
+      const first = await resolveAppAgentThread(appId);
+      const second = await resolveAppAgentThread(appId);
+      await loadResumeStep(appId, first, "run-a");
+      mocks.runStatus.mockResolvedValue(status);
+      await expect(
+        loadResumeStep(appId, second, "run-b")
+      ).resolves.toMatchObject({
+        cleanupSandboxName: threadSandboxName(first),
+      });
+      expect(await lease()).toMatchObject({
+        activeRunId: "run-b",
+        activeThreadId: second,
+      });
+      const abandoned = await thread(first);
+      expect(abandoned?.invalidatedAt).toBeInstanceOf(Date);
+      expect(abandoned?.resumeState).toBeNull();
+      await expect(renewSession(appId, "run-a")).rejects.toThrow(
+        "no longer owns"
+      );
+    }
+  );
+
+  it("keeps ownership when the previous run's status cannot be verified", async () => {
+    const first = await resolveAppAgentThread(appId);
+    const second = await resolveAppAgentThread(appId);
+    await loadResumeStep(appId, first, "run-a");
+    mocks.runStatus.mockRejectedValue(new Error("Status unavailable"));
+    await expect(loadResumeStep(appId, second, "run-b")).rejects.toThrow(
+      "Status unavailable"
+    );
+    expect(await lease()).toMatchObject({ activeRunId: "run-a" });
+    expect(await thread(first)).toMatchObject({ invalidatedAt: null });
+  });
+
+  it("rolls back a timed-out status lookup and ignores its late result", async () => {
+    const first = await resolveAppAgentThread(appId);
+    const second = await resolveAppAgentThread(appId);
+    await loadResumeStep(appId, first, "run-a");
+    await persistResumeStep(
+      appId,
+      first,
+      "run-a",
+      resumeFrom,
+      threadSandboxName(first)
+    );
+    const savedLease = await lease();
+    const savedThread = await thread(first);
+    const otherThread = await thread(second);
+    const status = Promise.withResolvers<"completed">();
+    mocks.runStatus.mockReturnValueOnce(status.promise);
+    vi.useFakeTimers();
+    try {
+      const pending = loadResumeStep(appId, second, "run-b");
+      const rejected = expect(pending).rejects.toThrow(
+        "Timed out checking the active app agent workflow."
+      );
+      await vi.waitFor(() => {
+        expect(mocks.runStatus).toHaveBeenCalledOnce();
+      });
+      await vi.advanceTimersByTimeAsync(5000);
+      await rejected;
+    } finally {
+      vi.useRealTimers();
+    }
+    expect(await lease()).toEqual(savedLease);
+    expect(await thread(first)).toEqual(savedThread);
+    expect(await thread(second)).toEqual(otherThread);
+    expect(mocks.deleteSandbox).not.toHaveBeenCalled();
+    status.resolve("completed");
+    expect(await lease()).toEqual(savedLease);
+  });
   it.each(["", "not-a-uuid", `${appId}-suffix`])(
     "rejects malformed thread ID %j before accessing the database",
     async (threadId) => {

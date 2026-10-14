@@ -2,6 +2,7 @@ import { eventIterator, ORPCError } from "@orpc/server";
 import {
   agentChatSchema,
   agentChunkSchema,
+  agentRunCompleteChunkSchema,
 } from "@tailorkit/client-platform/agent";
 import { appAgentChat } from "@tailorkit/client-platform/client";
 
@@ -23,7 +24,7 @@ export const appAgentRouter = {
         ? AbortSignal.any([clientSignal, controller.signal])
         : controller.signal;
       try {
-        let streamError: unknown;
+        let streamFailed = false;
         let done = false;
         const { stream } = await appAgentChat({
           body: { ...input, deployToken: getCliDeployToken(context.request) },
@@ -32,32 +33,27 @@ export const appAgentRouter = {
 
           headers: context.platformHeaders,
 
-          onSseError: (error) => {
-            streamError = error;
+          onSseError: () => {
+            streamFailed = true;
           },
 
           signal,
 
-          // Replaying a POST could start the agent twice. V1 has no reconnection.
+          // Only the CLI can reconnect with the signed identity and exact cursor.
           sseMaxRetryAttempts: 1,
         });
         for await (const value of stream) {
           const event = await agentChunkSchema.parseAsync(value);
-          if (event.type === "finish" || event.type === "error") {
+          if (
+            event.type === "error" ||
+            agentRunCompleteChunkSchema.safeParse(event).success
+          ) {
             done = true;
           }
           yield event;
         }
         signal?.throwIfAborted();
-        if (
-          streamError !== undefined &&
-          streamError !== null &&
-          streamError !== false &&
-          streamError !== "" &&
-          streamError !== 0 &&
-          !Number.isNaN(streamError) &&
-          streamError !== 0n
-        ) {
+        if (streamFailed) {
           throw new ORPCError("BAD_GATEWAY", {
             message: "The app agent stream failed. Try again.",
           });

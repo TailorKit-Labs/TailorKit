@@ -12,8 +12,12 @@ import { tmpdir } from "node:os";
 import nodePath from "node:path";
 import { promisify } from "node:util";
 
-import { toUIMessageStream } from "ai";
-import type { Experimental_SandboxSession, UIMessageChunk } from "ai";
+import {
+  createHarnessWorkflowState,
+  runHarnessAgentStep,
+} from "@ai-sdk/workflow-harness";
+import type { HarnessWorkflowChunk } from "@ai-sdk/workflow-harness";
+import type { Experimental_SandboxSession } from "ai";
 import { expect, it, vi } from "vite-plus/test";
 
 import { createAppAgent } from "./agent";
@@ -97,7 +101,7 @@ const localSession = (
   },
 });
 
-const messageEvents = (call: number) => {
+const messageEvents = (call: number, text: string) => {
   const first = call === 1;
   const events = [
     {
@@ -129,7 +133,7 @@ const messageEvents = (call: number) => {
             }),
             type: "input_json_delta",
           }
-        : { text: call === 2 ? "Built" : "Updated", type: "text_delta" },
+        : { text, type: "text_delta" },
       index: 0,
       type: "content_block_delta",
     },
@@ -206,9 +210,17 @@ it.each(["api-key", "runtime-oidc"])(
         });
         requests.push(await request.text());
         modelCalls += 1;
-        return new Response(messageEvents(modelCalls), {
-          headers: { "content-type": "text/event-stream" },
-        });
+        return new Response(
+          messageEvents(
+            modelCalls,
+            requests.at(-1)?.includes("Now update it") === true
+              ? "Updated"
+              : "Built"
+          ),
+          {
+            headers: { "content-type": "text/event-stream" },
+          }
+        );
       })
     );
     const input = {
@@ -230,16 +242,42 @@ it.each(["api-key", "runtime-oidc"])(
     try {
       const agent = await createAppAgent(input, "fixture");
       expect(agent.harnessId).toBe("pi");
-      session = await agent.createSession({ sandboxSession, sessionId });
-      const result = await agent.stream({ prompt: "Build a file", session });
-      const chunks: UIMessageChunk[] = [];
-      for await (const chunk of toUIMessageStream({
-        stream: result.stream,
-        tools: agent.tools,
-      })) {
-        chunks.push(chunk);
-      }
-      expect(await result.text).toBe("Built");
+      const chunks: HarnessWorkflowChunk[] = [];
+      const writable = () =>
+        new WritableStream<HarnessWorkflowChunk>({
+          write(chunk) {
+            chunks.push(chunk);
+          },
+        });
+      let state = await runHarnessAgentStep({
+        agent,
+        sandboxSession,
+        state: createHarnessWorkflowState({
+          prompt: "Build a file",
+          sessionId,
+        }),
+        writable: writable(),
+      });
+      expect(state.status).toBe("ready_for_next_step");
+      expect(state.continueFrom).toBeDefined();
+      // Pi can begin the next model call before its host receives the step boundary.
+      expect(requests.length).toBeGreaterThanOrEqual(1);
+      expect(chunks.some((chunk) => chunk.type === "finish")).toBe(false);
+      await rm(hostJournal, { force: true, recursive: true });
+      state = await runHarnessAgentStep({
+        agent: await createAppAgent(input, "fixture"),
+        sandboxSession,
+        state,
+        writable: writable(),
+      });
+      expect(state.status).toBe("finished");
+      expect(requests.length).toBeGreaterThanOrEqual(2);
+      expect(requests.at(-1)?.match(/Build a file/gu)).toHaveLength(1);
+      expect(chunks.filter((chunk) => chunk.type === "start")).toHaveLength(1);
+      expect(chunks.filter((chunk) => chunk.type === "finish")).toHaveLength(1);
+      expect(chunks).toContainEqual(
+        expect.objectContaining({ delta: "Built", type: "text-delta" })
+      );
       expect(chunks).toContainEqual(
         expect.objectContaining({
           input: { content: "First turn", file_path: "example.txt" },
@@ -256,7 +294,10 @@ it.each(["api-key", "runtime-oidc"])(
       expect(await readFile(join(workspace, "example.txt"), "utf-8")).toBe(
         "First turn"
       );
-      const resumeFrom = await session.detach();
+      const { resumeFrom } = state;
+      if (resumeFrom === undefined) {
+        throw new Error("Missing semantic step resume state");
+      }
       expect(resumeFrom.harnessId).toBe("pi");
       expect(JSON.stringify(resumeFrom.data)).toMatch(/\.jsonl/u);
       session = undefined;
@@ -271,21 +312,22 @@ it.each(["api-key", "runtime-oidc"])(
         sandboxSession,
         sessionId,
       });
+      const followupIndex = requests.length;
       const next = await nextAgent.generate({
         prompt: "Now update it",
         session,
       });
       expect(next.text).toBe("Updated");
-      expect(requests).toHaveLength(3);
+      expect(requests).toHaveLength(followupIndex + 1);
       expect(endpoints).toEqual(
-        Array.from({ length: 3 }, () => ({
+        Array.from({ length: requests.length }, () => ({
           authorization: `Bearer ${token}`,
           url: "https://gateway.test/v1/messages",
         }))
       );
-      expect(requests[2]).toContain("Build a file");
-      expect(requests[2]).toContain("Built");
-      expect(requests[2]).toContain("Now update it");
+      expect(requests[followupIndex]).toContain("Build a file");
+      expect(requests[followupIndex]).toContain("Built");
+      expect(requests[followupIndex]).toContain("Now update it");
       const continuedResume = await session.detach();
       session = undefined;
       const otherAgent = await createAppAgent(
@@ -297,8 +339,8 @@ it.each(["api-key", "runtime-oidc"])(
         sessionId: otherSessionId,
       });
       await otherAgent.generate({ prompt: "Different task", session });
-      expect(requests[3]).not.toContain("Build a file");
-      expect(requests[3]).not.toContain("Now update it");
+      expect(requests.at(-1)).not.toContain("Build a file");
+      expect(requests.at(-1)).not.toContain("Now update it");
       await session.destroy();
       session = await nextAgent.createSession({
         resumeFrom: continuedResume,
@@ -306,9 +348,9 @@ it.each(["api-key", "runtime-oidc"])(
         sessionId,
       });
       await nextAgent.generate({ prompt: "Back to first thread", session });
-      expect(requests[4]).toContain("Build a file");
-      expect(requests[4]).toContain("Now update it");
-      expect(requests[4]).not.toContain("Different task");
+      expect(requests.at(-1)).toContain("Build a file");
+      expect(requests.at(-1)).toContain("Now update it");
+      expect(requests.at(-1)).not.toContain("Different task");
     } finally {
       await session?.destroy();
       vi.unstubAllGlobals();

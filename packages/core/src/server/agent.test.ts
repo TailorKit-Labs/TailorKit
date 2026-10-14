@@ -28,6 +28,15 @@ const messages = [
 const hostUrl = "http://localhost:3000/api/tailorkit";
 const appId = "a3e7568a-c4f7-4ac0-8c35-71ff0f4cd002";
 const events: AgentChunk[] = [
+  {
+    data: {
+      runId: "wrun_test",
+      threadId: "e773a870-df5a-4bea-9ebd-9be4c0b1897a",
+      token: "signed-run",
+    },
+    transient: true,
+    type: "data-run",
+  },
   { messageId: "answer", type: "start" },
   { type: "start-step" },
   { id: "text-1", type: "text-start" },
@@ -47,6 +56,7 @@ const events: AgentChunk[] = [
   { id: "text-1", type: "text-end" },
   { type: "finish-step" },
   { type: "finish" },
+  { data: { runId: "wrun_test" }, transient: true, type: "data-run-complete" },
 ];
 
 const setup = (
@@ -109,6 +119,50 @@ const setup = (
 };
 
 describe("host agent relay", () => {
+  it("rejects a model finish without workflow cleanup completion", async () => {
+    const { client, requests } = setup({ events: events.slice(0, -1) });
+    await expect(
+      (async () => {
+        for await (const _event of await client.appAgent.chat({
+          appId,
+          hostUrl,
+          messages,
+          type: "turn",
+        })) {
+          /* consume */
+        }
+      })()
+    ).rejects.toThrow("ended unexpectedly");
+    expect(
+      requests.filter((request) => request.url.endsWith("/chat"))
+    ).toHaveLength(1);
+  });
+  it("relays a reconnect cursor and accepts cleanup completion without replaying the turn finish", async () => {
+    const complete: AgentChunk = {
+      data: { runId: "wrun_test" },
+      transient: true,
+      type: "data-run-complete",
+    };
+    const { client, requests } = setup({ events: [complete] });
+    const resume = { runId: "wrun_test", startIndex: 15, token: "signed-run" };
+    const received = [];
+    for await (const event of await client.appAgent.chat({
+      appId,
+      type: "resume",
+      ...resume,
+      threadId: "e773a870-df5a-4bea-9ebd-9be4c0b1897a",
+    })) {
+      received.push(event);
+    }
+    expect(received).toEqual([complete]);
+    const request = require(
+      requests.find((item) => item.url.endsWith("/chat"))
+    );
+    expect(await request.json()).toMatchObject({ type: "resume", ...resume });
+    expect(requests.filter((item) => item.url.endsWith("/chat"))).toHaveLength(
+      1
+    );
+  });
   it("verifies CLI auth, uses the host project key, and round trips streamed events", async () => {
     const { client, requests } = setup();
     const received = [];
@@ -116,6 +170,7 @@ describe("host agent relay", () => {
       appId,
       hostUrl,
       messages,
+      type: "turn",
     })) {
       received.push(event);
     }
@@ -133,6 +188,7 @@ describe("host agent relay", () => {
       deployToken: "cli-token",
       hostUrl,
       messages,
+      type: "turn",
     });
     expect(
       requests.filter((request) => request.url.endsWith("/verify-token"))
@@ -153,6 +209,7 @@ describe("host agent relay", () => {
       hostUrl,
       messages,
       schema,
+      type: "turn",
     })) {
       /* consume */
     }
@@ -165,6 +222,7 @@ describe("host agent relay", () => {
       hostUrl,
       messages,
       schema,
+      type: "turn",
     });
     expect(requests.some((request) => request.url.endsWith("/schema"))).toBe(
       false
@@ -173,7 +231,12 @@ describe("host agent relay", () => {
 
   it("assembles AI SDK messages across the real oRPC and OpenAPI transports", async () => {
     const { client } = setup();
-    const chunks = await client.appAgent.chat({ appId, hostUrl, messages });
+    const chunks = await client.appAgent.chat({
+      appId,
+      hostUrl,
+      messages,
+      type: "turn",
+    });
     let latest;
     for await (const message of readUIMessageStream({
       stream: asyncIteratorToUnproxiedDataStream(chunks),
@@ -203,7 +266,7 @@ describe("host agent relay", () => {
       url: "https://host.test/api/tailorkit",
     });
     await expect(
-      client.appAgent.chat({ appId, hostUrl, messages })
+      client.appAgent.chat({ appId, hostUrl, messages, type: "turn" })
     ).rejects.toMatchObject({
       code: "UNAUTHORIZED",
     });
@@ -213,7 +276,7 @@ describe("host agent relay", () => {
   it("rejects a token for an undeclared host scope", async () => {
     const { client } = setup({ scopeName: "forged" });
     await expect(
-      client.appAgent.chat({ appId, hostUrl, messages })
+      client.appAgent.chat({ appId, hostUrl, messages, type: "turn" })
     ).rejects.toMatchObject({
       code: "UNAUTHORIZED",
     });
@@ -227,6 +290,7 @@ describe("host agent relay", () => {
           appId,
           hostUrl,
           messages,
+          type: "turn",
         })) {
           /* consume */
         }
@@ -245,6 +309,7 @@ describe("host agent relay", () => {
           appId,
           hostUrl,
           messages,
+          type: "turn",
         })) {
           /* consume */
         }

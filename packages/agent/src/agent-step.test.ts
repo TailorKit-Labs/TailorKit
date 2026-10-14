@@ -1,6 +1,5 @@
 import { createHarnessWorkflowState } from "@ai-sdk/workflow-harness";
 import type { HarnessWorkflowChunk } from "@ai-sdk/workflow-harness";
-import type { ModelMessage } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { agentStep } from "./agent-step";
@@ -55,10 +54,8 @@ const resumeFrom = {
   type: "resume-session" as const,
 };
 const continueFrom = { ...resumeFrom, type: "continue-turn" as const };
-const response: ModelMessage[] = [{ content: "Built", role: "assistant" }];
 const streamResult = (text: string) => ({
   finishReason: Promise.resolve("stop"),
-  responseMessages: Promise.resolve(response),
   toUIMessageStream: () =>
     new ReadableStream<HarnessWorkflowChunk>({
       start(controller) {
@@ -107,8 +104,8 @@ describe("Pi step with the SDK workflow runner", () => {
       expect.objectContaining({ messages: input.messages })
     );
     expect(result).toMatchObject({
-      messages: response,
-      state: { resumeFrom, status: "finished" },
+      resumeFrom,
+      status: "finished",
     });
     expect(chunks.filter((chunk) => chunk.type === "start")).toHaveLength(1);
     expect(chunks.filter((chunk) => chunk.type === "finish")).toHaveLength(1);
@@ -131,7 +128,7 @@ describe("Pi step with the SDK workflow runner", () => {
     expect(mocks.continueStream).toHaveBeenCalledOnce();
     expect(mocks.stream).not.toHaveBeenCalled();
     expect(chunks.some((chunk) => chunk.type === "start")).toBe(false);
-    expect(result.state.status).toBe("finished");
+    expect(result.status).toBe("finished");
   });
 
   it("suspends unfinished work and leaves the sandbox available for another step", async () => {
@@ -144,56 +141,12 @@ describe("Pi step with the SDK workflow runner", () => {
       input,
       "run-1"
     );
-    expect(result.state).toMatchObject({
+    expect(result).toMatchObject({
       continueFrom,
       status: "ready_for_next_step",
     });
     expect(chunks.some((chunk) => chunk.type === "finish")).toBe(false);
     expect(mocks.detach).not.toHaveBeenCalled();
     expect(mocks.destroy).not.toHaveBeenCalled();
-  });
-
-  it("checkpoints at the five-minute wall-clock boundary while the native turn stays unfinished", async () => {
-    vi.useFakeTimers();
-    try {
-      let controller:
-        | ReadableStreamDefaultController<HarnessWorkflowChunk>
-        | undefined;
-      mocks.unfinished.mockReturnValue(true);
-      mocks.stream.mockResolvedValue({
-        ...streamResult("Working"),
-        toUIMessageStream: () =>
-          new ReadableStream<HarnessWorkflowChunk>({
-            start(value) {
-              controller = value;
-            },
-          }),
-      });
-      mocks.suspend.mockImplementation(async () => {
-        controller?.close();
-        return await Promise.resolve(continueFrom);
-      });
-      const pending = agentStep(
-        createHarnessWorkflowState({
-          messages: input.messages,
-          sessionId: input.threadId,
-        }),
-        input,
-        "run-1"
-      );
-      await vi.waitFor(() => {
-        expect(mocks.stream).toHaveBeenCalledOnce();
-      });
-      await vi.advanceTimersByTimeAsync(300_000);
-      const result = await pending;
-      expect(result.state).toMatchObject({
-        continueFrom,
-        status: "ready_for_next_step",
-      });
-      expect(mocks.detach).not.toHaveBeenCalled();
-      expect(mocks.destroy).not.toHaveBeenCalled();
-    } finally {
-      vi.useRealTimers();
-    }
   });
 });

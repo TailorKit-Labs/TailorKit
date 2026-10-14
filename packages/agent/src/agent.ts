@@ -1,5 +1,6 @@
 import { createPi } from "@ai-sdk/harness-pi";
 import { HarnessAgent } from "@ai-sdk/harness/agent";
+import { isStepCount } from "ai";
 
 import { resolveAgentAuth } from "./agent-auth";
 import { gatewayModelProviders } from "./gateway-model";
@@ -39,6 +40,7 @@ export const createAppAgent = async (
     instructions: `${instructions.trim()}\n\n## Host and generation commands\n\n${hostInstructions}`,
     model: input.model,
     sandboxConfig: { workDir: "." },
+    stopWhen: isStepCount(1),
     tools: { deploy: deployTool },
     toolsContext: {
       deploy: { agentToken: input.agentToken, appId: input.appId, sandboxName },
