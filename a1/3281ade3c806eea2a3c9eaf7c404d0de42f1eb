@@ -1,0 +1,81 @@
+apps/apps-worker/src/runtime/builder.test.ts
+  s_56c6974c595a82::t_a5df3e0c3cff6a 155-157,160
+apps/apps-worker/src/runtime/execution.test.ts
+  s_56c6974c595a82::t_a47ef9f3afa0ae 309-310
+packages/api-platform/src/routes/preview.test.ts
+  s_56c6974c595a82::t_261862d2663b4f 145,153-154,327,482
+packages/cli/src/deploy.test.ts
+  s_e44b2657443bc5::t_234b3d0acdef2e 17,23-27,122,135,360-361,496-497
+packages/cli/src/generator/types.test.ts
+  s_56c6974c595a82::t_b8f1a5916ac35b 13,33-36,38
+packages/cli/src/utils/open-browser.test.ts
+  s_e44b2657443bc5::t_3a0be642dae6ed 1-2,10-11,21-23,33,35,50,54,56,62
+packages/core/src/schema/schema.test-d.ts
+  s_56c6974c595a82::t_ff4f38ce1e1666 1,78-80
+packages/core/src/server/preview.test.ts
+  s_56c6974c595a82::t_7d07295a2c19f2 367-376
+packages/core/src/server/tools.test.ts
+  s_56c6974c595a82::t_96d3c5761916bf 443
+packages/vite/src/builder/file-routes.test.ts
+  s_56c6974c595a82::t_b3533a5a237560 13,305-306
+apps/apps-worker/src/runtime/execution.ts
+  s_c1a574be6981cf::t_239d9b1c1e1746 68
+packages/api-platform/src/app-agent-mcp.ts
+  s_c1a574be6981cf::t_ceeb5ab6ac58ea 189
+packages/app/src/client/connection.test.ts
+  s_c1a574be6981cf::t_8f63309850165e 288-291
+packages/app/src/instances.test-d.ts
+  s_56c6974c595a82::t_52ddee9dc42321 2,11-13
+packages/app/src/preact.ts
+  s_c1a574be6981cf::t_a0fb94bd570e7a 237
+packages/cli/src/agent-tui.test.ts
+  s_56c6974c595a82::t_47c3660200a882 7,288-290,321-322
+packages/cli/src/deployment-client.test.ts
+  s_c1a574be6981cf::t_00e128f4af5927 6,18-22,68-69,81-82,111,160,201-202,231
+packages/cli/src/generator/package-versions.ts
+  s_c1a574be6981cf::t_6489ce69308746 147
+packages/cli/src/generator/types.ts
+  s_c1a574be6981cf::t_8ebf6364d9043e 139-143,152,162,185,290
+packages/core/src/schema/schema.ts
+  s_c1a574be6981cf::t_d49cb3c89c9da2 66
+packages/core/src/server/routes/deployments.ts
+  s_c1a574be6981cf::t_58d49e40a1c23e 121
+packages/core/src/server/scope.test.ts
+  s_56c6974c595a82::t_22501656a116c4 65-70
+packages/vite/src/builder/define-view.ts
+  s_c1a574be6981cf::t_ce426f0507fb90 145-168,186
+packages/vite/src/builder/instances.ts
+  s_c1a574be6981cf::t_c53e64353fabe8 140-169,213,228,257,448,466,491,507
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a13281ade3c806eea2a3c9eaf7c404d0de42f1eb",
+  "prompts": {},
+  "sessions": {
+    "s_56c6974c595a82": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13c51-ff76-7aa3-ae1e-e13edbc9af3a",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_c1a574be6981cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13c67-bdde-7af2-9d27-b57f75abdde6",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_e44b2657443bc5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1384c-a987-7f40-a7da-25b9dd904879",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
