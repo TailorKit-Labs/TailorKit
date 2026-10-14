@@ -54,6 +54,9 @@ jobs:
       - name: Build
         run: vp run build
 
+      - name: Check SDK documentation artifact
+        run: vp run docs:reference:check
+
       - name: Lint
         run: vp run lint
 

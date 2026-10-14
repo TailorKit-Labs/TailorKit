@@ -47,6 +47,7 @@ const aliasWorkspaces = [
   "playground/tanstack-start",
 ];
 const ignorePatterns = [
+  "docs/sdk-artifacts/**",
   ".agents/skills",
   ".claude/skills",
   "**/wrangler.json",

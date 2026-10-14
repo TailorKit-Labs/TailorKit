@@ -1,0 +1,24 @@
+{
+  "extends": "../packages/config/tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "noEmit": true,
+    "typeRoots": ["../packages/config/node_modules/@types"],
+    "paths": {
+      "@tailorkit/core/schema": ["../packages/core/src/schema/index.ts"],
+      "@tailorkit/client-core": ["../packages/client-core/src/index.ts"],
+      "@tailorkit/core/*": ["../packages/core/src/*"],
+      "@tailorkit/client-platform/*": ["../packages/client-platform/src/*"],
+      "@tailorkit/app/client": ["../packages/app/src/client.ts"],
+      "@tailorkit/app/client/connection": [
+        "../packages/app/src/client/connection.ts"
+      ],
+      "@tailorkit/sandbox/protocol": ["../packages/sandbox/src/protocol.ts"],
+      "@tailorkit/client-platform/client": [
+        "../packages/client-platform/src/client/index.ts"
+      ],
+      "@tailorkit/sandbox/host": ["../packages/sandbox/src/host/index.ts"]
+    }
+  },
+  "include": ["sdk-entry.ts", "../packages/sandbox/src/virtual.d.ts"]
+}

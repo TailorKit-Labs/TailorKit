@@ -1,9 +1,8 @@
 ---
 title: "Views"
 description: "Choose UI that fits the current page and its context."
+sdk: "type UseViewContext"
 ---
-
-import ViewTypes from "/snippets/sdk/views.mdx";
 
 A view is a version of the UI in a [slot](/concepts/slots), matched to a context. The contract names those contexts and describes the data available in each one.
 
@@ -88,38 +87,6 @@ On the members list, the panel can show an overview. Opening a member registers 
 
 If no matching view is available, nothing renders for that app in the slot. To write those views, see [Writing apps → UI](/writing-apps/ui).
 
-## SDK reference
-
-`defineContract({ views })` maps paths starting with `/` to object schemas. Context fields from declared ancestors are combined with the selected view's fields. Child schemas must not redeclare an ancestor's field names. A fallback view receives its own and its ancestors' context, without fields from deeper paths.
-
-Call `tailor.useViewContext(path, state)` on the client returned by `createClient`:
-
-<ResponseField name="path" type="keyof contract.views" required>
-  The declared context to register. The deepest mounted path is active.
-</ResponseField>
-
-<ResponseField name="state.context" type="Schema input | undefined" required>
-  Data matching this path's schema. Pass `undefined` while unavailable.
-</ResponseField>
-
-<ResponseField name="state.loading" type="boolean" default="false">
-  Marks the context as loading. Loading contexts do not publish data.
-</ResponseField>
-
-<ResponseField name="state.error" type="Error | null">
-  Marks a failed context. Takes precedence over loading and does not publish
-  data.
-</ResponseField>
-
-```tsx title="While member data loads"
-tailor.useViewContext("/members/detail", {
-  context: undefined,
-  loading: true,
-});
-```
-
-<ViewTypes />
-
 ## Frequently asked questions
 
 <AccordionGroup>
@@ -133,3 +100,18 @@ tailor.useViewContext("/members/detail", {
     UI is hidden.
   </Accordion>
 </AccordionGroup>
+
+## SDK reference
+
+`defineContract({ views })` maps paths starting with `/` to object schemas. Context fields from declared ancestors are combined with the selected view's fields. Child schemas must not redeclare an ancestor's field names. A fallback view receives its own and its ancestors' context, without fields from deeper paths.
+
+Call `tailor.useViewContext(path, state)` on the client returned by `createClient`:
+
+```tsx title="While member data loads"
+tailor.useViewContext("/members/detail", {
+  context: undefined,
+  loading: true,
+});
+```
+
+See [ViewContextState](/sdk/interfaces/ViewContextState) for context, loading, and error fields.

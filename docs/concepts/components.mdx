@@ -1,9 +1,8 @@
 ---
 title: "Components"
 description: "Share your components while keeping app code isolated."
+sdk: "interface ComponentDefinition"
 ---
-
-import ComponentTypes from "/snippets/sdk/components.mdx";
 
 Apps run in a sandbox, without direct access to your components or the surrounding page. A component schema describes what they can use: its props, events, and children.
 
@@ -63,26 +62,6 @@ See [Writing apps → UI](/writing-apps/ui) for using these components in an app
 
 Removing a field, an allowed variant such as `"secondary"`, or a callback can break apps that use it. Adding a required field can break them too. Prefer optional additions and keep existing names and values until those apps have migrated.
 
-## SDK reference
-
-Each entry in `defineContract({ components })` describes one component. Schemas use Standard Schema validators, such as Zod.
-
-<ResponseField name="fields" type="Schema">
-  Schema for data props. Field names must be distinct from callback names.
-</ResponseField>
-
-<ResponseField name="callbacks" type="Record<string, CallbackDefinition>">
-  Named function props. `{}` declares a callback with no arguments and no return
-  value. Use `input` for its event payload, `output` for its result, and `async:
-  true` for a promise.
-</ResponseField>
-
-<ResponseField name="children" type="boolean" default="false">
-  Whether the component accepts text and nested components as children.
-</ResponseField>
-
-<ComponentTypes />
-
 ## Frequently asked questions
 
 <AccordionGroup>
@@ -96,3 +75,9 @@ Each entry in `defineContract({ components })` describes one component. Schemas 
     click or selection.
   </Accordion>
 </AccordionGroup>
+
+## SDK reference
+
+Each entry in `defineContract({ components })` describes one component. Schemas use Standard Schema validators, such as Zod.
+
+The [callback schema](/sdk/interfaces/CallbackDefinition) describes event payloads and results.

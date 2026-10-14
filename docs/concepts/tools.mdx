@@ -1,9 +1,8 @@
 ---
 title: "Tools"
 description: "Define actions that run on the server or in the browser."
+sdk: "interface ContractTool"
 ---
-
-import ToolTypes from "/snippets/sdk/tools.mdx";
 
 A tool is a named function with defined inputs and outputs. It can fetch a record, show a toast, or navigate to a page.
 
@@ -63,33 +62,6 @@ Here, `toast` is your toast library. The handler needs no output schema because 
 
 See [Writing apps → UI](/writing-apps/ui#use-components-and-tools) for calling tools from UI.
 
-## SDK reference
-
-Import `tool` and `defineContract` from `tailorkit`. Implement server tools with `createServer` from `tailorkit/server`, and client tools with `createClient` from `tailorkit/react`.
-
-<ResponseField name="tool.server()" type="ContractTool">
-  Starts a server tool declaration. Its handler belongs in `createServer({tools}
-  )`.
-</ResponseField>
-
-<ResponseField name="tool.client()" type="ContractTool">
-  Starts a client tool declaration. Its handler belongs in `createClient({tools}
-  )`.
-</ResponseField>
-
-<ResponseField name=".input(schema)" type="ContractTool">
-  Defines and validates the argument. Omit it when the tool takes no argument.
-</ResponseField>
-
-<ResponseField name=".output(schema)" type="ContractTool">
-  Defines and validates the return value. Omit it when the handler returns no
-  value.
-</ResponseField>
-
-Handlers receive `{ input, context }` and can return a value or a promise. `input` is the validated argument; `context` includes the installation identity, scope, and request ID. Tools can be nested in objects, such as `tools.members.read`.
-
-<ToolTypes />
-
 ## Frequently asked questions
 
 <AccordionGroup>
@@ -102,3 +74,11 @@ Handlers receive `{ input, context }` and can return a value or a promise. `inpu
     check whether the verified identity and scope can perform the operation.
   </Accordion>
 </AccordionGroup>
+
+## SDK reference
+
+Import `tool` and `defineContract` from `tailorkit`. Implement server tools with `createServer` from `tailorkit/server`, and client tools with `createClient` from `tailorkit/react`.
+
+Handlers receive `{ input, context }` and can return a value or a promise. `input` is the validated argument; `context` includes the installation identity, scope, and request ID. Tools can be nested in objects, such as `tools.members.read`.
+
+See [ToolContext](/sdk/interfaces/ToolContext) for the verified identity, scope, and request ID.

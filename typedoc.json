@@ -1,0 +1,12 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "TailorKit SDK",
+  "entryPoints": ["docs/sdk-entry.ts"],
+  "tsconfig": "docs/tsconfig.sdk.json",
+  "json": "docs/sdk-artifacts/typescript.json",
+  "disableSources": true,
+  "excludeExternals": true,
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "readme": "none"
+}

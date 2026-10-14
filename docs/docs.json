@@ -28,11 +28,58 @@
           "concepts/components",
           "concepts/tools",
           "concepts/showing-ui"
-        ]
+        ],
+        "sdk": {
+          "format": "typedoc",
+          "source": "sdk-artifacts/typescript.json",
+          "directory": "sdk"
+        }
       },
       {
         "group": "Writing apps",
-        "pages": ["writing-apps/ui"]
+        "pages": ["writing-apps/ui"],
+        "sdk": {
+          "format": "typedoc",
+          "source": "sdk-artifacts/typescript.json",
+          "directory": "sdk"
+        }
+      },
+      {
+        "group": "SDK reference",
+        "sdk": {
+          "format": "typedoc",
+          "source": "sdk-artifacts/typescript.json",
+          "directory": "sdk"
+        },
+        "pages": [
+          {
+            "group": "Contract",
+            "pages": [
+              "sdk/functions/defineContract",
+              "sdk/interfaces/TailorKitContract",
+              "sdk/types/SlotDefinitions",
+              "sdk/interfaces/ComponentDefinition",
+              "sdk/interfaces/CallbackDefinition",
+              "sdk/interfaces/ContractTool",
+              "sdk/interfaces/ToolContext"
+            ]
+          },
+          {
+            "group": "React",
+            "pages": [
+              "sdk/types/UseViewContext",
+              "sdk/interfaces/ViewContextState"
+            ]
+          },
+          {
+            "group": "App UI",
+            "pages": [
+              "sdk/functions/defineView",
+              "sdk/interfaces/ViewInstances",
+              "sdk/interfaces/ViewInstance"
+            ]
+          }
+        ]
       }
     ],
     "global": {

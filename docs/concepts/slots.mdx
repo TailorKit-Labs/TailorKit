@@ -1,9 +1,8 @@
 ---
 title: "Slots"
 description: "Define where UI can appear."
+sdk: "type SlotDefinitions"
 ---
-
-import SlotTypes from "/snippets/sdk/slots.mdx";
 
 ## What is a slot?
 
@@ -71,21 +70,6 @@ A panel can show an overview on a members list and details when a member is open
 
 To supply UI and instances from an app, see [Writing apps → UI](/writing-apps/ui).
 
-## SDK reference
-
-Slots live in `defineContract({ slots })`, keyed by the names you choose.
-
-<ResponseField name="views" type="readonly string[]" required>
-  Supported context paths. Each path must be declared in the contract's `views`.
-</ResponseField>
-
-<ResponseField name="multiple" type="boolean" default="false">
-  Allows multiple instances per app. Each instance needs a stable, non-empty key
-  unique within that view, a metadata object, and schema-validated data.
-</ResponseField>
-
-<SlotTypes />
-
 ## Frequently asked questions
 
 <AccordionGroup>
@@ -99,3 +83,9 @@ Slots live in `defineContract({ slots })`, keyed by the names you choose.
     `position`. Your UI decides what those fields mean.
   </Accordion>
 </AccordionGroup>
+
+## SDK reference
+
+Slots live in `defineContract({ slots })`, keyed by the names you choose. Each slot lists its supported `views`; `multiple` defaults to `false` and enables independent instances when set to `true`.
+
+See the [instance shape](/sdk/interfaces/ViewInstance) for repeated slots.

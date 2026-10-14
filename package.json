@@ -1,4 +1,5 @@
 {
+  "name": "tailorkit-workspace",
   "private": true,
   "type": "module",
   "scripts": {
@@ -40,8 +41,8 @@
     "playground:schema:export": "vp -C packages/client-platform run build && vp -C packages/core run build && vp -C packages/tailorkit run build && vp -C playground/shared run schema:export",
     "playground:generate": "vp -C packages/client-platform run build && vp -C packages/core run build && vp -C packages/app run build && vp -C packages/vite run build && vp -C packages/sandbox run build && vp -C packages/client-core run build && vp -C packages/react run build && vp -C packages/cli run build && vp -C packages/tailorkit run build && vp -C playground/shared run schema:export && vp -C playground/apps/todo run generate",
     "playground:todo:build": "vp -C playground/apps/todo run build",
-    "docs:reference": "node ./scripts/generate-docs-reference.mjs",
-    "docs:reference:check": "node ./scripts/generate-docs-reference.mjs --check"
+    "docs:reference": "typedoc --options typedoc.json",
+    "docs:reference:check": "pnpm docs:reference && git diff --exit-code -- docs/sdk-artifacts/typescript.json"
   },
   "devDependencies": {
     "@changesets/cli": "3.0.3",
@@ -52,6 +53,7 @@
     "oxlint": "1.87.0",
     "sherif": "^1.13.0",
     "turbo": "2.11.7",
+    "typedoc": "0.28.20",
     "ultracite": "8.0.0",
     "vite-plus": "catalog:"
   },

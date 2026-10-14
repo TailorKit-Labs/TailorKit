@@ -1,10 +1,8 @@
 ---
 title: "Showing UI"
 description: "Choose where UI appears and how it follows the current page."
+sdk: "function defineContract"
 ---
-
-import SlotTypes from "/snippets/sdk/slots.mdx";
-import ViewTypes from "/snippets/sdk/views.mdx";
 
 A side panel can stay open while you move from a members list to one member's page. Its contents can change from a general overview to details about that member.
 
@@ -120,17 +118,6 @@ One app can then supply several dashboard tiles, each with its own key, data, an
 
 To supply views and instances, see [Writing apps → UI](/writing-apps/ui).
 
-## SDK reference
-
-- `defineContract({ slots })` names UI areas and lists their supported context paths.
-- `defineContract({ views })` maps those paths to object schemas.
-- `tailor.useViewContext(path, { context, loading?, error? })` registers context inside the provider.
-
-Register every declared ancestor. Their context fields combine with the selected view's fields; child schemas cannot repeat ancestor field names. During loading, pass `{ context: undefined, loading: true }`; for a failure, pass `{ context: undefined, error }`.
-
-<SlotTypes />
-<ViewTypes />
-
 ## Frequently asked questions
 
 <AccordionGroup>
@@ -144,3 +131,11 @@ Register every declared ancestor. Their context fields combine with the selected
     details-only fields.
   </Accordion>
 </AccordionGroup>
+
+## SDK reference
+
+- `defineContract({ slots })` names UI areas and lists their supported context paths.
+- `defineContract({ views })` maps those paths to object schemas.
+- `tailor.useViewContext(path, { context, loading?, error? })` registers context inside the provider.
+
+Register every declared ancestor. Their context fields combine with the selected view's fields; child schemas cannot repeat ancestor field names. During loading, pass `{ context: undefined, loading: true }`; for a failure, pass `{ context: undefined, error }`.

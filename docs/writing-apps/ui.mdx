@@ -1,9 +1,8 @@
 ---
 title: "UI"
 description: "Write views, use shared components, and supply slot instances."
+sdk: "function defineView"
 ---
-
-import AppUITypes from "/snippets/sdk/app-ui.mdx";
 
 An app supplies UI for the [slots](/concepts/slots) in its contract. A view defines what to show in a slot for a particular [context](/concepts/views).
 
@@ -110,36 +109,6 @@ export default view;
 
 For a repeatable page slot, use the same pattern with keys such as `reports` and `activity`, and metadata such as `{ label: "Reports", icon: "chart" }` for sidebar links.
 
-## SDK reference
-
-Import `defineView` from `tailorkit/client`. The build discovers `.view.tsx` files and extracts instance resolvers into the server bundle.
-
-<ResponseField name="slot" type="SlotName">
-  The slot declared in the generated bindings. If supplied, it must match the folder name.
-  Otherwise, the build uses `src/slots/<slot>/`.
-</ResponseField>
-
-<ResponseField name="view" type="AppViewPath">
-  A context supported by the slot. An explicit path overrides filename-based
-  discovery. Without it, dots and subdirectories in the filename form the path.
-</ResponseField>
-
-<ResponseField name="component" type="() => ComponentChild" required>
-  The UI component. Call the returned view's `useContext()` here to read
-  context.
-</ResponseField>
-
-<ResponseField name="instances" type="ViewInstances">
-  Required for `multiple: true` slots; omitted for single-instance slots.
-  `dataSchema` validates each entry's data, and `resolve` returns entries with a
-  stable non-empty `key`, a `metadata` object, and `data`. Keys must be unique
-  within the view. Read the selected entry with `useInstance()`.
-</ResponseField>
-
-The resolver receives `{ context, identity, signal, queries }`. It can call registered queries; actions and mutations are unavailable there. `dataSchema` validates the resolver's data before it reaches the UI.
-
-<AppUITypes />
-
 ## Frequently asked questions
 
 <AccordionGroup>
@@ -153,3 +122,13 @@ The resolver receives `{ context, identity, signal, queries }`. It can call regi
     render in `data`.
   </Accordion>
 </AccordionGroup>
+
+## SDK reference
+
+Import `defineView` from `tailorkit/client`. The build discovers `.view.tsx` files and extracts instance resolvers into the server bundle.
+
+The resolver receives `{ context, identity, signal, queries }`. It can call registered queries; actions and mutations are unavailable there. `dataSchema` validates the resolver's data before it reaches the UI.
+
+`slot` must match the enclosing folder; `view` overrides filename-based context discovery. For `multiple: true` slots, `instances` is required. Each entry has a stable, non-empty key unique within the view, metadata, and schema-validated data.
+
+See [ViewInstances](/sdk/interfaces/ViewInstances) for the resolver and [ViewInstance](/sdk/interfaces/ViewInstance) for each entry.

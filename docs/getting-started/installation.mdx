@@ -319,12 +319,15 @@ import { contract } from "./tailorkit";
 
 export const tailorKit = createServer({
   contract,
+  baseUrl: "http://localhost:3000/api/tailorkit/",
   projectKey: process.env.TAILORKIT_PROJECT_KEY,
   tools: {
     echo: ({ input }) => input,
   },
 });
 ```
+
+Set `baseUrl` to the absolute public URL of this handler, including its route prefix. Use your public HTTPS URL in production; it establishes the trusted destination for backend sessions and server tool calls.
 
 Supply `authenticate` to return `{ scopes, subjectId? }`. `subjectId` is any product-defined principal, such as a user, service account, or scheduled job. Omit it to attribute calls to the installation. Tool handlers receive verified `context.identity`, the installation's `context.scope`, and `context.requestId`. Authentication can also be supplied per request when calling `handler`.
 
