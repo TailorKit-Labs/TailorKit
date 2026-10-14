@@ -1,0 +1,56 @@
+docs/concepts/views.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-142
+docs/concepts/showing-ui.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-155
+scripts/generate-docs-reference.mjs
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-145
+docs/snippets/sdk/views.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-55
+docs/README.md
+  s_35012a91b914e4::t_e8fe23aa3667bf 1,3,5,7,9-10,13-14,16,18-19,21,23-25,28-29,31,33,35-38
+package.json
+  s_35012a91b914e4::t_0e6830cbb948c2 42
+  s_35012a91b914e4::t_e8fe23aa3667bf 43-44
+docs/concepts/tools.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-110
+docs/snippets/sdk/components.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-44
+docs/snippets/sdk/slots.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-31
+docs/snippets/sdk/app-ui.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-81
+apps/web/vercel.json
+  s_35012a91b914e4::t_e8fe23aa3667bf 7-18
+docs/concepts/slots.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-98
+docs/getting-started/introduction.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 45
+docs/concepts/components.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 2-3,6,8-9,11-14,16,18,20-22,24-32,38-42,44,46,49-50,55-57,62-63,65,67,69-71,73,75-76,78-80,82-85,87-89,91,93,95-104
+docs/snippets/sdk/tools.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-88
+docs/docs.json
+  s_35012a91b914e4::t_e8fe23aa3667bf 18-32
+docs/getting-started/installation.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 331-332,679,734,786
+docs/images/slots-wireframe.svg
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-30
+docs/writing-apps/ui.mdx
+  s_35012a91b914e4::t_e8fe23aa3667bf 1-166
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9f565f76d2d108af72354b9c4982c0ccc4aab3a0",
+  "prompts": {},
+  "sessions": {
+    "s_35012a91b914e4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a123fb-4e04-7eb2-af76-566a5e408879",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
