@@ -92,11 +92,11 @@ bun add tailorkit@beta valibot @valibot/to-json-schema
 </Step>
 <Step title="Define the shared contract">
 
-This file is the contract between installed apps and your platform. It defines components, views, slots, scopes, and tool inputs and outputs. Keep this file browser-safe: both your server and frontend import it. Action handlers and secrets belong in the server file.
+This file is the contract between installed apps and your platform. It defines components, views, slots, and scopes. Keep this file browser-safe: both your server and frontend import it.
 
 <Tip>
-  Removing or changing a capability can break apps that rely on it. For example,
-  removing a component makes it unavailable to every app using it.
+  Breaking contract changes, like removing a component or requiring a field, can
+  break existing apps.
 </Tip>
 
 <Tabs>
@@ -104,7 +104,7 @@ This file is the contract between installed apps and your platform. It defines c
 <Tab title="Zod">
 
 ```ts src/lib/tailorkit.ts
-import { tool, defineContract } from "tailorkit";
+import { defineContract, type Component } from "tailorkit";
 import { primitives } from "tailorkit/zod";
 import { z } from "zod";
 
@@ -117,13 +117,20 @@ const Button = {
     onClick: {},
   },
   children: true,
-};
+} satisfies Component;
+
+const Input = {
+  fields: z.object({ value: z.string() }),
+  callbacks: {
+    onValueChange: {
+      input: z.object({ value: z.string() }),
+    },
+  },
+} satisfies Component;
 
 export const contract = defineContract({
-  // Values form the installation key: userId + teamId scopes installs per user per team.
+  // Values form the installation key, e.g. userId + teamId scopes installs per user per team.
   scopes: { user: z.object({ userId: z.string().min(1) }) },
-
-  tools: { echo: tool.server().input(z.string()).output(z.string()) },
 
   components: {
     // These give apps basic layout and styling components; we strongly recommend including them.
@@ -138,6 +145,7 @@ export const contract = defineContract({
       },
     }),
     Button,
+    Input,
   },
 
   // Views share page data with apps, which can provide UI for each view.
@@ -149,7 +157,6 @@ export const contract = defineContract({
   },
 
   // Slots define where apps render and which views they support.
-  // Add dashboardActions: { views: ["/dash"] } for custom page tools.
   slots: {
     page: { views: ["/"] },
   },
@@ -161,7 +168,7 @@ export const contract = defineContract({
 <Tab title="ArkType">
 
 ```ts src/lib/tailorkit.ts
-import { tool, defineContract } from "tailorkit";
+import { defineContract, type Component } from "tailorkit";
 import { primitives } from "tailorkit/arktype";
 import { type } from "arktype";
 
@@ -174,15 +181,22 @@ const Button = {
     onClick: {},
   },
   children: true,
-};
+} satisfies Component;
+
+const Input = {
+  fields: type({ value: "string" }),
+  callbacks: {
+    onValueChange: {
+      input: type({ value: "string" }),
+    },
+  },
+} satisfies Component;
 
 export const contract = defineContract({
-  // Values form the installation key: userId + teamId scopes installs per user per team.
+  // Values form the installation key, e.g. userId + teamId scopes installs per user per team.
   scopes: {
     user: type({ userId: "string > 0" }),
   },
-
-  tools: { echo: tool.server().input(type("string")).output(type("string")) },
 
   components: {
     // These give apps basic layout and styling components; we strongly recommend including them.
@@ -197,6 +211,7 @@ export const contract = defineContract({
       },
     }),
     Button,
+    Input,
   },
 
   // Views share page data with apps, which can provide UI for each view.
@@ -208,7 +223,6 @@ export const contract = defineContract({
   },
 
   // Slots define where apps render and which views they support.
-  // Add dashboardActions: { views: ["/dash"] } for custom page tools.
   slots: {
     page: { views: ["/"] },
   },
@@ -219,85 +233,60 @@ export const contract = defineContract({
 
 <Tab title="Valibot">
 
-Use `toStandardJsonSchema` to give Valibot schemas the JSON Schema conversion TailorKit uses to publish your host contract. Alternatively, keep native Valibot schemas in the contract and pass a `schemaSerializer` to `createServer`, importing the JSON Schema converter only in the server file. The browser only requires Standard Schema validation.
-
 ```ts src/lib/tailorkit.ts
-import { tool, defineContract } from "tailorkit";
+import { defineContract, type Component } from "tailorkit";
 import { primitives } from "tailorkit/valibot";
 import * as v from "valibot";
-import { toStandardJsonSchema } from "@valibot/to-json-schema";
 
 // Define the components you want apps to use
 const Button = {
-  fields: toStandardJsonSchema(
-    v.object({
-      variant: v.picklist(["default", "secondary"]),
-    })
-  ),
+  fields: v.object({
+    variant: v.picklist(["default", "secondary"]),
+  }),
   callbacks: {
     onClick: {},
   },
   children: true,
-};
+} satisfies Component;
+
+const Input = {
+  fields: v.object({ value: v.string() }),
+  callbacks: {
+    onValueChange: {
+      input: v.object({ value: v.string() }),
+    },
+  },
+} satisfies Component;
 
 export const contract = defineContract({
-  // Values form the installation key: userId + teamId scopes installs per user per team.
-  scopes: {
-    user: toStandardJsonSchema(
-      v.object({ userId: v.pipe(v.string(), v.minLength(1)) })
-    ),
-  },
-
-  tools: {
-    echo: tool
-      .server()
-      .input(toStandardJsonSchema(v.string()))
-      .output(toStandardJsonSchema(v.string())),
-  },
+  // Values form the installation key, e.g. userId + teamId scopes installs per user per team.
+  scopes: { user: v.object({ userId: v.pipe(v.string(), v.minLength(1)) }) },
 
   components: {
     // These give apps basic layout and styling components; we strongly recommend including them.
-    ...Object.fromEntries(
-      Object.entries(
-        primitives({
-          tokens: {
-            borderColor: {
-              default: "var(--border)",
-            },
-            textColor: {
-              default: "var(--text)",
-            },
-          },
-        })
-      ).map(([name, component]) => [
-        name,
-        {
-          ...component,
-          fields: toStandardJsonSchema(
-            component.fields as unknown as v.BaseSchema<
-              unknown,
-              unknown,
-              v.BaseIssue<unknown>
-            >
-          ),
+    ...primitives({
+      tokens: {
+        borderColor: {
+          default: "var(--border)",
         },
-      ])
-    ),
+        textColor: {
+          default: "var(--text)",
+        },
+      },
+    }),
     Button,
+    Input,
   },
 
   // Views are URL-like paths for your product's context; apps can provide UI for each.
   // TailorKit shows the closest match, checking parent paths up to "/".
   views: {
-    "/": toStandardJsonSchema(
-      v.object({
-        user: v.object({ id: v.string(), name: v.string() }),
-      })
-    ),
+    "/": v.object({
+      user: v.object({ id: v.string(), name: v.string() }),
+    }),
   },
 
   // Slots define where apps render and which views they support.
-  // Add dashboardActions: { views: ["/dash"] } for custom page tools.
   slots: {
     page: { views: ["/"] },
   },
@@ -311,7 +300,11 @@ export const contract = defineContract({
 </Step>
 <Step title="Implement the server">
 
-Create a separate server file for server tool handlers and server configuration. The tool inputs and return values infer from the contract.
+Create a separate server file to handle app requests and server-side logic. It connects your contract to TailorKit using your project key. Set `baseUrl` to your host URL in each environment, including your production domain.
+
+<Tabs>
+
+<Tab title="Zod">
 
 ```ts src/lib/tailorkit-server.ts
 import { createServer } from "tailorkit/server";
@@ -319,29 +312,113 @@ import { contract } from "./tailorkit";
 
 export const tailorKit = createServer({
   contract,
-  baseUrl: "http://localhost:3000/api/tailorkit/",
   projectKey: process.env.TAILORKIT_PROJECT_KEY,
-  tools: {
-    echo: ({ input }) => input,
-  },
+  baseUrl:
+    process.env.NODE_ENV === "development"
+      ? "http://localhost:3000/api/tailorkit"
+      : "https://your-app.com/api/tailorkit",
 });
 ```
 
-Set `baseUrl` to the absolute public URL of this handler, including its route prefix. Use your public HTTPS URL in production; it establishes the trusted destination for backend sessions and server tool calls.
+</Tab>
 
-Supply `authenticate` to return `{ scopes, subjectId? }`. `subjectId` is any product-defined principal, such as a user, service account, or scheduled job. Omit it to attribute calls to the installation. Tool handlers receive verified `context.identity`, the installation's `context.scope`, and `context.requestId`. Authentication can also be supplied per request when calling `handler`.
+<Tab title="ArkType">
 
-Client tools use `tool.client()` and are implemented through `createClient({ contract, tools })` in the product frontend. See [Tools](/concepts/tools) for server and client handlers.
+```ts src/lib/tailorkit-server.ts
+import { createServer } from "tailorkit/server";
+import { contract } from "./tailorkit";
+
+export const tailorKit = createServer({
+  contract,
+  projectKey: process.env.TAILORKIT_PROJECT_KEY,
+  baseUrl:
+    process.env.NODE_ENV === "development"
+      ? "http://localhost:3000/api/tailorkit"
+      : "https://your-app.com/api/tailorkit",
+});
+```
+
+</Tab>
+
+<Tab title="Valibot">
+
+```ts src/lib/tailorkit-server.ts
+import { createServer } from "tailorkit/server";
+import { toJsonSchema } from "@valibot/to-json-schema";
+import { contract } from "./tailorkit";
+
+export const tailorKit = createServer({
+  contract,
+  projectKey: process.env.TAILORKIT_PROJECT_KEY,
+  baseUrl:
+    process.env.NODE_ENV === "development"
+      ? "http://localhost:3000/api/tailorkit"
+      : "https://your-app.com/api/tailorkit",
+  schemaSerializer: toJsonSchema,
+});
+```
+
+</Tab>
+
+</Tabs>
+
+</Step>
+<Step title="Create the client">
+
+The TailorKit client connects your frontend to the TailorKit API and maps your contract's components to React components in your app.
+
+Create `tailorkit-client.tsx` in your frontend, wherever you keep client-side utilities.
+
+```tsx src/lib/tailorkit-client.tsx
+"use client";
+
+import { Button } from "@/components/button";
+import { Input } from "@/components/input";
+import { contract } from "@/lib/tailorkit";
+import { createClient, primitives } from "tailorkit/react";
+
+export const tailorKitClient = createClient({
+  contract,
+  // Replace this with your host origin and handler path.
+  baseUrl:
+    process.env.NODE_ENV === "development"
+      ? "http://localhost:3000/api/tailorkit"
+      : "https://your-app.com/api/tailorkit",
+  components: {
+    ...primitives,
+
+    Button: ({ props, children }) => (
+      <Button variant={props.variant} onClick={props.onClick}>
+        {children}
+      </Button>
+    ),
+
+    Input: ({ props }) => (
+      <Input
+        value={props.value}
+        onChange={(event) => props.onValueChange({ value: event.target.value })}
+      />
+    ),
+  },
+});
+
+export const {
+  Provider: TailorKitProvider,
+  RenderSlot,
+  useApps,
+  useViewContext,
+  useViews,
+} = tailorKitClient;
+
+export default tailorKitClient;
+```
 
 </Step>
 <Step title="Add the API handler">
 
-Mount the handler at your TailorKit base path. The default is `/api/tailorkit`.
+Mount the handler at your TailorKit base path. If you use a path other than `/api/tailorkit`, update `baseUrl` in both `tailorkit-server.ts` and `tailorkit-client.tsx` to match.
 
-<Note>
-  TailorKit supports any backend framework that uses standard `Request` and
-  `Response` objects, with examples for popular frameworks below.
-</Note>
+TailorKit supports any backend framework that uses standard `Request` and `Response` objects, with examples for popular frameworks below.
 
 <Tabs>
 
@@ -499,60 +576,43 @@ export default app;
 
 </Tab>
 
-</Tabs>
+<Tab title="Other">
 
-</Step>
-<Step title="Create the client">
+Pass your framework's `Request` to this handler and return its `Response`.
 
-The TailorKit client connects your frontend to the TailorKit API handler and maps the components from your contract to components in your app. It validates view context with the original Standard Schema validators and uses their parsed output, including stripped extra fields. The host client does not fetch `/meta`; that endpoint remains available for app type generation.
+```ts src/lib/tailorkit-handler.ts
+import { tailorKit } from "@/lib/tailorkit-server";
 
-App asset URLs normally come from discovery through `clientPath`. If you use the deployment URL fallback, pass `assetsBaseUrl` to the client.
+export async function handleRequest(request: Request): Promise<Response> {
+  return tailorKit.handler(request, {
+    authenticate: async () => {
+      // Replace this with your own authentication logic.
+      const session = await auth(request);
 
-Create `tailorkit-client.tsx` in your frontend, wherever you keep client-side utilities.
+      if (!session) {
+        return null;
+      }
 
-```tsx src/lib/tailorkit-client.tsx
-"use client";
-
-import { Button } from "@/components/button";
-import { contract } from "@/lib/tailorkit";
-import { createClient, primitives } from "tailorkit/react";
-
-export const tailorKitClient = createClient({
-  contract,
-  // Replace this with your host origin and handler path.
-  baseUrl: "http://localhost:3000/api/tailorkit/",
-  components: {
-    ...primitives,
-
-    Button: ({ props, children }) => (
-      <Button variant={props.variant} onClick={props.onClick}>
-        {children}
-      </Button>
-    ),
-  },
-});
-
-export const {
-  Provider: TailorKitProvider,
-  RenderSlot,
-  useApps,
-  useViewContext,
-  useViews,
-} = tailorKitClient;
-
-export default tailorKitClient;
+      return {
+        scopes: { user: { userId: session.user.id } },
+      };
+    },
+  });
+}
 ```
+
+</Tab>
+
+</Tabs>
 
 </Step>
 <Step title="Add the provider">
 
-Wrap your pages in the TailorKit provider to use TailorKit hooks and components. The provider uses the client that created it and renders no DOM wrapper. It accepts `children` and an optional `apps` list; you do not need to pass `client`.
+Wrap your pages in `TailorKitProvider`.
 
 <Tabs>
 
 <Tab title="Next.js App Router">
-
-Use `TailorKitProvider` from your client file in your root layout.
 
 ```tsx app/layout.tsx
 import type { ReactNode } from "react";
@@ -572,8 +632,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 </Tab>
 
 <Tab title="TanStack Start">
-
-Wrap your app.
 
 ```tsx src/routes/__root.tsx
 import type { ReactNode } from "react";
@@ -608,8 +666,6 @@ function RootDocument({ children }: { children: ReactNode }) {
 </Tab>
 
 <Tab title="React Router">
-
-Wrap the root route's `Outlet` in `TailorKitProvider`. Keep the document shell in `Layout`.
 
 ```tsx app/root.tsx
 import type { ReactNode } from "react";
@@ -650,15 +706,7 @@ export default function App() {
 </Step>
 <Step title="Render a view">
 
-Add a page to supply view context and switch between apps available in the `page` slot.
-
-`useViewContext(path, state)` registers the host location, context, and readiness that app views consume. It updates when those values change and unregisters when the component unmounts.
-
-`useViews({ slot: "page" })` returns one `{ app }` item per app for single-view slots (`multiple: false` or omitted). It checks enabled, supported app views without calling an instance resolver or requiring registered page context. For `multiple: true` slots, it resolves instances using the registered context and returns `{ app, key, metadata, data }` items. Render those with `<RenderSlot app={item.app} slot="page" instanceKey={item.key} />`.
-
-The returned `data` items are typed from your server slot definition: instance slots have a required `key: string`, `metadata`, and `data`; single-view slots have only `app`. Accessing `item.key` on a single-view slot is a TypeScript error. If the slot mode is only known at runtime, narrow an item with `"key" in item`.
-
-Both modes support `scopes` and `appIds`. React's `useApps` and `useViews` return only `data`, `isPending`, `error`, `isRefetching`, and `fetch()`. `isPending` is true while the query is waiting for initial data or required context. `isRefetching` is true during a background refresh after the initial pending state. Call `fetch()` to request fresh data or retry an error. Cache timings are managed by the client configuration. For single-view slots, `fetch()` refreshes app discovery; for multiple slots, it refreshes the resolved instances.
+Use `useViewContext` to share page data with apps and `useViews` to find apps available in the `page` slot. Render the selected app with `RenderSlot`.
 
 <Tabs>
 
@@ -678,9 +726,7 @@ export default function Page() {
 
   useViewContext(
     "/",
-    session
-      ? { context: { user: session.user } }
-      : { context: undefined, loading: true }
+    session ? { context: { user: session.user } } : { status: "loading" }
   );
 
   const selectedView =
@@ -735,9 +781,7 @@ function Page() {
 
   useViewContext(
     "/",
-    session
-      ? { context: { user: session.user } }
-      : { context: undefined, loading: true }
+    session ? { context: { user: session.user } } : { status: "loading" }
   );
 
   const selectedView =
@@ -789,9 +833,7 @@ export default function Page() {
 
   useViewContext(
     "/",
-    session
-      ? { context: { user: session.user } }
-      : { context: undefined, loading: true }
+    session ? { context: { user: session.user } } : { status: "loading" }
   );
 
   const selectedView =
@@ -853,4 +895,4 @@ If the routes return 404, check the catch-all route and handler path. If the sch
 
 ## Next steps
 
-With the host running, you can create an app, generate bindings from its schema, and start a preview. To try the local host and Todo app, run `pnpm playground:dev` from the TailorKit repository.
+With the host running, you can create an app, generate bindings from its schema, and start a preview. See the [example integrations](https://github.com/tailorkit-labs/tailorkit/tree/main/examples) for complete host projects.
