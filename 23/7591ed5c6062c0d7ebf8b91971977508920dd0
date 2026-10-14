@@ -1,0 +1,33 @@
+packages/agent/README.md
+  s_35012a91b914e4::t_077d78bd08b237 25
+packages/agent/package.json
+  s_35012a91b914e4::t_45502b1d8ead11 56
+packages/agent/src/agent-auth.test.ts
+  s_35012a91b914e4::t_3322019c08f6f2 1-56
+packages/agent/src/agent-auth.ts
+  s_35012a91b914e4::t_d85a4d4d568be7 1-29
+packages/agent/src/agent.integration.test.ts
+  s_35012a91b914e4::t_807688de6cea3d 21-25,152-162,164-172,174-183,185-207,209-316
+packages/agent/src/agent.ts
+  s_35012a91b914e4::t_5aa4d84f8b755a 4,17-18,32
+packages/agent/src/gateway-model.ts
+  s_35012a91b914e4::t_94529662966f29 1,22-23,26-27,31
+pnpm-lock.yaml
+  s_35012a91b914e4::t_8c7e5d8f18388a 575-577
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "237591ed5c6062c0d7ebf8b91971977508920dd0",
+  "prompts": {},
+  "sessions": {
+    "s_35012a91b914e4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a123fb-4e04-7eb2-af76-566a5e408879",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
