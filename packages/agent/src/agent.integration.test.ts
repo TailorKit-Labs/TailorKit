@@ -18,12 +18,11 @@ import { expect, it, vi } from "vite-plus/test";
 
 import { createAppAgent } from "./agent";
 
-vi.mock("#env", () => ({
-  env: {
-    AI_GATEWAY_API_KEY: "local-test-key",
-    AI_GATEWAY_BASE_URL: "https://gateway.test",
-  },
-}));
+const authentication = vi.hoisted(() => {
+  const env: Record<string, string> = {};
+  return { env };
+});
+vi.mock("#env", () => ({ env: authentication.env }));
 
 const { dirname, join } = nodePath;
 // oxlint-disable-next-line typescript/strict-void-return -- execFile also returns a ChildProcess; promisify consumes its completion callback, not that return value.
@@ -150,131 +149,168 @@ const messageEvents = (call: number) => {
     .join("");
 };
 
-it("streams typed Pi file tools and restores a multi-turn conversation without the host journal", async () => {
-  const directory = await realpath(
-    await mkdtemp(join(tmpdir(), "tailorkit-pi-"))
-  );
-  const workspace = join(directory, "app");
-  const sessionHome = join(directory, "home");
-  const sessionId = randomUUID();
-  const hostJournal = join(tmpdir(), "ai-sdk-harness", "pi", sessionId);
-  const otherSessionId = randomUUID();
-  const otherHostJournal = join(
-    tmpdir(),
-    "ai-sdk-harness",
-    "pi",
-    otherSessionId
-  );
-  await mkdir(workspace);
-  await mkdir(sessionHome);
-  const requests: string[] = [];
-  let modelCalls = 0;
-  vi.stubGlobal(
-    "fetch",
-    vi.fn<typeof fetch>(async (url, options) => {
-      const request = new Request(url, options);
-      if (request.url.endsWith("/v1/models")) {
-        return Response.json({ data: [model] });
-      }
-      requests.push(await request.text());
-      modelCalls += 1;
-      return new Response(messageEvents(modelCalls), {
-        headers: { "content-type": "text/event-stream" },
-      });
-    })
-  );
-  const input = {
-    agentToken: "private-token",
-    appId: randomUUID(),
-    hostUrl: "https://host.test/api/tailorkit",
-    messages: [],
-    model: modelId,
-    threadId: sessionId,
-  };
-  const sandboxSession = localSession(workspace, sessionHome);
-  let session:
-    | Awaited<
-        ReturnType<Awaited<ReturnType<typeof createAppAgent>>["createSession"]>
-      >
-    | undefined;
-  try {
-    const agent = await createAppAgent(input, "fixture");
-    expect(agent.harnessId).toBe("pi");
-    session = await agent.createSession({ sandboxSession, sessionId });
-    const result = await agent.stream({ prompt: "Build a file", session });
-    const chunks: UIMessageChunk[] = [];
-    for await (const chunk of toUIMessageStream({
-      stream: result.stream,
-      tools: agent.tools,
-    })) {
-      chunks.push(chunk);
+it.each(["api-key", "runtime-oidc"])(
+  "streams typed Pi tools and restores history using %s authentication",
+  async (mode) => {
+    authentication.env.AI_GATEWAY_BASE_URL = "https://gateway.test";
+    delete authentication.env.AI_GATEWAY_API_KEY;
+    const token =
+      mode === "api-key"
+        ? "local-test-key"
+        : `header.${Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })).toString("base64url")}.signature`;
+    if (mode === "api-key") {
+      authentication.env.AI_GATEWAY_API_KEY = token;
     }
-    expect(await result.text).toBe("Built");
-    expect(chunks).toContainEqual(
-      expect.objectContaining({
-        input: { content: "First turn", file_path: "example.txt" },
-        toolName: "write",
-        type: "tool-input-available",
+    // Production Vercel Functions expose OIDC through this request context.
+    vi.stubGlobal(Symbol.for("@vercel/request-context"), {
+      get: () => ({
+        headers:
+          mode === "runtime-oidc" ? { "x-vercel-oidc-token": token } : {},
+      }),
+    });
+    const directory = await realpath(
+      await mkdtemp(join(tmpdir(), "tailorkit-pi-"))
+    );
+    const workspace = join(directory, "app");
+    const sessionHome = join(directory, "home");
+    const sessionId = randomUUID();
+    const hostJournal = join(tmpdir(), "ai-sdk-harness", "pi", sessionId);
+    const otherSessionId = randomUUID();
+    const otherHostJournal = join(
+      tmpdir(),
+      "ai-sdk-harness",
+      "pi",
+      otherSessionId
+    );
+    await mkdir(workspace);
+    await mkdir(sessionHome);
+    const requests: string[] = [];
+    const endpoints: { authorization: string | null; url: string }[] = [];
+    let modelCalls = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof fetch>(async (url, options) => {
+        const request = new Request(url, options);
+        if (request.url.endsWith("/v1/models")) {
+          return Response.json({ data: [model] });
+        }
+        const endpoint = new URL(request.url);
+        endpoints.push({
+          authorization: request.headers.get("authorization"),
+          url: `${endpoint.origin}${endpoint.pathname}`,
+        });
+        requests.push(await request.text());
+        modelCalls += 1;
+        return new Response(messageEvents(modelCalls), {
+          headers: { "content-type": "text/event-stream" },
+        });
       })
     );
-    expect(chunks).toContainEqual(
-      expect.objectContaining({
-        toolCallId: "write-1",
-        type: "tool-output-available",
-      })
-    );
-    expect(await readFile(join(workspace, "example.txt"), "utf-8")).toBe(
-      "First turn"
-    );
-    const resumeFrom = await session.detach();
-    expect(resumeFrom.harnessId).toBe("pi");
-    expect(JSON.stringify(resumeFrom.data)).toMatch(/\.jsonl/u);
-    session = undefined;
-    // A different workflow worker cannot rely on the previous worker's files.
-    await rm(hostJournal, { force: true, recursive: true });
-    const nextAgent = await createAppAgent(
-      { ...input, agentToken: "fresh-token" },
-      "fixture"
-    );
-    session = await nextAgent.createSession({
-      resumeFrom,
-      sandboxSession,
-      sessionId,
-    });
-    const next = await nextAgent.generate({ prompt: "Now update it", session });
-    expect(next.text).toBe("Updated");
-    expect(requests).toHaveLength(3);
-    expect(requests[2]).toContain("Build a file");
-    expect(requests[2]).toContain("Built");
-    expect(requests[2]).toContain("Now update it");
-    const continuedResume = await session.detach();
-    session = undefined;
-    const otherAgent = await createAppAgent(
-      { ...input, threadId: otherSessionId },
-      "other-fixture"
-    );
-    session = await otherAgent.createSession({
-      sandboxSession,
-      sessionId: otherSessionId,
-    });
-    await otherAgent.generate({ prompt: "Different task", session });
-    expect(requests[3]).not.toContain("Build a file");
-    expect(requests[3]).not.toContain("Now update it");
-    await session.destroy();
-    session = await nextAgent.createSession({
-      resumeFrom: continuedResume,
-      sandboxSession,
-      sessionId,
-    });
-    await nextAgent.generate({ prompt: "Back to first thread", session });
-    expect(requests[4]).toContain("Build a file");
-    expect(requests[4]).toContain("Now update it");
-    expect(requests[4]).not.toContain("Different task");
-  } finally {
-    await session?.destroy();
-    vi.unstubAllGlobals();
-    await rm(directory, { force: true, recursive: true });
-    await rm(hostJournal, { force: true, recursive: true });
-    await rm(otherHostJournal, { force: true, recursive: true });
-  }
-}, 30_000);
+    const input = {
+      agentToken: "private-token",
+      appId: randomUUID(),
+      hostUrl: "https://host.test/api/tailorkit",
+      messages: [],
+      model: modelId,
+      threadId: sessionId,
+    };
+    const sandboxSession = localSession(workspace, sessionHome);
+    let session:
+      | Awaited<
+          ReturnType<
+            Awaited<ReturnType<typeof createAppAgent>>["createSession"]
+          >
+        >
+      | undefined;
+    try {
+      const agent = await createAppAgent(input, "fixture");
+      expect(agent.harnessId).toBe("pi");
+      session = await agent.createSession({ sandboxSession, sessionId });
+      const result = await agent.stream({ prompt: "Build a file", session });
+      const chunks: UIMessageChunk[] = [];
+      for await (const chunk of toUIMessageStream({
+        stream: result.stream,
+        tools: agent.tools,
+      })) {
+        chunks.push(chunk);
+      }
+      expect(await result.text).toBe("Built");
+      expect(chunks).toContainEqual(
+        expect.objectContaining({
+          input: { content: "First turn", file_path: "example.txt" },
+          toolName: "write",
+          type: "tool-input-available",
+        })
+      );
+      expect(chunks).toContainEqual(
+        expect.objectContaining({
+          toolCallId: "write-1",
+          type: "tool-output-available",
+        })
+      );
+      expect(await readFile(join(workspace, "example.txt"), "utf-8")).toBe(
+        "First turn"
+      );
+      const resumeFrom = await session.detach();
+      expect(resumeFrom.harnessId).toBe("pi");
+      expect(JSON.stringify(resumeFrom.data)).toMatch(/\.jsonl/u);
+      session = undefined;
+      // A different workflow worker cannot rely on the previous worker's files.
+      await rm(hostJournal, { force: true, recursive: true });
+      const nextAgent = await createAppAgent(
+        { ...input, agentToken: "fresh-token" },
+        "fixture"
+      );
+      session = await nextAgent.createSession({
+        resumeFrom,
+        sandboxSession,
+        sessionId,
+      });
+      const next = await nextAgent.generate({
+        prompt: "Now update it",
+        session,
+      });
+      expect(next.text).toBe("Updated");
+      expect(requests).toHaveLength(3);
+      expect(endpoints).toEqual(
+        Array.from({ length: 3 }, () => ({
+          authorization: `Bearer ${token}`,
+          url: "https://gateway.test/v1/messages",
+        }))
+      );
+      expect(requests[2]).toContain("Build a file");
+      expect(requests[2]).toContain("Built");
+      expect(requests[2]).toContain("Now update it");
+      const continuedResume = await session.detach();
+      session = undefined;
+      const otherAgent = await createAppAgent(
+        { ...input, threadId: otherSessionId },
+        "other-fixture"
+      );
+      session = await otherAgent.createSession({
+        sandboxSession,
+        sessionId: otherSessionId,
+      });
+      await otherAgent.generate({ prompt: "Different task", session });
+      expect(requests[3]).not.toContain("Build a file");
+      expect(requests[3]).not.toContain("Now update it");
+      await session.destroy();
+      session = await nextAgent.createSession({
+        resumeFrom: continuedResume,
+        sandboxSession,
+        sessionId,
+      });
+      await nextAgent.generate({ prompt: "Back to first thread", session });
+      expect(requests[4]).toContain("Build a file");
+      expect(requests[4]).toContain("Now update it");
+      expect(requests[4]).not.toContain("Different task");
+    } finally {
+      await session?.destroy();
+      vi.unstubAllGlobals();
+      await rm(directory, { force: true, recursive: true });
+      await rm(hostJournal, { force: true, recursive: true });
+      await rm(otherHostJournal, { force: true, recursive: true });
+    }
+  },
+  30_000
+);

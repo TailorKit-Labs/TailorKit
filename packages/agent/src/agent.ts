@@ -1,8 +1,7 @@
 import { createPi } from "@ai-sdk/harness-pi";
 import { HarnessAgent } from "@ai-sdk/harness/agent";
 
-import { env } from "#env";
-
+import { resolveAgentAuth } from "./agent-auth";
 import { gatewayModelProviders } from "./gateway-model";
 import type { AppAgentInput } from "./input";
 import instructions from "./instructions.md?raw";
@@ -15,7 +14,8 @@ export const createAppAgent = async (
   input: AppAgentInput,
   sandboxName: string
 ) => {
-  const providers = await gatewayModelProviders(input.model);
+  const auth = await resolveAgentAuth();
+  const providers = await gatewayModelProviders(input.model, auth);
   const schemaArgument =
     input.schema === undefined ? "" : ` --schema ${agentSchemaPath}`;
   const hostInstructions = [
@@ -29,7 +29,7 @@ export const createAppAgent = async (
 
   return new HarnessAgent({
     harness: createPi({
-      auth: env,
+      auth,
       fileToolPathPolicy: {
         deniedRoots: [agentTokenPath],
         readableRoots: ["/tmp/tailorkit-cli", "/workspace"],
