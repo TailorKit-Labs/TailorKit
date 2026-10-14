@@ -1,0 +1,91 @@
+packages/api-platform/src/app-agent-mcp-isolation.test.ts
+  s_23d161f26c1fb8::t_bae93e6a2f8584 200
+packages/agent/src/sandbox.test.ts
+  s_23d161f26c1fb8::t_7e298b8a7f7850 150
+packages/core/src/server/routes/app-agent.ts
+  s_23d161f26c1fb8::t_b2266b6f81f19d 27,36-37,56
+packages/cli/src/client.ts
+  s_23d161f26c1fb8::t_4e5120014732f4 2-4,128-131
+  s_23d161f26c1fb8::t_87e1688ab0b365 1
+packages/core/src/server/agent.test.ts
+  s_23d161f26c1fb8::t_4d0a040e3bef29 124-129,131-138
+  s_23d161f26c1fb8::t_c77bc13fb63593 122-123,139
+  s_23d161f26c1fb8::t_0d3f995d0e474d 35,38,59,130,173,191,212,225,238,269,279,293,312
+  s_23d161f26c1fb8::t_4e5120014732f4 31-34,36-37,39,151-152,161,234-237,239
+packages/api-platform/src/app-agent-mcp.test.ts
+  s_23d161f26c1fb8::t_4d0a040e3bef29 145,150-153,157,224,400,403
+  s_23d161f26c1fb8::t_7d10ae29386783 146-149
+packages/client-platform/src/agent.ts
+  s_23d161f26c1fb8::t_4e5120014732f4 46-49,68-70
+  s_23d161f26c1fb8::t_b2266b6f81f19d 28,37-40,42,50
+  s_23d161f26c1fb8::t_0d3f995d0e474d 34,41,43,55
+  s_23d161f26c1fb8::t_988f2bfa9f703e 35-36
+packages/cli/src/deployment-client.test.ts
+  s_23d161f26c1fb8::t_4d0a040e3bef29 165,195-197,199
+  s_23d161f26c1fb8::t_3397be253f6edd 188,198
+packages/client-platform/src/client/types.gen.ts
+  s_23d161f26c1fb8::t_99997de4c68240 19,36-42
+  s_23d161f26c1fb8::t_cae9b99462afff 43
+packages/agent/src/mcp.test.ts
+  s_23d161f26c1fb8::t_4d0a040e3bef29 115
+packages/api-platform/src/routes/app-agent.test.ts
+  s_23d161f26c1fb8::t_edcef3516656da 237-241
+  s_23d161f26c1fb8::t_4d0a040e3bef29 141-148
+  s_23d161f26c1fb8::t_c77bc13fb63593 139-140,149-152
+  s_23d161f26c1fb8::t_bae93e6a2f8584 96
+  s_23d161f26c1fb8::t_0d3f995d0e474d 170,215
+  s_23d161f26c1fb8::t_c5e40f65fa181f 81,307
+  s_23d161f26c1fb8::t_4e5120014732f4 164-169,171-172,209-214,216-217,305-306,308-309,311
+packages/cli/src/agent-tui.test.ts
+  s_23d161f26c1fb8::t_c77bc13fb63593 100-101,122-128,135
+  s_23d161f26c1fb8::t_4d0a040e3bef29 103-106,109-113,115-117,119-121,129-134
+  s_23d161f26c1fb8::t_4e5120014732f4 16-17,19-20,22,29-33,152-157,188,190,274-278,284
+  s_23d161f26c1fb8::t_3397be253f6edd 18,102,107-108,114,118,138,199,224,332,349
+packages/agent/src/workflows.test.ts
+  s_23d161f26c1fb8::t_4d0a040e3bef29 50-54,65-68,97-100,110,119-122,138-142,144-145
+packages/agent/src/sandbox.ts
+  s_23d161f26c1fb8::t_7e298b8a7f7850 38,54,86,97,115,126,128
+packages/api-platform/src/routes/app-agent.ts
+  s_23d161f26c1fb8::t_b2266b6f81f19d 22,65,72-77,79,87-90,101-103,110-115,119,123,125,132,170
+  s_23d161f26c1fb8::t_bae93e6a2f8584 99
+  s_23d161f26c1fb8::t_c5e40f65fa181f 71,78,80,161
+  s_23d161f26c1fb8::t_edcef3516656da 166,173-182,190
+  s_23d161f26c1fb8::t_4e5120014732f4 104-109,116-118,120-122,133-154
+.changeset/resume-agent-streams.md
+  s_23d161f26c1fb8::t_99997de4c68240 2-4,8-9
+  s_23d161f26c1fb8::t_bae93e6a2f8584 10-11
+packages/cli/src/agent-tui.ts
+  s_23d161f26c1fb8::t_3397be253f6edd 165
+  s_23d161f26c1fb8::t_4e5120014732f4 48-53,65,76-79,115,168
+  s_23d161f26c1fb8::t_b2266b6f81f19d 10,36,73-74,87,113,117,120,156,167
+packages/agent/src/agent-step.test.ts
+  s_23d161f26c1fb8::t_4d0a040e3bef29 107-108,131,144
+packages/agent/src/workflows.ts
+  s_23d161f26c1fb8::t_4d0a040e3bef29 39,57
+packages/agent/src/agent-step.ts
+  s_23d161f26c1fb8::t_4d0a040e3bef29 15,29-30
+  s_23d161f26c1fb8::t_7e298b8a7f7850 24,26-27
+packages/api-platform/src/app-agent-mcp.ts
+  s_23d161f26c1fb8::t_bae93e6a2f8584 203
+  s_23d161f26c1fb8::t_4d0a040e3bef29 16-17,202,204-209,211-222,226-228,230-232
+  s_23d161f26c1fb8::t_7e298b8a7f7850 210
+  s_23d161f26c1fb8::t_24a5fa89a06f2c 229
+packages/api-platform/openapi.json
+  s_23d161f26c1fb8::t_5f15732987639b 21-22,24-59,62-73,75,77-93,95,98-110,124-127,130-138,140
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1d153047b9d69dec497bc8b461d6c6518cb880d4",
+  "prompts": {},
+  "sessions": {
+    "s_23d161f26c1fb8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a139a6-f36d-7e02-adcd-ced64463916b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
