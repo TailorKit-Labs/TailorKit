@@ -59,8 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
 
     steps:
       - name: Checkout
@@ -81,6 +80,15 @@ jobs:
       - name: Install dependencies
         run: vp install --frozen-lockfile
 
+      - name: Generate release app token
+        id: release-app
+        uses: actions/create-github-app-token@v3.2.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
       - name: Create or update version PR
         uses: changesets/action/version@v2.1.2
         with:
@@ -88,7 +96,7 @@ jobs:
           commit-message: "chore: version beta packages"
           pr-title: "chore: version beta packages"
           pr-base-branch: main
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ steps.release-app.outputs.token }}
 
   publish:
     name: Publish prerelease
