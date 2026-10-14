@@ -17,7 +17,7 @@ import type { TailorKitSchemaFile } from "./generator/types";
 const schemaFetchTimeoutMs = 10_000;
 
 interface AgentTuiOptions {
-  client: Pick<TailorKitRouterClient, "appAgent">;
+  client: { appAgent: Pick<TailorKitRouterClient["appAgent"], "chat"> };
   hostUrl: string;
   appId: string;
   schemaPath?: string;

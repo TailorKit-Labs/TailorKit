@@ -31,6 +31,8 @@ import { env } from "#env";
 import { findAppInScopes, o, cliRouter } from "#procedures";
 import { canonicalizeScope } from "#scope";
 
+import { AppWithCurrentDeployment, createAppRecord } from "./apps";
+
 const require = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
@@ -80,6 +82,31 @@ const agentResumeSchema = z.object({
   type: z.literal("resume"),
 });
 
+const create = cliRouter
+  .meta(openapi({ method: "POST", path: "/apps" }))
+  .input(
+    z.object({
+      body: AppWithCurrentDeployment.pick({ description: true, name: true })
+        .extend({ deployToken: z.string().min(1) })
+        .strict(),
+    })
+  )
+  .output(z.object({ body: AppWithCurrentDeployment }))
+  .handler(async ({ context, input }) => {
+    const token = await authenticateCliRequest(context, input.body.deployToken);
+    return {
+      body: await createAppRecord(
+        context,
+        {
+          description: input.body.description,
+          name: input.body.name,
+          scope: token.scope,
+        },
+        true
+      ),
+    };
+  });
+
 const chat = cliRouter
   .meta(openapi({ method: "POST", outputStructure: "compact", path: "/chat" }))
   .input(
@@ -96,6 +123,12 @@ const chat = cliRouter
     const app = await findAppInScopes(context.project.id, input.body.appId, [
       canonicalizeScope(token.scope),
     ]);
+    if (!app.createdByAgent) {
+      throw new ORPCError("FORBIDDEN", {
+        message:
+          "The agent can only edit apps created by AI. Create a new app to continue.",
+      });
+    }
     const { body } = input;
     let threadId: string;
     let run: Run<Awaited<ReturnType<typeof appAgent>>>;
@@ -203,4 +236,4 @@ const chat = cliRouter
 
 export const appAgentRouter = o
   .meta(openapi({ prefix: "/app-agent" }))
-  .router({ chat });
+  .router({ chat, create });

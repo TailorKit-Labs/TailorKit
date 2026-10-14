@@ -111,7 +111,7 @@ beforeEach(() => {
     async (_appId, id) =>
       await Promise.resolve(id ?? "e773a870-df5a-4bea-9ebd-9be4c0b1897a")
   );
-  mocks.app.mockResolvedValue({ id: "app-one" });
+  mocks.app.mockResolvedValue({ createdByAgent: true, id: "app-one" });
   mocks.token.mockResolvedValue({
     expiresAt: new Date(Date.now() + 3_600_000),
     id: "cli-one",
@@ -459,6 +459,46 @@ describe("platform app chat", () => {
     await expect(consume()).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(mocks.start).not.toHaveBeenCalled();
   });
+  it("rejects manually created apps before starting a workflow", async () => {
+    mocks.app.mockResolvedValueOnce({
+      createdByAgent: false,
+      id: "manual-app",
+    });
+    await expect(consume()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      message:
+        "The agent can only edit apps created by AI. Create a new app to continue.",
+    });
+    expect(mocks.start).not.toHaveBeenCalled();
+  });
+
+  it("rejects manually created apps before resuming a workflow", async () => {
+    const threadId = "e773a870-df5a-4bea-9ebd-9be4c0b1897a";
+    mocks.app.mockResolvedValueOnce({
+      createdByAgent: false,
+      id: "manual-app",
+    });
+    await expect(
+      call(
+        appAgentRouter.chat,
+        {
+          body: {
+            appId: input.body.appId,
+            deployToken: input.body.deployToken,
+            runId: "wrun_test",
+            startIndex: 0,
+            threadId,
+            token: createAgentStreamToken("manual-app", threadId, "wrun_test"),
+            type: "resume",
+          },
+        },
+        { context }
+      )
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(mocks.getRun).not.toHaveBeenCalled();
+    expect(mocks.thread).not.toHaveBeenCalled();
+    expect(mocks.start).not.toHaveBeenCalled();
+  });
 
   it("waits for workflow cleanup before finishing the response", async () => {
     let finish!: () => void;
@@ -627,7 +667,7 @@ describe("platform app chat", () => {
 });
 
 it("accepts another app in the JWT scope without extending the original deadline", async () => {
-  mocks.app.mockResolvedValue({ id: "app-two" });
+  mocks.app.mockResolvedValue({ createdByAgent: true, id: "app-two" });
   const jwt = await issueAgentToken(
     {
       appId: "app-one",

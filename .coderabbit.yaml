@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+inheritance: true
+reviews:
+  auto_review:
+    # Matches the version PR title configured in .github/workflows/release.yml.
+    ignore_title_keywords:
+      - "chore: version beta packages"

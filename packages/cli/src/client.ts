@@ -17,6 +17,7 @@ import {
   previewStart,
   previewStop,
   appAgentChat,
+  appAgentCreate,
 } from "@tailorkit/client-platform/client";
 import { createClient } from "@tailorkit/client-platform/client/client/index";
 import { createTailorKitClient } from "@tailorkit/core/server";
@@ -143,6 +144,13 @@ export const createCliClient = (options: {
             });
           }
         },
+        create: async (input: Input<"appAgent", "create">) =>
+          await request(
+            appAgentCreate({
+              body: { ...input, deployToken: agent.token },
+              client,
+            })
+          ),
       },
       apps: {
         create: async (input: Input<"apps", "create">) =>

@@ -1,10 +1,14 @@
 import { eventIterator, ORPCError } from "@orpc/server";
 import {
   agentChatSchema,
+  agentCreateAppSchema,
   agentChunkSchema,
   agentRunCompleteChunkSchema,
 } from "@tailorkit/client-platform/agent";
-import { appAgentChat } from "@tailorkit/client-platform/client";
+import {
+  appAgentChat,
+  appAgentCreate,
+} from "@tailorkit/client-platform/client";
 
 import {
   getCliDeployToken,
@@ -67,5 +71,18 @@ export const appAgentRouter = {
         // Iterator cancellation must also terminate the upstream HTTP stream.
         controller.abort();
       }
+    }),
+  create: o
+    .use(requireCliDeployToken)
+    .input(agentCreateAppSchema)
+    .handler(async ({ context, input }) => {
+      const { data } = await appAgentCreate({
+        body: { ...input, deployToken: getCliDeployToken(context.request) },
+        client: context.platform,
+        headers: context.platformHeaders,
+        responseStyle: "fields",
+        throwOnError: true,
+      });
+      return data;
     }),
 };
