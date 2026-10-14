@@ -83,13 +83,11 @@ it("keeps response bodies alive and propagates per-request cancellation", async 
 
 it("validates redirect destinations before forwarding", async () => {
   const { bridge, controller } = setup();
-  const fetch = vi.fn(
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    async () =>
-      new Response(null, {
-        headers: { location: "https://127.0.0.1/private" },
-        status: 302,
-      })
+  const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(
+    new Response(null, {
+      headers: { location: "https://127.0.0.1/private" },
+      status: 302,
+    })
   );
   vi.stubGlobal("fetch", fetch);
   try {
@@ -110,13 +108,11 @@ it.each(["manual", "error"] as const)(
   "respects redirect: %s",
   async (redirect) => {
     const { bridge, controller } = setup();
-    const fetch = vi.fn(
-      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-      async () =>
-        new Response(null, {
-          headers: { location: "https://example.com/final" },
-          status: 302,
-        })
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(
+      new Response(null, {
+        headers: { location: "https://example.com/final" },
+        status: 302,
+      })
     );
     vi.stubGlobal("fetch", fetch);
     try {

@@ -28,8 +28,9 @@ it("routes normal calls over authenticated HTTP without opening a WebSocket", as
   const client = createClient({
     connect,
     fetch,
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    getSession: async () => session,
+    getSession: vi
+      .fn<() => Promise<typeof session>>()
+      .mockResolvedValue(session),
   });
   const requestId = crypto.randomUUID();
   try {
@@ -96,8 +97,9 @@ it("preserves runtime errors without retrying actions", async () => {
   );
   const client = createClient({
     fetch,
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    getSession: async () => session,
+    getSession: vi
+      .fn<() => Promise<typeof session>>()
+      .mockResolvedValue(session),
   });
   try {
     await expect(
@@ -152,8 +154,9 @@ it("aborts pending HTTP calls when closed", async () => {
   );
   const client = createClient({
     fetch,
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    getSession: async () => session,
+    getSession: vi
+      .fn<() => Promise<typeof session>>()
+      .mockResolvedValue(session),
   });
   const call = client.action(reference("import", "action"));
   const assertion = expect(call).rejects.toMatchObject({ code: "UNAVAILABLE" });
@@ -182,8 +185,9 @@ it("retries a lost mutation response with the same ID and frozen arguments", asy
   });
   const client = createClient({
     fetch,
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    getSession: async () => session,
+    getSession: vi
+      .fn<() => Promise<typeof session>>()
+      .mockResolvedValue(session),
   });
   try {
     const args = { text: "original" };
@@ -219,8 +223,9 @@ it("backs off transient mutation failures and preserves an explicit request ID",
     .mockResolvedValueOnce(Response.json({ json: "saved" }));
   const client = createClient({
     fetch,
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    getSession: async () => session,
+    getSession: vi
+      .fn<() => Promise<typeof session>>()
+      .mockResolvedValue(session),
   });
   try {
     const requestId = crypto.randomUUID();
@@ -265,8 +270,9 @@ it.each([
     );
   const client = createClient({
     fetch,
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    getSession: async () => session,
+    getSession: vi
+      .fn<() => Promise<typeof session>>()
+      .mockResolvedValue(session),
   });
   try {
     await expect(
@@ -322,8 +328,9 @@ it("stops when refreshed authentication is still rejected", async () => {
   );
   const client = createClient({
     fetch,
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    getSession: async () => session,
+    getSession: vi
+      .fn<() => Promise<typeof session>>()
+      .mockResolvedValue(session),
   });
   try {
     await expect(
@@ -344,8 +351,9 @@ it("cancels a mutation waiting to retry when the client closes", async () => {
     .mockRejectedValue(new TypeError("Offline"));
   const client = createClient({
     fetch,
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    getSession: async () => session,
+    getSession: vi
+      .fn<() => Promise<typeof session>>()
+      .mockResolvedValue(session),
   });
   try {
     const assertion = expect(
@@ -374,8 +382,9 @@ it.each(["query", "action"] as const)(
       .mockRejectedValue(new TypeError("Offline"));
     const client = createClient({
       fetch,
-      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-      getSession: async () => session,
+      getSession: vi
+        .fn<() => Promise<typeof session>>()
+        .mockResolvedValue(session),
     });
     try {
       const result =
@@ -406,8 +415,9 @@ it("retries when the connection drops while reading a mutation response body", a
     .mockResolvedValueOnce(Response.json({ json: "saved" }));
   const client = createClient({
     fetch,
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    getSession: async () => session,
+    getSession: vi
+      .fn<() => Promise<typeof session>>()
+      .mockResolvedValue(session),
   });
   try {
     const result = client.mutate(reference("save", "mutation"));
@@ -438,8 +448,9 @@ it("keeps reconnecting an active subscription beyond three failures", async () =
   });
   const client = createClient({
     connect,
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    getSession: async () => session,
+    getSession: vi
+      .fn<() => Promise<typeof session>>()
+      .mockResolvedValue(session),
     retryDelayMs: 0,
   });
   const stop = client.subscribe(

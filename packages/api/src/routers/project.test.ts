@@ -31,14 +31,12 @@ vi.mock("@tailorkit/db", () => ({
 vi.mock("@tailorkit/auth", () => ({
   auth: {
     api: {
-      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-      createApiKey: vi.fn(async () => ({
+      createApiKey: vi.fn().mockResolvedValue({
         id: "api-key-id",
         key: "tk_proj_secret",
-      })),
+      }),
       deleteApiKey: vi.fn(),
-      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-      hasPermission: vi.fn(async () => ({ success: true })),
+      hasPermission: vi.fn().mockResolvedValue({ success: true }),
       updateApiKey: vi.fn(),
     },
   },

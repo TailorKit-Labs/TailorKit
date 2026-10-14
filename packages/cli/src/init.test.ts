@@ -12,8 +12,7 @@ import { runInit } from "./init";
 
 vi.mock("./generator", async (importOriginal) => ({
   ...(await importOriginal<typeof generatorModule>()),
-  // oxlint-disable-next-line require-await -- The mock keeps the asynchronous API contract.
-  resolveTemplatePackageVersions: async () => ({
+  resolveTemplatePackageVersions: vi.fn().mockResolvedValue({
     preact: "11.0.0",
     tailorkit: "0.1.0-beta.16",
     typescript: "6.0.3",
@@ -52,8 +51,7 @@ const initOptions = async () => {
 };
 
 it("fetches the host schema and generates real bindings even when installation is skipped", async () => {
-  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-  const fetch = vi.fn(async () =>
+  const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(
     Response.json({
       components: { Box: { callbacks: {}, children: true } },
       slots: { sidebar: { views: ["/people"] } },
@@ -99,13 +97,11 @@ it("fetches the host schema and generates real bindings even when installation i
 it("reports schema fetch failures without creating a project", async () => {
   vi.stubGlobal(
     "fetch",
-    vi.fn(
-      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-      async () =>
-        new Response("Unavailable", {
-          status: 503,
-          statusText: "Service Unavailable",
-        })
+    vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(
+      new Response("Unavailable", {
+        status: 503,
+        statusText: "Service Unavailable",
+      })
     )
   );
   const options = await initOptions();

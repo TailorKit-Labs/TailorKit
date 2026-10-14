@@ -23,7 +23,7 @@ import type {
 import { Window } from "happy-dom";
 import type { VNode } from "preact";
 import { build } from "vite";
-import { expect, it } from "vite-plus/test";
+import { expect, it, vi } from "vite-plus/test";
 import type { z } from "zod";
 
 import { tailorkit } from "#index";
@@ -390,8 +390,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
         identity: { userId: "user_123" },
         mutations: {},
         queries: {
-          // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-          reports: { list: async () => [{ id: "report_123" }] },
+          reports: { list: vi.fn().mockResolvedValue([{ id: "report_123" }]) },
         },
         signal: new AbortController().signal,
       } as never
@@ -416,8 +415,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
         }),
         identity: { userId: "user_123" },
         queries: {
-          // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-          reports: { list: async () => [{ id: "report_123" }] },
+          reports: { list: vi.fn().mockResolvedValue([{ id: "report_123" }]) },
         },
         signal: new AbortController().signal,
       } as never

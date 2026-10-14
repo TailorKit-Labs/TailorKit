@@ -128,8 +128,9 @@ describe("MCP transport configuration", () => {
   });
 
   it("resolves configured headers per call and requires a project credential", async () => {
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    const headers = vi.fn(async () => ({ authorization: "Bearer custom-key" }));
+    const headers = vi
+      .fn<() => Promise<{ authorization: string }>>()
+      .mockResolvedValue({ authorization: "Bearer custom-key" });
     const { server } = setup({ platformHeaders: headers });
     const awaitedResult1 = await server.mcp.transport({
       scopes: { org: { tenant: "one" } },
