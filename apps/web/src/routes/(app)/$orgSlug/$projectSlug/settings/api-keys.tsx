@@ -349,14 +349,13 @@ const ProjectApiKeysPage = () => {
               Cancel
             </DialogClose>
             <Button
-              disabled={rotateMutation.isPending}
               type="button"
+              loading={rotateMutation.isPending}
               onClick={() => {
                 rotateMutation.mutate();
               }}
             >
-              <RefreshCwIcon />
-              {rotateMutation.isPending ? "Rotating…" : "Rotate key"}
+              Rotate key
             </Button>
           </DialogFooter>
         </DialogPopup>
