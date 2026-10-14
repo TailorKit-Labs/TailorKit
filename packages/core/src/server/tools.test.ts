@@ -440,8 +440,7 @@ it("keeps valid cached keys when a refresh returns invalid keys, and still expir
 it("rejects an unknown key after one fetch when the key cache is empty", async () => {
   const fetchKeys = vi
     .fn<typeof fetch>()
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    .mockImplementation(async () =>
+    .mockResolvedValueOnce(
       Response.json({ keys: [{ ...jwk, kid: "platform" }] })
     );
   const verify = createToolVerifier({ fetch: fetchKeys, platformUrl: issuer });

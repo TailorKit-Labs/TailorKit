@@ -136,7 +136,11 @@ const isNeverOnlyObject = (schema: JsonSchema): boolean => {
   );
 };
 
-const toObjectType = (schema: JsonSchema, depth: number): string => {
+const toObjectType = (
+  schema: JsonSchema,
+  depth: number,
+  renderType: (schema: JsonSchema | undefined, depth: number) => string
+): string => {
   const properties = schema.properties ?? {};
   const propertyEntries = Object.entries(properties);
 
@@ -145,8 +149,7 @@ const toObjectType = (schema: JsonSchema, depth: number): string => {
   }
 
   const required = new Set(schema.required);
-  // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
-  const catchallType = toTypeScriptType(
+  const catchallType = renderType(
     schema.additionalProperties === true ||
       schema.additionalProperties === false
       ? undefined
@@ -156,8 +159,7 @@ const toObjectType = (schema: JsonSchema, depth: number): string => {
   const additionalValueTypes = [catchallType];
   if (catchallType !== "unknown") {
     for (const [key, propertySchema] of propertyEntries) {
-      // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
-      additionalValueTypes.push(toTypeScriptType(propertySchema, depth));
+      additionalValueTypes.push(renderType(propertySchema, depth));
       if (!required.has(key)) {
         additionalValueTypes.push("undefined");
       }
@@ -180,8 +182,7 @@ const toObjectType = (schema: JsonSchema, depth: number): string => {
   for (const [key, propertySchema] of propertyEntries) {
     const optional = required.has(key) ? "" : "?";
     lines.push(
-      // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
-      `${propertyIndent}${toPropertyKey(key)}${optional}: ${toTypeScriptType(propertySchema, depth + 2)};`
+      `${propertyIndent}${toPropertyKey(key)}${optional}: ${renderType(propertySchema, depth + 2)};`
     );
   }
 
@@ -286,7 +287,7 @@ const toTypeScriptType = (
     );
   }
   if (schemaType === "object") {
-    return toObjectType(schema, depth);
+    return toObjectType(schema, depth, toTypeScriptType);
   }
 
   return "unknown";

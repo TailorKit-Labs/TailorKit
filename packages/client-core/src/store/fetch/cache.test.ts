@@ -158,8 +158,7 @@ describe("fetch cache", () => {
     const gcTime = timerLimit + 1000;
     const store = createFetchCache({ gcTime, staleTime: Infinity }).getStore(
       ["apps"],
-      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-      async () => "data"
+      vi.fn<() => Promise<string>>().mockResolvedValue("data")
     );
     await store.fetch();
     vi.advanceTimersByTime(timerLimit);
@@ -176,8 +175,7 @@ describe("fetch cache", () => {
     const gcTime = timerLimit + 1000;
     const store = createFetchCache({ gcTime }).getStore(
       ["apps"],
-      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-      async () => "data"
+      vi.fn<() => Promise<string>>().mockResolvedValue("data")
     );
     await store.fetch();
     vi.advanceTimersByTime(timerLimit);
@@ -270,8 +268,7 @@ describe("fetch cache", () => {
     const store = cache.getStore(["apps"], async () => await response.promise);
     const other = createFetchCache({ gcTime: Infinity }).getStore(
       ["apps"],
-      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-      async () => "other"
+      vi.fn<() => Promise<string>>().mockResolvedValue("other")
     );
     const stop = store.subscribe(
       vi.fn<NonNullable<Parameters<typeof store.subscribe>[0]>>()

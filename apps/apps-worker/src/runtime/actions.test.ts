@@ -542,8 +542,7 @@ it("binds backend tool calls to the active verified execution and closes escaped
   const calls = {
     mutate: async () => {},
     query: async () => {},
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    tool: vi.fn(async () => ({ amount: 42 })),
+    tool: vi.fn().mockResolvedValue({ amount: 42 }),
   };
   const execute = createActionExecution(implementation);
   expect(await execute({ name: "read" }, identity, calls)).toEqual({

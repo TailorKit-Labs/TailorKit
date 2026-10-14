@@ -21,6 +21,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
 const { publicKey, privateKey } = await generateKeyPair("ES256", {
   extractable: true,
 });
+const privateJwk = await exportJWK(privateKey);
 const publicKeys = {
   keys: [{ ...(await exportJWK(publicKey)), kid: "host-key" }],
 };
@@ -78,10 +79,13 @@ it("rejects wrong signature, issuer, audience, app, expiry, missing claims and e
     await issueAppToken(signing, { ...identity, appId: "other" }),
     await issueAppToken(signing, { ...identity, projectId: "other" }),
   ];
-  for (const { token } of invalid) {
-    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-    await expect(verify(token)).rejects.toMatchObject({ code: "UNAUTHORIZED" });
-  }
+  await Promise.all(
+    invalid.map(async ({ token }) => {
+      await expect(verify(token)).rejects.toMatchObject({
+        code: "UNAUTHORIZED",
+      });
+    })
+  );
   const sign = async (claims: ConstructorParameters<typeof SignJWT>[0]) =>
     await new SignJWT({
       ...identity,
@@ -93,7 +97,7 @@ it("rejects wrong signature, issuer, audience, app, expiry, missing claims and e
       .setAudience(signing.audience)
       .sign(privateKey);
   const now = Math.floor(Date.now() / 1000);
-  for (const claims of [
+  const invalidClaims = [
     {
       appId: "app",
       exp: now - 1,
@@ -109,24 +113,24 @@ it("rejects wrong signature, issuer, audience, app, expiry, missing claims and e
       iat: now + 60,
       installationId: "installation",
     },
-  ]) {
-    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-    await expect(verify(await sign(claims))).rejects.toMatchObject({
-      code: "UNAUTHORIZED",
-    });
-  }
+  ];
+  await Promise.all(
+    invalidClaims.map(async (claims) => {
+      await expect(verify(await sign(claims))).rejects.toMatchObject({
+        code: "UNAUTHORIZED",
+      });
+    })
+  );
   await expect(verify("not-a-token")).rejects.toMatchObject({
     code: "UNAUTHORIZED",
   });
 });
-// oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-it("rejects symmetric keys, private verification keys and missing bearer credentials", async () => {
+it("rejects symmetric keys, private verification keys and missing bearer credentials", () => {
   expect(() =>
     appTokenVerifier({
       ...signing,
       appId: "app",
-      // oxlint-disable-next-line no-use-before-define -- The assertion callback runs after the imported signing key has initialized.
-      publicKeys: { keys: [{ ...awaitPrivateKey, kid: "host-key" }] },
+      publicKeys: { keys: [{ ...privateJwk, kid: "host-key" }] },
     })
   ).toThrow("public signing keys");
   expect(() =>
@@ -140,7 +144,6 @@ it("rejects symmetric keys, private verification keys and missing bearer credent
     })
   ).toThrow();
 });
-const awaitPrivateKey = await exportJWK(privateKey);
 
 it("composes signing and verification with an injected clock, including expiry", async () => {
   const clock = Effect.runSync(

@@ -58,6 +58,23 @@ describe("preview message schemas", () => {
     );
   });
 
+  it.each([
+    { path: "assets/😀.js", valid: true },
+    { path: "assets/\u007F.js", valid: true },
+    { path: "assets/\u0000.js", valid: false },
+    { path: "assets/\u001F.js", valid: false },
+    { path: "assets/😀\n.js", valid: false },
+  ])(
+    "validates control characters in preview path $path",
+    ({ path, valid }) => {
+      expect(
+        previewBuildManifestSchema.safeParse({
+          files: [...manifest.files, { ...manifest.files[0], path }],
+        }).success
+      ).toBe(valid);
+    }
+  );
+
   it("rejects invalid manifest and metadata values", () => {
     expect(
       previewBuildManifestSchema.safeParse({

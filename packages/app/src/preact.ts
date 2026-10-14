@@ -234,13 +234,10 @@ const useCall = <K extends "mutation" | "action", I, O>(
     (...args: InputArguments<I>) => {
       void (async () => {
         try {
-          return await runAsync(...args);
+          await runAsync(...args);
         } catch {
           /* Intentionally no action is needed. */
         }
-
-        /* oxlint-disable-next-line unicorn/no-useless-undefined -- Missing results use the same undefined sentinel as the optional return type. */
-        return undefined;
       })();
     },
     [runAsync]

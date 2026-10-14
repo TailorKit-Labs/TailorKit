@@ -30,8 +30,7 @@ vi.mock("#env", () => ({
 }));
 
 describe("observability helpers", () => {
-  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-  afterEach(async () => {
+  afterEach(() => {
     Object.assign(mockEnv, {
       NODE_ENV: "development",
       OTEL_SERVICE_NAME: undefined,

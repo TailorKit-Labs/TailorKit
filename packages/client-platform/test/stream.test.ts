@@ -5,13 +5,11 @@ import { createSseClient } from "../src/client/core/serverSentEvents.gen";
 describe("generated SSE cancellation", () => {
   it("handles a body that rejects cancellation when the connection closes", async () => {
     const controller = new AbortController();
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    const cancel = vi.fn(async () => {
-      throw new DOMException("Connection closed", "AbortError");
-    });
+    const cancel = vi
+      .fn()
+      .mockRejectedValue(new DOMException("Connection closed", "AbortError"));
     const { stream } = createSseClient({
-      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-      fetch: async () =>
+      fetch: vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(
         new Response(
           new ReadableStream({
             cancel,
@@ -21,7 +19,8 @@ describe("generated SSE cancellation", () => {
               );
             },
           })
-        ),
+        )
+      ),
       method: "POST",
       signal: controller.signal,
       sseMaxRetryAttempts: 1,

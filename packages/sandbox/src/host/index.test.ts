@@ -303,10 +303,7 @@ describe("backend JWT bridge", () => {
   it("keeps client-only apps working when no backend session exists", async () => {
     const host = createIframeUiHost("https://assets.test/app.js", {
       fetch: createFetch(),
-      // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-      getBackendSession: async () => {
-        throw new Error("No backend");
-      },
+      getBackendSession: vi.fn().mockRejectedValue(new Error("No backend")),
     });
     host.mount();
     await vi.waitFor(() => {
@@ -350,8 +347,7 @@ it.each(["backend-first", "tools-first"])(
     const host = createIframeUiHost("https://assets.test/app.js", {
       fetch: createFetch(),
       getBackendSession,
-      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-      toolBridge: { client, session: async () => session },
+      toolBridge: { client, session: vi.fn().mockResolvedValue(session) },
     });
     host.mount();
     const postMessage = vi.spyOn(getContentWindow(host.iframe), "postMessage");

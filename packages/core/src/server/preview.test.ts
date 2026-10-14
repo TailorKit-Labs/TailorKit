@@ -364,14 +364,16 @@ describe("preview host flow", () => {
       }
     );
     expect(response.status).toBe(200);
-    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    const apps = (await response.json()) as {
-      id: string;
-      name: string;
-      clientPath?: string;
-      preview?: { sessionId: string };
-    }[];
+    const apps = z
+      .array(
+        z.object({
+          clientPath: z.string().optional(),
+          id: z.string(),
+          name: z.string(),
+          preview: z.object({ sessionId: z.string() }).optional(),
+        })
+      )
+      .parse(await response.json());
     expect(apps).toHaveLength(3);
     expect(apps[0]).toMatchObject({
       clientPath: "https://assets.test/first.js",

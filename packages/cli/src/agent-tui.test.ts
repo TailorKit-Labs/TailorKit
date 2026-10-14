@@ -4,6 +4,7 @@ import type { UIMessage } from "ai";
 import { readUIMessageStream } from "ai";
 import {
   afterEach,
+  assert,
   beforeEach,
   describe,
   expect,
@@ -284,13 +285,9 @@ describe("AI SDK terminal transport", () => {
     expect(newRequest.type).toBe("turn");
   }, 15_000);
   it("forwards the SDK's complete history and abort signal to the host client", async () => {
-    const chat = vi.fn(
-      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-      async (
-        _input: Parameters<TailorKitRouterClient["appAgent"]["chat"]>[0],
-        _options?: Parameters<TailorKitRouterClient["appAgent"]["chat"]>[1]
-      ) => chatEvents()
-    );
+    const chat = vi
+      .fn<TailorKitRouterClient["appAgent"]["chat"]>()
+      .mockResolvedValue(chatEvents());
     await openAgentTui({ appId, client: { appAgent: { chat } }, hostUrl });
     const [options] = requireValue(mocks.tui.mock.lastCall);
     expect(options).toMatchObject({
@@ -321,12 +318,8 @@ describe("AI SDK terminal transport", () => {
       hostUrl,
       expect.any(AbortSignal)
     );
-    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-
-    const schemaSignal =
-      /* oxlint-disable typescript/no-unsafe-type-assertion -- The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below. */
-      requireValue(mocks.fetchSchema.mock.calls[0])[1] as AbortSignal;
-    /* oxlint-enable typescript/no-unsafe-type-assertion */
+    const [, schemaSignal] = requireValue(mocks.fetchSchema.mock.calls[0]);
+    assert(schemaSignal instanceof AbortSignal);
     expect(schemaSignal.aborted).toBe(false);
     expect(chat).toHaveBeenCalledWith(
       { appId, hostUrl, messages, schema, threadId: undefined, type: "turn" },

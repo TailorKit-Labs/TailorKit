@@ -1,4 +1,5 @@
-import { spawn } from "node:child_process";
+import { ChildProcess, spawn } from "node:child_process";
+import type * as childProcess from "node:child_process";
 import { platform } from "node:os";
 import type * as nodeOs from "node:os";
 
@@ -6,7 +7,8 @@ import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { openUrlInBrowser } from "./open-browser";
 
-vi.mock("node:child_process", () => ({
+vi.mock("node:child_process", async (importOriginal) => ({
+  ...(await importOriginal<typeof childProcess>()),
   spawn: vi.fn(),
 }));
 
@@ -16,18 +18,9 @@ vi.mock("node:os", async (importOriginal) => ({
 }));
 
 const createChildProcess = () => {
-  const listeners = new Map<string, (...args: unknown[]) => void>();
-  const child = {
-    emit: (event: string, ...args: unknown[]) =>
-      listeners.get(event)?.(...args),
-    once: vi.fn((event: string, listener: (...args: unknown[]) => void) => {
-      listeners.set(event, listener);
-      return child;
-    }),
-    unref: vi.fn(),
-  };
-
-  return child;
+  const child = new ChildProcess();
+  const unref = vi.spyOn(child, "unref").mockImplementation(() => {});
+  return { child, unref };
 };
 
 describe("openUrlInBrowser", () => {
@@ -37,13 +30,9 @@ describe("openUrlInBrowser", () => {
   });
 
   it("opens URLs with the platform browser command", async () => {
-    const child = createChildProcess();
-    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    const { child, unref } = createChildProcess();
 
-    vi.mocked(spawn).mockReturnValue(
-      // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This event-driven ChildProcess double supplies only once and unref, the methods exercised by the browser opener. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-      child as unknown as ReturnType<typeof spawn>
-    );
+    vi.mocked(spawn).mockReturnValue(child);
 
     const result = openUrlInBrowser("https://example.com/approve");
     child.emit("spawn");
@@ -58,22 +47,18 @@ describe("openUrlInBrowser", () => {
         windowsHide: true,
       }
     );
-    expect(child.unref).toHaveBeenCalledOnce();
+    expect(unref).toHaveBeenCalledOnce();
   });
 
   it("returns false when the browser command cannot start", async () => {
-    const child = createChildProcess();
-    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    const { child, unref } = createChildProcess();
 
-    vi.mocked(spawn).mockReturnValue(
-      // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This event-driven ChildProcess double supplies only once and unref, the methods exercised by the browser opener. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-      child as unknown as ReturnType<typeof spawn>
-    );
+    vi.mocked(spawn).mockReturnValue(child);
 
     const result = openUrlInBrowser("https://example.com/approve");
     child.emit("error", new Error("missing opener"));
 
     await expect(result).resolves.toBe(false);
-    expect(child.unref).not.toHaveBeenCalled();
+    expect(unref).not.toHaveBeenCalled();
   });
 });

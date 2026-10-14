@@ -14,11 +14,16 @@ import path from "node:path";
 import { gunzipSync } from "node:zlib";
 
 import { SignJWT } from "jose";
-import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
+import { afterEach, beforeEach, assert, expect, it, vi } from "vite-plus/test";
 
 import type * as authModule from "./auth";
 import { NotLoggedInError } from "./auth";
 import { linkTestDependencies } from "./test-utils";
+
+const requireBytes = (body: RequestInit["body"]): Uint8Array => {
+  assert(body instanceof Uint8Array);
+  return body;
+};
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
@@ -113,10 +118,8 @@ it("uploads gzip server and client code with metadata matching the stored bytes"
     ],
   });
   expect(fetch).toHaveBeenCalledTimes(2);
-  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   const uploaded = fetch.mock.calls.map(([url, options]) => ({
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    code: gunzipSync(options?.body as Uint8Array).toString("utf-8"),
+    code: gunzipSync(requireBytes(options?.body)).toString("utf-8"),
 
     url: url instanceof Request ? url.url : String(url),
   }));
@@ -129,9 +132,7 @@ it("uploads gzip server and client code with metadata matching the stored bytes"
     url: "https://uploads.example/client",
   });
   for (const [uploadUrl, options] of fetch.mock.calls) {
-    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    const bytes = options?.body as Uint8Array;
+    const bytes = requireBytes(options?.body);
 
     const metadata = (uploadUrl instanceof Request
       ? uploadUrl.url
@@ -204,8 +205,7 @@ it.each([
 
     const result = await runDeploy({
       cwd: root,
-      // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-      onMissingAppId: async () => true,
+      onMissingAppId: vi.fn().mockResolvedValue(true),
     });
 
     expect(await readFile(configPath, "utf-8")).toBe(
@@ -357,9 +357,8 @@ it.each(["vite config", "option"])(
     const server = fetch.mock.calls.find(([url]) =>
       (url instanceof Request ? url.url : String(url)).endsWith("server")
     );
-    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    expect(gunzipSync(server?.[1]?.body as Uint8Array).toString("utf-8")).toBe(
+
+    expect(gunzipSync(requireBytes(server?.[1]?.body)).toString("utf-8")).toBe(
       "new-backend-code"
     );
     expect(fetch).toHaveBeenCalledTimes(2);
@@ -494,9 +493,8 @@ it("preserves signed upload headers and uploads logos without gzip encoding", as
   const logoUpload = fetch.mock.calls.find(([url]) =>
     (url instanceof Request ? url.url : String(url)).endsWith("logo")
   );
-  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-  expect(new TextDecoder().decode(logoUpload?.[1]?.body as Uint8Array)).toBe(
+
+  expect(new TextDecoder().decode(requireBytes(logoUpload?.[1]?.body))).toBe(
     logo
   );
   expect(
