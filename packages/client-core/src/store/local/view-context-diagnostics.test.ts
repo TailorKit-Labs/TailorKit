@@ -185,10 +185,7 @@ it("handles rejected and thrown validators without leaking context", async () =>
     () => {
       throw new Error("failed");
     },
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    async () => {
-      throw new Error("failed");
-    },
+    vi.fn().mockRejectedValue(new Error("failed")),
   ]) {
     const schema: Schema = {
       "~standard": {

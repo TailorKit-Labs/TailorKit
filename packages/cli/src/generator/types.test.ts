@@ -46,16 +46,21 @@ it.each([undefined, "{", '{"version":2,"components":{}}'])(
   }
 );
 
+const mockSchemaFetch = (requests: number) => {
+  const fetch = vi.spyOn(globalThis, "fetch");
+  for (let request = 0; request < requests; request += 1) {
+    fetch.mockResolvedValueOnce(
+      Response.json({ components: {}, version: 1, views: {} })
+    );
+  }
+  return fetch;
+};
+
 it("links the app to the configured server entry and never falls back to an unrelated default file", async () => {
   const root = await mkdtemp(
     path.join(tmpdir(), "tailorkit-configured-server-types-")
   );
-  const fetch = vi
-    .spyOn(globalThis, "fetch")
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    .mockImplementation(async () =>
-      Response.json({ components: {}, version: 1, views: {} })
-    );
+  const fetch = mockSchemaFetch(3);
   try {
     await mkdir(path.join(root, "backend"));
     await mkdir(path.join(root, "src"));
@@ -93,12 +98,7 @@ it("links the app to the configured server entry and never falls back to an unre
 
 it("preserves the type-only API link when regenerating host types, including custom paths", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-host-types-"));
-  const fetch = vi
-    .spyOn(globalThis, "fetch")
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    .mockImplementation(async () =>
-      Response.json({ components: {}, version: 1, views: {} })
-    );
+  const fetch = mockSchemaFetch(3);
   try {
     await mkdir(path.join(root, "src"));
     await writeFile(
@@ -133,12 +133,7 @@ it("preserves the type-only API link when regenerating host types, including cus
 
 it("detects the default server file without server configuration and removes stale API imports", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-detect-server-"));
-  const fetch = vi
-    .spyOn(globalThis, "fetch")
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    .mockImplementation(async () =>
-      Response.json({ components: {}, version: 1, views: {} })
-    );
+  const fetch = mockSchemaFetch(5);
   try {
     await writeFile(
       path.join(root, "tailorkit.config.mjs"),

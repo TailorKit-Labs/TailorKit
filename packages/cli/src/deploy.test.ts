@@ -204,8 +204,7 @@ it.each([
 
     const result = await runDeploy({
       cwd: root,
-      // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-      onMissingAppId: async () => true,
+      onMissingAppId: vi.fn().mockResolvedValue(true),
     });
 
     expect(await readFile(configPath, "utf-8")).toBe(

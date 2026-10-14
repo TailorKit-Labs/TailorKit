@@ -11,11 +11,13 @@ const requireValue = <T>(value: T | null | undefined): T => {
   return value;
 };
 
-const mocks = vi.hoisted(() => ({ runCommand: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  nativeSandbox: vi.fn(),
+  runCommand: vi.fn(),
+}));
 vi.mock("./utils", async (original) => ({
   ...(await original<typeof utilsModule>()),
-  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-  toolNativeSandbox: async () => ({ runCommand: mocks.runCommand }),
+  toolNativeSandbox: mocks.nativeSandbox,
 }));
 const context = {
   agentToken: "private-token",
@@ -25,15 +27,16 @@ const context = {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  mocks.nativeSandbox.mockResolvedValue({ runCommand: mocks.runCommand });
 });
 
 it("pins the authorized app and injects credentials only into the deploy process", async () => {
   mocks.runCommand.mockResolvedValue({
     exitCode: 0,
-    // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-    stderr: async () => "",
-    // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-    stdout: async () => "Deployment: published-one",
+    stderr: vi.fn<() => Promise<string>>().mockResolvedValue(""),
+    stdout: vi
+      .fn<() => Promise<string>>()
+      .mockResolvedValue("Deployment: published-one"),
   });
   const result = await requireValue(deployTool.execute)(
     {},
@@ -69,10 +72,12 @@ it("pins the authorized app and injects credentials only into the deploy process
 it("returns failures for the agent to address and redacts echoed credentials", async () => {
   mocks.runCommand.mockResolvedValue({
     exitCode: 1,
-    // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-    stderr: async () => `Rejected ${context.agentToken}`,
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    stdout: async () => context.agentToken,
+    stderr: vi
+      .fn<() => Promise<string>>()
+      .mockResolvedValue(`Rejected ${context.agentToken}`),
+    stdout: vi
+      .fn<() => Promise<string>>()
+      .mockResolvedValue(context.agentToken),
   });
   expect(
     await requireValue(deployTool.execute)(

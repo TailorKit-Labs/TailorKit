@@ -10,9 +10,14 @@ const base64 = z
   .string()
   .max(4 * Math.ceil((256 * 1024) / 3))
   .regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u);
-const hasControlCharacters = (value: string) =>
-  // oxlint-disable-next-line typescript/no-misused-spread -- Spreading a string iterates Unicode code points, which this control-character check requires.
-  [...value].some((character) => (character.codePointAt(0) ?? 0) < 32);
+const hasControlCharacters = (value: string): boolean => {
+  for (const character of value) {
+    if ((character.codePointAt(0) ?? 0) < 32) {
+      return true;
+    }
+  }
+  return false;
+};
 
 export const previewFileManifestSchema = z.object({
   chunks: z.number().int().min(0).max(4),

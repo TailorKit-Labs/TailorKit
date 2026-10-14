@@ -123,17 +123,11 @@ const setup = () => {
     vi.fn(async () => Response.json(await source.current()))
   );
   let version: string | undefined;
-  const facetQuery = vi.fn(
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    async (
-      _input: Parameters<AppFacet["query"]>[0],
-      _identity: Parameters<AppFacet["query"]>[1]
-    ) => ({
-      committed: false,
-      result: { ok: true, value: "result" },
-      tables: [],
-    })
-  );
+  const facetQuery = vi.fn<AppFacet["query"]>().mockResolvedValue({
+    committed: false,
+    result: { ok: true, value: "result" },
+    tables: [],
+  });
   const startup = vi.fn();
   const abort = vi.fn();
   const put = vi.fn((_key: string, value: string) => {

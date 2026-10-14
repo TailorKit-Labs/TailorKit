@@ -7,10 +7,8 @@ afterEach(() => vi.unstubAllGlobals());
 it("resolves only stable Preact 11 releases from the registry", async () => {
   vi.stubGlobal(
     "fetch",
-    // oxlint-disable-next-line require-await -- The mock keeps the asynchronous API contract.
-    vi.fn(async () => ({
-      // oxlint-disable-next-line require-await -- The mock keeps the asynchronous API contract.
-      json: async () => ({
+    vi.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
         time: {
           "11.0.0": "2026-01-01",
           "11.1.0": "2026-01-02",
@@ -25,7 +23,7 @@ it("resolves only stable Preact 11 releases from the registry", async () => {
         },
       }),
       ok: true,
-    }))
+    })
   );
   const awaitedResult1 = await resolveTemplatePackageVersions();
   expect(awaitedResult1.preact).toBe("11.1.0");
@@ -40,15 +38,13 @@ it("falls back to Preact 11 when the registry is unavailable", async () => {
 it("skips releases younger than three days", async () => {
   vi.stubGlobal(
     "fetch",
-    // oxlint-disable-next-line require-await -- The mock keeps the asynchronous API contract.
-    vi.fn(async () => ({
-      // oxlint-disable-next-line require-await -- The mock keeps the asynchronous API contract.
-      json: async () => ({
+    vi.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({
         time: { "8.0.0": "2026-01-01", "8.1.0": new Date().toISOString() },
         versions: { "8.0.0": {}, "8.1.0": {} },
       }),
       ok: true,
-    }))
+    })
   );
   const awaitedResult3 = await resolveTemplatePackageVersions("vite");
   expect(awaitedResult3.vite).toBe("8.0.0");
