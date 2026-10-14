@@ -653,7 +653,7 @@ importers:
         version: 4.6.5
     devDependencies:
       '@electric-sql/pglite':
-        specifier: ^0.5.8
+        specifier: 0.5.8
         version: 0.5.8
       '@tailorkit/config':
         specifier: workspace:*
@@ -723,7 +723,7 @@ importers:
         version: 4.6.5
     devDependencies:
       '@electric-sql/pglite':
-        specifier: ^0.5.8
+        specifier: 0.5.8
         version: 0.5.8
       '@modelcontextprotocol/client':
         specifier: 2.3.1
