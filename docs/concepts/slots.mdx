@@ -54,10 +54,9 @@ export const contract = defineContract({
 ```ts title="tailorkit.ts"
 import { defineContract } from "tailorkit";
 import * as v from "valibot";
-import { toStandardJsonSchema } from "@valibot/to-json-schema";
 
 export const contract = defineContract({
-  views: { "/": toStandardJsonSchema(v.object({})) },
+  views: { "/": v.object({}) },
   slots: {
     navbar: { views: ["/"] },
     panel: { views: ["/"] },
@@ -69,7 +68,10 @@ export const contract = defineContract({
 
 </Tabs>
 
-`/` is the default context. We'll come back to context below.
+<Tip>
+  Include `/` in a slot's [views](/concepts/views) so apps can provide default
+  UI when no more specific view matches.
+</Tip>
 
 ## One slot, many instances
 
