@@ -1,23 +1,39 @@
-# Database migrations
+# Implementation
 
-Generate migrations with the Drizzle CLI. Do not hand-write migration SQL unless it is absolutely necessary.
+- Preserve the host/sandbox boundary: extension code runs in the sandbox; the host renders UI and controls sensitive operations.
+- Use `#` aliases for imports between source directories in workspaces that declare `#*`; sibling `./` imports remain allowed. Import other workspaces through their package exports.
+- Read environment values through the package's `#env` module. Declare platform environment fields with `createEnv` from `@tailorkit/env`; keep local values in `.env` or `.env.local`.
+- Before adding UI, check `packages/ui` and reuse its components. Compose class names with `cn` from `@tailorkit/ui`.
+- Change generators or source definitions, then regenerate their output.
 
-# UI components
+# Coding defaults
 
-Before adding UI, check `packages/ui` and use existing components wherever possible. Use `cn` from `@tailorkit/ui` to compose class names; do not use template literals.
+For JavaScript/TypeScript work, start with these defaults to avoid preventable lint failures:
 
-# Package release age
+- Keep precise domain types. Parse untrusted input at I/O boundaries; use named types internally instead of broad `any`, `unknown`, or `object` parameters.
+- Prefer type narrowing over assertions and non-null assertions. When an assertion is necessary, add a `// SAFETY:` comment explaining the evidence that makes it valid; keep any required lint suppression local.
+- Prefer `const`, destructuring, optional chaining, and nullish coalescing. Use `for...of` for iteration instead of `.forEach()`.
+- Prefer `async/await`; await or explicitly handle promises, and use `return await` when returning a promise from an async function. Throw `Error` objects; catch errors when recovering or adding useful context.
+- Define React components as module-level arrow functions. Keep hooks unconditional with complete dependencies; use stable keys and nest JSX children between tags.
+- Use semantic controls with accessible names, associated input labels, and keyboard interactions. Give buttons an explicit `type`.
+- Prefer early returns and named conditions over nested ternaries. Keep regex literals outside loops and avoid spreading accumulators on every iteration.
+- Test behavior through real implementations or injected dependencies rather than module mocks. Keep committed tests free of `.only` and `.skip`.
 
-Install packages only after at least 3 days have passed since their release date, unless a required feature or bug fix makes an earlier update necessary.
+# Verification
 
-# Linting and formatting
+- Use pnpm and Vite+ commands: Ultracite 8's standalone CLI does not discover the presets in root `vite.config.ts`.
+- Run `pnpm check` for lint and formatting; run `pnpm fix` to apply fixes and review the diff for behavior changes. Focused checks: `pnpm exec vp lint <path>` and `pnpm exec vp fmt --check <path>`.
+- For code changes, run affected typechecks and tests through `pnpm exec turbo run check-types test --filter=<workspace>` so dependency builds are included. `pnpm check` covers neither types nor tests.
+- Keep preset rules enabled. Keep necessary exceptions local, with suppression comments explaining the runtime or type-system constraint. Preserve explicit `undefined` arguments when argument count matters, even if an autofix suggests removing them.
 
-Use Ultracite’s Oxlint core and Anti-Slop presets and Oxfmt defaults through the root `vite.config.ts`. Framework presets are scoped with `lint.overrides`: React for UI and React/Preact workspaces, and React plus TanStack for the web hosts, and shadcn only for `apps/web`. Keep the custom environment-access restriction in that config.
+# Task-specific guidance
 
-- Use `#` aliases for imports between source directories in workspaces that declare `#*`; sibling `./` imports remain allowed.
-- Run `pnpm check` to check lint and formatting through Turborepo.
-- Run `pnpm fix` to apply fixes, and review the result for behavior changes.
-- Run `pnpm exec vp lint` and `pnpm exec vp fmt --check` for individual checks.
-- Use Vite+ commands: Ultracite 8’s standalone CLI does not discover presets stored in `vite.config.ts`.
+- For platform schema, migration, backfill, or auth-schema changes, use the `tailorkit-db-changes` skill for PR separation and rollout compatibility; follow `packages/db/AGENTS.md` for auth generation and relations.
+- After changing platform API contracts, run `pnpm --filter @tailorkit/api-platform generate:openapi`, then `pnpm --filter @tailorkit/client-platform generate`.
+- For playground setup, contract changes, or database changes, read `playground/README.md` for generation, validator parity, and SQLite schema-push workflows.
+- For user-facing public-package changes or release work, read `RELEASING.md` and follow its Changeset and prerelease workflow.
 
-Do not disable preset rules globally to accommodate new code. Keep any necessary exceptions local and explain the runtime or type-system constraint in the suppression comment. Preserve explicit undefined arguments when argument count matters, even if an autofix suggests removing them.
+# Dependencies
+
+- Use `workspace:*` for internal dependencies and existing `catalog:` entries for shared external versions in `pnpm-workspace.yaml`.
+- Install packages only after at least 3 days have passed since release, unless a required feature or bug fix makes an earlier update necessary. Keep release-age exceptions explicit.
