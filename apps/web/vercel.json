@@ -4,6 +4,18 @@
   "buildCommand": "TURBO_PLATFORM_ENV_DISABLED=true turbo run build --filter=web...",
   "installCommand": "pnpm install --filter web...",
   "fluid": true,
+  "redirects": [
+    {
+      "source": "/docs",
+      "destination": "/docs/getting-started/introduction",
+      "permanent": true
+    },
+    {
+      "source": "/docs/",
+      "destination": "/docs/getting-started/introduction",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/149e9513-01fa-4fb0-aad4-566afd725d1b/2d206a39-8ed7-437e-a3be-862e0f06eea3/a-4-a/c.js",
@@ -46,10 +58,6 @@
     {
       "source": "/api/request",
       "destination": "https://tailorkit.mintlify.site/_mintlify/api/request"
-    },
-    {
-      "source": "/docs",
-      "destination": "https://tailorkit.mintlify.site/docs"
     },
     {
       "source": "/docs/:match*",

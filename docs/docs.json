@@ -15,7 +15,23 @@
     "pages": [
       {
         "group": "Getting Started",
-        "pages": ["index", "installation", "tools"]
+        "pages": [
+          "getting-started/introduction",
+          "getting-started/installation"
+        ]
+      },
+      {
+        "group": "App Capabilities",
+        "pages": [
+          "concepts/slots",
+          "concepts/views",
+          "concepts/components",
+          "concepts/tools"
+        ]
+      },
+      {
+        "group": "Writing apps",
+        "pages": ["writing-apps/overview", "writing-apps/ui"]
       }
     ],
     "global": {
