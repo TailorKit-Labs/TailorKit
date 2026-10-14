@@ -634,6 +634,52 @@ describe("createTailorKitServer", () => {
     );
   });
 
+  it.each([
+    { code: "UNAUTHORIZED", message: "Invalid CLI deploy token.", status: 401 },
+    { code: "FORBIDDEN", message: "Forbidden", status: 403 },
+    {
+      code: "SERVICE_UNAVAILABLE",
+      message: "Service unavailable",
+      status: 503,
+    },
+  ])(
+    "preserves platform $code during CLI token verification",
+    async ({ code, message, status }) => {
+      const server = createTailorKitServer({
+        $internal: {
+          // oxlint-disable-next-line require-await -- The fetch double must retain the asynchronous API contract.
+          platformFetch: async () =>
+            Response.json({ code, defined: false, message }, { status }),
+        },
+        baseUrl: "https://example.com/api/tailorkit",
+        components: {},
+        projectKey: "host-project-key",
+        scopes: { org: testScopeSchema },
+      });
+      const client = createTailorKitClient({
+        fetch: async (request, init) => {
+          const response = await server.handler(
+            request instanceof Request ? request : new Request(request, init),
+            {
+              authenticate: () => {
+                throw new Error("CLI verification must use the deploy token.");
+              },
+            }
+          );
+          expect(response.status).toBe(status);
+          return response;
+        },
+        headers: { authorization: "Bearer expired-cli-token" },
+        url: "https://example.com/api/tailorkit",
+      });
+
+      await expect(client.cliAuth.verifyToken({})).rejects.toMatchObject({
+        code,
+        message,
+      });
+    }
+  );
+
   it("calls the platform client with authorization headers", async () => {
     const requests: Request[] = [];
     const hostRequests: Request[] = [];
