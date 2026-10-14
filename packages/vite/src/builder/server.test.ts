@@ -91,10 +91,11 @@ it("builds file routes with a configured server and blocks server imports from t
       path.join(root, "tailorkit.config.mjs"),
       'export default { host: "https://host.example.com", server: { entry: "./backend/api.ts" } };'
     );
-    for (const directory of ["src", "backend"]) {
-      // oxlint-disable-next-line no-await-in-loop -- Process the validation and dependent file IO in order; fail before advancing on error.
-      await mkdir(path.join(root, directory));
-    }
+    await Promise.all(
+      ["src", "backend"].map(async (directory) => {
+        await mkdir(path.join(root, directory));
+      })
+    );
     await writeFile(
       path.join(root, "src/client.ts"),
       'throw new Error("Unused default client");'
@@ -214,17 +215,20 @@ it("builds separate artifacts and rejects accidental imports of server code", as
         recursive: true,
       })
     ).toEqual(migrationFiles);
-    for (const file of migrationFiles.filter((filename) =>
-      filename.endsWith("migration.sql")
-    )) {
-      expect(
-        // oxlint-disable-next-line no-await-in-loop -- Process the validation and dependent file IO in order; fail before advancing on error.
-        await readFile(path.join(root, ".tailorkit/migrations", file), "utf-8")
-      ).toBe(
-        // oxlint-disable-next-line no-await-in-loop -- Process the validation and dependent file IO in order; fail before advancing on error.
-        await readFile(path.join(root, "src/db/migrations", file), "utf-8")
-      );
-    }
+    await Promise.all(
+      migrationFiles
+        .filter((filename) => filename.endsWith("migration.sql"))
+        .map(async (file) => {
+          expect(
+            await readFile(
+              path.join(root, ".tailorkit/migrations", file),
+              "utf-8"
+            )
+          ).toBe(
+            await readFile(path.join(root, "src/db/migrations", file), "utf-8")
+          );
+        })
+    );
     await buildFixture({ cwd: root, outDir: ".tailorkit/custom" });
     expect(
       await readFile(

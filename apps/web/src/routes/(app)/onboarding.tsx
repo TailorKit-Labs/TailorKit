@@ -10,11 +10,9 @@ export const Route = createFileRoute("/(app)/onboarding")({
     );
 
     if (orgs.length > 0) {
-      // oxlint-disable-next-line typescript/only-throw-error -- TanStack Router intercepts its redirect and not-found response objects when they are thrown from route loaders.
-      throw redirect({ to: "/" });
+      redirect({ throw: true, to: "/" });
     }
 
-    // oxlint-disable-next-line typescript/only-throw-error -- TanStack Router intercepts its redirect and not-found response objects when they are thrown from route loaders.
-    throw redirect({ to: "/account/request-organization" });
+    redirect({ throw: true, to: "/account/request-organization" });
   },
 });

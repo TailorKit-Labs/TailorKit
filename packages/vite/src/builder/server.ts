@@ -143,9 +143,8 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
           closeWatcher: async () => {
             await rm(temporary, { force: true, recursive: true });
           },
-          async load(id) {
+          async load(id): Promise<string | undefined> {
             if (id !== "\0tailorkit:migrations") {
-              /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
               return undefined;
             }
             const { migrations, files } = await readAppMigrations(

@@ -38,7 +38,9 @@ const agentClaimsSchema = z.object({
 });
 
 /** Decode routing data only. The platform verifies the signature and authorization. */
-export const getAgentAuth = () => {
+export const getAgentAuth = ():
+  | (z.output<typeof agentClaimsSchema> & { token: string })
+  | undefined => {
   const environment = readAgentEnvironment();
   let token = environment.TAILORKIT_AGENT_TOKEN;
   if (
@@ -55,7 +57,6 @@ export const getAgentAuth = () => {
     }
   }
   if (token === undefined) {
-    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
     return undefined;
   }
   try {

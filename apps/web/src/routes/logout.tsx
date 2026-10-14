@@ -16,8 +16,8 @@ export const Route = createFileRoute("/logout")({
     });
 
     context.queryClient.clear();
-    // oxlint-disable-next-line typescript/only-throw-error -- TanStack Router intercepts its redirect and not-found response objects when they are thrown from route loaders.
-    throw redirect({
+    redirect({
+      throw: true,
       replace: true,
       search: { email: undefined, return_to: undefined },
       to: "/login",

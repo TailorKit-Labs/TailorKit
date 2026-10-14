@@ -288,12 +288,10 @@ describe("tailorKitClient React adapter", () => {
         (input) =>
           input instanceof URL && input.pathname.endsWith("/preview/metadata")
       );
-    expect(metadataRequest).toBeInstanceOf(URL);
-    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-    expect(
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-      new URL(metadataRequest as URL).searchParams.getAll("scopes")
-    ).toEqual([]);
+    if (!(metadataRequest instanceof URL)) {
+      throw new Error("Expected a preview metadata URL.");
+    }
+    expect(metadataRequest.searchParams.getAll("scopes")).toEqual([]);
     const [socket] = PreviewSocket.instances;
     view.rerender(content("updated-token"));
     expect(PreviewSocket.instances).toHaveLength(1);

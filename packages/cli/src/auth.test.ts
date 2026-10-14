@@ -498,9 +498,10 @@ describe("auth store", () => {
     const fetch = vi
       .spyOn(globalThis, "fetch")
       .mockImplementation(async (input) => {
-        // SAFETY: The exercised fetch call constructs this Request; the test inspects the captured request after asserting the call occurred.
-        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-        const request = input as Request;
+        if (!(input instanceof Request)) {
+          throw new Error("Expected a Request.");
+        }
+        const request = input;
         expect(request.url).toBe(
           "https://platform.test/api/platform/cli-auth/verify-token"
         );

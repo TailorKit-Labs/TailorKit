@@ -421,7 +421,9 @@ export const extractInstances = async (
   initialSource: string,
   root: string,
   includedNames?: string[]
-) => {
+): Promise<
+  { browser: string; names: string[]; server: string } | undefined
+> => {
   let source = initialSource;
 
   source = inferFileView(source, filename, root);
@@ -516,7 +518,6 @@ export const extractInstances = async (
     }
   }
   if (!resolvers.length) {
-    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
     return undefined;
   }
   const original = units(program, source);
@@ -606,19 +607,20 @@ export const instanceExtractionPlugin = (
 ): Plugin => ({
   enforce: "pre",
   name: "tailorkit-instance-extraction",
-  transform: async (source, filename) => {
+  transform: async (
+    source,
+    filename
+  ): Promise<{ code: string; map: null } | undefined> => {
     if (
       filename.includes("node_modules") ||
       !/\.[cm]?[jt]sx?$/u.test(filename) ||
       (!source.includes("instances") && !modules.has(filename))
     ) {
-      /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
       return undefined;
     }
     const result = await extractInstances(filename, source, root());
     if (!result) {
       modules.delete(filename);
-      /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
       return undefined;
     }
     if (!serverConfigured()) {
@@ -635,9 +637,8 @@ export const instanceServerPlugin = (
   modules: InstanceModule[]
 ): Plugin => ({
   enforce: "pre",
-  async load(id) {
+  async load(id): Promise<string | undefined> {
     if (!id.endsWith(suffix)) {
-      /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
       return undefined;
     }
     const filename = id.slice(0, -suffix.length);

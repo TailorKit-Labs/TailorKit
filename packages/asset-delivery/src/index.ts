@@ -200,7 +200,17 @@ const publicationPath = new RegExp(
   "u"
 );
 
-export const parseHostedAppRoute = (request: Request, assetDomain: string) => {
+export const parseHostedAppRoute = (
+  request: Request,
+  assetDomain: string
+):
+  | {
+      appPublicId: string;
+      projectId: string;
+      publicTeamId: string | undefined;
+      rpcPath: string;
+    }
+  | undefined => {
   const url = new URL(request.url);
   const suffix = `.${assetDomain}`;
   const local =
@@ -210,7 +220,6 @@ export const parseHostedAppRoute = (request: Request, assetDomain: string) => {
     !local &&
     (url.protocol !== "https:" || url.port || !url.hostname.endsWith(suffix))
   ) {
-    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
     return undefined;
   }
   const publicTeamId = local
@@ -225,12 +234,10 @@ export const parseHostedAppRoute = (request: Request, assetDomain: string) => {
     ) ||
       !teamIdPattern.test(publicTeamId))
   ) {
-    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
     return undefined;
   }
   const match = hostedAppPath.exec(url.pathname);
   if (!match) {
-    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
     return undefined;
   }
   return {
@@ -245,7 +252,7 @@ export const parseHostedAppRoute = (request: Request, assetDomain: string) => {
 export const parseDeploymentPublicationRoute = (
   request: Request,
   assetDomain: string
-) => {
+): { appPublicId: string; projectId: string } | undefined => {
   const url = new URL(request.url);
   if (
     url.protocol !== "https:" ||
@@ -253,12 +260,10 @@ export const parseDeploymentPublicationRoute = (
     url.search ||
     url.hostname !== `internal.${assetDomain}`
   ) {
-    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
     return undefined;
   }
   const match = publicationPath.exec(url.pathname);
   if (!match) {
-    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
     return undefined;
   }
   return {

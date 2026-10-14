@@ -268,10 +268,11 @@ it("typechecks file route roots, layouts and views without a manual client entry
     "src/slots/panel/layout.tsx",
     "src/slots/panel/index.view.tsx",
   ];
-  for (const file of sources) {
-    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-    await writeFile(path.join(root, file), "export default null;\n");
-  }
+  await Promise.all(
+    sources.map(async (file) => {
+      await writeFile(path.join(root, file), "export default null;\n");
+    })
+  );
   await writeFile(
     path.join(root, "tsconfig.json"),
     JSON.stringify({
@@ -293,13 +294,14 @@ it("typechecks file route roots, layouts and views without a manual client entry
   expect(mocks.publish).toHaveBeenCalledOnce();
   mocks.publish.mockClear();
   // Collect diagnostics for every entry in one compiler run.
-  for (const file of sources) {
-    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-    await writeFile(
-      path.join(root, file),
-      "const label: string = 42; export default label;\n"
-    );
-  }
+  await Promise.all(
+    sources.map(async (file) => {
+      await writeFile(
+        path.join(root, file),
+        "const label: string = 42; export default label;\n"
+      );
+    })
+  );
   const onTypecheckFailed = vi.fn().mockResolvedValue(false);
   await expect(runDeploy({ cwd: root, onTypecheckFailed })).rejects.toThrow(
     "type check failed"

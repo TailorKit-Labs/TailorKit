@@ -183,21 +183,8 @@ it("revokes callbacks after completion and cancellation", async () => {
 
 it("revokes a running action's callbacks before its asynchronous work finishes", async () => {
   let context!: ActionContext<typeof functions>;
-  let finish!: () => void;
-  // oxlint-disable-next-line typescript/promise-function-async -- These capability guards must throw synchronously before dispatching asynchronous work.
-  const external = (() => {
-    const {
-      promise: pendingPromise,
-      resolve,
-      reject: rejectPending,
-    } = Promise.withResolvers<ReturnType<() => void>>();
-    try {
-      finish = resolve;
-    } catch (error) {
-      rejectPending(error);
-    }
-    return pendingPromise;
-  })();
+  const { promise: external, resolve: finish } =
+    Promise.withResolvers<ReturnType<() => void>>();
   const mutate = vi.fn();
   const app = defineServer({
     ...functions,
@@ -246,21 +233,8 @@ it("rejects action call collections that are not registered under the same names
 it("reuses compiled nested bindings while isolating concurrent calls and retained callbacks", async () => {
   const nested = { records: { read: functions.read, write: functions.write } };
   const contexts: ActionContext<typeof nested>[] = [];
-  let release!: () => void;
-  // oxlint-disable-next-line typescript/promise-function-async -- These capability guards must throw synchronously before dispatching asynchronous work.
-  const waiting = (() => {
-    const {
-      promise: pendingPromise,
-      resolve,
-      reject: rejectPending,
-    } = Promise.withResolvers<ReturnType<() => void>>();
-    try {
-      release = resolve;
-    } catch (error) {
-      rejectPending(error);
-    }
-    return pendingPromise;
-  })();
+  const { promise: waiting, resolve: release } =
+    Promise.withResolvers<ReturnType<() => void>>();
   const app = defineServer({
     ...nested,
     run: action({
@@ -393,33 +367,35 @@ it("runs generated instance resolvers with all registered queries and no write c
 
 it("validates instance payloads and stable keys before returning resolver results", async () => {
   const { withInstanceResolvers } = await import("@tailorkit/app/server");
-  for (const result of [
-    [{ data: { id: 123 }, key: "overview", metadata: {} }],
-    [{ data: { id: "report" }, key: "", metadata: {} }],
+  await Promise.all(
     [
-      { data: { id: "one" }, key: "overview", metadata: {} },
-      { data: { id: "two" }, key: "overview", metadata: {} },
-    ],
-  ]) {
-    const app = withInstanceResolvers(defineServer({}), [
-      {
-        dataSchema: z.object({ id: z.string() }),
-        path: "/",
-        resolve: () => result,
-        slot: "page",
-      },
-    ]);
-    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-    await expect(
-      actionRunner(app, { mutate: vi.fn(), query: vi.fn() })(
+      [{ data: { id: 123 }, key: "overview", metadata: {} }],
+      [{ data: { id: "report" }, key: "", metadata: {} }],
+      [
+        { data: { id: "one" }, key: "overview", metadata: {} },
+        { data: { id: "two" }, key: "overview", metadata: {} },
+      ],
+    ].map(async (result) => {
+      const app = withInstanceResolvers(defineServer({}), [
         {
-          args: { context: {}, path: "/", slot: "page" },
-          name: "_tailorkit.instances.resolve",
+          dataSchema: z.object({ id: z.string() }),
+          path: "/",
+          resolve: () => result,
+          slot: "page",
         },
-        identity
-      )
-    ).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
-  }
+      ]);
+
+      await expect(
+        actionRunner(app, { mutate: vi.fn(), query: vi.fn() })(
+          {
+            args: { context: {}, path: "/", slot: "page" },
+            name: "_tailorkit.instances.resolve",
+          },
+          identity
+        )
+      ).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
+    })
+  );
 });
 
 it("reserves the internal namespace and rejects duplicate or invalid slot/path addresses", async () => {
@@ -490,28 +466,30 @@ it("dispatches by exact slot/path pairs and validates against the selected data 
       identity
     )
   ).resolves.toEqual([{ data: { count: 3 }, key: "two", metadata: {} }]);
-  for (const [slot, path] of [
-    ["page.links", "/reports"],
-    ["missing", "/reports/annual.summary"],
-    ["__proto__", "/constructor"],
-  ]) {
-    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-    await expect(
-      run({ args: { context: {}, path, slot }, name }, identity)
-    ).rejects.toMatchObject({
-      code: "NOT_FOUND",
-    });
-  }
-  for (const args of [
-    { context: {}, slot: "page.links" },
-    { context: {}, path: "invalid", slot: "page.links" },
-    { context: {}, path: "/", slot: "" },
-  ]) {
-    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-    await expect(run({ args, name }, identity)).rejects.toMatchObject({
-      code: "BAD_REQUEST",
-    });
-  }
+  await Promise.all(
+    [
+      ["page.links", "/reports"],
+      ["missing", "/reports/annual.summary"],
+      ["__proto__", "/constructor"],
+    ].map(async ([slot, path]) => {
+      await expect(
+        run({ args: { context: {}, path, slot }, name }, identity)
+      ).rejects.toMatchObject({
+        code: "NOT_FOUND",
+      });
+    })
+  );
+  await Promise.all(
+    [
+      { context: {}, slot: "page.links" },
+      { context: {}, path: "invalid", slot: "page.links" },
+      { context: {}, path: "/", slot: "" },
+    ].map(async (args) => {
+      await expect(run({ args, name }, identity)).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+      });
+    })
+  );
   expect(first).toHaveBeenCalledOnce();
   expect(second).toHaveBeenCalledOnce();
 });

@@ -46,22 +46,25 @@ describe("Node asset delivery", () => {
   it("rejects every server bundle URL before accessing private storage", async () => {
     const backend = storage();
     const fetch = vi.spyOn(globalThis, "fetch");
-    for (const suffix of [
-      "server.js",
-      "server/server.js",
-      "client/server.js",
-      "artifact.json",
-      "migration.sql",
-    ]) {
-      for (const method of ["GET", "HEAD", "OPTIONS"]) {
-        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-        const response = await handleAssetRequest(
-          new Request(url.replace("client.js", suffix), { method }),
-          backend
+    await Promise.all(
+      [
+        "server.js",
+        "server/server.js",
+        "client/server.js",
+        "artifact.json",
+        "migration.sql",
+      ].map(async (suffix) => {
+        await Promise.all(
+          ["GET", "HEAD", "OPTIONS"].map(async (method) => {
+            const response = await handleAssetRequest(
+              new Request(url.replace("client.js", suffix), { method }),
+              backend
+            );
+            expect(response.status).toBe(404);
+          })
         );
-        expect(response.status).toBe(404);
-      }
-    }
+      })
+    );
     expect(backend.head).not.toHaveBeenCalled();
     expect(backend.createDownloadUrl).not.toHaveBeenCalled();
     expect(fetch).not.toHaveBeenCalled();

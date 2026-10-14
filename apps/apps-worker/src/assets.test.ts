@@ -72,22 +72,25 @@ afterEach(() => {
 
 describe("tenant asset gateway", () => {
   it("never serves server bundles, manifests or migrations publicly", async () => {
-    for (const suffix of [
-      "server.js",
-      "server/server.js",
-      "client/server.js",
-      "artifact.json",
-      "migration.sql",
-      "../server/server.js",
-    ]) {
-      for (const method of ["GET", "HEAD", "OPTIONS"]) {
-        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-        const response = await fetchAsset(
-          new Request(url.replace("client.js", suffix), { method })
+    await Promise.all(
+      [
+        "server.js",
+        "server/server.js",
+        "client/server.js",
+        "artifact.json",
+        "migration.sql",
+        "../server/server.js",
+      ].map(async (suffix) => {
+        await Promise.all(
+          ["GET", "HEAD", "OPTIONS"].map(async (method) => {
+            const response = await fetchAsset(
+              new Request(url.replace("client.js", suffix), { method })
+            );
+            expect(response.status).toBe(404);
+          })
         );
-        expect(response.status).toBe(404);
-      }
-    }
+      })
+    );
     expect(get).not.toHaveBeenCalled();
     expect(head).not.toHaveBeenCalled();
     expect(match).not.toHaveBeenCalled();
@@ -173,33 +176,34 @@ describe("tenant asset gateway", () => {
   );
 
   it("rejects foreign hosts, slugs, malformed paths and query strings before R2", async () => {
-    for (const invalid of [
-      url.replace("abc123def45678", "abc123def4"),
-      url.replace("abc123def45678", "team-abcde"),
-      url.replace("abc123def45678", "team-abc123def45678"),
-      url.replace("abc123def45678", "editable-slug"),
-      url.replace("abc123def45678", "-bc123def4"),
-      url.replace("abc123def45678", "abc123def-"),
-      url.replace("abc123def45678", "abc_23def4"),
-      url.replace("abc123def45678", "-bc123def45678"),
-      url.replace("abc123def45678", "abc123def4567-"),
-      url.replace("abc123def45678", "abc_23def45678"),
-      url.replace("abc123def45678", "01234567890"),
-      url.replace("abc123def45678", "012345678901"),
-      url.replace("abc123def45678", "0123456789012"),
-      url.replace("abc123def45678", "012345678901234"),
-      url.replace("tailorkit.app", "tailorkit.app.evil.example"),
-      url.replace("abc123def45678", "nested.abc123def45678"),
-      `${url}?token=anything`,
-      url.replace("client.js", "secret.js"),
-      url.replace(appId, "app-slug"),
-    ]) {
-      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-      await expect(fetchAsset(new Request(invalid))).resolves.toHaveProperty(
-        "status",
-        404
-      );
-    }
+    await Promise.all(
+      [
+        url.replace("abc123def45678", "abc123def4"),
+        url.replace("abc123def45678", "team-abcde"),
+        url.replace("abc123def45678", "team-abc123def45678"),
+        url.replace("abc123def45678", "editable-slug"),
+        url.replace("abc123def45678", "-bc123def4"),
+        url.replace("abc123def45678", "abc123def-"),
+        url.replace("abc123def45678", "abc_23def4"),
+        url.replace("abc123def45678", "-bc123def45678"),
+        url.replace("abc123def45678", "abc123def4567-"),
+        url.replace("abc123def45678", "abc_23def45678"),
+        url.replace("abc123def45678", "01234567890"),
+        url.replace("abc123def45678", "012345678901"),
+        url.replace("abc123def45678", "0123456789012"),
+        url.replace("abc123def45678", "012345678901234"),
+        url.replace("tailorkit.app", "tailorkit.app.evil.example"),
+        url.replace("abc123def45678", "nested.abc123def45678"),
+        `${url}?token=anything`,
+        url.replace("client.js", "secret.js"),
+        url.replace(appId, "app-slug"),
+      ].map(async (invalid) => {
+        await expect(fetchAsset(new Request(invalid))).resolves.toHaveProperty(
+          "status",
+          404
+        );
+      })
+    );
     expect(get).not.toHaveBeenCalled();
     expect(head).not.toHaveBeenCalled();
   });

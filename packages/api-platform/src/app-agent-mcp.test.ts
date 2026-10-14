@@ -289,46 +289,49 @@ describe("platform MCP endpoint", () => {
   });
 
   it("rejects service/agent credentials and malformed host identities", async () => {
-    for (const restricted of [{ runtimeService: true }, { agentToken: {} }]) {
-      // SAFETY: This test supplies the context members read by the handler; unrelated request context services are outside this scenario.
+    await Promise.all(
+      [{ runtimeService: true }, { agentToken: {} }].map(async (restricted) => {
+        // SAFETY: This test supplies the context members read by the handler; unrelated request context services are outside this scenario.
 
-      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-      const awaitedResult1 = await handleAppAgentMcpRequest(
-        request("list_apps"),
+        const awaitedResult1 = await handleAppAgentMcpRequest(
+          request("list_apps"),
 
-        /* oxlint-disable typescript/no-unsafe-type-assertion -- This test supplies the context members read by the handler; unrelated request context services are outside this scenario. */
-        {
-          ...context,
-          ...restricted,
-        } as Context
-        /* oxlint-enable typescript/no-unsafe-type-assertion */
-      );
-      expect(awaitedResult1.status).toBe(403);
-    }
-    for (const invalid of [
-      { scopes: {} },
-      { subjectId: "" },
-      { scopes: { org: {} } },
-    ]) {
-      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-      const awaitedResult2 = await handleAppAgentMcpRequest(
-        request("list_apps", {}, invalid),
-        context
-      );
-      expect(awaitedResult2.status).toBe(400);
-    }
+          /* oxlint-disable typescript/no-unsafe-type-assertion -- This test supplies the context members read by the handler; unrelated request context services are outside this scenario. */
+          {
+            ...context,
+            ...restricted,
+          } as Context
+          /* oxlint-enable typescript/no-unsafe-type-assertion */
+        );
+        expect(awaitedResult1.status).toBe(403);
+      })
+    );
+    await Promise.all(
+      [{ scopes: {} }, { subjectId: "" }, { scopes: { org: {} } }].map(
+        async (invalid) => {
+          const awaitedResult2 = await handleAppAgentMcpRequest(
+            request("list_apps", {}, invalid),
+            context
+          );
+          expect(awaitedResult2.status).toBe(400);
+        }
+      )
+    );
     expect(mocks.list).not.toHaveBeenCalled();
   });
 
   it("rejects malformed/oversized context headers and cross-origin requests", async () => {
-    for (const encoded of ["", "not+base64", "eyJ9=", "x".repeat(8193), "_w"]) {
-      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-      const awaitedResult3 = await handleAppAgentMcpRequest(
-        request("list_apps", {}, {}, { "x-tailorkit-context": encoded }),
-        context
-      );
-      expect(awaitedResult3.status).toBe(400);
-    }
+    await Promise.all(
+      ["", "not+base64", "eyJ9=", "x".repeat(8193), "_w"].map(
+        async (encoded) => {
+          const awaitedResult3 = await handleAppAgentMcpRequest(
+            request("list_apps", {}, {}, { "x-tailorkit-context": encoded }),
+            context
+          );
+          expect(awaitedResult3.status).toBe(400);
+        }
+      )
+    );
     const unexpected = await handleAppAgentMcpRequest(
       request("list_apps", {}, { schema: {} }),
       context

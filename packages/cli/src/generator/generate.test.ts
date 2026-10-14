@@ -57,10 +57,11 @@ const defaultOptions = {
 } as const;
 
 afterEach(async () => {
-  for (const directory of testDirectories.splice(0)) {
-    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-    await rm(directory, { force: true, recursive: true });
-  }
+  await Promise.all(
+    testDirectories.splice(0).map(async (directory) => {
+      await rm(directory, { force: true, recursive: true });
+    })
+  );
 });
 
 describe("generateApp", () => {
@@ -86,12 +87,13 @@ describe("generateApp", () => {
       path.join("src", "functions", "greeting.ts"),
     ];
 
-    for (const file of files) {
-      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-      await expect(
-        readFile(path.join(targetDirectory, file), "utf-8")
-      ).resolves.toBeDefined();
-    }
+    await Promise.all(
+      files.map(async (file) => {
+        await expect(
+          readFile(path.join(targetDirectory, file), "utf-8")
+        ).resolves.toBeDefined();
+      })
+    );
   });
 
   it("wires the database and relations without a duplicate schema import", async () => {
@@ -270,17 +272,17 @@ describe("generateApp", () => {
     expect(content).not.toContain("defineTailorKitConfig");
   });
 
-  it("generates TailorKit logos for both themes", async () => {
-    const targetDirectory = await createTempDir();
-    await generateApp({ ...defaultOptions, targetDirectory });
+  it.each(["dark", "light"])(
+    "generates the %s TailorKit logo",
+    async (variant) => {
+      const targetDirectory = await createTempDir();
+      await generateApp({ ...defaultOptions, targetDirectory });
 
-    for (const variant of ["dark", "light"]) {
-      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       const content = await readFile(
         path.join(targetDirectory, `logo-${variant}.svg`),
         "utf-8"
       );
-      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+
       const brandMark = await readFile(
         new URL(
           `../../../../apps/web/public/brand/mark-${variant}.svg`,
@@ -290,29 +292,27 @@ describe("generateApp", () => {
       );
       expect(content).toBe(brandMark);
     }
-  });
+  );
 
-  it("protects existing logos unless force is enabled", async () => {
-    for (const variant of ["dark", "light"]) {
-      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+  it.each(["dark", "light"])(
+    "protects the existing %s logo unless force is enabled",
+    async (variant) => {
       const targetDirectory = await createTempDir();
       const logoPath = path.join(targetDirectory, `logo-${variant}.svg`);
-      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+
       await writeFile(logoPath, "custom logo", "utf-8");
 
-      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       await expect(
         generateApp({ ...defaultOptions, targetDirectory })
       ).rejects.toThrow("already exists. Use --force to overwrite it.");
-      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+
       expect(await readFile(logoPath, "utf-8")).toBe("custom logo");
 
-      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       await generateApp({ ...defaultOptions, force: true, targetDirectory });
-      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+
       expect(await readFile(logoPath, "utf-8")).toContain("<svg");
     }
-  });
+  );
 
   it("generates a default view for the host schema", async () => {
     const targetDirectory = await createTempDir();

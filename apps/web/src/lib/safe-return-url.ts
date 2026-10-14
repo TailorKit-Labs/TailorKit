@@ -1,16 +1,14 @@
 export const getSameOriginPath = (
   value: string | undefined,
   currentOrigin: string
-) => {
+): string | undefined => {
   if (!(value !== undefined && value !== null && value !== "")) {
-    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
     return undefined;
   }
 
   try {
     const url = new URL(value, currentOrigin);
     if (url.origin !== currentOrigin) {
-      /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
       return undefined;
     }
 
@@ -18,18 +16,16 @@ export const getSameOriginPath = (
   } catch {
     // Invalid URLs are not safe redirect targets.
   }
-  // oxlint-disable-next-line unicorn/no-useless-undefined -- Invalid URLs use the same sentinel as other unsafe redirect targets.
   return undefined;
 };
 
 export const getSameOriginUrl = (
   value: string | undefined,
   currentOrigin: string
-) => {
+): string | undefined => {
   const path = getSameOriginPath(value, currentOrigin);
 
   if (!(path !== undefined && path !== null && path !== "")) {
-    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
     return undefined;
   }
 

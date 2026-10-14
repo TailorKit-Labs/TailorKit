@@ -125,7 +125,7 @@ export const warnIfMissing = (scope: string, values: object): void => {
 export const resolveProductionUrl = (values: {
   AUTH_PRODUCTION_URL?: string;
   VERCEL_PROJECT_PRODUCTION_URL?: string;
-}) => {
+}): string | undefined => {
   let value = values.AUTH_PRODUCTION_URL;
   if (
     !(value !== undefined && value !== null && value !== "") &&
@@ -137,18 +137,15 @@ export const resolveProductionUrl = (values: {
   }
 
   if (!(value !== undefined && value !== null && value !== "")) {
-    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
     return undefined;
   }
 
   if (!URL.canParse(value)) {
-    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
     return undefined;
   }
 
   const url = new URL(value);
   if (url.protocol !== "http:" && url.protocol !== "https:") {
-    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
     return undefined;
   }
   return url.href.replace(/\/$/u, "");

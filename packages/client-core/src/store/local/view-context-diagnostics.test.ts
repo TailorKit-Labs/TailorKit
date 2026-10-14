@@ -181,25 +181,27 @@ it("waits for asynchronous validation and ignores results for replaced or unmoun
 
 it("handles rejected and thrown validators without leaking context", async () => {
   const error = vi.spyOn(console, "error").mockImplementation(() => {});
-  for (const validate of [
-    () => {
-      throw new Error("failed");
-    },
-    vi.fn().mockRejectedValue(new Error("failed")),
-  ]) {
-    const schema: Schema = {
-      "~standard": {
-        validate,
-        vendor: "test",
-        version: 1,
+  await Promise.all(
+    [
+      () => {
+        throw new Error("failed");
       },
-    };
-    const store = setup(schema);
-    store.register({ context: {}, id: Symbol("identity"), view: "/" });
-    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-    await vi.waitFor(() => {
-      expect(store.state.get()?.layers[0]?.status).toBe("error");
-    });
-  }
+      vi.fn().mockRejectedValue(new Error("failed")),
+    ].map(async (validate) => {
+      const schema: Schema = {
+        "~standard": {
+          validate,
+          vendor: "test",
+          version: 1,
+        },
+      };
+      const store = setup(schema);
+      store.register({ context: {}, id: Symbol("identity"), view: "/" });
+
+      await vi.waitFor(() => {
+        expect(store.state.get()?.layers[0]?.status).toBe("error");
+      });
+    })
+  );
   expect(error).toHaveBeenCalledTimes(2);
 });

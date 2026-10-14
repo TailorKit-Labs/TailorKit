@@ -25,7 +25,10 @@ const routePath = (name: string, filename: string, indexView = false) => {
   return `/${segments.join("/")}`;
 };
 
-export const fileViewLocation = (filename: string, root: string) => {
+export const fileViewLocation = (
+  filename: string,
+  root: string
+): { path: string; slot: string } | undefined => {
   const relative = path
     .relative(path.join(root, "src/slots"), filename)
     .split(path.sep);
@@ -34,12 +37,10 @@ export const fileViewLocation = (filename: string, root: string) => {
     relative[0] === ".." ||
     !filename.endsWith(".view.tsx")
   ) {
-    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
     return undefined;
   }
   const [slot, ...routeSegments] = relative;
   if (!(slot !== undefined && slot !== null && slot !== "")) {
-    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
     return undefined;
   }
   const basename = routeSegments.join("/").slice(0, -".view.tsx".length);
@@ -338,9 +339,8 @@ export const fileRoutesPlugin = (root: () => string): Plugin => ({
       skipSelf: true,
     })) ?? this.resolve("@tailorkit/app/client", importer, { skipSelf: true }));
   },
-  transform: (source, filename) => {
+  transform: (source, filename): { code: string; map: null } | undefined => {
     if (!filename.endsWith(".view.tsx")) {
-      /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
       return undefined;
     }
     const code = inferFileView(source, filename, root());

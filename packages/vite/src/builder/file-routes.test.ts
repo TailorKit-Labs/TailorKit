@@ -221,17 +221,18 @@ it("discovers only view and layout files, supports roots, and checks the same so
     await mkdir(path.join(root, "src/slots/panel.links/components"), {
       recursive: true,
     });
-    for (const file of [
-      "root.tsx",
-      "slots/panel.links/root.tsx",
-      "slots/panel.links/layout.tsx",
-      "slots/panel.links/customers.layout.tsx",
-      "slots/panel.links/customers.details.view.tsx",
-      "slots/panel.links/components/card.tsx",
-    ]) {
-      // oxlint-disable-next-line no-await-in-loop -- Process the validation and dependent file IO in order; fail before advancing on error.
-      await writeFile(path.join(root, "src", file), "export default {}; ");
-    }
+    await Promise.all(
+      [
+        "root.tsx",
+        "slots/panel.links/root.tsx",
+        "slots/panel.links/layout.tsx",
+        "slots/panel.links/customers.layout.tsx",
+        "slots/panel.links/customers.details.view.tsx",
+        "slots/panel.links/components/card.tsx",
+      ].map(async (file) => {
+        await writeFile(path.join(root, "src", file), "export default {}; ");
+      })
+    );
     const discovered = await discoverFileRoutes(root);
     expect(
       discovered.views.map(({ slot, filename }) => [
