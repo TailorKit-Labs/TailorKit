@@ -1,12 +1,11 @@
-import { createModelCallToUIChunkTransform } from "@ai-sdk/workflow";
 import { openapi } from "@orpc/openapi";
 import {
   eventIterator,
   ORPCError,
   streamToAsyncIteratorObject,
 } from "@orpc/server";
+import { appAgent } from "@tailorkit/agent/workflows";
 import { issueAgentToken } from "@tailorkit/api-utils/agent-token";
-import { appAgent } from "@tailorkit/app-agent/workflows";
 import {
   asSchema,
   convertToModelMessages,
@@ -112,9 +111,14 @@ const chat = cliRouter
         execute: async ({ writer }) => {
           const controller = new AbortController();
           writer.merge(
-            run.readable.pipeThrough(createModelCallToUIChunkTransform(), {
-              signal: controller.signal,
-            })
+            run
+              .getReadable<UIMessageChunk>()
+              .pipeThrough(
+                new TransformStream<UIMessageChunk, UIMessageChunk>(),
+                {
+                  signal: controller.signal,
+                }
+              )
           );
           try {
             // Finish the response only after cleanup releases the app's Drive.

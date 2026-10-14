@@ -36,8 +36,8 @@
   "dependencies": {
     "@orpc/client": "catalog:",
     "@orpc/server": "catalog:",
+    "@tailorkit/agent": "workspace:*",
     "@tailorkit/api-utils": "workspace:*",
-    "@tailorkit/app-agent": "workspace:*",
     "@tailorkit/auth": "workspace:*",
     "@tailorkit/db": "workspace:*",
     "@tailorkit/env": "workspace:*",
@@ -50,7 +50,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "^0.5.8",
+    "@electric-sql/pglite": "0.5.8",
     "@tailorkit/config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:"

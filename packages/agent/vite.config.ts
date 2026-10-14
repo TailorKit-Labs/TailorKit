@@ -9,7 +9,12 @@ export default defineConfig({
     clean: true,
     deps: { neverBundle: Object.keys(packageJson.dependencies) },
     dts: true,
-    entry: ["src/index.ts", "src/workflows.ts", "src/mcp.ts"],
+    entry: [
+      "src/index.ts",
+      "src/workflows.ts",
+      "src/mcp.ts",
+      "src/source-export.ts",
+    ],
     format: "esm",
     minify: false,
     plugins: [

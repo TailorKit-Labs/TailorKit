@@ -48,13 +48,12 @@
     "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
-    "@ai-sdk/workflow": "2.0.69",
     "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
     "@orpc/zod": "catalog:",
+    "@tailorkit/agent": "workspace:*",
     "@tailorkit/api-utils": "workspace:*",
     "@tailorkit/app": "workspace:*",
-    "@tailorkit/app-agent": "workspace:*",
     "@tailorkit/asset-delivery": "workspace:*",
     "@tailorkit/auth": "workspace:*",
     "@tailorkit/db": "workspace:*",
@@ -69,7 +68,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "^0.5.8",
+    "@electric-sql/pglite": "0.5.8",
     "@modelcontextprotocol/client": "2.3.1",
     "@tailorkit/config": "workspace:*",
     "@types/node": "catalog:",

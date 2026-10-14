@@ -64,6 +64,17 @@ export const App = createSelectSchema(app, {
 });
 export type App = z.output<typeof App>;
 
+/** Opaque harness state and the exclusive lease for one app's editing turn. */
+export const appAgentSession = pgTable("app_agent_session", {
+  activeRunId: text("active_run_id"),
+  appId: uuid("app_id")
+    .primaryKey()
+    .references(() => app.id, { onDelete: "cascade" }),
+  leaseExpiresAt: timestamp("lease_expires_at"),
+  resumeState: text("resume_state"),
+  sandboxName: text("sandbox_name"),
+});
+
 export const appDeploymentStatus = pgEnum("app_deployment_status", [
   "uploading",
   "deploying",

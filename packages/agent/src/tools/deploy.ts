@@ -17,7 +17,6 @@ export const deployTool = tool({
   description:
     "Build, type-check, and publish the finished app to its authorized TailorKit app. No login or host access is needed. Call only after completing and verifying the requested changes.",
   execute: async (_input, options) => {
-    "use step";
     const { appId, agentToken } = options.context;
     try {
       const sandbox = await toolNativeSandbox(options);

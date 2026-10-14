@@ -1,5 +1,5 @@
 {
-  "name": "@tailorkit/app-agent",
+  "name": "@tailorkit/agent",
   "version": "0.0.0",
   "private": true,
   "license": "BUSL-1.1",
@@ -12,7 +12,8 @@
       "./src/*.tsx",
       "./src/*/index.ts",
       "./src/*/index.tsx"
-    ]
+    ],
+    "#sandbox": "./src/sandbox.ts"
   },
   "exports": {
     ".": {
@@ -21,7 +22,7 @@
     },
     "./workflows": {
       "types": "./dist/workflows.d.mts",
-      "import": "./dist/workflows.mjs"
+      "import": "./src/workflows.ts"
     },
     "./mcp": {
       "types": "./dist/mcp.d.mts",
@@ -41,14 +42,21 @@
     "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
-    "@ai-sdk/workflow": "2.0.69",
+    "@ai-sdk/harness": "1.0.148",
+    "@ai-sdk/harness-pi": "1.0.150",
+    "@ai-sdk/sandbox-vercel": "1.0.148",
+    "@ai-sdk/workflow-harness": "1.0.148",
     "@modelcontextprotocol/server": "2.3.1",
+    "@tailorkit/db": "workspace:*",
+    "@tailorkit/env": "workspace:*",
     "@vercel/sandbox": "3.6.1",
     "ai": "catalog:",
+    "drizzle-orm": "catalog:",
     "workflow": "5.2.0",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
     "@modelcontextprotocol/client": "2.3.1",
     "@tailorkit/config": "workspace:*",
     "@types/node": "catalog:",

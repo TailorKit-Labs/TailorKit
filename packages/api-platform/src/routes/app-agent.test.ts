@@ -43,7 +43,7 @@ vi.mock("@tailorkit/api-utils/rate-limiting", () => ({
     async <TResult>({ next }: { next: () => TResult }) =>
       await next(),
 }));
-vi.mock("@tailorkit/app-agent/workflows", () => ({ appAgent: vi.fn() }));
+vi.mock("@tailorkit/agent/workflows", () => ({ appAgent: vi.fn() }));
 vi.mock("workflow/api", () => ({ start: mocks.start }));
 
 const { appAgentRouter } = await import("./app-agent");
@@ -73,14 +73,16 @@ const input = {
 };
 
 const run = (parts: unknown[]) => ({
-  readable: new ReadableStream({
-    start(controller) {
-      for (const part of parts) {
-        controller.enqueue(part);
-      }
-      controller.close();
-    },
-  }),
+  getReadable: () =>
+    new ReadableStream({
+      start(controller) {
+        for (const part of parts) {
+          controller.enqueue(part);
+        }
+        controller.enqueue({ type: "finish" });
+        controller.close();
+      },
+    }),
   returnValue: Promise.resolve({ messages: [] }),
   runId: "run-1",
 });
@@ -105,15 +107,15 @@ beforeEach(() => {
   // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
   mocks.start.mockImplementation(async () =>
     run([
-      { type: "model-call-start" },
+      { messageId: "assistant-1", type: "start" },
       { id: "text-1", type: "text-start" },
-      { id: "text-1", text: "Hello", type: "text-delta" },
+      { delta: "Hello", id: "text-1", type: "text-delta" },
       { id: "text-1", type: "text-end" },
       {
         input: {},
         toolCallId: "call-1",
-        toolName: "write",
-        type: "tool-call",
+        toolName: "write_file",
+        type: "tool-input-available",
       },
     ])
   );
@@ -124,7 +126,7 @@ describe("platform app chat", () => {
     const events = await consume();
     expect(events).toContainEqual({
       // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-      messageId: expect.any(String),
+      messageId: "assistant-1",
       type: "start",
     });
     expect(events).toContainEqual({
@@ -241,22 +243,22 @@ describe("platform app chat", () => {
           input: {},
           toolCallId: "call-1",
           toolName: "write",
-          type: "tool-call",
+          type: "tool-input-available",
         },
         {
           input: {},
           output: { success: true },
           toolCallId: "call-1",
           toolName: "write",
-          type: "tool-result",
+          type: "tool-output-available",
         },
         { type: "finish-step" },
         { type: "start-step" },
         { id: "old", type: "text-start" },
-        { id: "old", text: "discard me", type: "text-delta" },
+        { delta: "discard me", id: "old", type: "text-delta" },
         { type: "reset-step" },
         { id: "new", type: "text-start" },
-        { id: "new", text: "Built", type: "text-delta" },
+        { delta: "Built", id: "new", type: "text-delta" },
         { id: "new", type: "text-end" },
       ])
     );
@@ -344,7 +346,7 @@ describe("platform app chat", () => {
     const cancelStream = vi.fn();
     mocks.start.mockResolvedValueOnce({
       ...run([]),
-      readable: new ReadableStream({ cancel: cancelStream }),
+      getReadable: () => new ReadableStream({ cancel: cancelStream }),
       get returnValue() {
         return Promise.reject(new Error("This app is already being edited."));
       },
@@ -415,7 +417,7 @@ describe("platform app chat", () => {
 
   it("passes workflow error parts through the standard SDK adapter", async () => {
     mocks.start.mockResolvedValueOnce(
-      run([{ error: "The builder agent failed.", type: "error" }])
+      run([{ errorText: "The builder agent failed.", type: "error" }])
     );
     expect(await consume()).toContainEqual({
       errorText: "The builder agent failed.",
@@ -429,12 +431,13 @@ describe("platform app chat", () => {
     mocks.start.mockResolvedValueOnce({
       ...run([]),
       cancel: cancelRun,
-      readable: new ReadableStream({
-        cancel: cancelStream,
-        start(controller) {
-          controller.enqueue({ type: "model-call-start" });
-        },
-      }),
+      getReadable: () =>
+        new ReadableStream({
+          cancel: cancelStream,
+          start(controller) {
+            controller.enqueue({ messageId: "assistant-1", type: "start" });
+          },
+        }),
     });
     const controller = new AbortController();
     const stream = await call(appAgentRouter.chat, input, {

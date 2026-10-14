@@ -71,6 +71,7 @@ catalog:
 cacheDir: node_modules/.cache/pnpm
 
 allowBuilds:
+  "@google/genai": false
   "@swc/core": false
   cbor-extract: false
   workerd: true

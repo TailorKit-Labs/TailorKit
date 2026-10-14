@@ -1,10 +1,10 @@
 import { ORPCError } from "@orpc/server";
-import { withAppAssetUrl } from "@tailorkit/api-utils/app-asset-url";
 import {
   AppAgentWorkspaceBusyError,
   exportAppAgentWorkspace,
   getAppAgentWorkspaceStatus,
-} from "@tailorkit/app-agent/source-export";
+} from "@tailorkit/agent/source-export";
+import { withAppAssetUrl } from "@tailorkit/api-utils/app-asset-url";
 import { db } from "@tailorkit/db";
 import { app, appDeployment } from "@tailorkit/db/schema/apps";
 import { evaluateBooleanFlag } from "@tailorkit/flags";

@@ -1,15 +1,15 @@
 import { randomBytes } from "node:crypto";
 
-import { createModelCallToUIChunkTransform } from "@ai-sdk/workflow";
 import { call, ORPCError } from "@orpc/server";
+import { createAppAgentMcp } from "@tailorkit/agent/mcp";
+import type { AppAgentMcpExecution } from "@tailorkit/agent/mcp";
+import { appAgent, cancelAppAgent } from "@tailorkit/agent/workflows";
 import { issueAgentToken } from "@tailorkit/api-utils/agent-token";
 import { hashSecret } from "@tailorkit/api-utils/hashing";
-import { createAppAgentMcp } from "@tailorkit/app-agent/mcp";
-import type { AppAgentMcpExecution } from "@tailorkit/app-agent/mcp";
-import { appAgent, deleteSandbox } from "@tailorkit/app-agent/workflows";
 import { db } from "@tailorkit/db";
 import { cliToken } from "@tailorkit/db/schema/cli-auth";
 import { sanitizeErrorForLog } from "@tailorkit/observability";
+import type { UIMessageChunk } from "ai";
 import { eq } from "drizzle-orm";
 import { start } from "workflow/api";
 import type { Run } from "workflow/api";
@@ -182,12 +182,11 @@ export const handleAppAgentMcpRequest = async (
         runId: run.runId,
         status: "started",
       });
-      for await (const chunk of run.readable.pipeThrough(
-        createModelCallToUIChunkTransform(),
-        {
+      for await (const chunk of run
+        .getReadable<UIMessageChunk>()
+        .pipeThrough(new TransformStream<UIMessageChunk, UIMessageChunk>(), {
           signal,
-        }
-      )) {
+        })) {
         await execution.onProgress({
           appId: app.publicId,
           chunk,
@@ -213,7 +212,7 @@ export const handleAppAgentMcpRequest = async (
               runId: run.runId,
             });
           } finally {
-            await deleteSandbox(`app-agent-${run.runId}`);
+            await cancelAppAgent(app.id, run.runId);
           }
         }
       } finally {
