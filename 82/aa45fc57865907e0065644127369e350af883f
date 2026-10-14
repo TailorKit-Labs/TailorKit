@@ -1,0 +1,100 @@
+packages/core/src/server/agent.test.ts
+  s_23d161f26c1fb8::t_6e7a88b3dfa2ea 112-114,117-118,120-125,127-138
+  s_23d161f26c1fb8::t_6eab45d20a904c 115-116,119,126
+packages/api-platform/src/routes/app-agent.test.ts
+  s_23d161f26c1fb8::t_ce3d6d1752a8da 27
+  s_23d161f26c1fb8::t_b05082ee72b5cc 13,142-151,153-155,160-164,167-193
+  s_23d161f26c1fb8::t_67bb9fe2c0ee18 571
+  s_23d161f26c1fb8::t_2f29b51558f2bc 572-574
+  s_23d161f26c1fb8::t_1d3f75cd70ae83 138-141,152,156-159,165-166
+  s_23d161f26c1fb8::t_757e9214d250ad 56,96
+packages/cli/src/agent-tui.test.ts
+  s_23d161f26c1fb8::t_6e7a88b3dfa2ea 91-97,103-105,108-109,114-116,119-123,126-129,131-134,136,138-146,148-149,151-152,155-159,162-163,166-174
+  s_23d161f26c1fb8::t_91525a966347c3 175-182,186-192,195-205,211-213,222-226,234,236
+  s_23d161f26c1fb8::t_bdc5abf2b60820 165,183-185,206-208,210,214-217,221,230,232
+  s_23d161f26c1fb8::t_f1165b285a859e 238
+  s_23d161f26c1fb8::t_db52e65b5f106f 227-229,233,237
+  s_23d161f26c1fb8::t_c0af25c3d17e65 106-107,124-125,147,150,160-161,193-194
+  s_23d161f26c1fb8::t_c553f8dd5f4dc5 98-102
+  s_23d161f26c1fb8::t_d0e455bb3318bb 110-113
+  s_23d161f26c1fb8::t_eb00b3fb5f7558 117-118
+  s_23d161f26c1fb8::t_d9904bb7bfaa2f 130
+  s_23d161f26c1fb8::t_b08d78ed2e2db1 135
+  s_23d161f26c1fb8::t_99d93010b92be3 137
+  s_23d161f26c1fb8::t_fbc08b5c3a5587 153-154
+  s_23d161f26c1fb8::t_69fc74c159db55 164
+  s_23d161f26c1fb8::t_187eb82d8d2852 209
+  s_23d161f26c1fb8::t_658bcf534b42bb 218-220
+  s_23d161f26c1fb8::t_87f9cc62e6435d 231
+  s_23d161f26c1fb8::t_d48468d214f3f8 235
+packages/api-platform/src/routes/app-agent.ts
+  s_23d161f26c1fb8::t_b05082ee72b5cc 24-27,116-121,123-125,131-133,135-146,148-152,154-155,173-175
+  s_23d161f26c1fb8::t_0e208e8913171a 21,68-70,72-74,92,104-112,122,156,165-168
+  s_23d161f26c1fb8::t_ce3d6d1752a8da 71,127
+  s_23d161f26c1fb8::t_9870fbfe03931b 186-190
+  s_23d161f26c1fb8::t_697cfabcd81697 113-115,169
+.changeset/resume-agent-streams.md
+  s_23d161f26c1fb8::t_91525a966347c3 1-7
+packages/agent/src/session-store.test.ts
+  s_23d161f26c1fb8::t_ce3d6d1752a8da 29-32
+  s_23d161f26c1fb8::t_08051b08c9da51 118,134-136
+  s_23d161f26c1fb8::t_a9e12b469be8d0 63,142-147,151-153
+  s_23d161f26c1fb8::t_b05082ee72b5cc 42-48,119-133,137-141,148-150
+  s_23d161f26c1fb8::t_6469a52f07926f 33-34
+packages/agent/src/session-store.ts
+  s_23d161f26c1fb8::t_ce3d6d1752a8da 34-50,73-74
+packages/agent/src/agent.ts
+  s_23d161f26c1fb8::t_1015b1ae67d854 3,43
+packages/client-platform/src/client/types.gen.ts
+  s_23d161f26c1fb8::t_776c2faabc82ff 30-34
+packages/core/src/server/routes/app-agent.ts
+  s_23d161f26c1fb8::t_9870fbfe03931b 5,42
+  s_23d161f26c1fb8::t_b05082ee72b5cc 47-51
+packages/agent/src/agent.integration.test.ts
+  s_23d161f26c1fb8::t_82d84c48d2137f 19-20,245,252,259-262,265-266,273,276-277,297
+  s_23d161f26c1fb8::t_428ea48871f9f8 104,136
+  s_23d161f26c1fb8::t_4374bc1ba779df 263-264
+  s_23d161f26c1fb8::t_2f29b51558f2bc 213-215,219-223
+  s_23d161f26c1fb8::t_b05082ee72b5cc 15-18,246-251,253-258,267-272,278-280,298-300
+  s_23d161f26c1fb8::t_f1165b285a859e 274-275,315,321,323,328-330,342-343,351-353
+  s_23d161f26c1fb8::t_08051b08c9da51 216-218
+packages/cli/src/agent-tui.ts
+  s_23d161f26c1fb8::t_a2b780684df9b2 38-48,63-65,169
+  s_23d161f26c1fb8::t_9870fbfe03931b 35-37,55-60,68-85,91-110,112,159
+  s_23d161f26c1fb8::t_b05082ee72b5cc 6-10,49-53,113-118,160-168,170-171
+  s_23d161f26c1fb8::t_4e51fc08d78e6d 1-2,54,61-62,66-67
+  s_23d161f26c1fb8::t_5250efa65185a1 120-126
+  s_23d161f26c1fb8::t_6e7a88b3dfa2ea 86-90
+packages/agent/src/agent-step.ts
+  s_23d161f26c1fb8::t_1015b1ae67d854 1,47
+packages/api-platform/openapi.json
+  s_23d161f26c1fb8::t_2f29b51558f2bc 98
+  s_23d161f26c1fb8::t_428ea48871f9f8 79
+  s_23d161f26c1fb8::t_77c6b4a3e5f674 80-97
+packages/client-platform/src/agent.ts
+  s_23d161f26c1fb8::t_ce3d6d1752a8da 35
+  s_23d161f26c1fb8::t_5834b45683b9a5 32-34,36-38,43-44,49-50
+  s_23d161f26c1fb8::t_9870fbfe03931b 51,53-58
+  s_23d161f26c1fb8::t_b05082ee72b5cc 45-48
+  s_23d161f26c1fb8::t_e8c2e1e42da093 52
+packages/api-platform/src/agent-stream-token.ts
+  s_23d161f26c1fb8::t_ce3d6d1752a8da 13
+  s_23d161f26c1fb8::t_b05082ee72b5cc 30-32
+  s_23d161f26c1fb8::t_5834b45683b9a5 1-12,14-29,33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "82aa45fc57865907e0065644127369e350af883f",
+  "prompts": {},
+  "sessions": {
+    "s_23d161f26c1fb8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a139a6-f36d-7e02-adcd-ced64463916b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
