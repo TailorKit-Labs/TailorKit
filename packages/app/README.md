@@ -71,7 +71,7 @@ export default defineRoute({ shellComponent: Shell });
 
 Each slot can also have a `root.tsx` exporting `defineRoute({ shellComponent })`. It wraps every view in that slot, inside the app shell. A shell can render its `children` prop instead of `<Route />`.
 
-`layout.tsx` wraps the entire slot. `customers.layout.tsx` wraps `/customers` and its descendants, with matching at segment boundaries. Layouts follow the file-derived view path. They do not register views themselves. A layout default-exports an ordinary component (or a `defineRoute({ shellComponent })` definition):
+`layout.tsx` wraps its directory path: at the slot root it wraps the entire slot; `members/layout.tsx` wraps `/members` and its descendants. `customers.layout.tsx` wraps `/customers` and its descendants, with matching at segment boundaries. Unlike view paths, layout paths retain a final `index` segment: `index.layout.tsx` maps to `/index`, and `members/index.layout.tsx` maps to `/members/index`. Layouts do not register views themselves. A layout default-exports an ordinary component (or a `defineRoute({ shellComponent })` definition):
 
 ```tsx
 import { Route } from "tailorkit/client";
