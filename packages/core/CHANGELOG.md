@@ -1,5 +1,12 @@
 # @tailorkit/core
 
+## 0.1.0-beta.33
+
+### Patch Changes
+
+- a215860: Preserve platform authentication errors during CLI token verification so expired credentials trigger the CLI login approval flow instead of an internal server error.
+- @tailorkit/client-platform@0.1.0-beta.33
+
 ## 0.1.0-beta.32
 
 ### Patch Changes
