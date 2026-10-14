@@ -22,14 +22,13 @@ export const gatewayModelProviders = async (
   modelId: string,
   auth: HarnessV1AuthenticationEnvironment
 ): Promise<NonNullable<PiHarnessSettings["providers"]>> => {
-  if (
-    auth.AI_GATEWAY_API_KEY === undefined &&
-    auth.VERCEL_OIDC_TOKEN === undefined
-  ) {
+  const token = auth.AI_GATEWAY_API_KEY ?? auth.VERCEL_OIDC_TOKEN;
+  if (token === undefined) {
     return {};
   }
   const baseUrl = auth.AI_GATEWAY_BASE_URL ?? "https://ai-gateway.vercel.sh";
   const response = await fetch(`${baseUrl.replace(/\/$/u, "")}/v1/models`, {
+    headers: { Authorization: `Bearer ${token}` },
     signal: AbortSignal.timeout(30_000),
   });
   if (!response.ok) {

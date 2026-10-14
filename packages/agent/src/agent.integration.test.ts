@@ -154,12 +154,14 @@ it.each(["api-key", "runtime-oidc"])(
   async (mode) => {
     authentication.env.AI_GATEWAY_BASE_URL = "https://gateway.test";
     delete authentication.env.AI_GATEWAY_API_KEY;
+    delete authentication.env.VERCEL_OIDC_TOKEN;
     const token =
       mode === "api-key"
         ? "local-test-key"
         : `header.${Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })).toString("base64url")}.signature`;
     if (mode === "api-key") {
       authentication.env.AI_GATEWAY_API_KEY = token;
+      authentication.env.VERCEL_OIDC_TOKEN = "unused-oidc-token";
     }
     // Production Vercel Functions expose OIDC through this request context.
     vi.stubGlobal(Symbol.for("@vercel/request-context"), {
@@ -192,6 +194,9 @@ it.each(["api-key", "runtime-oidc"])(
       vi.fn<typeof fetch>(async (url, options) => {
         const request = new Request(url, options);
         if (request.url.endsWith("/v1/models")) {
+          if (request.headers.get("authorization") !== `Bearer ${token}`) {
+            return new Response("Unauthorized", { status: 401 });
+          }
           return Response.json({ data: [model] });
         }
         const endpoint = new URL(request.url);
