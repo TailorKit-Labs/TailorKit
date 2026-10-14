@@ -49,3 +49,8 @@ jobs:
         run: vp run db:migrate
         env:
           DATABASE_URL: ${{ secrets.PRODUCTION_MIGRATION_DATABASE_URL }}
+
+      - name: "notify vercel"
+        uses: "vercel/repository-dispatch/actions/status@v1"
+        with:
+          name: "Vercel - tailorkit-web: Database Migrations"
