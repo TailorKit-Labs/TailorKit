@@ -151,6 +151,44 @@ describe("agent threads and app workspace leases (Postgres)", () => {
     expect(await lease()).toMatchObject({ activeRunId: "run-a" });
     expect(await thread(first)).toMatchObject({ invalidatedAt: null });
   });
+
+  it("rolls back a timed-out status lookup and ignores its late result", async () => {
+    const first = await resolveAppAgentThread(appId);
+    const second = await resolveAppAgentThread(appId);
+    await loadResumeStep(appId, first, "run-a");
+    await persistResumeStep(
+      appId,
+      first,
+      "run-a",
+      resumeFrom,
+      threadSandboxName(first)
+    );
+    const savedLease = await lease();
+    const savedThread = await thread(first);
+    const otherThread = await thread(second);
+    const status = Promise.withResolvers<"completed">();
+    mocks.runStatus.mockReturnValueOnce(status.promise);
+    vi.useFakeTimers();
+    try {
+      const pending = loadResumeStep(appId, second, "run-b");
+      const rejected = expect(pending).rejects.toThrow(
+        "Timed out checking the active app agent workflow."
+      );
+      await vi.waitFor(() => {
+        expect(mocks.runStatus).toHaveBeenCalledOnce();
+      });
+      await vi.advanceTimersByTimeAsync(5000);
+      await rejected;
+    } finally {
+      vi.useRealTimers();
+    }
+    expect(await lease()).toEqual(savedLease);
+    expect(await thread(first)).toEqual(savedThread);
+    expect(await thread(second)).toEqual(otherThread);
+    expect(mocks.deleteSandbox).not.toHaveBeenCalled();
+    status.resolve("completed");
+    expect(await lease()).toEqual(savedLease);
+  });
   it.each(["", "not-a-uuid", `${appId}-suffix`])(
     "rejects malformed thread ID %j before accessing the database",
     async (threadId) => {

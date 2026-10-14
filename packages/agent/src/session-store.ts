@@ -40,11 +40,20 @@ const assertLeaseAvailable = async (
   }
   // External cancellation skips workflow cleanup; its durable status can free the lease.
   const { getRun } = await import("workflow/api");
-  const status = await getRun(activeRunId).status;
-  if (status === "pending" || status === "running") {
-    throw new FatalError(
-      `This app is already being edited by workflow ${activeRunId}. Retry after the active run finishes.`
-    );
+  const { promise: timeout, reject } = Promise.withResolvers<never>();
+  // Bound the status lookup while the caller holds the workspace row lock.
+  const timer = setTimeout(() => {
+    reject(new Error("Timed out checking the active app agent workflow."));
+  }, 5000);
+  try {
+    const status = await Promise.race([getRun(activeRunId).status, timeout]);
+    if (status === "pending" || status === "running") {
+      throw new FatalError(
+        `This app is already being edited by workflow ${activeRunId}. Retry after the active run finishes.`
+      );
+    }
+  } finally {
+    clearTimeout(timer);
   }
 };
 
