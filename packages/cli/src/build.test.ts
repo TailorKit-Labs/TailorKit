@@ -65,13 +65,14 @@ it("builds the app's Vite config with custom plugins, aliases, constants and out
     );
     const { outDir } = await buildProject({ cwd: root });
     expect(outDir).toBe(path.join(await realpath(root), "artifacts"));
-    for (const filename of ["client/client.js", "server/server.js"]) {
-      // oxlint-disable-next-line no-await-in-loop -- Process the validation and dependent file IO in order; fail before advancing on error.
-      const source = await readFile(path.join(outDir, filename), "utf-8");
-      expect(source).toContain("CUSTOM_ALIAS");
-      expect(source).toContain("CUSTOM_PLUGIN");
-      expect(source).toContain("CUSTOM_DEFINE");
-    }
+    await Promise.all(
+      ["client/client.js", "server/server.js"].map(async (filename) => {
+        const source = await readFile(path.join(outDir, filename), "utf-8");
+        expect(source).toContain("CUSTOM_ALIAS");
+        expect(source).toContain("CUSTOM_PLUGIN");
+        expect(source).toContain("CUSTOM_DEFINE");
+      })
+    );
     expect(
       JSON.parse(
         await readFile(path.join(outDir, "tailorkit-upload.json"), "utf-8")

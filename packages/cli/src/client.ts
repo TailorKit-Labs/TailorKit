@@ -145,39 +145,34 @@ export const createCliClient = (options: {
         },
       },
       apps: {
-        // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
-        create: (input: Input<"apps", "create">) =>
-          request(appsCreate({ body: { ...input, scope }, client })),
-        // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
-        delete: (input: Input<"apps", "delete">) =>
-          request(
+        create: async (input: Input<"apps", "create">) =>
+          await request(appsCreate({ body: { ...input, scope }, client })),
+        delete: async (input: Input<"apps", "delete">) =>
+          await request(
             appsDelete({
               body: { scope },
               client,
               path: { appId: input.appId },
             })
           ),
-        // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
-        deploy: (input: Input<"apps", "deploy">) =>
-          request(
+        deploy: async (input: Input<"apps", "deploy">) =>
+          await request(
             appsDeploy({
               body: { deploymentId: input.deploymentId, scope },
               client,
               path: { appId: input.appId },
             })
           ),
-        // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
-        get: (input: Input<"apps", "get">) =>
-          request(
+        get: async (input: Input<"apps", "get">) =>
+          await request(
             appsGet({
               body: { scopes: scopes(input.scopes) },
               client,
               path: { appId: input.appId },
             })
           ),
-        // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
-        list: (input?: Input<"apps", "list">) =>
-          request(
+        list: async (input?: Input<"apps", "list">) =>
+          await request(
             appsList({
               body: {
                 page: input?.page,
@@ -187,9 +182,8 @@ export const createCliClient = (options: {
               client,
             })
           ),
-        // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
-        update: (input: Input<"apps", "update">) =>
-          request(
+        update: async (input: Input<"apps", "update">) =>
+          await request(
             appsUpdate({
               body: { description: input.description, name: input.name, scope },
               client,
@@ -198,28 +192,26 @@ export const createCliClient = (options: {
           ),
       },
       cliAuth: {
-        // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
-        verifyToken: () =>
-          request(
+        verifyToken: async () =>
+          await request(
             cliAuthVerifyToken({ body: { deployToken: agent.token }, client })
           ),
       },
       deployments: {
-        // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
-        create: (input: Input<"deployments", "create">) =>
-          request(deploymentsCreate({ body: { ...input, scope }, client })),
-        // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
-        get: (input: Input<"deployments", "get">) =>
-          request(
+        create: async (input: Input<"deployments", "create">) =>
+          await request(
+            deploymentsCreate({ body: { ...input, scope }, client })
+          ),
+        get: async (input: Input<"deployments", "get">) =>
+          await request(
             deploymentsGet({
               body: { scopes: scopes(input.scopes) },
               client,
               path: { deploymentId: input.deploymentId },
             })
           ),
-        // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
-        list: (input: Input<"deployments", "list">) =>
-          request(
+        list: async (input: Input<"deployments", "list">) =>
+          await request(
             deploymentsList({
               body: {
                 appId: input.appId,
@@ -230,9 +222,8 @@ export const createCliClient = (options: {
               client,
             })
           ),
-        // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
-        publish: (input: Input<"deployments", "publish">) =>
-          request(
+        publish: async (input: Input<"deployments", "publish">) =>
+          await request(
             deploymentsPublish({
               body: { rollout: input.rollout, scope },
               client,
@@ -241,17 +232,15 @@ export const createCliClient = (options: {
           ),
       },
       preview: {
-        // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
-        start: (input: Input<"preview", "start">) =>
-          request(
+        start: async (input: Input<"preview", "start">) =>
+          await request(
             previewStart({
               body: { ...input, deployToken: agent.token },
               client,
             })
           ),
-        // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
-        stop: (input: Input<"preview", "stop">) =>
-          request(
+        stop: async (input: Input<"preview", "stop">) =>
+          await request(
             previewStop({
               body: { deployToken: agent.token },
               client,

@@ -7,9 +7,8 @@ const moduleId = "virtual:tailorkit-iframe";
 
 /** Bundle the isolated runtime as an inline script, with no runtime network imports. */
 export const iframeRuntimePlugin = (): Plugin => ({
-  load: async (id) => {
+  load: async (id): Promise<string | undefined> => {
     if (id !== `\0${moduleId}`) {
-      /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
       return undefined;
     }
     const result = await build({

@@ -71,12 +71,14 @@ it("uses existing platform deployment endpoints and scope from the agent JWT", a
     "https://platform.test/api/platform/deployments",
     "https://platform.test/api/platform/deployments/deployment-one",
   ]);
-  for (const request of requests) {
-    expect(request.headers.get("authorization")).toBe(`Bearer ${jwt}`);
-    expect(request.redirect).toBe("error");
-    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-    expect(await request.json()).toMatchObject({ scope });
-  }
+  await Promise.all(
+    requests.map(async (request) => {
+      expect(request.headers.get("authorization")).toBe(`Bearer ${jwt}`);
+      expect(request.redirect).toBe("error");
+
+      expect(await request.json()).toMatchObject({ scope });
+    })
+  );
   await client.apps.create({ description: null, name: "App" });
 
   expect(requireRequest(requireValue(fetch.mock.lastCall)[0]).url).toBe(
@@ -207,9 +209,11 @@ it("routes every authenticated CLI surface through existing platform endpoints f
     "https://platform.test/api/platform/preview/session-one/stop",
     "https://platform.test/api/platform/app-agent/chat",
   ]);
-  expect(() => {
-    void client.apps.list({ scopes: ["other"] });
-  }).toThrow("Requested scope");
+  fetch.mockClear();
+  await expect(client.apps.list({ scopes: ["other"] })).rejects.toThrow(
+    "Requested scope"
+  );
+  expect(fetch).not.toHaveBeenCalled();
 });
 
 it("discovers file authorization for all commands, with environment-token precedence", async () => {

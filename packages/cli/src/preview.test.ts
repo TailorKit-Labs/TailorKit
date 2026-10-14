@@ -51,13 +51,14 @@ it("uploads a build larger than 4.5 MiB in sequential bounded messages", async (
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-preview-"));
   dirs.push(root);
   await writeFile(path.join(root, "client.js"), Buffer.alloc(900_000, 1));
-  for (let index = 0; index < 5; index += 1) {
-    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-    await writeFile(
-      path.join(root, `asset-${index}.js`),
-      Buffer.alloc(900_000, index + 2)
-    );
-  }
+  await Promise.all(
+    Array.from({ length: 5 }, async (_, index) => {
+      await writeFile(
+        path.join(root, `asset-${index}.js`),
+        Buffer.alloc(900_000, index + 2)
+      );
+    })
+  );
   const snapshot = await capturePreviewSnapshot(root);
   expect(
     snapshot.manifest.files.reduce((total, file) => total + file.size, 0)
@@ -148,13 +149,14 @@ it("uploads a build larger than 4.5 MiB in sequential bounded messages", async (
 it("chunks exact boundaries and the largest allowed aggregate build", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-preview-"));
   dirs.push(root);
-  for (let index = 0; index < 10; index += 1) {
-    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-    await writeFile(
-      path.join(root, index === 0 ? "client.js" : `asset-${index}.js`),
-      Buffer.alloc(1024 * 1024, index)
-    );
-  }
+  await Promise.all(
+    Array.from({ length: 10 }, async (_, index) => {
+      await writeFile(
+        path.join(root, index === 0 ? "client.js" : `asset-${index}.js`),
+        Buffer.alloc(1024 * 1024, index)
+      );
+    })
+  );
   const snapshot = await capturePreviewSnapshot(root);
   expect(
     snapshot.manifest.files.reduce((total, file) => total + file.size, 0)

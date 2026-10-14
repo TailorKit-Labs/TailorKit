@@ -41,9 +41,8 @@ export const useOrgSlugAvailability = (slug: string) => {
     setCheckedSlug(slug);
     setAvailability({ message: null, status: slug ? "checking" : "idle" });
   }
-  useEffect(() => {
+  useEffect((): (() => void) | undefined => {
     if (!slug) {
-      /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
       return undefined;
     }
 

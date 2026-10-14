@@ -281,10 +281,9 @@ const AppsIndexPage = () => {
       })
     );
 
-  useEffect(() => {
+  useEffect((): (() => void) | undefined => {
     const loadMoreElement = loadMoreRef.current;
     if (!loadMoreElement || !hasNextPage) {
-      /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
       return undefined;
     }
 

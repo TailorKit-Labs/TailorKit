@@ -117,9 +117,8 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     applyTheme(storedTheme);
   }, []);
 
-  useEffect(() => {
+  useEffect((): (() => void) | undefined => {
     if (theme !== "system") {
-      /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
       return undefined;
     }
 

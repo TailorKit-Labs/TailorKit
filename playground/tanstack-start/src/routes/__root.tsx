@@ -40,12 +40,10 @@ export const Route = createRootRoute({
   beforeLoad: async ({ location }) => {
     const session = await loadSession();
     if (!session && location.pathname !== "/login") {
-      // oxlint-disable-next-line typescript/only-throw-error -- TanStack Router intercepts its redirect and not-found response objects when they are thrown from route loaders.
-      throw redirect({ to: "/login" });
+      redirect({ throw: true, to: "/login" });
     }
     if (session && location.pathname === "/login") {
-      // oxlint-disable-next-line typescript/only-throw-error -- TanStack Router intercepts its redirect and not-found response objects when they are thrown from route loaders.
-      throw redirect({ to: "/" });
+      redirect({ throw: true, to: "/" });
     }
     return { session };
   },

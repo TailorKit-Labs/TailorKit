@@ -184,14 +184,15 @@ describe("createTailorKitServer", () => {
       const authentication = {
         authenticate: () => ({ scopes: { org: { tenant: "verified" } } }),
       };
-      for (const route of ["schema", "meta"]) {
-        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-        const awaitedResult4 = await server.handler(
-          new Request(`https://request.test${prefix}/${route}`),
-          authentication
-        );
-        expect(awaitedResult4.status).toBe(200);
-      }
+      await Promise.all(
+        ["schema", "meta"].map(async (route) => {
+          const awaitedResult4 = await server.handler(
+            new Request(`https://request.test${prefix}/${route}`),
+            authentication
+          );
+          expect(awaitedResult4.status).toBe(200);
+        })
+      );
       const response = await server.handler(
         new Request(`https://request.test${prefix}/backend/session`, {
           body: JSON.stringify({ appId: "app" }),

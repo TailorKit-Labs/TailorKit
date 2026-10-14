@@ -314,27 +314,29 @@ describe("preview host flow", () => {
       };
       const first = await tailor.handler(new Request(consentUrl), options);
       const second = await tailor.handler(new Request(consentUrl), options);
-      for (const page of [first, second]) {
-        expect(page.status).toBe(200);
-        expect(page.headers.get("referrer-policy")).toBe("strict-origin");
-        expect(page.headers.get("set-cookie")).toBeNull();
-        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-        expect(await page.text()).not.toContain('name="csrfToken"');
-        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-        const accepted = await tailor.handler(
-          new Request(consentUrl, {
-            body: "intent=accept",
-            headers: {
-              "content-type": "application/x-www-form-urlencoded",
-              origin,
-              "sec-fetch-site": "same-origin",
-            },
-            method: "POST",
-          }),
-          options
-        );
-        expect(accepted.status).toBe(303);
-      }
+      await Promise.all(
+        [first, second].map(async (page) => {
+          expect(page.status).toBe(200);
+          expect(page.headers.get("referrer-policy")).toBe("strict-origin");
+          expect(page.headers.get("set-cookie")).toBeNull();
+
+          expect(await page.text()).not.toContain('name="csrfToken"');
+
+          const accepted = await tailor.handler(
+            new Request(consentUrl, {
+              body: "intent=accept",
+              headers: {
+                "content-type": "application/x-www-form-urlencoded",
+                origin,
+                "sec-fetch-site": "same-origin",
+              },
+              method: "POST",
+            }),
+            options
+          );
+          expect(accepted.status).toBe(303);
+        })
+      );
       expect(
         requests.filter((value) => value.endsWith("/accept"))
       ).toHaveLength(2);

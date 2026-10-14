@@ -229,17 +229,20 @@ describe("MCP database authorization", () => {
 
   it("rejects foreign-project and foreign-scope IDs without changing apps or grants", async () => {
     const initialApps = await database.db.select().from(app);
-    for (const deniedApp of [foreignApp, outOfScopeApp]) {
-      for (const appId of [deniedApp.id, deniedApp.publicId]) {
-        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-        const response = await handleAppAgentMcpRequest(
-          request("edit_app", { appId, prompt: "Change it" }),
-          context
+    await Promise.all(
+      [foreignApp, outOfScopeApp].map(async (deniedApp) => {
+        await Promise.all(
+          [deniedApp.id, deniedApp.publicId].map(async (appId) => {
+            const response = await handleAppAgentMcpRequest(
+              request("edit_app", { appId, prompt: "Change it" }),
+              context
+            );
+
+            expect(await response.text()).toContain('"isError":true');
+          })
         );
-        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-        expect(await response.text()).toContain('"isError":true');
-      }
-    }
+      })
+    );
     expect(state.start).not.toHaveBeenCalled();
     expect(await database.db.select().from(app)).toEqual(initialApps);
     expect(await database.db.select().from(cliToken)).toEqual(existingGrants);

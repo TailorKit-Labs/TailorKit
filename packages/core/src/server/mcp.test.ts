@@ -91,21 +91,22 @@ describe("MCP transport configuration", () => {
 
   it("validates caller scopes and subjects before returning any credentials", async () => {
     const { server } = setup();
-    for (const value of [
-      { scopes: {} },
-      { scopes: { other: { tenant: "one" } } },
-      { scopes: { org: { tenant: "" } } },
-      { scopes: { org: { tenant: "one" } }, subjectId: "" },
-      { scopes: { org: { tenant: "one" } }, subjectId: "x".repeat(257) },
-    ]) {
-      // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+    await Promise.all(
+      [
+        { scopes: {} },
+        { scopes: { other: { tenant: "one" } } },
+        { scopes: { org: { tenant: "" } } },
+        { scopes: { org: { tenant: "one" } }, subjectId: "" },
+        { scopes: { org: { tenant: "one" } }, subjectId: "x".repeat(257) },
+      ].map(async (value) => {
+        // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 
-      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-      await expect(
-        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-        server.mcp.transport(value as { scopes: { org: { tenant: string } } })
-      ).rejects.toThrow();
-    }
+        await expect(
+          // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+          server.mcp.transport(value as { scopes: { org: { tenant: string } } })
+        ).rejects.toThrow();
+      })
+    );
   });
 
   it("encodes Unicode identities safely and isolates callers", async () => {

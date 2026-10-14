@@ -163,11 +163,12 @@ it("validates optional output schemas for synchronous and async actions", async 
   const run = actionRunner(app, { mutate: vi.fn(), query: vi.fn() });
   expect(await run({ name: "valid" }, identity)).toBe(10);
   expect(await run({ name: "transformed" }, identity)).toBe(4);
-  for (const name of ["invalid", "invalidAsync"]) {
-    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-    await expect(run({ name }, identity)).rejects.toMatchObject({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Invalid function result",
-    });
-  }
+  await Promise.all(
+    ["invalid", "invalidAsync"].map(async (name) => {
+      await expect(run({ name }, identity)).rejects.toMatchObject({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Invalid function result",
+      });
+    })
+  );
 });

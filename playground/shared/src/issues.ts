@@ -71,14 +71,13 @@ export const updateIssueStatus = (
   teamId: string,
   issueId: string,
   status: IssueStatus
-) => {
+): typeof issues.$inferSelect | undefined => {
   const issue = db
     .select()
     .from(issues)
     .where(and(eq(issues.teamId, teamId), eq(issues.id, issueId)))
     .get();
   if (!issue) {
-    /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
     return undefined;
   }
   db.update(issues).set({ status }).where(eq(issues.id, issueId)).run();
