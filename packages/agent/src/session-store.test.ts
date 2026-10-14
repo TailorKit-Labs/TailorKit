@@ -21,7 +21,7 @@ import {
   releaseSessionStep,
   renewSession,
 } from "./session-store";
-import { resolveAppAgentThread } from "./threads";
+import { AppAgentThreadError, resolveAppAgentThread } from "./threads";
 
 const mocks = vi.hoisted(() => ({
   db: vi.fn<() => ReturnType<typeof drizzle>>(),
@@ -101,6 +101,16 @@ const complete = async (id: string, runId: string) => {
 };
 
 describe("agent threads and app workspace leases (Postgres)", () => {
+  it.each(["", "not-a-uuid", `${appId}-suffix`])(
+    "rejects malformed thread ID %j before accessing the database",
+    async (threadId) => {
+      await expect(
+        resolveAppAgentThread(appId, threadId)
+      ).rejects.toBeInstanceOf(AppAgentThreadError);
+      expect(mocks.db).not.toHaveBeenCalled();
+    }
+  );
+
   it("creates independent threads by default and resumes only an explicit existing ID", async () => {
     const first = await resolveAppAgentThread(appId);
     const second = await resolveAppAgentThread(appId);

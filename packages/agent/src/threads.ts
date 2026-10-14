@@ -1,4 +1,7 @@
 import { and, eq } from "drizzle-orm";
+import { z } from "zod";
+
+const threadIdSchema = z.uuid();
 
 export class AppAgentThreadError extends Error {
   constructor() {
@@ -14,6 +17,9 @@ export const resolveAppAgentThread = async (
   appId: string,
   threadId?: string
 ) => {
+  if (threadId !== undefined && !threadIdSchema.safeParse(threadId).success) {
+    throw new AppAgentThreadError();
+  }
   const { db } = await import("@tailorkit/db");
   const { appAgentThread } = await import("@tailorkit/db/schema/apps");
   if (threadId !== undefined) {

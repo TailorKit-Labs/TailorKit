@@ -233,8 +233,26 @@ describe("platform app chat", () => {
   });
 
   it("rejects an unavailable thread before starting a workflow", async () => {
-    mocks.thread.mockRejectedValueOnce(new AppAgentThreadError());
-    await expect(consume()).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    const threadId = "266f1673-2079-4e0c-9f68-6cf3f0f98a40";
+    const error = new AppAgentThreadError();
+    mocks.thread.mockRejectedValueOnce(error);
+    const handler = new OpenAPIHandler({ appAgent: appAgentRouter });
+    const result = await handler.handle(
+      new Request("https://platform.test/api/platform/app-agent/chat", {
+        body: JSON.stringify({ ...input.body, threadId }),
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      }),
+      { context, prefix: "/api/platform" }
+    );
+    const response = requireValue(result.response);
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      code: "BAD_REQUEST",
+      defined: false,
+      message: error.message,
+    });
+    expect(mocks.thread).toHaveBeenCalledWith("app-one", threadId);
     expect(mocks.start).not.toHaveBeenCalled();
   });
 
