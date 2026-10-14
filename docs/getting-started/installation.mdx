@@ -300,7 +300,7 @@ export const contract = defineContract({
 </Step>
 <Step title="Implement the server">
 
-Create a separate server file to handle app requests and server-side logic. It connects your contract to TailorKit using your project key.
+Create a separate server file to handle app requests and server-side logic. It connects your contract to TailorKit using your project key. Set `baseUrl` to your host URL in each environment, including your production domain.
 
 <Tabs>
 
@@ -313,7 +313,10 @@ import { contract } from "./tailorkit";
 export const tailorKit = createServer({
   contract,
   projectKey: process.env.TAILORKIT_PROJECT_KEY,
-  baseUrl: "http://localhost:3000/api/tailorkit",
+  baseUrl:
+    process.env.NODE_ENV === "development"
+      ? "http://localhost:3000/api/tailorkit"
+      : "https://your-app.com/api/tailorkit",
 });
 ```
 
@@ -328,7 +331,10 @@ import { contract } from "./tailorkit";
 export const tailorKit = createServer({
   contract,
   projectKey: process.env.TAILORKIT_PROJECT_KEY,
-  baseUrl: "http://localhost:3000/api/tailorkit",
+  baseUrl:
+    process.env.NODE_ENV === "development"
+      ? "http://localhost:3000/api/tailorkit"
+      : "https://your-app.com/api/tailorkit",
 });
 ```
 
@@ -344,7 +350,10 @@ import { contract } from "./tailorkit";
 export const tailorKit = createServer({
   contract,
   projectKey: process.env.TAILORKIT_PROJECT_KEY,
-  baseUrl: "http://localhost:3000/api/tailorkit",
+  baseUrl:
+    process.env.NODE_ENV === "development"
+      ? "http://localhost:3000/api/tailorkit"
+      : "https://your-app.com/api/tailorkit",
   schemaSerializer: toJsonSchema,
 });
 ```
@@ -371,7 +380,10 @@ import { createClient, primitives } from "tailorkit/react";
 export const tailorKitClient = createClient({
   contract,
   // Replace this with your host origin and handler path.
-  baseUrl: "http://localhost:3000/api/tailorkit",
+  baseUrl:
+    process.env.NODE_ENV === "development"
+      ? "http://localhost:3000/api/tailorkit"
+      : "https://your-app.com/api/tailorkit",
   components: {
     ...primitives,
 
