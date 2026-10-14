@@ -5,11 +5,10 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "packages/db/src/migrations/**"
 
 permissions:
   contents: read
+  statuses: write
 
 concurrency:
   group: production-db-migrations
@@ -18,13 +17,13 @@ concurrency:
 jobs:
   migrate:
     name: Migrate production database
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     environment: production-platform
     if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: useblacksmith/checkout@v1
 
       - name: Setup Vite+
         uses: voidzero-dev/setup-vp@v1.21.1
@@ -49,3 +48,8 @@ jobs:
         run: vp run db:migrate
         env:
           DATABASE_URL: ${{ secrets.PRODUCTION_MIGRATION_DATABASE_URL }}
+
+      - name: "notify vercel"
+        uses: "vercel/repository-dispatch/actions/status@v1"
+        with:
+          name: "Vercel - tailorkit-web: Database Migrations"

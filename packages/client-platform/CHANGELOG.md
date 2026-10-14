@@ -1,5 +1,35 @@
 # @tailorkit/client-platform
 
+## 0.1.0-beta.35
+
+No changes in this release.
+
+## 0.1.0-beta.34
+
+### Minor Changes
+
+- 82aa45f: Reconnect interrupted agent streams to the existing workflow from the last received chunk, and settle a disconnected turn before sending a follow-up. Relay signed run identities and cleanup completion through the host API.
+
+  Agent chat requires explicit turn or resume requests. Combine thread and run identity in `data-run`, and require `data-run-complete` after workspace cleanup. Remove the separate `data-thread` event and finish-only success handling.
+
+  The app agent checkpoints SDK state directly instead of collecting duplicate model messages. MCP returns the assembled assistant `message` from the output stream instead of a `messages` array.
+
+## 0.1.0-beta.33
+
+No changes in this release.
+
+## 0.1.0-beta.32
+
+### Minor Changes
+
+- 1929607: Start a new agent conversation for each CLI invocation by default. Follow-up messages reuse its thread, and `tailorkit agent --thread <id>` explicitly resumes a previous conversation. Add optional `threadId` to the chat protocol and return thread metadata in the stream.
+
+## 0.1.0-beta.31
+
+### Patch Changes
+
+- 4d2f904: Align source code with Ultracite’s default Oxlint and Oxfmt presets while preserving public APIs and runtime lifecycle behavior.
+
 ## 0.1.0-beta.30
 
 No changes in this release.

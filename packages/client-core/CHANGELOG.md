@@ -1,5 +1,55 @@
 # @tailorkit/client-core
 
+## 0.1.0-beta.35
+
+### Patch Changes
+
+- @tailorkit/app@0.1.0-beta.35
+  - @tailorkit/client-platform@0.1.0-beta.35
+  - @tailorkit/core@0.1.0-beta.35
+  - @tailorkit/sandbox@0.1.0-beta.35
+
+## 0.1.0-beta.34
+
+### Patch Changes
+
+- Updated dependencies [82aa45f]
+  - @tailorkit/core@0.1.0-beta.34
+  - @tailorkit/client-platform@0.1.0-beta.34
+  - @tailorkit/sandbox@0.1.0-beta.34
+  - @tailorkit/app@0.1.0-beta.34
+
+## 0.1.0-beta.33
+
+### Patch Changes
+
+- Updated dependencies [a215860]
+  - @tailorkit/core@0.1.0-beta.33
+  - @tailorkit/sandbox@0.1.0-beta.33
+  - @tailorkit/app@0.1.0-beta.33
+  - @tailorkit/client-platform@0.1.0-beta.33
+
+## 0.1.0-beta.32
+
+### Patch Changes
+
+- Updated dependencies [1929607]
+  - @tailorkit/client-platform@0.1.0-beta.32
+  - @tailorkit/core@0.1.0-beta.32
+  - @tailorkit/sandbox@0.1.0-beta.32
+  - @tailorkit/app@0.1.0-beta.32
+
+## 0.1.0-beta.31
+
+### Patch Changes
+
+- 4d2f904: Align source code with Ultracite’s default Oxlint and Oxfmt presets while preserving public APIs and runtime lifecycle behavior.
+- Updated dependencies [4d2f904]
+  - @tailorkit/app@0.1.0-beta.31
+  - @tailorkit/client-platform@0.1.0-beta.31
+  - @tailorkit/core@0.1.0-beta.31
+  - @tailorkit/sandbox@0.1.0-beta.31
+
 ## 0.1.0-beta.30
 
 ### Patch Changes

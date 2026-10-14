@@ -1,0 +1,6 @@
+---
+"@tailorkit/cli": minor
+"@tailorkit/client-platform": minor
+---
+
+Start a new agent conversation for each CLI invocation by default. Follow-up messages reuse its thread, and `tailorkit agent --thread <id>` explicitly resumes a previous conversation. Add optional `threadId` to the chat protocol and return thread metadata in the stream.

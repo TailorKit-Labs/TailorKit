@@ -26,3 +26,5 @@ Expired or invalid JWTs fail without prompting for login. Start another agent tu
 Platform URLs require HTTPS, with HTTP allowed only for `localhost`, `127.0.0.1`, and `[::1]` development hosts. These rules apply at issuance and client routing.
 
 `--no-interactive` fails instead of prompting for login, app creation, or a type check override. `--app-id <id>` pins deployment to an existing app and never creates a replacement. The agent writes its JWT to a mode-600 file in ephemeral `/tmp` and sets the file path for CLI discovery across sandbox commands. The deploy tool also passes it to its subprocess. It stays out of the model prompt, persistent Drive, and normal CLI credential store.
+
+Each `tailorkit agent` invocation starts a new conversation. Follow-up messages in the same invocation share its thread. When the chat closes, the CLI prints its `threadId`. Resume explicitly with `tailorkit agent --host <url> --app <id> --thread <threadId>`. App source is shared across threads; only one thread can edit an app at a time.

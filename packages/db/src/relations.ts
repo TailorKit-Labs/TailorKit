@@ -5,6 +5,14 @@ import { authRelations } from "./schema/auth";
 
 const applicationRelations = defineRelations(schema, (r) => ({
   app: {
+    agentLease: r.one.appAgentLease({
+      from: r.app.id,
+      to: r.appAgentLease.appId,
+    }),
+    agentThreads: r.many.appAgentThread({
+      from: r.app.id,
+      to: r.appAgentThread.appId,
+    }),
     currentDeployment: r.one.appDeployment({
       from: r.app.currentDeploymentId,
       to: r.appDeployment.id,
@@ -21,6 +29,17 @@ const applicationRelations = defineRelations(schema, (r) => ({
       from: r.app.projectId,
       to: r.project.id,
     }),
+  },
+
+  appAgentLease: {
+    app: r.one.app({ from: r.appAgentLease.appId, to: r.app.id }),
+    thread: r.one.appAgentThread({
+      from: r.appAgentLease.activeThreadId,
+      to: r.appAgentThread.id,
+    }),
+  },
+  appAgentThread: {
+    app: r.one.app({ from: r.appAgentThread.appId, to: r.app.id }),
   },
 
   appDeployment: {

@@ -1,4 +1,7 @@
-import { agentChunkSchema } from "@tailorkit/client-platform/agent";
+import {
+  agentChunkSchema,
+  agentRunCompleteChunkSchema,
+} from "@tailorkit/client-platform/agent";
 import {
   appsCreate,
   appsList,
@@ -122,7 +125,10 @@ export const createCliClient = (options: {
           });
           for await (const chunk of stream) {
             const event = await agentChunkSchema.parseAsync(chunk);
-            if (event.type === "finish" || event.type === "error") {
+            if (
+              agentRunCompleteChunkSchema.safeParse(event).success ||
+              event.type === "error"
+            ) {
               done = true;
             }
             yield event;

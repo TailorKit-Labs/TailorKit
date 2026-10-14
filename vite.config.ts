@@ -19,11 +19,11 @@ const reactWorkspaces = [
 const tanstackWorkspaces = ["apps/web", "playground/tanstack-start"];
 const aliasWorkspaces = [
   "apps/web",
+  "packages/agent",
   "packages/api",
   "packages/api-platform",
   "packages/api-utils",
   "packages/app",
-  "packages/app-agent",
   "packages/asset-delivery",
   "packages/auth",
   "packages/cli",
@@ -129,6 +129,7 @@ export default defineConfig({
           property: "env",
         },
       ],
+      "typescript/only-throw-error": ["error", { allowRethrowing: true }],
     },
     settings: {
       shadcn: {

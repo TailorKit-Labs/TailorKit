@@ -33,9 +33,9 @@ vi.mock("@tailorkit/db", () => ({
   },
 }));
 vi.mock("@tailorkit/kv", () => ({ getKV: () => {} }));
-vi.mock("@tailorkit/app-agent/workflows", () => ({
+vi.mock("@tailorkit/agent/workflows", () => ({
   appAgent: vi.fn(),
-  deleteSandbox: vi.fn(),
+  cancelAppAgent: vi.fn(),
 }));
 vi.mock("workflow/api", () => ({ start: state.start }));
 vi.mock("@tailorkit/api-utils/dev-delay", () => ({
@@ -191,12 +191,13 @@ describe("MCP database authorization", () => {
       .returning();
     state.start.mockResolvedValue({
       cancel: vi.fn(),
-      readable: new ReadableStream({
-        start(controller) {
-          controller.close();
-        },
-      }),
-      returnValue: Promise.resolve({ messages: [] }),
+      getReadable: () =>
+        new ReadableStream({
+          start(controller) {
+            controller.close();
+          },
+        }),
+      returnValue: Promise.resolve({ finishReason: "stop" }),
       runId: "run",
     });
   });

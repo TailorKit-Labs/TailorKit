@@ -1,0 +1,151 @@
+---
+title: "UI"
+description: "Write views, use shared components, and supply slot instances."
+---
+
+An app supplies UI for the [slots](/concepts/slots) in its contract. A view defines what to show in a slot for a particular [context](/concepts/views).
+
+These examples assume your app is configured to use that contract. Generate its bindings after adding or changing capabilities:
+
+```sh
+npx tailorkit generate
+```
+
+## Write a view
+
+Put view files in `src/slots/<slot>/` with a `.view.tsx` suffix. This view supplies default UI for the `panel` slot:
+
+```tsx title="src/slots/panel/index.view.tsx"
+import "../../tailorkit.gen";
+import { defineView } from "tailorkit/client";
+
+const view = defineView({
+  slot: "panel",
+  view: "/",
+  component: Overview,
+});
+
+function Overview() {
+  return "Member overview";
+}
+
+export default view;
+```
+
+The folder identifies the slot. The filename identifies the context: `index.view.tsx` maps to `/`, and `members/detail.view.tsx` or `members.detail.view.tsx` maps to `/members/detail`. An explicit `view` gives `useContext()` its inferred type and must match that path. The build rejects mismatched `view` or `slot` declarations.
+
+## Use components and tools
+
+Add another view for `/members/detail`. With `Button` and `showToast` exposed in the contract, generated imports let you use them together:
+
+```tsx title="src/slots/panel/members.detail.view.tsx"
+import { defineView } from "tailorkit/client";
+import { Button, tools } from "../../tailorkit.gen";
+
+const view = defineView({
+  slot: "panel",
+  view: "/members/detail",
+  component: MemberDetails,
+});
+
+function MemberDetails() {
+  const { member } = view.useContext();
+
+  return (
+    <Button
+      variant="secondary"
+      onClick={() => tools.showToast({ message: "Selected " + member.name })}
+    >
+      {member.name}
+    </Button>
+  );
+}
+
+export default view;
+```
+
+On a member's page, TailorKit selects this view and supplies the member context. Elsewhere, the panel can fall back to the overview. The button's click callback calls a client tool that shows a toast.
+
+## Supply several instances
+
+For a `tile` slot declared with `multiple: true`, return an entry for each dashboard tile:
+
+```tsx title="src/slots/tile/index.view.tsx"
+import "../../tailorkit.gen";
+import { defineView } from "tailorkit/client";
+import { z } from "zod";
+
+const view = defineView({
+  slot: "tile",
+  view: "/",
+  component: Tile,
+  instances: {
+    dataSchema: z.object({ title: z.string(), value: z.number() }),
+    resolve: () => [
+      {
+        key: "members",
+        metadata: { position: { column: 1, row: 1 } },
+        data: { title: "Members", value: 12 },
+      },
+      {
+        key: "tasks",
+        metadata: { position: { column: 2, row: 1 } },
+        data: { title: "Open tasks", value: 8 },
+      },
+    ],
+  },
+});
+
+function Tile() {
+  const { data } = view.useInstance();
+  return data.title + ": " + data.value;
+}
+
+export default view;
+```
+
+`resolve` runs on the app server. It can use the current context and registered queries to load entries. `useInstance()` reads the selected entry in the UI. The surrounding dashboard decides how to use `position` metadata.
+
+For a repeatable page slot, use the same pattern with keys such as `reports` and `activity`, and metadata such as `{ label: "Reports", icon: "chart" }` for sidebar links.
+
+## SDK reference
+
+Import `defineView` from `tailorkit/client`. The build discovers `.view.tsx` files and extracts instance resolvers into the server bundle.
+
+| Option | Meaning |
+| --- | --- |
+| `slot` | Must match `src/slots/<slot>/` if supplied. Otherwise the build uses the folder name. |
+| `view` | A supported context path matching the filename. Optional; when supplied, gives precise context typing. Dots and subdirectories separate path segments; a final `index` is omitted. |
+| `component` | Required. The UI component; use `view.useContext()` to read its context. |
+| `instances` | Required for `multiple: true` slots; omitted for single-instance slots. |
+| `instances.dataSchema` | Validates each entry's data. |
+| `instances.resolve` | Runs on the app server and returns entries, or a promise of entries. |
+
+The resolver receives `{ context, identity, signal, queries }`. It can call registered queries; actions and mutations are unavailable there.
+
+Each entry needs a stable, non-empty key unique within its view, a metadata object, and data matching `dataSchema`. Metadata describes labels or placement; data holds values the view renders.
+
+```ts
+export interface ViewInstance<TData = unknown> {
+  key: string;
+  metadata: Record<string, unknown>;
+  data: TData;
+}
+```
+
+`view.useInstance()` reads the selected entry, with its data type inferred from `dataSchema`.
+
+## Frequently asked questions
+
+<AccordionGroup>
+  <Accordion title="Does naming a file index.view.tsx make it the default view?">
+    Yes. `index.view.tsx` produces `/`; `members/index.view.tsx` produces
+    `/members`. Explicit `view` values must agree with the file path. Only
+    `.view.tsx` files register views.
+  </Accordion>
+  <Accordion title="Where do instance labels and layout rules belong?">
+    Return labels, icons, or placement hints in `metadata`. The surrounding UI
+    uses them to build links or arrange tiles. Put values your view needs to
+    render in `data`.
+  </Accordion>
+</AccordionGroup>

@@ -100,7 +100,7 @@ export default defineConfig(({ mode }) => {
     },
     ssr: {
       external: isDev ? undefined : serverPackages,
-      noExternal: ["@tailorkit/api-platform", "@tailorkit/app-agent"],
+      noExternal: ["@tailorkit/api-platform", "@tailorkit/agent"],
     },
   };
 });

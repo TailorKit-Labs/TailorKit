@@ -18,62 +18,126 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "appId": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "hostUrl": {
-                    "type": "string",
-                    "format": "uri"
-                  },
-                  "schema": {
+                "oneOf": [
+                  {
                     "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": {}
-                  },
-                  "messages": {
-                    "minItems": 1,
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "role": {
-                          "type": "string",
-                          "enum": ["user", "assistant"]
-                        },
-                        "parts": {
-                          "minItems": 1,
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "type": {
-                                "type": "string"
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "turn"
+                      },
+                      "appId": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "hostUrl": {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      "messages": {
+                        "minItems": 1,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "metadata": {},
+                            "parts": {
+                              "minItems": 1,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["type"],
+                                "additionalProperties": {}
                               }
                             },
-                            "required": ["type"],
-                            "additionalProperties": {}
-                          }
-                        },
-                        "metadata": {}
+                            "role": {
+                              "type": "string",
+                              "enum": ["user", "assistant"]
+                            }
+                          },
+                          "required": ["id", "parts", "role"]
+                        }
                       },
-                      "required": ["id", "role", "parts"]
-                    }
+                      "schema": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      },
+                      "threadId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "deployToken": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "appId",
+                      "hostUrl",
+                      "messages",
+                      "deployToken"
+                    ]
                   },
-                  "deployToken": {
-                    "type": "string",
-                    "minLength": 1
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "const": "resume"
+                      },
+                      "appId": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "threadId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "runId": {
+                        "type": "string",
+                        "format": "starts_with",
+                        "pattern": "^wrun_.*"
+                      },
+                      "startIndex": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "token": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "deployToken": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "appId",
+                      "threadId",
+                      "runId",
+                      "startIndex",
+                      "token",
+                      "deployToken"
+                    ]
                   }
-                },
-                "required": ["appId", "hostUrl", "messages", "deployToken"]
+                ]
               }
             }
           }

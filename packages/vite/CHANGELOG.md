@@ -1,5 +1,37 @@
 # @tailorkit/vite
 
+## 0.1.0-beta.35
+
+### Patch Changes
+
+- @tailorkit/app@0.1.0-beta.35
+
+## 0.1.0-beta.34
+
+### Patch Changes
+
+- @tailorkit/app@0.1.0-beta.34
+
+## 0.1.0-beta.33
+
+### Patch Changes
+
+- @tailorkit/app@0.1.0-beta.33
+
+## 0.1.0-beta.32
+
+### Patch Changes
+
+- @tailorkit/app@0.1.0-beta.32
+
+## 0.1.0-beta.31
+
+### Patch Changes
+
+- 4d2f904: Align source code with Ultracite’s default Oxlint and Oxfmt presets while preserving public APIs and runtime lifecycle behavior.
+- Updated dependencies [4d2f904]
+  - @tailorkit/app@0.1.0-beta.31
+
 ## 0.1.0-beta.30
 
 ### Minor Changes

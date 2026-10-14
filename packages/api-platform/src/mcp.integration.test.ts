@@ -20,9 +20,9 @@ vi.mock("@tailorkit/db", () => ({ db: {} }));
 vi.mock("./routes/apps.ts", () => ({
   appRouter: { list: os.handler(calls.list) },
 }));
-vi.mock("@tailorkit/app-agent/workflows", () => ({
+vi.mock("@tailorkit/agent/workflows", () => ({
   appAgent: vi.fn(),
-  deleteSandbox: vi.fn(),
+  cancelAppAgent: vi.fn(),
 }));
 vi.mock("workflow/api", () => ({ start: vi.fn() }));
 vi.mock("@tailorkit/api-utils/dev-delay", () => ({

@@ -266,7 +266,7 @@ it("typechecks file route roots, layouts and views without a manual client entry
     "src/root.tsx",
     "src/slots/panel/root.tsx",
     "src/slots/panel/layout.tsx",
-    "src/slots/panel/home.view.tsx",
+    "src/slots/panel/index.view.tsx",
   ];
   for (const file of sources) {
     // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.

@@ -1,5 +1,48 @@
 # @tailorkit/core
 
+## 0.1.0-beta.35
+
+### Patch Changes
+
+- @tailorkit/client-platform@0.1.0-beta.35
+
+## 0.1.0-beta.34
+
+### Minor Changes
+
+- 82aa45f: Reconnect interrupted agent streams to the existing workflow from the last received chunk, and settle a disconnected turn before sending a follow-up. Relay signed run identities and cleanup completion through the host API.
+
+  Agent chat requires explicit turn or resume requests. Combine thread and run identity in `data-run`, and require `data-run-complete` after workspace cleanup. Remove the separate `data-thread` event and finish-only success handling.
+
+  The app agent checkpoints SDK state directly instead of collecting duplicate model messages. MCP returns the assembled assistant `message` from the output stream instead of a `messages` array.
+
+### Patch Changes
+
+- Updated dependencies [82aa45f]
+  - @tailorkit/client-platform@0.1.0-beta.34
+
+## 0.1.0-beta.33
+
+### Patch Changes
+
+- a215860: Preserve platform authentication errors during CLI token verification so expired credentials trigger the CLI login approval flow instead of an internal server error.
+- @tailorkit/client-platform@0.1.0-beta.33
+
+## 0.1.0-beta.32
+
+### Patch Changes
+
+- Updated dependencies [1929607]
+  - @tailorkit/client-platform@0.1.0-beta.32
+
+## 0.1.0-beta.31
+
+### Patch Changes
+
+- 4d2f904: Align source code with Ultracite’s default Oxlint and Oxfmt presets while preserving public APIs and runtime lifecycle behavior.
+- Updated dependencies [4d2f904]
+  - @tailorkit/client-platform@0.1.0-beta.31
+
 ## 0.1.0-beta.30
 
 ### Patch Changes

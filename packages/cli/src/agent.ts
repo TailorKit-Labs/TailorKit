@@ -21,6 +21,7 @@ interface AgentOptions {
   appId?: string;
   host?: string;
   schemaPath?: string;
+  threadId?: string;
   onLoginRequired?: () => ReturnType<typeof runWhoami>;
 }
 
@@ -150,5 +151,6 @@ export const runAgentCommand = async (options: AgentOptions) => {
     client,
     hostUrl,
     schemaPath: options.schemaPath,
+    threadId: options.threadId,
   });
 };
