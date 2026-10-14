@@ -1,4 +1,4 @@
-import { runHarnessAgentTimeSlice } from "@ai-sdk/workflow-harness";
+import { runHarnessAgentStep } from "@ai-sdk/workflow-harness";
 import type {
   HarnessWorkflowAgent,
   HarnessWorkflowChunk,
@@ -44,11 +44,10 @@ export const agentStep = async (
       return result;
     },
   };
-  const next = await runHarnessAgentTimeSlice({
+  const next = await runHarnessAgentStep({
     agent: runner,
     sandboxSession,
     state,
-    timeSliceSeconds: 300,
     writable: getWritable<HarnessWorkflowChunk>(),
   });
   const messages = result

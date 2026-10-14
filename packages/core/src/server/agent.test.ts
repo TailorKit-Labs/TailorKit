@@ -109,6 +109,33 @@ const setup = (
 };
 
 describe("host agent relay", () => {
+  it("relays a reconnect cursor and accepts cleanup completion without replaying the turn finish", async () => {
+    const complete: AgentChunk = {
+      data: { runId: "wrun_test" },
+      transient: true,
+      type: "data-run-complete",
+    };
+    const { client, requests } = setup({ events: [complete] });
+    const resume = { runId: "wrun_test", startIndex: 15, token: "signed-run" };
+    const received = [];
+    for await (const event of await client.appAgent.chat({
+      appId,
+      hostUrl,
+      messages,
+      resume,
+      threadId: "e773a870-df5a-4bea-9ebd-9be4c0b1897a",
+    })) {
+      received.push(event);
+    }
+    expect(received).toEqual([complete]);
+    const request = require(
+      requests.find((item) => item.url.endsWith("/chat"))
+    );
+    expect(await request.json()).toMatchObject({ resume });
+    expect(requests.filter((item) => item.url.endsWith("/chat"))).toHaveLength(
+      1
+    );
+  });
   it("verifies CLI auth, uses the host project key, and round trips streamed events", async () => {
     const { client, requests } = setup();
     const received = [];

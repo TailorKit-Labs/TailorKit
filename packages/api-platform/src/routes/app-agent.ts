@@ -18,9 +18,13 @@ import {
   validateUIMessages,
 } from "ai";
 import type { UIMessageChunk } from "ai";
-import { start } from "workflow/api";
+import { getRun, start } from "workflow/api";
 import { z } from "zod";
 
+import {
+  createAgentStreamToken,
+  verifyAgentStreamToken,
+} from "#agent-stream-token";
 import { authenticateCliRequest } from "#cli-token";
 import { env } from "#env";
 import { findAppInScopes, o, cliRouter } from "#procedures";
@@ -61,6 +65,13 @@ const agentChatSchema = z.object({
   appId: z.string().min(1),
   hostUrl: z.url({ protocol: /^https?$/u }),
   messages: agentMessagesSchema,
+  resume: z
+    .object({
+      runId: z.string().startsWith("wrun_"),
+      startIndex: z.number().int().nonnegative(),
+      token: z.string().min(1),
+    })
+    .optional(),
   schema: z.record(z.string(), z.unknown()).optional(),
   threadId: z.uuid().optional(),
 });
@@ -78,6 +89,7 @@ const chat = cliRouter
     const app = await findAppInScopes(context.project.id, input.body.appId, [
       canonicalizeScope(token.scope),
     ]);
+    const { resume } = input.body;
     let messages;
     try {
       messages = await convertToModelMessages(
@@ -89,38 +101,59 @@ const chat = cliRouter
       });
     }
     let threadId: string;
-    try {
-      threadId = await resolveAppAgentThread(app.id, input.body.threadId);
-    } catch (error) {
-      if (error instanceof AppAgentThreadError) {
-        throw new ORPCError("BAD_REQUEST", { message: error.message });
+    if (resume === undefined) {
+      try {
+        threadId = await resolveAppAgentThread(app.id, input.body.threadId);
+      } catch (error) {
+        if (error instanceof AppAgentThreadError) {
+          throw new ORPCError("BAD_REQUEST", { message: error.message });
+        }
+        throw error;
       }
-      throw error;
+    } else {
+      if (
+        input.body.threadId === undefined ||
+        !verifyAgentStreamToken(
+          app.id,
+          input.body.threadId,
+          resume.runId,
+          resume.token
+        )
+      ) {
+        throw new ORPCError("NOT_FOUND", {
+          message: "Agent run not found for this app and thread.",
+        });
+      }
+      ({ threadId } = input.body);
     }
     // JWTs carry the same project/scope permissions as CLI sessions, not an app-only grant.
     // Reuse the credential across authorized app selections without extending its expiry.
-    const run = await start(appAgent, [
-      {
-        agentToken:
-          context.agentToken?.token ??
-          (await issueAgentToken(
+    const run =
+      resume === undefined
+        ? await start(appAgent, [
             {
+              agentToken:
+                context.agentToken?.token ??
+                (await issueAgentToken(
+                  {
+                    appId: app.id,
+                    cliTokenId: token.id,
+                    projectId: context.project.id,
+                    scope: token.scope,
+                  },
+                  require(env.AUTH_SECRET),
+                  env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform"
+                )),
               appId: app.id,
-              cliTokenId: token.id,
-              projectId: context.project.id,
-              scope: token.scope,
+              hostUrl: input.body.hostUrl,
+              messages,
+              model: APP_AGENT_MODEL,
+              schema: input.body.schema,
+              threadId,
             },
-            require(env.AUTH_SECRET),
-            env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform"
-          )),
-        appId: app.id,
-        hostUrl: input.body.hostUrl,
-        messages,
-        model: APP_AGENT_MODEL,
-        schema: input.body.schema,
-        threadId,
-      },
-    ]);
+          ])
+        : getRun<Awaited<ReturnType<typeof appAgent>>>(resume.runId);
+    const streamToken = createAgentStreamToken(app.id, threadId, run.runId);
     return streamToAsyncIteratorObject(
       createUIMessageStream({
         execute: async ({ writer }) => {
@@ -129,10 +162,17 @@ const chat = cliRouter
             transient: true,
             type: "data-thread",
           });
+          writer.write({
+            data: { runId: run.runId, token: streamToken },
+            transient: true,
+            type: "data-run",
+          });
           const controller = new AbortController();
           writer.merge(
             run
-              .getReadable<UIMessageChunk>()
+              .getReadable<UIMessageChunk>({
+                startIndex: resume?.startIndex ?? 0,
+              })
               .pipeThrough(
                 new TransformStream<UIMessageChunk, UIMessageChunk>(),
                 {
@@ -143,6 +183,11 @@ const chat = cliRouter
           try {
             // Finish the response only after cleanup releases the app's Drive.
             await run.returnValue;
+            writer.write({
+              data: { runId: run.runId },
+              transient: true,
+              type: "data-run-complete",
+            });
           } catch (error) {
             // A busy Drive can fail before the workflow opens its model stream.
             controller.abort(error);

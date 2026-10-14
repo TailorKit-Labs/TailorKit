@@ -27,6 +27,11 @@ export type AppAgentChatData = {
       }>;
       role: "user" | "assistant";
     }>;
+    resume?: {
+      runId: string;
+      startIndex: number;
+      token: string;
+    };
     schema?: {
       [key: string]: unknown;
     };

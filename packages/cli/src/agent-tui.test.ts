@@ -88,6 +88,154 @@ const waitForAbort = async (_host: string, signal: AbortSignal) =>
   })();
 
 describe("AI SDK terminal transport", () => {
+  it("reconnects after a truncated stream without replaying chunks or starting another turn", async () => {
+    const threadId = "e773a870-df5a-4bea-9ebd-9be4c0b1897a";
+    const run = { runId: "wrun_test", token: "signed-run" };
+    const chat = vi
+      .fn()
+      .mockResolvedValueOnce(
+        (async function* disconnected() {
+          yield { data: { threadId }, transient: true, type: "data-thread" };
+          yield { data: run, transient: true, type: "data-run" };
+          yield { messageId: "answer", type: "start" };
+          yield { id: "text", type: "text-start" };
+          yield { delta: "Hel", id: "text", type: "text-delta" };
+          throw new Error("The agent stream ended unexpectedly. Try again.");
+        })()
+      )
+      .mockImplementationOnce((input) =>
+        (async function* resumed() {
+          expect(input.resume).toEqual({ ...run, startIndex: 3 });
+          expect(input.threadId).toBe(threadId);
+          yield { data: { threadId }, transient: true, type: "data-thread" };
+          yield { data: run, transient: true, type: "data-run" };
+          yield { delta: "lo", id: "text", type: "text-delta" };
+          yield { id: "text", type: "text-end" };
+          yield { type: "finish" };
+          yield {
+            data: { runId: run.runId },
+            transient: true,
+            type: "data-run-complete",
+          };
+        })()
+      )
+      .mockResolvedValueOnce(chatEvents());
+    await openAgentTui({ appId, client: { appAgent: { chat } }, hostUrl });
+    const [options] = requireValue(mocks.tui.mock.lastCall);
+    const { transport } = options;
+    const stream = await transport.sendMessages({ messages });
+    let answer;
+    for await (const message of readUIMessageStream({
+      stream,
+      terminateOnError: true,
+    })) {
+      answer = message;
+    }
+    expect(answer?.parts).toContainEqual({
+      state: "done",
+      text: "Hello",
+      type: "text",
+    });
+    expect(chat).toHaveBeenCalledTimes(2);
+    expect(requireValue(chat.mock.calls[0])[0].resume).toBeUndefined();
+    await transport.sendMessages({ messages });
+    expect(requireValue(chat.mock.lastCall)[0].resume).toBeUndefined();
+    expect(requireValue(chat.mock.lastCall)[0].threadId).toBe(threadId);
+  });
+
+  it("stops reconnecting when the caller aborts during backoff", async () => {
+    const threadId = "e773a870-df5a-4bea-9ebd-9be4c0b1897a";
+    const chat = vi.fn().mockResolvedValue(
+      (async function* disconnected() {
+        yield { data: { threadId }, transient: true, type: "data-thread" };
+        yield {
+          data: { runId: "wrun_test", token: "signed-run" },
+          transient: true,
+          type: "data-run",
+        };
+        throw new Error("Disconnected");
+      })()
+    );
+    await openAgentTui({ appId, client: { appAgent: { chat } }, hostUrl });
+    const [options] = requireValue(mocks.tui.mock.lastCall);
+    const { transport } = options;
+    const abort = new AbortController();
+    const stream = await transport.sendMessages({
+      abortSignal: abort.signal,
+      messages,
+    });
+    const reader = stream.getReader();
+    await reader.read();
+    await reader.read();
+    const pending = reader.read();
+    abort.abort();
+    await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    expect(chat).toHaveBeenCalledOnce();
+  });
+
+  it("settles a disconnected turn before submitting a follow-up after retries are exhausted", async () => {
+    const run = { runId: "wrun_test", token: "signed-run" };
+    const threadId = "e773a870-df5a-4bea-9ebd-9be4c0b1897a";
+    const chat = vi
+      .fn()
+      .mockResolvedValueOnce(
+        (async function* initial() {
+          yield { data: { threadId }, transient: true, type: "data-thread" };
+          yield { data: run, transient: true, type: "data-run" };
+          yield { messageId: "old-answer", type: "start" };
+          throw new Error("Disconnected");
+        })()
+      )
+      .mockRejectedValueOnce(new Error("Offline"))
+      .mockRejectedValueOnce(new Error("Offline"))
+      .mockRejectedValueOnce(new Error("Offline"));
+    await openAgentTui({ appId, client: { appAgent: { chat } }, hostUrl });
+    const [options] = requireValue(mocks.tui.mock.lastCall);
+    const { transport } = options;
+    const stream = await transport.sendMessages({ messages });
+    const consuming = (async () => {
+      for await (const _chunk of stream) {
+        /* consume */
+      }
+    })();
+    const failed = expect(consuming).rejects.toThrow("Offline");
+    await failed;
+    chat
+      .mockResolvedValueOnce(
+        (async function* oldTurnCompleted() {
+          yield {
+            data: { runId: run.runId },
+            transient: true,
+            type: "data-run-complete",
+          };
+        })()
+      )
+      .mockResolvedValueOnce(chatEvents());
+    const followup = [
+      ...messages,
+      {
+        id: "followup",
+        parts: [{ text: "Continue", type: "text" }],
+        role: "user",
+      },
+    ];
+    const next = await transport.sendMessages({ messages: followup });
+    for await (const _chunk of next) {
+      /* consume */
+    }
+    expect(chat).toHaveBeenCalledTimes(6);
+    const [oldRequest] = requireValue(chat.mock.calls[4]);
+    const [newRequest] = requireValue(chat.mock.calls[5]);
+    expect(oldRequest).toMatchObject({
+      messages,
+      resume: { ...run, startIndex: 1 },
+    });
+    expect(newRequest).toMatchObject({
+      messages: followup,
+      threadId,
+    });
+    expect(newRequest.resume).toBeUndefined();
+  }, 15_000);
   it("forwards the SDK's complete history and abort signal to the host client", async () => {
     const chat = vi.fn(
       // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.

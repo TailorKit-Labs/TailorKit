@@ -152,48 +152,4 @@ describe("Pi step with the SDK workflow runner", () => {
     expect(mocks.detach).not.toHaveBeenCalled();
     expect(mocks.destroy).not.toHaveBeenCalled();
   });
-
-  it("checkpoints at the five-minute wall-clock boundary while the native turn stays unfinished", async () => {
-    vi.useFakeTimers();
-    try {
-      let controller:
-        | ReadableStreamDefaultController<HarnessWorkflowChunk>
-        | undefined;
-      mocks.unfinished.mockReturnValue(true);
-      mocks.stream.mockResolvedValue({
-        ...streamResult("Working"),
-        toUIMessageStream: () =>
-          new ReadableStream<HarnessWorkflowChunk>({
-            start(value) {
-              controller = value;
-            },
-          }),
-      });
-      mocks.suspend.mockImplementation(async () => {
-        controller?.close();
-        return await Promise.resolve(continueFrom);
-      });
-      const pending = agentStep(
-        createHarnessWorkflowState({
-          messages: input.messages,
-          sessionId: input.threadId,
-        }),
-        input,
-        "run-1"
-      );
-      await vi.waitFor(() => {
-        expect(mocks.stream).toHaveBeenCalledOnce();
-      });
-      await vi.advanceTimersByTimeAsync(300_000);
-      const result = await pending;
-      expect(result.state).toMatchObject({
-        continueFrom,
-        status: "ready_for_next_step",
-      });
-      expect(mocks.detach).not.toHaveBeenCalled();
-      expect(mocks.destroy).not.toHaveBeenCalled();
-    } finally {
-      vi.useRealTimers();
-    }
-  });
 });

@@ -1,7 +1,13 @@
+import { setTimeout as delay } from "node:timers/promises";
+
 import { runAgentTUI } from "@ai-sdk/tui";
 import { log } from "@clack/prompts";
 import { asyncIteratorToUnproxiedDataStream } from "@orpc/client";
-import { agentThreadChunkSchema } from "@tailorkit/client-platform/agent";
+import {
+  agentThreadChunkSchema,
+  agentRunChunkSchema,
+  agentRunCompleteChunkSchema,
+} from "@tailorkit/client-platform/agent";
 import type { TailorKitRouterClient } from "@tailorkit/core/server";
 import type { ChatTransport, UIMessage, UIMessageChunk } from "ai";
 
@@ -26,10 +32,98 @@ export const openAgentTui = async ({
   threadId: requestedThreadId,
 }: AgentTuiOptions) => {
   let threadId = requestedThreadId;
+  type ChatInput = Parameters<TailorKitRouterClient["appAgent"]["chat"]>[0];
+  let resume: ChatInput["resume"];
+  let pendingInput: ChatInput | undefined;
+  const connect = async (
+    input: ChatInput,
+    signal?: AbortSignal
+  ): Promise<AsyncIterable<UIMessageChunk>> => {
+    // oxlint-disable-next-line typescript/no-unsafe-assignment -- The generated RPC event iterator type is erased; the host validates each chunk.
+    const chunks: AsyncIterable<UIMessageChunk> = await client.appAgent.chat(
+      input,
+      { signal }
+    );
+    return chunks;
+  };
+  const readTurn = async function* readTurn(
+    input: ChatInput,
+    signal?: AbortSignal,
+    initial?: AsyncIterable<UIMessageChunk>
+  ): AsyncGenerator<UIMessageChunk> {
+    let initialChunks = initial;
+    let failures = 0;
+    let finished = false;
+    while (true) {
+      signal?.throwIfAborted();
+      const startIndex = resume?.startIndex ?? 0;
+      try {
+        const request =
+          resume === undefined ? input : { ...input, resume, threadId };
+        const nextChunks = initialChunks ?? connect(request, signal);
+        // oxlint-disable-next-line no-await-in-loop -- Connect sequentially from the last received chunk to avoid overlapping readers.
+        const chunks = await nextChunks;
+        initialChunks = undefined;
+        // oxlint-disable-next-line no-await-in-loop -- Each chunk advances the reconnect cursor before reading the next one.
+        for await (const chunk of chunks) {
+          const thread = agentThreadChunkSchema.safeParse(chunk);
+          const run = agentRunChunkSchema.safeParse(chunk);
+          const complete = agentRunCompleteChunkSchema.safeParse(chunk);
+          if (thread.success) {
+            ({ threadId } = thread.data.data);
+          } else if (run.success) {
+            resume = { ...run.data.data, startIndex };
+          } else if (complete.success) {
+            finished = true;
+          } else {
+            if (resume !== undefined) {
+              resume = { ...resume, startIndex: resume.startIndex + 1 };
+            }
+            failures = 0;
+            if (chunk.type === "finish" || chunk.type === "error") {
+              finished = true;
+            }
+            if (chunk.type === "error") {
+              // The SDK may cancel consumption as soon as it sees this terminal error.
+              resume = undefined;
+              pendingInput = undefined;
+            }
+          }
+          yield chunk;
+        }
+        if (finished) {
+          resume = undefined;
+          pendingInput = undefined;
+          return;
+        }
+        throw new Error("The agent stream ended before the turn completed.");
+      } catch (error) {
+        signal?.throwIfAborted();
+        failures += 1;
+        if (resume === undefined || failures > 3) {
+          throw error;
+        }
+        // oxlint-disable-next-line no-await-in-loop -- Retry this read, never the initial workflow submission; abort interrupts the backoff.
+        await delay(1000 * failures, undefined, { signal });
+      }
+    }
+  };
   const transport: ChatTransport<UIMessage> = {
-    // oxlint-disable-next-line eslint/require-await -- This asynchronous protocol method resolves synchronously but must preserve Promise results and rejected exceptions.
-    reconnectToStream: async () => null,
+    // oxlint-disable-next-line eslint/require-await -- ChatTransport requires a Promise although stream creation is synchronous.
+    reconnectToStream: async ({ abortSignal }) =>
+      pendingInput === undefined || resume === undefined
+        ? null
+        : asyncIteratorToUnproxiedDataStream(
+            readTurn(pendingInput, abortSignal)
+          ),
     sendMessages: async ({ messages, abortSignal }) => {
+      if (resume !== undefined && pendingInput !== undefined) {
+        // Settle the disconnected turn before submitting this follow-up.
+        // Its full history lives in Pi's journal, even if the terminal missed it.
+        for await (const _chunk of readTurn(pendingInput, abortSignal)) {
+          /* consume */
+        }
+      }
       const timeoutSignal = AbortSignal.timeout(schemaFetchTimeoutMs);
       const schemaSignal = abortSignal
         ? AbortSignal.any([abortSignal, timeoutSignal])
@@ -62,31 +156,19 @@ export const openAgentTui = async ({
           }
         );
       }
-      // oxlint-disable-next-line typescript/no-unsafe-assignment -- The generated SSE client exposes its event stream through an erased generic; the platform validates agent events before streaming them.
-      const chunks = await client.appAgent.chat(
-        {
-          appId,
-          hostUrl,
-          messages: messages.filter(
-            (message): message is UIMessage & { role: "user" | "assistant" } =>
-              message.role !== "system"
-          ),
-          schema,
-          threadId,
-        },
-        { signal: abortSignal }
-      );
-      // oxlint-disable-next-line typescript/no-unsafe-argument -- The generated client erases this event-stream type; the protocol parser validates the streamed chunks.
-      return asyncIteratorToUnproxiedDataStream(chunks).pipeThrough(
-        new TransformStream<UIMessageChunk, UIMessageChunk>({
-          transform(chunk, controller) {
-            const metadata = agentThreadChunkSchema.safeParse(chunk);
-            if (metadata.success) {
-              ({ threadId } = metadata.data.data);
-            }
-            controller.enqueue(chunk);
-          },
-        })
+      pendingInput = {
+        appId,
+        hostUrl,
+        messages: messages.filter(
+          (message): message is UIMessage & { role: "user" | "assistant" } =>
+            message.role !== "system"
+        ),
+        schema,
+        threadId,
+      };
+      const initial = await connect(pendingInput, abortSignal);
+      return asyncIteratorToUnproxiedDataStream(
+        readTurn(pendingInput, abortSignal, initial)
       );
     },
   };

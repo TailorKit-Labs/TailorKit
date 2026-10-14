@@ -76,6 +76,26 @@
                     "type": "string",
                     "format": "uuid",
                     "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "resume": {
+                    "type": "object",
+                    "properties": {
+                      "runId": {
+                        "type": "string",
+                        "format": "starts_with",
+                        "pattern": "^wrun_.*"
+                      },
+                      "startIndex": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "token": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": ["runId", "startIndex", "token"]
                   }
                 },
                 "required": ["appId", "hostUrl", "messages", "deployToken"]

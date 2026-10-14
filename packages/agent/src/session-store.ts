@@ -31,6 +31,23 @@ export interface SavedAgentSession {
   sandboxName?: string;
 }
 
+const assertLeaseAvailable = async (
+  activeRunId: string,
+  expiresAt: Date | null
+) => {
+  if (expiresAt !== null && expiresAt.getTime() < Date.now()) {
+    return;
+  }
+  // External cancellation skips workflow cleanup; its durable status can free the lease.
+  const { getRun } = await import("workflow/api");
+  const status = await getRun(activeRunId).status;
+  if (status === "pending" || status === "running") {
+    throw new FatalError(
+      `This app is already being edited by workflow ${activeRunId}. Retry after the active run finishes.`
+    );
+  }
+};
+
 /** Conversations are independent; the lease excludes all writers for this app. */
 export const loadResumeStep = async (
   appId: string,
@@ -53,14 +70,8 @@ export const loadResumeStep = async (
       throw new FatalError("This editing run belongs to another thread.");
     }
     const otherRun = lease.activeRunId !== null && lease.activeRunId !== runId;
-    if (
-      otherRun &&
-      (lease.leaseExpiresAt === null ||
-        lease.leaseExpiresAt.getTime() >= Date.now())
-    ) {
-      throw new FatalError(
-        "This app is already being edited. Retry after the active run finishes."
-      );
+    if (otherRun && lease.activeRunId !== null) {
+      await assertLeaseAvailable(lease.activeRunId, lease.leaseExpiresAt);
     }
     const [thread] = await tx
       .select()
