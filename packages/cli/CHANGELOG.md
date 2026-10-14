@@ -1,5 +1,15 @@
 # @tailorkit/cli
 
+## 0.1.0-beta.31
+
+### Patch Changes
+
+- 4d2f904: Align source code with Ultracite’s default Oxlint and Oxfmt presets while preserving public APIs and runtime lifecycle behavior.
+- Updated dependencies [4d2f904]
+  - @tailorkit/client-platform@0.1.0-beta.31
+  - @tailorkit/core@0.1.0-beta.31
+  - @tailorkit/vite@0.1.0-beta.31
+
 ## 0.1.0-beta.30
 
 ### Minor Changes
