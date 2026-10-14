@@ -1,5 +1,16 @@
 # tailorkit
 
+## 0.1.0-beta.35
+
+### Patch Changes
+
+- Advance the beta release to retry publishing after npm rejected the previously staged version.
+- @tailorkit/app@0.1.0-beta.35
+  - @tailorkit/cli@0.1.0-beta.35
+  - @tailorkit/core@0.1.0-beta.35
+  - @tailorkit/react@0.1.0-beta.35
+  - @tailorkit/vite@0.1.0-beta.35
+
 ## 0.1.0-beta.34
 
 ### Patch Changes
