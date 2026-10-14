@@ -1,0 +1,45 @@
+docs/getting-started/introduction.mdx
+  s_35012a91b914e4::t_a73ceddc3ab9ce 1-47
+docs/concepts/components.mdx
+  s_35012a91b914e4::t_a73ceddc3ab9ce 1-63,88-100
+  s_35012a91b914e4::t_c63757c41c5878 64-87
+docs/concepts/views.mdx
+  s_35012a91b914e4::t_c63757c41c5878 89-116
+  s_35012a91b914e4::t_a73ceddc3ab9ce 1-88,117-129
+docs/getting-started/installation.mdx
+  s_35012a91b914e4::t_a73ceddc3ab9ce 1-856
+docs/images/slots-wireframe.svg
+  s_35012a91b914e4::t_a73ceddc3ab9ce 1-30
+docs/docs.json
+  s_35012a91b914e4::t_c63757c41c5878 18-35
+docs/concepts/tools.mdx
+  s_35012a91b914e4::t_a73ceddc3ab9ce 1-63,89-100
+  s_35012a91b914e4::t_c63757c41c5878 64-88
+docs/writing-apps/ui.mdx
+  s_35012a91b914e4::t_a73ceddc3ab9ce 1-110,138-150
+  s_35012a91b914e4::t_c63757c41c5878 111-137
+docs/concepts/slots.mdx
+  s_35012a91b914e4::t_a73ceddc3ab9ce 1-71,90-102
+  s_35012a91b914e4::t_c63757c41c5878 72-89
+docs/concepts/showing-ui.mdx
+  s_35012a91b914e4::t_a73ceddc3ab9ce 1-119,132-144
+  s_35012a91b914e4::t_c63757c41c5878 120-131
+apps/web/vercel.json
+  s_35012a91b914e4::t_a73ceddc3ab9ce 7-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4cf4bfc07e1ce072ff6de270678697148bd02430",
+  "prompts": {},
+  "sessions": {
+    "s_35012a91b914e4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a123fb-4e04-7eb2-af76-566a5e408879",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
