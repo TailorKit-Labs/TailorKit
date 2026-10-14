@@ -14,6 +14,8 @@ The authorized app ID selects the shared `app-<appId>` source Drive. A separate 
 
 ## Threads
 
+Before the model starts, sandbox setup installs `tailorkit@beta` and its matching CLI in `/tmp/tailorkit-cli`. Empty app workspaces are scaffolded as `new-app` in `/workspace/app`, then dependencies are installed and host bindings generated. A setup marker lets interrupted installation or generation resume without overwriting the scaffold. Existing app source is preserved. CLI and new app installs enforce a three-day package release age with immediate availability only for `tailorkit` and `@tailorkit/*`. The agent receives a short readiness note and can begin implementation immediately.
+
 Every new `tailorkit agent --host <url>` invocation starts a new conversation by default. Follow-up messages in that invocation reuse the thread ID announced by the platform in a transient `data-thread` UI chunk. The CLI prints the ID when the chat closes; use `tailorkit agent --host <url> --app <id> --thread <threadId>` to continue it. The resumed TUI shows new messages while Pi retains its native prior context.
 
 MCP `create_app` and `edit_app` create a new thread by default and return its ID in progress events and the terminal result. Pass `threadId` to `edit_app` for a related follow-up. After `create_app`, continue through `edit_app` with the returned app and thread IDs. The backend validates that the requested thread belongs to the authorized app before starting a run or issuing an MCP agent grant.

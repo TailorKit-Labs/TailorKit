@@ -128,6 +128,13 @@ export const prepareSandboxStep = async (
   if (input.schema !== undefined) {
     await writeAgentSchema(sandboxName, input.schema);
   }
+  const { prepareWorkspace } = await import("./workspace");
+  const sandbox = await getSandbox(sandboxName);
+  await prepareWorkspace(
+    sandbox.currentSession(),
+    input,
+    input.schema === undefined ? undefined : agentSchemaPath
+  );
 };
 
 /** Stop only at the end of the user turn; persistence keeps Pi's persisted session journal. */
