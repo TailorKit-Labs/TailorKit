@@ -1,7 +1,16 @@
+import { captchaEndpoints } from "@tailorkit/auth/lib/captcha-endpoints";
 import { initBotId } from "botid/client/core";
 import { withBotId } from "botid/next/config";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import { captchaEndpoints } from "@tailorkit/auth/lib/captcha-endpoints";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vite-plus/test";
+
+// oxlint-disable-next-line import/no-relative-parent-imports -- This test reads the app deployment configuration outside src, which the # alias cannot address.
 import vercelConfig from "../../vercel.json";
 
 vi.mock("botid/client/core", () => ({ initBotId: vi.fn() }));
@@ -23,11 +32,13 @@ describe("auth client BotID initialization", () => {
       .fn()
       .mockResolvedValue(
         Response.json(
-          { message: "Invalid credentials", code: "INVALID_EMAIL_OR_PASSWORD" },
-          { status: 401 },
-        ),
+          { code: "INVALID_EMAIL_OR_PASSWORD", message: "Invalid credentials" },
+          { status: 401 }
+        )
       );
-    vi.stubGlobal("window", { location: new URL("https://tailorkit.dev/login") });
+    vi.stubGlobal("window", {
+      location: new URL("https://tailorkit.dev/login"),
+    });
     vi.stubGlobal("fetch", originalFetch);
     vi.stubEnv("PROD", true);
     vi.mocked(initBotId).mockImplementation(() => {
@@ -35,20 +46,28 @@ describe("auth client BotID initialization", () => {
     });
 
     const { authClient } = await import("./auth-client");
-    await authClient.signIn.email({ email: "user@example.com", password: "test-password" });
+    await authClient.signIn.email({
+      email: "user@example.com",
+      password: "test-password",
+    });
 
     expect(initBotId).toHaveBeenCalledWith({
-      protect: captchaEndpoints.map((path) => ({ path: `/api/auth${path}`, method: "POST" })),
+      protect: captchaEndpoints.map((path) => ({
+        method: "POST",
+        path: `/api/auth${path}`,
+      })),
     });
     expect(protectedFetch).toHaveBeenCalledOnce();
     expect(String(protectedFetch.mock.calls[0]?.[0])).toBe(
-      "https://tailorkit.dev/api/auth/sign-in/email",
+      "https://tailorkit.dev/api/auth/sign-in/email"
     );
     expect(originalFetch).not.toHaveBeenCalled();
   });
 
   it("does not load browser challenges during local development", async () => {
-    vi.stubGlobal("window", { location: new URL("http://localhost:3000/login") });
+    vi.stubGlobal("window", {
+      location: new URL("http://localhost:3000/login"),
+    });
     vi.stubEnv("PROD", false);
 
     await import("./auth-client");
@@ -58,6 +77,7 @@ describe("auth client BotID initialization", () => {
 
   it("does not initialize BotID during server rendering", async () => {
     vi.stubEnv("PROD", true);
+    // oxlint-disable-next-line unicorn/no-useless-undefined -- Preserve the original explicit argument and argument-count semantics.
     vi.stubGlobal("window", undefined);
 
     await import("./auth-client");
@@ -73,7 +93,11 @@ describe("BotID proxy configuration", () => {
     const headers = await sdkConfig.headers?.();
 
     expect(Array.isArray(rewrites)).toBe(true);
-    expect(vercelConfig.rewrites).toEqual(expect.arrayContaining(rewrites as unknown[]));
+    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+    expect(vercelConfig.rewrites).toEqual(
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+      expect.arrayContaining(rewrites as unknown[])
+    );
     expect(vercelConfig.headers).toEqual(expect.arrayContaining(headers ?? []));
   });
 });

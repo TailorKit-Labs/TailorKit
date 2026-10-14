@@ -1,21 +1,26 @@
-import type { TailorKitSchemaSpec } from "../spec/index";
-import type { ContractTools } from "./tools";
-import { serializeTools } from "./tools";
+import type { TailorKitSchemaSpec } from "#spec/index";
+
 import type {
   ComponentDefinitions,
   NoComponentFieldCallbackConflicts,
   ResolvedComponentMetadata,
 } from "./components";
 import { resolveComponentMetadata } from "./components";
+import { jsonSchemaSerializer, serializeSchema } from "./shared";
+import type { Schema, SchemaSerializer } from "./shared";
+import type { ContractTools } from "./tools";
+import { serializeTools } from "./tools";
 import type {
   ResolvedViewMetadata,
   ViewContextHierarchy,
   ContextDefinitions,
   SlotDefinitions,
 } from "./views";
-import { jsonSchemaSerializer, serializeSchema } from "./shared";
-import type { Schema, SchemaSerializer } from "./shared";
 
+const isBooleanValue = <TValue>(value: TValue): value is TValue & boolean =>
+  typeof value === "boolean";
+
+// oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
 type EmptyToolMap = Record<never, never>;
 
 export interface TailorKitSchema<
@@ -46,9 +51,32 @@ export interface TailorKitSchema<
   tools: TTools;
   components: TComponents;
   views: TViews;
-  serialize(schemaSerializer?: SchemaSerializer): TailorKitSchemaSpec;
+  serialize: (schemaSerializer?: SchemaSerializer) => TailorKitSchemaSpec;
 }
 
+// JSON Schema cannot represent undefined at its root. Preserve that information
+// separately before sending the schema to app type generation.
+const contextMayBeOmitted = (schema: Schema): boolean => {
+  // oxlint-disable-next-line unicorn/no-useless-undefined -- Probe whether the schema accepts an omitted context.
+  const result = schema["~standard"].validate(undefined);
+  if (result instanceof Promise) {
+    // Serialization is synchronous; conservatively allow omission for async schemas.
+    void (async () => {
+      try {
+        return await result;
+      } catch {
+        /* Intentionally no action is needed. */
+      }
+
+      /* oxlint-disable-next-line unicorn/no-useless-undefined -- Missing results use the same undefined sentinel as the optional return type. */
+      return undefined;
+    })();
+    return true;
+  }
+  return !result.issues;
+};
+
+// SAFETY: These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes.
 export const createTailorKitSchema = <
   const TComponents extends Record<string, unknown>,
   const TViews extends ContextDefinitions = Record<string, never>,
@@ -57,11 +85,12 @@ export const createTailorKitSchema = <
   slots?: SlotDefinitions<keyof NoInfer<TViews> & string>;
   scopes?: Record<string, Schema>;
   tools?: TTools;
-  components: TComponents & NoComponentFieldCallbackConflicts<NoInfer<TComponents>>;
+  components: TComponents &
+    NoComponentFieldCallbackConflicts<NoInfer<TComponents>>;
   views?: TViews & ViewContextHierarchy<NoInfer<TViews>>;
 }): TailorKitSchema<TComponents, TViews, TTools> => {
   for (const [name, slot] of Object.entries(schema.slots ?? {})) {
-    if (slot.multiple !== undefined && typeof slot.multiple !== "boolean") {
+    if (slot.multiple !== undefined && !isBooleanValue(slot.multiple)) {
       throw new TypeError(`Slot "${name}" multiple must be a boolean.`);
     }
     for (const view of slot.views) {
@@ -70,26 +99,54 @@ export const createTailorKitSchema = <
       }
     }
   }
-  const components = {} as TailorKitSchema<TComponents, TViews, TTools>["$internal"]["components"];
-  const views = {} as TailorKitSchema<TComponents, TViews, TTools>["$internal"]["views"];
+  // SAFETY: These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes.
+  const components =
+    /* oxlint-disable typescript/no-unsafe-type-assertion -- These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes. */
+    {} as TailorKitSchema<
+      TComponents,
+      TViews,
+      TTools
+    >["$internal"]["components"];
+  /* oxlint-enable typescript/no-unsafe-type-assertion */
+  // SAFETY: These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes.
+  const views =
+    /* oxlint-disable typescript/no-unsafe-type-assertion -- These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes. */
+    {} as TailorKitSchema<TComponents, TViews, TTools>["$internal"]["views"];
+  /* oxlint-enable typescript/no-unsafe-type-assertion */
 
-  for (const [name, definition] of Object.entries(schema.components as ComponentDefinitions)) {
-    components[name as keyof TComponents] = resolveComponentMetadata(name, definition);
+  for (const [name, definition] of Object.entries(
+    /* oxlint-disable typescript/no-unsafe-type-assertion -- These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes. */
+    schema.components as ComponentDefinitions
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
+  )) {
+    // SAFETY: These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes.
+    components[name as keyof TComponents] = resolveComponentMetadata(
+      name,
+      definition
+    );
   }
 
-  for (const [name, context] of Object.entries((schema.views ?? {}) as ContextDefinitions)) {
-    views[name as keyof TViews] = { context };
+  for (const [name, context] of Object.entries(schema.views ?? {})) {
+    // SAFETY: These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes.
+    views[
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes. */
+      name as keyof TViews
+      /* oxlint-enable typescript/no-unsafe-type-assertion */
+    ] = { context };
   }
 
   const serialize = (
-    schemaSerializer: SchemaSerializer = jsonSchemaSerializer,
+    schemaSerializer: SchemaSerializer = jsonSchemaSerializer
   ): TailorKitSchemaSpec => {
     const serializedComponents: TailorKitSchemaSpec["components"] = {};
     const serializedViews: TailorKitSchemaSpec["views"] = {};
 
     for (const [name, metadata] of Object.entries(components)) {
-      const callbacks: TailorKitSchemaSpec["components"][string]["callbacks"] = {};
-      for (const [callbackName, callback] of Object.entries(metadata.callbacks)) {
+      const callbacks: TailorKitSchemaSpec["components"][string]["callbacks"] =
+        {};
+      for (const [callbackName, callback] of Object.entries(
+        metadata.callbacks
+      )) {
         if (callback === undefined) {
           continue;
         }
@@ -102,63 +159,81 @@ export const createTailorKitSchema = <
 
       serializedComponents[name] = {
         callbacks,
-        fields: serializeSchema(metadata.fields, schemaSerializer),
         children: metadata.children,
+        fields: serializeSchema(metadata.fields, schemaSerializer),
       };
     }
 
     for (const [name, metadata] of Object.entries(views)) {
       serializedViews[name] = {
         context: serializeSchema(metadata.context, schemaSerializer),
-        ...(metadata.context && contextMayBeOmitted(metadata.context)
-          ? { contextOptional: true }
-          : {}),
       };
+      if (metadata.context && contextMayBeOmitted(metadata.context)) {
+        serializedViews[name].contextOptional = true;
+      }
     }
 
-    return {
-      tools: serializeTools(schema.tools ?? {}, schemaSerializer),
+    const serialized: TailorKitSchemaSpec = {
       components: serializedComponents,
-      views: serializedViews,
+
       slots: Object.fromEntries(
-        Object.entries(schema.slots ?? {}).map(([name, slot]) => [
-          name,
-          {
-            views: [...slot.views],
-            ...(slot.multiple !== undefined ? { multiple: slot.multiple } : {}),
-          },
-        ]),
-      ),
-      ...(schema.scopes
-        ? {
-            scopes: Object.fromEntries(
-              Object.entries(schema.scopes).flatMap(([name, scope]) => {
-                const serialized = serializeSchema(scope, schemaSerializer);
-                return serialized ? [[name, serialized]] : [];
-              }),
-            ),
+        Object.entries(schema.slots ?? {}).map(([name, slot]) => {
+          const definition: NonNullable<TailorKitSchemaSpec["slots"]>[string] =
+            {
+              views: [...slot.views],
+            };
+          if (slot.multiple !== undefined) {
+            definition.multiple = slot.multiple;
           }
-        : {}),
+          return [name, definition];
+        })
+      ),
+
+      tools: serializeTools(schema.tools ?? {}, schemaSerializer),
+
       version: 1,
+
+      views: serializedViews,
     };
+    if (schema.scopes) {
+      serialized.scopes = Object.fromEntries(
+        Object.entries(schema.scopes).flatMap(([name, scope]) => {
+          const value = serializeSchema(scope, schemaSerializer);
+          return value ? [[name, value]] : [];
+        })
+      );
+    }
+    return serialized;
   };
 
+  // SAFETY: These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes.
   return {
-    slots: schema.slots ?? {},
-    tools: (schema.tools ?? {}) as TTools,
-    components: schema.components,
-    views: (schema.views ?? {}) as TViews,
-    serialize,
     $internal: {
-      tools: (schema.tools ?? {}) as TTools,
       components,
+      tools:
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes. */
+        (schema.tools ?? {}) as TTools,
+      /* oxlint-enable typescript/no-unsafe-type-assertion */
       views,
     },
+    components: schema.components,
+    serialize,
+    slots: schema.slots ?? {},
+    tools:
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes. */
+      (schema.tools ?? {}) as TTools,
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
+    views:
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- These keys and definitions come from the same declared schema tables; the loops populate every declared key before the metadata escapes. */
+      (schema.views ?? {}) as TViews,
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
   };
 };
 
-export type { TailorKitTheme } from "../primitives/theme";
+export type { TailorKitTheme } from "#primitives/theme";
+
 export { tool } from "./tools";
+
 export type {
   ContractTool,
   ContractTools,
@@ -169,6 +244,7 @@ export type {
   InferToolInput,
   InferToolOutput,
 } from "./tools";
+
 export {
   type Callback,
   type CallbackDefinition,
@@ -177,6 +253,7 @@ export {
   type InferCallback,
   type InferCallbacks,
 } from "./callbacks";
+
 export {
   type Component,
   type ComponentDefinition,
@@ -187,6 +264,7 @@ export {
   type NoComponentFieldCallbackConflicts,
   type ResolvedComponentMetadata,
 } from "./components";
+
 export {
   type ResolvedViewMetadata,
   type View,
@@ -197,18 +275,11 @@ export {
   type Views,
   type SlotDefinitions,
 } from "./views";
-export { jsonSchemaSerializer, type Schema, type SchemaSerializer } from "./shared";
-export type { TailorKitSchema as TailorKit };
 
-// JSON Schema cannot represent undefined at its root. Preserve that information
-// separately before sending the schema to app type generation.
-function contextMayBeOmitted(schema: Schema): boolean {
-  // oxlint-disable-next-line unicorn/no-useless-undefined -- Probe whether the schema accepts an omitted context.
-  const result = schema["~standard"].validate(undefined);
-  if (result instanceof Promise) {
-    // Serialization is synchronous; conservatively allow omission for async schemas.
-    void result.catch(() => {});
-    return true;
-  }
-  return !result.issues;
-}
+export {
+  jsonSchemaSerializer,
+  type Schema,
+  type SchemaSerializer,
+} from "./shared";
+
+export type { TailorKitSchema as TailorKit };

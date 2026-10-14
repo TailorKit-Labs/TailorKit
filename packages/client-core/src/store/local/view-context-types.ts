@@ -2,7 +2,8 @@ import type { ViewDefinition } from "@tailorkit/core/schema";
 
 type DefaultViews = Record<`/${string}`, ViewDefinition>;
 
-export type ViewName<TViews extends Record<string, ViewDefinition>> = keyof TViews & string;
+export type ViewName<TViews extends Record<string, ViewDefinition>> =
+  keyof TViews & string;
 
 export type ViewContext<TView> = TView extends ViewDefinition
   ? NonNullable<TView["~standard"]["types"]>["output"]
@@ -33,9 +34,14 @@ export type ViewState<
 export type ViewOptions<
   TViews extends Record<string, ViewDefinition> = DefaultViews,
   TView extends ViewName<TViews> = ViewName<TViews>,
-> = TView extends ViewName<TViews> ? ViewState<TViews, TView> & { view: TView } : never;
+> =
+  TView extends ViewName<TViews>
+    ? ViewState<TViews, TView> & { view: TView }
+    : never;
 
-export interface ViewContextRegistration<TContext = unknown> extends ViewContextState<TContext> {
+export interface ViewContextRegistration<
+  TContext = unknown,
+> extends ViewContextState<TContext> {
   id: symbol;
   view: string;
 }

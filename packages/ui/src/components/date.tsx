@@ -2,7 +2,13 @@
 
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { Tooltip, TooltipPopup, TooltipProvider, TooltipTrigger } from "./tooltip";
+
+import {
+  Tooltip,
+  TooltipPopup,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./tooltip";
 
 dayjs.extend(relativeTime);
 
@@ -11,7 +17,7 @@ interface DateAgoProps {
   className?: string;
 }
 
-export function DateAgo({ date, className }: DateAgoProps) {
+export const DateAgo = ({ date, className }: DateAgoProps) => {
   const d = dayjs(date);
   return (
     <TooltipProvider>
@@ -23,4 +29,4 @@ export function DateAgo({ date, className }: DateAgoProps) {
       </Tooltip>
     </TooltipProvider>
   );
-}
+};

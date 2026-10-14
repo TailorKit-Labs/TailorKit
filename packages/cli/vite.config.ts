@@ -1,19 +1,16 @@
 import { defineConfig } from "vite-plus";
+
 import packageJson from "./package.json" with { type: "json" };
 
 const liquidRawPlugin = () => ({
   name: "liquid-raw",
-  transform(code: string, id: string) {
-    if (id.endsWith(".liquid")) {
-      return `export default ${JSON.stringify(code)};`;
-    }
-  },
+  transform: (code: string, id: string) =>
+    id.endsWith(".liquid")
+      ? `export default ${JSON.stringify(code)};`
+      : undefined,
 });
 
 export default defineConfig({
-  define: {
-    __TAILORKIT_VERSION__: JSON.stringify(packageJson.version),
-  },
   build: {
     emptyOutDir: true,
     minify: true,
@@ -21,7 +18,7 @@ export default defineConfig({
     rollupOptions: {
       external: [
         /^node:/u,
-        /^@tailorkit\/app(?:\/|$)/u,
+        /^@tailorkit\/vite(?:\/|$)/u,
         "@clack/prompts",
         "@ai-sdk/tui",
         "@standard-schema/spec",
@@ -45,8 +42,8 @@ export default defineConfig({
     ssr: "src/index.ts",
     target: "node24",
   },
-  plugins: [liquidRawPlugin()],
-  ssr: {
-    noExternal: ["cosmiconfig"],
+  define: {
+    __TAILORKIT_VERSION__: JSON.stringify(packageJson.version),
   },
+  plugins: [liquidRawPlugin()],
 });

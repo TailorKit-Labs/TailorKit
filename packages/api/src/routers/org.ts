@@ -1,10 +1,11 @@
+import { ORPCError } from "@orpc/server";
 import { auth } from "@tailorkit/auth";
 import { db } from "@tailorkit/db";
 import { invitation } from "@tailorkit/db/schema/index";
 import { and, eq } from "drizzle-orm";
-import { ORPCError } from "@orpc/server";
-import { protectedProcedure, requireOrg } from "../procedures";
-import z from "zod";
+import { z } from "zod";
+
+import { protectedProcedure, requireOrg } from "#procedures";
 
 export const orgRouter = {
   /**
@@ -16,8 +17,8 @@ export const orgRouter = {
     .handler(async ({ input, context }) => {
       const org = await db.query.organization.findFirst({
         where: {
-          slug: input.orgSlug,
           members: { userId: context.user.id },
+          slug: input.orgSlug,
         },
         with: {
           members: { with: { user: true } },
@@ -28,39 +29,11 @@ export const orgRouter = {
         throw new ORPCError("NOT_FOUND");
       }
 
-      return org.members.filter((m): m is typeof m & { user: NonNullable<typeof m.user> } =>
-        Boolean(m.user),
+      return org.members.filter(
+        (m): m is typeof m & { user: NonNullable<typeof m.user> } =>
+          Boolean(m.user)
       );
     }),
-
-  /**
-   * Invite a member by email. Caller must be owner or admin.
-   * Role cannot be set to "owner" — ownership must be transferred explicitly.
-   */
-  inviteMember: protectedProcedure
-    .input(
-      z.object({
-        orgSlug: z.string(),
-        email: z.email(),
-        role: z.enum(["member", "admin"]),
-      }),
-    )
-    .use(
-      requireOrg({
-        invitation: ["create"],
-      }),
-    )
-    .handler(({ input, context }) =>
-      auth.api.createInvitation({
-        body: {
-          organizationId: context.org.id,
-          email: input.email,
-          role: input.role,
-          resend: true,
-        },
-        headers: context.headers,
-      }),
-    ),
 
   /**
    * List pending invitations for an org. Caller must be owner or admin.
@@ -70,36 +43,44 @@ export const orgRouter = {
     .use(requireOrg({ invitation: ["read"] }))
     .handler(({ context }) =>
       db.query.invitation.findMany({
-        where: { organizationId: context.org.id, status: "pending", expiresAt: { gt: new Date() } },
         orderBy: { createdAt: "desc" },
-      }),
+        where: {
+          expiresAt: { gt: new Date() },
+          organizationId: context.org.id,
+          status: "pending",
+        },
+      })
     ),
 
   /**
-   * Revoke a pending invitation for an org. Caller must be owner or admin.
+   * Invite a member by email. Caller must be owner or admin.
+   * Role cannot be set to "owner" — ownership must be transferred explicitly.
    */
-  revokeInvitation: protectedProcedure
-    .input(z.object({ orgSlug: z.string(), invitationId: z.string() }))
-    .use(requireOrg({ invitation: ["cancel"] }))
-    .handler(async ({ input, context }) => {
-      const [revoked] = await db
-        .update(invitation)
-        .set({ status: "canceled" })
-        .where(
-          and(
-            eq(invitation.id, input.invitationId),
-            eq(invitation.organizationId, context.org.id),
-            eq(invitation.status, "pending"),
-          ),
-        )
-        .returning({ id: invitation.id });
-
-      if (!revoked) {
-        throw new ORPCError("NOT_FOUND");
-      }
-
-      return revoked;
-    }),
+  inviteMember: protectedProcedure
+    .input(
+      z.object({
+        email: z.email(),
+        orgSlug: z.string(),
+        role: z.enum(["member", "admin"]),
+      })
+    )
+    .use(
+      requireOrg({
+        invitation: ["create"],
+      })
+    )
+    .handler(
+      async ({ input, context }) =>
+        await auth.api.createInvitation({
+          body: {
+            email: input.email,
+            organizationId: context.org.id,
+            resend: true,
+            role: input.role,
+          },
+          headers: context.headers,
+        })
+    ),
 
   /**
    * Remove a member from an org.
@@ -110,12 +91,42 @@ export const orgRouter = {
    * - Admins can only remove members, not other admins.
    */
   removeMember: protectedProcedure
-    .input(z.object({ orgSlug: z.string(), memberId: z.string() }))
+    .input(z.object({ memberId: z.string(), orgSlug: z.string() }))
     .use(requireOrg({ member: ["delete"] }))
-    .handler(({ input, context }) =>
-      auth.api.removeMember({
-        body: { organizationId: context.org.id, memberIdOrEmail: input.memberId },
-        headers: context.headers,
-      }),
+    .handler(
+      async ({ input, context }) =>
+        await auth.api.removeMember({
+          body: {
+            memberIdOrEmail: input.memberId,
+            organizationId: context.org.id,
+          },
+          headers: context.headers,
+        })
     ),
+
+  /**
+   * Revoke a pending invitation for an org. Caller must be owner or admin.
+   */
+  revokeInvitation: protectedProcedure
+    .input(z.object({ invitationId: z.string(), orgSlug: z.string() }))
+    .use(requireOrg({ invitation: ["cancel"] }))
+    .handler(async ({ input, context }) => {
+      const [revoked] = await db
+        .update(invitation)
+        .set({ status: "canceled" })
+        .where(
+          and(
+            eq(invitation.id, input.invitationId),
+            eq(invitation.organizationId, context.org.id),
+            eq(invitation.status, "pending")
+          )
+        )
+        .returning({ id: invitation.id });
+
+      if (!revoked) {
+        throw new ORPCError("NOT_FOUND");
+      }
+
+      return revoked;
+    }),
 };

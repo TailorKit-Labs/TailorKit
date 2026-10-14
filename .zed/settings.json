@@ -20,18 +20,33 @@
           "fmt.experimental": true,
           "run": "onSave",
           "typeAware": false,
-          "unusedDisableDirectives": false
+          "unusedDisableDirectives": false,
+          "fmt.disableNestedConfig": true
         }
       }
     },
     "oxlint": {
       "initialization_options": {
         "settings": {
-          "disableNestedConfig": false,
+          "disableNestedConfig": true,
           "fixKind": "safe_fix",
           "run": "onType",
-          "typeAware": true,
+          "typeAware": null,
           "unusedDisableDirectives": "deny"
+        }
+      }
+    },
+    "vtsls": {
+      "settings": {
+        "javascript": {
+          "preferences": {
+            "includePackageJsonAutoImports": "on"
+          }
+        },
+        "typescript": {
+          "preferences": {
+            "includePackageJsonAutoImports": "on"
+          }
         }
       }
     }

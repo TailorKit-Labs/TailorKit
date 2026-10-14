@@ -1,5 +1,10 @@
 import { readFile } from "node:fs/promises";
 
+import {
+  parsePackageManifest,
+  parsePrereleaseState,
+} from "./package-manifest.mjs";
+
 const publishablePackages = [
   "packages/tailorkit/package.json",
   "packages/app/package.json",
@@ -12,21 +17,27 @@ const publishablePackages = [
 ];
 
 const allowedPrerelease = /-(?:alpha|beta)(?:\.|$)/u;
-const releaseRepository = process.env.GITHUB_REPOSITORY ?? "tailorkit-labs/TailorKit";
+
+const releaseRepository =
+  // oxlint-disable-next-line no-restricted-properties -- The standalone release script reads GitHub Actions metadata.
+  process.env.GITHUB_REPOSITORY ?? "tailorkit-labs/TailorKit";
 const expectedRepositoryUrl = `git+https://github.com/${releaseRepository}.git`;
 const errors = [];
-const manifests = [];
+const manifests = await Promise.all(
+  publishablePackages.map(async (manifestPath) =>
+    parsePackageManifest(await readFile(manifestPath, "utf-8"))
+  )
+);
 
-for (const manifestPath of publishablePackages) {
-  const manifest = JSON.parse(await readFile(manifestPath, "utf-8"));
-  manifests.push(manifest);
-
+for (const manifest of manifests) {
   if (manifest.private === true) {
     errors.push(`${manifest.name} is still private`);
   }
 
   if (!allowedPrerelease.test(manifest.version)) {
-    errors.push(`${manifest.name}@${manifest.version} is not an alpha or beta prerelease`);
+    errors.push(
+      `${manifest.name}@${manifest.version} is not an alpha or beta prerelease`
+    );
   }
 
   if (manifest.publishConfig?.access !== "public") {
@@ -35,7 +46,7 @@ for (const manifestPath of publishablePackages) {
 
   if (manifest.repository?.url !== expectedRepositoryUrl) {
     errors.push(
-      `${manifest.name} repository.url must be ${expectedRepositoryUrl} for trusted publishing`,
+      `${manifest.name} repository.url must be ${expectedRepositoryUrl} for trusted publishing`
     );
   }
 }
@@ -56,12 +67,16 @@ for (const manifest of manifests) {
 
   for (const [dependency, range] of Object.entries(publishedDependencies)) {
     if (range.startsWith("workspace:") && !publishableNames.has(dependency)) {
-      errors.push(`${manifest.name} has an unpublished workspace dependency on ${dependency}`);
+      errors.push(
+        `${manifest.name} has an unpublished workspace dependency on ${dependency}`
+      );
     }
   }
 }
 
-const preState = JSON.parse(await readFile(".changeset/pre.json", "utf-8"));
+const preState = parsePrereleaseState(
+  await readFile(".changeset/pre.json", "utf-8")
+);
 
 if (preState.mode !== "pre" || !["alpha", "beta"].includes(preState.tag)) {
   errors.push("Changesets must remain in alpha or beta prerelease mode");

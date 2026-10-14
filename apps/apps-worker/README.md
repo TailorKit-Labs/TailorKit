@@ -28,12 +28,12 @@ The platform needs `APP_RUNTIME_SIGNING_KEY`, an ES256 private JWK with a stable
 
 The host still returns the runtime's `/rpc` base URL. The client selects the route:
 
-| Route            | Transport             | Execution                                                        |
-| ---------------- | --------------------- | ---------------------------------------------------------------- |
-| `/rpc/queries`   | POST JSON             | SQLite facet, one-off query                                      |
-| `/rpc/mutations` | POST JSON             | SQLite facet, committed write and subscription updates           |
-| `/rpc/actions`   | POST JSON             | Shared dynamic facet, outbound HTTPS through a scoped capability |
-| `/rpc/queries`   | GET WebSocket upgrade | Trusted Durable Object, query subscriptions                      |
+| Route | Transport | Execution |
+| --- | --- | --- |
+| `/rpc/queries` | POST JSON | SQLite facet, one-off query |
+| `/rpc/mutations` | POST JSON | SQLite facet, committed write and subscription updates |
+| `/rpc/actions` | POST JSON | Shared dynamic facet, outbound HTTPS through a scoped capability |
+| `/rpc/queries` | GET WebSocket upgrade | Trusted Durable Object, query subscriptions |
 
 The table paths are relative to `/p/<projectId>/a/<appPublicId>`. HTTP requests and responses use the oRPC wire protocol. Procedure inputs contain `{ name, args }`; mutations also require a UUID `requestId`. oRPC preserves typed errors and their HTTP statuses. The URL determines the operation type, so bodies cannot override it. Nested names such as `todos.list` retain their full path. WebSockets expose subscriptions only.
 

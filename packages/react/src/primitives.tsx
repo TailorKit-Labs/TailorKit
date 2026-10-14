@@ -1,15 +1,16 @@
-import { createContext, useContext, useId, useMemo } from "react";
-import type { CSSProperties, ReactNode } from "react";
-import type { TailorKitTheme } from "@tailorkit/core/schema";
 import { buildPrimitiveCss } from "@tailorkit/client-core";
 import type { PrimitiveProps } from "@tailorkit/client-core";
+import type { TailorKitTheme } from "@tailorkit/core/schema";
+import { createContext, useContext, useId, useMemo } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 interface PrimitiveThemeContextValue {
   viewId: string;
   theme: TailorKitTheme;
 }
 
-export const PrimitiveThemeContext = createContext<PrimitiveThemeContextValue | null>(null);
+export const PrimitiveThemeContext =
+  createContext<PrimitiveThemeContextValue | null>(null);
 
 const usePrimitiveNodeId = (): string => {
   const id = useId();
@@ -35,36 +36,62 @@ const Primitive = ({
         display,
         nodeId,
         props,
-        viewId: context.viewId,
         theme: context.theme,
+        viewId: context.viewId,
       })
     : "";
 
   return (
     <Element data-tailorkit-node={nodeId}>
-      {css === "" ? null : <style data-tailorkit-node-style={nodeId}>{css}</style>}
+      {css === "" ? null : (
+        <style data-tailorkit-node-style={nodeId}>{css}</style>
+      )}
       {children}
     </Element>
   );
 };
 
 export const primitives = {
-  Box: ({ props, children }: { props: PrimitiveProps; children?: ReactNode }) => (
+  Box: ({
+    props,
+    children,
+  }: {
+    props: PrimitiveProps;
+    children?: ReactNode;
+  }) => (
     <Primitive display="block" element="div" props={props}>
       {children}
     </Primitive>
   ),
-  Flex: ({ props, children }: { props: PrimitiveProps; children?: ReactNode }) => (
+  Flex: ({
+    props,
+    children,
+  }: {
+    props: PrimitiveProps;
+    children?: ReactNode;
+  }) => (
     <Primitive display="flex" element="div" props={props}>
       {children}
     </Primitive>
   ),
-  Grid: ({ props, children }: { props: PrimitiveProps; children?: ReactNode }) => (
+  Grid: ({
+    props,
+    children,
+  }: {
+    props: PrimitiveProps;
+    children?: ReactNode;
+  }) => (
     <Primitive display="grid" element="div" props={props}>
       {children}
     </Primitive>
   ),
-  Inline: ({ props, children }: { props: PrimitiveProps; children?: ReactNode }) => (
+  Inline: ({
+    props,
+    children,
+  }: {
+    props: PrimitiveProps;
+    children?: ReactNode;
+  }) => (
     <Primitive display="inline" element="span" props={props}>
       {children}
     </Primitive>

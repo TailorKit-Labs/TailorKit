@@ -1,6 +1,6 @@
-import { AppWindowIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@tailorkit/ui/avatar";
-import { cn } from "@tailorkit/ui";
+import { AppWindowIcon } from "lucide-react";
+
 import { useTheme } from "#lib/theme";
 
 interface AppLogoProps {
@@ -12,7 +12,7 @@ interface AppLogoProps {
   name: string;
 }
 
-export function AppLogo({ className, logoPaths, name }: AppLogoProps) {
+export const AppLogo = ({ className, logoPaths, name }: AppLogoProps) => {
   const { resolvedTheme } = useTheme();
   const logoPath =
     resolvedTheme === "dark"
@@ -20,13 +20,17 @@ export function AppLogo({ className, logoPaths, name }: AppLogoProps) {
       : (logoPaths?.light ?? logoPaths?.dark);
 
   return (
-    <Avatar className={cn("rounded-lg border bg-card", className)}>
-      {logoPath ? (
-        <AvatarImage alt={`${name} logo`} className="object-contain p-1" src={logoPath} />
+    <Avatar className={className}>
+      {logoPath !== undefined && logoPath !== null && logoPath !== "" ? (
+        <AvatarImage
+          alt={`${name} logo`}
+          className="object-contain"
+          src={logoPath}
+        />
       ) : null}
-      <AvatarFallback className="rounded-lg text-muted-foreground">
+      <AvatarFallback>
         <AppWindowIcon aria-hidden="true" className="size-1/2" />
       </AvatarFallback>
     </Avatar>
   );
-}
+};

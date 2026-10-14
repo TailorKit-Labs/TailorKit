@@ -1,16 +1,30 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
+
+import type {
+  ComponentDefinitions,
+  NoComponentFieldCallbackConflicts,
+} from "./components";
+import type { Schema } from "./shared";
 import type { ContractTools } from "./tools";
 import { flattenTools } from "./tools";
-import type { ComponentDefinitions, NoComponentFieldCallbackConflicts } from "./components";
-import type { Schema } from "./shared";
-import type { ContextDefinitions, SlotDefinitions, ViewContextHierarchy } from "./views";
+import type {
+  ContextDefinitions,
+  SlotDefinitions,
+  ViewContextHierarchy,
+} from "./views";
+
+const isBooleanValue = <TValue>(value: TValue): value is TValue & boolean =>
+  typeof value === "boolean";
 
 export interface TailorKitContract<
   TComponents extends ComponentDefinitions = ComponentDefinitions,
   TViews extends ContextDefinitions = ContextDefinitions,
   TSlots extends SlotDefinitions = SlotDefinitions,
   TTools extends ContractTools = ContractTools,
-  TScopes extends Record<string, StandardSchemaV1> = Record<string, StandardSchemaV1>,
+  TScopes extends Record<string, StandardSchemaV1> = Record<
+    string,
+    StandardSchemaV1
+  >,
 > {
   readonly components: TComponents;
   readonly views: TViews;
@@ -20,25 +34,33 @@ export interface TailorKitContract<
 }
 
 /** Define the browser-safe interface shared by a host server and its clients. */
-export function defineContract<
+export const defineContract = <
+  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
   const TComponents extends ComponentDefinitions = Record<never, never>,
+  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
   const TViews extends ContextDefinitions = Record<never, never>,
+  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
   const TSlots extends SlotDefinitions = Record<never, never>,
+  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
   const TTools extends ContractTools = Record<never, never>,
+  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
   const TScopes extends Record<string, Schema> = Record<never, never>,
 >(definition: {
-  components?: TComponents & NoComponentFieldCallbackConflicts<NoInfer<TComponents>>;
+  components?: TComponents &
+    NoComponentFieldCallbackConflicts<NoInfer<TComponents>>;
   views?: TViews & ViewContextHierarchy<NoInfer<TViews>>;
   slots?: TSlots & SlotDefinitions<keyof NoInfer<TViews> & string>;
   tools?: TTools;
   scopes?: TScopes;
-}): TailorKitContract<TComponents, TViews, TSlots, TTools, TScopes> {
-  for (const name of Object.keys(definition))
-    if (!["components", "views", "slots", "tools", "scopes"].includes(name))
+}): TailorKitContract<TComponents, TViews, TSlots, TTools, TScopes> => {
+  for (const name of Object.keys(definition)) {
+    if (!["components", "views", "slots", "tools", "scopes"].includes(name)) {
       throw new Error(`Unknown contract field "${name}"`);
+    }
+  }
   flattenTools(definition.tools ?? {});
   for (const [name, slot] of Object.entries(definition.slots ?? {})) {
-    if (slot.multiple !== undefined && typeof slot.multiple !== "boolean") {
+    if (slot.multiple !== undefined && !isBooleanValue(slot.multiple)) {
       throw new TypeError(`Slot "${name}" multiple must be a boolean.`);
     }
     for (const view of slot.views) {
@@ -47,11 +69,27 @@ export function defineContract<
       }
     }
   }
+  // SAFETY: Each provided definition is preserved, and omitted optional tables use the empty-table generic defaults.
   return {
-    components: (definition.components ?? {}) as TComponents,
-    views: (definition.views ?? {}) as TViews,
-    slots: (definition.slots ?? {}) as TSlots,
-    tools: (definition.tools ?? {}) as TTools,
-    scopes: (definition.scopes ?? {}) as TScopes,
+    components:
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- Each provided definition is preserved, and omitted optional tables use the empty-table generic defaults. */
+      (definition.components ?? {}) as TComponents,
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
+    scopes:
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- Each provided definition is preserved, and omitted optional tables use the empty-table generic defaults. */
+      (definition.scopes ?? {}) as TScopes,
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
+    slots:
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- Each provided definition is preserved, and omitted optional tables use the empty-table generic defaults. */
+      (definition.slots ?? {}) as TSlots,
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
+    tools:
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- Each provided definition is preserved, and omitted optional tables use the empty-table generic defaults. */
+      (definition.tools ?? {}) as TTools,
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
+    views:
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- Each provided definition is preserved, and omitted optional tables use the empty-table generic defaults. */
+      (definition.views ?? {}) as TViews,
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
   };
-}
+};

@@ -1,50 +1,55 @@
+import { type } from "arktype";
 import { tool, defineContract } from "tailorkit";
 import { primitives } from "tailorkit/arktype";
-import { type } from "arktype";
+
 import { theme } from "./theme";
 
-const todo = type({ id: "string", title: "string", done: "boolean" });
+const todo = type({ done: "boolean", id: "string", title: "string" });
 
 export const contract = defineContract({
   components: {
     ...primitives(theme),
     Button: {
+      callbacks: { onClick: {} },
+      children: true,
       fields: type({
         "disabled?": "boolean",
         "size?": "'default' | 'sm' | 'lg' | 'icon' | 'icon-sm'",
-        "variant?": "'default' | 'secondary' | 'ghost' | 'outline' | 'destructive'",
+        "variant?":
+          "'default' | 'secondary' | 'ghost' | 'outline' | 'destructive'",
       }),
-      callbacks: { onClick: {} },
-      children: true,
     },
     Input: {
-      fields: type({ value: "string", "placeholder?": "string" }),
       callbacks: { onValueChange: { input: type({ value: "string" }) } },
+      fields: type({ "placeholder?": "string", value: "string" }),
     },
   },
-  views: {
-    "/": type({ user: { id: "string", name: "string" }, team: { id: "string", name: "string" } }),
+  scopes: {
+    team: type({ teamId: "string > 0" }),
+    user: type({ userId: "string > 0" }),
   },
   slots: { panel: { views: ["/"] } },
-  scopes: {
-    user: type({ userId: "string > 0" }),
-    team: type({ teamId: "string > 0" }),
-  },
   tools: {
     todos: {
-      list: tool.client().output(todo.array()),
       add: tool
         .client()
-        .input(type({ title: "string > 0 <= 160" }))
+        .input(type({ title: "0 < string <= 160" }))
         .output(todo),
-      toggle: tool
-        .client()
-        .input(type({ id: "string" }))
-        .output(todo),
+      list: tool.client().output(todo.array()),
       remove: tool
         .client()
         .input(type({ id: "string" }))
         .output(type({ ok: "boolean" })),
+      toggle: tool
+        .client()
+        .input(type({ id: "string" }))
+        .output(todo),
     },
+  },
+  views: {
+    "/": type({
+      team: { id: "string", name: "string" },
+      user: { id: "string", name: "string" },
+    }),
   },
 });

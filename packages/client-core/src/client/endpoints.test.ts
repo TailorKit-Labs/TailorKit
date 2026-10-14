@@ -1,69 +1,108 @@
 import { expect, it, vi } from "vite-plus/test";
-import type { TailorKitApp } from "../types";
+
+import type { TailorKitApp } from "#types";
+
 import { createEndpointClient } from "./endpoints";
 import { createTailorKitFetchClient } from "./fetch-client";
 
-function session(token: string) {
-  return Response.json({
+const session = (token: string) =>
+  Response.json({
+    expiresAt: Date.now() + 300_000,
     subjectId: "principal",
     token,
-    expiresAt: Date.now() + 300_000,
     url: "https://runtime.test/rpc",
   });
-}
 
-const deployedApp: TailorKitApp = { id: "app", currentDeployment: { id: "first" } };
+const deployedApp: TailorKitApp = {
+  currentDeployment: { id: "first" },
+  id: "app",
+};
 const previewApp: TailorKitApp = {
   ...deployedApp,
   preview: {
-    sessionId: "preview",
     expiresAt: new Date().toISOString(),
-    websocketUrl: "wss://host.test/preview",
+    sessionId: "preview",
     token: "preview-token",
+    websocketUrl: "wss://host.test/preview",
   },
 };
 
 it.each([
   ["deployment", { ...deployedApp, currentDeployment: { id: "second" } }],
   ["preview", previewApp],
-])("replaces obsolete %s sessions while held providers follow the current app", async (_, next) => {
-  const request = vi
-    .fn<typeof fetch>()
-    .mockResolvedValueOnce(session("first"))
-    .mockResolvedValueOnce(session("other"))
-    .mockResolvedValueOnce(session("second"))
-    .mockResolvedValueOnce(session("third"));
-  const client = createEndpointClient({ baseUrl: "https://host.test/", fetch: request });
-  const held = client.getSessionProvider(deployedApp);
-  const other = client.getSessionProvider({ id: "other" });
-  await expect(held({ refresh: false })).resolves.toMatchObject({ token: "first" });
-  await expect(other({ refresh: false })).resolves.toMatchObject({ token: "other" });
-  const current = client.getSessionProvider(next);
-  await expect(current({ refresh: false })).resolves.toMatchObject({ token: "second" });
-  await expect(held({ refresh: false })).resolves.toMatchObject({ token: "second" });
-  expect(client.getSessionProvider(next)).toBe(current);
-  await expect(other({ refresh: false })).resolves.toMatchObject({ token: "other" });
-  // Revisiting a deployment must not retrieve its previously cached credentials.
-  const restored = client.getSessionProvider(deployedApp);
-  expect(restored).not.toBe(held);
-  await expect(restored({ refresh: false })).resolves.toMatchObject({ token: "third" });
-  await expect(current({ refresh: false })).resolves.toMatchObject({ token: "third" });
-  expect(request).toHaveBeenCalledTimes(4);
-});
+])(
+  "replaces obsolete %s sessions while held providers follow the current app",
+  async (_, next) => {
+    const request = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(session("first"))
+      .mockResolvedValueOnce(session("other"))
+      .mockResolvedValueOnce(session("second"))
+      .mockResolvedValueOnce(session("third"));
+    const client = createEndpointClient({
+      baseUrl: "https://host.test/",
+      fetch: request,
+    });
+    const held = client.getSessionProvider(deployedApp);
+    const other = client.getSessionProvider({ id: "other" });
+    await expect(held({ refresh: false })).resolves.toMatchObject({
+      token: "first",
+    });
+    await expect(other({ refresh: false })).resolves.toMatchObject({
+      token: "other",
+    });
+    const current = client.getSessionProvider(next);
+    await expect(current({ refresh: false })).resolves.toMatchObject({
+      token: "second",
+    });
+    await expect(held({ refresh: false })).resolves.toMatchObject({
+      token: "second",
+    });
+    expect(client.getSessionProvider(next)).toBe(current);
+    await expect(other({ refresh: false })).resolves.toMatchObject({
+      token: "other",
+    });
+    // Revisiting a deployment must not retrieve its previously cached credentials.
+    const restored = client.getSessionProvider(deployedApp);
+    expect(restored).not.toBe(held);
+    await expect(restored({ refresh: false })).resolves.toMatchObject({
+      token: "third",
+    });
+    await expect(current({ refresh: false })).resolves.toMatchObject({
+      token: "third",
+    });
+    expect(request).toHaveBeenCalledTimes(4);
+  }
+);
+
+const respondImplementation = () => {};
 
 it("clears sessions for held consumers through the public client and shares replacement requests", async () => {
-  let respond: (response: Response) => void = () => {};
+  let respond: (response: Response) => void = respondImplementation;
   const request = vi
     .fn<typeof fetch>()
     .mockResolvedValueOnce(session("before"))
     .mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          respond = resolve;
-        }),
+      async () =>
+        await (async () => {
+          const {
+            promise: pendingPromise,
+            resolve,
+            reject: rejectPending,
+          } = Promise.withResolvers<Response>();
+          try {
+            respond = resolve;
+          } catch (error) {
+            rejectPending(error);
+          }
+          return await pendingPromise;
+        })()
     )
     .mockResolvedValueOnce(session("after-again"));
-  const fetchClient = createTailorKitFetchClient({ baseUrl: "https://host.test/", fetch: request });
+  const fetchClient = createTailorKitFetchClient({
+    baseUrl: "https://host.test/",
+    fetch: request,
+  });
   const client = fetchClient.endpoints;
   const held = client.getSessionProvider(deployedApp);
   await held({ refresh: false });
@@ -77,53 +116,83 @@ it("clears sessions for held consumers through the public client and shares repl
   await expect(pending).resolves.toMatchObject({ token: "after" });
   await expect(second).resolves.toMatchObject({ token: "after" });
   fetchClient.clear();
-  await expect(held({ refresh: false })).resolves.toMatchObject({ token: "after-again" });
-  await expect(fresh({ refresh: false })).resolves.toMatchObject({ token: "after-again" });
+  await expect(held({ refresh: false })).resolves.toMatchObject({
+    token: "after-again",
+  });
+  await expect(fresh({ refresh: false })).resolves.toMatchObject({
+    token: "after-again",
+  });
   expect(request).toHaveBeenCalledTimes(3);
 });
 
 it("reauthorizes held consumers after host sign-out and account changes", async () => {
   let user: string | null = "first-user";
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
   const request = vi.fn<typeof fetch>().mockImplementation(async () =>
-    user
+    user !== undefined && user !== null && user !== ""
       ? Response.json({
+          expiresAt: Date.now() + 300_000,
           subjectId: user,
           token: `${user}-token`,
-          expiresAt: Date.now() + 300_000,
           url: "https://runtime.test/rpc",
         })
-      : new Response(null, { status: 401 }),
+      : new Response(null, { status: 401 })
   );
-  const fetchClient = createTailorKitFetchClient({ baseUrl: "https://host.test/", fetch: request });
+  const fetchClient = createTailorKitFetchClient({
+    baseUrl: "https://host.test/",
+    fetch: request,
+  });
   const held = fetchClient.endpoints.getSessionProvider(deployedApp);
-  await expect(held({ refresh: false })).resolves.toMatchObject({ token: "first-user-token" });
+  await expect(held({ refresh: false })).resolves.toMatchObject({
+    token: "first-user-token",
+  });
 
   user = null;
   fetchClient.clear();
-  await expect(held({ refresh: false })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+  await expect(held({ refresh: false })).rejects.toMatchObject({
+    code: "UNAUTHORIZED",
+  });
 
   user = "next-user";
   fetchClient.clear();
-  await expect(held({ refresh: false })).resolves.toMatchObject({ token: "next-user-token" });
-  await expect(held({ refresh: false })).resolves.toMatchObject({ token: "next-user-token" });
+  await expect(held({ refresh: false })).resolves.toMatchObject({
+    token: "next-user-token",
+  });
+  await expect(held({ refresh: false })).resolves.toMatchObject({
+    token: "next-user-token",
+  });
 
   user = "third-user";
   fetchClient.clear();
-  await expect(held({ refresh: false })).resolves.toMatchObject({ token: "third-user-token" });
+  await expect(held({ refresh: false })).resolves.toMatchObject({
+    token: "third-user-token",
+  });
   expect(request).toHaveBeenCalledTimes(4);
 });
+
+const respondImplementation2 = () => {};
 
 it.each(["clear", "deployment", "preview"])(
   "rejects a late session response after %s invalidates its credentials",
   async (change) => {
-    let respond: (response: Response) => void = () => {};
+    let respond: (response: Response) => void = respondImplementation2;
     const request = vi
       .fn<typeof fetch>()
       .mockImplementationOnce(
-        () =>
-          new Promise((resolve) => {
-            respond = resolve;
-          }),
+        async () =>
+          await (async () => {
+            const {
+              promise: pendingPromise,
+              resolve,
+              reject: rejectPending,
+            } = Promise.withResolvers<Response>();
+            try {
+              respond = resolve;
+            } catch (error) {
+              rejectPending(error);
+            }
+            return await pendingPromise;
+          })()
       )
       .mockResolvedValueOnce(session("current"));
     const fetchClient = createTailorKitFetchClient({
@@ -133,16 +202,26 @@ it.each(["clear", "deployment", "preview"])(
     const client = fetchClient.endpoints;
     const held = client.getSessionProvider(deployedApp);
     const pending = held({ refresh: false });
-    const rejected = expect(pending).rejects.toMatchObject({ name: "AbortError" });
-    if (change === "clear") fetchClient.clear();
-    else
+    const rejected = expect(pending).rejects.toMatchObject({
+      name: "AbortError",
+    });
+    if (change === "clear") {
+      fetchClient.clear();
+    } else {
       client.getSessionProvider(
-        change === "preview" ? previewApp : { ...deployedApp, currentDeployment: { id: "second" } },
+        change === "preview"
+          ? previewApp
+          : { ...deployedApp, currentDeployment: { id: "second" } }
       );
-    await expect(held({ refresh: false })).resolves.toMatchObject({ token: "current" });
+    }
+    await expect(held({ refresh: false })).resolves.toMatchObject({
+      token: "current",
+    });
     respond(session("obsolete"));
     await rejected;
-    await expect(held({ refresh: false })).resolves.toMatchObject({ token: "current" });
+    await expect(held({ refresh: false })).resolves.toMatchObject({
+      token: "current",
+    });
     expect(request).toHaveBeenCalledTimes(2);
-  },
+  }
 );

@@ -1,10 +1,14 @@
-import { createSnapshotStore } from "../snapshot-store";
+import { createPreviewWebSocketClient } from "@tailorkit/client-platform/preview";
+import type {
+  PreviewBuildManifest,
+  PreviewEvent,
+} from "@tailorkit/client-platform/preview";
 import { atom, batch } from "nanostores";
 import type { WritableAtom } from "nanostores";
-import { createPreviewWebSocketClient } from "@tailorkit/client-platform/preview";
-import type { PreviewBuildManifest, PreviewEvent } from "@tailorkit/client-platform/preview";
-import type { TailorKitApp } from "../../types";
-import { createEndpointClient } from "../../client/endpoints";
+
+import { createEndpointClient } from "#client/endpoints";
+import { createSnapshotStore } from "#store/snapshot-store";
+import type { TailorKitApp } from "#types";
 
 export interface PreviewSnapshot {
   revision: number;
@@ -30,25 +34,31 @@ interface Entry {
   delay: number;
 }
 
-function viewerTokenExpiresAt(metadata: NonNullable<TailorKitApp["preview"]>): number {
+const viewerTokenExpiresAt = (
+  metadata: NonNullable<TailorKitApp["preview"]>
+): number => {
   const expiresAt = Number(metadata.token.split(".", 1)[0]);
   return Number.isSafeInteger(expiresAt) ? expiresAt : 0;
-}
+};
 
-function bytesFromBase64(value: string): Uint8Array {
+const bytesFromBase64 = (value: string): Uint8Array => {
   const raw = atob(value);
   const bytes = new Uint8Array(raw.length);
-  for (let index = 0; index < raw.length; index++) {
+  for (let index = 0; index < raw.length; index += 1) {
     bytes[index] = raw.codePointAt(index) ?? 0;
   }
   return bytes;
-}
+};
 
-async function verify(candidate: Candidate): Promise<string | null> {
+const verify = async (candidate: Candidate): Promise<string | null> => {
   let source: string | null = null;
   for (const [fileIndex, file] of candidate.manifest.files.entries()) {
     const parts = candidate.files[fileIndex];
-    if (!parts || parts.length !== file.chunks || parts.some((part) => part === null)) {
+    if (
+      !parts ||
+      parts.length !== file.chunks ||
+      parts.some((part) => part === null)
+    ) {
       return null;
     }
     const bytes = new Uint8Array(file.size);
@@ -63,7 +73,10 @@ async function verify(candidate: Candidate): Promise<string | null> {
     if (offset !== file.size) {
       return null;
     }
-    const digest = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))]
+    const digest = [
+      // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
+      ...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
+    ]
       .map((byte) => byte.toString(16).padStart(2, "0"))
       .join("");
     if (digest !== file.sha256) {
@@ -74,21 +87,21 @@ async function verify(candidate: Candidate): Promise<string | null> {
     }
   }
   return source;
-}
+};
 
-export function createPreviewManager(
+export const createPreviewManager = (
   baseUrl: URL,
   onEnded: () => void,
   onViews?: (appId: string, views: NonNullable<TailorKitApp["views"]>) => void,
-  refreshMetadata = createEndpointClient({ baseUrl }).previewMetadata,
-) {
+  refreshMetadata = createEndpointClient({ baseUrl }).previewMetadata
+) => {
   const entries = new Map<string, Entry>();
   const close = (entry: Entry) => {
     if (entry.reconnect) {
       clearTimeout(entry.reconnect);
     }
     entry.reconnect = null;
-    const socket = entry.socket;
+    const { socket } = entry;
     entry.socket = null;
     socket?.close();
     entry.connecting = false;
@@ -110,13 +123,15 @@ export function createPreviewManager(
     }
     if (event.type === "begin") {
       entry.candidate = {
-        revision: event.revision,
+        files: event.manifest.files.map((file) =>
+          Array.from({ length: file.chunks }, () => null)
+        ),
         manifest: event.manifest,
-        files: event.manifest.files.map((file) => Array.from({ length: file.chunks }, () => null)),
+        revision: event.revision,
       };
       return;
     }
-    const candidate = entry.candidate;
+    const { candidate } = entry;
     if (!candidate || candidate.revision !== event.revision) {
       return;
     }
@@ -134,7 +149,10 @@ export function createPreviewManager(
         return;
       }
       const bytes = bytesFromBase64(event.base64);
-      if (bytes.length !== Math.min(256 * 1024, file.size - event.chunkIndex * 256 * 1024)) {
+      if (
+        bytes.length !==
+        Math.min(256 * 1024, file.size - event.chunkIndex * 256 * 1024)
+      ) {
         entry.candidate = null;
         return;
       }
@@ -150,8 +168,9 @@ export function createPreviewManager(
       ) {
         batch(() => {
           entry.state.set({ revision: candidate.revision, source });
-          if (candidate.manifest.views !== undefined)
+          if (candidate.manifest.views !== undefined) {
             onViews?.(entry.app.id, candidate.manifest.views);
+          }
         });
       }
       if (entry.candidate === candidate) {
@@ -160,14 +179,20 @@ export function createPreviewManager(
     }
   };
   const connect = async (entry: Entry) => {
-    if (!entry.subscribers || !entry.app.preview || entry.socket || entry.connecting) {
+    if (
+      !entry.subscribers ||
+      !entry.app.preview ||
+      entry.socket ||
+      entry.connecting
+    ) {
       return;
     }
     entry.connecting = true;
     const appMetadata = entry.app.preview;
     let metadata =
       entry.metadata &&
-      viewerTokenExpiresAt(entry.metadata) > Math.max(Date.now(), viewerTokenExpiresAt(appMetadata))
+      viewerTokenExpiresAt(entry.metadata) >
+        Math.max(Date.now(), viewerTokenExpiresAt(appMetadata))
         ? entry.metadata
         : appMetadata;
     try {
@@ -205,7 +230,9 @@ export function createPreviewManager(
         }
       })();
     });
-    socket.addEventListener("error", () => socket.close());
+    socket.addEventListener("error", () => {
+      socket.close();
+    });
     socket.addEventListener("close", () => {
       if (entry.socket !== socket) {
         return;
@@ -222,32 +249,36 @@ export function createPreviewManager(
     });
   };
   const manager = {
+    dispose: () => {
+      for (const entry of entries.values()) {
+        entry.subscribers = 0;
+        close(entry);
+      }
+      entries.clear();
+    },
     getSnapshot: (sessionId: string): PreviewSnapshot =>
       entries.get(sessionId)?.state.get() ?? empty,
-    updateApp: (app: TailorKitApp): void => {
-      const sessionId = app.preview?.sessionId;
-      const entry = sessionId && entries.get(sessionId);
-      if (entry) {
-        entry.app = app;
-      }
-    },
     subscribe: (app: TailorKitApp, listener: () => void): (() => void) => {
       const sessionId = app.preview?.sessionId;
-      if (!sessionId) {
-        return () => {};
+      if (
+        !(sessionId !== undefined && sessionId !== null && sessionId !== "")
+      ) {
+        return () => {
+          /* Intentionally no action is needed. */
+        };
       }
       let entry = entries.get(sessionId);
       if (!entry) {
         entry = {
           app,
-          metadata: null,
           candidate: null,
-          subscribers: 0,
-          state: atom(empty),
-          socket: null,
           connecting: false,
-          reconnect: null,
           delay: 1000,
+          metadata: null,
+          reconnect: null,
+          socket: null,
+          state: atom(empty),
+          subscribers: 0,
         };
         entries.set(sessionId, entry);
       }
@@ -258,35 +289,47 @@ export function createPreviewManager(
       void connect(entry);
       let active = true;
       return () => {
-        if (!active) return;
+        if (!active) {
+          return;
+        }
         active = false;
         unsubscribe();
         current.subscribers = Math.max(0, current.subscribers - 1);
         if (!current.subscribers) {
           close(current);
-          if (entries.get(sessionId) === current) entries.delete(sessionId);
+          if (entries.get(sessionId) === current) {
+            entries.delete(sessionId);
+          }
         }
       };
     },
-    dispose: () => {
-      for (const entry of entries.values()) {
-        entry.subscribers = 0;
-        close(entry);
+    updateApp: (app: TailorKitApp): void => {
+      const sessionId = app.preview?.sessionId;
+      const entry =
+        sessionId !== undefined &&
+        sessionId !== null &&
+        sessionId !== "" &&
+        entries.get(sessionId);
+      if (entry !== undefined && entry !== false) {
+        entry.app = app;
       }
-      entries.clear();
     },
   };
   return {
     ...manager,
-    getStore(getApp: () => TailorKitApp) {
+    getStore: (getApp: () => TailorKitApp) => {
       const sessionId = getApp().preview?.sessionId ?? "";
       return createSnapshotStore(
         () => manager.getSnapshot(sessionId),
         (listener) => {
           const app = getApp();
-          return app.preview?.sessionId === sessionId ? manager.subscribe(app, listener) : () => {};
-        },
+          return app.preview?.sessionId === sessionId
+            ? manager.subscribe(app, listener)
+            : () => {
+                /* Intentionally no action is needed. */
+              };
+        }
       );
     },
   };
-}
+};

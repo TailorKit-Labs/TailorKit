@@ -15,21 +15,31 @@ const getBrowserCommand = (url: string) => {
   return { args: [url], command: "xdg-open" };
 };
 
-export const openUrlInBrowser = (url: string): Promise<boolean> =>
-  new Promise((resolve) => {
-    const { args, command } = getBrowserCommand(url);
-    const child = spawn(command, args, {
-      detached: true,
-      stdio: "ignore",
-      windowsHide: true,
-    });
+export const openUrlInBrowser = async (url: string): Promise<boolean> =>
+  await (async () => {
+    const {
+      promise: pendingPromise,
+      resolve,
+      reject: rejectPending,
+    } = Promise.withResolvers<boolean>();
+    try {
+      const { args, command } = getBrowserCommand(url);
+      const child = spawn(command, args, {
+        detached: true,
+        stdio: "ignore",
+        windowsHide: true,
+      });
 
-    child.once("error", () => {
-      resolve(false);
-    });
+      child.once("error", () => {
+        resolve(false);
+      });
 
-    child.once("spawn", () => {
-      child.unref();
-      resolve(true);
-    });
-  });
+      child.once("spawn", () => {
+        child.unref();
+        resolve(true);
+      });
+    } catch (error) {
+      rejectPending(error);
+    }
+    return await pendingPromise;
+  })();

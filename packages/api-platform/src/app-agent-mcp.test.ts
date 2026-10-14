@@ -1,30 +1,44 @@
+/* oxlint-disable typescript/no-unsafe-return, typescript/no-unsafe-assignment, typescript/no-unsafe-member-access, typescript/no-unsafe-argument -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { os } from "@orpc/server";
-import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { verifyAgentToken } from "@tailorkit/api-utils/agent-token";
-import { env } from "./env";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
+
 import type { Context } from "./context";
+import { env } from "./env";
 import { canonicalizeScope } from "./scope";
+
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
 
 const mocks = vi.hoisted(() => ({
   app: vi.fn(),
-  list: vi.fn(),
+  cancel: vi.fn(),
+  cleanup: vi.fn(),
   create: vi.fn(),
   grant: vi.fn(),
+  list: vi.fn(),
   revoke: vi.fn(),
   start: vi.fn(),
-  cleanup: vi.fn(),
-  cancel: vi.fn(),
 }));
 vi.mock("@tailorkit/db", () => ({
   db: {
-    query: { app: { findFirst: mocks.app } },
     insert: () => ({
-      values: (value: unknown) => {
+      values: (value: Parameters<typeof mocks.grant>[0]) => {
         mocks.grant(value);
+        // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
         return { returning: async () => [{ id: "grant" }] };
       },
     }),
-    update: () => ({ set: (value: unknown) => ({ where: () => mocks.revoke(value) }) }),
+    query: { app: { findFirst: mocks.app } },
+    update: () => ({
+      set: (value: Parameters<typeof mocks.revoke>[0]) => ({
+        where: () => mocks.revoke(value),
+      }),
+    }),
   },
 }));
 vi.mock("./routes/apps", () => ({
@@ -37,77 +51,107 @@ vi.mock("@tailorkit/app-agent/workflows", () => ({
 }));
 vi.mock("workflow/api", () => ({ start: mocks.start }));
 vi.mock("@tailorkit/api-utils/dev-delay", () => ({
-  devDelayMiddleware: async ({ next }: { next: () => unknown }) => next(),
+  devDelayMiddleware: async <TResult>({ next }: { next: () => TResult }) =>
+    await next(),
 }));
 vi.mock("@tailorkit/api-utils/rate-limiting", () => ({
   createRateLimiter: vi.fn(),
   ratelimitMiddleware:
     () =>
-    async ({ next }: { next: () => unknown }) =>
-      next(),
+    async <TResult>({ next }: { next: () => TResult }) =>
+      await next(),
 }));
 const { handleAppAgentMcpRequest } = await import("./app-agent-mcp");
 
 const scope = canonicalizeScope({ name: "org", value: { tenant: "one" } });
-const context = { project: { id: "project" }, organization: { id: "org" } } as Context;
+// SAFETY: This test supplies the context members read by the handler; unrelated request context services are outside this scenario.
+
+const context =
+  /* oxlint-disable typescript/no-unsafe-type-assertion -- This test supplies the context members read by the handler; unrelated request context services are outside this scenario. */
+  {
+    organization: { id: "org" },
+    project: { id: "project" },
+  } as Context;
+/* oxlint-enable typescript/no-unsafe-type-assertion */
 const identity = { scopes: { org: scope.scope.value }, subjectId: "user" };
 const app = { id: "internal-app", publicId: "public-app", scope: scope.scope };
 
-function request(name: string, args: Record<string, unknown> = {}, overrides = {}, headers = {}) {
-  const context = { ...identity, hostUrl: "https://host.test/api/tailorkit", ...overrides };
+const request = (
+  name: string,
+  args: Parameters<typeof JSON.stringify>[0] = {},
+  overrides = {},
+  headers = {}
+) => {
+  const contextValue = {
+    ...identity,
+    hostUrl: "https://host.test/api/tailorkit",
+    ...overrides,
+  };
   return new Request("https://platform.test/api/platform/app-agent/mcp", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      accept: "application/json, text/event-stream",
-      "mcp-protocol-version": "2026-07-28",
-      "mcp-method": "tools/call",
-      "mcp-name": name,
-      "x-tailorkit-context": Buffer.from(JSON.stringify(context), "utf8").toString("base64url"),
-      ...headers,
-    },
     body: JSON.stringify({
-      jsonrpc: "2.0",
       id: 1,
+      jsonrpc: "2.0",
       method: "tools/call",
       params: {
-        name,
-        arguments: args,
         _meta: {
-          "io.modelcontextprotocol/protocolVersion": "2026-07-28",
-          "io.modelcontextprotocol/clientInfo": { name: "test", version: "1" },
           "io.modelcontextprotocol/clientCapabilities": {},
+          "io.modelcontextprotocol/clientInfo": { name: "test", version: "1" },
+          "io.modelcontextprotocol/protocolVersion": "2026-07-28",
           progressToken: "progress",
         },
+        arguments: args,
+        name,
       },
     }),
+    headers: {
+      accept: "application/json, text/event-stream",
+      "content-type": "application/json",
+      "mcp-method": "tools/call",
+      "mcp-name": name,
+      "mcp-protocol-version": "2026-07-28",
+      "x-tailorkit-context": Buffer.from(
+        JSON.stringify(contextValue),
+        "utf-8"
+      ).toString("base64url"),
+      ...headers,
+    },
+    method: "POST",
   });
-}
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.app.mockResolvedValue(app);
   mocks.create.mockResolvedValue(app);
-  mocks.list.mockResolvedValue({ body: { items: [app], pagination: { hasMore: false } } });
+  mocks.list.mockResolvedValue({
+    body: { items: [app], pagination: { hasMore: false } },
+  });
   mocks.start.mockResolvedValue({
-    runId: "run",
     cancel: mocks.cancel,
     readable: new ReadableStream({
       start(controller) {
-        controller.enqueue({ type: "text-delta", id: "text", text: "Building" });
+        controller.enqueue({
+          id: "text",
+          text: "Building",
+          type: "text-delta",
+        });
         controller.close();
       },
     }),
     returnValue: Promise.resolve({ messages: [] }),
+    runId: "run",
   });
 });
 
 describe("platform MCP endpoint", () => {
   it("lists only host scopes without starting an agent", async () => {
-    const response = await handleAppAgentMcpRequest(request("list_apps"), context);
+    const response = await handleAppAgentMcpRequest(
+      request("list_apps"),
+      context
+    );
     expect(response.status).toBe(200);
     expect(await response.text()).toContain("public-app");
-    expect(mocks.list.mock.lastCall![0].input.body).toEqual({
+    expect(requireValue(mocks.list.mock.lastCall)[0].input.body).toEqual({
       page: 1,
       pageSize: 100,
       scopes: [scope.scope],
@@ -118,34 +162,40 @@ describe("platform MCP endpoint", () => {
   it("starts an authorized editor, streams events, and revokes its grant after cleanup", async () => {
     const response = await handleAppAgentMcpRequest(
       request("edit_app", { appId: "public-app", prompt: "Change it" }),
-      context,
+      context
     );
     const events = await response.text();
     expect(events).toContain("notifications/progress");
     expect(events).toContain("Building");
     expect(mocks.start).toHaveBeenCalledOnce();
-    const input = mocks.start.mock.lastCall![1][0];
+    const [, [input]] = requireValue(mocks.start.mock.lastCall);
     expect(input).toMatchObject({
       appId: app.id,
       hostUrl: "https://host.test/api/tailorkit",
-      messages: [{ role: "user", content: "Change it" }],
+      messages: [{ content: "Change it", role: "user" }],
     });
     expect(
-      await verifyAgentToken(input.agentToken, env.AUTH_SECRET!, env.OPENAPI_SERVER_URL!),
+      await verifyAgentToken(
+        input.agentToken,
+        requireValue(env.AUTH_SECRET),
+        requireValue(env.OPENAPI_SERVER_URL)
+      )
     ).toMatchObject({
-      projectId: "project",
       appId: app.id,
       cliTokenId: "grant",
+      projectId: "project",
       scope: scope.scope,
     });
     expect(input.schema).toBeUndefined();
-    expect(mocks.start.mock.lastCall![2].attributes).toMatchObject({
-      "tailorkit.subjectId": "user",
-    });
-    expect(mocks.grant.mock.lastCall![0]).toMatchObject({
+    expect(requireValue(mocks.start.mock.lastCall)[2].attributes).toMatchObject(
+      {
+        "tailorkit.subjectId": "user",
+      }
+    );
+    expect(requireValue(mocks.grant.mock.lastCall)[0]).toMatchObject({
       projectId: "project",
-      scopeKey: scope.scopeKey,
       scope: scope.scope,
+      scopeKey: scope.scopeKey,
     });
     expect(mocks.revoke).toHaveBeenCalledOnce();
     expect(mocks.cancel).not.toHaveBeenCalled();
@@ -153,16 +203,16 @@ describe("platform MCP endpoint", () => {
 
   it("creates the installation in a host scope before launching its builder agent", async () => {
     const response = await handleAppAgentMcpRequest(
-      request("create_app", { name: "Todo", scope: "org", prompt: "Build it" }),
-      context,
+      request("create_app", { name: "Todo", prompt: "Build it", scope: "org" }),
+      context
     );
     await response.text();
-    expect(mocks.create.mock.lastCall![1]).toEqual({
-      name: "Todo",
+    expect(requireValue(mocks.create.mock.lastCall)[1]).toEqual({
       description: null,
+      name: "Todo",
       scope: scope.scope,
     });
-    expect(mocks.create.mock.lastCall![2]).toBe(true);
+    expect(requireValue(mocks.create.mock.lastCall)[2]).toBe(true);
     expect(mocks.start).toHaveBeenCalledOnce();
   });
 
@@ -170,12 +220,12 @@ describe("platform MCP endpoint", () => {
     mocks.app.mockResolvedValue(null);
     const missing = await handleAppAgentMcpRequest(
       request("edit_app", { appId: "other", prompt: "Change" }),
-      context,
+      context
     );
     expect(await missing.text()).toContain('"isError":true');
     const invalid = await handleAppAgentMcpRequest(
-      request("create_app", { name: "Todo", scope: "other", prompt: "Build" }),
-      context,
+      request("create_app", { name: "Todo", prompt: "Build", scope: "other" }),
+      context
     );
     expect(await invalid.text()).toContain('"isError":true');
     expect(mocks.create).not.toHaveBeenCalled();
@@ -185,42 +235,53 @@ describe("platform MCP endpoint", () => {
 
   it("rejects service/agent credentials and malformed host identities", async () => {
     for (const restricted of [{ runtimeService: true }, { agentToken: {} }]) {
-      expect(
-        (
-          await handleAppAgentMcpRequest(request("list_apps"), {
-            ...context,
-            ...restricted,
-          } as Context)
-        ).status,
-      ).toBe(403);
+      // SAFETY: This test supplies the context members read by the handler; unrelated request context services are outside this scenario.
+
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+      const awaitedResult1 = await handleAppAgentMcpRequest(
+        request("list_apps"),
+
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- This test supplies the context members read by the handler; unrelated request context services are outside this scenario. */
+        {
+          ...context,
+          ...restricted,
+        } as Context
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
+      );
+      expect(awaitedResult1.status).toBe(403);
     }
-    for (const invalid of [{ scopes: {} }, { subjectId: "" }, { scopes: { org: {} } }]) {
-      expect(
-        (await handleAppAgentMcpRequest(request("list_apps", {}, invalid), context)).status,
-      ).toBe(400);
+    for (const invalid of [
+      { scopes: {} },
+      { subjectId: "" },
+      { scopes: { org: {} } },
+    ]) {
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+      const awaitedResult2 = await handleAppAgentMcpRequest(
+        request("list_apps", {}, invalid),
+        context
+      );
+      expect(awaitedResult2.status).toBe(400);
     }
     expect(mocks.list).not.toHaveBeenCalled();
   });
 
   it("rejects malformed/oversized context headers and cross-origin requests", async () => {
     for (const encoded of ["", "not+base64", "eyJ9=", "x".repeat(8193), "_w"]) {
-      expect(
-        (
-          await handleAppAgentMcpRequest(
-            request("list_apps", {}, {}, { "x-tailorkit-context": encoded }),
-            context,
-          )
-        ).status,
-      ).toBe(400);
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+      const awaitedResult3 = await handleAppAgentMcpRequest(
+        request("list_apps", {}, {}, { "x-tailorkit-context": encoded }),
+        context
+      );
+      expect(awaitedResult3.status).toBe(400);
     }
     const unexpected = await handleAppAgentMcpRequest(
       request("list_apps", {}, { schema: {} }),
-      context,
+      context
     );
     expect(unexpected.status).toBe(400);
     const origin = await handleAppAgentMcpRequest(
       request("list_apps", {}, {}, { origin: "https://other.test" }),
-      context,
+      context
     );
     expect(origin.status).toBe(403);
     expect(mocks.list).not.toHaveBeenCalled();
@@ -234,7 +295,7 @@ describe("platform MCP endpoint", () => {
         scopes: { org: { tenant: "other" } },
         subjectId: "other-user",
       }),
-      context,
+      context
     );
     expect(await response.text()).toContain('"isError":true');
     expect(mocks.start).not.toHaveBeenCalled();
@@ -242,21 +303,31 @@ describe("platform MCP endpoint", () => {
 
   it("cancels the workflow and deletes its sandbox when the response closes", async () => {
     let revoked!: () => void;
-    const revocation = new Promise<void>((resolve) => {
-      revoked = resolve;
-    });
+    const revocation = (async () => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers<ReturnType<() => void>>();
+      try {
+        revoked = resolve;
+      } catch (error) {
+        rejectPending(error);
+      }
+      await pendingPromise;
+    })();
     mocks.revoke.mockImplementation(revoked);
     mocks.start.mockResolvedValueOnce({
-      runId: "run",
       cancel: mocks.cancel,
       readable: new ReadableStream(),
-      returnValue: new Promise(() => {}),
+      returnValue: Promise.withResolvers().promise,
+      runId: "run",
     });
     const response = await handleAppAgentMcpRequest(
       request("edit_app", { appId: "public-app", prompt: "Change" }),
-      context,
+      context
     );
-    const reader = response.body!.getReader();
+    const reader = requireValue(response.body).getReader();
     await reader.read();
     await reader.cancel();
     await revocation;
@@ -266,11 +337,22 @@ describe("platform MCP endpoint", () => {
 
   it("waits for workflow cleanup before sending the terminal result", async () => {
     let finish!: () => void;
-    const returnValue = new Promise<{ messages: [] }>((resolve) => {
-      finish = () => resolve({ messages: [] });
-    });
+    const returnValue = (async () => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers<{ messages: [] }>();
+      try {
+        finish = () => {
+          resolve({ messages: [] });
+        };
+      } catch (error) {
+        rejectPending(error);
+      }
+      return await pendingPromise;
+    })();
     mocks.start.mockResolvedValueOnce({
-      runId: "run",
       cancel: mocks.cancel,
       readable: new ReadableStream({
         start(controller) {
@@ -278,34 +360,44 @@ describe("platform MCP endpoint", () => {
         },
       }),
       returnValue,
+      runId: "run",
     });
     const response = await handleAppAgentMcpRequest(
       request("edit_app", { appId: "public-app", prompt: "Change" }),
-      context,
+      context
     );
-    const reader = response.body!.getReader();
+    const reader = requireValue(response.body).getReader();
     await reader.read();
     const final = reader.read();
     expect(mocks.revoke).not.toHaveBeenCalled();
     finish();
     await final;
-    while (!(await reader.read()).done) {
+
+    while (true) {
+      // oxlint-disable-next-line no-await-in-loop -- Read or renew in sequence; the next operation depends on this result.
+      const chunk = await reader.read();
+      if (chunk.done) {
+        break;
+      }
       /* drain */
     }
     expect(mocks.revoke).toHaveBeenCalledOnce();
   });
 
   it("cancels an unfinished agent after a stream failure while the request stays active", async () => {
-    const input = request("edit_app", { appId: "public-app", prompt: "Change" });
+    const input = request("edit_app", {
+      appId: "public-app",
+      prompt: "Change",
+    });
     mocks.start.mockResolvedValueOnce({
-      runId: "run",
       cancel: mocks.cancel,
       readable: new ReadableStream({
         start(controller) {
           controller.error(new Error("Agent stream failed"));
         },
       }),
-      returnValue: new Promise(() => {}),
+      returnValue: Promise.withResolvers().promise,
+      runId: "run",
     });
     const response = await handleAppAgentMcpRequest(input, context);
     expect(await response.text()).toContain("Agent stream failed");
@@ -319,19 +411,19 @@ describe("platform MCP endpoint", () => {
     const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
     mocks.cancel.mockRejectedValueOnce(new Error("Cancellation unavailable"));
     mocks.start.mockResolvedValueOnce({
-      runId: "run",
       cancel: mocks.cancel,
       readable: new ReadableStream({
         start(controller) {
           controller.error(new Error("Agent stream failed"));
         },
       }),
-      returnValue: new Promise(() => {}),
+      returnValue: Promise.withResolvers().promise,
+      runId: "run",
     });
     try {
       const response = await handleAppAgentMcpRequest(
         request("edit_app", { appId: "public-app", prompt: "Change" }),
-        context,
+        context
       );
       const events = await response.text();
       expect(events).toContain("Agent stream failed");
@@ -346,16 +438,16 @@ describe("platform MCP endpoint", () => {
 
   it("surfaces setup failures without waiting for an unopened model stream", async () => {
     mocks.start.mockResolvedValueOnce({
-      runId: "run",
       cancel: mocks.cancel,
       readable: new ReadableStream(),
       get returnValue() {
         return Promise.reject(new Error("This app is already being edited."));
       },
+      runId: "run",
     });
     const response = await handleAppAgentMcpRequest(
       request("edit_app", { appId: "public-app", prompt: "Change" }),
-      context,
+      context
     );
     expect(await response.text()).toContain("already being edited");
     expect(mocks.revoke).toHaveBeenCalledOnce();

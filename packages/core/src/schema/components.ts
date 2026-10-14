@@ -1,6 +1,10 @@
 import type { CallbackMap, Callbacks, InferCallbacks } from "./callbacks";
 import type { EmptyObject, InferSchema, MergeProps, Schema } from "./shared";
 
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
+
+// oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
 type EmptyCallbackMap = Record<never, never>;
 
 export type Fields = Schema;
@@ -17,15 +21,18 @@ export interface ComponentDefinition<
 
 type AnyComponentDefinition = ComponentDefinition<
   Schema | undefined,
-  CallbackMap,
-  boolean | undefined
+  CallbackMap
 >;
 
 export type ComponentDefinitions = Record<string, AnyComponentDefinition>;
 
 export type ComponentProps<TComponent> = MergeProps<
-  TComponent extends { fields: infer TFields } ? InferSchema<TFields> : EmptyObject,
-  TComponent extends { callbacks: infer TCallbacks } ? InferCallbacks<TCallbacks> : EmptyObject
+  TComponent extends { fields: infer TFields }
+    ? InferSchema<TFields>
+    : EmptyObject,
+  TComponent extends { callbacks: infer TCallbacks }
+    ? InferCallbacks<TCallbacks>
+    : EmptyObject
 >;
 
 export interface ResolvedComponentMetadata {
@@ -53,28 +60,27 @@ type NoFieldCallbackConflicts<TFields, TCallbacks> =
 export type NoComponentFieldCallbackConflicts<TComponents> = {
   [TName in keyof TComponents]: TComponents[TName] extends ComponentDefinition<
     infer TFields,
-    infer TCallbacks,
-    boolean | undefined
+    infer TCallbacks
   >
     ? NoFieldCallbackConflicts<TFields, TCallbacks>
     : unknown;
 };
 
-const getObjectKeys = (value: unknown): string[] => {
-  if (!(value && typeof value === "object")) {
+const getObjectKeys = (value: Schema | undefined): string[] => {
+  if (!(value && isObjectValue(value))) {
     return [];
   }
 
   if ("shape" in value) {
-    const shape = (value as { shape?: unknown }).shape;
-    if (shape && typeof shape === "object") {
-      return Object.keys(shape);
+    const fields = value.shape;
+    if (isObjectValue(fields)) {
+      return Object.keys(fields);
     }
   }
 
   if ("entries" in value) {
-    const entries = (value as { entries?: unknown }).entries;
-    if (entries && typeof entries === "object") {
+    const { entries } = value;
+    if (isObjectValue(entries)) {
       return Object.keys(entries);
     }
   }
@@ -85,13 +91,13 @@ const getObjectKeys = (value: unknown): string[] => {
 const assertNoLocalFieldCallbackConflicts = (
   componentName: string,
   fieldKeys: readonly string[],
-  callbackKeys: readonly string[],
+  callbackKeys: readonly string[]
 ): void => {
   const callbackKeySet = new Set(callbackKeys);
   for (const fieldKey of fieldKeys) {
     if (callbackKeySet.has(fieldKey)) {
       throw new Error(
-        `Component "${componentName}" defines both a field and callback named "${fieldKey}". Use distinct names for serializable fields and function callbacks.`,
+        `Component "${componentName}" defines both a field and callback named "${fieldKey}". Use distinct names for serializable fields and function callbacks.`
       );
     }
   }
@@ -99,17 +105,17 @@ const assertNoLocalFieldCallbackConflicts = (
 
 export const resolveComponentMetadata = (
   name: string,
-  definition: ComponentDefinition,
+  definition: ComponentDefinition
 ): ResolvedComponentMetadata => {
-  const fields = definition.fields;
+  const { fields } = definition;
   const fieldKeys = fields ? getObjectKeys(fields) : [];
   const callbackKeys = Object.keys(definition.callbacks ?? {});
   assertNoLocalFieldCallbackConflicts(name, fieldKeys, callbackKeys);
 
   return {
     callbacks: definition.callbacks ?? {},
-    fields,
     children: definition.children ?? false,
+    fields,
   };
 };
 

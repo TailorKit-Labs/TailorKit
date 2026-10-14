@@ -1,120 +1,32 @@
-import { gzipSync } from "node:zlib";
+/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-argument, typescript/no-unsafe-call, typescript/no-unsafe-return, typescript/no-unsafe-member-access -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 // Disposable local workerd/R2 test. No Cloudflare account or deployed resources are used.
-/* eslint-disable unicorn/no-await-expression-member, no-restricted-properties */
+/* eslint-disable unicorn/no-await-expression-member */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { createRequire } from "node:module";
 import { mkdtemp, rm, readFile, writeFile, readdir } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { build } from "vite";
-import { issueAppToken, appTokenVerifier, APP_AUDIENCE } from "@tailorkit/api-utils/app-auth";
+import { gzipSync } from "node:zlib";
 
+import {
+  issueAppToken,
+  appTokenVerifier,
+  APP_AUDIENCE,
+} from "@tailorkit/api-utils/app-auth";
 import { createClient, createApi, reference } from "@tailorkit/app/client";
-
+import { build } from "vite";
 import { it } from "vite-plus/test";
-import { readAppMigrations } from "../../../../packages/app/src/builder/migrations.ts";
 
-it("runs isolated app backends with persistent SQLite and two-client realtime updates", async () => {
-  // Exercise precisely the workerd/Miniflare version bundled with this project's Wrangler.
-  const require = createRequire(import.meta.url);
-  const { Miniflare, convertV4MiniflareOptions } = createRequire(require.resolve("wrangler"))(
-    "miniflare",
-  );
+import { createTestBackend } from "./backend";
 
-  const state = await mkdtemp(path.join(tmpdir(), "tailorkit-apps-worker-"));
-
-  const keys = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
-    "sign",
-    "verify",
-  ]);
-  const signing = {
-    issuer: "https://platform.test/api/platform",
-    audience: APP_AUDIENCE,
-    keyId: "test",
-    privateKey: keys.privateKey,
-  };
-  const publicKeys = {
-    keys: [{ ...(await crypto.subtle.exportKey("jwk", keys.publicKey)), kid: "test" }],
-  };
-
-  const projectId = "22222222-2222-4222-8222-222222222222";
-  const otherProjectId = "33333333-3333-4333-8333-333333333333";
-  const publicTeamId = "abc123def45678";
-  const appPublicId = "app000000001";
-  const rpcUrl = `https://${publicTeamId}.tailorkit.app/p/${projectId}/a/${appPublicId}/rpc`;
-  let published;
-  const appTokens = new Set();
-  let externalCalls = 0;
-  let releaseExternal;
-  let pendingExternal;
-  let metadataReads = 0;
-
-  const dist = path.resolve(import.meta.dirname, "../../dist");
-  const options = {
-    name: "tailorkit-runtime-test",
-    modulesRoot: dist,
-    modules: [
-      { type: "ESModule", path: path.join(dist, "index.js") },
-      ...(await readdir(dist))
-        .filter((name) => name.endsWith(".txt"))
-        .map((name) => ({ type: "Text", path: path.join(dist, name) })),
-    ],
-    compatibilityDate: "2026-10-01",
-    workerLoaders: { LOADER: {} },
-    durableObjects: { STORES: { className: "AppInstallation", useSQLite: true } },
-    resourcePersistencePath: state,
-    kvNamespaces: ["DEPLOYMENTS"],
-    r2Buckets: { BUNDLES: "private-apps" },
-    bindings: {
-      PLATFORM_URL: "https://platform.test/api/platform",
-      APP_RUNTIME_PUBLIC_KEYS: publicKeys,
-      RUNTIME_SERVICE_TOKEN: "x".repeat(32),
-      ASSET_DOMAIN: "tailorkit.app",
-    },
-    outboundService: async (request) => {
-      if (request.url === "https://host.test/api/tailorkit/tools/execute") {
-        const { path: toolPath, input, requestId } = await request.json();
-        assert.match(requestId, /^[0-9a-f-]{36}$/u);
-        const token = request.headers.get("authorization").slice(7);
-        assert.ok(appTokens.has(token), "tool calls reuse an issued app execution JWT");
-        const verified = await appTokenVerifier({ ...signing, publicKeys })(token);
-        if (toolPath === "echo") return Response.json({ output: input });
-        return Response.json({
-          output: {
-            subjectId: verified.subjectId,
-            installationId: verified.installationId,
-            scope: verified.scope,
-          },
-        });
-      }
-
-      if (request.url.startsWith("https://third-party.test/")) {
-        externalCalls++;
-        assert.equal(request.headers.get("authorization"), null);
-
-        if (request.url.endsWith("/redirect"))
-          return new Response(null, {
-            status: 302,
-            headers: { location: "https://127.0.0.1/private" },
-          });
-
-        if (request.url.endsWith("/slow")) await pendingExternal;
-
-        return Response.json({ title: "Imported from external API" });
-      }
-
-      assert.equal(request.url, "https://platform.test/api/platform/apps/app/runtime");
-      assert.equal(request.headers.get("authorization"), `Bearer ${"x".repeat(32)}`);
-      metadataReads++;
-      return Response.json(published);
-    },
-  };
-
-  let mf;
-
-  function bundle(version) {
-    return `import { env } from "cloudflare:workers";
+/** @typedef {NonNullable<import("wrangler").unstable_DevEnv["runtimes"][number]["mf"]>} LocalMiniflare */
+/** @typedef {{ Miniflare: new(options: Record<string, unknown>) => LocalMiniflare, convertV4MiniflareOptions: (options: Record<string, unknown>) => Record<string, unknown> }} WranglerRuntimeModule */
+/** @typedef {{id: string, text: string, priority?: number}} Todo */
+/** @typedef {{appId: string, projectId: string, deploymentId: string, objectKey: string, checksum: string, contentLength: number, contentEncoding?: string}} PublishedDeployment */
+/** @param {number} version Fixture backend version. */
+const bundleImplementation = (version) =>
+  `import { env } from "cloudflare:workers";
 let globals = 0;
 export const runtimeManifest = { apiVersion: 1, requires: ["database", "actions"] };
 export const migrations = [];
@@ -127,9 +39,166 @@ export default { functions: { probe: {
      bindings: Object.keys(env), token: null, identity };
  }
 } } }`;
-  }
 
-  async function publish(version) {
+it("runs isolated app backends with persistent SQLite and two-client realtime updates", async () => {
+  // Exercise precisely the workerd/Miniflare version bundled with this project's Wrangler.
+  const require = createRequire(import.meta.url);
+  /** @type {WranglerRuntimeModule} */
+  const wranglerRuntime = createRequire(require.resolve("wrangler"))(
+    "miniflare"
+  );
+  const { Miniflare, convertV4MiniflareOptions } = wranglerRuntime;
+
+  const state = await mkdtemp(path.join(tmpdir(), "tailorkit-apps-worker-"));
+
+  const keys = await crypto.subtle.generateKey(
+    { name: "ECDSA", namedCurve: "P-256" },
+    true,
+    ["sign", "verify"]
+  );
+  const signing = {
+    audience: APP_AUDIENCE,
+    issuer: "https://platform.test/api/platform",
+    keyId: "test",
+    privateKey: keys.privateKey,
+  };
+  const publicKeys = {
+    keys: [
+      {
+        ...(await crypto.subtle.exportKey("jwk", keys.publicKey)),
+        kid: "test",
+      },
+    ],
+  };
+
+  const projectId = "22222222-2222-4222-8222-222222222222";
+  const otherProjectId = "33333333-3333-4333-8333-333333333333";
+  const publicTeamId = "abc123def45678";
+  const appPublicId = "app000000001";
+  const rpcUrl = `https://${publicTeamId}.tailorkit.app/p/${projectId}/a/${appPublicId}/rpc`;
+  /** @type {PublishedDeployment} */
+  let published;
+  /** @type {Set<string>} */
+  const appTokens = new Set();
+  let externalCalls = 0;
+  /** @type {() => void} */
+  let releaseExternal;
+  /** @type {Promise<void> | undefined} */
+  let pendingExternal;
+  let metadataReads = 0;
+
+  const dist = path.resolve(import.meta.dirname, "../../dist");
+  const options = {
+    bindings: {
+      APP_RUNTIME_PUBLIC_KEYS: publicKeys,
+      ASSET_DOMAIN: "tailorkit.app",
+      PLATFORM_URL: "https://platform.test/api/platform",
+      RUNTIME_SERVICE_TOKEN: "x".repeat(32),
+    },
+    compatibilityDate: "2026-10-01",
+    durableObjects: {
+      STORES: { className: "AppInstallation", useSQLite: true },
+    },
+    kvNamespaces: ["DEPLOYMENTS"],
+    modules: [
+      { path: path.join(dist, "index.js"), type: "ESModule" },
+      ...(await readdir(dist))
+        .filter((name) => name.endsWith(".txt"))
+        .map((name) => ({ path: path.join(dist, name), type: "Text" })),
+    ],
+    modulesRoot: dist,
+    name: "tailorkit-runtime-test",
+    /** @param {Request} request Outbound request made by the isolated worker. */
+    // oxlint-disable-next-line eslint/complexity -- Keep this validation or rendering lifecycle together: its guards share the same state, cleanup, and error handling.
+    outboundService: async (request) => {
+      if (request.url === "https://host.test/api/tailorkit/tools/execute") {
+        const { path: toolPath, input, requestId } = await request.json();
+        assert.match(requestId, /^[0-9a-f-]{36}$/u);
+        const token = request.headers.get("authorization").slice(7);
+        assert.ok(
+          appTokens.has(token),
+          "tool calls reuse an issued app execution JWT"
+        );
+        const verified = await appTokenVerifier({ ...signing, publicKeys })(
+          token
+        );
+        if (toolPath === "echo") {
+          return Response.json({ output: input });
+        }
+        return Response.json({
+          output: {
+            installationId: verified.installationId,
+            scope: verified.scope,
+            subjectId: verified.subjectId,
+          },
+        });
+      }
+
+      if (
+        request.url.startsWith("https://third-party.test/") !== undefined &&
+        request.url.startsWith("https://third-party.test/") !== null &&
+        request.url.startsWith("https://third-party.test/") &&
+        request.url.startsWith("https://third-party.test/") !== "" &&
+        request.url.startsWith("https://third-party.test/") !== 0 &&
+        !Number.isNaN(request.url.startsWith("https://third-party.test/")) &&
+        request.url.startsWith("https://third-party.test/") !== 0n
+      ) {
+        externalCalls += 1;
+        assert.equal(request.headers.get("authorization"), null);
+
+        if (
+          request.url.endsWith("/redirect") !== undefined &&
+          request.url.endsWith("/redirect") !== null &&
+          request.url.endsWith("/redirect") &&
+          request.url.endsWith("/redirect") !== "" &&
+          request.url.endsWith("/redirect") !== 0 &&
+          !Number.isNaN(request.url.endsWith("/redirect")) &&
+          request.url.endsWith("/redirect") !== 0n
+        ) {
+          return new Response(null, {
+            headers: { location: "https://127.0.0.1/private" },
+            status: 302,
+          });
+        }
+
+        if (
+          request.url.endsWith("/slow") !== undefined &&
+          request.url.endsWith("/slow") !== null &&
+          request.url.endsWith("/slow") &&
+          request.url.endsWith("/slow") !== "" &&
+          request.url.endsWith("/slow") !== 0 &&
+          !Number.isNaN(request.url.endsWith("/slow")) &&
+          request.url.endsWith("/slow") !== 0n
+        ) {
+          await pendingExternal;
+        }
+
+        return Response.json({ title: "Imported from external API" });
+      }
+
+      assert.equal(
+        request.url,
+        "https://platform.test/api/platform/apps/app/runtime"
+      );
+      assert.equal(
+        request.headers.get("authorization"),
+        `Bearer ${"x".repeat(32)}`
+      );
+      metadataReads += 1;
+      return Response.json(published);
+    },
+    r2Buckets: { BUNDLES: "private-apps" },
+    resourcePersistencePath: state,
+    workerLoaders: { LOADER: {} },
+  };
+
+  /** @type {LocalMiniflare} */
+  let mf;
+
+  const bundle = bundleImplementation;
+
+  /** @param {number} version Fixture deployment to publish. */
+  const publish = async (version) => {
     const code = bundle(version);
     const objectKey = `teams/${publicTeamId}/projects/${projectId}/apps/${appPublicId}/deployments/deploy00000${version}/server/server.js`;
     const bucket = await mf.getR2Bucket("BUNDLES");
@@ -137,70 +206,95 @@ export default { functions: { probe: {
     await bucket.put(objectKey, bytes, {
       httpMetadata: version === 1 ? {} : { contentEncoding: "gzip" },
     });
-    published = {
-      projectId,
-      appId: "app",
-      deploymentId: `v${version}`,
-      objectKey,
-      checksum: createHash("sha256").update(bytes).digest("hex"),
-      contentLength: bytes.byteLength,
-      ...(version === 1 ? {} : { contentEncoding: "gzip" }),
-    };
+    published =
+      version === 1
+        ? {
+            appId: "app",
+            checksum: createHash("sha256").update(bytes).digest("hex"),
+            contentLength: bytes.byteLength,
+            deploymentId: `v${version}`,
+            objectKey,
+            projectId,
+          }
+        : {
+            appId: "app",
+            checksum: createHash("sha256").update(bytes).digest("hex"),
+            contentEncoding: "gzip",
+            contentLength: bytes.byteLength,
+            deploymentId: `v${version}`,
+            objectKey,
+            projectId,
+          };
     const response = await mf.dispatchFetch(
       `https://internal.tailorkit.app/p/${projectId}/a/${appPublicId}/new-deployment`,
       {
-        method: "POST",
-        headers: { authorization: `Bearer ${"x".repeat(32)}`, "content-type": "application/json" },
         body: JSON.stringify(published),
-      },
+        headers: {
+          authorization: `Bearer ${"x".repeat(32)}`,
+          "content-type": "application/json",
+        },
+        method: "POST",
+      }
     );
     assert.equal(response.status, 204, await response.text());
-  }
+  };
 
-  async function invoke(
+  const defaultProbe = { name: "probe" };
+  const invoke = async (
     installationId,
     deploymentId = published.deploymentId,
     overrides = {},
     endpoint = "queries",
-    input = { name: "probe" },
-  ) {
+    rawInput = defaultProbe
+  ) => {
+    const input = rawInput ?? { name: "probe" };
     const session = await issueAppToken(signing, {
-      publicTeamId,
-      appPublicId,
-      scope: { name: "org", value: { id: "tenant" } },
-      toolUrl: "https://host.test/api/tailorkit/tools/execute",
-      subjectId: "user",
-      projectId,
       appId: "app",
-      installationId,
+      appPublicId,
       deploymentId,
+      installationId,
+      projectId,
+      publicTeamId,
+      scope: { name: "org", value: { id: "tenant" } },
+      subjectId: "user",
+      toolUrl: "https://host.test/api/tailorkit/tools/execute",
       ...overrides,
     });
-    return mf.dispatchFetch(
+    return await mf.dispatchFetch(
       `${rpcUrl.replace(projectId, overrides.projectId ?? projectId)}/${endpoint}`,
       {
-        method: "POST",
         body: JSON.stringify({ json: input }),
         headers: {
           authorization: `Bearer ${session.token}`,
-          "x-tailorkit-identity": "forged",
           "content-type": "application/json",
+          "x-tailorkit-identity": "forged",
         },
-      },
+        method: "POST",
+      }
     );
-  }
+  };
 
-  async function checkRpc() {
+  const checkRpc = async () => {
     const repo = path.resolve(import.meta.dirname, "../../../..");
-    const { migrations } = await readAppMigrations(
-      path.join(repo, "packages/app/test/fixtures/backend-todo/src/db/migrations"),
+    const backend = path.join(state, "backend");
+    await createTestBackend(backend);
+    const sql = await readFile(
+      new URL("fixtures/todos-init.sql", import.meta.url),
+      "utf-8"
     );
+    const migrations = [
+      {
+        hash: createHash("sha256").update(sql).digest("hex"),
+        id: "20261001062220_init",
+        statements: sql.split("--> statement-breakpoint"),
+      },
+    ];
 
     const entry = path.join(state, "fixture.ts");
 
-    async function publishRpc(history, deploymentId) {
+    const publishRpc = async (history, deploymentId) => {
       // Use the same migration bootstrap bundled into production server artifacts.
-      const setup = `import app from ${JSON.stringify(path.join(repo, "packages/app/test/fixtures/backend-todo/src/server.ts"))};
+      const setup = `import app from ${JSON.stringify(path.join(backend, "server.ts"))};
 import { defineServer, action, query, table, text, integer, AppError } from ${JSON.stringify(path.join(repo, "packages/app/dist/server.js"))};
 import { env } from "cloudflare:workers";
 
@@ -228,23 +322,26 @@ export const runtimeManifest = { apiVersion: 1, requires: ["database", "actions"
 export const migrations = ${JSON.stringify(history)};`;
       await writeFile(entry, setup);
       await build({
-        configFile: false,
-        root: repo,
-        logLevel: "error",
-        ssr: { target: "webworker", noExternal: true },
         build: {
           minify: true,
-          ssr: entry,
           outDir: path.join(state, "fixture"),
-          target: "esnext",
-          rollupOptions: {
+          rolldownOptions: {
             external: ["cloudflare:workers"],
             output: { entryFileNames: "server.js" },
           },
+          ssr: entry,
+          target: "esnext",
         },
+        configFile: false,
+        logLevel: "error",
+        root: repo,
+        ssr: { noExternal: true, target: "webworker" },
       });
 
-      const code = await readFile(path.join(state, "fixture/server.js"), "utf-8");
+      const code = await readFile(
+        path.join(state, "fixture/server.js"),
+        "utf-8"
+      );
       const bucket = await mf.getR2Bucket("BUNDLES");
 
       const bytes = gzipSync(code);
@@ -253,90 +350,149 @@ export const migrations = ${JSON.stringify(history)};`;
       });
 
       published = {
-        projectId,
         appId: "app",
+        checksum: createHash("sha256").update(bytes).digest("hex"),
+        contentEncoding: "gzip",
+        contentLength: bytes.byteLength,
         deploymentId,
         objectKey: "private/todo/server/server.js",
-        checksum: createHash("sha256").update(bytes).digest("hex"),
-        contentLength: bytes.byteLength,
-        contentEncoding: "gzip",
+        projectId,
       };
       await (
         await mf.getKVNamespace("DEPLOYMENTS")
-      ).put(JSON.stringify([published.projectId, published.appId]), JSON.stringify(published));
-    }
+      ).put(
+        JSON.stringify([published.projectId, published.appId]),
+        JSON.stringify(published)
+      );
+    };
 
     await publishRpc(migrations, "backend");
 
     let renewals = 0;
     const makeClient = (installationId = "backend-todos") =>
       createClient({
+        connect: async (url, protocols) => {
+          assert.equal(
+            new URL(url).pathname,
+            `${new URL(rpcUrl).pathname}/queries`
+          );
+          const response = await mf.dispatchFetch(
+            url.replace("wss:", "https:"),
+            {
+              headers: {
+                "sec-websocket-protocol": protocols.join(", "),
+                upgrade: "websocket",
+              },
+            }
+          );
+          if (response.status !== 101) {
+            throw new Error(
+              `WebSocket handshake ${response.status}: ${await response.text()}`
+            );
+          }
+          const socket = response.webSocket;
+          socket.accept();
+          return socket;
+        },
+        // oxlint-disable-next-line typescript/promise-function-async, typescript/no-base-to-string -- This fixture returns the original deferred or runtime Promise and installs its resolver synchronously. The fixture sends string URLs and serialized JSON bodies; this assertion inspects those controlled wire values through the broader fetch signature.
+        fetch: (url, init) => mf.dispatchFetch(String(url), init),
         getSession: async () => {
-          renewals++;
+          renewals += 1;
           const session = await issueAppToken(
             // Renew after five seconds while keeping the production one-minute renewal window.
             { ...signing, lifetimeSeconds: 65 },
             {
-              publicTeamId,
-              appPublicId,
-              scope: { name: "org", value: { id: "tenant" } },
-              toolUrl: "https://host.test/api/tailorkit/tools/execute",
-              subjectId: "user",
-              projectId,
               appId: "app",
-              installationId,
+              appPublicId,
               deploymentId: published.deploymentId,
-            },
+              installationId,
+              projectId,
+              publicTeamId,
+              scope: { name: "org", value: { id: "tenant" } },
+              subjectId: "user",
+              toolUrl: "https://host.test/api/tailorkit/tools/execute",
+            }
           );
           appTokens.add(session.token);
           return { ...session, url: rpcUrl };
-        },
-        fetch: (url, init) => mf.dispatchFetch(String(url), init),
-        connect: async (url, protocols) => {
-          assert.equal(new URL(url).pathname, new URL(rpcUrl).pathname + "/queries");
-          const response = await mf.dispatchFetch(url.replace("wss:", "https:"), {
-            headers: { upgrade: "websocket", "sec-websocket-protocol": protocols.join(", ") },
-          });
-          if (response.status !== 101)
-            throw new Error(`WebSocket handshake ${response.status}: ${await response.text()}`);
-          const socket = response.webSocket;
-          socket.accept();
-          return socket;
         },
         retryDelayMs: 20,
       });
 
     const first = makeClient();
     const second = makeClient();
+    /** @type {import("@tailorkit/app/client").Reference<"query", undefined, Todo[]>} */
     const list = reference("list", "query");
+    /** @type {import("@tailorkit/app/client").Reference<"mutation", {text: string}, Todo>} */
     const add = reference("add", "mutation");
+    /** @type {Todo[][][]} */
     const snapshots = [[], []];
+    /** @type {unknown[]} */
     const errors = [];
     const stops = [first, second].map((client, index) =>
-      client.subscribe(list, undefined, (rows) => snapshots[index].push(rows), {
-        onError: (error) => errors.push(error),
-      }),
+      client.subscribe(
+        list,
+        undefined,
+        (rows) => {
+          snapshots[index].push(rows);
+        },
+        {
+          onError: (err) => {
+            errors.push(err);
+          },
+        }
+      )
     );
 
-    async function wait(predicate, label) {
+    /** @param {() => boolean} predicate Completion condition. @param {string} label Failure context. */
+    const wait = async (predicate, label) => {
       const until = Date.now() + 15_000;
-      while (!predicate()) {
-        if (Date.now() > until)
-          throw new Error(`Timeout: ${label}: ${JSON.stringify(errors.slice(-3))}`);
-        await new Promise((resolve) => setTimeout(resolve, 25));
+      while (
+        !(
+          predicate() !== undefined &&
+          predicate() !== null &&
+          predicate() &&
+          predicate() !== "" &&
+          predicate() !== 0 &&
+          !Number.isNaN(predicate()) &&
+          predicate() !== 0n
+        )
+      ) {
+        if (Date.now() > until) {
+          throw new Error(
+            `Timeout: ${label}: ${JSON.stringify(errors.slice(-3))}`
+          );
+        }
+        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+        await (async () => {
+          const {
+            promise: pendingPromise,
+            resolve,
+            reject: rejectPending,
+          } = Promise.withResolvers();
+          try {
+            setTimeout(resolve, 25);
+          } catch (error) {
+            rejectPending(error);
+          }
+          return await pendingPromise;
+        })();
       }
-    }
+    };
 
     try {
-      await wait(() => snapshots.every((rows) => rows.length), "initial query snapshots");
+      await wait(
+        () => snapshots.every((rows) => rows.length > 0),
+        "initial query snapshots"
+      );
       assert.deepEqual(await first.query(list), await second.query(list));
       const nestedApi = createApi();
       assert.deepEqual(await first.query(nestedApi.nested.read), []);
       assert.deepEqual(await first.action(nestedApi.tasks.read), []);
       assert.deepEqual(await first.action(reference("toolProbe", "action")), {
-        subjectId: "user",
         installationId: "backend-todos",
         scope: { name: "org", value: { id: "tenant" } },
+        subjectId: "user",
       });
 
       const input = { text: "Both clients see this persisted mutation" };
@@ -344,12 +500,14 @@ export const migrations = ${JSON.stringify(history)};`;
         requestId: "00000000-0000-4000-8000-000000000001",
       });
       assert.deepEqual(
-        await second.mutate(add, input, { requestId: "00000000-0000-4000-8000-000000000001" }),
-        saved,
+        await second.mutate(add, input, {
+          requestId: "00000000-0000-4000-8000-000000000001",
+        }),
+        saved
       );
       await wait(
         () => snapshots.every((rows) => rows.at(-1).length === 1),
-        "table invalidation on both clients",
+        "table invalidation on both clients"
       );
       assert.equal((await second.query(list)).length, 1);
 
@@ -357,15 +515,26 @@ export const migrations = ${JSON.stringify(history)};`;
       const oldRenewals = renewals;
       await wait(
         () =>
-          renewals > oldRenewals && snapshots.every((rows, index) => rows.length > oldCount[index]),
-        "renewed subscriptions receive fresh snapshots",
+          renewals > oldRenewals &&
+          snapshots.every((rows, index) => rows.length > oldCount[index]),
+        "renewed subscriptions receive fresh snapshots"
       );
       assert.equal(errors.length, 0);
 
       {
-        pendingExternal = new Promise((resolve) => {
-          releaseExternal = resolve;
-        });
+        pendingExternal = (async () => {
+          const {
+            promise: pendingPromise,
+            resolve,
+            reject: rejectPending,
+          } = Promise.withResolvers();
+          try {
+            releaseExternal = resolve;
+          } catch (error) {
+            rejectPending(error);
+          }
+          return await pendingPromise;
+        })();
         const oldCalls = externalCalls;
         const action = first.action(reference("importTodo", "action"), {
           url: "https://third-party.test/slow",
@@ -379,7 +548,7 @@ export const migrations = ${JSON.stringify(history)};`;
         await second.mutate(add, { text: "While the action waits" });
         await wait(
           () => snapshots.every((rows) => rows.at(-1).length === 2),
-          "writes continue while action waits",
+          "writes continue while action waits"
         );
 
         releaseExternal();
@@ -388,7 +557,7 @@ export const migrations = ${JSON.stringify(history)};`;
         assert.equal((await second.query(list)).length, 3);
         await wait(
           () => snapshots.every((rows) => rows.at(-1).length === 3),
-          "action mutation updates both clients",
+          "action mutation updates both clients"
         );
         const actionSnapshots = snapshots.map((rows) => rows.length);
 
@@ -400,7 +569,7 @@ export const migrations = ${JSON.stringify(history)};`;
         assert.equal(metadataReads, beforeDirect);
         assert.deepEqual(
           snapshots.map((rows) => rows.length),
-          actionSnapshots,
+          actionSnapshots
         );
 
         const probe = reference("isolation", "action");
@@ -417,42 +586,56 @@ export const migrations = ${JSON.stringify(history)};`;
         assert.equal((await second.query(list)).length, 3);
 
         // Local calls do not consume RPC subrequests or application call allowances.
-        assert.equal(await first.action(reference("manyDatabaseCalls", "action")), "ok");
+        assert.equal(
+          await first.action(reference("manyDatabaseCalls", "action")),
+          "ok"
+        );
 
-        await assert.rejects(first.action(reference("failAfterWrite", "action")), {
-          code: "CONFLICT",
-        });
+        await assert.rejects(
+          first.action(reference("failAfterWrite", "action")),
+          {
+            code: "CONFLICT",
+          }
+        );
         assert.equal((await second.query(list)).length, 4);
         await wait(
           () => snapshots.every((rows) => rows.at(-1).length === 4),
-          "committed action mutation updates clients even when action fails",
+          "committed action mutation updates clients even when action fails"
         );
 
         const beforeRedirect = externalCalls;
         await assert.rejects(
           first.action(reference("importTodo", "action"), {
             url: "https://third-party.test/redirect",
-          }),
+          })
         );
         assert.equal(externalCalls, beforeRedirect + 1);
 
         const beforeBlocked = externalCalls;
         await assert.rejects(
-          first.action(reference("importTodo", "action"), { url: "http://127.0.0.1/private" }),
+          first.action(reference("importTodo", "action"), {
+            url: "http://127.0.0.1/private",
+          })
         );
         assert.equal(externalCalls, beforeBlocked);
 
         await assert.rejects(
-          first.query(reference("importTodo", "query"), { url: "https://third-party.test/title" }),
+          first.query(reference("importTodo", "query"), {
+            url: "https://third-party.test/title",
+          })
         );
 
         await assert.rejects(first.action(reference("list", "action"), {}));
 
         stops[1]();
-        await second.query(list); // Cancellation and this request share an ordered connection.
+        // Cancellation and this request share an ordered connection.
+        await second.query(list);
         const stoppedCount = snapshots[1].length;
         await first.mutate(add, { text: "After unsubscribe" });
-        await wait(() => snapshots[0].at(-1).length === 5, "remaining active client updates");
+        await wait(
+          () => snapshots[0].at(-1).length === 5,
+          "remaining active client updates"
+        );
         assert.equal(snapshots[1].length, stoppedCount);
 
         const isolated = makeClient("another-installation");
@@ -469,7 +652,9 @@ export const migrations = ${JSON.stringify(history)};`;
         }
       }
     } finally {
-      stops.forEach((stop) => stop());
+      for (const stop of stops) {
+        stop();
+      }
       first.close?.();
       second.close?.();
     }
@@ -482,57 +667,97 @@ export const migrations = ${JSON.stringify(history)};`;
     try {
       assert.equal((await recovered.query(list)).length, 5);
 
-      {
-        await recovered.mutate(
-          add,
-          { text: "Both clients see this persisted mutation" },
-          { requestId: "00000000-0000-4000-8000-000000000001" },
-        );
-        assert.equal((await recovered.query(list)).length, 5);
-      }
+      await recovered.mutate(
+        add,
+        { text: "Both clients see this persisted mutation" },
+        { requestId: "00000000-0000-4000-8000-000000000001" }
+      );
+      assert.equal((await recovered.query(list)).length, 5);
     } finally {
       recovered.close?.();
     }
 
     const upgradeSql = await readFile(
       path.join(import.meta.dirname, "fixtures/todos-priority.sql"),
-      "utf8",
+      "utf-8"
     );
     const upgrade = {
-      id: "20261002000000_priority",
       hash: createHash("sha256").update(upgradeSql).digest("hex"),
+      id: "20261002000000_priority",
       statements: [upgradeSql],
     };
 
     const live = makeClient();
     const liveSnapshots = [];
-    const stopLive = live.subscribe(list, undefined, (rows) => liveSnapshots.push(rows), {
-      onError: (error) => errors.push(error),
-    });
-    await wait(() => liveSnapshots.length === 1, "subscription before deployment change");
-    pendingExternal = new Promise((resolve) => {
-      releaseExternal = resolve;
-    });
+    const stopLive = live.subscribe(
+      list,
+      undefined,
+      (rows) => {
+        liveSnapshots.push(rows);
+      },
+      {
+        onError: (err2) => {
+          errors.push(err2);
+        },
+      }
+    );
+    await wait(
+      () => liveSnapshots.length === 1,
+      "subscription before deployment change"
+    );
+    pendingExternal = (async () => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers();
+      try {
+        releaseExternal = resolve;
+      } catch (error) {
+        rejectPending(error);
+      }
+      return await pendingPromise;
+    })();
     const beforeUpgradeCalls = externalCalls;
     const oldAction = live.action(reference("importTodo", "action"), {
       url: "https://third-party.test/slow",
     });
-    const oldActionResult = oldAction.then(
-      () => "unexpected",
-      (error) => error.code,
+    const oldActionResult = (async () => {
+      try {
+        await oldAction;
+        return "unexpected";
+      } catch (error) {
+        return error.code;
+      }
+    })();
+    await wait(
+      () => externalCalls > beforeUpgradeCalls,
+      "action before deployment replacement"
     );
-    await wait(() => externalCalls > beforeUpgradeCalls, "action before deployment replacement");
     await publishRpc([...migrations, upgrade], "backend-upgrade");
 
     // Activate the deployment over HTTP: version changes close existing WebSocket connections.
-    const upgradeResponse = await invoke("backend-todos", published.deploymentId, {}, "queries", {
-      name: "list",
-    });
-    assert.equal(upgradeResponse.status, 200, await upgradeResponse.clone().text());
+    const upgradeResponse = await invoke(
+      "backend-todos",
+      published.deploymentId,
+      {},
+      "queries",
+      {
+        name: "list",
+      }
+    );
+    assert.equal(
+      upgradeResponse.status,
+      200,
+      await upgradeResponse.clone().text()
+    );
     assert.equal(await oldActionResult, "UNAVAILABLE");
     releaseExternal();
     try {
-      await wait(() => liveSnapshots.length > 1, "facet restart reconnects active subscriptions");
+      await wait(
+        () => liveSnapshots.length > 1,
+        "facet restart reconnects active subscriptions"
+      );
       assert.equal(liveSnapshots.at(-1).length, 5);
     } finally {
       stopLive();
@@ -545,26 +770,32 @@ export const migrations = ${JSON.stringify(history)};`;
       assert.equal((await upgraded.query(list)).length, 5);
       const rows = await upgraded.query(reference("migrationProbe", "query"));
       assert.equal(rows.length, 5);
-      assert.ok(rows.every((row) => row.priority === 0));
+      assert.ok(Boolean(rows.every((row) => row.priority === 0)));
     } finally {
       upgraded.close();
     }
 
     const requiredSql = await readFile(
       path.join(import.meta.dirname, "fixtures/todos-required.sql"),
-      "utf8",
+      "utf-8"
     );
     const failed = {
-      id: "20261003000000_required",
       hash: createHash("sha256").update(requiredSql).digest("hex"),
+      id: "20261003000000_required",
       statements: [requiredSql],
     };
 
     await publishRpc([...migrations, upgrade, failed], "backend-failed");
 
-    const failedResponse = await invoke("backend-todos", published.deploymentId, {}, "queries", {
-      name: "list",
-    });
+    const failedResponse = await invoke(
+      "backend-todos",
+      published.deploymentId,
+      {},
+      "queries",
+      {
+        name: "list",
+      }
+    );
     assert.equal(failedResponse.status, 500);
 
     await publishRpc([...migrations, upgrade], "backend-retry");
@@ -572,9 +803,15 @@ export const migrations = ${JSON.stringify(history)};`;
     await mf.dispose();
     mf = new Miniflare(convertV4MiniflareOptions(options));
 
-    const retryResponse = await invoke("backend-todos", published.deploymentId, {}, "queries", {
-      name: "list",
-    });
+    const retryResponse = await invoke(
+      "backend-todos",
+      published.deploymentId,
+      {},
+      "queries",
+      {
+        name: "list",
+      }
+    );
     assert.equal(retryResponse.status, 200, await retryResponse.clone().text());
 
     const retried = makeClient();
@@ -583,18 +820,26 @@ export const migrations = ${JSON.stringify(history)};`;
     try {
       assert.equal((await retried.query(list)).length, 5);
       assert.ok(
-        (await retried.query(reference("migrationProbe", "query"))).every(
-          (row) => row.priority === 0,
-        ),
+        Boolean(
+          (await retried.query(reference("migrationProbe", "query"))).every(
+            (row) => row.priority === 0
+          )
+        )
       );
-      assert.deepEqual(await fresh.query(reference("migrationProbe", "query")), []);
+      assert.deepEqual(
+        await fresh.query(reference("migrationProbe", "query")),
+        []
+      );
       await fresh.mutate(add, { text: "Initialized with the full history" });
-      assert.equal((await fresh.query(reference("migrationProbe", "query")))[0].priority, 0);
+      assert.equal(
+        (await fresh.query(reference("migrationProbe", "query")))[0].priority,
+        0
+      );
     } finally {
       retried.close();
       fresh.close();
     }
-  }
+  };
 
   try {
     mf = new Miniflare(convertV4MiniflareOptions(options));
@@ -605,15 +850,26 @@ export const migrations = ${JSON.stringify(history)};`;
     const assetBase = `${rpcUrl.replace(/\/rpc$/u, "")}/d/deploy000001`;
     const clientKey = `teams/${publicTeamId}/projects/${projectId}/apps/${appPublicId}/deployments/deploy000001/client/client.js`;
     const clientBytes = gzipSync("export default 'client';");
-    await assets.put(clientKey, clientBytes, { httpMetadata: { contentEncoding: "gzip" } });
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const compressed = await mf.dispatchFetch(`${assetBase}/client/client.js`, {
-        headers: { "Accept-Encoding": "gzip" },
-      });
+    await assets.put(clientKey, clientBytes, {
+      httpMetadata: { contentEncoding: "gzip" },
+    });
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+      const compressed = await mf.dispatchFetch(
+        `${assetBase}/client/client.js`,
+        {
+          headers: { "Accept-Encoding": "gzip" },
+        }
+      );
       assert.equal(compressed.headers.get("mf-content-encoding"), "gzip");
       assert.equal(compressed.headers.get("vary"), "Accept-Encoding");
       // Miniflare dispatchFetch decodes HTTP gzip and preserves its header here.
-      assert.equal(await compressed.text(), "export default 'client';", `gzip request ${attempt}`);
+      assert.equal(
+        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+        await compressed.text(),
+        "export default 'client';",
+        `gzip request ${attempt}`
+      );
     }
     const client = await mf.dispatchFetch(`${assetBase}/client/client.js`, {
       headers: { "Accept-Encoding": "identity" },
@@ -622,24 +878,36 @@ export const migrations = ${JSON.stringify(history)};`;
     assert.equal(await client.text(), "export default 'client';");
     assert.equal(client.headers.get("cache-control"), "private, max-age=3600");
     const clientHead = await mf.dispatchFetch(`${assetBase}/client/client.js`, {
-      method: "HEAD",
       headers: { "Accept-Encoding": "gzip" },
+      method: "HEAD",
     });
     assert.equal(clientHead.headers.get("mf-content-encoding"), "gzip");
-    assert.equal(clientHead.headers.get("content-length"), String(clientBytes.byteLength));
-    assert.equal((await mf.dispatchFetch(`${assetBase}/client.js`)).status, 404);
+    assert.equal(
+      clientHead.headers.get("content-length"),
+      String(clientBytes.byteLength)
+    );
+    assert.equal(
+      (await mf.dispatchFetch(`${assetBase}/client.js`)).status,
+      404
+    );
     const logoHash = "a".repeat(64);
     await assets.put(
       `teams/${publicTeamId}/projects/${projectId}/apps/${appPublicId}/logos/${logoHash}.svg`,
-      "<svg/>",
+      "<svg/>"
     );
     const logo = await mf.dispatchFetch(`${assetBase}/logos/${logoHash}.svg`);
     assert.equal(logo.status, 200);
     assert.equal(logo.headers.get("content-type"), "image/svg+xml");
-    assert.equal((await mf.dispatchFetch(`${assetBase}/server/server.js`)).status, 404);
+    assert.equal(
+      (await mf.dispatchFetch(`${assetBase}/server/server.js`)).status,
+      404
+    );
 
     const rejected = await mf.dispatchFetch(`${rpcUrl}/queries`, {
-      headers: { upgrade: "websocket", "sec-websocket-protocol": "tailorkit, jwt.forged" },
+      headers: {
+        "sec-websocket-protocol": "tailorkit, jwt.forged",
+        upgrade: "websocket",
+      },
     });
     assert.equal(rejected.status, 401);
 
@@ -652,12 +920,23 @@ export const migrations = ${JSON.stringify(history)};`;
     assert.equal(one.token, null);
     assert.equal(one.identity.installationId, "one");
 
-    const two = await (await invoke("two")).json().then((result) => result.json);
+    const two = await (
+      await invoke("two")
+    )
+      .json()
+      .then((result) => result.json);
     assert.equal(two.globals, 1);
-    assert.equal((await (await invoke("one")).json().then((result) => result.json)).globals, 2);
+    assert.equal(
+      (await (await invoke("one")).json().then((result) => result.json))
+        .globals,
+      2
+    );
 
     const before = metadataReads;
-    assert.equal((await invoke("one", "v1", { projectId: otherProjectId })).status, 403);
+    assert.equal(
+      (await invoke("one", "v1", { projectId: otherProjectId })).status,
+      403
+    );
     assert.equal(metadataReads, before + 1);
 
     published = { ...published, projectId: otherProjectId };
@@ -669,13 +948,19 @@ export const migrations = ${JSON.stringify(history)};`;
     assert.equal(otherProject.globals, 1);
 
     published = { ...published, projectId: otherProjectId };
-    await (await mf.getKVNamespace("DEPLOYMENTS")).delete(JSON.stringify([projectId, "app"]));
+    await (
+      await mf.getKVNamespace("DEPLOYMENTS")
+    ).delete(JSON.stringify([projectId, "app"]));
     assert.equal((await invoke("one")).status, 403);
 
     await publish(2);
     assert.equal((await invoke("one", "v1")).status, 200);
 
-    const updated = await (await invoke("one")).json().then((result) => result.json);
+    const updated = await (
+      await invoke("one")
+    )
+      .json()
+      .then((result) => result.json);
     assert.equal(updated.version, 2);
     assert.equal(updated.globals, 2);
 
@@ -683,23 +968,33 @@ export const migrations = ${JSON.stringify(history)};`;
     await mf.dispose();
     mf = new Miniflare(convertV4MiniflareOptions(options));
 
-    const recovered = await (await invoke("one")).json().then((result) => result.json);
+    const recovered = await (
+      await invoke("one")
+    )
+      .json()
+      .then((result) => result.json);
     assert.equal(recovered.globals, 1);
     assert.equal(recovered.version, 2);
 
     const originalHash = published.checksum;
     published = { ...published, checksum: "a".repeat(64) };
-    await (await mf.getKVNamespace("DEPLOYMENTS")).delete(JSON.stringify([projectId, "app"]));
+    await (
+      await mf.getKVNamespace("DEPLOYMENTS")
+    ).delete(JSON.stringify([projectId, "app"]));
     assert.equal((await invoke("one")).status, 500);
     published = { ...published, checksum: originalHash };
     await (
       await mf.getKVNamespace("DEPLOYMENTS")
     ).put(JSON.stringify([projectId, "app"]), JSON.stringify(published));
-    assert.equal((await (await invoke("one")).json().then((result) => result.json)).globals, 2);
+    assert.equal(
+      (await (await invoke("one")).json().then((result) => result.json))
+        .globals,
+      2
+    );
 
     await checkRpc();
   } finally {
     await mf?.dispose();
-    await rm(state, { recursive: true, force: true });
+    await rm(state, { force: true, recursive: true });
   }
 }, 45_000);

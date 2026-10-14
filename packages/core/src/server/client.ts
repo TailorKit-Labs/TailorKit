@@ -1,6 +1,11 @@
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
+
 import type { TailorKitRouterClient } from "./router";
+
+const isFunctionValue = <TValue>(
+  value: TValue
+): value is Extract<TValue, CallableFunction> => typeof value === "function";
 
 type HeaderInput = ConstructorParameters<typeof Headers>[0];
 
@@ -10,26 +15,34 @@ export interface TailorKitClientOptions {
   url: string;
 }
 
-export function createTailorKitClient(options: TailorKitClientOptions): TailorKitRouterClient {
+export const createTailorKitClient = (
+  options: TailorKitClientOptions
+): TailorKitRouterClient => {
   const url = URL.canParse(options.url) ? new URL(options.url) : undefined;
+  // SAFETY: The configured URL is normalized into a pathname before the client uses it as an absolute route path.
   const link = new RPCLink({
-    origin: url?.origin,
-    async fetch(url, init) {
-      const configuredHeaders = await (typeof options.headers === "function"
+    fetch: async (urlValue, init) => {
+      const configuredHeaders = await (isFunctionValue(options.headers)
         ? options.headers()
         : options.headers);
       const headers = new Headers(configuredHeaders);
-      new Headers(init.headers).forEach((value, key) => {
+      for (const [key, value] of new Headers(init.headers)) {
         headers.set(key, value);
-      });
+      }
 
-      return (options.fetch ?? fetch)(url, {
+      return await (options.fetch ?? fetch)(urlValue, {
         ...init,
         headers,
       });
     },
-    url: (url ? `${url.pathname}${url.search}${url.hash}` : options.url) as `/${string}`,
+    origin: url?.origin,
+    url:
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- The configured URL is normalized into a pathname before the client uses it as an absolute route path. */
+      (url
+        ? `${url.pathname}${url.search}${url.hash}`
+        : options.url) as `/${string}`,
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
   });
 
   return createORPCClient<TailorKitRouterClient>(link);
-}
+};

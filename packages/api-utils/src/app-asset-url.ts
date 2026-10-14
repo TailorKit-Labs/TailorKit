@@ -1,5 +1,9 @@
 import { getBaseUrl } from "@tailorkit/env";
+
 import { env } from "#env";
+
+const hasText = (value: string | null | undefined): value is string =>
+  value !== undefined && value !== null && value.length > 0;
 
 interface AppDeploymentAssets {
   views?: { slot: string; path: string; instances?: true; disabled?: true }[];
@@ -10,31 +14,43 @@ interface AppDeploymentAssets {
   status: string;
 }
 
-export function withAppAssetUrl<
+export const withAppAssetUrl = <
   T extends {
     currentDeployment: AppDeploymentAssets | null;
     publicId: string;
   },
->(app: T, publicTeamId: string, projectId: string) {
+>(
+  app: T,
+  publicTeamId: string,
+  projectId: string
+) => {
   const deployment = app.currentDeployment;
   const nodeBaseUrl =
     env.ASSET_BASE_URL ??
-    (env.NODE_ENV === "development" ? `${getBaseUrl(env)}/api/assets` : undefined);
-  const assetBaseUrl = nodeBaseUrl
+    (env.NODE_ENV === "development"
+      ? `${getBaseUrl(env)}/api/assets`
+      : undefined);
+  const assetBaseUrl = hasText(nodeBaseUrl)
     ? `${nodeBaseUrl.replace(/\/$/u, "")}/t/${publicTeamId}`
     : `https://${publicTeamId}.${env.ASSET_DOMAIN}`;
   let clientPath: string | undefined;
   let logoPaths: { dark?: string; light?: string } | undefined;
 
-  if (deployment?.status === "published" && deployment.clientEntryFileId) {
+  if (
+    deployment?.status === "published" &&
+    hasText(deployment.clientEntryFileId)
+  ) {
     const appBase = `${assetBaseUrl}/p/${projectId}/a/${app.publicId}`;
     const deploymentBase = `${appBase}/d/${deployment.publicId}`;
     clientPath = `${deploymentBase}/client/client.js`;
     const getLogoUrl = (path: string) => `${deploymentBase}/${path}`;
-    const logos = {
-      ...(deployment.logoDarkPath ? { dark: getLogoUrl(deployment.logoDarkPath) } : {}),
-      ...(deployment.logoLightPath ? { light: getLogoUrl(deployment.logoLightPath) } : {}),
-    };
+    const logos: NonNullable<typeof logoPaths> = {};
+    if (hasText(deployment.logoDarkPath)) {
+      logos.dark = getLogoUrl(deployment.logoDarkPath);
+    }
+    if (hasText(deployment.logoLightPath)) {
+      logos.light = getLogoUrl(deployment.logoLightPath);
+    }
 
     if (Object.keys(logos).length > 0) {
       logoPaths = logos;
@@ -47,4 +63,4 @@ export function withAppAssetUrl<
     logoPaths,
     views: deployment?.status === "published" ? (deployment.views ?? []) : [],
   };
-}
+};

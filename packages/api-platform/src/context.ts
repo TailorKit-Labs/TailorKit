@@ -1,15 +1,22 @@
-import { runtimeProjectAccess } from "./runtime/access";
-import { env } from "./env";
-import type { Organization } from "@tailorkit/db/schema/auth";
-import type { Project } from "@tailorkit/db/schema/project";
-import { getStorage } from "@tailorkit/storage";
-import type { Storage } from "@tailorkit/storage";
+import { ORPCError } from "@orpc/server";
+import { verifyAgentToken } from "@tailorkit/api-utils/agent-token";
+import type { AgentToken } from "@tailorkit/api-utils/agent-token";
 import { auth } from "@tailorkit/auth";
 import { db } from "@tailorkit/db";
-import { verifyAgentToken, type AgentToken } from "@tailorkit/api-utils/agent-token";
-import { ORPCError } from "@orpc/server";
+import type { Organization } from "@tailorkit/db/schema/auth";
+import type { Project } from "@tailorkit/db/schema/project";
+import {
+  initializeObservability,
+  setSpanAttributes,
+  withSpan,
+} from "@tailorkit/observability";
+import { getStorage } from "@tailorkit/storage";
+import type { Storage } from "@tailorkit/storage";
+import { z } from "zod";
+
+import { env } from "./env";
+import { runtimeProjectAccess } from "./runtime/access";
 import { canonicalizeScope } from "./scope";
-import { initializeObservability, setSpanAttributes, withSpan } from "@tailorkit/observability";
 
 export interface Context {
   project: Project;
@@ -21,36 +28,59 @@ export interface Context {
   agentToken?: AgentToken & { token: string };
 }
 
-export async function createContext({ request }: { request: Request }): Promise<Context> {
+export const createContext = async ({
+  request,
+}: {
+  request: Request;
+}): Promise<Context> => {
   await initializeObservability("tailorkit-web");
 
-  return withSpan("api_platform.create_context", async () => {
+  // oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
+  return await withSpan("api_platform.create_context", async () => {
     const storage = getStorage();
     if (!storage) {
-      throw new ORPCError("SERVICE_UNAVAILABLE", { message: "Platform storage is unavailable." });
+      throw new ORPCError("SERVICE_UNAVAILABLE", {
+        message: "Platform storage is unavailable.",
+      });
     }
 
-    const [scheme, key] = request.headers.get("authorization")?.split(" ") ?? [];
+    const [scheme, key] =
+      request.headers.get("authorization")?.split(" ") ?? [];
 
-    if (!key) {
-      throw new ORPCError("UNAUTHORIZED", { message: "Authorization header not found" });
+    if (!(key !== undefined && key !== null && key !== "")) {
+      throw new ORPCError("UNAUTHORIZED", {
+        message: "Authorization header not found",
+      });
     }
     if (scheme !== "Bearer") {
-      throw new ORPCError("UNAUTHORIZED", { message: "Invalid authorization scheme" });
+      throw new ORPCError("UNAUTHORIZED", {
+        message: "Invalid authorization scheme",
+      });
     }
 
-    const runtimeProject = await runtimeProjectAccess(request, env.APP_RUNTIME_SERVICE_TOKEN);
+    const runtimeProject = await runtimeProjectAccess(
+      request,
+      env.APP_RUNTIME_SERVICE_TOKEN
+    );
     let projectId: string;
 
     let agentToken: Context["agentToken"];
     if (key.split(".").length === 3) {
-      if (!env.AUTH_SECRET) throw new ORPCError("SERVICE_UNAVAILABLE");
+      if (
+        !(
+          env.AUTH_SECRET !== undefined &&
+          env.AUTH_SECRET !== null &&
+          env.AUTH_SECRET !== ""
+        )
+      ) {
+        throw new ORPCError("SERVICE_UNAVAILABLE");
+      }
       let claims: AgentToken;
       try {
         claims = await verifyAgentToken(
           key,
           env.AUTH_SECRET,
-          env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform",
+          env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform"
         );
         canonicalizeScope(claims.scope);
       } catch {
@@ -69,28 +99,41 @@ export async function createContext({ request }: { request: Request }): Promise<
           source &&
           !source.revokedAt &&
           source.scopeKey === scope.scopeKey &&
-          canonicalizeScope(source.scope).scopeKey === scope.scopeKey,
+          canonicalizeScope(source.scope).scopeKey === scope.scopeKey
         );
       } catch {
         /* Malformed stored authorization is rejected. */
       }
-      if (!validSource)
+      if (!validSource) {
         throw new ORPCError("UNAUTHORIZED", {
           message: "Agent authorization revoked. Start a new agent turn.",
         });
+      }
       // An authorized JWT has its own expiry; source revocation still applies.
       agentToken = { ...claims, scope: scope.scope, token: key };
-      projectId = agentToken.projectId;
-    } else if (runtimeProject) {
+      ({ projectId } = agentToken);
+    } else if (
+      runtimeProject !== undefined &&
+      runtimeProject !== null &&
+      runtimeProject !== ""
+    ) {
       projectId = runtimeProject;
     } else {
-      const apiKey = await auth.api.verifyApiKey({ body: { configId: "project-host", key } });
-      if (!apiKey?.valid) throw new ORPCError("UNAUTHORIZED", { message: "Invalid API key" });
-      projectId = apiKey.key?.metadata?.projectId;
-      if (!projectId)
+      const apiKey = await auth.api.verifyApiKey({
+        body: { configId: "project-host", key },
+      });
+      if (!apiKey?.valid) {
+        throw new ORPCError("UNAUTHORIZED", { message: "Invalid API key" });
+      }
+      const keyProjectId = z
+        .object({ projectId: z.string().min(1) })
+        .safeParse(apiKey.key?.metadata).data?.projectId;
+      if (keyProjectId === undefined || keyProjectId === "") {
         throw new ORPCError("UNAUTHORIZED", {
           message: "Project ID not found in API key metadata",
         });
+      }
+      projectId = keyProjectId;
     }
 
     const project = await db.query.project.findFirst({
@@ -109,28 +152,34 @@ export async function createContext({ request }: { request: Request }): Promise<
     }
 
     setSpanAttributes({
+      "tailorkit.authenticated": true,
       "tailorkit.package": "api-platform",
       "tailorkit.resource_type": "project",
-      "tailorkit.authenticated": true,
     });
 
     return {
-      project,
-      organization: project.organization,
-      storage,
-      runtimeService: Boolean(runtimeProject),
       agentToken,
+      organization: project.organization,
+      project,
+      runtimeService: Boolean(runtimeProject),
+      storage,
     };
   });
-}
+};
 
 /** Keep unavailable dependencies distinct from rejected credentials at the HTTP boundary. */
-export function contextErrorResponse(error: unknown) {
-  const unauthorized = error instanceof ORPCError && error.code === "UNAUTHORIZED";
+export const contextErrorResponse = (cause: unknown) => {
+  if (cause instanceof ORPCError && cause.code === "UNAUTHORIZED") {
+    return Response.json(
+      { code: "UNAUTHORIZED", message: cause.message },
+      { status: 401 }
+    );
+  }
   return Response.json(
-    unauthorized
-      ? { code: error.code, message: error.message }
-      : { code: "SERVICE_UNAVAILABLE", message: "Platform is temporarily unavailable." },
-    { status: unauthorized ? 401 : 503 },
+    {
+      code: "SERVICE_UNAVAILABLE",
+      message: "Platform is temporarily unavailable.",
+    },
+    { status: 503 }
   );
-}
+};

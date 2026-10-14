@@ -2,12 +2,33 @@
 
 import { useState } from "react";
 
-import { Field, FieldDescription, FieldError, FieldLabel } from "../components/field";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "#components/field";
+import {
+  Select,
+  SelectItem,
+  SelectPopup,
+  SelectTrigger,
+  SelectValue,
+} from "#components/select";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "#components/tooltip";
+
 import { formatFieldErrors } from "./field-errors";
-import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../components/select";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../components/tooltip";
+
+const isStringValue = <TValue,>(value: TValue): value is TValue & string =>
+  typeof value === "string";
 
 const emptyErrors: unknown[] = [];
+
+const hasBaseUIHandlerControl = <TEvent extends object>(
+  event: TEvent
+): event is TEvent & { preventBaseUIHandler: () => void } =>
+  "preventBaseUIHandler" in event &&
+  typeof event.preventBaseUIHandler === "function";
 
 export interface SelectFieldProps {
   allowDeselect?: boolean;
@@ -24,7 +45,7 @@ export interface SelectFieldProps {
   value?: string;
 }
 
-export function SelectField({
+export const SelectField = ({
   allowDeselect = false,
   description,
   disabled,
@@ -37,24 +58,27 @@ export function SelectField({
   placeholder,
   required,
   value,
-}: SelectFieldProps) {
+}: SelectFieldProps) => {
   const errorMessage = formatFieldErrors(errors);
   const isError = errorMessage.length > 0;
   const isEmpty = items.length === 0;
-  const isDisabled = disabled || isEmpty;
+  const isDisabled = disabled ?? isEmpty;
   const [open, setOpen] = useState(false);
 
   return (
     <Field disabled={isDisabled}>
       <FieldLabel>
-        {label} {required && <span className="text-destructive-foreground">*</span>}
+        {label}{" "}
+        {required === true && (
+          <span className="text-destructive-foreground">*</span>
+        )}
       </FieldLabel>
       <Select
         disabled={isDisabled}
         items={items}
         onOpenChange={setOpen}
         onValueChange={(nextValue) => {
-          onValueChange?.(typeof nextValue === "string" ? nextValue : null);
+          onValueChange?.(isStringValue(nextValue) ? nextValue : null);
         }}
         open={open}
         required={required}
@@ -62,9 +86,11 @@ export function SelectField({
       >
         <Tooltip>
           <TooltipTrigger render={<SelectTrigger />} disabled={!isEmpty}>
-            <SelectValue placeholder={isEmpty ? emptyPlaceholder : placeholder} />
+            <SelectValue
+              placeholder={isEmpty ? emptyPlaceholder : placeholder}
+            />
           </TooltipTrigger>
-          <TooltipContent>{emptyTooltip}</TooltipContent>
+          <TooltipPopup>{emptyTooltip}</TooltipPopup>
         </Tooltip>
         <SelectPopup>
           {items.map(({ label: itemLabel, value: itemValue }) => (
@@ -77,11 +103,9 @@ export function SelectField({
                 }
 
                 event.preventDefault();
-                (
-                  event as typeof event & {
-                    preventBaseUIHandler?: () => void;
-                  }
-                ).preventBaseUIHandler?.();
+                if (hasBaseUIHandlerControl(event)) {
+                  event.preventBaseUIHandler();
+                }
                 onValueChange?.(null);
                 setOpen(false);
               }}
@@ -91,8 +115,12 @@ export function SelectField({
           ))}
         </SelectPopup>
       </Select>
-      {description && <FieldDescription>{description}</FieldDescription>}
+      {description !== undefined &&
+        description !== null &&
+        description !== "" && (
+          <FieldDescription>{description}</FieldDescription>
+        )}
       {isError && <FieldError>{errorMessage}</FieldError>}
     </Field>
   );
-}
+};

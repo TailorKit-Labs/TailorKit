@@ -53,13 +53,16 @@
 
   --animate-caret-blink: 1s ease-out infinite caret-blink;
 
-  --animate-toast-success-odd: toast-success-odd 0.32s cubic-bezier(0.5, 1, 0.89, 1);
+  --animate-toast-success-odd: toast-success-odd 0.32s
+    cubic-bezier(0.5, 1, 0.89, 1);
 
-  --animate-toast-success-even: toast-success-even 0.32s cubic-bezier(0.5, 1, 0.89, 1);
+  --animate-toast-success-even: toast-success-even 0.32s
+    cubic-bezier(0.5, 1, 0.89, 1);
 
   --animate-toast-error-odd: toast-error-odd 0.28s cubic-bezier(0.5, 1, 0.89, 1);
 
-  --animate-toast-error-even: toast-error-even 0.28s cubic-bezier(0.5, 1, 0.89, 1);
+  --animate-toast-error-even: toast-error-even 0.28s
+    cubic-bezier(0.5, 1, 0.89, 1);
   @keyframes caret-blink {
     0%,
     70%,
@@ -188,7 +191,11 @@
   --muted-foreground: hsla(0, 0%, 70%, 0.8);
   --accent: hsla(0, 0%, 40.9%, 30%);
   --accent-foreground: hsl(0, 0%, 90%);
-  --destructive: color-mix(in srgb, var(--color-red-500) 90%, var(--color-white));
+  --destructive: color-mix(
+    in srgb,
+    var(--color-red-500) 90%,
+    var(--color-white)
+  );
   --destructive-foreground: var(--color-red-400);
   --info: var(--color-blue-500);
   --info-foreground: var(--color-blue-400);
@@ -215,7 +222,7 @@
   }
 
   body {
-    @apply font-sans bg-background text-foreground;
+    @apply bg-background font-sans text-foreground;
   }
 
   html {

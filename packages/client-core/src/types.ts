@@ -2,7 +2,7 @@ export interface TailorKitApp {
   scope?: { name: string };
   views?: { slot: string; path: string; instances?: true; disabled?: true }[];
   clientPath?: string;
-  description?: string;
+  description?: string | null;
   id: string;
   logoPaths?: {
     dark?: string;
@@ -13,5 +13,10 @@ export interface TailorKitApp {
     id: string;
   } | null;
   name?: string;
-  preview?: { sessionId: string; expiresAt: string; websocketUrl: string; token: string };
+  preview?: {
+    sessionId: string;
+    expiresAt: string;
+    websocketUrl: string;
+    token: string;
+  };
 }

@@ -1,20 +1,34 @@
-import type { Persistence } from "./driver";
-import { AppError } from "../errors";
-
 import type { AppMigration } from "@tailorkit/app/protocol";
+
+import { AppError } from "../errors";
+import type { Persistence } from "./driver";
+
+const require = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
 export type { AppMigration } from "@tailorkit/app/protocol";
 
 /** Runs synchronously during facet initialization, before database handlers are available. */
-export function migrateDatabase(persistence: Persistence, migrations: readonly AppMigration[]) {
-  for (let index = 0; index < migrations.length; index++) {
-    const migration = migrations[index]!;
+export const migrateDatabase = (
+  persistence: Persistence,
+  migrations: readonly AppMigration[]
+) => {
+  for (let index = 0; index < migrations.length; index += 1) {
+    const migration = require(migrations[index]);
     if (
       !/^\d{14}_[\w-]+$/u.test(migration.id) ||
       !/^[a-f0-9]{64}$/u.test(migration.hash) ||
       !migration.statements.length ||
-      (index > 0 && migrations[index - 1]!.id >= migration.id)
+      (index > 0 && require(migrations[index - 1]).id >= migration.id)
     ) {
-      throw new AppError("INCOMPATIBLE_VERSION", "Invalid app migration history");
+      throw new AppError(
+        "INCOMPATIBLE_VERSION",
+        "Invalid app migration history"
+      );
     }
   }
 
@@ -22,31 +36,35 @@ export function migrateDatabase(persistence: Persistence, migrations: readonly A
   persistence.transaction(() => {
     persistence.execute(
       "CREATE TABLE IF NOT EXISTS tailorkit_migrations (position INTEGER PRIMARY KEY, id TEXT NOT NULL UNIQUE, hash TEXT NOT NULL)",
-      [],
+      []
     );
     const applied = persistence.execute(
       "SELECT position, id, hash FROM tailorkit_migrations ORDER BY position",
-      [],
+      []
     ).rows;
     for (const [index, row] of applied.entries()) {
       const migration = migrations[index];
       if (
         row[0] !== index ||
-        (migration && (row[1] !== migration.id || row[2] !== migration.hash))
+        (migration !== undefined &&
+          migration !== null &&
+          (row[1] !== migration.id || row[2] !== migration.hash))
       ) {
         throw new AppError(
           "INCOMPATIBLE_VERSION",
-          "Applied app migrations must not be changed or reordered",
+          "Applied app migrations must not be changed or reordered"
         );
       }
     }
-    for (let index = applied.length; index < migrations.length; index++) {
-      const migration = migrations[index]!;
-      for (const statement of migration.statements) persistence.execute(statement, []);
+    for (let index = applied.length; index < migrations.length; index += 1) {
+      const migration = require(migrations[index]);
+      for (const statement of migration.statements) {
+        persistence.execute(statement, []);
+      }
       persistence.execute(
         "INSERT INTO tailorkit_migrations (position, id, hash) VALUES (?, ?, ?)",
-        [index, migration.id, migration.hash],
+        [index, migration.id, migration.hash]
       );
     }
   });
-}
+};

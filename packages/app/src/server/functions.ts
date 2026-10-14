@@ -1,12 +1,16 @@
-import type { TailorKitServerTools } from "../client/tools";
-import type { z } from "zod";
 import type { AnyRelations, EmptyRelations } from "drizzle-orm/relations";
-import type { DatabaseDefinition } from "../database/definition";
-import type { QueryDatabase, MutationDatabase } from "../database/types";
+import type { z } from "zod";
+
+import type { TailorKitServerTools } from "#client/tools";
+import type { DatabaseDefinition } from "#database/definition";
+import type { QueryDatabase, MutationDatabase } from "#database/types";
 
 export interface Identity {
   readonly subjectId?: string;
-  readonly scope: { name: string; value: Record<string, unknown> };
+  readonly scope: {
+    name: string;
+    value: Record<string, z.output<ReturnType<typeof z.json>>>;
+  };
   readonly toolUrl: string;
   readonly projectId: string;
   readonly appId: string;
@@ -23,10 +27,14 @@ export type FunctionResult<D> = D extends { result: infer R extends z.ZodType }
     : never;
 export type FunctionCalls<F, K extends "query" | "mutation"> = {
   readonly [
-    N in keyof F as F[N] extends { kind: FunctionKind } ? (F[N] extends { kind: K } ? N : never) : N
+    N in keyof F as F[N] extends { kind: FunctionKind }
+      ? F[N] extends { kind: K }
+        ? N
+        : never
+      : N
   ]: F[N] extends {
     args: infer A extends z.ZodType;
-    handler: (context: never) => unknown;
+    handler: (context: never) => infer _Output;
   }
     ? K extends "mutation"
       ? (
@@ -35,13 +43,16 @@ export type FunctionCalls<F, K extends "query" | "mutation"> = {
             : [args: z.input<A>, options?: { requestId?: string }]
         ) => Promise<FunctionResult<F[N]>>
       : (
-          ...args: undefined extends z.input<A> ? [args?: z.input<A>] : [args: z.input<A>]
+          ...args: undefined extends z.input<A>
+            ? [args?: z.input<A>]
+            : [args: z.input<A>]
         ) => Promise<FunctionResult<F[N]>>
     : F[N] extends Functions
       ? FunctionCalls<F[N], K>
       : never;
 };
 
+// oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
 export interface ActionContext<F extends Functions = Record<never, never>> {
   readonly identity: Identity;
   readonly tools: TailorKitServerTools;
@@ -56,6 +67,7 @@ export interface FunctionDefinition<
   K extends FunctionKind,
   A extends z.ZodType,
   O,
+  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
   F extends Functions = Record<never, never>,
   D extends AnyRelations = EmptyRelations,
 > {
@@ -66,57 +78,102 @@ export interface FunctionDefinition<
   readonly handler: (
     context: { args: z.output<A> } & (K extends "action"
       ? ActionContext<F>
-      : { db: K extends "query" ? QueryDatabase<D> : MutationDatabase<D>; identity: Identity }),
+      : {
+          db: K extends "query" ? QueryDatabase<D> : MutationDatabase<D>;
+          identity: Identity;
+        })
   ) => K extends "action" ? O | Promise<O> : O;
 }
 
-export function query<A extends z.ZodType, O, const D extends AnyRelations = EmptyRelations>(
-  definition: Omit<FunctionDefinition<"query", A, O, Record<never, never>, D>, "kind"> & {
-    handler: FunctionDefinition<"query", A, O, Record<never, never>, D>["handler"] &
-      ([O] extends [never] ? unknown : O extends PromiseLike<unknown> ? never : unknown);
-  },
-) {
-  return Object.freeze({ ...definition, kind: "query" as const });
-}
-export function mutation<A extends z.ZodType, O, const D extends AnyRelations = EmptyRelations>(
-  definition: Omit<FunctionDefinition<"mutation", A, O, Record<never, never>, D>, "kind"> & {
-    handler: FunctionDefinition<"mutation", A, O, Record<never, never>, D>["handler"] &
-      ([O] extends [never] ? unknown : O extends PromiseLike<unknown> ? never : unknown);
-  },
-) {
-  return Object.freeze({ ...definition, kind: "mutation" as const });
-}
+export const query = <
+  A extends z.ZodType,
+  O,
+  const D extends AnyRelations = EmptyRelations,
+>(
+  definition: Omit<
+    // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
+    FunctionDefinition<"query", A, O, Record<never, never>, D>,
+    "kind"
+  > & {
+    handler: FunctionDefinition<
+      "query",
+      A,
+      O,
+      // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
+      Record<never, never>,
+      D
+    >["handler"] &
+      ([O] extends [never]
+        ? unknown
+        : O extends PromiseLike<unknown>
+          ? never
+          : unknown);
+  }
+) => Object.freeze({ ...definition, kind: "query" as const });
+export const mutation = <
+  A extends z.ZodType,
+  O,
+  const D extends AnyRelations = EmptyRelations,
+>(
+  definition: Omit<
+    // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
+    FunctionDefinition<"mutation", A, O, Record<never, never>, D>,
+    "kind"
+  > & {
+    handler: FunctionDefinition<
+      "mutation",
+      A,
+      O,
+      // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
+      Record<never, never>,
+      D
+    >["handler"] &
+      ([O] extends [never]
+        ? unknown
+        : O extends PromiseLike<unknown>
+          ? never
+          : unknown);
+  }
+) => Object.freeze({ ...definition, kind: "mutation" as const });
 
-export function action<A extends z.ZodType, O, const F extends Functions = Record<never, never>>(
-  definition: Omit<FunctionDefinition<"action", A, O, F>, "kind"> & { functions?: F },
-) {
-  return Object.freeze({ ...definition, kind: "action" as const });
-}
+export const action = <
+  A extends z.ZodType,
+  O,
+  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
+  const F extends Functions = Record<never, never>,
+>(
+  definition: Omit<FunctionDefinition<"action", A, O, F>, "kind"> & {
+    functions?: F;
+  }
+) => Object.freeze({ ...definition, kind: "action" as const });
 
 // Erasure is private to dispatch; the generic definitions preserve app argument/result types.
-export type RegisteredFunction = {
+export interface RegisteredFunction<TOutput = unknown> {
   kind: FunctionKind;
   args: z.ZodType;
   result?: z.ZodType;
-  handler: (context: never) => unknown;
+  handler: (context: never) => TOutput;
   functions?: Functions;
   database?: DatabaseDefinition;
-};
+}
 export interface Functions {
   readonly [name: string]: RegisteredFunction | Functions;
 }
 
-export function isFunction(value: RegisteredFunction | Functions): value is RegisteredFunction {
-  return typeof value.kind === "string" && typeof value.handler === "function";
-}
+export const isFunction = (
+  value: RegisteredFunction | Functions
+): value is RegisteredFunction =>
+  typeof value.kind === "string" && typeof value.handler === "function";
 
-export function defineServer<const F extends Functions>(functions: F) {
+export const defineServer = <const F extends Functions>(functions: F) => {
   for (const [name, value] of Object.entries(functions)) {
     if (!/^[a-zA-Z][a-zA-Z0-9_]{0,63}$/u.test(name)) {
       throw new Error("Invalid function name");
     }
-    if (!isFunction(value)) defineServer(value);
+    if (!isFunction(value)) {
+      defineServer(value);
+    }
   }
   return Object.freeze({ functions });
-}
+};
 export type AppDefinition = ReturnType<typeof defineServer>;

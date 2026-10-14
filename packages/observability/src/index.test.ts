@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+
 import {
   initializeObservability,
   safeAttributes,
@@ -7,13 +8,14 @@ import {
 } from "./index";
 
 const registerOTel = vi.fn();
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const mockEnv = vi.hoisted(() => ({
   NODE_ENV: "development" as "development" | "production" | "test",
   OTEL_SERVICE_NAME: undefined as string | undefined,
   OTEL_TRACES_SAMPLER_ARG: undefined as string | undefined,
   TAILORKIT_OTEL_DISABLED: false,
   TAILORKIT_OTEL_SAMPLE_RATE: undefined as string | undefined,
-  VERCEL: undefined as string | undefined,
+  VERCEL: undefined as boolean | undefined,
   VERCEL_ENV: undefined as "production" | "preview" | "development" | undefined,
   VERCEL_GIT_COMMIT_SHA: undefined as string | undefined,
   VERCEL_REGION: undefined as string | undefined,
@@ -28,6 +30,7 @@ vi.mock("#env", () => ({
 }));
 
 describe("observability helpers", () => {
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
   afterEach(async () => {
     Object.assign(mockEnv, {
       NODE_ENV: "development",
@@ -41,7 +44,7 @@ describe("observability helpers", () => {
       VERCEL_REGION: undefined,
     });
     registerOTel.mockReset();
-    await shutdownObservability();
+    shutdownObservability();
   });
 
   it("drops sensitive attributes", () => {
@@ -51,7 +54,7 @@ describe("observability helpers", () => {
         "http.method": "GET",
         "request.headers": "cookie=value",
         "storage.key": "projects/id/file.js",
-      }),
+      })
     ).toEqual({
       "http.method": "GET",
     });
@@ -59,19 +62,21 @@ describe("observability helpers", () => {
 
   it("normalizes safe primitive values", () => {
     expect(safeAttributeValue(new Date("2026-01-01T00:00:00.000Z"))).toBe(
-      "2026-01-01T00:00:00.000Z",
+      "2026-01-01T00:00:00.000Z"
     );
     expect(safeAttributeValue(42)).toBe(42);
   });
 
   it("can be disabled in tests without registering an SDK", async () => {
     mockEnv.TAILORKIT_OTEL_DISABLED = true;
-    await expect(initializeObservability("test-service")).resolves.toBeUndefined();
+    await expect(
+      initializeObservability("test-service")
+    ).resolves.toBeUndefined();
   });
 
   it("deduplicates concurrent initialization", async () => {
     mockEnv.NODE_ENV = "production";
-    mockEnv.VERCEL = "1";
+    mockEnv.VERCEL = true;
     mockEnv.VERCEL_ENV = "preview";
     mockEnv.VERCEL_GIT_COMMIT_SHA = "abc123";
     mockEnv.TAILORKIT_OTEL_SAMPLE_RATE = "0.25";
@@ -85,26 +90,32 @@ describe("observability helpers", () => {
     expect(registerOTel).toHaveBeenCalledTimes(1);
     expect(registerOTel).toHaveBeenCalledWith(
       expect.objectContaining({
+        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
         attributes: expect.objectContaining({
           "deployment.environment.name": "preview",
           "service.name": "test-service",
           "service.version": "abc123",
         }),
+        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
         instrumentations: expect.arrayContaining(["auto"]),
         serviceName: "test-service",
-      }),
+      })
     );
   });
 
   it("resets initialization state after registration failure", async () => {
     mockEnv.NODE_ENV = "production";
-    mockEnv.VERCEL = "1";
+    mockEnv.VERCEL = true;
     registerOTel.mockImplementationOnce(() => {
       throw new Error("registration failed");
     });
 
-    await expect(initializeObservability("test-service")).rejects.toThrow("registration failed");
-    await expect(initializeObservability("test-service")).resolves.toBeUndefined();
+    await expect(initializeObservability("test-service")).rejects.toThrow(
+      "registration failed"
+    );
+    await expect(
+      initializeObservability("test-service")
+    ).resolves.toBeUndefined();
 
     expect(registerOTel).toHaveBeenCalledTimes(2);
   });

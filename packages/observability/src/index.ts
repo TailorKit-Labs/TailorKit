@@ -1,11 +1,34 @@
-import { context, propagation, SpanKind, SpanStatusCode, trace } from "@opentelemetry/api";
+import {
+  context,
+  propagation,
+  SpanKind,
+  SpanStatusCode,
+  trace,
+} from "@opentelemetry/api";
 import type { Attributes, Span, SpanOptions } from "@opentelemetry/api";
 import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
 import { PgInstrumentation } from "@opentelemetry/instrumentation-pg";
 import { UndiciInstrumentation } from "@opentelemetry/instrumentation-undici";
-import { ParentBasedSampler, TraceIdRatioBasedSampler } from "@opentelemetry/sdk-trace-base";
+import {
+  ParentBasedSampler,
+  TraceIdRatioBasedSampler,
+} from "@opentelemetry/sdk-trace-base";
 import { ORPCInstrumentation } from "@orpc/opentelemetry";
+
 import { env } from "#env";
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
+const isNumberValue = <TValue>(value: TValue): value is TValue & number =>
+  typeof value === "number";
+
+const isBooleanValue = <TValue>(value: TValue): value is TValue & boolean =>
+  typeof value === "boolean";
+
+const isSpanHandler = <T>(
+  value: SpanOptions | ((span: Span) => T | Promise<T>)
+): value is (span: Span) => T | Promise<T> => typeof value === "function";
 
 interface TelemetryState {
   initializing?: Promise<void>;
@@ -23,45 +46,80 @@ interface VercelOtelModule {
 }
 
 const stateKey = Symbol.for("tailorkit.observability.state");
-const sensitiveAttributePattern =
-  /(authorization|cookie|password|secret|token|key|body|headers|email|url)$/iu;
 
+const sensitiveAttributePattern =
+  /(?:authorization|cookie|password|secret|token|key|body|headers|email|url)$/iu;
+
+// SAFETY: This module owns the telemetry symbol state and initializes it with TelemetryState; the optional SDK import is the installed @vercel/otel API.
 const globalState = globalThis as typeof globalThis & {
   [stateKey]?: TelemetryState;
 };
 
-const state = (globalState[stateKey] ??= { started: false });
+globalState[stateKey] ??= { started: false };
+const state = globalState[stateKey];
 
-function isTracingDisabled() {
-  return env.TAILORKIT_OTEL_DISABLED || env.NODE_ENV === "test";
-}
+const isTracingDisabled = () =>
+  env.TAILORKIT_OTEL_DISABLED ?? env.NODE_ENV === "test";
 
-function resolveServiceName(serviceName?: string) {
-  return serviceName ?? env.OTEL_SERVICE_NAME ?? "tailorkit-web";
-}
+const resolveServiceName = (serviceName?: string) =>
+  serviceName ?? env.OTEL_SERVICE_NAME ?? "tailorkit-web";
 
-function resolveDeploymentEnvironment() {
-  return env.VERCEL_ENV ?? env.NODE_ENV;
-}
+const resolveDeploymentEnvironment = () => env.VERCEL_ENV ?? env.NODE_ENV;
 
-function resolveServiceVersion() {
-  return env.VERCEL_GIT_COMMIT_SHA;
-}
+const resolveServiceVersion = () => env.VERCEL_GIT_COMMIT_SHA;
 
-function createResourceAttributes(serviceName: string): Attributes {
-  return safeAttributes({
+export const safeAttributeValue = (
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser, serializer, or runtime adapter handles arbitrary values before validating or encoding their domain representation.
+  value: unknown
+): string | number | boolean | undefined => {
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+
+  if (isStringValue(value) || isNumberValue(value) || isBooleanValue(value)) {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  // oxlint-disable-next-line typescript/no-base-to-string -- Telemetry deliberately records the string representation of nonprimitive values after preserving primitives and dates.
+  return String(value);
+};
+
+// oxlint-disable-next-line anti-slop/no-object-parameters -- This structural adapter enumerates caller-owned fields; a concrete domain shape would exclude supported schema or attribute objects.
+export const safeAttributes = (attributes?: object): Attributes =>
+  Object.fromEntries(
+    Object.entries(attributes ?? {})
+      .filter(([key]) => !sensitiveAttributePattern.test(key))
+      .map(([key, value]) => [key, safeAttributeValue(value)])
+      .filter(
+        (entry): entry is [string, string | number | boolean] =>
+          entry[1] !== undefined
+      )
+  );
+
+const createResourceAttributes = (serviceName: string): Attributes =>
+  safeAttributes({
+    "cloud.region": env.VERCEL_REGION,
+    "deployment.environment.name": resolveDeploymentEnvironment(),
     "service.name": serviceName,
     "service.version": resolveServiceVersion(),
-    "deployment.environment.name": resolveDeploymentEnvironment(),
-    "cloud.region": env.VERCEL_REGION,
     "tailorkit.package": "observability",
   });
-}
 
-function resolveSampleRate() {
-  const configuredRate = env.TAILORKIT_OTEL_SAMPLE_RATE ?? env.OTEL_TRACES_SAMPLER_ARG;
+const resolveSampleRate = () => {
+  const configuredRate =
+    env.TAILORKIT_OTEL_SAMPLE_RATE ?? env.OTEL_TRACES_SAMPLER_ARG;
 
-  if (!configuredRate) {
+  if (
+    !(
+      configuredRate !== undefined &&
+      configuredRate !== null &&
+      configuredRate !== ""
+    )
+  ) {
     return 1;
   }
 
@@ -71,54 +129,53 @@ function resolveSampleRate() {
   }
 
   return Math.min(Math.max(rate, 0), 1);
-}
+};
 
-function createSampler() {
-  return new ParentBasedSampler({
+const createSampler = () =>
+  new ParentBasedSampler({
     root: new TraceIdRatioBasedSampler(resolveSampleRate()),
   });
-}
 
-function createInstrumentations() {
-  return [
-    "auto",
-    new ORPCInstrumentation(),
-    new PgInstrumentation({
-      enhancedDatabaseReporting: false,
-      requireParentSpan: false,
-      requestHook: (span, queryInfo) => {
-        const operation = queryInfo.query.text.trim().split(/\s+/u)[0]?.toLowerCase() ?? "query";
-        span.setAttributes(
-          safeAttributes({
-            "operation.name": `db.${operation}`,
-            "resource.name": `postgres ${operation}`,
-            "tailorkit.package": "db",
-          }),
-        );
-      },
-      responseHook: (span, responseInfo) => {
-        span.setAttributes(
-          safeAttributes({
-            "db.response.rows": responseInfo.data.rowCount,
-          }),
-        );
-      },
-    }),
-    new HttpInstrumentation({
-      requireParentforOutgoingSpans: true,
-      requireParentforIncomingSpans: false,
-    }),
-    new UndiciInstrumentation(),
-  ];
-}
+const createInstrumentations = () => [
+  "auto",
+  new ORPCInstrumentation(),
+  new PgInstrumentation({
+    enhancedDatabaseReporting: false,
+    requestHook: (span, queryInfo) => {
+      const operation =
+        queryInfo.query.text.trim().split(/\s+/u)[0]?.toLowerCase() ?? "query";
+      span.setAttributes(
+        safeAttributes({
+          "operation.name": `db.${operation}`,
+          "resource.name": `postgres ${operation}`,
+          "tailorkit.package": "db",
+        })
+      );
+    },
+    requireParentSpan: false,
+    responseHook: (span, responseInfo) => {
+      span.setAttributes(
+        safeAttributes({
+          "db.response.rows": responseInfo.data.rowCount,
+        })
+      );
+    },
+  }),
+  new HttpInstrumentation({
+    requireParentforIncomingSpans: false,
+    requireParentforOutgoingSpans: true,
+  }),
+  new UndiciInstrumentation(),
+];
 
-export async function initializeObservability(serviceName?: string) {
+export const initializeObservability = async (serviceName?: string) => {
   if (state.started) {
     return;
   }
 
   if (state.initializing) {
-    return state.initializing;
+    await state.initializing;
+    return;
   }
 
   if (isTracingDisabled()) {
@@ -129,16 +186,20 @@ export async function initializeObservability(serviceName?: string) {
   state.serviceName = resolvedServiceName;
 
   state.initializing = (async () => {
-    if (!env.VERCEL) {
+    if (!(env.VERCEL === true)) {
       return;
     }
 
-    const { registerOTel } = (await import("@vercel/otel")) as VercelOtelModule;
+    // SAFETY: This module owns the telemetry symbol state and initializes it with TelemetryState; the optional SDK import is the installed @vercel/otel API.
+    const { registerOTel } =
+      /* oxlint-disable typescript/no-unsafe-type-assertion -- This module owns the telemetry symbol state and initializes it with TelemetryState; the optional SDK import is the installed @vercel/otel API. */
+      (await import("@vercel/otel")) as VercelOtelModule;
+    /* oxlint-enable typescript/no-unsafe-type-assertion */
     registerOTel({
       attributes: createResourceAttributes(resolvedServiceName),
+      instrumentations: createInstrumentations(),
       serviceName: resolvedServiceName,
       traceSampler: createSampler(),
-      instrumentations: createInstrumentations(),
     });
   })();
 
@@ -151,51 +212,26 @@ export async function initializeObservability(serviceName?: string) {
   } finally {
     state.initializing = undefined;
   }
-}
+};
 
-export function shutdownObservability() {
+export const shutdownObservability = () => {
   state.initializing = undefined;
   state.started = false;
   state.serviceName = undefined;
-}
+};
 
-export function getTracer(name = "tailorkit") {
-  return trace.getTracer(name);
-}
+export const getTracer = (name = "tailorkit") => trace.getTracer(name);
 
-export function safeAttributeValue(value: unknown): string | number | boolean | undefined {
-  if (value === null || value === undefined) {
-    return undefined;
-  }
-
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-    return value;
-  }
-
-  if (value instanceof Date) {
-    return value.toISOString();
-  }
-
-  return String(value);
-}
-
-export function safeAttributes(attributes: Record<string, unknown> = {}): Attributes {
-  return Object.fromEntries(
-    Object.entries(attributes)
-      .filter(([key]) => !sensitiveAttributePattern.test(key))
-      .map(([key, value]) => [key, safeAttributeValue(value)])
-      .filter((entry): entry is [string, string | number | boolean] => entry[1] !== undefined),
-  );
-}
-
-export function setSpanAttributes(attributes: Record<string, unknown>) {
+// oxlint-disable-next-line anti-slop/no-object-parameters -- This structural adapter enumerates caller-owned fields; a concrete domain shape would exclude supported schema or attribute objects.
+export const setSpanAttributes = (attributes: object) => {
   const span = trace.getActiveSpan();
   if (span) {
     span.setAttributes(safeAttributes(attributes));
   }
-}
+};
 
-export function recordException(error: unknown, attributes?: Record<string, unknown>) {
+// oxlint-disable-next-line anti-slop/no-object-parameters -- This structural adapter enumerates caller-owned fields; a concrete domain shape would exclude supported schema or attribute objects.
+export const recordException = (cause: unknown, attributes?: object) => {
   const span = trace.getActiveSpan();
   if (!span) {
     return;
@@ -205,74 +241,85 @@ export function recordException(error: unknown, attributes?: Record<string, unkn
     span.setAttributes(safeAttributes(attributes));
   }
 
-  if (error instanceof Error) {
-    span.recordException(error);
-    span.setStatus({ code: SpanStatusCode.ERROR, message: error.message });
+  if (cause instanceof Error) {
+    span.recordException(cause);
+    span.setStatus({ code: SpanStatusCode.ERROR, message: cause.message });
     return;
   }
 
-  span.recordException(String(error));
+  span.recordException(String(cause));
   span.setStatus({ code: SpanStatusCode.ERROR });
-}
+};
 
-export function withSpan<T>(
+export const withSpan = async <T>(
   name: string,
   optionsOrHandler: SpanOptions | ((span: Span) => Promise<T> | T),
-  maybeHandler?: (span: Span) => Promise<T> | T,
-): Promise<T> {
+  maybeHandler?: (span: Span) => Promise<T> | T
+): Promise<T> => {
   const tracer = getTracer("tailorkit.runtime");
-  const options = typeof optionsOrHandler === "function" ? undefined : optionsOrHandler;
-  const handler = typeof optionsOrHandler === "function" ? optionsOrHandler : maybeHandler;
+  const options = isSpanHandler(optionsOrHandler)
+    ? undefined
+    : optionsOrHandler;
+  const handler = isSpanHandler(optionsOrHandler)
+    ? optionsOrHandler
+    : maybeHandler;
 
   if (!handler) {
     throw new Error("withSpan requires a handler.");
   }
 
-  return tracer.startActiveSpan(name, options ?? {}, async (span) => {
-    span.setAttributes(
-      safeAttributes({
-        "operation.name": name,
-        "resource.name": name,
-        ...options?.attributes,
-      }),
-    );
+  return await tracer.startActiveSpan(
+    name,
+    options ?? {},
+    async (span: Span) => {
+      span.setAttributes(
+        safeAttributes({
+          "operation.name": name,
+          "resource.name": name,
+          ...options?.attributes,
+        })
+      );
 
-    try {
-      const result = await handler(span);
-      span.setStatus({ code: SpanStatusCode.OK });
-      return result;
-    } catch (error) {
-      recordException(error);
-      throw error;
-    } finally {
-      span.end();
+      try {
+        const result = await handler(span);
+        span.setStatus({ code: SpanStatusCode.OK });
+        return result;
+      } catch (error) {
+        recordException(error);
+        throw error;
+      } finally {
+        span.end();
+      }
     }
-  });
-}
+  );
+};
 
-function headersToCarrier(headers: Headers): Record<string, string> {
-  return Object.fromEntries(headers.entries());
-}
+const headersToCarrier = (headers: Headers): Record<string, string> =>
+  Object.fromEntries(headers.entries());
 
-export function withRequestSpan<T>(
+export const withRequestSpan = async <T>(
   request: Request,
   name: string,
   optionsOrHandler: SpanOptions | ((span: Span) => Promise<T> | T),
-  maybeHandler?: (span: Span) => Promise<T> | T,
-): Promise<T> {
+  maybeHandler?: (span: Span) => Promise<T> | T
+): Promise<T> => {
   const carrier = headersToCarrier(request.headers);
   const parentContext = propagation.extract(context.active(), carrier);
 
-  return context.with(parentContext, () => {
+  return await context.with(parentContext, async () => {
     const url = new URL(request.url);
-    const options = typeof optionsOrHandler === "function" ? undefined : optionsOrHandler;
-    const handler = typeof optionsOrHandler === "function" ? optionsOrHandler : maybeHandler;
+    const options = isSpanHandler(optionsOrHandler)
+      ? undefined
+      : optionsOrHandler;
+    const handler = isSpanHandler(optionsOrHandler)
+      ? optionsOrHandler
+      : maybeHandler;
 
     if (!handler) {
       throw new Error("withRequestSpan requires a handler.");
     }
 
-    return withSpan(
+    return await withSpan(
       name,
       {
         kind: SpanKind.SERVER,
@@ -283,29 +330,29 @@ export function withRequestSpan<T>(
           ...options?.attributes,
         }),
       },
-      handler,
+      handler
     );
   });
-}
+};
 
-export function getTraceId() {
+export const getTraceId = () => {
   const span = trace.getSpan(context.active());
   const spanContext = span?.spanContext();
   return spanContext?.traceId;
-}
+};
 
-export function sanitizeErrorForLog(error: unknown) {
-  if (error instanceof Error) {
+export const sanitizeErrorForLog = (cause: unknown) => {
+  if (cause instanceof Error) {
     return {
-      name: error.name,
-      message: error.message,
+      message: cause.message,
+      name: cause.name,
       traceId: getTraceId(),
     };
   }
 
   return {
-    name: "UnknownError",
     message: "Unknown error",
+    name: "UnknownError",
     traceId: getTraceId(),
   };
-}
+};

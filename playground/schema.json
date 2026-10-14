@@ -855,34 +855,104 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                "enum": [
+                  "none",
+                  "2xs",
+                  "xs",
+                  "sm",
+                  "md",
+                  "lg",
+                  "xl",
+                  "2xl",
+                  "3xl"
+                ]
               },
               {
                 "type": "object",
                 "properties": {
                   "base": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "sm": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "md": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "lg": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "2xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -1493,34 +1563,104 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                "enum": [
+                  "none",
+                  "2xs",
+                  "xs",
+                  "sm",
+                  "md",
+                  "lg",
+                  "xl",
+                  "2xl",
+                  "3xl"
+                ]
               },
               {
                 "type": "object",
                 "properties": {
                   "base": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "sm": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "md": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "lg": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "2xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -1531,34 +1671,104 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                "enum": [
+                  "none",
+                  "2xs",
+                  "xs",
+                  "sm",
+                  "md",
+                  "lg",
+                  "xl",
+                  "2xl",
+                  "3xl"
+                ]
               },
               {
                 "type": "object",
                 "properties": {
                   "base": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "sm": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "md": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "lg": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "2xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -1670,27 +1880,69 @@
                 "properties": {
                   "base": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   },
                   "sm": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   },
                   "md": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   },
                   "lg": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   },
                   "xl": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   },
                   "2xl": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -2820,34 +3072,104 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                "enum": [
+                  "none",
+                  "2xs",
+                  "xs",
+                  "sm",
+                  "md",
+                  "lg",
+                  "xl",
+                  "2xl",
+                  "3xl"
+                ]
               },
               {
                 "type": "object",
                 "properties": {
                   "base": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "sm": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "md": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "lg": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "2xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -3458,34 +3780,104 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                "enum": [
+                  "none",
+                  "2xs",
+                  "xs",
+                  "sm",
+                  "md",
+                  "lg",
+                  "xl",
+                  "2xl",
+                  "3xl"
+                ]
               },
               {
                 "type": "object",
                 "properties": {
                   "base": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "sm": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "md": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "lg": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "2xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -3496,34 +3888,104 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                "enum": [
+                  "none",
+                  "2xs",
+                  "xs",
+                  "sm",
+                  "md",
+                  "lg",
+                  "xl",
+                  "2xl",
+                  "3xl"
+                ]
               },
               {
                 "type": "object",
                 "properties": {
                   "base": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "sm": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "md": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "lg": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "2xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -3635,27 +4097,69 @@
                 "properties": {
                   "base": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   },
                   "sm": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   },
                   "md": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   },
                   "lg": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   },
                   "xl": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   },
                   "2xl": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -4286,34 +4790,104 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                "enum": [
+                  "none",
+                  "2xs",
+                  "xs",
+                  "sm",
+                  "md",
+                  "lg",
+                  "xl",
+                  "2xl",
+                  "3xl"
+                ]
               },
               {
                 "type": "object",
                 "properties": {
                   "base": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "sm": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "md": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "lg": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "2xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -5339,34 +5913,104 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                "enum": [
+                  "none",
+                  "2xs",
+                  "xs",
+                  "sm",
+                  "md",
+                  "lg",
+                  "xl",
+                  "2xl",
+                  "3xl"
+                ]
               },
               {
                 "type": "object",
                 "properties": {
                   "base": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "sm": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "md": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "lg": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "2xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -5977,34 +6621,104 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                "enum": [
+                  "none",
+                  "2xs",
+                  "xs",
+                  "sm",
+                  "md",
+                  "lg",
+                  "xl",
+                  "2xl",
+                  "3xl"
+                ]
               },
               {
                 "type": "object",
                 "properties": {
                   "base": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "sm": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "md": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "lg": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "2xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -6015,34 +6729,104 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                "enum": [
+                  "none",
+                  "2xs",
+                  "xs",
+                  "sm",
+                  "md",
+                  "lg",
+                  "xl",
+                  "2xl",
+                  "3xl"
+                ]
               },
               {
                 "type": "object",
                 "properties": {
                   "base": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "sm": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "md": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "lg": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "2xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -6154,27 +6938,69 @@
                 "properties": {
                   "base": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   },
                   "sm": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   },
                   "md": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   },
                   "lg": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   },
                   "xl": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   },
                   "2xl": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -6767,34 +7593,104 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                "enum": [
+                  "none",
+                  "2xs",
+                  "xs",
+                  "sm",
+                  "md",
+                  "lg",
+                  "xl",
+                  "2xl",
+                  "3xl"
+                ]
               },
               {
                 "type": "object",
                 "properties": {
                   "base": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "sm": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "md": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "lg": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "2xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -6892,34 +7788,104 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                "enum": [
+                  "none",
+                  "2xs",
+                  "xs",
+                  "sm",
+                  "md",
+                  "lg",
+                  "xl",
+                  "2xl",
+                  "3xl"
+                ]
               },
               {
                 "type": "object",
                 "properties": {
                   "base": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "sm": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "md": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "lg": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "2xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -6968,34 +7934,104 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                "enum": [
+                  "none",
+                  "2xs",
+                  "xs",
+                  "sm",
+                  "md",
+                  "lg",
+                  "xl",
+                  "2xl",
+                  "3xl"
+                ]
               },
               {
                 "type": "object",
                 "properties": {
                   "base": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "sm": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "md": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "lg": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "2xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -7006,34 +8042,104 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                "enum": [
+                  "none",
+                  "2xs",
+                  "xs",
+                  "sm",
+                  "md",
+                  "lg",
+                  "xl",
+                  "2xl",
+                  "3xl"
+                ]
               },
               {
                 "type": "object",
                 "properties": {
                   "base": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "sm": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "md": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "lg": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   },
                   "2xl": {
                     "type": "string",
-                    "enum": ["none", "2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl"]
+                    "enum": [
+                      "none",
+                      "2xs",
+                      "xs",
+                      "sm",
+                      "md",
+                      "lg",
+                      "xl",
+                      "2xl",
+                      "3xl"
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -7051,27 +8157,69 @@
                 "properties": {
                   "base": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   },
                   "sm": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   },
                   "md": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   },
                   "lg": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   },
                   "xl": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   },
                   "2xl": {
                     "type": "string",
-                    "enum": ["left", "right", "start", "end", "center", "justify"]
+                    "enum": [
+                      "left",
+                      "right",
+                      "start",
+                      "end",
+                      "center",
+                      "justify"
+                    ]
                   }
                 },
                 "additionalProperties": false

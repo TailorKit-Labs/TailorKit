@@ -1,7 +1,11 @@
-import { expect, it, vi } from "vite-plus/test";
-import type { StandardJSONSchemaV1, StandardSchemaV1 } from "@standard-schema/spec";
-import * as v from "valibot";
+import type {
+  StandardJSONSchemaV1,
+  StandardSchemaV1,
+} from "@standard-schema/spec";
 import { type } from "arktype";
+import * as v from "valibot";
+import { expect, it, vi } from "vite-plus/test";
+
 import { jsonSchemaSerializer, serializeSchema } from "./shared";
 
 it("passes the output mode and current target to a JSON Schema converter", () => {
@@ -33,13 +37,15 @@ it("selects the matching Standard JSON Schema method and defaults to output", ()
   const output = vi.fn(() => outputSchema);
   const schema: StandardSchemaV1 & StandardJSONSchemaV1 = {
     "~standard": {
-      version: 1,
-      vendor: "test",
-      validate: (value) => ({ value }),
       jsonSchema: { input, output },
+      validate: (value) => ({ value }),
+      vendor: "test",
+      version: 1,
     },
   };
-  expect(serializeSchema(schema, jsonSchemaSerializer, "input")).toBe(inputSchema);
+  expect(serializeSchema(schema, jsonSchemaSerializer, "input")).toBe(
+    inputSchema
+  );
   expect(input).toHaveBeenCalledExactlyOnceWith({ target: "draft-2020-12" });
   expect(output).not.toHaveBeenCalled();
   expect(serializeSchema(schema, jsonSchemaSerializer)).toBe(outputSchema);
@@ -61,14 +67,18 @@ it("serializes ArkType morph inputs before parsing and outputs after parsing", (
 });
 
 it("preserves plain JSON Schema serializers, including extension properties", () => {
-  const jsonSchema = { type: "string", "~standard": { description: "Extension" } };
+  const jsonSchema = {
+    type: "string",
+    "~standard": { description: "Extension" },
+  };
   expect(serializeSchema(v.string(), () => jsonSchema)).toBe(jsonSchema);
-  expect(serializeSchema(v.string(), () => undefined)).toBeUndefined();
+  expect(serializeSchema(v.string(), () => {})).toBeUndefined();
 });
 
 it("does not invoke serialization for absent schemas or serializers", () => {
   const serializer = vi.fn(() => ({ type: "string" }));
   expect(serializeSchema(undefined, serializer)).toBeUndefined();
   expect(serializer).not.toHaveBeenCalled();
+  // oxlint-disable-next-line unicorn/no-useless-undefined -- Preserve the original explicit argument and argument-count semantics.
   expect(serializeSchema(v.string(), undefined)).toBeUndefined();
 });

@@ -1,69 +1,102 @@
 import { createHash } from "node:crypto";
-import {
-  scopeSchema as namedScopeSchema,
-  scopeValueSchema,
-  scopesSchema,
+
+import { scopesSchema } from "@tailorkit/db/schema/scope";
+import type { JsonObject, JsonValue, Scope } from "@tailorkit/db/schema/scope";
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
+const isBooleanValue = <TValue>(value: TValue): value is TValue & boolean =>
+  typeof value === "boolean";
+
+const isNumberValue = <TValue>(value: TValue): value is TValue & number =>
+  typeof value === "number";
+
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
+
+export {
   type JsonObject,
   type JsonValue,
   type Scope,
 } from "@tailorkit/db/schema/scope";
-
-export const scopeSchema = namedScopeSchema;
-export { scopeValueSchema, scopesSchema };
-export type { JsonObject, JsonValue, Scope };
+export {
+  scopeSchema,
+  scopeValueSchema,
+  scopesSchema,
+} from "@tailorkit/db/schema/scope";
 
 const maxObjectEntries = 32;
+
 const maxArrayEntries = 100;
+
 const maxStringLength = 255;
+
 const maxKeyLength = 64;
+
 const maxDepth = 16;
+
 const maxNodes = 512;
+
 const maxSerializedBytes = 16 * 1024;
 
-function isPlainRecord(value: unknown): value is Record<string, unknown> {
+const isPlainRecord = (value: unknown): value is object => {
   if (
     value === null ||
     typeof value !== "object" ||
     Array.isArray(value) ||
-    (Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null)
+    (Object.getPrototypeOf(value) !== Object.prototype &&
+      Object.getPrototypeOf(value) !== null)
   ) {
     return false;
   }
   return true;
-}
+};
 
-function validateOwnDataProperties(value: object, keys: readonly PropertyKey[]) {
+const validateOwnDataProperties = (
+  // oxlint-disable-next-line anti-slop/no-object-parameters -- This structural adapter enumerates caller-owned fields; a concrete domain shape would exclude supported schema or attribute objects.
+  value: object,
+  keys: readonly PropertyKey[]
+) => {
   for (const key of keys) {
-    if (typeof key !== "string") {
+    if (!isStringValue(key)) {
       throw new TypeError("Scope values cannot contain symbol keys.");
     }
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
-    if (!descriptor || !("value" in descriptor) || !descriptor.enumerable) {
-      throw new TypeError("Scope values must use enumerable own data properties.");
+    if (
+      !descriptor ||
+      !("value" in descriptor) ||
+      !(descriptor.enumerable === true)
+    ) {
+      throw new TypeError(
+        "Scope values must use enumerable own data properties."
+      );
     }
   }
-}
+};
 
-function canonicalizeJsonValue(
+// oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
+const canonicalizeJsonValue = (
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser rejects non-JSON values, accessors, cycles and invalid scope identities before returning the canonical domain value.
   value: unknown,
   state: { active: WeakSet<object>; nodes: number },
-  depth: number,
-): JsonValue {
+  depth: number
+): JsonValue => {
   state.nodes += 1;
   if (state.nodes > maxNodes) {
     throw new TypeError("Scope value cannot contain more than 512 values.");
   }
 
-  if (value === null || typeof value === "boolean") {
+  if (value === null || isBooleanValue(value)) {
     return value;
   }
-  if (typeof value === "string") {
+  if (isStringValue(value)) {
     if (value.length > maxStringLength) {
       throw new TypeError("Scope strings cannot exceed 255 characters.");
     }
     return value;
   }
-  if (typeof value === "number") {
+  if (isNumberValue(value)) {
     if (!Number.isFinite(value) || Object.is(value, -0)) {
       throw new TypeError("Scope numbers must be finite and cannot be -0.");
     }
@@ -72,7 +105,7 @@ function canonicalizeJsonValue(
     }
     return value;
   }
-  if (typeof value !== "object") {
+  if (!isObjectValue(value)) {
     throw new TypeError("Scope values must contain only JSON values.");
   }
   if (depth > maxDepth) {
@@ -85,26 +118,40 @@ function canonicalizeJsonValue(
   state.active.add(value);
   if (Array.isArray(value)) {
     if (Object.getPrototypeOf(value) !== Array.prototype) {
-      throw new TypeError("Scope arrays must use the standard array prototype.");
+      throw new TypeError(
+        "Scope arrays must use the standard array prototype."
+      );
     }
     if (value.length > maxArrayEntries) {
       throw new TypeError("Scope arrays cannot contain more than 100 entries.");
     }
     const ownKeys = Reflect.ownKeys(value);
     if (ownKeys.length !== value.length + 1 || !ownKeys.includes("length")) {
-      throw new TypeError("Scope arrays must be dense and cannot have extra properties.");
+      throw new TypeError(
+        "Scope arrays must be dense and cannot have extra properties."
+      );
     }
     validateOwnDataProperties(
       value,
-      ownKeys.filter((key): key is string => key !== "length"),
+      ownKeys.filter((key): key is string => key !== "length")
     );
     const canonical: JsonValue[] = [];
     for (let index = 0; index < value.length; index += 1) {
       const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
-      if (!descriptor || !("value" in descriptor) || !descriptor.enumerable) {
-        throw new TypeError("Scope arrays must be dense and cannot contain accessors.");
+      if (
+        !descriptor ||
+        !("value" in descriptor) ||
+        !(descriptor.enumerable === true)
+      ) {
+        throw new TypeError(
+          "Scope arrays must be dense and cannot contain accessors."
+        );
       }
-      canonical[index] = canonicalizeJsonValue(descriptor.value, state, depth + 1);
+      canonical[index] = canonicalizeJsonValue(
+        descriptor.value,
+        state,
+        depth + 1
+      );
     }
     state.active.delete(value);
     return canonical;
@@ -118,14 +165,15 @@ function canonicalizeJsonValue(
     throw new TypeError("Scope objects cannot contain more than 32 entries.");
   }
   validateOwnDataProperties(value, ownKeys);
-  const keys = ownKeys as string[];
+  const keys = ownKeys.filter(isStringValue);
   for (const key of keys) {
     if (key === "__proto__" || key.length === 0 || key.length > maxKeyLength) {
       throw new TypeError("Scope object keys must contain 1–64 characters.");
     }
   }
+  // oxlint-disable-next-line typescript/no-unsafe-assignment -- Object.create(null) is typed as any by the standard library; this empty registry is populated only through the typed assignments below.
   const canonical: Record<string, JsonValue> = Object.create(null);
-  for (const key of keys.sort()) {
+  for (const key of keys.toSorted()) {
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
     if (!descriptor || !("value" in descriptor)) {
       throw new TypeError("Scope values cannot contain accessors.");
@@ -134,9 +182,41 @@ function canonicalizeJsonValue(
   }
   state.active.delete(value);
   return canonical;
-}
+};
 
-function canonicalizeScopeValue(value: unknown): JsonObject {
+const serializeJsonValue = (value: JsonValue): string => {
+  if (value === null) {
+    return "null";
+  }
+  if (isStringValue(value)) {
+    return JSON.stringify(value);
+  }
+  if (isNumberValue(value) || isBooleanValue(value)) {
+    const serialized = JSON.stringify(value);
+    if (serialized === undefined) {
+      throw new TypeError("Scope value is not valid JSON.");
+    }
+    return serialized;
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => serializeJsonValue(item)).join(",")}]`;
+  }
+  return `{${Object.keys(value)
+    .toSorted()
+    .map(
+      // SAFETY: Object.keys enumerates own entries of this canonical JsonObject, whose values cannot be undefined.
+      (key) =>
+        `${JSON.stringify(key)}:${serializeJsonValue(
+          /* oxlint-disable typescript/no-unsafe-type-assertion -- Object.keys enumerates own entries of this canonical JsonObject, whose values cannot be undefined. */
+          value[key] as JsonValue
+          /* oxlint-enable typescript/no-unsafe-type-assertion */
+        )}`
+    )
+    .join(",")}}`;
+};
+
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser rejects non-JSON values, accessors, cycles and invalid scope identities before returning the canonical domain value.
+const canonicalizeScopeValue = (value: unknown): JsonObject => {
   if (!isPlainRecord(value)) {
     throw new TypeError("Named scope value must be a plain object.");
   }
@@ -145,6 +225,7 @@ function canonicalizeScopeValue(value: unknown): JsonObject {
   if (
     Array.isArray(canonicalValue) ||
     canonicalValue === null ||
+    // oxlint-disable-next-line anti-slop/no-runtime-typeof -- Narrow the closed canonical JSON union to its object member.
     typeof canonicalValue !== "object"
   ) {
     throw new TypeError("Named scope value must be a plain object.");
@@ -152,78 +233,87 @@ function canonicalizeScopeValue(value: unknown): JsonObject {
   if (Object.keys(canonicalValue).length === 0) {
     throw new TypeError("Named scope value must contain at least one entry.");
   }
-  if (Buffer.byteLength(serializeJsonValue(canonicalValue), "utf8") > maxSerializedBytes) {
-    throw new TypeError("Named scope value cannot exceed 16 KiB when serialized.");
+  if (
+    Buffer.byteLength(serializeJsonValue(canonicalValue), "utf-8") >
+    maxSerializedBytes
+  ) {
+    throw new TypeError(
+      "Named scope value cannot exceed 16 KiB when serialized."
+    );
   }
   return canonicalValue;
-}
+};
 
-function serializeJsonValue(value: JsonValue): string {
-  if (value === null) return "null";
-  if (typeof value === "string") return JSON.stringify(value);
-  if (typeof value === "number" || typeof value === "boolean") {
-    const serialized = JSON.stringify(value);
-    if (serialized === undefined) throw new TypeError("Scope value is not valid JSON.");
-    return serialized;
-  }
-  if (Array.isArray(value)) {
-    return `[${value.map((item) => serializeJsonValue(item)).join(",")}]`;
-  }
-  return `{${Object.keys(value)
-    .sort()
-    .map((key) => `${JSON.stringify(key)}:${serializeJsonValue(value[key] as JsonValue)}`)
-    .join(",")}}`;
-}
+const serializeScope = (scope: Scope): string =>
+  `{"name":${JSON.stringify(scope.name)},"value":${serializeJsonValue(scope.value)}}`;
 
-function serializeScope(scope: Scope): string {
-  return `{"name":${JSON.stringify(scope.name)},"value":${serializeJsonValue(scope.value)}}`;
+export interface CanonicalScope {
+  scope: Scope;
+  scopeKey: string;
 }
 
 /** Validates and recursively canonicalizes a named scope before deriving its stable key. */
-export function canonicalizeScope(value: unknown): { scope: Scope; scopeKey: string } {
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser rejects non-JSON values, accessors, cycles and invalid scope identities before returning the canonical domain value.
+export const canonicalizeScope = (value: unknown): CanonicalScope => {
   if (!isPlainRecord(value)) {
     throw new TypeError("Scope must be a plain object.");
   }
   const keys = Reflect.ownKeys(value);
   validateOwnDataProperties(value, keys);
   if (keys.length !== 2 || !keys.includes("name") || !keys.includes("value")) {
-    throw new TypeError("Named scope must contain only name and value properties.");
-  }
-  const name = (value as Record<string, unknown>).name;
-  if (typeof name !== "string" || !/^[A-Za-z][A-Za-z0-9_-]{0,63}$/u.test(name)) {
     throw new TypeError(
-      "Scope name must be 1–64 letters, digits, underscores, or hyphens and start with a letter.",
+      "Named scope must contain only name and value properties."
     );
   }
-  const valueScope = canonicalizeScopeValue((value as Record<string, unknown>).value);
-  const scope = Object.create(null) as Scope;
-  scope.name = name;
-  scope.value = valueScope;
+  const name: unknown = Object.getOwnPropertyDescriptor(value, "name")?.value;
+  if (!isStringValue(name) || !/^[A-Za-z][A-Za-z0-9_-]{0,63}$/u.test(name)) {
+    throw new TypeError(
+      "Scope name must be 1–64 letters, digits, underscores, or hyphens and start with a letter."
+    );
+  }
+  const valueScope = canonicalizeScopeValue(
+    Object.getOwnPropertyDescriptor(value, "value")?.value
+  );
+  // oxlint-disable-next-line typescript/no-unsafe-assignment -- Object.create(null) is typed as any by the standard library; this empty registry is populated only through the typed assignments below.
+  const scope: Scope = Object.assign(Object.create(null), {
+    name,
+    value: valueScope,
+  });
   const serialized = serializeScope(scope);
-  const scopeKey = createHash("sha256").update(`scope:v2:${serialized}`).digest("hex").slice(0, 32);
+  const scopeKey = createHash("sha256")
+    .update(`scope:v2:${serialized}`)
+    .digest("hex")
+    .slice(0, 32);
   return { scope, scopeKey };
-}
+};
 
 /** Canonicalizes an exact set of named identities for one multi-scope read. */
-export function canonicalizeScopes(value: unknown) {
+export const canonicalizeScopes = (
+  value: Parameters<typeof scopesSchema.parse>[0]
+) => {
   const parsed = scopesSchema.parse(value);
   const scopes = parsed.map((scope) => canonicalizeScope(scope));
   const seen = new Set<string>();
   for (const entry of scopes) {
     const serialized = serializeScope(entry.scope);
     if (seen.has(serialized)) {
-      throw new TypeError("Multi-scope reads cannot contain duplicate identities.");
+      throw new TypeError(
+        "Multi-scope reads cannot contain duplicate identities."
+      );
     }
     seen.add(serialized);
   }
   return scopes;
-}
+};
 
-export function scopeMatches(left: unknown, right: unknown): boolean {
+export const scopeMatches = (
+  left: Parameters<typeof canonicalizeScope>[0],
+  right: Parameters<typeof canonicalizeScope>[0]
+): boolean => {
   const canonicalLeft = canonicalizeScope(left);
   const canonicalRight = canonicalizeScope(right);
   return (
     canonicalLeft.scopeKey === canonicalRight.scopeKey &&
     serializeScope(canonicalLeft.scope) === serializeScope(canonicalRight.scope)
   );
-}
+};

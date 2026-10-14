@@ -2,7 +2,7 @@ import type { StorageBody, UploadToUrlInput } from "./types.js";
 
 type FetchBody = NonNullable<RequestInit["body"]>;
 
-function getBodySize(body: StorageBody): number | undefined {
+const getBodySize = (body: StorageBody): number | undefined => {
   if (body instanceof Blob) {
     return body.size;
   }
@@ -16,19 +16,24 @@ function getBodySize(body: StorageBody): number | undefined {
   }
 
   return undefined;
-}
+};
 
-function toFetchBody(body: StorageBody): FetchBody {
+const toFetchBody = (body: StorageBody): FetchBody => {
   if (body instanceof Buffer) {
     return new Uint8Array(body);
   }
 
+  // SAFETY: StorageBody contains fetch-compatible binary or stream bodies; Node Buffer is normalized to Uint8Array before forwarding.
   return body as FetchBody;
-}
+};
 
-export async function uploadToUrl(input: UploadToUrlInput): Promise<void> {
+export const uploadToUrl = async (input: UploadToUrlInput): Promise<void> => {
   const size = getBodySize(input.body);
-  if (input.maxBytes !== undefined && size !== undefined && size > input.maxBytes) {
+  if (
+    input.maxBytes !== undefined &&
+    size !== undefined &&
+    size > input.maxBytes
+  ) {
     throw new Error(`Upload body exceeds ${input.maxBytes} bytes.`);
   }
 
@@ -44,6 +49,8 @@ export async function uploadToUrl(input: UploadToUrlInput): Promise<void> {
   });
 
   if (!response.ok) {
-    throw new Error(`Upload failed with ${response.status} ${response.statusText}.`);
+    throw new Error(
+      `Upload failed with ${response.status} ${response.statusText}.`
+    );
   }
-}
+};

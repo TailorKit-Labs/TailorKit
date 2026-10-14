@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
+
 import { toolNativeSandbox, toolSandbox } from "./utils";
 
 const mocks = vi.hoisted(() => ({
   getSandbox: vi.fn(),
-  runCommand: vi.fn(),
   read: vi.fn(),
+  runCommand: vi.fn(),
   write: vi.fn(),
 }));
 vi.mock("../sandbox", () => ({
@@ -14,19 +15,25 @@ vi.mock("../sandbox", () => ({
 vi.mock("workflow", () => ({ FatalError: class extends Error {} }));
 
 const session = {
-  runCommand: mocks.runCommand,
   readFileToBuffer: mocks.read,
+  runCommand: mocks.runCommand,
   writeFiles: mocks.write,
 };
-const options = { toolCallId: "call-1", messages: [], context: { sandboxName: "app-agent-run-1" } };
+const options = {
+  context: { sandboxName: "app-agent-run-1" },
+  messages: [],
+  toolCallId: "call-1",
+};
 
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.getSandbox.mockResolvedValue({ currentSession: () => session });
   mocks.runCommand.mockResolvedValue({
     exitCode: 0,
-    stdout: () => Promise.resolve("ok"),
-    stderr: () => Promise.resolve(""),
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    stderr: async () => "",
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    stdout: async () => "ok",
   });
 });
 
@@ -38,29 +45,35 @@ describe("pinned tool session", () => {
 
   it("runs commands on the pinned VM with a process timeout", async () => {
     const sandbox = await toolSandbox(options);
-    expect(await sandbox.run({ command: "pwd", workingDirectory: "/workspace/app" })).toEqual({
+    expect(
+      await sandbox.run({ command: "pwd", workingDirectory: "/workspace/app" })
+    ).toEqual({
       exitCode: 0,
-      stdout: "ok",
       stderr: "",
+      stdout: "ok",
     });
     expect(mocks.runCommand).toHaveBeenCalledWith(
       expect.objectContaining({
-        cmd: "bash",
         args: ["-c", "pwd"],
+        cmd: "bash",
         cwd: "/workspace/app",
         timeoutMs: 15 * 60_000,
-      }),
+      })
     );
   });
 
   it("preserves full text, supports inclusive line ranges and returns null for missing files", async () => {
     const sandbox = await toolSandbox(options);
     mocks.read.mockResolvedValue(Buffer.from("one\ntwo\nthree\n"));
-    expect(await sandbox.readTextFile({ path: "/workspace/app/test.txt" })).toBe(
-      "one\ntwo\nthree\n",
-    );
     expect(
-      await sandbox.readTextFile({ path: "/workspace/app/test.txt", startLine: 2, endLine: 3 }),
+      await sandbox.readTextFile({ path: "/workspace/app/test.txt" })
+    ).toBe("one\ntwo\nthree\n");
+    expect(
+      await sandbox.readTextFile({
+        endLine: 3,
+        path: "/workspace/app/test.txt",
+        startLine: 2,
+      })
     ).toBe("two\nthree");
     mocks.read.mockResolvedValue(null);
     expect(await sandbox.readTextFile({ path: "/missing" })).toBeNull();
@@ -68,16 +81,19 @@ describe("pinned tool session", () => {
 
   it("creates parent directories and writes on the same pinned VM", async () => {
     const sandbox = await toolSandbox(options);
-    await sandbox.writeTextFile({ path: "/workspace/app/src/test.ts", content: "hello" });
+    await sandbox.writeTextFile({
+      content: "hello",
+      path: "/workspace/app/src/test.ts",
+    });
     expect(mocks.runCommand).toHaveBeenCalledWith(
       expect.objectContaining({
-        cmd: "mkdir",
         args: ["-p", "/workspace/app/src"],
-      }),
+        cmd: "mkdir",
+      })
     );
     expect(mocks.write).toHaveBeenCalledWith(
-      [{ path: "/workspace/app/src/test.ts", content: Buffer.from("hello") }],
-      expect.anything(),
+      [{ content: Buffer.from("hello"), path: "/workspace/app/src/test.ts" }],
+      expect.anything()
     );
     expect(mocks.getSandbox).toHaveBeenCalledTimes(1);
   });

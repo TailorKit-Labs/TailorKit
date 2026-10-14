@@ -1,12 +1,13 @@
-import { createRouterClient } from "@orpc/server";
-import type { RouterClient } from "@orpc/server";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
-import { getRequest } from "@tanstack/react-start/server";
-import { createIsomorphicFn } from "@tanstack/react-start";
+import { createRouterClient } from "@orpc/server";
+import type { RouterClient } from "@orpc/server";
+import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { createContext, appRouter } from "@tailorkit/api";
 import { QueryClient } from "@tanstack/react-query";
-import { createTanstackQueryUtils } from "@orpc/tanstack-query";
+import { createIsomorphicFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
+
 import { deploymentHeaders } from "./deployment-headers";
 
 export const getQueryClient = () =>
@@ -22,13 +23,13 @@ export const getQueryClient = () =>
 const getORPCClient = createIsomorphicFn()
   .server(() =>
     createRouterClient(appRouter, {
-      context: () => createContext({ request: getRequest() }),
-    }),
+      context: async () => await createContext({ request: getRequest() }),
+    })
   )
   .client((): RouterClient<typeof appRouter> => {
     const link = new RPCLink({
-      url: "/api/rpc",
       headers: deploymentHeaders,
+      url: "/api/rpc",
     });
 
     return createORPCClient(link);

@@ -1,26 +1,39 @@
+/* oxlint-disable typescript/no-unsafe-argument, typescript/no-unsafe-assignment, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
+// oxlint-disable-next-line max-classes-per-file -- These related adapter or mock classes implement one runtime boundary.
+import { issueAppToken, APP_AUDIENCE } from "@tailorkit/api-utils/app-auth";
+import { AppError } from "@tailorkit/app/server";
 import { afterAll, beforeEach, expect, it, vi } from "vite-plus/test";
 
-vi.mock("cloudflare:workers", () => ({
-  RpcTarget: class {},
-  WorkerEntrypoint: class {},
-  DurableObject: class {
-    ctx: unknown;
-    env: unknown;
+import type { AppFacet } from "./dynamic-workers/facet";
+import { AppInstallation } from "./installation";
+import worker from "./worker";
 
-    constructor(ctx: unknown, env: unknown) {
+vi.mock("cloudflare:workers", () => ({
+  DurableObject: class {
+    ctx: DurableObjectState;
+    env: Env;
+
+    constructor(ctx: DurableObjectState, env: Env) {
       this.ctx = ctx;
       this.env = env;
     }
   },
+  // oxlint-disable-next-line typescript/no-extraneous-class -- The mock must be constructible because the runtime extends this base class.
+  RpcTarget: class {},
+  // oxlint-disable-next-line typescript/no-extraneous-class -- The mock must be constructible because the runtime extends this base class.
+  WorkerEntrypoint: class {},
 }));
 
-import { AppError } from "@tailorkit/app/server";
-import { issueAppToken, APP_AUDIENCE } from "@tailorkit/api-utils/app-auth";
-import worker from "./worker";
-import { AppInstallation } from "./installation";
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
 
 // Node requires a duplex hint for request streams; workerd does not.
 const NativeRequest = globalThis.Request;
+
 vi.stubGlobal(
   "Request",
   class extends NativeRequest {
@@ -28,60 +41,74 @@ vi.stubGlobal(
       const options =
         init instanceof NativeRequest
           ? {
-              method: init.method,
-              headers: init.headers,
               body: init.body,
-              signal: init.signal,
               duplex: "half",
+              headers: init.headers,
+              method: init.method,
+              signal: init.signal,
             }
           : { ...init, duplex: "half" };
       super(input, options);
     }
-  },
+  }
 );
 
 afterAll(() => vi.unstubAllGlobals());
 
-const source = vi.hoisted(() => ({ current: vi.fn(), code: vi.fn() }));
+const source = vi.hoisted(() => ({ code: vi.fn(), current: vi.fn() }));
 
-const keys = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
-  "sign",
-  "verify",
-]);
+const keys = await crypto.subtle.generateKey(
+  { name: "ECDSA", namedCurve: "P-256" },
+  true,
+  ["sign", "verify"]
+);
+
 const signing = {
-  issuer: "https://platform.test/api/platform",
   audience: APP_AUDIENCE,
+  issuer: "https://platform.test/api/platform",
   keyId: "host",
   privateKey: keys.privateKey,
 };
+
 const publicKeys = {
-  keys: [{ ...(await crypto.subtle.exportKey("jwk", keys.publicKey)), kid: "host" }],
+  keys: [
+    { ...(await crypto.subtle.exportKey("jwk", keys.publicKey)), kid: "host" },
+  ],
 };
+
 const identity = {
-  publicTeamId: "abc123def45678",
-  appPublicId: "app000000001",
-  subjectId: "user",
-  projectId: "22222222-2222-4222-8222-222222222222",
-  scope: { name: "org", value: { id: "tenant" } },
-  toolUrl: "https://host.test/api/tailorkit/tools/execute",
   appId: "app",
-  installationId: "one",
+  appPublicId: "app000000001",
   deploymentId: "v1",
+  installationId: "one",
+  projectId: "22222222-2222-4222-8222-222222222222",
+  publicTeamId: "abc123def45678",
+  scope: { name: "org", value: { id: "tenant" } },
+  subjectId: "user",
+  toolUrl: "https://host.test/api/tailorkit/tools/execute",
 };
+
 const checksum = async (code: string) =>
-  [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(code)))]
+  [
+    ...new Uint8Array(
+      await crypto.subtle.digest("SHA-256", new TextEncoder().encode(code))
+    ),
+  ]
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
+
 const codeHash = await checksum("code");
+
 const nextHash = await checksum("new code");
+
 const deployment = {
-  projectId: "22222222-2222-4222-8222-222222222222",
   appId: "app",
-  deploymentId: "v1",
   checksum: codeHash,
+  contentLength: 4,
+  deploymentId: "v1",
   objectKey:
     "teams/abc123def45678/projects/22222222-2222-4222-8222-222222222222/apps/app000000001/deployments/deploy000001/server/server.js",
-  contentLength: 4,
+  projectId: "22222222-2222-4222-8222-222222222222",
 };
 
 beforeEach(() => {
@@ -90,108 +117,161 @@ beforeEach(() => {
   source.code.mockResolvedValue("code");
 });
 
-function setup() {
+const setup = () => {
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => Response.json(await source.current())),
+    vi.fn(async () => Response.json(await source.current()))
   );
   let version: string | undefined;
-  const facetQuery = vi.fn(async (_input: unknown, _identity: unknown) => ({
-    result: { ok: true, value: "result" },
-    tables: [],
-    committed: false,
-  }));
+  const facetQuery = vi.fn(
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    async (
+      _input: Parameters<AppFacet["query"]>[0],
+      _identity: Parameters<AppFacet["query"]>[1]
+    ) => ({
+      committed: false,
+      result: { ok: true, value: "result" },
+      tables: [],
+    })
+  );
   const startup = vi.fn();
   const abort = vi.fn();
   const put = vi.fn((_key: string, value: string) => {
     version = value;
   });
-  const get = vi.fn((_name: string, options: () => unknown) => {
-    startup(options());
-    return { query: facetQuery };
-  });
-  const id = { toString: () => "installation-id", equals: vi.fn(() => true) };
-  const ctx = {
-    id,
-    getWebSockets: () => [],
-    storage: { kv: { get: () => version, put } },
-    facets: { get, abort },
-  } as unknown as DurableObjectState;
+  const get = vi.fn(
+    (
+      _name: string,
+      options: () => { source: string; hostEnv?: { connection?: string } }
+    ) => {
+      startup(options());
+      return { query: facetQuery };
+    }
+  );
+  const id = { equals: vi.fn(() => true), toString: () => "installation-id" };
+  // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+
+  const ctx =
+    /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
+    {
+      facets: { abort, get },
+      getWebSockets: () => [],
+      id,
+      storage: { kv: { get: () => version, put } },
+    } as unknown as DurableObjectState;
+  /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
 
   const getClass = vi.fn(() => "facet-class");
-  const load = vi.fn((_name: string, options: () => unknown) => {
-    startup(options());
-    return { getDurableObjectClass: getClass };
-  });
+  const load = vi.fn(
+    (
+      _name: string,
+      options: () => { source: string; hostEnv?: { connection?: string } }
+    ) => {
+      startup(options());
+      return { getDurableObjectClass: getClass };
+    }
+  );
 
-  const routeFetch = vi.fn(async (_request: Request) => new Response("forwarded", { status: 202 }));
+  const routeFetch = vi.fn(
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    async (_request: Request) => new Response("forwarded", { status: 202 })
+  );
   const getByName = vi.fn((_name: string) => ({ fetch: routeFetch }));
   const idFromName = vi.fn(() => id);
 
-  const env = {
-    ASSET_DOMAIN: "tailorkit.app",
-    DEPLOYMENTS: { get: vi.fn(async () => null), put: vi.fn(async () => {}) },
-    BUNDLES: { get: async () => ({ body: new Response(await source.code()).body! }) },
-    RUNTIME_SERVICE_TOKEN: "private",
-    PLATFORM_URL: signing.issuer,
-    APP_RUNTIME_PUBLIC_KEYS: publicKeys,
-    STORES: { getByName, idFromName },
-    LOADER: { get: load },
-  } as unknown as Env;
+  // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+
+  const env =
+    /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
+    {
+      APP_RUNTIME_PUBLIC_KEYS: publicKeys,
+      ASSET_DOMAIN: "tailorkit.app",
+      BUNDLES: {
+        get: async () => ({
+          body: requireValue(new Response(await source.code()).body),
+        }),
+      },
+
+      DEPLOYMENTS: {
+        get: vi.fn<() => Promise<null>>().mockResolvedValue(null),
+        put: vi.fn(async () => {}),
+      },
+      LOADER: { get: load },
+      PLATFORM_URL: signing.issuer,
+      RUNTIME_SERVICE_TOKEN: "private",
+      STORES: { getByName, idFromName },
+    } as unknown as Env;
+  /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
 
   return {
-    env,
-    ctx,
-    id,
-    getByName,
-    routeFetch,
-    load,
-    startup,
-    getClass,
-    get,
     abort,
-    put,
+    ctx,
+    env,
     facetQuery,
+    get,
+    getByName,
+    getClass,
+    id,
+    load,
+    put,
+    routeFetch,
+    startup,
   };
-}
+};
 
-async function request(overrides = {}, path = "/rpc/queries", body = '{"json":{"name":"list"}}') {
+const request = async (
+  overrides = {},
+  path = "/rpc/queries",
+  body = '{"json":{"name":"list"}}'
+) => {
   const session = await issueAppToken(signing, { ...identity, ...overrides });
 
   return new Request(`https://runtime.test${path}`, {
-    method: "POST",
+    body,
     headers: {
       authorization: `Bearer ${session.token}`,
       "content-type": "application/json",
-      "x-tailorkit-identity": "forged",
       origin: "https://host.test",
+      "x-tailorkit-identity": "forged",
     },
-    body,
+    method: "POST",
   });
-}
+};
 
 // Gateway tests use hosted paths; installation tests retain the private normalized /rpc paths.
-async function fetchWorker(request: Request, env: Env) {
-  const url = new URL(request.url);
+
+const fetchWorker = async (requestValue: Request, env: Env) => {
+  const url = new URL(requestValue.url);
   if (url.hostname === "runtime.test" && url.pathname.startsWith("/rpc")) {
-    const token = request.headers.get("authorization")?.slice(7);
-    const payload = token
-      ? JSON.parse(atob(token.split(".")[1]!.replaceAll("-", "+").replaceAll("_", "/")))
-      : identity;
+    const token = requestValue.headers.get("authorization")?.slice(7);
+    const payload =
+      token !== undefined && token !== null && token !== ""
+        ? JSON.parse(
+            atob(
+              requireValue(token.split(".")[1])
+                .replaceAll("-", "+")
+                .replaceAll("_", "/")
+            )
+          )
+        : identity;
     url.hostname = `${identity.publicTeamId}.tailorkit.app`;
     url.pathname = `/p/${payload.projectId}/a/${identity.appPublicId}${url.pathname}`;
   }
-  return worker.fetch(
-    new Request(url, request),
+  // SAFETY: This test supplies the context members read by the handler; unrelated request context services are outside this scenario.
+  return await worker.fetch(
+    new Request(url, requestValue),
     { ...env, ASSET_DOMAIN: env.ASSET_DOMAIN ?? "tailorkit.app" },
-    {} as ExecutionContext,
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+    {} as ExecutionContext
   );
-}
+};
 
 it("answers a preflight without accessing authentication or storage", async () => {
+  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   const response = await fetchWorker(
     new Request("https://runtime.test/rpc/queries", { method: "OPTIONS" }),
-    {} as Parameters<typeof worker.fetch>[1],
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+    {} as Parameters<typeof worker.fetch>[1]
   );
 
   expect(response.status).toBe(204);
@@ -204,24 +284,25 @@ it.each(["GET", "POST"])(
     const { env, getByName } = setup();
     const response = await fetchWorker(
       new Request("https://runtime.test/server/server.js", { method }),
-      env,
+      env
     );
 
     expect(response.status).toBe(404);
     expect(getByName).not.toHaveBeenCalled();
-  },
+  }
 );
 
 it.each(["/rpc", "/rpc/query", "/rpc/unknown", "/rpc/queries/extra"])(
   "rejects unknown RPC route %s",
   async (path) => {
     const { env, getByName } = setup();
-    expect(
-      (await fetchWorker(new Request(`https://runtime.test${path}`, { method: "POST" }), env))
-        .status,
-    ).toBe(404);
+    const awaitedResult1 = await fetchWorker(
+      new Request(`https://runtime.test${path}`, { method: "POST" }),
+      env
+    );
+    expect(awaitedResult1.status).toBe(404);
     expect(getByName).not.toHaveBeenCalled();
-  },
+  }
 );
 
 it.each(["actions", "mutations", "queries"])(
@@ -229,20 +310,20 @@ it.each(["actions", "mutations", "queries"])(
   async (kind) => {
     const { env, routeFetch } = setup();
     await fetchWorker(await request({}, `/rpc/${kind}`), env);
-    expect(routeFetch.mock.calls[0]![0].url).toBe(
-      `https://${identity.publicTeamId}.tailorkit.app/rpc/${kind}`,
+    expect(requireValue(routeFetch.mock.calls[0])[0].url).toBe(
+      `https://${identity.publicTeamId}.tailorkit.app/rpc/${kind}`
     );
-  },
+  }
 );
 
 it("requires a token even when any origin is allowed", async () => {
   const { env, getByName } = setup();
   const response = await fetchWorker(
     new Request("https://runtime.test/rpc/queries", {
-      method: "POST",
       headers: { origin: "https://attacker.test" },
+      method: "POST",
     }),
-    env,
+    env
   );
 
   expect(response.status).toBe(401);
@@ -258,9 +339,11 @@ it("authenticates and forwards an RPC body with CORS and stable installation rou
   expect(response.headers.get("access-control-allow-credentials")).toBeNull();
   expect(response.headers.get("cache-control")).toBe("no-store");
   expect(getByName).toHaveBeenCalledWith(
-    JSON.stringify([signing.issuer, identity.projectId, "app", "one"]),
+    JSON.stringify([signing.issuer, identity.projectId, "app", "one"])
   );
-  expect(await routeFetch.mock.calls[0][0].text()).toBe('{"json":{"name":"list"}}');
+  expect(await routeFetch.mock.calls[0][0].text()).toBe(
+    '{"json":{"name":"list"}}'
+  );
 });
 
 it("maps forwarding failures to a sanitized response with allowed-origin CORS", async () => {
@@ -276,14 +359,23 @@ it("maps forwarding failures to a sanitized response with allowed-origin CORS", 
 it("accepts different signed projects and routes them to distinct installations", async () => {
   const { env, getByName } = setup();
 
-  expect((await fetchWorker(await request(), env)).status).toBe(202);
-  expect(
-    (await fetchWorker(await request({ projectId: "33333333-3333-4333-8333-333333333333" }), env))
-      .status,
-  ).toBe(202);
+  const awaitedResult2 = await fetchWorker(await request(), env);
+  expect(awaitedResult2.status).toBe(202);
+  const awaitedResult3 = await fetchWorker(
+    await request({
+      projectId: "33333333-3333-4333-8333-333333333333",
+    }),
+    env
+  );
+  expect(awaitedResult3.status).toBe(202);
   expect(getByName.mock.calls.map(([name]) => name)).toEqual([
     JSON.stringify([signing.issuer, identity.projectId, "app", "one"]),
-    JSON.stringify([signing.issuer, "33333333-3333-4333-8333-333333333333", "app", "one"]),
+    JSON.stringify([
+      signing.issuer,
+      "33333333-3333-4333-8333-333333333333",
+      "app",
+      "one",
+    ]),
   ]);
 });
 
@@ -295,28 +387,31 @@ it("loads isolated code, passes only the verified identity and caches a warm dep
   expect(await response.json()).toEqual({ json: "result" });
   expect(fixtures.load).toHaveBeenCalledWith(
     `installation-id:v1:${deployment.checksum}`,
-    expect.any(Function),
+    expect.any(Function)
   );
   expect(fixtures.startup).toHaveBeenCalledWith(
     expect.objectContaining({
+      env: {},
+      globalOutbound: null,
+      limits: { cpuMs: 10, subRequests: 64 },
+      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
       modules: expect.objectContaining({
         "application.js": "code",
+        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
         "bootstrap.js": expect.any(String),
       }),
-      globalOutbound: null,
-      env: {},
-      limits: { cpuMs: 10, subRequests: 64 },
-    }),
+    })
   );
   expect(fixtures.get).toHaveBeenCalledWith("app", expect.any(Function));
   expect(fixtures.getClass).toHaveBeenCalledWith("AppFacet");
 
   expect(fixtures.facetQuery).toHaveBeenCalledWith(
     { name: "list" },
-    expect.objectContaining(identity),
+    expect.objectContaining(identity)
   );
 
-  await (await installation.fetch(await request())).text();
+  const awaitedResult4 = await installation.fetch(await request());
+  await awaitedResult4.text();
 
   expect(source.current).toHaveBeenCalledTimes(2);
   expect(source.code).toHaveBeenCalledOnce();
@@ -327,17 +422,21 @@ it("loads isolated code, passes only the verified identity and caches a warm dep
 it("changes code on the same facet and accepts old client tokens without switching back", async () => {
   const fixtures = setup();
   const installation = new AppInstallation(fixtures.ctx, fixtures.env);
-  await (await installation.fetch(await request())).text();
+  const awaitedResult5 = await installation.fetch(await request());
+  await awaitedResult5.text();
 
   source.current.mockResolvedValue({
     ...deployment,
-    deploymentId: "v2",
     checksum: nextHash,
     contentLength: "new code".length,
+    deploymentId: "v2",
   });
   source.code.mockResolvedValue("new code");
 
-  await (await installation.fetch(await request({ deploymentId: "v2" }))).text();
+  const awaitedResult6 = await installation.fetch(
+    await request({ deploymentId: "v2" })
+  );
+  await awaitedResult6.text();
 
   expect(fixtures.abort).toHaveBeenCalledOnce();
   expect(fixtures.abort).toHaveBeenCalledWith("app", "App deployment changed");
@@ -346,7 +445,8 @@ it("changes code on the same facet and accepts old client tokens without switchi
 
   const loads = source.code.mock.calls.length;
 
-  expect((await installation.fetch(await request())).status).toBe(200);
+  const awaitedResult7 = await installation.fetch(await request());
+  expect(awaitedResult7.status).toBe(200);
   expect(source.code).toHaveBeenCalledTimes(loads);
   expect(fixtures.abort).toHaveBeenCalledOnce();
 });
@@ -354,12 +454,16 @@ it("changes code on the same facet and accepts old client tokens without switchi
 it("keeps the running facet when replacement code fails verification", async () => {
   const fixtures = setup();
   const installation = new AppInstallation(fixtures.ctx, fixtures.env);
-  await (await installation.fetch(await request())).text();
+  const awaitedResult8 = await installation.fetch(await request());
+  await awaitedResult8.text();
 
   source.current.mockResolvedValue({ ...deployment, deploymentId: "v2" });
   source.code.mockRejectedValue(new AppError("NOT_FOUND", "Missing code"));
 
-  expect((await installation.fetch(await request({ deploymentId: "v2" }))).status).toBe(404);
+  const awaitedResult9 = await installation.fetch(
+    await request({ deploymentId: "v2" })
+  );
+  expect(awaitedResult9.status).toBe(404);
   expect(fixtures.abort).not.toHaveBeenCalled();
   expect(fixtures.put).toHaveBeenCalledOnce();
 });
@@ -368,12 +472,14 @@ it("rechecks authentication and rejects the wrong supervisor before looking up a
   const fixtures = setup();
   const installation = new AppInstallation(fixtures.ctx, fixtures.env);
 
-  expect((await installation.fetch(new Request("https://runtime.test/rpc/queries"))).status).toBe(
-    401,
+  const awaitedResult10 = await installation.fetch(
+    new Request("https://runtime.test/rpc/queries")
   );
+  expect(awaitedResult10.status).toBe(401);
 
   fixtures.id.equals.mockReturnValue(false);
-  expect((await installation.fetch(await request())).status).toBe(403);
+  const awaitedResult11 = await installation.fetch(await request());
+  expect(awaitedResult11.status).toBe(403);
   expect(source.current).not.toHaveBeenCalled();
   expect(fixtures.load).not.toHaveBeenCalled();
 });
@@ -381,28 +487,46 @@ it("rechecks authentication and rejects the wrong supervisor before looking up a
 it("accepts metadata publication only with the shared service credential", async () => {
   const { env, getByName } = setup();
   env.RUNTIME_SERVICE_TOKEN = "x".repeat(32);
-  const publish = (token: string, body: unknown = deployment) =>
-    fetchWorker(
+  const publish = async (
+    token: string,
+
+    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This fixture must represent malformed input so the runtime validation boundary can be tested.
+    body: unknown = deployment
+  ) =>
+    await fetchWorker(
       new Request(
         `https://internal.tailorkit.app/p/${identity.projectId}/a/${identity.appPublicId}/new-deployment`,
         {
-          method: "POST",
-          headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
           body: JSON.stringify(body),
-        },
+          headers: {
+            authorization: `Bearer ${token}`,
+            "content-type": "application/json",
+          },
+          method: "POST",
+        }
       ),
-      env,
+      env
     );
-  expect((await publish("wrong")).status).toBe(401);
-  expect((await publish(env.RUNTIME_SERVICE_TOKEN, {})).status).toBe(400);
-  expect((await publish(env.RUNTIME_SERVICE_TOKEN)).status).toBe(204);
+  const awaitedResult12 = await publish("wrong");
+  expect(awaitedResult12.status).toBe(401);
+  const awaitedResult13 = await publish(env.RUNTIME_SERVICE_TOKEN, {});
+  expect(awaitedResult13.status).toBe(400);
+  const awaitedResult14 = await publish(env.RUNTIME_SERVICE_TOKEN);
+  expect(awaitedResult14.status).toBe(204);
+  // oxlint-disable-next-line typescript/unbound-method -- This assertion inspects a spy reference without invoking the method or changing its receiver.
   expect(env.DEPLOYMENTS.put).toHaveBeenCalledWith(
     JSON.stringify([deployment.projectId, deployment.appId]),
     expect.any(String),
-    { expirationTtl: 300 },
+    { expirationTtl: 300 }
   );
-  expect(JSON.parse((env.DEPLOYMENTS.put as ReturnType<typeof vi.fn>).mock.calls[0]![1])).toEqual(
-    deployment,
-  );
+  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+  expect(
+    JSON.parse(
+      requireValue(
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+        (env.DEPLOYMENTS.put as ReturnType<typeof vi.fn>).mock.calls[0]
+      )[1]
+    )
+  ).toEqual(deployment);
   expect(getByName).not.toHaveBeenCalled();
 });

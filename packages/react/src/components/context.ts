@@ -1,27 +1,31 @@
 import type { TailorKitStore } from "@tailorkit/client-core";
 import { createContext, useContext } from "react";
 
-import type { TailorKitClientConfig } from "../tailorkit";
+import type { TailorKitClientConfig } from "#tailorkit";
 
 export interface TailorkitContextValue {
   store: TailorKitStore;
   client: TailorKitClientConfig;
 }
 
-export const TailorkitContext = createContext<TailorkitContextValue | null>(null);
+export const TailorkitContext = createContext<TailorkitContextValue | null>(
+  null
+);
 
-export function useTailorkitContext(
+export const useTailorkitContext = (
   component: string,
-  expectedClient?: TailorKitClientConfig,
-): TailorkitContextValue {
+  expectedClient?: TailorKitClientConfig
+): TailorkitContextValue => {
   const context = useContext(TailorkitContext);
   if (!context) {
-    throw new Error(`${component} must be rendered inside a TailorKit Provider.`);
+    throw new Error(
+      `${component} must be rendered inside a TailorKit Provider.`
+    );
   }
   if (expectedClient && context.client !== expectedClient) {
     throw new Error(
-      `${component} was created for a different TailorKit client than the surrounding Provider.`,
+      `${component} was created for a different TailorKit client than the surrounding Provider.`
     );
   }
   return context;
-}
+};

@@ -1,5 +1,17 @@
 # @tailorkit/app
 
+## 0.1.0-beta.30
+
+### Minor Changes
+
+- 29f3e30: Move the complete build pipeline and configuration loading into `@tailorkit/vite`. Build TailorKit apps with the public `tailorkit()` plugin from `tailorkit/vite`. Init now offers Vite+ (recommended, with linting, formatting and testing) or Vite (build only), with one `vite.config.ts` for app tooling. Deploy builds using the app's Vite configuration and installation.
+
+  Remove `tailorkit build`, `buildApp()`, the init lint/format flags, and build settings in `tailorkit.config.ts`. Set `build.outDir` in `vite.config.ts` instead.
+
+### Patch Changes
+
+- f8dce5d: Rename the app function builder export from `tk` to `fn` and update generated apps to use it from `tailorkit/server`.
+
 ## 0.1.0-beta.29
 
 No changes in this release.
@@ -99,8 +111,7 @@ No changes in this release.
 
 ### Patch Changes
 
-- fc9538d: Allow the agent command to search existing apps or create a new app when appId is
-  omitted, then save the chosen app ID in the TailorKit config for future launches.
+- fc9538d: Allow the agent command to search existing apps or create a new app when appId is omitted, then save the chosen app ID in the TailorKit config for future launches.
 
 ## 0.1.0-beta.17
 

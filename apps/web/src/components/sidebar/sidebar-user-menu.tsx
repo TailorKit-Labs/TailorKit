@@ -1,14 +1,3 @@
-import {
-  BookOpenIcon,
-  ChevronsUpDownIcon,
-  ExternalLinkIcon,
-  HomeIcon,
-  LaptopMinimalIcon,
-  LogOutIcon,
-  MoonIcon,
-  SunIcon,
-  UserIcon,
-} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@tailorkit/ui/avatar";
 import { Button } from "@tailorkit/ui/button";
 import {
@@ -20,16 +9,27 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@tailorkit/ui/dropdown-menu";
-import { ToggleGroup, ToggleGroupItem } from "@tailorkit/ui/toggle-group";
-import { Link } from "@tanstack/react-router";
 import { toastManager } from "@tailorkit/ui/toast";
+import { ToggleGroup, ToggleGroupItem } from "@tailorkit/ui/toggle-group";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import {
+  BookOpenIcon,
+  ChevronsUpDownIcon,
+  ExternalLinkIcon,
+  HomeIcon,
+  LaptopMinimalIcon,
+  LogOutIcon,
+  MoonIcon,
+  SunIcon,
+  UserIcon,
+} from "lucide-react";
 
 import { authClient } from "#lib/auth-client";
-import { fallbackTheme, getUserTheme, isAppTheme, useTheme } from "#lib/theme";
-import { useQuery } from "@tanstack/react-query";
 import { orpc } from "#lib/orpc.ts";
+import { fallbackTheme, getUserTheme, isAppTheme, useTheme } from "#lib/theme";
 
-export function SidebarUserMenu() {
+export const SidebarUserMenu = () => {
   const { data: session } = useQuery(orpc.user.getSession.queryOptions());
   const { setTheme, theme } = useTheme();
 
@@ -46,10 +46,15 @@ export function SidebarUserMenu() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="w-full" render={<Button variant={"ghost"} />}>
-        <Avatar className="size-6 rounded-lg">
-          {image && <AvatarImage alt={name} src={image} />}
-          <AvatarFallback className="rounded-lg text-xs">{initials}</AvatarFallback>
+      <DropdownMenuTrigger
+        className="w-full"
+        render={<Button variant="ghost" />}
+      >
+        <Avatar className="size-6">
+          {image !== undefined && image !== null && image !== "" && (
+            <AvatarImage alt={name} src={image} />
+          )}
+          <AvatarFallback>{initials}</AvatarFallback>
         </Avatar>
         <div className="flex min-w-0 flex-1 flex-col text-left text-sm leading-tight">
           <span className="truncate font-medium">{name}</span>
@@ -59,15 +64,19 @@ export function SidebarUserMenu() {
 
       <DropdownMenuContent align="end" className="w-56" side="top">
         <DropdownMenuGroup>
-          <DropdownMenuLabel className="p-0 font-normal">
+          <DropdownMenuLabel>
             <div className="flex items-center gap-2 px-1 py-1.5">
-              <Avatar className="size-6 rounded-lg">
-                {image && <AvatarImage alt={name} src={image} />}
-                <AvatarFallback className="rounded-lg text-xs">{initials}</AvatarFallback>
+              <Avatar className="size-6">
+                {image !== undefined && image !== null && image !== "" && (
+                  <AvatarImage alt={name} src={image} />
+                )}
+                <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
               <div className="flex min-w-0 flex-1 flex-col text-sm leading-tight">
                 <span className="truncate font-medium">{name}</span>
-                <span className="truncate text-muted-foreground text-xs">{email}</span>
+                <span className="truncate text-xs text-muted-foreground">
+                  {email}
+                </span>
               </div>
             </div>
           </DropdownMenuLabel>
@@ -80,7 +89,11 @@ export function SidebarUserMenu() {
           </DropdownMenuItem>
           <DropdownMenuItem
             render={
-              <a href="https://tailorkit.dev/home" rel="noopener" target="_blank">
+              <a
+                href="https://tailorkit.dev/home"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
                 <HomeIcon />
                 <span className="w-full">Homepage</span>
                 <ExternalLinkIcon />
@@ -89,7 +102,11 @@ export function SidebarUserMenu() {
           />
           <DropdownMenuItem
             render={
-              <a href="https://tailorkit.dev/docs" rel="noopener" target="_blank">
+              <a
+                href="https://tailorkit.dev/docs"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
                 <BookOpenIcon />
                 <span className="w-full">Documentation</span>
                 <ExternalLinkIcon />
@@ -98,7 +115,7 @@ export function SidebarUserMenu() {
           />
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem closeOnClick={false} className="p-0 data-highlighted:bg-transparent">
+        <DropdownMenuItem closeOnClick={false}>
           <div className="flex w-full items-center justify-between gap-3">
             <p className="px-2 text-sm">Theme</p>
             <ToggleGroup
@@ -107,51 +124,76 @@ export function SidebarUserMenu() {
               value={[selectedTheme]}
               variant="default"
               onValueChange={(value) => {
-                const nextTheme = value[0];
+                const [nextTheme] = value;
 
                 if (!isAppTheme(nextTheme)) {
                   return;
                 }
 
                 setTheme(nextTheme);
-                void authClient
-                  .updateUser({ theme: nextTheme } as Parameters<typeof authClient.updateUser>[0])
-                  .then((result) => {
-                    if (result.error) {
-                      toastManager.add({
-                        description: result.error.message || "Failed to update theme",
-                        title: "Theme not saved",
-                        type: "error",
-                      });
-                    }
-                  })
-                  .catch(() => {
+                void (async () => {
+                  try {
+                    await (async () => {
+                      // SAFETY: The server declares theme as an additional user field and isAppTheme admits only its supported values; the client update overload omits additional fields.
+                      const result = await authClient.updateUser(
+                        /* oxlint-disable typescript/no-unsafe-type-assertion -- The server declares theme as an additional user field and isAppTheme admits only its supported values; the client update overload omits additional fields. */
+                        {
+                          theme: nextTheme,
+                        } as Parameters<typeof authClient.updateUser>[0]
+                        /* oxlint-enable typescript/no-unsafe-type-assertion */
+                      );
+                      if (result.error) {
+                        toastManager.add({
+                          description:
+                            result.error.message ?? "Failed to update theme",
+                          title: "Theme not saved",
+                          type: "error",
+                        });
+                      }
+                    })();
+                  } catch {
                     toastManager.add({
                       description: "Failed to update theme",
                       title: "Theme not saved",
                       type: "error",
                     });
-                  });
+                  }
+                })();
               }}
             >
-              <ToggleGroupItem aria-label="System theme" title="System" value="system">
+              <ToggleGroupItem
+                aria-label="System theme"
+                title="System"
+                value="system"
+              >
                 <LaptopMinimalIcon />
               </ToggleGroupItem>
-              <ToggleGroupItem aria-label="Light theme" title="Light" value="light">
+              <ToggleGroupItem
+                aria-label="Light theme"
+                title="Light"
+                value="light"
+              >
                 <SunIcon />
               </ToggleGroupItem>
-              <ToggleGroupItem aria-label="Dark theme" title="Dark" value="dark">
+              <ToggleGroupItem
+                aria-label="Dark theme"
+                title="Dark"
+                value="dark"
+              >
                 <MoonIcon />
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem render={<Link preload={false} to="/logout" />} variant="destructive">
+        <DropdownMenuItem
+          render={<Link preload={false} to="/logout" />}
+          variant="destructive"
+        >
           <LogOutIcon />
           Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+};

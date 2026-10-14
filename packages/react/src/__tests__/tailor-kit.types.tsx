@@ -1,13 +1,31 @@
-import { defineContract } from "@tailorkit/core/schema";
-import type { StandardJSONSchemaV1, StandardSchemaV1 } from "@standard-schema/spec";
-import type { ReactNode } from "react";
-import type { ComponentDefinition } from "@tailorkit/core/schema";
+import type {
+  StandardJSONSchemaV1,
+  StandardSchemaV1,
+} from "@standard-schema/spec";
 import type { ComponentRenderer } from "@tailorkit/client-core";
-import { components, createClient } from "../tailorkit";
-import type { TailorKitApp } from "../tailorkit";
-import type { TailorKitInstance, UseAppsResult, UseViewsResult } from "../index";
+import { defineContract } from "@tailorkit/core/schema";
+import type { ComponentDefinition } from "@tailorkit/core/schema";
+/* oxlint-disable react/rules-of-hooks -- Compile-only API tests exercise hook signatures outside runtime components. */
+import type { ViewContextValues } from "@tailorkit/core/views";
+import type { ReactNode } from "react";
 
-type ExpectedResultKeys = "data" | "isPending" | "error" | "isRefetching" | "fetch";
+import type { TailorKitInstance, UseAppsResult, UseViewsResult } from "#index";
+import { components, createClient } from "#tailorkit";
+import type { TailorKitApp } from "#tailorkit";
+
+const requireValue = <T,>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
+
+type ExpectedResultKeys =
+  | "data"
+  | "isPending"
+  | "error"
+  | "isRefetching"
+  | "fetch";
 type Assert<T extends true> = T;
 type HasExactResultKeys<T> = [keyof T] extends [ExpectedResultKeys]
   ? [ExpectedResultKeys] extends [keyof T]
@@ -19,12 +37,18 @@ type ViewsResultKeys = Assert<HasExactResultKeys<UseViewsResult>>;
 const resultKeys: [AppsResultKeys, ViewsResultKeys] = [true, true];
 void resultKeys;
 
-type OptionalChildrenComponent = ComponentDefinition<undefined, {}, true>;
-const optionalChildrenRenderer: ComponentRenderer<OptionalChildrenComponent, ReactNode> = ({
-  children,
-}) => children;
+type OptionalChildrenComponent = ComponentDefinition<
+  undefined,
+  Record<string, never>,
+  true
+>;
+const optionalChildrenRenderer: ComponentRenderer<
+  OptionalChildrenComponent,
+  ReactNode
+> = async ({ children }) => await children;
 void optionalChildrenRenderer;
 
+// oxlint-disable-next-line typescript/no-empty-object-type, typescript/ban-types -- This negative type case verifies a component with no declared children property.
 const leafRenderer: ComponentRenderer<{}, ReactNode> = (args) => {
   // @ts-expect-error leaf component renderer arguments do not include children
   void args.children;
@@ -32,6 +56,7 @@ const leafRenderer: ComponentRenderer<{}, ReactNode> = (args) => {
 };
 void leafRenderer;
 
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const typedSchema = <TValue,>(): StandardSchemaV1<TValue, TValue> &
   StandardJSONSchemaV1<TValue, TValue> =>
   ({
@@ -40,25 +65,29 @@ const typedSchema = <TValue,>(): StandardSchemaV1<TValue, TValue> &
         input: () => ({}),
         output: () => ({}),
       },
-      validate: (value: unknown) => ({ value: value as TValue }),
+      validate: (
+        value: Parameters<StandardSchemaV1["~standard"]["validate"]>[0]
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+      ) => ({ value: value as TValue }),
       vendor: "test",
       version: 1,
     },
-  }) as const satisfies StandardSchemaV1<TValue, TValue> & StandardJSONSchemaV1<TValue, TValue>;
+  }) as const satisfies StandardSchemaV1<TValue, TValue> &
+    StandardJSONSchemaV1<TValue, TValue>;
 
 const contract = defineContract({
+  components: {
+    Button: {},
+  },
   scopes: {
     organization: typedSchema<{ orgId: string }>(),
     user: typedSchema<{ userId: string }>(),
   },
   slots: {
-    panel: { views: ["/", "/home", "/home/detail", "/user"] },
     navbar: { views: ["/"] },
-    page: { views: ["/"], multiple: true },
-    single: { views: ["/"], multiple: false },
-  },
-  components: {
-    Button: {},
+    page: { multiple: true, views: ["/"] },
+    panel: { views: ["/", "/home", "/home/detail", "/user"] },
+    single: { multiple: false, views: ["/"] },
   },
   views: {
     "/": typedSchema<{ user: { id: string } }>(),
@@ -70,9 +99,15 @@ const contract = defineContract({
   },
 });
 
-const tailor = createClient({ contract: contract, baseUrl: "http://runtime.test" });
+const tailor = createClient({ baseUrl: "http://runtime.test", contract });
 tailor.clearCache();
-const { Provider: TailorKitProvider, RenderSlot, useApps, useViews, useViewContext } = tailor;
+const {
+  Provider: TailorKitProvider,
+  RenderSlot,
+  useApps,
+  useViews,
+  useViewContext,
+} = tailor;
 const app = { clientPath: "/apps/todo.js", id: "todo" };
 
 <TailorKitProvider>
@@ -91,42 +126,44 @@ const app = { clientPath: "/apps/todo.js", id: "todo" };
 <TailorKitProvider apps={[{ id: 123 }]} />;
 
 const childrenContract = defineContract({
-  scopes: { user: typedSchema<{ userId: string }>() },
   components: {
     Button: {
       children: true,
     },
   },
+  scopes: { user: typedSchema<{ userId: string }>() },
 });
 
 const childrenSchema = childrenContract;
 
 createClient({
-  contract: childrenContract,
   baseUrl: "http://runtime.test",
   components: {
-    Button: ({ children }) => {
+    Button: async ({ children }) => {
       const content: ReactNode = children;
-      return content;
+      return await content;
     },
   },
+  contract: childrenContract,
 });
 
 const requiredComponentsContract = defineContract({
-  scopes: { user: typedSchema<{ userId: string }>() },
   components: {
     Button: {},
     Input: {},
   },
+  scopes: { user: typedSchema<{ userId: string }>() },
 });
 
 createClient({
-  contract: requiredComponentsContract,
   baseUrl: "http://runtime.test",
+
   // @ts-expect-error all contract components must have client renderers when components are provided
   components: {
     Button: () => null,
   },
+
+  contract: requiredComponentsContract,
 });
 
 components(childrenSchema, {
@@ -140,16 +177,16 @@ components(childrenSchema, {
 });
 
 const callbackContract = defineContract({
-  scopes: { user: typedSchema<{ userId: string }>() },
   components: {
     Button: {
-      fields: typedSchema<{ variant?: "default" | "secondary" }>(),
       callbacks: {
         onClick: {},
       },
       children: true,
+      fields: typedSchema<{ variant?: "default" | "secondary" }>(),
     },
   },
+  scopes: { user: typedSchema<{ userId: string }>() },
 });
 
 components(callbackContract, {
@@ -171,14 +208,22 @@ useViewContext("/user", { context: { userId: "u1" }, loading: true });
 declare const queryContext: { userId: string } | undefined;
 declare const queryLoading: boolean;
 declare const queryError: boolean | string | Error | null;
-useViewContext("/user", { context: queryContext, loading: queryLoading, error: queryError });
+useViewContext("/user", {
+  context: queryContext,
+  error: queryError,
+  loading: queryLoading,
+});
 
 useViewContext("/user", { context: undefined, error: new Error("Failed") });
 useViewContext("/user", { context: undefined, error: true });
 useViewContext("/user", { context: { userId: "u1" }, error: false });
 useViewContext("/user", { context: undefined, error: "Failed" });
 useViewContext("/user", { context: undefined, error: "" });
-useViewContext("/user", { context: { userId: "u1" }, loading: false, error: null });
+useViewContext("/user", {
+  context: { userId: "u1" },
+  error: null,
+  loading: false,
+});
 
 // @ts-expect-error invalid view name
 useViewContext("missing", { context: {} });
@@ -189,12 +234,21 @@ useViewContext("/user", { context: { page: { title: "Home" } } });
 // @ts-expect-error the context property is required
 useViewContext("/home", {});
 
-// @ts-expect-error loading still requires a complete context shape or undefined
-useViewContext("/home", { loading: true, context: { page: {} } });
-// @ts-expect-error errors still require a complete context shape or undefined
-useViewContext("/home", { error: new Error("Failed"), context: { page: {} } });
-// @ts-expect-error the context shape belongs to the selected view even while loading
-useViewContext("/user", { loading: true, context: { page: { title: "Home" } } });
+useViewContext("/home", {
+  // @ts-expect-error loading still requires a complete context shape or undefined
+  context: { page: {} },
+  loading: true,
+});
+useViewContext("/home", {
+  // @ts-expect-error errors still require a complete context shape or undefined
+  context: { page: {} },
+  error: new Error("Failed"),
+});
+useViewContext("/user", {
+  // @ts-expect-error the context shape belongs to the selected view even while loading
+  context: { page: { title: "Home" } },
+  loading: true,
+});
 // @ts-expect-error loading must be a boolean
 useViewContext("/user", { context: undefined, loading: "loading" });
 // @ts-expect-error error cannot be a number
@@ -218,21 +272,21 @@ useApps({ scopes: ["organization", "user"] });
 useApps({ scopes: ["unknown"] });
 
 const workspaceContract = defineContract({
-  scopes: { workspace: typedSchema<{ workspaceId: string }>() },
   components: {},
+  scopes: { workspace: typedSchema<{ workspaceId: string }>() },
 });
 const workspaceClient = createClient({
-  contract: workspaceContract,
   baseUrl: "http://runtime.test",
+  contract: workspaceContract,
 });
 workspaceClient.useApps({ scopes: ["workspace"] });
 // @ts-expect-error scope names belong to the client that declared them
 workspaceClient.useApps({ scopes: ["organization"] });
 
 // @ts-expect-error The former object-only hook signature is not supported.
-useViewContext({ view: "/user", context: { userId: "u1" } });
+useViewContext({ context: { userId: "u1" }, view: "/user" });
 
-useViews({ scopes: ["organization"], appIds: ["todo"], slot: "panel" });
+useViews({ appIds: ["todo"], scopes: ["organization"], slot: "panel" });
 // @ts-expect-error scope names must be declared by this contract
 useViews({ scopes: ["unknown"], slot: "panel" });
 
@@ -245,26 +299,28 @@ void viewsPending;
 void viewsError;
 void viewsRefetching;
 void viewsFetch;
-const requiredKey: string = instances.data![0]!.key;
+const requiredKey: string = requireValue(requireValue(instances.data)[0]).key;
 const single = useViews({ slot: "single" });
 // @ts-expect-error explicit single slots have no instance key
-void single.data![0]!.key;
+void requireValue(requireValue(single.data)[0]).key;
 const defaultSingle = useViews({ slot: "panel" });
 // @ts-expect-error slots with an omitted multiple flag have no instance key
-void defaultSingle.data![0]!.key;
-const requiredMetadata: Record<string, unknown> = instances.data![0]!.metadata;
+void requireValue(requireValue(defaultSingle.data)[0]).key;
+const requiredMetadata: ViewContextValues = requireValue(
+  requireValue(instances.data)[0]
+).metadata;
 // @ts-expect-error single slots have no instance metadata
-void single.data![0]!.metadata;
+void requireValue(requireValue(single.data)[0]).metadata;
 // @ts-expect-error single slots have no instance data
-void single.data![0]!.data;
+void requireValue(requireValue(single.data)[0]).data;
 const selectedSlot: "page" | "single" = Math.random() > 0.5 ? "page" : "single";
 const selectedItems = useViews({ slot: selectedSlot });
 // @ts-expect-error a union slot name requires narrowing before reading an instance key
-void selectedItems.data![0]!.key;
-const selectedItem = selectedItems.data![0]!;
+void requireValue(requireValue(selectedItems.data)[0]).key;
+const selectedItem = requireValue(requireValue(selectedItems.data)[0]);
 if ("key" in selectedItem) {
   const narrowedKey: string = selectedItem.key;
-  const narrowedMetadata: Record<string, unknown> = selectedItem.metadata;
+  const narrowedMetadata: ViewContextValues = selectedItem.metadata;
   void narrowedKey;
   void narrowedMetadata;
 }
@@ -276,7 +332,9 @@ declare const optionalClient: TailorKitInstance<
   Record<string, never>,
   { optional: { views: readonly ["/"]; multiple?: true } }
 >;
-const optionalItem = optionalClient.useViews({ slot: "optional" }).data![0]!;
+const optionalItem = requireValue(
+  requireValue(optionalClient.useViews({ slot: "optional" }).data)[0]
+);
 // @ts-expect-error an optional multiple flag cannot guarantee an instance key
 void optionalItem.key;
 if ("key" in optionalItem) {
@@ -314,14 +372,18 @@ useViews({});
   slot="panel"
   view="/home"
   status="ready"
-  context={{ user: { id: "u1" }, page: { title: "Home" } }}
+  context={{ page: { title: "Home" }, user: { id: "u1" } }}
 />;
 <RenderSlot.Controlled
   app={app}
   slot="panel"
   view="/home/detail"
   status="ready"
-  context={{ user: { id: "u1" }, page: { title: "Home" }, detail: { id: "d1" } }}
+  context={{
+    detail: { id: "d1" },
+    page: { title: "Home" },
+    user: { id: "u1" },
+  }}
 />;
 <RenderSlot.Controlled
   app={app}
@@ -336,7 +398,12 @@ useViews({});
 // @ts-expect-error controlled slots require an explicit view and status
 <RenderSlot.Controlled app={app} slot="panel" />;
 // @ts-expect-error controlled slots require status even with ready context
-<RenderSlot.Controlled app={app} slot="panel" view="/" context={{ user: { id: "u1" } }} />;
+<RenderSlot.Controlled
+  app={app}
+  slot="panel"
+  view="/"
+  context={{ user: { id: "u1" } }}
+/>;
 // @ts-expect-error ready controlled slots require context
 <RenderSlot.Controlled app={app} slot="panel" view="/home" status="ready" />;
 <RenderSlot.Controlled
@@ -365,8 +432,13 @@ useViews({});
 />;
 // @ts-expect-error the navbar only supports root
 <RenderSlot.Controlled app={app} slot="navbar" view="/user" status="loading" />;
-// @ts-expect-error unknown views cannot be rendered
-<RenderSlot.Controlled app={app} slot="panel" view="/missing" status="loading" />;
+<RenderSlot.Controlled
+  app={app}
+  slot="panel"
+  // @ts-expect-error unknown views cannot be rendered
+  view="/missing"
+  status="loading"
+/>;
 
 const optionalContextContract = defineContract({
   components: {},
@@ -378,8 +450,8 @@ const optionalContextContract = defineContract({
   },
 });
 const optionalContextClient = createClient({
-  contract: optionalContextContract,
   baseUrl: "http://runtime.test",
+  contract: optionalContextContract,
 });
 optionalContextClient.useViewContext("/", { context: undefined });
 optionalContextClient.useViewContext("/", { context: { workspaceId: "w1" } });
@@ -396,7 +468,7 @@ const OptionalSlot = optionalContextClient.RenderSlot;
   slot="panel"
   view="/detail"
   status="ready"
-  context={{ workspaceId: "w1", detailId: "d1" }}
+  context={{ detailId: "d1", workspaceId: "w1" }}
 />;
 
 const unionContextContract = defineContract({
@@ -404,27 +476,29 @@ const unionContextContract = defineContract({
   scopes: { user: typedSchema<{ userId: string }>() },
   slots: { panel: { views: ["/detail"] } },
   views: {
-    "/": typedSchema<{ kind: "user"; userId: string } | { kind: "organization"; orgId: string }>(),
+    "/": typedSchema<
+      { kind: "user"; userId: string } | { kind: "organization"; orgId: string }
+    >(),
     "/detail": typedSchema<{ detailId: string }>(),
   },
 });
 const UnionSlot = createClient({
-  contract: unionContextContract,
   baseUrl: "http://runtime.test",
+  contract: unionContextContract,
 }).RenderSlot;
 <UnionSlot.Controlled
   app={app}
   slot="panel"
   view="/detail"
   status="ready"
-  context={{ kind: "user", userId: "u1", detailId: "d1" }}
+  context={{ detailId: "d1", kind: "user", userId: "u1" }}
 />;
 <UnionSlot.Controlled
   app={app}
   slot="panel"
   view="/detail"
   status="ready"
-  context={{ kind: "organization", orgId: "o1", detailId: "d1" }}
+  context={{ detailId: "d1", kind: "organization", orgId: "o1" }}
 />;
 
 <RenderSlot app={app} slot="page" instanceKey="overview" />;
@@ -435,9 +509,9 @@ const UnionSlot = createClient({
 // @ts-expect-error Single-instance slots reject a key (explicit false).
 <RenderSlot app={app} slot="single" instanceKey="overview" />;
 const suppliedInstance = {
+  data: { reportId: "r1" },
   key: "overview",
   metadata: { title: "Overview" },
-  data: { reportId: "r1" },
 };
 <RenderSlot.Controlled
   app={app}
@@ -500,11 +574,20 @@ const slotName: "page" | "navbar" = Math.random() > 0.5 ? "page" : "navbar";
 <RenderSlot app={app} slot={slotName} />;
 
 // Registration accepts schema input; apps receive the validated output.
-const transformedSchema: StandardSchemaV1<{ count: string }, { count: number }> = {
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+const transformedSchema: StandardSchemaV1<
+  { count: string },
+  { count: number }
+> = {
   "~standard": {
-    version: 1,
+    validate: (
+      value: Parameters<StandardSchemaV1["~standard"]["validate"]>[0]
+    ) => ({
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+      value: { count: Number((value as { count: string }).count) },
+    }),
     vendor: "test",
-    validate: (value) => ({ value: { count: Number((value as { count: string }).count) } }),
+    version: 1,
   },
 };
 const transformedClient = createClient({

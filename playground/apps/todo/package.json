@@ -1,7 +1,6 @@
 {
   "name": "@playground/todo",
   "private": true,
-  "license": "BUSL-1.1",
   "type": "module",
   "imports": {
     "#tailorkit": "./src/tailorkit.gen.ts",
@@ -15,15 +14,22 @@
   },
   "scripts": {
     "generate": "tailorkit generate --schema ../../schema.json",
-    "build": "tailorkit build",
-    "check-types": "tsc --noEmit"
+    "build": "vp build",
+    "check-types": "tsc --noEmit",
+    "lint": "vp lint .",
+    "format": "vp fmt --check",
+    "check": "vp check",
+    "fix": "vp check --fix",
+    "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
-    "preact": "^11.0.0",
+    "preact": "^11.0.1",
     "tailorkit": "workspace:*"
   },
   "devDependencies": {
     "@tailorkit/cli": "workspace:*",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
   }
 }

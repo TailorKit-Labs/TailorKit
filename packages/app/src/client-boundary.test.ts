@@ -1,8 +1,9 @@
-import { expect, it } from "vite-plus/test";
-import { build } from "vite";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+
+import { build } from "vite";
+import { expect, it } from "vite-plus/test";
 
 it("exports the client API and public contract without importing private runtime code", async () => {
   const modules: string[] = [];
@@ -10,32 +11,42 @@ it("exports the client API and public contract without importing private runtime
   const entry = path.join(root, "entry.js");
   await writeFile(
     entry,
-    `export * from ${JSON.stringify(path.resolve(import.meta.dirname, "../../tailorkit/dist/client.js"))}; export { defineServer } from ${JSON.stringify(path.resolve(import.meta.dirname, "../dist/index.js"))}; export { appContract } from ${JSON.stringify(path.resolve(import.meta.dirname, "../dist/protocol.js"))};`,
+    `export * from ${JSON.stringify(path.resolve(import.meta.dirname, "../../tailorkit/dist/client.js"))}; export { defineServer } from ${JSON.stringify(path.resolve(import.meta.dirname, "../dist/index.js"))}; export { appContract } from ${JSON.stringify(path.resolve(import.meta.dirname, "../dist/protocol.js"))};`
   );
   try {
     const result = await build({
+      build: {
+        lib: { entry, formats: ["es"] },
+        minify: false,
+        write: false,
+      },
       configFile: false,
       logLevel: "silent",
       plugins: [
         {
-          name: "tailorkit-client-boundary-check",
           generateBundle() {
             modules.push(...this.getModuleIds());
           },
+          name: "tailorkit-client-boundary-check",
         },
       ],
-      build: {
-        write: false,
-        minify: false,
-        lib: { entry, formats: ["es"] },
-      },
     });
-    expect(modules.some((id) => /\/node_modules\/(?:effect|jose)\//u.test(id))).toBe(false);
+    expect(
+      modules.some((id) => /\/node_modules\/(?:effect|jose)\//u.test(id))
+    ).toBe(false);
     expect(modules.some((id) => id.includes("@orpc/server"))).toBe(false);
-    expect(modules.some((id) => /(?:apps-worker|api-utils|app-platform)/u.test(id))).toBe(false);
-    expect(modules.some((id) => /\/(?:auth|runtime)\.js$/u.test(id))).toBe(false);
-    expect(modules.some((id) => /\/(?:tokens|verifier)\.[jt]s$/u.test(id))).toBe(false);
-    expect(modules.some((id) => /\/@tanstack\/(?:store|preact-store)\//u.test(id))).toBe(false);
+    expect(
+      modules.some((id) => /(?:apps-worker|api-utils|app-platform)/u.test(id))
+    ).toBe(false);
+    expect(modules.some((id) => /\/(?:auth|runtime)\.js$/u.test(id))).toBe(
+      false
+    );
+    expect(
+      modules.some((id) => /\/(?:tokens|verifier)\.[jt]s$/u.test(id))
+    ).toBe(false);
+    expect(
+      modules.some((id) => /\/@tanstack\/(?:store|preact-store)\//u.test(id))
+    ).toBe(false);
     expect(modules.some((id) => id.includes("/nanostores/"))).toBe(true);
     const outputs = Array.isArray(result) ? result : [result];
     const browser = outputs
@@ -58,6 +69,6 @@ it("exports the client API and public contract without importing private runtime
     expect(browser).not.toContain("SignJWT");
     expect(browser).not.toContain("createAppRuntimeVerifier");
   } finally {
-    await rm(root, { recursive: true, force: true });
+    await rm(root, { force: true, recursive: true });
   }
 });

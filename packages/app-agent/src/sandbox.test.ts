@@ -1,6 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
+// oxlint-disable-next-line max-classes-per-file -- These related adapter or mock classes implement one runtime boundary.
 import { APIError } from "@vercel/sandbox";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { FatalError } from "workflow";
+
 import {
   deleteSandbox,
   getSandbox,
@@ -13,13 +15,13 @@ import {
 } from "./sandbox";
 
 const mocks = vi.hoisted(() => ({
+  delete: vi.fn(),
   drive: vi.fn(),
+  extend: vi.fn(),
   get: vi.fn(),
   getOrCreate: vi.fn(),
-  delete: vi.fn(),
-  extend: vi.fn(),
-  writeFiles: vi.fn(),
   runCommand: vi.fn(),
+  writeFiles: vi.fn(),
 }));
 vi.mock("workflow", () => ({ FatalError: class extends Error {} }));
 vi.mock("@vercel/sandbox", () => ({
@@ -42,15 +44,15 @@ beforeEach(() => {
   mocks.drive.mockResolvedValue({ name: "app-123", region: "syd1" });
   mocks.getOrCreate.mockResolvedValue({ name: sandboxName });
   mocks.get.mockResolvedValue({
-    name: sandboxName,
-    status: "running",
-    expiresAt: new Date(sandboxIdleTimeoutMs),
     currentSession: () => ({
       extendTimeout: mocks.extend,
-      writeFiles: mocks.writeFiles,
       runCommand: mocks.runCommand,
+      writeFiles: mocks.writeFiles,
     }),
     delete: mocks.delete,
+    expiresAt: new Date(sandboxIdleTimeoutMs),
+    name: sandboxName,
+    status: "running",
   });
 });
 
@@ -58,28 +60,41 @@ describe("sandbox ownership and sliding timeout", () => {
   it("mounts the persistent Drive on a disposable 15-minute sandbox without stopping it", async () => {
     await prepareSandbox("app-123", sandboxName);
     expect(mocks.getOrCreate).toHaveBeenCalledWith({
-      name: sandboxName,
-      image: "vercel/sandbox/universal",
-      region: "syd1",
-      persistent: false,
-      timeout: sandboxIdleTimeoutMs,
-      mounts: { "/workspace": expect.objectContaining({ name: "app-123" }) },
       env: { TAILORKIT_AGENT_TOKEN_FILE: agentTokenPath },
+      image: "vercel/sandbox/universal",
+      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
+      mounts: { "/workspace": expect.objectContaining({ name: "app-123" }) },
+      name: sandboxName,
+      persistent: false,
+      region: "syd1",
+      timeout: sandboxIdleTimeoutMs,
     });
     expect(mocks.delete).not.toHaveBeenCalled();
   });
 
   it("writes a supplied schema as JSON on the persistent Drive", async () => {
-    const schema = { version: 1, components: {}, views: {}, slots: {}, tools: {} };
+    const schema = {
+      components: {},
+      slots: {},
+      tools: {},
+      version: 1,
+      views: {},
+    };
     await writeAgentSchema(sandboxName, schema);
     expect(mocks.writeFiles).toHaveBeenCalledExactlyOnceWith([
-      { path: agentSchemaPath, content: Buffer.from(JSON.stringify(schema), "utf-8") },
+      {
+        content: Buffer.from(JSON.stringify(schema), "utf-8"),
+        path: agentSchemaPath,
+      },
     ]);
     expect(agentSchemaPath).toBe("/workspace/tailorkit.schema.json");
   });
 
   it("fails busy Drive requests immediately without touching the active writer", async () => {
-    mocks.drive.mockResolvedValue({ name: "app-123", currentSandboxName: "app-agent-alice" });
+    mocks.drive.mockResolvedValue({
+      currentSandboxName: "app-agent-alice",
+      name: "app-123",
+    });
     const preparation = prepareSandbox("app-123", sandboxName);
     await expect(preparation).rejects.toBeInstanceOf(FatalError);
     await expect(preparation).rejects.toThrow("already being edited");
@@ -92,9 +107,11 @@ describe("sandbox ownership and sliding timeout", () => {
     mocks.getOrCreate.mockRejectedValue(
       new APIError(new Response(null, { status: 409 }), {
         message: "Drive is already mounted",
-      }),
+      })
     );
-    await expect(prepareSandbox("app-123", sandboxName)).rejects.toBeInstanceOf(FatalError);
+    await expect(prepareSandbox("app-123", sandboxName)).rejects.toBeInstanceOf(
+      FatalError
+    );
     expect(mocks.delete).not.toHaveBeenCalled();
   });
 
@@ -112,7 +129,10 @@ describe("sandbox ownership and sliding timeout", () => {
   });
 
   it("rejects expired or stopped VMs without resuming or recreating them", async () => {
-    mocks.get.mockResolvedValueOnce({ status: "running", expiresAt: new Date(299_999) });
+    mocks.get.mockResolvedValueOnce({
+      expiresAt: new Date(299_999),
+      status: "running",
+    });
     await expect(getSandbox(sandboxName)).rejects.toThrow("no longer running");
     mocks.get.mockResolvedValueOnce({ status: "stopped" });
     await expect(getSandbox(sandboxName)).rejects.toThrow("no longer running");
@@ -124,7 +144,9 @@ describe("sandbox ownership and sliding timeout", () => {
     await deleteSandbox(sandboxName);
     expect(mocks.get).toHaveBeenCalledWith({ name: sandboxName });
     expect(mocks.delete).toHaveBeenCalledWith({ deleteOrphanSnapshots: true });
-    mocks.get.mockRejectedValue(new APIError(new Response(null, { status: 404 })));
+    mocks.get.mockRejectedValue(
+      new APIError(new Response(null, { status: 404 }))
+    );
     await expect(deleteSandbox(sandboxName)).resolves.toBeUndefined();
   });
 });
@@ -133,12 +155,17 @@ it("keeps the authorization file off the Drive and restricts its permissions", a
   mocks.runCommand.mockResolvedValue({ exitCode: 0 });
   await writeAgentToken(sandboxName, "private-token");
   expect(mocks.writeFiles).toHaveBeenCalledWith([
-    { path: "/tmp/tailorkit-agent.token", content: Buffer.from("private-token") },
+    {
+      content: Buffer.from("private-token"),
+      path: "/tmp/tailorkit-agent.token",
+    },
   ]);
   expect(mocks.runCommand).toHaveBeenCalledWith({
-    cmd: "chmod",
     args: ["600", agentTokenPath],
+    cmd: "chmod",
     timeoutMs: 30_000,
   });
-  expect(JSON.stringify(mocks.runCommand.mock.calls)).not.toContain("private-token");
+  expect(JSON.stringify(mocks.runCommand.mock.calls)).not.toContain(
+    "private-token"
+  );
 });

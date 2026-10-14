@@ -1,6 +1,6 @@
 {
   "name": "@tailorkit/cli",
-  "version": "0.1.0-beta.29",
+  "version": "0.1.0-beta.30",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -16,6 +16,17 @@
     "dist"
   ],
   "type": "module",
+  "imports": {
+    "#env": "./src/env.ts",
+    "#*": [
+      "./src/*",
+      "./src/*.ts",
+      "./src/*.tsx",
+      "./src/*/index.ts",
+      "./src/*/index.tsx"
+    ],
+    "#package.json": "./package.json"
+  },
   "exports": {
     ".": "./dist/index.js"
   },
@@ -25,17 +36,19 @@
   "scripts": {
     "build": "vp build",
     "check-types": "tsc --noEmit",
-    "test": "vp test run"
+    "test": "vp test run",
+    "lint": "vp lint .",
+    "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
-    "@ai-sdk/tui": "1.0.128",
+    "@ai-sdk/tui": "1.0.138",
     "@clack/prompts": "^1.8.1",
     "@orpc/client": "catalog:",
-    "@tailorkit/app": "workspace:*",
     "@tailorkit/client-platform": "workspace:*",
     "@tailorkit/core": "workspace:*",
+    "@tailorkit/vite": "workspace:*",
     "ai": "catalog:",
-    "cac": "^7.0.0",
+    "cac": "^7.0.1",
     "jose": "6.2.12",
     "liquidjs": "^10.30.0",
     "picocolors": "^1.1.1",
@@ -43,8 +56,10 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@tailorkit/app": "workspace:*",
     "@tailorkit/config": "workspace:*",
     "@types/node": "catalog:",
+    "preact": "^11.0.1",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   }

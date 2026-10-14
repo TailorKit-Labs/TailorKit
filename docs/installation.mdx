@@ -4,14 +4,14 @@ description: "Install TailorKit, expose your host API, and render installed apps
 ---
 
 <Note>
-  You'll need a TailorKit account to get started. [Sign up](https://tailorkit.dev/signup).
+  You'll need a TailorKit account to get started. [Sign
+  up](https://tailorkit.dev/signup).
 </Note>
 
 <Steps titleSize="h2">
 <Step title="Install TailorKit">
 
-Choose a validation library to use with TailorKit. If you’re unsure, use Zod.
-Then add TailorKit and your chosen library to your project:
+Choose a validation library to use with TailorKit. If you’re unsure, use Zod. Then add TailorKit and your chosen library to your project:
 
 <Tabs>
 
@@ -92,14 +92,11 @@ bun add tailorkit@beta valibot @valibot/to-json-schema
 </Step>
 <Step title="Define the shared contract">
 
-This file is the contract between installed apps and your platform.
-It defines components, views, slots, scopes, and tool inputs and outputs. Keep this file
-browser-safe: both your server and frontend import it. Action handlers and secrets belong
-in the server file.
+This file is the contract between installed apps and your platform. It defines components, views, slots, scopes, and tool inputs and outputs. Keep this file browser-safe: both your server and frontend import it. Action handlers and secrets belong in the server file.
 
 <Tip>
-  Removing or changing a capability can break apps that rely on it. For example, removing a
-  component makes it unavailable to every app using it.
+  Removing or changing a capability can break apps that rely on it. For example,
+  removing a component makes it unavailable to every app using it.
 </Tip>
 
 <Tabs>
@@ -222,10 +219,7 @@ export const contract = defineContract({
 
 <Tab title="Valibot">
 
-Use `toStandardJsonSchema` to give Valibot schemas the JSON Schema conversion
-TailorKit uses to publish your host contract. Alternatively, keep native Valibot schemas
-in the contract and pass a `schemaSerializer` to `createServer`, importing the JSON Schema
-converter only in the server file. The browser only requires Standard Schema validation.
+Use `toStandardJsonSchema` to give Valibot schemas the JSON Schema conversion TailorKit uses to publish your host contract. Alternatively, keep native Valibot schemas in the contract and pass a `schemaSerializer` to `createServer`, importing the JSON Schema converter only in the server file. The browser only requires Standard Schema validation.
 
 ```ts src/lib/tailorkit.ts
 import { tool, defineContract } from "tailorkit";
@@ -238,7 +232,7 @@ const Button = {
   fields: toStandardJsonSchema(
     v.object({
       variant: v.picklist(["default", "secondary"]),
-    }),
+    })
   ),
   callbacks: {
     onClick: {},
@@ -248,7 +242,11 @@ const Button = {
 
 export const contract = defineContract({
   // Values form the installation key: userId + teamId scopes installs per user per team.
-  scopes: { user: toStandardJsonSchema(v.object({ userId: v.pipe(v.string(), v.minLength(1)) })) },
+  scopes: {
+    user: toStandardJsonSchema(
+      v.object({ userId: v.pipe(v.string(), v.minLength(1)) })
+    ),
+  },
 
   tools: {
     echo: tool
@@ -270,16 +268,20 @@ export const contract = defineContract({
               default: "var(--text)",
             },
           },
-        }),
+        })
       ).map(([name, component]) => [
         name,
         {
           ...component,
           fields: toStandardJsonSchema(
-            component.fields as unknown as v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>,
+            component.fields as unknown as v.BaseSchema<
+              unknown,
+              unknown,
+              v.BaseIssue<unknown>
+            >
           ),
         },
-      ]),
+      ])
     ),
     Button,
   },
@@ -290,7 +292,7 @@ export const contract = defineContract({
     "/": toStandardJsonSchema(
       v.object({
         user: v.object({ id: v.string(), name: v.string() }),
-      }),
+      })
     ),
   },
 
@@ -309,8 +311,7 @@ export const contract = defineContract({
 </Step>
 <Step title="Implement the server">
 
-Create a separate server file for server tool handlers and server configuration.
-The tool inputs and return values infer from the contract.
+Create a separate server file for server tool handlers and server configuration. The tool inputs and return values infer from the contract.
 
 ```ts src/lib/tailorkit-server.ts
 import { createServer } from "tailorkit/server";
@@ -325,15 +326,9 @@ export const tailorKit = createServer({
 });
 ```
 
-Supply `authenticate` to return `{ scopes, subjectId? }`. `subjectId` is any
-product-defined principal, such as a user, service account, or scheduled job. Omit
-it to attribute calls to the installation. Tool handlers receive verified
-`context.identity`, the installation's `context.scope`, and `context.requestId`.
-Authentication can also be supplied per request when calling `handler`.
+Supply `authenticate` to return `{ scopes, subjectId? }`. `subjectId` is any product-defined principal, such as a user, service account, or scheduled job. Omit it to attribute calls to the installation. Tool handlers receive verified `context.identity`, the installation's `context.scope`, and `context.requestId`. Authentication can also be supplied per request when calling `handler`.
 
-Client tools use `tool.client()` and are implemented through `createClient({
-contract, tools })` in the product frontend. See [Tools](/tools) for nested callers,
-backend action access, and credential behavior.
+Client tools use `tool.client()` and are implemented through `createClient({ contract, tools })` in the product frontend. See [Tools](/tools) for nested callers, backend action access, and credential behavior.
 
 </Step>
 <Step title="Add the API handler">
@@ -341,8 +336,8 @@ backend action access, and credential behavior.
 Mount the handler at your TailorKit base path. The default is `/api/tailorkit`.
 
 <Note>
-  TailorKit supports any backend framework that uses standard `Request` and `Response` objects, with
-  examples for popular frameworks below.
+  TailorKit supports any backend framework that uses standard `Request` and
+  `Response` objects, with examples for popular frameworks below.
 </Note>
 
 <Tabs>
@@ -506,14 +501,9 @@ export default app;
 </Step>
 <Step title="Create the client">
 
-The TailorKit client connects your frontend to the TailorKit API handler and
-maps the components from your contract to components in your app. It validates view
-context with the original Standard Schema validators and uses their parsed output,
-including stripped extra fields. The host client does not fetch `/meta`; that endpoint
-remains available for app type generation.
+The TailorKit client connects your frontend to the TailorKit API handler and maps the components from your contract to components in your app. It validates view context with the original Standard Schema validators and uses their parsed output, including stripped extra fields. The host client does not fetch `/meta`; that endpoint remains available for app type generation.
 
-App asset URLs normally come from discovery through `clientPath`. If you use the
-deployment URL fallback, pass `assetsBaseUrl` to the client.
+App asset URLs normally come from discovery through `clientPath`. If you use the deployment URL fallback, pass `assetsBaseUrl` to the client.
 
 Create `tailorkit-client.tsx` in your frontend, wherever you keep client-side utilities.
 
@@ -553,9 +543,7 @@ export default tailorKitClient;
 </Step>
 <Step title="Add the provider">
 
-Wrap your pages in the TailorKit provider to use TailorKit hooks and components.
-The provider uses the client that created it and renders no DOM wrapper. It accepts
-`children` and an optional `apps` list; you do not need to pass `client`.
+Wrap your pages in the TailorKit provider to use TailorKit hooks and components. The provider uses the client that created it and renders no DOM wrapper. It accepts `children` and an optional `apps` list; you do not need to pass `client`.
 
 <Tabs>
 
@@ -586,7 +574,12 @@ Wrap your app.
 
 ```tsx src/routes/__root.tsx
 import type { ReactNode } from "react";
-import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
+import {
+  createRootRoute,
+  HeadContent,
+  Outlet,
+  Scripts,
+} from "@tanstack/react-router";
 import { TailorKitProvider } from "@/lib/tailorkit-client";
 
 export const Route = createRootRoute({
@@ -656,29 +649,13 @@ export default function App() {
 
 Add a page to supply view context and switch between apps available in the `page` slot.
 
-`useViewContext(path, state)` registers the host location, context, and readiness
-that app views consume. It updates when those values change and unregisters when
-the component unmounts.
+`useViewContext(path, state)` registers the host location, context, and readiness that app views consume. It updates when those values change and unregisters when the component unmounts.
 
-`useViews({ slot: "page" })` returns one `{ app }` item per app for single-view
-slots (`multiple: false` or omitted). It checks enabled, supported app views
-without calling an instance resolver or requiring registered page context. For
-`multiple: true` slots, it resolves instances using the registered context and
-returns `{ app, key, metadata, data }` items. Render those with
-`<RenderSlot app={item.app} slot="page" instanceKey={item.key} />`.
+`useViews({ slot: "page" })` returns one `{ app }` item per app for single-view slots (`multiple: false` or omitted). It checks enabled, supported app views without calling an instance resolver or requiring registered page context. For `multiple: true` slots, it resolves instances using the registered context and returns `{ app, key, metadata, data }` items. Render those with `<RenderSlot app={item.app} slot="page" instanceKey={item.key} />`.
 
-The returned `data` items are typed from your server slot definition: instance
-slots have a required `key: string`, `metadata`, and `data`; single-view slots
-have only `app`. Accessing `item.key` on a single-view slot is a TypeScript error.
-If the slot mode is only known at runtime, narrow an item with `"key" in item`.
+The returned `data` items are typed from your server slot definition: instance slots have a required `key: string`, `metadata`, and `data`; single-view slots have only `app`. Accessing `item.key` on a single-view slot is a TypeScript error. If the slot mode is only known at runtime, narrow an item with `"key" in item`.
 
-Both modes support `scopes` and `appIds`. React's `useApps` and `useViews` return
-only `data`, `isPending`, `error`, `isRefetching`, and `fetch()`. `isPending` is
-true while the query is waiting for initial data or required context.
-`isRefetching` is true during a background refresh after the initial pending
-state. Call `fetch()` to request fresh data or retry an error. Cache timings are
-managed by the client configuration. For single-view slots, `fetch()` refreshes
-app discovery; for multiple slots, it refreshes the resolved instances.
+Both modes support `scopes` and `appIds`. React's `useApps` and `useViews` return only `data`, `isPending`, `error`, `isRefetching`, and `fetch()`. `isPending` is true while the query is waiting for initial data or required context. `isRefetching` is true during a background refresh after the initial pending state. Call `fetch()` to request fresh data or retry an error. Cache timings are managed by the client configuration. For single-view slots, `fetch()` refreshes app discovery; for multiple slots, it refreshes the resolved instances.
 
 <Tabs>
 
@@ -696,9 +673,13 @@ export default function Page() {
   // Replace this with your own authentication hook.
   const { data: session, isPending: isSessionPending } = useSession();
 
-  useViewContext("/", session ? { context: { user: session.user } } : { status: "loading" });
+  useViewContext(
+    "/",
+    session ? { context: { user: session.user } } : { status: "loading" }
+  );
 
-  const selectedView = views?.find((view) => view.app.id === selectedId) ?? views?.[0];
+  const selectedView =
+    views?.find((view) => view.app.id === selectedId) ?? views?.[0];
 
   if (isPending || isSessionPending) return <p>Loading views…</p>;
   if (error) return "An error has occurred: " + error.message;
@@ -708,7 +689,10 @@ export default function Page() {
     <>
       <label>
         View
-        <select value={selectedView.app.id} onChange={(event) => setSelectedId(event.target.value)}>
+        <select
+          value={selectedView.app.id}
+          onChange={(event) => setSelectedId(event.target.value)}
+        >
           {views?.map((view) => (
             <option key={view.app.id} value={view.app.id}>
               {view.app.name ?? view.app.id}
@@ -717,7 +701,11 @@ export default function Page() {
         </select>
       </label>
 
-      <RenderSlot key={selectedView.app.id} app={selectedView.app} slot="page" />
+      <RenderSlot
+        key={selectedView.app.id}
+        app={selectedView.app}
+        slot="page"
+      />
     </>
   );
 }
@@ -740,9 +728,13 @@ function Page() {
   // Replace this with your own authentication hook.
   const { data: session, isPending: isSessionPending } = useSession();
 
-  useViewContext("/", session ? { context: { user: session.user } } : { status: "loading" });
+  useViewContext(
+    "/",
+    session ? { context: { user: session.user } } : { status: "loading" }
+  );
 
-  const selectedView = views?.find((view) => view.app.id === selectedId) ?? views?.[0];
+  const selectedView =
+    views?.find((view) => view.app.id === selectedId) ?? views?.[0];
 
   if (isPending || isSessionPending) return <p>Loading views…</p>;
   if (error) return "An error has occurred: " + error.message;
@@ -752,7 +744,10 @@ function Page() {
     <>
       <label>
         View
-        <select value={selectedView.app.id} onChange={(event) => setSelectedId(event.target.value)}>
+        <select
+          value={selectedView.app.id}
+          onChange={(event) => setSelectedId(event.target.value)}
+        >
           {views?.map((view) => (
             <option key={view.app.id} value={view.app.id}>
               {view.app.name ?? view.app.id}
@@ -761,7 +756,11 @@ function Page() {
         </select>
       </label>
 
-      <RenderSlot key={selectedView.app.id} app={selectedView.app} slot="page" />
+      <RenderSlot
+        key={selectedView.app.id}
+        app={selectedView.app}
+        slot="page"
+      />
     </>
   );
 }
@@ -781,9 +780,13 @@ export default function Page() {
   // Replace this with your own authentication hook.
   const { data: session, isPending: isSessionPending } = useSession();
 
-  useViewContext("/", session ? { context: { user: session.user } } : { status: "loading" });
+  useViewContext(
+    "/",
+    session ? { context: { user: session.user } } : { status: "loading" }
+  );
 
-  const selectedView = views?.find((view) => view.app.id === selectedId) ?? views?.[0];
+  const selectedView =
+    views?.find((view) => view.app.id === selectedId) ?? views?.[0];
 
   if (isPending || isSessionPending) return <p>Loading views…</p>;
   if (error) return "An error has occurred: " + error.message;
@@ -793,7 +796,10 @@ export default function Page() {
     <>
       <label>
         View
-        <select value={selectedView.app.id} onChange={(event) => setSelectedId(event.target.value)}>
+        <select
+          value={selectedView.app.id}
+          onChange={(event) => setSelectedId(event.target.value)}
+        >
           {views?.map((view) => (
             <option key={view.app.id} value={view.app.id}>
               {view.app.name ?? view.app.id}
@@ -802,7 +808,11 @@ export default function Page() {
         </select>
       </label>
 
-      <RenderSlot key={selectedView.app.id} app={selectedView.app} slot="page" />
+      <RenderSlot
+        key={selectedView.app.id}
+        app={selectedView.app}
+        slot="page"
+      />
     </>
   );
 }
@@ -823,23 +833,15 @@ GET /api/tailorkit/meta
 GET /api/tailorkit/apps
 ```
 
-The schema and metadata endpoints describe your public app contract. The apps
-endpoint requires a valid host session and returns the apps installed for the
-authenticated scopes. Each scope is named by the schema key, such as `user`.
+The schema and metadata endpoints describe your public app contract. The apps endpoint requires a valid host session and returns the apps installed for the authenticated scopes. Each scope is named by the schema key, such as `user`.
 
-While signed in to your host, open `/app-views`. You
-should see either an app view or “No views available yet.” An
-unauthenticated request to `/api/tailorkit/apps` should be rejected.
+While signed in to your host, open `/app-views`. You should see either an app view or “No views available yet.” An unauthenticated request to `/api/tailorkit/apps` should be rejected.
 
-If the routes return 404, check the catch-all route and handler path. If the
-schema works but apps fail to load, check that `authenticate` returns a valid
-session and that the client points to the same origin as your host.
+If the routes return 404, check the catch-all route and handler path. If the schema works but apps fail to load, check that `authenticate` returns a valid session and that the client points to the same origin as your host.
 
 </Step>
 </Steps>
 
 ## Next steps
 
-With the host running, you can create an app, generate bindings from its schema,
-and start a preview. To try the local host and Todo app, run `pnpm playground:dev`
-from the TailorKit repository.
+With the host running, you can create an app, generate bindings from its schema, and start a preview. To try the local host and Todo app, run `pnpm playground:dev` from the TailorKit repository.

@@ -1,6 +1,6 @@
 {
   "name": "@tailorkit/sandbox",
-  "version": "0.1.0-beta.29",
+  "version": "0.1.0-beta.30",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -11,6 +11,16 @@
     "dist"
   ],
   "type": "module",
+  "imports": {
+    "#env": "./src/env.ts",
+    "#*": [
+      "./src/*",
+      "./src/*.ts",
+      "./src/*.tsx",
+      "./src/*/index.ts",
+      "./src/*/index.tsx"
+    ]
+  },
   "exports": {
     "./host": {
       "types": "./dist/host/index.d.ts",
@@ -27,7 +37,9 @@
   "scripts": {
     "check-types": "tsc --noEmit",
     "test": "vp test run",
-    "build": "vp build && tsc -p tsconfig.build.json"
+    "build": "vp build && tsc -p tsconfig.build.json",
+    "lint": "vp lint .",
+    "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
     "@tailorkit/app": "workspace:*",
@@ -37,7 +49,7 @@
   "devDependencies": {
     "@tailorkit/config": "workspace:*",
     "@types/node": "catalog:",
-    "happy-dom": "^20.14.5",
+    "happy-dom": "^20.14.6",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"

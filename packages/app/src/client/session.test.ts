@@ -1,18 +1,20 @@
 import { expect, it, vi } from "vite-plus/test";
+
 import { createSessionProvider } from "./session";
 
 it("deduplicates token requests, caches until renewal and sends only the host-bound app ID", async () => {
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
   const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async () =>
     Response.json({
+      expiresAt: Date.now() + 300_000,
       subjectId: "principal",
       token: "scoped",
-      expiresAt: Date.now() + 300_000,
       url: "https://runtime.test/rpc",
-    }),
+    })
   );
   const session = createSessionProvider({
-    baseUrl: "https://host.test/api/tailorkit",
     appId: "allowed",
+    baseUrl: "https://host.test/api/tailorkit",
     fetch,
   });
   const [first, second] = await Promise.all([
@@ -21,12 +23,16 @@ it("deduplicates token requests, caches until renewal and sends only the host-bo
   ]);
   expect(first).toEqual(second);
   expect(fetch).toHaveBeenCalledTimes(1);
-  expect(fetch.mock.calls[0]?.[0].toString()).toBe(
-    "https://host.test/api/tailorkit/backend/session",
-  );
+
+  const requestedUrl = fetch.mock.calls[0]?.[0];
+  expect(
+    requestedUrl instanceof Request
+      ? requestedUrl.url
+      : requestedUrl?.toString()
+  ).toBe("https://host.test/api/tailorkit/backend/session");
   expect(fetch.mock.calls[0]?.[1]).toMatchObject({
-    credentials: "same-origin",
     body: JSON.stringify({ appId: "allowed" }),
+    credentials: "same-origin",
   });
   await session({ refresh: false });
   expect(fetch).toHaveBeenCalledTimes(1);
@@ -37,17 +43,20 @@ it("renews cached sessions when one minute remains", async () => {
   vi.useFakeTimers();
   vi.setSystemTime(0);
   try {
-    const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async () =>
-      Response.json({
-        subjectId: "principal",
-        token: "scoped",
-        expiresAt: Date.now() + 300_000,
-        url: "https://runtime.test/rpc",
-      }),
-    );
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+      .mockImplementation(async () =>
+        Response.json({
+          expiresAt: Date.now() + 300_000,
+          subjectId: "principal",
+          token: "scoped",
+          url: "https://runtime.test/rpc",
+        })
+      );
     const session = createSessionProvider({
-      baseUrl: "https://host.test/api",
       appId: "allowed",
+      baseUrl: "https://host.test/api",
       fetch,
     });
     await session({ refresh: false });
@@ -68,20 +77,26 @@ it("does not cache failed authorization or malformed sessions", async () => {
     .mockResolvedValueOnce(Response.json({ token: "secret" }))
     .mockResolvedValueOnce(
       Response.json({
+        expiresAt: Date.now() + 300_000,
         subjectId: "principal",
         token: "scoped",
-        expiresAt: Date.now() + 300_000,
         url: "https://runtime.test/rpc",
-      }),
+      })
     );
   const session = createSessionProvider({
-    baseUrl: "https://host.test/api",
     appId: "allowed",
+    baseUrl: "https://host.test/api",
     fetch,
   });
-  await expect(session({ refresh: false })).rejects.toMatchObject({ code: "FORBIDDEN" });
-  await expect(session({ refresh: false })).rejects.toMatchObject({ code: "UNAVAILABLE" });
-  await expect(session({ refresh: false })).resolves.toMatchObject({ token: "scoped" });
+  await expect(session({ refresh: false })).rejects.toMatchObject({
+    code: "FORBIDDEN",
+  });
+  await expect(session({ refresh: false })).rejects.toMatchObject({
+    code: "UNAVAILABLE",
+  });
+  await expect(session({ refresh: false })).resolves.toMatchObject({
+    token: "scoped",
+  });
 });
 
 it("reports session network failures as retryable and allows the next request to recover", async () => {
@@ -90,56 +105,60 @@ it("reports session network failures as retryable and allows the next request to
     .mockRejectedValueOnce(new TypeError("Offline"))
     .mockResolvedValueOnce(
       Response.json({
+        expiresAt: Date.now() + 300_000,
         subjectId: "principal",
         token: "scoped",
-        expiresAt: Date.now() + 300_000,
         url: "https://runtime.test/rpc",
-      }),
+      })
     );
   const session = createSessionProvider({
-    baseUrl: "https://host.test/api",
     appId: "allowed",
+    baseUrl: "https://host.test/api",
     fetch,
   });
-  await expect(session({ refresh: false })).rejects.toMatchObject({ code: "UNAVAILABLE" });
-  await expect(session({ refresh: false })).resolves.toMatchObject({ token: "scoped" });
+  await expect(session({ refresh: false })).rejects.toMatchObject({
+    code: "UNAVAILABLE",
+  });
+  await expect(session({ refresh: false })).resolves.toMatchObject({
+    token: "scoped",
+  });
 });
 it("caches server-authenticated sessions without a subject cache key and refreshes their identity", async () => {
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(
       Response.json({
-        token: "first",
         expiresAt: Date.now() + 300_000,
-        url: "https://runtime.test/rpc",
         subjectId: "first-user",
-      }),
+        token: "first",
+        url: "https://runtime.test/rpc",
+      })
     )
     .mockResolvedValueOnce(
       Response.json({
-        token: "refreshed",
         expiresAt: Date.now() + 300_000,
-        url: "https://runtime.test/rpc",
         subjectId: "next-user",
-      }),
+        token: "refreshed",
+        url: "https://runtime.test/rpc",
+      })
     );
   const session = createSessionProvider({
-    baseUrl: "https://product.test/api/",
     appId: "app",
+    baseUrl: "https://product.test/api/",
     fetch,
   });
   await expect(session({ refresh: false })).resolves.toMatchObject({
-    token: "first",
     subjectId: "first-user",
+    token: "first",
   });
   await expect(session({ refresh: false })).resolves.toMatchObject({
-    token: "first",
     subjectId: "first-user",
+    token: "first",
   });
   expect(fetch).toHaveBeenCalledTimes(1);
   await expect(session({ refresh: true })).resolves.toMatchObject({
-    token: "refreshed",
     subjectId: "next-user",
+    token: "refreshed",
   });
   expect(fetch).toHaveBeenCalledTimes(2);
 });

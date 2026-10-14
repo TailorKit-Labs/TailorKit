@@ -1,0 +1,21 @@
+/** Values produced by CAC's declared string and boolean command options. */
+export interface CliOptions {
+  app?: string;
+  appId?: string;
+  config?: string;
+  cwd?: string;
+  force?: boolean;
+  host?: string;
+  install?: boolean;
+  interactive?: boolean;
+  mode?: string;
+  name?: string;
+  open?: boolean;
+  out?: string;
+  outDir?: string;
+  packageManager?: string;
+  replace?: boolean;
+  schema?: string;
+  timeout?: string | number;
+  tooling?: string;
+}

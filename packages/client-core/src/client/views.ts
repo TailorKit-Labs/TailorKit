@@ -1,5 +1,6 @@
-import { createSlotStore } from "../store/fetch/slot";
-import type { TailorKitStore } from "../store/store";
+import { createSlotStore } from "#store/fetch/slot";
+import type { TailorKitStore } from "#store/store";
+
 import { matchesApp } from "./apps";
 
 export interface ViewsQueryOptions<
@@ -12,23 +13,35 @@ export interface ViewsQueryOptions<
 }
 
 /** Refresh discovery or instances and join queries created by the resulting state. */
-export async function refetchViews(
+export const refetchViews = async (
   store: TailorKitStore,
-  { slot, scopes, appIds }: ViewsQueryOptions,
-): Promise<void> {
+  { slot, scopes, appIds }: ViewsQueryOptions
+): Promise<void> => {
   const queryOptions = () => {
     const schema = store.contract;
     return {
-      apps: store.getAppsSnapshot().apps.filter((app) => matchesApp(app, scopes, appIds)),
+      activeView:
+        schema.slots[slot]?.multiple === true
+          ? store.views.getSnapshot()
+          : null,
+      apps: store
+        .getAppsSnapshot()
+        .apps.filter((app) => matchesApp(app, scopes, appIds)),
       slot,
-      activeView: schema.slots[slot]?.multiple === true ? store.views.getSnapshot() : null,
     };
   };
-  if (store.getAppsSnapshot().status === "ready" && store.contract.slots[slot]?.multiple === true) {
-    await createSlotStore(store.client, store.contract, queryOptions()).fetch({ force: true });
+  if (
+    store.getAppsSnapshot().status === "ready" &&
+    store.contract.slots[slot]?.multiple === true
+  ) {
+    await createSlotStore(store.client, store.contract, queryOptions()).fetch({
+      force: true,
+    });
     return;
   }
   await store.fetchApps({ force: true });
-  if (store.getAppsSnapshot().status !== "ready") return;
+  if (store.getAppsSnapshot().status !== "ready") {
+    return;
+  }
   await createSlotStore(store.client, store.contract, queryOptions()).fetch();
-}
+};

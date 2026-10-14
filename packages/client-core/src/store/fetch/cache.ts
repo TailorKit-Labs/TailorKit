@@ -1,7 +1,11 @@
 import { computedAsync } from "@nanostores/async";
-import { createSnapshotStore } from "../snapshot-store";
 import { atom } from "nanostores";
 import type { ReadableAtom, WritableAtom } from "nanostores";
+
+import { createSnapshotStore } from "#store/snapshot-store";
+
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 export interface FetchCacheOptions {
   /** Milliseconds before a successful response needs refreshing. Infinity keeps it fresh. */
@@ -35,8 +39,8 @@ export interface FetchStore<T> {
 const idle = <T>(): FetchSnapshot<T> => ({
   data: undefined,
   error: null,
-  status: "idle",
   isFetching: false,
+  status: "idle",
   updatedAt: 0,
 });
 
@@ -53,22 +57,31 @@ interface Entry {
   timer: ReturnType<typeof setTimeout> | null;
 }
 
-export function serializeCacheKey(key: readonly unknown[]): string {
-  return JSON.stringify(key, (_name, value: unknown) =>
-    value && typeof value === "object" && !Array.isArray(value)
-      ? Object.fromEntries(Object.entries(value).toSorted(([a], [b]) => a.localeCompare(b)))
-      : value,
+export const serializeCacheKey = (key: readonly unknown[]): string =>
+  JSON.stringify(
+    key,
+    // Native JSON serialization supplies arbitrary values; this boundary only normalizes object key order.
+    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- These are serializer inputs, not unparsed domain-handler arguments.
+    (_name, value: unknown) =>
+      isObjectValue(value) && !Array.isArray(value)
+        ? Object.fromEntries(
+            Object.entries(value).toSorted(([a], [b]) => a.localeCompare(b))
+          )
+        : value
   );
-}
 
-function duration(value: number | undefined, fallback: number): number {
-  if (value === undefined) return fallback;
-  if (value < 0 || Number.isNaN(value)) throw new Error("Cache times must be non-negative.");
+const duration = (value: number | undefined, fallback: number): number => {
+  if (value === undefined) {
+    return fallback;
+  }
+  if (value < 0 || Number.isNaN(value)) {
+    throw new Error("Cache times must be non-negative.");
+  }
   return value;
-}
+};
 
 /** A cache belongs to one authenticated client, never to the process or a global singleton. */
-export function createFetchCache(defaults: FetchCacheOptions = {}) {
+export const createFetchCache = (defaults: FetchCacheOptions = {}) => {
   const entries = new Map<string, Entry>();
   const staleTime = duration(defaults.staleTime, 30_000);
   const gcTime = duration(defaults.gcTime, 300_000);
@@ -79,20 +92,28 @@ export function createFetchCache(defaults: FetchCacheOptions = {}) {
     entry.controller = null;
     entry.pending = null;
     entry.invalidated = false;
-    if (entry.timer) clearTimeout(entry.timer);
+    if (entry.timer) {
+      clearTimeout(entry.timer);
+    }
     entry.timer = null;
     entry.state.set(idle());
   };
 
   const scheduleGc = (key: string, entry: Entry) => {
-    if (entry.timer) clearTimeout(entry.timer);
+    if (entry.timer) {
+      clearTimeout(entry.timer);
+    }
     entry.timer = null;
-    if (entry.observers || entry.pending || entry.gcTime === Infinity) return;
+    if (entry.observers || entry.pending || entry.gcTime === Infinity) {
+      return;
+    }
     const expiresAt = Date.now() + entry.gcTime;
     const arm = () => {
       entry.timer = setTimeout(
         () => {
-          if (entries.get(key) !== entry || entry.observers || entry.pending) return;
+          if (entries.get(key) !== entry || entry.observers || entry.pending) {
+            return;
+          }
           if (Date.now() < expiresAt) {
             arm();
             return;
@@ -100,19 +121,29 @@ export function createFetchCache(defaults: FetchCacheOptions = {}) {
           entries.delete(key);
           reset(entry);
         },
-        Math.min(Math.max(0, expiresAt - Date.now()), 2_147_483_647),
+        Math.min(Math.max(0, expiresAt - Date.now()), 2_147_483_647)
       );
-      if (typeof entry.timer === "object") entry.timer.unref?.();
+      if (isObjectValue(entry.timer)) {
+        entry.timer.unref?.();
+      }
     };
     arm();
   };
 
   return {
-    getStore<T>(
+    clear: () => {
+      for (const [key, entry] of entries) {
+        reset(entry);
+        if (!entry.observers) {
+          entries.delete(key);
+        }
+      }
+    },
+    getStore: <T>(
       input: readonly unknown[],
       fetcher: Fetcher<T>,
-      options: FetchCacheOptions & { abortOnUnsubscribe?: boolean } = {},
-    ): FetchStore<T> {
+      options: FetchCacheOptions & { abortOnUnsubscribe?: boolean } = {}
+    ): FetchStore<T> => {
       const key = serializeCacheKey(input);
       const retention = duration(options.gcTime, gcTime);
       const freshness = duration(options.staleTime, staleTime);
@@ -120,13 +151,13 @@ export function createFetchCache(defaults: FetchCacheOptions = {}) {
         let entry = entries.get(key);
         if (!entry) {
           entry = {
-            state: atom(idle<unknown>()),
             controller: null,
-            pending: null,
-            observers: 0,
+            gcTime: retention,
             generation: 0,
             invalidated: false,
-            gcTime: retention,
+            observers: 0,
+            pending: null,
+            state: atom(idle<unknown>()),
             timer: null,
           };
           entries.set(key, entry);
@@ -138,21 +169,158 @@ export function createFetchCache(defaults: FetchCacheOptions = {}) {
         }
         return entry;
       };
+      // SAFETY: This entry is populated by the store's T-typed fetcher and updater; the shared key table erases that generic.
       const store = {
-        getSnapshot: () => getEntry().state.get() as FetchSnapshot<T>,
-        subscribe(listener: () => void) {
+        // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
+        fetch: (settings: FetchOptions = {}) => {
           const entry = getEntry();
-          if (entry.timer) clearTimeout(entry.timer);
+          if (entry.pending && !(settings.force === true)) {
+            return entry.pending;
+          }
+          const snapshot = entry.state.get();
+          const age = Date.now() - snapshot.updatedAt;
+          if (
+            !(settings.force === true) &&
+            !entry.invalidated &&
+            snapshot.status === "ready" &&
+            age < duration(settings.staleTime, freshness)
+          ) {
+            return Promise.resolve();
+          }
+          if (entry.timer) {
+            clearTimeout(entry.timer);
+          }
+          entry.timer = null;
+          entry.controller?.abort();
+          const controller = new AbortController();
+          entry.controller = controller;
+          entry.generation += 1;
+          const { generation } = entry;
+          let start!: () => void;
+          // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
+          const pending = (() => {
+            const {
+              promise: pendingPromise,
+              resolve,
+              reject: rejectPending,
+            } = Promise.withResolvers<ReturnType<() => void>>();
+            try {
+              start = () => {
+                // Async owns fetching, settlement, and Nano Stores task tracking.
+                const request = computedAsync(
+                  atom(controller.signal),
+                  // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
+                  (signal) => {
+                    signal.throwIfAborted();
+                    return fetcher(signal);
+                  }
+                );
+                const stop = request.listen((result) => {
+                  if (result.state === "loading") {
+                    return;
+                  }
+                  stop();
+                  if (entry.generation === generation) {
+                    if (result.state === "ready") {
+                      entry.invalidated = false;
+                      entry.state.set({
+                        data: result.value,
+                        error: null,
+                        isFetching: false,
+                        status: "ready",
+                        updatedAt: Date.now(),
+                      });
+                    } else {
+                      entry.state.set({
+                        ...entry.state.get(),
+                        error:
+                          result.error instanceof Error
+                            ? result.error
+                            : new Error(String(result.error)),
+                        isFetching: false,
+                        status: "error",
+                      });
+                    }
+                    if (entry.generation === generation) {
+                      entry.controller = null;
+                      entry.pending = null;
+                      scheduleGc(key, entry);
+                    }
+                  }
+                  resolve();
+                });
+              };
+            } catch (error) {
+              rejectPending(error);
+            }
+            return pendingPromise;
+          })();
+          entry.pending = pending;
+          const previous = entry.state.get();
+          entry.state.set({
+            ...previous,
+            error: null,
+            isFetching: true,
+            status: previous.data === undefined ? "loading" : "ready",
+          });
+          start();
+          return pending;
+        },
+        getSnapshot: () =>
+          /* oxlint-disable typescript/no-unsafe-type-assertion -- The public generic API establishes this relationship; its runtime registry erases the type parameters. */
+          getEntry().state.get() as FetchSnapshot<T>,
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
+        // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
+        invalidate: () => {
+          const entry = getEntry();
+          entry.invalidated = true;
+          if (entry.observers) {
+            return store.fetch({ force: true });
+          }
+          return Promise.resolve();
+        },
+        setData: (updater: (previous: T | undefined) => T) => {
+          const entry = getEntry();
+          entry.generation += 1;
+          entry.controller?.abort();
+          entry.controller = null;
+          entry.pending = null;
+          entry.invalidated = false;
+          // SAFETY: This entry is populated by the store's T-typed fetcher and updater; the shared key table erases that generic.
+          entry.state.set({
+            data: updater(
+              /* oxlint-disable typescript/no-unsafe-type-assertion -- This entry is populated by the store's T-typed fetcher and updater; the shared key table erases that generic. */
+              entry.state.get().data as T | undefined
+              /* oxlint-enable typescript/no-unsafe-type-assertion */
+            ),
+            error: null,
+            isFetching: false,
+            status: "ready",
+            updatedAt: Date.now(),
+          });
+          scheduleGc(key, entry);
+        },
+        subscribe: (listener: () => void) => {
+          const entry = getEntry();
+          if (entry.timer) {
+            clearTimeout(entry.timer);
+          }
           entry.timer = null;
           entry.observers += 1;
           const unsubscribe = entry.state.listen(listener);
           let active = true;
           return () => {
-            if (!active) return;
+            if (!active) {
+              return;
+            }
             active = false;
             unsubscribe();
             entry.observers -= 1;
-            if (!entry.observers && options.abortOnUnsubscribe && entry.pending) {
+            if (
+              !entry.observers &&
+              options.abortOnUnsubscribe === true &&
+              entry.pending
+            ) {
               entry.generation += 1;
               entry.controller?.abort();
               entry.controller = null;
@@ -160,115 +328,20 @@ export function createFetchCache(defaults: FetchCacheOptions = {}) {
               const previous = entry.state.get();
               entry.state.set({
                 ...previous,
-                status: previous.data === undefined ? "idle" : "ready",
                 isFetching: false,
+                status: previous.data === undefined ? "idle" : "ready",
               });
             }
             scheduleGc(key, entry);
           };
         },
-        fetch(settings: FetchOptions = {}) {
-          const entry = getEntry();
-          if (entry.pending && !settings.force) return entry.pending;
-          const snapshot = entry.state.get();
-          const age = Date.now() - snapshot.updatedAt;
-          if (
-            !settings.force &&
-            !entry.invalidated &&
-            snapshot.status === "ready" &&
-            age < duration(settings.staleTime, freshness)
-          )
-            return Promise.resolve();
-          if (entry.timer) clearTimeout(entry.timer);
-          entry.timer = null;
-          entry.controller?.abort();
-          const controller = new AbortController();
-          entry.controller = controller;
-          const generation = ++entry.generation;
-          let start!: () => void;
-          const pending = new Promise<void>((resolve) => {
-            start = () => {
-              // Async owns fetching, settlement, and Nano Stores task tracking.
-              const request = computedAsync(atom(controller.signal), (signal) => {
-                signal.throwIfAborted();
-                return fetcher(signal);
-              });
-              const stop = request.listen((result) => {
-                if (result.state === "loading") return;
-                stop();
-                if (entry.generation === generation) {
-                  if (result.state === "ready") {
-                    entry.invalidated = false;
-                    entry.state.set({
-                      data: result.value,
-                      error: null,
-                      status: "ready",
-                      isFetching: false,
-                      updatedAt: Date.now(),
-                    });
-                  } else {
-                    entry.state.set({
-                      ...entry.state.get(),
-                      error:
-                        result.error instanceof Error
-                          ? result.error
-                          : new Error(String(result.error)),
-                      status: "error",
-                      isFetching: false,
-                    });
-                  }
-                  if (entry.generation === generation) {
-                    entry.controller = null;
-                    entry.pending = null;
-                    scheduleGc(key, entry);
-                  }
-                }
-                resolve();
-              });
-            };
-          });
-          entry.pending = pending;
-          const previous = entry.state.get();
-          entry.state.set({
-            ...previous,
-            error: null,
-            status: previous.data === undefined ? "loading" : "ready",
-            isFetching: true,
-          });
-          start();
-          return pending;
-        },
-        setData(updater: (previous: T | undefined) => T) {
-          const entry = getEntry();
-          entry.generation += 1;
-          entry.controller?.abort();
-          entry.controller = null;
-          entry.pending = null;
-          entry.invalidated = false;
-          entry.state.set({
-            data: updater(entry.state.get().data as T | undefined),
-            error: null,
-            status: "ready",
-            isFetching: false,
-            updatedAt: Date.now(),
-          });
-          scheduleGc(key, entry);
-        },
-        invalidate() {
-          const entry = getEntry();
-          entry.invalidated = true;
-          return entry.observers ? store.fetch({ force: true }) : Promise.resolve();
-        },
       };
-      return { ...store, state: createSnapshotStore(store.getSnapshot, store.subscribe) };
-    },
-    clear() {
-      for (const [key, entry] of entries) {
-        reset(entry);
-        if (!entry.observers) entries.delete(key);
-      }
+      return {
+        ...store,
+        state: createSnapshotStore(store.getSnapshot, store.subscribe),
+      };
     },
   };
-}
+};
 
 export type FetchCache = ReturnType<typeof createFetchCache>;

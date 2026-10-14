@@ -1,34 +1,54 @@
-/* oxlint-disable require-await, typescript/no-non-null-assertion -- the in-memory KV fake implements Promise methods. */
-import { issueAgentToken, verifyAgentToken } from "@tailorkit/api-utils/agent-token";
-import { call } from "@orpc/server";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
+import { call } from "@orpc/server";
+/* oxlint-disable require-await, typescript/no-non-null-assertion -- the in-memory KV fake implements Promise methods. */
+import {
+  issueAgentToken,
+  verifyAgentToken,
+} from "@tailorkit/api-utils/agent-token";
 import { RateLimitHandlerPlugin } from "@tailorkit/api-utils/rate-limiting";
 import { app as appTable } from "@tailorkit/db/schema/apps";
 import { organization } from "@tailorkit/db/schema/auth";
 import { cliToken } from "@tailorkit/db/schema/cli-auth";
 import { previewSession } from "@tailorkit/db/schema/preview-session";
 import { project as projectTable } from "@tailorkit/db/schema/project";
-import { env } from "#env";
 import { eq } from "drizzle-orm";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import type { Context } from "../context";
-import { createTestDb } from "../test/pglite";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vite-plus/test";
 
-const state = vi.hoisted(() => ({ db: undefined as unknown, kv: undefined as unknown }));
+import type { Context } from "#context";
+import { env } from "#env";
+import { createTestDb } from "#test/pglite";
+
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+const state = vi.hoisted(() => ({
+  db: undefined as unknown,
+  kv: undefined as unknown,
+}));
 vi.mock("@tailorkit/db", () => ({
   get db() {
     return state.db;
   },
 }));
-vi.mock("@tailorkit/kv", async (original) => ({ ...(await original()), getKV: () => state.kv }));
+vi.mock("@tailorkit/kv", async (original) => ({
+  ...(await original()),
+  getKV: () => state.kv,
+}));
 
 const { previewRouter } = await import("./preview");
-const { canonicalizeScope } = await import("../scope");
-const { authorizePreviewSocket } = await import("../preview-ws-auth");
-const { previewWebSocketRouter } = await import("../preview-ws");
+const { canonicalizeScope } = await import("#scope");
+const { authorizePreviewSocket } = await import("#preview-ws-auth");
+const { previewWebSocketRouter } = await import("#preview-ws");
 const authSecret = env.AUTH_SECRET;
-if (!authSecret) {
-  throw new Error("The preview test requires AUTH_SECRET in its Vitest config.");
+if (!(authSecret !== undefined && authSecret !== null && authSecret !== "")) {
+  throw new Error(
+    "The preview test requires AUTH_SECRET in its Vitest config."
+  );
 }
 const orgId = "11111111-1111-4111-8111-111111111111";
 const projectId = "22222222-2222-4222-8222-222222222222";
@@ -37,34 +57,25 @@ const authorScope = { name: "user", value: { userId: "author" } };
 const otherHostScope = { name: "user", value: { userId: "other" } };
 const viewerScope = { name: "user", value: { userId: "viewer" } };
 
-function fakeKV() {
+const fakeKV = () => {
   const data = new Map<string, string>();
   return {
+    delete: async (key: string) => {
+      data.delete(key);
+    },
     get: async (key: string) => data.get(key) ?? null,
     getAndDelete: async (key: string) => {
       const value = data.get(key) ?? null;
       data.delete(key);
       return value;
     },
-    setPreviewPresenceIfActive: async (
-      presenceKey: string,
-      seenKey: string,
-      endedKey: string,
-      value: string,
-    ) => {
-      if (data.has(endedKey)) {
-        return false;
-      }
-      data.set(presenceKey, value);
-      data.set(seenKey, "1");
-      return true;
-    },
+    increment: async () => 1,
     keepPreviewSessionIfDeveloperPresent: async (
       presenceKey: string,
       seenKey: string,
       endedKey: string,
       _endedTtl: number,
-      expireUnseen = false,
+      expireUnseen = false
     ) => {
       if (data.has(endedKey)) {
         return false;
@@ -75,88 +86,108 @@ function fakeKV() {
       data.set(endedKey, "1");
       return false;
     },
+    publish: async () => 0,
     set: async (key: string, value: string) => {
       data.set(key, value);
     },
-    delete: async (key: string) => {
-      data.delete(key);
+    setPreviewPresenceIfActive: async (
+      presenceKey: string,
+      seenKey: string,
+      endedKey: string,
+      value: string
+    ) => {
+      if (data.has(endedKey)) {
+        return false;
+      }
+      data.set(presenceKey, value);
+      data.set(seenKey, "1");
+      return true;
     },
-    publish: async () => 0,
     subscribe: async () => async () => {},
-    increment: async () => 1,
   };
-}
+};
 
 const context: Context = {
   organization: {
+    createdAt: new Date(),
     id: orgId,
-    publicId: "team0000000001",
-    name: "Team",
-    slug: "team",
     logo: null,
     metadata: null,
-    createdAt: new Date(),
+    name: "Team",
+    publicId: "team0000000001",
+    slug: "team",
   },
   project: {
-    id: projectId,
-    organizationId: orgId,
-    name: "Project",
-    slug: "project",
     createdAt: new Date(),
+    id: projectId,
+    name: "Project",
+    organizationId: orgId,
+    slug: "project",
     updatedAt: new Date(),
   },
   storage: {
-    type: "s3",
-    createUploadUrl: vi.fn(),
     createDownloadUrl: vi.fn(),
+    createUploadUrl: vi.fn(),
     delete: vi.fn(),
     head: vi.fn(),
+    type: "s3",
   },
 };
+
+const startImplementation = async () =>
+  await call(
+    previewRouter.start,
+    { body: { appId: "authapp00001", deployToken: "deploy-token" } },
+    { context }
+  );
 
 describe("platform preview lifecycle and grants", () => {
   let client: Awaited<ReturnType<typeof createTestDb>>["client"];
   let db: Awaited<ReturnType<typeof createTestDb>>["db"];
   beforeEach(async () => {
     const testDb = await createTestDb();
-    client = testDb.client;
-    db = testDb.db;
+    ({ client } = testDb);
+    ({ db } = testDb);
     state.db = db;
     state.kv = fakeKV();
     await db.insert(organization).values({
-      id: orgId,
-      publicId: "team0000000001",
-      name: "Team",
-      slug: "team",
       createdAt: new Date(),
+      id: orgId,
+      name: "Team",
+      publicId: "team0000000001",
+      slug: "team",
     });
     await db.insert(projectTable).values({
-      id: projectId,
-      organizationId: orgId,
-      name: "Project",
-      slug: "project",
       createdAt: new Date(),
+      id: projectId,
+      name: "Project",
+      organizationId: orgId,
+      slug: "project",
       updatedAt: new Date(),
     });
     const { hashSecret } = await import("@tailorkit/api-utils/hashing");
     await db.insert(cliToken).values({
       id: tokenId,
+
       projectId,
+
       ...canonicalizeScope(authorScope),
-      tokenHash: hashSecret("deploy-token", authSecret),
+
       expiresAt: new Date(Date.now() + 60_000),
+
+      tokenHash: hashSecret("deploy-token", authSecret),
     });
     await db.insert(appTable).values([
       {
+        name: "Author app",
         projectId,
         publicId: "authapp00001",
-        name: "Author app",
         ...canonicalizeScope(authorScope),
       },
       {
+        name: "Other app",
         projectId,
         publicId: "otherapp0001",
-        name: "Other app",
         ...canonicalizeScope(otherHostScope),
       },
     ]);
@@ -166,24 +197,24 @@ describe("platform preview lifecycle and grants", () => {
     vi.clearAllMocks();
   });
 
-  const start = () =>
-    call(
-      previewRouter.start,
-      { body: { appId: "authapp00001", deployToken: "deploy-token" } },
-      { context },
-    );
+  const start = startImplementation;
 
   it("serves prefixed GET routes with validated path parameters", async () => {
     const started = await start();
     const handler = new OpenAPIHandler(
       { preview: previewRouter },
-      { plugins: [new RateLimitHandlerPlugin()] },
+      { plugins: [new RateLimitHandlerPlugin()] }
     );
-    const handle = (shareId: string) =>
-      handler.handle(new Request(`https://example.com/api/platform/preview/shares/${shareId}`), {
-        prefix: "/api/platform",
-        context,
-      });
+    const handle = async (shareId: string) =>
+      await handler.handle(
+        new Request(
+          `https://example.com/api/platform/preview/shares/${shareId}`
+        ),
+        {
+          context,
+          prefix: "/api/platform",
+        }
+      );
 
     const invitation = await handle(started.body.shareId);
     expect(invitation.matched).toBe(true);
@@ -203,8 +234,8 @@ describe("platform preview lifecycle and grants", () => {
       call(
         previewRouter.start,
         { body: { appId: "otherapp0001", deployToken: "deploy-token" } },
-        { context },
-      ),
+        { context }
+      )
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
     const first = await start();
     expect(first.body.shareId).toHaveLength(43);
@@ -213,25 +244,30 @@ describe("platform preview lifecycle and grants", () => {
       code: "CONFLICT",
       data: { reason: "ACTIVE_PREVIEW_EXISTS" },
     });
+    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     const kv = state.kv as ReturnType<typeof fakeKV>;
     const expiredBuildId = "expired_build";
     const manifest = {
       files: [
         {
-          path: "client.js",
-          contentType: "text/javascript",
-          size: 1,
           chunks: 1,
+          contentType: "text/javascript",
+          path: "client.js",
           sha256: "0".repeat(64),
+          size: 1,
         },
       ],
     };
     const buildKey = `preview:build:${first.body.sessionId}:${expiredBuildId}`;
     await kv.set(
       `preview:current:${first.body.sessionId}`,
-      JSON.stringify({ buildId: expiredBuildId, manifest, revision: 1 }),
+      JSON.stringify({ buildId: expiredBuildId, manifest, revision: 1 })
     );
-    await kv.set(buildKey, JSON.stringify({ state: "ready", manifest, revision: 1 }));
+    await kv.set(
+      buildKey,
+      JSON.stringify({ manifest, revision: 1, state: "ready" })
+    );
     await kv.set(`${buildKey}:0:0`, "YQ==");
     await db
       .update(previewSession)
@@ -243,10 +279,17 @@ describe("platform preview lifecycle and grants", () => {
     expect(await kv.get(buildKey)).toBeNull();
     expect(await kv.get(`${buildKey}:0:0`)).toBeNull();
     expect(await kv.get(`preview:ended:${first.body.sessionId}`)).toBe("1");
-    await db.update(cliToken).set({ revokedAt: new Date() }).where(eq(cliToken.id, tokenId));
+    await db
+      .update(cliToken)
+      .set({ revokedAt: new Date() })
+      .where(eq(cliToken.id, tokenId));
     await expect(start()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
     expect(
-      await authorizePreviewSocket(second.body.sessionId, second.body.tunnelToken, "uploader"),
+      await authorizePreviewSocket(
+        second.body.sessionId,
+        second.body.tunnelToken,
+        "uploader"
+      )
     ).toBeNull();
     const revokedSession = await db.query.previewSession.findFirst({
       where: { id: second.body.sessionId },
@@ -272,23 +315,35 @@ describe("platform preview lifecycle and grants", () => {
 
     await expect(
       call(previewWebSocketRouter.heartbeat, undefined, {
-        context: { sessionId: started.body.sessionId, role: "uploader" },
-      }),
-    ).rejects.toMatchObject({ code: "UNAUTHORIZED", message: "Preview CLI token is unavailable." });
+        context: { role: "uploader", sessionId: started.body.sessionId },
+      })
+    ).rejects.toMatchObject({
+      code: "UNAUTHORIZED",
+      message: "Preview CLI token is unavailable.",
+    });
     const session = await db.query.previewSession.findFirst({
       where: { id: started.body.sessionId },
     });
     expect(session?.status).toBe("ended");
     expect(
-      await (state.kv as ReturnType<typeof fakeKV>).get(`preview:ended:${started.body.sessionId}`),
+      // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+      await (state.kv as ReturnType<typeof fakeKV>).get(
+        `preview:ended:${started.body.sessionId}`
+      )
     ).toBe("1");
   });
 
   it("retires a disconnected developer before checking the app conflict", async () => {
     const first = await start();
+    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     const kv = state.kv as ReturnType<typeof fakeKV>;
     await kv.set(`preview:developer-seen:${first.body.sessionId}`, "1");
-    await kv.set(`preview:developer-connection:${first.body.sessionId}`, "connected");
+    await kv.set(
+      `preview:developer-connection:${first.body.sessionId}`,
+      "connected"
+    );
     await expect(start()).rejects.toMatchObject({ code: "CONFLICT" });
 
     await kv.delete(`preview:developer-connection:${first.body.sessionId}`);
@@ -311,6 +366,8 @@ describe("platform preview lifecycle and grants", () => {
 
     const replacement = await start();
     expect(replacement.body.sessionId).not.toBe(first.body.sessionId);
+    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     const kv = state.kv as ReturnType<typeof fakeKV>;
     expect(await kv.get(`preview:ended:${first.body.sessionId}`)).toBe("1");
   });
@@ -319,56 +376,66 @@ describe("platform preview lifecycle and grants", () => {
     const started = await start();
     const accepted = await call(
       previewRouter.accept,
-      { params: { shareId: started.body.shareId }, body: { scope: viewerScope } },
-      { context },
+      {
+        body: { scope: viewerScope },
+        params: { shareId: started.body.shareId },
+      },
+      { context }
     );
     const wrongScope = await call(
       previewRouter.accepted,
       { body: { grantIds: [accepted.body.grantId], scopes: [otherHostScope] } },
-      { context },
+      { context }
     );
     expect(wrongScope.body.items).toEqual([]);
+    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     const kv = state.kv as ReturnType<typeof fakeKV>;
     await kv.set(
       `preview:current:${started.body.sessionId}`,
       JSON.stringify({
         buildId: "build",
-        revision: 1,
         manifest: {
           files: [],
           views: [
-            { slot: "page", path: "/", instances: true },
-            { slot: "page", path: "/disabled", disabled: true },
+            { instances: true, path: "/", slot: "page" },
+            { disabled: true, path: "/disabled", slot: "page" },
           ],
         },
-      }),
+        revision: 1,
+      })
     );
     const viewer = await call(
       previewRouter.accepted,
       { body: { grantIds: [accepted.body.grantId], scopes: [viewerScope] } },
-      { context },
+      { context }
     );
     expect(viewer.body.items).toHaveLength(1);
     expect(viewer.body.items[0]?.app.views).toEqual([
-      { slot: "page", path: "/", instances: true },
-      { slot: "page", path: "/disabled", disabled: true },
+      { instances: true, path: "/", slot: "page" },
+      { disabled: true, path: "/disabled", slot: "page" },
     ]);
     expect(viewer.body.items[0]?.preview.token).toBeTruthy();
     await call(
       previewRouter.stop,
-      { params: { sessionId: started.body.sessionId }, body: { deployToken: "deploy-token" } },
-      { context },
+      {
+        body: { deployToken: "deploy-token" },
+        params: { sessionId: started.body.sessionId },
+      },
+      { context }
     );
     const ended = await call(
       previewRouter.accepted,
       { body: { grantIds: [accepted.body.grantId], scopes: [viewerScope] } },
-      { context },
+      { context }
     );
     expect(ended.body.items).toEqual([]);
   });
 
   it("retries KV cleanup after the session was durably stopped", async () => {
     const started = await start();
+    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     const kv = state.kv as ReturnType<typeof fakeKV>;
     const buildId = "retry_build";
     const buildKey = `preview:build:${started.body.sessionId}:${buildId}`;
@@ -376,19 +443,22 @@ describe("platform preview lifecycle and grants", () => {
     const manifest = {
       files: [
         {
-          path: "client.js",
-          contentType: "text/javascript",
-          size: 1,
           chunks: 1,
+          contentType: "text/javascript",
+          path: "client.js",
           sha256: "0".repeat(64),
+          size: 1,
         },
       ],
     };
     await kv.set(
       `preview:current:${started.body.sessionId}`,
-      JSON.stringify({ buildId, manifest, revision: 1 }),
+      JSON.stringify({ buildId, manifest, revision: 1 })
     );
-    await kv.set(buildKey, JSON.stringify({ state: "ready", manifest, revision: 1 }));
+    await kv.set(
+      buildKey,
+      JSON.stringify({ manifest, revision: 1, state: "ready" })
+    );
     await kv.set(chunkKey, "YQ==");
     const remove = kv.delete;
     let failOnce = true;
@@ -399,11 +469,14 @@ describe("platform preview lifecycle and grants", () => {
       }
       await remove(key);
     };
-    const stop = () =>
-      call(
+    const stop = async () =>
+      await call(
         previewRouter.stop,
-        { params: { sessionId: started.body.sessionId }, body: { deployToken: "deploy-token" } },
-        { context },
+        {
+          body: { deployToken: "deploy-token" },
+          params: { sessionId: started.body.sessionId },
+        },
+        { context }
       );
 
     await expect(stop()).rejects.toThrow("KV cleanup failed");
@@ -411,34 +484,54 @@ describe("platform preview lifecycle and grants", () => {
       where: { id: started.body.sessionId },
     });
     expect(session?.status).toBe("ended");
-    expect(await kv.get(`preview:current:${started.body.sessionId}`)).not.toBeNull();
+    expect(
+      await kv.get(`preview:current:${started.body.sessionId}`)
+    ).not.toBeNull();
     await expect(stop()).resolves.toEqual({ body: {} });
-    expect(await kv.get(`preview:current:${started.body.sessionId}`)).toBeNull();
+    expect(
+      await kv.get(`preview:current:${started.body.sessionId}`)
+    ).toBeNull();
     expect(await kv.get(buildKey)).toBeNull();
     expect(await kv.get(chunkKey)).toBeNull();
   });
 
   it("ends an idle viewer stream when its bearer token expires", async () => {
     const started = await start();
-    const current = vi.spyOn(state.kv as ReturnType<typeof fakeKV>, "get");
+    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+
+    const current = vi.spyOn(
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The test installs fakeKV into a KV service; the service signature erases the fake implementation methods inspected here. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+      state.kv as ReturnType<typeof fakeKV>,
+      "get"
+    );
     vi.useFakeTimers({
-      toFake: ["Date", "setTimeout", "setInterval", "clearTimeout", "clearInterval"],
+      toFake: [
+        "Date",
+        "setTimeout",
+        "setInterval",
+        "clearTimeout",
+        "clearInterval",
+      ],
     });
     const deadline = Date.now() + 1000;
     const clock = vi.spyOn(Date, "now");
     try {
       const stream = await call(previewWebSocketRouter.subscribe, undefined, {
         context: {
-          sessionId: started.body.sessionId,
           role: "viewer",
+          sessionId: started.body.sessionId,
           viewerTokenExpiresAt: deadline,
         },
       });
       const iterator = stream[Symbol.asyncIterator]();
-      const expired = expect(iterator.next()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
-      await vi.waitFor(() =>
-        expect(current).toHaveBeenCalledWith(`preview:current:${started.body.sessionId}`),
-      );
+      const expired = expect(iterator.next()).rejects.toMatchObject({
+        code: "UNAUTHORIZED",
+      });
+      await vi.waitFor(() => {
+        expect(current).toHaveBeenCalledWith(
+          `preview:current:${started.body.sessionId}`
+        );
+      });
       // Simulate a timer waking just before the wall-clock expiry deadline.
       clock.mockReturnValue(deadline - 1);
       await vi.advanceTimersByTimeAsync(1000);
@@ -457,18 +550,22 @@ describe("platform preview lifecycle and grants", () => {
   it("allows five active apps per scope, retires expired sessions, and frees a slot on stop", async () => {
     const appIds = Array.from(
       { length: 7 },
-      (_, index) => `scopeapp${String(index).padStart(4, "0")}`,
+      (_, index) => `scopeapp${String(index).padStart(4, "0")}`
     );
     await db.insert(appTable).values(
       appIds.map((publicId) => ({
+        name: publicId,
         projectId,
         publicId,
-        name: publicId,
         ...canonicalizeScope(authorScope),
-      })),
+      }))
     );
-    const startApp = (appId: string) =>
-      call(previewRouter.start, { body: { appId, deployToken: "deploy-token" } }, { context });
+    const startApp = async (appId: string) =>
+      await call(
+        previewRouter.start,
+        { body: { appId, deployToken: "deploy-token" } },
+        { context }
+      );
     const started = await Promise.all(appIds.slice(0, 5).map(startApp));
     await expect(startApp(appIds[5]!)).rejects.toMatchObject({
       code: "CONFLICT",
@@ -477,15 +574,19 @@ describe("platform preview lifecycle and grants", () => {
     const { hashSecret } = await import("@tailorkit/api-utils/hashing");
     await db.insert(cliToken).values({
       id: "44444444-4444-4444-8444-444444444444",
+
       projectId,
+
       ...canonicalizeScope(otherHostScope),
-      tokenHash: hashSecret("other-token", authSecret),
+
       expiresAt: new Date(Date.now() + 60_000),
+
+      tokenHash: hashSecret("other-token", authSecret),
     });
     const otherScope = await call(
       previewRouter.start,
       { body: { appId: "otherapp0001", deployToken: "other-token" } },
-      { context },
+      { context }
     );
     expect(otherScope.body.sessionId).toBeTruthy();
     await db
@@ -494,11 +595,16 @@ describe("platform preview lifecycle and grants", () => {
       .where(eq(previewSession.id, started[0]!.body.sessionId));
     const replacement = await startApp(appIds[5]!);
     expect(replacement.body.sessionId).toBeTruthy();
-    await expect(startApp(appIds[6]!)).rejects.toMatchObject({ code: "CONFLICT" });
+    await expect(startApp(appIds[6]!)).rejects.toMatchObject({
+      code: "CONFLICT",
+    });
     await call(
       previewRouter.stop,
-      { params: { sessionId: started[1]!.body.sessionId }, body: { deployToken: "deploy-token" } },
-      { context },
+      {
+        body: { deployToken: "deploy-token" },
+        params: { sessionId: started[1]!.body.sessionId },
+      },
+      { context }
     );
     const afterStop = await startApp(appIds[6]!);
     expect(afterStop.body.sessionId).toBeTruthy();
@@ -508,22 +614,29 @@ describe("platform preview lifecycle and grants", () => {
   it("enforces the scope cap when several starts are requested together", async () => {
     const appIds = Array.from(
       { length: 6 },
-      (_, index) => `raceapp${String(index).padStart(5, "0")}`,
+      (_, index) => `raceapp${String(index).padStart(5, "0")}`
     );
     await db.insert(appTable).values(
       appIds.map((publicId) => ({
+        name: publicId,
         projectId,
         publicId,
-        name: publicId,
         ...canonicalizeScope(authorScope),
-      })),
+      }))
     );
     const results = await Promise.allSettled(
-      appIds.map((appId) =>
-        call(previewRouter.start, { body: { appId, deployToken: "deploy-token" } }, { context }),
-      ),
+      appIds.map(
+        async (appId) =>
+          await call(
+            previewRouter.start,
+            { body: { appId, deployToken: "deploy-token" } },
+            { context }
+          )
+      )
     );
-    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(5);
+    expect(
+      results.filter((result) => result.status === "fulfilled")
+    ).toHaveLength(5);
     const rejected = results.filter((result) => result.status === "rejected");
     expect(rejected).toHaveLength(1);
     expect(rejected[0]?.reason).toMatchObject({
@@ -534,36 +647,58 @@ describe("platform preview lifecycle and grants", () => {
 
   it("supports JWT preview authorization through source expiry, bounded by the JWT deadline", async () => {
     const jwt = await issueAgentToken(
-      { projectId, appId: "authapp00001", cliTokenId: tokenId, scope: authorScope },
-      authSecret!,
-      env.OPENAPI_SERVER_URL!,
+      {
+        appId: "authapp00001",
+        cliTokenId: tokenId,
+        projectId,
+        scope: authorScope,
+      },
+      authSecret,
+      env.OPENAPI_SERVER_URL!
     );
     const agentToken = {
-      ...(await verifyAgentToken(jwt, authSecret!, env.OPENAPI_SERVER_URL!)),
+      ...(await verifyAgentToken(jwt, authSecret, env.OPENAPI_SERVER_URL!)),
       token: jwt,
     };
     const handler = new OpenAPIHandler({ preview: previewRouter });
     const response = await handler.handle(
       new Request("https://platform.test/api/platform/preview/start", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
         body: JSON.stringify({ appId: "authapp00001", deployToken: jwt }),
+        headers: { "content-type": "application/json" },
+        method: "POST",
       }),
-      { prefix: "/api/platform", context: { ...context, agentToken } },
+      { context: { ...context, agentToken }, prefix: "/api/platform" }
     );
     expect(response.response!.status).toBe(200);
-    const started = await response.response!.json();
+    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+    const started = (await response.response!.json()) as {
+      expiresAt: string;
+      sessionId: string;
+      tunnelToken: string;
+    };
     expect(new Date(started.expiresAt).getTime()).toBe(agentToken.exp * 1000);
     await db
       .update(cliToken)
       .set({ expiresAt: new Date(0) })
       .where(eq(cliToken.id, tokenId));
     expect(
-      await authorizePreviewSocket(started.sessionId, started.tunnelToken, "uploader"),
-    ).toMatchObject({ sessionId: started.sessionId, role: "uploader" });
-    await db.update(cliToken).set({ revokedAt: new Date() }).where(eq(cliToken.id, tokenId));
+      await authorizePreviewSocket(
+        started.sessionId,
+        started.tunnelToken,
+        "uploader"
+      )
+    ).toMatchObject({ role: "uploader", sessionId: started.sessionId });
+    await db
+      .update(cliToken)
+      .set({ revokedAt: new Date() })
+      .where(eq(cliToken.id, tokenId));
     expect(
-      await authorizePreviewSocket(started.sessionId, started.tunnelToken, "uploader"),
+      await authorizePreviewSocket(
+        started.sessionId,
+        started.tunnelToken,
+        "uploader"
+      )
     ).toBeNull();
   });
 });

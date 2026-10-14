@@ -1,7 +1,8 @@
-import { useEffect, useMemo } from "react";
-import type { ViewDefinition } from "@tailorkit/core/schema";
 import type { ViewName, ViewState } from "@tailorkit/client-core";
-import { useTailorkitContext } from "../components/context";
+import type { ViewDefinition } from "@tailorkit/core/schema";
+import { useEffect, useMemo } from "react";
+
+import { useTailorkitContext } from "#components/context";
 
 export type {
   ViewName,
@@ -17,13 +18,16 @@ export type UseViewContext<TViews extends Record<string, ViewDefinition>> = <
   TView extends ViewName<TViews>,
 >(
   view: TView,
-  options: ViewState<TViews, NoInfer<TView>>,
+  options: ViewState<TViews, NoInfer<TView>>
 ) => void;
 
-export function useViewContext<
+export const useViewContext = <
   TViews extends Record<string, ViewDefinition> = DefaultViews,
   TView extends ViewName<TViews> = ViewName<TViews>,
->(view: TView, options: ViewState<TViews, NoInfer<TView>>): void {
+>(
+  view: TView,
+  options: ViewState<TViews, NoInfer<TView>>
+): void => {
   const { store } = useTailorkitContext("useViewContext");
   const id = useMemo(() => Symbol("tailorkit-current-view"), []);
   const { context, loading, error } = options;
@@ -32,10 +36,10 @@ export function useViewContext<
     () => () => {
       store.views.unregister(id);
     },
-    [id, store],
+    [id, store]
   );
 
   useEffect(() => {
-    store.views.register({ id, view, context, loading, error });
+    store.views.register({ context, error, id, loading, view });
   }, [id, view, context, loading, error, store]);
-}
+};

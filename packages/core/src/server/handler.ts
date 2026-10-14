@@ -1,24 +1,34 @@
-import { handleBackendSession } from "./backend";
 import { RPCHandler } from "@orpc/server/fetch";
-import { appsList, appsRuntimeSession, previewAccepted } from "@tailorkit/client-platform/client";
+import {
+  appsList,
+  appsRuntimeSession,
+  previewAccepted,
+} from "@tailorkit/client-platform/client";
 import { createClient } from "@tailorkit/client-platform/client/client/index";
+import type {
+  AppsListResponses,
+  PreviewAcceptedResponses,
+} from "@tailorkit/client-platform/client/types.gen";
+
 import type {
   NoComponentFieldCallbackConflicts,
   ViewContextHierarchy,
   SlotDefinitions,
-} from "../schema/index";
-import { createTailorKitSchema } from "../schema/schema";
+} from "#schema/index";
+import { createTailorKitSchema } from "#schema/schema";
+
+import { handleBackendSession } from "./backend";
 import { normalizeBaseUrl } from "./base-url";
-import { createMcpTransport } from "./mcp";
 import { handleCliAuthApprovalPage } from "./cli-auth-page";
-import { handlePreviewConsent, readPreviewGrantIds } from "./preview-consent";
 import { createContext } from "./context";
+import { createMcpTransport } from "./mcp";
+import { handlePreviewConsent, readPreviewGrantIds } from "./preview-consent";
+import { tailorkitRouter } from "./router";
 import {
   selectTailorKitScopes,
   validateTailorKitScopeSchemas,
   validateTailorKitScopes,
 } from "./scope";
-import { tailorkitRouter } from "./router";
 import type {
   InferTailorKitServerTools,
   InferTailorKitServerComponents,
@@ -30,27 +40,62 @@ import type {
   TailorKitServerInputOptions,
 } from "./types";
 
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
+const isFunctionValue = <TValue>(
+  value: TValue
+): value is Extract<TValue, CallableFunction> => typeof value === "function";
+
 const defaultPlatformBaseUrl = "https://tailorkit.dev/api/platform";
+
 type AbsolutePath = `/${string}`;
+
 const previewShareIdPattern = /^[A-Za-z0-9_-]{43}$/u;
 
-export function createTailorKitServer<const TOptions extends TailorKitServerInputOptions>(
+const resolveReadScopes = (url: URL, availableScopes: TailorKitScopes) => {
+  try {
+    const names = url.searchParams.getAll("scopes");
+    if (names.length === 1 && names[0] === "") {
+      return [];
+    }
+    return selectTailorKitScopes(
+      availableScopes,
+      names.length ? names : undefined
+    );
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Invalid scope selection.";
+    return new Response(message, { status: 400 });
+  }
+};
+
+export const createTailorKitServer = <
+  const TOptions extends TailorKitServerInputOptions,
+>(
   options: TOptions & {
-    slots?: SlotDefinitions<keyof InferTailorKitServerViews<NoInfer<TOptions>> & string>;
+    slots?: SlotDefinitions<
+      keyof InferTailorKitServerViews<NoInfer<TOptions>> & string
+    >;
     tools?: InferTailorKitServerTools<TOptions>;
     components: InferTailorKitServerComponents<TOptions> &
-      NoComponentFieldCallbackConflicts<InferTailorKitServerComponents<TOptions>>;
+      NoComponentFieldCallbackConflicts<
+        InferTailorKitServerComponents<TOptions>
+      >;
     views?: InferTailorKitServerViews<TOptions> &
       ViewContextHierarchy<InferTailorKitServerViews<TOptions>>;
-  },
+  }
 ): TailorKitServer<
   InferTailorKitServerComponents<TOptions>,
   InferTailorKitServerViews<TOptions>,
   InferTailorKitServerTools<TOptions>,
   InferTailorKitServerScopes<TOptions>
 > & {
-  readonly $slots?: TOptions extends { slots: infer V } ? V : Record<never, never>;
-} {
+  readonly $slots?: TOptions extends { slots: infer V }
+    ? V
+    : // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
+      Record<never, never>;
+} => {
   const { basePath, publicOrigin } = normalizeBaseUrl(options.baseUrl);
   const scopeSchemas = validateTailorKitScopeSchemas(options.scopes);
   const previewReturnPath = options.preview?.returnPath ?? "/";
@@ -60,20 +105,24 @@ export function createTailorKitServer<const TOptions extends TailorKitServerInpu
     previewReturnPath.includes("\\") ||
     /[\r\n]/u.test(previewReturnPath)
   ) {
-    throw new Error("preview.returnPath must be a same-origin root-relative path.");
+    throw new Error(
+      "preview.returnPath must be a same-origin root-relative path."
+    );
   }
+  // SAFETY: The server preserves the supplied typed tool table and normalizes the route base path before constructing its handler.
   const schema = createTailorKitSchema<
     InferTailorKitServerComponents<TOptions>,
     InferTailorKitServerViews<TOptions>,
     InferTailorKitServerTools<TOptions>
   >({
-    tools: options.tools as InferTailorKitServerTools<TOptions> | undefined,
-    slots: options.slots,
-    scopes: options.scopes,
     components: options.components,
+    scopes: options.scopes,
+    slots: options.slots,
+    tools: options.tools,
     views: options.views,
   });
-  const platformBaseUrl = options.$internal?.platformBaseUrl ?? defaultPlatformBaseUrl;
+  const platformBaseUrl =
+    options.$internal?.platformBaseUrl ?? defaultPlatformBaseUrl;
   const platform = createClient({
     baseUrl: platformBaseUrl,
     fetch: options.$internal?.platformFetch,
@@ -82,33 +131,46 @@ export function createTailorKitServer<const TOptions extends TailorKitServerInpu
   });
   const platformHeaders =
     options.$internal?.platformHeaders ??
-    (options.projectKey ? { authorization: `Bearer ${options.projectKey}` } : undefined);
+    (options.projectKey !== undefined &&
+    options.projectKey !== null &&
+    options.projectKey !== ""
+      ? { authorization: `Bearer ${options.projectKey}` }
+      : undefined);
   const rpcHandler = new RPCHandler(tailorkitRouter);
   const mcp = createMcpTransport({
     hostUrl: publicOrigin + basePath,
-    platformUrl: platformBaseUrl,
     platformHeaders,
+    platformUrl: platformBaseUrl,
     scopeSchemas,
   });
 
   // oxlint-disable-next-line complexity -- request dispatch is intentionally centralized here.
   const handler = async (
     request: Request,
-    handlerOptions: TailorKitHandlerOptions<InferTailorKitServerScopes<TOptions>>,
+    handlerOptions: TailorKitHandlerOptions<
+      InferTailorKitServerScopes<TOptions>
+    >
   ) => {
-    const authenticate = async ({ request }: { request: Request }) => {
-      const hostContext = await handlerOptions.authenticate({ request });
+    const authenticate = async ({
+      request: requestValue,
+    }: {
+      request: Request;
+    }) => {
+      const hostContext = await handlerOptions.authenticate({
+        request: requestValue,
+      });
       if (!hostContext) {
         return null;
       }
 
       if (
         hostContext.subjectId !== undefined &&
-        (typeof hostContext.subjectId !== "string" ||
+        (!isStringValue(hostContext.subjectId) ||
           !hostContext.subjectId ||
           hostContext.subjectId.length > 256)
-      )
+      ) {
         throw new Error("Invalid authenticated subject");
+      }
       return {
         ...hostContext,
         scopes: await validateTailorKitScopes(scopeSchemas, hostContext.scopes),
@@ -117,33 +179,39 @@ export function createTailorKitServer<const TOptions extends TailorKitServerInpu
     const url = new URL(request.url);
     const previewPrefix = `${basePath}/preview/`;
     if (url.pathname === `${basePath}/backend/session`) {
-      return handleBackendSession(
+      return await handleBackendSession(
         request,
         authenticate,
         async (appId, scopes, subjectId) => {
-          const headers = await (typeof platformHeaders === "function"
+          const headers = await (isFunctionValue(platformHeaders)
             ? platformHeaders()
             : platformHeaders);
           const session = await appsRuntimeSession({
+            body: {
+              scopes: Object.entries(scopes).map(([name, value]) => ({
+                name,
+                value,
+              })),
+              subjectId,
+              toolUrl: `${publicOrigin + basePath}/tools/execute`,
+            },
             client: platform,
-            responseStyle: "fields",
-            throwOnError: false,
             headers,
             path: { appId },
-            body: {
-              subjectId,
-              toolUrl: publicOrigin + basePath + "/tools/execute",
-              scopes: Object.entries(scopes).map(([name, value]) => ({ name, value })),
-            },
+            responseStyle: "fields",
+            throwOnError: false,
           });
           if (session.data) {
             return session.data;
           }
-          return Response.json(session.error ?? { error: "Unable to authorize the app backend" }, {
-            status: session.response?.status ?? 502,
-          });
+          return Response.json(
+            session.error ?? { error: "Unable to authorize the app backend" },
+            {
+              status: session.response?.status ?? 502,
+            }
+          );
         },
-        publicOrigin,
+        publicOrigin
       );
     }
     if (url.pathname === `${basePath}/schema`) {
@@ -164,33 +232,36 @@ export function createTailorKitServer<const TOptions extends TailorKitServerInpu
       previewShareIdPattern.test(previewShareId)
     ) {
       const context = await createContext({
+        authenticate,
         platform,
         platformHeaders,
         request,
         schema,
         scopeSchemas,
-        authenticate,
       });
-      return handlePreviewConsent({
-        request,
-        shareId: previewShareId,
+      return await handlePreviewConsent({
+        authenticate: context.authenticate,
         basePath,
-        returnPath: previewReturnPath,
-        signInPath: options.cliAuth?.signInPath,
         platform: context.platform,
         platformHeaders: context.platformHeaders,
-        authenticate: context.authenticate,
+        request,
+        returnPath: previewReturnPath,
+        shareId: previewShareId,
+        signInPath: options.cliAuth?.signInPath,
       });
     }
 
-    if (request.method === "GET" && url.pathname === `${basePath}/preview/metadata`) {
+    if (
+      request.method === "GET" &&
+      url.pathname === `${basePath}/preview/metadata`
+    ) {
       const context = await createContext({
+        authenticate,
         platform,
         platformHeaders,
         request,
         schema,
         scopeSchemas,
-        authenticate,
       });
       const viewer = await context.authenticate({ request });
       if (!viewer) {
@@ -202,8 +273,8 @@ export function createTailorKitServer<const TOptions extends TailorKitServerInpu
       }
       if (scopes.length === 0) {
         return new Response("Preview unavailable", {
-          status: 404,
           headers: { "cache-control": "no-store" },
+          status: 404,
         });
       }
       const result = await previewAccepted({
@@ -214,24 +285,26 @@ export function createTailorKitServer<const TOptions extends TailorKitServerInpu
       });
       const data = "data" in result ? result.data : result;
       const selected = data.items.find(
-        (item) => item.preview.sessionId === url.searchParams.get("sessionId"),
+        (item) => item.preview.sessionId === url.searchParams.get("sessionId")
       );
       return selected
-        ? Response.json(selected.preview, { headers: { "cache-control": "no-store" } })
-        : new Response("Preview unavailable", {
-            status: 404,
+        ? Response.json(selected.preview, {
             headers: { "cache-control": "no-store" },
+          })
+        : new Response("Preview unavailable", {
+            headers: { "cache-control": "no-store" },
+            status: 404,
           });
     }
 
     if (request.method === "GET" && url.pathname === `${basePath}/apps`) {
       const context = await createContext({
+        authenticate,
         platform,
         platformHeaders,
         request,
         schema,
         scopeSchemas,
-        authenticate,
       });
       const tailorkit = await context.authenticate({ request });
 
@@ -247,13 +320,16 @@ export function createTailorKitServer<const TOptions extends TailorKitServerInpu
         return Response.json([], { headers: { "cache-control": "no-store" } });
       }
 
-      const items: Record<string, unknown>[] = [];
+      const items: (AppsListResponses[200]["items"][number] & {
+        preview?: PreviewAcceptedResponses[200]["items"][number]["preview"];
+      })[] = [];
       let page = 1;
       for (;;) {
+        // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
         const result = await appsList({
+          body: { page, pageSize: 100, scopes },
           client: context.platform,
           headers: context.platformHeaders,
-          body: { page, pageSize: 100, scopes },
           throwOnError: true,
         });
         const data = "data" in result ? result.data : result;
@@ -279,7 +355,10 @@ export function createTailorKitServer<const TOptions extends TailorKitServerInpu
             byId.set(accepted.app.id, items.length);
             items.push({ ...accepted.app, preview: accepted.preview });
           } else {
-            items[index] = { ...items[index], preview: accepted.preview };
+            const existing = items[index];
+            if (existing) {
+              items[index] = { ...existing, preview: accepted.preview };
+            }
           }
         }
       }
@@ -288,15 +367,15 @@ export function createTailorKitServer<const TOptions extends TailorKitServerInpu
 
     if (url.pathname === `${basePath}/cli-auth/approve`) {
       const context = await createContext({
+        authenticate,
         platform,
         platformHeaders,
         request,
         schema,
         scopeSchemas,
-        authenticate,
       });
 
-      return handleCliAuthApprovalPage({
+      return await handleCliAuthApprovalPage({
         authenticate: context.authenticate,
         platform: context.platform,
         platformHeaders: context.platformHeaders,
@@ -305,16 +384,20 @@ export function createTailorKitServer<const TOptions extends TailorKitServerInpu
       });
     }
 
+    // SAFETY: The server preserves the supplied typed tool table and normalizes the route base path before constructing its handler.
     const rpcResult = await rpcHandler.handle(request, {
       context: await createContext({
+        authenticate,
         platform,
         platformHeaders,
         request,
         schema,
         scopeSchemas,
-        authenticate,
       }),
-      prefix: basePath as AbsolutePath,
+      prefix:
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- The server preserves the supplied typed tool table and normalizes the route base path before constructing its handler. */
+        basePath as AbsolutePath,
+      /* oxlint-enable typescript/no-unsafe-type-assertion */
     });
 
     if (rpcResult.response) {
@@ -326,20 +409,7 @@ export function createTailorKitServer<const TOptions extends TailorKitServerInpu
 
   return {
     $internal: { platformBaseUrl, router: tailorkitRouter, schema },
-    mcp,
     handler,
+    mcp,
   };
-}
-
-function resolveReadScopes(url: URL, availableScopes: TailorKitScopes) {
-  try {
-    const names = url.searchParams.getAll("scopes");
-    if (names.length === 1 && names[0] === "") {
-      return [];
-    }
-    return selectTailorKitScopes(availableScopes, names.length ? names : undefined);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Invalid scope selection.";
-    return new Response(message, { status: 400 });
-  }
-}
+};

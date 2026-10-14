@@ -1,44 +1,58 @@
+import type { Invocation } from "@tailorkit/app/protocol";
+import type {
+  AppDefinition,
+  Identity,
+  FunctionKind,
+} from "@tailorkit/app/server";
+import { z } from "zod";
+
 import { AppError } from "./errors";
 
-import type { Invocation } from "@tailorkit/app/protocol";
-import type { AppDefinition, Identity, FunctionKind } from "@tailorkit/app/server";
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
 
 export type Functions = AppDefinition["functions"];
 type RegisteredFunction = Exclude<Functions[string], Functions>;
-export function isFunction(value: Functions[string]): value is RegisteredFunction {
-  return typeof value.kind === "string" && typeof value.handler === "function";
-}
+export const isFunction = (
+  value: Functions[string]
+): value is RegisteredFunction =>
+  typeof value.kind === "string" && typeof value.handler === "function";
 
-export function resolveFunction(
+export const resolveFunction = (
   functions: Functions,
-  name: string,
-): RegisteredFunction | undefined {
+  name: string
+): RegisteredFunction | undefined => {
   let current: RegisteredFunction | Functions = functions;
   for (const part of name.split(".")) {
     if (isFunction(current) || !Object.hasOwn(current, part)) {
-      return;
+      return undefined;
     }
     const next: RegisteredFunction | Functions | undefined = current[part];
-    if (!next) {
-      return;
+    if (!(next !== undefined && next !== null)) {
+      return undefined;
     }
     current = next;
   }
   return isFunction(current) ? current : undefined;
-}
+};
 
-function freezeIdentity(value: unknown): void {
-  if (!value || typeof value !== "object" || Object.isFrozen(value)) return;
-  for (const child of Object.values(value)) freezeIdentity(child);
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser, serializer, or runtime adapter handles arbitrary values before validating or encoding their domain representation.
+const freezeIdentity = (value: unknown): void => {
+  if (!isObjectValue(value) || Object.isFrozen(value)) {
+    return;
+  }
+  for (const child of Object.values(value)) {
+    freezeIdentity(child);
+  }
   Object.freeze(value);
-}
+};
 
-export function prepareFunction(
+export const prepareFunction = (
   app: AppDefinition,
   input: Invocation,
   identity: Identity,
-  kind: FunctionKind,
-) {
+  kind: FunctionKind
+) => {
   if (identity.expiresAt <= Date.now()) {
     throw new AppError("UNAUTHORIZED", "App token expired");
   }
@@ -51,11 +65,20 @@ export function prepareFunction(
   if (!args.success) {
     throw new AppError("BAD_REQUEST", "Invalid function arguments");
   }
-  return { fn, args: args.data };
-}
+  return { args: args.data, fn };
+};
 
 /** Validate serialization before a mutation can commit or an action can return. */
-export function functionValue(fn: RegisteredFunction, value: unknown): unknown {
+const jsonResultSchema = z.json();
+export type FunctionValue = z.output<typeof jsonResultSchema>;
+export const functionValue = (
+  fn: RegisteredFunction,
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser, serializer, or runtime adapter handles arbitrary values before validating or encoding their domain representation.
+  initialValue: unknown
+): FunctionValue => {
+  let value: Parameters<RegisteredFunction["args"]["safeParse"]>[0] =
+    initialValue;
+
   if (fn.result) {
     const result = fn.result.safeParse(value);
     if (!result.success) {
@@ -64,5 +87,5 @@ export function functionValue(fn: RegisteredFunction, value: unknown): unknown {
     value = result.data;
   }
   const serialized = JSON.stringify(value ?? null);
-  return JSON.parse(serialized);
-}
+  return jsonResultSchema.parse(JSON.parse(serialized));
+};

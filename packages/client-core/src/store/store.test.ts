@@ -1,24 +1,38 @@
-import { testContract } from "../test-contract";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+
+import { createTailorKitFetchClient } from "#client/fetch-client";
+import { toBaseUrl } from "#client/url";
+import { testContract } from "#test-contract";
+import type { TailorKitApp } from "#types";
+
 import { createTailorKitStore } from "./store";
-import { toBaseUrl } from "../client/url";
-import { createTailorKitFetchClient } from "../client/fetch-client";
-import type { TailorKitApp } from "../types";
 
 afterEach(() => vi.unstubAllGlobals());
 
-function deferredResponse() {
+const deferredResponse = () => {
   let resolve!: (response: Response) => void;
-  const promise = new Promise<Response>((done) => {
-    resolve = done;
-  });
+  const promise = (async () => {
+    const {
+      promise: pendingPromise,
+      resolve: done,
+      reject: rejectPending,
+    } = Promise.withResolvers<Response>();
+    try {
+      resolve = done;
+    } catch (error) {
+      rejectPending(error);
+    }
+    return await pendingPromise;
+  })();
   return { promise, resolve };
-}
+};
 
 describe("client stores", () => {
   it("normalizes endpoints without changing the input URL", () => {
     const input = new URL("https://host.test/api/tailorkit?token=test");
-    expect(toBaseUrl(input).href).toBe("https://host.test/api/tailorkit/?token=test");
+    expect(toBaseUrl(input).href).toBe(
+      "https://host.test/api/tailorkit/?token=test"
+    );
     expect(input.pathname).toBe("/api/tailorkit");
   });
 
@@ -26,44 +40,60 @@ describe("client stores", () => {
     "https://other.test/api",
     "https://host.test/other",
     "https://host.test/api?token=other",
-  ])("rejects the mismatched endpoint %s before creating fetch stores", (baseUrl) => {
-    const client = createTailorKitFetchClient({ baseUrl: "https://host.test/api" });
-    const apps = vi.spyOn(client, "apps");
-    expect(() =>
-      createTailorKitStore({ baseUrl: baseUrl, apps: undefined, client, contract: testContract() }),
-    ).toThrow("createTailorKitStore: baseUrl does not match the supplied fetch client.");
-    expect(apps).not.toHaveBeenCalled();
-  });
+  ])(
+    "rejects the mismatched endpoint %s before creating fetch stores",
+    (baseUrl) => {
+      const client = createTailorKitFetchClient({
+        baseUrl: "https://host.test/api",
+      });
+      const apps = vi.spyOn(client, "apps");
+      expect(() =>
+        createTailorKitStore({
+          apps: undefined,
+          baseUrl,
+          client,
+          contract: testContract(),
+        })
+      ).toThrow(
+        "createTailorKitStore: baseUrl does not match the supplied fetch client."
+      );
+      expect(apps).not.toHaveBeenCalled();
+    }
+  );
 
   it.each(["https://HOST.test:443/api", new URL("https://host.test/api/")])(
     "accepts the equivalent normalized endpoint %s",
     (baseUrl) => {
-      const client = createTailorKitFetchClient({ baseUrl: "https://host.test/api/" });
+      const client = createTailorKitFetchClient({
+        baseUrl: "https://host.test/api/",
+      });
       const store = createTailorKitStore({
-        baseUrl: baseUrl,
         apps: undefined,
+        baseUrl,
         client,
         contract: testContract(),
       });
       expect(store.client).toBe(client);
       expect(store.baseUrl.href).toBe("https://host.test/api/");
-    },
+    }
   );
 
   it("shares discovery requests and retains snapshots across subscription lifecycles", async () => {
     const response = deferredResponse();
-    const fetchMock = vi.fn(() => response.promise);
+    const fetchMock = vi.fn(async () => await response.promise);
     vi.stubGlobal("fetch", fetchMock);
     const store = createTailorKitStore({
       baseUrl: "https://host.test/api/tailorkit",
       contract: testContract(),
     });
-    const listener = vi.fn();
+    const listener = vi.fn<Parameters<typeof store.subscribeApps>[0]>();
     const stop = store.subscribeApps(listener);
     const first = store.fetchApps();
     expect(store.fetchApps()).toBe(first);
     expect(store.getAppsSnapshot().status).toBe("loading");
-    response.resolve(Response.json([{ id: "app", views: [{ path: "/home", slot: "panel" }] }]));
+    response.resolve(
+      Response.json([{ id: "app", views: [{ path: "/home", slot: "panel" }] }])
+    );
     await first;
     const ready = store.getAppsSnapshot();
     expect(ready.status).toBe("ready");
@@ -77,7 +107,11 @@ describe("client stores", () => {
     expect(fetchMock).toHaveBeenCalledOnce();
     expect(fetchMock).toHaveBeenCalledWith(
       new URL("https://host.test/api/tailorkit/apps"),
-      expect.objectContaining({ credentials: "same-origin", signal: expect.any(AbortSignal) }),
+      expect.objectContaining({
+        credentials: "same-origin",
+        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
+        signal: expect.any(AbortSignal),
+      })
     );
     stopAgain();
   });
@@ -87,9 +121,15 @@ describe("client stores", () => {
     const current = deferredResponse();
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockReturnValueOnce(old.promise).mockReturnValueOnce(current.promise),
+      vi
+        .fn()
+        .mockReturnValueOnce(old.promise)
+        .mockReturnValueOnce(current.promise)
     );
-    const store = createTailorKitStore({ baseUrl: "https://host.test/", contract: testContract() });
+    const store = createTailorKitStore({
+      baseUrl: "https://host.test/",
+      contract: testContract(),
+    });
     const first = store.fetchApps();
     await Promise.resolve();
     const second = store.fetchApps({ force: true });
@@ -106,9 +146,12 @@ describe("client stores", () => {
     const response = deferredResponse();
     vi.stubGlobal(
       "fetch",
-      vi.fn(() => response.promise),
+      vi.fn(async () => await response.promise)
     );
-    const store = createTailorKitStore({ baseUrl: "https://host.test/", contract: testContract() });
+    const store = createTailorKitStore({
+      baseUrl: "https://host.test/",
+      contract: testContract(),
+    });
     const pending = store.fetchApps();
     const apps: TailorKitApp[] = [{ id: "provided" }];
     store.setProvidedApps(apps);
@@ -120,15 +163,21 @@ describe("client stores", () => {
   });
 
   it("resumes discovery when provided apps are removed with an active subscriber", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(Response.json([{ id: "remote" }]));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(Response.json([{ id: "remote" }]));
     vi.stubGlobal("fetch", fetchMock);
     const store = createTailorKitStore({
+      apps: [{ id: "provided" }],
       baseUrl: "https://host.test/",
       contract: testContract(),
-      apps: [{ id: "provided" }],
     });
-    const firstStop = store.subscribeApps(vi.fn());
-    const stop = store.subscribeApps(vi.fn());
+    const firstStop = store.subscribeApps(
+      vi.fn<NonNullable<Parameters<typeof store.subscribeApps>[0]>>()
+    );
+    const stop = store.subscribeApps(
+      vi.fn<NonNullable<Parameters<typeof store.subscribeApps>[0]>>()
+    );
     await store.fetchApps();
     firstStop();
     firstStop();
@@ -142,10 +191,13 @@ describe("client stores", () => {
 
   it("does not seed discovery from preview updates before apps are available", async () => {
     const response = deferredResponse();
-    const fetchMock = vi.fn<typeof fetch>(() => response.promise);
+    const fetchMock = vi.fn<typeof fetch>(async () => await response.promise);
     vi.stubGlobal("fetch", fetchMock);
-    const store = createTailorKitStore({ baseUrl: "https://host.test/", contract: testContract() });
-    const views = [{ slot: "panel", path: "/preview" }];
+    const store = createTailorKitStore({
+      baseUrl: "https://host.test/",
+      contract: testContract(),
+    });
+    const views = [{ path: "/preview", slot: "panel" }];
 
     store.fetch.apps.updateViews("app", views);
     expect(store.getAppsSnapshot().status).toBe("idle");
@@ -156,9 +208,15 @@ describe("client stores", () => {
     expect(store.getAppsSnapshot().status).toBe("loading");
     expect(signal?.aborted).toBe(false);
     expect(store.fetchApps()).toBe(pending);
-    response.resolve(Response.json([{ id: "app", views: [{ slot: "panel", path: "/remote" }] }]));
+    response.resolve(
+      Response.json([
+        { id: "app", views: [{ path: "/remote", slot: "panel" }] },
+      ])
+    );
     await pending;
-    expect(store.getAppsSnapshot().apps[0]?.views).toEqual([{ slot: "panel", path: "/remote" }]);
+    expect(store.getAppsSnapshot().apps[0]?.views).toEqual([
+      { path: "/remote", slot: "panel" },
+    ]);
     expect(fetchMock).toHaveBeenCalledOnce();
 
     store.fetch.apps.updateViews("app", views);
@@ -171,7 +229,10 @@ describe("client stores", () => {
       .mockRejectedValueOnce("offline")
       .mockResolvedValueOnce(Response.json([{ id: "remote" }]));
     vi.stubGlobal("fetch", fetchMock);
-    const first = createTailorKitStore({ baseUrl: "https://host.test/", contract: testContract() });
+    const first = createTailorKitStore({
+      baseUrl: "https://host.test/",
+      contract: testContract(),
+    });
     const second = createTailorKitStore({
       baseUrl: "https://other.test/",
       contract: testContract(),
@@ -180,7 +241,13 @@ describe("client stores", () => {
     expect(first.getAppsSnapshot().error?.message).toBe("offline");
     expect(first.getAppsSnapshot().status).toBe("error");
     await first.fetchApps({ force: true });
-    expect(first.getAppsSnapshot()).toMatchObject({ error: null, status: "ready" });
-    expect(second.getAppsSnapshot()).toMatchObject({ apps: [], status: "idle" });
+    expect(first.getAppsSnapshot()).toMatchObject({
+      error: null,
+      status: "ready",
+    });
+    expect(second.getAppsSnapshot()).toMatchObject({
+      apps: [],
+      status: "idle",
+    });
   });
 });

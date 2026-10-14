@@ -1,5 +1,11 @@
-import { createFetchCache } from "../store/fetch/cache";
-import type { FetchCacheOptions } from "../store/fetch/cache";
+import type {
+  TailorKitContract,
+  ToolImplementations,
+} from "@tailorkit/core/schema";
+
+import { createFetchCache } from "#store/fetch/cache";
+import type { FetchCacheOptions } from "#store/fetch/cache";
+
 import { createEndpointClient } from "./endpoints";
 
 export interface TailorKitCacheOptions extends FetchCacheOptions {
@@ -8,34 +14,38 @@ export interface TailorKitCacheOptions extends FetchCacheOptions {
 }
 
 export interface TailorKitFetchClientOptions {
-  contract?: import("@tailorkit/core/schema").TailorKitContract;
-  tools?: import("@tailorkit/core/schema").ToolImplementations<
-    import("@tailorkit/core/schema").TailorKitContract["tools"],
-    "client"
-  >;
+  contract?: TailorKitContract;
+  tools?: ToolImplementations<TailorKitContract["tools"], "client">;
   baseUrl: string | URL;
   fetch?: typeof fetch;
   cache?: TailorKitCacheOptions;
 }
 
 /** Share this client between roots to share endpoint requests and cached responses. */
-export function createTailorKitFetchClient(options: TailorKitFetchClientOptions) {
+export const createTailorKitFetchClient = (
+  options: TailorKitFetchClientOptions
+) => {
   const endpoints = createEndpointClient(options);
   const cache = createFetchCache(options.cache);
-  const baseUrl = endpoints.baseUrl;
+  const { baseUrl } = endpoints;
   const prefix = ["tailorkit", baseUrl.toString()] as const;
   return {
+    apps: (settings: FetchCacheOptions = {}) =>
+      cache.getStore([...prefix, "apps"], endpoints.apps, {
+        ...options.cache?.apps,
+        ...settings,
+      }),
     baseUrl,
-    endpoints,
     cache,
     cacheOptions: options.cache,
-    apps: (settings: FetchCacheOptions = {}) =>
-      cache.getStore([...prefix, "apps"], endpoints.apps, { ...options.cache?.apps, ...settings }),
-    clear() {
+    clear: () => {
       cache.clear();
       endpoints.clearSessions();
     },
+    endpoints,
   };
-}
+};
 
-export type TailorKitFetchClient = ReturnType<typeof createTailorKitFetchClient>;
+export type TailorKitFetchClient = ReturnType<
+  typeof createTailorKitFetchClient
+>;

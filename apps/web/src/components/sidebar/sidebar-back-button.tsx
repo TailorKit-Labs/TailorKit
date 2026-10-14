@@ -1,21 +1,20 @@
-import { ChevronLeftIcon } from "lucide-react";
+import { SidebarMenuButton } from "@tailorkit/ui/sidebar";
 import type { LinkProps } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
-import { Button } from "@tailorkit/ui/button";
+import { ChevronLeftIcon } from "lucide-react";
 
 type SidebarBackButtonProps = LinkProps & { label: string };
 
-export function SidebarBackButton({ label, ...props }: SidebarBackButtonProps) {
-  return (
-    <Button
-      className="mb-1 w-full px-2.5 text-center text-sidebar-accent-foreground/75 hover:text-sidebar-accent-foreground"
-      render={<Link {...props} />}
-      size="lg"
-      variant="ghost"
-    >
-      <ChevronLeftIcon className="size-4" />
-      <span className="grow truncate">{label}</span>
-      <span className="size-4" aria-hidden="true" />
-    </Button>
-  );
-}
+export const SidebarBackButton = ({
+  label,
+  ...props
+}: SidebarBackButtonProps) => (
+  <SidebarMenuButton
+    className="mb-1 h-10 text-center sm:h-9"
+    render={<Link {...props} />}
+  >
+    <ChevronLeftIcon className="size-4" />
+    <span className="grow truncate">{label}</span>
+    <span className="size-4" aria-hidden="true" />
+  </SidebarMenuButton>
+);

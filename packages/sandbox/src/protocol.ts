@@ -1,32 +1,34 @@
 import * as v from "valibot";
 
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
+
 // Valibot object schemas also accept arrays; the wire protocol requires objects.
-const ObjectInput = v.custom<Record<string, unknown>>(
-  (input) => input !== null && typeof input === "object" && !Array.isArray(input),
-  "Expected an object",
+const ObjectInput = v.custom<object>(
+  (input) => input !== null && isObjectValue(input) && !Array.isArray(input),
+  "Expected an object"
 );
-const Props = v.pipe(ObjectInput, v.record(v.string(), v.unknown()));
-function strictObject<const TEntries extends v.ObjectEntries>(entries: TEntries) {
-  return v.pipe(ObjectInput, v.strictObject(entries));
-}
+export const RemotePropsSchema = v.pipe(
+  ObjectInput,
+  v.record(v.string(), v.unknown())
+);
+const strictObject = <const TEntries extends v.ObjectEntries>(
+  entries: TEntries
+) => v.pipe(ObjectInput, v.strictObject(entries));
 
 const FiniteNumber = v.pipe(v.number(), v.finite());
 const SessionId = v.pipe(v.string(), v.minLength(1), v.maxLength(128));
 // Preserve WHATWG URL validation, including non-HTTP absolute URLs.
 const SessionUrl = v.pipe(
   v.string(),
-  v.check((value) => {
-    try {
-      new URL(value.trim());
-      return true;
-    } catch {
-      return false;
-    }
-  }, "Invalid URL"),
-  v.transform((value) => value.trim().replace(/[\t\n\r]/gu, "")),
+  v.check((value) => URL.canParse(value.trim()), "Invalid URL"),
+  v.transform((value) => value.trim().replaceAll(/[\t\n\r]/gu, ""))
 );
 
-export type RemoteNode = RemoteElementNode | RemoteFragmentNode | RemoteTextNode;
+export type RemoteNode =
+  | RemoteElementNode
+  | RemoteFragmentNode
+  | RemoteTextNode;
 
 export interface RemoteTextNode {
   id: string;
@@ -49,7 +51,7 @@ export interface RemoteElementNode {
   type: string;
 }
 
-export type RemoteProps = Record<string, unknown>;
+export type RemoteProps = v.InferOutput<typeof RemotePropsSchema>;
 
 export interface RemoteCallbackBinding {
   callback: string;
@@ -90,29 +92,20 @@ export type RemotePatch =
       op: "setCallbacks";
     };
 
+// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
 export const HostToIframePayload = v.pipe(
   ObjectInput,
   v.variant("type", [
     v.strictObject({
-      type: v.literal("toolResult"),
       data: strictObject({
+        error: v.optional(v.string()),
         id: SessionId,
         output: v.optional(v.unknown()),
-        error: v.optional(v.string()),
       }),
+      type: v.literal("toolResult"),
     }),
     v.strictObject({
-      type: v.literal("backendSessionResult"),
       data: strictObject({
-        id: SessionId,
-        session: v.optional(
-          strictObject({
-            subjectId: v.optional(v.string()),
-            token: v.pipe(v.string(), v.maxLength(8192)),
-            expiresAt: FiniteNumber,
-            url: SessionUrl,
-          }),
-        ),
         error: v.optional(
           strictObject({
             code: v.picklist([
@@ -126,15 +119,25 @@ export const HostToIframePayload = v.pipe(
               "INTERNAL_SERVER_ERROR",
             ]),
             message: v.string(),
-          }),
+          })
+        ),
+        id: SessionId,
+        session: v.optional(
+          strictObject({
+            expiresAt: FiniteNumber,
+            subjectId: v.optional(v.string()),
+            token: v.pipe(v.string(), v.maxLength(8192)),
+            url: SessionUrl,
+          })
         ),
       }),
+      type: v.literal("backendSessionResult"),
     }),
     v.strictObject({
       data: strictObject({
         appSource: v.string(),
         appUrl: v.string(),
-        props: v.optional(Props),
+        props: v.optional(RemotePropsSchema),
       }),
       type: v.literal("init"),
     }),
@@ -150,14 +153,14 @@ export const HostToIframePayload = v.pipe(
       data: strictObject({ timestamp: FiniteNumber }),
       type: v.literal("animationFrame"),
     }),
-  ]),
+  ])
 );
 export type HostToIframePayload = v.InferOutput<typeof HostToIframePayload>;
 
 const RemoteCallbackBindingSchema = strictObject({
   callback: v.string(),
-  inputCount: FiniteNumber,
   event: v.string(),
+  inputCount: FiniteNumber,
 });
 
 type RemoteNodeSchemaType = v.GenericSchema<unknown, RemoteNode>;
@@ -180,11 +183,11 @@ const RemoteNodeSchema: RemoteNodeSchemaType = v.lazy(() =>
         children: v.array(RemoteNodeSchema),
         id: v.string(),
         kind: v.literal("element"),
-        props: Props,
+        props: RemotePropsSchema,
         type: v.string(),
       }),
-    ]),
-  ),
+    ])
+  )
 );
 
 const RemotePatchSchema: v.GenericSchema<unknown, RemotePatch> = v.pipe(
@@ -221,24 +224,25 @@ const RemotePatchSchema: v.GenericSchema<unknown, RemotePatch> = v.pipe(
       nodeId: v.string(),
       op: v.literal("setCallbacks"),
     }),
-  ]),
+  ])
 );
 
+// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
 export const IframeToHostPayload = v.pipe(
   ObjectInput,
   v.variant("type", [
     v.strictObject({
-      type: v.literal("toolRequest"),
       data: strictObject({
         id: SessionId,
+        input: v.optional(v.unknown()),
         kind: v.picklist(["client", "server"]),
         path: v.pipe(v.string(), v.maxLength(512)),
-        input: v.optional(v.unknown()),
       }),
+      type: v.literal("toolRequest"),
     }),
     v.strictObject({
-      type: v.literal("backendSessionRequest"),
       data: strictObject({ id: SessionId, refresh: v.boolean() }),
+      type: v.literal("backendSessionRequest"),
     }),
     v.strictObject({ type: v.literal("ready") }),
     v.strictObject({
@@ -261,7 +265,10 @@ export const IframeToHostPayload = v.pipe(
       }),
       type: v.literal("error"),
     }),
-    v.strictObject({ data: strictObject({}), type: v.literal("requestAnimationFrame") }),
-  ]),
+    v.strictObject({
+      data: strictObject({}),
+      type: v.literal("requestAnimationFrame"),
+    }),
+  ])
 );
 export type IframeToHostPayload = v.InferOutput<typeof IframeToHostPayload>;

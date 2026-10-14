@@ -1,4 +1,5 @@
 import { expect, it } from "vite-plus/test";
+
 import { buildThemeCss, buildPrimitiveCss } from "./primitive-css";
 
 const theme = {
@@ -14,16 +15,16 @@ const theme = {
     borderColor: {
       default: "var(--border)",
     },
-    textColor: {
-      foreground: "var(--foreground)",
-      muted: "var(--muted-foreground)",
-    },
     radius: {
       md: "8px",
     },
     space: {
       lg: "16px",
       md: "8px",
+    },
+    textColor: {
+      foreground: "var(--foreground)",
+      muted: "var(--muted-foreground)",
     },
   },
 };
@@ -34,28 +35,32 @@ it("builds view-scoped theme variables", () => {
   expect(css).toContain("--tailorkit-border-solid: solid;");
   expect(css).toContain("--tailorkit-space-md: 8px;");
   expect(css).toContain("--tailorkit-background-surface: var(--background);");
-  expect(css).toContain("--tailorkit-textColor-muted: var(--muted-foreground);");
+  expect(css).toContain(
+    "--tailorkit-textColor-muted: var(--muted-foreground);"
+  );
 });
 
 it("builds responsive primitive CSS without rendering a component", () => {
   const css = buildPrimitiveCss({
-    viewId: "view",
-    nodeId: "node",
     display: "flex",
-    theme,
+    nodeId: "node",
     props: {
-      padding: "md",
       align: "start",
       justify: "between",
-      width: 320,
+      padding: "md",
       textColor: { base: "muted", lg: "foreground", missing: "foreground" },
+      width: 320,
     },
+    theme,
+    viewId: "view",
   });
-  expect(css).toContain('[data-tailorkit-view="view"] [data-tailorkit-node="node"]');
+  expect(css).toContain(
+    '[data-tailorkit-view="view"] [data-tailorkit-node="node"]'
+  );
   expect(css).toContain("padding: var(--tailorkit-space-md)");
   expect(css).toContain("width: 320px");
   expect(css).toContain("align-items: flex-start");
   expect(css).toContain("justify-content: space-between");
   expect(css).toContain("@media (min-width: 1024px)");
-  expect(css.match(/@media/g)).toHaveLength(1);
+  expect(css.match(/@media/gu)).toHaveLength(1);
 });

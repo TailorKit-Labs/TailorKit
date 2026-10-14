@@ -11,7 +11,9 @@ Leaf({ value: "value" });
 // @ts-expect-error leaf components do not accept children
 Leaf({ children: "not allowed" });
 
-const ExplicitLeaf = createRemoteComponent<object, false>("Leaf", { children: false });
+const ExplicitLeaf = createRemoteComponent<object>("Leaf", {
+  children: false,
+});
 // @ts-expect-error explicitly disabled children are rejected too
 ExplicitLeaf({ children: ["not allowed"] });
 

@@ -1,36 +1,50 @@
-import type { BooleanFieldProps as BaseBooleanFieldProps } from "./boolean-field";
-import type { NumberFieldProps as BaseNumberFieldProps } from "./number-field";
-import type { SelectFieldProps as BaseSelectFieldProps } from "./select-field";
-import type { TextFieldProps as BaseTextFieldProps } from "./text-field";
+import { createFormHook, createFormHookContexts } from "@tanstack/react-form";
+import { EyeIcon, EyeOffIcon } from "lucide-react";
 import type { ReactNode } from "react";
-
 import { useState } from "react";
 
-import { createFormHook, createFormHookContexts, formOptions } from "@tanstack/react-form";
-import { EyeIcon, EyeOffIcon } from "lucide-react";
-
-import { BooleanField as BaseBooleanField } from "./boolean-field";
-import { formatFieldErrors } from "./field-errors";
-import { NumberField as BaseNumberField } from "./number-field";
-import { SelectField as BaseSelectField } from "./select-field";
-import { TextField as BaseTextField } from "./text-field";
-import { Field, FieldDescription, FieldError, FieldLabel } from "../components/field";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "../components/input-group";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../components/tooltip";
-import { Button } from "../components/button";
-import type { ButtonProps } from "../components/button";
+import { Button } from "#components/button";
+import type { ButtonProps } from "#components/button";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "#components/field";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "#components/input-group";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "#components/tooltip";
 import { cn } from "#ui";
 
-export { formOptions };
+import type { BooleanFieldProps as BaseBooleanFieldProps } from "./boolean-field";
+import { BooleanField as BaseBooleanField } from "./boolean-field";
+import { formatFieldErrors } from "./field-errors";
+import type { NumberFieldProps as BaseNumberFieldProps } from "./number-field";
+import { NumberField as BaseNumberField } from "./number-field";
+import type { SelectFieldProps as BaseSelectFieldProps } from "./select-field";
+import { SelectField as BaseSelectField } from "./select-field";
+import type { TextFieldProps as BaseTextFieldProps } from "./text-field";
+import { TextField as BaseTextField } from "./text-field";
+
+const isNumberValue = <TValue,>(value: TValue): value is TValue & number =>
+  typeof value === "number";
+
+export { formOptions } from "@tanstack/react-form";
+
 export { formatFieldErrors } from "./field-errors";
 
 // export useFieldContext for use in your custom components
+/* oxlint-disable typescript/no-unsafe-assignment -- TanStack shared contexts erase form-specific generics; typed hooks restore them. */
 export const { fieldContext, formContext, useFieldContext, useFormContext } =
   createFormHookContexts();
+/* oxlint-enable typescript/no-unsafe-assignment */
 
 export type TextFieldProps = Omit<BaseTextFieldProps, "errors" | "value">;
 
-export function TextField({ onBlur, onChange, ...props }: TextFieldProps) {
+export const TextField = ({ onBlur, onChange, ...props }: TextFieldProps) => {
   const field = useFieldContext<string>();
 
   return (
@@ -48,11 +62,15 @@ export function TextField({ onBlur, onChange, ...props }: TextFieldProps) {
       value={field.state.value}
     />
   );
-}
+};
 
 export type NumberFieldProps = Omit<BaseNumberFieldProps, "errors" | "value">;
 
-export function NumberField({ onBlur, onChange, ...props }: NumberFieldProps) {
+export const NumberField = ({
+  onBlur,
+  onChange,
+  ...props
+}: NumberFieldProps) => {
   const field = useFieldContext<number | null>();
 
   return (
@@ -65,19 +83,21 @@ export function NumberField({ onBlur, onChange, ...props }: NumberFieldProps) {
       }}
       onChange={(
         value: number | null,
-        eventDetails: Parameters<NonNullable<BaseNumberFieldProps["onChange"]>>[1],
+        eventDetails: Parameters<
+          NonNullable<BaseNumberFieldProps["onChange"]>
+        >[1]
       ) => {
         field.handleChange(value);
         onChange?.(value, eventDetails);
       }}
-      value={typeof field.state.value === "number" ? field.state.value : null}
+      value={isNumberValue(field.state.value) ? field.state.value : null}
     />
   );
-}
+};
 
 export type SelectFieldProps = Omit<BaseSelectFieldProps, "errors" | "value">;
 
-export function SelectField(props: SelectFieldProps) {
+export const SelectField = (props: SelectFieldProps) => {
   const field = useFieldContext<string>();
   const { onValueChange, ...restProps } = props;
 
@@ -86,13 +106,13 @@ export function SelectField(props: SelectFieldProps) {
       {...restProps}
       errors={field.state.meta.errors}
       onValueChange={(value) => {
-        field.setValue(value || field.state.value);
+        field.setValue(value ?? field.state.value);
         onValueChange?.(value);
       }}
       value={field.state.value}
     />
   );
-}
+};
 
 export interface SecretTextFieldProps {
   autoFocus?: boolean;
@@ -104,7 +124,7 @@ export interface SecretTextFieldProps {
   required?: boolean;
 }
 
-export function SecretTextField({
+export const SecretTextField = ({
   autoFocus,
   description,
   disabled,
@@ -112,18 +132,21 @@ export function SecretTextField({
   labelAction,
   placeholder,
   required,
-}: SecretTextFieldProps) {
+}: SecretTextFieldProps) => {
   const field = useFieldContext<string>();
   const [showSecret, setShowSecret] = useState(false);
-  const errors = field.state.meta.errors;
+  const { errors } = field.state.meta;
   const errorMessage = formatFieldErrors(errors);
   const isError = errorMessage.length > 0;
 
   return (
     <Field disabled={disabled} invalid={isError}>
-      <FieldLabel className={"w-full"}>
-        {label} {required && <span className="text-destructive-foreground">*</span>}
-        {labelAction && <div className="ml-auto">{labelAction}</div>}
+      <FieldLabel className="w-full">
+        {label}{" "}
+        {required === true && (
+          <span className="text-destructive-foreground">*</span>
+        )}
+        {Boolean(labelAction) && <div className="ml-auto">{labelAction}</div>}
       </FieldLabel>
       <InputGroup>
         <InputGroupInput
@@ -131,7 +154,9 @@ export function SecretTextField({
           autoFocus={autoFocus}
           disabled={disabled}
           onBlur={field.handleBlur}
-          onChange={(e) => field.handleChange(e.target.value)}
+          onChange={(e) => {
+            field.handleChange(e.target.value);
+          }}
           placeholder={placeholder}
           required={required}
           type={showSecret ? "text" : "password"}
@@ -143,7 +168,9 @@ export function SecretTextField({
               render={
                 <Button
                   aria-label={showSecret ? "Hide secret" : "Show secret"}
-                  onClick={() => setShowSecret(!showSecret)}
+                  onClick={() => {
+                    setShowSecret(!showSecret);
+                  }}
                   size="icon-xs"
                   variant="ghost"
                 />
@@ -151,48 +178,54 @@ export function SecretTextField({
             >
               {showSecret ? <EyeOffIcon /> : <EyeIcon />}
             </TooltipTrigger>
-            <TooltipPopup>{showSecret ? "Hide secret" : "Show secret"}</TooltipPopup>
+            <TooltipPopup>
+              {showSecret ? "Hide secret" : "Show secret"}
+            </TooltipPopup>
           </Tooltip>
         </InputGroupAddon>
       </InputGroup>
-      {description && <FieldDescription>{description}</FieldDescription>}
+      {description !== undefined &&
+        description !== null &&
+        description !== "" && (
+          <FieldDescription>{description}</FieldDescription>
+        )}
       {isError && <FieldError>{errorMessage}</FieldError>}
     </Field>
   );
-}
+};
 
 export type BooleanFieldProps = Omit<
   BaseBooleanFieldProps,
   "checked" | "errors" | "onBlur" | "onCheckedChange"
 >;
 
-export function BooleanField(props: BooleanFieldProps) {
+export const BooleanField = (props: BooleanFieldProps) => {
   const field = useFieldContext<boolean>();
 
   return (
     <BaseBooleanField
       {...props}
-      checked={Boolean(field.state.value)}
+      checked={field.state.value}
       errors={field.state.meta.errors}
       onBlur={field.handleBlur}
       onCheckedChange={field.handleChange}
     />
   );
-}
+};
 
-type SubmitButtonState = {
+interface SubmitButtonState {
   canSubmit: boolean;
   isSubmitting: boolean;
   isValidating: boolean;
-};
+}
 
-function SubmitButton({
+const SubmitButton = ({
   children,
   variant,
   className,
   disabled = false,
   ...props
-}: Omit<ButtonProps, "type" | "loading">) {
+}: Omit<ButtonProps, "type" | "loading">) => {
   const form = useFormContext();
   return (
     <form.Subscribe<SubmitButtonState>
@@ -216,9 +249,9 @@ function SubmitButton({
       )}
     </form.Subscribe>
   );
-}
+};
 
-function FormError({ children }: { children?: ReactNode }) {
+const FormError = ({ children }: { children?: ReactNode }) => {
   const errorMessage = formatFieldErrors([children]);
 
   if (!errorMessage) {
@@ -230,21 +263,26 @@ function FormError({ children }: { children?: ReactNode }) {
       <FieldError>{errorMessage}</FieldError>
     </Field>
   );
-}
+};
 
 export const { useAppForm, withForm } = createFormHook({
-  fieldContext,
-  formContext,
   // We'll learn more about these options later
   fieldComponents: {
-    TextField,
-    NumberField,
-    SelectField,
     BooleanField,
+    NumberField,
     SecretTextField,
+    SelectField,
+    TextField,
   },
+
+  // oxlint-disable-next-line typescript/no-unsafe-assignment -- TanStack Form shared contexts erase form-specific generics; the typed field and form hooks restore those relationships.
+  fieldContext,
+
   formComponents: {
     FormError,
     SubmitButton,
   },
+
+  // oxlint-disable-next-line typescript/no-unsafe-assignment -- TanStack Form shared contexts erase form-specific generics; the typed field and form hooks restore those relationships.
+  formContext,
 });

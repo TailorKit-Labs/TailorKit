@@ -1,18 +1,23 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
+import { authRedirectSearchSchema } from "#lib/auth-search";
+
 export const Route = createFileRoute("/(auth)")({
-  validateSearch: (search) => ({
-    return_to: search.return_to as string | undefined,
-  }),
   loader: async ({ context, location }) => {
     const [session] = await Promise.all([
       context.queryClient.query(context.orpc.user.getSession.queryOptions()),
-      context.queryClient.query(context.orpc.user.getSocialProviders.queryOptions()),
+      context.queryClient.query(
+        context.orpc.user.getSocialProviders.queryOptions()
+      ),
     ]);
 
     if (session.session || session.user) {
-      const returnTo = (location.search as { return_to?: string }).return_to;
+      const returnTo = authRedirectSearchSchema.parse(
+        location.search
+      ).return_to;
+      // oxlint-disable-next-line typescript/only-throw-error -- TanStack Router intercepts its redirect and not-found response objects when they are thrown from route loaders.
       throw redirect({ to: returnTo ?? "/" });
     }
   },
+  validateSearch: authRedirectSearchSchema,
 });

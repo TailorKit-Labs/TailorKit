@@ -1,40 +1,61 @@
+import { randomBytes } from "node:crypto";
+
 import { openapi } from "@orpc/openapi";
 import { ORPCError } from "@orpc/server";
 import { hashSecret } from "@tailorkit/api-utils/hashing";
-import { getBaseUrl } from "@tailorkit/env";
-import { env } from "#env";
-import { getKV } from "@tailorkit/kv";
 import { db } from "@tailorkit/db";
 import { previewSession } from "@tailorkit/db/schema/preview-session";
 import { project } from "@tailorkit/db/schema/project";
+import { getBaseUrl } from "@tailorkit/env";
+import { getKV } from "@tailorkit/kv";
 import { and, count, eq, lt } from "drizzle-orm";
-import { randomBytes } from "node:crypto";
-import z from "zod";
-import { createPreviewBuildStore } from "../preview-build-store";
-import { ensurePreviewDeveloperGrace, recordPreviewAgentAuthorization } from "../preview-lifecycle";
-import { o, cliRouter } from "../procedures";
+import { z } from "zod";
+
+import { authenticateCliRequest } from "#cli-token";
+import { env } from "#env";
+import { createPreviewBuildStore } from "#preview-build-store";
+import {
+  ensurePreviewDeveloperGrace,
+  recordPreviewAgentAuthorization,
+} from "#preview-lifecycle";
+import { o, cliRouter } from "#procedures";
+
 import { previewGrantRoutes } from "./preview-grants";
-import { authenticateCliRequest } from "../cli-token";
+
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
+
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
 
 const previewSessionLifetimeMs = 8 * 60 * 60 * 1000;
 const firstConnectionGraceMs = 2 * 60 * 1000;
 const maxActivePreviewsPerScope = 5;
 const activePreviewConflictReason = "ACTIVE_PREVIEW_EXISTS";
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
-function hash(value: string): string {
-  if (!env.AUTH_SECRET) {
+const hash = (value: string): string => {
+  if (
+    !(
+      env.AUTH_SECRET !== undefined &&
+      env.AUTH_SECRET !== null &&
+      env.AUTH_SECRET !== ""
+    )
+  ) {
     throw new Error("AUTH_SECRET is required for preview credentials.");
   }
   return hashSecret(value, env.AUTH_SECRET);
-}
+};
 
-function createSecret(): string {
-  return randomBytes(32).toString("base64url");
-}
+const createSecret = (): string => randomBytes(32).toString("base64url");
 
 const startPreview = cliRouter
-  .meta(openapi({ path: "/start", method: "POST" }))
+  .meta(openapi({ method: "POST", path: "/start" }))
   .input(
     z.object({
       body: z.object({
@@ -42,18 +63,18 @@ const startPreview = cliRouter
         deployToken: z.string().min(1),
         replaceActive: z.boolean().optional(),
       }),
-    }),
+    })
   )
   .output(
     z.object({
       body: z.object({
         expiresAt: z.date(),
         sessionId: z.string(),
+        shareId: z.string(),
         tunnelToken: z.string(),
         tunnelUrl: z.url(),
-        shareId: z.string(),
       }),
-    }),
+    })
   )
   .handler(async ({ context, input }) => {
     const kv = getKV();
@@ -67,38 +88,46 @@ const startPreview = cliRouter
 
     const previewApp = await db.query.app.findFirst({
       where: {
-        RAW: (fields, { and, eq }) =>
-          and(
-            eq(fields.projectId, context.project.id),
-            eq(fields.scopeKey, token.scopeKey),
-            eq(fields.scope, token.scope),
-            uuidPattern.test(input.body.appId)
-              ? eq(fields.id, input.body.appId)
-              : eq(fields.publicId, input.body.appId),
-          )!,
+        RAW: (fields, { and: andValue, eq: eqValue }) =>
+          requireValue(
+            andValue(
+              eqValue(fields.projectId, context.project.id),
+              eqValue(fields.scopeKey, token.scopeKey),
+              eqValue(fields.scope, token.scope),
+              uuidPattern.test(input.body.appId)
+                ? eqValue(fields.id, input.body.appId)
+                : eqValue(fields.publicId, input.body.appId)
+            )
+          ),
       },
     });
     if (!previewApp) {
-      throw new ORPCError("NOT_FOUND", { message: "App not found for this host scope." });
+      throw new ORPCError("NOT_FOUND", {
+        message: "App not found for this host scope.",
+      });
     }
 
     const activeSessions = await db.query.previewSession.findMany({
       where: {
-        RAW: (fields, { and, eq }) =>
-          and(
-            eq(fields.projectId, context.project.id),
-            eq(fields.scopeKey, token.scopeKey),
-            eq(fields.scope, token.scope),
-            eq(fields.status, "active"),
-          )!,
+        RAW: (fields, { and: andValue2, eq: eqValue2 }) =>
+          requireValue(
+            andValue2(
+              eqValue2(fields.projectId, context.project.id),
+              eqValue2(fields.scopeKey, token.scopeKey),
+              eqValue2(fields.scope, token.scope),
+              eqValue2(fields.status, "active")
+            )
+          ),
       },
     });
     for (const activeSession of activeSessions) {
       if (activeSession.expiresAt > now) {
+        // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
         await ensurePreviewDeveloperGrace(
           kv,
           activeSession.id,
-          activeSession.createdAt.getTime() + firstConnectionGraceMs <= now.getTime(),
+          activeSession.createdAt.getTime() + firstConnectionGraceMs <=
+            now.getTime()
         );
       }
     }
@@ -125,8 +154,8 @@ const startPreview = cliRouter
               eq(previewSession.scopeKey, token.scopeKey),
               eq(previewSession.scope, token.scope),
               eq(previewSession.status, "active"),
-              lt(previewSession.expiresAt, now),
-            ),
+              lt(previewSession.expiresAt, now)
+            )
           )
           .returning({ id: previewSession.id });
         const active = await tx.query.previewSession.findFirst({
@@ -135,7 +164,7 @@ const startPreview = cliRouter
             status: "active",
           },
         });
-        if (active && !input.body.replaceActive) {
+        if (active && !(input.body.replaceActive === true)) {
           throw new ORPCError("CONFLICT", {
             data: { reason: activePreviewConflictReason },
             message: "A preview is already running for this app.",
@@ -145,7 +174,12 @@ const startPreview = cliRouter
           ? await tx
               .update(previewSession)
               .set({ endedAt: now, status: "ended" })
-              .where(and(eq(previewSession.id, active.id), eq(previewSession.status, "active")))
+              .where(
+                and(
+                  eq(previewSession.id, active.id),
+                  eq(previewSession.status, "active")
+                )
+              )
               .returning({ id: previewSession.id })
           : [];
         const [scopeCount] = await tx
@@ -156,8 +190,8 @@ const startPreview = cliRouter
               eq(previewSession.projectId, context.project.id),
               eq(previewSession.scopeKey, token.scopeKey),
               eq(previewSession.scope, token.scope),
-              eq(previewSession.status, "active"),
-            ),
+              eq(previewSession.status, "active")
+            )
           );
         if ((scopeCount?.total ?? 0) >= maxActivePreviewsPerScope) {
           throw new ORPCError("CONFLICT", {
@@ -171,23 +205,22 @@ const startPreview = cliRouter
             cliTokenId: token.id,
             expiresAt,
             projectId: context.project.id,
-            scopeKey: token.scopeKey,
             scope: token.scope,
+            scopeKey: token.scopeKey,
             shareId,
             tunnelTokenHash: hash(tunnelToken),
           })
           .returning({ id: previewSession.id });
-        return { session: created, expiredSessions, replacedSessions };
+        return { expiredSessions, replacedSessions, session: created };
       })
-      .catch((error: unknown) => {
+      .catch((error: ErrorOptions["cause"]) => {
         if (error instanceof ORPCError) {
           throw error;
         }
         const candidate =
-          error && typeof error === "object" && "cause" in error ? error.cause : error;
+          isObjectValue(error) && "cause" in error ? error.cause : error;
         if (
-          candidate &&
-          typeof candidate === "object" &&
+          isObjectValue(candidate) &&
           "code" in candidate &&
           candidate.code === "23505"
         ) {
@@ -199,13 +232,20 @@ const startPreview = cliRouter
         throw error;
       });
     if (!started.session) {
-      throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Failed to create preview." });
+      throw new ORPCError("INTERNAL_SERVER_ERROR", {
+        message: "Failed to create preview.",
+      });
     }
-    if (context.agentToken)
+    if (context.agentToken) {
       await recordPreviewAgentAuthorization(kv, started.session.id, expiresAt);
+    }
     const builds = createPreviewBuildStore(kv);
-    for (const ended of [...started.expiredSessions, ...started.replacedSessions]) {
+    for (const ended of [
+      ...started.expiredSessions,
+      ...started.replacedSessions,
+    ]) {
       try {
+        // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
         await builds.end(ended.id);
       } catch {
         // Existing KV TTLs bound cleanup if the store is temporarily unavailable.
@@ -227,12 +267,12 @@ const startPreview = cliRouter
   });
 
 const stopPreview = cliRouter
-  .meta(openapi({ path: "/{sessionId}/stop", method: "POST" }))
+  .meta(openapi({ method: "POST", path: "/{sessionId}/stop" }))
   .input(
     z.object({
       body: z.object({ deployToken: z.string().min(1) }),
       params: z.object({ sessionId: z.uuid() }),
-    }),
+    })
   )
   .output(z.object({ body: z.object({}) }))
   .handler(async ({ context, input }) => {
@@ -248,28 +288,32 @@ const stopPreview = cliRouter
           eq(previewSession.cliTokenId, token.id),
           eq(previewSession.scopeKey, token.scopeKey),
           eq(previewSession.scope, token.scope),
-          eq(previewSession.status, "active"),
-        ),
+          eq(previewSession.status, "active")
+        )
       )
       .returning({ id: previewSession.id });
     const alreadyEnded = endedSession
       ? null
       : await db.query.previewSession.findFirst({
           where: {
-            RAW: (fields, { and, eq }) =>
-              and(
-                eq(fields.id, input.params.sessionId),
-                eq(fields.projectId, context.project.id),
-                eq(fields.cliTokenId, token.id),
-                eq(fields.scopeKey, token.scopeKey),
-                eq(fields.scope, token.scope),
-                eq(fields.status, "ended"),
-              )!,
+            RAW: (fields, { and: andValue3, eq: eqValue3 }) =>
+              requireValue(
+                andValue3(
+                  eqValue3(fields.id, input.params.sessionId),
+                  eqValue3(fields.projectId, context.project.id),
+                  eqValue3(fields.cliTokenId, token.id),
+                  eqValue3(fields.scopeKey, token.scopeKey),
+                  eqValue3(fields.scope, token.scope),
+                  eqValue3(fields.status, "ended")
+                )
+              ),
           },
         });
     const sessionId = endedSession?.id ?? alreadyEnded?.id;
-    if (!sessionId) {
-      throw new ORPCError("NOT_FOUND", { message: "Preview session is unavailable." });
+    if (!(sessionId !== undefined && sessionId !== null && sessionId !== "")) {
+      throw new ORPCError("NOT_FOUND", {
+        message: "Preview session is unavailable.",
+      });
     }
     const kv = getKV();
     if (kv) {

@@ -1,10 +1,10 @@
 import { Separator } from "@tailorkit/ui/separator";
 import { SidebarTrigger, useSidebar } from "@tailorkit/ui/sidebar";
 
-import { NavBreadcrumb } from "#components/nav-breadcrumb";
 import { useHeaderActions } from "#components/header-actions";
+import { NavBreadcrumb } from "#components/nav-breadcrumb";
 
-export function SidebarLayoutHeader() {
+export const SidebarLayoutHeader = () => {
   const { open } = useSidebar();
   const { actions } = useHeaderActions();
   return (
@@ -20,7 +20,7 @@ export function SidebarLayoutHeader() {
         </>
       )}
       <NavBreadcrumb />
-      {actions && <div className="ml-auto">{actions}</div>}
+      {Boolean(actions) && <div className="ml-auto">{actions}</div>}
     </header>
   );
-}
+};

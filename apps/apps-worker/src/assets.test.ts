@@ -1,7 +1,24 @@
+/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { gzipSync, gunzipSync } from "node:zlib";
+
 import { assetHeaders, maxDeploymentBytes } from "@tailorkit/asset-delivery";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vite-plus/test";
+
 import worker from "./assets";
+
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
 
 const projectId = "22222222-2222-4222-8222-222222222222";
 const appId = "app000000001";
@@ -12,24 +29,37 @@ const key = `teams/abc123def45678/projects/${projectId}/apps/${appId}/deployment
 const bundle = "export default 'tenant bundle';";
 const get = vi.fn();
 const head = vi.fn();
-const match = vi.fn((_request: Request) => Promise.resolve(undefined as Response | undefined));
-const put = vi.fn((_request: Request, _response: Response) => Promise.resolve());
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+const match = vi.fn(
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  async (_request: Request) => undefined as Response | undefined
+);
+const put = vi.fn(async (_request: Request, _response: Response) => {});
 const waitUntil = vi.fn();
-const env = { ASSET_DOMAIN: "tailorkit.app", BUNDLES: { get, head } } as unknown as Env;
+// SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+
+const env =
+  /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
+  {
+    ASSET_DOMAIN: "tailorkit.app",
+    BUNDLES: { get, head },
+  } as unknown as Env;
+/* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
+// SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+// oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
 const ctx = { waitUntil } as unknown as ExecutionContext;
 
-function fetchAsset(request: Request) {
-  return worker.fetch(request as Parameters<typeof worker.fetch>[0], env, ctx);
-}
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+const fetchAsset = async (request: Request) =>
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+  await worker.fetch(request as Parameters<typeof worker.fetch>[0], env, ctx);
 
-function object(body = bundle) {
-  return {
-    body: new Response(body).body,
-    size: new TextEncoder().encode(body).byteLength,
-    httpEtag: '"etag"',
-    writeHttpMetadata: vi.fn(),
-  };
-}
+const object = (body = bundle) => ({
+  body: new Response(body).body,
+  httpEtag: '"etag"',
+  size: new TextEncoder().encode(body).byteLength,
+  writeHttpMetadata: vi.fn(),
+});
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -51,8 +81,9 @@ describe("tenant asset gateway", () => {
       "../server/server.js",
     ]) {
       for (const method of ["GET", "HEAD", "OPTIONS"]) {
+        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
         const response = await fetchAsset(
-          new Request(url.replace("client.js", suffix), { method }),
+          new Request(url.replace("client.js", suffix), { method })
         );
         expect(response.status).toBe(404);
       }
@@ -72,8 +103,12 @@ describe("tenant asset gateway", () => {
     expect(await response.text()).toBe(bundle);
     expect(response.headers.get("Cache-Control")).toBe("private, max-age=3600");
     const cachedResponse = put.mock.calls[0]?.[1];
-    expect(cachedResponse?.headers.get("Cache-Control")).toBe("public, max-age=86400");
-    expect(response.headers.get("Content-Type")).toBe("application/javascript; charset=utf-8");
+    expect(cachedResponse?.headers.get("Cache-Control")).toBe(
+      "public, max-age=86400"
+    );
+    expect(response.headers.get("Content-Type")).toBe(
+      "application/javascript; charset=utf-8"
+    );
     expect(response.headers.get("Access-Control-Allow-Origin")).toBe("*");
     expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
   });
@@ -88,8 +123,11 @@ describe("tenant asset gateway", () => {
   it("serves an edge cache hit without reading R2", async () => {
     match.mockResolvedValueOnce(
       new Response(bundle, {
-        headers: assetHeaders({ contentLength: bundle.length, etag: '"cached"' }),
-      }),
+        headers: assetHeaders({
+          contentLength: bundle.length,
+          etag: '"cached"',
+        }),
+      })
     );
     const response = await fetchAsset(new Request(url));
     expect(await response.text()).toBe(bundle);
@@ -102,11 +140,13 @@ describe("tenant asset gateway", () => {
   it("serves logos with their image content type", async () => {
     get.mockResolvedValueOnce(object("<svg/>"));
     const response = await fetchAsset(
-      new Request(url.replace("client/client.js", `logos/${"a".repeat(64)}.svg`)),
+      new Request(
+        url.replace("client/client.js", `logos/${"a".repeat(64)}.svg`)
+      )
     );
     expect(response.headers.get("Content-Type")).toBe("image/svg+xml");
     expect(get).toHaveBeenCalledWith(
-      `teams/abc123def45678/projects/${projectId}/apps/${appId}/logos/${"a".repeat(64)}.svg`,
+      `teams/abc123def45678/projects/${projectId}/apps/${appId}/logos/${"a".repeat(64)}.svg`
     );
   });
 
@@ -114,18 +154,22 @@ describe("tenant asset gateway", () => {
     get.mockResolvedValueOnce(object());
     const otherUrl = url.replace("abc123def45678", "xyz123def45678");
     await fetchAsset(new Request(otherUrl));
-    expect(get).toHaveBeenCalledWith(key.replace("abc123def45678", "xyz123def45678"));
+    expect(get).toHaveBeenCalledWith(
+      key.replace("abc123def45678", "xyz123def45678")
+    );
   });
 
   it.each(["team-abcdefghi", "a------------z", "0123456789abcd"])(
     "serves bundles for hyphenated team ID %s",
     async (publicId) => {
       get.mockResolvedValueOnce(object());
-      const response = await fetchAsset(new Request(url.replace("abc123def45678", publicId)));
+      const response = await fetchAsset(
+        new Request(url.replace("abc123def45678", publicId))
+      );
       expect(response.status).toBe(200);
       expect(get).toHaveBeenCalledWith(key.replace("abc123def45678", publicId));
       expect(await response.text()).toBe(bundle);
-    },
+    }
   );
 
   it("rejects foreign hosts, slugs, malformed paths and query strings before R2", async () => {
@@ -150,21 +194,23 @@ describe("tenant asset gateway", () => {
       url.replace("client.js", "secret.js"),
       url.replace(appId, "app-slug"),
     ]) {
-      await expect(fetchAsset(new Request(invalid))).resolves.toHaveProperty("status", 404);
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+      await expect(fetchAsset(new Request(invalid))).resolves.toHaveProperty(
+        "status",
+        404
+      );
     }
     expect(get).not.toHaveBeenCalled();
     expect(head).not.toHaveBeenCalled();
   });
 
   it("supports HEAD and preflight without reading bundle bodies", async () => {
-    await expect(fetchAsset(new Request(url, { method: "POST" }))).resolves.toHaveProperty(
-      "status",
-      405,
-    );
-    await expect(fetchAsset(new Request(url.replace("https:", "http:")))).resolves.toHaveProperty(
-      "status",
-      400,
-    );
+    await expect(
+      fetchAsset(new Request(url, { method: "POST" }))
+    ).resolves.toHaveProperty("status", 405);
+    await expect(
+      fetchAsset(new Request(url.replace("https:", "http:")))
+    ).resolves.toHaveProperty("status", 400);
     const preflight = await fetchAsset(new Request(url, { method: "OPTIONS" }));
     expect(preflight.status).toBe(204);
     expect(get).not.toHaveBeenCalled();
@@ -179,12 +225,23 @@ describe("tenant asset gateway", () => {
     get
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ ...object(), size: maxDeploymentBytes + 1 });
-    await expect(fetchAsset(new Request(url))).resolves.toHaveProperty("status", 404);
-    await expect(fetchAsset(new Request(url))).resolves.toHaveProperty("status", 404);
+    await expect(fetchAsset(new Request(url))).resolves.toHaveProperty(
+      "status",
+      404
+    );
+    await expect(fetchAsset(new Request(url))).resolves.toHaveProperty(
+      "status",
+      404
+    );
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
     get.mockRejectedValueOnce(new Error("private storage detail"));
-    await expect(fetchAsset(new Request(url))).resolves.toHaveProperty("status", 503);
-    expect(JSON.stringify(log.mock.calls)).not.toContain("private storage detail");
+    await expect(fetchAsset(new Request(url))).resolves.toHaveProperty(
+      "status",
+      503
+    );
+    expect(JSON.stringify(log.mock.calls)).not.toContain(
+      "private storage detail"
+    );
   });
 });
 
@@ -201,68 +258,84 @@ it("keeps the response usable when a background cache write fails", async () => 
   get.mockResolvedValueOnce(object());
   const log = vi.spyOn(console, "error").mockImplementation(() => {});
   const response = await fetchAsset(new Request(url));
-  await waitUntil.mock.calls[0]![0];
+  await requireValue(waitUntil.mock.calls[0])[0];
   expect(response.status).toBe(200);
   expect(await response.text()).toBe(bundle);
-  expect(log).toHaveBeenCalledWith(JSON.stringify({ message: "Asset cache write failed" }));
+  expect(log).toHaveBeenCalledWith(
+    JSON.stringify({ message: "Asset cache write failed" })
+  );
 });
 
-function gzipObject(body = bundle) {
+const gzipObject = (body = bundle) => {
   const bytes = gzipSync(body);
   return {
     ...object(),
     body: new Response(bytes).body,
-    size: bytes.byteLength,
     httpMetadata: { contentEncoding: "gzip" },
+    size: bytes.byteLength,
   };
-}
+};
 
 it("serves stored gzip bytes and caches them without double compression", async () => {
   const stored = gzipObject();
   get.mockResolvedValueOnce(stored);
   const response = await fetchAsset(
-    new Request(url, { headers: { "Accept-Encoding": "br, gzip" } }),
+    new Request(url, { headers: { "Accept-Encoding": "br, gzip" } })
   );
   expect(response.headers.get("Content-Encoding")).toBe("gzip");
   expect(response.headers.get("Content-Length")).toBe(String(stored.size));
   expect(response.headers.get("Vary")).toBe("Accept-Encoding");
-  expect(gunzipSync(Buffer.from(await response.arrayBuffer())).toString()).toBe(bundle);
-  const cached = put.mock.calls[0]![1];
+  expect(gunzipSync(Buffer.from(await response.arrayBuffer())).toString()).toBe(
+    bundle
+  );
+  const [, cached] = requireValue(put.mock.calls[0]);
   expect(cached.headers.get("Content-Encoding")).toBe("gzip");
-  expect(gunzipSync(Buffer.from(await cached.arrayBuffer())).toString()).toBe(bundle);
+  expect(gunzipSync(Buffer.from(await cached.arrayBuffer())).toString()).toBe(
+    bundle
+  );
 });
 
-it.each(["R2", "cache"])("caps inflated bytes from %s at 3 MiB", async (source) => {
-  const stored = gzipObject("a".repeat(maxDeploymentBytes + 1));
-  expect(stored.size).toBeLessThan(maxDeploymentBytes);
-  if (source === "R2") {
-    get.mockResolvedValueOnce(stored);
-  } else {
-    match.mockResolvedValueOnce(
-      new Response(stored.body, {
-        headers: assetHeaders({ contentLength: stored.size, contentEncoding: "gzip" }),
-      }),
-    );
+it.each(["R2", "cache"])(
+  "caps inflated bytes from %s at 3 MiB",
+  async (source) => {
+    const stored = gzipObject("a".repeat(maxDeploymentBytes + 1));
+    expect(stored.size).toBeLessThan(maxDeploymentBytes);
+    if (source === "R2") {
+      get.mockResolvedValueOnce(stored);
+    } else {
+      match.mockResolvedValueOnce(
+        new Response(stored.body, {
+          headers: assetHeaders({
+            contentEncoding: "gzip",
+            contentLength: stored.size,
+          }),
+        })
+      );
+    }
+    const response = await fetchAsset(new Request(url));
+    const reader = requireValue(response.body).getReader();
+    let deliveredBytes = 0;
+    await expect(
+      (async () => {
+        while (true) {
+          // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+          const { done, value } = await reader.read();
+          if (done) {
+            break;
+          }
+          deliveredBytes += value.byteLength;
+        }
+      })()
+    ).rejects.toThrow("Asset delivery failed (404)");
+    expect(deliveredBytes).toBeLessThanOrEqual(maxDeploymentBytes);
   }
-  const response = await fetchAsset(new Request(url));
-  const reader = response.body!.getReader();
-  let deliveredBytes = 0;
-  await expect(
-    (async () => {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        deliveredBytes += value.byteLength;
-      }
-    })(),
-  ).rejects.toThrow("Asset delivery failed (404)");
-  expect(deliveredBytes).toBeLessThanOrEqual(maxDeploymentBytes);
-});
+);
 
 it("serves a gzip bundle whose decoded size is exactly 3 MiB", async () => {
   get.mockResolvedValueOnce(gzipObject("a".repeat(maxDeploymentBytes)));
   const response = await fetchAsset(new Request(url));
-  expect((await response.arrayBuffer()).byteLength).toBe(maxDeploymentBytes);
+  const awaitedResult1 = await response.arrayBuffer();
+  expect(awaitedResult1.byteLength).toBe(maxDeploymentBytes);
 });
 
 it.each([undefined, "identity", "gzip;q=0, *;q=1"])(
@@ -272,14 +345,19 @@ it.each([undefined, "identity", "gzip;q=0, *;q=1"])(
     match.mockResolvedValueOnce(
       new Response(stored.body, {
         headers: assetHeaders({
-          contentLength: stored.size,
           contentEncoding: "gzip",
+          contentLength: stored.size,
           etag: stored.httpEtag,
         }),
-      }),
+      })
     );
     const response = await fetchAsset(
-      new Request(url, { headers: encoding ? { "Accept-Encoding": encoding } : undefined }),
+      new Request(url, {
+        headers:
+          encoding !== undefined && encoding !== null && encoding !== ""
+            ? { "Accept-Encoding": encoding }
+            : undefined,
+      })
     );
     expect(await response.text()).toBe(bundle);
     expect(response.headers.get("Content-Encoding")).toBeNull();
@@ -287,7 +365,7 @@ it.each([undefined, "identity", "gzip;q=0, *;q=1"])(
     expect(response.headers.get("ETag")).toBe('W/"etag"');
     expect(response.headers.get("Vary")).toBe("Accept-Encoding");
     expect(get).not.toHaveBeenCalled();
-  },
+  }
 );
 
 it.each(["gzip", "identity"])(
@@ -296,13 +374,18 @@ it.each(["gzip", "identity"])(
     const stored = gzipObject();
     head.mockResolvedValueOnce(stored);
     const response = await fetchAsset(
-      new Request(url, { method: "HEAD", headers: { "Accept-Encoding": encoding } }),
+      new Request(url, {
+        headers: { "Accept-Encoding": encoding },
+        method: "HEAD",
+      })
     );
-    expect(response.headers.get("Content-Encoding")).toBe(encoding === "gzip" ? "gzip" : null);
+    expect(response.headers.get("Content-Encoding")).toBe(
+      encoding === "gzip" ? "gzip" : null
+    );
     expect(response.headers.get("Content-Length")).toBe(
-      encoding === "gzip" ? String(stored.size) : null,
+      encoding === "gzip" ? String(stored.size) : null
     );
     expect(await response.text()).toBe("");
     expect(get).not.toHaveBeenCalled();
-  },
+  }
 );

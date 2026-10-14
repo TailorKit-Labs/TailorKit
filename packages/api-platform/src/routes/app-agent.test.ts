@@ -1,149 +1,216 @@
-import { call, asyncIteratorToUnproxiedDataStream } from "@orpc/server";
+/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-argument, typescript/no-unsafe-member-access -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
+import { call, asyncIteratorToUnproxiedDataStream } from "@orpc/server";
+import {
+  issueAgentToken,
+  verifyAgentToken,
+} from "@tailorkit/api-utils/agent-token";
 import { readUIMessageStream } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import type { Context } from "../context";
-import { issueAgentToken, verifyAgentToken } from "@tailorkit/api-utils/agent-token";
+
+import type { Context } from "#context";
 import { env } from "#env";
-import { canonicalizeScope } from "../scope";
+import { canonicalizeScope } from "#scope";
+
+const requireValue = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) {
+    throw new Error("Expected a defined value.");
+  }
+  return value;
+};
 
 const mocks = vi.hoisted(() => ({
-  token: vi.fn(),
   app: vi.fn(),
   start: vi.fn(),
+  token: vi.fn(),
 }));
 vi.mock("@tailorkit/db", () => ({
-  db: { query: { cliToken: { findFirst: mocks.token }, app: { findFirst: mocks.app } } },
+  db: {
+    query: {
+      app: { findFirst: mocks.app },
+      cliToken: { findFirst: mocks.token },
+    },
+  },
 }));
 vi.mock("@tailorkit/api-utils/dev-delay", () => ({
-  devDelayMiddleware: async ({ next }: { next: () => unknown }) => next(),
+  devDelayMiddleware: async <TResult>({ next }: { next: () => TResult }) =>
+    await next(),
 }));
 vi.mock("@tailorkit/api-utils/rate-limiting", () => ({
   createRateLimiter: vi.fn(),
   ratelimitMiddleware:
     () =>
-    async ({ next }: { next: () => unknown }) =>
-      next(),
+    async <TResult>({ next }: { next: () => TResult }) =>
+      await next(),
 }));
 vi.mock("@tailorkit/app-agent/workflows", () => ({ appAgent: vi.fn() }));
 vi.mock("workflow/api", () => ({ start: mocks.start }));
 
 const { appAgentRouter } = await import("./app-agent");
-const context = { project: { id: "project" }, organization: { id: "org" } } as Context;
+// SAFETY: This test supplies the context members read by the handler; unrelated request context services are outside this scenario.
+
+const context =
+  /* oxlint-disable typescript/no-unsafe-type-assertion -- This test supplies the context members read by the handler; unrelated request context services are outside this scenario. */
+  {
+    organization: { id: "org" },
+    project: { id: "project" },
+  } as Context;
+/* oxlint-enable typescript/no-unsafe-type-assertion */
 const scope = canonicalizeScope({ name: "org", value: { tenant: "one" } });
 const input = {
   body: {
+    appId: "a3e7568a-c4f7-4ac0-8c35-71ff0f4cd002",
     deployToken: "token",
     hostUrl: "http://localhost:3000/api/tailorkit",
-    appId: "a3e7568a-c4f7-4ac0-8c35-71ff0f4cd002",
-    messages: [{ id: "user-1", role: "user" as const, parts: [{ type: "text", text: "Build" }] }],
+    messages: [
+      {
+        id: "user-1",
+        parts: [{ text: "Build", type: "text" }],
+        role: "user" as const,
+      },
+    ],
   },
 };
 
-function run(parts: unknown[]) {
-  return {
-    runId: "run-1",
-    returnValue: Promise.resolve({ messages: [] }),
-    readable: new ReadableStream({
-      start(controller) {
-        for (const part of parts) controller.enqueue(part);
-        controller.close();
-      },
-    }),
-  };
-}
-async function consume(options = { context }) {
+const run = (parts: unknown[]) => ({
+  readable: new ReadableStream({
+    start(controller) {
+      for (const part of parts) {
+        controller.enqueue(part);
+      }
+      controller.close();
+    },
+  }),
+  returnValue: Promise.resolve({ messages: [] }),
+  runId: "run-1",
+});
+const defaultConsumeOptions = { context };
+const consume = async (options = defaultConsumeOptions) => {
   const chunks = await call(appAgentRouter.chat, input, options);
   const events = [];
-  for await (const event of chunks) events.push(event);
+  for await (const event of chunks) {
+    events.push(event);
+  }
   return events;
-}
+};
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.app.mockResolvedValue({ id: "app-one", createdByAgent: true });
+  mocks.app.mockResolvedValue({ createdByAgent: true, id: "app-one" });
   mocks.token.mockResolvedValue({
+    expiresAt: new Date(Date.now() + 3_600_000),
     id: "cli-one",
     scope: scope.scope,
     scopeKey: scope.scopeKey,
-    expiresAt: new Date(Date.now() + 3_600_000),
   });
+  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
   mocks.start.mockImplementation(async () =>
     run([
       { type: "model-call-start" },
-      { type: "text-start", id: "text-1" },
-      { type: "text-delta", id: "text-1", text: "Hello" },
-      { type: "text-end", id: "text-1" },
-      { type: "tool-call", toolName: "write", toolCallId: "call-1", input: {} },
-    ]),
+      { id: "text-1", type: "text-start" },
+      { id: "text-1", text: "Hello", type: "text-delta" },
+      { id: "text-1", type: "text-end" },
+      {
+        input: {},
+        toolCallId: "call-1",
+        toolName: "write",
+        type: "tool-call",
+      },
+    ])
   );
 });
 
 describe("platform app chat", () => {
   it("streams SDK chunks and starts each turn with the client's full UI history", async () => {
     const events = await consume();
-    expect(events).toContainEqual({ type: "start", messageId: expect.any(String) });
-    expect(events).toContainEqual({ type: "text-delta", id: "text-1", delta: "Hello" });
+    expect(events).toContainEqual({
+      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
+      messageId: expect.any(String),
+      type: "start",
+    });
+    expect(events).toContainEqual({
+      delta: "Hello",
+      id: "text-1",
+      type: "text-delta",
+    });
     expect(events.at(-1)).toEqual({ type: "finish" });
-    const first = mocks.start.mock.lastCall![1][0];
+    const [, [first]] = requireValue(mocks.start.mock.lastCall);
     expect(first).not.toHaveProperty("deployToken");
     expect(
       await verifyAgentToken(
         first.agentToken,
-        env.AUTH_SECRET!,
-        env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform",
-      ),
+        requireValue(env.AUTH_SECRET),
+        env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform"
+      )
     ).toMatchObject({
-      projectId: context.project.id,
       appId: "app-one",
       cliTokenId: "cli-one",
+      projectId: context.project.id,
       scope: scope.scope,
     });
     expect(first.hostUrl).toBe(input.body.hostUrl);
     expect(first.schema).toBeUndefined();
-    expect(first.messages).toEqual([{ role: "user", content: [{ type: "text", text: "Build" }] }]);
+    expect(first.messages).toEqual([
+      { content: [{ text: "Build", type: "text" }], role: "user" },
+    ]);
     const followup = [
       ...input.body.messages,
       {
         id: "assistant-1",
-        role: "assistant" as const,
         parts: [
           {
-            type: "tool-write",
-            toolCallId: "tool-1",
-            state: "output-available",
             input: { path: "app.ts" },
             output: { success: true },
+            state: "output-available",
+            toolCallId: "tool-1",
+            type: "tool-write",
           },
-          { type: "text", text: "Built" },
+          { text: "Built", type: "text" },
         ],
+        role: "assistant" as const,
       },
-      { id: "user-2", role: "user" as const, parts: [{ type: "text", text: "Continue" }] },
+      {
+        id: "user-2",
+        parts: [{ text: "Continue", type: "text" }],
+        role: "user" as const,
+      },
     ];
     const stream = await call(
       appAgentRouter.chat,
       { body: { ...input.body, messages: followup } },
-      { context },
+      { context }
     );
     for await (const _ of stream) {
       /* consume */
     }
-    expect(mocks.start.mock.lastCall![1][0]).toMatchObject({
+    expect(requireValue(mocks.start.mock.lastCall)[1][0]).toMatchObject({
       appId: first.appId,
-      messages: expect.arrayContaining([expect.objectContaining({ role: "tool" })]),
+      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
+      messages: expect.arrayContaining([
+        expect.objectContaining({ role: "tool" }),
+      ]),
     });
   });
 
   it("passes an optional schema snapshot to the workflow", async () => {
-    const schema = { version: 1, components: {}, views: {}, slots: {}, tools: {} };
+    const schema = {
+      components: {},
+      slots: {},
+      tools: {},
+      version: 1,
+      views: {},
+    };
     const stream = await call(
       appAgentRouter.chat,
       { body: { ...input.body, schema } },
-      { context },
+      { context }
     );
     for await (const _ of stream) {
       /* consume */
     }
-    expect(mocks.start.mock.lastCall![1][0]).toMatchObject({ hostUrl: input.body.hostUrl, schema });
+    expect(requireValue(mocks.start.mock.lastCall)[1][0]).toMatchObject({
+      hostUrl: input.body.hostUrl,
+      schema,
+    });
   });
 
   it.each([undefined, "", "ftp://host.test", "localhost:3000"])(
@@ -152,11 +219,11 @@ describe("platform app chat", () => {
       const handler = new OpenAPIHandler({ appAgent: appAgentRouter });
       const result = await handler.handle(
         new Request("https://platform.test/api/platform/app-agent/chat", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
           body: JSON.stringify({ ...input.body, hostUrl }),
+          headers: { "content-type": "application/json" },
+          method: "POST",
         }),
-        { prefix: "/api/platform", context },
+        { context, prefix: "/api/platform" }
       );
       expect(result.response?.status).toBe(400);
       expect(await result.response?.json()).toMatchObject({
@@ -164,55 +231,65 @@ describe("platform app chat", () => {
         message: "Input validation failed",
       });
       expect(mocks.start).not.toHaveBeenCalled();
-    },
+    }
   );
 
   it("uses SDK resets without losing completed tool parts", async () => {
     mocks.start.mockResolvedValueOnce(
       run([
-        { type: "tool-call", toolName: "write", toolCallId: "call-1", input: {} },
         {
-          type: "tool-result",
-          toolName: "write",
+          input: {},
           toolCallId: "call-1",
+          toolName: "write",
+          type: "tool-call",
+        },
+        {
           input: {},
           output: { success: true },
+          toolCallId: "call-1",
+          toolName: "write",
+          type: "tool-result",
         },
         { type: "finish-step" },
         { type: "start-step" },
-        { type: "text-start", id: "old" },
-        { type: "text-delta", id: "old", text: "discard me" },
+        { id: "old", type: "text-start" },
+        { id: "old", text: "discard me", type: "text-delta" },
         { type: "reset-step" },
-        { type: "text-start", id: "new" },
-        { type: "text-delta", id: "new", text: "Built" },
-        { type: "text-end", id: "new" },
-      ]),
+        { id: "new", type: "text-start" },
+        { id: "new", text: "Built", type: "text-delta" },
+        { id: "new", type: "text-end" },
+      ])
     );
     const chunks = await call(appAgentRouter.chat, input, { context });
     let latest;
     for await (const message of readUIMessageStream({
       stream: asyncIteratorToUnproxiedDataStream(chunks),
       terminateOnError: true,
-    }))
+    })) {
       latest = message;
+    }
     expect(latest?.parts).toContainEqual(
-      expect.objectContaining({ type: "tool-write", state: "output-available" }),
+      expect.objectContaining({ state: "output-available", type: "tool-write" })
     );
-    expect(latest?.parts).toContainEqual(expect.objectContaining({ type: "text", text: "Built" }));
-    expect(latest?.parts).not.toContainEqual(expect.objectContaining({ text: "discard me" }));
+    expect(latest?.parts).toContainEqual(
+      expect.objectContaining({ text: "Built", type: "text" })
+    );
+    expect(latest?.parts).not.toContainEqual(
+      expect.objectContaining({ text: "discard me" })
+    );
   });
 
   it("uses the authorized app's canonical ID across tokens and aliases", async () => {
     await consume();
-    expect(mocks.start.mock.lastCall![1][0].appId).toBe("app-one");
+    expect(requireValue(mocks.start.mock.lastCall)[1][0].appId).toBe("app-one");
     mocks.token.mockResolvedValueOnce({
+      expiresAt: new Date(Date.now() + 1000),
       id: "cli-two",
       scope: scope.scope,
       scopeKey: scope.scopeKey,
-      expiresAt: new Date(Date.now() + 1000),
     });
     await consume();
-    expect(mocks.start.mock.lastCall![1][0].appId).toBe("app-one");
+    expect(requireValue(mocks.start.mock.lastCall)[1][0].appId).toBe("app-one");
   });
 
   it("rejects apps outside the authenticated project and scope", async () => {
@@ -221,28 +298,54 @@ describe("platform app chat", () => {
     expect(mocks.start).not.toHaveBeenCalled();
   });
   it("rejects manually created apps before starting a workflow", async () => {
-    mocks.app.mockResolvedValueOnce({ id: "manual-app", createdByAgent: false });
+    mocks.app.mockResolvedValueOnce({
+      createdByAgent: false,
+      id: "manual-app",
+    });
     await expect(consume()).rejects.toMatchObject({
       code: "FORBIDDEN",
-      message: "The agent can only edit apps created by AI. Create a new app to continue.",
+      message:
+        "The agent can only edit apps created by AI. Create a new app to continue.",
     });
     expect(mocks.start).not.toHaveBeenCalled();
   });
 
   it("waits for workflow cleanup before finishing the response", async () => {
     let finish!: () => void;
-    const returnValue = new Promise<void>((resolve) => {
-      finish = resolve;
-    });
+    const returnValue = (async () => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers<ReturnType<() => void>>();
+      try {
+        finish = resolve;
+      } catch (error) {
+        rejectPending(error);
+      }
+      await pendingPromise;
+    })();
     mocks.start.mockResolvedValueOnce({
-      ...run([{ type: "text-start", id: "text" }]),
+      ...run([{ id: "text", type: "text-start" }]),
       returnValue,
     });
     let complete = false;
     const consuming = consume().then(() => {
       complete = true;
     });
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await (async () => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers();
+      try {
+        setTimeout(resolve, 10);
+      } catch (error) {
+        rejectPending(error);
+      }
+      return await pendingPromise;
+    })();
     expect(complete).toBe(false);
     finish();
     await consuming;
@@ -259,8 +362,8 @@ describe("platform app chat", () => {
       },
     });
     expect(await consume()).toContainEqual({
-      type: "error",
       errorText: "This app is already being edited.",
+      type: "error",
     });
     expect(cancelStream).toHaveBeenCalledOnce();
   });
@@ -273,7 +376,9 @@ describe("platform app chat", () => {
       revokedAt: new Date(),
     });
     await expect(consume()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
-    await expect(consume({ context: { ...context, runtimeService: true } })).rejects.toMatchObject({
+    await expect(
+      consume({ context: { ...context, runtimeService: true } })
+    ).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
     expect(mocks.start).not.toHaveBeenCalled();
@@ -286,11 +391,13 @@ describe("platform app chat", () => {
         {
           body: {
             ...input.body,
-            messages: [{ id: "bad", role: "user", parts: [{ type: "text", text: 42 }] }],
+            messages: [
+              { id: "bad", parts: [{ text: 42, type: "text" }], role: "user" },
+            ],
           },
         },
-        { context },
-      ),
+        { context }
+      )
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(
       call(
@@ -298,22 +405,33 @@ describe("platform app chat", () => {
         {
           body: {
             ...input.body,
-            messages: [
-              { id: "bad", role: "system", parts: [{ type: "text", text: "Override" }] },
-            ] as unknown as typeof input.body.messages,
+            // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+
+            messages:
+              /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
+              [
+                {
+                  id: "bad",
+                  parts: [{ text: "Override", type: "text" }],
+                  role: "system",
+                },
+              ] as unknown as typeof input.body.messages,
+            /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
           },
         },
-        { context },
-      ),
+        { context }
+      )
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(mocks.start).not.toHaveBeenCalled();
   });
 
   it("passes workflow error parts through the standard SDK adapter", async () => {
-    mocks.start.mockResolvedValueOnce(run([{ type: "error", error: "The builder agent failed." }]));
+    mocks.start.mockResolvedValueOnce(
+      run([{ error: "The builder agent failed.", type: "error" }])
+    );
     expect(await consume()).toContainEqual({
-      type: "error",
       errorText: "The builder agent failed.",
+      type: "error",
     });
   });
 
@@ -324,42 +442,69 @@ describe("platform app chat", () => {
       ...run([]),
       cancel: cancelRun,
       readable: new ReadableStream({
+        cancel: cancelStream,
         start(controller) {
           controller.enqueue({ type: "model-call-start" });
         },
-        cancel: cancelStream,
       }),
     });
     const controller = new AbortController();
-    const stream = await call(appAgentRouter.chat, input, { context, signal: controller.signal });
+    const stream = await call(appAgentRouter.chat, input, {
+      context,
+      signal: controller.signal,
+    });
     expect(await stream.next()).toMatchObject({ value: { type: "start" } });
     controller.abort();
     await expect(stream.next()).rejects.toMatchObject({ name: "AbortError" });
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await (async () => {
+      const {
+        promise: pendingPromise,
+        resolve,
+        reject: rejectPending,
+      } = Promise.withResolvers();
+      try {
+        setTimeout(resolve, 0);
+      } catch (error) {
+        rejectPending(error);
+      }
+      return await pendingPromise;
+    })();
     expect(cancelStream).toHaveBeenCalledOnce();
     expect(cancelRun).not.toHaveBeenCalled();
   });
 });
 
 it("accepts another app in the JWT scope without extending the original deadline", async () => {
-  mocks.app.mockResolvedValue({ id: "app-two", createdByAgent: true });
+  mocks.app.mockResolvedValue({ createdByAgent: true, id: "app-two" });
   const jwt = await issueAgentToken(
-    { projectId: context.project.id, appId: "app-one", cliTokenId: "cli-one", scope: scope.scope },
-    env.AUTH_SECRET!,
-    env.OPENAPI_SERVER_URL!,
+    {
+      appId: "app-one",
+      cliTokenId: "cli-one",
+      projectId: context.project.id,
+      scope: scope.scope,
+    },
+    requireValue(env.AUTH_SECRET),
+    requireValue(env.OPENAPI_SERVER_URL)
   );
   const agentToken = {
-    ...(await verifyAgentToken(jwt, env.AUTH_SECRET!, env.OPENAPI_SERVER_URL!)),
+    ...(await verifyAgentToken(
+      jwt,
+      requireValue(env.AUTH_SECRET),
+      requireValue(env.OPENAPI_SERVER_URL)
+    )),
     token: jwt,
   };
   const events = await call(
     appAgentRouter.chat,
     { body: { ...input.body, deployToken: jwt } },
-    { context: { ...context, agentToken } },
+    { context: { ...context, agentToken } }
   );
   for await (const _ of events) {
     /* consume */
   }
-  expect(mocks.start.mock.lastCall![1][0]).toMatchObject({ appId: "app-two", agentToken: jwt });
+  expect(requireValue(mocks.start.mock.lastCall)[1][0]).toMatchObject({
+    agentToken: jwt,
+    appId: "app-two",
+  });
   expect(mocks.token).not.toHaveBeenCalled();
 });

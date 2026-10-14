@@ -17,19 +17,22 @@ export type AppTheme = (typeof themes)[number];
 export const fallbackTheme = "system" satisfies AppTheme;
 export const themeStorageKey = "theme";
 
-export const isAppTheme = (value: unknown): value is AppTheme =>
-  typeof value === "string" && themes.includes(value as AppTheme);
+export const isAppTheme = <TValue>(value: TValue): value is TValue & AppTheme =>
+  value === "system" || value === "light" || value === "dark";
 
-export const getUserTheme = (user: User | null | undefined): AppTheme | undefined => {
-  if (!(user && typeof user === "object" && "theme" in user)) {
-    return;
+export const getUserTheme = (
+  user: User | null | undefined
+): AppTheme | undefined => {
+  if (!user) {
+    return undefined;
   }
 
-  const theme = (user as { theme?: unknown }).theme;
+  const { theme } = user;
   return isAppTheme(theme) ? theme : undefined;
 };
 
-const prefersDark = () => window.matchMedia("(prefers-color-scheme: dark)").matches;
+const prefersDark = () =>
+  window.matchMedia("(prefers-color-scheme: dark)").matches;
 
 export const resolveTheme = (theme: AppTheme): "light" | "dark" => {
   if (theme === "system") {
@@ -49,7 +52,11 @@ export const getStoredTheme = (): AppTheme => {
 
 const disableTransitionOnChange = () => {
   const style = document.createElement("style");
-  style.append(document.createTextNode("*{transition:none!important;animation:none!important}"));
+  style.append(
+    document.createTextNode(
+      "*{transition:none!important;animation:none!important}"
+    )
+  );
   document.head.append(style);
 
   return () => {
@@ -60,12 +67,18 @@ const disableTransitionOnChange = () => {
   };
 };
 
-export const applyTheme = (theme: AppTheme, options: { disableTransitions?: boolean } = {}) => {
+export const applyTheme = (
+  theme: AppTheme,
+  options: { disableTransitions?: boolean } = {}
+) => {
   if (typeof document === "undefined") {
     return;
   }
 
-  const enableTransitions = options.disableTransitions ? disableTransitionOnChange() : undefined;
+  const enableTransitions =
+    options.disableTransitions === true
+      ? disableTransitionOnChange()
+      : undefined;
   const resolvedTheme = resolveTheme(theme);
 
   document.documentElement.classList.toggle("dark", resolvedTheme === "dark");
@@ -84,13 +97,13 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<AppTheme>(fallbackTheme);
+export const ThemeProvider = ({ children }: { children: ReactNode }) => {
+  const [theme, setTheme] = useState<AppTheme>(fallbackTheme);
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
 
-  const setTheme = useCallback((nextTheme: AppTheme) => {
+  const updateTheme = useCallback((nextTheme: AppTheme) => {
     localStorage.setItem(themeStorageKey, nextTheme);
-    setThemeState(nextTheme);
+    setTheme(nextTheme);
     const nextResolvedTheme = resolveTheme(nextTheme);
     setResolvedTheme(nextResolvedTheme);
     applyTheme(nextTheme, { disableTransitions: true });
@@ -98,14 +111,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const storedTheme = getStoredTheme();
-    setThemeState(storedTheme);
+    // oxlint-disable-next-line react/set-state-in-effect -- Restore the persisted browser theme after hydration to preserve the server-rendered initial state.
+    setTheme(storedTheme);
     setResolvedTheme(resolveTheme(storedTheme));
     applyTheme(storedTheme);
   }, []);
 
   useEffect(() => {
     if (theme !== "system") {
-      return;
+      /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
+      return undefined;
     }
 
     const query = window.matchMedia("(prefers-color-scheme: dark)");
@@ -116,16 +131,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     };
 
     query.addEventListener("change", handleChange);
-    return () => query.removeEventListener("change", handleChange);
+    return () => {
+      query.removeEventListener("change", handleChange);
+    };
   }, [theme]);
 
   const value = useMemo(
-    () => ({ resolvedTheme, setTheme, theme }),
-    [resolvedTheme, setTheme, theme],
+    () => ({ resolvedTheme, setTheme: updateTheme, theme }),
+    [resolvedTheme, updateTheme, theme]
   );
 
   return createElement(ThemeContext.Provider, { value }, children);
-}
+};
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);

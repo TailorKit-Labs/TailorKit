@@ -4,6 +4,16 @@
   "private": true,
   "license": "BUSL-1.1",
   "type": "module",
+  "imports": {
+    "#env": "./src/env.ts",
+    "#*": [
+      "./src/*",
+      "./src/*.ts",
+      "./src/*.tsx",
+      "./src/*/index.ts",
+      "./src/*/index.tsx"
+    ]
+  },
   "exports": {
     ".": {
       "development": "./src/index.ts",
@@ -13,7 +23,9 @@
   },
   "scripts": {
     "build": "vp pack src/index.ts --format esm --dts --clean",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "lint": "vp lint .",
+    "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
     "@vercel/flags-core": "1.10.0"

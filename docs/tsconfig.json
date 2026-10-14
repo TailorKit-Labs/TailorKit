@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "noEmit": true,
+    "strict": true,
+    "types": [],
+    "noUncheckedIndexedAccess": true
+  },
+  "include": ["*.js"]
+}

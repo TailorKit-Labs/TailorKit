@@ -1,4 +1,7 @@
-export function appendScopeSelection(url: URL, scopes?: readonly string[]): void {
+export const appendScopeSelection = (
+  url: URL,
+  scopes?: readonly string[]
+): void => {
   if (scopes === undefined) {
     return;
   }
@@ -9,15 +12,19 @@ export function appendScopeSelection(url: URL, scopes?: readonly string[]): void
   for (const scope of scopes) {
     url.searchParams.append("scopes", scope);
   }
-}
+};
 
-export function normalizeScopeSelection(scopes?: readonly string[]): {
+export interface ScopeSelection {
   key: string;
   scopes?: readonly string[];
-} {
+}
+
+export const normalizeScopeSelection = (
+  scopes?: readonly string[]
+): ScopeSelection => {
   if (scopes === undefined) {
     return { key: "*" };
   }
-  const names = [...new Set(scopes)].sort();
+  const names = [...new Set(scopes)].toSorted();
   return { key: JSON.stringify(names), scopes: names };
-}
+};

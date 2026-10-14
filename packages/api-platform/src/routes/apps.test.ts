@@ -1,34 +1,50 @@
+/* oxlint-disable typescript/no-unsafe-assignment -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
+import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import type { ORPCError } from "@orpc/server";
 import { call } from "@orpc/server";
-import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { RateLimitHandlerPlugin } from "@tailorkit/api-utils/rate-limiting";
-import { app as appTable, appDeployment, appDeploymentFile } from "@tailorkit/db/schema/apps";
+import {
+  app as appTable,
+  appDeployment,
+  appDeploymentFile,
+} from "@tailorkit/db/schema/apps";
 import { organization, user } from "@tailorkit/db/schema/auth";
 import { project as projectTable } from "@tailorkit/db/schema/project";
 import { eq } from "drizzle-orm";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import type { Context } from "../context";
-import type * as RuntimeModule from "./runtime";
-import { createTestDb } from "../test/pglite";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vite-plus/test";
 
+import type { Context } from "#context";
+import { createTestDb } from "#test/pglite";
+
+import type * as RuntimeModule from "./runtime";
+
+// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const testState = vi.hoisted(() => ({
   db: undefined as unknown,
-  publishMetadata: vi.fn(),
   env: { APP_RUNTIME_URL: undefined as string | undefined },
   issueToken: vi.fn(
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
     async (_identity: {
       userId: string;
       installationId: string;
       projectId: string;
       appId: string;
       deploymentId: string;
-    }) => ({ token: "platform-token", expiresAt: Date.now() + 300_000 }),
+    }) => ({ expiresAt: Date.now() + 300_000, token: "platform-token" })
   ),
+  publishMetadata: vi.fn(),
 }));
 
 vi.mock("../env", () => ({ env: testState.env }));
 
-vi.mock("@tailorkit/kv", () => ({ getKV: () => undefined }));
+vi.mock("@tailorkit/kv", () => ({ getKV: () => {} }));
 
 vi.mock("@tailorkit/db", () => ({
   createDb: () => testState.db,
@@ -37,7 +53,9 @@ vi.mock("@tailorkit/db", () => ({
   },
 }));
 
-vi.mock("../runtime/auth", () => ({ issueAppRuntimeToken: testState.issueToken }));
+vi.mock("../runtime/auth", () => ({
+  issueAppRuntimeToken: testState.issueToken,
+}));
 
 vi.mock("./runtime", async (importOriginal) => ({
   ...(await importOriginal<typeof RuntimeModule>()),
@@ -45,44 +63,48 @@ vi.mock("./runtime", async (importOriginal) => ({
 }));
 
 const { appRouter } = await import("./apps");
-const { canonicalizeScope } = await import("../scope");
+const { canonicalizeScope } = await import("#scope");
 
 const orgId = "11111111-1111-4111-8111-111111111111";
 const projectId = "22222222-2222-4222-8222-222222222222";
 const otherProjectId = "33333333-3333-4333-8333-333333333333";
 const userId = "44444444-4444-4444-8444-444444444444";
-const productionScope = { name: "environment", value: { environment: "production" } };
+const productionScope = {
+  name: "environment",
+  value: { environment: "production" },
+};
 const stagingScope = { name: "environment", value: { environment: "staging" } };
 
-function createContext(overrides: Partial<Context> = {}): Context {
-  return {
-    organization: {
-      publicId: "team0000000001",
-      createdAt: new Date("2026-01-01T00:00:00.000Z"),
-      id: orgId,
-      logo: null,
-      metadata: null,
-      name: "Analytical Engines",
-      slug: "analytical-engines",
-    },
-    project: {
-      createdAt: new Date("2026-01-02T00:00:00.000Z"),
-      id: projectId,
-      name: "Compiler",
-      organizationId: orgId,
-      slug: "compiler",
-      updatedAt: new Date("2026-01-02T00:00:00.000Z"),
-    },
-    storage: {
-      type: "s3",
-      createDownloadUrl: vi.fn(),
-      createUploadUrl: vi.fn(),
-      delete: vi.fn(),
-      head: vi.fn(),
-    },
-    ...overrides,
-  };
-}
+const createContext = (overrides: Partial<Context> = {}): Context => ({
+  organization: {
+    createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    id: orgId,
+    logo: null,
+    metadata: null,
+    name: "Analytical Engines",
+    publicId: "team0000000001",
+    slug: "analytical-engines",
+  },
+  project: {
+    createdAt: new Date("2026-01-02T00:00:00.000Z"),
+    id: projectId,
+    name: "Compiler",
+    organizationId: orgId,
+    slug: "compiler",
+    updatedAt: new Date("2026-01-02T00:00:00.000Z"),
+  },
+  storage: {
+    createDownloadUrl: vi.fn(),
+    createUploadUrl: vi.fn(),
+    delete: vi.fn(),
+    head: vi.fn(),
+    type: "s3",
+  },
+  ...overrides,
+});
+
+const createdAtImplementationImplementation = (day: number) =>
+  new Date(`2026-01-${String(day).padStart(2, "0")}T00:00:00.000Z`);
 
 describe("platform appRouter", () => {
   let client: Awaited<ReturnType<typeof createTestDb>>["client"];
@@ -91,42 +113,42 @@ describe("platform appRouter", () => {
   beforeEach(async () => {
     testState.env.APP_RUNTIME_URL = undefined;
     const testDb = await createTestDb();
-    client = testDb.client;
-    db = testDb.db;
+    ({ client } = testDb);
+    ({ db } = testDb);
     testState.db = db;
 
     await db.insert(user).values({
-      id: userId,
-      name: "Ada Lovelace",
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
       email: "ada@example.com",
       emailVerified: true,
-      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      id: userId,
+      name: "Ada Lovelace",
       updatedAt: new Date("2026-01-01T00:00:00.000Z"),
     });
 
     await db.insert(organization).values({
-      publicId: "team0000000001",
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
       id: orgId,
       name: "Analytical Engines",
+      publicId: "team0000000001",
       slug: "analytical-engines",
-      createdAt: new Date("2026-01-01T00:00:00.000Z"),
     });
 
     await db.insert(projectTable).values([
       {
+        createdAt: new Date("2026-01-02T00:00:00.000Z"),
         id: projectId,
         name: "Compiler",
         organizationId: orgId,
         slug: "compiler",
-        createdAt: new Date("2026-01-02T00:00:00.000Z"),
         updatedAt: new Date("2026-01-02T00:00:00.000Z"),
       },
       {
+        createdAt: new Date("2026-01-02T00:00:00.000Z"),
         id: otherProjectId,
         name: "Runtime",
         organizationId: orgId,
         slug: "runtime",
-        createdAt: new Date("2026-01-02T00:00:00.000Z"),
         updatedAt: new Date("2026-01-02T00:00:00.000Z"),
       },
     ]);
@@ -140,32 +162,42 @@ describe("platform appRouter", () => {
   it("serves the existing OpenAPI create and lookup URLs with detailed inputs", async () => {
     const handler = new OpenAPIHandler(
       { apps: appRouter },
-      { plugins: [new RateLimitHandlerPlugin()] },
+      { plugins: [new RateLimitHandlerPlugin()] }
     );
-    const handle = (path: string, body: unknown) =>
-      handler.handle(
+    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This fixture must represent malformed input so the runtime validation boundary can be tested.
+    const handle = async (path: string, body: unknown) =>
+      await handler.handle(
         new Request(`https://example.com/api/platform${path}`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
+          headers: { "content-type": "application/json" },
+          method: "POST",
         }),
-        { prefix: "/api/platform", context: createContext() },
+        { context: createContext(), prefix: "/api/platform" }
       );
 
     const created = await handle("/apps", {
-      name: "Compiler",
       description: null,
+      name: "Compiler",
       scope: productionScope,
     });
     expect(created.response?.status).toBe(200);
     expect(created.response?.headers.get("ratelimit-limit")).toBe("100");
+    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
     const app = (await created.response?.json()) as { id: string };
 
-    const found = await handle(`/apps/${app.id}/lookup`, { scopes: [productionScope] });
+    const found = await handle(`/apps/${app.id}/lookup`, {
+      scopes: [productionScope],
+    });
     expect(found.response?.status).toBe(200);
-    await expect(found.response?.json()).resolves.toMatchObject({ id: app.id, name: "Compiler" });
+    await expect(found.response?.json()).resolves.toMatchObject({
+      id: app.id,
+      name: "Compiler",
+    });
 
-    const missing = await handle("/apps/missing/lookup", { scopes: [productionScope] });
+    const missing = await handle("/apps/missing/lookup", {
+      scopes: [productionScope],
+    });
     expect(missing.response?.status).toBe(404);
     const error = await missing.response?.json();
     expect(error).toMatchObject({ code: "NOT_FOUND" });
@@ -178,23 +210,32 @@ describe("platform appRouter", () => {
       appRouter.create,
       {
         body: {
-          name: "AI app",
-          description: null,
-          scope: productionScope,
           createdByAgent: true,
+          description: null,
+          name: "AI app",
+          scope: productionScope,
         },
       },
-      { context },
+      { context }
     );
     expect(created.body.createdByAgent).toBe(true);
     const found = await call(
       appRouter.get,
-      { params: { appId: created.body.id }, body: { scopes: [productionScope] } },
-      { context },
+      {
+        body: { scopes: [productionScope] },
+        params: { appId: created.body.id },
+      },
+      { context }
     );
     expect(found.body.createdByAgent).toBe(true);
-    const listed = await call(appRouter.list, { body: { scopes: [productionScope] } }, { context });
-    expect(listed.body.items).toEqual([expect.objectContaining({ createdByAgent: true })]);
+    const listed = await call(
+      appRouter.list,
+      { body: { scopes: [productionScope] } },
+      { context }
+    );
+    expect(listed.body.items).toEqual([
+      expect.objectContaining({ createdByAgent: true }),
+    ]);
   });
 
   it("creates and lists apps within the authenticated project and scope", async () => {
@@ -209,7 +250,7 @@ describe("platform appRouter", () => {
           scope: productionScope,
         },
       },
-      { context },
+      { context }
     );
 
     expect(created.body).toEqual(
@@ -218,9 +259,10 @@ describe("platform appRouter", () => {
         description: "Embedded inbox",
         name: "Inbox",
         projectId,
+        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
         publicId: expect.stringMatching(/^[0-9a-z]{12}$/u),
         scope: productionScope,
-      }),
+      })
     );
 
     await db.insert(appTable).values({
@@ -233,11 +275,13 @@ describe("platform appRouter", () => {
     const result = await call(
       appRouter.list,
       { body: { page: 1, pageSize: 10, scopes: [productionScope] } },
-      { context },
+      { context }
     );
 
     expect(result.body.items).toHaveLength(1);
-    expect(result.body.items[0]).toEqual(expect.objectContaining({ id: created.body.id }));
+    expect(result.body.items[0]).toEqual(
+      expect.objectContaining({ id: created.body.id })
+    );
   });
 
   it("returns the current published deployment", async () => {
@@ -299,43 +343,44 @@ describe("platform appRouter", () => {
     const result = await call(
       appRouter.list,
       { body: { page: 1, pageSize: 10, scopes: [productionScope] } },
-      { context },
+      { context }
     );
 
     expect(result.body.items[0]?.currentDeployment?.id).toBe(deployment.id);
     expect(result.body.items[0]?.clientPath).toBe(
-      `https://team0000000001.tailorkit.app/p/${projectId}/a/notes00001/d/deploy0001/client/client.js`,
+      `https://team0000000001.tailorkit.app/p/${projectId}/a/notes00001/d/deploy0001/client/client.js`
     );
   });
+
+  const createdAtImplementation = createdAtImplementationImplementation;
 
   it("lists apps across selected named scopes with global ordering and pagination", async () => {
     const context = createContext();
     const teamScope = { name: "team", value: { teamId: "team_1" } };
     const userScope = { name: "user", value: { userId: "user_1" } };
     const excludedScope = { name: "team", value: { teamId: "team_2" } };
-    const createdAt = (day: number) =>
-      new Date(`2026-01-${String(day).padStart(2, "0")}T00:00:00.000Z`);
+    const createdAt = createdAtImplementation;
 
     await db.insert(appTable).values([
       {
+        createdAt: createdAt(3),
         name: "Team app",
         projectId,
         publicId: "teamapp00001",
-        createdAt: createdAt(3),
         ...canonicalizeScope(teamScope),
       },
       {
+        createdAt: createdAt(4),
         name: "User app",
         projectId,
         publicId: "userapp00001",
-        createdAt: createdAt(4),
         ...canonicalizeScope(userScope),
       },
       {
+        createdAt: createdAt(5),
         name: "Other team app",
         projectId,
         publicId: "otherapp0001",
-        createdAt: createdAt(5),
         ...canonicalizeScope(excludedScope),
       },
     ]);
@@ -343,12 +388,12 @@ describe("platform appRouter", () => {
     const firstPage = await call(
       appRouter.list,
       { body: { page: 1, pageSize: 1, scopes: [teamScope, userScope] } },
-      { context },
+      { context }
     );
     const secondPage = await call(
       appRouter.list,
       { body: { page: 2, pageSize: 1, scopes: [teamScope, userScope] } },
-      { context },
+      { context }
     );
 
     expect(firstPage.body.items.map(({ name }) => name)).toEqual(["User app"]);
@@ -375,13 +420,13 @@ describe("platform appRouter", () => {
     await expect(
       call(
         appRouter.get,
-        { params: { appId: created.id }, body: { scopes: [productionScope] } },
-        { context: createContext() },
-      ),
+        { body: { scopes: [productionScope] }, params: { appId: created.id } },
+        { context: createContext() }
+      )
     ).rejects.toEqual(
       expect.objectContaining({ code: "NOT_FOUND" } satisfies Partial<
         ORPCError<"NOT_FOUND", unknown>
-      >),
+      >)
     );
 
     const [otherScopeApp] = await db
@@ -399,9 +444,12 @@ describe("platform appRouter", () => {
     await expect(
       call(
         appRouter.get,
-        { params: { appId: otherScopeApp.id }, body: { scopes: [productionScope] } },
-        { context: createContext() },
-      ),
+        {
+          body: { scopes: [productionScope] },
+          params: { appId: otherScopeApp.id },
+        },
+        { context: createContext() }
+      )
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
@@ -431,30 +479,30 @@ describe("platform appRouter", () => {
       const objectKey = `teams/${context.organization?.publicId}/projects/${projectId}/apps/${created.publicId}/deployments/${deployment.publicId}/server/server.js`;
       await db.insert(appDeploymentFile).values({
         appDeploymentId: deployment.id,
-        objectKey,
-        status: "verified",
         checksum: "0".repeat(64),
         contentLength: 1,
         contentType: "application/javascript",
         encoding: "utf-8",
+        objectKey,
+        status: "verified",
       });
       await call(
         appRouter.deploy,
         {
-          params: { appId: created.publicId },
           body: { deploymentId: deployment.publicId, scope: productionScope },
+          params: { appId: created.publicId },
         },
-        { context },
+        { context }
       );
       if (status === "published") {
         expect(testState.publishMetadata).toHaveBeenCalledWith(
           expect.objectContaining({ deploymentId: deployment.id, objectKey }),
-          created.publicId,
+          created.publicId
         );
       } else {
         expect(testState.publishMetadata).not.toHaveBeenCalled();
       }
-    },
+    }
   );
 
   it("uses the JSON body scope for app mutations", async () => {
@@ -469,26 +517,32 @@ describe("platform appRouter", () => {
         ...canonicalizeScope(productionScope),
       })
       .returning();
-    if (!created) throw new Error("Expected test app to be created.");
+    if (!created) {
+      throw new Error("Expected test app to be created.");
+    }
 
     await expect(
       call(
         appRouter.update,
         {
+          body: { description: null, name: "Wrong scope", scope: stagingScope },
           params: { appId: created.publicId },
-          body: { name: "Wrong scope", description: null, scope: stagingScope },
         },
-        { context },
-      ),
+        { context }
+      )
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
 
     const updated = await call(
       appRouter.update,
       {
+        body: {
+          description: null,
+          name: "Updated inbox",
+          scope: productionScope,
+        },
         params: { appId: created.publicId },
-        body: { name: "Updated inbox", description: null, scope: productionScope },
       },
-      { context },
+      { context }
     );
     expect(updated.body.name).toBe("Updated inbox");
 
@@ -499,36 +553,42 @@ describe("platform appRouter", () => {
         publicId: "deploy0002",
         status: "published",
         views: [
-          { slot: "page", path: "/", instances: true },
-          { slot: "page", path: "/disabled", disabled: true },
+          { instances: true, path: "/", slot: "page" },
+          { disabled: true, path: "/disabled", slot: "page" },
         ],
       })
       .returning();
-    if (!deployment) throw new Error("Expected test deployment to be created.");
+    if (!deployment) {
+      throw new Error("Expected test deployment to be created.");
+    }
 
     const deployed = await call(
       appRouter.deploy,
       {
-        params: { appId: created.publicId },
         body: { deploymentId: deployment.publicId, scope: productionScope },
+        params: { appId: created.publicId },
       },
-      { context },
+      { context }
     );
     expect(deployed.body.currentDeployment?.id).toBe(deployment.id);
     expect(deployed.body.views).toEqual([
-      { slot: "page", path: "/", instances: true },
-      { slot: "page", path: "/disabled", disabled: true },
+      { instances: true, path: "/", slot: "page" },
+      { disabled: true, path: "/disabled", slot: "page" },
     ]);
-    const listed = await call(appRouter.list, { body: { scopes: [productionScope] } }, { context });
+    const listed = await call(
+      appRouter.list,
+      { body: { scopes: [productionScope] } },
+      { context }
+    );
     expect(listed.body.items[0]?.views).toEqual([
-      { slot: "page", path: "/", instances: true },
-      { slot: "page", path: "/disabled", disabled: true },
+      { instances: true, path: "/", slot: "page" },
+      { disabled: true, path: "/disabled", slot: "page" },
     ]);
 
     const deleted = await call(
       appRouter.delete,
-      { params: { appId: created.publicId }, body: { scope: productionScope } },
-      { context },
+      { body: { scope: productionScope }, params: { appId: created.publicId } },
+      { context }
     );
     expect(deleted.body.id).toBe(created.id);
   });
@@ -544,7 +604,9 @@ describe("platform appRouter", () => {
         ...canonicalizeScope(productionScope),
       })
       .returning();
-    if (!created) throw new Error("Expected test app");
+    if (!created) {
+      throw new Error("Expected test app");
+    }
     const [deployment] = await db
       .insert(appDeployment)
       .values({
@@ -553,62 +615,73 @@ describe("platform appRouter", () => {
         status: "published",
       })
       .returning();
-    if (!deployment) throw new Error("Expected test deployment");
+    if (!deployment) {
+      throw new Error("Expected test deployment");
+    }
     await db
       .update(appTable)
       .set({ currentDeploymentId: deployment.id })
       .where(eq(appTable.id, created.id));
     const input = {
-      params: { appId: created.publicId },
       body: {
         scopes: [productionScope],
         toolUrl: "https://host.test/api/tailorkit/tools/execute",
       },
+      params: { appId: created.publicId },
     };
     const session = await call(appRouter.runtimeSession, input, { context });
     expect(session.body.token).toBe("platform-token");
     expect(session.body.toolUrl).toBe(input.body.toolUrl);
     expect(session.body.identity).toMatchObject({
+      deploymentId: deployment.id,
+      expiresAt: session.body.expiresAt,
       installationId: created.id,
       projectId,
-      deploymentId: deployment.id,
       scope: created.scope,
       toolUrl: input.body.toolUrl,
-      expiresAt: session.body.expiresAt,
     });
     expect(testState.issueToken).toHaveBeenCalledWith({
-      subjectId: undefined,
-      scope: created.scope,
-      toolUrl: input.body.toolUrl,
-      installationId: created.id,
       appId: created.id,
-      projectId,
-      deploymentId: deployment.id,
-      publicTeamId: context.organization.publicId,
       appPublicId: created.publicId,
+      deploymentId: deployment.id,
+      installationId: created.id,
+      projectId,
+      publicTeamId: context.organization.publicId,
+      scope: created.scope,
+      subjectId: undefined,
+      toolUrl: input.body.toolUrl,
     });
     await expect(
       call(
         appRouter.runtimeSession,
         { ...input, body: { ...input.body, scopes: [stagingScope] } },
-        { context },
-      ),
+        { context }
+      )
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
     await expect(
       call(appRouter.runtimeSession, input, {
-        context: { ...context, project: { ...context.project, id: otherProjectId } },
-      }),
+        context: {
+          ...context,
+          project: { ...context.project, id: otherProjectId },
+        },
+      })
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
 
     expect(testState.issueToken).toHaveBeenCalledTimes(1);
     const handler = new OpenAPIHandler({ apps: appRouter });
     const http = await handler.handle(
-      new Request(`https://platform.test/api/platform/apps/${created.publicId}/runtime/session`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ scopes: [productionScope], toolUrl: input.body.toolUrl }),
-      }),
-      { prefix: "/api/platform", context },
+      new Request(
+        `https://platform.test/api/platform/apps/${created.publicId}/runtime/session`,
+        {
+          body: JSON.stringify({
+            scopes: [productionScope],
+            toolUrl: input.body.toolUrl,
+          }),
+          headers: { "content-type": "application/json" },
+          method: "POST",
+        }
+      ),
+      { context, prefix: "/api/platform" }
     );
     expect(http.response?.status).toBe(200);
     await expect(http.response?.json()).resolves.toMatchObject({
@@ -617,7 +690,7 @@ describe("platform appRouter", () => {
     });
 
     expect(session.body.url).toBe(
-      `https://team0000000001.tailorkit.app/p/${projectId}/a/${created.publicId}/rpc`,
+      `https://team0000000001.tailorkit.app/p/${projectId}/a/${created.publicId}/rpc`
     );
     const identity = testState.issueToken.mock.calls.at(-1)?.[0];
     for (const appId of [created.id, created.publicId]) {
@@ -625,10 +698,11 @@ describe("platform appRouter", () => {
         [stagingScope, productionScope],
         [productionScope, stagingScope],
       ]) {
+        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
         await call(
           appRouter.runtimeSession,
-          { params: { appId }, body: { scopes, toolUrl: input.body.toolUrl } },
-          { context },
+          { body: { scopes, toolUrl: input.body.toolUrl }, params: { appId } },
+          { context }
         );
         expect(testState.issueToken).toHaveBeenLastCalledWith(identity);
       }
@@ -642,18 +716,28 @@ describe("platform appRouter", () => {
       "https://runtime.test#fragment",
     ]) {
       testState.env.APP_RUNTIME_URL = runtimeUrl;
-      await expect(call(appRouter.runtimeSession, input, { context })).rejects.toMatchObject({
+      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+      await expect(
+        call(appRouter.runtimeSession, input, { context })
+      ).rejects.toMatchObject({
         code: "SERVICE_UNAVAILABLE",
       });
     }
     expect(testState.issueToken.mock.calls).toHaveLength(tokenCalls);
     testState.env.APP_RUNTIME_URL = "http://localhost:8787/other";
     const local = await call(appRouter.runtimeSession, input, { context });
-    expect(local.body.url).toBe(`http://localhost:8787/p/${projectId}/a/${created.publicId}/rpc`);
+    expect(local.body.url).toBe(
+      `http://localhost:8787/p/${projectId}/a/${created.publicId}/rpc`
+    );
     testState.env.APP_RUNTIME_URL = undefined;
 
-    await db.update(appTable).set({ currentDeploymentId: null }).where(eq(appTable.id, created.id));
-    await expect(call(appRouter.runtimeSession, input, { context })).rejects.toMatchObject({
+    await db
+      .update(appTable)
+      .set({ currentDeploymentId: null })
+      .where(eq(appTable.id, created.id));
+    await expect(
+      call(appRouter.runtimeSession, input, { context })
+    ).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
   });

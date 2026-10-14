@@ -1,31 +1,64 @@
-import { createIframeTools } from "./tools";
-import type { ToolBridge } from "@tailorkit/app/client";
-import { createIframeBackend } from "./backend";
-import type { Session } from "@tailorkit/app/client";
-import { iframeReadyType, sandboxMessageType } from "../bridge";
-import { readElementProps } from "../host/serialize";
+import * as v from "valibot";
+
+import { iframeReadyType, sandboxMessageType } from "#bridge";
+import { readElementProps } from "#host/serialize";
+import { HostToIframePayload, RemotePropsSchema } from "#protocol";
 import type {
-  HostToIframePayload,
   IframeToHostPayload,
   RemoteCallbackBinding,
   RemoteNode,
-} from "../protocol";
+} from "#protocol";
+
+import { createIframeBackend } from "./backend";
 import { assertAppClient, renderClient } from "./resolve-view";
 import type { AppClient, ViewRequest } from "./resolve-view";
+import { createIframeTools } from "./tools";
 
 type InitData = Extract<HostToIframePayload, { type: "init" }>["data"];
 
-export function startIframeRuntime(options: {
+const readCallbacksImplementation = (
+  element: Element
+): RemoteCallbackBinding[] => {
+  // oxlint-disable-next-line unicorn/prefer-dom-node-dataset -- SVG Element does not expose dataset in this public DOM type.
+  const value = element.getAttribute("data-tailorkit-callbacks");
+  if (!(value !== undefined && value !== null && value !== "")) {
+    return [];
+  }
+  try {
+    const parsed = v.safeParse(RemotePropsSchema, JSON.parse(value));
+    if (!parsed.success) {
+      return [];
+    }
+    const callbackSchema = v.object({
+      callback: v.string(),
+      inputCount: v.number(),
+    });
+    return Object.entries(parsed.output).flatMap(([event, config]) => {
+      const callback = v.safeParse(callbackSchema, config);
+      return callback.success ? [{ ...callback.output, event }] : [];
+    });
+  } catch {
+    return [];
+  }
+};
+
+export const startIframeRuntime = (options: {
   root: HTMLElement;
   channel: string;
   parentWindow?: Pick<Window, "postMessage">;
   importModule?: (url: string) => Promise<{ default?: unknown }>;
-}): () => void {
+}): (() => void) => {
   const {
     root,
     channel,
     parentWindow = window.parent,
-    importModule = (url) => import(/* @vite-ignore */ url),
+
+    importModule = async (url: string): Promise<{ default?: unknown }> =>
+      v.parse(
+        v.object({ default: v.optional(v.unknown()) }),
+        // oxlint-disable-next-line no-inline-comments -- Vite requires this directive inside import() to preserve remote module loading.
+        await import(/* @vite-ignore */ url)
+      ),
   } = options;
   const nodeIds = new WeakMap<Node, string>();
   const nodes = new Map<string, WeakRef<Node>>();
@@ -38,50 +71,44 @@ export function startIframeRuntime(options: {
 
   const send = (payload: IframeToHostPayload) => {
     if (!destroyed) {
-      parentWindow.postMessage({ channel, payload, type: sandboxMessageType }, "*");
+      parentWindow.postMessage(
+        { channel, payload, type: sandboxMessageType },
+        "*"
+      );
     }
   };
-  const tools = createIframeTools((data) => send({ type: "toolRequest", data }));
-  const backend = createIframeBackend((data) => send({ type: "backendSessionRequest", data }));
-  const backendGlobal = globalThis as typeof globalThis & {
-    __tailorkitTools?: ToolBridge;
-    __tailorkitBackendSession?: (options: { refresh: boolean }) => Promise<Session>;
-  };
+  const tools = createIframeTools((data) => {
+    send({ data, type: "toolRequest" });
+  });
+  const backend = createIframeBackend((data) => {
+    send({ data, type: "backendSessionRequest" });
+  });
+  const backendGlobal = globalThis;
   backendGlobal.__tailorkitTools = tools.bridge;
   backendGlobal.__tailorkitBackendSession = backend.getSession;
-  const sendError = (error: unknown) =>
+  const sendError = (cause: unknown) => {
+    let message = String(cause);
+    if (cause instanceof Error) {
+      message =
+        cause.stack !== undefined && cause.stack !== ""
+          ? cause.stack
+          : cause.message;
+    }
     send({
-      data: { message: error instanceof Error ? error.stack || error.message : String(error) },
+      data: { message },
       type: "error",
     });
+  };
   const getNodeId = (node: Node): string => {
     let id = nodeIds.get(node);
-    if (!id) {
-      id = `n:${nextNodeId++}`;
+    if (!(id !== undefined && id !== null && id !== "")) {
+      id = `n:${(nextNodeId += 1) - 1}`;
       nodeIds.set(node, id);
       nodes.set(id, new WeakRef(node));
     }
     return id;
   };
-  const readCallbacks = (element: Element): RemoteCallbackBinding[] => {
-    const value = element.getAttribute("data-tailorkit-callbacks");
-    if (!value) {
-      return [];
-    }
-    try {
-      const callbacks = JSON.parse(value) as Record<string, Partial<RemoteCallbackBinding>>;
-      if (!callbacks || typeof callbacks !== "object" || Array.isArray(callbacks)) {
-        return [];
-      }
-      return Object.entries(callbacks).flatMap(([event, config]) =>
-        config && typeof config.callback === "string" && typeof config.inputCount === "number"
-          ? [{ callback: config.callback, event, inputCount: config.inputCount }]
-          : [],
-      );
-    } catch {
-      return [];
-    }
-  };
+  const readCallbacks = readCallbacksImplementation;
   const serializeNode = (node: Node): RemoteNode => {
     if (node instanceof Text) {
       return { id: getNodeId(node), kind: "text", text: node.data };
@@ -102,10 +129,10 @@ export function startIframeRuntime(options: {
       kind: "fragment",
     };
   };
-  const sendSnapshot = () =>
+  const sendSnapshot = () => {
     send({
       data: {
-        revision: ++revision,
+        revision: (revision += 1),
         tree: {
           children: Array.from(root.childNodes, serializeNode),
           id: getNodeId(root),
@@ -114,12 +141,18 @@ export function startIframeRuntime(options: {
       },
       type: "snapshot",
     });
+  };
   const observer = new MutationObserver(() => {
     if (!rendering) {
       sendSnapshot();
     }
   });
-  observer.observe(root, { attributes: true, characterData: true, childList: true, subtree: true });
+  observer.observe(root, {
+    attributes: true,
+    characterData: true,
+    childList: true,
+    subtree: true,
+  });
 
   const loadApp = async ({ appSource, appUrl, props }: InitData) => {
     if (destroyed) {
@@ -127,7 +160,7 @@ export function startIframeRuntime(options: {
     }
     if (loadedAppUrl !== appUrl) {
       const module = await importModule(
-        `data:text/javascript;charset=utf-8,${encodeURIComponent(appSource)}`,
+        `data:text/javascript;charset=utf-8,${encodeURIComponent(appSource)}`
       );
       if (destroyed) {
         return;
@@ -141,7 +174,15 @@ export function startIframeRuntime(options: {
     }
     rendering = true;
     try {
-      renderClient(client, props as unknown as ViewRequest, root);
+      // SAFETY: The adapter reconstructs the same runtime contract, but TypeScript cannot relate the erased generic parameters across this library boundary.
+
+      renderClient(
+        client,
+        /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- The adapter reconstructs the same runtime contract, but TypeScript cannot relate the erased generic parameters across this library boundary. */
+        props as unknown as ViewRequest,
+        /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
+        root
+      );
     } finally {
       observer.takeRecords();
       rendering = false;
@@ -149,15 +190,22 @@ export function startIframeRuntime(options: {
     sendSnapshot();
   };
   let pendingLoad = Promise.resolve();
-  const handleMessage = (event: MessageEvent) => {
-    if (
-      event.source !== parentWindow ||
-      event.data?.channel !== channel ||
-      event.data.type !== sandboxMessageType
-    ) {
+  const handleMessage = (event: MessageEvent<unknown>) => {
+    if (event.source !== parentWindow) {
       return;
     }
-    const payload = event.data.payload as HostToIframePayload;
+    const parsed = v.safeParse(
+      v.object({
+        channel: v.literal(channel),
+        payload: HostToIframePayload,
+        type: v.literal(sandboxMessageType),
+      }),
+      event.data
+    );
+    if (!parsed.success) {
+      return;
+    }
+    const { payload } = parsed.output;
     if (payload?.type === "toolResult") {
       tools.receive(payload.data);
       return;
@@ -165,12 +213,23 @@ export function startIframeRuntime(options: {
     if (payload?.type === "backendSessionResult") {
       backend.receive(payload.data);
     } else if (payload?.type === "init") {
-      pendingLoad = pendingLoad.then(() => loadApp(payload.data)).catch(sendError);
+      pendingLoad = (async () => {
+        try {
+          await pendingLoad;
+          await loadApp(payload.data);
+        } catch (error) {
+          sendError(error);
+        }
+      })();
     } else if (payload?.type === "dispatchCallback") {
       const target = nodes.get(payload.data.nodeId)?.deref();
       if (!(target instanceof Element)) {
         nodes.delete(payload.data.nodeId);
-        sendError(new Error(`Cannot dispatch callback to unknown node "${payload.data.nodeId}".`));
+        sendError(
+          new Error(
+            `Cannot dispatch callback to unknown node "${payload.data.nodeId}".`
+          )
+        );
         return;
       }
       target.dispatchEvent(
@@ -178,7 +237,7 @@ export function startIframeRuntime(options: {
           bubbles: false,
           cancelable: true,
           detail: payload.data.args ?? [],
-        }),
+        })
       );
     }
   };
@@ -187,13 +246,16 @@ export function startIframeRuntime(options: {
   send({ type: "ready" });
   return () => {
     tools.close();
-    if (backendGlobal.__tailorkitTools === tools.bridge) delete backendGlobal.__tailorkitTools;
+    if (backendGlobal.__tailorkitTools === tools.bridge) {
+      delete backendGlobal.__tailorkitTools;
+    }
     backend.close();
-    if (backendGlobal.__tailorkitBackendSession === backend.getSession)
+    if (backendGlobal.__tailorkitBackendSession === backend.getSession) {
       delete backendGlobal.__tailorkitBackendSession;
+    }
     destroyed = true;
     observer.disconnect();
     window.removeEventListener("message", handleMessage);
     nodes.clear();
   };
-}
+};

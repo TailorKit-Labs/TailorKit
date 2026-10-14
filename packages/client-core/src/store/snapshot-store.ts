@@ -2,13 +2,15 @@ import type { ReadableAtom } from "nanostores";
 import { atom, onStart, onStop, readonlyType } from "nanostores";
 
 /** Expose cache snapshots as a Nano Store with immediate observer cleanup. */
-export function createSnapshotStore<T>(
+export const createSnapshotStore = <T>(
   getSnapshot: () => T,
-  subscribe: (listener: () => void) => () => void,
-) {
+  subscribe: (listener: () => void) => () => void
+) => {
   const state = atom(getSnapshot());
   let stop: (() => void) | undefined;
-  const sync = () => state.set(getSnapshot());
+  const sync = () => {
+    state.set(getSnapshot());
+  };
   state.get = () => {
     sync();
     return state.value;
@@ -22,11 +24,11 @@ export function createSnapshotStore<T>(
     stop = undefined;
   });
   return readonlyType(state);
-}
+};
 
 /** Follow a selected store and detach the previous reader immediately. */
-export function switchStore<T>(selection: ReadableAtom<ReadableAtom<T>>) {
-  return createSnapshotStore(
+export const switchStore = <T>(selection: ReadableAtom<ReadableAtom<T>>) =>
+  createSnapshotStore(
     () => selection.get().get(),
     (listener) => {
       let current = selection.get();
@@ -45,6 +47,5 @@ export function switchStore<T>(selection: ReadableAtom<ReadableAtom<T>>) {
         stopSelection();
         stopCurrent();
       };
-    },
+    }
   );
-}

@@ -1,51 +1,56 @@
-import { createTailorKitFetchClient } from "../client/fetch-client";
-import type { TailorKitFetchClient } from "../client/fetch-client";
-import { toBaseUrl } from "../client/url";
-import type { TailorKitContract } from "@tailorkit/core/schema";
-import type { TailorKitApp } from "../types";
-import { createViewContextStore } from "./local/view-context";
+import type {
+  ToolImplementations,
+  TailorKitContract,
+} from "@tailorkit/core/schema";
+
+import { createTailorKitFetchClient } from "#client/fetch-client";
+import type { TailorKitFetchClient } from "#client/fetch-client";
+import { toBaseUrl } from "#client/url";
+import type { TailorKitApp } from "#types";
+
 import { createAppsStore } from "./fetch/apps";
 import { createPreviewManager } from "./fetch/preview-manager";
+import { createViewContextStore } from "./local/view-context";
 
 export type TailorKitStore = ReturnType<typeof createTailorKitStore>;
 
 /** Compose independent fetch stores and local view state for one root. */
-export function createTailorKitStore(options: {
+export const createTailorKitStore = (options: {
   baseUrl: string | URL;
   contract: TailorKitContract;
-  tools?: import("@tailorkit/core/schema").ToolImplementations<
-    TailorKitContract["tools"],
-    "client"
-  >;
+  tools?: ToolImplementations<TailorKitContract["tools"], "client">;
   apps?: TailorKitApp[];
   client?: TailorKitFetchClient;
   assetsBaseUrl?: string | URL;
-}) {
+}) => {
   const { baseUrl, contract, assetsBaseUrl, apps: initialApps } = options;
   const client =
-    options.client ?? createTailorKitFetchClient({ baseUrl, contract, tools: options.tools });
+    options.client ??
+    createTailorKitFetchClient({ baseUrl, contract, tools: options.tools });
   if (toBaseUrl(baseUrl).href !== toBaseUrl(client.baseUrl).href) {
-    throw new Error("createTailorKitStore: baseUrl does not match the supplied fetch client.");
+    throw new Error(
+      "createTailorKitStore: baseUrl does not match the supplied fetch client."
+    );
   }
   const apps = createAppsStore(client, initialApps);
   return {
-    baseUrl: client.baseUrl,
-    contract,
     assetsBaseUrl,
+    baseUrl: client.baseUrl,
     client,
+    contract,
     fetch: { apps },
-    views: createViewContextStore(contract),
-    setProvidedApps: apps.setProvidedApps,
     fetchApps: apps.fetch,
     getAppsSnapshot: apps.getSnapshot,
-    subscribeApps: apps.subscribe,
     previews: createPreviewManager(
       client.baseUrl,
       () => {
         void apps.refresh();
       },
       apps.updateViews,
-      client.endpoints.previewMetadata,
+      client.endpoints.previewMetadata
     ),
+    setProvidedApps: apps.setProvidedApps,
+    subscribeApps: apps.subscribe,
+    views: createViewContextStore(contract),
   };
-}
+};

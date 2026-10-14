@@ -1,60 +1,10 @@
 import { defineRelations, defineRelationsPart } from "drizzle-orm";
-import { authRelations } from "./schema/auth";
+
 import * as schema from "./schema";
+import { authRelations } from "./schema/auth";
 
 const applicationRelations = defineRelations(schema, (r) => ({
-  project: {
-    organization: r.one.organization({
-      from: r.project.organizationId,
-      to: r.organization.id,
-    }),
-    apps: r.many.app({
-      from: r.project.id,
-      to: r.app.projectId,
-    }),
-    cliAuthSessions: r.many.cliAuthSession({
-      from: r.project.id,
-      to: r.cliAuthSession.projectId,
-    }),
-    cliTokens: r.many.cliToken({
-      from: r.project.id,
-      to: r.cliToken.projectId,
-    }),
-    previewSessions: r.many.previewSession({
-      from: r.project.id,
-      to: r.previewSession.projectId,
-    }),
-  },
-
-  cliAuthSession: {
-    project: r.one.project({
-      from: r.cliAuthSession.projectId,
-      to: r.project.id,
-    }),
-  },
-
-  cliToken: {
-    project: r.one.project({
-      from: r.cliToken.projectId,
-      to: r.project.id,
-    }),
-    previewSessions: r.many.previewSession({
-      from: r.cliToken.id,
-      to: r.previewSession.cliTokenId,
-    }),
-  },
-
-  previewSession: {
-    app: r.one.app({ from: r.previewSession.appId, to: r.app.id }),
-    cliToken: r.one.cliToken({ from: r.previewSession.cliTokenId, to: r.cliToken.id }),
-    project: r.one.project({ from: r.previewSession.projectId, to: r.project.id }),
-  },
-
   app: {
-    project: r.one.project({
-      from: r.app.projectId,
-      to: r.project.id,
-    }),
     currentDeployment: r.one.appDeployment({
       from: r.app.currentDeploymentId,
       to: r.appDeployment.id,
@@ -66,6 +16,10 @@ const applicationRelations = defineRelations(schema, (r) => ({
     previewSessions: r.many.previewSession({
       from: r.app.id,
       to: r.previewSession.appId,
+    }),
+    project: r.one.project({
+      from: r.app.projectId,
+      to: r.project.id,
     }),
   },
 
@@ -84,6 +38,59 @@ const applicationRelations = defineRelations(schema, (r) => ({
     appDeployment: r.one.appDeployment({
       from: r.appDeploymentFile.appDeploymentId,
       to: r.appDeployment.id,
+    }),
+  },
+
+  cliAuthSession: {
+    project: r.one.project({
+      from: r.cliAuthSession.projectId,
+      to: r.project.id,
+    }),
+  },
+
+  cliToken: {
+    previewSessions: r.many.previewSession({
+      from: r.cliToken.id,
+      to: r.previewSession.cliTokenId,
+    }),
+    project: r.one.project({
+      from: r.cliToken.projectId,
+      to: r.project.id,
+    }),
+  },
+
+  previewSession: {
+    app: r.one.app({ from: r.previewSession.appId, to: r.app.id }),
+    cliToken: r.one.cliToken({
+      from: r.previewSession.cliTokenId,
+      to: r.cliToken.id,
+    }),
+    project: r.one.project({
+      from: r.previewSession.projectId,
+      to: r.project.id,
+    }),
+  },
+
+  project: {
+    apps: r.many.app({
+      from: r.project.id,
+      to: r.app.projectId,
+    }),
+    cliAuthSessions: r.many.cliAuthSession({
+      from: r.project.id,
+      to: r.cliAuthSession.projectId,
+    }),
+    cliTokens: r.many.cliToken({
+      from: r.project.id,
+      to: r.cliToken.projectId,
+    }),
+    organization: r.one.organization({
+      from: r.project.organizationId,
+      to: r.organization.id,
+    }),
+    previewSessions: r.many.previewSession({
+      from: r.project.id,
+      to: r.previewSession.projectId,
     }),
   },
 }));

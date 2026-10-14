@@ -1,41 +1,59 @@
 // Test fixtures use promise-shaped callbacks and assertions on known fixture values.
-/* eslint-disable require-await, typescript/no-non-null-assertion, unicorn/no-await-expression-member */
+/* eslint-disable require-await */
 import { beforeEach, expect, it, vi } from "vite-plus/test";
+
 import { handleBackendSession } from "./backend";
 
-const session = { token: "platform-issued-token", expiresAt: 123, url: "https://runtime.test/rpc" };
-const issueSession = vi.fn(async () => session);
-const authenticate = vi.fn(async () => ({ scopes: { workspace: { id: "authorized-workspace" } } }));
+const session = {
+  expiresAt: 123,
+  token: "platform-issued-token",
+  url: "https://runtime.test/rpc",
+};
+const issueSession = vi
+  .fn<() => Promise<typeof session>>()
+  .mockResolvedValue(session);
+const authenticate = vi
+  .fn<Parameters<typeof handleBackendSession>[1]>()
+  .mockResolvedValue({
+    scopes: { workspace: { id: "authorized-workspace" } },
+  });
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- This fixture must represent malformed input so the runtime validation boundary can be tested.
 const request = (body: unknown, origin = "https://host.test") =>
   new Request("https://host.test/api/tailorkit/backend/session", {
-    method: "POST",
     body: JSON.stringify(body),
     headers: { "content-type": "application/json", origin },
+    method: "POST",
   });
 
 beforeEach(() => vi.clearAllMocks());
 
 it("uses existing host authentication and passes only verified scopes to the platform", async () => {
   const input = request({ appId: "installed-app" });
-  const response = await handleBackendSession(input, authenticate, issueSession);
+  const response = await handleBackendSession(
+    input,
+    authenticate,
+    issueSession
+  );
   expect(response.status).toBe(200);
   expect(response.headers.get("cache-control")).toBe("no-store");
   expect(await response.json()).toEqual(session);
   expect(authenticate).toHaveBeenCalledWith({ request: input });
+  // oxlint-disable unicorn/no-useless-undefined -- The exact mock call includes its optional subject argument.
   expect(issueSession).toHaveBeenCalledExactlyOnceWith(
     "installed-app",
     {
       workspace: { id: "authorized-workspace" },
     },
-    undefined,
+    undefined
   );
+  // oxlint-enable unicorn/no-useless-undefined
 });
 
 it("rejects unauthenticated requests before issuing tokens", async () => {
   const response = await handleBackendSession(
     request({ appId: "app" }),
     async () => null,
-    issueSession,
+    issueSession
   );
   expect(response.status).toBe(401);
   expect(issueSession).not.toHaveBeenCalled();
@@ -51,7 +69,11 @@ it.each([
   { appId: "x".repeat(257) },
   null,
 ])("rejects invalid or forged session input %j", async (body) => {
-  const response = await handleBackendSession(request(body), authenticate, issueSession);
+  const response = await handleBackendSession(
+    request(body),
+    authenticate,
+    issueSession
+  );
   expect(response.status).toBe(400);
   expect(issueSession).not.toHaveBeenCalled();
 });
@@ -60,7 +82,7 @@ it("rejects cross-origin requests before authenticating or issuing tokens", asyn
   const response = await handleBackendSession(
     request({ appId: "app" }, "https://attacker.test"),
     authenticate,
-    issueSession,
+    issueSession
   );
   expect(response.status).toBe(400);
   expect(authenticate).not.toHaveBeenCalled();
@@ -71,7 +93,7 @@ it.each(["GET", "PUT"])("rejects %s session requests", async (method) => {
   const response = await handleBackendSession(
     new Request("https://host.test/api/tailorkit/backend/session", { method }),
     authenticate,
-    issueSession,
+    issueSession
   );
   expect(response.status).toBe(400);
   expect(issueSession).not.toHaveBeenCalled();
@@ -81,7 +103,7 @@ it("bounds chunked session request bodies", async () => {
   const response = await handleBackendSession(
     request({ appId: "x".repeat(4096) }),
     authenticate,
-    issueSession,
+    issueSession
   );
   expect(response.status).toBe(413);
   expect(issueSession).not.toHaveBeenCalled();
@@ -90,12 +112,12 @@ it("bounds chunked session request bodies", async () => {
 it("rejects malformed JSON", async () => {
   const response = await handleBackendSession(
     new Request("https://host.test/api/tailorkit/backend/session", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
       body: "{",
+      headers: { "content-type": "application/json" },
+      method: "POST",
     }),
     authenticate,
-    issueSession,
+    issueSession
   );
   expect(response.status).toBe(400);
   expect(issueSession).not.toHaveBeenCalled();

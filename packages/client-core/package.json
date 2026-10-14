@@ -1,6 +1,6 @@
 {
   "name": "@tailorkit/client-core",
-  "version": "0.1.0-beta.29",
+  "version": "0.1.0-beta.30",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -12,6 +12,30 @@
   ],
   "type": "module",
   "sideEffects": false,
+  "imports": {
+    "#env": "./src/env.ts",
+    "#*": {
+      "development": [
+        "./src/*",
+        "./src/*.ts",
+        "./src/*.tsx",
+        "./src/*/index.ts",
+        "./src/*/index.tsx"
+      ],
+      "types": [
+        "./dist/*",
+        "./dist/*.d.ts",
+        "./dist/*/index.d.ts"
+      ],
+      "default": [
+        "./src/*",
+        "./src/*.ts",
+        "./src/*.tsx",
+        "./src/*/index.ts",
+        "./src/*/index.tsx"
+      ]
+    }
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -36,7 +60,9 @@
   "scripts": {
     "build": "tsup --entry.index src/index.ts --entry.client src/client/index.ts --entry.store-fetch src/store/fetch/index.ts --entry.store-local src/store/local/index.ts --format esm --target node20 --clean && tsc -p tsconfig.build.json",
     "check-types": "tsc --noEmit",
-    "test": "vp test run"
+    "test": "vp test run",
+    "lint": "vp lint .",
+    "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
     "@nanostores/async": "0.1.0",
@@ -44,13 +70,13 @@
     "@tailorkit/client-platform": "workspace:*",
     "@tailorkit/core": "workspace:*",
     "@tailorkit/sandbox": "workspace:*",
-    "nanostores": "1.5.4"
+    "nanostores": "1.5.5",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@tailorkit/config": "workspace:*",
     "@types/node": "catalog:",
     "tsup": "^8.5.1",
-    "typescript": "catalog:",
-    "zod": "catalog:"
+    "typescript": "catalog:"
   }
 }

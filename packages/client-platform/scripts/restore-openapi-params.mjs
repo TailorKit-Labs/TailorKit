@@ -1,8 +1,10 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-const path = fileURLToPath(new URL("../src/client/core/params.gen.ts", import.meta.url));
-const source = await readFile(path, "utf8");
+const path = fileURLToPath(
+  new URL("../src/client/core/params.gen.ts", import.meta.url)
+);
+const source = await readFile(path, "utf-8");
 
 const replacements = [
   [
@@ -15,17 +17,21 @@ const replacements = [
   ],
   [
     "    record[key] = value;\n  }\n\n  let config",
+    // oxlint-disable-next-line no-template-curly-in-string -- This literal is emitted as source code; interpolation belongs to the generated function.
     '    if (record === null || typeof record !== "object" || Array.isArray(record)) {\n      throw new Error(`Cannot map fields into a non-object ${slot} parameter.`);\n    }\n    record[key] = value;\n  }\n\n  function writeRawSlot(slot: Slot, value: unknown): void {\n    if (slot === "body") {\n      if (bodyMode === "mapped") {\n        throw new Error("Cannot mix raw and mapped body parameters.");\n      }\n      bodyMode = "raw";\n      params.body = value;\n      return;\n    }\n    params[slot] = value as Record<string, unknown>;\n  }\n\n  let config',
   ],
   ["        params.body = arg;", '        writeRawSlot("body", arg);'],
-  ["            params[field.map] = value;", "            writeRawSlot(field.map, value);"],
+  [
+    "            params[field.map] = value;",
+    "            writeRawSlot(field.map, value);",
+  ],
 ];
 
 let output = source;
 for (const [from, to] of replacements) {
   if (!output.includes(from)) {
     throw new Error(
-      "openapi-ts output changed; update restore-openapi-params.mjs before generating.",
+      "openapi-ts output changed; update restore-openapi-params.mjs before generating."
     );
   }
   output = output.replace(from, to);

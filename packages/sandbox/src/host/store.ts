@@ -1,88 +1,56 @@
-import type { IframeToHostPayload, RemoteNode, RemotePatch } from "../protocol.js";
+import type { IframeToHostPayload, RemoteNode, RemotePatch } from "#protocol";
+
+const hasText = (value: string | null | undefined): value is string =>
+  value !== undefined && value !== null && value.length > 0;
 
 export interface RemoteUiStore {
-  applyPatches(patches: readonly RemotePatch[]): void;
-  getRevision(): number;
-  getSnapshot(): RemoteNode | null;
-  handleSandboxMessage(message: IframeToHostPayload): void;
-  setSnapshot(tree: RemoteNode, revision: number): void;
-  subscribe(listener: () => void): () => void;
+  applyPatches: (patches: readonly RemotePatch[]) => void;
+  getRevision: () => number;
+  getSnapshot: () => RemoteNode | null;
+  handleSandboxMessage: (message: IframeToHostPayload) => void;
+  setSnapshot: (tree: RemoteNode, revision: number) => void;
+  subscribe: (listener: () => void) => () => void;
 }
 
-export function createRemoteUiStore(): RemoteUiStore {
-  const listeners = new Set<() => void>();
-  let revision = 0;
-  let snapshot: RemoteNode | null = null;
+const cloneNode = <TNode extends RemoteNode>(node: TNode): TNode =>
+  structuredClone(node);
 
-  const notify = (): void => {
-    for (const listener of listeners) {
-      listener();
+const findNode = (node: RemoteNode, nodeId: string): RemoteNode | null => {
+  if (node.id === nodeId) {
+    return node;
+  }
+  if (node.kind === "text") {
+    return null;
+  }
+  for (const child of node.children) {
+    const match = findNode(child, nodeId);
+    if (match) {
+      return match;
     }
-  };
+  }
+  return null;
+};
 
-  return {
-    applyPatches(patches) {
-      if (!snapshot) {
-        return;
-      }
-      const nextSnapshot = cloneNode(snapshot);
-      for (const patch of patches) {
-        applyPatch(nextSnapshot, patch);
-      }
-      snapshot = nextSnapshot;
-      notify();
-    },
-    getRevision() {
-      return revision;
-    },
-    getSnapshot() {
-      return snapshot;
-    },
-    handleSandboxMessage(message) {
-      switch (message.type) {
-        case "snapshot": {
-          this.setSnapshot(message.data.tree, message.data.revision);
-          break;
-        }
-        case "patches": {
-          revision = message.data.revision;
-          this.applyPatches(message.data.patches);
-          break;
-        }
-        case "error": {
-          throw new Error(message.data.message);
-        }
-        case "ready":
-        case "requestAnimationFrame": {
-          break;
-        }
-        default: {
-          break;
-        }
-      }
-    },
-    setSnapshot(tree, nextRevision) {
-      snapshot = cloneNode(tree);
-      revision = nextRevision;
-      notify();
-    },
-    subscribe(listener) {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
-  };
-}
+const removeNode = (node: RemoteNode, nodeId: string): boolean => {
+  if (node.kind === "text") {
+    return false;
+  }
+  const index = node.children.findIndex((child) => child.id === nodeId);
+  if (index !== -1) {
+    node.children.splice(index, 1);
+    return true;
+  }
+  return node.children.some((child) => removeNode(child, nodeId));
+};
 
-function applyPatch(root: RemoteNode, patch: RemotePatch): void {
+const applyPatch = (root: RemoteNode, patch: RemotePatch): void => {
   switch (patch.op) {
     case "insert": {
       const parent = findNode(root, patch.parentId);
       if (!parent || parent.kind === "text") {
         return;
       }
-      const beforeIndex = patch.beforeId
+      const beforeIndex = hasText(patch.beforeId)
         ? parent.children.findIndex((child) => child.id === patch.beforeId)
         : -1;
       if (beforeIndex === -1) {
@@ -128,36 +96,68 @@ function applyPatch(root: RemoteNode, patch: RemotePatch): void {
       break;
     }
   }
-}
+};
 
-function findNode(node: RemoteNode, nodeId: string): RemoteNode | null {
-  if (node.id === nodeId) {
-    return node;
-  }
-  if (node.kind === "text") {
-    return null;
-  }
-  for (const child of node.children) {
-    const match = findNode(child, nodeId);
-    if (match) {
-      return match;
+export const createRemoteUiStore = (): RemoteUiStore => {
+  const listeners = new Set<() => void>();
+  let revision = 0;
+  let snapshot: RemoteNode | null = null;
+
+  const notify = (): void => {
+    for (const listener of listeners) {
+      listener();
     }
-  }
-  return null;
-}
+  };
 
-function removeNode(node: RemoteNode, nodeId: string): boolean {
-  if (node.kind === "text") {
-    return false;
-  }
-  const index = node.children.findIndex((child) => child.id === nodeId);
-  if (index !== -1) {
-    node.children.splice(index, 1);
-    return true;
-  }
-  return node.children.some((child) => removeNode(child, nodeId));
-}
-
-function cloneNode<TNode extends RemoteNode>(node: TNode): TNode {
-  return structuredClone(node);
-}
+  return {
+    applyPatches: (patches) => {
+      if (!snapshot) {
+        return;
+      }
+      const nextSnapshot = cloneNode(snapshot);
+      for (const patch of patches) {
+        applyPatch(nextSnapshot, patch);
+      }
+      snapshot = nextSnapshot;
+      notify();
+    },
+    getRevision: () => revision,
+    getSnapshot: () => snapshot,
+    handleSandboxMessage(message) {
+      /* oxlint-disable typescript/switch-exhaustiveness-check -- This syntax visitor handles selected node kinds; other kinds use its generic traversal or default branch. */
+      switch (message.type) {
+        case "snapshot": {
+          this.setSnapshot(message.data.tree, message.data.revision);
+          break;
+        }
+        case "patches": {
+          ({ revision } = message.data);
+          this.applyPatches(message.data.patches);
+          break;
+        }
+        case "error": {
+          throw new Error(message.data.message);
+        }
+        case "ready":
+        case "requestAnimationFrame": {
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+      /* oxlint-enable typescript/switch-exhaustiveness-check */
+    },
+    setSnapshot: (tree, nextRevision) => {
+      snapshot = cloneNode(tree);
+      revision = nextRevision;
+      notify();
+    },
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+  };
+};

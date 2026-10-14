@@ -41,9 +41,7 @@ services:
     volumes:
       - seaweedfs_data:/data
     command: >
-      server
-      -s3
-      -dir=/data
+      server -s3 -dir=/data
     restart: unless-stopped
 
   s3-init:
@@ -51,13 +49,7 @@ services:
     depends_on:
       - s3
     entrypoint: >
-      /bin/sh -c "
-      sleep 5;
-      aws configure set aws_access_key_id some_access_key;
-      aws configure set aws_secret_access_key some_secret_key;
-      aws configure set default.region us-east-1;
-      aws --endpoint-url=http://s3:8333 s3 mb s3://tailorkit || true;
-      "
+      /bin/sh -c " sleep 5; aws configure set aws_access_key_id some_access_key; aws configure set aws_secret_access_key some_secret_key; aws configure set default.region us-east-1; aws --endpoint-url=http://s3:8333 s3 mb s3://tailorkit || true; "
 
 volumes:
   pgdb_data:

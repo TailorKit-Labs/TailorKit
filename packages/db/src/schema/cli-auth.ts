@@ -10,9 +10,11 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { createSelectSchema } from "drizzle-orm/zod";
-import z from "zod";
+import type z from "zod";
+
 import { project } from "./project";
-import { scopeKeySchema, scopeSchema, type Scope } from "./scope";
+import { scopeKeySchema, scopeSchema } from "./scope";
+import type { Scope } from "./scope";
 
 export const cliAuthSessionStatus = pgEnum("cli_auth_session_status", [
   "pending",
@@ -23,86 +25,108 @@ export const cliAuthSessionStatus = pgEnum("cli_auth_session_status", [
 export const cliToken = pgTable(
   "cli_token",
   {
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+
+    expiresAt: timestamp("expires_at").notNull(),
+
     id: uuid("id")
       .default(sql`pg_catalog.gen_random_uuid()`)
       .primaryKey(),
+
+    lastUsedAt: timestamp("last_used_at"),
 
     projectId: uuid("project_id")
       .notNull()
       .references(() => project.id, { onDelete: "cascade" }),
 
-    scopeKey: text("scope_key").notNull(),
+    revokedAt: timestamp("revoked_at"),
+
     scope: jsonb("scope_json").$type<Scope>().notNull(),
+
+    scopeKey: text("scope_key").notNull(),
 
     tokenHash: text("token_hash").notNull(),
 
-    expiresAt: timestamp("expires_at").notNull(),
-    revokedAt: timestamp("revoked_at"),
-    lastUsedAt: timestamp("last_used_at"),
-
-    createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [
-    index("cli_token_project_scope_key_idx").on(table.projectId, table.scopeKey),
+    index("cli_token_project_scope_key_idx").on(
+      table.projectId,
+      table.scopeKey
+    ),
     index("cli_token_expires_at_idx").on(table.expiresAt),
     index("cli_token_revoked_at_idx").on(table.revokedAt),
     uniqueIndex("cli_token_token_hash_unique").on(table.tokenHash),
-  ],
+  ]
 );
 
 export const cliAuthSession = pgTable(
   "cli_auth_session",
   {
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+
+    deviceCodeHash: text("device_code_hash").notNull(),
+
+    expiresAt: timestamp("expires_at").notNull(),
+
     id: uuid("id")
       .default(sql`pg_catalog.gen_random_uuid()`)
       .primaryKey(),
+
+    lastPolledAt: timestamp("last_polled_at"),
 
     projectId: uuid("project_id")
       .notNull()
       .references(() => project.id, { onDelete: "cascade" }),
 
-    scopeKey: text("scope_key"),
     scope: jsonb("scope_json").$type<Scope>(),
 
-    deviceCodeHash: text("device_code_hash").notNull(),
-    userCodeHash: text("user_code_hash").notNull(),
+    scopeKey: text("scope_key"),
 
     status: cliAuthSessionStatus("status").default("pending").notNull(),
 
-    expiresAt: timestamp("expires_at").notNull(),
-
-    lastPolledAt: timestamp("last_polled_at"),
-
-    createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
+
+    userCodeHash: text("user_code_hash").notNull(),
   },
   (table) => [
-    index("cli_auth_session_project_id_status_idx").on(table.projectId, table.status),
-    index("cli_auth_session_project_scope_key_idx").on(table.projectId, table.scopeKey),
+    index("cli_auth_session_project_id_status_idx").on(
+      table.projectId,
+      table.status
+    ),
+    index("cli_auth_session_project_scope_key_idx").on(
+      table.projectId,
+      table.scopeKey
+    ),
     index("cli_auth_session_expires_at_idx").on(table.expiresAt),
 
-    uniqueIndex("cli_auth_session_device_code_hash_unique").on(table.deviceCodeHash),
-    uniqueIndex("cli_auth_session_user_code_hash_unique").on(table.userCodeHash),
-  ],
+    uniqueIndex("cli_auth_session_device_code_hash_unique").on(
+      table.deviceCodeHash
+    ),
+    uniqueIndex("cli_auth_session_user_code_hash_unique").on(
+      table.userCodeHash
+    ),
+  ]
 );
 
+// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
 export const CliToken = createSelectSchema(cliToken, {
-  scopeKey: scopeKeySchema,
   scope: scopeSchema,
+  scopeKey: scopeKeySchema,
 });
 
 export type CliToken = z.output<typeof CliToken>;
 
+// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
 export const CliAuthSession = createSelectSchema(cliAuthSession, {
-  scopeKey: scopeKeySchema.nullable(),
   scope: scopeSchema.nullable(),
+  scopeKey: scopeKeySchema.nullable(),
 });
 
 export type CliAuthSession = z.output<typeof CliAuthSession>;

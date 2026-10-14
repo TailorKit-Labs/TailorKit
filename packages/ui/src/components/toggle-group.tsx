@@ -3,26 +3,32 @@
 import type { Toggle as TogglePrimitive } from "@base-ui/react/toggle";
 import { ToggleGroup as ToggleGroupPrimitive } from "@base-ui/react/toggle-group";
 import type { VariantProps } from "class-variance-authority";
+import { useMemo } from "react";
 import * as React from "react";
+
 import { cn } from "#ui";
 import { Separator } from "#ui/separator";
 import { Toggle as ToggleComponent } from "#ui/toggle";
 import type { toggleVariants } from "#ui/toggle";
 
-export const ToggleGroupContext: React.Context<VariantProps<typeof toggleVariants>> =
-  React.createContext<VariantProps<typeof toggleVariants>>({
-    size: "default",
-    variant: "default",
-  });
+export { ToggleGroup as ToggleGroupPrimitive } from "@base-ui/react/toggle-group";
 
-export function ToggleGroup({
+export const ToggleGroupContext: React.Context<
+  VariantProps<typeof toggleVariants>
+> = React.createContext<VariantProps<typeof toggleVariants>>({
+  size: "default",
+  variant: "default",
+});
+
+export const ToggleGroup = ({
   className,
   variant = "default",
   size = "default",
   orientation = "horizontal",
   children,
   ...props
-}: ToggleGroupPrimitive.Props & VariantProps<typeof toggleVariants>): React.ReactElement {
+}: ToggleGroupPrimitive.Props &
+  VariantProps<typeof toggleVariants>): React.ReactElement => {
   let layoutClasses =
     "flex-col *:not-first:rounded-t-none *:not-last:rounded-b-none *:not-first:border-t-0 *:not-last:border-b-0 *:not-first:not-data-[slot=separator]:before:-top-[0.5px] *:not-last:not-data-[slot=separator]:before:-bottom-[0.5px] *:not-first:before:rounded-t-none *:not-last:before:rounded-b-none *:data-[slot=toggle]:not-last:before:hidden dark:*:last:before:hidden dark:*:first:before:block";
 
@@ -33,6 +39,7 @@ export function ToggleGroup({
       "*:not-first:rounded-s-none *:not-last:rounded-e-none *:not-first:border-s-0 *:not-last:border-e-0 *:not-first:not-data-[slot=separator]:before:-start-[0.5px] *:not-last:not-data-[slot=separator]:before:-end-[0.5px] *:not-first:before:rounded-s-none *:not-last:before:rounded-e-none";
   }
 
+  const contextValue1 = useMemo(() => ({ size, variant }), [size, variant]);
   return (
     <ToggleGroupPrimitive
       className={cn(
@@ -41,7 +48,7 @@ export function ToggleGroup({
           ? "*:pointer-coarse:after:min-w-auto"
           : "*:pointer-coarse:after:min-h-auto",
         layoutClasses,
-        className,
+        className
       )}
       data-size={size}
       data-slot="toggle-group"
@@ -49,24 +56,25 @@ export function ToggleGroup({
       orientation={orientation}
       {...props}
     >
-      <ToggleGroupContext.Provider value={{ size, variant }}>
+      <ToggleGroupContext.Provider value={contextValue1}>
         {children}
       </ToggleGroupContext.Provider>
     </ToggleGroupPrimitive>
   );
-}
+};
 
-export function ToggleGroupItem({
+export const ToggleGroupItem = ({
   className,
   children,
   variant,
   size,
   ...props
-}: TogglePrimitive.Props & VariantProps<typeof toggleVariants>): React.ReactElement {
+}: TogglePrimitive.Props &
+  VariantProps<typeof toggleVariants>): React.ReactElement => {
   const context = React.useContext(ToggleGroupContext);
 
-  const resolvedVariant = context.variant || variant;
-  const resolvedSize = context.size || size;
+  const resolvedVariant = context.variant ?? variant;
+  const resolvedSize = context.size ?? size;
 
   return (
     <ToggleComponent
@@ -80,25 +88,21 @@ export function ToggleGroupItem({
       {children}
     </ToggleComponent>
   );
-}
+};
 
-export function ToggleGroupSeparator({
+export const ToggleGroupSeparator = ({
   className,
   orientation = "vertical",
   ...props
 }: {
   className?: string;
-} & React.ComponentProps<typeof Separator>): React.ReactElement {
-  return (
-    <Separator
-      className={cn(
-        "pointer-events-none relative bg-input before:absolute before:inset-0 dark:before:bg-input/32",
-        className,
-      )}
-      orientation={orientation}
-      {...props}
-    />
-  );
-}
-
-export { ToggleGroupPrimitive };
+} & React.ComponentProps<typeof Separator>): React.ReactElement => (
+  <Separator
+    className={cn(
+      "pointer-events-none relative bg-input before:absolute before:inset-0 dark:before:bg-input/32",
+      className
+    )}
+    orientation={orientation}
+    {...props}
+  />
+);

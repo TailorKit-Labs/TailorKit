@@ -3,29 +3,30 @@ import { betterAuth } from "better-auth/minimal";
 import { captcha } from "better-auth/plugins";
 import { checkBotId } from "botid/server";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
+
 import { captchaEndpoints } from "./lib/captcha-endpoints";
 
 vi.mock("botid/server", () => ({ checkBotId: vi.fn() }));
 
 const authCaptcha = captcha({
-  provider: "vercel-botid",
   checkBotId,
   endpoints: captchaEndpoints,
+  provider: "vercel-botid",
 });
 
 const options: BetterAuthOptions = {
   baseURL: "https://tailorkit.dev",
-  secret: "test-secret-with-at-least-32-characters",
   logger: { disabled: true },
   plugins: [authCaptcha],
+  secret: "test-secret-with-at-least-32-characters",
 };
 const auth = betterAuth(options);
 
 const humanVerdict = {
-  isHuman: true,
-  isBot: false,
-  isVerifiedBot: false,
   bypassed: false,
+  isBot: false,
+  isHuman: true,
+  isVerifiedBot: false,
 };
 
 describe("auth captcha", () => {
@@ -34,14 +35,20 @@ describe("auth captcha", () => {
   });
 
   it.each(captchaEndpoints)("rejects bots on %s", async (path) => {
-    vi.mocked(checkBotId).mockResolvedValue({ ...humanVerdict, isHuman: false, isBot: true });
+    vi.mocked(checkBotId).mockResolvedValue({
+      ...humanVerdict,
+      isBot: true,
+      isHuman: false,
+    });
 
     const response = await auth.handler(
-      new Request(`https://tailorkit.dev/api/auth${path}`, { method: "POST" }),
+      new Request(`https://tailorkit.dev/api/auth${path}`, { method: "POST" })
     );
 
     expect(response.status).toBe(403);
-    expect(await response.json()).toMatchObject({ code: "VERIFICATION_FAILED" });
+    expect(await response.json()).toMatchObject({
+      code: "VERIFICATION_FAILED",
+    });
     expect(checkBotId).toHaveBeenCalledOnce();
   });
 
@@ -50,7 +57,7 @@ describe("auth captcha", () => {
 
     const result = await authCaptcha.onRequest(
       new Request(`https://tailorkit.dev/api/auth${path}`, { method: "POST" }),
-      await auth.$context,
+      await auth.$context
     );
 
     expect(result).toBeUndefined();
@@ -60,13 +67,15 @@ describe("auth captcha", () => {
   it("rejects verified bots as well", async () => {
     vi.mocked(checkBotId).mockResolvedValue({
       ...humanVerdict,
-      isHuman: false,
       isBot: true,
+      isHuman: false,
       isVerifiedBot: true,
     });
 
     const response = await auth.handler(
-      new Request("https://tailorkit.dev/api/auth/sign-in/email", { method: "POST" }),
+      new Request("https://tailorkit.dev/api/auth/sign-in/email", {
+        method: "POST",
+      })
     );
 
     expect(response.status).toBe(403);
@@ -76,23 +85,27 @@ describe("auth captcha", () => {
     vi.mocked(checkBotId).mockRejectedValue(new Error("BotID unavailable"));
 
     const response = await auth.handler(
-      new Request("https://tailorkit.dev/api/auth/sign-up/email", { method: "POST" }),
+      new Request("https://tailorkit.dev/api/auth/sign-up/email", {
+        method: "POST",
+      })
     );
 
     expect(response.status).toBe(500);
     expect(await response.json()).toMatchObject({ code: "UNKNOWN_ERROR" });
   });
 
-  it.each(["/get-session", "/callback/google", "/oauth-proxy-callback", "/api-key/verify"])(
-    "does not challenge %s",
-    async (path) => {
-      const result = await authCaptcha.onRequest(
-        new Request(`https://tailorkit.dev/api/auth${path}`),
-        await auth.$context,
-      );
+  it.each([
+    "/get-session",
+    "/callback/google",
+    "/oauth-proxy-callback",
+    "/api-key/verify",
+  ])("does not challenge %s", async (path) => {
+    const result = await authCaptcha.onRequest(
+      new Request(`https://tailorkit.dev/api/auth${path}`),
+      await auth.$context
+    );
 
-      expect(result).toBeUndefined();
-      expect(checkBotId).not.toHaveBeenCalled();
-    },
-  );
+    expect(result).toBeUndefined();
+    expect(checkBotId).not.toHaveBeenCalled();
+  });
 });

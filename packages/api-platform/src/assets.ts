@@ -10,27 +10,43 @@ import {
 import type { AssetIdentity } from "@tailorkit/asset-delivery";
 import type { Storage } from "@tailorkit/storage";
 import { Effect } from "effect";
+import { z } from "zod";
 
-function storageFailure(error: unknown) {
-  if (error && typeof error === "object") {
-    const value = error as { name?: string; $metadata?: { httpStatusCode?: number } };
+const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
+  typeof value === "object" && value !== null;
+
+const storageFailure = (cause: unknown) => {
+  if (isObjectValue(cause)) {
+    const parsed = z
+      .object({
+        $metadata: z
+          .object({ httpStatusCode: z.number().optional() })
+          .optional(),
+        name: z.string().optional(),
+      })
+      .safeParse(cause);
+    const value = parsed.success ? parsed.data : undefined;
     if (
-      value.name === "NoSuchKey" ||
-      value.name === "NotFound" ||
-      value.$metadata?.httpStatusCode === 404
+      value?.name === "NoSuchKey" ||
+      value?.name === "NotFound" ||
+      value?.$metadata?.httpStatusCode === 404
     ) {
       return new AssetDeliveryError(404);
     }
   }
   return new AssetDeliveryError(503);
-}
+};
 
-function loadAsset(request: Request, identity: AssetIdentity, storage: Storage) {
-  return Effect.gen(function* () {
-    const key = identity.key;
+const loadAsset = (
+  request: Request,
+  identity: AssetIdentity,
+  storage: Storage
+) =>
+  Effect.gen(function* loadAssetValue() {
+    const { key } = identity;
     const object = yield* Effect.tryPromise({
-      try: () => storage.head({ key }),
       catch: storageFailure,
+      try: async () => await storage.head({ key }),
     });
     const contentLength = yield* assetSize(object.contentLength);
     const headers = assetHeaders({
@@ -42,35 +58,52 @@ function loadAsset(request: Request, identity: AssetIdentity, storage: Storage) 
     // that decoded stream; the stored length and strong ETag describe gzip bytes.
     if (object.contentEncoding === "gzip") {
       headers.delete("Content-Length");
-      if (object.etag) headers.set("ETag", `W/${object.etag}`);
+      if (
+        object.etag !== undefined &&
+        object.etag !== null &&
+        object.etag !== ""
+      ) {
+        headers.set("ETag", `W/${object.etag}`);
+      }
     }
-    if (request.method === "HEAD") return new Response(null, { headers });
+    if (request.method === "HEAD") {
+      return new Response(null, { headers });
+    }
     const download = yield* Effect.tryPromise({
-      try: () => storage.createDownloadUrl({ key, expiresInSeconds: 60 }),
       catch: storageFailure,
+      try: async () =>
+        await storage.createDownloadUrl({ expiresInSeconds: 60, key }),
     });
     const upstream = yield* Effect.tryPromise({
-      try: (signal) => fetch(download.url, { redirect: "error", signal }),
       catch: storageFailure,
+      try: async (signal) =>
+        await fetch(download.url, { redirect: "error", signal }),
     });
-    if (!upstream.ok)
-      return yield* Effect.fail(new AssetDeliveryError(upstream.status === 404 ? 404 : 503));
+    if (!upstream.ok) {
+      return yield* Effect.fail(
+        new AssetDeliveryError(upstream.status === 404 ? 404 : 503)
+      );
+    }
     const body =
       object.contentEncoding === "gzip" && upstream.body
         ? limitAssetBody(upstream.body)
         : upstream.body;
     return new Response(body, { headers });
   });
-}
 
-export function handleAssetRequest(request: Request, storage: Storage | null): Promise<Response> {
-  const program = Effect.gen(function* () {
+export const handleAssetRequest = async (
+  request: Request,
+  storage: Storage | null
+): Promise<Response> => {
+  const program = Effect.gen(function* program() {
     const identity = yield* nodeAssetRequest(request);
-    if (!storage) return yield* Effect.fail(new AssetDeliveryError(503));
+    if (!storage) {
+      return yield* Effect.fail(new AssetDeliveryError(503));
+    }
     return yield* serveAssetRequest(request, {
       identity: Effect.succeed(identity),
       load: (asset) => loadAsset(request, asset, storage),
     });
   });
-  return Effect.runPromise(assetResponse(program));
-}
+  return await Effect.runPromise(assetResponse(program));
+};
