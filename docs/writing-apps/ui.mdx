@@ -15,7 +15,7 @@ npx tailorkit generate
 
 Put view files in `src/slots/<slot>/` with a `.view.tsx` suffix. This view supplies default UI for the `panel` slot:
 
-```tsx title="src/slots/panel/overview.view.tsx"
+```tsx title="src/slots/panel/index.view.tsx"
 import "../../tailorkit.gen";
 import { defineView } from "tailorkit/client";
 
@@ -32,13 +32,13 @@ function Overview() {
 export default view;
 ```
 
-The folder identifies the slot. An explicit `view` identifies the context and gives `useContext()` its inferred type. Here, `/` makes this a fallback view.
+The folder identifies the slot. The filename identifies the context: `index.view.tsx` maps to `/`, and `members/detail.view.tsx` or `members.detail.view.tsx` maps to `/members/detail`. An explicit `view` gives `useContext()` its inferred type and must match that path. The build rejects mismatched `view` or `slot` declarations.
 
 ## Use components and tools
 
 Add another view for `/members/detail`. With `Button` and `showToast` exposed in the contract, generated imports let you use them together:
 
-```tsx title="src/slots/panel/member.view.tsx"
+```tsx title="src/slots/panel/members.detail.view.tsx"
 import { defineView } from "tailorkit/client";
 import { Button, tools } from "../../tailorkit.gen";
 
@@ -70,7 +70,7 @@ On a member's page, TailorKit selects this view and supplies the member context.
 
 For a `tile` slot declared with `multiple: true`, return an entry for each dashboard tile:
 
-```tsx title="src/slots/tile/dashboard.view.tsx"
+```tsx title="src/slots/tile/index.view.tsx"
 import "../../tailorkit.gen";
 import { defineView } from "tailorkit/client";
 import { z } from "zod";
@@ -115,7 +115,7 @@ Import `defineView` from `tailorkit/client`. The build discovers `.view.tsx` fil
 | Option | Meaning |
 | --- | --- |
 | `slot` | Must match `src/slots/<slot>/` if supplied. Otherwise the build uses the folder name. |
-| `view` | A supported context path. Overrides the path derived from dots and subdirectories in the filename. |
+| `view` | A supported context path matching the filename. Optional; when supplied, gives precise context typing. Dots and subdirectories separate path segments; a final `index` is omitted. |
 | `component` | Required. The UI component; use `view.useContext()` to read its context. |
 | `instances` | Required for `multiple: true` slots; omitted for single-instance slots. |
 | `instances.dataSchema` | Validates each entry's data. |
@@ -139,8 +139,9 @@ export interface ViewInstance<TData = unknown> {
 
 <AccordionGroup>
   <Accordion title="Does naming a file index.view.tsx make it the default view?">
-    It produces `/index`. Set `view: "/"` explicitly for a default view, as the
-    overview example does. Only `.view.tsx` files register views.
+    Yes. `index.view.tsx` produces `/`; `members/index.view.tsx` produces
+    `/members`. Explicit `view` values must agree with the file path. Only
+    `.view.tsx` files register views.
   </Accordion>
   <Accordion title="Where do instance labels and layout rules belong?">
     Return labels, icons, or placement hints in `metadata`. The surrounding UI

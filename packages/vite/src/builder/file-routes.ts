@@ -12,12 +12,15 @@ const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
 
 const clientRuntimeImport = "tailorkit:file-client-runtime";
 
-const routePath = (name: string, filename: string) => {
+const routePath = (name: string, filename: string, indexView = false) => {
   const segments = name.split(/[./]/u);
   if (segments.some((segment) => !segment || segment === "..")) {
     throw new Error(
       `${filename} has an empty route segment. Use route.nested-route.view.tsx.`
     );
+  }
+  if (indexView && segments.at(-1) === "index") {
+    segments.pop();
   }
   return `/${segments.join("/")}`;
 };
@@ -40,7 +43,46 @@ export const fileViewLocation = (filename: string, root: string) => {
     return undefined;
   }
   const basename = routeSegments.join("/").slice(0, -".view.tsx".length);
-  return { path: routePath(basename, filename), slot };
+  return { path: routePath(basename, filename, true), slot };
+};
+
+const validateViewOptions = (
+  options: ESTree.ObjectExpression,
+  expected: { slot: string; view: string },
+  filename: string
+) => {
+  const properties = new Set<string>();
+  for (const property of options.properties) {
+    if (
+      property.type !== "Property" ||
+      (property.computed && property.key.type !== "Literal")
+    ) {
+      throw new Error(
+        `${filename}: use named defineView properties so the build can validate the slot and view against the file location.`
+      );
+    }
+    let key: string | undefined;
+    if (property.key.type === "Identifier") {
+      key = property.key.name;
+    } else if (property.key.type === "Literal") {
+      key = String(property.key.value);
+    }
+    if (
+      (key === "slot" || key === "view") &&
+      (property.kind !== "init" ||
+        property.method ||
+        property.value.type !== "Literal" ||
+        property.value.value !== expected[key])
+    ) {
+      throw new Error(
+        `${filename}: defineView ${key} must be ${JSON.stringify(expected[key])} to match the file location. Omit ${key} to infer it, or move the file to the matching location.`
+      );
+    }
+    if (key !== undefined) {
+      properties.add(key);
+    }
+  }
+  return properties;
 };
 
 /** Fill missing defineView options before instance extraction, on both build sides. */
@@ -70,21 +112,11 @@ export const inferFileView = (
           `${filename}: file views require defineView with an inline options object.`
         );
       }
-      const properties = new Set(
-        options.properties.flatMap((property) => {
-          if (property.type !== "Property" || property.computed) {
-            return [];
-          }
-          if (property.key.type === "Identifier") {
-            return [property.key.name];
-          }
-          if (property.key.type === "Literal") {
-            return [String(property.key.value)];
-          }
-          return [];
-        })
+      const properties = validateViewOptions(
+        options,
+        { slot, view: viewPath },
+        filename
       );
-      // Defaults precede spreads, so an explicit view override is respected.
       const defaults = [
         properties.has("slot") ? "" : `slot: ${JSON.stringify(slot)},`,
         properties.has("view") ? "" : `view: ${JSON.stringify(viewPath)},`,
@@ -116,7 +148,7 @@ export const inferFileView = (
 };
 
 export const discoverFileRoutes = async (root: string) => {
-  const views: { filename: string; slot: string }[] = [];
+  const views: { filename: string; slot: string; path: string }[] = [];
   const roots: { filename: string; slot: string }[] = [];
   const layouts: { filename: string; slot: string; path: string }[] = [];
   const slotsDir = path.join(root, "src/slots");
@@ -155,8 +187,10 @@ export const discoverFileRoutes = async (root: string) => {
         slot !== ""
       ) {
         if (entry.name.endsWith(".view.tsx")) {
-          fileViewLocation(filename, root);
-          views.push({ filename, slot });
+          const location = fileViewLocation(filename, root);
+          if (location) {
+            views.push({ filename, ...location });
+          }
         } else if (entry.name === "root.tsx" && !prefix) {
           roots.push({ filename, slot });
         } else if (
@@ -221,7 +255,8 @@ const fileClientSource = async (root: string) => {
       `${module(entry)}, slot: ${JSON.stringify(entry.slot)}, path: ${JSON.stringify(entry.path)} }`
   );
   const views = discovered.views.map(
-    (entry) => `${module(entry)}, slot: ${JSON.stringify(entry.slot)} }`
+    (entry) =>
+      `${module(entry)}, slot: ${JSON.stringify(entry.slot)}, path: ${JSON.stringify(entry.path)} }`
   );
   return `${imports.join("\n")}\nexport default createFileClient({ root: ${rootModule}, roots: [${roots.join(",")}], layouts: [${layouts.join(",")}], views: [${views.join(",")}] });`;
 };

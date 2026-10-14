@@ -7,6 +7,7 @@ import { gatewayModelProviders } from "./gateway-model";
 import type { AppAgentInput } from "./input";
 import instructions from "./instructions.md?raw";
 import { agentSchemaPath, agentTokenPath } from "./sandbox";
+import { appAgentSkills } from "./skills";
 import { deployTool } from "./tools/deploy";
 
 /** Configuration only; live state belongs to the supplied harness session. */
@@ -40,6 +41,7 @@ export const createAppAgent = async (
     instructions: `${instructions.trim()}\n\n## Host and generation commands\n\n${hostInstructions}`,
     model: input.model,
     sandboxConfig: { workDir: "." },
+    skills: appAgentSkills,
     stopWhen: isStepCount(1),
     tools: { deploy: deployTool },
     toolsContext: {

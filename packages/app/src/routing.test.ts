@@ -82,8 +82,18 @@ it("keeps app and slot shells and common layouts mounted, and isolates mounted s
       },
     ],
     views: [
-      { definition: first, filename: "home.view.tsx", slot: "panel" },
-      { definition: users, filename: "users.view.tsx", slot: "panel" },
+      {
+        definition: first,
+        filename: "index.view.tsx",
+        path: "/",
+        slot: "panel",
+      },
+      {
+        definition: users,
+        filename: "users.view.tsx",
+        path: "/users",
+        slot: "panel",
+      },
     ],
   });
   const container = document.createElement("div");
@@ -144,7 +154,7 @@ it("keeps app and slot shells and common layouts mounted, and isolates mounted s
   }
 });
 
-it("matches layout prefixes at route boundaries and uses explicit view overrides", async () => {
+it("matches layout prefixes at route boundaries", async () => {
   const view = defineView({
     component: () => h("div", {}, "leaf", h(Route, {})),
     slot: "panel",
@@ -177,7 +187,8 @@ it("matches layout prefixes at route boundaries and uses explicit view overrides
     views: [
       {
         definition: view,
-        filename: "descriptive-name.view.tsx",
+        filename: "users.view.tsx",
+        path: "/users",
         slot: "panel",
       },
     ],
@@ -210,9 +221,14 @@ it("matches layout prefixes at route boundaries and uses explicit view overrides
   }
 });
 
-it("rejects duplicate paths, invalid root exports, and incorrect slots", () => {
+it("rejects duplicate paths, invalid root exports, and mismatched file locations", () => {
   const view = defineView({ component: () => null, slot: "panel", view: "/" });
-  const module = { definition: view, filename: "home.view.tsx", slot: "panel" };
+  const module = {
+    definition: view,
+    filename: "index.view.tsx",
+    path: "/",
+    slot: "panel",
+  };
   const options = { layouts: [], roots: [], views: [module] };
   expect(() =>
     createFileClient({
@@ -229,6 +245,9 @@ it("rejects duplicate paths, invalid root exports, and incorrect slots", () => {
   expect(() =>
     createFileClient({ ...options, views: [{ ...module, slot: "navbar" }] })
   ).toThrow('declares slot "panel"');
+  expect(() =>
+    createFileClient({ ...options, views: [{ ...module, path: "/other" }] })
+  ).toThrow('declares view "/" but its file location requires "/other"');
   expect(() =>
     createFileClient({
       ...options,

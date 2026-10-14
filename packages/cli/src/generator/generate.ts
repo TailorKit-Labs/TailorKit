@@ -64,10 +64,14 @@ const isFilenameSegment = (segment: string) =>
 
 const getViewModulePath = (slotName: string, viewPath: string) => {
   const viewSegments =
-    viewPath === "/" ? ["home"] : viewPath.slice(1).split("/");
+    viewPath === "/" ? ["index"] : viewPath.slice(1).split("/");
+  if (viewPath !== "/" && viewSegments.at(-1) === "index") {
+    viewSegments.push("index");
+  }
   const routeName = viewSegments.join(".");
   if (
     !viewPath.startsWith("/") ||
+    viewSegments.some((segment) => segment.includes(".")) ||
     ![slotName, ...viewSegments, ...routeName.split(".")].every(
       isFilenameSegment
     )

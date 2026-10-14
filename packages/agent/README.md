@@ -2,6 +2,12 @@
 
 A Pi-backed `HarnessAgent` for building and editing TailorKit extensions. The web host, platform chat and MCP routes, and app source export all consume `@tailorkit/agent`; the previous `packages/app-agent` package has been removed.
 
+## Instructions and skills
+
+`src/instructions.md` supplies always-loaded workspace, app structure, runtime, and publishing rules. `src/skills.ts` registers five on-demand harness skills from bundled Markdown: views and file routing, backend functions, SQLite and relations, Preact composition, and Preact performance. The harness projects them into its skill discovery system each turn; app workspaces do not need copies of this repository's `.agents` directory.
+
+The Preact skills adapt the applicable principles from the repository's `vercel-composition-patterns` and `vercel-react-best-practices` skills to generated host components and reactive TailorKit clients. React 19, Next.js, and DOM-specific APIs do not apply. Keep the app guidance aligned with the CLI scaffold, `packages/app/src` public APIs, `packages/vite/src/builder` routing/migrations, and the Durable Object runtime in `apps/apps-worker/src`.
+
 ## Durable turns
 
 `@tailorkit/agent/workflows` exports `appAgent(input)`. Start it with `start()` from `workflow/api`; the web host discovers it through `apps/web/workflows/app-agent.ts`. The workflow imports the agent dynamically from its step module. Node APIs, credentials and sandbox objects stay inside steps.
