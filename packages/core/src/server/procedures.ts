@@ -1,3 +1,4 @@
+import { createORPCErrorFromJson, isORPCErrorJson } from "@orpc/client";
 import { ORPCError, os } from "@orpc/server";
 import { cliAuthVerifyToken } from "@tailorkit/client-platform/client";
 
@@ -77,14 +78,26 @@ export const getCliDeployToken = (request: Request): string => {
   return token;
 };
 
+const verifyCliDeployToken = async (context: Context) => {
+  try {
+    return await cliAuthVerifyToken({
+      body: {
+        deployToken: getCliDeployToken(context.request),
+      },
+      client: context.platform,
+      headers: context.platformHeaders,
+    });
+  } catch (error) {
+    if (isORPCErrorJson(error)) {
+      throw createORPCErrorFromJson(error);
+    }
+    // oxlint-disable-next-line typescript/only-throw-error -- Preserve non-oRPC transport failures without classifying them as expired credentials.
+    throw error;
+  }
+};
+
 export const requireCliDeployToken = o.middleware(async ({ context, next }) => {
-  const result = await cliAuthVerifyToken({
-    body: {
-      deployToken: getCliDeployToken(context.request),
-    },
-    client: context.platform,
-    headers: context.platformHeaders,
-  });
+  const result = await verifyCliDeployToken(context);
 
   const token = "data" in result ? result.data : result;
 
