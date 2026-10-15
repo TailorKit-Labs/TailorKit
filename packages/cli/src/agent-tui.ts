@@ -24,13 +24,18 @@ interface AgentTuiOptions {
   threadId?: string;
 }
 
-export const openAgentTui = async ({
-  client,
-  hostUrl,
-  appId,
-  schemaPath,
-  threadId: requestedThreadId,
-}: AgentTuiOptions) => {
+export const openAgentTui = async (
+  {
+    client,
+    hostUrl,
+    appId,
+    schemaPath,
+    threadId: requestedThreadId,
+  }: AgentTuiOptions,
+  waitForRetry = async (milliseconds: number, signal?: AbortSignal) => {
+    await delay(milliseconds, undefined, { signal });
+  }
+) => {
   let threadId = requestedThreadId;
   type ChatInput = Parameters<TailorKitRouterClient["appAgent"]["chat"]>[0];
   let resume: AgentRunCursor | undefined;
@@ -103,7 +108,7 @@ export const openAgentTui = async ({
           throw error;
         }
         // oxlint-disable-next-line no-await-in-loop -- Retry this read, never the initial workflow submission; abort interrupts the backoff.
-        await delay(1000 * failures, undefined, { signal });
+        await waitForRetry(1000 * failures, signal);
       }
     }
   };

@@ -1,5 +1,6 @@
 /* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-member-access -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import {
+  cp,
   readFile,
   writeFile,
   rm,
@@ -23,7 +24,7 @@ import type {
 import { Window } from "happy-dom";
 import type { VNode } from "preact";
 import { build } from "vite";
-import { expect, it, vi } from "vite-plus/test";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vite-plus/test";
 import type { z } from "zod";
 
 import { tailorkit } from "#index";
@@ -160,123 +161,178 @@ it("builds file routes with a configured server and blocks server imports from t
   } finally {
     await rm(root, { force: true, recursive: true });
   }
-}, 60_000);
+});
 
-it("builds separate artifacts and rejects accidental imports of server code", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-server-build-"));
-  await createDatabaseTestApp(root);
-  const client = await readFile(path.join(root, "src/root.tsx"), "utf-8");
-  const sourceFiles = await readdir(path.join(root, "src"), {
-    recursive: true,
+describe("database app builds", () => {
+  let template: string | undefined;
+
+  beforeAll(async () => {
+    template = await mkdtemp(
+      path.join(tmpdir(), "tailorkit-database-template-")
+    );
+    await createDatabaseTestApp(template);
   });
-  try {
-    await buildFixture({ cwd: root });
-    const browser = await readFile(
-      path.join(root, ".tailorkit/client/client.js"),
-      "utf-8"
-    );
-    const server = await readFile(
-      path.join(root, ".tailorkit/server/server.js"),
-      "utf-8"
-    );
-    // Keep a small app below this budget, including its schemas and ORM.
-    expect(Buffer.byteLength(server)).toBeLessThan(150_000);
-    expect(server).not.toContain("tailorkit_receipts");
-    expect(server).not.toContain("cloudflare:workers");
-    expect(server).not.toContain("node:async_hooks");
-    expect(server).not.toContain(
-      "CREATE TABLE IF NOT EXISTS tailorkit_migrations"
-    );
-    expect(server).toContain("CREATE TABLE `todos`");
-    expect(browser).not.toContain("tailorkit_migrations");
-    expect(browser).not.toContain("CREATE TABLE `todos`");
-    expect(browser).not.toContain("tailorkit_receipts");
-    expect(browser).not.toContain("PRIVATE_DATABASE_TEST");
-    expect(browser).not.toContain("cloudflare:workers");
-    expect(browser).not.toContain("jwtVerify");
-    expect(browser).not.toContain("SignJWT");
-    expect(await readdir(path.join(root, "src"), { recursive: true })).toEqual(
-      sourceFiles
-    );
-    expect(sourceFiles).not.toContain("server.gen.ts");
-    expect(
-      JSON.parse(
+  afterAll(async () => {
+    if (template !== undefined) {
+      await rm(template, { force: true, recursive: true });
+    }
+  });
+
+  const withDatabaseApp = async (check: (root: string) => Promise<void>) => {
+    const source = requireValue(template);
+    const root = await mkdtemp(path.join(tmpdir(), "tailorkit-server-build-"));
+    try {
+      // Generate migrations once, then give each build its own sources and outputs.
+      await Promise.all(
+        ["package.json", "tailorkit.config.mjs", "src"].map(
+          async (filename) => {
+            await cp(path.join(source, filename), path.join(root, filename), {
+              recursive: true,
+            });
+          }
+        )
+      );
+      await linkTestDependencies(root);
+      await check(root);
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  };
+
+  it("builds separate artifacts without exposing server code to the browser", async () => {
+    await withDatabaseApp(async (root) => {
+      const sourceFiles = await readdir(path.join(root, "src"), {
+        recursive: true,
+      });
+      await buildFixture({ cwd: root });
+      const browser = await readFile(
+        path.join(root, ".tailorkit/client/client.js"),
+        "utf-8"
+      );
+      const server = await readFile(
+        path.join(root, ".tailorkit/server/server.js"),
+        "utf-8"
+      );
+      // Keep a small app below this budget, including its schemas and ORM.
+      expect(Buffer.byteLength(server)).toBeLessThan(150_000);
+      expect(server).not.toContain("tailorkit_receipts");
+      expect(server).not.toContain("cloudflare:workers");
+      expect(server).not.toContain("node:async_hooks");
+      expect(server).not.toContain(
+        "CREATE TABLE IF NOT EXISTS tailorkit_migrations"
+      );
+      expect(server).toContain("CREATE TABLE `todos`");
+      expect(browser).not.toContain("tailorkit_migrations");
+      expect(browser).not.toContain("CREATE TABLE `todos`");
+      expect(browser).not.toContain("tailorkit_receipts");
+      expect(browser).not.toContain("PRIVATE_DATABASE_TEST");
+      expect(browser).not.toContain("cloudflare:workers");
+      expect(browser).not.toContain("jwtVerify");
+      expect(browser).not.toContain("SignJWT");
+      expect(
+        await readdir(path.join(root, "src"), { recursive: true })
+      ).toEqual(sourceFiles);
+      expect(sourceFiles).not.toContain("server.gen.ts");
+      expect(
+        JSON.parse(
+          await readFile(
+            path.join(root, ".tailorkit/tailorkit-upload.json"),
+            "utf-8"
+          )
+        ).assets
+      ).toEqual({ client: "client/client.js", server: "server/server.js" });
+      const migrationFiles = await readdir(
+        path.join(root, "src/db/migrations"),
+        {
+          recursive: true,
+        }
+      );
+      expect(
+        await readdir(path.join(root, ".tailorkit/migrations"), {
+          recursive: true,
+        })
+      ).toEqual(migrationFiles);
+      await Promise.all(
+        migrationFiles
+          .filter((filename) => filename.endsWith("migration.sql"))
+          .map(async (file) => {
+            expect(
+              await readFile(
+                path.join(root, ".tailorkit/migrations", file),
+                "utf-8"
+              )
+            ).toBe(
+              await readFile(
+                path.join(root, "src/db/migrations", file),
+                "utf-8"
+              )
+            );
+          })
+      );
+    });
+  });
+
+  it("preserves the client bundle and migrations with custom output", async () => {
+    await withDatabaseApp(async (root) => {
+      await buildFixture({ cwd: root });
+      const browser = await readFile(
+        path.join(root, ".tailorkit/client/client.js"),
+        "utf-8"
+      );
+      const migrationFiles = await readdir(
+        path.join(root, "src/db/migrations"),
+        {
+          recursive: true,
+        }
+      );
+      await buildFixture({ cwd: root, outDir: ".tailorkit/custom" });
+      expect(
         await readFile(
-          path.join(root, ".tailorkit/tailorkit-upload.json"),
+          path.join(root, ".tailorkit/custom/client/client.js"),
           "utf-8"
         )
-      ).assets
-    ).toEqual({ client: "client/client.js", server: "server/server.js" });
-    const migrationFiles = await readdir(path.join(root, "src/db/migrations"), {
-      recursive: true,
-    });
-    expect(
-      await readdir(path.join(root, ".tailorkit/migrations"), {
-        recursive: true,
-      })
-    ).toEqual(migrationFiles);
-    await Promise.all(
-      migrationFiles
-        .filter((filename) => filename.endsWith("migration.sql"))
-        .map(async (file) => {
-          expect(
-            await readFile(
-              path.join(root, ".tailorkit/migrations", file),
-              "utf-8"
-            )
-          ).toBe(
-            await readFile(path.join(root, "src/db/migrations", file), "utf-8")
-          );
-        })
-    );
-    await buildFixture({ cwd: root, outDir: ".tailorkit/custom" });
-    expect(
-      await readFile(
-        path.join(root, ".tailorkit/custom/client/client.js"),
+      ).toBe(browser);
+      const customServer = await readFile(
+        path.join(root, ".tailorkit/custom/server/server.js"),
         "utf-8"
-      )
-    ).toBe(browser);
-    const customServer = await readFile(
-      path.join(root, ".tailorkit/custom/server/server.js"),
-      "utf-8"
-    );
-    expect(customServer).not.toContain(
-      "CREATE TABLE IF NOT EXISTS tailorkit_migrations"
-    );
-    expect(customServer).toContain("CREATE TABLE `todos`");
-    expect(
-      await readdir(path.join(root, ".tailorkit/custom/migrations"), {
-        recursive: true,
-      })
-    ).toEqual(migrationFiles);
-    await writeFile(
-      path.join(root, "src/root.tsx"),
-      `import "./server";\n${client}`
-    );
-    await expect(buildFixture({ cwd: root })).rejects.toThrow(
-      "cannot be imported into a browser bundle"
-    );
-    await writeFile(
-      path.join(root, "src/root.tsx"),
-      `import "tailorkit/server";\n${client}`
-    );
-    await expect(buildFixture({ cwd: root })).rejects.toThrow(
-      "cannot be imported into a browser bundle"
-    );
-    await expect(
-      buildFixture({ cwd: root, outDir: "src/db/migrations" })
-    ).rejects.toThrow("must not overlap migration source");
-    await writeFile(
-      path.join(root, "src/root.tsx"),
-      `import "effect";\n${client}`
-    );
-    await expect(buildFixture({ cwd: root })).rejects.toThrow(
-      "cannot be imported into a browser bundle"
-    );
-  } finally {
-    await rm(root, { force: true, recursive: true });
-  }
-}, 60_000);
+      );
+      expect(customServer).not.toContain(
+        "CREATE TABLE IF NOT EXISTS tailorkit_migrations"
+      );
+      expect(customServer).toContain("CREATE TABLE `todos`");
+      expect(
+        await readdir(path.join(root, ".tailorkit/custom/migrations"), {
+          recursive: true,
+        })
+      ).toEqual(migrationFiles);
+    });
+  });
+
+  it.each(["./server", "tailorkit/server", "effect"])(
+    "rejects the browser's accidental import of %s",
+    async (specifier) => {
+      await withDatabaseApp(async (root) => {
+        const clientPath = path.join(root, "src/root.tsx");
+        const client = await readFile(clientPath, "utf-8");
+        await writeFile(
+          clientPath,
+          `import ${JSON.stringify(specifier)};\n${client}`
+        );
+        await expect(buildFixture({ cwd: root })).rejects.toThrow(
+          "cannot be imported into a browser bundle"
+        );
+      });
+    }
+  );
+
+  it("rejects build output overlapping the migration source", async () => {
+    await withDatabaseApp(async (root) => {
+      await expect(
+        buildFixture({ cwd: root, outDir: "src/db/migrations" })
+      ).rejects.toThrow("must not overlap migration source");
+    });
+  });
+});
 
 it("builds colocated instance resolvers as query-only server actions", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-instances-build-"));
@@ -536,30 +592,22 @@ it("builds colocated instance resolvers as query-only server actions", async () 
         'export function title(id: string) { return "PRIVATE_UPDATED:" + id; }'
       );
       await expect
-        .poll(
-          async () => {
-            const awaitedResult1 = await readFile(watchedServer, "utf-8");
-            return awaitedResult1.includes("PRIVATE_UPDATED");
-          },
-          {
-            timeout: 10_000,
-          }
-        )
+        .poll(async () => {
+          const awaitedResult1 = await readFile(watchedServer, "utf-8");
+          return awaitedResult1.includes("PRIVATE_UPDATED");
+        })
         .toBe(true);
       await writeFile(
         path.join(root, "src/slots/page/index.view.tsx"),
         viewSource.replace("PRIVATE_INITIALIZER", "RESOLVER_UPDATED")
       );
       await expect
-        .poll(
-          async () => {
-            const awaitedResult2 = await readFile(watchedServer, "utf-8").catch(
-              () => ""
-            );
-            return awaitedResult2.includes("RESOLVER_UPDATED");
-          },
-          { timeout: 10_000 }
-        )
+        .poll(async () => {
+          const awaitedResult2 = await readFile(watchedServer, "utf-8").catch(
+            () => ""
+          );
+          return awaitedResult2.includes("RESOLVER_UPDATED");
+        })
         .toBe(true);
       // The server watcher can finish while the client watcher is still
       // rebuilding and has temporarily cleared its output directory.
@@ -569,22 +617,16 @@ it("builds colocated instance resolvers as query-only server actions", async () 
             await readFile(
               path.join(root, ".tailorkit/watched/client/client.js"),
               "utf-8"
-            ).catch(() => ""),
-          { timeout: 10_000 }
+            ).catch(() => "")
         )
         .toContain(requireValue(names[0]));
       await rm(path.join(root, "src/slots/page/index.view.tsx"));
       await rm(path.join(root, "src/slots/panel.links/index.view.tsx"));
       await expect
-        .poll(
-          async () => {
-            const output = await readFile(watchedServer, "utf-8").catch(
-              () => ""
-            );
-            return !!output && !output.includes("RESOLVER_UPDATED");
-          },
-          { timeout: 10_000 }
-        )
+        .poll(async () => {
+          const output = await readFile(watchedServer, "utf-8").catch(() => "");
+          return !!output && !output.includes("RESOLVER_UPDATED");
+        })
         .toBe(true);
       const withoutInstances: ApplicationModule = await import(
         `${pathToFileURL(watchedServer).href}?instances-removed`
@@ -609,4 +651,4 @@ it("builds colocated instance resolvers as query-only server actions", async () 
   } finally {
     await rm(root, { force: true, recursive: true });
   }
-}, 60_000);
+});

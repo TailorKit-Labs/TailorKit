@@ -37,6 +37,5 @@ it.each([undefined, "history"])(
     } finally {
       await rm(root, { force: true, recursive: true });
     }
-  },
-  60_000
+  }
 );
