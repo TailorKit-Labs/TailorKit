@@ -9,6 +9,7 @@ import { z } from "zod";
 
 import { withAppAssetUrl } from "#asset-url";
 import { env } from "#env";
+import { forEachSequential } from "#for-each-sequential";
 import { createPreviewBuildStore } from "#preview-build-store";
 import { ensurePreviewDeveloperGrace } from "#preview-lifecycle";
 import { createPreviewViewerToken } from "#preview-token";
@@ -162,27 +163,29 @@ export const accepted = protectedRouter
   .handler(async ({ context, input }) => {
     const kv = requireKV();
     const scopes = canonicalizeScopes(input.body.scopes);
-    const items = [];
+    const items: {
+      app: z.output<typeof AppWithCurrentDeployment>;
+      preview: z.output<typeof previewMetadata>;
+    }[] = [];
     const seen = new Set<string>();
-    for (const grantId of input.body.grantIds) {
-      // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
+    await forEachSequential(input.body.grantIds, async (grantId) => {
       const raw = await kv.get(grantKey(grantId));
       if (!(raw !== undefined && raw !== null && raw !== "")) {
-        continue;
+        return;
       }
       let grant: Grant;
       try {
         grant = grantSchema.parse(JSON.parse(raw));
       } catch {
-        continue;
+        return;
       }
       if (
         grant.projectId !== context.project.id ||
         !scopes.some(({ scope }) => scopeMatches(grant.scope, scope))
       ) {
-        continue;
+        return;
       }
-      // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
+
       const session = await db.query.previewSession.findFirst({
         where: {
           id: grant.sessionId,
@@ -199,10 +202,9 @@ export const accepted = protectedRouter
         !session?.app ||
         session.expiresAt <= new Date() ||
         seen.has(session.app.id) ||
-        // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
         !(await ensurePreviewDeveloperGrace(kv, session.id))
       ) {
-        continue;
+        return;
       }
       seen.add(session.app.id);
       const websocketUrl = new URL(
@@ -211,7 +213,7 @@ export const accepted = protectedRouter
       );
       websocketUrl.searchParams.set("session", session.id);
       websocketUrl.searchParams.set("role", "viewer");
-      // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
+
       const build = await createPreviewBuildStore(kv).current(session.id);
       const app = withAppAssetUrl(
         session.app,
@@ -231,7 +233,7 @@ export const accepted = protectedRouter
           websocketUrl: websocketUrl.href,
         },
       });
-    }
+    });
     return { body: { items } };
   });
 

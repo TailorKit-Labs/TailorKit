@@ -1,8 +1,14 @@
-import { describe, expect, it } from "vite-plus/test";
+import type { Mock } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
 import { createTailorKitClient } from "./client";
 import { createTailorKitServer } from "./handler";
+
+const platformRequests = (request: Mock<typeof fetch>): Request[] =>
+  request.mock.calls.map(([input, init]) =>
+    input instanceof Request ? input : new Request(input, init)
+  );
 
 const testScopeSchema = z.record(z.string(), z.string().min(1));
 const tailor = createTailorKitServer({
@@ -37,20 +43,16 @@ const requestImplementationImplementation = (origin: string) =>
 
 describe("createTailorKitServer", () => {
   it("requests app backend tokens from the platform with host credentials and verified scopes", async () => {
-    const requests: Request[] = [];
+    const platformFetch = vi.fn<typeof fetch>().mockResolvedValueOnce(
+      Response.json({
+        expiresAt: 123,
+        token: "platform-token",
+        url: "https://runtime.test/rpc",
+      })
+    );
     const server = createTailorKitServer({
       $internal: {
-        // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-        platformFetch: async (input, init) => {
-          requests.push(
-            input instanceof Request ? input : new Request(input, init)
-          );
-          return Response.json({
-            expiresAt: 123,
-            token: "platform-token",
-            url: "https://runtime.test/rpc",
-          });
-        },
+        platformFetch,
       },
       baseUrl: "https://host.test/api/tailorkit",
       components: {},
@@ -73,7 +75,7 @@ describe("createTailorKitServer", () => {
       token: "platform-token",
       url: "https://runtime.test/rpc",
     });
-    const [issuedRequest] = requests;
+    const [issuedRequest] = platformRequests(platformFetch);
     if (!issuedRequest) {
       throw new Error("Expected a platform token request");
     }
@@ -92,20 +94,16 @@ describe("createTailorKitServer", () => {
   const requestImplementation = requestImplementationImplementation;
 
   it("issues the public tool destination and checks the browser origin behind a proxy", async () => {
-    const requests: Request[] = [];
+    const platformFetch = vi.fn<typeof fetch>().mockResolvedValueOnce(
+      Response.json({
+        expiresAt: 123,
+        token: "platform-token",
+        url: "https://runtime.test/rpc",
+      })
+    );
     const server = createTailorKitServer({
       $internal: {
-        // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-        platformFetch: async (input, init) => {
-          requests.push(
-            input instanceof Request ? input : new Request(input, init)
-          );
-          return Response.json({
-            expiresAt: 123,
-            token: "platform-token",
-            url: "https://runtime.test/rpc",
-          });
-        },
+        platformFetch,
       },
       baseUrl: "https://host.test/custom/tailorkit/",
       components: {},
@@ -121,7 +119,7 @@ describe("createTailorKitServer", () => {
       authentication
     );
     expect(awaitedResult1.status).toBe(200);
-    expect(await requests[0]?.json()).toMatchObject({
+    expect(await platformRequests(platformFetch)[0]?.json()).toMatchObject({
       toolUrl: "https://host.test/custom/tailorkit/tools/execute",
     });
     const awaitedResult2 = await server.handler(
@@ -134,7 +132,7 @@ describe("createTailorKitServer", () => {
       authentication
     );
     expect(awaitedResult3.status).toBe(400);
-    expect(requests).toHaveLength(1);
+    expect(platformRequests(platformFetch)).toHaveLength(1);
   });
 
   it.each([
@@ -241,19 +239,17 @@ describe("createTailorKitServer", () => {
   });
 
   it("returns platform scope denials without issuing a backend session", async () => {
-    const requests: Request[] = [];
+    const platformFetch = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        Response.json(
+          { code: "NOT_FOUND", message: "Not found" },
+          { status: 404 }
+        )
+      );
     const server = createTailorKitServer({
       $internal: {
-        // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-        platformFetch: async (input, init) => {
-          requests.push(
-            input instanceof Request ? input : new Request(input, init)
-          );
-          return Response.json(
-            { code: "NOT_FOUND", message: "Not found" },
-            { status: 404 }
-          );
-        },
+        platformFetch,
       },
       baseUrl: "https://host.test/api/tailorkit",
       components: {},
@@ -271,7 +267,7 @@ describe("createTailorKitServer", () => {
     expect(response.status).toBe(404);
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(await response.json()).toMatchObject({ code: "NOT_FOUND" });
-    expect(requests).toHaveLength(1);
+    expect(platformRequests(platformFetch)).toHaveLength(1);
   });
 
   const authenticateImplementation = authenticateImplementationImplementation;
@@ -322,14 +318,12 @@ describe("createTailorKitServer", () => {
   const authenticateImplementation2 = authenticateImplementation2Implementation;
 
   it("treats scopes= as an empty app and preview selection", async () => {
-    let platformCalls = 0;
+    const platformFetch = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json({ items: [] }));
     const server = createTailorKitServer({
       $internal: {
-        // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-        platformFetch: async () => {
-          platformCalls += 1;
-          return Response.json({ items: [] });
-        },
+        platformFetch,
       },
       baseUrl: "https://example.com/api/tailorkit",
       components: {},
@@ -350,7 +344,7 @@ describe("createTailorKitServer", () => {
       { authenticate }
     );
     expect(metadata.status).toBe(404);
-    expect(platformCalls).toBe(0);
+    expect(platformFetch).not.toHaveBeenCalled();
   });
 
   it("preserves hosted bundle URLs", async () => {
@@ -361,12 +355,12 @@ describe("createTailorKitServer", () => {
     };
     const server = createTailorKitServer({
       $internal: {
-        // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-        platformFetch: async () =>
+        platformFetch: vi.fn<typeof fetch>().mockResolvedValueOnce(
           Response.json({
             items: [app],
             pagination: { hasMore: false, page: 1, pageSize: 100 },
-          }),
+          })
+        ),
       },
       baseUrl: "https://example.com/api/tailorkit",
       components: {},
@@ -526,18 +520,13 @@ describe("createTailorKitServer", () => {
   });
 
   it("approves CLI auth from the built-in approval page", async () => {
-    const requests: Request[] = [];
+    const platformFetch = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json({ id: "cli_auth_session_1" }));
     const server = createTailorKitServer({
       $internal: {
         platformBaseUrl: "http://localhost:3000/api/platform",
-        // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-        platformFetch: async (request, init) => {
-          const platformRequest =
-            request instanceof Request ? request : new Request(request, init);
-          requests.push(platformRequest);
-
-          return Response.json({ id: "cli_auth_session_1" });
-        },
+        platformFetch,
         platformHeaders: { authorization: "Bearer host-token" },
       },
       baseUrl: "https://example.com/api/tailorkit",
@@ -558,29 +547,26 @@ describe("createTailorKitServer", () => {
 
     const html = await response.text();
     expect(html).toContain("CLI login approved");
-    expect(requests[0]?.url).toBe(
+    expect(platformRequests(platformFetch)[0]?.url).toBe(
       "http://localhost:3000/api/platform/cli-auth/approve"
     );
-    expect(requests[0]?.headers.get("authorization")).toBe("Bearer host-token");
-    await expect(requests[0]?.json()).resolves.toEqual({
+    expect(
+      platformRequests(platformFetch)[0]?.headers.get("authorization")
+    ).toBe("Bearer host-token");
+    await expect(platformRequests(platformFetch)[0]?.json()).resolves.toEqual({
       scope: { name: "org", value: { orgId: "org_1" } },
       userCode: "ABC-123-XYZ",
     });
   });
 
   it("uses projectKey as the default platform authorization header", async () => {
-    const requests: Request[] = [];
+    const platformFetch = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json({ id: "cli_auth_session_1" }));
     const server = createTailorKitServer({
       $internal: {
         platformBaseUrl: "http://localhost:3000/api/platform",
-        // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-        platformFetch: async (request, init) => {
-          const platformRequest =
-            request instanceof Request ? request : new Request(request, init);
-          requests.push(platformRequest);
-
-          return Response.json({ id: "cli_auth_session_1" });
-        },
+        platformFetch,
       },
       baseUrl: "https://example.com/api/tailorkit",
       components: {},
@@ -600,18 +586,18 @@ describe("createTailorKitServer", () => {
       { authenticate: () => ({ scopes: { org: { orgId: "org_1" } } }) }
     );
 
-    expect(requests[0]?.headers.get("authorization")).toBe(
-      "Bearer project-key"
-    );
+    expect(
+      platformRequests(platformFetch)[0]?.headers.get("authorization")
+    ).toBe("Bearer project-key");
   });
 
   it("surfaces rejected project keys during CLI auth start", async () => {
     const server = createTailorKitServer({
       $internal: {
         platformBaseUrl: "http://localhost:3000/api/platform",
-        // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-        platformFetch: async () =>
-          new Response("Unauthorized", { status: 401 }),
+        platformFetch: vi
+          .fn<typeof fetch>()
+          .mockResolvedValueOnce(new Response("Unauthorized", { status: 401 })),
       },
       baseUrl: "https://example.com/api/tailorkit",
       components: {},
@@ -648,9 +634,11 @@ describe("createTailorKitServer", () => {
     async ({ code, message, status }) => {
       const server = createTailorKitServer({
         $internal: {
-          // oxlint-disable-next-line require-await -- The fetch double must retain the asynchronous API contract.
-          platformFetch: async () =>
-            Response.json({ code, defined: false, message }, { status }),
+          platformFetch: vi
+            .fn<typeof fetch>()
+            .mockResolvedValueOnce(
+              Response.json({ code, defined: false, message }, { status })
+            ),
         },
         baseUrl: "https://example.com/api/tailorkit",
         components: {},

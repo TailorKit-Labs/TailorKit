@@ -4,6 +4,8 @@ import { useContext, useEffect } from "preact/hooks";
 import { act } from "preact/test-utils";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
+import type { ShellProps } from "./routing";
+
 vi.stubGlobal("__PREACT_VERSION__", "11.0.0");
 const { createFileClient, defineRoute } = await import("./routing");
 afterEach(() => vi.unstubAllGlobals());
@@ -15,18 +17,18 @@ it("keeps the app wrapper mounted across view changes and cleans it up on unmoun
   const Context = createContext("missing");
   const mount = vi.fn();
   const cleanup = vi.fn<() => void>();
+  const ShellComponent = ({ children }: ShellProps) => {
+    useEffect(() => {
+      mount();
+      return cleanup;
+    }, []);
+    return h(Context.Provider, { value: "shared" }, children);
+  };
   const client = createFileClient({
     layouts: [],
     root: {
       definition: defineRoute({
-        // oxlint-disable-next-line func-name-matching -- The named function is a React-compatible test component supplied through a component property.
-        shellComponent: function ShellComponent({ children }) {
-          useEffect(() => {
-            mount();
-            return cleanup;
-          }, []);
-          return h(Context.Provider, { value: "shared" }, children);
-        },
+        shellComponent: ShellComponent,
       }),
       filename: "src/root.tsx",
     },

@@ -1,4 +1,3 @@
-/* oxlint-disable typescript/no-unsafe-member-access, typescript/no-unsafe-return, typescript/no-unsafe-assignment -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import type {
   StandardSchemaV1,
   StandardJSONSchemaV1,
@@ -9,10 +8,27 @@ import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { StrictMode } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
+import { z } from "zod";
 
 import { createClient } from "#index";
 import type { TailorKitApp } from "#index";
 
+const actionRequestSchema = z.object({
+  json: z.object({
+    args: z.object({
+      context: z.record(z.string(), z.json()),
+      path: z.string(),
+      slot: z.string(),
+    }),
+  }),
+});
+const userRequestSchema = z.object({
+  json: z.object({
+    args: z.object({
+      context: z.object({ user: z.object({ id: z.string() }) }),
+    }),
+  }),
+});
 const requireValue = <T,>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
@@ -75,7 +91,7 @@ const url = (input: Parameters<typeof fetch>[0]) =>
   new URL(input instanceof Request ? input.url : String(input));
 
 const mockFetch = () =>
-  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
+  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
   vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
     const path = url(input).pathname;
     if (path.endsWith("/apps")) {
@@ -184,8 +200,7 @@ it.each(["apps", "single", "page"] as const)(
       isRefetching: false,
     });
     const { fetch } = result.current;
-    // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-    await act(async () => {
+    act(() => {
       requireValue(pending[0])(response());
     });
     await waitFor(() => {
@@ -276,9 +291,9 @@ it("uses the closest supported ancestor and excludes deeper loading context", as
     );
   });
 
-  const requestPayload = await new Response(
-    calls("/actions")[0]?.[1]?.body
-  ).json();
+  const requestPayload = actionRequestSchema.parse(
+    await new Response(calls("/actions")[0]?.[1]?.body).json()
+  );
   expect(requestPayload.json.args).toEqual({
     context: { user: { id: "u1" } },
     path: "/",
@@ -496,18 +511,18 @@ it("clears previous data and ignores late responses after context changes", asyn
     expect(pending).toHaveLength(2);
   });
   expect(pending[0]?.signal?.aborted).toBe(true);
-  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-  await act(async () => {
+  act(() => {
     requireValue(pending[0]).resolve(Response.json({ json: instances }));
   });
   expect(result.current.data).toBeUndefined();
   expect(result.current.isPending).toBe(true);
   const fresh = [{ data: { userId: "u2" }, key: "fresh", metadata: {} }];
-  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-  await act(async () => {
+  act(() => {
     requireValue(pending[1]).resolve(Response.json({ json: fresh }));
   });
-  expect(result.current.data).toEqual(withApp(fresh));
+  await waitFor(() => {
+    expect(result.current.data).toEqual(withApp(fresh));
+  });
   rerender({ userId: "u3" });
   await waitFor(() => {
     expect(pending).toHaveLength(3);
@@ -515,8 +530,7 @@ it("clears previous data and ignores late responses after context changes", asyn
   expect(result.current.data).toBeUndefined();
   unmount();
   expect(pending[2]?.signal?.aborted).toBe(true);
-  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-  await act(async () => {
+  act(() => {
     requireValue(pending[2]).resolve(Response.json({ json: instances }));
   });
 });
@@ -651,7 +665,9 @@ it("works in Strict Mode and isolates different roots", async () => {
   });
   const resolvedUsers = await Promise.all(
     calls("/actions").map(async ([, options]) => {
-      const request = await new Response(options?.body).json();
+      const request = userRequestSchema.parse(
+        await new Response(options?.body).json()
+      );
       return request.json.args.context.user.id;
     })
   );
@@ -769,8 +785,7 @@ it("discovers apps through useApps before resolving their instances", async () =
   });
   expect(result.current.isPending).toBe(true);
   expect(calls("/backend/session")).toHaveLength(0);
-  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-  await act(async () => {
+  act(() => {
     finishApps(Response.json([app]));
   });
   await waitFor(() => {
@@ -796,7 +811,9 @@ it("aggregates apps in discovery order, resolves in parallel, and preserves dupl
 
   vi.mocked(globalThis.fetch).mockImplementation(async (input, options) => {
     if (url(input).pathname.endsWith("/backend/session")) {
-      const { appId } = await new Response(options?.body).json();
+      const { appId } = z
+        .object({ appId: z.string() })
+        .parse(await new Response(options?.body).json());
       return Response.json({
         expiresAt: Date.now() + 300_000,
         token: appId,
@@ -839,24 +856,25 @@ it("aggregates apps in discovery order, resolves in parallel, and preserves dupl
     "Bearer app_1",
     "Bearer app_2",
   ]);
-  expect(pending.map(({ body }) => JSON.parse(body).json.args.path)).toEqual([
-    "/customers/detail",
-    "/",
-  ]);
-  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-  await act(async () => {
+  expect(
+    pending.map(
+      ({ body }) => actionRequestSchema.parse(JSON.parse(body)).json.args.path
+    )
+  ).toEqual(["/customers/detail", "/"]);
+  act(() => {
     requireValue(pending[1]).resolve(Response.json({ json: instances }));
   });
   expect(result.current.isPending).toBe(true);
   expect(result.current.data).toBeUndefined();
-  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-  await act(async () => {
+  act(() => {
     requireValue(pending[0]).resolve(Response.json({ json: instances }));
   });
-  expect(result.current.data).toEqual([
-    ...withApp(instances),
-    ...withApp(instances, second),
-  ]);
+  await waitFor(() => {
+    expect(result.current.data).toEqual([
+      ...withApp(instances),
+      ...withApp(instances, second),
+    ]);
+  });
   expect(calls("/meta")).toHaveLength(0);
 });
 
@@ -973,18 +991,18 @@ it("cancels every app resolver and ignores late results when the app list change
   expect(
     pending.slice(0, 2).every(({ signal }) => signal?.aborted === true)
   ).toBe(true);
-  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-  await act(async () => {
+  act(() => {
     for (const request of pending.slice(0, 2)) {
       request.resolve(Response.json({ json: instances }));
     }
   });
   expect(result.current.data).toBeUndefined();
-  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-  await act(async () => {
+  act(() => {
     requireValue(pending[2]).resolve(Response.json({ json: instances }));
   });
-  expect(result.current.data).toEqual(withApp(instances, second));
+  await waitFor(() => {
+    expect(result.current.data).toEqual(withApp(instances, second));
+  });
   act(() => {
     void result.current.fetch();
   });
@@ -1031,8 +1049,7 @@ it("clears the aggregate and cancels remaining resolvers when any app fails", as
   await waitFor(() => {
     expect(pending).toHaveLength(2);
   });
-  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-  await act(async () => {
+  act(() => {
     requireValue(pending[0]).resolve(
       Response.json(
         {
@@ -1238,7 +1255,7 @@ it("retains single-slot entries when registered context changes", async () => {
   });
   const previous = result.current.data;
   rerender({ userId: "u2" });
-  await act(async () => {});
+  act(() => {});
   expect(result.current.isPending).toBe(false);
   expect(result.current.data).toBe(previous);
   expect(calls("/meta")).toHaveLength(0);
@@ -1312,8 +1329,7 @@ it.each(["page", "single"] as const)(
         expect(calls("/actions")).toHaveLength(1);
       });
       expect(complete).toBe(false);
-      // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-      await act(async () => {
+      act(() => {
         finishInstances(Response.json({ json: instances }));
       });
     }

@@ -4,6 +4,8 @@ import path from "node:path";
 
 import type { AppMigration } from "@tailorkit/app/protocol";
 
+import { forEachSequential } from "#for-each-sequential";
+
 import { isMissingFile } from "./fs-errors";
 
 /** Read the timestamped migration folders produced by the workspace's Drizzle Kit version. */
@@ -31,14 +33,14 @@ export const readAppMigrations = async (
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
     .toSorted();
-  for (const name of names) {
+  await forEachSequential(names, async (name) => {
     if (!/^\d{14}_[\w-]+$/u.test(name)) {
       throw new Error(
         `Unsupported app migration folder: ${name}. Use Drizzle Kit v1 migrations.`
       );
     }
     const file = path.join(directory, name, "migration.sql");
-    // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
+
     const sql = await readFile(file, "utf-8");
     const statements = sql
       .split("--> statement-breakpoint")
@@ -53,6 +55,6 @@ export const readAppMigrations = async (
       statements,
     });
     files.push(file);
-  }
+  });
   return { files, migrations };
 };

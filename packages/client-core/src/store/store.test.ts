@@ -80,7 +80,7 @@ describe("client stores", () => {
 
   it("shares discovery requests and retains snapshots across subscription lifecycles", async () => {
     const response = deferredResponse();
-    const fetchMock = vi.fn(async () => await response.promise);
+    const fetchMock = vi.fn<typeof fetch>(async () => await response.promise);
     vi.stubGlobal("fetch", fetchMock);
     const store = createTailorKitStore({
       baseUrl: "https://host.test/api/tailorkit",
@@ -109,10 +109,9 @@ describe("client stores", () => {
       new URL("https://host.test/api/tailorkit/apps"),
       expect.objectContaining({
         credentials: "same-origin",
-        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-        signal: expect.any(AbortSignal),
       })
     );
+    expect(fetchMock.mock.calls[0]?.[1]?.signal).toBeInstanceOf(AbortSignal);
     stopAgain();
   });
 

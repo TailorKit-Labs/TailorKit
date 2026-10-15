@@ -70,7 +70,23 @@ const controlledViewProps = (
   return { context: request.context, status: "ready", view: request.view };
 };
 
-// oxlint-disable-next-line eslint/complexity -- Keep this validation or rendering lifecycle together: its guards share the same state, cleanup, and error handling.
+const validateViewInstance = (
+  instance: ViewInstance,
+  selected: string
+): void => {
+  if (
+    !(instance !== undefined && instance !== null) ||
+    !isObjectValue(instance) ||
+    !isStringValue(instance.key) ||
+    !instance.key ||
+    !(instance.metadata !== undefined && instance.metadata !== null) ||
+    !isObjectValue(instance.metadata) ||
+    Array.isArray(instance.metadata)
+  ) {
+    throw new TypeError(`Invalid instance for view "${selected}".`);
+  }
+};
+
 export const resolveView = (client: AppClient, request: ViewRequest) => {
   const views = client.slots[request.slot];
   if (views === undefined) {
@@ -109,17 +125,7 @@ export const resolveView = (client: AppClient, request: ViewRequest) => {
       throw new Error(`View "${selected}" does not support instances.`);
     }
     const { instance } = request;
-    if (
-      !(instance !== undefined && instance !== null) ||
-      !isObjectValue(instance) ||
-      !isStringValue(instance.key) ||
-      !instance.key ||
-      !(instance.metadata !== undefined && instance.metadata !== null) ||
-      !isObjectValue(instance.metadata) ||
-      Array.isArray(instance.metadata)
-    ) {
-      throw new TypeError(`Invalid instance for view "${selected}".`);
-    }
+    validateViewInstance(instance, selected);
     return { component: definition.component, props: { ...props, instance } };
   }
   return { component: definition.component, props };

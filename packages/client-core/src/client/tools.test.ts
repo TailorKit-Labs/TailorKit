@@ -1,4 +1,4 @@
-/* oxlint-disable typescript/no-unsafe-return, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
+import type { ToolImplementations } from "@tailorkit/core/schema";
 import { defineContract, tool } from "@tailorkit/core/schema";
 import { expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
@@ -7,8 +7,7 @@ import type { TailorKitApp } from "#types";
 
 import { createEndpointClient } from "./endpoints";
 
-// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-const app = { id: "installed-app" } as TailorKitApp;
+const app: TailorKitApp = { id: "installed-app" };
 const contract = defineContract({
   scopes: { workspace: z.object({ id: z.string() }) },
   tools: {
@@ -32,7 +31,9 @@ const identity = {
   toolUrl: "https://product.test/tools",
 };
 it("binds client tool calls to the installation and validates transformed inputs and outputs", async () => {
-  const implementation = vi.fn(({ input }) => input + 1);
+  const implementation = vi.fn<
+    ToolImplementations<typeof contract.tools, "client">["ui"]["select"]
+  >(({ input }) => input + 1);
   const bodies: unknown[] = [];
   const client = createEndpointClient({
     baseUrl: "https://product.test/api/tailorkit/",

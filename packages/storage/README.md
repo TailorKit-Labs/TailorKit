@@ -1,3 +1,3 @@
-# TailorKit Storage
+# TailorKit storage
 
-Shared file storage for the TailorKit platform.
+`@tailorkit/storage` implements shared file storage for the TailorKit platform.

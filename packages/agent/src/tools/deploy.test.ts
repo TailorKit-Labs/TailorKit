@@ -1,108 +1,122 @@
-/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-call, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
-import { beforeEach, expect, it, vi } from "vite-plus/test";
+import { expect, it } from "vite-plus/test";
 
-import { deployTool } from "./deploy";
-import type * as utilsModule from "./utils";
+import { createDeployTool } from "./deploy";
+import type { DeploymentSandbox } from "./deploy";
 
-const requireValue = <T>(value: T | null | undefined): T => {
-  if (value === null || value === undefined) {
-    throw new Error("Expected a defined value.");
-  }
-  return value;
-};
-
-const mocks = vi.hoisted(() => ({
-  nativeSandbox: vi.fn(),
-  runCommand: vi.fn(),
-}));
-vi.mock("./utils", async (original) => ({
-  ...(await original<typeof utilsModule>()),
-  toolNativeSandbox: mocks.nativeSandbox,
-}));
 const context = {
   agentToken: "private-token",
   appId: "selected-app",
   sandboxName: "sandbox-one",
 };
-
-beforeEach(() => {
-  vi.resetAllMocks();
-  mocks.nativeSandbox.mockResolvedValue({ runCommand: mocks.runCommand });
-});
-
-it("pins the authorized app and injects credentials only into the deploy process", async () => {
-  mocks.runCommand.mockResolvedValue({
-    exitCode: 0,
-    stderr: vi.fn<() => Promise<string>>().mockResolvedValue(""),
-    stdout: vi
-      .fn<() => Promise<string>>()
-      .mockResolvedValue("Deployment: published-one"),
-  });
-  const result = await requireValue(deployTool.execute)(
+const execute = async (
+  dependencies: Parameters<typeof createDeployTool>[0]
+) => {
+  const tool = createDeployTool(dependencies);
+  if (tool.execute === undefined) {
+    throw new Error("Missing deploy implementation.");
+  }
+  return await tool.execute(
     {},
     { context, messages: [], toolCallId: "deploy-one" }
   );
-  expect(result).toEqual({
-    exitCode: 0,
-    stderr: "",
-    stdout: "Deployment: published-one",
-  });
-  const [command] = requireValue(mocks.runCommand.mock.lastCall);
-  expect(command).toMatchObject({
-    args: [
-      "--dir",
-      "/tmp/tailorkit-cli",
-      "exec",
-      "tailorkit",
-      "deploy",
-      "--cwd",
-      "/workspace/app",
-      "--app-id",
-      context.appId,
-      "--no-interactive",
-    ],
-    cmd: "pnpm",
-    env: {
-      TAILORKIT_AGENT_TOKEN: context.agentToken,
+};
+const commandResult = (exitCode = 0, stdout = "", stderr = "") => ({
+  exitCode,
+  stderr: async () => await Promise.resolve(stderr),
+  stdout: async () => await Promise.resolve(stdout),
+});
+
+it("builds without credentials and publishes through the authorized host capability", async () => {
+  const commands: Parameters<DeploymentSandbox["runCommand"]>[0][] = [];
+  let published = false;
+  const sandbox: DeploymentSandbox = {
+    readFileToBuffer: async () => await Promise.resolve(null),
+    runCommand: async (command) => {
+      commands.push(command);
+      return await Promise.resolve(commandResult());
     },
-  });
-  expect(command.args.join(" ")).not.toContain(context.agentToken);
+  };
+  expect(
+    await execute({
+      publish: async (reader, authorization) => {
+        expect(reader).toBe(sandbox);
+        expect(authorization).toEqual(context);
+        expect(commands.map((command) => command.args)).toEqual([
+          ["exec", "tsc", "--noEmit"],
+          [
+            "exec",
+            "node",
+            "--input-type=module",
+            "--eval",
+            'import { build } from "vite"; await build({ build: { outDir: "/tmp/tailorkit-deployment" } });',
+          ],
+        ]);
+        published = true;
+        return await Promise.resolve("Deployment: published-one");
+      },
+      sandbox: async () => await Promise.resolve(sandbox),
+    })
+  ).toEqual({ exitCode: 0, stderr: "", stdout: "Deployment: published-one" });
+  expect(published).toBe(true);
+  for (const command of commands) {
+    expect(command.env).toEqual({ CI: "true", NO_COLOR: "1" });
+    expect(JSON.stringify(command)).not.toContain(context.agentToken);
+    expect(JSON.stringify(command)).not.toContain("TAILORKIT_AGENT_TOKEN");
+  }
 });
 
-it("returns failures for the agent to address and redacts echoed credentials", async () => {
-  mocks.runCommand.mockResolvedValue({
-    exitCode: 1,
-    stderr: vi
-      .fn<() => Promise<string>>()
-      .mockResolvedValue(`Rejected ${context.agentToken}`),
-    stdout: vi
-      .fn<() => Promise<string>>()
-      .mockResolvedValue(context.agentToken),
-  });
-  expect(
-    await requireValue(deployTool.execute)(
-      {},
-      { context, messages: [], toolCallId: "deploy-one" }
-    )
-  ).toEqual({
-    exitCode: 1,
-    stderr: "Rejected [redacted]",
-    stdout: "[redacted]",
-  });
-});
+it.each([0, 1])(
+  "does not publish after preparation command %s fails",
+  async (failedCommand) => {
+    let commands = 0;
+    let published = false;
+    const result = await execute({
+      publish: async () => {
+        published = true;
+        return await Promise.resolve("unexpected");
+      },
+      sandbox: async () =>
+        await Promise.resolve({
+          readFileToBuffer: async () => await Promise.resolve(null),
+          runCommand: async () => {
+            const failed = commands === failedCommand;
+            commands += 1;
+            return await Promise.resolve(
+              commandResult(
+                failed ? 1 : 0,
+                context.agentToken,
+                `Rejected ${context.agentToken}`
+              )
+            );
+          },
+        }),
+    });
+    expect(result).toEqual({
+      exitCode: 1,
+      stderr: "Rejected [redacted]",
+      stdout: "[redacted]",
+    });
+    expect(published).toBe(false);
+    expect(commands).toBe(failedCommand + 1);
+  }
+);
 
-it("redacts credentials from command transport failures", async () => {
-  mocks.runCommand.mockRejectedValue(
-    new Error(`Command failed: ${context.agentToken}`)
-  );
+it("redacts publication transport failures", async () => {
   expect(
-    await requireValue(deployTool.execute)(
-      {},
-      { context, messages: [], toolCallId: "deploy-one" }
-    )
+    await execute({
+      publish: async () =>
+        await Promise.reject(
+          new Error(`Publication failed: ${context.agentToken}`)
+        ),
+      sandbox: async () =>
+        await Promise.resolve({
+          readFileToBuffer: async () => await Promise.resolve(null),
+          runCommand: async () => await Promise.resolve(commandResult()),
+        }),
+    })
   ).toEqual({
     exitCode: 1,
-    stderr: "Command failed: [redacted]",
+    stderr: "Publication failed: [redacted]",
     stdout: "",
   });
 });

@@ -168,11 +168,10 @@ export const createExecution = (
           result: { ok: true as const, value },
           tables: [],
         })),
-        // oxlint-disable-next-line promise/prefer-await-to-callbacks -- This is an Effect recovery operator or transport callback, not a Node-style completion callback.
-        catchEffect((err) =>
+        catchEffect((failure) =>
           Effect.succeed({
             committed: false,
-            result: failedResult(err),
+            result: failedResult(failure),
             tables: [],
           })
         )

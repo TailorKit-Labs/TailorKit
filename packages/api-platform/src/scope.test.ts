@@ -1,4 +1,3 @@
-/* oxlint-disable typescript/no-unsafe-assignment -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { describe, expect, it } from "vite-plus/test";
 
 import { canonicalizeScope, scopeMatches, scopeSchema } from "./scope";
@@ -80,10 +79,10 @@ describe("scope canonicalization", () => {
   });
 
   it("rejects __proto__ keys instead of silently losing them during schema parsing", () => {
-    const rootValue = JSON.parse(
+    const rootValue: unknown = JSON.parse(
       '{"__proto__":"unexpected","orgId":"org_123"}'
     );
-    const nestedValue = JSON.parse(
+    const nestedValue: unknown = JSON.parse(
       '{"orgId":"org_123","labels":[{"__proto__":"unexpected"}]}'
     );
     expect(

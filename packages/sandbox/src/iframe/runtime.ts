@@ -19,8 +19,9 @@ type InitData = Extract<HostToIframePayload, { type: "init" }>["data"];
 const readCallbacksImplementation = (
   element: Element
 ): RemoteCallbackBinding[] => {
-  // oxlint-disable-next-line unicorn/prefer-dom-node-dataset -- SVG Element does not expose dataset in this public DOM type.
-  const value = element.getAttribute("data-tailorkit-callbacks");
+  const value = element.attributes.getNamedItem(
+    "data-tailorkit-callbacks"
+  )?.value;
   if (!(value !== undefined && value !== null && value !== "")) {
     return [];
   }

@@ -435,15 +435,16 @@ it("keeps reconnecting an active subscription beyond three failures", async () =
     readyState: 1,
     send: vi.fn(),
   });
-  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-  const connect = vi.fn(async () => {
-    if (connect.mock.calls.length <= 5) {
-      throw new Error("Offline");
-    }
-    // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-    // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    return socket as unknown as WebSocket;
-  });
+  const connect =
+    vi.fn<
+      NonNullable<NonNullable<Parameters<typeof createClient>[0]>["connect"]>
+    >();
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    connect.mockRejectedValueOnce(new Error("Offline"));
+  }
+  // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
+  // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
+  connect.mockResolvedValue(socket as unknown as WebSocket);
   const client = createClient({
     connect,
     getSession: vi

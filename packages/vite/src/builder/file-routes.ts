@@ -5,10 +5,9 @@ import path from "node:path";
 import { parseSync } from "vite";
 import type { ESTree, Plugin } from "vite";
 
-import { createDefineViewMatcher } from "./define-view";
+import { forEachSequential } from "#for-each-sequential";
 
-const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
-  typeof value === "object" && value !== null;
+import { childNodes, createDefineViewMatcher } from "./define-view";
 
 const clientRuntimeImport = "tailorkit:file-client-runtime";
 
@@ -126,18 +125,8 @@ export const inferFileView = (
         edits.push({ position: options.start + 1, text: defaults });
       }
     }
-    for (const value of Object.values(node)) {
-      const children = Array.isArray(value) ? value : [value];
-      for (const child of children) {
-        if (isObjectValue(child) && Boolean(child) && "type" in child) {
-          // SAFETY: These children come from the parsed ESTree AST, and only objects carrying a node type are visited.
-          visit(
-            /* oxlint-disable typescript/no-unsafe-type-assertion -- These children come from the parsed ESTree AST, and only objects carrying a node type are visited. */
-            child as ESTree.Node
-            /* oxlint-enable typescript/no-unsafe-type-assertion */
-          );
-        }
-      }
+    for (const child of childNodes(node)) {
+      visit(child);
     }
   };
   visit(parsed.program);
@@ -168,48 +157,48 @@ export const discoverFileRoutes = async (root: string) => {
         throw error;
       }
     })();
-    for (const entry of entries.toSorted((a, b) =>
-      a.name.localeCompare(b.name)
-    )) {
-      const filename = path.join(directory, entry.name);
-      if (entry.isDirectory()) {
-        // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
-        await scan(
-          filename,
-          slot ?? entry.name,
-          slot !== undefined && slot !== null && slot !== ""
-            ? `${prefix}${entry.name}/`
-            : ""
-        );
-      } else if (
-        entry.isFile() &&
-        slot !== undefined &&
-        slot !== null &&
-        slot !== ""
-      ) {
-        if (entry.name.endsWith(".view.tsx")) {
-          const location = fileViewLocation(filename, root);
-          if (location) {
-            views.push({ filename, ...location });
-          }
-        } else if (entry.name === "root.tsx" && !prefix) {
-          roots.push({ filename, slot });
-        } else if (
-          entry.name === "layout.tsx" ||
-          entry.name.endsWith(".layout.tsx")
-        ) {
-          const name =
-            entry.name === "layout.tsx"
-              ? prefix.replace(/\/$/u, "")
-              : prefix + entry.name.slice(0, -".layout.tsx".length);
-          layouts.push({
+    await forEachSequential(
+      entries.toSorted((a, b) => a.name.localeCompare(b.name)),
+      async (entry) => {
+        const filename = path.join(directory, entry.name);
+        if (entry.isDirectory()) {
+          await scan(
             filename,
-            path: name ? routePath(name, filename) : "/",
-            slot,
-          });
+            slot ?? entry.name,
+            slot !== undefined && slot !== null && slot !== ""
+              ? `${prefix}${entry.name}/`
+              : ""
+          );
+        } else if (
+          entry.isFile() &&
+          slot !== undefined &&
+          slot !== null &&
+          slot !== ""
+        ) {
+          if (entry.name.endsWith(".view.tsx")) {
+            const location = fileViewLocation(filename, root);
+            if (location) {
+              views.push({ filename, ...location });
+            }
+          } else if (entry.name === "root.tsx" && !prefix) {
+            roots.push({ filename, slot });
+          } else if (
+            entry.name === "layout.tsx" ||
+            entry.name.endsWith(".layout.tsx")
+          ) {
+            const name =
+              entry.name === "layout.tsx"
+                ? prefix.replace(/\/$/u, "")
+                : prefix + entry.name.slice(0, -".layout.tsx".length);
+            layouts.push({
+              filename,
+              path: name ? routePath(name, filename) : "/",
+              slot,
+            });
+          }
         }
       }
-    }
+    );
   };
   await scan(slotsDir);
   const rootFile = path.join(root, "src/root.tsx");

@@ -1,8 +1,8 @@
-/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
 import { defineContract } from "#schema/contract";
+import type { ToolImplementations } from "#schema/tools";
 import { tool } from "#schema/tools";
 
 import { createServer } from "./contract";
@@ -28,10 +28,6 @@ const identity = {
   scope: { name: "org", value: { id: "tenant" } },
   subjectId: "automation:billing",
 };
-const handler = vi.fn(({ input, context }) => ({
-  principal: context.identity.subjectId ?? context.identity.installationId,
-  value: input + 1,
-}));
 const contract = defineContract({
   scopes: { org: z.object({ id: z.string() }) },
   tools: {
@@ -48,6 +44,12 @@ const contract = defineContract({
     ui: { open: tool.client().input(z.string()).output(z.string()) },
   },
 });
+const handler = vi.fn<
+  ToolImplementations<typeof contract.tools, "server">["math"]["increment"]
+>(({ input, context }) => ({
+  principal: context.identity.subjectId ?? context.identity.installationId,
+  value: input + 1,
+}));
 // SAFETY: This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input.
 const server = createServer({
   $internal: {
@@ -189,6 +191,35 @@ const execute = async (
     { authenticate: () => null }
   );
 };
+it.each([
+  { requestId: "invalid" },
+  { requestId: "A".repeat(36) },
+  { requestId: 123 },
+  { requestId: undefined },
+  { path: 123 },
+  { extra: true },
+])(
+  "rejects malformed tool request fields before authentication: %j",
+  async (fields) => {
+    const before = handler.mock.calls.length;
+    const response = await server.handler(
+      new Request(toolUrl, {
+        body: JSON.stringify({
+          input: "41",
+          path: "math.increment",
+          requestId: "1a5febf3-e3af-4a01-89a7-35a4f1846114",
+          ...fields,
+        }),
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      }),
+      { authenticate: () => null }
+    );
+    expect(response.status).toBe(400);
+    expect(await response.text()).toBe("Invalid tool request");
+    expect(handler.mock.calls.length).toBe(before);
+  }
+);
 it("validates transformed inputs and exposes verified installation, principal, scope and request ID", async () => {
   const response = await execute(await token());
   expect(response.status).toBe(200);
@@ -297,7 +328,7 @@ it("uses the trusted public origin to verify tool destinations behind a proxy", 
   const proxied = createServer({
     $internal: {
       platformBaseUrl: issuer,
-      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+      // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
       platformFetch: async (url) =>
         (url instanceof Request ? url.url : String(url)).endsWith(
           "/runtime/keys"
@@ -381,13 +412,11 @@ it("refreshes once for a rotated key, coalesces requests and throttles unknown k
       verify(credential, toolUrl),
     ]);
     expect(fetchKeys).toHaveBeenCalledTimes(2);
-    for (const kid of ["forged-a", "forged-b"]) {
-      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+    await Array.fromAsync(["forged-a", "forged-b"], async (kid) => {
       await expect(
-        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
         verify(await token({}, pair.privateKey, kid), toolUrl)
       ).rejects.toThrow("Unknown signing key");
-    }
+    });
     expect(fetchKeys).toHaveBeenCalledTimes(2);
     vi.advanceTimersByTime(9999);
     await expect(

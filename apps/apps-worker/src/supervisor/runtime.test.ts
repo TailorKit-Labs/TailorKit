@@ -41,13 +41,11 @@ it.each([
       BUNDLES: { get: load },
       // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
-      DEPLOYMENTS:
-        /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
-        {
-          get: vi.fn<() => Promise<null>>().mockResolvedValue(null),
-          put: vi.fn(async () => {}),
-        } as unknown as KVNamespace,
-      /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
+      DEPLOYMENTS: {
+        get: vi.fn<() => Promise<null>>().mockResolvedValue(null),
+        put: vi.fn(async () => {}),
+      },
+
       PLATFORM_URL: "https://platform.test",
       RUNTIME_SERVICE_TOKEN: "private",
     });
@@ -67,13 +65,11 @@ it("rejects a token that expires while resolving deployment", async () => {
     BUNDLES: { get: vi.fn() },
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
-    DEPLOYMENTS:
-      /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
-      {
-        get: vi.fn<() => Promise<null>>().mockResolvedValue(null),
-        put: vi.fn(async () => {}),
-      } as unknown as KVNamespace,
-    /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
+    DEPLOYMENTS: {
+      get: vi.fn<() => Promise<null>>().mockResolvedValue(null),
+      put: vi.fn(async () => {}),
+    },
+
     PLATFORM_URL: "https://platform.test",
     RUNTIME_SERVICE_TOKEN: "private",
   });

@@ -55,14 +55,13 @@ export const app = pgTable(
   ]
 );
 
-// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
-export const App = createSelectSchema(app, {
+const AppSchema = createSelectSchema(app, {
   description: z.string().max(255).nullable(),
   name: z.string().max(127),
   scope: scopeSchema,
   scopeKey: scopeKeySchema,
 });
-export type App = z.output<typeof App>;
+export type App = z.output<typeof AppSchema>;
 
 /** Independent conversations for an app; their snapshots retain Pi journals. */
 export const appAgentThread = pgTable(
@@ -152,8 +151,7 @@ export const appDeployment = pgTable(
   ]
 );
 
-// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
-export const AppDeployment = createSelectSchema(appDeployment, {
+const AppDeploymentSchema = createSelectSchema(appDeployment, {
   views: z
     .array(
       z.object({
@@ -165,7 +163,7 @@ export const AppDeployment = createSelectSchema(appDeployment, {
     )
     .max(1000),
 });
-export type AppDeployment = z.output<typeof AppDeployment>;
+export type AppDeployment = z.output<typeof AppDeploymentSchema>;
 
 export const appDeploymentFileContentType = pgEnum(
   "app_deployment_file_content_type",
@@ -213,8 +211,7 @@ export const appDeploymentFile = pgTable(
   ]
 );
 
-// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
-export const AppDeploymentFile = createSelectSchema(appDeploymentFile, {
+const AppDeploymentFileSchema = createSelectSchema(appDeploymentFile, {
   objectKey: z
     .string()
     .max(512)
@@ -223,4 +220,10 @@ export const AppDeploymentFile = createSelectSchema(appDeploymentFile, {
       "Must be a valid object key like assets/client.js"
     ),
 });
-export type AppDeploymentFile = z.output<typeof AppDeploymentFile>;
+export type AppDeploymentFile = z.output<typeof AppDeploymentFileSchema>;
+
+export { AppSchema as App };
+
+export { AppDeploymentSchema as AppDeployment };
+
+export { AppDeploymentFileSchema as AppDeploymentFile };

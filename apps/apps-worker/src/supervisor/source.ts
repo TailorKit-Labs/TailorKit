@@ -34,26 +34,14 @@ export const metadataLifetimeSeconds = 300;
 const readBundleBytes = async (
   stream: ReadableStream<Uint8Array>
 ): Promise<Uint8Array<ArrayBuffer>> => {
-  const reader = stream.getReader();
   const chunks: Uint8Array[] = [];
   let length = 0;
-  try {
-    for (;;) {
-      // oxlint-disable-next-line no-await-in-loop -- Stream reads and cancellation must stay ordered and bounded.
-      const { done, value } = await reader.read();
-      if (done) {
-        break;
-      }
-      length += value.byteLength;
-      if (length > maxDeploymentBytes) {
-        // oxlint-disable-next-line no-await-in-loop -- Stream reads and cancellation must stay ordered and bounded.
-        await reader.cancel();
-        throw new Error("Server bundle exceeds deployment size limit");
-      }
-      chunks.push(value);
+  for await (const value of stream) {
+    length += value.byteLength;
+    if (length > maxDeploymentBytes) {
+      throw new Error("Server bundle exceeds deployment size limit");
     }
-  } finally {
-    reader.releaseLock();
+    chunks.push(value);
   }
   const bytes = new Uint8Array(length);
   let offset = 0;
@@ -67,7 +55,14 @@ const readBundleBytes = async (
 /** Only this trusted service sees platform credentials or the private R2 binding. */
 export const deploymentSource = (
   env: Pick<Env, "PLATFORM_URL" | "RUNTIME_SERVICE_TOKEN"> & {
-    DEPLOYMENTS: Pick<KVNamespace, "get" | "put">;
+    DEPLOYMENTS: {
+      get: (key: string, type: "json") => Promise<ServerDeployment | null>;
+      put: (
+        key: string,
+        value: string,
+        options: { expirationTtl: number }
+      ) => Promise<void>;
+    };
     BUNDLES: {
       get: (
         key: string

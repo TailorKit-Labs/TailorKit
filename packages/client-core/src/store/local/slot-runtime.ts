@@ -285,7 +285,7 @@ export const createSlotRuntime = (
           return;
         }
         updating = true;
-        do {
+        while (true) {
           queued = false;
           const nextQuery = getQuery();
           if (nextQuery !== observedQuery) {
@@ -305,8 +305,10 @@ export const createSlotRuntime = (
             stopPrevious?.();
           }
           listener();
-          // oxlint-disable-next-line no-unmodified-loop-condition -- The callback invoked by the loop updates this shared lifecycle or validation flag.
-        } while (queued && active);
+          if (!queued || !active) {
+            break;
+          }
+        }
         updating = false;
       };
       const stopInput = input.listen(refresh);

@@ -1,4 +1,3 @@
-/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import {
   mkdir,
   mkdtemp,
@@ -11,6 +10,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vite-plus/test";
+import { z } from "zod";
 
 import { generateApp } from "./generate";
 import type { TailorKitSchemaFile } from "./types";
@@ -132,9 +132,16 @@ describe("generateApp", () => {
         path.join(targetDirectory, "vite.config.ts"),
         "utf-8"
       );
-      const pkg = JSON.parse(
-        await readFile(path.join(targetDirectory, "package.json"), "utf-8")
-      );
+      const pkg = z
+        .object({
+          devDependencies: z.record(z.string(), z.string()),
+          scripts: z.record(z.string(), z.string()),
+        })
+        .parse(
+          JSON.parse(
+            await readFile(path.join(targetDirectory, "package.json"), "utf-8")
+          )
+        );
       expect(config).toContain(`from "${tooling}"`);
       expect(config).toContain('from "tailorkit/vite"');
       expect(pkg.devDependencies).not.toHaveProperty("oxlint");
@@ -494,7 +501,14 @@ describe("generateApp", () => {
       path.join(targetDirectory, "tsconfig.json"),
       "utf-8"
     );
-    const tsconfig = JSON.parse(content);
+    const tsconfig = z
+      .object({
+        compilerOptions: z.object({
+          jsx: z.string(),
+          jsxImportSource: z.string(),
+        }),
+      })
+      .parse(JSON.parse(content));
     expect(tsconfig.compilerOptions.jsx).toBe("react-jsx");
     expect(tsconfig.compilerOptions.jsxImportSource).toBe("preact");
   });

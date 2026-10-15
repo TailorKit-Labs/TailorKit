@@ -1,4 +1,3 @@
-/* oxlint-disable typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { gzipSync, gunzipSync } from "node:zlib";
 
 import { assetHeaders, maxDeploymentBytes } from "@tailorkit/asset-delivery";
@@ -31,10 +30,12 @@ const get = vi.fn();
 const head = vi.fn();
 // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const match = vi.fn(
-  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
   async (_request: Request) => undefined as Response | undefined
 );
-const put = vi.fn(async (_request: Request, _response: Response) => {});
+const put = vi
+  .fn<(_request: Request, _response: Response) => Promise<void>>()
+  .mockReturnValue(Promise.resolve());
 const waitUntil = vi.fn();
 // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
@@ -322,6 +323,9 @@ it.each(["R2", "cache"])(
     await expect(
       (async () => {
         for await (const value of body) {
+          if (!(value instanceof Uint8Array)) {
+            throw new Error("Expected asset bytes");
+          }
           deliveredBytes += value.byteLength;
         }
       })()

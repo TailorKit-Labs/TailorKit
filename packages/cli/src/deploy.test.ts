@@ -1,4 +1,3 @@
-/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-member-access -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { createHash } from "node:crypto";
 import {
   mkdir,
@@ -13,11 +12,15 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { gunzipSync } from "node:zlib";
 
+import type { createTailorKitClient } from "@tailorkit/core/server";
+import type { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
 import { SignJWT } from "jose";
 import { afterEach, beforeEach, assert, expect, it, vi } from "vite-plus/test";
+import { z } from "zod";
 
 import type * as authModule from "./auth";
 import { NotLoggedInError } from "./auth";
+import type { buildProject } from "./build";
 import { linkTestDependencies } from "./test-utils";
 
 const requireBytes = (body: RequestInit["body"]): Uint8Array => {
@@ -29,10 +32,31 @@ const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
 
 const mocks = vi.hoisted(() => ({
-  build: vi.fn(),
+  build:
+    vi.fn<
+      (...args: Parameters<typeof buildProject>) => Promise<{ outDir: string }>
+    >(),
   client: vi.fn(),
-  create: vi.fn(),
-  load: vi.fn(),
+  create: vi.fn<
+    (
+      input: Parameters<
+        ReturnType<typeof createTailorKitClient>["deployments"]["create"]
+      >[0]
+    ) => Promise<{
+      deployment: { id: string };
+      assets: { headers?: Record<string, string>; uploadUrl: string }[];
+      logos?: Record<
+        string,
+        { headers?: Record<string, string>; uploadUrl: string }
+      >;
+      server?: { uploadUrl: string };
+    }>
+  >(),
+  load: vi.fn<
+    (
+      ...args: Parameters<typeof loadTailorKitConfig>
+    ) => Promise<Partial<Awaited<ReturnType<typeof loadTailorKitConfig>>>>
+  >(),
   publish: vi.fn(),
   token: vi.fn(),
   whoami: vi.fn(),
@@ -82,7 +106,11 @@ beforeEach(async () => {
   );
   mocks.build.mockResolvedValue({ outDir: path.join(root, ".tailorkit") });
   mocks.load.mockResolvedValue({
-    config: { appId: "app-one", server: {} },
+    config: {
+      appId: "app-one",
+      host: "https://host.example",
+      server: { entry: "src/server.ts" },
+    },
     filepath: path.join(root, "tailorkit.config.ts"),
     root,
   });
@@ -190,7 +218,10 @@ it.each([
     const configPath = path.join(root, "tailorkit.config.ts");
     await writeFile(configPath, source);
     mocks.load.mockResolvedValue({
-      config: { server: {} },
+      config: {
+        host: "https://host.example",
+        server: { entry: "src/server.ts" },
+      },
       filepath: configPath,
       root,
     });
@@ -236,27 +267,49 @@ it("preserves client-only deployment uploads", async () => {
   expect(fetch).toHaveBeenCalledOnce();
 });
 
-it("typechecks the server entry even when the client does not import it", async () => {
-  await linkTestDependencies(root);
-  await mkdir(path.join(root, "src"));
-  await writeFile(path.join(root, "src/root.tsx"), "export default {};\n");
-  await writeFile(
-    path.join(root, "src/server.ts"),
-    'export const invalid: number = "string";'
-  );
-  await writeFile(
-    path.join(root, "tsconfig.json"),
-    JSON.stringify({ compilerOptions: { skipLibCheck: true, types: [] } })
-  );
-  const onTypecheckFailed = vi.fn().mockResolvedValue(false);
-  await expect(runDeploy({ cwd: root, onTypecheckFailed })).rejects.toThrow(
-    "type check failed"
-  );
-  expect(onTypecheckFailed.mock.calls[0]?.[0].output).toContain(
-    "src/server.ts"
-  );
-  expect(mocks.publish).not.toHaveBeenCalled();
-});
+it.each([false, true])(
+  "returns server diagnostics with an interactive callback: %s",
+  async (interactive) => {
+    await linkTestDependencies(root);
+    await mkdir(path.join(root, "src"));
+    await writeFile(path.join(root, "src/root.tsx"), "export default {};\n");
+    await writeFile(
+      path.join(root, "src/server.ts"),
+      'export const invalid: number = "string";'
+    );
+    await writeFile(
+      path.join(root, "tsconfig.json"),
+      JSON.stringify({ compilerOptions: { skipLibCheck: true, types: [] } })
+    );
+    const onTypecheckFailed = vi
+      .fn<
+        NonNullable<
+          NonNullable<Parameters<typeof runDeploy>[0]>["onTypecheckFailed"]
+        >
+      >()
+      .mockResolvedValue(false);
+    const deployment = runDeploy({
+      cwd: root,
+      onTypecheckFailed: interactive ? onTypecheckFailed : undefined,
+    });
+    await expect(deployment).rejects.toThrow("type check failed");
+    await expect(deployment).rejects.toThrow(
+      'Command: tsc --noEmit --project "tsconfig.json" --pretty false (app entries: "src/root.tsx", "src/server.ts")'
+    );
+    await expect(deployment).rejects.not.toThrow(".tailorkit-typecheck-");
+    await expect(deployment).rejects.toThrow("src/server.ts");
+    await expect(deployment).rejects.toThrow("error TS2322");
+    if (interactive) {
+      expect(onTypecheckFailed.mock.calls[0]?.[0].output).toContain(
+        "src/server.ts"
+      );
+    } else {
+      expect(onTypecheckFailed).not.toHaveBeenCalled();
+    }
+    expect(mocks.create).not.toHaveBeenCalled();
+    expect(mocks.publish).not.toHaveBeenCalled();
+  }
+);
 
 it("typechecks file route roots, layouts and views without a manual client entry", async () => {
   await linkTestDependencies(root);
@@ -302,13 +355,28 @@ it("typechecks file route roots, layouts and views without a manual client entry
       );
     })
   );
-  const onTypecheckFailed = vi.fn().mockResolvedValue(false);
+  const onTypecheckFailed = vi
+    .fn<
+      NonNullable<
+        NonNullable<Parameters<typeof runDeploy>[0]>["onTypecheckFailed"]
+      >
+    >()
+    .mockResolvedValue(false);
   await expect(runDeploy({ cwd: root, onTypecheckFailed })).rejects.toThrow(
     "type check failed"
   );
   expect(onTypecheckFailed).toHaveBeenCalledOnce();
+  expect(onTypecheckFailed.mock.calls[0]?.[0].command).toContain(
+    '--project "tsconfig.json"'
+  );
+  expect(onTypecheckFailed.mock.calls[0]?.[0].command).toContain(
+    '"src/server.ts"'
+  );
   for (const file of sources) {
     expect(onTypecheckFailed.mock.calls[0]?.[0].output).toContain(file);
+    expect(onTypecheckFailed.mock.calls[0]?.[0].command).toContain(
+      JSON.stringify(file)
+    );
   }
   expect(mocks.publish).not.toHaveBeenCalled();
   const files = await readdir(root);
@@ -319,7 +387,7 @@ it("typechecks file route roots, layouts and views without a manual client entry
 
 it("does not publish when the server upload fails", async () => {
   vi.spyOn(globalThis, "fetch").mockImplementation(
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
     async (url) =>
       new Response(null, {
         status: (url instanceof Request ? url.url : String(url)).endsWith(
@@ -345,7 +413,8 @@ it.each(["vite config", "option"])(
     mocks.load.mockResolvedValue({
       config: {
         appId: "app-one",
-        server: {},
+        host: "https://host.example",
+        server: { entry: "src/server.ts" },
       },
       filepath: path.join(root, "tailorkit.config.ts"),
       root,
@@ -377,7 +446,7 @@ it.each(["missing", "expired"])(
     mocks.token.mockResolvedValue(
       credentials === "missing" ? undefined : { deployToken: "expired-token" }
     );
-    // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
+    // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
     const onLoginRequired = vi.fn().mockImplementation(async () => {
       expect(mocks.build).not.toHaveBeenCalled();
       expect(mocks.create).not.toHaveBeenCalled();
@@ -460,7 +529,15 @@ it("preserves signed upload headers and uploads logos without gzip encoding", as
   const logo = '<svg xmlns="http://www.w3.org/2000/svg"/>';
   await writeFile(path.join(root, ".tailorkit/client/logo-light.svg"), logo);
   const manifestPath = path.join(root, ".tailorkit/tailorkit-upload.json");
-  const manifest = JSON.parse(await readFile(manifestPath, "utf-8"));
+  const manifest = z
+    .looseObject({
+      assets: z.looseObject({
+        client: z.string(),
+        logos: z.record(z.string(), z.string()).optional(),
+        server: z.string().optional(),
+      }),
+    })
+    .parse(JSON.parse(await readFile(manifestPath, "utf-8")));
   manifest.assets.logos = { light: "client/logo-light.svg" };
   await writeFile(manifestPath, JSON.stringify(manifest));
   mocks.create.mockResolvedValue({

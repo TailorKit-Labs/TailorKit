@@ -357,13 +357,12 @@ export const assetResponse = (
   onUnavailable?: () => void
 ): Effect.Effect<Response> =>
   program.pipe(
-    // oxlint-disable-next-line promise/prefer-await-to-callbacks -- This is an Effect recovery operator or transport callback, not a Node-style completion callback.
-    catchEffect((err) =>
+    catchEffect((failure) =>
       Effect.sync(() => {
-        if (err.status === 503) {
+        if (failure.status === 503) {
           onUnavailable?.();
         }
-        return assetFailure(err.status);
+        return assetFailure(failure.status);
       })
     )
   );

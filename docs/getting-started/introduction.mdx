@@ -1,47 +1,45 @@
 ---
 title: "What is TailorKit?"
-description: "A framework for extending your product with apps built by users, partners, and AI."
+description: "Extend your product with apps built by users, partners, and AI."
 ---
 
-Think browser extensions, but for your product. TailorKit lets users and partners **build apps with AI or code**. Apps are small, lightweight TypeScript programs that use your UI components and the capabilities you expose, whether it's a single button, a full-page view, or even Doom.
+TailorKit lets users, partners, and AI agents build apps inside your product. Apps are TypeScript programs that use the UI components, data, and tools you expose. They can add a button, a side panel, or a full-page view.
 
-## Users build features with AI
+## Let users build features with AI
 
-Users describe what they need, and **TailorKit's agent codes the app** using the capabilities your product exposes. We manage its development container and deployment, and the agent can update existing apps when users ask for changes.
+Users describe what they need, and TailorKit’s agent writes an app using your product’s capabilities. TailorKit manages the agent’s development container and deployment. The agent can also update existing apps when users request changes.
 
-Connect it as a **subagent for your product's existing agent**, or offer it as a dedicated app-building agent.
+Connect the builder to your product’s existing agent as a subagent, or offer it as a dedicated app-building agent.
 
-## Third-party marketplace
+## Let partners publish apps
 
-Optionally let developers and partners publish apps for your customers to install. TailorKit handles developer tooling, deployments, versioning, approvals, and distribution.
+Developers and partners can publish apps for your customers to install. TailorKit handles developer tooling, deployments, versioning, approvals, and distribution.
 
-Each app can have its own Git repository and release cycle, with deployments managed through the TailorKit CLI.
+Each app can have its own Git repository and release cycle. Developers deploy it through the TailorKit command-line interface (CLI).
 
-## Your UI, your boundaries
+## Define what apps can access
 
-Apps use a **schema you define**: a contract specifying which UI components, data, and tools they can access. Their UI renders with your actual components, rather than injected JavaScript targeting page selectors.
+You define a contract that specifies the UI components, data, and tools available to apps. Their UI renders with your components.
 
-This gives you explicit boundaries to maintain as your product evolves. Keep the contract stable, and you can change your layout and internals **without breaking apps**.
+Keep that contract stable as your product evolves. You can then change your layout and internal implementation without breaking apps that depend on the contract.
 
-## Secure by design
+## Keep app code isolated
 
-TailorKit isolates app code while keeping your product in control of rendering and data access.
+TailorKit isolates app code while your product controls rendering and data access:
 
-- **Sandboxed frontend.** App code runs in an isolated, off-screen iframe. We proxy its UI into your product using your design system's components. Apps are isolated from your product's browser environment, including its DOM, cookies, and local storage.
-- **Isolated backends.** Backend execution and storage are isolated by installation. Each install with a database gets its own data, separate from other customers.
-- **Controlled access.** Apps can call the tools you expose through your schema or connect to your existing API using credentials you supply.
+- **Sandboxed frontend**: app code runs in an isolated, off-screen iframe. TailorKit renders its UI in your product using your components. App code cannot access your product’s Document Object Model (DOM), cookies, or local storage.
+- **Isolated backends**: backend execution and storage are isolated by installation. Each installation with a database has separate data.
+- **Controlled access**: apps call the tools you expose through your contract or connect to your API using credentials you supply.
 
-## Managed reactive backends
+## Run app backends
 
-Apps can store data, run backend logic, and update live. **TailorKit handles all the infrastructure**, so you don't need to provision databases, run servers, or manage realtime connections for each app.
+Apps can store data, run backend logic, and subscribe to live updates. TailorKit manages the databases, servers, and realtime connections:
 
-- **Per-install databases.** Each install gets its own SQLite database, keeping customer data separate and preserving it across app code deployments.
-- **Backend functions.** Run backend logic isolated per install to read and write database data or interact with external services.
-- **Realtime queries.** Database changes automatically update all connected app clients subscribed to the affected data.
-- **Deployment.** Publish app assets through TailorKit's CDN and backend code to the managed runtime. Versioned deployments let you update apps without rebuilding your host product.
+- **Per-installation databases**: each installation with a database gets its own SQLite database. Data persists across app deployments.
+- **Backend functions**: queries and mutations read and write installation data. Actions can also call external services.
+- **Realtime queries**: database changes update connected app clients subscribed to the affected data.
+- **Deployment**: publish app assets through TailorKit’s content delivery network (CDN) and backend code to the managed runtime. Update apps without rebuilding your host product.
 
-## Get started
+## Integrate TailorKit
 
-Follow our [installation guide](/getting-started/installation) to get started in 5 minutes.
-
-Want to talk through your use case? [Book a call](https://cal.com/alfiejones) or email [hello@tailorkit.dev](mailto:hello@tailorkit.dev).
+Follow the [installation guide](/getting-started/installation) to connect your host product. To discuss your use case, [book a call](https://cal.com/alfiejones) or email [hello@tailorkit.dev](mailto:hello@tailorkit.dev).

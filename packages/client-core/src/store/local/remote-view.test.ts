@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { createRemoteUiStore } from "@tailorkit/sandbox/host";
 import type {
   IframeUiHost,
@@ -39,15 +40,13 @@ const setup = () => {
     (_url: string | URL, options: IframeUiHostOptions = {}) => {
       const source = createRemoteUiStore();
       const listeners: (() => void)[] = [];
-      // SAFETY: The test provides a DOM stand-in with the members exercised by this scenario; unrelated browser members are never used.
       const host: IframeUiHost = {
         ...source,
 
         destroy: vi.fn<IframeUiHost["destroy"]>(),
 
         dispatch: vi.fn<IframeUiHost["dispatch"]>(),
-        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-        iframe: {} as HTMLIFrameElement,
+        iframe: document.createElement("iframe"),
 
         mount: vi.fn<IframeUiHost["mount"]>(),
 
@@ -222,15 +221,13 @@ it("reports startup failures, releases partial hosts, and recovers on the next m
   const failure = new Error("Failed to start");
   createHost.mockImplementationOnce((_url, options = {}) => {
     const source = createRemoteUiStore();
-    // SAFETY: The test provides a DOM stand-in with the members exercised by this scenario; unrelated browser members are never used.
     const host: IframeUiHost = {
       ...source,
 
       destroy: vi.fn<IframeUiHost["destroy"]>(),
 
       dispatch: vi.fn<IframeUiHost["dispatch"]>(),
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-      iframe: {} as HTMLIFrameElement,
+      iframe: document.createElement("iframe"),
       mount: () => {
         throw failure;
       },

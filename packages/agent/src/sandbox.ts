@@ -6,7 +6,8 @@ import type { AppAgentInput } from "./input";
 import type { HostSchemaDocument } from "./schema";
 import type { SavedAgentSession } from "./session-store";
 
-export const agentTokenPath = "/tmp/tailorkit-agent.token";
+// Legacy snapshots may retain this path; remove it before exposing a resumed VM.
+const agentTokenPath = "/tmp/tailorkit-agent.token";
 export const agentSchemaPath = "/workspace/tailorkit.schema.json";
 export const sandboxIdleTimeoutMs = 15 * 60_000;
 
@@ -35,21 +36,6 @@ export const networkSession = async (sandbox: Sandbox) => {
   return session;
 };
 
-export const writeAgentToken = async (sandbox: Sandbox, token: string) => {
-  const session = sandbox.currentSession();
-  await session.writeFiles([
-    { content: Buffer.from(token, "utf-8"), path: agentTokenPath },
-  ]);
-  const result = await session.runCommand({
-    args: ["600", agentTokenPath],
-    cmd: "chmod",
-    timeoutMs: 30_000,
-  });
-  if (result.exitCode !== 0) {
-    throw new FatalError("Could not secure agent authorization file.");
-  }
-};
-
 export const writeAgentSchema = async (
   sandbox: Sandbox,
   schema: HostSchemaDocument
@@ -73,6 +59,18 @@ export const deleteSandbox = async (name: string) => {
       return;
     }
     throw error;
+  }
+};
+
+/** Remove credentials left by a VM snapshot created before host-side publication. */
+export const removeLegacyAgentToken = async (sandbox: Sandbox) => {
+  const result = await sandbox.currentSession().runCommand({
+    args: ["-f", agentTokenPath],
+    cmd: "rm",
+    timeoutMs: 30_000,
+  });
+  if (result.exitCode !== 0) {
+    throw new FatalError("Could not remove legacy agent authorization.");
   }
 };
 
@@ -113,7 +111,6 @@ export const prepareSandboxStep = async (
       );
     }
     sandbox = await Sandbox.getOrCreate({
-      env: { TAILORKIT_AGENT_TOKEN_FILE: agentTokenPath },
       image: "vercel/sandbox/universal",
       keepLastSnapshots: { count: 1 },
       mounts: { "/workspace": drive },
@@ -123,7 +120,7 @@ export const prepareSandboxStep = async (
       timeout: sandboxIdleTimeoutMs,
     });
   }
-  await writeAgentToken(sandbox, input.agentToken);
+  await removeLegacyAgentToken(sandbox);
   if (input.schema !== undefined) {
     await writeAgentSchema(sandbox, input.schema);
   }
@@ -135,16 +132,10 @@ export const prepareSandboxStep = async (
   );
 };
 
-/** Stop only at the end of the user turn; persistence keeps Pi's persisted session journal. */
+/** Stop only at the end of the user turn; retain Pi's session journal. */
 export const stopSandboxStep = async (sandboxName: string) => {
   "use step";
   const sandbox = await getSandbox(sandboxName);
-  // Do not retain expired CLI credentials in the between-turn snapshot.
-  const result = await sandbox
-    .currentSession()
-    .runCommand({ args: ["-f", agentTokenPath], cmd: "rm", timeoutMs: 30_000 });
-  if (result.exitCode !== 0) {
-    throw new FatalError("Could not remove ephemeral agent authorization.");
-  }
+  await removeLegacyAgentToken(sandbox);
   await sandbox.stop();
 };

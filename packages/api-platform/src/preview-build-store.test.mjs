@@ -1,15 +1,18 @@
-/* oxlint-disable typescript/no-unsafe-argument, typescript/no-unsafe-member-access, typescript/no-unsafe-assignment, typescript/no-unsafe-call -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 /* oxlint-disable require-await, require-unicode-regexp, unicorn/no-await-expression-member -- the in-memory KV fake mirrors async adapter methods. */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 
 import { test } from "vite-plus/test";
+import { z } from "zod";
 
 import {
   createPreviewBuildStore,
   previewChunkBytes,
   previewMessageBytes,
 } from "./preview-build-store.ts";
+
+const pointerSchema = z.object({ revision: z.number() });
+const stateSchema = z.object({ state: z.string() });
 
 /** @returns {Parameters<typeof createPreviewBuildStore>[0] & {advance: (milliseconds: number) => void}} In-memory adapter and its deterministic clock. */
 const fakeKV = () => {
@@ -63,6 +66,7 @@ const fakeKV = () => {
       remove(key);
     },
     get: async (key) => get(key),
+    /** @param {string} key Entry to consume. */
     getAndDelete: async (key) => {
       const value = get(key);
       remove(key);
@@ -87,7 +91,7 @@ const fakeKV = () => {
       const current = get(key);
       if (
         (current ?? "") !== "" &&
-        JSON.parse(current).revision >= revisionValue
+        pointerSchema.parse(JSON.parse(current)).revision >= revisionValue
       ) {
         return false;
       }
@@ -235,7 +239,9 @@ test("a failed pointer write leaves a verified build retryable with the same rev
   assert.equal((await store.current("session")).buildId, firstId);
   assert.equal(await kv.get("preview:uploading:session"), nextId);
   assert.equal(
-    JSON.parse(await kv.get(`preview:build:session:${nextId}`)).state,
+    stateSchema.parse(
+      JSON.parse((await kv.get(`preview:build:session:${nextId}`)) ?? "null")
+    ).state,
     "ready"
   );
 
@@ -263,7 +269,7 @@ test("an older concurrent commit cannot replace a newer current revision", async
   kv.set = async (key, value, options) => {
     if (
       key === `preview:build:session:${buildId}` &&
-      JSON.parse(value).revision === 1
+      pointerSchema.parse(JSON.parse(value)).revision === 1
     ) {
       entered.resolve();
       await release.promise;
@@ -385,31 +391,34 @@ test("reads builds committed before the retryable-state rollout", async () => {
 
 test("large aggregate builds use bounded chunks and messages", async () => {
   const store = createPreviewBuildStore(fakeKV());
+  /** @type {[string, Buffer][]} */
   const files = Array.from({ length: 6 }, (_, index) => [
     index === 0 ? "client.js" : `file-${index}.js`,
     Buffer.alloc(900_000, index),
   ]);
   const id = await store.begin("session", manifestFor(files));
-  for (const [fileIndex, [, bytes]] of files.entries()) {
-    for (
-      let chunkIndex = 0;
-      chunkIndex < Math.ceil(bytes.length / previewChunkBytes);
-      chunkIndex += 1
-    ) {
-      const base64 = bytes
-        .subarray(
-          chunkIndex * previewChunkBytes,
-          (chunkIndex + 1) * previewChunkBytes
-        )
-        .toString("base64");
-      assert.ok(
-        Buffer.byteLength(JSON.stringify({ base64, chunkIndex, fileIndex })) <
-          previewMessageBytes
-      );
-      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-      await store.upload("session", id, fileIndex, chunkIndex, base64);
-    }
-  }
+  await Array.fromAsync(files.entries(), async ([fileIndex, [, bytes]]) => {
+    await Array.fromAsync(
+      Array.from(
+        { length: Math.ceil(bytes.length / previewChunkBytes) },
+        (_, index) => index
+      ),
+      async (chunkIndex) => {
+        const base64 = bytes
+          .subarray(
+            chunkIndex * previewChunkBytes,
+            (chunkIndex + 1) * previewChunkBytes
+          )
+          .toString("base64");
+        assert.ok(
+          Buffer.byteLength(JSON.stringify({ base64, chunkIndex, fileIndex })) <
+            previewMessageBytes
+        );
+
+        await store.upload("session", id, fileIndex, chunkIndex, base64);
+      }
+    );
+  });
   assert.equal((await store.commit("session", id)).manifest.files.length, 6);
 });
 

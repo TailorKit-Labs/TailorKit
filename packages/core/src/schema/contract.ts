@@ -34,7 +34,7 @@ export interface TailorKitContract<
 }
 
 /** Define the browser-safe interface shared by a host server and its clients. */
-export const defineContract = <
+export function defineContract<
   const TComponents extends ComponentDefinitions = EmptyDefinitionMap,
   const TViews extends ContextDefinitions = EmptyDefinitionMap,
   const TSlots extends SlotDefinitions = EmptyDefinitionMap,
@@ -47,7 +47,14 @@ export const defineContract = <
   slots?: TSlots & SlotDefinitions<keyof NoInfer<TViews> & string>;
   tools?: TTools;
   scopes?: TScopes;
-}): TailorKitContract<TComponents, TViews, TSlots, TTools, TScopes> => {
+}): TailorKitContract<TComponents, TViews, TSlots, TTools, TScopes>;
+export function defineContract(definition: {
+  components?: ComponentDefinitions;
+  views?: ContextDefinitions;
+  slots?: SlotDefinitions;
+  tools?: ContractTools;
+  scopes?: Record<string, Schema>;
+}): TailorKitContract {
   for (const name of Object.keys(definition)) {
     if (!["components", "views", "slots", "tools", "scopes"].includes(name)) {
       throw new Error(`Unknown contract field "${name}"`);
@@ -64,27 +71,11 @@ export const defineContract = <
       }
     }
   }
-  // SAFETY: Each provided definition is preserved, and omitted optional tables use the empty-table generic defaults.
   return {
-    components:
-      /* oxlint-disable typescript/no-unsafe-type-assertion -- Each provided definition is preserved, and omitted optional tables use the empty-table generic defaults. */
-      (definition.components ?? {}) as TComponents,
-    /* oxlint-enable typescript/no-unsafe-type-assertion */
-    scopes:
-      /* oxlint-disable typescript/no-unsafe-type-assertion -- Each provided definition is preserved, and omitted optional tables use the empty-table generic defaults. */
-      (definition.scopes ?? {}) as TScopes,
-    /* oxlint-enable typescript/no-unsafe-type-assertion */
-    slots:
-      /* oxlint-disable typescript/no-unsafe-type-assertion -- Each provided definition is preserved, and omitted optional tables use the empty-table generic defaults. */
-      (definition.slots ?? {}) as TSlots,
-    /* oxlint-enable typescript/no-unsafe-type-assertion */
-    tools:
-      /* oxlint-disable typescript/no-unsafe-type-assertion -- Each provided definition is preserved, and omitted optional tables use the empty-table generic defaults. */
-      (definition.tools ?? {}) as TTools,
-    /* oxlint-enable typescript/no-unsafe-type-assertion */
-    views:
-      /* oxlint-disable typescript/no-unsafe-type-assertion -- Each provided definition is preserved, and omitted optional tables use the empty-table generic defaults. */
-      (definition.views ?? {}) as TViews,
-    /* oxlint-enable typescript/no-unsafe-type-assertion */
+    components: definition.components ?? {},
+    scopes: definition.scopes ?? {},
+    slots: definition.slots ?? {},
+    tools: definition.tools ?? {},
+    views: definition.views ?? {},
   };
-};
+}

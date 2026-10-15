@@ -1,4 +1,3 @@
-/* oxlint-disable typescript/no-unsafe-return, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { expect, it, vi } from "vite-plus/test";
 
 import { createSlotStore } from "#store/fetch/slot";
@@ -62,7 +61,11 @@ it("joins discovery and resolves single slots from the imported contract without
 
 it("refreshes instances using the current registered context without refreshing discovery", async () => {
   const instanceFetch = vi
-    .fn()
+    .fn<
+      ReturnType<
+        typeof createTailorKitFetchClient
+      >["endpoints"]["slotInstances"]
+    >()
     .mockResolvedValue([{ data: {}, key: "overview", metadata: {} }]);
   const client = createTailorKitFetchClient({
     baseUrl: "https://host.test",
