@@ -1,5 +1,6 @@
 ---
-title: "Views"
+title: "Match app UI to page context"
+sidebarTitle: "Views"
 description: "Choose UI that fits the current page and its context."
 ---
 
@@ -74,7 +75,7 @@ export function MemberPage({
 
 The hook registers the context when mounted, validates its data, and updates it when values change. On unmount, it removes that registration. Register each declared ancestor too, as the layouts above do.
 
-## The closest match wins
+## Select the closest matching view
 
 TailorKit uses the deepest mounted context. For each slot, it checks that path, then its parents, selecting the first supported view supplied by the app:
 
@@ -84,11 +85,11 @@ TailorKit uses the deepest mounted context. For each slot, it checks that path, 
 
 On the members list, the panel can show an overview. Opening a member registers `/members/detail`, so the panel switches to that member's view. Leaving the page unregisters it and returns to the overview. The same works for a global navbar.
 
-If no matching view is available, nothing renders for that app in the slot. To write those views, see [Writing apps → UI](/writing-apps/ui).
+If no matching view is available, nothing renders for that app in the slot. To write those views, see [Write app UI](/writing-apps/ui).
 
 ## SDK reference
 
-`defineContract({ views })` maps paths starting with `/` to object schemas. Context fields from declared ancestors combine with the selected view's fields; child schemas cannot repeat ancestor field names. A fallback receives its own and its ancestors' context, without fields from deeper paths.
+`defineContract({ views })` maps paths starting with `/` to object schemas. Context fields from declared ancestors combine with the selected view’s fields. Child schemas cannot repeat ancestor field names. A fallback receives its own context and its ancestors’ context, excluding fields from deeper paths.
 
 Call `tailor.useViewContext(path, state)` on the client returned by `createClient`:
 
@@ -107,6 +108,8 @@ export interface ViewContextState<TContext = unknown> {
 }
 ```
 
+While member data loads, register the context with `loading: true`:
+
 ```tsx title="While member data loads"
 tailor.useViewContext("/members/detail", {
   context: undefined,
@@ -115,6 +118,8 @@ tailor.useViewContext("/members/detail", {
 ```
 
 ## Frequently asked questions
+
+Register context from your pages and layouts. Slots and apps can each support a subset of contexts.
 
 <AccordionGroup>
   <Accordion title="Does TailorKit watch my router automatically?">

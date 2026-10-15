@@ -1,3 +1,3 @@
-# TailorKit Asset Delivery
+# TailorKit asset delivery
 
-Serves assets for TailorKit extensions.
+`@tailorkit/asset-delivery` serves assets for TailorKit extensions.

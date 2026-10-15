@@ -1,56 +1,45 @@
-# Mintlify Starter Kit
+# TailorKit documentation
 
-Use the starter kit to get your docs deployed and ready to customize.
+This directory contains the TailorKit documentation site. Edit pages in MDX and configure navigation, branding, and site settings in `docs.json`.
 
-Click the green **Use this template** button at the top of this repo to copy the Mintlify starter kit. The starter kit contains examples with
+## Preview the site
 
-- Guide pages
-- Navigation
-- Customizations
-- API reference pages
-- Use of popular components
+Install dependencies from the repository root, then start the local preview:
 
-**[Follow the full quickstart guide](https://starter.mintlify.com/quickstart)**
-
-## AI-assisted writing
-
-Set up your AI coding tool to work with Mintlify:
-
-```bash
-npx skills add https://mintlify.com/docs
+```sh
+pnpm install
+pnpm dev:docs
 ```
 
-This command installs Mintlify's documentation skill for your configured AI tools like Claude Code, Cursor, Windsurf, and others. The skill includes component reference, writing standards, and workflow guidance.
+Open the URL printed by the Mintlify CLI. The default is [localhost:3000](http://localhost:3000).
 
-See the [AI tools guides](/ai-tools) for tool-specific setup.
+## Edit a page
 
-## Development
+Use the existing sections to choose where a page belongs:
 
-Install the [Mintlify CLI](https://www.npmjs.com/package/mint) to preview your documentation changes locally. To install, use the following command:
+- `getting-started/`: introduce TailorKit and integrate it into a host product
+- `concepts/`: explain slots, views, components, and tools
+- `writing-apps/`: create apps against a host contract
 
+Give each page a `title` and `description` in its YAML frontmatter. Use sentence case for headings and root-relative internal links without file extensions, such as `/concepts/slots`. Add new pages to the navigation in `docs.json`.
+
+See the [writing-guidelines skill](../.agents/skills/writing-guidelines/SKILL.md) for prose review and the [Mintlify documentation](https://www.mintlify.com/docs) for MDX components and site configuration.
+
+## Check changes
+
+From this directory, validate the site and check internal links:
+
+```sh
+pnpm exec mint validate
+pnpm exec mint broken-links
 ```
-npm i -g mint
+
+From the repository root, run the repository checks:
+
+```sh
+pnpm check
 ```
 
-Run the following command at the root of your documentation, where your `docs.json` is located:
+## Publish changes
 
-```
-mint dev
-```
-
-View your local preview at `http://localhost:3000`.
-
-## Publishing changes
-
-Install our GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app) to propagate changes from your repo to your deployment. Changes are deployed to production automatically after pushing to the default branch.
-
-## Need help?
-
-### Troubleshooting
-
-- If your dev environment isn't running: Run `mint update` to ensure you have the most recent version of the CLI.
-- If a page loads as a 404: Make sure you are running in a folder with a valid `docs.json`.
-
-### Resources
-
-- [Mintlify documentation](https://mintlify.com/docs)
+Open a pull request for documentation changes. Mintlify publishes updates from the connected default branch after merge.

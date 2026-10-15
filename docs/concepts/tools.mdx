@@ -1,9 +1,10 @@
 ---
-title: "Tools"
+title: "Expose actions through tools"
+sidebarTitle: "Tools"
 description: "Define actions that run on the server or in the browser."
 ---
 
-A tool gives apps an ability in your product by exposing a function from your own code. You define its inputs and outputs, and when an app calls it, your code runs in your frontend or on your backend.
+A tool exposes one of your product’s functions to apps. You define its input and output schemas and implement it in your frontend or backend.
 
 For example, a client tool can show a message using your toast library, open a dialog, or navigate to a page. A server tool can fetch a member, save a record, or call an external API using your existing backend code.
 
@@ -61,7 +62,7 @@ tools: {
 
 Here, `toast` is your toast library. The handler needs no output schema because it returns no value. Keep credentials and privileged operations on the server.
 
-See [Writing apps → UI](/writing-apps/ui#use-components-and-tools) for calling tools from UI.
+See [Write app UI](/writing-apps/ui#use-components-and-tools) for calling tools from UI.
 
 ## SDK reference
 
@@ -89,6 +90,8 @@ export interface ToolContext {
 Tools can be nested in objects, such as `tools.members.read`.
 
 ## Frequently asked questions
+
+Keep privileged operations on the server and check permissions separately from input validation.
 
 <AccordionGroup>
   <Accordion title="Can a client tool access my database directly?">

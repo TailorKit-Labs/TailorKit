@@ -1,3 +1,3 @@
-# TailorKit Observability
+# TailorKit observability
 
-Shared tracing and telemetry for the TailorKit platform.
+`@tailorkit/observability` contains shared tracing and telemetry code for the TailorKit platform.

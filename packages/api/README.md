@@ -1,3 +1,3 @@
 # TailorKit API
 
-The internal API for the TailorKit dashboard.
+`@tailorkit/api` implements the internal API for the TailorKit dashboard.
