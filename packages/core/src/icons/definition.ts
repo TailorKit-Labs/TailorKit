@@ -1,16 +1,16 @@
+import type { LucideIconName } from "./lucide-names.generated";
+
+export type { LucideIconName } from "./lucide-names.generated";
+
 export interface IconOptions {
   library: "lucide";
 }
 
 export interface IconProps {
   /** Kebab-case icon name, for example `arrow-right`. */
-  name: string;
+  name: LucideIconName;
   /** Size in pixels. Defaults to 24. */
   size?: number;
-  /** Stroke width in SVG units. Defaults to 2. */
-  strokeWidth?: number;
-  /** Omit for decorative icons. Label icon-only controls on the control itself. */
-  label?: string;
 }
 
 export const iconNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;

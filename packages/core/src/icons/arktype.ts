@@ -1,7 +1,8 @@
 import { type } from "arktype";
 
-import { iconNamePattern, validateIconOptions } from "./definition";
+import { validateIconOptions } from "./definition";
 import type { IconOptions } from "./definition";
+import { lucideIconNames } from "./lucide-names.generated";
 
 /** Define one icon component, registered under the name of your choice. */
 export const Icon = (options: IconOptions) => {
@@ -9,10 +10,8 @@ export const Icon = (options: IconOptions) => {
   return {
     children: false as const,
     fields: type({
-      "label?": "1 <= string <= 256",
-      name: type("string <= 100").and(iconNamePattern),
+      name: type.enumerated(...lucideIconNames),
       "size?": "1 <= number <= 256",
-      "strokeWidth?": "0.5 <= number <= 4",
     }).onUndeclaredKey("reject"),
   };
 };

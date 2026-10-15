@@ -5,7 +5,7 @@ import { createIconLoader } from "./loader";
 import type { IconRendererOptions } from "./loader";
 
 const IconSvg = ({
-  props: { name, size = 24, strokeWidth = 2, label },
+  props: { name, size = 24 },
   loader,
 }: {
   props: IconProps;
@@ -38,16 +38,14 @@ const IconSvg = ({
 
   return (
     <svg
-      aria-hidden={label === undefined ? true : undefined}
-      aria-label={label}
+      aria-hidden="true"
       fill="none"
       focusable="false"
       height={size}
-      role={label === undefined ? undefined : "img"}
       stroke="currentColor"
       strokeLinecap="round"
       strokeLinejoin="round"
-      strokeWidth={strokeWidth}
+      strokeWidth={2}
       style={{
         display: "inline-block",
         flexShrink: 0,

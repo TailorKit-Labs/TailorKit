@@ -1,13 +1,19 @@
+import dynamicIconImports from "lucide-react/dynamicIconImports.mjs";
 import { describe, expect, it } from "vite-plus/test";
 
 import { createTailorKitSchema } from "#schema/schema";
 
 import { Icon as arktypeIcon } from "./arktype";
 import { parseIconData } from "./definition";
+import { lucideIconNames } from "./lucide-names.generated";
 import { Icon as valibotIcon } from "./valibot";
 import { Icon as zodIcon } from "./zod";
 
 describe("icon contracts", () => {
+  it("keeps the generated name list aligned with the pinned Lucide dependency", () => {
+    expect(lucideIconNames).toEqual(Object.keys(dynamicIconImports).toSorted());
+  });
+
   for (const [name, define] of Object.entries({
     arktype: arktypeIcon,
     valibot: valibotIcon,
@@ -16,10 +22,8 @@ describe("icon contracts", () => {
     it(`validates equivalent ${name} icon props`, async () => {
       const component = define({ library: "lucide" });
       const valid = await component.fields["~standard"].validate({
-        label: "Continue",
         name: "arrow-right",
         size: 16,
-        strokeWidth: 1.5,
       });
       expect(valid.issues).toBeUndefined();
       expect(component.children).toBe(false);
@@ -28,10 +32,11 @@ describe("icon contracts", () => {
         { name: "../arrow-right" },
         { name: "https://other.test/icon" },
         { name: "ArrowRight" },
+        { name: "arrow-rigth" },
         { name: "arrow-right", size: 0 },
         { name: "arrow-right", size: Number.NaN },
-        { name: "arrow-right", strokeWidth: 10 },
-        { label: "", name: "arrow-right" },
+        { name: "arrow-right", strokeWidth: 2 },
+        { label: "Continue", name: "arrow-right" },
         { href: "https://other.test", name: "arrow-right" },
       ];
       const results = await Promise.all(
@@ -52,7 +57,7 @@ describe("icon contracts", () => {
     const component = schema.serialize().components.icon;
     expect(component?.children).toBe(false);
     expect(component?.fields).toMatchObject({
-      properties: { name: { type: "string" } },
+      properties: { name: { enum: lucideIconNames, type: "string" } },
       required: ["name"],
     });
   });

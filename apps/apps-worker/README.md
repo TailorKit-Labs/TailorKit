@@ -10,6 +10,8 @@ The worker also serves `https://icons.tailorkit.app/lucide/1.55.0/<name>.json`. 
 
 For self-hosting, run `pnpm --filter @tailorkit/core build`, then `cd apps/apps-worker && node scripts/build-icons.mjs`. Copy the contents of `.generated/icons/` to your static host. Keep the generated `LICENSE.txt` beside the data: it contains Lucide's ISC notice and the Feather MIT notice. Configure the React renderer's `baseUrl` to that directory, with CORS enabled for the consuming host.
 
+The SDK name enum is generated from the same pinned Lucide release. Run `pnpm --filter @tailorkit/core generate:icons` whenever updating that release, then regenerate app bindings. The generator reads names without loading SVG geometry.
+
 Catalogue versions are part of the published SDK contract. Retain previously published version directories when adding another version; do not replace an existing version's files or remove them while released SDKs reference them.
 
 `tailorkit-apps-worker` is the trusted Cloudflare entry point for app queries, mutations, actions and subscriptions. App server bundles are uploaded by the existing CLI to the private blob bucket under `server/server.js`; client code remains under `client/client.js`. The same worker delivers public client assets and logos; its asset allowlist never serves server bundles.

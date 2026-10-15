@@ -1,7 +1,8 @@
 import { z } from "zod";
 
-import { iconNamePattern, validateIconOptions } from "./definition";
+import { validateIconOptions } from "./definition";
 import type { IconOptions } from "./definition";
+import { lucideIconNames } from "./lucide-names.generated";
 
 /** Define one icon component, registered under the name of your choice. */
 export const Icon = (options: IconOptions) => {
@@ -9,10 +10,8 @@ export const Icon = (options: IconOptions) => {
   return {
     children: false as const,
     fields: z.strictObject({
-      label: z.string().min(1).max(256).optional(),
-      name: z.string().max(100).regex(iconNamePattern),
+      name: z.enum(lucideIconNames),
       size: z.number().min(1).max(256).optional(),
-      strokeWidth: z.number().min(0.5).max(4).optional(),
     }),
   };
 };

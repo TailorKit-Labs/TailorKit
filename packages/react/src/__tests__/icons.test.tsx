@@ -8,33 +8,32 @@ afterEach(cleanup);
 const arrow = { nodes: [["path", { d: "M5 12h14" }]], size: 24 };
 
 describe("icon renderer", () => {
-  it("reserves dimensions while loading and renders labelled inline SVG", async () => {
+  it("reserves dimensions while loading and renders decorative inline SVG", async () => {
     const pending = Promise.withResolvers<Response>();
     const fetchIcon = vi.fn<typeof fetch>(async () => await pending.promise);
     const Renderer = Icon({ fetch: fetchIcon, library: "lucide" });
-    render(
+    const view = render(
       <Renderer
         props={{
-          label: "Continue",
           name: "arrow-right",
           size: 16,
-          strokeWidth: 1.5,
         }}
       />
     );
-    const svg = screen.getByRole("img", { name: "Continue" });
-    expect(svg.getAttribute("width")).toBe("16");
-    expect(svg.getAttribute("height")).toBe("16");
-    expect(svg.querySelector("path")).toBeNull();
+    const svg = view.container.querySelector("svg");
+    expect(svg).not.toBeNull();
+    expect(svg?.getAttribute("width")).toBe("16");
+    expect(svg?.getAttribute("height")).toBe("16");
+    expect(svg?.querySelector("path")).toBeNull();
     await act(async () => {
       pending.resolve(Response.json(arrow));
       await pending.promise;
     });
     await waitFor(() => {
-      expect(svg.querySelector("path")?.getAttribute("d")).toBe("M5 12h14");
+      expect(svg?.querySelector("path")?.getAttribute("d")).toBe("M5 12h14");
     });
-    expect(svg.getAttribute("stroke")).toBe("currentColor");
-    expect(svg.getAttribute("stroke-width")).toBe("1.5");
+    expect(svg?.getAttribute("stroke")).toBe("currentColor");
+    expect(svg?.getAttribute("stroke-width")).toBe("2");
   });
 
   it("hides decorative icons and shares cached geometry across mounts", async () => {
@@ -85,7 +84,7 @@ describe("icon renderer", () => {
     });
     const view = render(
       <>
-        <Renderer props={{ name: "missing" }} />
+        <Renderer props={{ name: "camera" }} />
         <span>Still visible</span>
       </>
     );
