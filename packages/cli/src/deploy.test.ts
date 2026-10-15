@@ -256,7 +256,10 @@ it.each([false, true])(
       onTypecheckFailed: interactive ? onTypecheckFailed : undefined,
     });
     await expect(deployment).rejects.toThrow("type check failed");
-    await expect(deployment).rejects.toThrow("Command: tsc --noEmit");
+    await expect(deployment).rejects.toThrow(
+      'Command: tsc --noEmit --project "tsconfig.json" --pretty false (app entries: "src/root.tsx", "src/server.ts")'
+    );
+    await expect(deployment).rejects.not.toThrow(".tailorkit-typecheck-");
     await expect(deployment).rejects.toThrow("src/server.ts");
     await expect(deployment).rejects.toThrow("error TS2322");
     if (interactive) {
@@ -320,8 +323,17 @@ it("typechecks file route roots, layouts and views without a manual client entry
     "type check failed"
   );
   expect(onTypecheckFailed).toHaveBeenCalledOnce();
+  expect(onTypecheckFailed.mock.calls[0]?.[0].command).toContain(
+    '--project "tsconfig.json"'
+  );
+  expect(onTypecheckFailed.mock.calls[0]?.[0].command).toContain(
+    '"src/server.ts"'
+  );
   for (const file of sources) {
     expect(onTypecheckFailed.mock.calls[0]?.[0].output).toContain(file);
+    expect(onTypecheckFailed.mock.calls[0]?.[0].command).toContain(
+      JSON.stringify(file)
+    );
   }
   expect(mocks.publish).not.toHaveBeenCalled();
   const files = await readdir(root);
