@@ -1,3 +1,3 @@
 # TailorKit UI
 
-Shared UI components and styles for TailorKit apps.
+`@tailorkit/ui` contains shared UI components and styles for TailorKit apps.

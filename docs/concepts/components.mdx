@@ -1,11 +1,12 @@
 ---
-title: "Components"
+title: "Expose your UI components"
+sidebarTitle: "Components"
 description: "Share your components while keeping app code isolated."
 ---
 
 Apps run in a sandbox, without direct access to your components or the surrounding page. A component schema describes what they can use: its props, events, and children.
 
-TailorKit generates stand-in components for the sandbox. A local bridge passes their updates to your real components and sends events back. Your buttons still look and behave like your buttons, while app code stays isolated. UI updates cross this bridge in the browser, without a server round trip.
+TailorKit generates stand-in components for the sandbox. A local bridge passes UI updates to your real components and sends events back to app code. Updates cross this bridge in the browser without a server round trip.
 
 ## Define a component
 
@@ -55,9 +56,9 @@ export const tailor = createClient({
 
 A callback describes an event on a component. For an action such as opening a toast or navigating, expose a [client tool](/concepts/tools#client-tools) instead.
 
-See [Writing apps → UI](/writing-apps/ui) for using these components in an app.
+See [Write app UI](/writing-apps/ui) for using these components in an app.
 
-## Changing a schema
+## Change a component schema
 
 Removing a field, an allowed variant such as `"secondary"`, or a callback can break apps that use it. Adding a required field can break them too. Prefer optional additions and keep existing names and values until those apps have migrated.
 
@@ -86,6 +87,8 @@ export interface CallbackDefinition<
 ```
 
 ## Frequently asked questions
+
+Apps can use only the components you expose. Use tools for actions that do not describe component events.
 
 <AccordionGroup>
   <Accordion title="Can an app import any component from my codebase?">

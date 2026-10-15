@@ -1,9 +1,8 @@
 ---
-title: "Slots"
+title: "Define where apps render"
+sidebarTitle: "Slots"
 description: "Define where UI can appear."
 ---
-
-## What is a slot?
 
 A slot is a named place for UI. It might be a side panel, part of a navbar, or a whole page. The green areas below are two slots:
 
@@ -73,11 +72,11 @@ export const contract = defineContract({
   UI when no more specific view matches.
 </Tip>
 
-## Multiple slot variations
+## Allow multiple slot instances
 
 By default, a slot has one instance per app, showing one view at a time. Set `multiple: true` when you want separate instances that can appear together.
 
-### Use cases
+Use multiple instances for tiles or pages that need separate metadata:
 
 | Slot | Instances | Metadata could describe |
 | --- | --- | --- |
@@ -112,9 +111,9 @@ Metadata lets you decide how to arrange tiles or build links. TailorKit doesn't 
 
 ## Context chooses the view
 
-A panel can show an overview on a members list and details when a member is open. The slot selects the closest available [view](/concepts/views) for the current context. That changes the UI inside an instance; `multiple` lets you have more instances.
+A panel can show an overview on a members list and details when a member is open. The slot selects the closest available [view](/concepts/views) for the current context. Views change the UI inside an instance. The `multiple` option lets an app supply separate instances.
 
-To supply UI and instances from an app, see [Writing apps → UI](/writing-apps/ui).
+To supply UI and instances from an app, see [Write app UI](/writing-apps/ui).
 
 ## SDK reference
 
@@ -132,9 +131,11 @@ export type SlotDefinitions<TPath extends string = string> = Record<
 >;
 ```
 
-Each repeated instance has a stable, non-empty `key` unique within its view, a `metadata` object, and schema-validated `data`. See [Writing apps → UI](/writing-apps/ui#supply-several-instances) for the implementation.
+Each repeated instance has a stable, non-empty `key` unique within its view, a `metadata` object, and schema-validated `data`. See [Write app UI](/writing-apps/ui#supply-several-instances) for the implementation.
 
 ## Frequently asked questions
+
+Use views to adapt an instance to page context and metadata to describe its placement or label.
 
 <AccordionGroup>
   <Accordion title="Do I need multiple instances to change UI between pages?">

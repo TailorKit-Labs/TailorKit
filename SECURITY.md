@@ -1,9 +1,12 @@
 # Security policy
 
-Please do not report security vulnerabilities through public GitHub issues, discussions, or pull requests.
+Report vulnerabilities through [GitHub’s private vulnerability reporting](https://github.com/TailorKit-Labs/TailorKit/security/advisories/new). Keep security reports out of public issues, discussions, and pull requests.
 
-Use GitHub's private vulnerability reporting to send a report:
+Include these details:
 
-[Report a vulnerability](https://github.com/TailorKit-Labs/TailorKit/security/advisories/new)
+- Affected package or application
+- Version or commit
+- Steps to reproduce the issue
+- Potential impact
 
-Include the affected package or application, the impacted version or commit, steps to reproduce the issue, and the potential impact. Do not include secrets, personal data, or customer data in the report.
+Do not include secrets, personal data, or customer data in the report.

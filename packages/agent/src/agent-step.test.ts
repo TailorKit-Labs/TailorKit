@@ -11,11 +11,11 @@ const mocks = vi.hoisted(() => ({
   createSession: vi.fn(),
   destroy: vi.fn(),
   detach: vi.fn(),
+  removeToken: vi.fn(),
   renew: vi.fn(),
   stream: vi.fn(),
   suspend: vi.fn(),
   unfinished: vi.fn(),
-  writeToken: vi.fn(),
 }));
 vi.mock("./agent", () => ({
   createAppAgent: () => ({
@@ -27,7 +27,7 @@ vi.mock("./agent", () => ({
 vi.mock("./sandbox", () => ({
   getSandbox: vi.fn(),
   networkSession: vi.fn(),
-  writeAgentToken: mocks.writeToken,
+  removeLegacyAgentToken: mocks.removeToken,
 }));
 vi.mock("./session-store", () => ({ renewSession: mocks.renew }));
 vi.mock("workflow", () => ({

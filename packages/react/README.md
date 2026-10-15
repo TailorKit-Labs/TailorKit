@@ -1,3 +1,3 @@
 # TailorKit React
 
-React components and hooks for integrating TailorKit into your SaaS.
+Use the React components and hooks in `@tailorkit/react` to integrate TailorKit into your SaaS product.

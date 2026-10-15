@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import type { AppAgentInput } from "./input";
 import {
-  agentTokenPath,
   getSandbox,
   networkSession,
   prepareSandboxStep,
@@ -70,7 +69,7 @@ beforeEach(() => {
 });
 
 describe("Pi sandbox ownership", () => {
-  it("creates a persistent app VM and secures fresh CLI authorization", async () => {
+  it("creates a persistent app VM without exposing CLI authorization", async () => {
     await prepareSandboxStep(input, {});
     expect(mocks.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -80,12 +79,11 @@ describe("Pi sandbox ownership", () => {
       })
     );
     expect(mocks.create.mock.calls[0]?.[0]).not.toHaveProperty("ports");
-    expect(mocks.write).toHaveBeenCalledWith([
-      { content: Buffer.from(input.agentToken), path: agentTokenPath },
-    ]);
+    expect(mocks.create.mock.calls[0]?.[0]).not.toHaveProperty("env");
+    expect(mocks.write).not.toHaveBeenCalled();
     expect(mocks.run).toHaveBeenCalledWith({
-      args: ["600", agentTokenPath],
-      cmd: "chmod",
+      args: ["-f", "/tmp/tailorkit-agent.token"],
+      cmd: "rm",
       timeoutMs: 30_000,
     });
     expect(mocks.workspace).toHaveBeenCalledWith(
@@ -93,7 +91,7 @@ describe("Pi sandbox ownership", () => {
       input,
       undefined
     );
-    expect(mocks.write.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(mocks.run.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.workspace.mock.invocationCallOrder[0] ?? 0
     );
   });
@@ -174,7 +172,7 @@ describe("Pi sandbox ownership", () => {
   it("removes ephemeral CLI authorization before saving the idle snapshot", async () => {
     await stopSandboxStep(sandboxName);
     expect(mocks.run).toHaveBeenCalledWith({
-      args: ["-f", agentTokenPath],
+      args: ["-f", "/tmp/tailorkit-agent.token"],
       cmd: "rm",
       timeoutMs: 30_000,
     });
