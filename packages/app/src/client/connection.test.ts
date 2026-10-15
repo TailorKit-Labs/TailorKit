@@ -316,15 +316,14 @@ it("refreshes authentication once for a mutation without changing its request ID
 });
 
 it("stops when refreshed authentication is still rejected", async () => {
-  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async () =>
-    Response.json(
-      {
-        json: { code: "UNAUTHORIZED", defined: false, message: "Rejected" },
-      },
-      { status: 401 }
-    )
+  const rejected = Response.json(
+    { json: { code: "UNAUTHORIZED", defined: false, message: "Rejected" } },
+    { status: 401 }
   );
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(rejected)
+    .mockResolvedValueOnce(rejected.clone());
   const client = createClient({
     fetch,
     getSession: vi

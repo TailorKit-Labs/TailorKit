@@ -3,6 +3,7 @@
 import { issueAppToken, APP_AUDIENCE } from "@tailorkit/api-utils/app-auth";
 import { AppError } from "@tailorkit/app/server";
 import { afterAll, beforeEach, expect, it, vi } from "vite-plus/test";
+import type { z } from "zod";
 
 import type { AppFacet } from "./dynamic-workers/facet";
 import { AppInstallation } from "./installation";
@@ -116,6 +117,9 @@ beforeEach(() => {
   source.current.mockResolvedValue(deployment);
   source.code.mockResolvedValue("code");
 });
+
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
 
 const setup = () => {
   vi.stubGlobal(
@@ -383,19 +387,14 @@ it("loads isolated code, passes only the verified identity and caches a warm dep
     `installation-id:v1:${deployment.checksum}`,
     expect.any(Function)
   );
-  expect(fixtures.startup).toHaveBeenCalledWith(
-    expect.objectContaining({
-      env: {},
-      globalOutbound: null,
-      limits: { cpuMs: 10, subRequests: 64 },
-      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-      modules: expect.objectContaining({
-        "application.js": "code",
-        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-        "bootstrap.js": expect.any(String),
-      }),
-    })
-  );
+  const [startupOptions] = requireValue(fixtures.startup.mock.calls[0]);
+  expect(startupOptions).toMatchObject({
+    env: {},
+    globalOutbound: null,
+    limits: { cpuMs: 10, subRequests: 64 },
+    modules: { "application.js": "code" },
+  });
+  expect(startupOptions.modules["bootstrap.js"]).toEqual(expect.any(String));
   expect(fixtures.get).toHaveBeenCalledWith("app", expect.any(Function));
   expect(fixtures.getClass).toHaveBeenCalledWith("AppFacet");
 
@@ -480,12 +479,11 @@ it("rechecks authentication and rejects the wrong supervisor before looking up a
 
 it("accepts metadata publication only with the shared service credential", async () => {
   const { env, getByName } = setup();
+  const deploymentPut = vi.spyOn(env.DEPLOYMENTS, "put");
   env.RUNTIME_SERVICE_TOKEN = "x".repeat(32);
   const publish = async (
     token: string,
-
-    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This fixture must represent malformed input so the runtime validation boundary can be tested.
-    body: unknown = deployment
+    body: z.core.util.JSONType = deployment
   ) =>
     await fetchWorker(
       new Request(
@@ -507,20 +505,15 @@ it("accepts metadata publication only with the shared service credential", async
   expect(awaitedResult13.status).toBe(400);
   const awaitedResult14 = await publish(env.RUNTIME_SERVICE_TOKEN);
   expect(awaitedResult14.status).toBe(204);
-  // oxlint-disable-next-line typescript/unbound-method -- This assertion inspects a spy reference without invoking the method or changing its receiver.
-  expect(env.DEPLOYMENTS.put).toHaveBeenCalledWith(
+  expect(deploymentPut).toHaveBeenCalledWith(
     JSON.stringify([deployment.projectId, deployment.appId]),
     expect.any(String),
     { expirationTtl: 300 }
   );
-  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-  expect(
-    JSON.parse(
-      requireValue(
-        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-        (env.DEPLOYMENTS.put as ReturnType<typeof vi.fn>).mock.calls[0]
-      )[1]
-    )
-  ).toEqual(deployment);
+  const [, publishedMetadata] = requireValue(deploymentPut.mock.calls[0]);
+  if (!isStringValue(publishedMetadata)) {
+    throw new Error("Expected serialized deployment metadata.");
+  }
+  expect(JSON.parse(publishedMetadata)).toEqual(deployment);
   expect(getByName).not.toHaveBeenCalled();
 });

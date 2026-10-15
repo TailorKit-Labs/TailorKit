@@ -643,18 +643,14 @@ describe("platform deployment uploads", () => {
     expect(result.body.logos?.light?.file.id).toBe(
       result.body.logos?.dark?.file.id
     );
-    expect(result.body.deployment).toEqual(
-      expect.objectContaining({
-        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-        clientEntryFileId: expect.any(String),
-        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-        logoDarkFileId: expect.any(String),
-        logoDarkPath: `logos/${"b".repeat(64)}.svg`,
-        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-        logoLightFileId: expect.any(String),
-        logoLightPath: `logos/${"b".repeat(64)}.svg`,
-      })
-    );
+    const publishedDeployment = result.body.deployment;
+    expect(publishedDeployment).toMatchObject({
+      logoDarkPath: `logos/${"b".repeat(64)}.svg`,
+      logoLightPath: `logos/${"b".repeat(64)}.svg`,
+    });
+    expect(publishedDeployment.clientEntryFileId).toBeTypeOf("string");
+    expect(publishedDeployment.logoDarkFileId).toBeTypeOf("string");
+    expect(publishedDeployment.logoLightFileId).toBeTypeOf("string");
     expect(createUploadUrl).toHaveBeenCalledTimes(2);
   });
 

@@ -225,7 +225,6 @@ describe("platform app chat", () => {
   it("streams SDK chunks and starts each turn with the client's full UI history", async () => {
     const events = await consume();
     expect(events).toContainEqual({
-      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
       messageId: "assistant-1",
       type: "start",
     });
@@ -288,13 +287,13 @@ describe("platform app chat", () => {
     for await (const _ of stream) {
       /* consume */
     }
-    expect(requireValue(mocks.start.mock.lastCall)[1][0]).toMatchObject({
+    const [, [agentInput]] = requireValue(mocks.start.mock.lastCall);
+    expect(agentInput).toMatchObject({
       appId: first.appId,
-      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-      messages: expect.arrayContaining([
-        expect.objectContaining({ role: "tool" }),
-      ]),
     });
+    expect(agentInput.messages).toEqual(
+      expect.arrayContaining([expect.objectContaining({ role: "tool" })])
+    );
   });
 
   it("starts a fresh thread by default and announces its ID in the stream", async () => {

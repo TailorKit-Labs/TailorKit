@@ -5,6 +5,7 @@ export { fn } from "./server/builder";
 export { withInstanceResolvers } from "./server/instances";
 export type { QueryDatabase, MutationDatabase } from "./database/types";
 export type {
+  EmptyFunctions,
   Identity,
   FunctionDefinition,
   AppDefinition,

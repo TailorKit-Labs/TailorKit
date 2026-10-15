@@ -437,8 +437,7 @@ describe("AI SDK terminal transport", () => {
           messages,
         })
       ).rejects.toMatchObject({
-        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-        cause: expect.objectContaining({ name: "TimeoutError" }),
+        cause: { name: "TimeoutError" },
         message: `Unable to fetch the host schema from ${hostUrl}: Timed out after 10 seconds.`,
       });
       expect(timeoutSpy).toHaveBeenCalledWith(10_000);

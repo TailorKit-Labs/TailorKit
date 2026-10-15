@@ -20,6 +20,7 @@ import {
   it,
   vi,
 } from "vite-plus/test";
+import { z } from "zod";
 
 import type { Context } from "#context";
 import { env } from "#env";
@@ -646,13 +647,13 @@ describe("platform preview lifecycle and grants", () => {
       { context: { ...context, agentToken }, prefix: "/api/platform" }
     );
     expect(response.response!.status).toBe(200);
-    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    const started = (await response.response!.json()) as {
-      expiresAt: string;
-      sessionId: string;
-      tunnelToken: string;
-    };
+    const started = z
+      .object({
+        expiresAt: z.string(),
+        sessionId: z.string(),
+        tunnelToken: z.string(),
+      })
+      .parse(await response.response!.json());
     expect(new Date(started.expiresAt).getTime()).toBe(agentToken.exp * 1000);
     await db
       .update(cliToken)

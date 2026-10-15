@@ -44,10 +44,10 @@ export const createActionExecution = (app: AppDefinition) => {
   }
   const bindings = new Map<unknown, { queries: Group; mutations: Group }>();
   const compile = (functions: Functions, prefix = "") => {
-    // oxlint-disable-next-line typescript/no-unsafe-assignment -- Object.create(null) is typed as any by the standard library; this empty registry is populated only through the typed assignments below.
-    const queries: Group = Object.create(null);
-    // oxlint-disable-next-line typescript/no-unsafe-assignment -- Object.create(null) is typed as any by the standard library; this empty registry is populated only through the typed assignments below.
-    const mutations: Group = Object.create(null);
+    const queries: Group = {};
+    Object.setPrototypeOf(queries, null);
+    const mutations: Group = {};
+    Object.setPrototypeOf(mutations, null);
     for (const [key, definition] of Object.entries(functions)) {
       const name = prefix ? `${prefix}.${key}` : key;
       if (!isFunction(definition)) {
@@ -95,8 +95,8 @@ export const createActionExecution = (app: AppDefinition) => {
     check: () => void,
     calls: ActionCalls
   ): BoundGroup => {
-    // oxlint-disable-next-line typescript/no-unsafe-assignment -- Object.create(null) is typed as any by the standard library; this empty registry is populated only through the typed assignments below.
-    const bound: BoundGroup = Object.create(null);
+    const bound: BoundGroup = {};
+    Object.setPrototypeOf(bound, null);
     for (const [key, entry] of Object.entries(group)) {
       bound[key] = isCall(entry)
         ? entry(check, calls)

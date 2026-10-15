@@ -1,5 +1,9 @@
 /* oxlint-disable typescript/no-unsafe-member-access, typescript/no-unsafe-return, typescript/no-unsafe-assignment -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
-import type { StandardSchemaV1 } from "@standard-schema/spec";
+import type {
+  StandardSchemaV1,
+  StandardJSONSchemaV1,
+} from "@standard-schema/spec";
+import type { EmptyDefinitionMap } from "@tailorkit/core/schema";
 import { defineContract } from "@tailorkit/core/schema";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
@@ -17,13 +21,13 @@ const requireValue = <T,>(value: T | null | undefined): T => {
 };
 
 // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-const schema = {
+const schema: StandardSchemaV1<unknown, EmptyDefinitionMap> &
+  StandardJSONSchemaV1<unknown, EmptyDefinitionMap> = {
   "~standard": {
     jsonSchema: { input: () => ({}), output: () => ({}) },
     validate: (
       value: Parameters<StandardSchemaV1["~standard"]["validate"]>[0]
-      // oxlint-disable-next-line typescript/no-generated-empty-object-type, typescript/no-unsafe-type-assertion -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    ) => ({ value: value as Record<never, never> }),
+    ) => ({ value: value ?? {} }),
     vendor: "test",
     version: 1 as const,
   },
@@ -376,8 +380,7 @@ it.each(["missing", "error", "invalid", "duplicate"] as const)(
   }
 );
 
-// oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-it("stays idle for multiple slots without a registered view and never calls a resolver", async () => {
+it("stays idle for multiple slots without a registered view and never calls a resolver", () => {
   const { result } = renderHook(() => client.useViews({ slot: "page" }), {
     wrapper,
   });

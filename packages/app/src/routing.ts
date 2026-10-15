@@ -119,11 +119,8 @@ export const createFileClient = (options: {
     ...layout,
     shell: shellComponent(layout, false),
   }));
-  const definitions: Record<
-    string,
-    Record<string, FileViewDefinition>
-    // oxlint-disable-next-line typescript/no-unsafe-assignment -- Object.create(null) is typed as any by the standard library; this empty registry is populated only through the typed assignments below.
-  > = Object.create(null);
+  const definitions: Record<string, Record<string, FileViewDefinition>> = {};
+  Object.setPrototypeOf(definitions, null);
   for (const module of options.views) {
     // SAFETY: The generated module registry owns these component and view declarations; the runtime adapter preserves their exported implementations.
     const view =
@@ -163,11 +160,8 @@ export const createFileClient = (options: {
     }
     slot[view.path] = view;
   }
-  const slots: Record<
-    string,
-    Record<string, FileViewDefinition>
-    // oxlint-disable-next-line typescript/no-unsafe-assignment -- Object.create(null) is typed as any by the standard library; this empty registry is populated only through the typed assignments below.
-  > = Object.create(null);
+  const slots: Record<string, Record<string, FileViewDefinition>> = {};
+  Object.setPrototypeOf(slots, null);
   for (const [slot, views] of Object.entries(definitions)) {
     const slotLayouts = layouts
       .filter((layout) => layout.slot === slot)

@@ -4,6 +4,8 @@ import type {
 } from "@standard-schema/spec";
 
 export type Schema = StandardSchemaV1;
+// oxlint-disable-next-line typescript/no-generated-empty-object-type -- An omitted definition table must have no keys, including in keyof-based inference.
+export type EmptyDefinitionMap = Record<never, never>;
 // This conditional-type identity preserves unconstrained schema inputs; {} would reject null and undefined.
 // oxlint-disable-next-line anti-slop/no-unknown-type-aliases -- The neutral intersection type is part of the public schema inference contract.
 export type EmptyObject = unknown;

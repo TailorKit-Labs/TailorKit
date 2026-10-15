@@ -1,4 +1,4 @@
-/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
+/* oxlint-disable typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { gzipSync, gunzipSync } from "node:zlib";
 
 import { assetHeaders, maxDeploymentBytes } from "@tailorkit/asset-delivery";
@@ -317,16 +317,11 @@ it.each(["R2", "cache"])(
       );
     }
     const response = await fetchAsset(new Request(url));
-    const reader = requireValue(response.body).getReader();
+    const body = requireValue(response.body);
     let deliveredBytes = 0;
     await expect(
       (async () => {
-        while (true) {
-          // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-          const { done, value } = await reader.read();
-          if (done) {
-            break;
-          }
+        for await (const value of body) {
           deliveredBytes += value.byteLength;
         }
       })()

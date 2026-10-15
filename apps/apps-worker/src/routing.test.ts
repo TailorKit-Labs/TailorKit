@@ -1,6 +1,7 @@
 import { AppError } from "@tailorkit/app/server";
 import { Effect } from "effect";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
+import type { z } from "zod";
 
 import worker from "./worker";
 
@@ -74,9 +75,7 @@ const call = async (request: Request) => await worker.fetch(request, env, ctx);
 
 const post = (
   url: string,
-
-  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This fixture must represent malformed input so the runtime validation boundary can be tested.
-  body: unknown = metadata,
+  body: z.core.util.JSONType = metadata,
   token = secret
 ) =>
   new Request(url, {

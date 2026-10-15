@@ -3,6 +3,7 @@ import type {
   StandardSchemaV1,
 } from "@standard-schema/spec";
 import { createTailorKitStore } from "@tailorkit/client-core";
+import type { EmptyDefinitionMap } from "@tailorkit/core/schema";
 import { defineContract } from "@tailorkit/core/schema";
 import type { IframeUiHost } from "@tailorkit/sandbox/host";
 import type {
@@ -97,10 +98,8 @@ vi.mock("@tailorkit/sandbox/host", () => ({
 }));
 
 // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-// oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-const emptySchema: StandardSchemaV1<unknown, Record<never, never>> &
-  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-  StandardJSONSchemaV1<unknown, Record<never, never>> = {
+const emptySchema: StandardSchemaV1<unknown, EmptyDefinitionMap> &
+  StandardJSONSchemaV1<unknown, EmptyDefinitionMap> = {
   "~standard": {
     jsonSchema: {
       input: () => ({}),
@@ -108,8 +107,7 @@ const emptySchema: StandardSchemaV1<unknown, Record<never, never>> &
     },
     validate: (
       value: Parameters<StandardSchemaV1["~standard"]["validate"]>[0]
-      // oxlint-disable-next-line typescript/no-generated-empty-object-type, typescript/no-unsafe-type-assertion -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    ) => ({ value: value as Record<never, never> }),
+    ) => ({ value: value ?? {} }),
     vendor: "test",
     version: 1,
   },
@@ -593,8 +591,14 @@ describe("tailorKitClient React adapter", () => {
     ]);
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     expect(
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-      hostRecords.map((record) => (record.props?.layers as unknown[])?.[0])
+      hostRecords.map((record) => {
+        const layers = record.props?.layers;
+        if (!Array.isArray(layers)) {
+          throw new TypeError("Expected view layers.");
+        }
+        const layer: unknown = layers[0];
+        return layer;
+      })
     ).toEqual([
       { context: { page: { title: "home" } }, path: "/home", status: "ready" },
       { context: { page: { title: "home" } }, path: "/home", status: "ready" },
@@ -849,8 +853,7 @@ const Layers = ({
 describe("view registries", () => {
   beforeEach(() => {
     hostRecords.length = 0;
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
       Response.json({ schema: {} })
     );
   });
@@ -1027,12 +1030,10 @@ const ContentsImplementation2 = () => {
 it("keeps each provider bound to its client's fetch transport", async () => {
   const explicitFetch = vi
     .fn()
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    .mockImplementation(async () => Response.json([{ id: "explicit-user" }]));
+    .mockResolvedValue(Response.json([{ id: "explicit-user" }]));
   const fallbackFetch = vi
     .spyOn(globalThis, "fetch")
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    .mockImplementation(async () => Response.json([{ id: "fallback-user" }]));
+    .mockResolvedValue(Response.json([{ id: "fallback-user" }]));
   const client = createClient({
     baseUrl: "http://runtime.test/api",
     components,
@@ -1097,8 +1098,7 @@ const controlledUserView = (
 );
 
 it("retains equivalent explicit context identity and publishes changed values", async () => {
-  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-  vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
+  vi.spyOn(globalThis, "fetch").mockResolvedValue(
     Response.json({ schema: {} })
   );
   const client = createClient({
@@ -1128,8 +1128,8 @@ describe("supplied app discovery", () => {
     cleanup();
     vi.restoreAllMocks();
   });
+  const client = createClient({ baseUrl: "https://apps.test/api/", contract });
   const Apps = () => {
-    // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
     const { data, isPending, fetch } = client.useApps();
     return (
       <button
@@ -1144,7 +1144,6 @@ describe("supplied app discovery", () => {
       </button>
     );
   };
-  const client = createClient({ baseUrl: "https://apps.test/api/", contract });
 
   it("uses supplied apps for discovery, including updates and empty lists, without fetching", async () => {
     const fetch = vi.spyOn(globalThis, "fetch");

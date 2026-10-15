@@ -7,9 +7,11 @@ import { organization } from "@tailorkit/db/schema/auth";
 import { cliToken } from "@tailorkit/db/schema/cli-auth";
 import { project } from "@tailorkit/db/schema/project";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
+import type { z } from "zod";
 
 import { env } from "#env";
 import { canonicalizeScope } from "#scope";
+import type { Scope } from "#scope";
 import { createTestDb } from "#test/pglite";
 
 const requireValue = <T>(value: T | null | undefined): T => {
@@ -66,13 +68,11 @@ let sameScopeAppId: string;
 let otherScopeAppId: string;
 let otherProjectAppId: string;
 
-const request = (
-  path: string,
+interface AgentRequestBody {
+  [field: string]: z.core.util.JSONType | Scope | Scope[];
+}
 
-  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This fixture must represent malformed input so the runtime validation boundary can be tested.
-  body: unknown = {},
-  secret = jwt
-) =>
+const request = (path: string, body: AgentRequestBody = {}, secret = jwt) =>
   new Request(`https://platform.test/api/platform${path}`, {
     body: JSON.stringify(body),
     headers: {
@@ -81,12 +81,7 @@ const request = (
     },
     method: "POST",
   });
-const post = async (
-  path: string,
-
-  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This fixture must represent malformed input so the runtime validation boundary can be tested.
-  body: unknown = {}
-) => {
+const post = async (path: string, body: AgentRequestBody = {}) => {
   const input = request(path, body);
   let context;
   try {

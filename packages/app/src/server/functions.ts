@@ -5,6 +5,9 @@ import type { TailorKitServerTools } from "#client/tools";
 import type { DatabaseDefinition } from "#database/definition";
 import type { QueryDatabase, MutationDatabase } from "#database/types";
 
+// oxlint-disable-next-line typescript/no-generated-empty-object-type -- Omitted function tables must have no keys so actions expose no undeclared capabilities.
+export type EmptyFunctions = Record<never, never>;
+
 export interface Identity {
   readonly subjectId?: string;
   readonly scope: {
@@ -52,8 +55,7 @@ export type FunctionCalls<F, K extends "query" | "mutation"> = {
       : never;
 };
 
-// oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-export interface ActionContext<F extends Functions = Record<never, never>> {
+export interface ActionContext<F extends Functions = EmptyFunctions> {
   readonly identity: Identity;
   readonly tools: TailorKitServerTools;
   readonly requestId: string;
@@ -67,8 +69,7 @@ export interface FunctionDefinition<
   K extends FunctionKind,
   A extends z.ZodType,
   O,
-  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-  F extends Functions = Record<never, never>,
+  F extends Functions = EmptyFunctions,
   D extends AnyRelations = EmptyRelations,
 > {
   readonly kind: K;
@@ -91,18 +92,10 @@ export const query = <
   const D extends AnyRelations = EmptyRelations,
 >(
   definition: Omit<
-    // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-    FunctionDefinition<"query", A, O, Record<never, never>, D>,
+    FunctionDefinition<"query", A, O, EmptyFunctions, D>,
     "kind"
   > & {
-    handler: FunctionDefinition<
-      "query",
-      A,
-      O,
-      // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-      Record<never, never>,
-      D
-    >["handler"] &
+    handler: FunctionDefinition<"query", A, O, EmptyFunctions, D>["handler"] &
       ([O] extends [never]
         ? unknown
         : O extends PromiseLike<unknown>
@@ -116,16 +109,14 @@ export const mutation = <
   const D extends AnyRelations = EmptyRelations,
 >(
   definition: Omit<
-    // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-    FunctionDefinition<"mutation", A, O, Record<never, never>, D>,
+    FunctionDefinition<"mutation", A, O, EmptyFunctions, D>,
     "kind"
   > & {
     handler: FunctionDefinition<
       "mutation",
       A,
       O,
-      // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-      Record<never, never>,
+      EmptyFunctions,
       D
     >["handler"] &
       ([O] extends [never]
@@ -139,8 +130,7 @@ export const mutation = <
 export const action = <
   A extends z.ZodType,
   O,
-  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-  const F extends Functions = Record<never, never>,
+  const F extends Functions = EmptyFunctions,
 >(
   definition: Omit<FunctionDefinition<"action", A, O, F>, "kind"> & {
     functions?: F;

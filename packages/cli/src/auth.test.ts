@@ -53,8 +53,10 @@ const loadAuthModule = async (homeDirectory: string) => {
 const authStorePath = (homeDirectory: string) =>
   path.join(homeDirectory, ".tailorkit", "auth.json");
 
-// oxlint-disable-next-line anti-slop/no-unknown-parameters -- This fixture must represent malformed input so the runtime validation boundary can be tested.
-const writeAuthStoreFixture = async (homeDirectory: string, value: unknown) => {
+const writeAuthStoreFixture = async (
+  homeDirectory: string,
+  value: z.core.util.JSONType
+) => {
   const filePath = authStorePath(homeDirectory);
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, JSON.stringify(value));

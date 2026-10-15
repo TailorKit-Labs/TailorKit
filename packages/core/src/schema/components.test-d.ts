@@ -1,19 +1,19 @@
 import { expectTypeOf } from "vite-plus/test";
-import type { z } from "zod";
+import { z } from "zod";
 
 import type {
   Component,
   ComponentProps,
   NoComponentFieldCallbackConflicts,
 } from "./components";
+import type { EmptyDefinitionMap } from "./shared";
 
 interface Button {
   fields: z.ZodObject<{
     variant: z.ZodEnum<{ default: "default"; secondary: "secondary" }>;
   }>;
   callbacks: {
-    // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-    onClick: Record<never, never>;
+    onClick: EmptyDefinitionMap;
   };
   children: true;
 }
@@ -25,12 +25,10 @@ expectTypeOf<ComponentProps<Button>>().toExtend<{
 
 expectTypeOf<Button["children"]>().toEqualTypeOf<true>();
 
-// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const annotatedComponent: Component = {
   callbacks: {
     onValueChange: {
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-      input: {} as z.ZodObject<{ value: z.ZodString }>,
+      input: z.object({ value: z.string() }),
     },
   },
 };
@@ -48,8 +46,7 @@ expectTypeOf<
   NoComponentFieldCallbackConflicts<{
     Button: {
       fields: z.ZodObject<{ onClick: z.ZodString }>;
-      // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-      callbacks: { onClick: Record<never, never> };
+      callbacks: { onClick: EmptyDefinitionMap };
     };
   }>
 >().toExtend<{

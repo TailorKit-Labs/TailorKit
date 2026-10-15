@@ -262,11 +262,11 @@ describe("MCP database authorization", () => {
     expect(grants).toHaveLength(3);
     expect(grant).toMatchObject({
       projectId,
-      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-      revokedAt: expect.any(Date),
+
       scope: scope.scope,
       scopeKey: scope.scopeKey,
     });
+    expect(grant?.revokedAt).toBeInstanceOf(Date);
     expect(grants.filter(({ id }) => id !== requireValue(grant).id)).toEqual(
       existingGrants
     );
@@ -312,15 +312,14 @@ describe("MCP database authorization", () => {
         existingGrants.some((existing) => existing.id === id)
       )
     ).toEqual(existingGrants);
-    expect(
-      grants.find(
-        ({ id }) => !existingGrants.some((existing) => existing.id === id)
-      )
-    ).toMatchObject({
+    const createdGrant = grants.find(
+      ({ id }) => !existingGrants.some((existing) => existing.id === id)
+    );
+    expect(createdGrant).toMatchObject({
       projectId,
-      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-      revokedAt: expect.any(Date),
+
       scope: scope.scope,
     });
+    expect(createdGrant?.revokedAt).toBeInstanceOf(Date);
   });
 });

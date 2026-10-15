@@ -1,5 +1,3 @@
-// Test fixtures use promise-shaped callbacks and assertions on known fixture values.
-/* eslint-disable require-await */
 import { beforeEach, expect, it, vi } from "vite-plus/test";
 
 import { handleBackendSession } from "./backend";
@@ -17,8 +15,19 @@ const authenticate = vi
   .mockResolvedValue({
     scopes: { workspace: { id: "authorized-workspace" } },
   });
-// oxlint-disable-next-line anti-slop/no-unknown-parameters -- This fixture must represent malformed input so the runtime validation boundary can be tested.
-const request = (body: unknown, origin = "https://host.test") =>
+
+interface BackendSessionFixture {
+  appId: string | number;
+  installationId?: string;
+  subjectId?: string;
+  scopes?: { workspace: { id: string } };
+  url?: string;
+}
+
+const request = (
+  body: BackendSessionFixture | null,
+  origin = "https://host.test"
+) =>
   new Request("https://host.test/api/tailorkit/backend/session", {
     body: JSON.stringify(body),
     headers: { "content-type": "application/json", origin },
@@ -52,7 +61,7 @@ it("uses existing host authentication and passes only verified scopes to the pla
 it("rejects unauthenticated requests before issuing tokens", async () => {
   const response = await handleBackendSession(
     request({ appId: "app" }),
-    async () => null,
+    vi.fn<Parameters<typeof handleBackendSession>[1]>().mockResolvedValue(null),
     issueSession
   );
   expect(response.status).toBe(401);

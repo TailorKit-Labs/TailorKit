@@ -1,6 +1,6 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
-import type { Schema } from "./shared";
+import type { EmptyDefinitionMap, Schema } from "./shared";
 
 export type ContextDefinitions = Record<`/${string}`, Schema>;
 export type ViewDefinition<TContext extends Schema = Schema> = TContext;
@@ -14,8 +14,7 @@ export interface ResolvedViewMetadata {
 type OwnContext<T> =
   T extends StandardSchemaV1<unknown, infer TOutput>
     ? TOutput
-    : // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-      Record<never, never>;
+    : EmptyDefinitionMap;
 type ContextKeys<T> = T extends Record<string, never> ? never : keyof T;
 type Ancestors<T, P extends string> = {
   [K in keyof T & string]: K extends P

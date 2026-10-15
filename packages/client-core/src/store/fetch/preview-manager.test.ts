@@ -617,14 +617,14 @@ it("clears the published preview before refreshing apps when a session ends", as
   ];
   const snapshots: { revision: number; source: string | null }[] = [];
   const endedSnapshots: { revision: number; source: string | null }[] = [];
-  const onEnded = vi.fn(() => {
-    // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
-    endedSnapshots.push(manager.getSnapshot("session"));
-  });
+  const onEnded = vi.fn<() => void>();
   const manager = createPreviewManager(
     new URL("https://host.test/api/tailorkit/"),
     onEnded
   );
+  onEnded.mockImplementation(() => {
+    endedSnapshots.push(manager.getSnapshot("session"));
+  });
   const unsubscribe = manager.subscribe(
     {
       id: "app",

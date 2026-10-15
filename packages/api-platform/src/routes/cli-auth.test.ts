@@ -127,12 +127,12 @@ describe("platform CLI auth scopes", () => {
     if (polled.body.status !== "approved") {
       throw new Error("Expected CLI auth session to be approved.");
     }
-    expect(polled.body).toEqual({
-      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-      deployToken: expect.any(String),
+    const { deployToken, ...approvedSession } = polled.body;
+    expect(approvedSession).toEqual({
       scope: expectedScope,
       status: "approved",
     });
+    expect(deployToken).toBeTypeOf("string");
 
     const verified = await call(
       cliAuthRouter.verifyToken,
@@ -142,14 +142,11 @@ describe("platform CLI auth scopes", () => {
     expect(verified.body).toEqual({ scope: expectedScope });
 
     const token = await db.query.cliToken.findFirst();
-    expect(token).toEqual(
-      expect.objectContaining({
-        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-        lastUsedAt: expect.any(Date),
-        scope: expectedScope,
-        scopeKey: expectedScopeKey,
-      })
-    );
+    expect(token).toMatchObject({
+      scope: expectedScope,
+      scopeKey: expectedScopeKey,
+    });
+    expect(token?.lastUsedAt).toBeInstanceOf(Date);
   });
 
   it("rejects malformed stored scopes in approved sessions and deploy tokens", async () => {

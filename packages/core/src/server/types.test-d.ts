@@ -2,6 +2,8 @@ import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { expectTypeOf } from "vite-plus/test";
 import { z } from "zod";
 
+import type { EmptyDefinitionMap } from "#schema/shared";
+
 import { createTailorKitServer } from "./handler";
 import type { TailorKitServerOptions, TailorKitHostContext } from "./types";
 
@@ -40,12 +42,9 @@ const scopedServer = createTailorKitServer({
   scopes: namedScopes,
 });
 const explicitlyTypedOptions: TailorKitServerOptions<
-  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-  Record<never, never>,
-  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-  Record<never, never>,
-  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-  Record<never, never>,
+  EmptyDefinitionMap,
+  EmptyDefinitionMap,
+  EmptyDefinitionMap,
   typeof namedScopes
 > = {
   baseUrl: "https://example.com/api/tailorkit",
@@ -100,18 +99,21 @@ void scopedServer.handler(
   }
 );
 
-// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const nonJsonSchemaScope = {
   "~standard": {
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    types: {} as StandardSchemaV1.Types<
-      { accountId: string },
-      { accountId: string }
-    >,
+    types: {
+      input: { accountId: "account" },
+      output: { accountId: "account" },
+    },
     validate: (
       value: Parameters<StandardSchemaV1["~standard"]["validate"]>[0]
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    ) => ({ value: value as { accountId: string } }),
+    ) => {
+      const parsed = z.object({ accountId: z.string() }).safeParse(value);
+      if (!parsed.success) {
+        return { issues: [{ message: "Expected an account ID." }] };
+      }
+      return { value: parsed.data };
+    },
     vendor: "core-type-test",
     version: 1 as const,
   },

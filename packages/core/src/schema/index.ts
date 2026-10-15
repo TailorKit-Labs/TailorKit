@@ -38,6 +38,7 @@ export {
   type ResolvedViewMetadata,
 } from "./views";
 export {
+  type EmptyDefinitionMap,
   type Schema,
   type SchemaSerializer,
   type SchemaSerializerOptions,
