@@ -34,7 +34,7 @@ pnpm playground:todo:build
 
 `playground:generate` serializes the selected contract to `playground/schema.json`, then runs `tailorkit generate --schema` for the todo app. It does not need the host to be running. The file contains the raw schema object accepted by `tailorkit generate --schema`, matching the `schema` value inside the host's `/meta` response.
 
-The host contract exports a small TailorKit component surface: the standard `Box`, `Flex`, `Grid`, and `Inline` primitives, plus `Button` and `Input`. The host maps those components to `@tailorkit/ui`.
+The host contract exports a small TailorKit component surface: the standard `Box`, `Flex`, `Grid`, `Inline`, and Lucide-backed `Icon` primitives, plus `Button` and `Input`. The host maps those components to `@tailorkit/ui`.
 
 The contracts in `playground/shared/src/contracts/` are deliberately written with each validator's native API. Keep their components, views, scopes, tools, and validation behavior aligned when editing them.
 

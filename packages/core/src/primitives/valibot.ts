@@ -1,5 +1,6 @@
 import * as v from "valibot";
 
+import { Icon } from "#icons/valibot";
 import type { ComponentDefinition } from "#schema/index";
 
 import { primitiveDefinitions, mapPrimitiveDefinitions } from "./definition";
@@ -12,7 +13,7 @@ type FieldValidators = Record<string, Schema>;
 type PrimitiveComponents = Record<
   PrimitiveName,
   ComponentDefinition & { children: true }
->;
+> & { Icon: ReturnType<typeof Icon> };
 
 const tokenPicklist = (tokens: Record<string, string> | undefined): Schema => {
   const keys = Object.keys(tokens ?? {});
@@ -65,5 +66,5 @@ export const primitives = (theme: TailorKitTheme = {}): PrimitiveComponents => {
     children: true as const,
     fields: v.strictObject(primitiveFields(name, resolvedTheme)),
   }));
-  return components;
+  return { ...components, Icon: Icon({ library: "lucide" }) };
 };

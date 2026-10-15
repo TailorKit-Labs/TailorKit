@@ -4,6 +4,8 @@ import type { TailorKitTheme } from "@tailorkit/core/schema";
 import { createContext, useContext, useId, useMemo } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
+import { Icon } from "#icons/icon";
+
 interface PrimitiveThemeContextValue {
   viewId: string;
   theme: TailorKitTheme;
@@ -85,6 +87,7 @@ export const primitives = {
       {children}
     </Primitive>
   ),
+  Icon: Icon({ library: "lucide" }),
   Inline: ({
     props,
     children,

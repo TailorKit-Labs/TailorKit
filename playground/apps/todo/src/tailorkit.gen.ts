@@ -8,6 +8,7 @@
 
 import { createRemoteComponent } from "tailorkit/client";
 
+
 import { createApi } from "tailorkit/client";
 import type app from "./server";
 type AppServerFunctions = typeof app.functions;
@@ -22,11 +23,11 @@ import { callTool } from "tailorkit/client";
 export interface ViewPropsByPath {
   "/": {
     context: {
-      user: {
+      team: {
         id: string;
         name: string;
       };
-      team: {
+      user: {
         id: string;
         name: string;
       };
@@ -36,234 +37,76 @@ export interface ViewPropsByPath {
 
 declare module "tailorkit/client" {
   interface TailorKitViews extends ViewPropsByPath {}
-  interface TailorKitSlots {
-    panel: { views: "/"; multiple: false };
-  }
+  interface TailorKitSlots { "panel": { views: "/"; multiple: false }; }
 }
 
 export type ViewPath = keyof ViewPropsByPath & string;
 export type ViewProps<TPath extends ViewPath> = ViewPropsByPath[TPath];
 export type TailorKitTools = {
   todos: {
-    list: (input?: undefined) => Promise<
-      {
-        id: string;
-        title: string;
-        done: boolean;
-      }[]
-    >;
-    add: (input: { title: string }) => Promise<{
+    add: (input: {
+      title: string;
+    }) => Promise<{
+      done: boolean;
       id: string;
       title: string;
-      done: boolean;
     }>;
-    toggle: (input: { id: string }) => Promise<{
+    list: (input?: undefined) => Promise<{
+      done: boolean;
       id: string;
       title: string;
-      done: boolean;
-    }>;
-    remove: (input: { id: string }) => Promise<{
+    }[]>;
+    remove: (input: {
+      id: string;
+    }) => Promise<{
       ok: boolean;
+    }>;
+    toggle: (input: {
+      id: string;
+    }) => Promise<{
+      done: boolean;
+      id: string;
+      title: string;
     }>;
   };
 };
-export type TailorKitBackendTools = {};
-declare module "tailorkit/client" {
-  interface TailorKitServerTools extends TailorKitBackendTools {}
-}
+export type TailorKitBackendTools = {
+};
+declare module "tailorkit/client" { interface TailorKitServerTools extends TailorKitBackendTools {} }
 export const tools = {
   todos: {
-    list: (input?: unknown) => callTool("client", "todos.list", input),
     add: (input?: unknown) => callTool("client", "todos.add", input),
-    toggle: (input?: unknown) => callTool("client", "todos.toggle", input),
+    list: (input?: unknown) => callTool("client", "todos.list", input),
     remove: (input?: unknown) => callTool("client", "todos.remove", input),
-  },
+    toggle: (input?: unknown) => callTool("client", "todos.toggle", input),
+  }
+,
 } as TailorKitTools;
 
 export type Breakpoint = "base" | "sm" | "md" | "lg" | "xl" | "2xl";
 export type Responsive<TValue> = TValue | Partial<Record<Breakpoint, TValue>>;
 export type Background = Responsive<"muted" | "surface">;
-export type Basis = Responsive<
-  | "0"
-  | "1/2"
-  | "1/3"
-  | "2/3"
-  | "1/4"
-  | "2/4"
-  | "3/4"
-  | "1/5"
-  | "2/5"
-  | "3/5"
-  | "4/5"
-  | "1/6"
-  | "2/6"
-  | "3/6"
-  | "4/6"
-  | "5/6"
-  | "1/12"
-  | "2/12"
-  | "3/12"
-  | "4/12"
-  | "5/12"
-  | "6/12"
-  | "7/12"
-  | "8/12"
-  | "9/12"
-  | "10/12"
-  | "11/12"
-  | "full"
-  | "min"
-  | "max"
-  | "fit"
->;
-export type Border = Responsive<"solid" | "dashed" | "dotted" | "double">;
+export type Basis = Responsive<"0" | "1/12" | "1/2" | "1/3" | "1/4" | "1/5" | "1/6" | "10/12" | "11/12" | "2/12" | "2/3" | "2/4" | "2/5" | "2/6" | "3/12" | "3/4" | "3/5" | "3/6" | "4/12" | "4/5" | "4/6" | "5/12" | "5/6" | "6/12" | "7/12" | "8/12" | "9/12" | "fit" | "full" | "max" | "min">;
+export type Border = Responsive<"dashed" | "dotted" | "double" | "solid">;
 export type BorderColor = Responsive<"default">;
 export type Grow = Responsive<"0" | "1">;
-export type Height = Responsive<
-  | "0"
-  | "1/2"
-  | "1/3"
-  | "2/3"
-  | "1/4"
-  | "2/4"
-  | "3/4"
-  | "1/5"
-  | "2/5"
-  | "3/5"
-  | "4/5"
-  | "1/6"
-  | "2/6"
-  | "3/6"
-  | "4/6"
-  | "5/6"
-  | "1/12"
-  | "2/12"
-  | "3/12"
-  | "4/12"
-  | "5/12"
-  | "6/12"
-  | "7/12"
-  | "8/12"
-  | "9/12"
-  | "10/12"
-  | "11/12"
-  | "full"
-  | "min"
-  | "max"
-  | "fit"
->;
-export type Margin = Responsive<"none" | "2xs" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl">;
-export type MinHeight = Responsive<
-  | "0"
-  | "1/2"
-  | "1/3"
-  | "2/3"
-  | "1/4"
-  | "2/4"
-  | "3/4"
-  | "1/5"
-  | "2/5"
-  | "3/5"
-  | "4/5"
-  | "1/6"
-  | "2/6"
-  | "3/6"
-  | "4/6"
-  | "5/6"
-  | "1/12"
-  | "2/12"
-  | "3/12"
-  | "4/12"
-  | "5/12"
-  | "6/12"
-  | "7/12"
-  | "8/12"
-  | "9/12"
-  | "10/12"
-  | "11/12"
-  | "full"
-  | "min"
-  | "max"
-  | "fit"
->;
-export type MinWidth = Responsive<
-  | "0"
-  | "1/2"
-  | "1/3"
-  | "2/3"
-  | "1/4"
-  | "2/4"
-  | "3/4"
-  | "1/5"
-  | "2/5"
-  | "3/5"
-  | "4/5"
-  | "1/6"
-  | "2/6"
-  | "3/6"
-  | "4/6"
-  | "5/6"
-  | "1/12"
-  | "2/12"
-  | "3/12"
-  | "4/12"
-  | "5/12"
-  | "6/12"
-  | "7/12"
-  | "8/12"
-  | "9/12"
-  | "10/12"
-  | "11/12"
-  | "full"
-  | "min"
-  | "max"
-  | "fit"
->;
-export type Overflow = Responsive<"visible" | "hidden" | "clip" | "scroll" | "auto">;
-export type OverflowWrap = Responsive<"normal" | "breakWord" | "anywhere">;
-export type Padding = Responsive<"none" | "2xs" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl">;
-export type Radius = Responsive<"none" | "2xs" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl">;
+export type Height = Responsive<"0" | "1/12" | "1/2" | "1/3" | "1/4" | "1/5" | "1/6" | "10/12" | "11/12" | "2/12" | "2/3" | "2/4" | "2/5" | "2/6" | "3/12" | "3/4" | "3/5" | "3/6" | "4/12" | "4/5" | "4/6" | "5/12" | "5/6" | "6/12" | "7/12" | "8/12" | "9/12" | "fit" | "full" | "max" | "min">;
+export type Margin = Responsive<"2xl" | "2xs" | "3xl" | "lg" | "md" | "none" | "sm" | "xl" | "xs">;
+export type MinHeight = Responsive<"0" | "1/12" | "1/2" | "1/3" | "1/4" | "1/5" | "1/6" | "10/12" | "11/12" | "2/12" | "2/3" | "2/4" | "2/5" | "2/6" | "3/12" | "3/4" | "3/5" | "3/6" | "4/12" | "4/5" | "4/6" | "5/12" | "5/6" | "6/12" | "7/12" | "8/12" | "9/12" | "fit" | "full" | "max" | "min">;
+export type MinWidth = Responsive<"0" | "1/12" | "1/2" | "1/3" | "1/4" | "1/5" | "1/6" | "10/12" | "11/12" | "2/12" | "2/3" | "2/4" | "2/5" | "2/6" | "3/12" | "3/4" | "3/5" | "3/6" | "4/12" | "4/5" | "4/6" | "5/12" | "5/6" | "6/12" | "7/12" | "8/12" | "9/12" | "fit" | "full" | "max" | "min">;
+export type Overflow = Responsive<"auto" | "clip" | "hidden" | "scroll" | "visible">;
+export type OverflowWrap = Responsive<"anywhere" | "breakWord" | "normal">;
+export type Padding = Responsive<"2xl" | "2xs" | "3xl" | "lg" | "md" | "none" | "sm" | "xl" | "xs">;
+export type Radius = Responsive<"2xl" | "2xs" | "3xl" | "lg" | "md" | "none" | "sm" | "xl" | "xs">;
 export type Shrink = Responsive<"0" | "1">;
-export type TextAlign = Responsive<"left" | "right" | "start" | "end" | "center" | "justify">;
+export type TextAlign = Responsive<"center" | "end" | "justify" | "left" | "right" | "start">;
 export type TextColor = Responsive<"default" | "muted">;
 export type TextOverflow = Responsive<"clip" | "ellipsis">;
-export type TextTransform = Responsive<"capitalize" | "uppercase" | "lowercase" | "none">;
-export type Width = Responsive<
-  | "0"
-  | "1/2"
-  | "1/3"
-  | "2/3"
-  | "1/4"
-  | "2/4"
-  | "3/4"
-  | "1/5"
-  | "2/5"
-  | "3/5"
-  | "4/5"
-  | "1/6"
-  | "2/6"
-  | "3/6"
-  | "4/6"
-  | "5/6"
-  | "1/12"
-  | "2/12"
-  | "3/12"
-  | "4/12"
-  | "5/12"
-  | "6/12"
-  | "7/12"
-  | "8/12"
-  | "9/12"
-  | "10/12"
-  | "11/12"
-  | "full"
-  | "min"
-  | "max"
-  | "fit"
->;
+export type TextTransform = Responsive<"capitalize" | "lowercase" | "none" | "uppercase">;
+export type Width = Responsive<"0" | "1/12" | "1/2" | "1/3" | "1/4" | "1/5" | "1/6" | "10/12" | "11/12" | "2/12" | "2/3" | "2/4" | "2/5" | "2/6" | "3/12" | "3/4" | "3/5" | "3/6" | "4/12" | "4/5" | "4/6" | "5/12" | "5/6" | "6/12" | "7/12" | "8/12" | "9/12" | "fit" | "full" | "max" | "min">;
 export type Align = Responsive<"start" | "center" | "end" | "stretch">;
 export type Direction = Responsive<"row" | "column">;
-export type Gap = Responsive<"none" | "2xs" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl">;
+export type Gap = Responsive<"2xl" | "2xs" | "3xl" | "lg" | "md" | "none" | "sm" | "xl" | "xs">;
 export type Justify = Responsive<"start" | "center" | "end" | "between">;
 export type Wrap = Responsive<"wrap" | "nowrap" | "wrap-reverse">;
 export type Columns = Responsive<1 | 2 | 3 | 4 | 6 | 12>;
@@ -370,6 +213,17 @@ export const Inline = /* @__PURE__ */ createRemoteComponent<InlineProps, true>("
   children: true,
 });
 
+export interface IconProps {
+  label?: string;
+  name?: string;
+  size?: number;
+  strokeWidth?: number;
+}
+
+export const Icon = /* @__PURE__ */ createRemoteComponent<IconProps, false>("Icon", {
+  children: false,
+});
+
 export interface ButtonProps {
   disabled?: boolean;
   size?: "default" | "sm" | "lg" | "icon" | "icon-sm";
@@ -379,16 +233,18 @@ export interface ButtonProps {
 
 export const Button = /* @__PURE__ */ createRemoteComponent<ButtonProps, true>("Button", {
   children: true,
-  callbacks: { onClick: 0 },
+  callbacks: { "onClick": 0 },
 });
 
 export interface InputProps {
-  value?: string;
   placeholder?: string;
-  onValueChange?: (input: { value: string }) => void;
+  value?: string;
+  onValueChange?: (input: {
+    value: string;
+  }) => void;
 }
 
 export const Input = /* @__PURE__ */ createRemoteComponent<InputProps, false>("Input", {
   children: false,
-  callbacks: { onValueChange: 1 },
+  callbacks: { "onValueChange": 1 },
 });

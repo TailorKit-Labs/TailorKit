@@ -2,6 +2,7 @@ import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { describe, expect, it } from "vite-plus/test";
 
 import { createTailorKitSchema } from "#schema/schema";
+import { TailorKitSchemaSpec } from "#spec/spec";
 
 import { primitives as arktypePrimitives } from "./arktype";
 import { primitives as valibotPrimitives } from "./valibot";
@@ -24,6 +25,29 @@ const isValid = (
 };
 
 describe("primitive schema components", () => {
+  it.each([
+    ["Zod", zodPrimitives],
+    ["Valibot", valibotPrimitives],
+    ["ArkType", arktypePrimitives],
+  ] as const)("includes a leaf Icon in %s primitives", (_name, define) => {
+    const { Icon } = define();
+    expect(Icon.children).toBe(false);
+    expect(isValid(Icon.fields, { name: "arrow-right", size: 16 })).toBe(true);
+    expect(isValid(Icon.fields, {})).toBe(false);
+    expect(isValid(Icon.fields, { name: "../arrow-right" })).toBe(false);
+  });
+
+  it("serializes Icon with the other primitives", () => {
+    const serialized = createTailorKitSchema({
+      components: zodPrimitives(),
+    }).serialize();
+    expect(serialized.components.Icon).toMatchObject({
+      children: false,
+      fields: { required: ["name"] },
+    });
+    expect(TailorKitSchemaSpec.safeParse(serialized).success).toBe(true);
+  });
+
   const theme = {
     breakpoints: {
       base: null,

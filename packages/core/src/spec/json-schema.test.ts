@@ -5,6 +5,8 @@ import { JsonSchema } from "./json-schema";
 
 describe("JSON Schema spec", () => {
   it.each([
+    { name: "bounded string", schema: z.string().min(1).max(100) },
+    { name: "patterned string", schema: z.string().regex(/^[a-z-]+$/u) },
     { name: "integer", schema: z.int() },
     { name: "record", schema: z.record(z.string(), z.number().nullable()) },
     { name: "fixed tuple", schema: z.tuple([z.string(), z.number()]) },
@@ -39,6 +41,15 @@ describe("JSON Schema spec", () => {
     ).toBe(false);
     expect(
       JsonSchema.safeParse({ maxItems: length, type: "array" }).success
+    ).toBe(false);
+  });
+
+  it.each([-1, 1.5])("rejects invalid string lengths: %s", (length) => {
+    expect(
+      JsonSchema.safeParse({ minLength: length, type: "string" }).success
+    ).toBe(false);
+    expect(
+      JsonSchema.safeParse({ maxLength: length, type: "string" }).success
     ).toBe(false);
   });
 });
