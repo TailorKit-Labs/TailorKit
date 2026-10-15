@@ -2,6 +2,18 @@
 
 Enable `server: {}` in `tailorkit.config.ts`; the default entry is `src/server.ts`. Backend files are separate from the Preact iframe and run on the platform, not a Node.js app server. Do not add HTTP routes, a listener, a database driver, or a custom client transport.
 
+## Locate public declarations when needed
+
+Use the recipes below first. `tailorkit/server` re-exports `@tailorkit/app/server`; `tailorkit/client` re-exports `@tailorkit/app/client`. The umbrella declarations can therefore contain only re-exports. With pnpm, transitive packages need not exist in the app's top-level `node_modules/@tailorkit` directory.
+
+To locate the installed app SDK's declarations from `/workspace/app`, resolve through the umbrella package:
+
+```sh
+node --input-type=module -e 'import { findPackageJSON } from "node:module"; import { dirname, join } from "node:path"; console.log(join(dirname(findPackageJSON("@tailorkit/app", import.meta.resolve("tailorkit/server"))), "dist"));'
+```
+
+Read `server.d.ts` or `client.d.ts` in that directory and follow only the declaration imports needed for the uncovered API. Keep app imports on the public `tailorkit/server` and `tailorkit/client` entry points.
+
 ## Define and register
 
 Use `fn.query`, `fn.mutation`, and `fn.action` from `tailorkit/server`. Chain `.input(zodSchema)` and optionally `.output(zodSchema)` before `.handler(...)`. Handlers receive validated `input`; without an input schema it is `undefined`. Return JSON-compatible values (use `null` for an absent record).

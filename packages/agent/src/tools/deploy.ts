@@ -15,7 +15,7 @@ export const deployTool = tool({
     appId: z.string().min(1),
   }),
   description:
-    "Build, type-check, and publish the finished app to its authorized TailorKit app. No login or host access is needed. Call only after completing and verifying the requested changes.",
+    "Build, type-check, and publish the finished app to its authorized TailorKit app. Run lint and relevant tests first; this tool owns the build and type check, so do not run a separate build before calling it. Failures include compiler diagnostics for repair. No login or host access is needed.",
   execute: async (_input, options) => {
     const { appId, agentToken } = options.context;
     try {
@@ -35,7 +35,11 @@ export const deployTool = tool({
         ],
         cmd: "pnpm",
         cwd: "/workspace/app",
-        env: { TAILORKIT_AGENT_TOKEN: agentToken },
+        env: {
+          CI: "true",
+          NO_COLOR: "1",
+          TAILORKIT_AGENT_TOKEN: agentToken,
+        },
         signal: options.abortSignal,
         timeoutMs: sandboxIdleTimeoutMs,
       });

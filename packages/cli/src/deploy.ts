@@ -248,6 +248,17 @@ const typecheckAppEntries = async (
   }
   const { getClientSourceFiles } = await import("@tailorkit/vite/builder");
   const clientFiles = await getClientSourceFiles(loaded.root);
+  const entryFiles = [
+    ...clientFiles,
+    ...(loaded.config.server
+      ? [
+          path.resolve(
+            loaded.root,
+            loaded.config.server.entry ?? "src/server.ts"
+          ),
+        ]
+      : []),
+  ];
   // Check both application entry points with the project compiler options.
   const temporary = await mkdtemp(
     path.join(loaded.root, ".tailorkit-typecheck-")
@@ -259,17 +270,7 @@ const typecheckAppEntries = async (
       JSON.stringify({
         compilerOptions: { composite: false, incremental: false, noEmit: true },
         extends: baseTsconfig,
-        files: [
-          ...clientFiles,
-          ...(loaded.config.server
-            ? [
-                path.resolve(
-                  loaded.root,
-                  loaded.config.server.entry ?? "src/server.ts"
-                ),
-              ]
-            : []),
-        ],
+        files: entryFiles,
         include: [],
       })
     );
@@ -290,7 +291,7 @@ const typecheckAppEntries = async (
       .safeParse(error);
     const failure = parsed.success ? parsed.data : {};
     return {
-      command: `tsc --noEmit ${clientFiles.map((file) => path.relative(loaded.root, file)).join(" ")}`,
+      command: `tsc --noEmit --project ${JSON.stringify(path.relative(loaded.root, baseTsconfig))} --pretty false (app entries: ${entryFiles.map((file) => JSON.stringify(path.relative(loaded.root, file))).join(", ")})`,
       exitCode: isNumberValue(failure.code) ? failure.code : null,
       output:
         (`${failure.stdout ?? ""}${failure.stderr ?? ""}`.trim() ||
@@ -356,7 +357,13 @@ export const runDeploy = async (
       typecheckResult.value
     );
     if (!(shouldContinue === true)) {
-      throw new Error("Deployment cancelled because type check failed.");
+      throw new Error(
+        [
+          "Deployment cancelled because type check failed.",
+          `Command: ${typecheckResult.value.command}`,
+          typecheckResult.value.output,
+        ].join("\n")
+      );
     }
   }
 

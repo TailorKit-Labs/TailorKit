@@ -63,6 +63,8 @@ it("pins the authorized app and injects credentials only into the deploy process
     ],
     cmd: "pnpm",
     env: {
+      CI: "true",
+      NO_COLOR: "1",
       TAILORKIT_AGENT_TOKEN: context.agentToken,
     },
   });
