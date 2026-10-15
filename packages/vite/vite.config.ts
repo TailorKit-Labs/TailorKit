@@ -14,4 +14,8 @@ export default defineConfig({
     format: "esm",
     target: "node20",
   },
+  test: {
+    hookTimeout: 5000,
+    testTimeout: 5000,
+  },
 });

@@ -316,18 +316,18 @@ it("builds file routes with extracted instances and discovers additions, renames
         return current.views.map((view) => view.path).toSorted();
       };
       await expect
-        .poll(paths, { timeout: 10_000 })
+        .poll(paths, { timeout: 2500 })
         .toEqual(["/", "/customers/details"]);
       await rename(
         next,
         path.join(root, "src/slots/page/customers.summary.view.tsx")
       );
       await expect
-        .poll(paths, { timeout: 10_000 })
+        .poll(paths, { timeout: 2500 })
         .toEqual(["/", "/customers/summary"]);
       await rm(path.join(root, "src/slots/page/index.view.tsx"));
       await expect
-        .poll(paths, { timeout: 10_000 })
+        .poll(paths, { timeout: 2500 })
         .toEqual(["/customers/summary"]);
       await expect
         .poll(
@@ -338,7 +338,7 @@ it("builds file routes with extracted instances and discovers additions, renames
             );
             return server.includes("PRIVATE_RESOLVER");
           },
-          { timeout: 10_000 }
+          { timeout: 2500 }
         )
         .toBe(false);
     } finally {
@@ -347,7 +347,7 @@ it("builds file routes with extracted instances and discovers additions, renames
   } finally {
     await rm(root, { force: true, recursive: true });
   }
-}, 60_000);
+});
 
 it.each([
   ['view: "/index"', 'view must be "/"'],

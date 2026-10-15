@@ -199,7 +199,7 @@ it("chunks exact boundaries and the largest allowed aggregate build", async () =
       ).toBeLessThan(512 * 1024);
     }
   }
-}, 30_000);
+});
 
 it("detects unchanged output and refuses an oversized rebuild snapshot", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-preview-"));

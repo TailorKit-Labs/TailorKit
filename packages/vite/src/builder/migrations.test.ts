@@ -36,7 +36,7 @@ it("packages generated SQL with stable checksums and tracks the source files", a
   } finally {
     await rm(root, { force: true, recursive: true });
   }
-}, 60_000);
+});
 
 it("allows an absent default directory but fails for missing configured migrations or malformed files", async () => {
   const root = await mkdtemp(

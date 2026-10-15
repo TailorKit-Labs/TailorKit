@@ -86,7 +86,7 @@ it("builds the app's Vite config with custom plugins, aliases, constants and out
   } finally {
     await rm(root, { force: true, recursive: true });
   }
-}, 30_000);
+});
 
 it("requires the TailorKit plugin when deploying", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-missing-plugin-"));

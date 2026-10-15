@@ -30,4 +30,8 @@ export default defineConfig({
     sourcemap: true,
     target: "node24",
   },
+  test: {
+    hookTimeout: 5000,
+    testTimeout: 5000,
+  },
 });

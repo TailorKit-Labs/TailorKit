@@ -370,6 +370,5 @@ it.each(["api-key", "runtime-oidc"])(
       await rm(hostJournal, { force: true, recursive: true });
       await rm(otherHostJournal, { force: true, recursive: true });
     }
-  },
-  30_000
+  }
 );

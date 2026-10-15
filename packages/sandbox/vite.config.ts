@@ -21,4 +21,8 @@ export default defineConfig({
     },
   },
   plugins: [iframeRuntimePlugin()],
+  test: {
+    hookTimeout: 5000,
+    testTimeout: 5000,
+  },
 });

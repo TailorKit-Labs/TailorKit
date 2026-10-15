@@ -5,7 +5,8 @@ import { appAgentLease, appAgentThread } from "@tailorkit/db/schema/apps";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import {
-  afterEach,
+  afterAll,
+  beforeAll,
   beforeEach,
   describe,
   expect,
@@ -55,15 +56,10 @@ const resumeFrom = {
   specificationVersion: "harness-v1" as const,
   type: "resume-session" as const,
 };
-let client: PGlite;
-let database: ReturnType<typeof drizzle>;
+const client = new PGlite();
+const database = drizzle({ client });
 
-beforeEach(async () => {
-  vi.resetAllMocks();
-  mocks.runStatus.mockResolvedValue("running");
-  client = new PGlite();
-  database = drizzle({ client });
-  mocks.db.mockReturnValue(database);
+beforeAll(async () => {
   // App identity is the fixture; both agent DDL changes come from Drizzle CLI.
   await client.exec("CREATE TABLE app (id uuid PRIMARY KEY)");
   const root = new URL("../../db/src/migrations/", import.meta.url);
@@ -90,7 +86,14 @@ beforeEach(async () => {
     otherAppId,
   ]);
 });
-afterEach(async () => {
+beforeEach(async () => {
+  vi.resetAllMocks();
+  mocks.runStatus.mockResolvedValue("running");
+  mocks.db.mockReturnValue(database);
+  // Keep the migrated schema, but isolate every test's leases and journals.
+  await client.exec("TRUNCATE app_agent_lease, app_agent_thread");
+});
+afterAll(async () => {
   await client.close();
 });
 

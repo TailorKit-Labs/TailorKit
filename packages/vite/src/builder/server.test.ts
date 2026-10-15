@@ -160,7 +160,7 @@ it("builds file routes with a configured server and blocks server imports from t
   } finally {
     await rm(root, { force: true, recursive: true });
   }
-}, 60_000);
+});
 
 it("builds separate artifacts and rejects accidental imports of server code", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-server-build-"));
@@ -276,7 +276,7 @@ it("builds separate artifacts and rejects accidental imports of server code", as
   } finally {
     await rm(root, { force: true, recursive: true });
   }
-}, 60_000);
+});
 
 it("builds colocated instance resolvers as query-only server actions", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-instances-build-"));
@@ -542,7 +542,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
             return awaitedResult1.includes("PRIVATE_UPDATED");
           },
           {
-            timeout: 10_000,
+            timeout: 2500,
           }
         )
         .toBe(true);
@@ -558,7 +558,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
             );
             return awaitedResult2.includes("RESOLVER_UPDATED");
           },
-          { timeout: 10_000 }
+          { timeout: 2500 }
         )
         .toBe(true);
       // The server watcher can finish while the client watcher is still
@@ -570,7 +570,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
               path.join(root, ".tailorkit/watched/client/client.js"),
               "utf-8"
             ).catch(() => ""),
-          { timeout: 10_000 }
+          { timeout: 2500 }
         )
         .toContain(requireValue(names[0]));
       await rm(path.join(root, "src/slots/page/index.view.tsx"));
@@ -583,7 +583,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
             );
             return !!output && !output.includes("RESOLVER_UPDATED");
           },
-          { timeout: 10_000 }
+          { timeout: 2500 }
         )
         .toBe(true);
       const withoutInstances: ApplicationModule = await import(
@@ -609,4 +609,4 @@ it("builds colocated instance resolvers as query-only server actions", async () 
   } finally {
     await rm(root, { force: true, recursive: true });
   }
-}, 60_000);
+});

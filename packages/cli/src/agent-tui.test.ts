@@ -41,6 +41,8 @@ const requireValue = <T>(value: T | null | undefined): T => {
   return value;
 };
 
+type RetryDelay = (milliseconds: number, signal?: AbortSignal) => Promise<void>;
+
 const mocks = vi.hoisted(() => ({ fetchSchema: vi.fn(), tui: vi.fn() }));
 vi.mock("@ai-sdk/tui", () => ({ runAgentTUI: mocks.tui }));
 vi.mock("./generator/types", () => ({
@@ -120,13 +122,18 @@ describe("AI SDK terminal transport", () => {
           };
         })()
       );
-    await openAgentTui({ appId, client: { appAgent: { chat } }, hostUrl });
+    const waitForRetry = vi.fn<RetryDelay>(async () => {});
+    await openAgentTui(
+      { appId, client: { appAgent: { chat } }, hostUrl },
+      waitForRetry
+    );
     const [options] = requireValue(mocks.tui.mock.lastCall);
     const stream = await options.transport.sendMessages({ messages });
     for await (const _chunk of stream) {
       /* consume */
     }
     expect(chat).toHaveBeenCalledTimes(2);
+    expect(waitForRetry.mock.calls).toEqual([[1000, undefined]]);
     expect(requireValue(chat.mock.lastCall)[0]).toEqual({
       appId,
       type: "resume",
@@ -169,7 +176,11 @@ describe("AI SDK terminal transport", () => {
         })()
       )
       .mockResolvedValueOnce(chatEvents());
-    await openAgentTui({ appId, client: { appAgent: { chat } }, hostUrl });
+    const waitForRetry = vi.fn<RetryDelay>(async () => {});
+    await openAgentTui(
+      { appId, client: { appAgent: { chat } }, hostUrl },
+      waitForRetry
+    );
     const [options] = requireValue(mocks.tui.mock.lastCall);
     const { transport } = options;
     const stream = await transport.sendMessages({ messages });
@@ -186,6 +197,7 @@ describe("AI SDK terminal transport", () => {
       type: "text",
     });
     expect(chat).toHaveBeenCalledTimes(2);
+    expect(waitForRetry.mock.calls).toEqual([[1000, undefined]]);
     expect(requireValue(chat.mock.calls[0])[0].type).toBe("turn");
     await transport.sendMessages({ messages });
     expect(requireValue(chat.mock.lastCall)[0].type).toBe("turn");
@@ -235,7 +247,11 @@ describe("AI SDK terminal transport", () => {
       .mockRejectedValueOnce(new Error("Offline"))
       .mockRejectedValueOnce(new Error("Offline"))
       .mockRejectedValueOnce(new Error("Offline"));
-    await openAgentTui({ appId, client: { appAgent: { chat } }, hostUrl });
+    const waitForRetry = vi.fn<RetryDelay>(async () => {});
+    await openAgentTui(
+      { appId, client: { appAgent: { chat } }, hostUrl },
+      waitForRetry
+    );
     const [options] = requireValue(mocks.tui.mock.lastCall);
     const { transport } = options;
     const stream = await transport.sendMessages({ messages });
@@ -246,6 +262,11 @@ describe("AI SDK terminal transport", () => {
     })();
     const failed = expect(consuming).rejects.toThrow("Offline");
     await failed;
+    expect(waitForRetry.mock.calls).toEqual([
+      [1000, undefined],
+      [2000, undefined],
+      [3000, undefined],
+    ]);
     chat
       .mockResolvedValueOnce(
         (async function* oldTurnCompleted() {
@@ -283,7 +304,7 @@ describe("AI SDK terminal transport", () => {
       threadId,
     });
     expect(newRequest.type).toBe("turn");
-  }, 15_000);
+  });
   it("forwards the SDK's complete history and abort signal to the host client", async () => {
     const chat = vi
       .fn<TailorKitRouterClient["appAgent"]["chat"]>()
