@@ -31,7 +31,7 @@ The virtual machine (VM) remains available between slices. Turns have a 30-minut
 
 ## App source and editing leases
 
-The authorized app ID selects the shared `app-<appId>` source Drive. A separate `threadId` identifies the Pi conversation and its persistent `agent-thread-<threadId>` VM. PostgreSQL stores each thread's opaque resume handle in `app_agent_thread`; the thread's sandbox snapshots retain its Pi journal. Successful turns remove the command-line interface (CLI) token file, snapshot and stop the VM, and release the app’s editing lease.
+The authorized app ID selects the shared `app-<appId>` source Drive. A separate `threadId` identifies the Pi conversation and its persistent `agent-thread-<threadId>` VM. PostgreSQL stores each thread's opaque resume handle in `app_agent_thread`; the thread's sandbox snapshots retain its Pi journal. Successful turns snapshot and stop the VM and release the app’s editing lease. Deployment credentials stay in the host process.
 
 Switching threads uses the same current app source and each thread's own conversation history.
 
@@ -41,7 +41,7 @@ An abandoned lease expires after one hour. A new thread can reclaim it, invalida
 
 ## Prepare an app workspace
 
-Before the model starts, sandbox setup installs `tailorkit@beta` and its matching CLI in `/tmp/tailorkit-cli`. For empty workspaces, setup scaffolds `new-app` in `/workspace/app`, installs dependencies, and generates host bindings. A setup marker lets interrupted installation or generation resume without overwriting the scaffold. Existing app source is preserved.
+Before the model starts, sandbox setup installs `tailorkit@beta` and its matching command-line interface (CLI) in `/tmp/tailorkit-cli`. For empty workspaces, setup scaffolds `new-app` in `/workspace/app`, installs dependencies, and generates host bindings. A setup marker lets interrupted installation or generation resume without overwriting the scaffold. Existing app source is preserved.
 
 CLI and new app installs enforce a three-day package release age. Only `tailorkit` and `@tailorkit/*` are immediately available. The agent receives a short readiness note and can begin implementation immediately.
 
@@ -71,7 +71,9 @@ The agent loads Gateway model definitions from its published catalog, including 
 
 ## Consume tool events
 
-The agent exposes Pi’s typed `read`, `write`, `edit`, `bash`, `grep`, `glob`, and `ls` tools through AI SDK tool events, alongside the host-executed `deploy` tool. Deployment retains the platform’s short-lived CLI grant, app authorization, and credential redaction. Native file tools can read the app workspace, supplied schema, and installed CLI; writes stay in the workspace. Native file tools cannot access the token file. This restriction does not apply to shell commands. See the [Pi adapter](https://ai-sdk.dev/providers/ai-sdk-harnesses/pi).
+The agent exposes Pi’s typed `read`, `write`, `edit`, `bash`, `grep`, `glob`, and `ls` tools through AI SDK tool events. Native file tools can read the app workspace, supplied schema, and installed CLI; writes stay in the workspace.
+
+The host-executed `deploy` tool runs typechecks and builds in the sandbox without deployment credentials. It validates the resulting artifact manifest, then uploads and publishes from the host using the platform’s short-lived grant. The host pins the authorized app and redacts credentials from tool results. The JWT never enters the shell-visible sandbox. Setup and resumed turns remove token files left by older snapshots. See the [Pi adapter](https://ai-sdk.dev/providers/ai-sdk-harnesses/pi).
 
 `run.getReadable<UIMessageChunk>()` emits AI SDK UI chunks. Consume it directly without `createModelCallToUIChunkTransform()`. The CLI chat keeps running when its response disconnects; the existing MCP transport cancels its agent on disconnect.
 

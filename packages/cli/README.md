@@ -46,7 +46,7 @@ Use these options to control unattended deployments:
 - `--no-interactive`: fail instead of prompting for login, app creation, or a typecheck override
 - `--app-id your_app_id`: deploy to an existing app; never create a replacement
 
-The agent stores its JWT in a mode-600 file under ephemeral `/tmp` and sets the file path for CLI discovery. Its deploy tool passes the same path to subprocesses. The token stays out of the model prompt, persistent Drive, and CLI credential store.
+The app agent keeps its JWT in the host process. Its deployment tool builds without credentials in the sandbox, then uploads and publishes through the host. The token stays out of the model prompt, sandbox filesystem and environment, persistent Drive, and CLI credential store.
 
 ## Resume a conversation
 
