@@ -14,4 +14,8 @@ export default defineConfig({
     format: "esm",
     target: "node20",
   },
+  test: {
+    // Build fixtures also launch Vite and Drizzle; avoid saturating CI CPUs.
+    maxWorkers: 2,
+  },
 });

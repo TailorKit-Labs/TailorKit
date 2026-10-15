@@ -256,7 +256,7 @@ it("discovers only view and layout files, supports roots, and checks the same so
   }
 });
 
-it("builds file routes with extracted instances and discovers additions, renames and removals in watch mode", async () => {
+const withFileRouteApp = async (check: (root: string) => Promise<void>) => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-file-build-"));
   try {
     await linkTestDependencies(root);
@@ -291,6 +291,14 @@ it("builds file routes with extracted instances and discovers additions, renames
       path.join(root, "src/slots/page/card.tsx"),
       'throw new Error("Ordinary components are not routes");'
     );
+    await check(root);
+  } finally {
+    await rm(root, { force: true, recursive: true });
+  }
+};
+
+it("builds file routes with extracted private instance resolvers", async () => {
+  await withFileRouteApp(async (root) => {
     await buildFixture({ cwd: root });
     const manifestFile = path.join(root, ".tailorkit/client/client.js");
     const manifest = await readClientManifest(manifestFile);
@@ -303,42 +311,62 @@ it("builds file routes with extracted instances and discovers additions, renames
     expect(
       await readFile(path.join(root, ".tailorkit/server/server.js"), "utf-8")
     ).toContain("PRIVATE_RESOLVER");
-    const watcher = await buildFixture({ cwd: root, watch: true });
-    assert("on" in watcher);
-    try {
-      const next = path.join(root, "src/slots/page/customers.details.view.tsx");
-      await writeFile(
-        next,
-        'import * as client from "tailorkit/client"; import { z } from "zod"; export default client["defineView"]({ component: () => "details", instances: { dataSchema: z.object({}), resolve: () => [{ key: "details", metadata: { title: "INFERRED_RESOLVER" }, data: {} }] } });'
-      );
-      const paths = async () => {
-        const current = await readClientManifest(manifestFile);
-        return current.views.map((view) => view.path).toSorted();
-      };
-      await expect.poll(paths).toEqual(["/", "/customers/details"]);
-      await rename(
-        next,
-        path.join(root, "src/slots/page/customers.summary.view.tsx")
-      );
-      await expect.poll(paths).toEqual(["/", "/customers/summary"]);
-      await rm(path.join(root, "src/slots/page/index.view.tsx"));
-      await expect.poll(paths).toEqual(["/customers/summary"]);
-      await expect
-        .poll(async () => {
-          const server = await readFile(
-            path.join(root, ".tailorkit/server/server.js"),
-            "utf-8"
-          );
-          return server.includes("PRIVATE_RESOLVER");
-        })
-        .toBe(false);
-    } finally {
-      await watcher.close();
-    }
-  } finally {
-    await rm(root, { force: true, recursive: true });
-  }
+  });
 });
+
+it.each(["add", "rename", "remove"] as const)(
+  "discovers a file route %s in watch mode",
+  async (change) => {
+    await withFileRouteApp(async (root) => {
+      const next = path.join(root, "src/slots/page/customers.details.view.tsx");
+      const renamed = path.join(
+        root,
+        "src/slots/page/customers.summary.view.tsx"
+      );
+      const viewSource =
+        'import * as client from "tailorkit/client"; import { z } from "zod"; export default client["defineView"]({ component: () => "details", instances: { dataSchema: z.object({}), resolve: () => [{ key: "details", metadata: { title: "INFERRED_RESOLVER" }, data: {} }] } });';
+      if (change === "rename") {
+        await writeFile(next, viewSource);
+      }
+      if (change === "remove") {
+        await writeFile(renamed, viewSource);
+      }
+      const watcher = await buildFixture({ cwd: root, watch: true });
+      assert("on" in watcher);
+      try {
+        const paths = async () => {
+          const current = await readClientManifest(
+            path.join(root, ".tailorkit/client/client.js")
+          );
+          return current.views.map((view) => view.path).toSorted();
+        };
+        if (change === "add") {
+          await writeFile(next, viewSource);
+          await expect.poll(paths).toEqual(["/", "/customers/details"]);
+          return;
+        }
+        if (change === "rename") {
+          await rename(next, renamed);
+          await expect.poll(paths).toEqual(["/", "/customers/summary"]);
+          return;
+        }
+        await rm(path.join(root, "src/slots/page/index.view.tsx"));
+        await expect.poll(paths).toEqual(["/customers/summary"]);
+        await expect
+          .poll(async () => {
+            const server = await readFile(
+              path.join(root, ".tailorkit/server/server.js"),
+              "utf-8"
+            );
+            return server.includes("PRIVATE_RESOLVER");
+          })
+          .toBe(false);
+      } finally {
+        await watcher.close();
+      }
+    });
+  }
+);
 
 it.each([
   ['view: "/index"', 'view must be "/"'],
