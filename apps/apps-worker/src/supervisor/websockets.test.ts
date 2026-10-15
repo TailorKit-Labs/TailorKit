@@ -13,6 +13,17 @@ const requireValue = <T>(value: T | null | undefined): T => {
   return value;
 };
 
+const createIdentity = (expiresAt: number): Identity => ({
+  appId: "app",
+  deploymentId: "deployment",
+  expiresAt,
+  installationId: "installation",
+  projectId: "project",
+  scope: { name: "org", value: { id: "tenant" } },
+  subjectId: "user",
+  toolUrl: "https://host.test/tools",
+});
+
 const setup = () => {
   const now = Date.now();
   const records = new Map<string, SubscriptionSession>();
@@ -49,12 +60,13 @@ const setup = () => {
   /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
   vi.stubGlobal("WebSocket", { CLOSED: 3 });
   const socket = (id: string, expiresAt: number) => {
+    const close = vi.fn();
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
     const socketValue =
       /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
       {
-        close: vi.fn(),
+        close,
         deserializeAttachment: () => id,
         readyState: 2,
         send: vi.fn(),
@@ -62,12 +74,11 @@ const setup = () => {
     /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     records.set(`socket:${id}`, {
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-      identity: { expiresAt } as Identity,
+      identity: createIdentity(expiresAt),
       subscriptions: [],
     });
     sockets.push(socketValue);
-    return socketValue;
+    return { close, value: socketValue };
   };
   return {
     cancel,
@@ -90,10 +101,9 @@ afterEach(() => vi.unstubAllGlobals());
 
 it("rejects expired frames before decoding or executing a procedure", async () => {
   const test = setup();
-  const socket = test.socket("expired", test.now - 1);
+  const { close, value: socket } = test.socket("expired", test.now - 1);
   await test.create().message(socket, "{}");
-  // oxlint-disable-next-line typescript/unbound-method -- This assertion inspects a spy reference without invoking the method or changing its receiver.
-  expect(socket.close).toHaveBeenCalledWith(1008, "Authentication expired");
+  expect(close).toHaveBeenCalledWith(1008, "Authentication expired");
   expect(test.operations).not.toHaveBeenCalled();
   expect(test.records.size).toBe(0);
 });
@@ -103,14 +113,11 @@ it("expires idle connections after recreation and schedules the next durable ala
   const expired = test.socket("expired", test.now - 1);
   const active = test.socket("active", test.now + 60_000);
   await test.create().alarm();
-  // oxlint-disable-next-line typescript/unbound-method -- This assertion inspects a spy reference without invoking the method or changing its receiver.
   expect(expired.close).toHaveBeenCalledWith(1008, "Authentication expired");
-  // oxlint-disable-next-line typescript/unbound-method -- This assertion inspects a spy reference without invoking the method or changing its receiver.
   expect(active.close).not.toHaveBeenCalled();
   expect(test.getAlarm()).toBe(test.now + 60_000);
   expect(test.create().connections()).toHaveLength(1);
-  await test.create().close(active, 1000, "Renew authentication");
-  // oxlint-disable-next-line typescript/unbound-method -- This assertion inspects a spy reference without invoking the method or changing its receiver.
+  await test.create().close(active.value, 1000, "Renew authentication");
   expect(active.close).toHaveBeenCalledWith(1000, "Renew authentication");
   expect(test.records.size).toBe(0);
   expect(test.getAlarm()).toBeNull();
@@ -133,8 +140,7 @@ it("removes abandoned durable records when an alarm wakes an installation with n
   const test = setup();
   // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   test.records.set("socket:orphan", {
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    identity: { expiresAt: test.now - 1 } as Identity,
+    identity: createIdentity(test.now - 1),
     subscriptions: [],
   });
   await test.create().alarm();

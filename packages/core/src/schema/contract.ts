@@ -4,7 +4,7 @@ import type {
   ComponentDefinitions,
   NoComponentFieldCallbackConflicts,
 } from "./components";
-import type { Schema } from "./shared";
+import type { EmptyDefinitionMap, Schema } from "./shared";
 import type { ContractTools } from "./tools";
 import { flattenTools } from "./tools";
 import type {
@@ -35,16 +35,11 @@ export interface TailorKitContract<
 
 /** Define the browser-safe interface shared by a host server and its clients. */
 export const defineContract = <
-  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-  const TComponents extends ComponentDefinitions = Record<never, never>,
-  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-  const TViews extends ContextDefinitions = Record<never, never>,
-  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-  const TSlots extends SlotDefinitions = Record<never, never>,
-  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-  const TTools extends ContractTools = Record<never, never>,
-  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-  const TScopes extends Record<string, Schema> = Record<never, never>,
+  const TComponents extends ComponentDefinitions = EmptyDefinitionMap,
+  const TViews extends ContextDefinitions = EmptyDefinitionMap,
+  const TSlots extends SlotDefinitions = EmptyDefinitionMap,
+  const TTools extends ContractTools = EmptyDefinitionMap,
+  const TScopes extends Record<string, Schema> = EmptyDefinitionMap,
 >(definition: {
   components?: TComponents &
     NoComponentFieldCallbackConflicts<NoInfer<TComponents>>;

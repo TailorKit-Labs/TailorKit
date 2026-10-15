@@ -2,6 +2,7 @@ import { expectTypeOf } from "vite-plus/test";
 import type { z } from "zod";
 
 import type { InferCallback, InferCallbacks } from "./callbacks";
+import type { EmptyDefinitionMap } from "./shared";
 
 interface SaveCallback {
   input: z.ZodObject<{ title: z.ZodString; version: z.ZodNumber }>;
@@ -20,13 +21,11 @@ expectTypeOf<InferCallback<SaveCallback>>().toEqualTypeOf<
 expectTypeOf<InferCallback<LoadCallback>>().toEqualTypeOf<
   () => Promise<{ ready: true }>
 >();
-// oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-expectTypeOf<InferCallback<Record<never, never>>>().toEqualTypeOf<() => void>();
+expectTypeOf<InferCallback<EmptyDefinitionMap>>().toEqualTypeOf<() => void>();
 
 expectTypeOf<
   InferCallbacks<{
-    // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-    onClose: Record<never, never>;
+    onClose: EmptyDefinitionMap;
     onLoad: LoadCallback;
     omitted: undefined;
   }>

@@ -14,15 +14,21 @@ import { TailorkitContext } from "#components/context";
 import type { ViewState } from "#hooks/use-view-context";
 import { createClient } from "#tailorkit";
 
-// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
+const isViewContext = <TValue,>(
+  value: TValue
+): value is TValue & ViewContextValues =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
 const contextSchema: StandardSchemaV1<unknown, ViewContextValues | undefined> &
   StandardJSONSchemaV1<unknown, ViewContextValues | undefined> = {
   "~standard": {
     jsonSchema: { input: () => ({}), output: () => ({}) },
-    validate: (value) => ({
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-      value: value as ViewContextValues | undefined,
-    }),
+    validate: (value) => {
+      if (value === undefined || isViewContext(value)) {
+        return { value };
+      }
+      return { issues: [{ message: "Expected view context fields." }] };
+    },
     vendor: "test",
     version: 1,
   },

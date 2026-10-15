@@ -6,8 +6,8 @@ import type {
   ResolvedComponentMetadata,
 } from "./components";
 import { resolveComponentMetadata } from "./components";
+import type { EmptyDefinitionMap, Schema, SchemaSerializer } from "./shared";
 import { jsonSchemaSerializer, serializeSchema } from "./shared";
-import type { Schema, SchemaSerializer } from "./shared";
 import type { ContractTools } from "./tools";
 import { serializeTools } from "./tools";
 import type {
@@ -20,8 +20,7 @@ import type {
 const isBooleanValue = <TValue>(value: TValue): value is TValue & boolean =>
   typeof value === "boolean";
 
-// oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-type EmptyToolMap = Record<never, never>;
+type EmptyToolMap = EmptyDefinitionMap;
 
 export interface TailorKitSchema<
   TComponents extends Record<string, unknown> = ComponentDefinitions,

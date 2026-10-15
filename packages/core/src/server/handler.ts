@@ -16,6 +16,7 @@ import type {
   SlotDefinitions,
 } from "#schema/index";
 import { createTailorKitSchema } from "#schema/schema";
+import type { EmptyDefinitionMap } from "#schema/shared";
 
 import { handleBackendSession } from "./backend";
 import { normalizeBaseUrl } from "./base-url";
@@ -93,8 +94,7 @@ export const createTailorKitServer = <
 > & {
   readonly $slots?: TOptions extends { slots: infer V }
     ? V
-    : // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-      Record<never, never>;
+    : EmptyDefinitionMap;
 } => {
   const { basePath, publicOrigin } = normalizeBaseUrl(options.baseUrl);
   const scopeSchemas = validateTailorKitScopeSchemas(options.scopes);

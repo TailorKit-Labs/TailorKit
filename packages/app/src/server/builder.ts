@@ -6,6 +6,7 @@ import type { MutationDatabase, QueryDatabase } from "#database/types";
 
 import type {
   ActionContext,
+  EmptyFunctions,
   FunctionKind,
   Functions,
   Identity,
@@ -63,8 +64,7 @@ class FunctionBuilder<
   K extends FunctionKind,
   A extends z.ZodType,
   R extends z.ZodType | undefined = undefined,
-  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-  F extends Functions = Record<never, never>,
+  F extends Functions = EmptyFunctions,
   D extends AnyRelations = EmptyRelations,
 > {
   private readonly kind: K;

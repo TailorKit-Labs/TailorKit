@@ -42,8 +42,7 @@ const setup = () => {
   // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
   const query = vi.fn(async (input: Invocation, identity: Identity) => ({
     tables: [input.name],
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    value: `${identity.subjectId}:${values[input.name as keyof typeof values]}`,
+    value: `${identity.subjectId}:${Object.entries(values).find(([name]) => name === input.name)?.[1]}`,
   }));
   const connection = (user = "alice"): SubscriptionConnection => {
     records.set(
@@ -95,8 +94,7 @@ const setup = () => {
               ? JSON.parse(value)
               : undefined;
           },
-          // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This fixture must represent malformed input so the runtime validation boundary can be tested.
-          put: (key: string, value: unknown) =>
+          put: (key: string, value: SubscriptionSession) =>
             records.set(key.slice(7), JSON.stringify(value)),
         },
       },
@@ -202,8 +200,7 @@ it("refreshes view subscriptions on table writes after recreation without broade
   // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
   test.query.mockImplementation(async (input, identity) => ({
     tables: input.name === "public" ? ["*"] : ["private"],
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    value: `${identity.subjectId}:${test.values[input.name as keyof typeof test.values]}`,
+    value: `${identity.subjectId}:${Object.entries(test.values).find(([name]) => name === input.name)?.[1]}`,
   }));
   const viewStream = await test.client.subscribe({ name: "public" });
   const tableStream = await test.client.subscribe({ name: "private" });

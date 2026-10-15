@@ -46,8 +46,9 @@ it("uses existing platform deployment endpoints and scope from the agent JWT", a
   vi.stubEnv("TAILORKIT_AGENT_TOKEN", jwt);
   const fetch = vi
     .spyOn(globalThis, "fetch")
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    .mockImplementation(async () => Response.json({}));
+    .mockResolvedValueOnce(Response.json({}))
+    .mockResolvedValueOnce(Response.json({}))
+    .mockResolvedValueOnce(Response.json({}));
   const client = createCliClient({ token: jwt, url: "http://localhost:1" });
   await client.deployments.create({
     appId: "app-one",

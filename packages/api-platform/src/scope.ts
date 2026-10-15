@@ -171,8 +171,8 @@ const canonicalizeJsonValue = (
       throw new TypeError("Scope object keys must contain 1–64 characters.");
     }
   }
-  // oxlint-disable-next-line typescript/no-unsafe-assignment -- Object.create(null) is typed as any by the standard library; this empty registry is populated only through the typed assignments below.
-  const canonical: Record<string, JsonValue> = Object.create(null);
+  const canonical: Record<string, JsonValue> = {};
+  Object.setPrototypeOf(canonical, null);
   for (const key of keys.toSorted()) {
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
     if (!descriptor || !("value" in descriptor)) {
@@ -274,11 +274,11 @@ export const canonicalizeScope = (value: unknown): CanonicalScope => {
   const valueScope = canonicalizeScopeValue(
     Object.getOwnPropertyDescriptor(value, "value")?.value
   );
-  // oxlint-disable-next-line typescript/no-unsafe-assignment -- Object.create(null) is typed as any by the standard library; this empty registry is populated only through the typed assignments below.
-  const scope: Scope = Object.assign(Object.create(null), {
+  const scope: Scope = {
     name,
     value: valueScope,
-  });
+  };
+  Object.setPrototypeOf(scope, null);
   const serialized = serializeScope(scope);
   const scopeKey = createHash("sha256")
     .update(`scope:v2:${serialized}`)

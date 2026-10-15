@@ -24,8 +24,9 @@ const endpoint = "https://example.com";
 
 const callsImplementation = (value: string) => ({
   committed: vi.fn(async () => {}),
-  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-  fetch: vi.fn(async () => new Response(value)),
+  fetch: vi
+    .fn<() => Promise<Response>>()
+    .mockResolvedValue(new Response(value)),
 });
 
 const setup = () => {

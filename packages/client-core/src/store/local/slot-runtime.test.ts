@@ -109,10 +109,9 @@ it("selects instances and validates keys without a framework", async () => {
   });
   runtime.setInput({ ...options, instanceKey: "missing" });
   expect(runtime.state.get()).toMatchObject({
-    // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-    error: expect.objectContaining({
+    error: {
       message: 'View instance "missing" is unavailable.',
-    }),
+    },
     status: "error",
   });
   expect(instances).toHaveBeenCalledOnce();

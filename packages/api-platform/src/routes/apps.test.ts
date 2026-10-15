@@ -25,6 +25,7 @@ import {
   it,
   vi,
 } from "vite-plus/test";
+import { z } from "zod";
 
 import type { Context } from "#context";
 import { createTestDb } from "#test/pglite";
@@ -174,8 +175,8 @@ describe("platform appRouter", () => {
       { apps: appRouter },
       { plugins: [new RateLimitHandlerPlugin()] }
     );
-    // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This fixture must represent malformed input so the runtime validation boundary can be tested.
-    const handle = async (path: string, body: unknown) =>
+
+    const handle = async (path: string, body: z.core.util.JSONType) =>
       await handler.handle(
         new Request(`https://example.com/api/platform${path}`, {
           body: JSON.stringify(body),
@@ -192,9 +193,9 @@ describe("platform appRouter", () => {
     });
     expect(created.response?.status).toBe(200);
     expect(created.response?.headers.get("ratelimit-limit")).toBe("100");
-    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    const app = (await created.response?.json()) as { id: string };
+    const app = z
+      .object({ id: z.string() })
+      .parse(await created.response?.json());
 
     const found = await handle(`/apps/${app.id}/lookup`, {
       scopes: [productionScope],

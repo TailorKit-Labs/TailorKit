@@ -122,8 +122,8 @@ it("serves KV hits to old clients and fills misses from the platform", async () 
   });
   const fetch = vi
     .spyOn(globalThis, "fetch")
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    .mockImplementation(async () =>
+    .mockResolvedValueOnce(Response.json({ ...deployment, deploymentId: "v2" }))
+    .mockResolvedValueOnce(
       Response.json({ ...deployment, deploymentId: "v2" })
     );
   const source = deploymentSource({

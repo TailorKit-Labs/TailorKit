@@ -32,8 +32,11 @@ vi.mock("@tailorkit/db", () => ({
     insert: () => ({
       values: (value: Parameters<typeof mocks.grant>[0]) => {
         mocks.grant(value);
-        // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-        return { returning: async () => [{ id: "grant" }] };
+        return {
+          returning: vi
+            .fn<() => Promise<{ id: string }[]>>()
+            .mockResolvedValue([{ id: "grant" }]),
+        };
       },
     }),
     query: { app: { findFirst: mocks.app } },

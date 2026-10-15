@@ -6,6 +6,11 @@ import { renderGeneratedTypes } from "./types";
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
   typeof value === "object" && value !== null;
 
+const isCallback = <TValue>(
+  value: TValue
+): value is TValue & ((event: { detail: unknown[] }) => void) =>
+  typeof value === "function";
+
 describe("children-only components", () => {
   it("generates opt-in children and leaf component bindings", () => {
     const output = renderGeneratedTypes({
@@ -65,11 +70,14 @@ describe("children-only components", () => {
     if (!isObjectValue(node) || !("props" in node)) {
       throw new Error("Expected a remote component node");
     }
-    // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    const props = node.props as {
-      ontailorkitcallbackonclick: (event: { detail: unknown[] }) => void;
-    };
+    const props: unknown = node.props;
+    if (
+      !isObjectValue(props) ||
+      !("ontailorkitcallbackonclick" in props) ||
+      !isCallback(props.ontailorkitcallbackonclick)
+    ) {
+      throw new Error("Expected an onClick callback.");
+    }
     props.ontailorkitcallbackonclick({ detail: [] });
     expect(onClick).toHaveBeenCalledExactlyOnceWith();
   });

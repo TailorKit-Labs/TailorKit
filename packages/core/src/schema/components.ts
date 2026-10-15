@@ -1,11 +1,16 @@
 import type { CallbackMap, Callbacks, InferCallbacks } from "./callbacks";
-import type { EmptyObject, InferSchema, MergeProps, Schema } from "./shared";
+import type {
+  EmptyDefinitionMap,
+  EmptyObject,
+  InferSchema,
+  MergeProps,
+  Schema,
+} from "./shared";
 
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
   typeof value === "object" && value !== null;
 
-// oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-type EmptyCallbackMap = Record<never, never>;
+type EmptyCallbackMap = EmptyDefinitionMap;
 
 export type Fields = Schema;
 

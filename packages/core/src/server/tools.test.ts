@@ -361,8 +361,13 @@ it("refreshes once for a rotated key, coalesces requests and throttles unknown k
       .mockResolvedValueOnce(
         Response.json({ keys: [{ ...jwk, kid: "platform" }] })
       )
-      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-      .mockImplementation(async () =>
+      .mockResolvedValueOnce(
+        Response.json({ keys: [{ ...rotatedJwk, kid: "rotated" }] })
+      )
+      .mockResolvedValueOnce(
+        Response.json({ keys: [{ ...rotatedJwk, kid: "rotated" }] })
+      )
+      .mockResolvedValueOnce(
         Response.json({ keys: [{ ...rotatedJwk, kid: "rotated" }] })
       );
     const verify = createToolVerifier({
@@ -410,11 +415,11 @@ it("keeps valid cached keys when a refresh returns invalid keys, and still expir
       .mockResolvedValueOnce(
         Response.json({ keys: [{ ...jwk, kid: "platform" }] })
       )
-      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-      .mockImplementation(async () =>
-        Response.json({
-          keys: [{ ...jwk, d: "private", kid: "rotated" }],
-        })
+      .mockResolvedValueOnce(
+        Response.json({ keys: [{ ...jwk, d: "private", kid: "rotated" }] })
+      )
+      .mockResolvedValueOnce(
+        Response.json({ keys: [{ ...jwk, d: "private", kid: "rotated" }] })
       );
     const verify = createToolVerifier({
       fetch: fetchKeys,

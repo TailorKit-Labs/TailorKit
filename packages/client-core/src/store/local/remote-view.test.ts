@@ -1,4 +1,3 @@
-/* oxlint-disable typescript/no-unsafe-argument -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { createRemoteUiStore } from "@tailorkit/sandbox/host";
 import type {
   IframeUiHost,
@@ -25,6 +24,11 @@ const tree: RemoteElementNode = {
   type: "Button",
 };
 
+const isCallback = <TValue>(
+  value: TValue
+): value is TValue & ((...args: unknown[]) => void) =>
+  typeof value === "function";
+
 const setup = () => {
   const records: {
     host: IframeUiHost;
@@ -48,10 +52,12 @@ const setup = () => {
         mount: vi.fn<IframeUiHost["mount"]>(),
 
         setProps: vi.fn<IframeUiHost["setProps"]>(),
-        subscribe: vi.fn((listener) => {
-          listeners.push(listener);
-          return source.subscribe(listener);
-        }),
+        subscribe: vi.fn(
+          (listener: Parameters<IframeUiHost["subscribe"]>[0]) => {
+            listeners.push(listener);
+            return source.subscribe(listener);
+          }
+        ),
       };
       records.push({ host, listeners, options });
       return host;
@@ -140,9 +146,11 @@ it("retains the latest props and shares callback payload construction", () => {
     undefined
   );
   const props = createRemoteElementProps(tree, store.dispatch);
-  // SAFETY: The fixture registers this callback before reading it back, and the test checks the dispatched callback arguments.
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-  (props.onSelect as (...args: unknown[]) => void)("selected value", {
+  const { onSelect } = props;
+  if (!isCallback(onSelect)) {
+    throw new Error("Expected an onSelect callback.");
+  }
+  onSelect("selected value", {
     synthetic: "event",
   });
   expect(
@@ -153,9 +161,7 @@ it("retains the latest props and shares callback payload construction", () => {
   });
   expect(tree.props).toEqual({ label: "Button" });
   stop();
-  // SAFETY: The fixture registers this callback before reading it back, and the test checks the dispatched callback arguments.
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-  (props.onSelect as (...args: unknown[]) => void)("after stop");
+  onSelect("after stop");
   expect(requireValue(records[0]).host.dispatch).toHaveBeenCalledOnce();
 });
 
@@ -173,14 +179,10 @@ it("isolates dispatch, component registries, and trees between remote views", ()
   const stopSecond = second.mount({ appUrl: "https://host.test/second.js" });
   requireValue(records[0]).host.setSnapshot(tree, 1);
   expect(second.nodes.root.get()).toBeNull();
-  // SAFETY: The fixture registers this callback before reading it back, and the test checks the dispatched callback arguments.
-
-  const operation =
-    /* oxlint-disable typescript/no-unsafe-type-assertion -- The fixture registers this callback before reading it back, and the test checks the dispatched callback arguments. */
-    createRemoteElementProps(tree, second.dispatch).onSelect as (
-      ...args: unknown[]
-    ) => void;
-  /* oxlint-enable typescript/no-unsafe-type-assertion */
+  const operation = createRemoteElementProps(tree, second.dispatch).onSelect;
+  if (!isCallback(operation)) {
+    throw new Error("Expected an onSelect callback.");
+  }
   operation("second");
   expect(requireValue(records[0]).host.dispatch).not.toHaveBeenCalled();
   expect(requireValue(records[1]).host.dispatch).toHaveBeenCalledOnce();
