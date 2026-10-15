@@ -75,14 +75,12 @@ export const contract = defineContract({
 
 ## Describe the space
 
-Add an optional `description` to tell app authors and agents where a slot appears, its typical size, and how it scrolls:
+Use `description` to tell app authors and agents where a slot appears:
 
 ```ts title="Inside your contract's slots"
 panel: {
   views: ["/"],
-  description:
-    "Right-hand side panel, typically 360px wide. " +
-    "Use a compact, single-column layout. The panel scrolls independently.",
+  description: "Right-hand side panel with independently scrolling content.",
 },
 page: {
   views: ["/"],
@@ -90,7 +88,14 @@ page: {
 },
 ```
 
-TailorKit includes descriptions in the serialized contract and generated slot documentation so agents can read them while building apps. Descriptions provide guidance; your host controls the actual layout and dimensions.
+Agents read descriptions in the generated slot documentation while building apps. Your host controls the actual layout and dimensions.
+
+<Tip>
+  Describe the slot’s usable width and height at each breakpoint, including any
+  padding or scrolling behavior. For example: “360 px wide on desktop, full
+  width below 768 px, with independent scrolling.” This helps agents choose
+  layouts that fit the available space.
+</Tip>
 
 ## Multiple slot variations
 
