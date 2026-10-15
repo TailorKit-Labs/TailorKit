@@ -572,6 +572,9 @@ importers:
       '@tailorkit/env':
         specifier: workspace:*
         version: link:../env
+      '@tailorkit/vite':
+        specifier: workspace:*
+        version: link:../vite
       '@vercel/oidc':
         specifier: 3.5.0
         version: 3.5.0

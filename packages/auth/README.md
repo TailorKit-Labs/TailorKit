@@ -1,3 +1,3 @@
-# TailorKit Auth
+# TailorKit authentication
 
-Authentication and access management for the TailorKit platform.
+`@tailorkit/auth` manages authentication and access for the TailorKit platform.

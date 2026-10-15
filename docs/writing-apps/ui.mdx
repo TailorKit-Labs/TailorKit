@@ -1,5 +1,6 @@
 ---
-title: "UI"
+title: "Write app UI"
+sidebarTitle: "UI"
 description: "Write views, use shared components, and supply slot instances."
 ---
 
@@ -123,7 +124,7 @@ Import `defineView` from `tailorkit/client`. The build discovers `.view.tsx` fil
 
 The resolver receives `{ context, identity, signal, queries }`. It can call registered queries; actions and mutations are unavailable there.
 
-Each entry needs a stable, non-empty key unique within its view, a metadata object, and data matching `dataSchema`. Metadata describes labels or placement; data holds values the view renders.
+Each entry needs a stable, non-empty key unique within its view, a metadata object, and data matching `dataSchema`. Use metadata for labels or placement hints and data for values the view renders:
 
 ```ts
 export interface ViewInstance<TData = unknown> {
@@ -136,6 +137,8 @@ export interface ViewInstance<TData = unknown> {
 `view.useInstance()` reads the selected entry, with its data type inferred from `dataSchema`.
 
 ## Frequently asked questions
+
+View filenames determine context paths. Instance metadata describes labels and placement; instance data supplies rendered values.
 
 <AccordionGroup>
   <Accordion title="Does naming a file index.view.tsx make it the default view?">

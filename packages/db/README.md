@@ -1,3 +1,3 @@
-# TailorKit DB
+# TailorKit database
 
-Database definitions and access for the TailorKit platform.
+`@tailorkit/db` defines the TailorKit platform database schema and database access.

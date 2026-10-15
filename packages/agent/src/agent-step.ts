@@ -15,15 +15,15 @@ export const agentStep = async (
 ): Promise<HarnessWorkflowState> => {
   "use step";
   const { createAppAgent } = await import("./agent");
-  const { getSandbox, networkSession, writeAgentToken } =
+  const { getSandbox, networkSession, removeLegacyAgentToken } =
     await import("./sandbox");
   const { renewSession } = await import("./session-store");
   await renewSession(input.appId, runId);
   const { threadSandboxName } = await import("./identity");
   const sandboxName = threadSandboxName(input.threadId);
   const sandbox = await getSandbox(sandboxName);
-  // A resumed persistent VM may have dropped the ephemeral token file.
-  await writeAgentToken(sandbox, input.agentToken);
+  // Clean snapshots from older deployments before the shell can access them.
+  await removeLegacyAgentToken(sandbox);
   const sandboxSession = await networkSession(sandbox);
   const agent = await createAppAgent(input, sandboxName);
   return await runHarnessAgentStep({

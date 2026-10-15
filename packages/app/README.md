@@ -1,12 +1,10 @@
-# TailorKit App
+# TailorKit app SDK
 
-The SDK for building TailorKit extensions.
-
-Apps require Preact 11. Install `preact@^11` alongside the SDK.
+Use `@tailorkit/app` to build TailorKit extensions. Apps require Preact 11; install `preact@^11` alongside the SDK.
 
 ## File routing
 
-New apps register views from `src/slots` automatically. Only files ending in `.view.tsx` are views, so supporting components can live beside them.
+The builder registers views from `src/slots` automatically. Only files ending in `.view.tsx` register views, so supporting components can live beside them:
 
 ```text
 src/
@@ -22,10 +20,13 @@ src/
       customer-card.tsx
 ```
 
-The slot directory is its literal host slot name, including dots in names such as `panel.links`. Dots in a view filename separate route segments: `customers.details.view.tsx` registers `/customers/details`. Subdirectories also separate segments. `customer-card.tsx` is an ordinary component and is ignored unless imported. Duplicate view paths in a slot fail the build.
+The slot directory is its literal host slot name, including dots in names such as `panel.links`. Dots in a view filename separate route segments: `customers.details.view.tsx` registers `/customers/details`. Subdirectories also separate segments. `customer-card.tsx` is an ordinary component and is ignored unless imported.
+
+Duplicate view paths in a slot fail the build.
+
+For example, `src/slots/panel/customers.details.view.tsx` registers `/customers/details`:
 
 ```tsx
-// src/slots/panel/customers.details.view.tsx
 import { defineView } from "tailorkit/client";
 
 import CustomerCard from "./customer-card";
@@ -33,10 +34,9 @@ import CustomerCard from "./customer-card";
 export default defineView({ component: CustomerCard });
 ```
 
-The builder supplies the slot and route before compiling. An explicit `view` must match the file path and gives precise host context typing:
+The builder supplies the slot and route before compiling. In `src/slots/panel/index.view.tsx`, an explicit `view` gives typed host context and must match `/`:
 
 ```tsx
-// src/slots/panel/index.view.tsx
 import { defineView } from "tailorkit/client";
 
 const view = defineView({ view: "/", component: Home });
@@ -49,7 +49,11 @@ function Home() {
 export default view;
 ```
 
-`index.view.tsx` maps to `/`. A final `index` segment is omitted, so `customers/index.view.tsx` and `customers.index.view.tsx` both map to `/customers`. Other segments stay literal: `index.details.view.tsx` maps to `/index/details`. An explicit `view` or `slot` must be a matching string literal; mismatches fail the build. Use named properties in the inline `defineView` options so the build can check them. Multi-instance views provide `instances: { dataSchema, resolve }`; resolvers are extracted into the private server bundle. Host slot/view support and multiplicity are validated when publishing. An explicit slot also retains the source-level TypeScript checks for that slot's supported views and instances.
+`index.view.tsx` maps to `/`. A final `index` segment is omitted, so `customers/index.view.tsx` and `customers.index.view.tsx` both map to `/customers`. Other segments stay literal: `index.details.view.tsx` maps to `/index/details`.
+
+An explicit `view` or `slot` must be a matching string literal; mismatches fail the build. Use named properties in the inline `defineView` options so the build can check them.
+
+For multi-instance views, provide `instances: { dataSchema, resolve }`. The builder extracts resolvers into the private server bundle. Host slot/view support and multiplicity are validated when publishing. An explicit slot also retains the source-level TypeScript checks for that slot's supported views and instances.
 
 ## Roots and layouts
 
@@ -71,7 +75,11 @@ export default defineRoute({ shellComponent: Shell });
 
 Each slot can also have a `root.tsx` exporting `defineRoute({ shellComponent })`. It wraps every view in that slot, inside the app shell. A shell can render its `children` prop instead of `<Route />`.
 
-`layout.tsx` wraps its directory path: at the slot root it wraps the entire slot; `members/layout.tsx` wraps `/members` and its descendants. `customers.layout.tsx` wraps `/customers` and its descendants, with matching at segment boundaries. Unlike view paths, layout paths retain a final `index` segment: `index.layout.tsx` maps to `/index`, and `members/index.layout.tsx` maps to `/members/index`. Layouts do not register views themselves. A layout default-exports an ordinary component (or a `defineRoute({ shellComponent })` definition):
+`layout.tsx` wraps its directory path: at the slot root it wraps the entire slot; `members/layout.tsx` wraps `/members` and its descendants. `customers.layout.tsx` wraps `/customers` and its descendants, with matching at segment boundaries.
+
+Unlike view paths, layout paths retain a final `index` segment: `index.layout.tsx` maps to `/index`, and `members/index.layout.tsx` maps to `/members/index`. Layouts do not register views themselves.
+
+Export a component as the layout’s default export, or use a `defineRoute({ shellComponent })` definition:
 
 ```tsx
 import { Route } from "tailorkit/client";

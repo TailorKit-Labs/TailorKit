@@ -1,3 +1,3 @@
-# TailorKit Config
+# TailorKit configuration
 
-Shared development configuration for TailorKit packages.
+`@tailorkit/config` contains shared development configuration for TailorKit packages.

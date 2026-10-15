@@ -1,3 +1,3 @@
-# TailorKit Client Core
+# TailorKit client core
 
-Shared client functionality for TailorKit integrations.
+`@tailorkit/client-core` contains shared client functionality for TailorKit integrations.
