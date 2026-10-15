@@ -236,27 +236,40 @@ it("preserves client-only deployment uploads", async () => {
   expect(fetch).toHaveBeenCalledOnce();
 });
 
-it("typechecks the server entry even when the client does not import it", async () => {
-  await linkTestDependencies(root);
-  await mkdir(path.join(root, "src"));
-  await writeFile(path.join(root, "src/root.tsx"), "export default {};\n");
-  await writeFile(
-    path.join(root, "src/server.ts"),
-    'export const invalid: number = "string";'
-  );
-  await writeFile(
-    path.join(root, "tsconfig.json"),
-    JSON.stringify({ compilerOptions: { skipLibCheck: true, types: [] } })
-  );
-  const onTypecheckFailed = vi.fn().mockResolvedValue(false);
-  await expect(runDeploy({ cwd: root, onTypecheckFailed })).rejects.toThrow(
-    "type check failed"
-  );
-  expect(onTypecheckFailed.mock.calls[0]?.[0].output).toContain(
-    "src/server.ts"
-  );
-  expect(mocks.publish).not.toHaveBeenCalled();
-});
+it.each([false, true])(
+  "returns server diagnostics with an interactive callback: %s",
+  async (interactive) => {
+    await linkTestDependencies(root);
+    await mkdir(path.join(root, "src"));
+    await writeFile(path.join(root, "src/root.tsx"), "export default {};\n");
+    await writeFile(
+      path.join(root, "src/server.ts"),
+      'export const invalid: number = "string";'
+    );
+    await writeFile(
+      path.join(root, "tsconfig.json"),
+      JSON.stringify({ compilerOptions: { skipLibCheck: true, types: [] } })
+    );
+    const onTypecheckFailed = vi.fn().mockResolvedValue(false);
+    const deployment = runDeploy({
+      cwd: root,
+      onTypecheckFailed: interactive ? onTypecheckFailed : undefined,
+    });
+    await expect(deployment).rejects.toThrow("type check failed");
+    await expect(deployment).rejects.toThrow("Command: tsc --noEmit");
+    await expect(deployment).rejects.toThrow("src/server.ts");
+    await expect(deployment).rejects.toThrow("error TS2322");
+    if (interactive) {
+      expect(onTypecheckFailed.mock.calls[0]?.[0].output).toContain(
+        "src/server.ts"
+      );
+    } else {
+      expect(onTypecheckFailed).not.toHaveBeenCalled();
+    }
+    expect(mocks.create).not.toHaveBeenCalled();
+    expect(mocks.publish).not.toHaveBeenCalled();
+  }
+);
 
 it("typechecks file route roots, layouts and views without a manual client entry", async () => {
   await linkTestDependencies(root);

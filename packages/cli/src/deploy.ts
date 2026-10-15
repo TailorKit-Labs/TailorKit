@@ -356,7 +356,13 @@ export const runDeploy = async (
       typecheckResult.value
     );
     if (!(shouldContinue === true)) {
-      throw new Error("Deployment cancelled because type check failed.");
+      throw new Error(
+        [
+          "Deployment cancelled because type check failed.",
+          `Command: ${typecheckResult.value.command}`,
+          typecheckResult.value.output,
+        ].join("\n")
+      );
     }
   }
 
