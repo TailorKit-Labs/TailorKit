@@ -16,7 +16,7 @@ if (manifest.version !== lucideVersion) {
 
 const output = path.resolve(
   import.meta.dirname,
-  "../.generated/icons/lucide",
+  "../dist/lucide",
   lucideVersion
 );
 await mkdir(output, { recursive: true });
@@ -31,4 +31,9 @@ await Promise.all(
 await copyFile(
   path.join(packageRoot, "LICENSE"),
   path.join(output, "LICENSE.txt")
+);
+
+await copyFile(
+  new URL("../public/_headers", import.meta.url),
+  new URL("../dist/_headers", import.meta.url)
 );

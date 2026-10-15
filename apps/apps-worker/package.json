@@ -4,12 +4,12 @@
   "license": "BUSL-1.1",
   "type": "module",
   "scripts": {
-    "build": "node scripts/build-bootstrap.mjs && node scripts/build-icons.mjs && wrangler deploy --dry-run --outdir dist",
+    "build": "node scripts/build-bootstrap.mjs && wrangler deploy --dry-run --outdir dist",
     "check-types": "tsc --noEmit",
     "types": "wrangler types src/worker-env.d.ts --env-interface Env --strict-vars=false",
-    "dev": "node scripts/build-bootstrap.mjs && node scripts/build-icons.mjs && wrangler dev --local --persist-to .tailorkit/state",
+    "dev": "node scripts/build-bootstrap.mjs && wrangler dev --local --persist-to .tailorkit/state",
     "test": "vp test run",
-    "deploy": "node scripts/build-bootstrap.mjs && node scripts/build-icons.mjs && wrangler deploy",
+    "deploy": "node scripts/build-bootstrap.mjs && wrangler deploy",
     "lint": "vp lint .",
     "lint:fix": "vp lint --fix ."
   },
@@ -27,10 +27,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@tailorkit/core": "workspace:*",
     "@types/node": "catalog:",
-    "lucide-react": "catalog:",
-    "react": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:",
