@@ -853,24 +853,25 @@ export const migrations = ${JSON.stringify(history)};`;
     await assets.put(clientKey, clientBytes, {
       httpMetadata: { contentEncoding: "gzip" },
     });
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-      const compressed = await mf.dispatchFetch(
-        `${assetBase}/client/client.js`,
-        {
-          headers: { "Accept-Encoding": "gzip" },
-        }
-      );
-      assert.equal(compressed.headers.get("mf-content-encoding"), "gzip");
-      assert.equal(compressed.headers.get("vary"), "Accept-Encoding");
-      // Miniflare dispatchFetch decodes HTTP gzip and preserves its header here.
-      assert.equal(
-        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-        await compressed.text(),
-        "export default 'client';",
-        `gzip request ${attempt}`
-      );
-    }
+    await Array.fromAsync(
+      Array.from({ length: 2 }, (_, attempt) => attempt),
+      async (attempt) => {
+        const compressed = await mf.dispatchFetch(
+          `${assetBase}/client/client.js`,
+          {
+            headers: { "Accept-Encoding": "gzip" },
+          }
+        );
+        assert.equal(compressed.headers.get("mf-content-encoding"), "gzip");
+        assert.equal(compressed.headers.get("vary"), "Accept-Encoding");
+        // Miniflare dispatchFetch decodes HTTP gzip and preserves its header here.
+        assert.equal(
+          await compressed.text(),
+          "export default 'client';",
+          `gzip request ${attempt}`
+        );
+      }
+    );
     const client = await mf.dispatchFetch(`${assetBase}/client/client.js`, {
       headers: { "Accept-Encoding": "identity" },
     });

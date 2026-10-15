@@ -1,10 +1,10 @@
-/* oxlint-disable typescript/no-unsafe-member-access -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import {
   Client,
   StreamableHTTPClientTransport,
 } from "@modelcontextprotocol/client";
 import { os } from "@orpc/server";
 import { expect, it, vi } from "vite-plus/test";
+import { z } from "zod";
 
 import type { Context } from "./context";
 
@@ -15,10 +15,36 @@ const require = <T>(value: T | null | undefined): T => {
   return value;
 };
 
-const calls = vi.hoisted(() => ({ list: vi.fn() }));
+interface ListInput {
+  input: { body: { scopes: { name: string; value: { tenant: string } }[] } };
+}
+interface ListResult {
+  body: {
+    items: { id: string; name: string }[];
+    pagination: { hasMore: boolean };
+  };
+}
+const calls = vi.hoisted(() => ({
+  list: vi.fn<(options: ListInput) => Promise<ListResult>>(),
+}));
 vi.mock("@tailorkit/db", () => ({ db: {} }));
 vi.mock("./routes/apps.ts", () => ({
-  appRouter: { list: os.handler(calls.list) },
+  appRouter: {
+    list: os
+      .input(
+        z.object({
+          body: z.object({
+            scopes: z.array(
+              z.object({
+                name: z.string(),
+                value: z.object({ tenant: z.string() }),
+              })
+            ),
+          }),
+        })
+      )
+      .handler(calls.list),
+  },
 }));
 vi.mock("@tailorkit/agent/workflows", () => ({
   appAgent: vi.fn(),

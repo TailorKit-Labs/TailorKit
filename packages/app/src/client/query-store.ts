@@ -72,7 +72,7 @@ export class QueryStore {
     }
     const current = entry;
     current.observers += 1;
-    const publish = (state: QueryState<O>) => {
+    const publish = (state: QueryState<unknown>) => {
       if (!this.disposed && this.entries.get(key) === current) {
         this.state.set(new Map(this.state.get()).set(key, state));
       }
@@ -82,12 +82,8 @@ export class QueryStore {
         if (this.disposed || this.entries.get(key) !== current) {
           return;
         }
-        // SAFETY: The entry is created and updated by this query reference's typed subscription; the shared cache erases its output generic.
         publish({
-          data:
-            /* oxlint-disable typescript/no-unsafe-type-assertion -- The entry is created and updated by this query reference's typed subscription; the shared cache erases its output generic. */
-            this.state.get().get(key)?.data as O | undefined,
-          /* oxlint-enable typescript/no-unsafe-type-assertion */
+          data: this.state.get().get(key)?.data,
           error,
           status: "error",
         });

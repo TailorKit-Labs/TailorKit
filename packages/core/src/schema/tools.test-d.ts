@@ -1,4 +1,3 @@
-/* oxlint-disable typescript/no-unsafe-call, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { expectTypeOf } from "vite-plus/test";
 import { z } from "zod";
 
@@ -30,7 +29,7 @@ expectTypeOf(backend.data.read("1")).toEqualTypeOf<Promise<number>>();
 expectTypeOf(backend.data.sync()).toEqualTypeOf<Promise<void>>();
 expectTypeOf(backend.data.transformed()).toEqualTypeOf<Promise<number>>();
 // @ts-expect-error client tools are unavailable in backend callers
-backend.ui.open("details");
+void backend.ui;
 // @ts-expect-error caller input uses the schema's input type
 void backend.data.read(1);
 const implementations: ToolImplementations<typeof contract.tools, "server"> = {

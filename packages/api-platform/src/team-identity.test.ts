@@ -63,17 +63,15 @@ describe("permanent public team identity", () => {
         throw new Error("Missing inserted team");
       }
 
-      for (const valid of [
-        "team-abcdefghi",
-        "a------------z",
-        "0123456789abcd",
-      ]) {
-        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-        await client.query(
-          "INSERT INTO organization (slug, public_id) VALUES ($1, $2)",
-          [valid, valid]
-        );
-      }
+      await Array.fromAsync(
+        ["team-abcdefghi", "a------------z", "0123456789abcd"],
+        async (valid) => {
+          await client.query(
+            "INSERT INTO organization (slug, public_id) VALUES ($1, $2)",
+            [valid, valid]
+          );
+        }
+      );
 
       await client.query(
         "UPDATE organization SET name = 'Renamed' WHERE id = $1",
@@ -98,31 +96,33 @@ describe("permanent public team identity", () => {
       await expect(
         client.query("INSERT INTO organization (slug) VALUES ('missing')")
       ).rejects.toThrow();
-      for (const invalid of [
-        "abc123def4",
-        "team-abcde",
-        "UPPERCASE0",
-        "too-short",
-        "-bc123def4",
-        "abc123def-",
-        "abc_23def4",
-        "01234567890",
-        "012345678901",
-        "0123456789012",
-        "012345678901234",
-        "-bc123def45678",
-        "abc123def4567-",
-        "abc_23def45678",
-        "ABC123DEF45678",
-      ]) {
-        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-        await expect(
-          client.query(
-            "INSERT INTO organization (slug, public_id) VALUES ($1, $2)",
-            [invalid, invalid]
-          )
-        ).rejects.toThrow();
-      }
+      await Array.fromAsync(
+        [
+          "abc123def4",
+          "team-abcde",
+          "UPPERCASE0",
+          "too-short",
+          "-bc123def4",
+          "abc123def-",
+          "abc_23def4",
+          "01234567890",
+          "012345678901",
+          "0123456789012",
+          "012345678901234",
+          "-bc123def45678",
+          "abc123def4567-",
+          "abc_23def45678",
+          "ABC123DEF45678",
+        ],
+        async (invalid) => {
+          await expect(
+            client.query(
+              "INSERT INTO organization (slug, public_id) VALUES ($1, $2)",
+              [invalid, invalid]
+            )
+          ).rejects.toThrow();
+        }
+      );
     } finally {
       await client.close();
     }

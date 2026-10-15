@@ -124,7 +124,6 @@ export const createRemoteUiStore = (): RemoteUiStore => {
     getRevision: () => revision,
     getSnapshot: () => snapshot,
     handleSandboxMessage(message) {
-      /* oxlint-disable typescript/switch-exhaustiveness-check -- This syntax visitor handles selected node kinds; other kinds use its generic traversal or default branch. */
       switch (message.type) {
         case "snapshot": {
           this.setSnapshot(message.data.tree, message.data.revision);
@@ -138,6 +137,8 @@ export const createRemoteUiStore = (): RemoteUiStore => {
         case "error": {
           throw new Error(message.data.message);
         }
+        case "toolRequest":
+        case "backendSessionRequest":
         case "ready":
         case "requestAnimationFrame": {
           break;
@@ -146,7 +147,6 @@ export const createRemoteUiStore = (): RemoteUiStore => {
           break;
         }
       }
-      /* oxlint-enable typescript/switch-exhaustiveness-check */
     },
     setSnapshot: (tree, nextRevision) => {
       snapshot = cloneNode(tree);

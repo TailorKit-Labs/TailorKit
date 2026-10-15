@@ -1,13 +1,20 @@
-/* oxlint-disable typescript/no-unsafe-argument, typescript/no-unsafe-member-access, typescript/no-unsafe-call -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import type { PreviewWebSocketClient } from "@tailorkit/client-platform/preview";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 
+import type { buildProject } from "./build";
+
 const mocks = vi.hoisted(() => ({
-  beginBuild: vi.fn(),
-  build: vi.fn(),
+  beginBuild: vi.fn<PreviewWebSocketClient["beginBuild"]>(),
+  build:
+    vi.fn<
+      (
+        ...args: Parameters<typeof buildProject>
+      ) => Promise<{ outDir: string; result: { close: () => Promise<void> } }>
+    >(),
   client: vi.fn(),
   close: vi.fn(),
   commitBuild: vi.fn(),
@@ -16,7 +23,7 @@ const mocks = vi.hoisted(() => ({
   start: vi.fn(),
   stop: vi.fn(),
   token: vi.fn(),
-  uploadChunk: vi.fn(),
+  uploadChunk: vi.fn<PreviewWebSocketClient["uploadChunk"]>(),
   whoami: vi.fn(),
 }));
 
@@ -54,17 +61,17 @@ beforeEach(() => {
     SIGTERM: process.listeners("SIGTERM"),
   };
   vi.resetAllMocks();
-  // oxlint-disable-next-line require-await -- The mock keeps the asynchronous API contract.
+  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
   mocks.build.mockImplementation(async (options) => ({
     outDir: path.resolve(options.cwd, options.outDir ?? ".tailorkit"),
     result: { close: mocks.close },
   }));
-  mocks.close.mockImplementation(async () => {});
+  mocks.close.mockReturnValue(Promise.resolve());
   mocks.client.mockReturnValue({
     preview: { start: mocks.start, stop: mocks.stop },
   });
   mocks.start.mockResolvedValue({ data: { sessionId: "session" } });
-  mocks.stop.mockImplementation(async () => {});
+  mocks.stop.mockReturnValue(Promise.resolve());
   mocks.token.mockResolvedValue({ deployToken: "token" });
   mocks.whoami.mockResolvedValue({ hostUrl: "https://host.test" });
   mocks.heartbeat.mockResolvedValue({ accepted: true });
@@ -119,7 +126,7 @@ it.each([
   // End the session after the first upload so its manifest can be inspected.
   const heartbeat = Promise.withResolvers<{ accepted: boolean }>();
   mocks.heartbeat.mockReturnValue(heartbeat.promise);
-  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
   mocks.commitBuild.mockImplementation(async () => {
     heartbeat.reject({ code: "UNAUTHORIZED", message });
     return { accepted: true };

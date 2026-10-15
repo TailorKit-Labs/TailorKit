@@ -3,6 +3,8 @@ import { createHash, randomUUID } from "node:crypto";
 import type { KV } from "@tailorkit/kv";
 import { z } from "zod";
 
+import { forEachSequential } from "#for-each-sequential";
+
 export const previewChunkBytes = 256 * 1024;
 export const previewMessageBytes = 512 * 1024;
 export const previewFileBytes = 1024 * 1024;
@@ -188,12 +190,19 @@ export const createPreviewBuildStore = (
     if (!build || current?.buildId === buildId) {
       return;
     }
-    for (const [fileIndex, file] of build.manifest.files.entries()) {
-      for (let chunkIndex = 0; chunkIndex < file.chunks; chunkIndex += 1) {
-        // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
-        await kv.delete(chunkKey(sessionId, buildId, fileIndex, chunkIndex));
+    await forEachSequential(
+      build.manifest.files.entries(),
+      async ([fileIndex, file]) => {
+        await forEachSequential(
+          Array.from({ length: file.chunks }, (_, chunkIndex) => chunkIndex),
+          async (chunkIndex) => {
+            await kv.delete(
+              chunkKey(sessionId, buildId, fileIndex, chunkIndex)
+            );
+          }
+        );
       }
-    }
+    );
     await kv.delete(buildKey(sessionId, buildId));
   };
   return {
@@ -269,7 +278,6 @@ export const createPreviewBuildStore = (
         : null;
     },
 
-    // oxlint-disable-next-line complexity -- commit verifies all chunks before advancing the pointer.
     async commit(
       sessionId: string,
       buildId: string
@@ -289,52 +297,69 @@ export const createPreviewBuildStore = (
       validatePreviewManifest(build.manifest);
       let revision = build.state === "ready" ? build.revision : 0;
       if (build.state === "uploading") {
-        for (const [fileIndex, file] of build.manifest.files.entries()) {
-          const parts: Buffer[] = [];
-          for (let chunkIndex = 0; chunkIndex < file.chunks; chunkIndex += 1) {
-            // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
-            const value = await kv.get(
-              chunkKey(sessionId, buildId, fileIndex, chunkIndex)
+        await forEachSequential(
+          build.manifest.files.entries(),
+          async ([fileIndex, file]) => {
+            const parts: Buffer[] = [];
+            await forEachSequential(
+              Array.from(
+                { length: file.chunks },
+                (_, chunkIndex) => chunkIndex
+              ),
+              async (chunkIndex) => {
+                const value = await kv.get(
+                  chunkKey(sessionId, buildId, fileIndex, chunkIndex)
+                );
+                if (value === null) {
+                  throw new Error("Preview build is incomplete.");
+                }
+                if (!base64Schema.safeParse(value).success) {
+                  throw new Error("Corrupt preview chunk.");
+                }
+                const bytes = Buffer.from(value, "base64");
+                if (
+                  bytes.length !==
+                  Math.min(
+                    previewChunkBytes,
+                    file.size - chunkIndex * previewChunkBytes
+                  )
+                ) {
+                  throw new Error("Corrupt preview chunk.");
+                }
+                parts.push(bytes);
+              }
             );
-            if (value === null) {
-              throw new Error("Preview build is incomplete.");
+            const bytes = Buffer.concat(parts);
+            if (bytes.length !== file.size || sha256(bytes) !== file.sha256) {
+              throw new Error("Preview checksum mismatch.");
             }
-            if (!base64Schema.safeParse(value).success) {
-              throw new Error("Corrupt preview chunk.");
-            }
-            const bytes = Buffer.from(value, "base64");
-            if (
-              bytes.length !==
-              Math.min(
-                previewChunkBytes,
-                file.size - chunkIndex * previewChunkBytes
-              )
-            ) {
-              throw new Error("Corrupt preview chunk.");
-            }
-            parts.push(bytes);
           }
-          const bytes = Buffer.concat(parts);
-          if (bytes.length !== file.size || sha256(bytes) !== file.sha256) {
-            throw new Error("Preview checksum mismatch.");
-          }
-        }
+        );
         revision = await kv.increment(
           `preview:revision-counter:${sessionId}`,
           activeTtlSeconds
         );
-        for (const [fileIndex, file] of build.manifest.files.entries()) {
-          for (let chunkIndex = 0; chunkIndex < file.chunks; chunkIndex += 1) {
-            const key = chunkKey(sessionId, buildId, fileIndex, chunkIndex);
-            // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
-            const value = await kv.get(key);
-            if (value === null) {
-              throw new Error("Preview build expired before commit.");
-            }
-            // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
-            await kv.set(key, value, { ttl: activeTtlSeconds });
+        await forEachSequential(
+          build.manifest.files.entries(),
+          async ([fileIndex, file]) => {
+            await forEachSequential(
+              Array.from(
+                { length: file.chunks },
+                (_, chunkIndex) => chunkIndex
+              ),
+              async (chunkIndex) => {
+                const key = chunkKey(sessionId, buildId, fileIndex, chunkIndex);
+
+                const value = await kv.get(key);
+                if (value === null) {
+                  throw new Error("Preview build expired before commit.");
+                }
+
+                await kv.set(key, value, { ttl: activeTtlSeconds });
+              }
+            );
           }
-        }
+        );
         await kv.set(
           buildKey(sessionId, buildId),
           JSON.stringify({
@@ -394,26 +419,30 @@ export const createPreviewBuildStore = (
                 ttl: committedTtlSeconds,
               }
             );
-            for (const [fileIndex, file] of previous.manifest.files.entries()) {
-              for (
-                let chunkIndex = 0;
-                chunkIndex < file.chunks;
-                chunkIndex += 1
-              ) {
-                const key = chunkKey(
-                  sessionId,
-                  previous.buildId,
-                  fileIndex,
-                  chunkIndex
+            await forEachSequential(
+              previous.manifest.files.entries(),
+              async ([fileIndex, file]) => {
+                await forEachSequential(
+                  Array.from(
+                    { length: file.chunks },
+                    (_, chunkIndex) => chunkIndex
+                  ),
+                  async (chunkIndex) => {
+                    const key = chunkKey(
+                      sessionId,
+                      previous.buildId,
+                      fileIndex,
+                      chunkIndex
+                    );
+
+                    const value = await kv.get(key);
+                    if (value !== null) {
+                      await kv.set(key, value, { ttl: committedTtlSeconds });
+                    }
+                  }
                 );
-                // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
-                const value = await kv.get(key);
-                if (value !== null) {
-                  // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
-                  await kv.set(key, value, { ttl: committedTtlSeconds });
-                }
               }
-            }
+            );
           }
         }
       } catch {
@@ -453,14 +482,22 @@ export const createPreviewBuildStore = (
         await removeUploadingBuild(sessionId, uploading);
       }
       if (active) {
-        for (const [fileIndex, file] of active.manifest.files.entries()) {
-          for (let chunkIndex = 0; chunkIndex < file.chunks; chunkIndex += 1) {
-            // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
-            await kv.delete(
-              chunkKey(sessionId, active.buildId, fileIndex, chunkIndex)
+        await forEachSequential(
+          active.manifest.files.entries(),
+          async ([fileIndex, file]) => {
+            await forEachSequential(
+              Array.from(
+                { length: file.chunks },
+                (_, chunkIndex) => chunkIndex
+              ),
+              async (chunkIndex) => {
+                await kv.delete(
+                  chunkKey(sessionId, active.buildId, fileIndex, chunkIndex)
+                );
+              }
             );
           }
-        }
+        );
         await kv.delete(buildKey(sessionId, active.buildId));
       }
       await kv.delete(uploadingKey(sessionId));

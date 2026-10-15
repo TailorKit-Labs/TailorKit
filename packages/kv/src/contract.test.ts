@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import type { Redis as UpstashRedis } from "@upstash/redis";
 /* oxlint-disable max-classes-per-file, no-useless-constructor, class-methods-use-this, require-await, typescript/no-non-null-assertion, unicorn/no-await-expression-member, import/first -- adapter mocks implement the Redis clients' asynchronous shape. */
 import { describe, expect, it, vi } from "vite-plus/test";
+import { z } from "zod";
 
 // oxlint-disable-next-line import/no-relative-parent-imports -- Adapter integration tests reuse built platform types without adding a cyclic workspace dependency.
 import type * as PreviewBuildModule from "../../api-platform/dist/preview-build-store.mjs";
@@ -21,19 +22,13 @@ interface UpstashSubscriber {
   handlers: Map<string, (message?: { message: string }) => void>;
 }
 const pointerRevision = (source: string): number => {
-  const pointer: unknown = JSON.parse(source);
-
-  if (
-    // oxlint-disable-next-line anti-slop/no-runtime-typeof -- Validate the parsed JSON pointer object before reading its revision.
-    typeof pointer !== "object" ||
-    pointer === null ||
-    !("revision" in pointer) ||
-    // oxlint-disable-next-line anti-slop/no-runtime-typeof -- The Redis fixture requires a numeric revision before comparing it.
-    typeof pointer.revision !== "number"
-  ) {
+  const result = z
+    .object({ revision: z.number() })
+    .safeParse(JSON.parse(source));
+  if (!result.success) {
     throw new Error("Invalid revision pointer fixture");
   }
-  return pointer.revision;
+  return result.data.revision;
 };
 const state = vi.hoisted(() => ({
   redis: {

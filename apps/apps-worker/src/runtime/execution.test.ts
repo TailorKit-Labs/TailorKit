@@ -516,16 +516,18 @@ it("runs action database calls locally and notifies only committed writes before
         await expect(mutations.records.fail()).rejects.toMatchObject({
           code: "CONFLICT",
         });
-        for (let i = 0; i < 100; i += 1) {
-          // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-          await queries.records.list();
-        }
+        await Array.fromAsync(
+          Array.from({ length: 100 }, (_, i) => i),
+          async (_i) => {
+            await queries.records.list();
+          }
+        );
         await external;
         return await queries.records.list();
       }),
   });
   const execution = createExecution(app, persistence);
-  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
+  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
   const notify = vi.fn(async (tables: string[]) => {
     expect(tables).toEqual(["todos"]);
     expect(

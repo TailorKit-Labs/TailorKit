@@ -69,11 +69,11 @@ it("dispatches nested functions and preserves their names, identity, execution a
     saved: "saved",
   });
   expect(query).toHaveBeenCalledWith({ args: undefined, name: "todos.read" });
+  const expectedRequestIdMatcher1: unknown = expect.any(String);
   expect(mutate).toHaveBeenCalledWith({
     args: undefined,
     name: "todos.save",
-    // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-    requestId: expect.any(String),
+    requestId: expectedRequestIdMatcher1,
   });
 });
 

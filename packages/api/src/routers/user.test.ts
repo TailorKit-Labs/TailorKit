@@ -174,13 +174,13 @@ describe("userRouter", () => {
       )
     ).rejects.toEqual(expect.objectContaining({ code: "FORBIDDEN" }));
 
+    const expectedHeadersMatcher1: unknown = expect.any(Headers);
     expect(auth.api.hasPermission).toHaveBeenCalledWith({
       body: {
         organizationId: orgId,
         permissions: { invitation: ["read"] },
       },
-      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-      headers: expect.any(Headers),
+      headers: expectedHeadersMatcher1,
     });
   });
 

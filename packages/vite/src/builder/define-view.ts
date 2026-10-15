@@ -89,7 +89,7 @@ const resolve = (
   return undefined;
 };
 
-const childNodes = (node: ESTree.Node): ESTree.Node[] =>
+export const childNodes = (node: ESTree.Node): ESTree.Node[] =>
   Object.values(node).flatMap((value) => {
     const children = Array.isArray(value) ? value : [value];
     return children.filter(

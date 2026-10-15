@@ -156,7 +156,10 @@ it("composes signing and verification with an injected clock, including expiry",
     const access = yield* verifyEffect(session.token);
     now += 300_000;
     const expired = yield* verifyEffect(session.token).pipe(
-      Effect.catch((error) => Effect.succeed(error.code))
+      Effect.match({
+        onFailure: (error) => error.code,
+        onSuccess: (value) => value,
+      })
     );
     return { access, expired, expiresAt: session.expiresAt };
   }).pipe(
@@ -181,8 +184,12 @@ it("keeps invalid signing configuration in the recoverable Effect error channel"
   const program = issueAppTokenEffect(
     { ...signing, lifetimeSeconds: 301 },
     identity
-    // oxlint-disable-next-line promise/prefer-await-to-callbacks -- This is an Effect recovery operator or transport callback, not a Node-style completion callback.
-  ).pipe(Effect.catch((error) => Effect.succeed(error.message)));
+  ).pipe(
+    Effect.match({
+      onFailure: (error) => error.message,
+      onSuccess: (value) => value,
+    })
+  );
   await expect(Effect.runPromise(program)).resolves.toBe(
     "App tokens must last 1–300 seconds"
   );
@@ -205,8 +212,10 @@ it("rejects a token that expires while its signature is being verified", async (
         ),
       })
     ),
-    // oxlint-disable-next-line promise/prefer-await-to-callbacks -- This is an Effect recovery operator or transport callback, not a Node-style completion callback.
-    Effect.catch((error) => Effect.succeed(error.code))
+    Effect.match({
+      onFailure: (error) => error.code,
+      onSuccess: (value) => value,
+    })
   );
   await expect(Effect.runPromise(program)).resolves.toBe("UNAUTHORIZED");
 });

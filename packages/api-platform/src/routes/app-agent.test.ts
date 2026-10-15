@@ -1,8 +1,8 @@
-/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-argument, typescript/no-unsafe-member-access -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { call, asyncIteratorToUnproxiedDataStream } from "@orpc/server";
 import { AppAgentThreadError } from "@tailorkit/agent/threads";
 import type * as threadsModule from "@tailorkit/agent/threads";
+import type { appAgent } from "@tailorkit/agent/workflows";
 import {
   issueAgentToken,
   verifyAgentToken,
@@ -25,7 +25,18 @@ const requireValue = <T>(value: T | null | undefined): T => {
 const mocks = vi.hoisted(() => ({
   app: vi.fn(),
   getRun: vi.fn<(runId: string) => ReturnType<typeof run>>(),
-  start: vi.fn(),
+  start: vi.fn<
+    (
+      workflow: typeof appAgent,
+      args: [Parameters<typeof appAgent>[0]],
+      options?: { attributes?: Record<string, string> }
+    ) => Promise<{
+      runId: string;
+      cancel?: () => void | Promise<void>;
+      getReadable: (...args: never[]) => ReadableStream;
+      returnValue: Promise<unknown>;
+    }>
+  >(),
   thread: vi.fn<(appId: string, threadId?: string) => Promise<string>>(),
   token: vi.fn(),
 }));
@@ -118,7 +129,7 @@ beforeEach(() => {
     scope: scope.scope,
     scopeKey: scope.scopeKey,
   });
-  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
   mocks.start.mockImplementation(async () =>
     run([
       { messageId: "assistant-1", type: "start" },

@@ -46,13 +46,13 @@ const metadata = {
 };
 
 const fetchInstallation = vi.fn(
-  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
   async (_request: Request) => new Response("result")
 );
 
 const getByName = vi.fn(() => ({ fetch: fetchInstallation }));
 
-const put = vi.fn(async () => {});
+const put = vi.fn<() => Promise<void>>().mockReturnValue(Promise.resolve());
 
 // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 

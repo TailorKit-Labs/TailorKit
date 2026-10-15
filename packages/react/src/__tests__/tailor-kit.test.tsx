@@ -229,7 +229,7 @@ describe("tailorKitClient React adapter", () => {
   });
 
   it("keeps a preview subscription when an inline app is rendered again", async () => {
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
     vi.mocked(globalThis.fetch).mockImplementation(async (input) =>
       input instanceof URL && input.pathname.endsWith("/preview/metadata")
         ? new Response(null, { status: 503 })
@@ -340,12 +340,12 @@ describe("tailorKitClient React adapter", () => {
       expect(testingView.getAllByText("ready:todo")).toHaveLength(2);
     });
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    const expectedSignalMatcher1: unknown = expect.any(AbortSignal);
     expect(globalThis.fetch).toHaveBeenCalledWith(
       new URL("apps", "http://runtime.test/api/tailorkit/"),
       expect.objectContaining({
         credentials: "same-origin",
-        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-        signal: expect.any(AbortSignal),
+        signal: expectedSignalMatcher1,
       })
     );
   });
@@ -436,12 +436,12 @@ describe("tailorKitClient React adapter", () => {
     await waitFor(() => {
       expect(testingView.getByText("ready")).toBeTruthy();
     });
+    const expectedSignalMatcher2: unknown = expect.any(AbortSignal);
     expect(globalThis.fetch).toHaveBeenCalledWith(
       new URL("apps", "http://runtime.test/api/tailorkit/"),
       expect.objectContaining({
         credentials: "same-origin",
-        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-        signal: expect.any(AbortSignal),
+        signal: expectedSignalMatcher2,
       })
     );
   });
@@ -976,7 +976,7 @@ const ContentsImplementation = ({
 it("isolates a new client cache even when its endpoint is equivalent", async () => {
   const fetchMock = vi
     .spyOn(globalThis, "fetch")
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
     .mockImplementation(async (input) => {
       const url = new URL(
         input instanceof Request ? input.url : input.toString()

@@ -1,8 +1,9 @@
-/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 // @vitest-environment happy-dom
+import * as v from "valibot";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
 import { sandboxMessageType } from "#bridge";
+import { IframeToHostPayload } from "#protocol";
 
 import type { AppClient, ViewRequest } from "./resolve-view";
 import { startIframeRuntime } from "./runtime";
@@ -16,7 +17,20 @@ afterEach(() => {
 
 const setup = (module: { default?: unknown; mount?: () => void }) => {
   const root = document.createElement("div");
-  const parentWindow = { postMessage: vi.fn() };
+  const messages: IframeToHostPayload[] = [];
+  const envelope = v.object({ payload: IframeToHostPayload });
+  const postMessage = vi
+    .spyOn(window, "postMessage")
+    .mockImplementation((message: Parameters<Window["postMessage"]>[0]) => {
+      const parsed = v.safeParse(envelope, message);
+      if (parsed.success) {
+        messages.push(parsed.output.payload);
+      }
+    });
+  cleanups.push(() => {
+    postMessage.mockRestore();
+  });
+  const parentWindow = window;
   const importModule = vi.fn(async () => await Promise.resolve(module));
   cleanups.push(
     startIframeRuntime({ channel: "test", importModule, parentWindow, root })
@@ -25,9 +39,7 @@ const setup = (module: { default?: unknown; mount?: () => void }) => {
     window.dispatchEvent(
       new MessageEvent("message", {
         data: { channel: "test", payload, type: sandboxMessageType },
-        // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-        // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-        source: parentWindow as unknown as Window,
+        source: parentWindow,
       })
     );
   };
@@ -41,7 +53,14 @@ const setup = (module: { default?: unknown; mount?: () => void }) => {
       type: "init",
     });
   };
-  return { importModule, parentWindow, root, send, update };
+  return {
+    importModule,
+    messages,
+    parentWindow: { postMessage },
+    root,
+    send,
+    update,
+  };
 };
 
 const requestImplementation = (name: string): ViewRequest => ({
@@ -86,14 +105,21 @@ it("imports once, publishes updates, clears unsupported slots, and dispatches ca
   await vi.waitFor(() => {
     expect(runtime.root.textContent).toBe("first");
   });
-  const snapshot = runtime.parentWindow.postMessage.mock.calls.find(
-    ([message]) => message.payload?.type === "snapshot"
-  )?.[0].payload.data.tree;
-  expect(snapshot.children[0].callbacks).toEqual([
+  const snapshot = runtime.messages.find(
+    (message) => message.type === "snapshot"
+  );
+  if (snapshot?.type !== "snapshot" || snapshot.data.tree.kind === "text") {
+    throw new Error("Expected a rendered snapshot");
+  }
+  const [button] = snapshot.data.tree.children;
+  if (button?.kind !== "element") {
+    throw new Error("Expected a button element");
+  }
+  expect(button.callbacks).toEqual([
     { callback: "onClick", event: "click", inputCount: 0 },
   ]);
   runtime.send({
-    data: { args: [], event: "click", nodeId: snapshot.children[0].id },
+    data: { args: [], event: "click", nodeId: button.id },
     type: "dispatchCallback",
   });
   await vi.waitFor(() => {
@@ -108,9 +134,13 @@ it("imports once, publishes updates, clears unsupported slots, and dispatches ca
   await vi.waitFor(() => {
     expect(runtime.root.childNodes).toHaveLength(0);
   });
+  const cleared = runtime.messages.findLast(
+    (message) => message.type === "snapshot"
+  );
   expect(
-    runtime.parentWindow.postMessage.mock.calls.at(-1)?.[0].payload.data.tree
-      .children
+    cleared?.type === "snapshot" && cleared.data.tree.kind !== "text"
+      ? cleared.data.tree.children
+      : null
   ).toEqual([]);
 });
 
@@ -126,15 +156,9 @@ it("reports a mount-only module instead of bypassing view resolution", async () 
     view: "/",
   });
   await vi.waitFor(() => {
-    expect(runtime.parentWindow.postMessage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        payload: {
-          // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-          data: { message: expect.stringContaining("app builder") },
-          type: "error",
-        },
-      }),
-      "*"
+    const error = runtime.messages.find((message) => message.type === "error");
+    expect(error?.type === "error" ? error.data.message : null).toContain(
+      "app builder"
     );
   });
   expect(mount).not.toHaveBeenCalled();
@@ -238,17 +262,12 @@ it("forwards selected instances through the bridge and switches them without rei
   await vi.waitFor(() => {
     expect(runtime.root.textContent).toBe('summary:{"count":2}');
   });
-  // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
-
-  runtime.update(
-    /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
-    {
-      ...request,
-      context: undefined,
-      status: "loading",
-    } as unknown as ViewRequest
-    /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
-  );
+  runtime.update({
+    ...request,
+    context: undefined,
+    instance: undefined,
+    status: "loading" as const,
+  });
   await vi.waitFor(() => {
     expect(runtime.root.childNodes).toHaveLength(0);
   });

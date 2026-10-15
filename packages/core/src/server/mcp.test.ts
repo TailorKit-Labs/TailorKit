@@ -1,4 +1,3 @@
-/* oxlint-disable typescript/no-unsafe-return -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { describe, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
@@ -36,12 +35,19 @@ const setup = (
   });
   return { fetch, server };
 };
+const contextSchema = z.object({
+  hostUrl: z.string(),
+  scopes: z.record(z.string(), z.json()),
+  subjectId: z.string().optional(),
+});
 const context = (headers: Record<string, string>) =>
-  JSON.parse(
-    Buffer.from(
-      requireValue(headers["x-tailorkit-context"]),
-      "base64url"
-    ).toString("utf-8")
+  contextSchema.parse(
+    JSON.parse(
+      Buffer.from(
+        requireValue(headers["x-tailorkit-context"]),
+        "base64url"
+      ).toString("utf-8")
+    )
   );
 
 describe("MCP transport configuration", () => {

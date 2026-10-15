@@ -1,4 +1,4 @@
-/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-argument, typescript/no-unsafe-member-access -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
+import type { appAgent } from "@tailorkit/agent/workflows";
 import { verifyAgentToken } from "@tailorkit/api-utils/agent-token";
 import { app } from "@tailorkit/db/schema/apps";
 import { organization } from "@tailorkit/db/schema/auth";
@@ -12,6 +12,7 @@ import {
   it,
   vi,
 } from "vite-plus/test";
+import type { z } from "zod";
 
 import type { Context } from "./context";
 import { env } from "./env";
@@ -26,7 +27,21 @@ const requireValue = <T>(value: T | null | undefined): T => {
 };
 
 // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-const state = vi.hoisted(() => ({ db: undefined as unknown, start: vi.fn() }));
+const state = vi.hoisted(() => ({
+  db: undefined as unknown,
+  start: vi.fn<
+    (
+      workflow: typeof appAgent,
+      args: [Parameters<typeof appAgent>[0]],
+      options?: { attributes?: Record<string, string> }
+    ) => Promise<{
+      runId: string;
+      cancel?: () => void | Promise<void>;
+      getReadable: (...args: never[]) => ReadableStream;
+      returnValue: Promise<unknown>;
+    }>
+  >(),
+}));
 vi.mock("@tailorkit/db", () => ({
   get db() {
     return state.db;
@@ -57,10 +72,7 @@ const otherProjectId = "33333333-3333-4333-8333-333333333333";
 const scope = canonicalizeScope({ name: "org", value: { tenant: "one" } });
 const otherScope = canonicalizeScope({ name: "org", value: { tenant: "two" } });
 
-const request = (
-  name: string,
-  args: Parameters<typeof JSON.stringify>[0] = {}
-) =>
+const request = (name: string, args: z.infer<ReturnType<typeof z.json>> = {}) =>
   new Request("https://platform.test/api/platform/app-agent/mcp", {
     body: JSON.stringify({
       id: 1,

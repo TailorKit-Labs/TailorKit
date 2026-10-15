@@ -11,27 +11,31 @@ export const drizzleGenerateArguments = async (
   name?: string
 ) => {
   const require = createRequire(path.join(root, "package.json"));
-  for (const directory of require.resolve.paths("drizzle-kit") ?? []) {
-    const cli = path.join(directory, "drizzle-kit/bin.cjs");
-    if (
-      // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
-      await access(cli)
-        .then(() => true)
-        .catch(() => false)
-    ) {
-      return [
-        "--preserve-symlinks-main",
-        cli,
-        "generate",
-        "--dialect",
-        "sqlite",
-        "--schema",
-        appDatabasePaths(root).schema,
-        "--out",
-        output,
-        ...(name === undefined ? [] : ["--name", name]),
-      ];
-    }
+  const candidates = await Promise.all(
+    (require.resolve.paths("drizzle-kit") ?? []).map(async (directory) => {
+      const cli = path.join(directory, "drizzle-kit/bin.cjs");
+      try {
+        await access(cli);
+        return cli;
+      } catch {
+        return null;
+      }
+    })
+  );
+  const cli = candidates.find((candidate) => candidate !== null);
+  if (cli !== undefined && cli !== null && cli !== "") {
+    return [
+      "--preserve-symlinks-main",
+      cli,
+      "generate",
+      "--dialect",
+      "sqlite",
+      "--schema",
+      appDatabasePaths(root).schema,
+      "--out",
+      output,
+      ...(name === undefined ? [] : ["--name", name]),
+    ];
   }
   throw new Error(
     "Install drizzle-kit and drizzle-orm as dev dependencies, then run tailorkit db generate."

@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 
+import { appDeploymentMetadata } from "@tailorkit/api-utils/app-auth";
 import { Effect } from "effect";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
@@ -39,7 +40,7 @@ const identity = {
 };
 
 const setup = (contents: string | Uint8Array<ArrayBuffer> | null = code) => {
-  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
+  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
   const get = vi.fn(async () =>
     contents === null
       ? null
@@ -52,13 +53,11 @@ const setup = (contents: string | Uint8Array<ArrayBuffer> | null = code) => {
       BUNDLES: { get },
       // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
-      DEPLOYMENTS:
-        /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
-        {
-          get: vi.fn<() => Promise<null>>().mockResolvedValue(null),
-          put: vi.fn(async () => {}),
-        } as unknown as KVNamespace,
-      /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
+      DEPLOYMENTS: {
+        get: vi.fn<() => Promise<null>>().mockResolvedValue(null),
+        put: vi.fn<() => Promise<void>>().mockReturnValue(Promise.resolve()),
+      },
+
       PLATFORM_URL: "https://platform.test/api/platform",
       RUNTIME_SERVICE_TOKEN: "private",
     }),
@@ -115,10 +114,13 @@ it.each([302, 403, 404, 503])(
 );
 
 it("serves KV hits to old clients and fills misses from the platform", async () => {
-  const values = new Map<string, unknown>();
-  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
+  const values = new Map<
+    string,
+    ReturnType<typeof appDeploymentMetadata.parse>
+  >();
+  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
   const put = vi.fn(async (key: string, value: string) => {
-    values.set(key, JSON.parse(value));
+    values.set(key, appDeploymentMetadata.parse(JSON.parse(value)));
   });
   const fetch = vi
     .spyOn(globalThis, "fetch")
@@ -130,14 +132,12 @@ it("serves KV hits to old clients and fills misses from the platform", async () 
     BUNDLES: { get: vi.fn() },
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
-    DEPLOYMENTS:
-      /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
-      {
-        // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-        get: async (key: string) => values.get(key) ?? null,
-        put,
-      } as unknown as KVNamespace,
-    /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
+    DEPLOYMENTS: {
+      // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
+      get: async (key: string) => values.get(key) ?? null,
+      put,
+    },
+
     PLATFORM_URL: "https://platform.test",
     RUNTIME_SERVICE_TOKEN: "private",
   });

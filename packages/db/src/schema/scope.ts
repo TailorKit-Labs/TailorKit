@@ -125,8 +125,11 @@ const preflightScopeValue = (value: unknown): string | null => {
       if (keys.length !== current.length + 1 || !keys.includes("length")) {
         fail("Scope arrays must be dense and contain no extra properties.");
       }
-      // oxlint-disable-next-line no-unmodified-loop-condition -- The callback invoked by the loop updates this shared lifecycle or validation flag.
-      for (let index = 0; index < current.length && valid; index += 1) {
+
+      for (let index = 0; index < current.length; index += 1) {
+        if (!valid) {
+          break;
+        }
         const descriptor = Object.getOwnPropertyDescriptor(
           current,
           String(index)
@@ -153,8 +156,11 @@ const preflightScopeValue = (value: unknown): string | null => {
       if (keys.length > maxObjectEntries) {
         fail("Scope objects cannot exceed 32 entries.");
       }
-      // oxlint-disable-next-line no-unmodified-loop-condition -- The callback invoked by the loop updates this shared lifecycle or validation flag.
-      for (let index = 0; index < keys.length && valid; index += 1) {
+
+      for (let index = 0; index < keys.length; index += 1) {
+        if (!valid) {
+          break;
+        }
         const key = keys[index];
         if (
           !isStringValue(key) ||
@@ -191,8 +197,11 @@ const preflightScopeValue = (value: unknown): string | null => {
   if (rootKeys.length === 0 || rootKeys.length > maxObjectEntries) {
     return "Scope value must contain 1–32 entries.";
   }
-  // oxlint-disable-next-line no-unmodified-loop-condition -- The callback invoked by the loop updates this shared lifecycle or validation flag.
-  for (let index = 0; index < rootKeys.length && valid; index += 1) {
+
+  for (let index = 0; index < rootKeys.length; index += 1) {
+    if (!valid) {
+      break;
+    }
     const key = rootKeys[index];
     if (
       !isStringValue(key) ||

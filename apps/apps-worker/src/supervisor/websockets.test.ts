@@ -1,4 +1,4 @@
-/* oxlint-disable typescript/no-unsafe-return -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
+import type { Invocation } from "@tailorkit/app/protocol";
 import type { Identity } from "@tailorkit/app/server";
 import { Effect, Semaphore } from "effect";
 import { afterEach, expect, it, vi } from "vite-plus/test";
@@ -29,7 +29,13 @@ const setup = () => {
   const records = new Map<string, SubscriptionSession>();
   let alarm: number | null = null;
   const sockets: WebSocket[] = [];
-  const operations = vi.fn();
+  const operations =
+    vi.fn<
+      (
+        input: Invocation,
+        identity: Identity
+      ) => Promise<{ value: unknown; tables: string[] }>
+    >();
   const cancel = vi.fn();
   // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
@@ -38,11 +44,11 @@ const setup = () => {
     {
       getWebSockets: () => sockets,
       storage: {
-        // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
+        // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
         deleteAlarm: async () => {
           alarm = null;
         },
-        // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+        // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
         getAlarm: async () => alarm,
         kv: {
           delete: (key: string) => records.delete(key),
@@ -51,7 +57,7 @@ const setup = () => {
           put: (key: string, value: SubscriptionSession) =>
             records.set(key, value),
         },
-        // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
+        // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
         setAlarm: async (time: number) => {
           alarm = time;
         },
@@ -85,7 +91,8 @@ const setup = () => {
     create: () =>
       createSubscriptions(
         ctx,
-        (input, identity) => Effect.promise(() => operations(input, identity)),
+        (input, identity) =>
+          Effect.promise(async () => await operations(input, identity)),
         Semaphore.makeUnsafe(1)
       ),
     ctx,
