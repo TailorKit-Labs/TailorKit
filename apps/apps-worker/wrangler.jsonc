@@ -3,7 +3,7 @@
   "name": "tailorkit-apps-worker",
   "main": "src/index.ts",
   "build": {
-    "command": "pnpm exec turbo run build --filter=@tailorkit/api-utils... --filter=@tailorkit/app... --filter=@tailorkit/asset-delivery... && node scripts/build-bootstrap.mjs",
+    "command": "pnpm exec turbo run build --filter=@tailorkit/api-utils... --filter=@tailorkit/app... --filter=@tailorkit/asset-delivery... --filter=@tailorkit/core... && node scripts/build-bootstrap.mjs && node scripts/build-icons.mjs",
     "watch_dir": ["src", "../../packages/asset-delivery/src"],
   },
   "compatibility_date": "2026-10-01",
@@ -16,10 +16,18 @@
   ],
   "compatibility_flags": ["enable_request_signal"],
   "workers_dev": false,
+  "assets": {
+    "directory": ".generated/icons",
+    "binding": "ICON_ASSETS",
+    "run_worker_first": true,
+    "html_handling": "none",
+    "not_found_handling": "none",
+  },
   "preview_urls": false,
   "routes": [
     { "pattern": "*.tailorkit.app/*", "zone_name": "tailorkit.app" },
     { "pattern": "internal.tailorkit.app", "custom_domain": true },
+    { "pattern": "icons.tailorkit.app", "custom_domain": true },
   ],
   "worker_loaders": [
     {

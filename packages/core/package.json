@@ -72,13 +72,29 @@
     "./views": {
       "types": "./dist/views.d.ts",
       "import": "./dist/views.js"
+    },
+    "./icons": {
+      "types": "./dist/icons/definition.d.ts",
+      "import": "./dist/icons-definition.js"
+    },
+    "./icons/zod": {
+      "types": "./dist/icons/zod.d.ts",
+      "import": "./dist/icons-zod.js"
+    },
+    "./icons/valibot": {
+      "types": "./dist/icons/valibot.d.ts",
+      "import": "./dist/icons-valibot.js"
+    },
+    "./icons/arktype": {
+      "types": "./dist/icons/arktype.d.ts",
+      "import": "./dist/icons-arktype.js"
     }
   },
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "tsup --entry.views src/views.ts --entry.server src/server/index.ts --entry.server-types src/server/types.ts --entry.schema src/schema/index.ts --entry.spec src/spec/index.ts --entry.primitives-theme src/primitives/theme.ts --entry.primitives-zod src/primitives/zod.ts --entry.primitives-valibot src/primitives/valibot.ts --entry.primitives-arktype src/primitives/arktype.ts --format esm --target node20 --clean && tsc -p tsconfig.build.json",
+    "build": "tsup --entry.views src/views.ts --entry.server src/server/index.ts --entry.server-types src/server/types.ts --entry.schema src/schema/index.ts --entry.spec src/spec/index.ts --entry.primitives-theme src/primitives/theme.ts --entry.primitives-zod src/primitives/zod.ts --entry.primitives-valibot src/primitives/valibot.ts --entry.primitives-arktype src/primitives/arktype.ts --entry.icons-definition src/icons/definition.ts --entry.icons-zod src/icons/zod.ts --entry.icons-valibot src/icons/valibot.ts --entry.icons-arktype src/icons/arktype.ts --format esm --target node20 --clean && tsc -p tsconfig.build.json",
     "check-types": "tsc --noEmit",
     "generate:native": "tsx scripts/generate-native-components/index.ts",
     "test": "vp test run --typecheck --exclude '**/*.test-d.ts'",

@@ -2,6 +2,16 @@ Private Cloudflare application runtime, licensed under BUSL-1.1.
 
 # App runtime
 
+## Icon catalogue
+
+The worker also serves `https://icons.tailorkit.app/lucide/1.55.0/<name>.json`. Wrangler provisions `icons.tailorkit.app` as a custom domain. Deploy this worker before releasing the SDK that references the catalogue. Catalogue requests use public CORS and immutable one-year caching; misses are not cached. Other hostnames continue through the existing app and asset routes.
+
+`scripts/build-icons.mjs` imports Lucide only during the build and writes one validated geometry file per icon to `.generated/icons/lucide/1.55.0/`. It reuses the repository's pinned `lucide-react` development dependency; no icon modules enter the worker or browser bundles. Build, dev, deploy and Wrangler's custom build all generate these files before Wrangler collects static assets. The catalogue is bound as `ICON_ASSETS` and is served only through the reserved icon hostname.
+
+For self-hosting, run `pnpm --filter @tailorkit/core build`, then `cd apps/apps-worker && node scripts/build-icons.mjs`. Copy the contents of `.generated/icons/` to your static host. Keep the generated `LICENSE.txt` beside the data: it contains Lucide's ISC notice and the Feather MIT notice. Configure the React renderer's `baseUrl` to that directory, with CORS enabled for the consuming host.
+
+Catalogue versions are part of the published SDK contract. Retain previously published version directories when adding another version; do not replace an existing version's files or remove them while released SDKs reference them.
+
 `tailorkit-apps-worker` is the trusted Cloudflare entry point for app queries, mutations, actions and subscriptions. App server bundles are uploaded by the existing CLI to the private blob bucket under `server/server.js`; client code remains under `client/client.js`. The same worker delivers public client assets and logos; its asset allowlist never serves server bundles.
 
 The host SDK uses its existing `authenticate` callback and calls `POST /apps/{appId}/runtime/session` with its project key, verified scopes, optional product-defined `subjectId`, and product tool URL. The platform checks the app belongs to that project and one of those scopes, resolves its published deployment, and issues a short-lived ES256 JWT. The canonical app ID is the stable installation ID and JWT `sub`. Optional `subjectId` identifies any product-defined principal; calls without it are attributed to the installation. Apps cannot supply a verified subject. The platform returns `https://<teamPublicId>.tailorkit.app/p/<projectId>/a/<appPublicId>/rpc`, deriving the hostname from `ASSET_DOMAIN` (default `tailorkit.app`). `APP_RUNTIME_URL` is an optional origin override for local development. The signed JWT binds the public team and app identifiers as well as the canonical project/app IDs; the gateway checks the hostname and path before routing to a trusted installation. Sandboxed apps obtain scoped JWTs through the host bridge and call the backend over authenticated HTTP, with a WebSocket for query subscriptions. Platform credentials remain in the host server.

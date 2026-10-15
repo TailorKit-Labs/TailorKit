@@ -13,6 +13,7 @@ import {
 import { Effect } from "effect";
 
 import assets from "./assets";
+import { serveIcon } from "./icons";
 import { validateDeploymentPublication } from "./publication";
 import { appError } from "./runtime/errors";
 import { verifier } from "./supervisor/auth";
@@ -25,6 +26,10 @@ export default {
     env: Env,
     ctx: ExecutionContext
   ): Promise<Response> => {
+    const icon = await serveIcon(request, env);
+    if (icon) {
+      return icon;
+    }
     const domain = env.ASSET_DOMAIN;
     const publication = parseDeploymentPublicationRoute(request, domain);
     const appRoute = parseHostedAppRoute(request, domain);
