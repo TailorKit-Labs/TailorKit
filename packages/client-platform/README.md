@@ -1,3 +1,3 @@
-# TailorKit Client Platform
+# TailorKit platform client
 
-A client for interacting with the TailorKit platform.
+`@tailorkit/client-platform` is the API client for the TailorKit platform.

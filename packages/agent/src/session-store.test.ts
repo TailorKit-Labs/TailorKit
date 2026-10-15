@@ -77,10 +77,9 @@ beforeAll(async () => {
         await readFile(new URL(`${name}/migration.sql`, root), "utf-8")
     )
   );
-  for (const migration of changes) {
-    // oxlint-disable-next-line no-await-in-loop -- Apply generated migrations in schema order.
+  await Array.fromAsync(changes, async (migration) => {
     await client.exec(migration);
-  }
+  });
   await client.query("INSERT INTO app (id) VALUES ($1), ($2)", [
     appId,
     otherAppId,

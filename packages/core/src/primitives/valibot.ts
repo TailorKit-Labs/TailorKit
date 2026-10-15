@@ -51,11 +51,9 @@ const primitiveFields = (
   theme: TailorKitTheme
 ): FieldValidators =>
   Object.fromEntries(
-    Object.entries(primitiveDefinitions[name]).map(([propName, definition]) => [
-      propName,
-      // oxlint-disable-next-line typescript/no-unsafe-argument -- Object.entries erases the schema registry value type; these definitions were created and validated by the contract builder.
-      propSchema(definition, theme),
-    ])
+    Object.entries<PrimitivePropDefinition>(primitiveDefinitions[name]).map(
+      ([propName, definition]) => [propName, propSchema(definition, theme)]
+    )
   );
 
 export const primitives = (theme: TailorKitTheme = {}): PrimitiveComponents => {

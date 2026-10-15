@@ -53,6 +53,7 @@
     "@modelcontextprotocol/server": "2.3.1",
     "@tailorkit/db": "workspace:*",
     "@tailorkit/env": "workspace:*",
+    "@tailorkit/vite": "workspace:*",
     "@vercel/oidc": "3.5.0",
     "@vercel/sandbox": "3.6.1",
     "ai": "catalog:",

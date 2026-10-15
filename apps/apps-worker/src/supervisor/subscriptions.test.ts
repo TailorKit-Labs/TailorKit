@@ -153,7 +153,6 @@ const setup = () => {
     },
     refresh: async (tables: string[]) => {
       await Effect.runPromise(
-        // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
         coordinator.withPermits(1)(subscriptions.refresh(tables))
       );
     },

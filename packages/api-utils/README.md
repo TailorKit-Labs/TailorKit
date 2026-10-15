@@ -1,3 +1,3 @@
-# TailorKit API Utils
+# TailorKit API utilities
 
-Shared utilities for TailorKit APIs.
+`@tailorkit/api-utils` contains shared utilities for TailorKit APIs.

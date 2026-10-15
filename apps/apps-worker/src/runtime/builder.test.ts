@@ -1,4 +1,3 @@
-/* oxlint-disable typescript/no-unsafe-argument -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import type { Invocation } from "@tailorkit/app/protocol";
 import { fn, defineServer } from "@tailorkit/app/server";
 import type { AppDefinition, Identity } from "@tailorkit/app/server";
@@ -128,21 +127,27 @@ it("uses undefined input and infers returns for mutations and async actions with
   expect(functions.save).not.toHaveProperty("result");
   expect(perform).not.toHaveProperty("result");
   const execute = createExecution(app, persistence);
-  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-  const query = vi.fn(async (input) => execute.query(input, identity).value);
-  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-  const mutate = vi.fn(async (input) => execute.mutate(input, identity).value);
+  const query = vi.fn(
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    async (input: Parameters<typeof execute.query>[0]) =>
+      execute.query(input, identity).value
+  );
+  const mutate = vi.fn(
+    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    async (input: Parameters<typeof execute.mutate>[0]) =>
+      execute.mutate(input, identity).value
+  );
   const run = actionRunner(app, { mutate, query });
   expect(await run({ name: "perform" }, identity)).toEqual({
     rows: [1, 2],
     saved: { saved: true },
   });
   expect(query).toHaveBeenCalledWith({ args: undefined, name: "read" });
+  const expectedRequestIdMatcher1: unknown = expect.any(String);
   expect(mutate).toHaveBeenCalledWith({
     args: undefined,
     name: "save",
-    // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-    requestId: expect.any(String),
+    requestId: expectedRequestIdMatcher1,
   });
   await expect(run({ args: {}, name: "perform" }, identity)).rejects.toThrow(
     "Invalid function arguments"

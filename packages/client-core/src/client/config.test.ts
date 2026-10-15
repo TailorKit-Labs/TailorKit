@@ -14,13 +14,13 @@ const require = <T>(value: T | null | undefined): T => {
 it("wraps each renderer once and shares it with remote component aliases", () => {
   const renderer = { id: "renderer" };
   const wrap = vi.fn((value: typeof renderer) => ({ wrapped: value }));
-  const registry = createComponentRegistry(
-    { CustomerCard: renderer, Missing: undefined },
-    wrap
-  );
+  const renderers = { CustomerCard: renderer, Missing: undefined };
+  Object.setPrototypeOf(renderers, { Inherited: renderer });
+  const registry = createComponentRegistry(renderers, wrap);
   expect(wrap).toHaveBeenCalledOnce();
   expect(registry.CustomerCard).toBe(registry["tailorkit-customer-card"]);
   expect(registry).not.toHaveProperty("Missing");
+  expect(registry).not.toHaveProperty("Inherited");
 });
 
 it("builds reusable client configuration without initiating network requests", () => {

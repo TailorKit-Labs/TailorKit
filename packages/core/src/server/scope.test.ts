@@ -1,4 +1,3 @@
-/* oxlint-disable typescript/no-unsafe-assignment -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { type as arktype } from "arktype";
 import * as v from "valibot";
@@ -163,7 +162,7 @@ describe("TailorKit named scope validation", () => {
     const arrayWithHole: unknown[] = [];
     arrayWithHole.length = 1;
     const arrayWithExtra = Object.assign(["ok"], { extra: true });
-    const withCustomPrototype = Object.assign(
+    const withCustomPrototype: unknown = Object.assign(
       Object.create({ inherited: true }),
       { ok: true }
     );

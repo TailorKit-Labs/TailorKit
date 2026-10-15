@@ -15,6 +15,8 @@ import { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
 import pc from "picocolors";
 import { z } from "zod";
 
+import { forEachSequential } from "#for-each-sequential";
+
 import { getDeployToken, runWhoami } from "./auth";
 import { buildProject } from "./build";
 import { createCliClient } from "./client";
@@ -81,8 +83,7 @@ export const capturePreviewSnapshot = async (
   const files: Buffer[] = [];
   const manifest: PreviewBuildManifest = { files: [] };
   let total = 0;
-  for (const entry of entries) {
-    // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
+  await forEachSequential(entries, async (entry) => {
     const resolved = await realpath(path.join(entry.parentPath, entry.name));
     const relative = path
       .relative(actualRoot, resolved)
@@ -90,7 +91,7 @@ export const capturePreviewSnapshot = async (
     if (!relative || relative.startsWith("../") || path.isAbsolute(relative)) {
       throw new Error("Preview file escapes the build output.");
     }
-    // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
+
     const bytes = await readFile(resolved);
     if (bytes.length > 1024 * 1024) {
       throw new Error(`Preview file ${relative} exceeds 1 MiB.`);
@@ -113,7 +114,7 @@ export const capturePreviewSnapshot = async (
       sha256: createHash("sha256").update(bytes).digest("hex"),
       size: bytes.length,
     });
-  }
+  });
   if (!manifest.files.some((file) => file.path === "client.js")) {
     throw new Error("Preview build is missing client.js.");
   }
@@ -153,23 +154,27 @@ export const uploadPreviewSnapshot = async (
   current: Snapshot
 ): Promise<void> => {
   const { buildId } = await client.beginBuild({ manifest: current.manifest });
-  for (const [fileIndex, bytes] of current.files.entries()) {
-    for (
-      let chunkIndex = 0;
-      chunkIndex < (current.manifest.files[fileIndex]?.chunks ?? 0);
-      chunkIndex += 1
-    ) {
-      // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
-      await client.uploadChunk({
-        base64: bytes
-          .subarray(chunkIndex * chunkBytes, (chunkIndex + 1) * chunkBytes)
-          .toString("base64"),
-        buildId,
-        chunkIndex,
-        fileIndex,
-      });
+  await forEachSequential(
+    current.files.entries(),
+    async ([fileIndex, bytes]) => {
+      await forEachSequential(
+        Array.from(
+          { length: current.manifest.files[fileIndex]?.chunks ?? 0 },
+          (_, index) => index
+        ),
+        async (chunkIndex) => {
+          await client.uploadChunk({
+            base64: bytes
+              .subarray(chunkIndex * chunkBytes, (chunkIndex + 1) * chunkBytes)
+              .toString("base64"),
+            buildId,
+            chunkIndex,
+            fileIndex,
+          });
+        }
+      );
     }
-  }
+  );
   await client.commitBuild({ buildId });
 };
 

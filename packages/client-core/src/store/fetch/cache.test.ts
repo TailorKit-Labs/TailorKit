@@ -1,4 +1,3 @@
-/* oxlint-disable typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { allTasks } from "nanostores";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
@@ -195,7 +194,7 @@ describe("fetch cache", () => {
     const old = deferred<string>();
     const fresh = deferred<string>();
     const fetcher = vi
-      .fn()
+      .fn<(signal: AbortSignal) => Promise<string>>()
       .mockReturnValueOnce(old.promise)
       .mockReturnValueOnce(fresh.promise);
     const store = createFetchCache({ gcTime: Infinity }).getStore(

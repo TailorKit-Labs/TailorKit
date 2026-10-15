@@ -41,13 +41,12 @@ const emailConfig = {
   }
 >;
 
-// SAFETY: Object.entries enumerates this complete email configuration, and the projection retains each email type's subject.
-export const betterAuthEmailSubjects =
-  /* oxlint-disable typescript/no-unsafe-type-assertion -- Object.entries enumerates this complete email configuration, and the projection retains each email type's subject. */
-  Object.fromEntries(
-    Object.entries(emailConfig).map(([type, value]) => [type, value.subject])
-  ) as Record<BetterAuthEmailType, string>;
-/* oxlint-enable typescript/no-unsafe-type-assertion */
+export const betterAuthEmailSubjects = {
+  "change-email": emailConfig["change-email"].subject,
+  "email-verification": emailConfig["email-verification"].subject,
+  "forget-password": emailConfig["forget-password"].subject,
+  "sign-in": emailConfig["sign-in"].subject,
+} satisfies Record<BetterAuthEmailType, string>;
 
 export const BetterAuthOtpTemplate = ({
   logoBaseUrl,

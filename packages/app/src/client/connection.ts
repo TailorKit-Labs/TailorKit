@@ -229,11 +229,7 @@ export const createClient = (
               },
               headers: { authorization: `Bearer ${session.token}` },
               origin: url.origin,
-              // SAFETY: URL.pathname always starts with a slash for this HTTP session URL, satisfying the transport's absolute route-path type.
-              url:
-                /* oxlint-disable typescript/no-unsafe-type-assertion -- URL.pathname always starts with a slash for this HTTP session URL, satisfying the transport's absolute route-path type. */
-                url.pathname as `/${string}`,
-              /* oxlint-enable typescript/no-unsafe-type-assertion */
+              url: `/${url.pathname.slice(1)}`,
             })
           );
           if (kind === "mutations") {
@@ -311,7 +307,7 @@ export const createClient = (
       await /* oxlint-disable typescript/no-unsafe-type-assertion -- The query reference owns its output type, and the server validates that registered query before the shared transport returns its erased result. */
       (call("queries", { args, name: ref.name }) as Promise<never>),
     /* oxlint-enable typescript/no-unsafe-type-assertion */
-    subscribe: (ref, args, next, settings = {}) => {
+    subscribe: (ref, args, onValue, settings = {}) => {
       if (closed) {
         throw new AppError("UNAVAILABLE", "App client closed");
       }
@@ -335,8 +331,7 @@ export const createClient = (
                 break;
               }
               // SAFETY: This subscription was opened with ref.name and args; its listener receives only results from that same registered query, whose output generic is erased by the transport.
-              // oxlint-disable-next-line node/callback-return -- This is a value listener or middleware continuation, not a Node-style completion callback.
-              next(
+              onValue(
                 /* oxlint-disable typescript/no-unsafe-type-assertion -- This subscription was opened with ref.name and args; its listener receives only results from that same registered query, whose output generic is erased by the transport. */
                 value as never
                 /* oxlint-enable typescript/no-unsafe-type-assertion */

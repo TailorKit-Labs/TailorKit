@@ -41,12 +41,12 @@ const removeImplementation = (
 const keyImplementation = (socket: WebSocket) =>
   `socket:${socket.deserializeAttachment()}`;
 
-export const createSubscriptions = (
+export const createSubscriptions = <QueryError>(
   ctx: DurableObjectState,
   query: (
     input: Invocation,
     identity: Identity
-  ) => Effect.Effect<{ value: unknown; tables: string[] }, unknown>,
+  ) => Effect.Effect<{ value: unknown; tables: string[] }, QueryError>,
   queue: Semaphore.Semaphore
 ) => {
   const handler = createSubscriptionHandler();
@@ -93,7 +93,7 @@ export const createSubscriptions = (
     connectionValue2: SubscriptionConnection,
     id: string,
     execute = query
-  ): Effect.Effect<void, unknown> =>
+  ): Effect.Effect<void> =>
     Effect.gen(function* deliverSnapshot() {
       const session = connectionValue2.read();
       const subscription = session?.subscriptions.find(
@@ -102,7 +102,7 @@ export const createSubscriptions = (
       if (!session || !subscription) {
         return;
       }
-      // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
+
       const snapshot = yield* execute(subscription.input, session.identity);
       const current = connectionValue2.read();
       const active = current?.subscriptions.find((entry) => entry.id === id);
@@ -111,14 +111,16 @@ export const createSubscriptions = (
       }
       active.tables = snapshot.tables;
       connectionValue2.write(current);
-      // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
+
+      // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- The transport preserves arbitrary send/encoding failures until its recovery handler.
       yield* deliverSubscription(connectionValue2, id, snapshot.value);
     }).pipe(
-      // oxlint-disable-next-line promise/prefer-await-to-callbacks -- This is an Effect recovery operator or transport callback, not a Node-style completion callback.
-      catchEffect((err) =>
+      catchEffect((failure) =>
         remove(connectionValue2, id).pipe(
-          // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
-          Effect.andThen(deliverSubscription(connectionValue2, id, err, true))
+          Effect.andThen(
+            // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- The transport preserves arbitrary send/encoding failures until its recovery handler.
+            deliverSubscription(connectionValue2, id, failure, true)
+          )
         )
       ),
       Effect.ignore
@@ -140,7 +142,7 @@ export const createSubscriptions = (
           0
         );
         if (count >= 256) {
-          // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
+          // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- The transport preserves arbitrary send/encoding failures until its recovery handler.
           yield* deliverSubscription(
             connectionValue3,
             id,
@@ -154,7 +156,7 @@ export const createSubscriptions = (
         }
         session.subscriptions.push({ id, input, tables: [] });
         connectionValue3.write(session);
-        // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
+
         yield* deliver(connectionValue3, id);
       })
     );
@@ -198,7 +200,8 @@ export const createSubscriptions = (
       await handler.message(
         socket,
         message,
-        // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
+
+        // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- The transport preserves arbitrary send/encoding failures until its recovery handler.
         (input) => subscriptionStream((id) => subscribe(current, input, id)),
         async (id) => {
           await Effect.runPromise(queue.withPermits(1)(remove(current, id)));
@@ -242,7 +245,6 @@ export const createSubscriptions = (
                   table === ALL_DATABASE_TABLES || tables.includes(table)
               )
             ) {
-              // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
               yield* deliver(connectionValue5, subscription.id, execute);
             }
           }

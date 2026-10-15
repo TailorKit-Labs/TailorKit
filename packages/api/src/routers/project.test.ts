@@ -197,12 +197,12 @@ describe("projectRouter", () => {
       { context: createContext() }
     );
 
+    const expectedBodyMatcher1: unknown = expect.objectContaining({
+      configId: "project-host",
+      userId,
+    });
     expect(auth.api.createApiKey).toHaveBeenCalledWith({
-      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-      body: expect.objectContaining({
-        configId: "project-host",
-        userId,
-      }),
+      body: expectedBodyMatcher1,
     });
   });
 
@@ -213,14 +213,14 @@ describe("projectRouter", () => {
       { context: createContext() }
     );
 
+    const expectedBodyMatcher2: unknown = expect.objectContaining({
+      configId: "project-host",
+      rateLimitEnabled: true,
+      rateLimitMax: 1000,
+      rateLimitTimeWindow: 1000,
+    });
     expect(auth.api.createApiKey).toHaveBeenCalledWith({
-      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-      body: expect.objectContaining({
-        configId: "project-host",
-        rateLimitEnabled: true,
-        rateLimitMax: 1000,
-        rateLimitTimeWindow: 1000,
-      }),
+      body: expectedBodyMatcher2,
     });
   });
 
@@ -235,11 +235,11 @@ describe("projectRouter", () => {
       { context: createContext() }
     );
 
+    const expectedBodyMatcher3: unknown = expect.objectContaining({
+      name: "Project host key",
+    });
     expect(auth.api.createApiKey).toHaveBeenCalledWith({
-      // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-      body: expect.objectContaining({
-        name: "Project host key",
-      }),
+      body: expectedBodyMatcher3,
     });
   });
 });

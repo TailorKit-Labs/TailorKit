@@ -57,10 +57,9 @@ export const primitives = (theme: TailorKitTheme = {}): PrimitiveComponents => {
     children: true as const,
     fields: z.object(
       Object.fromEntries(
-        Object.entries(primitiveDefinitions[name]).map(
+        Object.entries<PrimitivePropDefinition>(primitiveDefinitions[name]).map(
           ([propName, definition]) => [
             propName,
-            // oxlint-disable-next-line typescript/no-unsafe-argument -- Object.entries erases the schema registry value type; these definitions were created and validated by the contract builder.
             propSchema(definition, resolvedTheme),
           ]
         )

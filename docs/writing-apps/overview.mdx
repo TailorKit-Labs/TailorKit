@@ -1,9 +1,10 @@
 ---
-title: "Overview"
+title: "Create an app"
+sidebarTitle: "Overview"
 description: "Create an app and find your way around its files."
 ---
 
-An app extends a product using its shared components, tools, and slots. Start with the TailorKit CLI:
+Create an app against a host product’s contract to use its components, tools, and slots. You need Node.js, a package manager, and the host’s TailorKit API URL. Start with the TailorKit command-line interface (CLI):
 
 ```sh
 npx tailorkit@beta init
@@ -43,7 +44,9 @@ These are the main files for a host with a `panel` slot and a `/` view:
   </Tree.Folder>
 </Tree>
 
-| Location | What goes here |
+Use these files to add UI, backend logic, and configuration:
+
+| Location | Purpose |
 | --- | --- |
 | `src/slots/` | UI views, grouped by slot. |
 | `src/root.tsx` | The shared UI shell. |

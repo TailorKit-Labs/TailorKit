@@ -1,3 +1,3 @@
-# TailorKit Sandbox
+# TailorKit sandbox
 
-The sandbox runtime for running TailorKit extensions.
+`@tailorkit/sandbox` runs TailorKit extensions in an isolated sandbox.

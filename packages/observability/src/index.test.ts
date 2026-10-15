@@ -87,16 +87,18 @@ describe("observability helpers", () => {
     ]);
 
     expect(registerOTel).toHaveBeenCalledTimes(1);
+    const expectedInstrumentationsMatcher2: unknown = expect.arrayContaining([
+      "auto",
+    ]);
+    const expectedAttributesMatcher1: unknown = expect.objectContaining({
+      "deployment.environment.name": "preview",
+      "service.name": "test-service",
+      "service.version": "abc123",
+    });
     expect(registerOTel).toHaveBeenCalledWith(
       expect.objectContaining({
-        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-        attributes: expect.objectContaining({
-          "deployment.environment.name": "preview",
-          "service.name": "test-service",
-          "service.version": "abc123",
-        }),
-        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-        instrumentations: expect.arrayContaining(["auto"]),
+        attributes: expectedAttributesMatcher1,
+        instrumentations: expectedInstrumentationsMatcher2,
         serviceName: "test-service",
       })
     );

@@ -1,4 +1,3 @@
-/* oxlint-disable typescript/no-unsafe-argument -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -561,7 +560,9 @@ describe("renderGeneratedTypes", () => {
       }
     );
     expect(response.ok).toBe(true);
-    const output = renderGeneratedTypes(await response.json());
+    const output = renderGeneratedTypes(
+      TailorKitSchemaSpec.parse(await response.json())
+    );
     expect(output).toContain("increment: (input: string) => Promise<number>;");
   });
 

@@ -1,4 +1,3 @@
-/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { expect, it, vi } from "vite-plus/test";
 
 import { cancellationStream } from "../runtime/cancellation";
@@ -8,7 +7,9 @@ vi.mock("cloudflare:workers", () => ({ RpcTarget: vi.fn() }));
 
 const setup = () => {
   const controller = new AbortController();
-  const notify = vi.fn(async (_tables: string[]) => {});
+  const notify = vi
+    .fn<(_tables: string[]) => Promise<void>>()
+    .mockReturnValue(Promise.resolve());
   const lease = { deadline: Date.now() + 30_000, signal: controller.signal };
   return {
     bridge: new ActionCapability(lease, notify),
@@ -59,8 +60,11 @@ it("keeps response bodies alive and propagates per-request cancellation", async 
   let outgoing!: AbortSignal;
   vi.stubGlobal(
     "fetch",
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    vi.fn(async (_request, init) => {
+    // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
+    vi.fn<typeof fetch>(async (_request, init) => {
+      if (!init?.signal) {
+        throw new Error("Expected a cancellation signal");
+      }
       outgoing = init.signal;
       return new Response("response body");
     })

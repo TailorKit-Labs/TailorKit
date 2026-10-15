@@ -17,8 +17,7 @@ const toolRecord: z.ZodType<ToolRecord> = z.lazy(() =>
   z.record(z.string(), z.union([toolLeaf, toolRecord]))
 );
 
-// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
-export const TailorKitSchemaSpec = z
+const TailorKitSchemaSpecSchema = z
   .strictObject({
     components: componentRecord,
     scopes: z.record(z.string(), z.record(z.string(), z.unknown())).optional(),
@@ -50,4 +49,6 @@ export const TailorKitSchemaSpec = z
     }
   });
 
-export type TailorKitSchemaSpec = z.infer<typeof TailorKitSchemaSpec>;
+export type TailorKitSchemaSpec = z.infer<typeof TailorKitSchemaSpecSchema>;
+
+export { TailorKitSchemaSpecSchema as TailorKitSchemaSpec };

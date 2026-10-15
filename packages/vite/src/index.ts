@@ -7,6 +7,8 @@ import type { LogoContentType } from "@tailorkit/asset-delivery/logo-validation"
 import type { Plugin, PluginOption, ResolvedConfig } from "vite";
 import { z } from "zod";
 
+import { forEachSequential } from "#for-each-sequential";
+
 import { readClientManifest } from "./builder/client-views";
 import { getBuildEnvironment } from "./builder/env";
 import { createFileRouteEntry, fileRoutesPlugin } from "./builder/file-routes";
@@ -134,7 +136,7 @@ export const tailorkit = (options: TailorKitPluginOptions = {}): Plugin[] => {
       light?: string;
     }
     const logoManifest: LogoManifest = {};
-    for (const variant of ["light", "dark"] as const) {
+    await forEachSequential(["light", "dark"] as const, async (variant) => {
       const configuredPath = loaded.config.logos?.[variant];
       if (
         !(
@@ -143,7 +145,7 @@ export const tailorkit = (options: TailorKitPluginOptions = {}): Plugin[] => {
           configuredPath !== ""
         )
       ) {
-        continue;
+        return;
       }
       const extension = path.extname(configuredPath).toLowerCase().slice(1);
       const contentType = new Map<string, LogoContentType>([
@@ -156,14 +158,14 @@ export const tailorkit = (options: TailorKitPluginOptions = {}): Plugin[] => {
           `The ${variant} logo must be an SVG, PNG, or WebP file.`
         );
       }
-      // oxlint-disable-next-line no-await-in-loop -- Process the validation and dependent file IO in order; fail before advancing on error.
+
       const content = await readFile(path.resolve(loaded.root, configuredPath));
       validateLogoAsset(content, contentType);
       const filename = `logo-${variant}.${extension}`;
-      // oxlint-disable-next-line no-await-in-loop -- Process the validation and dependent file IO in order; fail before advancing on error.
+
       await writeFile(path.join(clientOutDir, filename), content);
       logoManifest[variant] = `client/${filename}`;
-    }
+    });
     await writeFile(
       path.join(clientOutDir, "views.json"),
       `${JSON.stringify(views)}\n`

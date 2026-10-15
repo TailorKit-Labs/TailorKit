@@ -12,14 +12,9 @@ afterEach(() => {
 });
 
 it("shares endpoint responses across roots without sharing local view registrations", async () => {
-  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-  const fetchMock = vi.fn(async (input) =>
-    Response.json(
-      String(input).endsWith("/apps")
-        ? [{ id: "app" }]
-        : { schema: { views: {} } }
-    )
-  );
+  const fetchMock = vi
+    .fn<typeof fetch>()
+    .mockResolvedValueOnce(Response.json([{ id: "app" }]));
   const client = createTailorKitFetchClient({
     baseUrl: "https://host.test/api",
     fetch: fetchMock,
@@ -77,12 +72,10 @@ it("keeps supplied discovery data local while another root fetches", async () =>
 
 it("honors app freshness defaults", async () => {
   vi.useFakeTimers();
-  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-  const fetchMock = vi.fn(async (input) =>
-    Response.json(
-      String(input).endsWith("/apps") ? [{ id: "app" }] : { schema: {} }
-    )
-  );
+  const fetchMock = vi
+    .fn<typeof fetch>()
+    .mockResolvedValueOnce(Response.json([{ id: "app" }]))
+    .mockResolvedValueOnce(Response.json([{ id: "app" }]));
   const client = createTailorKitFetchClient({
     baseUrl: "https://host.test/",
     cache: { apps: { staleTime: 10 }, gcTime: Infinity },

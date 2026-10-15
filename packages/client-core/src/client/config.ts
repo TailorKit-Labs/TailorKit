@@ -161,7 +161,11 @@ export const createComponentRegistry = <
   wrap: (renderer: NonNullable<T[keyof T]>) => TRenderer
 ): WrappedComponentRegistry<TRenderer> => {
   const components: WrappedComponentRegistry<TRenderer> = {};
-  for (const [name, renderer] of Object.entries(renderers)) {
+  for (const name in renderers) {
+    if (!Object.hasOwn(renderers, name)) {
+      continue;
+    }
+    const renderer = renderers[name];
     if (
       renderer !== undefined &&
       renderer !== null &&
@@ -171,12 +175,7 @@ export const createComponentRegistry = <
       !Number.isNaN(renderer) &&
       renderer !== 0n
     ) {
-      // SAFETY: Object.entries returns own values from renderers, and the truthy check excludes nullish entries before wrapping.
-      const component = wrap(
-        /* oxlint-disable typescript/no-unsafe-type-assertion -- Object.entries returns own values from renderers, and the truthy check excludes nullish entries before wrapping. */
-        renderer as NonNullable<T[keyof T]>
-        /* oxlint-enable typescript/no-unsafe-type-assertion */
-      );
+      const component = wrap(renderer);
       components[name] = component;
       components[toComponentTagName(name)] = component;
     }

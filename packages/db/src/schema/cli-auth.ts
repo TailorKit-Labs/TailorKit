@@ -115,18 +115,20 @@ export const cliAuthSession = pgTable(
   ]
 );
 
-// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
-export const CliToken = createSelectSchema(cliToken, {
+const CliTokenSchema = createSelectSchema(cliToken, {
   scope: scopeSchema,
   scopeKey: scopeKeySchema,
 });
 
-export type CliToken = z.output<typeof CliToken>;
+export type CliToken = z.output<typeof CliTokenSchema>;
 
-// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
-export const CliAuthSession = createSelectSchema(cliAuthSession, {
+const CliAuthSessionSchema = createSelectSchema(cliAuthSession, {
   scope: scopeSchema.nullable(),
   scopeKey: scopeKeySchema.nullable(),
 });
 
-export type CliAuthSession = z.output<typeof CliAuthSession>;
+export type CliAuthSession = z.output<typeof CliAuthSessionSchema>;
+
+export { CliTokenSchema as CliToken };
+
+export { CliAuthSessionSchema as CliAuthSession };

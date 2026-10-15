@@ -1,7 +1,7 @@
-/* oxlint-disable typescript/no-unsafe-call -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { beforeEach, expect, it, vi } from "vite-plus/test";
 
 import type { runAgentCommand } from "./agent";
+import type { runLogin } from "./auth";
 import type { runDeploy } from "./deploy";
 import type { CliOptions } from "./options";
 
@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   generate: vi.fn(),
   info: vi.fn(),
   init: vi.fn(),
-  login: vi.fn(),
+  login: vi.fn<typeof runLogin>(),
   logout: vi.fn(),
   open: vi.fn(),
   outro: vi.fn(),
@@ -69,14 +69,17 @@ await import("./index");
 
 beforeEach(() => {
   vi.clearAllMocks();
-  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
+  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
   mocks.login.mockImplementation(async (_options, onUserCode) => {
     onUserCode({
       expiresAt: new Date("2030-01-01"),
       hostUrl: "https://host.example",
       userCode: "ABC-123",
     });
-    return { hostUrl: "https://host.example" };
+    return {
+      hostUrl: "https://host.example",
+      scope: { name: "org", value: { id: "org" } },
+    };
   });
 });
 
@@ -129,7 +132,10 @@ it("opens login approval and resumes deploy with the selected config and working
   mocks.deploy.mockImplementation(
     async (options: Parameters<typeof runDeploy>[0]) => {
       const auth = await options.onLoginRequired?.();
-      expect(auth).toEqual({ hostUrl: "https://host.example" });
+      expect(auth).toEqual({
+        hostUrl: "https://host.example",
+        scope: { name: "org", value: { id: "org" } },
+      });
       expect(mocks.stop).toHaveBeenCalledWith("Approved.");
       return {
         appId: "app",
@@ -205,11 +211,11 @@ it("passes the explicit host through agent startup and automatic login", async (
     host: "https://host.example",
   });
 
+  const expectedOnLoginRequiredMatcher1: unknown = expect.any(Function);
   expect(mocks.agent).toHaveBeenCalledWith({
     appId: "app-one",
     host: "https://host.example",
-    // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-    onLoginRequired: expect.any(Function),
+    onLoginRequired: expectedOnLoginRequiredMatcher1,
   });
   expect(mocks.login).toHaveBeenCalledWith(
     { host: "https://host.example" },

@@ -198,31 +198,24 @@ export const serializeTools = (
 type ParsedToolValue<TSchema extends Schema | undefined> =
   TSchema extends Schema ? StandardSchemaV1.InferOutput<TSchema> : undefined;
 
-export const validateToolValue = async <TSchema extends Schema | undefined>(
+export function validateToolValue<TSchema extends Schema | undefined>(
   schema: TSchema,
-  // This is the parsing boundary; accepting unknown is required before Standard Schema validation.
-  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- Raw values are decoded here, not passed into domain handlers.
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- Tool payloads are parsed at this boundary.
   value: unknown
-): Promise<ParsedToolValue<TSchema>> => {
+): Promise<ParsedToolValue<TSchema>>;
+export async function validateToolValue(
+  schema: Schema | undefined,
+  value: Parameters<typeof validateToolValue>[1]
+) {
   if (!schema) {
     if (value !== undefined) {
       throw new Error("Tool expects no value");
     }
-    // SAFETY: Without a schema, the only admitted value is undefined and the corresponding output branch is undefined.
-    return (
-      /* oxlint-disable typescript/no-unsafe-type-assertion -- Without a schema, the only admitted value is undefined and the corresponding output branch is undefined. */
-      undefined as ParsedToolValue<TSchema>
-      /* oxlint-enable typescript/no-unsafe-type-assertion */
-    );
+    return value;
   }
   const result = await schema["~standard"].validate(value);
   if (result.issues) {
     throw new Error("Invalid tool payload");
   }
-  // SAFETY: This exact schema produced result.value after reporting no validation issues.
-  return (
-    /* oxlint-disable typescript/no-unsafe-type-assertion -- This exact schema produced result.value after reporting no validation issues. */
-    result.value as ParsedToolValue<TSchema>
-    /* oxlint-enable typescript/no-unsafe-type-assertion */
-  );
-};
+  return result.value;
+}

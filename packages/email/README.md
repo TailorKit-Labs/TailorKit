@@ -1,3 +1,3 @@
-# TailorKit Email
+# TailorKit email
 
-Email delivery and templates for the TailorKit platform.
+`@tailorkit/email` contains email templates and delivery code for the TailorKit platform.

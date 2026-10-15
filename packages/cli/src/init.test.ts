@@ -1,4 +1,3 @@
-/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-member-access -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -6,6 +5,7 @@ import path from "node:path";
 import type * as clackpromptsModule from "@clack/prompts";
 import { select } from "@clack/prompts";
 import { afterEach, expect, it, vi } from "vite-plus/test";
+import { z } from "zod";
 
 import type * as generatorModule from "./generator";
 import { runInit } from "./init";
@@ -195,9 +195,14 @@ it("recommends Vite+ and offers build-only Vite in one tooling prompt", async ()
       ],
     })
   );
-  const pkg = JSON.parse(
-    await readFile(path.join(directory, "package.json"), "utf-8")
-  );
+  const pkg = z
+    .object({
+      devDependencies: z.record(z.string(), z.string()),
+      scripts: z.record(z.string(), z.string()),
+    })
+    .parse(
+      JSON.parse(await readFile(path.join(directory, "package.json"), "utf-8"))
+    );
   expect(pkg.scripts.build).toBe("vp build");
   expect(pkg.scripts.check).toBe("vp check");
 });

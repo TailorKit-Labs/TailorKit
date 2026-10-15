@@ -277,16 +277,16 @@ describe("RenderSlot.Controlled", () => {
     await waitFor(() => {
       expect(requests.at(-1)?.props.status).toBe("ready");
     });
-    for (const status of ["loading", "error"] as const) {
+    await Array.fromAsync(["loading", "error"] as const, async (status) => {
       result.rerender(contents(status));
-      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+
       await waitFor(() => {
         expect(requests.at(-1)?.props).toMatchObject({
           context: undefined,
           status,
         });
       });
-    }
+    });
   });
 });
 
@@ -383,8 +383,7 @@ it("resolves the key and sends a complete controlled instance through the render
     expect(finish).toBeTypeOf("function");
   });
   expect(requests).toHaveLength(0);
-  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-  await act(async () => {
+  act(() => {
     finish(Response.json({ json: [overview, summary] }));
   });
   await waitFor(() => {
@@ -423,7 +422,7 @@ it("resolves the key and sends a complete controlled instance through the render
 });
 
 it("reports resolver failures and missing keys without mounting stale instances", async () => {
-  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
+  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
   vi.mocked(globalThis.fetch).mockImplementation(async (input) => {
     const url = input instanceof Request ? input.url : String(input);
     if (url.endsWith("/backend/session")) {

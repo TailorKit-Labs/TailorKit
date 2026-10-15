@@ -1,12 +1,12 @@
 ---
-title: "Installation"
+title: "Integrate TailorKit"
+sidebarTitle: "Installation"
 description: "Install TailorKit, expose your host API, and render installed apps in React."
 ---
 
-<Note>
-  You'll need a TailorKit account to get started. [Sign
-  up](https://tailorkit.dev/signup).
-</Note>
+Connect your host product to TailorKit, define the capabilities apps can use, and render installed apps in React. You need an existing React frontend, a backend that handles standard `Request` and `Response` objects, and a [TailorKit account](https://tailorkit.dev/signup).
+
+Get your project key from TailorKit and make it available to your server as `TAILORKIT_PROJECT_KEY`. Keep it out of client bundles. The examples use `@/` for your source directory; adjust imports to match your project.
 
 <Steps titleSize="h2">
 <Step title="Install TailorKit">
@@ -92,7 +92,7 @@ bun add tailorkit@beta valibot @valibot/to-json-schema
 </Step>
 <Step title="Define the shared contract">
 
-This file is the contract between installed apps and your platform. It defines components, views, slots, and scopes. Keep this file browser-safe: both your server and frontend import it.
+Create `src/lib/tailorkit.ts` to define the contract between installed apps and your platform. It declares [components](/concepts/components), [views](/concepts/views), [slots](/concepts/slots), and scopes that identify an installation’s owner. Both your server and frontend import this file, so keep server credentials and logic elsewhere.
 
 <Tip>
   Breaking contract changes, like removing a component or requiring a field, can
@@ -329,7 +329,7 @@ A slot's optional `description` gives app authors and agents layout and sizing g
 </Step>
 <Step title="Implement the server">
 
-Create a separate server file to handle app requests and server-side logic. It connects your contract to TailorKit using your project key. Set `baseUrl` to your host URL in each environment, including your production domain.
+Create `src/lib/tailorkit-server.ts` to connect your contract to TailorKit using your project key. Set `baseUrl` to your host’s TailorKit handler URL in each environment, including production.
 
 <Tabs>
 
@@ -394,9 +394,7 @@ export const tailorKit = createServer({
 </Step>
 <Step title="Create the client">
 
-The TailorKit client connects your frontend to the TailorKit API and maps your contract's components to React components in your app.
-
-Create `tailorkit-client.tsx` in your frontend, wherever you keep client-side utilities.
+Create `src/lib/tailorkit-client.tsx` to connect your frontend to the TailorKit API. Map each contract component to its React implementation. The example assumes your `Button` and `Input` components accept the props shown below.
 
 ```tsx src/lib/tailorkit-client.tsx
 "use client";
@@ -447,7 +445,7 @@ export default tailorKitClient;
 
 Mount the handler at your TailorKit base path. If you use a path other than `/api/tailorkit`, update `baseUrl` in both `tailorkit-server.ts` and `tailorkit-client.tsx` to match.
 
-TailorKit supports any backend framework that uses standard `Request` and `Response` objects, with examples for popular frameworks below.
+Choose your framework below. Replace `auth` with your authentication implementation and return verified scope values from the session.
 
 <Tabs>
 
@@ -637,7 +635,7 @@ export async function handleRequest(request: Request): Promise<Response> {
 </Step>
 <Step title="Add the provider">
 
-Wrap your pages in `TailorKitProvider`.
+Wrap pages that use TailorKit hooks or render apps in `TailorKitProvider`. Choose the root layout for your framework:
 
 <Tabs>
 
@@ -755,7 +753,9 @@ export default function Page() {
 
   useViewContext(
     "/",
-    session ? { context: { user: session.user } } : { status: "loading" }
+    session
+      ? { context: { user: session.user } }
+      : { context: undefined, loading: true }
   );
 
   const selectedView =
@@ -810,7 +810,9 @@ function Page() {
 
   useViewContext(
     "/",
-    session ? { context: { user: session.user } } : { status: "loading" }
+    session
+      ? { context: { user: session.user } }
+      : { context: undefined, loading: true }
   );
 
   const selectedView =
@@ -862,7 +864,9 @@ export default function Page() {
 
   useViewContext(
     "/",
-    session ? { context: { user: session.user } } : { status: "loading" }
+    session
+      ? { context: { user: session.user } }
+      : { context: undefined, loading: true }
   );
 
   const selectedView =
@@ -922,6 +926,6 @@ If the routes return 404, check the catch-all route and handler path. If the sch
 </Step>
 </Steps>
 
-## Next steps
+## Create your first app
 
-With the host running, you can create an app, generate bindings from its schema, and start a preview. See the [example integrations](https://github.com/tailorkit-labs/tailorkit/tree/main/examples) for complete host projects.
+Follow [Create an app](/writing-apps/overview) to scaffold an app against your host contract. Then [write a view](/writing-apps/ui) for one of its slots.

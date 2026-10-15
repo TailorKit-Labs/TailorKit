@@ -13,6 +13,7 @@ import { z } from "zod";
 
 import { authenticateCliRequest } from "#cli-token";
 import { env } from "#env";
+import { forEachSequential } from "#for-each-sequential";
 import { createPreviewBuildStore } from "#preview-build-store";
 import {
   ensurePreviewDeveloperGrace,
@@ -120,9 +121,8 @@ const startPreview = cliRouter
           ),
       },
     });
-    for (const activeSession of activeSessions) {
+    await forEachSequential(activeSessions, async (activeSession) => {
       if (activeSession.expiresAt > now) {
-        // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
         await ensurePreviewDeveloperGrace(
           kv,
           activeSession.id,
@@ -130,7 +130,7 @@ const startPreview = cliRouter
             now.getTime()
         );
       }
-    }
+    });
 
     const tunnelToken = createSecret();
     const shareId = createSecret();
@@ -240,17 +240,16 @@ const startPreview = cliRouter
       await recordPreviewAgentAuthorization(kv, started.session.id, expiresAt);
     }
     const builds = createPreviewBuildStore(kv);
-    for (const ended of [
-      ...started.expiredSessions,
-      ...started.replacedSessions,
-    ]) {
-      try {
-        // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
-        await builds.end(ended.id);
-      } catch {
-        // Existing KV TTLs bound cleanup if the store is temporarily unavailable.
+    await forEachSequential(
+      [...started.expiredSessions, ...started.replacedSessions],
+      async (ended) => {
+        try {
+          await builds.end(ended.id);
+        } catch {
+          // Existing KV TTLs bound cleanup if the store is temporarily unavailable.
+        }
       }
-    }
+    );
 
     const baseUrl = getBaseUrl(env).replace(/^http/u, "ws");
     const tunnelUrl = new URL("/api/platform/preview/ws", baseUrl);

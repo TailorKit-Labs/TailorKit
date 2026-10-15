@@ -80,9 +80,10 @@ export const previewSession = pgTable(
   ]
 );
 
-// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
-export const PreviewSession = createSelectSchema(previewSession, {
+const PreviewSessionSchema = createSelectSchema(previewSession, {
   scope: scopeSchema,
   scopeKey: scopeKeySchema,
 });
-export type PreviewSession = z.output<typeof PreviewSession>;
+export type PreviewSession = z.output<typeof PreviewSessionSchema>;
+
+export { PreviewSessionSchema as PreviewSession };

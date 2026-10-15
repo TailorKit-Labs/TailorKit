@@ -6,7 +6,7 @@ import { resolveAgentAuth } from "./agent-auth";
 import { gatewayModelProviders } from "./gateway-model";
 import type { AppAgentInput } from "./input";
 import instructions from "./instructions.md?raw";
-import { agentSchemaPath, agentTokenPath } from "./sandbox";
+import { agentSchemaPath } from "./sandbox";
 import { appAgentSkills } from "./skills";
 import { deployTool } from "./tools/deploy";
 
@@ -32,7 +32,6 @@ export const createAppAgent = async (
     harness: createPi({
       auth,
       fileToolPathPolicy: {
-        deniedRoots: [agentTokenPath],
         readableRoots: ["/tmp/tailorkit-cli", "/workspace"],
       },
       providers,
