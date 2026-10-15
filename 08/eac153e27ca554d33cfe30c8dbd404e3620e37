@@ -1,0 +1,61 @@
+packages/app/src/client/connection.test.ts
+  s_0e0b64360a5a0c::t_8493813edb7310 438-447
+packages/app/src/client/query-store.ts
+  s_0e0b64360a5a0c::t_9237b985376c2a 75,86
+packages/app/tsup.config.ts
+  s_0e0b64360a5a0c::t_554e3765442681 4,7-9
+packages/client-core/src/client/config.test.ts
+  s_0e0b64360a5a0c::t_6cfbdd581df846 17-19,23
+packages/client-core/src/client/config.ts
+  s_0e0b64360a5a0c::t_7312c01fde8606 164-168,178
+packages/client-core/src/client/fetch-client.test.ts
+  s_0e0b64360a5a0c::t_d7b5959cb2cde1 15-17,75-78
+packages/client-core/src/client/tools.test.ts
+  s_0e0b64360a5a0c::t_70cc620a13f903 1,10,34-36
+packages/client-core/src/client/views.test.ts
+  s_0e0b64360a5a0c::t_bfc63d037faa01 64-68
+packages/client-core/src/store/fetch/cache.test.ts
+  s_0e0b64360a5a0c::t_3b532a90ff7fe6 197
+packages/client-core/src/store/local/remote-view.test.ts
+  s_0e0b64360a5a0c::t_3bf3b7d43d9a6a 1,49,230
+packages/client-core/src/store/store.test.ts
+  s_0e0b64360a5a0c::t_a4aa2fc98cac59 83,114
+packages/core/src/primitives/arktype.ts
+  s_0e0b64360a5a0c::t_6e950624bc11fc 68-70
+packages/core/src/primitives/theme.ts
+  s_0e0b64360a5a0c::t_1cce578ed13136 219-221,225,228-230
+packages/core/src/primitives/valibot.ts
+  s_0e0b64360a5a0c::t_b7b271e9062693 54-56
+packages/core/src/primitives/zod.ts
+  s_0e0b64360a5a0c::t_1b3e86fe8e1816 60
+packages/core/src/server/contract.ts
+  s_0e0b64360a5a0c::t_e5cc11685239aa 119-159,198,214
+packages/core/src/server/handler.test.ts
+  s_0e0b64360a5a0c::t_487eabced8a086 1-2,8-12,46-52,55,78,97-103,106,122,135,242-249,252,270,321-323,326,347,358,362-363,523-525,529,550,553-556,563-565,569,589-591,598-600,637-641
+packages/core/src/server/mcp.test.ts
+  s_0e0b64360a5a0c::t_c5554426367b7c 38-42,44-50
+packages/core/src/server/scope.test.ts
+  s_0e0b64360a5a0c::t_40bf4463bd05f4 165
+packages/core/src/server/tools.test.ts
+  s_0e0b64360a5a0c::t_91ea484296a41d 5,47-52,194-222
+packages/sandbox/src/host/store.ts
+  s_0e0b64360a5a0c::t_d0764abb8f7e52 140-141
+packages/sandbox/src/iframe/resolve-view.ts
+  s_0e0b64360a5a0c::t_c8ac3c458a8e45 73-89,128
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "08eac153e27ca554d33cfe30c8dbd404e3620e37",
+  "prompts": {},
+  "sessions": {
+    "s_0e0b64360a5a0c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13e31-ec9d-7753-b5f4-65b435bafd61",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
