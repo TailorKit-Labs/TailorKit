@@ -1,12 +1,5 @@
-import { createRequire } from "node:module";
-
+import preactPackageJson from "preact/package.json" with { type: "json" };
 import { defineConfig } from "tsup";
-import { z } from "zod";
-
-const require = createRequire(import.meta.url);
-const preactPackageJson = z
-  .object({ version: z.string() })
-  .parse(require("preact/package.json"));
 
 export default defineConfig({
   clean: true,
