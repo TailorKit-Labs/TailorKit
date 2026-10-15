@@ -1,13 +1,12 @@
 import { createRequire } from "node:module";
 
 import { defineConfig } from "tsup";
+import { z } from "zod";
 
 const require = createRequire(import.meta.url);
-// SAFETY: Node resolves the installed Preact package manifest; its version string determines the bundled compatibility version.
-const preactPackageJson =
-  /* oxlint-disable typescript/no-unsafe-type-assertion -- Node resolves the installed Preact package manifest; its version string determines the bundled compatibility version. */
-  require("preact/package.json") as { version: string };
-/* oxlint-enable typescript/no-unsafe-type-assertion */
+const preactPackageJson = z
+  .object({ version: z.string() })
+  .parse(require("preact/package.json"));
 
 export default defineConfig({
   clean: true,

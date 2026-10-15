@@ -216,18 +216,18 @@ const defaultTokenGroups = {
   textTransform: defaultTextTransform,
 } satisfies TailorKitTheme["tokens"];
 
+const isTokenName = (name: string): name is keyof typeof defaultTokenGroups =>
+  Object.hasOwn(defaultTokenGroups, name);
+
 const resolveTokens = (
   theme: TailorKitTheme | undefined
 ): TailorKitTheme["tokens"] => {
-  const tokens = { ...theme?.tokens };
+  const tokens: NonNullable<TailorKitTheme["tokens"]> = { ...theme?.tokens };
 
   for (const [key, value] of Object.entries(defaultTokenGroups)) {
-    // SAFETY: The token group name is checked against the declared default token groups before indexing that table.
-    const tokenKey =
-      /* oxlint-disable typescript/no-unsafe-type-assertion -- The token group name is checked against the declared default token groups before indexing that table. */
-      key as keyof typeof defaultTokenGroups;
-    /* oxlint-enable typescript/no-unsafe-type-assertion */
-    tokens[tokenKey] ??= value;
+    if (isTokenName(key)) {
+      tokens[key] ??= value;
+    }
   }
 
   return tokens;

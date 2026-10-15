@@ -26,9 +26,6 @@ const isFunctionValue = <TValue>(
   value: TValue
 ): value is Extract<TValue, CallableFunction> => typeof value === "function";
 
-const isStringValue = <TValue>(value: TValue): value is TValue & string =>
-  typeof value === "string";
-
 export type { ToolImplementations } from "#schema/tools";
 export type ContractScopes<T extends TailorKitContract> = {
   [N in keyof T["scopes"]]: StandardSchemaV1.InferInput<T["scopes"][N]>;
@@ -119,10 +116,50 @@ export const createServer = <const T extends TailorKitContract>(
       : undefined);
   const verify = createToolVerifier({ fetch: requestPlatform, platformUrl });
   const { basePath, publicOrigin } = normalizeBaseUrl(configuration.baseUrl);
+  const authenticateTool = async (
+    request: Request,
+    requestId: string
+  ): Promise<ToolContext> => {
+    const authorization = request.headers.get("authorization");
+    if (!(authorization?.startsWith("Bearer ") === true)) {
+      throw new Error("Invalid credential.");
+    }
+    const identity = await verify(
+      authorization.slice(7),
+      `${publicOrigin + basePath}/tools/execute`
+    );
+    const schema = contract.scopes[identity.scope.name];
+    if (!schema) {
+      throw new Error("Invalid credential.");
+    }
+    await validateToolValue(schema, identity.scope.value);
+    const headersValue = await (isFunctionValue(platformHeaders)
+      ? platformHeaders()
+      : platformHeaders);
+    const installation = await appsGet({
+      body: { scopes: [normalizeTailorKitNamedScope(identity.scope)] },
+      client: platform,
+      headers: headersValue,
+      path: { appId: identity.installationId },
+      throwOnError: true,
+    });
+    const installed = "data" in installation ? installation.data : installation;
+    if (
+      installed.id !== identity.installationId ||
+      installed.projectId !== identity.projectId ||
+      installed.currentDeployment?.id !== identity.deploymentId
+    ) {
+      throw new Error("Installation unavailable");
+    }
+    return Object.freeze({
+      identity,
+      requestId,
+      scope: identity.scope,
+    });
+  };
   return {
     ...server,
     contract,
-    // oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
     handler: async (
       request: Request,
       handlerOptions: TailorKitHandlerOptions<Partial<ContractScopes<T>>>
@@ -158,21 +195,10 @@ export const createServer = <const T extends TailorKitContract>(
             .object({
               input: z.unknown().optional(),
               path: z.string(),
-              requestId: z.string(),
+              requestId: z.string().regex(/^[0-9a-f-]{36}$/u),
             })
             .strict()
             .parse(await request.json());
-          if (
-            !(input !== undefined && input !== null) ||
-            !isStringValue(input.path) ||
-            !isStringValue(input.requestId) ||
-            !/^[0-9a-f-]{36}$/u.test(input.requestId) ||
-            Object.keys(input).some(
-              (k) => !["path", "input", "requestId"].includes(k)
-            )
-          ) {
-            throw new Error("Invalid credential.");
-          }
         } catch {
           return new Response("Invalid tool request", {
             headers,
@@ -185,43 +211,7 @@ export const createServer = <const T extends TailorKitContract>(
         }
         let context: ToolContext;
         try {
-          const authorization = request.headers.get("authorization");
-          if (!(authorization?.startsWith("Bearer ") === true)) {
-            throw new Error("Invalid credential.");
-          }
-          const identity = await verify(
-            authorization.slice(7),
-            `${publicOrigin + basePath}/tools/execute`
-          );
-          const schema = contract.scopes[identity.scope.name];
-          if (!schema) {
-            throw new Error("Invalid credential.");
-          }
-          await validateToolValue(schema, identity.scope.value);
-          const headersValue = await (isFunctionValue(platformHeaders)
-            ? platformHeaders()
-            : platformHeaders);
-          const installation = await appsGet({
-            body: { scopes: [normalizeTailorKitNamedScope(identity.scope)] },
-            client: platform,
-            headers: headersValue,
-            path: { appId: identity.installationId },
-            throwOnError: true,
-          });
-          const installed =
-            "data" in installation ? installation.data : installation;
-          if (
-            installed.id !== identity.installationId ||
-            installed.projectId !== identity.projectId ||
-            installed.currentDeployment?.id !== identity.deploymentId
-          ) {
-            throw new Error("Installation unavailable");
-          }
-          context = Object.freeze({
-            identity,
-            requestId: input.requestId,
-            scope: identity.scope,
-          });
+          context = await authenticateTool(request, input.requestId);
         } catch {
           return new Response("Unauthorized", { headers, status: 401 });
         }
