@@ -1,0 +1,63 @@
+apps/web/vite.config.ts
+  s_4309e34fe2b036::t_dc96ab18cb3cca 30-33
+packages/agent/src/agent.integration.test.ts
+  s_4309e34fe2b036::t_c2f05555b9a069 373
+packages/agent/src/session-store.test.ts
+  s_4309e34fe2b036::t_634c910f4e2427 8-9,59-60,62,89-96
+packages/agent/vite.config.ts
+  s_4309e34fe2b036::t_f30a5a9958b633 33-36
+packages/api-platform/src/team-identity.test.ts
+  s_4309e34fe2b036::t_fea038c4c86cc1 129
+packages/api-platform/vitest.config.ts
+  s_4309e34fe2b036::t_f90d3261343a25 16,18
+packages/api/vitest.config.ts
+  s_4309e34fe2b036::t_3641012c3a6bb8 16,18
+packages/cli/src/agent-tui.test.ts
+  s_4309e34fe2b036::t_6e9fa2585583c1 44-45,125-129,136,179-183,200,250-254,265-269,307
+packages/cli/src/agent-tui.ts
+  s_4309e34fe2b036::t_7cde9e17b0ae8d 27-38,111
+packages/cli/src/build.test.ts
+  s_4309e34fe2b036::t_f248f3cdfb7289 89
+packages/cli/src/preview.test.ts
+  s_4309e34fe2b036::t_0848315a1e39fe 202
+packages/cli/vite.config.ts
+  s_4309e34fe2b036::t_d0b4fcc98cb7d3 49-52
+packages/react/vitest.config.ts
+  s_4309e34fe2b036::t_fe2684a19e2284 6-7
+packages/sandbox/vite.config.ts
+  s_4309e34fe2b036::t_25581d35f2e605 24-27
+packages/storage/package.json
+  s_4309e34fe2b036::t_b593c18d623059 32
+packages/vite/src/builder/file-routes.test.ts
+  s_4309e34fe2b036::t_d4b4cdc5993c1b 319,326,330,341,350
+packages/vite/src/builder/generate-migrations.test.ts
+  s_4309e34fe2b036::t_05ff6f072c08d4 40
+packages/vite/src/builder/migrations.test.ts
+  s_4309e34fe2b036::t_c394761c383f79 39
+packages/vite/src/builder/schema-check.test.ts
+  s_4309e34fe2b036::t_4de554de691fb4 12-19,29-97,99-102,104-109
+packages/vite/src/builder/server.test.ts
+  s_4309e34fe2b036::t_cdef176acaa84b 163,279,545,561,573,586,612
+packages/vite/vite.config.ts
+  s_4309e34fe2b036::t_43dfde883b2203 17-20
+turbo.json
+  s_4309e34fe2b036::t_5bd5ef4e3e0996 33
+vite.config.ts
+  s_4309e34fe2b036::t_84fd6659914c81 144-147
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "317ce47208e3e593d41964361390e1c6bd8bd7cf",
+  "prompts": {},
+  "sessions": {
+    "s_4309e34fe2b036": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13d0c-2e32-7141-b980-d10e6701e261",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
