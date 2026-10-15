@@ -1,0 +1,42 @@
+packages/cli/src/deploy.test.ts
+  s_76a7a3b35601c2::t_71372217848faa 239-266,271
+  s_c4cd9592b16171::t_d1d1b5f8e7a092 267-270,272
+packages/agent/src/skills/backend-functions.md
+  s_76a7a3b35601c2::t_2ea1ea5151331c 12
+  s_76a7a3b35601c2::t_53b9f85a60a30a 5-11,13-16
+packages/agent/src/tools/deploy.ts
+  s_76a7a3b35601c2::t_53b9f85a60a30a 18,38-42
+packages/agent/src/tools/deploy.test.ts
+  s_76a7a3b35601c2::t_53b9f85a60a30a 66-67
+packages/agent/src/instructions.md
+  s_76a7a3b35601c2::t_2ea1ea5151331c 50
+  s_76a7a3b35601c2::t_53b9f85a60a30a 48,51-52
+packages/cli/src/deploy.ts
+  s_76a7a3b35601c2::t_53b9f85a60a30a 359-365
+.changeset/actionable-deploy-diagnostics.md
+  s_76a7a3b35601c2::t_53b9f85a60a30a 1-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1f6b983c522fa391058bd7b77989777c43a5c6e9",
+  "prompts": {},
+  "sessions": {
+    "s_76a7a3b35601c2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13d93-dcb4-7a50-8a0d-76ff863618c4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_c4cd9592b16171": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13d96-eb8f-7ad2-b94e-d2ac3660c209",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
