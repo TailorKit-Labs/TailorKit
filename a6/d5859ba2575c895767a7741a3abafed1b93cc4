@@ -1,0 +1,21 @@
+docs/getting-started/installation.mdx
+  s_3d130e08251b54::t_d3254834c9fb47 169,244,317
+docs/concepts/slots.mdx
+  s_3d130e08251b54::t_d3254834c9fb47 89
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a6d5859ba2575c895767a7741a3abafed1b93cc4",
+  "prompts": {},
+  "sessions": {
+    "s_3d130e08251b54": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13e32-e2dc-77f3-b2bf-1b552eac1a42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
