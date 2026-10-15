@@ -32,14 +32,14 @@ vi.mock("#env", () => ({ env: authentication.env }));
 const { dirname, join } = nodePath;
 // oxlint-disable-next-line typescript/strict-void-return -- execFile also returns a ChildProcess; promisify consumes its completion callback, not that return value.
 const execute = promisify(execFile);
-const modelId = "xiaomi/mimo-v2.6-pro";
+const modelId = "openai/gpt-6-luna";
 const model = {
-  context_window: 1_048_576,
+  context_window: 1_050_000,
   id: modelId,
-  max_tokens: 131_072,
-  modalities: { input: ["text", "image", "audio", "video"] },
-  name: "MiMo V2.6 Pro",
-  pricing: { input: "0.000000435", output: "0.00000087" },
+  max_tokens: 128_000,
+  modalities: { input: ["text", "image", "pdf"] },
+  name: "GPT-6 Luna",
+  pricing: { input: "0.0000001", output: "0.0000005" },
   tags: ["reasoning", "tool-use", "vision"],
 };
 
@@ -104,50 +104,54 @@ const localSession = (
 
 const messageEvents = (call: number, text: string) => {
   const first = call === 1;
-  const events = [
-    {
-      message: {
-        content: [],
-        id: randomUUID(),
-        model: modelId,
+  const item = first
+    ? {
+        arguments: JSON.stringify({
+          content: "First turn",
+          file_path: "example.txt",
+        }),
+        call_id: "write-1",
+        id: "fc_write1",
+        name: "write",
+        type: "function_call",
+      }
+    : {
+        content: [{ annotations: [], text, type: "output_text" }],
+        id: `msg_${call}`,
         role: "assistant",
-        stop_reason: null,
-        stop_sequence: null,
         type: "message",
-        usage: { input_tokens: 10, output_tokens: 0 },
+      };
+  const events = [
+    { response: { id: `resp_${call}` }, type: "response.created" },
+    { item, output_index: 0, type: "response.output_item.added" },
+    ...(first
+      ? []
+      : [
+          {
+            content_index: 0,
+            item_id: item.id,
+            output_index: 0,
+            part: { annotations: [], text: "", type: "output_text" },
+            type: "response.content_part.added",
+          },
+          {
+            content_index: 0,
+            delta: text,
+            item_id: item.id,
+            output_index: 0,
+            type: "response.output_text.delta",
+          },
+        ]),
+    { item, output_index: 0, type: "response.output_item.done" },
+    {
+      response: {
+        id: `resp_${call}`,
+        output: [item],
+        status: "completed",
+        usage: { input_tokens: 10, output_tokens: 5, total_tokens: 15 },
       },
-      type: "message_start",
+      type: "response.completed",
     },
-    {
-      content_block: first
-        ? { id: "write-1", input: {}, name: "write", type: "tool_use" }
-        : { text: "", type: "text" },
-      index: 0,
-      type: "content_block_start",
-    },
-    {
-      delta: first
-        ? {
-            partial_json: JSON.stringify({
-              content: "First turn",
-              file_path: "example.txt",
-            }),
-            type: "input_json_delta",
-          }
-        : { text, type: "text_delta" },
-      index: 0,
-      type: "content_block_delta",
-    },
-    { index: 0, type: "content_block_stop" },
-    {
-      delta: {
-        stop_reason: first ? "tool_use" : "end_turn",
-        stop_sequence: null,
-      },
-      type: "message_delta",
-      usage: { output_tokens: 5 },
-    },
-    { type: "message_stop" },
   ];
   return events
     .map((event) => `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`)
@@ -299,7 +303,7 @@ it.each(["api-key", "runtime-oidc"])(
       );
       expect(chunks).toContainEqual(
         expect.objectContaining({
-          toolCallId: "write-1",
+          toolCallId: "write-1|fc_write1",
           type: "tool-output-available",
         })
       );
@@ -334,9 +338,17 @@ it.each(["api-key", "runtime-oidc"])(
       expect(endpoints).toEqual(
         Array.from({ length: requests.length }, () => ({
           authorization: `Bearer ${token}`,
-          url: "https://gateway.test/v1/messages",
+          url: "https://gateway.test/v1/responses",
         }))
       );
+      for (const request of requests) {
+        expect(JSON.parse(request)).toMatchObject({
+          model: modelId,
+          reasoning: { effort: "high" },
+        });
+        expect(request).not.toContain(token);
+        expect(request).not.toContain("private-token");
+      }
       expect(requests[followupIndex]).toContain("Build a file");
       expect(requests[followupIndex]).toContain("Built");
       expect(requests[followupIndex]).toContain("Now update it");
