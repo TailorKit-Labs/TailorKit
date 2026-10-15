@@ -73,6 +73,27 @@ export const contract = defineContract({
   UI when no more specific view matches.
 </Tip>
 
+## Describe the space
+
+Add an optional `description` to tell app authors and agents where a slot appears, its typical size, and how it scrolls:
+
+```ts title="Inside your contract's slots"
+panel: {
+  views: ["/"],
+  description:
+    "Right-hand side panel, typically 360px wide. " +
+    "Use a compact, single-column layout. The panel scrolls independently.",
+},
+page: {
+  views: ["/"],
+  description:
+    "Main content area beneath the host navigation. " +
+    "Fills the available width and becomes narrow on mobile.",
+},
+```
+
+TailorKit includes descriptions in the serialized contract and generated slot documentation so agents can read them while building apps. Descriptions provide guidance; your host controls the actual layout and dimensions.
+
 ## Multiple slot variations
 
 By default, a slot has one instance per app, showing one view at a time. Set `multiple: true` when you want separate instances that can appear together.
@@ -123,12 +144,13 @@ Slots live in `defineContract({ slots })`, keyed by the names you choose.
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `views` | `readonly string[]` | Required. Context paths declared in the contract's `views`. |
+| `description` | `string` | Optional. Layout and sizing guidance for app authors and agents. Does not enforce dimensions. |
 | `multiple` | `boolean` | Defaults to `false`. Set to `true` to allow independent instances from one app. |
 
 ```ts
 export type SlotDefinitions<TPath extends string = string> = Record<
   string,
-  { views: readonly TPath[]; multiple?: boolean }
+  { views: readonly TPath[]; multiple?: boolean; description?: string }
 >;
 ```
 

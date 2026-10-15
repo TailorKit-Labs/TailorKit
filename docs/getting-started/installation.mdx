@@ -164,7 +164,12 @@ export const contract = defineContract({
 
   // Slots define where apps render and which views they support.
   slots: {
-    page: { views: ["/"] },
+    page: {
+      views: ["/"],
+      description:
+        "Main content area beneath the host navigation. " +
+        "Fills the available width and becomes narrow on mobile.",
+    },
   },
 });
 ```
@@ -236,7 +241,12 @@ export const contract = defineContract({
 
   // Slots define where apps render and which views they support.
   slots: {
-    page: { views: ["/"] },
+    page: {
+      views: ["/"],
+      description:
+        "Main content area beneath the host navigation. " +
+        "Fills the available width and becomes narrow on mobile.",
+    },
   },
 });
 ```
@@ -306,7 +316,12 @@ export const contract = defineContract({
 
   // Slots define where apps render and which views they support.
   slots: {
-    page: { views: ["/"] },
+    page: {
+      views: ["/"],
+      description:
+        "Main content area beneath the host navigation. " +
+        "Fills the available width and becomes narrow on mobile.",
+    },
   },
 });
 ```
@@ -314,6 +329,8 @@ export const contract = defineContract({
 </Tab>
 
 </Tabs>
+
+A slot's optional `description` gives app authors and agents layout and sizing guidance. Your host controls the actual dimensions. See [Slots](/concepts/slots#describe-the-space) for a side panel example.
 
 </Step>
 <Step title="Implement the server">

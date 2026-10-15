@@ -55,6 +55,12 @@ interface SerializedView {
   context?: JsonSchema;
 }
 
+interface SerializedSlot {
+  description?: string;
+  multiple?: boolean;
+  views: readonly string[];
+}
+
 interface SerializedTools {
   [key: string]: SerializedTool | SerializedTools;
 }
@@ -69,7 +75,7 @@ export interface TailorKitSchemaFile extends Record<string, unknown> {
   tools?: SerializedTools;
   components?: Record<string, SerializedComponent>;
   views?: Record<string, SerializedView>;
-  slots?: Record<string, { views: readonly string[]; multiple?: boolean }>;
+  slots?: Record<string, SerializedSlot>;
 }
 
 export interface GenerateTypesOptions {
@@ -609,12 +615,20 @@ export const renderGeneratedTypes = (
     renderViewProps(schema.views ?? {}),
     `declare module "tailorkit/client" {
   interface TailorKitViews extends ViewPropsByPath {}
-  interface TailorKitSlots { ${Object.entries(schema.slots ?? {})
-    .map(
-      ([name, slot]) =>
-        `${quote(name)}: { views: ${slot.views.map(quote).join(" | ") || "never"}; multiple: ${slot.multiple === true} };`
-    )
-    .join(" ")} }
+  interface TailorKitSlots {
+${Object.entries(schema.slots ?? {})
+  .map(([name, slot]) => {
+    const definition = `    ${quote(name)}: { views: ${slot.views.map(quote).join(" | ") || "never"}; multiple: ${slot.multiple === true} };`;
+    if (slot.description === undefined) {
+      return definition;
+    }
+    const description = slot.description
+      .replaceAll("*/", "* /")
+      .replaceAll(/\r\n?|\n|\u2028|\u2029/gu, "\n     * ");
+    return `    /**\n     * ${description}\n     */\n${definition}`;
+  })
+  .join("\n")}
+  }
 }
 
 export type ViewPath = keyof ViewPropsByPath & string;

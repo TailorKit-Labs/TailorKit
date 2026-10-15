@@ -16,6 +16,9 @@ import type {
 const isBooleanValue = <TValue>(value: TValue): value is TValue & boolean =>
   typeof value === "boolean";
 
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 export interface TailorKitContract<
   TComponents extends ComponentDefinitions = ComponentDefinitions,
   TViews extends ContextDefinitions = ContextDefinitions,
@@ -55,6 +58,9 @@ export const defineContract = <
   }
   flattenTools(definition.tools ?? {});
   for (const [name, slot] of Object.entries(definition.slots ?? {})) {
+    if (slot.description !== undefined && !isStringValue(slot.description)) {
+      throw new TypeError(`Slot "${name}" description must be a string.`);
+    }
     if (slot.multiple !== undefined && !isBooleanValue(slot.multiple)) {
       throw new TypeError(`Slot "${name}" multiple must be a boolean.`);
     }

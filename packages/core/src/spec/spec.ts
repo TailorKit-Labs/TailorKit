@@ -26,6 +26,7 @@ export const TailorKitSchemaSpec = z
       .record(
         z.string().min(1),
         z.object({
+          description: z.string().optional(),
           multiple: z.boolean().optional(),
           views: z.array(z.string().startsWith("/")),
         })
