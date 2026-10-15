@@ -4,7 +4,9 @@ A Pi-backed `HarnessAgent` for building and editing TailorKit extensions. The we
 
 ## Instructions and skills
 
-`src/instructions.md` supplies always-loaded workspace, app structure, runtime, and publishing rules. `src/skills.ts` registers five on-demand harness skills from bundled Markdown: views and file routing, backend functions, SQLite and relations, Preact composition, and Preact performance. The harness projects them into its skill discovery system each turn; app workspaces do not need copies of this repository's `.agents` directory.
+`src/instructions.md` supplies always-loaded workspace, app structure, runtime, and publishing rules. `src/skills.ts` registers six on-demand harness skills from bundled Markdown: host UI and tools, views and file routing, backend functions, SQLite and relations, Preact composition, and Preact performance. The harness projects them into its skill discovery system each turn; app workspaces do not need copies of this repository's `.agents` directory.
+
+The skills include the common SDK patterns so the agent can implement from the scaffold and relevant generated contract declarations. Installed public types are a fallback for uncovered details or version mismatches, rather than a required dependency-reading step. Host component names, props, and tools always come from that app's generated bindings.
 
 The Preact skills adapt the applicable principles from the repository's `vercel-composition-patterns` and `vercel-react-best-practices` skills to generated host components and reactive TailorKit clients. React 19, Next.js, and DOM-specific APIs do not apply. Keep the app guidance aligned with the CLI scaffold, `packages/app/src` public APIs, `packages/vite/src/builder` routing/migrations, and the Durable Object runtime in `apps/apps-worker/src`.
 

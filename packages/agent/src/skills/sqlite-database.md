@@ -2,9 +2,36 @@
 
 Drizzle powers TailorKit's database internally. App code gets a restricted synchronous `db` capability inside queries and mutations, not an unrestricted Drizzle connection. Do not create a driver, open SQLite files, use D1/Postgres clients, or reach into Durable Object storage.
 
-Keep tables in `src/db/schema.ts`, relations in `src/db/relations.ts`, and `defineDatabase({ relations })` in `src/db/index.ts`. Import `table`, `text`, `integer`, `real`, `boolean`, and supported filter/order helpers from `tailorkit/server`. `boolean()` stores SQLite integers. Use explicit primary keys, nullability, and defaults; use foreign-key references when the schema requires database enforcement. Table names must start with a letter, contain only letters/digits/underscores, be at most 63 characters, and avoid `sqlite_` and `tailorkit_` prefixes.
+Keep the scaffold's three database files:
 
-Use the installed `defineRelations` API from `drizzle-orm`; it is a schema declaration, not a database connection. Include all tables, even those without relationships. For example:
+```ts
+// src/db/schema.ts
+import { table, text, boolean } from "tailorkit/server";
+
+export const todos = table("todos", {
+  id: text().primaryKey(),
+  title: text().notNull(),
+  done: boolean().notNull().default(false),
+});
+
+// src/db/relations.ts
+import { defineRelations } from "drizzle-orm";
+
+import * as schema from "./schema";
+
+export const relations = defineRelations(schema);
+
+// src/db/index.ts
+import { defineDatabase } from "tailorkit/server";
+
+import { relations } from "./relations";
+
+export const db = defineDatabase({ relations });
+```
+
+Import column builders (`table`, `text`, `integer`, `real`, `boolean`) and supported filter/order helpers from `tailorkit/server`. `boolean()` stores SQLite integers. Generate IDs in mutations, for example with `crypto.randomUUID()`; a text primary key has no automatic ID. Use explicit nullability/defaults and foreign-key references where enforcement is required. Table names must start with a letter, contain only letters/digits/underscores, be at most 63 characters, and avoid `sqlite_` and `tailorkit_` prefixes.
+
+The scaffold uses Drizzle's `defineRelations` API, not the older `relations(table, ...)` API. Include all tables, even those without relationships. To link tables:
 
 ```ts
 // src/db/relations.ts

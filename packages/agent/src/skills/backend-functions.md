@@ -1,17 +1,68 @@
 # Backend functions and reactive clients
 
-The app backend runs in Cloudflare Durable Objects with installation-scoped SQLite storage. It is separate from the Preact iframe. Enable it with `server: {}` in `tailorkit.config.ts`; the default entry is `src/server.ts`.
+Enable `server: {}` in `tailorkit.config.ts`; the default entry is `src/server.ts`. Backend files are separate from the Preact iframe and run on the platform, not a Node.js app server. Do not add HTTP routes, a listener, a database driver, or a custom client transport.
 
-- Implement functions in `src/functions/` and register them in the default export of `src/server.ts` using `defineServer({ ... })` from `tailorkit/server`. Files are not automatically registered. Nested objects form namespaces, such as `defineServer({ todos })` → `api.todos.list`. Regenerate bindings after changing registrations.
-- Use `fn.query`, `fn.mutation`, or `fn.action` from `tailorkit/server`. Chain `.input(zodSchema)` and, when useful, `.output(zodSchema)`. Builders receive validated `input`; the object-style `query`/`mutation`/`action` API receives `args`. With no input schema the argument is `undefined`. Return JSON-compatible values.
-- Queries read through `db`; mutations read and write through `db`. Attach the database definition with `.database(dbDefinition)` to get typed relations. Both handlers must finish synchronously: no `async`, promises, fetch, host tools, timers, or external side effects. Use `.sync()` for relational reads, `.all()`/`.get()` for selects, and `.run()` for writes.
-- Mutations run atomically; a thrown error rolls back their writes. Runtime database access ends when the handler returns. Do not save a handle or use it from later work.
-- Actions may await external `fetch` and supported host server tools through their `tools` context. They have no direct `db`. Declare callable queries/mutations with `.functions({ todos })`, register those same definitions under the same namespace in `defineServer`, then use `queries.todos.list(...)` or `mutations.todos.save(...)` from the action context. Actions cannot call actions through these helpers. Pass `signal` to external requests and validate their responses before writing data.
-- An action's individual mutations commit separately. External calls and multiple mutations are not one transaction; design retries to avoid duplicate external side effects. Host tools still require the host's exposed capability and authorization. Generated client tools belong in UI callbacks; backend actions use context `tools` for server tools.
-- Handlers receive verified `identity`; actions also receive `scope`. Use trusted identity and the host's contract for authorization. A client-supplied record or subject ID is input to validate, not proof of permission. Keep secrets out of UI imports and returned values.
+## Define and register
 
-In Preact, import `ClientProvider`, `useQuery`, `useMutation`, and `useAction` from `tailorkit/client`, and `api` from `#tailorkit`. Keep one stable provider in the app shell.
+Use `fn.query`, `fn.mutation`, and `fn.action` from `tailorkit/server`. Chain `.input(zodSchema)` and optionally `.output(zodSchema)` before `.handler(...)`. Handlers receive validated `input`; without an input schema it is `undefined`. Return JSON-compatible values (use `null` for an absent record).
 
-- `useQuery(api.todos.list, input)` subscribes reactively. The runtime tracks tables read and reruns affected subscriptions after committed writes; do not poll or manually refetch after every mutation. Data can be `undefined` while pending. Render loading, error, empty, and success states.
-- Keep hooks unconditional. Use the third argument `{ enabled: false }` to defer a query until required context exists; for an inputless query, preserve the second `undefined` argument when passing options.
-- Mutations expose `mutate`/`mutateAsync`; actions expose `execute`/`executeAsync`. Use the async variants when subsequent behavior needs the result or a caught error. Use `isPending` to prevent duplicate submissions. Server tools and external data do not become reactive merely because they are called by an action; persist results with a mutation when subscriptions should update.
+For a `todos` table and database definition from the database skill:
+
+```ts
+// src/functions/todos.ts
+import { fn } from "tailorkit/server";
+import { z } from "zod";
+
+import { db as database } from "../db";
+import { todos } from "../db/schema";
+
+export const list = fn.query
+  .database(database)
+  .handler(({ db }) => db.query.todos.findMany({ limit: 100 }).sync());
+
+export const add = fn.mutation
+  .database(database)
+  .input(z.object({ title: z.string().trim().min(1).max(200) }))
+  .handler(({ db, input }) => {
+    const id = crypto.randomUUID();
+    db.insert(todos).values({ id, title: input.title }).run();
+    return { id };
+  });
+```
+
+Register explicitly; files alone do not register functions:
+
+```ts
+// src/server.ts
+import { defineServer } from "tailorkit/server";
+
+import * as todos from "./functions/todos";
+
+export default defineServer({ todos });
+```
+
+Regenerate bindings to expose `api.todos.list` and `api.todos.add`. Nested objects define namespaces. Export only callable definitions from modules spread into `defineServer`. The alternative object-style `query`/`mutation`/`action` API uses `args` in place of builder `input`.
+
+## Runtime boundaries
+
+- Queries read through `db`; mutations read and write. Attach `.database(database)` for typed relations. Both handlers must finish synchronously: no `async`, promises, fetch, host tools, timers, or external side effects. Execute reads with `.sync()` or `.all()`/`.get()` and writes with `.run()`.
+- A mutation is atomic; thrown errors roll back its writes. Database handles expire when the handler returns.
+- Actions may await `fetch` and exposed server tools through context `tools`; they have no `db`. Declare `.functions({ todos })` using the same definitions and namespaces as `defineServer`, then await `queries.todos.list()` or `mutations.todos.add({ title })`. These helpers cannot call actions. Pass context `signal` to fetch, check response status, and validate external data with Zod.
+- Each action mutation commits separately. External work and multiple mutations are not one transaction; make retries safe for side effects. Persist external results with a mutation if reactive queries should update.
+- Handlers receive verified `identity`; actions also receive `scope`. SQLite is shared within an installation, not automatically isolated per user or context record. For private or record-specific data, validate access and filter reads/writes using trusted identity/context identifiers. `identity.subjectId` is optional; do not assume a signed-in user or trust a supplied subject ID.
+- For expected failures, throw `new AppError("NOT_FOUND", "Record no longer exists")` (import from `tailorkit/server`) or another supported code such as `FORBIDDEN` or `CONFLICT`. Unexpected errors become generic client failures. Never return secrets.
+
+## Use from Preact
+
+Keep the scaffold's stable `<ClientProvider><Route /></ClientProvider>` shell. Import hooks from `tailorkit/client` and `api` from `#tailorkit`:
+
+```ts
+const todos = useQuery(api.todos.list);
+const add = useMutation(api.todos.add, { onSuccess: () => setTitle("") });
+// In a generated host callback:
+add.mutate({ title });
+```
+
+- `useQuery(ref, input?, options?)` subscribes reactively; committed writes rerun affected queries. Use `data`, `error`, `isLoading`, and `isError`; pending data is `undefined`. Do not poll or manually refetch after writes.
+- Keep hooks unconditional. Defer with `{ enabled: false }` in the third argument; preserve `undefined` as the second argument for an inputless query with options. Disabled queries have `isLoading: false` and `isPending: true`.
+- Mutations expose `mutate`/`mutateAsync`; actions expose `execute`/`executeAsync`. The non-async variants return void and report failures through hook state and optional `onError`; await the async variants when later behavior needs a result or caught error. Both hooks expose `data`, `error`, `isPending`, and `reset`. Disable duplicate submissions while pending.

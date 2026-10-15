@@ -1,6 +1,7 @@
 import type { HarnessAgentSkill } from "@ai-sdk/harness/agent";
 
 import functions from "./skills/backend-functions.md?raw";
+import hostUi from "./skills/host-ui.md?raw";
 import composition from "./skills/preact-composition.md?raw";
 import performance from "./skills/preact-performance.md?raw";
 import database from "./skills/sqlite-database.md?raw";
@@ -8,6 +9,12 @@ import routing from "./skills/views-and-routing.md?raw";
 
 /** Bundled with the agent; the harness makes each skill discoverable on demand. */
 export const appAgentSkills = [
+  {
+    content: hostUi,
+    description:
+      "Host UI: read when building app UI, choosing generated components or styling props, handling callbacks, or calling host tools.",
+    name: "tailorkit-host-ui",
+  },
   {
     content: routing,
     description:
