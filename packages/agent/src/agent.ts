@@ -37,6 +37,7 @@ export const createAppAgent = async (
       },
       providers,
       reattachInProcess: false,
+      thinkingLevel: "high",
     }),
     instructions: `${instructions.trim()}\n\n## Host and generation commands\n\n${hostInstructions}`,
     model: input.model,

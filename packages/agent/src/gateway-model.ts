@@ -44,10 +44,12 @@ export const gatewayModelProviders = async (
     throw new Error(`Gateway has no model '${modelId}' in its catalog.`);
   }
   const model = gatewayModelSchema.parse(entry);
+  const useResponses = model.id.startsWith("openai/");
   return {
     "vercel-ai-gateway": {
-      // Pi's Gateway provider uses Gateway's Anthropic-compatible endpoint.
-      api: "anthropic-messages" as const,
+      // Responses preserves OpenAI's explicit reasoning effort for tool calls.
+      api: useResponses ? "openai-responses" : "anthropic-messages",
+      baseUrl: useResponses ? `${baseUrl.replace(/\/$/u, "")}/v1` : baseUrl,
       models: [
         {
           contextWindow: model.context_window,

@@ -174,7 +174,7 @@ export const handleAppAgentMcpRequest = async (
             appId: app.id,
             hostUrl: input.hostUrl,
             messages: [{ content: prompt, role: "user" }],
-            model: "xiaomi/mimo-v2.6-pro",
+            model: "openai/gpt-6-luna",
             threadId,
           },
         ],

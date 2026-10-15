@@ -40,7 +40,7 @@ const require = <T>(value: T | null | undefined): T => {
   return value;
 };
 
-const APP_AGENT_MODEL = "xiaomi/mimo-v2.6-pro";
+const APP_AGENT_MODEL = "openai/gpt-6-luna";
 
 const chunkSchema = asSchema(uiMessageChunkSchema);
 
