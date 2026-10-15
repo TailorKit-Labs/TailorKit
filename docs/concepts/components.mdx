@@ -58,6 +58,75 @@ A callback describes an event on a component. For an action such as opening a to
 
 See [Write app UI](/writing-apps/ui) for using these components in an app.
 
+## Built-in icons
+
+The primitives include an `Icon` component backed by Lucide. Expose it alongside the layout primitives:
+
+```ts title="tailorkit.ts"
+import { defineContract } from "tailorkit";
+import { primitives } from "tailorkit/zod";
+
+export const contract = defineContract({
+  components: {
+    ...primitives(),
+  },
+});
+```
+
+The same primitives are available from `tailorkit/valibot` and `tailorkit/arktype`. Lucide is the supported library today; apps choose an icon by name.
+
+Spread the matching React primitives into your client. The built-in icon renderer shares its request cache across rendered apps:
+
+```tsx title="tailorkit-client.tsx"
+import { createClient, primitives } from "tailorkit/react";
+import { contract } from "./tailorkit";
+
+export const tailor = createClient({
+  contract,
+  baseUrl: "/api/tailorkit/",
+  components: {
+    ...primitives,
+  },
+});
+```
+
+After regenerating app bindings, apps can use the component:
+
+```tsx
+import { Icon } from "./tailorkit.gen";
+
+export function ContinueIcon() {
+  return <Icon name="arrow-right" size={16} />;
+}
+```
+
+| Prop | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `name` | Lucide name union | Required | A name from the pinned Lucide catalogue, such as `arrow-right`. |
+| `size` | `number` | `24` | Width and height in pixels, from 1 to 256. |
+
+The generated `IconProps.name` type is a union of the supported Lucide names. Your editor offers autocomplete, and TypeScript rejects misspellings such as `arrow-rigth`. The contract also rejects unknown names at runtime. The catalogue name list is generated from the same pinned Lucide release as the assets.
+
+Icons inherit the surrounding text color, including colors set by primitives. They do not accept children and are decorative, hidden from assistive technology. Give icon-only controls an accessible name on the control itself.
+
+The host fetches individual JSON files from `https://icons.tailorkit.app/lucide/1.55.0/` and renders validated SVG geometry inline. Icon data stays out of SDK and app bundles. Concurrent requests for the same icon are deduplicated, and each renderer caches up to 512 icons. The first load reserves the icon's dimensions until its geometry arrives. Unknown names and failed requests leave an empty space of the same size; a later mount can retry. Icons load in the browser and are initially empty during server rendering.
+
+The standalone `Icon({ library: "lucide" })` helpers remain available for custom component names and overrides. To self-host, serve the same versioned catalogue directory and override the renderer after spreading the primitives:
+
+```ts
+import { Icon, primitives } from "tailorkit/react";
+
+const components = {
+  ...primitives,
+  Icon: Icon({
+    library: "lucide",
+    baseUrl: "https://assets.example.com/icons/",
+  }),
+};
+```
+
+The renderer appends `lucide/1.55.0/<name>.json` to this URL and also accepts a `fetch` implementation. Cross-origin catalogues must allow your host origin through CORS. Allow the catalogue origin in your page's `connect-src` policy if you use one. See the dedicated assets project's [catalogue build instructions](https://github.com/TailorKit-Labs/tailorkit/tree/main/apps/icons-assets) for generating the files and retaining their license notices.
+
 ## Change a component schema
 
 Removing a field, an allowed variant such as `"secondary"`, or a callback can break apps that use it. Adding a required field can break them too. Prefer optional additions and keep existing names and values until those apps have migrated.

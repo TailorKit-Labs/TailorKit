@@ -380,6 +380,33 @@ importers:
         specifier: 4.149.0
         version: 4.149.0(@types/node@26.6.4)
 
+  apps/icons-assets:
+    devDependencies:
+      '@tailorkit/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@tailorkit/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.6.4
+      lucide-react:
+        specifier: 'catalog:'
+        version: 1.55.0(@types/react@19.3.0)(react@19.3.0)
+      react:
+        specifier: 'catalog:'
+        version: 19.3.0
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vite-plus:
+        specifier: 'catalog:'
+        version: 1.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/ui@5.0.1)(esbuild@0.28.2)(happy-dom@20.14.6)(jiti@2.7.0)(tsx@4.23.15)(typescript@7.0.2)(yaml@2.9.1)
+      wrangler:
+        specifier: 4.149.0
+        version: 4.149.0(@types/node@26.6.4)
+
   apps/web:
     dependencies:
       '@base-ui/react':
@@ -1099,6 +1126,9 @@ importers:
       arktype:
         specifier: 2.2.7
         version: 2.2.7
+      lucide-react:
+        specifier: 'catalog:'
+        version: 1.55.0(@types/react@19.3.0)(react@19.3.0)
       tsup:
         specifier: ^8.5.1
         version: 8.5.1(@swc/core@1.15.3(@swc/helpers@0.5.23))(jiti@2.7.0)(postcss@8.5.28)(supports-color@10.2.2)(tsx@4.23.15)(typescript@7.0.2)(yaml@2.9.1)

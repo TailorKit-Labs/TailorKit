@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import { Icon as iconContract } from "@tailorkit/core/icons/zod";
 import {
   tool,
   defineContract,
@@ -13,6 +14,20 @@ import { assert, describe, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
 import { generateTypes, readSchemaFile, renderGeneratedTypes } from "./types";
+
+it("generates the Lucide name union for an icon registered under any name", () => {
+  const schema = createTailorKitSchema({
+    components: { Glyph: iconContract({ library: "lucide" }) },
+  }).serialize();
+  const output = renderGeneratedTypes(TailorKitSchemaSpec.parse(schema));
+  expect(output).toContain("export interface GlyphProps");
+  expect(output).toContain('name: "a-arrow-down" |');
+  expect(output).toContain('"arrow-right"');
+  expect(output).not.toContain('"arrow-rigth"');
+  expect(output).not.toContain("strokeWidth");
+  expect(output).not.toContain("label");
+  expect(output).toContain("size?: number;");
+});
 
 it.each([undefined, "{", '{"version":2,"components":{}}'])(
   "includes the original schema loading error and preserves its cause for %s",
@@ -302,7 +317,7 @@ describe("renderGeneratedTypes", () => {
     expect(output).not.toContain("export type Disabled = boolean;");
     expect(output).not.toContain("export type Label = string;");
     expect(output).toContain("disabled?: boolean;");
-    expect(output).toContain("label?: string;");
+    expect(output).toContain("label: string;");
     expect(output).toContain("onClick?: () => void;");
     expect(output).toContain("onValueChange?: (input: {");
     expect(output).toContain("value: string;");

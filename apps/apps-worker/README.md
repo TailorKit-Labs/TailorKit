@@ -2,6 +2,8 @@
 
 `tailorkit-apps-worker` runs app queries, mutations, actions, and subscriptions on Cloudflare. It also delivers public client assets and logos. This private runtime is licensed under BUSL-1.1.
 
+The public icon catalogue is deployed independently from [`apps/icons-assets`](../icons-assets/README.md).
+
 The TailorKit command-line interface (CLI) uploads server bundles to the private blob bucket under `server/server.js`. Client code uses `client/client.js`. The worker’s asset allowlist excludes server bundles.
 
 ## Authenticate app requests

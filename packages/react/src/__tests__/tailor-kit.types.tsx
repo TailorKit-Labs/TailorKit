@@ -3,13 +3,17 @@ import type {
   StandardSchemaV1,
 } from "@standard-schema/spec";
 import type { ComponentRenderer } from "@tailorkit/client-core";
+import { Icon as iconContract } from "@tailorkit/core/icons/zod";
+import { primitives as contractPrimitives } from "@tailorkit/core/primitives/zod";
 import { defineContract } from "@tailorkit/core/schema";
 import type { ComponentDefinition } from "@tailorkit/core/schema";
 /* oxlint-disable react/rules-of-hooks -- Compile-only API tests exercise hook signatures outside runtime components. */
 import type { ViewContextValues } from "@tailorkit/core/views";
 import type { ReactNode } from "react";
 
+import { Icon as iconRenderer } from "#icons/icon";
 import type { TailorKitInstance, UseAppsResult, UseViewsResult } from "#index";
+import { primitives as reactPrimitives } from "#primitives";
 import { components, createClient } from "#tailorkit";
 import type { TailorKitApp } from "#tailorkit";
 
@@ -597,3 +601,28 @@ const transformedClient = createClient({
 transformedClient.useViewContext("/", { context: { count: "1" } });
 // @ts-expect-error registration must match the schema input, before transformation
 transformedClient.useViewContext("/", { context: { count: 1 } });
+
+// Default primitives include the Icon contract and renderer.
+const primitivesContract = defineContract({ components: contractPrimitives() });
+createClient({
+  baseUrl: "https://host.test",
+  components: reactPrimitives,
+  contract: primitivesContract,
+});
+components(primitivesContract, {});
+const iconLeaf: false = primitivesContract.components.Icon.children;
+void iconLeaf;
+
+// Standalone icons can be registered under any shared name.
+const icons = defineContract({
+  components: { icon: iconContract({ library: "lucide" }) },
+});
+createClient({
+  baseUrl: "https://host.test",
+  components: { icon: iconRenderer({ library: "lucide" }) },
+  contract: icons,
+});
+iconContract({
+  // @ts-expect-error Only supported libraries can be configured.
+  library: "unknown",
+});

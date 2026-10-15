@@ -488,11 +488,12 @@ const renderComponent = (
   const propsName = toPropsName(name);
   const fields = getComponentFields(component);
   const callbacks = component.callbacks ?? {};
+  const required = new Set(component.fields?.required);
   const lines = [`export interface ${propsName} {`];
 
   for (const [key, schema] of Object.entries(fields)) {
     lines.push(
-      `  ${toPropertyKey(key)}?: ${fieldAliases[key] ?? renderFieldType(schema, 2)};`
+      `  ${toPropertyKey(key)}${required.has(key) ? "" : "?"}: ${fieldAliases[key] ?? renderFieldType(schema, 2)};`
     );
   }
 

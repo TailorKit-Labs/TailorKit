@@ -1,8 +1,13 @@
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { createElement } from "react";
-import { describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { PrimitiveThemeContext, primitives } from "#primitives";
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 const theme = {
   breakpoints: {
@@ -35,6 +40,32 @@ const contextValue1 = { theme, viewId: "screen-1" };
 const contextValue2 = { theme, viewId: "screen-2" };
 
 describe("react primitives", () => {
+  it("loads Icon only when rendered and shares its cache across mounts", async () => {
+    const fetchIcon = vi.fn<typeof fetch>(
+      async () =>
+        await Promise.resolve(
+          Response.json({
+            nodes: [["path", { d: "M5 12h14" }]],
+            size: 24,
+          })
+        )
+    );
+    vi.stubGlobal("fetch", fetchIcon);
+    const view = render(primitives.Box({ props: {} }));
+    expect(fetchIcon).not.toHaveBeenCalled();
+
+    view.rerender(primitives.Icon({ props: { name: "arrow-right" } }));
+    await waitFor(() => {
+      expect(view.container.querySelector("path")?.getAttribute("d")).toBe(
+        "M5 12h14"
+      );
+    });
+    view.unmount();
+    const second = render(primitives.Icon({ props: { name: "arrow-right" } }));
+    expect(second.container.querySelector("path")).not.toBeNull();
+    expect(fetchIcon).toHaveBeenCalledOnce();
+  });
+
   it("renders a scoped primitive style with responsive rules", () => {
     render(
       <PrimitiveThemeContext.Provider value={contextValue1}>

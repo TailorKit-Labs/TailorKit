@@ -24,3 +24,10 @@ export type {
   ViewState,
 } from "./hooks/use-view-context";
 export { primitives } from "./primitives";
+export { Icon } from "#icons/icon";
+export type { IconRendererOptions } from "#icons/loader";
+export type {
+  IconOptions,
+  IconProps,
+  LucideIconName,
+} from "@tailorkit/core/icons";
