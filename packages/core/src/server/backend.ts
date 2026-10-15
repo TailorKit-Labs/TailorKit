@@ -43,24 +43,16 @@ export const handleBackendSession = async (
     return new Response("Too large", { headers, status: 413 });
   }
   // Bound chunked bodies too; a sandbox cannot allocate an unbounded host request.
-  const reader = request.body?.getReader();
   let body = "";
-  if (reader) {
+  if (request.body) {
     const decoder = new TextDecoder();
     let bytes = 0;
-    for (;;) {
-      // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
-      const chunk = await reader.read();
-      if (chunk.done) {
-        break;
-      }
-      bytes += chunk.value.byteLength;
+    for await (const chunk of request.body) {
+      bytes += chunk.byteLength;
       if (bytes > 4096) {
-        // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
-        await reader.cancel();
         return new Response("Too large", { headers, status: 413 });
       }
-      body += decoder.decode(chunk.value, { stream: true });
+      body += decoder.decode(chunk, { stream: true });
     }
     body += decoder.decode();
   }

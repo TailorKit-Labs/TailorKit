@@ -116,7 +116,6 @@ export class AppInstallation extends DurableObject<Env> {
           Effect.flatMap((result) => resultEffect(result.result))
         ),
       mutate: (input) =>
-        // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
         this.#mutate(input, identity).pipe(
           Effect.flatMap((result) => resultEffect(result.result))
         ),
@@ -161,7 +160,6 @@ export class AppInstallation extends DurableObject<Env> {
           try: async () => await facet.mutate(input, identity),
         });
         if (result.committed && result.tables.length) {
-          // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
           yield* this.#refresh(result.tables, facet);
         }
         return result;
@@ -170,7 +168,6 @@ export class AppInstallation extends DurableObject<Env> {
   }
 
   #refresh(tables: string[], facet: Pick<AppFacet, "query">) {
-    // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
     return this.#subscriptions.refresh(
       tables,
       (input: Invocation, subscriber) =>
@@ -281,7 +278,6 @@ export class AppInstallation extends DurableObject<Env> {
               lease,
               async (tables) => {
                 await Effect.runPromise(
-                  // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
                   this.#queue.withPermits(1)(this.#refresh(tables, facet))
                 );
               },

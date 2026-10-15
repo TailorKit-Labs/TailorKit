@@ -1,4 +1,3 @@
-/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-member-access, typescript/no-unsafe-argument -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { issueAgentToken } from "@tailorkit/api-utils/agent-token";
 import { hashSecret } from "@tailorkit/api-utils/hashing";
@@ -7,7 +6,7 @@ import { organization } from "@tailorkit/db/schema/auth";
 import { cliToken } from "@tailorkit/db/schema/cli-auth";
 import { project } from "@tailorkit/db/schema/project";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
-import type { z } from "zod";
+import { z } from "zod";
 
 import { env } from "#env";
 import { canonicalizeScope } from "#scope";
@@ -81,6 +80,10 @@ const request = (path: string, body: AgentRequestBody = {}, secret = jwt) =>
     },
     method: "POST",
   });
+const responseBodySchema = z.looseObject({
+  deployment: z.looseObject({ id: z.string() }).optional(),
+  id: z.string().optional(),
+});
 const post = async (path: string, body: AgentRequestBody = {}) => {
   const input = request(path, body);
   let context;
@@ -88,7 +91,10 @@ const post = async (path: string, body: AgentRequestBody = {}) => {
     context = await createContext({ request: input });
   } catch (error) {
     const response = contextErrorResponse(error);
-    return { body: await response.json(), status: response.status };
+    return {
+      body: responseBodySchema.parse(await response.json()),
+      status: response.status,
+    };
   }
   const result = await handler.handle(input, {
     context,
@@ -97,7 +103,10 @@ const post = async (path: string, body: AgentRequestBody = {}) => {
   if (!result.response) {
     throw new Error("Expected HTTP response");
   }
-  return { body: await result.response.json(), status: result.response.status };
+  return {
+    body: responseBodySchema.parse(await result.response.json()),
+    status: result.response.status,
+  };
 };
 const deploymentInput = (appId: string) => ({
   appId,
@@ -243,13 +252,12 @@ it("cannot change the authorized scope", async () => {
 });
 
 it("rejects apps outside the scope or project", async () => {
-  for (const appId of [otherScopeAppId, otherProjectAppId]) {
-    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+  await Array.fromAsync([otherScopeAppId, otherProjectAppId], async (appId) => {
     expect(await post("/deployments", deploymentInput(appId))).toMatchObject({
       body: { code: "NOT_FOUND" },
       status: 404,
     });
-    // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+
     const [deployment] = await database.db
       .insert(appDeployment)
       .values({
@@ -259,7 +267,6 @@ it("rejects apps outside the scope or project", async () => {
       })
       .returning();
     expect(
-      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
       await post(`/deployments/${requireValue(deployment).id}`, {
         scope: scope.scope,
       })
@@ -267,7 +274,7 @@ it("rejects apps outside the scope or project", async () => {
       body: { code: "NOT_FOUND" },
       status: 404,
     });
-  }
+  });
 });
 
 it("keeps ordinary CLI tokens on the host authentication path", async () => {
@@ -289,10 +296,13 @@ it("publishes a verified upload to the authorized app", async () => {
     url: "https://uploads.test/client.js",
   });
   vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("client-code"));
-  const published = await post(`/deployments/${created.body.deployment.id}`, {
-    rollout: true,
-    scope: scope.scope,
-  });
+  const published = await post(
+    `/deployments/${requireValue(created.body.deployment).id}`,
+    {
+      rollout: true,
+      scope: scope.scope,
+    }
+  );
   expect(published).toMatchObject({
     body: { status: "published" },
     status: 200,
@@ -300,7 +310,9 @@ it("publishes a verified upload to the authorized app", async () => {
   const selectedApp = await database.db.query.app.findFirst({
     where: { id: authorizedAppId },
   });
-  expect(selectedApp?.currentDeploymentId).toBe(created.body.deployment.id);
+  expect(selectedApp?.currentDeploymentId).toBe(
+    requireValue(created.body.deployment).id
+  );
   const otherApp = await database.db.query.app.findFirst({
     where: { id: otherScopeAppId },
   });
@@ -334,7 +346,7 @@ it("uses the same CLI permissions for verification, listing, app creation, and d
   expect(awaitedResult3.status).toBe(200);
   const awaitedResult4 = await post(
     "/deployments",
-    deploymentInput(created.body.id)
+    deploymentInput(requireValue(created.body.id))
   );
   expect(awaitedResult4.status).toBe(200);
 });

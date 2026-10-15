@@ -4,12 +4,9 @@ import { JsonSchema } from "./json-schema";
 
 const viewKeyPattern = /^\/.*$/u;
 
-// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
-const ViewKey = z.string().regex(viewKeyPattern, {
+const viewKeySchema = z.string().regex(viewKeyPattern, {
   message: 'View keys must start with "/".',
 });
-
-type ViewKey = z.infer<typeof ViewKey>;
 
 const SerializedView = z
   .object({
@@ -18,4 +15,4 @@ const SerializedView = z
   })
   .strict();
 
-export const viewRecord = z.record(ViewKey, SerializedView);
+export const viewRecord = z.record(viewKeySchema, SerializedView);

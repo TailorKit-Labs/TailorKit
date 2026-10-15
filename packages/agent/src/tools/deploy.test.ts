@@ -1,4 +1,3 @@
-/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-call, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { beforeEach, expect, it, vi } from "vite-plus/test";
 
 import { deployTool } from "./deploy";
@@ -13,7 +12,18 @@ const requireValue = <T>(value: T | null | undefined): T => {
 
 const mocks = vi.hoisted(() => ({
   nativeSandbox: vi.fn(),
-  runCommand: vi.fn(),
+  runCommand: vi.fn<
+    (command: {
+      args: string[];
+      cmd: string;
+      env: Record<string, string>;
+      cwd?: string;
+    }) => Promise<{
+      exitCode: number;
+      stderr: () => Promise<string>;
+      stdout: () => Promise<string>;
+    }>
+  >(),
 }));
 vi.mock("./utils", async (original) => ({
   ...(await original<typeof utilsModule>()),

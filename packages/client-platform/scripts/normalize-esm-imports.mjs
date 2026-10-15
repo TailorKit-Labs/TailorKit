@@ -14,59 +14,62 @@ const exists = async (value) => {
 };
 /** @param {string} dir Generated source directory to normalize. @returns {Promise<void>} */
 const visit = async (dir) => {
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const filename = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
-      await visit(filename);
-      continue;
-    }
-    if (!entry.name.endsWith(".ts")) {
-      continue;
-    }
-    // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
-    const input = await readFile(filename, "utf-8");
-    let output = input;
-    for (const match of input.matchAll(
-      /from\s+(?<quote>["'])(?<specifier>\.\.?\/[^"']+)\k<quote>/gu
-    )) {
-      const specifier = match.groups?.specifier;
-      if (specifier === undefined) {
-        continue;
+  await Array.fromAsync(
+    await readdir(dir, { withFileTypes: true }),
+    async (entry) => {
+      const filename = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await visit(filename);
+        return;
       }
-      if (specifier.endsWith(".js")) {
-        continue;
+      if (!entry.name.endsWith(".ts")) {
+        return;
       }
-      const target = path.resolve(dir, specifier);
 
-      let replacement = null;
-      // oxlint-disable-next-line no-await-in-loop -- The replacement depends on the first existing module path.
-      if (await exists(`${target}.ts`)) {
-        replacement = `${specifier}.js`;
-        // oxlint-disable-next-line no-await-in-loop -- Try the directory module only after the file module.
-      } else if (await exists(path.join(target, "index.ts"))) {
-        replacement = `${specifier}/index.js`;
-      }
-      if (
-        !(
-          replacement !== undefined &&
-          replacement !== null &&
-          replacement !== ""
-        )
-      ) {
-        throw new Error(
-          `Unresolved relative import ${specifier} in ${filename}`
-        );
-      }
-      output = output.replaceAll(
-        `${match[1]}${specifier}${match[1]}`,
-        `${match[1]}${replacement}${match[1]}`
+      const input = await readFile(filename, "utf-8");
+      let output = input;
+      await Array.fromAsync(
+        input.matchAll(
+          /from\s+(?<quote>["'])(?<specifier>\.\.?\/[^"']+)\k<quote>/gu
+        ),
+        async (match) => {
+          const specifier = match.groups?.specifier;
+          if (specifier === undefined) {
+            return;
+          }
+          if (specifier.endsWith(".js")) {
+            return;
+          }
+          const target = path.resolve(dir, specifier);
+
+          let replacement = null;
+
+          if (await exists(`${target}.ts`)) {
+            replacement = `${specifier}.js`;
+          } else if (await exists(path.join(target, "index.ts"))) {
+            replacement = `${specifier}/index.js`;
+          }
+          if (
+            !(
+              replacement !== undefined &&
+              replacement !== null &&
+              replacement !== ""
+            )
+          ) {
+            throw new Error(
+              `Unresolved relative import ${specifier} in ${filename}`
+            );
+          }
+          output = output.replaceAll(
+            `${match[1]}${specifier}${match[1]}`,
+            `${match[1]}${replacement}${match[1]}`
+          );
+        }
       );
+      if (output !== input) {
+        await writeFile(filename, output);
+      }
     }
-    if (output !== input) {
-      // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
-      await writeFile(filename, output);
-    }
-  }
+  );
 };
 await visit(root);

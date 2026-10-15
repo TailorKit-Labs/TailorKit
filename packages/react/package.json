@@ -70,7 +70,8 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "tsup": "^8.5.1",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "zod": "catalog:"
   },
   "peerDependencies": {
     "react": ">=19.2.6"

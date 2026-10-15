@@ -92,8 +92,7 @@ export type RemotePatch =
       op: "setCallbacks";
     };
 
-// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
-export const HostToIframePayload = v.pipe(
+const HostToIframePayloadSchema = v.pipe(
   ObjectInput,
   v.variant("type", [
     v.strictObject({
@@ -155,7 +154,9 @@ export const HostToIframePayload = v.pipe(
     }),
   ])
 );
-export type HostToIframePayload = v.InferOutput<typeof HostToIframePayload>;
+export type HostToIframePayload = v.InferOutput<
+  typeof HostToIframePayloadSchema
+>;
 
 const RemoteCallbackBindingSchema = strictObject({
   callback: v.string(),
@@ -227,8 +228,7 @@ const RemotePatchSchema: v.GenericSchema<unknown, RemotePatch> = v.pipe(
   ])
 );
 
-// oxlint-disable-next-line no-redeclare -- The schema value and its inferred TypeScript type intentionally share the public name.
-export const IframeToHostPayload = v.pipe(
+const IframeToHostPayloadSchema = v.pipe(
   ObjectInput,
   v.variant("type", [
     v.strictObject({
@@ -271,4 +271,10 @@ export const IframeToHostPayload = v.pipe(
     }),
   ])
 );
-export type IframeToHostPayload = v.InferOutput<typeof IframeToHostPayload>;
+export type IframeToHostPayload = v.InferOutput<
+  typeof IframeToHostPayloadSchema
+>;
+
+export { HostToIframePayloadSchema as HostToIframePayload };
+
+export { IframeToHostPayloadSchema as IframeToHostPayload };

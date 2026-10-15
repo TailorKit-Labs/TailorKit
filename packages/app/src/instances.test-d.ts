@@ -1,4 +1,3 @@
-/* oxlint-disable typescript/no-unsafe-call, typescript/no-unsafe-assignment -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { vi } from "vite-plus/test";
 import { z } from "zod";
 
@@ -43,9 +42,9 @@ defineView({
       // @ts-expect-error Required query inputs cannot be omitted.
       void queries.reports.list();
       // @ts-expect-error Mutation functions are not exposed.
-      queries.reports.write();
+      void queries.reports.write;
       // @ts-expect-error Action functions are not exposed.
-      queries.reports.fetch();
+      void queries.reports.fetch;
       // @ts-expect-error Resolver context has no arbitrary input.
       void other.input;
       // @ts-expect-error Resolver context has no mutation capability.
@@ -88,4 +87,4 @@ void parsedCount;
 // @ts-expect-error instance data is the parsed schema output
 const _rawCount: string = selected.data.count;
 // @ts-expect-error instance data fields are inferred from the schema
-const _missing = selected.data.missing;
+void selected.data.missing;

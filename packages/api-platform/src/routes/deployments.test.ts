@@ -1,4 +1,3 @@
-/* oxlint-disable typescript/no-unsafe-assignment -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 
@@ -213,7 +212,7 @@ describe("platform deployment uploads", () => {
     "uploads and verifies %s client and private server code",
     async (encoding) => {
       const context = publishContext("https://private.example/server");
-      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+      // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
       const uploads = vi.fn(async ({ key }: { key: string }) => ({
         key,
         uploadUrl: `https://uploads.example/${key}`,
@@ -389,19 +388,25 @@ describe("platform deployment uploads", () => {
     const bytes = gzipSync(decoded);
     const checksum = createHash("sha256").update(bytes).digest("hex");
     const context = publishContext("https://uploads.example/client.js");
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    context.storage.createUploadUrl = vi.fn(async ({ key }) => ({
-      key,
-      uploadUrl: `https://uploads.example/${key}`,
-    }));
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    context.storage.head = vi.fn(async ({ key }) => ({
-      checksumSha256: Buffer.from(checksum, "hex").toString("base64"),
-      contentEncoding: "gzip",
-      contentLength: bytes.byteLength,
-      contentType: "application/javascript",
-      key,
-    }));
+    context.storage.createUploadUrl = vi.fn<
+      typeof context.storage.createUploadUrl
+    >(
+      // oxlint-disable-next-line eslint/require-await -- The storage fixture implements the asynchronous upload API.
+      async ({ key }) => ({
+        key,
+        uploadUrl: `https://uploads.example/${key}`,
+      })
+    );
+    context.storage.head = vi.fn<typeof context.storage.head>(
+      // oxlint-disable-next-line eslint/require-await -- The storage fixture implements the asynchronous metadata API.
+      async ({ key }) => ({
+        checksumSha256: Buffer.from(checksum, "hex").toString("base64"),
+        contentEncoding: "gzip",
+        contentLength: bytes.byteLength,
+        contentType: "application/javascript",
+        key,
+      })
+    );
     const currentApp = await db.query.app.findFirst();
     if (!currentApp) {
       throw new Error("Missing app");
@@ -467,12 +472,12 @@ describe("platform deployment uploads", () => {
     );
     expect(cancel).toHaveBeenCalledOnce();
     expect(position).toBe(2);
+    const expectedSignalMatcher1: unknown = expect.any(AbortSignal);
     expect(fetchMock).toHaveBeenCalledWith(
       new URL("https://uploads.example/client.js"),
       expect.objectContaining({
         redirect: "error",
-        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-        signal: expect.any(AbortSignal),
+        signal: expectedSignalMatcher1,
       })
     );
     const deployment = await db.query.appDeployment.findFirst({
@@ -567,7 +572,7 @@ describe("platform deployment uploads", () => {
   });
 
   it("creates optional logo assets alongside the client bundle", async () => {
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
     const createUploadUrl = vi.fn(async ({ key }: { key: string }) => ({
       key,
       uploadUrl: `https://uploads.example/${key}`,
@@ -655,7 +660,7 @@ describe("platform deployment uploads", () => {
   });
 
   it("reuses a matching app logo without creating another upload URL", async () => {
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
     const createUploadUrl = vi.fn(async ({ key }: { key: string }) => ({
       key,
       uploadUrl: `https://uploads.example/${key}`,
@@ -810,7 +815,7 @@ describe("platform deployment uploads", () => {
     vi.useFakeTimers();
     vi.stubGlobal(
       "fetch",
-      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+      // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
       vi.fn(async (_url: URL, init?: RequestInit) => ({
         arrayBuffer: async () =>
           await (async () => {

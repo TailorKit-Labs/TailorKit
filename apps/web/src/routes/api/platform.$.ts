@@ -18,10 +18,9 @@ import { createFileRoute } from "@tanstack/react-router";
 
 const handler = new OpenAPIHandler(platformRouter, {
   interceptors: [
-    // oxlint-disable-next-line promise/prefer-await-to-callbacks -- The oRPC error interceptor is a synchronous callback required by the adapter API.
-    onError((err) => {
-      recordException(err, { "tailorkit.adapter": "orpc-openapi" });
-      console.error("OpenAPI request failed", sanitizeErrorForLog(err));
+    onError((failure) => {
+      recordException(failure, { "tailorkit.adapter": "orpc-openapi" });
+      console.error("OpenAPI request failed", sanitizeErrorForLog(failure));
     }),
   ],
   plugins: [new RateLimitHandlerPlugin()],

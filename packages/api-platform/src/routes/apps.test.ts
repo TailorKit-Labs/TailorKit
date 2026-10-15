@@ -1,4 +1,3 @@
-/* oxlint-disable typescript/no-unsafe-assignment -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import type { ORPCError } from "@orpc/server";
 import { call } from "@orpc/server";
@@ -41,7 +40,7 @@ const testState = vi.hoisted(() => ({
     AUTH_SECRET: "test-only-agent-creation-secret-32-chars",
   },
   issueToken: vi.fn(
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
     async (_identity: {
       userId: string;
       installationId: string;
@@ -210,7 +209,7 @@ describe("platform appRouter", () => {
       scopes: [productionScope],
     });
     expect(missing.response?.status).toBe(404);
-    const error = await missing.response?.json();
+    const error: unknown = await missing.response?.json();
     expect(error).toMatchObject({ code: "NOT_FOUND" });
     expect(error).not.toHaveProperty("status");
   });
@@ -383,14 +382,15 @@ describe("platform appRouter", () => {
       { context }
     );
 
+    const expectedPublicIdMatcher1: unknown =
+      expect.stringMatching(/^[0-9a-z]{12}$/u);
     expect(created.body).toEqual(
       expect.objectContaining({
         createdByAgent: false,
         description: "Embedded inbox",
         name: "Inbox",
         projectId,
-        // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-        publicId: expect.stringMatching(/^[0-9a-z]{12}$/u),
+        publicId: expectedPublicIdMatcher1,
         scope: productionScope,
       })
     );
@@ -823,36 +823,44 @@ describe("platform appRouter", () => {
       `https://team0000000001.tailorkit.app/p/${projectId}/a/${created.publicId}/rpc`
     );
     const identity = testState.issueToken.mock.calls.at(-1)?.[0];
-    for (const appId of [created.id, created.publicId]) {
-      for (const scopes of [
-        [stagingScope, productionScope],
-        [productionScope, stagingScope],
-      ]) {
-        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-        await call(
-          appRouter.runtimeSession,
-          { body: { scopes, toolUrl: input.body.toolUrl }, params: { appId } },
-          { context }
-        );
-        expect(testState.issueToken).toHaveBeenLastCalledWith(identity);
-      }
-    }
+    await Array.fromAsync([created.id, created.publicId], async (appId) => {
+      await Array.fromAsync(
+        [
+          [stagingScope, productionScope],
+          [productionScope, stagingScope],
+        ],
+        async (scopes) => {
+          await call(
+            appRouter.runtimeSession,
+            {
+              body: { scopes, toolUrl: input.body.toolUrl },
+              params: { appId },
+            },
+            { context }
+          );
+          expect(testState.issueToken).toHaveBeenLastCalledWith(identity);
+        }
+      );
+    });
     const tokenCalls = testState.issueToken.mock.calls.length;
-    for (const runtimeUrl of [
-      "http://runtime.test",
-      "ftp://localhost",
-      "https://user:pass@runtime.test",
-      "https://runtime.test?redirect=attacker",
-      "https://runtime.test#fragment",
-    ]) {
-      testState.env.APP_RUNTIME_URL = runtimeUrl;
-      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
-      await expect(
-        call(appRouter.runtimeSession, input, { context })
-      ).rejects.toMatchObject({
-        code: "SERVICE_UNAVAILABLE",
-      });
-    }
+    await Array.fromAsync(
+      [
+        "http://runtime.test",
+        "ftp://localhost",
+        "https://user:pass@runtime.test",
+        "https://runtime.test?redirect=attacker",
+        "https://runtime.test#fragment",
+      ],
+      async (runtimeUrl) => {
+        testState.env.APP_RUNTIME_URL = runtimeUrl;
+
+        await expect(
+          call(appRouter.runtimeSession, input, { context })
+        ).rejects.toMatchObject({
+          code: "SERVICE_UNAVAILABLE",
+        });
+      }
+    );
     expect(testState.issueToken.mock.calls).toHaveLength(tokenCalls);
     testState.env.APP_RUNTIME_URL = "http://localhost:8787/other";
     const local = await call(appRouter.runtimeSession, input, { context });

@@ -69,11 +69,11 @@ it("awaits actions and exposes scoped calls instead of a database handle", async
   const run = actionRunner(app, { mutate: mutateCall, query: queryCall });
   expect(await run({ args: { delta: 2 }, name: "plus" }, identity)).toBe(6);
   expect(queryCall).toHaveBeenCalledWith({ args: {}, name: "read" });
+  const expectedRequestIdMatcher1: unknown = expect.any(String);
   expect(mutateCall).toHaveBeenCalledWith({
     args: { value: 6 },
     name: "write",
-    // oxlint-disable-next-line typescript/no-unsafe-assignment -- Vitest asymmetric matchers intentionally return any; this value is used only to describe an assertion, not as application data.
-    requestId: expect.any(String),
+    requestId: expectedRequestIdMatcher1,
   });
 });
 

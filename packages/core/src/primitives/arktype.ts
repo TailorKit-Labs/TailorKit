@@ -29,14 +29,7 @@ const responsive = (expr: string, theme: TailorKitTheme) => {
   for (const key of Object.keys(theme.breakpoints ?? {})) {
     fields[`${key}?`] = expr;
   }
-  // SAFETY: expr comes from the predefined primitive validator table; this generic adapter constructs equivalent base and breakpoint validators, which Arktype cannot infer from a runtime definition.
-  return type(
-    /* oxlint-disable typescript/no-unsafe-type-assertion -- expr comes from the predefined primitive validator table; this generic adapter constructs equivalent base and breakpoint validators, which Arktype cannot infer from a runtime definition. */
-    expr as never
-    /* oxlint-enable typescript/no-unsafe-type-assertion */
-  )
-    .or(fields)
-    .onUndeclaredKey("reject");
+  return type.raw(expr).or(fields).onUndeclaredKey("reject");
 };
 
 const optionalResponsive = (expr: string, theme: TailorKitTheme) =>

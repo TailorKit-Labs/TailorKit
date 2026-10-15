@@ -56,10 +56,9 @@ const setup = () => {
     client: client.fetchClient,
     contract,
   });
-  const contextValue1 = { client, store };
+  const contextValue1 = Object.freeze({ client, store });
   const wrapper = ({ children }: { children: ReactNode }) => (
     <StrictMode>
-      {/* oxlint-disable-next-line react/jsx-no-constructed-context-values -- This fixture is created once outside the render callback and stays stable for the test. */}
       <TailorkitContext.Provider value={contextValue1}>
         {children}
       </TailorkitContext.Provider>

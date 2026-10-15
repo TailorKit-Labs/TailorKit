@@ -1,13 +1,14 @@
-/* oxlint-disable typescript/no-unsafe-return, typescript/no-unsafe-assignment, typescript/no-unsafe-member-access, typescript/no-unsafe-argument -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 import { os } from "@orpc/server";
 import { AppAgentThreadError } from "@tailorkit/agent/threads";
 import type * as threadsModule from "@tailorkit/agent/threads";
+import type { appAgent } from "@tailorkit/agent/workflows";
 import { verifyAgentToken } from "@tailorkit/api-utils/agent-token";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { z } from "zod";
 
 import type { Context } from "./context";
 import { env } from "./env";
-import { canonicalizeScope } from "./scope";
+import { scopeSchema, canonicalizeScope } from "./scope";
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -22,9 +23,32 @@ const mocks = vi.hoisted(() => ({
   cleanup: vi.fn(),
   create: vi.fn(),
   grant: vi.fn(),
-  list: vi.fn(),
-  revoke: vi.fn(),
-  start: vi.fn(),
+  list: vi.fn<
+    (options: {
+      input: {
+        body: {
+          page: number;
+          pageSize: number;
+          scopes: (typeof scope.scope)[];
+        };
+      };
+    }) => Promise<{
+      body: { items: (typeof app)[]; pagination: { hasMore: boolean } };
+    }>
+  >(),
+  revoke: vi.fn<(value: { revokedAt: Date }) => void>(),
+  start: vi.fn<
+    (
+      workflow: typeof appAgent,
+      args: [Parameters<typeof appAgent>[0]],
+      options?: { attributes?: Record<string, string> }
+    ) => Promise<{
+      runId: string;
+      cancel?: () => void | Promise<void>;
+      getReadable: (...args: never[]) => ReadableStream;
+      returnValue: Promise<unknown>;
+    }>
+  >(),
   thread: vi.fn<(appId: string, threadId?: string) => Promise<string>>(),
 }));
 vi.mock("@tailorkit/db", () => ({
@@ -42,13 +66,27 @@ vi.mock("@tailorkit/db", () => ({
     query: { app: { findFirst: mocks.app } },
     update: () => ({
       set: (value: Parameters<typeof mocks.revoke>[0]) => ({
-        where: () => mocks.revoke(value),
+        where: () => {
+          mocks.revoke(value);
+        },
       }),
     }),
   },
 }));
 vi.mock("./routes/apps", () => ({
-  appRouter: { list: os.handler(mocks.list) },
+  appRouter: {
+    list: os
+      .input(
+        z.object({
+          body: z.object({
+            page: z.number(),
+            pageSize: z.number(),
+            scopes: z.array(scopeSchema),
+          }),
+        })
+      )
+      .handler(mocks.list),
+  },
   createAppRecord: mocks.create,
 }));
 vi.mock("@tailorkit/agent/workflows", () => ({
@@ -88,7 +126,7 @@ const app = { id: "internal-app", publicId: "public-app", scope: scope.scope };
 
 const request = (
   name: string,
-  args: Parameters<typeof JSON.stringify>[0] = {},
+  args: z.infer<ReturnType<typeof z.json>> = {},
   overrides = {},
   headers = {}
 ) => {
@@ -245,11 +283,11 @@ describe("platform MCP endpoint", () => {
       scope: scope.scope,
     });
     expect(input.schema).toBeUndefined();
-    expect(requireValue(mocks.start.mock.lastCall)[2].attributes).toMatchObject(
-      {
-        "tailorkit.subjectId": "user",
-      }
-    );
+    expect(
+      requireValue(mocks.start.mock.lastCall)[2]?.attributes
+    ).toMatchObject({
+      "tailorkit.subjectId": "user",
+    });
     expect(requireValue(mocks.grant.mock.lastCall)[0]).toMatchObject({
       projectId: "project",
       scope: scope.scope,

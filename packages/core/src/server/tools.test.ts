@@ -328,7 +328,7 @@ it("uses the trusted public origin to verify tool destinations behind a proxy", 
   const proxied = createServer({
     $internal: {
       platformBaseUrl: issuer,
-      // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+      // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
       platformFetch: async (url) =>
         (url instanceof Request ? url.url : String(url)).endsWith(
           "/runtime/keys"
@@ -412,13 +412,11 @@ it("refreshes once for a rotated key, coalesces requests and throttles unknown k
       verify(credential, toolUrl),
     ]);
     expect(fetchKeys).toHaveBeenCalledTimes(2);
-    for (const kid of ["forged-a", "forged-b"]) {
-      // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
+    await Array.fromAsync(["forged-a", "forged-b"], async (kid) => {
       await expect(
-        // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
         verify(await token({}, pair.privateKey, kid), toolUrl)
       ).rejects.toThrow("Unknown signing key");
-    }
+    });
     expect(fetchKeys).toHaveBeenCalledTimes(2);
     vi.advanceTimersByTime(9999);
     await expect(

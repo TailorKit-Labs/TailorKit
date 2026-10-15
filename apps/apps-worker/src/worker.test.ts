@@ -1,12 +1,12 @@
-/* oxlint-disable typescript/no-unsafe-argument, typescript/no-unsafe-assignment, typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 // oxlint-disable-next-line max-classes-per-file -- These related adapter or mock classes implement one runtime boundary.
 import { issueAppToken, APP_AUDIENCE } from "@tailorkit/api-utils/app-auth";
 import { AppError } from "@tailorkit/app/server";
 import { afterAll, beforeEach, expect, it, vi } from "vite-plus/test";
-import type { z } from "zod";
+import { z } from "zod";
 
 import type { AppFacet } from "./dynamic-workers/facet";
 import { AppInstallation } from "./installation";
+import type { ServerDeployment } from "./supervisor/source";
 import worker from "./worker";
 
 vi.mock("cloudflare:workers", () => ({
@@ -56,7 +56,10 @@ vi.stubGlobal(
 
 afterAll(() => vi.unstubAllGlobals());
 
-const source = vi.hoisted(() => ({ code: vi.fn(), current: vi.fn() }));
+const source = vi.hoisted(() => ({
+  code: vi.fn<() => Promise<string>>(),
+  current: vi.fn<() => Promise<ServerDeployment>>(),
+}));
 
 const keys = await crypto.subtle.generateKey(
   { name: "ECDSA", namedCurve: "P-256" },
@@ -132,16 +135,20 @@ const setup = () => {
     result: { ok: true, value: "result" },
     tables: [],
   });
-  const startup = vi.fn();
+  const startup =
+    vi.fn<
+      (options: {
+        modules: Record<string, string>;
+        source?: string;
+        hostEnv?: { connection?: string };
+      }) => void
+    >();
   const abort = vi.fn();
   const put = vi.fn((_key: string, value: string) => {
     version = value;
   });
   const get = vi.fn(
-    (
-      _name: string,
-      options: () => { source: string; hostEnv?: { connection?: string } }
-    ) => {
+    (_name: string, options: () => Parameters<typeof startup>[0]) => {
       startup(options());
       return { query: facetQuery };
     }
@@ -161,17 +168,14 @@ const setup = () => {
 
   const getClass = vi.fn(() => "facet-class");
   const load = vi.fn(
-    (
-      _name: string,
-      options: () => { source: string; hostEnv?: { connection?: string } }
-    ) => {
+    (_name: string, options: () => Parameters<typeof startup>[0]) => {
       startup(options());
       return { getDurableObjectClass: getClass };
     }
   );
 
   const routeFetch = vi.fn(
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
+    // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
     async (_request: Request) => new Response("forwarded", { status: 202 })
   );
   const getByName = vi.fn((_name: string) => ({ fetch: routeFetch }));
@@ -192,7 +196,7 @@ const setup = () => {
 
       DEPLOYMENTS: {
         get: vi.fn<() => Promise<null>>().mockResolvedValue(null),
-        put: vi.fn(async () => {}),
+        put: vi.fn<() => Promise<void>>().mockReturnValue(Promise.resolve()),
       },
       LOADER: { get: load },
       PLATFORM_URL: signing.issuer,
@@ -244,13 +248,17 @@ const fetchWorker = async (requestValue: Request, env: Env) => {
     const token = requestValue.headers.get("authorization")?.slice(7);
     const payload =
       token !== undefined && token !== null && token !== ""
-        ? JSON.parse(
-            atob(
-              requireValue(token.split(".")[1])
-                .replaceAll("-", "+")
-                .replaceAll("_", "/")
+        ? z
+            .object({ projectId: z.string() })
+            .parse(
+              JSON.parse(
+                atob(
+                  requireValue(token.split(".")[1])
+                    .replaceAll("-", "+")
+                    .replaceAll("_", "/")
+                )
+              )
             )
-          )
         : identity;
     url.hostname = `${identity.publicTeamId}.tailorkit.app`;
     url.pathname = `/p/${payload.projectId}/a/${identity.appPublicId}${url.pathname}`;
