@@ -1,0 +1,19 @@
+docs/concepts/slots.mdx
+  s_3d130e08251b54::t_8e51c99e97466a 78,83,91-98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "df454c2d7f09c74649b6a6f136cc80be1ccd9c18",
+  "prompts": {},
+  "sessions": {
+    "s_3d130e08251b54": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13e32-e2dc-77f3-b2bf-1b552eac1a42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
