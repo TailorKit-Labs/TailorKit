@@ -13,8 +13,6 @@ export default defineConfig({
     },
     environment: "node",
     fileParallelism: false,
-    hookTimeout: 5000,
     pool: "forks",
-    testTimeout: 5000,
   },
 });

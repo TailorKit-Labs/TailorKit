@@ -536,30 +536,22 @@ it("builds colocated instance resolvers as query-only server actions", async () 
         'export function title(id: string) { return "PRIVATE_UPDATED:" + id; }'
       );
       await expect
-        .poll(
-          async () => {
-            const awaitedResult1 = await readFile(watchedServer, "utf-8");
-            return awaitedResult1.includes("PRIVATE_UPDATED");
-          },
-          {
-            timeout: 2500,
-          }
-        )
+        .poll(async () => {
+          const awaitedResult1 = await readFile(watchedServer, "utf-8");
+          return awaitedResult1.includes("PRIVATE_UPDATED");
+        })
         .toBe(true);
       await writeFile(
         path.join(root, "src/slots/page/index.view.tsx"),
         viewSource.replace("PRIVATE_INITIALIZER", "RESOLVER_UPDATED")
       );
       await expect
-        .poll(
-          async () => {
-            const awaitedResult2 = await readFile(watchedServer, "utf-8").catch(
-              () => ""
-            );
-            return awaitedResult2.includes("RESOLVER_UPDATED");
-          },
-          { timeout: 2500 }
-        )
+        .poll(async () => {
+          const awaitedResult2 = await readFile(watchedServer, "utf-8").catch(
+            () => ""
+          );
+          return awaitedResult2.includes("RESOLVER_UPDATED");
+        })
         .toBe(true);
       // The server watcher can finish while the client watcher is still
       // rebuilding and has temporarily cleared its output directory.
@@ -569,22 +561,16 @@ it("builds colocated instance resolvers as query-only server actions", async () 
             await readFile(
               path.join(root, ".tailorkit/watched/client/client.js"),
               "utf-8"
-            ).catch(() => ""),
-          { timeout: 2500 }
+            ).catch(() => "")
         )
         .toContain(requireValue(names[0]));
       await rm(path.join(root, "src/slots/page/index.view.tsx"));
       await rm(path.join(root, "src/slots/panel.links/index.view.tsx"));
       await expect
-        .poll(
-          async () => {
-            const output = await readFile(watchedServer, "utf-8").catch(
-              () => ""
-            );
-            return !!output && !output.includes("RESOLVER_UPDATED");
-          },
-          { timeout: 2500 }
-        )
+        .poll(async () => {
+          const output = await readFile(watchedServer, "utf-8").catch(() => "");
+          return !!output && !output.includes("RESOLVER_UPDATED");
+        })
         .toBe(true);
       const withoutInstances: ApplicationModule = await import(
         `${pathToFileURL(watchedServer).href}?instances-removed`

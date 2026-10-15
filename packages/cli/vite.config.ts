@@ -46,8 +46,4 @@ export default defineConfig({
     __TAILORKIT_VERSION__: JSON.stringify(packageJson.version),
   },
   plugins: [liquidRawPlugin()],
-  test: {
-    hookTimeout: 5000,
-    testTimeout: 5000,
-  },
 });

@@ -27,10 +27,6 @@ export default defineConfig(({ mode }) => {
   const reactPlugin = viteReact({ compiler: true });
 
   return {
-    test: {
-      hookTimeout: 5000,
-      testTimeout: 5000,
-    },
     define: {
       "import.meta.env.VITE_ORG_CREATION_MANAGED": JSON.stringify(
         env.VERCEL_ENV === "production"

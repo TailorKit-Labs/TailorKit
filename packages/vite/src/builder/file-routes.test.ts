@@ -315,31 +315,22 @@ it("builds file routes with extracted instances and discovers additions, renames
         const current = await readClientManifest(manifestFile);
         return current.views.map((view) => view.path).toSorted();
       };
-      await expect
-        .poll(paths, { timeout: 2500 })
-        .toEqual(["/", "/customers/details"]);
+      await expect.poll(paths).toEqual(["/", "/customers/details"]);
       await rename(
         next,
         path.join(root, "src/slots/page/customers.summary.view.tsx")
       );
-      await expect
-        .poll(paths, { timeout: 2500 })
-        .toEqual(["/", "/customers/summary"]);
+      await expect.poll(paths).toEqual(["/", "/customers/summary"]);
       await rm(path.join(root, "src/slots/page/index.view.tsx"));
+      await expect.poll(paths).toEqual(["/customers/summary"]);
       await expect
-        .poll(paths, { timeout: 2500 })
-        .toEqual(["/customers/summary"]);
-      await expect
-        .poll(
-          async () => {
-            const server = await readFile(
-              path.join(root, ".tailorkit/server/server.js"),
-              "utf-8"
-            );
-            return server.includes("PRIVATE_RESOLVER");
-          },
-          { timeout: 2500 }
-        )
+        .poll(async () => {
+          const server = await readFile(
+            path.join(root, ".tailorkit/server/server.js"),
+            "utf-8"
+          );
+          return server.includes("PRIVATE_RESOLVER");
+        })
         .toBe(false);
     } finally {
       await watcher.close();

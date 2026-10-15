@@ -30,7 +30,6 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/vite.config.ts"],
       "outputs": []
     },
     "dev": {

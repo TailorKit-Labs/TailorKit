@@ -141,8 +141,4 @@ export default defineConfig({
     "*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}": "vp check --fix",
     "*.{json,jsonc,json5,md,mdx,yaml,yml,css,html}": "vp fmt",
   },
-  test: {
-    hookTimeout: 5000,
-    testTimeout: 5000,
-  },
 });
