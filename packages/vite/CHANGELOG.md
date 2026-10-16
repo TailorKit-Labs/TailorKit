@@ -1,5 +1,13 @@
 # @tailorkit/vite
 
+## 0.1.0-beta.37
+
+### Patch Changes
+
+- f2da040: Export upload manifest validation separately from the Vite builder so server runtimes can validate deployment artifacts without loading the compiler or its native bindings.
+- Updated dependencies [0d72562]
+  - @tailorkit/app@0.1.0-beta.37
+
 ## 0.1.0-beta.36
 
 ### Patch Changes
