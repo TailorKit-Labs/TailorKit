@@ -289,15 +289,12 @@ const deleteApp = cliRouter
           ? error.cause
           : error;
       const dependencyViolation = z
-        .union([
-          z.object({ code: z.literal("23503") }),
-          z.object({
-            code: z.literal("23001"),
-            constraint: z.literal(
-              "app_current_deployment_id_app_deployment_id_fkey"
-            ),
-          }),
-        ])
+        .object({
+          code: z.enum(["23503", "23001"]),
+          constraint: z.literal(
+            "app_current_deployment_id_app_deployment_id_fkey"
+          ),
+        })
         .safeParse(candidate);
       if (dependencyViolation.success) {
         throw new ORPCError("CONFLICT", {

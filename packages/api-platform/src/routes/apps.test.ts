@@ -439,7 +439,7 @@ describe("platform appRouter", () => {
     ).toBeDefined();
   });
 
-  it.each(["23503", "P0001"])(
+  it.each(["23503", "23001", "P0001"])(
     "handles deletion error %s without masking unrelated failures",
     async (code) => {
       const context = createContext();
@@ -464,13 +464,6 @@ describe("platform appRouter", () => {
         { body: { scope: productionScope }, params: { appId: source.id } },
         { context }
       );
-      if (code === "23503") {
-        await expect(deletion).rejects.toMatchObject({
-          code: "CONFLICT",
-          message: "Remove installations using this app before deleting it.",
-        });
-        return;
-      }
       await expect(deletion).rejects.toMatchObject({
         cause: { code, message: "Deletion failed" },
         name: "DrizzleQueryError",
