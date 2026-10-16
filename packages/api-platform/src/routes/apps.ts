@@ -8,7 +8,13 @@ import { z } from "zod";
 import { withAppAssetUrl } from "#asset-url";
 import type { Context } from "#context";
 import { paginatedOutput, paginationQuery } from "#pagination";
-import { o, cliRouter, requireApp, requireAppInScopes } from "#procedures";
+import {
+  o,
+  cliRouter,
+  protectedRouter,
+  requireApp,
+  requireAppInScopes,
+} from "#procedures";
 import { createPublicId } from "#public-id";
 import {
   canonicalizeScope,
@@ -28,7 +34,7 @@ export const AppWithCurrentDeployment = App.omit({ scopeKey: true }).extend({
   views: AppDeployment.shape.views,
 });
 const uuidPattern =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
 const createUniqueAppPublicId = async (projectId: string) => {
   for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -83,6 +89,7 @@ const listApps = cliRouter
           where: {
             status: "published",
           },
+          with: { app: { columns: { publicId: true } } },
         },
       },
     });
@@ -183,6 +190,64 @@ const createApp = cliRouter
     body: await createAppRecord(context, input.body),
   }));
 
+// Only the trusted host may select a source outside the destination scope.
+const installApp = protectedRouter
+  .meta(openapi({ method: "POST", path: "/apps/{appId}/install" }))
+  .input(
+    z.object({
+      body: z.strictObject({ scope: scopeSchema }),
+      params: z.object({ appId: z.string().min(1).max(256) }),
+    })
+  )
+  .output(z.object({ body: AppWithCurrentDeployment }))
+  .handler(async ({ context, input }) => {
+    const source = await db.query.app.findFirst({
+      where: {
+        projectId: context.project.id,
+        ...(uuidPattern.test(input.params.appId)
+          ? { id: input.params.appId }
+          : { publicId: input.params.appId }),
+      },
+      with: {
+        currentDeployment: {
+          where: { status: "published" },
+          with: { app: { columns: { publicId: true } } },
+        },
+      },
+    });
+    const deployment = source?.currentDeployment;
+    if (!source || !deployment) {
+      throw new ORPCError("NOT_FOUND", {
+        message: "App has no published deployment.",
+      });
+    }
+
+    const scope = canonicalizeScope(input.body.scope);
+    const [installed] = await db
+      .insert(app)
+      .values({
+        currentDeploymentId: deployment.id,
+        description: source.description,
+        name: source.name,
+        projectId: context.project.id,
+        publicId: await createUniqueAppPublicId(context.project.id),
+        scope: scope.scope,
+        scopeKey: scope.scopeKey,
+      })
+      .returning();
+    if (!installed) {
+      throw new ORPCError("BAD_REQUEST", { message: "Failed to install app." });
+    }
+
+    return {
+      body: withAppAssetUrl(
+        { ...installed, currentDeployment: deployment },
+        context.organization.publicId,
+        context.project.id
+      ),
+    };
+  });
+
 const deleteApp = cliRouter
   .meta(
     openapi({
@@ -196,7 +261,7 @@ const deleteApp = cliRouter
       params: z.object({ appId: z.string() }),
     })
   )
-  .output(z.object({ body: z.object({ id: z.uuid({ version: "v7" }) }) }))
+  .output(z.object({ body: App.pick({ id: true }) }))
   .use(
     requireApp.adaptInput(({ params: { appId }, body: { scope } }) => ({
       appId,
@@ -204,7 +269,40 @@ const deleteApp = cliRouter
     }))
   )
   .handler(async ({ context }) => {
-    await db.delete(app).where(eq(app.id, context.app.id));
+    const dependent = await db.query.app.findFirst({
+      columns: { id: true },
+      where: {
+        currentDeployment: { appId: context.app.id },
+        id: { ne: context.app.id },
+      },
+    });
+    if (dependent) {
+      throw new ORPCError("CONFLICT", {
+        message: "Remove installations using this app before deleting it.",
+      });
+    }
+    try {
+      await db.delete(app).where(eq(app.id, context.app.id));
+    } catch (error) {
+      const candidate =
+        error instanceof Error && error.cause !== undefined
+          ? error.cause
+          : error;
+      const dependencyViolation = z
+        .object({
+          code: z.enum(["23503", "23001"]),
+          constraint: z.literal(
+            "app_current_deployment_id_app_deployment_id_fkey"
+          ),
+        })
+        .safeParse(candidate);
+      if (dependencyViolation.success) {
+        throw new ORPCError("CONFLICT", {
+          message: "Remove installations using this app before deleting it.",
+        });
+      }
+      throw error;
+    }
 
     return { body: { id: context.app.id } };
   });
@@ -350,6 +448,7 @@ export const appRouter = o.router({
   delete: deleteApp,
   deploy,
   get: getApp,
+  install: installApp,
   list: listApps,
   runtimeSession,
   update: updateApp,

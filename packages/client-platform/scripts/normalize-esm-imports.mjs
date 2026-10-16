@@ -37,6 +37,15 @@ const visit = async (dir) => {
           if (specifier === undefined) {
             return;
           }
+          if (!entry.name.endsWith(".gen.ts") && specifier.startsWith("../")) {
+            const target = path.resolve(dir, specifier);
+            const alias = `#${path.relative(root, target).replaceAll("\\", "/").replace(/\.js$/u, "")}`;
+            output = output.replaceAll(
+              `${match[1]}${specifier}${match[1]}`,
+              `${match[1]}${alias}${match[1]}`
+            );
+            return;
+          }
           if (specifier.endsWith(".js")) {
             return;
           }
@@ -66,6 +75,17 @@ const visit = async (dir) => {
           );
         }
       );
+      if (
+        filename === path.join(root, "client/client/index.ts") &&
+        !output.includes(
+          "oxlint-disable-next-line anti-slop/no-shape-in-symbol-names"
+        )
+      ) {
+        output = output.replace(
+          "  TDataShape,",
+          "  // oxlint-disable-next-line anti-slop/no-shape-in-symbol-names -- This re-exports the generated client API; changing its public name would break generated consumers.\n  TDataShape,"
+        );
+      }
       if (output !== input) {
         await writeFile(filename, output);
       }

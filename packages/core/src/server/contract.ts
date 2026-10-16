@@ -19,6 +19,7 @@ import type {
   TailorKitServerBaseOptions,
   TailorKitHandlerOptions,
   TailorKitHostContext,
+  TailorKitInstallAppOptions,
   TailorKitServerInputOptions,
 } from "./types";
 
@@ -160,6 +161,15 @@ export const createServer = <const T extends TailorKitContract>(
   return {
     ...server,
     contract,
+    experimental: {
+      installApp: async (
+        input: TailorKitInstallAppOptions<ContractScopes<T>>
+      ) =>
+        await server.experimental.installApp({
+          appId: input.appId,
+          scope: input.scope,
+        }),
+    },
     handler: async (
       request: Request,
       handlerOptions: TailorKitHandlerOptions<Partial<ContractScopes<T>>>

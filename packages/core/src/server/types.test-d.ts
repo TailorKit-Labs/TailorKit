@@ -2,8 +2,10 @@ import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { expectTypeOf } from "vite-plus/test";
 import { z } from "zod";
 
+import { defineContract } from "#schema/contract";
 import type { EmptyDefinitionMap } from "#schema/shared";
 
+import { createServer } from "./contract";
 import { createTailorKitServer } from "./handler";
 import type { TailorKitServerOptions, TailorKitHostContext } from "./types";
 
@@ -130,3 +132,30 @@ void standardOnlyServer.handler(
     authenticate: () => ({ scopes: { account: { accountId: "acct_1" } } }),
   }
 );
+
+const contractServer = createServer({
+  baseUrl: "https://example.com/api/tailorkit",
+  contract: defineContract({ scopes: namedScopes }),
+});
+for (const installApp of [
+  scopedServer.experimental.installApp,
+  contractServer.experimental.installApp,
+]) {
+  void installApp({
+    appId: "app",
+    scope: { name: "org", value: { orgId: "org_1" } },
+  });
+  void installApp({
+    appId: "app",
+    scope: { name: "userOrg", value: { orgId: "org_1", userId: "user_1" } },
+  });
+  // @ts-expect-error installation requires a declared scope name
+  void installApp({ appId: "app", scope: { name: "missing", value: {} } });
+  void installApp({
+    appId: "app",
+    // @ts-expect-error the named scope's value must include its required fields
+    scope: { name: "userOrg", value: { orgId: "org_1" } },
+  });
+  // @ts-expect-error installation requires an explicit scope
+  void installApp({ appId: "app" });
+}

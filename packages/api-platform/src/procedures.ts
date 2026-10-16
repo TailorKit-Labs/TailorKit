@@ -48,7 +48,12 @@ export const findAppInScopes = async (
             )
           ),
       },
-      with: { currentDeployment: { where: { status: "published" } } },
+      with: {
+        currentDeployment: {
+          where: { status: "published" },
+          with: { app: { columns: { publicId: true } } },
+        },
+      },
     });
 
   const app =
