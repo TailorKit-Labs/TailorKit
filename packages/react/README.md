@@ -30,6 +30,6 @@ Enabled controls participate in Tab and Shift+Tab navigation and show a focus ou
 
 Children provide the accessible name. Set `ariaLabel` for an explicit name, including icon-only actions. `disabled` exposes `aria-disabled="true"`, sets `tabIndex={-1}`, and blocks pointer, keyboard, and programmatic click activation. The API also permits omitting `onPress`.
 
-Style interactions with `:hover`, `:active`, `:focus-visible`, and `:disabled` conditional token values. `:active` includes held keyboard activation; `:disabled` targets the ARIA disabled state and suppresses other interaction styles. Each style accepts responsive breakpoint values. The default focus indicator uses the browser's `outline: auto` with a 2px offset. It does not require a host CSS variable or focus-color token. Its appearance follows the browser and platform.
+Style interactions with `:hover`, `:active`, `:focus-visible`, and `:disabled` conditional token values. `:active` includes held keyboard activation; `:disabled` targets the ARIA disabled state and suppresses other interaction styles. Each style accepts responsive breakpoint values. The focus indicator uses `outline: auto`, letting the browser choose its appearance. Pressable does not specify an outline width, color, or offset, and does not require a host CSS variable or focus-color token.
 
 DOM events, keyboard state, focus, and styles stay in the React host. Only the zero-argument `onPress?: () => void` callback is dispatched into the sandbox. The host-provided Button and other primitives retain their existing behavior.

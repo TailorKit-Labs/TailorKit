@@ -111,7 +111,7 @@ it("builds responsive Pressable states in interaction precedence order", () => {
   );
   expect(css).toContain("outline: auto;");
   expect(css).not.toContain("--ring");
-  expect(css).toContain("outline-offset: 2px;");
+  expect(css).not.toContain("outline-offset:");
   expect(css).not.toContain(":enabled");
   expect(css).not.toContain(":disabled");
   expect(css).not.toContain("outline: none");

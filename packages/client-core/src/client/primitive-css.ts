@@ -233,7 +233,7 @@ export const buildPrimitiveCss = ({
   const rules = buildStyleRules(selector, props, theme, base);
   if (pressable) {
     rules.push(
-      `${selector}:not([aria-disabled="true"]):focus-visible { outline: auto; outline-offset: 2px; }`,
+      `${selector}:not([aria-disabled="true"]):focus-visible { outline: auto; }`,
       `${selector}[aria-disabled="true"] { cursor: default; }`
     );
   }
