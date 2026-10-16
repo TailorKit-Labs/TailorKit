@@ -1,5 +1,11 @@
 # @tailorkit/client-platform
 
+## 0.1.0-beta.39
+
+### Minor Changes
+
+- ad770d2: Add `tailorkit.experimental.installApp({ appId, scope: { name, value } })` to the host server SDK. Install an app's current published deployment into a declared scope in the same project, with an independent installation identity and runtime data. Validate scope inputs against the host contract, keep project credentials server-side, and return the installed app with its views and existing asset URLs. Installations stay pinned when the source app is redeployed.
+
 ## 0.1.0-beta.38
 
 No changes in this release.
