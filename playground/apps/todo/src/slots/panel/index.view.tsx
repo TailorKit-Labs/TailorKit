@@ -3,6 +3,8 @@ import { defineView } from "tailorkit/client";
 
 import { Box, Button, Flex, Input, tools } from "#tailorkit";
 
+import { PressablePrototype } from "./pressable-prototype";
+
 interface Todo {
   id: string;
   title: string;
@@ -175,6 +177,7 @@ const TodoPanel = () => {
             </Flex>
           ))}
         </Flex>
+        <PressablePrototype />
       </Flex>
     </Box>
   );

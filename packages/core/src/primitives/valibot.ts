@@ -2,7 +2,11 @@ import * as v from "valibot";
 
 import type { ComponentDefinition } from "#schema/index";
 
-import { primitiveDefinitions, mapPrimitiveDefinitions } from "./definition";
+import {
+  primitiveDefinitions,
+  primitiveInteractionStates,
+  mapPrimitiveDefinitions,
+} from "./definition";
 import type { PrimitiveName, PrimitivePropDefinition } from "./definition";
 import { resolveTheme } from "./theme";
 import type { TailorKitTheme } from "./theme";
@@ -22,28 +26,42 @@ const tokenPicklist = (tokens: Record<string, string> | undefined): Schema => {
   return v.picklist(keys);
 };
 
-const responsive = (schema: Schema, theme: TailorKitTheme): Schema => {
+const responsive = (
+  schema: Schema,
+  theme: TailorKitTheme,
+  interactive = true
+): Schema => {
   const fields: FieldValidators = {};
+  fields.default = v.optional(schema);
   for (const key of Object.keys(theme.breakpoints ?? {})) {
     fields[key] = v.optional(schema);
   }
+  if (interactive) {
+    const stateValue = v.optional(responsive(schema, theme, false));
+    for (const state of primitiveInteractionStates) {
+      fields[state] = stateValue;
+    }
+  }
   return v.union([schema, v.strictObject(fields)]);
 };
-
-const optionalResponsive = (schema: Schema, theme: TailorKitTheme): Schema =>
-  v.optional(responsive(schema, theme));
 
 const propSchema = (
   definition: PrimitivePropDefinition,
   theme: TailorKitTheme
 ): Schema => {
+  if (definition.kind === "boolean") {
+    return v.optional(v.boolean());
+  }
+  if (definition.kind === "string") {
+    return v.optional(v.string());
+  }
   const schema =
     definition.kind === "token"
       ? tokenPicklist(theme.tokens?.[definition.token])
       : v.picklist(definition.values);
   return definition.responsive === false
     ? v.optional(schema)
-    : optionalResponsive(schema, theme);
+    : v.optional(responsive(schema, theme));
 };
 
 const primitiveFields = (
@@ -59,7 +77,7 @@ const primitiveFields = (
 export const primitives = (theme: TailorKitTheme = {}): PrimitiveComponents => {
   const resolvedTheme = resolveTheme(theme);
   const components = mapPrimitiveDefinitions((name) => ({
-    callbacks: {},
+    callbacks: name === "Pressable" ? { onPress: {} } : {},
     children: true as const,
     fields: v.strictObject(primitiveFields(name, resolvedTheme)),
   }));

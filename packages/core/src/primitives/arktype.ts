@@ -2,7 +2,11 @@ import { type } from "arktype";
 
 import type { ComponentDefinition } from "#schema/index";
 
-import { primitiveDefinitions, mapPrimitiveDefinitions } from "./definition";
+import {
+  primitiveDefinitions,
+  primitiveInteractionStates,
+  mapPrimitiveDefinitions,
+} from "./definition";
 import type { PrimitiveName, PrimitivePropDefinition } from "./definition";
 import { resolveTheme } from "./theme";
 import type { TailorKitTheme } from "./theme";
@@ -24,16 +28,24 @@ const tokenExpr = (tokens: Record<string, string> | undefined): string => {
   return keys.map((key) => `'${key}'`).join(" | ");
 };
 
-const responsive = (expr: string, theme: TailorKitTheme) => {
+const responsive = (
+  expr: string,
+  theme: TailorKitTheme,
+  interactive = true
+): ReturnType<typeof type.raw> => {
   const fields: FieldValidators = {};
+  fields["default?"] = expr;
   for (const key of Object.keys(theme.breakpoints ?? {})) {
     fields[`${key}?`] = expr;
   }
-  return type.raw(expr).or(fields).onUndeclaredKey("reject");
+  if (interactive) {
+    const stateValue = responsive(expr, theme, false);
+    for (const state of primitiveInteractionStates) {
+      fields[`${state}?`] = stateValue;
+    }
+  }
+  return type.raw(expr).or(fields).onDeepUndeclaredKey("reject");
 };
-
-const optionalResponsive = (expr: string, theme: TailorKitTheme) =>
-  responsive(expr, theme);
 
 const valueExpr = (values: readonly (number | string)[]): string =>
   values
@@ -43,14 +55,15 @@ const valueExpr = (values: readonly (number | string)[]): string =>
 const propExpr = (
   definition: PrimitivePropDefinition,
   theme: TailorKitTheme
-) => {
+): Parameters<typeof type>[0] => {
+  if (definition.kind === "boolean" || definition.kind === "string") {
+    return definition.kind;
+  }
   const expr =
     definition.kind === "token"
       ? tokenExpr(theme.tokens?.[definition.token])
       : valueExpr(definition.values);
-  return definition.responsive === false
-    ? expr
-    : optionalResponsive(expr, theme);
+  return definition.responsive === false ? expr : responsive(expr, theme);
 };
 
 const primitiveFields = (
@@ -66,7 +79,7 @@ const primitiveFields = (
 export const primitives = (theme: TailorKitTheme = {}): PrimitiveComponents => {
   const resolvedTheme = resolveTheme(theme);
   const components = mapPrimitiveDefinitions((name) => ({
-    callbacks: {},
+    callbacks: name === "Pressable" ? { onPress: {} } : {},
     children: true as const,
     fields: type(primitiveFields(name, resolvedTheme)).onDeepUndeclaredKey(
       "reject"

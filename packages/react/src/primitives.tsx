@@ -51,6 +51,67 @@ const Primitive = ({
   );
 };
 
+const isStringValue = <TValue,>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
+const isPressCallback = <TValue,>(
+  value: TValue
+): value is TValue & (() => void) => typeof value === "function";
+
+const Pressable = ({
+  props,
+  children,
+}: {
+  props: PrimitiveProps;
+  children?: ReactNode;
+}): ReactNode => {
+  const context = useContext(PrimitiveThemeContext);
+  const nodeId = usePrimitiveNodeId();
+  const displays = {
+    box: "block",
+    flex: "flex",
+    grid: "grid",
+    inline: "inline-flex",
+  } as const;
+  const { ariaLabel, layout, onPress } = props;
+  const display =
+    layout === "box" || layout === "flex" || layout === "grid"
+      ? displays[layout]
+      : displays.inline;
+  const disabled = props.disabled === true;
+  const css = context
+    ? buildPrimitiveCss({
+        display,
+        nodeId,
+        pressable: true,
+        props,
+        theme: context.theme,
+        viewId: context.viewId,
+      })
+    : "";
+
+  return (
+    <>
+      {css === "" ? null : (
+        <style data-tailorkit-node-style={nodeId}>{css}</style>
+      )}
+      <button
+        aria-label={isStringValue(ariaLabel) ? ariaLabel : undefined}
+        data-tailorkit-node={nodeId}
+        disabled={disabled}
+        onClick={() => {
+          if (!disabled && isPressCallback(onPress)) {
+            onPress();
+          }
+        }}
+        type="button"
+      >
+        {children}
+      </button>
+    </>
+  );
+};
+
 export const primitives = {
   Box: ({
     props,
@@ -96,6 +157,13 @@ export const primitives = {
       {children}
     </Primitive>
   ),
+  Pressable: ({
+    props,
+    children,
+  }: {
+    props: PrimitiveProps;
+    children?: ReactNode;
+  }) => <Pressable props={props}>{children}</Pressable>,
 } as const;
 
 export type PrimitiveStyle = CSSProperties;

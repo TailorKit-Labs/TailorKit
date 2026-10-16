@@ -2,6 +2,7 @@ import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
+  resolveJsonSchema,
   SerializedComponent as SerializedComponentSchema,
   TailorKitSchemaSpec,
 } from "@tailorkit/core/spec";
@@ -23,6 +24,8 @@ const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
   typeof value === "object" && value !== null;
 
 interface JsonSchema {
+  $defs?: Record<string, JsonSchema>;
+  $ref?: string;
   additionalProperties?: boolean | JsonSchema;
   anyOf?: JsonSchema[];
   oneOf?: JsonSchema[];
@@ -45,7 +48,6 @@ interface SerializedCallback {
 
 interface SerializedComponent {
   callbacks?: Record<string, SerializedCallback>;
-  fieldKeys?: string[];
   fields?: JsonSchema;
   children?: boolean;
 }
@@ -99,7 +101,13 @@ import { createRemoteComponent } from "tailorkit/client";
 
 const fallbackObjectType = "Record<string, never>";
 
-const primitiveComponentNames = new Set(["Box", "Flex", "Grid", "Inline"]);
+const primitiveComponentNames = new Set([
+  "Box",
+  "Flex",
+  "Grid",
+  "Inline",
+  "Pressable",
+]);
 
 const quote = (value: string): string => JSON.stringify(value);
 
@@ -319,25 +327,13 @@ const toTypeName = (name: string): string => {
 
 const getComponentFields = (
   component: SerializedComponent
-): NonNullable<JsonSchema["properties"]> => {
-  if (component.fields?.properties !== undefined) {
-    return component.fields.properties;
-  }
-
-  const fields: Record<string, JsonSchema> = {};
-
-  for (const key of component.fieldKeys ?? []) {
-    fields[key] = {};
-  }
-
-  return fields;
-};
+): NonNullable<JsonSchema["properties"]> => component.fields?.properties ?? {};
 
 const renderResponsiveType = (
   schema: JsonSchema | undefined,
   depth: number
 ): string | undefined => {
-  if (schema?.anyOf === undefined || schema.anyOf.length !== 2) {
+  if (schema?.anyOf?.length !== 2) {
     return undefined;
   }
 
@@ -368,19 +364,27 @@ const renderResponsiveType = (
     return "never";
   }
 
-  const properties = Object.values(responsiveOption.properties ?? {});
+  const properties = Object.entries(responsiveOption.properties ?? {});
   if (properties.length === 0) {
     return undefined;
   }
-
-  const responsiveTypes = properties.map((property) =>
-    toTypeScriptType(property, depth)
-  );
-  if (responsiveTypes.some((type) => type !== scalarType && type !== "never")) {
-    return undefined;
+  let hasStates = false;
+  for (const [key, property] of properties) {
+    const valueType = toTypeScriptType(property, depth);
+    const matchesScalar = valueType === scalarType || valueType === "never";
+    if (key.startsWith(":")) {
+      hasStates = true;
+      if (
+        !matchesScalar &&
+        renderResponsiveType(property, depth) !== `Responsive<${scalarType}>`
+      ) {
+        return undefined;
+      }
+    } else if (!matchesScalar) {
+      return undefined;
+    }
   }
-
-  return `Responsive<${scalarType}>`;
+  return `${hasStates ? "Conditional" : "Responsive"}<${scalarType}>`;
 };
 
 const renderFieldType = (
@@ -427,9 +431,32 @@ const renderTypeAliases = (
   components: Record<string, SerializedComponent>,
   aliases: Record<string, string>
 ): string => {
+  const breakpoints = new Set<string>();
+  const states = new Set<string>();
+  for (const [name, component] of Object.entries(components)) {
+    if (!primitiveComponentNames.has(name)) {
+      continue;
+    }
+    for (const schema of Object.values(getComponentFields(component))) {
+      for (const option of schema.anyOf ?? schema.oneOf ?? []) {
+        if (option.type !== "object") {
+          continue;
+        }
+        for (const key of Object.keys(option.properties ?? {})) {
+          if (key.startsWith(":")) {
+            states.add(key);
+          } else if (key !== "default") {
+            breakpoints.add(key);
+          }
+        }
+      }
+    }
+  }
   const lines = [
-    'export type Breakpoint = "base" | "sm" | "md" | "lg" | "xl" | "2xl";',
-    "export type Responsive<TValue> = TValue | Partial<Record<Breakpoint, TValue>>;",
+    `export type Breakpoint = ${[...breakpoints].map(quote).join(" | ") || "never"};`,
+    `export type InteractionState = ${[...states].map(quote).join(" | ") || "never"};`,
+    'export type Responsive<TValue> = TValue | Partial<Record<"default" | Breakpoint, TValue>>;',
+    'export type Conditional<TValue> = TValue | (Partial<Record<"default" | Breakpoint, TValue>> & Partial<Record<InteractionState, Responsive<TValue>>>);',
   ];
   const emitted = new Set<string>();
 
@@ -497,8 +524,11 @@ const renderComponent = (
   const lines = [`export interface ${propsName} {`];
 
   for (const [key, schema] of Object.entries(fields)) {
+    const alias = primitiveComponentNames.has(name)
+      ? fieldAliases[key]
+      : undefined;
     lines.push(
-      `  ${toPropertyKey(key)}?: ${fieldAliases[key] ?? renderFieldType(schema, 2)};`
+      `  ${toPropertyKey(key)}?: ${alias ?? renderFieldType(schema, 2)};`
     );
   }
 
@@ -602,10 +632,66 @@ const renderToolRuntime = (
   return lines.join("\n");
 };
 
+const resolveSchema = (
+  schema: JsonSchema | undefined
+): JsonSchema | undefined => {
+  if (schema === undefined) {
+    return undefined;
+  }
+  return resolveJsonSchema({ ...schema });
+};
+
+const resolveTools = (tools: SerializedTools): SerializedTools =>
+  Object.fromEntries(
+    Object.entries(tools).map(([key, value]) => [
+      key,
+      isSerializedTool(value)
+        ? {
+            ...value,
+            input: resolveSchema(value.input),
+            output: resolveSchema(value.output),
+          }
+        : resolveTools(value),
+    ])
+  );
+
+const resolveSchemaFile = (
+  schema: TailorKitSchemaFile
+): TailorKitSchemaFile => ({
+  ...schema,
+  components: Object.fromEntries(
+    Object.entries(schema.components ?? {}).map(([name, component]) => [
+      name,
+      {
+        ...component,
+        callbacks: Object.fromEntries(
+          Object.entries(component.callbacks ?? {}).map(([key, callback]) => [
+            key,
+            {
+              ...callback,
+              input: resolveSchema(callback.input),
+              output: resolveSchema(callback.output),
+            },
+          ])
+        ),
+        fields: resolveSchema(component.fields),
+      },
+    ])
+  ),
+  tools: resolveTools(schema.tools ?? {}),
+  views: Object.fromEntries(
+    Object.entries(schema.views ?? {}).map(([name, view]) => [
+      name,
+      { ...view, context: resolveSchema(view.context) },
+    ])
+  ),
+});
+
 export const renderGeneratedTypes = (
-  schema: TailorKitSchemaFile,
+  schemaFile: TailorKitSchemaFile,
   options: { serverModule?: string } = {}
 ): string => {
+  const schema = resolveSchemaFile(schemaFile);
   const toolsType = renderTools(schema.tools ?? {});
   const components = schema.components ?? {};
   const fieldAliases = collectFieldTypeAliases(components);
