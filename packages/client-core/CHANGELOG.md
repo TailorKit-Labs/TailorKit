@@ -1,5 +1,15 @@
 # @tailorkit/client-core
 
+## 0.1.0-beta.37
+
+### Patch Changes
+
+- Updated dependencies [0d72562]
+  - @tailorkit/core@0.1.0-beta.37
+  - @tailorkit/app@0.1.0-beta.37
+  - @tailorkit/sandbox@0.1.0-beta.37
+  - @tailorkit/client-platform@0.1.0-beta.37
+
 ## 0.1.0-beta.36
 
 ### Patch Changes

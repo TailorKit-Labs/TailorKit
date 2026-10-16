@@ -1,5 +1,11 @@
 # @tailorkit/app
 
+## 0.1.0-beta.37
+
+### Patch Changes
+
+- 0d72562: Name empty contract tables and server function defaults with the exported EmptyDefinitionMap and EmptyFunctions types while preserving their key inference.
+
 ## 0.1.0-beta.36
 
 No changes in this release.

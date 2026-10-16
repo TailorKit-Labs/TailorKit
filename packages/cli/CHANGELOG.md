@@ -1,5 +1,16 @@
 # @tailorkit/cli
 
+## 0.1.0-beta.37
+
+### Patch Changes
+
+- 1f6b983: Include the compiler command and TypeScript diagnostics when deployment stops after a failed type check, including non-interactive agent deployments.
+- Updated dependencies [f2da040]
+- Updated dependencies [0d72562]
+  - @tailorkit/vite@0.1.0-beta.37
+  - @tailorkit/core@0.1.0-beta.37
+  - @tailorkit/client-platform@0.1.0-beta.37
+
 ## 0.1.0-beta.36
 
 ### Patch Changes
