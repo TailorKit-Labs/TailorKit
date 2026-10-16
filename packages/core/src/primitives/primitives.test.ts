@@ -143,6 +143,23 @@ describe("primitive schema components", () => {
       arktypePrimitives(theme),
     ]) {
       const pressable = suite.Pressable;
+      // Omitted layout uses the host's inline default, never child inference.
+      for (const layout of [undefined, "inline", "box", "flex", "grid"]) {
+        const fields = layout === undefined ? {} : { layout };
+        expect(isValid(pressable.fields, fields)).toBe(true);
+      }
+      expect(
+        isValid(pressable.fields, {
+          align: "center",
+          columns: { default: 1, lg: 2 },
+          direction: "column",
+          gap: "sm",
+          grow: "1",
+          justify: "between",
+          padding: { default: "sm", lg: "md" },
+          wrap: "wrap",
+        })
+      ).toBe(true);
       expect(
         isValid(pressable.fields, {
           ariaLabel: "Open project",
@@ -160,6 +177,12 @@ describe("primitive schema components", () => {
       ).toBe(true);
       for (const invalid of [
         { layout: "link" },
+        { layout: { default: "inline", lg: "flex" } },
+        { ariaLabel: 1 },
+        { asChild: true },
+        { onKeyDown: "sandbox-handler" },
+        { tabIndex: 0 },
+        { role: "link" },
         { background: { base: "muted" } },
         { background: { hover: "muted" } },
         { background: { ":custom": "muted" } },

@@ -36,7 +36,7 @@ pnpm playground:todo:build
 
 The host contract exposes these components: the standard `Box`, `Flex`, `Grid`, `Inline`, and `Pressable` primitives, plus `Button` and `Input`. The host maps `Button` and `Input` to `@tailorkit/ui` and uses the standard React renderers for primitives.
 
-The Todo panel includes a Pressable prototype with inline, box, flex, and grid layouts. Try hover, hold, keyboard focus and activation, and the disable toggle.
+The Todo panel includes Pressable examples with inline, box, flex, and grid layouts, an email row with nested layout children, an icon-only action with an explicit name, and a disable toggle. Try hover, hold, Tab / Shift+Tab, Enter, and Space.
 
 Every primitive style prop accepts a token string or a conditional object:
 
@@ -58,7 +58,27 @@ Every primitive style prop accepts a token string or a conditional object:
 
 Use `background="surface"` when no conditions are needed. Supported states are `:hover`, `:active`, `:focus-visible`, and `:disabled`. State values accept a token or a breakpoint object; combine conditions by nesting breakpoints inside a state. `default` supplies the fallback independently of configured breakpoints. Breakpoint names come from `primitives(theme)`; `default` and names beginning with `:` produce type errors and are rejected at runtime. A breakpoint named `hover` is distinct from the `:hover` state.
 
-Within a property, later matching breakpoint entries override earlier ones. List minimum-width breakpoints from smaller to larger for the usual responsive behavior. State styles override ordinary breakpoint styles; active styles override focus-visible and hover styles on conflicting properties. Disabled Pressables ignore the other interaction states. `onPress` runs on activation; state styling stays in the host. Use text or `Inline` children inside the native button and keep nested controls outside it.
+Within a property, later matching breakpoint entries override earlier ones. List minimum-width breakpoints from smaller to larger for the usual responsive behavior. State styles override ordinary breakpoint styles; active styles override focus-visible and hover styles on conflicting properties. Disabled Pressables ignore the other interaction states. `onPress` runs on activation; state styling stays in the host. Pressable renders its own `<div role="button">`; `layout` defaults to `"inline"` (`inline-flex`). `"box"`, `"flex"`, and `"grid"` map to `block`, `flex`, and `grid`. Layout never depends on children. Use `Box`, `Flex`, `Grid`, and `Inline` children to compose content. Nested interactive controls (including other Pressables, buttons, links, and inputs) are unsupported; place them alongside the Pressable.
+
+Enabled Pressables use `tabIndex={0}` and have a visible focus outline. Enter activates on keydown; Space prevents scrolling and activates on keyup. Moving focus or disabling the control cancels a held Space. Activation preserves focus unless the action moves it. Disabled Pressables expose `aria-disabled="true"`, use `tabIndex={-1}`, and block pointer, keyboard, and programmatic clicks. Children supply the accessible name; use `ariaLabel` for an explicit name, especially for icon-only controls. Only the zero-argument `onPress` callback crosses into the sandbox; DOM events, focus, and interaction state remain in the host.
+
+The email row demonstrates nested layout children:
+
+```tsx
+<Pressable
+  layout="flex"
+  align="center"
+  gap="sm"
+  padding="md"
+  onPress={openEmail}
+>
+  <Box grow="1">
+    <Inline>{email.sender}</Inline>
+    <Inline>{email.subject}</Inline>
+  </Box>
+  <Inline>{email.receivedAt}</Inline>
+</Pressable>
+```
 
 Every configured breakpoint needs a media-query width. Generated types reflect the contract's breakpoint names and supported pseudo-classes; `default` is the sole fallback key.
 

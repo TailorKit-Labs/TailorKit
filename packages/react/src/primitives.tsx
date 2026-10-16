@@ -1,7 +1,7 @@
 import { buildPrimitiveCss } from "@tailorkit/client-core";
 import type { PrimitiveProps } from "@tailorkit/client-core";
 import type { TailorKitTheme } from "@tailorkit/core/schema";
-import { createContext, useContext, useId, useMemo } from "react";
+import { createContext, useContext, useId, useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
 interface PrimitiveThemeContextValue {
@@ -79,6 +79,11 @@ const Pressable = ({
       ? displays[layout]
       : displays.inline;
   const disabled = props.disabled === true;
+  const [pressedKey, setPressedKey] = useState<"Enter" | " " | null>(null);
+  // Cancel a held key when disabled, including if re-enabled before keyup.
+  if (disabled && pressedKey !== null) {
+    setPressedKey(null);
+  }
   const css = context
     ? buildPrimitiveCss({
         display,
@@ -95,19 +100,74 @@ const Pressable = ({
       {css === "" ? null : (
         <style data-tailorkit-node-style={nodeId}>{css}</style>
       )}
-      <button
+      {/* oxlint-disable jsx-a11y/prefer-tag-over-role -- Pressable owns a div to support nested block layout primitives. */}
+      <div
+        aria-disabled={disabled || undefined}
         aria-label={isStringValue(ariaLabel) ? ariaLabel : undefined}
+        data-pressed={!disabled && pressedKey !== null ? "" : undefined}
         data-tailorkit-node={nodeId}
-        disabled={disabled}
-        onClick={() => {
-          if (!disabled && isPressCallback(onPress)) {
+        onBlur={() => {
+          setPressedKey(null);
+        }}
+        onClick={(event) => {
+          if (disabled) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+          }
+          if (event.button === 0 && isPressCallback(onPress)) {
             onPress();
           }
         }}
-        type="button"
+        onKeyDown={(event) => {
+          const { key } = event;
+          if (
+            event.target !== event.currentTarget ||
+            (key !== "Enter" && key !== " ")
+          ) {
+            return;
+          }
+          // A div has no native keyboard activation. Prevent defaults (including
+          // Space scrolling) and dispatch directly, without synthesizing a click.
+          event.preventDefault();
+          if (disabled || event.repeat || pressedKey !== null) {
+            return;
+          }
+          setPressedKey(key);
+          if (key === "Enter" && isPressCallback(onPress)) {
+            onPress();
+          }
+        }}
+        onKeyUp={(event) => {
+          const { key } = event;
+          if (
+            event.target !== event.currentTarget ||
+            (key !== "Enter" && key !== " ")
+          ) {
+            return;
+          }
+          event.preventDefault();
+          const activate = !disabled && key === " " && pressedKey === " ";
+          setPressedKey(null);
+          if (activate && isPressCallback(onPress)) {
+            onPress();
+          }
+        }}
+        onPointerDown={(event) => {
+          if (disabled) {
+            event.preventDefault();
+            return;
+          }
+          if (event.button === 0) {
+            event.currentTarget.focus();
+          }
+        }}
+        role="button"
+        tabIndex={disabled ? -1 : 0}
       >
         {children}
-      </button>
+      </div>
+      {/* oxlint-enable jsx-a11y/prefer-tag-over-role */}
     </>
   );
 };

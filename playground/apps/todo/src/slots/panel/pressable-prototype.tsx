@@ -21,9 +21,11 @@ export const PressablePrototype = () => {
 
   return (
     <Flex direction="column" gap="sm">
-      <Box>Pressable prototype</Box>
+      <Box>Pressable layouts</Box>
       <Box textColor="muted">
-        Hover, hold, or use Tab then Enter / Space. Pressed {presses} times.
+        Use Tab / Shift+Tab to focus. Enter activates on press; Space activates
+        on release. Disabled examples leave the tab order. Pressed {presses}{" "}
+        times.
       </Box>
       <Flex align="center" gap="sm" wrap="wrap">
         <Pressable
@@ -48,6 +50,17 @@ export const PressablePrototype = () => {
         >
           {disabled ? "Enable examples" : "Disable examples"}
         </Pressable>
+        <Pressable
+          ariaLabel="Open next email"
+          background={background}
+          disabled={disabled}
+          onPress={countPress}
+          padding="sm"
+          radius="md"
+          textColor={textColor}
+        >
+          →
+        </Pressable>
       </Flex>
       <Pressable
         background={background}
@@ -64,6 +77,7 @@ export const PressablePrototype = () => {
         A full-width box action
       </Pressable>
       <Pressable
+        ariaLabel="Open email from Alex Chen: Project update"
         align="center"
         background={background}
         border="solid"
@@ -78,8 +92,11 @@ export const PressablePrototype = () => {
         textColor={textColor}
         width="full"
       >
-        <Inline>Open project</Inline>
-        <Inline textColor="muted">→</Inline>
+        <Box grow="1">
+          <Inline>Alex Chen: </Inline>
+          <Inline>Project update</Inline>
+        </Box>
+        <Inline textColor="muted">10:42</Inline>
       </Pressable>
       <Pressable
         background={background}
@@ -98,6 +115,10 @@ export const PressablePrototype = () => {
         <Inline>Grid action</Inline>
         <Inline textColor="muted">Two columns</Inline>
       </Pressable>
+      <Box textColor="muted">
+        Nest Box, Flex, Grid, or Inline for layout. Keep buttons, links, inputs,
+        and other interactive controls outside Pressable.
+      </Box>
     </Flex>
   );
 };
