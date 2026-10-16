@@ -1,5 +1,11 @@
 # @tailorkit/core
 
+## 0.1.0-beta.41
+
+### Patch Changes
+
+- @tailorkit/client-platform@0.1.0-beta.41
+
 ## 0.1.0-beta.40
 
 ### Minor Changes
