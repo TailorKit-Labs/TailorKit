@@ -1,5 +1,16 @@
 # tailorkit
 
+## 0.1.0-beta.38
+
+### Patch Changes
+
+- Updated dependencies [469d8c2]
+  - @tailorkit/core@0.1.0-beta.38
+  - @tailorkit/cli@0.1.0-beta.38
+  - @tailorkit/react@0.1.0-beta.38
+  - @tailorkit/app@0.1.0-beta.38
+  - @tailorkit/vite@0.1.0-beta.38
+
 ## 0.1.0-beta.37
 
 ### Patch Changes
