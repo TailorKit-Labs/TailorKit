@@ -7,6 +7,26 @@ import { expect, it } from "vite-plus/test";
 import { tailorkitConfigSchema } from "./config";
 import { loadTailorKitConfig } from "./loader";
 
+it.each(["", "   "])("rejects a blank app name: %j", (name) => {
+  expect(() =>
+    tailorkitConfigSchema.parse({ host: "https://host.test", name })
+  ).toThrow();
+});
+
+it("loads and trims the configured app name", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-named-config-"));
+  try {
+    await writeFile(
+      path.join(root, "tailorkit.config.mjs"),
+      'export default { host: "https://host.test", name: "  My App  " };'
+    );
+    const loaded = await loadTailorKitConfig(undefined, root);
+    expect(loaded.config.name).toBe("My App");
+  } finally {
+    await rm(root, { force: true, recursive: true });
+  }
+});
+
 it.each([{ server: { entry: "./backend.ts" } }])(
   "accepts configured server entry points: %j",
   (override) => {

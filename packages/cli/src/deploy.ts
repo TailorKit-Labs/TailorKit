@@ -95,6 +95,10 @@ const deploymentPublishSchema = z.object({
   status: z.string().optional(),
 });
 const appCreateSchema = z.object({ id: z.string() });
+const appDetailsSchema = z.object({
+  description: z.string().nullable(),
+  name: z.string(),
+});
 
 export interface DeployResult {
   appId: string;
@@ -430,7 +434,7 @@ export const runDeploy = async (
     ) {
       throw new Error("The requested deployment app was not found.");
     }
-    const appName = await readAppName(loaded.root);
+    const appName = loaded.config.name ?? (await readAppName(loaded.root));
     const shouldCreateApp = await options.onMissingAppId?.({
       appName,
       configPath: loaded.filepath,
@@ -537,6 +541,23 @@ export const runDeploy = async (
       await uploadAsset(upload, logo.content);
     }),
   ]);
+
+  if (loaded.config.name !== undefined && !createdApp) {
+    const app = unwrapRpcResult(
+      appDetailsSchema,
+      await client.apps.get({ appId })
+    );
+    if (app.name !== loaded.config.name) {
+      unwrapRpcResult(
+        appCreateSchema,
+        await client.apps.update({
+          appId,
+          description: app.description,
+          name: loaded.config.name,
+        })
+      );
+    }
+  }
 
   const published = unwrapRpcResult(
     deploymentPublishSchema,

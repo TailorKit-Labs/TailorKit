@@ -1,0 +1,244 @@
+import { once } from "node:events";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { createServer } from "node:http";
+import type { IncomingMessage, ServerResponse } from "node:http";
+import { tmpdir } from "node:os";
+import path from "node:path";
+
+import { SignJWT } from "jose";
+import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
+import { z } from "zod";
+
+import { runDeploy } from "./deploy";
+import { linkTestDependencies } from "./test-utils";
+
+const scope = { name: "user", value: { userId: "one" } };
+const requests: { body: string; method?: string; path?: string }[] = [];
+let root: string;
+let host: string;
+let missingApp: boolean;
+let currentName: string;
+let description: string | null;
+let updateFails: boolean;
+
+type PlatformResponse =
+  | { scope: typeof scope }
+  | { description: string | null; name: string }
+  | { id: string; status?: string }
+  | { code?: string; message: string }
+  | { assets: { uploadUrl: string }[]; deployment: { id: string } };
+
+const respond = (
+  response: ServerResponse,
+  data: PlatformResponse,
+  status = 200
+) => {
+  response.writeHead(status, { "content-type": "application/json" });
+  response.end(JSON.stringify(data));
+};
+
+const handleRequest = async (
+  request: IncomingMessage,
+  response: ServerResponse
+) => {
+  const chunks: Buffer[] = [];
+  request.on("data", (chunk: Buffer) => {
+    chunks.push(chunk);
+  });
+  await once(request, "end");
+  requests.push({
+    body: Buffer.concat(chunks).toString("utf-8"),
+    method: request.method,
+    path: request.url,
+  });
+  switch (request.url ?? "") {
+    case "/cli-auth/verify-token": {
+      respond(response, { scope });
+      return;
+    }
+    case "/apps/app-one/lookup": {
+      respond(response, { description, name: currentName });
+      return;
+    }
+    case "/apps/app-one": {
+      respond(
+        response,
+        updateFails
+          ? { code: "FORBIDDEN", message: "Cannot rename app." }
+          : { id: "app-one" },
+        updateFails ? 403 : 200
+      );
+      return;
+    }
+    case "/apps": {
+      missingApp = false;
+      respond(response, { id: "new-app" });
+      return;
+    }
+    case "/deployments": {
+      if (missingApp) {
+        respond(response, { message: "App not found" }, 404);
+        return;
+      }
+      respond(response, {
+        assets: [{ uploadUrl: `${host}/upload` }],
+        deployment: { id: "deployment" },
+      });
+      return;
+    }
+    case "/upload": {
+      response.end();
+      return;
+    }
+    case "/deployments/deployment": {
+      respond(response, { id: "deployment", status: "published" });
+      return;
+    }
+    default: {
+      respond(response, { message: "Unexpected request" }, 500);
+    }
+  }
+};
+
+const server = createServer((request, response) => {
+  handleRequest(request, response).catch(() => {
+    respond(response, { message: "Test server failed" }, 500);
+  });
+});
+
+beforeEach(async () => {
+  requests.length = 0;
+  missingApp = false;
+  currentName = "Old Name";
+  description = "Keep this description";
+  updateFails = false;
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const address = z.object({ port: z.number() }).parse(server.address());
+  host = `http://127.0.0.1:${address.port}`;
+  const now = Math.floor(Date.now() / 1000);
+  vi.stubEnv(
+    "TAILORKIT_AGENT_TOKEN",
+    await new SignJWT({
+      appId: "app-one",
+      aud: "tailorkit-platform-cli",
+      exp: now + 3600,
+      iat: now,
+      iss: "tailorkit-agent",
+      platformUrl: host,
+      projectId: "project",
+      scope,
+    })
+      .setProtectedHeader({ alg: "HS256", typ: "tailorkit-agent+jwt" })
+      .sign(new TextEncoder().encode("test-only-key"))
+  );
+  root = await mkdtemp(path.join(tmpdir(), "tailorkit-deploy-name-"));
+  await linkTestDependencies(root);
+  await mkdir(path.join(root, "src"));
+  await writeFile(
+    path.join(root, "src/root.tsx"),
+    'import { defineRoute } from "tailorkit/client"; export default defineRoute({ shellComponent: () => null });'
+  );
+  await writeFile(
+    path.join(root, "vite.config.mjs"),
+    'import { tailorkit } from "tailorkit/vite"; export default { plugins: [tailorkit()] };'
+  );
+  await writeFile(
+    path.join(root, "package.json"),
+    JSON.stringify({ name: "package-name", type: "module" })
+  );
+});
+
+afterEach(async () => {
+  vi.unstubAllEnvs();
+  const closed = once(server, "close");
+  server.close();
+  await closed;
+  await rm(root, { force: true, recursive: true });
+});
+
+const writeConfig = async (name?: string) => {
+  await writeFile(
+    path.join(root, "tailorkit.config.ts"),
+    `export default ${JSON.stringify({ host, name })};`
+  );
+};
+
+it.each([
+  { expectedName: "My App", name: "  My App  ", source: "config" },
+  { expectedName: "package-name", name: undefined, source: "package" },
+  { expectedName: undefined, name: undefined, source: "directory" },
+])(
+  "creates replacement apps using the $source name and shows it in the prompt",
+  async ({ expectedName, name, source }) => {
+    missingApp = true;
+    await writeConfig(name);
+    if (source === "directory") {
+      await writeFile(path.join(root, "package.json"), '{"type":"module"}');
+    }
+    const appName = expectedName ?? path.basename(root);
+    const onMissingAppId = vi
+      .fn<NonNullable<Parameters<typeof runDeploy>[0]["onMissingAppId"]>>()
+      .mockResolvedValue(true);
+    expect(
+      await runDeploy({
+        cwd: root,
+        onMissingAppId,
+      })
+    ).toMatchObject({ appId: "new-app", createdApp: true });
+    expect(onMissingAppId).toHaveBeenCalledExactlyOnceWith({
+      appName,
+      configPath: path.join(root, "tailorkit.config.ts"),
+      hostUrl: host,
+      reason: "not-found",
+    });
+    expect(
+      JSON.parse(requests.find((r) => r.path === "/apps")?.body ?? "null")
+    ).toEqual({ description: null, name: appName, scope });
+    expect(
+      await readFile(path.join(root, "tailorkit.config.ts"), "utf-8")
+    ).toContain('appId: "new-app"');
+    expect(
+      requests.some((r) => r.method === "PUT" && r.path !== "/upload")
+    ).toBe(false);
+  }
+);
+
+it.each(["Keep this description", null])(
+  "renames linked apps before publishing and preserves description %j",
+  async (savedDescription) => {
+    description = savedDescription;
+    await writeConfig("  My App  ");
+    await runDeploy({ appId: "app-one", cwd: root });
+    const update = requests.find((r) => r.path === "/apps/app-one");
+    expect(update?.method).toBe("PUT");
+    expect(JSON.parse(update?.body ?? "null")).toEqual({
+      description: savedDescription,
+      name: "My App",
+      scope,
+    });
+    expect(requests.at(-1)?.path).toBe("/deployments/deployment");
+  }
+);
+
+it.each([undefined, "Old Name"])(
+  "keeps existing names without an update when configured as %j",
+  async (name) => {
+    await writeConfig(name);
+    await runDeploy({ cwd: root });
+    expect(requests.some((r) => r.path === "/apps/app-one")).toBe(false);
+    expect(requests.some((r) => r.path === "/apps/app-one/lookup")).toBe(
+      name !== undefined
+    );
+    expect(requests.at(-1)?.path).toBe("/deployments/deployment");
+  }
+);
+
+it("fails deployment if the configured name cannot be synchronized", async () => {
+  updateFails = true;
+  await writeConfig("My App");
+  await expect(runDeploy({ cwd: root })).rejects.toThrow("Cannot rename app.");
+  expect(requests.some((r) => r.path === "/deployments/deployment")).toBe(
+    false
+  );
+});
