@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { promisify } from "node:util";
 import { gzip } from "node:zlib";
 
-import { tailorkitUploadManifestSchema } from "@tailorkit/vite/builder";
+import { tailorkitUploadManifestSchema } from "@tailorkit/vite/upload-manifest";
 import type { Sandbox } from "@vercel/sandbox";
 import { z } from "zod";
 

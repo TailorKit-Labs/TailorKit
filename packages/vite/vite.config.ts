@@ -10,6 +10,7 @@ export default defineConfig({
       config: "src/config/index.ts",
       "config-loader": "src/config/loader.ts",
       index: "src/index.ts",
+      "upload-manifest": "src/builder/upload-manifest.ts",
     },
     format: "esm",
     target: "node20",
