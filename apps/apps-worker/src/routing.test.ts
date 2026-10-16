@@ -18,22 +18,22 @@ const require = <T>(value: T | null | undefined): T => {
 
 const projectId = "22222222-2222-4222-8222-222222222222";
 
-const publicTeamId = "abc123def45678";
+const projectShortId = "abc123def456";
 
-const appPublicId = "app000000001";
+const appShortId = "app000000001";
 
-const rpc = `https://${publicTeamId}.tailorkit.app/p/${projectId}/a/${appPublicId}/rpc`;
+const rpc = `https://${projectShortId}.tailorkit.app/a/${appShortId}/rpc`;
 
-const publication = `https://internal.tailorkit.app/p/${projectId}/a/${appPublicId}/new-deployment`;
+const publication = `https://internal.tailorkit.app/p/${projectId}/a/${appShortId}/new-deployment`;
 
 const secret = "s".repeat(32);
 
 const identity = {
   appId: "private-app",
-  appPublicId,
+  appShortId,
   installationId: "installation",
   projectId,
-  publicTeamId,
+  projectShortId,
 };
 
 const metadata = {
@@ -41,7 +41,7 @@ const metadata = {
   checksum: "a".repeat(64),
   contentLength: 100,
   deploymentId: "private-deployment",
-  objectKey: `teams/${publicTeamId}/projects/${projectId}/apps/${appPublicId}/deployments/deploy000001/server/server.js`,
+  objectKey: `projects/${projectShortId}/apps/${appShortId}/deployments/deploy000001/server/server.js`,
   projectId,
 };
 
@@ -107,21 +107,17 @@ it("forwards stable app RPC routes and body to the installation without caching"
 });
 
 it.each([
-  rpc.replace(publicTeamId, "xyz123def45678"),
-  rpc.replace(projectId, "33333333-3333-4333-8333-333333333333"),
-  rpc.replace(appPublicId, "app000000002"),
-])(
-  "rejects a valid token used on another team, project or app: %s",
-  async (url) => {
-    const awaitedResult1 = await call(post(`${url}/queries`, {}, "session"));
-    expect(awaitedResult1.status).toBe(403);
-    expect(getByName).not.toHaveBeenCalled();
-  }
-);
+  rpc.replace(projectShortId, "xyz123def456"),
+  rpc.replace(appShortId, "app000000002"),
+])("rejects a valid token used on another project or app: %s", async (url) => {
+  const awaitedResult1 = await call(post(`${url}/queries`, {}, "session"));
+  expect(awaitedResult1.status).toBe(403);
+  expect(getByName).not.toHaveBeenCalled();
+});
 
 it("rejects sessions without a signed public app identifier", async () => {
   state.verify.mockReturnValue(
-    Effect.succeed({ ...identity, appPublicId: undefined })
+    Effect.succeed({ ...identity, appShortId: undefined })
   );
   const awaitedResult2 = await call(post(`${rpc}/queries`, {}, "session"));
   expect(awaitedResult2.status).toBe(403);
@@ -166,7 +162,7 @@ it("accepts authenticated publication only on the internal hostname", async () =
   );
   put.mockClear();
   const awaitedResult4 = await call(
-    post(publication.replace("internal", publicTeamId))
+    post(publication.replace("internal", projectShortId))
   );
   expect(awaitedResult4.status).toBe(404);
   expect(put).not.toHaveBeenCalled();
@@ -174,7 +170,7 @@ it("accepts authenticated publication only on the internal hostname", async () =
 
 it.each([
   { projectId: "other" },
-  { objectKey: metadata.objectKey.replace(appPublicId, "app000000002") },
+  { objectKey: metadata.objectKey.replace(appShortId, "app000000002") },
   {
     objectKey: metadata.objectKey.replace(
       "/server/server.js",

@@ -46,7 +46,7 @@
     "@tailorkit/observability": "workspace:*",
     "@vercel/functions": "^3.9.11",
     "drizzle-orm": "catalog:",
-    "nanoid": "^6.0.2",
+    "nanoid": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

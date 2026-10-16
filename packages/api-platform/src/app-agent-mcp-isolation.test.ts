@@ -127,7 +127,7 @@ describe("MCP database authorization", () => {
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
         id: orgId,
         name: "Test team",
-        publicId: "team0000000001",
+        shortId: "team00000001",
         slug: "test-team",
       })
       .returning();
@@ -158,17 +158,17 @@ describe("MCP database authorization", () => {
     const apps = await database.db
       .insert(app)
       .values([
-        { name: "Own", projectId, publicId: "ownapp000001", ...scope },
+        { name: "Own", projectId, shortId: "ownapp000001", ...scope },
         {
           name: "Other",
           projectId: otherProjectId,
-          publicId: "otherapp0001",
+          shortId: "otherapp0001",
           ...scope,
         },
         {
           name: "Out of scope",
           projectId,
-          publicId: "outscope0001",
+          shortId: "outscope0001",
           ...otherScope,
         },
       ])
@@ -224,17 +224,17 @@ describe("MCP database authorization", () => {
       context
     );
     const events = await response.text();
-    expect(events).toContain(ownApp.publicId);
-    expect(events).not.toContain(foreignApp.publicId);
-    expect(events).not.toContain(outOfScopeApp.publicId);
+    expect(events).toContain(ownApp.shortId);
+    expect(events).not.toContain(foreignApp.shortId);
+    expect(events).not.toContain(outOfScopeApp.shortId);
     const otherResponse = await handleAppAgentMcpRequest(
       request("list_apps"),
       otherContext
     );
     const otherEvents = await otherResponse.text();
-    expect(otherEvents).toContain(foreignApp.publicId);
-    expect(otherEvents).not.toContain(ownApp.publicId);
-    expect(otherEvents).not.toContain(outOfScopeApp.publicId);
+    expect(otherEvents).toContain(foreignApp.shortId);
+    expect(otherEvents).not.toContain(ownApp.shortId);
+    expect(otherEvents).not.toContain(outOfScopeApp.shortId);
     expect(state.start).not.toHaveBeenCalled();
     expect(await database.db.select().from(cliToken)).toEqual(existingGrants);
   });
@@ -244,7 +244,7 @@ describe("MCP database authorization", () => {
     await Promise.all(
       [foreignApp, outOfScopeApp].map(async (deniedApp) => {
         await Promise.all(
-          [deniedApp.id, deniedApp.publicId].map(async (appId) => {
+          [deniedApp.id, deniedApp.shortId].map(async (appId) => {
             const response = await handleAppAgentMcpRequest(
               request("edit_app", { appId, prompt: "Change it" }),
               context
@@ -262,7 +262,7 @@ describe("MCP database authorization", () => {
 
   it("creates and revokes only its own single-scope agent grant", async () => {
     const response = await handleAppAgentMcpRequest(
-      request("edit_app", { appId: ownApp.publicId, prompt: "Change it" }),
+      request("edit_app", { appId: ownApp.shortId, prompt: "Change it" }),
       context
     );
     expect(await response.text()).not.toContain('"isError":true');

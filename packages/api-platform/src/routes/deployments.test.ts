@@ -62,7 +62,7 @@ const publishContextImplementation = (downloadUrl: string): Context => ({
     logo: null,
     metadata: null,
     name: "Analytical Engines",
-    publicId: "team0000000001",
+    shortId: "team00000001",
     slug: "analytical-engines",
   },
   project: {
@@ -70,6 +70,7 @@ const publishContextImplementation = (downloadUrl: string): Context => ({
     id: projectId,
     name: "Compiler",
     organizationId,
+    shortId: "proj00000001",
     slug: "compiler",
     updatedAt: new Date(),
   },
@@ -100,7 +101,7 @@ describe("platform deployment uploads", () => {
       createdAt: new Date(),
       id: organizationId,
       name: "Analytical Engines",
-      publicId: "team0000000001",
+      shortId: "team00000001",
       slug: "analytical-engines",
     });
     await db.insert(projectTable).values({
@@ -114,7 +115,7 @@ describe("platform deployment uploads", () => {
     await db.insert(appTable).values({
       name: "Inbox",
       projectId,
-      publicId: "app000000001",
+      shortId: "app000000001",
       ...canonicalizeScope(productionScope),
     });
   });
@@ -135,7 +136,7 @@ describe("platform deployment uploads", () => {
       .insert(appDeployment)
       .values({
         appId: currentApp.id,
-        publicId: "dep000000001",
+        shortId: "dep000000001",
         status: "uploading",
       })
       .returning();
@@ -148,7 +149,7 @@ describe("platform deployment uploads", () => {
       contentLength: 11,
       contentType: "image/svg+xml",
       encoding: null,
-      objectKey: "teams/team0000000001/logo-dark.svg",
+      objectKey: "projects/proj00000001/apps/app000000001/logos/legacy.svg",
     });
     return deployment;
   };
@@ -584,7 +585,7 @@ describe("platform deployment uploads", () => {
         logo: null,
         metadata: null,
         name: "Analytical Engines",
-        publicId: "team0000000001",
+        shortId: "team00000001",
         slug: "analytical-engines",
       },
       project: {
@@ -592,6 +593,7 @@ describe("platform deployment uploads", () => {
         id: projectId,
         name: "Compiler",
         organizationId,
+        shortId: "proj00000001",
         slug: "compiler",
         updatedAt: new Date(),
       },
@@ -672,7 +674,7 @@ describe("platform deployment uploads", () => {
         logo: null,
         metadata: null,
         name: "Analytical Engines",
-        publicId: "team0000000001",
+        shortId: "team00000001",
         slug: "analytical-engines",
       },
       project: {
@@ -680,6 +682,7 @@ describe("platform deployment uploads", () => {
         id: projectId,
         name: "Compiler",
         organizationId,
+        shortId: "proj00000001",
         slug: "compiler",
         updatedAt: new Date(),
       },
@@ -730,7 +733,7 @@ describe("platform deployment uploads", () => {
     expect(result.body.logos?.dark?.uploadUrl).toBeUndefined();
     expect(createUploadUrl).toHaveBeenCalledTimes(1);
     expect(context.storage.head).toHaveBeenCalledWith({
-      key: `teams/team0000000001/projects/${projectId}/apps/app000000001/logos/${logoChecksum}.svg`,
+      key: `projects/proj00000001/apps/app000000001/logos/${logoChecksum}.svg`,
     });
   });
 
@@ -743,7 +746,7 @@ describe("platform deployment uploads", () => {
         logo: null,
         metadata: null,
         name: "Analytical Engines",
-        publicId: "team0000000001",
+        shortId: "team00000001",
         slug: "analytical-engines",
       },
       project: {
@@ -751,6 +754,7 @@ describe("platform deployment uploads", () => {
         id: projectId,
         name: "Compiler",
         organizationId,
+        shortId: "proj00000001",
         slug: "compiler",
         updatedAt: new Date(),
       },

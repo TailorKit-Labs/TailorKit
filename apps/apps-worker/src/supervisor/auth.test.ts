@@ -26,11 +26,11 @@ const publicKeys = {
 };
 const identity = {
   appId: "app",
-  appPublicId: "app000000001",
+  appShortId: "app000000001",
   deploymentId: "deployment",
   installationId: "installation",
   projectId: "project",
-  publicTeamId: "abc123def45678",
+  projectShortId: "abc123def456",
   scope: { name: "org", value: { id: "tenant" } },
   subjectId: "user",
   toolUrl: "https://host.test/api/tailorkit/tools/execute",

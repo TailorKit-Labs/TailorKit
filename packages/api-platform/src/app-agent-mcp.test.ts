@@ -122,7 +122,7 @@ const context =
   } as Context;
 /* oxlint-enable typescript/no-unsafe-type-assertion */
 const identity = { scopes: { org: scope.scope.value }, subjectId: "user" };
-const app = { id: "internal-app", publicId: "public-app", scope: scope.scope };
+const app = { id: "internal-app", scope: scope.scope, shortId: "public-app" };
 
 const request = (
   name: string,

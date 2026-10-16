@@ -19,12 +19,12 @@ const requireValue = <T>(value: T | null | undefined): T => {
   return value;
 };
 
-const projectId = "22222222-2222-4222-8222-222222222222";
+const projectId = "proj00000001";
 const appId = "app000000001";
 const deploymentId = "deploy000001";
-const path = `/p/${projectId}/a/${appId}/d/${deploymentId}/client/client.js`;
-const url = `https://abc123def45678.tailorkit.app${path}`;
-const key = `teams/abc123def45678/projects/${projectId}/apps/${appId}/deployments/${deploymentId}/client/client.js`;
+const path = `/a/${appId}/d/${deploymentId}/client/client.js`;
+const url = `https://${projectId}.tailorkit.app${path}`;
+const key = `projects/${projectId}/apps/${appId}/deployments/${deploymentId}/client/client.js`;
 const bundle = "export default 'tenant bundle';";
 const get = vi.fn();
 const head = vi.fn();
@@ -71,7 +71,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("tenant asset gateway", () => {
+describe("project asset gateway", () => {
   it("never serves server bundles, manifests or migrations publicly", async () => {
     await Promise.all(
       [
@@ -150,28 +150,26 @@ describe("tenant asset gateway", () => {
     );
     expect(response.headers.get("Content-Type")).toBe("image/svg+xml");
     expect(get).toHaveBeenCalledWith(
-      `teams/abc123def45678/projects/${projectId}/apps/${appId}/logos/${"a".repeat(64)}.svg`
+      `projects/${projectId}/apps/${appId}/logos/${"a".repeat(64)}.svg`
     );
   });
 
-  it("uses the hostname tenant ID as part of the storage namespace", async () => {
+  it("uses the hostname project short ID as the storage namespace", async () => {
     get.mockResolvedValueOnce(object());
-    const otherUrl = url.replace("abc123def45678", "xyz123def45678");
+    const otherUrl = url.replace(projectId, "xyz123def456");
     await fetchAsset(new Request(otherUrl));
-    expect(get).toHaveBeenCalledWith(
-      key.replace("abc123def45678", "xyz123def45678")
-    );
+    expect(get).toHaveBeenCalledWith(key.replace(projectId, "xyz123def456"));
   });
 
-  it.each(["team-abcdefghi", "a------------z", "0123456789abcd"])(
-    "serves bundles for hyphenated team ID %s",
-    async (publicId) => {
+  it.each(["abcdef012345", "012345678901", "zzzzzzzzzzzz"])(
+    "serves bundles for DNS-safe project short ID %s",
+    async (shortId) => {
       get.mockResolvedValueOnce(object());
       const response = await fetchAsset(
-        new Request(url.replace("abc123def45678", publicId))
+        new Request(url.replace(projectId, shortId))
       );
       expect(response.status).toBe(200);
-      expect(get).toHaveBeenCalledWith(key.replace("abc123def45678", publicId));
+      expect(get).toHaveBeenCalledWith(key.replace(projectId, shortId));
       expect(await response.text()).toBe(bundle);
     }
   );
@@ -179,22 +177,21 @@ describe("tenant asset gateway", () => {
   it("rejects foreign hosts, slugs, malformed paths and query strings before R2", async () => {
     await Promise.all(
       [
-        url.replace("abc123def45678", "abc123def4"),
-        url.replace("abc123def45678", "team-abcde"),
-        url.replace("abc123def45678", "team-abc123def45678"),
-        url.replace("abc123def45678", "editable-slug"),
-        url.replace("abc123def45678", "-bc123def4"),
-        url.replace("abc123def45678", "abc123def-"),
-        url.replace("abc123def45678", "abc_23def4"),
-        url.replace("abc123def45678", "-bc123def45678"),
-        url.replace("abc123def45678", "abc123def4567-"),
-        url.replace("abc123def45678", "abc_23def45678"),
-        url.replace("abc123def45678", "01234567890"),
-        url.replace("abc123def45678", "012345678901"),
-        url.replace("abc123def45678", "0123456789012"),
-        url.replace("abc123def45678", "012345678901234"),
+        url.replace(projectId, "abc123def4"),
+        url.replace(projectId, "team-abcde"),
+        url.replace(projectId, "team-abc123def456"),
+        url.replace(projectId, "editable-slug"),
+        url.replace(projectId, "-bc123def4"),
+        url.replace(projectId, "abc123def-"),
+        url.replace(projectId, "abc_23def4"),
+        url.replace(projectId, "-bc123def45678"),
+        url.replace(projectId, "abc123def4567-"),
+        url.replace(projectId, "abc_23def45678"),
+        url.replace(projectId, "01234567890"),
+        url.replace(projectId, "0123456789012"),
+        url.replace(projectId, "012345678901234"),
         url.replace("tailorkit.app", "tailorkit.app.evil.example"),
-        url.replace("abc123def45678", "nested.abc123def45678"),
+        url.replace(projectId, "nested.abc123def456"),
         `${url}?token=anything`,
         url.replace("client.js", "secret.js"),
         url.replace(appId, "app-slug"),

@@ -32,15 +32,15 @@ const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
 const getProjectApp = async (projectId: string, appId: string) => {
-  const appByPublicId = await db.query.app.findFirst({
+  const appByShortId = await db.query.app.findFirst({
     where: {
       projectId,
-      publicId: appId,
+      shortId: appId,
     },
   });
 
-  if (appByPublicId || !uuidPattern.test(appId)) {
-    return appByPublicId ?? null;
+  if (appByShortId || !uuidPattern.test(appId)) {
+    return appByShortId ?? null;
   }
 
   return (
@@ -140,7 +140,7 @@ export const appsRouter = {
           projectId: context.project.id,
         },
         with: {
-          currentDeployment: { with: { app: { columns: { publicId: true } } } },
+          currentDeployment: { with: { app: { columns: { shortId: true } } } },
           deployments: {
             orderBy: { createdAt: "desc" },
           },
@@ -159,8 +159,7 @@ export const appsRouter = {
           currentDeployment: appWithDeployments.currentDeployment,
           deployments: appWithDeployments.deployments,
         },
-        context.org.publicId,
-        context.project.id
+        context.project.shortId
       );
     }),
 
@@ -184,7 +183,7 @@ export const appsRouter = {
               eq(app.projectId, context.project.id),
               or(
                 ilike(app.name, searchPattern),
-                ilike(app.publicId, searchPattern),
+                ilike(app.shortId, searchPattern),
                 sql`${app.scope}::text ILIKE ${searchPattern}`,
                 ilike(app.description, searchPattern),
                 sql`${app.id}::text ILIKE ${searchPattern}`
@@ -230,7 +229,7 @@ export const appsRouter = {
           currentDeploymentIds.length > 0
             ? db.query.appDeployment.findMany({
                 where: { id: { in: currentDeploymentIds } },
-                with: { app: { columns: { publicId: true } } },
+                with: { app: { columns: { shortId: true } } },
               })
             : Promise.resolve([]),
         ]);
@@ -267,8 +266,7 @@ export const appsRouter = {
               deploymentCount: deploymentCountByAppId.get(item.id) ?? 0,
               latestDeployment: latestDeploymentByAppId.get(item.id) ?? null,
             },
-            context.org.publicId,
-            context.project.id
+            context.project.shortId
           );
         }),
         pagination: {

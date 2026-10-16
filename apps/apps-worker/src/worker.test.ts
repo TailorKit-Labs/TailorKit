@@ -82,11 +82,11 @@ const publicKeys = {
 
 const identity = {
   appId: "app",
-  appPublicId: "app000000001",
+  appShortId: "app000000001",
   deploymentId: "v1",
   installationId: "one",
   projectId: "22222222-2222-4222-8222-222222222222",
-  publicTeamId: "abc123def45678",
+  projectShortId: "abc123def456",
   scope: { name: "org", value: { id: "tenant" } },
   subjectId: "user",
   toolUrl: "https://host.test/api/tailorkit/tools/execute",
@@ -111,7 +111,7 @@ const deployment = {
   contentLength: 4,
   deploymentId: "v1",
   objectKey:
-    "teams/abc123def45678/projects/22222222-2222-4222-8222-222222222222/apps/app000000001/deployments/deploy000001/server/server.js",
+    "projects/abc123def456/apps/app000000001/deployments/deploy000001/server/server.js",
   projectId: "22222222-2222-4222-8222-222222222222",
 };
 
@@ -249,7 +249,7 @@ const fetchWorker = async (requestValue: Request, env: Env) => {
     const payload =
       token !== undefined && token !== null && token !== ""
         ? z
-            .object({ projectId: z.string() })
+            .object({ projectShortId: z.string() })
             .parse(
               JSON.parse(
                 atob(
@@ -260,8 +260,8 @@ const fetchWorker = async (requestValue: Request, env: Env) => {
               )
             )
         : identity;
-    url.hostname = `${identity.publicTeamId}.tailorkit.app`;
-    url.pathname = `/p/${payload.projectId}/a/${identity.appPublicId}${url.pathname}`;
+    url.hostname = `${payload.projectShortId}.tailorkit.app`;
+    url.pathname = `/a/${identity.appShortId}${url.pathname}`;
   }
   // SAFETY: This test supplies the context members read by the handler; unrelated request context services are outside this scenario.
   return await worker.fetch(
@@ -317,7 +317,7 @@ it.each(["actions", "mutations", "queries"])(
     const { env, routeFetch } = setup();
     await fetchWorker(await request({}, `/rpc/${kind}`), env);
     expect(requireValue(routeFetch.mock.calls[0])[0].url).toBe(
-      `https://${identity.publicTeamId}.tailorkit.app/rpc/${kind}`
+      `https://${identity.projectShortId}.tailorkit.app/rpc/${kind}`
     );
   }
 );
@@ -370,6 +370,7 @@ it("accepts different signed projects and routes them to distinct installations"
   const awaitedResult3 = await fetchWorker(
     await request({
       projectId: "33333333-3333-4333-8333-333333333333",
+      projectShortId: "other0000001",
     }),
     env
   );
@@ -495,7 +496,7 @@ it("accepts metadata publication only with the shared service credential", async
   ) =>
     await fetchWorker(
       new Request(
-        `https://internal.tailorkit.app/p/${identity.projectId}/a/${identity.appPublicId}/new-deployment`,
+        `https://internal.tailorkit.app/p/${identity.projectId}/a/${identity.appShortId}/new-deployment`,
         {
           body: JSON.stringify(body),
           headers: {

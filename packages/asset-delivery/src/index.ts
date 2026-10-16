@@ -10,25 +10,23 @@ const requireValue = <T>(value: T | null | undefined): T => {
   return value;
 };
 
-const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
-const publicId = "[0-9a-z]{10}(?:[0-9a-z]{2})?";
+const shortId = "[0-9a-z]{12}";
+const shortIdPattern = /^[0-9a-z]{12}$/u;
 const deploymentAssetPath = new RegExp(
-  `^/p/(${uuid})/a/(${publicId})/d/(${publicId})/(?:client/(client\\.js)|logos/([a-f0-9]{64}\\.(?:svg|png|webp)))$`,
+  `^/a/(${shortId})/d/(${shortId})/(?:client/(client\\.js)|logos/([a-f0-9]{64}\\.(?:svg|png|webp)))$`,
   "u"
 );
-const teamIdPattern = /^[a-z0-9][a-z0-9-]{12}[a-z0-9]$/u;
-const nodeAssetPath = /^\/api\/assets\/t\/(?<team>[^/]+)(?<path>\/p\/.*)$/u;
+const nodeAssetPath = new RegExp(`^/api/assets/p/(${shortId})(/a/.*)$`, "u");
 const methods = new Set(["GET", "HEAD", "OPTIONS"]);
 
 export const maxDeploymentBytes = 3 * 1024 * 1024;
 export const maxAssetBytes = maxDeploymentBytes;
 
 export interface AssetIdentity {
-  appId: string;
-  deploymentId: string;
+  appShortId: string;
+  deploymentShortId: string;
+  projectShortId: string;
   key: string;
-  projectId: string;
-  publicTeamId: string;
   contentType: "application/javascript" | LogoContentType;
 }
 
@@ -48,46 +46,40 @@ const getAssetContentType = (
 };
 
 const createIdentity = (
-  publicTeamId: string,
+  projectShortId: string,
   pathname: string
 ): AssetIdentity | undefined => {
-  if (!teamIdPattern.test(publicTeamId)) {
+  if (!shortIdPattern.test(projectShortId)) {
     return undefined;
   }
-
   const match = deploymentAssetPath.exec(pathname);
   if (!match) {
     return undefined;
   }
-  const [, projectId, appId, deploymentId, clientFilename, logoFilename] =
-    match;
-  const filename = clientFilename ?? logoFilename;
-  if (
-    !(projectId !== undefined && projectId !== null && projectId !== "") ||
-    !(appId !== undefined && appId !== null && appId !== "") ||
-    !(
-      deploymentId !== undefined &&
-      deploymentId !== null &&
-      deploymentId !== ""
-    ) ||
-    !(filename !== undefined && filename !== null && filename !== "")
-  ) {
+  const [, appMatch, deploymentMatch, clientFilename, logoFilename] = match;
+  const appShortId = requireValue(appMatch);
+  const deploymentShortId = requireValue(deploymentMatch);
+  const filename = requireValue(clientFilename ?? logoFilename);
+  const appKey = `projects/${projectShortId}/apps/${appShortId}`;
+  return {
+    appShortId,
+    contentType: getAssetContentType(filename),
+    deploymentShortId,
+    key:
+      clientFilename === undefined
+        ? `${appKey}/logos/${filename}`
+        : `${appKey}/deployments/${deploymentShortId}/client/${filename}`,
+    projectShortId,
+  };
+};
+
+const hostedProjectId = (url: URL, assetDomain: string): string | undefined => {
+  const suffix = `.${assetDomain}`;
+  if (url.protocol !== "https:" || url.port || !url.hostname.endsWith(suffix)) {
     return undefined;
   }
-  const appKey = `teams/${publicTeamId}/projects/${projectId}/apps/${appId}`;
-  return {
-    appId,
-    contentType: getAssetContentType(filename),
-    deploymentId,
-    key:
-      clientFilename !== undefined &&
-      clientFilename !== null &&
-      clientFilename !== ""
-        ? `${appKey}/deployments/${deploymentId}/client/${filename}`
-        : `${appKey}/logos/${filename}`,
-    projectId,
-    publicTeamId,
-  };
+  const projectShortId = url.hostname.slice(0, -suffix.length);
+  return shortIdPattern.test(projectShortId) ? projectShortId : undefined;
 };
 
 export const parseHostedAssetRequest = (
@@ -95,45 +87,22 @@ export const parseHostedAssetRequest = (
   assetDomain: string
 ): AssetIdentity | undefined => {
   const url = new URL(request.url);
-  const suffix = `.${assetDomain}`;
-  if (
-    url.protocol !== "https:" ||
-    url.port ||
-    url.search ||
-    !url.hostname.endsWith(suffix)
-  ) {
+  const projectShortId = hostedProjectId(url, assetDomain);
+  if (projectShortId === undefined || url.search) {
     return undefined;
   }
-  return createIdentity(url.hostname.slice(0, -suffix.length), url.pathname);
+  return createIdentity(projectShortId, url.pathname);
 };
 
 export const parseNodeAssetRequest = (
   request: Request
 ): AssetIdentity | undefined => {
   const url = new URL(request.url);
-  if (url.search) {
-    return undefined;
-  }
   const match = nodeAssetPath.exec(url.pathname);
-  if (!match) {
+  if (!match || url.search) {
     return undefined;
   }
-  const [, publicTeamId, assetPathname] = match;
-  if (
-    !(
-      publicTeamId !== undefined &&
-      publicTeamId !== null &&
-      publicTeamId !== ""
-    ) ||
-    !(
-      assetPathname !== undefined &&
-      assetPathname !== null &&
-      assetPathname !== ""
-    )
-  ) {
-    return undefined;
-  }
-  return createIdentity(publicTeamId, assetPathname);
+  return createIdentity(requireValue(match[1]), requireValue(match[2]));
 };
 
 export const isAssetMethod = (method: string): boolean => methods.has(method);
@@ -190,13 +159,12 @@ export const assetHeaders = (input: {
   return headers;
 };
 
-/** Hosted app routes use public team/app IDs and the canonical project UUID. */
-const hostedAppPath = new RegExp(
-  `^/p/(${uuid})/a/(${publicId})(/rpc(?:/.*)?)$`,
-  "u"
-);
+/** Hosted app routes share the project's asset origin; local routes include its short ID. */
+const hostedAppPath = new RegExp(`^/a/(${shortId})(/rpc(?:/.*)?)$`, "u");
+const localAppPath = new RegExp(`^/p/(${shortId})(/a/.*)$`, "u");
+const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const publicationPath = new RegExp(
-  `^/p/(${uuid})/a/(${publicId})/new-deployment$`,
+  `^/p/(${uuid})/a/(${shortId})/new-deployment$`,
   "u"
 );
 
@@ -204,55 +172,36 @@ export const parseHostedAppRoute = (
   request: Request,
   assetDomain: string
 ):
-  | {
-      appPublicId: string;
-      projectId: string;
-      publicTeamId: string | undefined;
-      rpcPath: string;
-    }
+  | { appShortId: string; projectShortId: string; rpcPath: string }
   | undefined => {
   const url = new URL(request.url);
-  const suffix = `.${assetDomain}`;
   const local =
     url.protocol === "http:" &&
     ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
-  if (
-    !local &&
-    (url.protocol !== "https:" || url.port || !url.hostname.endsWith(suffix))
-  ) {
+  const localMatch = local ? localAppPath.exec(url.pathname) : null;
+  const projectShortId = local
+    ? localMatch?.[1]
+    : hostedProjectId(url, assetDomain);
+  const pathname = local ? localMatch?.[2] : url.pathname;
+  if (projectShortId === undefined || pathname === undefined) {
     return undefined;
   }
-  const publicTeamId = local
-    ? undefined
-    : url.hostname.slice(0, -suffix.length);
-  if (
-    !local &&
-    (!(
-      publicTeamId !== undefined &&
-      publicTeamId !== null &&
-      publicTeamId !== ""
-    ) ||
-      !teamIdPattern.test(publicTeamId))
-  ) {
-    return undefined;
-  }
-  const match = hostedAppPath.exec(url.pathname);
+  const match = hostedAppPath.exec(pathname);
   if (!match) {
     return undefined;
   }
   return {
-    appPublicId: requireValue(match[2]),
-    projectId: requireValue(match[1]),
-    publicTeamId,
-    rpcPath: requireValue(match[3]),
+    appShortId: requireValue(match[1]),
+    projectShortId,
+    rpcPath: requireValue(match[2]),
   };
 };
 
-/** Publication uses the reserved internal hostname, never a tenant hostname. */
+/** Metadata publication is restricted to the authenticated internal hostname. */
 export const parseDeploymentPublicationRoute = (
   request: Request,
   assetDomain: string
-): { appPublicId: string; projectId: string } | undefined => {
+): { appShortId: string; projectId: string } | undefined => {
   const url = new URL(request.url);
   if (
     url.protocol !== "https:" ||
@@ -267,7 +216,7 @@ export const parseDeploymentPublicationRoute = (
     return undefined;
   }
   return {
-    appPublicId: requireValue(match[2]),
+    appShortId: requireValue(match[2]),
     projectId: requireValue(match[1]),
   };
 };

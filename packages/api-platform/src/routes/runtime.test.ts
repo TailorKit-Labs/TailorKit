@@ -120,16 +120,16 @@ it("returns deployment metadata directly as the HTTP response body", async () =>
     contentLength: 123,
     deploymentId: "deployment",
     objectKey:
-      "teams/team/projects/project/apps/app-public/deployments/deployment-public/server/server.js",
+      "projects/proj00000001/apps/app-public/deployments/deployment-public/server/server.js",
     projectId: "project",
   };
   state.findApp.mockResolvedValueOnce({
     currentDeployment: {
       id: metadata.deploymentId,
-      publicId: "deployment-public",
+      shortId: "deployment-public",
     },
     id: metadata.appId,
-    publicId: "app-public",
+    shortId: "app-public",
   });
   state.findFile.mockResolvedValueOnce(metadata);
   const handler = new OpenAPIHandler({ runtime: getRuntimeBundle });
@@ -144,8 +144,8 @@ it("returns deployment metadata directly as the HTTP response body", async () =>
       context:
         /* oxlint-disable typescript/no-unsafe-type-assertion -- This test supplies the context members read by the handler; unrelated request context services are outside this scenario. */
         {
-          organization: { id: "organization", publicId: "team" },
-          project: { id: metadata.projectId },
+          organization: { id: "organization", shortId: "team" },
+          project: { id: metadata.projectId, shortId: "proj00000001" },
           runtimeService: true,
         } as Context,
       /* oxlint-enable typescript/no-unsafe-type-assertion */

@@ -123,10 +123,8 @@ export default {
             Effect.gen(function* verify() {
               const identity = yield* verifier(env)(token);
               if (
-                (appRoute.publicTeamId !== undefined &&
-                  identity.publicTeamId !== appRoute.publicTeamId) ||
-                identity.projectId !== appRoute.projectId ||
-                identity.appPublicId !== appRoute.appPublicId
+                identity.projectShortId !== appRoute.projectShortId ||
+                identity.appShortId !== appRoute.appShortId
               ) {
                 return yield* Effect.fail(
                   new AppError(

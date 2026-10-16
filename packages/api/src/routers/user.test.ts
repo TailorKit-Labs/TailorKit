@@ -126,14 +126,14 @@ describe("userRouter", () => {
         createdAt: new Date("2026-01-02T00:00:00.000Z"),
         id: orgId,
         name: "Analytical Engines",
-        publicId: "team0000000001",
+        shortId: "team00000001",
         slug: "analytical-engines",
       },
       {
         createdAt: new Date("2026-01-02T00:00:00.000Z"),
         id: otherOrgId,
         name: "Compilers Inc",
-        publicId: "team0000000002",
+        shortId: "team00000002",
         slug: "compilers-inc",
       },
     ]);
@@ -266,7 +266,7 @@ describe("userRouter", () => {
       members: [],
       metadata: null,
       name: "New Org",
-      publicId: "team0000000003",
+      shortId: "team00000003",
       slug: "new-org",
     });
 

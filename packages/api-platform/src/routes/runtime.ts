@@ -101,36 +101,33 @@ export const runtimeSession = protectedRouter
     }
     const runtime = new URL(
       env.APP_RUNTIME_URL ??
-        `https://${context.organization.publicId}.${env.ASSET_DOMAIN ?? "tailorkit.app"}`
+        `https://${context.project.shortId}.${env.ASSET_DOMAIN ?? "tailorkit.app"}`
     );
+    const localRuntime =
+      runtime.protocol === "http:" &&
+      ["localhost", "127.0.0.1", "[::1]"].includes(runtime.hostname);
     if (
       runtime.username ||
       runtime.password ||
       runtime.search ||
       runtime.hash ||
-      (runtime.protocol !== "https:" &&
-        !(
-          runtime.protocol === "http:" &&
-          ["localhost", "127.0.0.1", "[::1]"].includes(runtime.hostname)
-        ))
+      (runtime.protocol !== "https:" && !localRuntime)
     ) {
       throw new ORPCError("SERVICE_UNAVAILABLE", {
         message: "Invalid app runtime configuration.",
       });
     }
-    const url = new URL(
-      `/p/${context.project.id}/a/${context.app.publicId}/rpc`,
-      runtime
-    );
+    const projectPath = localRuntime ? `/p/${context.project.shortId}` : "";
+    const url = new URL(`${projectPath}/a/${context.app.shortId}/rpc`, runtime);
     // Each app belongs to one installation scope. Resolve identity from the authorized
     // database record, never from browser input or the ordering of the viewer's scopes.
     const identity = {
       appId: context.app.id,
-      appPublicId: context.app.publicId,
+      appShortId: context.app.shortId,
       deploymentId: deployment.id,
       installationId: context.app.id,
       projectId: context.project.id,
-      publicTeamId: context.organization.publicId,
+      projectShortId: context.project.shortId,
       scope: context.app.scope,
       subjectId: input.body.subjectId,
       toolUrl: input.body.toolUrl,
@@ -165,7 +162,7 @@ export const getRuntimeBundle = protectedRouter
           with: {
             currentDeployment: {
               where: { status: "published" },
-              with: { app: { columns: { publicId: true } } },
+              with: { app: { columns: { shortId: true } } },
             },
           },
         });
@@ -182,8 +179,8 @@ export const getRuntimeBundle = protectedRouter
     if (!deployment) {
       throw new ORPCError("NOT_FOUND");
     }
-    const assetAppId = deployment.app?.publicId ?? context.app.publicId;
-    const key = `teams/${context.organization.publicId}/projects/${context.project.id}/apps/${assetAppId}/deployments/${deployment.publicId}/server/server.js`;
+    const assetAppId = deployment.app?.shortId ?? context.app.shortId;
+    const key = `projects/${context.project.shortId}/apps/${assetAppId}/deployments/${deployment.shortId}/server/server.js`;
     const file = await db.query.appDeploymentFile.findFirst({
       where: {
         appDeploymentId: deployment.id,
@@ -216,7 +213,7 @@ export const getRuntimeBundle = protectedRouter
 /** Cache publication failures do not undo a published deployment; worker misses use the API. */
 export const publishRuntimeMetadata = async (
   metadata: AppDeploymentMetadata,
-  appPublicId: string
+  appShortId: string
 ) => {
   await Effect.runPromise(
     // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context, effecttsgo/unknown-in-effect-catch -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
@@ -233,7 +230,7 @@ export const publishRuntimeMetadata = async (
           return;
         }
         const url = new URL(
-          `/p/${metadata.projectId}/a/${appPublicId}/new-deployment`,
+          `/p/${metadata.projectId}/a/${appShortId}/new-deployment`,
           env.APP_RUNTIME_INTERNAL_URL ??
             `https://internal.${env.ASSET_DOMAIN ?? "tailorkit.app"}`
         );

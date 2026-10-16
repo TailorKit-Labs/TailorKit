@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   index,
   integer,
   jsonb,
@@ -15,6 +16,8 @@ import {
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { createSelectSchema } from "drizzle-orm/zod";
 import { z } from "zod";
+
+import { createShortId } from "#short-id";
 
 import { project } from "./project";
 import { scopeKeySchema, scopeSchema } from "./scope";
@@ -38,19 +41,22 @@ export const app = pgTable(
     projectId: uuid("project_id")
       .notNull()
       .references(() => project.id, { onDelete: "cascade" }),
-    publicId: varchar("public_id", { length: 12 }).notNull(),
     scope: jsonb("scope_json").$type<Scope>().notNull(),
     scopeKey: text("scope_key").notNull(),
+    shortId: varchar("short_id", { length: 12 })
+      .notNull()
+      .$defaultFn(createShortId),
     updatedAt: timestamp("updated_at")
       .defaultNow()
       .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [
+    check("app_short_id_format", sql`${table.shortId} ~ '^[a-z0-9]{12}$'`),
     index("app_project_scope_key_idx").on(table.projectId, table.scopeKey),
-    uniqueIndex("app_project_id_public_id_unique").on(
+    uniqueIndex("app_project_id_short_id_unique").on(
       table.projectId,
-      table.publicId
+      table.shortId
     ),
   ]
 );
@@ -60,6 +66,7 @@ const AppSchema = createSelectSchema(app, {
   name: z.string().max(127),
   scope: scopeSchema,
   scopeKey: scopeKeySchema,
+  shortId: z.string().regex(/^[a-z0-9]{12}$/u),
 });
 export type App = z.output<typeof AppSchema>;
 
@@ -130,7 +137,9 @@ export const appDeployment = pgTable(
       { onDelete: "restrict" }
     ),
     logoLightPath: text("logo_light_path"),
-    publicId: varchar("public_id", { length: 12 }).notNull(),
+    shortId: varchar("short_id", { length: 12 })
+      .notNull()
+      .$defaultFn(createShortId),
     status: appDeploymentStatus("status").default("deploying").notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -144,14 +153,19 @@ export const appDeployment = pgTable(
       .default([]),
   },
   (table) => [
-    uniqueIndex("app_deployment_app_id_public_id_unique").on(
+    check(
+      "app_deployment_short_id_format",
+      sql`${table.shortId} ~ '^[a-z0-9]{12}$'`
+    ),
+    uniqueIndex("app_deployment_app_id_short_id_unique").on(
       table.appId,
-      table.publicId
+      table.shortId
     ),
   ]
 );
 
 const AppDeploymentSchema = createSelectSchema(appDeployment, {
+  shortId: z.string().regex(/^[a-z0-9]{12}$/u),
   views: z
     .array(
       z.object({

@@ -128,7 +128,7 @@ export const createToolVerifier = (options: {
     const parsedClaims = z
       .object({
         appId: identifier,
-        appPublicId: identifier,
+        appShortId: identifier,
         aud: z.literal(audience),
         deploymentId: identifier,
         exp: z.number().int(),
@@ -136,7 +136,7 @@ export const createToolVerifier = (options: {
         installationId: identifier,
         iss: z.literal(issuer),
         projectId: identifier,
-        publicTeamId: identifier,
+        projectShortId: identifier,
         scope: z.object({
           name: z.string().min(1),
           value: z.record(z.string(), z.json()),

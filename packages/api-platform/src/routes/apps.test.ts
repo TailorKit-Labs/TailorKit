@@ -92,7 +92,7 @@ const createContext = (overrides: Partial<Context> = {}): Context => ({
     logo: null,
     metadata: null,
     name: "Analytical Engines",
-    publicId: "team0000000001",
+    shortId: "team00000001",
     slug: "analytical-engines",
   },
   project: {
@@ -100,6 +100,7 @@ const createContext = (overrides: Partial<Context> = {}): Context => ({
     id: projectId,
     name: "Compiler",
     organizationId: orgId,
+    shortId: "proj00000001",
     slug: "compiler",
     updatedAt: new Date("2026-01-02T00:00:00.000Z"),
   },
@@ -140,7 +141,7 @@ describe("platform appRouter", () => {
       createdAt: new Date("2026-01-01T00:00:00.000Z"),
       id: orgId,
       name: "Analytical Engines",
-      publicId: "team0000000001",
+      shortId: "team00000001",
       slug: "analytical-engines",
     });
 
@@ -232,7 +233,7 @@ describe("platform appRouter", () => {
       .values({
         appId: source.id,
         logoLightPath: `logos/${"a".repeat(64)}.svg`,
-        publicId: "published001",
+        shortId: "published001",
         status: "published",
         views: [{ path: "/", slot: "page" }],
       })
@@ -240,14 +241,14 @@ describe("platform appRouter", () => {
     if (!deployment) {
       throw new Error("Expected published deployment");
     }
-    const keyBase = `teams/${context.organization.publicId}/projects/${projectId}/apps/${source.publicId}`;
+    const keyBase = `projects/${context.project.shortId}/apps/${source.shortId}`;
     const [clientFile] = await db
       .insert(appDeploymentFile)
       .values({
         appDeploymentId: deployment.id,
         contentLength: 10,
         contentType: "application/javascript",
-        objectKey: `${keyBase}/deployments/${deployment.publicId}/client/client.js`,
+        objectKey: `${keyBase}/deployments/${deployment.shortId}/client/client.js`,
         status: "verified",
       })
       .returning();
@@ -264,7 +265,7 @@ describe("platform appRouter", () => {
       contentLength: 20,
       contentType: "application/javascript",
       encoding: "gzip",
-      objectKey: `${keyBase}/deployments/${deployment.publicId}/server/server.js`,
+      objectKey: `${keyBase}/deployments/${deployment.shortId}/server/server.js`,
       status: "verified",
     });
     await db
@@ -275,7 +276,7 @@ describe("platform appRouter", () => {
     const handler = new OpenAPIHandler({ apps: appRouter });
     const response = await handler.handle(
       new Request(
-        `https://platform.test/api/platform/apps/${source.publicId}/install`,
+        `https://platform.test/api/platform/apps/${source.shortId}/install`,
         {
           body: JSON.stringify({ scope: stagingScope }),
           headers: { "content-type": "application/json" },
@@ -286,10 +287,10 @@ describe("platform appRouter", () => {
     );
     expect(response.response?.status).toBe(200);
     const installed = z
-      .object({ id: z.string(), publicId: z.string() })
+      .object({ id: z.string(), shortId: z.string() })
       .parse(await response.response?.json());
     expect(installed.id).not.toBe(source.id);
-    expect(installed.publicId).not.toBe(source.publicId);
+    expect(installed.shortId).not.toBe(source.shortId);
 
     const { body: listed } = await call(
       appRouter.list,
@@ -307,10 +308,10 @@ describe("platform appRouter", () => {
       views: [{ path: "/", slot: "page" }],
     });
     expect(listed.items[0]?.clientPath).toContain(
-      `/a/${source.publicId}/d/${deployment.publicId}/client/client.js`
+      `/a/${source.shortId}/d/${deployment.shortId}/client/client.js`
     );
     expect(listed.items[0]?.logoPaths?.light).toContain(
-      `/a/${source.publicId}/d/${deployment.publicId}/logos/`
+      `/a/${source.shortId}/d/${deployment.shortId}/logos/`
     );
     const lookup = await call(
       appRouter.get,
@@ -356,7 +357,7 @@ describe("platform appRouter", () => {
       appId: installed.id,
       contentEncoding: "gzip",
       deploymentId: deployment.id,
-      objectKey: `${keyBase}/deployments/${deployment.publicId}/server/server.js`,
+      objectKey: `${keyBase}/deployments/${deployment.shortId}/server/server.js`,
     });
 
     await expect(
@@ -402,7 +403,7 @@ describe("platform appRouter", () => {
     );
     await db.insert(appDeployment).values({
       appId: source.id,
-      publicId: "published001",
+      shortId: "published001",
       status: "published",
     });
 
@@ -411,7 +412,7 @@ describe("platform appRouter", () => {
       CREATE FUNCTION install_before_delete() RETURNS trigger AS $$
       BEGIN
         INSERT INTO app (
-          name, project_id, public_id, scope_json, scope_key, current_deployment_id
+          name, project_id, short_id, scope_json, scope_key, current_deployment_id
         )
         SELECT 'Concurrent installation', OLD.project_id, 'installed001',
           OLD.scope_json, OLD.scope_key, id
@@ -491,7 +492,7 @@ describe("platform appRouter", () => {
       .insert(appDeployment)
       .values({
         appId: source.id,
-        publicId: "uploading001",
+        shortId: "uploading001",
         status: "uploading",
       })
       .returning();
@@ -709,7 +710,7 @@ describe("platform appRouter", () => {
       { context }
     );
 
-    const expectedPublicIdMatcher1: unknown =
+    const expectedShortIdMatcher1: unknown =
       expect.stringMatching(/^[0-9a-z]{12}$/u);
     expect(created.body).toEqual(
       expect.objectContaining({
@@ -717,15 +718,15 @@ describe("platform appRouter", () => {
         description: "Embedded inbox",
         name: "Inbox",
         projectId,
-        publicId: expectedPublicIdMatcher1,
         scope: productionScope,
+        shortId: expectedShortIdMatcher1,
       })
     );
 
     await db.insert(appTable).values({
       name: "Staging app",
       projectId,
-      publicId: "staging001",
+      shortId: "staging00001",
       ...canonicalizeScope(stagingScope),
     });
 
@@ -748,7 +749,7 @@ describe("platform appRouter", () => {
       .values({
         name: "Notes",
         projectId,
-        publicId: "notes00001",
+        shortId: "notes0000001",
         ...canonicalizeScope(productionScope),
       })
       .returning();
@@ -761,7 +762,7 @@ describe("platform appRouter", () => {
       .insert(appDeployment)
       .values({
         appId: createdApp.id,
-        publicId: "deploy0001",
+        shortId: "deploy000001",
         status: "published",
       })
       .returning();
@@ -805,7 +806,7 @@ describe("platform appRouter", () => {
 
     expect(result.body.items[0]?.currentDeployment?.id).toBe(deployment.id);
     expect(result.body.items[0]?.clientPath).toBe(
-      `https://team0000000001.tailorkit.app/p/${projectId}/a/notes00001/d/deploy0001/client/client.js`
+      `https://proj00000001.tailorkit.app/a/notes0000001/d/deploy000001/client/client.js`
     );
   });
 
@@ -823,21 +824,21 @@ describe("platform appRouter", () => {
         createdAt: createdAt(3),
         name: "Team app",
         projectId,
-        publicId: "teamapp00001",
+        shortId: "teamapp00001",
         ...canonicalizeScope(teamScope),
       },
       {
         createdAt: createdAt(4),
         name: "User app",
         projectId,
-        publicId: "userapp00001",
+        shortId: "userapp00001",
         ...canonicalizeScope(userScope),
       },
       {
         createdAt: createdAt(5),
         name: "Other team app",
         projectId,
-        publicId: "otherapp0001",
+        shortId: "otherapp0001",
         ...canonicalizeScope(excludedScope),
       },
     ]);
@@ -865,7 +866,7 @@ describe("platform appRouter", () => {
       .values({
         name: "Other project app",
         projectId: otherProjectId,
-        publicId: "other00001",
+        shortId: "other0000001",
         ...canonicalizeScope(productionScope),
       })
       .returning();
@@ -891,7 +892,7 @@ describe("platform appRouter", () => {
       .values({
         name: "Staging app",
         projectId,
-        publicId: "staging002",
+        shortId: "staging00002",
         ...canonicalizeScope(stagingScope),
       })
       .returning();
@@ -919,7 +920,7 @@ describe("platform appRouter", () => {
         .values({
           name: "Runtime",
           projectId,
-          publicId: "runtime00001",
+          shortId: "runtime00001",
           ...canonicalizeScope(productionScope),
         })
         .returning();
@@ -928,12 +929,12 @@ describe("platform appRouter", () => {
       }
       const [deployment] = await db
         .insert(appDeployment)
-        .values({ appId: created.id, publicId: "runtime00002", status })
+        .values({ appId: created.id, shortId: "runtime00002", status })
         .returning();
       if (!deployment) {
         throw new Error("Expected test deployment");
       }
-      const objectKey = `teams/${context.organization?.publicId}/projects/${projectId}/apps/${created.publicId}/deployments/${deployment.publicId}/server/server.js`;
+      const objectKey = `projects/${context.project.shortId}/apps/${created.shortId}/deployments/${deployment.shortId}/server/server.js`;
       await db.insert(appDeploymentFile).values({
         appDeploymentId: deployment.id,
         checksum: "0".repeat(64),
@@ -946,15 +947,15 @@ describe("platform appRouter", () => {
       await call(
         appRouter.deploy,
         {
-          body: { deploymentId: deployment.publicId, scope: productionScope },
-          params: { appId: created.publicId },
+          body: { deploymentId: deployment.shortId, scope: productionScope },
+          params: { appId: created.shortId },
         },
         { context }
       );
       if (status === "published") {
         expect(testState.publishMetadata).toHaveBeenCalledWith(
           expect.objectContaining({ deploymentId: deployment.id, objectKey }),
-          created.publicId
+          created.shortId
         );
       } else {
         expect(testState.publishMetadata).not.toHaveBeenCalled();
@@ -970,7 +971,7 @@ describe("platform appRouter", () => {
         id: "55555555-5555-7555-8555-555555555555",
         name: "Inbox",
         projectId,
-        publicId: "inbox0000001",
+        shortId: "inbox0000001",
         ...canonicalizeScope(productionScope),
       })
       .returning();
@@ -983,7 +984,7 @@ describe("platform appRouter", () => {
         appRouter.update,
         {
           body: { description: null, name: "Wrong scope", scope: stagingScope },
-          params: { appId: created.publicId },
+          params: { appId: created.shortId },
         },
         { context }
       )
@@ -997,7 +998,7 @@ describe("platform appRouter", () => {
           name: "Updated inbox",
           scope: productionScope,
         },
-        params: { appId: created.publicId },
+        params: { appId: created.shortId },
       },
       { context }
     );
@@ -1007,7 +1008,7 @@ describe("platform appRouter", () => {
       .insert(appDeployment)
       .values({
         appId: created.id,
-        publicId: "deploy0002",
+        shortId: "deploy000002",
         status: "published",
         views: [
           { instances: true, path: "/", slot: "page" },
@@ -1022,8 +1023,8 @@ describe("platform appRouter", () => {
     const deployed = await call(
       appRouter.deploy,
       {
-        body: { deploymentId: deployment.publicId, scope: productionScope },
-        params: { appId: created.publicId },
+        body: { deploymentId: deployment.shortId, scope: productionScope },
+        params: { appId: created.shortId },
       },
       { context }
     );
@@ -1044,7 +1045,7 @@ describe("platform appRouter", () => {
 
     const deleted = await call(
       appRouter.delete,
-      { body: { scope: productionScope }, params: { appId: created.publicId } },
+      { body: { scope: productionScope }, params: { appId: created.shortId } },
       { context }
     );
     expect(deleted.body.id).toBe(created.id);
@@ -1057,7 +1058,7 @@ describe("platform appRouter", () => {
         id: "55555555-5555-7555-8555-555555555555",
         name: "Inbox",
         projectId,
-        publicId: "inbox0000001",
+        shortId: "inbox0000001",
         ...canonicalizeScope(productionScope),
       })
       .returning();
@@ -1068,7 +1069,7 @@ describe("platform appRouter", () => {
       .insert(appDeployment)
       .values({
         appId: created.id,
-        publicId: "deploy0002",
+        shortId: "deploy000002",
         status: "published",
       })
       .returning();
@@ -1084,7 +1085,7 @@ describe("platform appRouter", () => {
         scopes: [productionScope],
         toolUrl: "https://host.test/api/tailorkit/tools/execute",
       },
-      params: { appId: created.publicId },
+      params: { appId: created.shortId },
     };
     const session = await call(appRouter.runtimeSession, input, { context });
     expect(session.body.token).toBe("platform-token");
@@ -1099,11 +1100,11 @@ describe("platform appRouter", () => {
     });
     expect(testState.issueToken).toHaveBeenCalledWith({
       appId: created.id,
-      appPublicId: created.publicId,
+      appShortId: created.shortId,
       deploymentId: deployment.id,
       installationId: created.id,
       projectId,
-      publicTeamId: context.organization.publicId,
+      projectShortId: context.project.shortId,
       scope: created.scope,
       subjectId: undefined,
       toolUrl: input.body.toolUrl,
@@ -1128,7 +1129,7 @@ describe("platform appRouter", () => {
     const handler = new OpenAPIHandler({ apps: appRouter });
     const http = await handler.handle(
       new Request(
-        `https://platform.test/api/platform/apps/${created.publicId}/runtime/session`,
+        `https://platform.test/api/platform/apps/${created.shortId}/runtime/session`,
         {
           body: JSON.stringify({
             scopes: [productionScope],
@@ -1143,14 +1144,14 @@ describe("platform appRouter", () => {
     expect(http.response?.status).toBe(200);
     await expect(http.response?.json()).resolves.toMatchObject({
       token: "platform-token",
-      url: `https://team0000000001.tailorkit.app/p/${projectId}/a/${created.publicId}/rpc`,
+      url: `https://proj00000001.tailorkit.app/a/${created.shortId}/rpc`,
     });
 
     expect(session.body.url).toBe(
-      `https://team0000000001.tailorkit.app/p/${projectId}/a/${created.publicId}/rpc`
+      `https://proj00000001.tailorkit.app/a/${created.shortId}/rpc`
     );
     const identity = testState.issueToken.mock.calls.at(-1)?.[0];
-    await Array.fromAsync([created.id, created.publicId], async (appId) => {
+    await Array.fromAsync([created.id, created.shortId], async (appId) => {
       await Array.fromAsync(
         [
           [stagingScope, productionScope],
@@ -1192,7 +1193,7 @@ describe("platform appRouter", () => {
     testState.env.APP_RUNTIME_URL = "http://localhost:8787/other";
     const local = await call(appRouter.runtimeSession, input, { context });
     expect(local.body.url).toBe(
-      `http://localhost:8787/p/${projectId}/a/${created.publicId}/rpc`
+      `http://localhost:8787/p/proj00000001/a/${created.shortId}/rpc`
     );
     testState.env.APP_RUNTIME_URL = undefined;
 

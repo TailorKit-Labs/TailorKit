@@ -17,12 +17,11 @@ const requireValue = <T>(value: T | null | undefined): T => {
   return value;
 };
 
-const teamId = "abc123def45678";
-const projectId = "22222222-2222-4222-8222-222222222222";
+const projectId = "proj00000001";
 const appId = "app000000001";
 const deploymentId = "deploy000001";
-const url = `http://localhost:3000/api/assets/t/${teamId}/p/${projectId}/a/${appId}/d/${deploymentId}/client/client.js`;
-const key = `teams/${teamId}/projects/${projectId}/apps/${appId}/deployments/${deploymentId}/client/client.js`;
+const url = `http://localhost:3000/api/assets/p/${projectId}/a/${appId}/d/${deploymentId}/client/client.js`;
+const key = `projects/${projectId}/apps/${appId}/deployments/${deploymentId}/client/client.js`;
 const bundle = "export default 'local asset';";
 
 const storage = (): Storage => ({

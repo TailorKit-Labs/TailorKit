@@ -11,14 +11,13 @@ import {
   parseNodeAssetRequest,
 } from "./index";
 
-const teamId = "abc123def45678";
-const projectId = "22222222-2222-4222-8222-222222222222";
+const projectId = "proj00000001";
 const appId = "app000000001";
 const deploymentId = "deploy000001";
-const assetPath = `/p/${projectId}/a/${appId}/d/${deploymentId}/client/client.js`;
+const assetPath = `/a/${appId}/d/${deploymentId}/client/client.js`;
 const logoHash = "b".repeat(64);
-const localUrl = `http://localhost:3000/api/assets/t/${teamId}${assetPath}`;
-const hostedUrl = `https://${teamId}.tailorkit.app${assetPath}`;
+const localUrl = `http://localhost:3000/api/assets/p/${projectId}${assetPath}`;
+const hostedUrl = `https://${projectId}.tailorkit.app${assetPath}`;
 
 describe("gzip content negotiation", () => {
   it.each([
@@ -43,12 +42,11 @@ describe("gzip content negotiation", () => {
 describe("asset delivery contract", () => {
   it("maps the same local and hosted URL contract to one storage key", () => {
     const expected = {
-      appId,
+      appShortId: appId,
       contentType: "application/javascript",
-      deploymentId,
-      key: `teams/${teamId}/projects/${projectId}/apps/${appId}/deployments/${deploymentId}/client/client.js`,
-      projectId,
-      publicTeamId: teamId,
+      deploymentShortId: deploymentId,
+      key: `projects/${projectId}/apps/${appId}/deployments/${deploymentId}/client/client.js`,
+      projectShortId: projectId,
     };
     expect(parseNodeAssetRequest(new Request(localUrl))).toEqual(expected);
     expect(
@@ -57,32 +55,33 @@ describe("asset delivery contract", () => {
   });
 
   it("maps content-addressed app logos to shared storage keys", () => {
-    const logoPath = `/p/${projectId}/a/${appId}/d/${deploymentId}/logos/${logoHash}.webp`;
+    const logoPath = `/a/${appId}/d/${deploymentId}/logos/${logoHash}.webp`;
     expect(
       parseNodeAssetRequest(
-        new Request(`http://localhost:3000/api/assets/t/${teamId}${logoPath}`)
+        new Request(
+          `http://localhost:3000/api/assets/p/${projectId}${logoPath}`
+        )
       )
     ).toEqual({
-      appId,
+      appShortId: appId,
       contentType: "image/webp",
-      deploymentId,
-      key: `teams/${teamId}/projects/${projectId}/apps/${appId}/logos/${logoHash}.webp`,
-      projectId,
-      publicTeamId: teamId,
+      deploymentShortId: deploymentId,
+      key: `projects/${projectId}/apps/${appId}/logos/${logoHash}.webp`,
+      projectShortId: projectId,
     });
     expect(
       parseHostedAssetRequest(
-        new Request(`https://${teamId}.tailorkit.app${logoPath}`),
+        new Request(`https://${projectId}.tailorkit.app${logoPath}`),
         "tailorkit.app"
       )
     ).toEqual(
       expect.objectContaining({
-        key: `teams/${teamId}/projects/${projectId}/apps/${appId}/logos/${logoHash}.webp`,
+        key: `projects/${projectId}/apps/${appId}/logos/${logoHash}.webp`,
       })
     );
   });
 
-  it("requires the hosted tenant hostname to match the request identity", () => {
+  it("requires the hosted project hostname to match the request identity", () => {
     expect(
       parseHostedAssetRequest(
         new Request(
@@ -103,7 +102,7 @@ describe("asset delivery contract", () => {
     for (const invalid of [
       localUrl.replace("/api/assets", "/other"),
       `${localUrl}?extra=value`,
-      localUrl.replace(teamId, "short"),
+      localUrl.replace(projectId, "short"),
       localUrl.replace(appId, "app-slug"),
     ]) {
       expect(parseNodeAssetRequest(new Request(invalid))).toBeUndefined();
@@ -141,13 +140,13 @@ it("rejects retired flat asset and app-scoped logo URLs", () => {
   ]) {
     expect(
       parseHostedAssetRequest(
-        new Request(`https://${teamId}.tailorkit.app${path}`),
+        new Request(`https://${projectId}.tailorkit.app${path}`),
         "tailorkit.app"
       )
     ).toBeUndefined();
     expect(
       parseNodeAssetRequest(
-        new Request(`http://localhost:3000/api/assets/t/${teamId}${path}`)
+        new Request(`http://localhost:3000/api/assets/p/${projectId}${path}`)
       )
     ).toBeUndefined();
   }

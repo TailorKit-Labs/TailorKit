@@ -296,10 +296,6 @@
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
-                    "publicId": {
-                      "type": "string",
-                      "maxLength": 12
-                    },
                     "scope": {
                       "type": "object",
                       "properties": {
@@ -321,6 +317,10 @@
                       },
                       "required": ["name", "value"],
                       "additionalProperties": false
+                    },
+                    "shortId": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9]{12}$"
                     },
                     "updatedAt": {
                       "type": "string",
@@ -393,9 +393,9 @@
                             "logoLightPath": {
                               "type": ["string", "null"]
                             },
-                            "publicId": {
+                            "shortId": {
                               "type": "string",
-                              "maxLength": 12
+                              "pattern": "^[a-z0-9]{12}$"
                             },
                             "status": {
                               "type": "string",
@@ -451,7 +451,7 @@
                             "logoDarkPath",
                             "logoLightFileId",
                             "logoLightPath",
-                            "publicId",
+                            "shortId",
                             "status",
                             "updatedAt",
                             "views"
@@ -516,8 +516,8 @@
                     "id",
                     "name",
                     "projectId",
-                    "publicId",
                     "scope",
+                    "shortId",
                     "updatedAt",
                     "currentDeployment",
                     "views"
@@ -637,10 +637,6 @@
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
-                    "publicId": {
-                      "type": "string",
-                      "maxLength": 12
-                    },
                     "scope": {
                       "type": "object",
                       "properties": {
@@ -662,6 +658,10 @@
                       },
                       "required": ["name", "value"],
                       "additionalProperties": false
+                    },
+                    "shortId": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9]{12}$"
                     },
                     "updatedAt": {
                       "type": "string",
@@ -734,9 +734,9 @@
                             "logoLightPath": {
                               "type": ["string", "null"]
                             },
-                            "publicId": {
+                            "shortId": {
                               "type": "string",
-                              "maxLength": 12
+                              "pattern": "^[a-z0-9]{12}$"
                             },
                             "status": {
                               "type": "string",
@@ -792,7 +792,7 @@
                             "logoDarkPath",
                             "logoLightFileId",
                             "logoLightPath",
-                            "publicId",
+                            "shortId",
                             "status",
                             "updatedAt",
                             "views"
@@ -857,8 +857,8 @@
                     "id",
                     "name",
                     "projectId",
-                    "publicId",
                     "scope",
+                    "shortId",
                     "updatedAt",
                     "currentDeployment",
                     "views"
@@ -1056,10 +1056,6 @@
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
-                    "publicId": {
-                      "type": "string",
-                      "maxLength": 12
-                    },
                     "scope": {
                       "type": "object",
                       "properties": {
@@ -1081,6 +1077,10 @@
                       },
                       "required": ["name", "value"],
                       "additionalProperties": false
+                    },
+                    "shortId": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9]{12}$"
                     },
                     "updatedAt": {
                       "type": "string",
@@ -1153,9 +1153,9 @@
                             "logoLightPath": {
                               "type": ["string", "null"]
                             },
-                            "publicId": {
+                            "shortId": {
                               "type": "string",
-                              "maxLength": 12
+                              "pattern": "^[a-z0-9]{12}$"
                             },
                             "status": {
                               "type": "string",
@@ -1211,7 +1211,7 @@
                             "logoDarkPath",
                             "logoLightFileId",
                             "logoLightPath",
-                            "publicId",
+                            "shortId",
                             "status",
                             "updatedAt",
                             "views"
@@ -1276,8 +1276,8 @@
                     "id",
                     "name",
                     "projectId",
-                    "publicId",
                     "scope",
+                    "shortId",
                     "updatedAt",
                     "currentDeployment",
                     "views"
@@ -1394,10 +1394,6 @@
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
-                    "publicId": {
-                      "type": "string",
-                      "maxLength": 12
-                    },
                     "scope": {
                       "type": "object",
                       "properties": {
@@ -1419,6 +1415,10 @@
                       },
                       "required": ["name", "value"],
                       "additionalProperties": false
+                    },
+                    "shortId": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9]{12}$"
                     },
                     "updatedAt": {
                       "type": "string",
@@ -1491,9 +1491,9 @@
                             "logoLightPath": {
                               "type": ["string", "null"]
                             },
-                            "publicId": {
+                            "shortId": {
                               "type": "string",
-                              "maxLength": 12
+                              "pattern": "^[a-z0-9]{12}$"
                             },
                             "status": {
                               "type": "string",
@@ -1549,7 +1549,7 @@
                             "logoDarkPath",
                             "logoLightFileId",
                             "logoLightPath",
-                            "publicId",
+                            "shortId",
                             "status",
                             "updatedAt",
                             "views"
@@ -1614,8 +1614,8 @@
                     "id",
                     "name",
                     "projectId",
-                    "publicId",
                     "scope",
+                    "shortId",
                     "updatedAt",
                     "currentDeployment",
                     "views"
@@ -1734,10 +1734,6 @@
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
-                    "publicId": {
-                      "type": "string",
-                      "maxLength": 12
-                    },
                     "scope": {
                       "type": "object",
                       "properties": {
@@ -1759,6 +1755,10 @@
                       },
                       "required": ["name", "value"],
                       "additionalProperties": false
+                    },
+                    "shortId": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9]{12}$"
                     },
                     "updatedAt": {
                       "type": "string",
@@ -1831,9 +1831,9 @@
                             "logoLightPath": {
                               "type": ["string", "null"]
                             },
-                            "publicId": {
+                            "shortId": {
                               "type": "string",
-                              "maxLength": 12
+                              "pattern": "^[a-z0-9]{12}$"
                             },
                             "status": {
                               "type": "string",
@@ -1889,7 +1889,7 @@
                             "logoDarkPath",
                             "logoLightFileId",
                             "logoLightPath",
-                            "publicId",
+                            "shortId",
                             "status",
                             "updatedAt",
                             "views"
@@ -1954,8 +1954,8 @@
                     "id",
                     "name",
                     "projectId",
-                    "publicId",
                     "scope",
+                    "shortId",
                     "updatedAt",
                     "currentDeployment",
                     "views"
@@ -2072,10 +2072,6 @@
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
-                    "publicId": {
-                      "type": "string",
-                      "maxLength": 12
-                    },
                     "scope": {
                       "type": "object",
                       "properties": {
@@ -2097,6 +2093,10 @@
                       },
                       "required": ["name", "value"],
                       "additionalProperties": false
+                    },
+                    "shortId": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9]{12}$"
                     },
                     "updatedAt": {
                       "type": "string",
@@ -2169,9 +2169,9 @@
                             "logoLightPath": {
                               "type": ["string", "null"]
                             },
-                            "publicId": {
+                            "shortId": {
                               "type": "string",
-                              "maxLength": 12
+                              "pattern": "^[a-z0-9]{12}$"
                             },
                             "status": {
                               "type": "string",
@@ -2227,7 +2227,7 @@
                             "logoDarkPath",
                             "logoLightFileId",
                             "logoLightPath",
-                            "publicId",
+                            "shortId",
                             "status",
                             "updatedAt",
                             "views"
@@ -2292,8 +2292,8 @@
                     "id",
                     "name",
                     "projectId",
-                    "publicId",
                     "scope",
+                    "shortId",
                     "updatedAt",
                     "currentDeployment",
                     "views"
@@ -2419,10 +2419,6 @@
                             "format": "uuid",
                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                           },
-                          "publicId": {
-                            "type": "string",
-                            "maxLength": 12
-                          },
                           "scope": {
                             "type": "object",
                             "properties": {
@@ -2444,6 +2440,10 @@
                             },
                             "required": ["name", "value"],
                             "additionalProperties": false
+                          },
+                          "shortId": {
+                            "type": "string",
+                            "pattern": "^[a-z0-9]{12}$"
                           },
                           "updatedAt": {
                             "type": "string",
@@ -2516,9 +2516,9 @@
                                   "logoLightPath": {
                                     "type": ["string", "null"]
                                   },
-                                  "publicId": {
+                                  "shortId": {
                                     "type": "string",
-                                    "maxLength": 12
+                                    "pattern": "^[a-z0-9]{12}$"
                                   },
                                   "status": {
                                     "type": "string",
@@ -2574,7 +2574,7 @@
                                   "logoDarkPath",
                                   "logoLightFileId",
                                   "logoLightPath",
-                                  "publicId",
+                                  "shortId",
                                   "status",
                                   "updatedAt",
                                   "views"
@@ -2639,8 +2639,8 @@
                           "id",
                           "name",
                           "projectId",
-                          "publicId",
                           "scope",
+                          "shortId",
                           "updatedAt",
                           "currentDeployment",
                           "views"
@@ -3517,9 +3517,9 @@
                         "logoLightPath": {
                           "type": ["string", "null"]
                         },
-                        "publicId": {
+                        "shortId": {
                           "type": "string",
-                          "maxLength": 12
+                          "pattern": "^[a-z0-9]{12}$"
                         },
                         "status": {
                           "type": "string",
@@ -3575,7 +3575,7 @@
                         "logoDarkPath",
                         "logoLightFileId",
                         "logoLightPath",
-                        "publicId",
+                        "shortId",
                         "status",
                         "updatedAt",
                         "views"
@@ -4038,9 +4038,9 @@
                     "logoLightPath": {
                       "type": ["string", "null"]
                     },
-                    "publicId": {
+                    "shortId": {
                       "type": "string",
-                      "maxLength": 12
+                      "pattern": "^[a-z0-9]{12}$"
                     },
                     "status": {
                       "type": "string",
@@ -4096,7 +4096,7 @@
                     "logoDarkPath",
                     "logoLightFileId",
                     "logoLightPath",
-                    "publicId",
+                    "shortId",
                     "status",
                     "updatedAt",
                     "views"
@@ -4237,9 +4237,9 @@
                           "logoLightPath": {
                             "type": ["string", "null"]
                           },
-                          "publicId": {
+                          "shortId": {
                             "type": "string",
-                            "maxLength": 12
+                            "pattern": "^[a-z0-9]{12}$"
                           },
                           "status": {
                             "type": "string",
@@ -4295,7 +4295,7 @@
                           "logoDarkPath",
                           "logoLightFileId",
                           "logoLightPath",
-                          "publicId",
+                          "shortId",
                           "status",
                           "updatedAt",
                           "views"
@@ -4450,9 +4450,9 @@
                     "logoLightPath": {
                       "type": ["string", "null"]
                     },
-                    "publicId": {
+                    "shortId": {
                       "type": "string",
-                      "maxLength": 12
+                      "pattern": "^[a-z0-9]{12}$"
                     },
                     "status": {
                       "type": "string",
@@ -4508,7 +4508,7 @@
                     "logoDarkPath",
                     "logoLightFileId",
                     "logoLightPath",
-                    "publicId",
+                    "shortId",
                     "status",
                     "updatedAt",
                     "views"

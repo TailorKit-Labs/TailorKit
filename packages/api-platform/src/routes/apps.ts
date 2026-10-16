@@ -2,6 +2,7 @@ import { openapi } from "@orpc/openapi";
 import { ORPCError } from "@orpc/server";
 import { db } from "@tailorkit/db";
 import { App, app, AppDeployment } from "@tailorkit/db/schema/apps";
+import { createShortId } from "@tailorkit/db/short-id";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -15,7 +16,6 @@ import {
   requireApp,
   requireAppInScopes,
 } from "#procedures";
-import { createPublicId } from "#public-id";
 import {
   canonicalizeScope,
   canonicalizeScopes,
@@ -36,16 +36,16 @@ export const AppWithCurrentDeployment = App.omit({ scopeKey: true }).extend({
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
-const createUniqueAppPublicId = async (projectId: string) => {
+const createUniqueAppShortId = async (projectId: string) => {
   for (let attempt = 0; attempt < 5; attempt += 1) {
-    const publicId = createPublicId();
+    const shortId = createShortId();
     // oxlint-disable-next-line no-await-in-loop -- Each retry depends on the result of the previous attempt.
     const existing = await db.query.app.findFirst({
-      where: { projectId, publicId },
+      where: { projectId, shortId },
     });
 
     if (!existing) {
-      return publicId;
+      return shortId;
     }
   }
 
@@ -89,7 +89,7 @@ const listApps = cliRouter
           where: {
             status: "published",
           },
-          with: { app: { columns: { publicId: true } } },
+          with: { app: { columns: { shortId: true } } },
         },
       },
     });
@@ -98,13 +98,7 @@ const listApps = cliRouter
       body: {
         items: apps
           .slice(0, pageSize)
-          .map((item) =>
-            withAppAssetUrl(
-              item,
-              context.organization.publicId,
-              context.project.id
-            )
-          ),
+          .map((item) => withAppAssetUrl(item, context.project.shortId)),
         pagination: {
           hasMore: apps.length > pageSize,
           page,
@@ -134,11 +128,7 @@ const getApp = cliRouter
     )
   )
   .handler(({ context }) => ({
-    body: withAppAssetUrl(
-      context.app,
-      context.organization.publicId,
-      context.project.id
-    ),
+    body: withAppAssetUrl(context.app, context.project.shortId),
   }));
 
 const createAppInput = z.object({
@@ -160,9 +150,9 @@ export const createAppRecord = async (
       description: input.description?.trim() ?? undefined,
       name: input.name.trim(),
       projectId: context.project.id,
-      publicId: await createUniqueAppPublicId(context.project.id),
       scope: scope.scope,
       scopeKey: scope.scopeKey,
+      shortId: await createUniqueAppShortId(context.project.id),
     })
     .returning();
 
@@ -206,12 +196,12 @@ const installApp = protectedRouter
         projectId: context.project.id,
         ...(uuidPattern.test(input.params.appId)
           ? { id: input.params.appId }
-          : { publicId: input.params.appId }),
+          : { shortId: input.params.appId }),
       },
       with: {
         currentDeployment: {
           where: { status: "published" },
-          with: { app: { columns: { publicId: true } } },
+          with: { app: { columns: { shortId: true } } },
         },
       },
     });
@@ -230,9 +220,9 @@ const installApp = protectedRouter
         description: source.description,
         name: source.name,
         projectId: context.project.id,
-        publicId: await createUniqueAppPublicId(context.project.id),
         scope: scope.scope,
         scopeKey: scope.scopeKey,
+        shortId: await createUniqueAppShortId(context.project.id),
       })
       .returning();
     if (!installed) {
@@ -242,8 +232,7 @@ const installApp = protectedRouter
     return {
       body: withAppAssetUrl(
         { ...installed, currentDeployment: deployment },
-        context.organization.publicId,
-        context.project.id
+        context.project.shortId
       ),
     };
   });
@@ -376,14 +365,14 @@ const deploy = cliRouter
     }))
   )
   .handler(async ({ context, input }) => {
-    const deploymentByPublicId = await db.query.appDeployment.findFirst({
+    const deploymentByShortId = await db.query.appDeployment.findFirst({
       where: {
         appId: context.app.id,
-        publicId: input.body.deploymentId,
+        shortId: input.body.deploymentId,
       },
     });
     const deployment =
-      deploymentByPublicId ??
+      deploymentByShortId ??
       (uuidPattern.test(input.body.deploymentId)
         ? await db.query.appDeployment.findFirst({
             where: {
@@ -411,7 +400,7 @@ const deploy = cliRouter
       const server = await db.query.appDeploymentFile.findFirst({
         where: {
           appDeploymentId: deployment.id,
-          objectKey: `teams/${context.organization.publicId}/projects/${context.project.id}/apps/${context.app.publicId}/deployments/${deployment.publicId}/server/server.js`,
+          objectKey: `projects/${context.project.shortId}/apps/${context.app.shortId}/deployments/${deployment.shortId}/server/server.js`,
           status: "verified",
         },
       });
@@ -429,7 +418,7 @@ const deploy = cliRouter
             objectKey: server.objectKey,
             projectId: context.project.id,
           },
-          context.app.publicId
+          context.app.shortId
         );
       }
     }
@@ -437,8 +426,7 @@ const deploy = cliRouter
     return {
       body: withAppAssetUrl(
         { ...updatedApp, currentDeployment: deployment },
-        context.organization.publicId,
-        context.project.id
+        context.project.shortId
       ),
     };
   });
