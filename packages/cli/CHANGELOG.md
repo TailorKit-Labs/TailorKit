@@ -1,5 +1,18 @@
 # @tailorkit/cli
 
+## 0.1.0-beta.38
+
+### Minor Changes
+
+- 469d8c2: Add optional slot descriptions for layout and sizing guidance. Preserve descriptions in serialized host contracts and include them in generated slot documentation for app authors and agents.
+
+### Patch Changes
+
+- Updated dependencies [469d8c2]
+  - @tailorkit/core@0.1.0-beta.38
+  - @tailorkit/client-platform@0.1.0-beta.38
+  - @tailorkit/vite@0.1.0-beta.38
+
 ## 0.1.0-beta.37
 
 ### Patch Changes
