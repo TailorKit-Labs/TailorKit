@@ -4,6 +4,9 @@ export default defineConfig({
   input: "../api-platform/openapi.json",
   output: {
     clean: true,
+    module: {
+      extension: ".js",
+    },
     path: "src/client",
   },
   plugins: [
