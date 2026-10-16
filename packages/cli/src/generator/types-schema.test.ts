@@ -376,6 +376,36 @@ const tupleReviewCases: {
   },
 ];
 
+const referenceCases: { name: string; schema: JsonSchema; expected: string }[] =
+  [
+    {
+      expected: '{ value: "first" | "second"; }',
+      name: "referenced object root and nested enum",
+      schema: {
+        $defs: {
+          payload: {
+            properties: { value: { $ref: "#/$defs/value" } },
+            required: ["value"],
+            type: "object",
+          },
+          value: { enum: ["first", "second"], type: "string" },
+        },
+        $ref: "#/$defs/payload",
+      },
+    },
+    {
+      expected: "[string, number | null]",
+      name: "referenced tuple and nullable item",
+      schema: {
+        $defs: { value: { type: ["number", "null"] } },
+        items: false,
+        minItems: 2,
+        prefixItems: [{ type: "string" }, { $ref: "#/$defs/value" }],
+        type: "array",
+      },
+    },
+  ];
+
 const normalize = (text: string): string =>
   text.replaceAll(/\s+/gu, " ").trim();
 const renderDeclaration = (context: JsonSchema): string => {
@@ -522,6 +552,15 @@ describe("JSON Schema type generation", () => {
     }
   );
 
+  it.each(referenceCases)(
+    "resolves $name before rendering types",
+    ({ schema, expected }) => {
+      expect(normalize(renderDeclaration(schema))).toBe(
+        `export interface ViewPropsByPath { "/": { context: ${expected}; }; }`
+      );
+    }
+  );
+
   it("generates TypeScript types equivalent to the expected types", async () => {
     const source = [
       "type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;",
@@ -540,6 +579,13 @@ describe("JSON Schema type generation", () => {
           type: "object",
         }).replace("ViewPropsByPath", `TupleCase${index}`),
         `type TupleCheck${index} = Assert<Equal<TupleCase${index}["/"]["context"]["value"], ${expected}>>;`,
+      ]),
+      ...referenceCases.flatMap(({ schema, expected }, index) => [
+        renderDeclaration(schema).replace(
+          "ViewPropsByPath",
+          `ReferenceCase${index}`
+        ),
+        `type ReferenceCheck${index} = Assert<Equal<ReferenceCase${index}["/"]["context"], ${expected}>>;`,
       ]),
       `const customer: Case${cases.findIndex(({ name }) => name === "mixed catchall")}["/"]["context"]["value"] = { id: "customer-1", extra: 42 };`,
       'const tuple: TupleCase0["/"]["context"]["value"] = ["first", 1, 2];',

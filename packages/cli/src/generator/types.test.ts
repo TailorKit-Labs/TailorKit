@@ -2,13 +2,14 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import { primitives } from "@tailorkit/core/primitives/zod";
 import {
   tool,
   defineContract,
   createTailorKitSchema,
 } from "@tailorkit/core/schema";
 import { createServer } from "@tailorkit/core/server";
-import { TailorKitSchemaSpec } from "@tailorkit/core/spec";
+import { compactJsonSchema, TailorKitSchemaSpec } from "@tailorkit/core/spec";
 import { transformWithOxc } from "vite";
 import { assert, describe, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
@@ -354,22 +355,6 @@ describe("renderGeneratedTypes", () => {
     expect(output).toContain('callbacks: { "onClick": 0, "onValueChange": 1 }');
   });
 
-  it("supports fieldKeys from older schema files", () => {
-    const output = renderGeneratedTypes({
-      components: {
-        Button: {
-          callbacks: {},
-          children: true,
-          fieldKeys: ["variant"],
-        },
-      },
-      views: {},
-    });
-
-    expect(output).not.toContain("export type Variant = unknown;");
-    expect(output).toContain("variant?: unknown;");
-  });
-
   it("generates primitive component props from serialized fields", () => {
     const output = renderGeneratedTypes({
       components: {
@@ -413,7 +398,7 @@ describe("renderGeneratedTypes", () => {
                   {
                     additionalProperties: false,
                     properties: {
-                      base: {
+                      default: {
                         enum: ["lg", "xl"],
                         type: "string",
                       },
@@ -434,11 +419,9 @@ describe("renderGeneratedTypes", () => {
       views: {},
     });
 
+    expect(output).toContain('export type Breakpoint = "md";');
     expect(output).toContain(
-      'export type Breakpoint = "base" | "sm" | "md" | "lg" | "xl" | "2xl";'
-    );
-    expect(output).toContain(
-      "export type Responsive<TValue> = TValue | Partial<Record<Breakpoint, TValue>>;"
+      'export type Responsive<TValue> = TValue | Partial<Record<"default" | Breakpoint, TValue>>;'
     );
     expect(output).toContain('export type Margin = Responsive<"lg" | "xl">;');
     expect(output).toContain("margin?: Margin;");
@@ -509,7 +492,7 @@ describe("renderGeneratedTypes", () => {
                   {
                     additionalProperties: false,
                     properties: {
-                      base: {
+                      default: {
                         not: {},
                       },
                       md: {
@@ -692,4 +675,96 @@ it("generates both frontend kinds and excludes client namespaces from backend ca
   );
   expect(backend).not.toContain("ui:");
   expect(backend).toContain("balance: (input?: undefined) => Promise<number>");
+});
+
+it("generates conditional primitive types from the contract's breakpoint aliases", () => {
+  const schema = createTailorKitSchema({
+    components: {
+      ...primitives({
+        breakpoints: { desktop: "1024px", hover: "640px" },
+        tokens: { background: { accent: "blue", surface: "white" } },
+      }),
+      Custom: { fields: z.object({ background: z.number() }) },
+    },
+  }).serialize();
+  const output = renderGeneratedTypes(schema);
+  expect(output).toContain('export type Breakpoint = "desktop" | "hover";');
+  expect(output).toContain(
+    'export type InteractionState = ":active" | ":disabled" | ":focus-visible" | ":hover";'
+  );
+  expect(output).toContain(
+    'export type Background = Conditional<"accent" | "surface">;'
+  );
+  expect(output).toContain(
+    'export type Responsive<TValue> = TValue | Partial<Record<"default" | Breakpoint, TValue>>;'
+  );
+  expect(output).toContain(
+    'export type Conditional<TValue> = TValue | (Partial<Record<"default" | Breakpoint, TValue>> & Partial<Record<InteractionState, Responsive<TValue>>>);'
+  );
+  expect(output).toContain(
+    "export interface PressableProps {\n  background?: Background;"
+  );
+  expect(output).toContain(
+    "export interface CustomProps {\n  background?: number;"
+  );
+  expect(output).toContain("onPress?: () => void;");
+  expect(output).not.toContain("states?:");
+});
+
+it("generates identical types from inline and referenced schemas in every contract position", () => {
+  const fields = z.strictObject({ first: z.string(), second: z.number() });
+  const context = z.object({ first: fields, second: fields });
+  const original = context["~standard"].jsonSchema.output({
+    target: "draft-2020-12",
+  });
+  const compact = compactJsonSchema(original);
+  expect(compact).toHaveProperty("$defs");
+  const schemaWith = (
+    value: typeof original
+  ): Parameters<typeof renderGeneratedTypes>[0] => ({
+    components: {
+      Example: {
+        callbacks: { onChange: { input: value } },
+        children: false,
+        fields: value,
+      },
+    },
+    tools: {
+      nested: { echo: { input: value, kind: "server", output: value } },
+    },
+    views: { "/": { context: value } },
+  });
+  const schema = schemaWith(compact);
+  expect(renderGeneratedTypes(schema)).toBe(
+    renderGeneratedTypes(schemaWith(original))
+  );
+  const serialized = TailorKitSchemaSpec.parse({ ...schema, version: 1 });
+  expect(renderGeneratedTypes(serialized)).toBe(
+    renderGeneratedTypes(schemaWith(original))
+  );
+});
+
+const referencedField = (type: string) => ({
+  $defs: { value: { type } },
+  properties: { value: { $ref: "#/$defs/value" } },
+  type: "object",
+});
+
+it("resolves each embedded schema against its own definitions", () => {
+  const output = renderGeneratedTypes({
+    components: {
+      Count: {
+        callbacks: {},
+        children: false,
+        fields: referencedField("number"),
+      },
+      Text: {
+        callbacks: {},
+        children: false,
+        fields: referencedField("string"),
+      },
+    },
+  });
+  expect(output).toContain("export interface TextProps {\n  value?: string;");
+  expect(output).toContain("export interface CountProps {\n  value?: number;");
 });

@@ -21,6 +21,8 @@ const JsonSchemaSchema: z.ZodType<
   ReturnType<StandardJSONSchemaV1.Converter["output"]>
 > = z
   .object({
+    $defs: z.lazy(() => z.record(z.string(), JsonSchemaSchema)).optional(),
+    $ref: z.string().optional(),
     $schema: z
       .enum(["https://json-schema.org/draft/2020-12/schema"])
       .optional(),
