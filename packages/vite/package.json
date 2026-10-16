@@ -30,6 +30,10 @@
       "types": "./dist/builder.d.mts",
       "import": "./dist/builder.mjs"
     },
+    "./upload-manifest": {
+      "types": "./dist/upload-manifest.d.mts",
+      "import": "./dist/upload-manifest.mjs"
+    },
     "./config": {
       "types": "./dist/config.d.mts",
       "import": "./dist/config.mjs"
