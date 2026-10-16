@@ -1,5 +1,11 @@
 # @tailorkit/vite
 
+## 0.1.0-beta.39
+
+### Patch Changes
+
+- @tailorkit/app@0.1.0-beta.39
+
 ## 0.1.0-beta.38
 
 ### Patch Changes
