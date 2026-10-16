@@ -1,7 +1,16 @@
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 
-import { expect, it } from "vite-plus/test";
+import { beforeAll, expect, it } from "vite-plus/test";
+
+const packageRoot = path.resolve(import.meta.dirname, "..");
+
+beforeAll(() => {
+  execFileSync("pnpm", ["run", "build"], {
+    cwd: packageRoot,
+    timeout: 60_000,
+  });
+}, 60_000);
 
 it("validates upload manifests without loading build tooling in a server runtime", () => {
   const output = execFileSync(
@@ -33,7 +42,7 @@ it("validates upload manifests without loading build tooling in a server runtime
         console.log("manifest runtime ready");
       `,
     ],
-    { cwd: path.resolve(import.meta.dirname, ".."), encoding: "utf-8" }
+    { cwd: packageRoot, encoding: "utf-8" }
   );
   expect(output).toContain("manifest runtime ready");
 });
