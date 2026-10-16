@@ -7,6 +7,45 @@ import { expect, it } from "vite-plus/test";
 import { tailorkitConfigSchema } from "./config";
 import { loadTailorKitConfig } from "./loader";
 
+it.each(["", "   "])("rejects a blank app name: %j", (name) => {
+  expect(() =>
+    tailorkitConfigSchema.parse({ host: "https://host.test", name })
+  ).toThrow();
+});
+
+it("loads and trims the configured app name and description", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-named-config-"));
+  try {
+    await writeFile(
+      path.join(root, "tailorkit.config.mjs"),
+      'export default { host: "https://host.test", name: "  My App  ", description: "  My app description  " };'
+    );
+    const loaded = await loadTailorKitConfig(undefined, root);
+    expect(loaded.config.name).toBe("My App");
+    expect(loaded.config.description).toBe("My app description");
+  } finally {
+    await rm(root, { force: true, recursive: true });
+  }
+});
+
+it.each([null, "", "a".repeat(255)])(
+  "accepts a clear, empty, or maximum-length description: %j",
+  (description) => {
+    expect(
+      tailorkitConfigSchema.parse({ description, host: "https://host.test" })
+    ).toMatchObject({ description });
+  }
+);
+
+it("rejects app descriptions longer than 255 characters", () => {
+  expect(() =>
+    tailorkitConfigSchema.parse({
+      description: "a".repeat(256),
+      host: "https://host.test",
+    })
+  ).toThrow();
+});
+
 it.each([{ server: { entry: "./backend.ts" } }])(
   "accepts configured server entry points: %j",
   (override) => {
