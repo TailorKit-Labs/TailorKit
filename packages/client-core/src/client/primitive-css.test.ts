@@ -109,7 +109,8 @@ it("builds responsive Pressable states in interaction precedence order", () => {
   ).toBeLessThan(
     css.indexOf(':not([aria-disabled="true"]):is(:active, [data-pressed])')
   );
-  expect(css).toContain("outline: 2px solid var(--ring, currentColor);");
+  expect(css).toContain("outline: auto;");
+  expect(css).not.toContain("--ring");
   expect(css).toContain("outline-offset: 2px;");
   expect(css).not.toContain(":enabled");
   expect(css).not.toContain(":disabled");
