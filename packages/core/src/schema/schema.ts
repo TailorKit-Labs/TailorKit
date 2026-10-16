@@ -20,6 +20,9 @@ import type {
 const isBooleanValue = <TValue>(value: TValue): value is TValue & boolean =>
   typeof value === "boolean";
 
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 type EmptyToolMap = EmptyDefinitionMap;
 
 export interface TailorKitSchema<
@@ -92,6 +95,9 @@ export function createTailorKitSchema(schema: {
   views?: ContextDefinitions;
 }) {
   for (const [name, slot] of Object.entries(schema.slots ?? {})) {
+    if (slot.description !== undefined && !isStringValue(slot.description)) {
+      throw new TypeError(`Slot "${name}" description must be a string.`);
+    }
     if (slot.multiple !== undefined && !isBooleanValue(slot.multiple)) {
       throw new TypeError(`Slot "${name}" multiple must be a boolean.`);
     }
@@ -166,6 +172,9 @@ export function createTailorKitSchema(schema: {
             };
           if (slot.multiple !== undefined) {
             definition.multiple = slot.multiple;
+          }
+          if (slot.description !== undefined) {
+            definition.description = slot.description;
           }
           return [name, definition];
         })

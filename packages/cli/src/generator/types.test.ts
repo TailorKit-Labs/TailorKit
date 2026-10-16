@@ -9,6 +9,7 @@ import {
 } from "@tailorkit/core/schema";
 import { createServer } from "@tailorkit/core/server";
 import { TailorKitSchemaSpec } from "@tailorkit/core/spec";
+import { transformWithOxc } from "vite";
 import { assert, describe, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
@@ -188,6 +189,49 @@ const responsiveConstUnionImplementationImplementation = (
 });
 
 describe("renderGeneratedTypes", () => {
+  it("includes slot descriptions from the host schema endpoint in generated documentation", async () => {
+    const server = createServer({
+      baseUrl: "https://host.test/api/tailorkit",
+      contract: defineContract({
+        scopes: { user: z.object({ userId: z.string() }) },
+        slots: {
+          panel: {
+            description:
+              "Right-hand panel, typically 360px wide.\nScrolls independently.",
+            views: ["/"],
+          },
+        },
+        views: { "/": z.object({}) },
+      }),
+    });
+    const response = await server.handler(
+      new Request("https://host.test/api/tailorkit/schema"),
+      { authenticate: () => null }
+    );
+    expect(response.ok).toBe(true);
+    const output = renderGeneratedTypes(
+      TailorKitSchemaSpec.parse(await response.json())
+    );
+    expect(output).toContain(
+      '    /**\n     * Right-hand panel, typically 360px wide.\n     * Scrolls independently.\n     */\n    "panel": { views: "/"; multiple: false };'
+    );
+  });
+
+  it.each([
+    "",
+    "Panel */\r\nexport const injected = true; /*\rMore\u2028Text\u2029End",
+  ])("keeps description %j inside generated comments", async (description) => {
+    const output = renderGeneratedTypes({
+      slots: { panel: { description, views: ["/"] } },
+    });
+    expect(output).toContain(
+      '    */\n    "panel": { views: "/"; multiple: false };'
+    );
+    const { code } = await transformWithOxc(output, "tailorkit.gen.ts");
+    expect(code).not.toContain("injected");
+    expect(code).not.toContain("description");
+  });
+
   it("preserves nullable view context fields through schema serialization and generation", () => {
     const schema = createTailorKitSchema({
       components: {},
@@ -592,7 +636,7 @@ it("composes independent ancestor contexts and generates slot names", () => {
     },
   });
   expect(generated).toContain(
-    'interface TailorKitSlots { "navbar": { views: "/"; multiple: false }; "panel": { views: "/" | "/users" | "/users/detail"; multiple: true }; }'
+    'interface TailorKitSlots {\n    "navbar": { views: "/"; multiple: false };\n    "panel": { views: "/" | "/users" | "/users/detail"; multiple: true };\n  }'
   );
   const detail = generated.slice(
     generated.indexOf('"/users/detail":'),

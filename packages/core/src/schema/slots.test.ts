@@ -3,9 +3,72 @@ import { z } from "zod";
 
 import { TailorKitSchemaSpec } from "#spec/spec";
 
+import { defineContract } from "./contract";
 import { createTailorKitSchema } from "./schema";
 
 describe("slot view contracts", () => {
+  it("preserves descriptions through contract serialization and schema parsing", () => {
+    const contract = defineContract({
+      slots: {
+        empty: { description: "", views: ["/"] },
+        navbar: { views: ["/"] },
+        page: {
+          description: "Main workspace.\nFills the available width.",
+          multiple: true,
+          views: ["/"],
+        },
+        panel: {
+          description: "Right-hand panel, typically 360px wide.",
+          views: ["/"],
+        },
+      },
+      views: { "/": z.object({}) },
+    });
+    const schema = createTailorKitSchema(contract).serialize();
+    expect(TailorKitSchemaSpec.parse(schema).slots).toEqual({
+      empty: { description: "", views: ["/"] },
+      navbar: { views: ["/"] },
+      page: {
+        description: "Main workspace.\nFills the available width.",
+        multiple: true,
+        views: ["/"],
+      },
+      panel: {
+        description: "Right-hand panel, typically 360px wide.",
+        views: ["/"],
+      },
+    });
+  });
+
+  it.each([null, 360, true, {}, []])(
+    "rejects a non-string description %j at each host boundary",
+    (description) => {
+      expect(() =>
+        defineContract({
+          // @ts-expect-error Exercise runtime validation for JavaScript hosts.
+          slots: { panel: { description, views: ["/"] } },
+          views: { "/": z.object({}) },
+        })
+      ).toThrow('Slot "panel" description must be a string.');
+      expect(() =>
+        createTailorKitSchema({
+          components: {},
+          // @ts-expect-error Exercise runtime validation for JavaScript hosts.
+          slots: { panel: { description, views: ["/"] } },
+          views: { "/": z.object({}) },
+        })
+      ).toThrow('Slot "panel" description must be a string.');
+      expect(
+        TailorKitSchemaSpec.safeParse({
+          components: {},
+          slots: { panel: { description, views: ["/"] } },
+          version: 1,
+          views: { "/": {} },
+        }).success
+      ).toBe(false);
+    }
+  );
+
   it("preserves true, false, and omitted multiplicity through serialization", () => {
     const host = createTailorKitSchema({
       components: {},
