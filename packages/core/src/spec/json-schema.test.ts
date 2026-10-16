@@ -27,6 +27,20 @@ describe("JSON Schema spec", () => {
     expect(JsonSchema.parse(serialized)).toEqual(serialized);
   });
 
+  it("preserves local definitions and references", () => {
+    const schema = {
+      $defs: { value: { enum: ["one", "two"], type: "string" } },
+      properties: { value: { $ref: "#/$defs/value" } },
+      type: "object",
+    };
+    expect(JsonSchema.parse(schema)).toEqual(schema);
+    expect(
+      JsonSchema.safeParse({ $defs: { value: { "x-unsupported": true } } })
+        .success
+    ).toBe(false);
+    expect(JsonSchema.safeParse({ $ref: 42 }).success).toBe(false);
+  });
+
   it("continues to reject unsupported keywords", () => {
     expect(
       JsonSchema.safeParse({ type: "string", "x-custom": true }).success

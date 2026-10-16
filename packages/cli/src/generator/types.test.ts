@@ -9,7 +9,7 @@ import {
   createTailorKitSchema,
 } from "@tailorkit/core/schema";
 import { createServer } from "@tailorkit/core/server";
-import { TailorKitSchemaSpec } from "@tailorkit/core/spec";
+import { compactJsonSchema, TailorKitSchemaSpec } from "@tailorkit/core/spec";
 import { transformWithOxc } from "vite";
 import { assert, describe, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
@@ -709,4 +709,62 @@ it("generates conditional primitive types from the contract's breakpoint aliases
   );
   expect(output).toContain("onPress?: () => void;");
   expect(output).not.toContain("states?:");
+});
+
+it("generates identical types from inline and referenced schemas in every contract position", () => {
+  const fields = z.strictObject({ first: z.string(), second: z.number() });
+  const context = z.object({ first: fields, second: fields });
+  const original = context["~standard"].jsonSchema.output({
+    target: "draft-2020-12",
+  });
+  const compact = compactJsonSchema(original);
+  expect(compact).toHaveProperty("$defs");
+  const schemaWith = (
+    value: typeof original
+  ): Parameters<typeof renderGeneratedTypes>[0] => ({
+    components: {
+      Example: {
+        callbacks: { onChange: { input: value } },
+        children: false,
+        fields: value,
+      },
+    },
+    tools: {
+      nested: { echo: { input: value, kind: "server", output: value } },
+    },
+    views: { "/": { context: value } },
+  });
+  const schema = schemaWith(compact);
+  expect(renderGeneratedTypes(schema)).toBe(
+    renderGeneratedTypes(schemaWith(original))
+  );
+  const serialized = TailorKitSchemaSpec.parse({ ...schema, version: 1 });
+  expect(renderGeneratedTypes(serialized)).toBe(
+    renderGeneratedTypes(schemaWith(original))
+  );
+});
+
+const referencedField = (type: string) => ({
+  $defs: { value: { type } },
+  properties: { value: { $ref: "#/$defs/value" } },
+  type: "object",
+});
+
+it("resolves each embedded schema against its own definitions", () => {
+  const output = renderGeneratedTypes({
+    components: {
+      Count: {
+        callbacks: {},
+        children: false,
+        fields: referencedField("number"),
+      },
+      Text: {
+        callbacks: {},
+        children: false,
+        fields: referencedField("string"),
+      },
+    },
+  });
+  expect(output).toContain("export interface TextProps {\n  value?: string;");
+  expect(output).toContain("export interface CountProps {\n  value?: number;");
 });

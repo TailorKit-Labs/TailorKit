@@ -32,7 +32,7 @@ pnpm playground:generate
 pnpm playground:todo:build
 ```
 
-`playground:generate` serializes the selected contract to `playground/schema.json`, then runs `tailorkit generate --schema` for the todo app. It does not need the host to be running. The file contains the raw schema object accepted by `tailorkit generate --schema`, matching the `schema` value inside the host's `/meta` response.
+`playground:generate` serializes the selected contract to `playground/schema.json`, then runs `tailorkit generate --schema` for the todo app. It does not need the host to be running. Repeated JSON Schema definitions use local `$defs`/`$ref` references in both the generated file and the host response; the app type generator resolves them before producing TypeScript. The file contains the raw schema object accepted by `tailorkit generate --schema`, matching the `schema` value inside the host's `/meta` response.
 
 The host contract exposes these components: the standard `Box`, `Flex`, `Grid`, `Inline`, and `Pressable` primitives, plus `Button` and `Input`. The host maps `Button` and `Input` to `@tailorkit/ui` and uses the standard React renderers for primitives.
 

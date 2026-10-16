@@ -3,6 +3,8 @@ import type {
   StandardSchemaV1,
 } from "@standard-schema/spec";
 
+import { compactJsonSchema } from "#spec/schema-references";
+
 export type Schema = StandardSchemaV1;
 // oxlint-disable-next-line typescript/no-generated-empty-object-type -- An omitted definition table must have no keys, including in keyof-based inference.
 export type EmptyDefinitionMap = Record<never, never>;
@@ -74,8 +76,11 @@ export const serializeSchema = (
     return undefined;
   }
   // SAFETY: The serializer contract returns JSON Schema objects; some native converter interfaces omit the string index signature required by Standard JSON Schema.
-  return schemaSerializer(schema, {
+  const serialized:
+    | ReturnType<StandardJSONSchemaV1.Converter["output"]>
+    | undefined = schemaSerializer(schema, {
     target: "draft-2020-12",
     typeMode,
   });
+  return serialized === undefined ? undefined : compactJsonSchema(serialized);
 };

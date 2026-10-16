@@ -2,6 +2,7 @@ import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { describe, expect, it } from "vite-plus/test";
 
 import { createTailorKitSchema } from "#schema/schema";
+import { resolveJsonSchema } from "#spec/schema-references";
 
 import { primitives as arktypePrimitives } from "./arktype";
 import { primitives as valibotPrimitives } from "./valibot";
@@ -88,7 +89,12 @@ describe("primitive schema components", () => {
     const pressable = schema.serialize().components.Pressable;
     expect(pressable?.callbacks).toEqual({ onPress: {} });
     expect(pressable?.children).toBe(true);
-    expect(pressable?.fields).toHaveProperty("properties.background.anyOf");
+    expect(pressable?.fields).toBeDefined();
+    if (pressable?.fields) {
+      expect(resolveJsonSchema(pressable.fields)).toHaveProperty(
+        "properties.background.anyOf"
+      );
+    }
     expect(pressable?.fields).not.toHaveProperty("properties.states");
   });
 

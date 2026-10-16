@@ -2,6 +2,7 @@ import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
+  resolveJsonSchema,
   SerializedComponent as SerializedComponentSchema,
   TailorKitSchemaSpec,
 } from "@tailorkit/core/spec";
@@ -23,6 +24,8 @@ const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
   typeof value === "object" && value !== null;
 
 interface JsonSchema {
+  $defs?: Record<string, JsonSchema>;
+  $ref?: string;
   additionalProperties?: boolean | JsonSchema;
   anyOf?: JsonSchema[];
   oneOf?: JsonSchema[];
@@ -629,10 +632,66 @@ const renderToolRuntime = (
   return lines.join("\n");
 };
 
+const resolveSchema = (
+  schema: JsonSchema | undefined
+): JsonSchema | undefined => {
+  if (schema === undefined) {
+    return undefined;
+  }
+  return resolveJsonSchema({ ...schema });
+};
+
+const resolveTools = (tools: SerializedTools): SerializedTools =>
+  Object.fromEntries(
+    Object.entries(tools).map(([key, value]) => [
+      key,
+      isSerializedTool(value)
+        ? {
+            ...value,
+            input: resolveSchema(value.input),
+            output: resolveSchema(value.output),
+          }
+        : resolveTools(value),
+    ])
+  );
+
+const resolveSchemaFile = (
+  schema: TailorKitSchemaFile
+): TailorKitSchemaFile => ({
+  ...schema,
+  components: Object.fromEntries(
+    Object.entries(schema.components ?? {}).map(([name, component]) => [
+      name,
+      {
+        ...component,
+        callbacks: Object.fromEntries(
+          Object.entries(component.callbacks ?? {}).map(([key, callback]) => [
+            key,
+            {
+              ...callback,
+              input: resolveSchema(callback.input),
+              output: resolveSchema(callback.output),
+            },
+          ])
+        ),
+        fields: resolveSchema(component.fields),
+      },
+    ])
+  ),
+  tools: resolveTools(schema.tools ?? {}),
+  views: Object.fromEntries(
+    Object.entries(schema.views ?? {}).map(([name, view]) => [
+      name,
+      { ...view, context: resolveSchema(view.context) },
+    ])
+  ),
+});
+
 export const renderGeneratedTypes = (
-  schema: TailorKitSchemaFile,
+  schemaFile: TailorKitSchemaFile,
   options: { serverModule?: string } = {}
 ): string => {
+  const schema = resolveSchemaFile(schemaFile);
   const toolsType = renderTools(schema.tools ?? {});
   const components = schema.components ?? {};
   const fieldAliases = collectFieldTypeAliases(components);
