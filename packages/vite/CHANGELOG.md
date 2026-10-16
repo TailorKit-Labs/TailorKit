@@ -1,5 +1,12 @@
 # @tailorkit/vite
 
+## 0.1.0-beta.42
+
+### Patch Changes
+
+- c54e0b1: Remove TailorKit app previews, including the `tailorkit preview` command, host preview consent and configuration, platform preview APIs and schemas, client preview metadata and stores, live revision subscriptions, and sandbox inline-source loading. Use deployed app builds for host integrations.
+- @tailorkit/app@0.1.0-beta.42
+
 ## 0.1.0-beta.41
 
 ### Patch Changes
