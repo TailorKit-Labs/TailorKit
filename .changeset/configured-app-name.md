@@ -4,4 +4,4 @@
 "tailorkit": minor
 ---
 
-Add an optional `name` to `TailorKitConfig`. Deployment uses it for new apps and synchronizes existing app names while preserving their descriptions. When omitted, new apps retain the package or directory name fallback and existing app names stay unchanged.
+Add optional `name` and `description` fields to `TailorKitConfig`. Deployment uses them for new apps and synchronizes configured fields on existing apps. Omitted fields preserve existing values; new apps fall back to the package or directory name and have no description. Set `description: null` to clear it.

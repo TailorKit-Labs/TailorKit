@@ -39,20 +39,23 @@ Expired or invalid JWTs fail without prompting for login. Start another agent tu
 
 Platform URLs require HTTPS. HTTP is allowed only for the development hosts `localhost`, `127.0.0.1`, and `[::1]`. Both token issuance and client routing enforce these rules.
 
-## Configure the app name
+## Configure the app name and description
 
-Set an optional display name in `tailorkit.config.ts`:
+Set an optional display name and description in `tailorkit.config.ts`:
 
 ```ts
 import type { TailorKitConfig } from "tailorkit/app/config";
 
 export default {
+  description: "Track tasks for your team.",
   host: "https://your-product.com/api/tailorkit",
   name: "My App",
 } satisfies TailorKitConfig;
 ```
 
 `tailorkit deploy` uses this name when creating an app and updates an existing linked app's name before publishing. Names are trimmed and must contain at least one non-whitespace character. When `name` is omitted, new apps use the `package.json` name, falling back to the app directory name. Existing apps keep their current name.
+
+Deploy also applies `description` when creating or updating an app. Descriptions are trimmed and may contain up to 255 characters. Set `description: null` to clear it. Omit `description` to preserve an existing app's description or create a new app without one. You can configure either field independently.
 
 ## Deploy without prompts
 

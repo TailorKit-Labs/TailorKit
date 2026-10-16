@@ -7,6 +7,7 @@ const logosConfigSchema = z.object({
 
 const tailorkitConfigSchema = z.strictObject({
   appId: z.string().min(1).optional(),
+  description: z.string().trim().max(255).nullable().optional(),
   host: z.url(),
   logos: logosConfigSchema.optional(),
   name: z.string().trim().min(1).optional(),
@@ -30,6 +31,14 @@ export interface TailorKitConfig extends z.input<typeof tailorkitConfigSchema> {
    * @default undefined
    */
   appId?: string;
+  /**
+   * App description applied during deployment, including updates to an existing app.
+   * Trimmed to remove surrounding whitespace; accepts at most 255 characters.
+   * Set to null to clear the description. When omitted, existing apps keep their
+   * current description and new apps have no description.
+   * @default undefined
+   */
+  description?: string | null;
   /**
    * URL of the TailorKit host used for authentication, deployment, remote preview,
    * and fetching the host schema for generated types. Required; has no default.

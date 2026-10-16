@@ -449,7 +449,7 @@ export const runDeploy = async (
     const app = unwrapRpcResult(
       appCreateSchema,
       await client.apps.create({
-        description: null,
+        description: loaded.config.description ?? null,
         name: appName,
       })
     );
@@ -542,18 +542,22 @@ export const runDeploy = async (
     }),
   ]);
 
-  if (loaded.config.name !== undefined && !createdApp) {
+  const { description, name } = loaded.config;
+  if ((name !== undefined || description !== undefined) && !createdApp) {
     const app = unwrapRpcResult(
       appDetailsSchema,
       await client.apps.get({ appId })
     );
-    if (app.name !== loaded.config.name) {
+    const appName = name ?? app.name;
+    const appDescription =
+      description === undefined ? app.description : description;
+    if (app.name !== appName || app.description !== appDescription) {
       unwrapRpcResult(
         appCreateSchema,
         await client.apps.update({
           appId,
-          description: app.description,
-          name: loaded.config.name,
+          description: appDescription,
+          name: appName,
         })
       );
     }

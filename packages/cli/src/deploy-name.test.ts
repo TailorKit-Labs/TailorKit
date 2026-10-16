@@ -157,22 +157,43 @@ afterEach(async () => {
   await rm(root, { force: true, recursive: true });
 });
 
-const writeConfig = async (name?: string) => {
+const writeConfig = async (name?: string, appDescription?: string | null) => {
   await writeFile(
     path.join(root, "tailorkit.config.ts"),
-    `export default ${JSON.stringify({ host, name })};`
+    `export default ${JSON.stringify({ description: appDescription, host, name })};`
   );
 };
 
 it.each([
-  { expectedName: "My App", name: "  My App  ", source: "config" },
-  { expectedName: "package-name", name: undefined, source: "package" },
-  { expectedName: undefined, name: undefined, source: "directory" },
+  {
+    appDescription: "  My app description  ",
+    expectedName: "My App",
+    name: "  My App  ",
+    source: "config",
+  },
+  {
+    appDescription: undefined,
+    expectedName: "package-name",
+    name: undefined,
+    source: "package",
+  },
+  {
+    appDescription: "Description without a configured name",
+    expectedName: "package-name",
+    name: undefined,
+    source: "package-description",
+  },
+  {
+    appDescription: null,
+    expectedName: undefined,
+    name: undefined,
+    source: "directory",
+  },
 ])(
   "creates replacement apps using the $source name and shows it in the prompt",
-  async ({ expectedName, name, source }) => {
+  async ({ appDescription, expectedName, name, source }) => {
     missingApp = true;
-    await writeConfig(name);
+    await writeConfig(name, appDescription);
     if (source === "directory") {
       await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     }
@@ -194,7 +215,11 @@ it.each([
     });
     expect(
       JSON.parse(requests.find((r) => r.path === "/apps")?.body ?? "null")
-    ).toEqual({ description: null, name: appName, scope });
+    ).toEqual({
+      description: appDescription?.trim() ?? null,
+      name: appName,
+      scope,
+    });
     expect(
       await readFile(path.join(root, "tailorkit.config.ts"), "utf-8")
     ).toContain('appId: "new-app"');
@@ -234,11 +259,51 @@ it.each([undefined, "Old Name"])(
   }
 );
 
-it("fails deployment if the configured name cannot be synchronized", async () => {
-  updateFails = true;
-  await writeConfig("My App");
-  await expect(runDeploy({ cwd: root })).rejects.toThrow("Cannot rename app.");
-  expect(requests.some((r) => r.path === "/deployments/deployment")).toBe(
-    false
-  );
-});
+it.each([
+  { appDescription: "  New description  ", name: undefined },
+  { appDescription: "New description", name: "My App" },
+  { appDescription: null, name: undefined },
+  { appDescription: "", name: undefined },
+])(
+  "synchronizes description $appDescription with name $name before publishing",
+  async ({ appDescription, name }) => {
+    await writeConfig(name, appDescription);
+    await runDeploy({ cwd: root });
+    const update = requests.find((r) => r.path === "/apps/app-one");
+    expect(update?.method).toBe("PUT");
+    expect(JSON.parse(update?.body ?? "null")).toEqual({
+      description: appDescription?.trim() ?? null,
+      name: name ?? "Old Name",
+      scope,
+    });
+    expect(requests.at(-1)?.path).toBe("/deployments/deployment");
+  }
+);
+
+it.each(["Keep this description", null])(
+  "skips updates when the configured description already matches %j",
+  async (savedDescription) => {
+    description = savedDescription;
+    await writeConfig(undefined, savedDescription);
+    await runDeploy({ cwd: root });
+    expect(requests.some((r) => r.path === "/apps/app-one")).toBe(false);
+    expect(requests.at(-1)?.path).toBe("/deployments/deployment");
+  }
+);
+
+it.each(["name", "description"])(
+  "fails deployment if the configured %s cannot be synchronized",
+  async (field) => {
+    updateFails = true;
+    await writeConfig(
+      field === "name" ? "My App" : undefined,
+      field === "description" ? "New description" : undefined
+    );
+    await expect(runDeploy({ cwd: root })).rejects.toThrow(
+      "Cannot rename app."
+    );
+    expect(requests.some((r) => r.path === "/deployments/deployment")).toBe(
+      false
+    );
+  }
+);
