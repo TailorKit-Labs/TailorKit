@@ -214,6 +214,333 @@ describe("platform appRouter", () => {
     expect(error).not.toHaveProperty("status");
   });
 
+  it("installs a published app with separate scope and runtime identity while retaining its artifacts", async () => {
+    const context = createContext();
+    const { body: source } = await call(
+      appRouter.create,
+      {
+        body: {
+          description: "An inbox",
+          name: "Shared inbox",
+          scope: productionScope,
+        },
+      },
+      { context }
+    );
+    const [deployment] = await db
+      .insert(appDeployment)
+      .values({
+        appId: source.id,
+        logoLightPath: `logos/${"a".repeat(64)}.svg`,
+        publicId: "published001",
+        status: "published",
+        views: [{ path: "/", slot: "page" }],
+      })
+      .returning();
+    if (!deployment) {
+      throw new Error("Expected published deployment");
+    }
+    const keyBase = `teams/${context.organization.publicId}/projects/${projectId}/apps/${source.publicId}`;
+    const [clientFile] = await db
+      .insert(appDeploymentFile)
+      .values({
+        appDeploymentId: deployment.id,
+        contentLength: 10,
+        contentType: "application/javascript",
+        objectKey: `${keyBase}/deployments/${deployment.publicId}/client/client.js`,
+        status: "verified",
+      })
+      .returning();
+    if (!clientFile) {
+      throw new Error("Expected client file");
+    }
+    await db
+      .update(appDeployment)
+      .set({ clientEntryFileId: clientFile.id })
+      .where(eq(appDeployment.id, deployment.id));
+    await db.insert(appDeploymentFile).values({
+      appDeploymentId: deployment.id,
+      checksum: "b".repeat(64),
+      contentLength: 20,
+      contentType: "application/javascript",
+      encoding: "gzip",
+      objectKey: `${keyBase}/deployments/${deployment.publicId}/server/server.js`,
+      status: "verified",
+    });
+    await db
+      .update(appTable)
+      .set({ currentDeploymentId: deployment.id })
+      .where(eq(appTable.id, source.id));
+
+    const handler = new OpenAPIHandler({ apps: appRouter });
+    const response = await handler.handle(
+      new Request(
+        `https://platform.test/api/platform/apps/${source.publicId}/install`,
+        {
+          body: JSON.stringify({ scope: stagingScope }),
+          headers: { "content-type": "application/json" },
+          method: "POST",
+        }
+      ),
+      { context, prefix: "/api/platform" }
+    );
+    expect(response.response?.status).toBe(200);
+    const installed = z
+      .object({ id: z.string(), publicId: z.string() })
+      .parse(await response.response?.json());
+    expect(installed.id).not.toBe(source.id);
+    expect(installed.publicId).not.toBe(source.publicId);
+
+    const { body: listed } = await call(
+      appRouter.list,
+      { body: { scopes: [stagingScope] } },
+      { context }
+    );
+    expect(listed.items).toHaveLength(1);
+    expect(listed.items[0]).toMatchObject({
+      ...installed,
+      createdByAgent: false,
+      currentDeployment: { id: deployment.id },
+      description: source.description,
+      name: source.name,
+      scope: stagingScope,
+      views: [{ path: "/", slot: "page" }],
+    });
+    expect(listed.items[0]?.clientPath).toContain(
+      `/a/${source.publicId}/d/${deployment.publicId}/client/client.js`
+    );
+    expect(listed.items[0]?.logoPaths?.light).toContain(
+      `/a/${source.publicId}/d/${deployment.publicId}/logos/`
+    );
+    const lookup = await call(
+      appRouter.get,
+      { body: { scopes: [stagingScope] }, params: { appId: installed.id } },
+      { context }
+    );
+    expect(lookup.body.clientPath).toBe(listed.items[0]?.clientPath);
+    await expect(
+      call(
+        appRouter.get,
+        {
+          body: { scopes: [productionScope] },
+          params: { appId: installed.id },
+        },
+        { context }
+      )
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+
+    const session = await call(
+      appRouter.runtimeSession,
+      {
+        body: {
+          scopes: [stagingScope],
+          toolUrl: "https://host.test/api/tailorkit/tools/execute",
+        },
+        params: { appId: installed.id },
+      },
+      { context }
+    );
+    expect(session.body.identity).toMatchObject({
+      appId: installed.id,
+      deploymentId: deployment.id,
+      installationId: installed.id,
+      scope: stagingScope,
+    });
+    const { getRuntimeBundle } = await import("./runtime");
+    const bundle = await call(
+      getRuntimeBundle,
+      { body: {}, params: { appId: installed.id } },
+      { context: { ...context, runtimeService: true } }
+    );
+    expect(bundle.body).toMatchObject({
+      appId: installed.id,
+      contentEncoding: "gzip",
+      deploymentId: deployment.id,
+      objectKey: `${keyBase}/deployments/${deployment.publicId}/server/server.js`,
+    });
+
+    await expect(
+      call(
+        appRouter.delete,
+        {
+          body: { scope: productionScope },
+          params: { appId: source.id },
+        },
+        { context }
+      )
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+
+    // Changing the source deployment never changes an existing installation.
+    await db
+      .update(appTable)
+      .set({ currentDeploymentId: null })
+      .where(eq(appTable.id, source.id));
+    const pinned = await call(
+      appRouter.get,
+      { body: { scopes: [stagingScope] }, params: { appId: installed.id } },
+      { context }
+    );
+    expect(pinned.body.currentDeployment?.id).toBe(deployment.id);
+    await call(
+      appRouter.delete,
+      { body: { scope: stagingScope }, params: { appId: installed.id } },
+      { context }
+    );
+    expect(
+      await db.query.app.findFirst({ where: { id: source.id } })
+    ).toBeDefined();
+  });
+
+  it("returns a conflict when an installation appears after the deletion dependency check", async () => {
+    const context = createContext();
+    const { body: source } = await call(
+      appRouter.create,
+      {
+        body: { description: null, name: "Shared app", scope: productionScope },
+      },
+      { context }
+    );
+    await db.insert(appDeployment).values({
+      appId: source.id,
+      publicId: "published001",
+      status: "published",
+    });
+
+    // Insert the dependency during deletion so the initial check cannot see it.
+    await client.exec(`
+      CREATE FUNCTION install_before_delete() RETURNS trigger AS $$
+      BEGIN
+        INSERT INTO app (
+          name, project_id, public_id, scope_json, scope_key, current_deployment_id
+        )
+        SELECT 'Concurrent installation', OLD.project_id, 'installed001',
+          OLD.scope_json, OLD.scope_key, id
+        FROM app_deployment WHERE app_id = OLD.id;
+        RETURN OLD;
+      END;
+      $$ LANGUAGE plpgsql;
+      CREATE TRIGGER install_before_delete
+        BEFORE DELETE ON app
+        FOR EACH ROW EXECUTE FUNCTION install_before_delete();
+    `);
+
+    await expect(
+      call(
+        appRouter.delete,
+        { body: { scope: productionScope }, params: { appId: source.id } },
+        { context }
+      )
+    ).rejects.toMatchObject({
+      code: "CONFLICT",
+      message: "Remove installations using this app before deleting it.",
+    });
+    expect(
+      await db.query.app.findFirst({ where: { id: source.id } })
+    ).toBeDefined();
+  });
+
+  it.each(["23503", "23001", "P0001"])(
+    "handles deletion error %s without masking unrelated failures",
+    async (code) => {
+      const context = createContext();
+      const { body: source } = await call(
+        appRouter.create,
+        { body: { description: null, name: "App", scope: productionScope } },
+        { context }
+      );
+      await client.exec(`
+      CREATE FUNCTION fail_delete() RETURNS trigger AS $$
+      BEGIN
+        RAISE EXCEPTION 'Deletion failed' USING ERRCODE = '${code}';
+      END;
+      $$ LANGUAGE plpgsql;
+      CREATE TRIGGER fail_delete
+        BEFORE DELETE ON app
+        FOR EACH ROW EXECUTE FUNCTION fail_delete();
+    `);
+
+      const deletion = call(
+        appRouter.delete,
+        { body: { scope: productionScope }, params: { appId: source.id } },
+        { context }
+      );
+      await expect(deletion).rejects.toMatchObject({
+        cause: { code, message: "Deletion failed" },
+        name: "DrizzleQueryError",
+      });
+    }
+  );
+
+  it("limits installation to published apps in the host project and rejects agent credentials", async () => {
+    const context = createContext();
+    const { body: source } = await call(
+      appRouter.create,
+      {
+        body: { description: null, name: "Draft", scope: productionScope },
+      },
+      { context }
+    );
+    const input = {
+      body: { scope: stagingScope },
+      params: { appId: source.id },
+    };
+    await expect(
+      call(appRouter.install, input, { context })
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    const [deployment] = await db
+      .insert(appDeployment)
+      .values({
+        appId: source.id,
+        publicId: "uploading001",
+        status: "uploading",
+      })
+      .returning();
+    if (!deployment) {
+      throw new Error("Expected deployment");
+    }
+    await db
+      .update(appTable)
+      .set({ currentDeploymentId: deployment.id })
+      .where(eq(appTable.id, source.id));
+    await expect(
+      call(appRouter.install, input, { context })
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await db
+      .update(appDeployment)
+      .set({ status: "published" })
+      .where(eq(appDeployment.id, deployment.id));
+    await expect(
+      call(appRouter.install, input, {
+        context: createContext({
+          project: { ...context.project, id: otherProjectId },
+        }),
+      })
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    const token = await issueAgentToken(
+      {
+        appId: source.id,
+        cliTokenId: "credential",
+        projectId,
+        scope: productionScope,
+      },
+      testState.env.AUTH_SECRET,
+      "https://platform.test/api/platform"
+    );
+    const claims = await verifyAgentToken(
+      token,
+      testState.env.AUTH_SECRET,
+      "https://platform.test/api/platform"
+    );
+    await expect(
+      call(appRouter.install, input, {
+        context: createContext({ agentToken: { ...claims, token } }),
+      })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(await db.select().from(appTable)).toHaveLength(1);
+    const installed = await call(appRouter.install, input, { context });
+    expect(installed.body.id).not.toBe(source.id);
+  });
+
   it("rejects caller-supplied provenance on general app creation", async () => {
     const handler = new OpenAPIHandler({ apps: appRouter });
     const result = await handler.handle(

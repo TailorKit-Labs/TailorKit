@@ -6,6 +6,7 @@ const hasText = (value: string | null | undefined): value is string =>
   value !== undefined && value !== null && value.length > 0;
 
 interface AppDeploymentAssets {
+  app?: { publicId: string } | null;
   views?: { slot: string; path: string; instances?: true; disabled?: true }[];
   clientEntryFileId: string | null;
   logoDarkPath?: string | null;
@@ -40,7 +41,8 @@ export const withAppAssetUrl = <
     deployment?.status === "published" &&
     hasText(deployment.clientEntryFileId)
   ) {
-    const appBase = `${assetBaseUrl}/p/${projectId}/a/${app.publicId}`;
+    const assetAppId = deployment.app?.publicId ?? app.publicId;
+    const appBase = `${assetBaseUrl}/p/${projectId}/a/${assetAppId}`;
     const deploymentBase = `${appBase}/d/${deployment.publicId}`;
     clientPath = `${deploymentBase}/client/client.js`;
     const getLogoUrl = (path: string) => `${deploymentBase}/${path}`;

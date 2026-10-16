@@ -162,7 +162,12 @@ export const getRuntimeBundle = protectedRouter
 
         const app = await db.query.app.findFirst({
           where: { id: input.appId, projectId: context.project.id },
-          with: { currentDeployment: { where: { status: "published" } } },
+          with: {
+            currentDeployment: {
+              where: { status: "published" },
+              with: { app: { columns: { publicId: true } } },
+            },
+          },
         });
         if (!app) {
           throw new ORPCError("NOT_FOUND");
@@ -177,7 +182,8 @@ export const getRuntimeBundle = protectedRouter
     if (!deployment) {
       throw new ORPCError("NOT_FOUND");
     }
-    const key = `teams/${context.organization.publicId}/projects/${context.project.id}/apps/${context.app.publicId}/deployments/${deployment.publicId}/server/server.js`;
+    const assetAppId = deployment.app?.publicId ?? context.app.publicId;
+    const key = `teams/${context.organization.publicId}/projects/${context.project.id}/apps/${assetAppId}/deployments/${deployment.publicId}/server/server.js`;
     const file = await db.query.appDeploymentFile.findFirst({
       where: {
         appDeploymentId: deployment.id,

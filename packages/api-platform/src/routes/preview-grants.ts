@@ -194,7 +194,12 @@ export const accepted = protectedRouter
         },
         with: {
           app: {
-            with: { currentDeployment: { where: { status: "published" } } },
+            with: {
+              currentDeployment: {
+                where: { status: "published" },
+                with: { app: { columns: { publicId: true } } },
+              },
+            },
           },
         },
       });

@@ -140,6 +140,7 @@ export const appsRouter = {
           projectId: context.project.id,
         },
         with: {
+          currentDeployment: { with: { app: { columns: { publicId: true } } } },
           deployments: {
             orderBy: { createdAt: "desc" },
           },
@@ -155,11 +156,7 @@ export const appsRouter = {
       return withAppAssetUrl(
         {
           ...publicApp,
-          currentDeployment:
-            appWithDeployments.deployments.find(
-              (deployment) =>
-                deployment.id === appWithDeployments.currentDeploymentId
-            ) ?? null,
+          currentDeployment: appWithDeployments.currentDeployment,
           deployments: appWithDeployments.deployments,
         },
         context.org.publicId,
@@ -231,10 +228,10 @@ export const appsRouter = {
             .where(inArray(appDeployment.appId, appIds))
             .orderBy(desc(appDeployment.createdAt)),
           currentDeploymentIds.length > 0
-            ? db
-                .select()
-                .from(appDeployment)
-                .where(inArray(appDeployment.id, currentDeploymentIds))
+            ? db.query.appDeployment.findMany({
+                where: { id: { in: currentDeploymentIds } },
+                with: { app: { columns: { publicId: true } } },
+              })
             : Promise.resolve([]),
         ]);
       const deploymentCountByAppId = new Map(
