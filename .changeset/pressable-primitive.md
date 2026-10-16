@@ -9,4 +9,4 @@ Add a Pressable primitive with inline, box, flex, and grid layouts, token-based 
 
 Replace the `base` style fallback with `default` across primitives. Style props continue to accept token strings and now support conditional objects with host-defined breakpoint names and `:hover`, `:active`, `:focus-visible`, and `:disabled` states. State values can contain breakpoint overrides. Breakpoint names `default` and all names starting with `:` are rejected by TypeScript and at runtime.
 
-Generate breakpoint and interaction types from serialized component fields, and preserve each property's authored breakpoint order. Remove `base: null` from theme breakpoints and replace `base` fallback keys in style objects with `default` before regenerating app types.
+Generate breakpoint and interaction types from serialized component fields, and preserve each property's authored breakpoint order. Breakpoint values require media-query widths; null fallback breakpoints and the generator's legacy `fieldKeys` schema fallback are no longer supported.

@@ -45,7 +45,6 @@ interface SerializedCallback {
 
 interface SerializedComponent {
   callbacks?: Record<string, SerializedCallback>;
-  fieldKeys?: string[];
   fields?: JsonSchema;
   children?: boolean;
 }
@@ -325,19 +324,7 @@ const toTypeName = (name: string): string => {
 
 const getComponentFields = (
   component: SerializedComponent
-): NonNullable<JsonSchema["properties"]> => {
-  if (component.fields?.properties !== undefined) {
-    return component.fields.properties;
-  }
-
-  const fields: Record<string, JsonSchema> = {};
-
-  for (const key of component.fieldKeys ?? []) {
-    fields[key] = {};
-  }
-
-  return fields;
-};
+): NonNullable<JsonSchema["properties"]> => component.fields?.properties ?? {};
 
 const renderResponsiveType = (
   schema: JsonSchema | undefined,

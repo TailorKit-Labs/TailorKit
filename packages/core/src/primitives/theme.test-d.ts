@@ -35,3 +35,6 @@ const invalidTheme: TailorKitTheme = reservedState;
 void invalidTheme;
 // @ts-expect-error -- Host theme resolution accepts the same constrained configuration.
 resolveTheme(reservedDefault);
+
+// @ts-expect-error -- Every breakpoint requires a media-query width; there is no null fallback breakpoint.
+zodPrimitives({ breakpoints: { base: null } });

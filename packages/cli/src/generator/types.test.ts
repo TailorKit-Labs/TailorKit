@@ -355,22 +355,6 @@ describe("renderGeneratedTypes", () => {
     expect(output).toContain('callbacks: { "onClick": 0, "onValueChange": 1 }');
   });
 
-  it("supports fieldKeys from older schema files", () => {
-    const output = renderGeneratedTypes({
-      components: {
-        Button: {
-          callbacks: {},
-          children: true,
-          fieldKeys: ["variant"],
-        },
-      },
-      views: {},
-    });
-
-    expect(output).not.toContain("export type Variant = unknown;");
-    expect(output).toContain("variant?: unknown;");
-  });
-
   it("generates primitive component props from serialized fields", () => {
     const output = renderGeneratedTypes({
       components: {

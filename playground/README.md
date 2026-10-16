@@ -60,7 +60,7 @@ Use `background="surface"` when no conditions are needed. Supported states are `
 
 Within a property, later matching breakpoint entries override earlier ones. List minimum-width breakpoints from smaller to larger for the usual responsive behavior. State styles override ordinary breakpoint styles; active styles override focus-visible and hover styles on conflicting properties. Disabled Pressables ignore the other interaction states. `onPress` runs on activation; state styling stays in the host. Use text or `Inline` children inside the native button and keep nested controls outside it.
 
-This changes the fallback key from `base` to `default`. Remove the old `base: null` breakpoint and replace `base` keys in conditional style values with `default`. Generated types reflect the contract's breakpoint names and supported pseudo-classes.
+Every configured breakpoint needs a media-query width. Generated types reflect the contract's breakpoint names and supported pseudo-classes; `default` is the sole fallback key.
 
 The contracts in `playground/shared/src/contracts/` are deliberately written with each validator's native API. Keep their components, views, scopes, tools, and validation behavior aligned when editing them.
 

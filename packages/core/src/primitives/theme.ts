@@ -1,5 +1,5 @@
 /** Host-defined media query aliases. Conditional style keys are reserved. */
-export type ThemeBreakpoints = Record<string, string | null> & {
+export type ThemeBreakpoints = Record<string, string> & {
   default?: never;
   [state: `:${string}`]: never;
 };
