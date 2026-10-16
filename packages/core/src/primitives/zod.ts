@@ -2,7 +2,11 @@ import { z } from "zod";
 
 import type { ComponentDefinition } from "#schema/index";
 
-import { primitiveDefinitions, mapPrimitiveDefinitions } from "./definition";
+import {
+  primitiveDefinitions,
+  primitiveInteractionStates,
+  mapPrimitiveDefinitions,
+} from "./definition";
 import type { PrimitiveName, PrimitivePropDefinition } from "./definition";
 import { resolveTheme } from "./theme";
 import type { TailorKitTheme } from "./theme";
@@ -29,10 +33,21 @@ const valueEnum = (values: readonly (number | string)[]): z.ZodType => {
   return z.union([z.literal(first), ...rest.map((value) => z.literal(value))]);
 };
 
-const responsive = (schema: z.ZodType, theme: TailorKitTheme): z.ZodType => {
+const responsive = (
+  schema: z.ZodType,
+  theme: TailorKitTheme,
+  interactive = true
+): z.ZodType => {
   const fields: FieldValidators = {};
+  fields.default = schema.optional();
   for (const key of Object.keys(theme.breakpoints ?? {})) {
     fields[key] = schema.optional();
+  }
+  if (interactive) {
+    const stateValue = responsive(schema, theme, false).optional();
+    for (const state of primitiveInteractionStates) {
+      fields[state] = stateValue;
+    }
   }
   return z.union([schema, z.object(fields).strict()]);
 };
@@ -41,6 +56,12 @@ const propSchema = (
   definition: PrimitivePropDefinition,
   theme: TailorKitTheme
 ): z.ZodType => {
+  if (definition.kind === "boolean") {
+    return z.boolean().optional();
+  }
+  if (definition.kind === "string") {
+    return z.string().optional();
+  }
   const schema =
     definition.kind === "token"
       ? tokenEnum(theme.tokens?.[definition.token])
@@ -52,10 +73,8 @@ const propSchema = (
 
 export const primitives = (theme: TailorKitTheme = {}): PrimitiveComponents => {
   const resolvedTheme = resolveTheme(theme);
-  const components = mapPrimitiveDefinitions((name) => ({
-    callbacks: {},
-    children: true as const,
-    fields: z.object(
+  const components = mapPrimitiveDefinitions((name) => {
+    const fields = z.object(
       Object.fromEntries(
         Object.entries<PrimitivePropDefinition>(primitiveDefinitions[name]).map(
           ([propName, definition]) => [
@@ -64,7 +83,12 @@ export const primitives = (theme: TailorKitTheme = {}): PrimitiveComponents => {
           ]
         )
       )
-    ),
-  }));
+    );
+    return {
+      callbacks: name === "Pressable" ? { onPress: {} } : {},
+      children: true as const,
+      fields: name === "Pressable" ? fields.strict() : fields,
+    };
+  });
   return components;
 };

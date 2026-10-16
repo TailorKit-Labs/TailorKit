@@ -1,4 +1,10 @@
-export const primitiveNames = ["Box", "Flex", "Grid", "Inline"] as const;
+export const primitiveNames = [
+  "Box",
+  "Flex",
+  "Grid",
+  "Inline",
+  "Pressable",
+] as const;
 
 export type PrimitiveName = (typeof primitiveNames)[number];
 export const mapPrimitiveDefinitions = <T>(
@@ -8,6 +14,7 @@ export const mapPrimitiveDefinitions = <T>(
   Flex: create("Flex"),
   Grid: create("Grid"),
   Inline: create("Inline"),
+  Pressable: create("Pressable"),
 });
 
 export type TokenName =
@@ -25,6 +32,8 @@ export type TokenName =
   | "textTransform";
 
 export type PrimitivePropDefinition =
+  | { kind: "boolean" }
+  | { kind: "string" }
   | {
       kind: "token";
       token: TokenName;
@@ -76,7 +85,7 @@ const inlineProps = {
   textTransform: boxProps.textTransform,
 } as const satisfies Record<string, PrimitivePropDefinition>;
 
-export const primitiveDefinitions = {
+const layoutDefinitions = {
   Box: boxProps,
   Flex: {
     ...boxProps,
@@ -104,4 +113,31 @@ export const primitiveDefinitions = {
     gap: { kind: "token", responsive: true, token: "space" },
   },
   Inline: inlineProps,
+} as const satisfies Omit<PrimitiveComponentDefinitions, "Pressable">;
+
+const pressableStyleProps = {
+  ...layoutDefinitions.Box,
+  ...layoutDefinitions.Flex,
+  ...layoutDefinitions.Grid,
+} as const;
+
+export const primitiveDefinitions = {
+  ...layoutDefinitions,
+  Pressable: {
+    ...pressableStyleProps,
+    ariaLabel: { kind: "string" },
+    disabled: { kind: "boolean" },
+    layout: {
+      kind: "enum",
+      responsive: false,
+      values: ["inline", "box", "flex", "grid"],
+    },
+  },
 } as const satisfies PrimitiveComponentDefinitions;
+
+export const primitiveInteractionStates = [
+  ":active",
+  ":disabled",
+  ":focus-visible",
+  ":hover",
+] as const;

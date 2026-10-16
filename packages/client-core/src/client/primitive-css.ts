@@ -17,6 +17,7 @@ type PrimitiveValue = number | string;
 export type PrimitiveProps = RemoteProps;
 
 const tokenGroups = [
+  "size",
   "space",
   "radius",
   "background",
@@ -34,13 +35,13 @@ const cssEscape = (value: string): string => {
 };
 
 const toCssValue = (
-  group: (typeof tokenGroups)[number] | "size" | "raw",
+  group: (typeof tokenGroups)[number] | "raw",
   value: PrimitiveValue
 ): string => {
   if (isNumberValue(value)) {
     return `${value}px`;
   }
-  if (group === "size" || group === "raw") {
+  if (group === "raw") {
     return value;
   }
   return `var(--tailorkit-${group}-${cssEscape(value)})`;
@@ -54,7 +55,7 @@ const toResponsiveEntries = (
   value: RemoteProps[string]
 ): [string, PrimitiveValue][] => {
   if (isPrimitiveValue(value)) {
-    return [["base", value]];
+    return [["default", value]];
   }
   if (!isObjectValue(value) || Array.isArray(value)) {
     return [];
@@ -156,51 +157,113 @@ const declarationsForProp = (prop: string, value: PrimitiveValue): string[] => {
   return [];
 };
 
-export const buildPrimitiveCss = ({
-  display,
-  nodeId,
-  props,
-  viewId,
-  theme,
-}: {
-  display: "block" | "flex" | "grid" | "inline";
-  nodeId: string;
-  props: PrimitiveProps;
-  viewId: string;
-  theme: TailorKitTheme;
-}): string => {
-  const selector = `[data-tailorkit-view="${cssEscape(viewId)}"] [data-tailorkit-node="${cssEscape(
-    nodeId
-  )}"]`;
-  const base = [`display: ${display};`];
-  const byBreakpoint = new Map<string, string[]>();
-
+const buildStyleRules = (
+  selector: string,
+  props: PrimitiveProps,
+  theme: TailorKitTheme,
+  base: string[] = []
+): string[] => {
+  const responsiveRules: string[] = [];
   for (const [prop, rawValue] of Object.entries(props)) {
     for (const [breakpoint, value] of toResponsiveEntries(rawValue)) {
       const declarations = declarationsForProp(prop, value);
       if (declarations.length === 0) {
         continue;
       }
-      const target =
-        breakpoint === "base" ? base : (byBreakpoint.get(breakpoint) ?? []);
-      target.push(...declarations);
-      if (breakpoint !== "base") {
-        byBreakpoint.set(breakpoint, target);
+      if (breakpoint === "default") {
+        base.push(...declarations);
+        continue;
+      }
+      const minWidth = theme.breakpoints?.[breakpoint];
+      if (!(minWidth !== undefined && minWidth !== null && minWidth !== "")) {
+        continue;
+      }
+      // Keep each property's authored query order independent of other properties.
+      responsiveRules.push(
+        `@media (min-width: ${minWidth}) { ${selector} { ${declarations.join(" ")} } }`
+      );
+    }
+  }
+  const rules = base.length > 0 ? [`${selector} { ${base.join(" ")} }`] : [];
+  return [...rules, ...responsiveRules];
+};
+
+// Order defines precedence when more than one interaction state is active.
+const interactionStates = [
+  ":hover",
+  ":focus-visible",
+  ":active",
+  ":disabled",
+] as const;
+
+export const buildPrimitiveCss = ({
+  display,
+  nodeId,
+  props,
+  viewId,
+  theme,
+  pressable = false,
+}: {
+  display: "block" | "flex" | "grid" | "inline" | "inline-flex";
+  nodeId: string;
+  props: PrimitiveProps;
+  viewId: string;
+  theme: TailorKitTheme;
+  pressable?: boolean;
+}): string => {
+  const selector = `[data-tailorkit-view="${cssEscape(viewId)}"] [data-tailorkit-node="${cssEscape(
+    nodeId
+  )}"]`;
+  const base = pressable
+    ? [
+        "appearance: none;",
+        "box-sizing: border-box;",
+        "border: 0;",
+        "padding: 0;",
+        "margin: 0;",
+        "font: inherit;",
+        "color: inherit;",
+        "text-align: inherit;",
+        "background: transparent;",
+        "cursor: pointer;",
+      ]
+    : [];
+  base.push(`display: ${display};`);
+  const rules = buildStyleRules(selector, props, theme, base);
+  if (pressable) {
+    rules.push(`${selector}:disabled { cursor: default; }`);
+  }
+  for (const state of interactionStates) {
+    const stateProps: PrimitiveProps = {};
+    for (const [prop, rawValue] of Object.entries(props)) {
+      if (!isObjectValue(rawValue) || Array.isArray(rawValue)) {
+        continue;
+      }
+      const conditions = new Map<string, PrimitiveProps[string]>(
+        Object.entries(rawValue)
+      );
+      const value = conditions.get(state);
+      if (value !== undefined) {
+        stateProps[prop] = value;
       }
     }
-  }
-
-  const rules = [`${selector} { ${base.join(" ")} }`];
-  for (const [breakpoint, declarations] of byBreakpoint) {
-    const minWidth = theme.breakpoints?.[breakpoint];
-    if (!(minWidth !== undefined && minWidth !== null && minWidth !== "")) {
+    const pseudo =
+      pressable && state !== ":disabled" ? `:enabled${state}` : state;
+    const stateRules = buildStyleRules(
+      `${selector}${pseudo}`,
+      stateProps,
+      theme
+    ).join("\n");
+    if (stateRules === "") {
       continue;
     }
+    // Avoid sticky hover styling after a tap on touch devices.
     rules.push(
-      `@media (min-width: ${minWidth}) { ${selector} { ${declarations.join(" ")} } }`
+      state === ":hover"
+        ? `@media (hover: hover) { ${stateRules} }`
+        : stateRules
     );
   }
-
   return rules.join("\n");
 };
 

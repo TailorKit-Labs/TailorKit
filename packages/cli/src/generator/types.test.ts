@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import { primitives } from "@tailorkit/core/primitives/zod";
 import {
   tool,
   defineContract,
@@ -413,7 +414,7 @@ describe("renderGeneratedTypes", () => {
                   {
                     additionalProperties: false,
                     properties: {
-                      base: {
+                      default: {
                         enum: ["lg", "xl"],
                         type: "string",
                       },
@@ -434,11 +435,9 @@ describe("renderGeneratedTypes", () => {
       views: {},
     });
 
+    expect(output).toContain('export type Breakpoint = "md";');
     expect(output).toContain(
-      'export type Breakpoint = "base" | "sm" | "md" | "lg" | "xl" | "2xl";'
-    );
-    expect(output).toContain(
-      "export type Responsive<TValue> = TValue | Partial<Record<Breakpoint, TValue>>;"
+      'export type Responsive<TValue> = TValue | Partial<Record<"default" | Breakpoint, TValue>>;'
     );
     expect(output).toContain('export type Margin = Responsive<"lg" | "xl">;');
     expect(output).toContain("margin?: Margin;");
@@ -509,7 +508,7 @@ describe("renderGeneratedTypes", () => {
                   {
                     additionalProperties: false,
                     properties: {
-                      base: {
+                      default: {
                         not: {},
                       },
                       md: {
@@ -692,4 +691,38 @@ it("generates both frontend kinds and excludes client namespaces from backend ca
   );
   expect(backend).not.toContain("ui:");
   expect(backend).toContain("balance: (input?: undefined) => Promise<number>");
+});
+
+it("generates conditional primitive types from the contract's breakpoint aliases", () => {
+  const schema = createTailorKitSchema({
+    components: {
+      ...primitives({
+        breakpoints: { desktop: "1024px", hover: "640px" },
+        tokens: { background: { accent: "blue", surface: "white" } },
+      }),
+      Custom: { fields: z.object({ background: z.number() }) },
+    },
+  }).serialize();
+  const output = renderGeneratedTypes(schema);
+  expect(output).toContain('export type Breakpoint = "desktop" | "hover";');
+  expect(output).toContain(
+    'export type InteractionState = ":active" | ":disabled" | ":focus-visible" | ":hover";'
+  );
+  expect(output).toContain(
+    'export type Background = Conditional<"accent" | "surface">;'
+  );
+  expect(output).toContain(
+    'export type Responsive<TValue> = TValue | Partial<Record<"default" | Breakpoint, TValue>>;'
+  );
+  expect(output).toContain(
+    'export type Conditional<TValue> = TValue | (Partial<Record<"default" | Breakpoint, TValue>> & Partial<Record<InteractionState, Responsive<TValue>>>);'
+  );
+  expect(output).toContain(
+    "export interface PressableProps {\n  background?: Background;"
+  );
+  expect(output).toContain(
+    "export interface CustomProps {\n  background?: number;"
+  );
+  expect(output).toContain("onPress?: () => void;");
+  expect(output).not.toContain("states?:");
 });

@@ -1,4 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { createRemoteElementProps } from "@tailorkit/client-core";
+import type { HostToIframePayload } from "@tailorkit/sandbox/protocol";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { describe, expect, it } from "vite-plus/test";
 
@@ -6,7 +8,6 @@ import { PrimitiveThemeContext, primitives } from "#primitives";
 
 const theme = {
   breakpoints: {
-    base: null,
     lg: "1024px",
     sm: "640px",
   },
@@ -42,10 +43,10 @@ describe("react primitives", () => {
           children: createElement("span", null, "Content"),
           props: {
             border: "solid",
-            direction: { base: "column", lg: "row" },
+            direction: { default: "column", lg: "row" },
             gap: "md",
-            padding: { base: "md", lg: "lg" },
-            textColor: { base: "muted", lg: "foreground" },
+            padding: { default: "md", lg: "lg" },
+            textColor: { default: "muted", lg: "foreground" },
           },
         })}
       </PrimitiveThemeContext.Provider>
@@ -82,5 +83,55 @@ describe("react primitives", () => {
     );
 
     expect(screen.getByText("Label").tagName).toBe("SPAN");
+  });
+});
+
+describe("Pressable", () => {
+  it("dispatches one zero-argument sandbox callback from a native button", () => {
+    const events: HostToIframePayload[] = [];
+    const props = createRemoteElementProps(
+      {
+        callbacks: [{ callback: "onPress", event: "press", inputCount: 0 }],
+        children: [],
+        id: "pressable",
+        kind: "element",
+        props: { ariaLabel: "Open project", layout: "box", padding: "md" },
+        type: "Pressable",
+      },
+      (event) => {
+        events.push(event);
+      }
+    );
+    const { container, rerender } = render(
+      <PrimitiveThemeContext.Provider value={contextValue1}>
+        {primitives.Pressable({ children: "Project", props })}
+      </PrimitiveThemeContext.Provider>
+    );
+    const button = screen.getByRole("button", { name: "Open project" });
+    expect(button.tagName).toBe("BUTTON");
+    expect(button.getAttribute("type")).toBe("button");
+    expect(container.querySelector("style")?.textContent).toContain(
+      "display: block;"
+    );
+    // Styles stay outside the button's accessible name and content model.
+    expect(button.querySelector("style")).toBeNull();
+    fireEvent.click(button);
+    expect(events).toEqual([
+      {
+        data: { args: [], event: "press", nodeId: "pressable" },
+        type: "dispatchCallback",
+      },
+    ]);
+    rerender(
+      <PrimitiveThemeContext.Provider value={contextValue1}>
+        {primitives.Pressable({
+          children: "Project",
+          props: { ...props, disabled: true },
+        })}
+      </PrimitiveThemeContext.Provider>
+    );
+    expect(button.hasAttribute("disabled")).toBe(true);
+    fireEvent.click(button);
+    expect(events).toHaveLength(1);
   });
 });

@@ -1,14 +1,20 @@
+/** Host-defined media query aliases. Conditional style keys are reserved. */
+export type ThemeBreakpoints = Record<string, string | null> & {
+  default?: never;
+  [state: `:${string}`]: never;
+};
+
 export interface TailorKitTheme {
   /**
    * Responsive breakpoint names used by responsive primitive props.
    *
-   * The `base` breakpoint should be `null`; every other value is used as a
-   * CSS `min-width` media query.
+   * Values are used as CSS `min-width` media queries. Use `default` in style
+   * values for the fallback; `default` and names starting with `:` are reserved.
    *
-   * Defaults: `base: null`, `sm: "640px"`, `md: "768px"`,
+   * Defaults: `sm: "640px"`, `md: "768px"`,
    * `lg: "1024px"`, `xl: "1280px"`, `2xl: "1536px"`.
    */
-  breakpoints?: Record<string, string | null>;
+  breakpoints?: ThemeBreakpoints;
   tokens?: {
     /**
      * Background color tokens used by the `background` primitive prop.
@@ -97,7 +103,6 @@ export interface TailorKitTheme {
 
 export const defaultBreakpoints = {
   "2xl": "1536px",
-  base: null,
   lg: "1024px",
   md: "768px",
   sm: "640px",
@@ -235,7 +240,14 @@ const resolveTokens = (
 
 export const resolveTheme = (
   theme: TailorKitTheme | undefined
-): TailorKitTheme => ({
-  breakpoints: theme?.breakpoints ?? defaultBreakpoints,
-  tokens: resolveTokens(theme),
-});
+): TailorKitTheme => {
+  const breakpoints = theme?.breakpoints ?? defaultBreakpoints;
+  for (const name of Object.keys(breakpoints)) {
+    if (name === "default" || name.startsWith(":")) {
+      throw new Error(
+        `Breakpoint name "${name}" is reserved for conditional styles.`
+      );
+    }
+  }
+  return { breakpoints, tokens: resolveTokens(theme) };
+};
