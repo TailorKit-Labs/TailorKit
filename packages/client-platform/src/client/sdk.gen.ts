@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import type { Client, ClientMeta, Options as Options2, RequestResult, ServerSentEventsResult, TDataShape } from './client/index.js';
-import type { AppAgentChatData, AppAgentChatResponse, AppAgentChatResponses, AppAgentCreateData, AppAgentCreateResponses, AppsCreateData, AppsCreateResponses, AppsDeleteData, AppsDeleteResponses, AppsDeployData, AppsDeployResponses, AppsGetData, AppsGetResponses, AppsInstallData, AppsInstallResponses, AppsListData, AppsListResponses, AppsRuntimeSessionData, AppsRuntimeSessionResponses, AppsUpdateData, AppsUpdateResponses, CliAuthApproveData, CliAuthApproveResponses, CliAuthDenyData, CliAuthDenyResponses, CliAuthPollData, CliAuthPollResponses, CliAuthStartData, CliAuthStartResponses, CliAuthVerifyTokenData, CliAuthVerifyTokenResponses, DeploymentsCreateData, DeploymentsCreateResponses, DeploymentsGetData, DeploymentsGetResponses, DeploymentsListData, DeploymentsListResponses, DeploymentsPublishData, DeploymentsPublishResponses, DeploymentsRuntimeData, DeploymentsRuntimeResponses, PreviewAcceptData, PreviewAcceptedData, PreviewAcceptedResponses, PreviewAcceptResponses, PreviewInvitationData, PreviewInvitationResponses, PreviewStartData, PreviewStartResponses, PreviewStopData, PreviewStopResponses } from './types.gen.js';
+import type { AppAgentChatData, AppAgentChatResponse, AppAgentChatResponses, AppAgentCreateData, AppAgentCreateResponses, AppsCreateData, AppsCreateResponses, AppsDeleteData, AppsDeleteResponses, AppsDeployData, AppsDeployResponses, AppsGetData, AppsGetResponses, AppsInstallData, AppsInstallResponses, AppsListData, AppsListResponses, AppsRuntimeSessionData, AppsRuntimeSessionResponses, AppsUpdateData, AppsUpdateResponses, CliAuthApproveData, CliAuthApproveResponses, CliAuthDenyData, CliAuthDenyResponses, CliAuthPollData, CliAuthPollResponses, CliAuthStartData, CliAuthStartResponses, CliAuthVerifyTokenData, CliAuthVerifyTokenResponses, DeploymentsCreateData, DeploymentsCreateResponses, DeploymentsGetData, DeploymentsGetResponses, DeploymentsListData, DeploymentsListResponses, DeploymentsPublishData, DeploymentsPublishResponses, DeploymentsRuntimeData, DeploymentsRuntimeResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
   /**
@@ -197,41 +197,3 @@ export const deploymentsRuntime = <ThrowOnError extends boolean = false>(options
     ...options.headers
   }
 });
-
-export const previewStart = <ThrowOnError extends boolean = false>(options: Options<PreviewStartData, ThrowOnError>): RequestResult<PreviewStartResponses, unknown, ThrowOnError> => (options.client ?? client).post<PreviewStartResponses, unknown, ThrowOnError>({
-  url: '/preview/start',
-  ...options,
-  headers: {
-    'Content-Type': 'application/json',
-    ...options.headers
-  }
-});
-
-export const previewStop = <ThrowOnError extends boolean = false>(options: Options<PreviewStopData, ThrowOnError>): RequestResult<PreviewStopResponses, unknown, ThrowOnError> => (options.client ?? client).post<PreviewStopResponses, unknown, ThrowOnError>({
-  url: '/preview/{sessionId}/stop',
-  ...options,
-  headers: {
-    'Content-Type': 'application/json',
-    ...options.headers
-  }
-});
-
-export const previewAccept = <ThrowOnError extends boolean = false>(options: Options<PreviewAcceptData, ThrowOnError>): RequestResult<PreviewAcceptResponses, unknown, ThrowOnError> => (options.client ?? client).post<PreviewAcceptResponses, unknown, ThrowOnError>({
-  url: '/preview/shares/{shareId}/accept',
-  ...options,
-  headers: {
-    'Content-Type': 'application/json',
-    ...options.headers
-  }
-});
-
-export const previewAccepted = <ThrowOnError extends boolean = false>(options: Options<PreviewAcceptedData, ThrowOnError>): RequestResult<PreviewAcceptedResponses, unknown, ThrowOnError> => (options.client ?? client).post<PreviewAcceptedResponses, unknown, ThrowOnError>({
-  url: '/preview/grants/resolve',
-  ...options,
-  headers: {
-    'Content-Type': 'application/json',
-    ...options.headers
-  }
-});
-
-export const previewInvitation = <ThrowOnError extends boolean = false>(options: Options<PreviewInvitationData, ThrowOnError>): RequestResult<PreviewInvitationResponses, unknown, ThrowOnError> => (options.client ?? client).get<PreviewInvitationResponses, unknown, ThrowOnError>({ url: '/preview/shares/{shareId}', ...options });

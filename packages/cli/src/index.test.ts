@@ -59,10 +59,6 @@ vi.mock("./deploy", () => ({ runDeploy: mocks.deploy }));
 vi.mock("./agent", () => ({ runAgentCommand: mocks.agent }));
 vi.mock("./generator/types", () => ({ generateTypes: mocks.generate }));
 vi.mock("./init", () => ({ runInit: mocks.init }));
-vi.mock("./preview", () => ({
-  runPreview: vi.fn(),
-  toPreviewOptions: vi.fn(),
-}));
 vi.mock("./utils/open-browser", () => ({ openUrlInBrowser: mocks.open }));
 
 await import("./index");

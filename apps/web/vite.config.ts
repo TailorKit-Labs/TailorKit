@@ -49,10 +49,6 @@ export default defineConfig(({ mode }) => {
           tailwindcss(),
           tanstackStart(),
           nitro({
-            // Preview uploads and viewer revisions share this Nitro deployment.
-            // KV leases give the CLI 75 seconds to reconnect after an upgrade.
-            features: { websocket: !isTest },
-
             // Nitro's dev server otherwise treats client.js as a Vite static asset.
             // Forward this prefix to Start, which owns the endpoint and its handlers.
             handlers: [

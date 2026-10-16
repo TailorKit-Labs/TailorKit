@@ -162,12 +162,6 @@ const createReactTailorKitClient = <
       useEffect(() => {
         store.setProvidedApps(apps);
       }, [store, apps]);
-      useEffect(
-        () => () => {
-          store.previews.dispose();
-        },
-        [store]
-      );
       const context = useMemo(() => ({ client, store }), [store]);
       return createElement(
         TailorkitContext.Provider,

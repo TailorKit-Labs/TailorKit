@@ -484,9 +484,6 @@ importers:
       botid:
         specifier: 1.5.11
         version: 1.5.11(next@16.3.3(@babel/core@7.29.7(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)
-      crossws:
-        specifier: 0.4.15
-        version: 0.4.15(srvx@1.0.4)
       drizzle-orm:
         specifier: 'catalog:'
         version: 1.0.0-rc.4-5d5b77c(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(@upstash/redis@1.39.0)(arktype@2.2.7)(effect@4.0.2)(pg@8.23.1)(typebox@1.3.36)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5)
@@ -994,9 +991,6 @@ importers:
       '@tailorkit/app':
         specifier: workspace:*
         version: link:../app
-      '@tailorkit/client-platform':
-        specifier: workspace:*
-        version: link:../client-platform
       '@tailorkit/core':
         specifier: workspace:*
         version: link:../core

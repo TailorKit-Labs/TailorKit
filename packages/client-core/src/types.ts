@@ -13,10 +13,4 @@ export interface TailorKitApp {
     id: string;
   } | null;
   name?: string;
-  preview?: {
-    sessionId: string;
-    expiresAt: string;
-    websocketUrl: string;
-    token: string;
-  };
 }

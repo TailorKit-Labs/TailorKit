@@ -186,8 +186,6 @@ it("routes every authenticated CLI surface through existing platform endpoints f
   await client.cliAuth.verifyToken({});
   await client.apps.list({ page: 1, pageSize: 100 });
   await client.apps.create({ description: null, name: "App" });
-  await client.preview.start({ appId: "app-one" });
-  await client.preview.stop({ sessionId: "session-one" });
   const chunks = [];
   for await (const chunk of await client.appAgent.chat({
     appId: "app-one",
@@ -214,8 +212,6 @@ it("routes every authenticated CLI surface through existing platform endpoints f
     "https://platform.test/api/platform/cli-auth/verify-token",
     "https://platform.test/api/platform/apps/list",
     "https://platform.test/api/platform/apps",
-    "https://platform.test/api/platform/preview/start",
-    "https://platform.test/api/platform/preview/session-one/stop",
     "https://platform.test/api/platform/app-agent/chat",
   ]);
   fetch.mockClear();

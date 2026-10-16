@@ -9,13 +9,6 @@ import type { TailorKitApp } from "#types";
 import { createSlotRuntime } from "./slot-runtime";
 import type { SlotRuntimeOptions } from "./slot-runtime";
 
-const require = <T>(value: T | null | undefined): T => {
-  if (value === null || value === undefined) {
-    throw new Error("Expected a defined value.");
-  }
-  return value;
-};
-
 const setup = (multiple = false) => {
   const fetch = vi.fn<typeof globalThis.fetch>();
   const client = createTailorKitFetchClient({
@@ -180,74 +173,6 @@ it("updates the session provider when deployment changes behind the same custom 
   }
   expect(updated.appUrl).toBe(initial.appUrl);
   expect(updated.getBackendSession).not.toBe(initial.getBackendSession);
-});
-
-it("keeps preview subscriptions across context changes and switches sessions without accepting old source", async () => {
-  const { atom, onStop } = await import("nanostores");
-  const { store } = setup();
-  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-  const first = atom({ revision: 0, source: null as string | null });
-  // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-  const second = atom({ revision: 0, source: null as string | null });
-  const stopped = vi.fn<Parameters<typeof onStop>[1]>();
-  onStop(first, stopped);
-  vi.spyOn(store.previews, "getStore").mockImplementation((getApp) =>
-    getApp().preview?.sessionId === "first" ? first : second
-  );
-  const app: TailorKitApp = {
-    id: "preview",
-    preview: {
-      expiresAt: "later",
-      sessionId: "first",
-      token: "token",
-      websocketUrl: "wss://preview.test",
-    },
-  };
-  const options: SlotRuntimeOptions = {
-    app,
-    context: { customer: "first" },
-    mode: "controlled",
-    slot: "page",
-    status: "ready",
-    view: "/",
-  };
-  const runtime = createSlotRuntime(store, options);
-  const stop = runtime.state.listen(
-    vi.fn<NonNullable<Parameters<typeof runtime.state.listen>[0]>>()
-  );
-  expect(runtime.state.get().status).toBe("hidden");
-  stopped.mockClear();
-  first.set({ revision: 1, source: "export default 1" });
-  expect(runtime.state.get()).toMatchObject({
-    appUrl: "https://host.test/api/preview/first/client.js",
-    hostKey: 1,
-    sourceText: "export default 1",
-    status: "render",
-  });
-  runtime.setInput({ ...options, context: { customer: "second" } });
-  expect(stopped).not.toHaveBeenCalled();
-  expect(first.lc).toBe(1);
-  runtime.setInput({
-    ...options,
-    app: {
-      ...app,
-      preview: { ...require(app.preview), sessionId: "second" },
-    },
-  });
-  expect(stopped).toHaveBeenCalledOnce();
-  const switched = runtime.state.get();
-  expect(switched.status).toBe("hidden");
-  first.set({ revision: 2, source: "stale" });
-  expect(runtime.state.get()).toBe(switched);
-  second.set({ revision: 3, source: "export default 3" });
-  expect(runtime.state.get()).toMatchObject({
-    appUrl: "https://host.test/api/preview/second/client.js",
-    hostKey: 3,
-    sourceText: "export default 3",
-    status: "render",
-  });
-  stop();
-  expect(second.lc).toBe(0);
 });
 
 it("cancels an instance request when switching to a controlled slot", async () => {

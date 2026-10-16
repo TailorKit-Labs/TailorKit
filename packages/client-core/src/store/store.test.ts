@@ -188,40 +188,6 @@ describe("client stores", () => {
     stop();
   });
 
-  it("does not seed discovery from preview updates before apps are available", async () => {
-    const response = deferredResponse();
-    const fetchMock = vi.fn<typeof fetch>(async () => await response.promise);
-    vi.stubGlobal("fetch", fetchMock);
-    const store = createTailorKitStore({
-      baseUrl: "https://host.test/",
-      contract: testContract(),
-    });
-    const views = [{ path: "/preview", slot: "panel" }];
-
-    store.fetch.apps.updateViews("app", views);
-    expect(store.getAppsSnapshot().status).toBe("idle");
-    const pending = store.fetchApps();
-    await Promise.resolve();
-    const signal = fetchMock.mock.calls[0]?.[1]?.signal;
-    store.fetch.apps.updateViews("app", views);
-    expect(store.getAppsSnapshot().status).toBe("loading");
-    expect(signal?.aborted).toBe(false);
-    expect(store.fetchApps()).toBe(pending);
-    response.resolve(
-      Response.json([
-        { id: "app", views: [{ path: "/remote", slot: "panel" }] },
-      ])
-    );
-    await pending;
-    expect(store.getAppsSnapshot().apps[0]?.views).toEqual([
-      { path: "/remote", slot: "panel" },
-    ]);
-    expect(fetchMock).toHaveBeenCalledOnce();
-
-    store.fetch.apps.updateViews("app", views);
-    expect(store.getAppsSnapshot().apps[0]?.views).toEqual(views);
-  });
-
   it("recovers from failed requests and keeps client instances isolated", async () => {
     const fetchMock = vi
       .fn()

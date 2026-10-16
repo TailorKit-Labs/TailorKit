@@ -42,6 +42,19 @@ const requestImplementationImplementation = (origin: string) =>
   });
 
 describe("createTailorKitServer", () => {
+  it.each([
+    ["GET", "preview/metadata?sessionId=removed"],
+    ["GET", `preview/${"a".repeat(43)}`],
+    ["POST", `preview/${"a".repeat(43)}`],
+    ["POST", "preview/start"],
+  ])("returns 404 for removed %s %s routes", async (method, path) => {
+    const response = await tailor.handler(
+      new Request(`https://example.com/api/tailorkit/${path}`, { method }),
+      { authenticate: authenticateImplementation2Implementation }
+    );
+    expect(response.status).toBe(404);
+  });
+
   it("requests app backend tokens from the platform with host credentials and verified scopes", async () => {
     const platformFetch = vi.fn<typeof fetch>().mockResolvedValueOnce(
       Response.json({
@@ -317,7 +330,7 @@ describe("createTailorKitServer", () => {
 
   const authenticateImplementation2 = authenticateImplementation2Implementation;
 
-  it("treats scopes= as an empty app and preview selection", async () => {
+  it("treats scopes= as an empty app selection", async () => {
     const platformFetch = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(Response.json({ items: [] }));
@@ -337,13 +350,6 @@ describe("createTailorKitServer", () => {
     expect(apps.status).toBe(200);
     await expect(apps.json()).resolves.toEqual([]);
 
-    const metadata = await server.handler(
-      new Request(
-        "https://example.com/api/tailorkit/preview/metadata?sessionId=test&scopes="
-      ),
-      { authenticate }
-    );
-    expect(metadata.status).toBe(404);
     expect(platformFetch).not.toHaveBeenCalled();
   });
 

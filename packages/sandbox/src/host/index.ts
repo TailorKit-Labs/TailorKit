@@ -37,8 +37,6 @@ export interface IframeUiHostOptions {
   mountTarget?: HTMLElement;
   onError?: (error: Error) => void;
   props?: RemoteProps;
-  /** Complete source for a committed preview revision. */
-  sourceText?: string;
   /** Bound by the host SDK to this app installation; never supplied by the iframe. */
   toolBridge?: ToolBridge;
   getBackendSession?: (options: { refresh: boolean }) => Promise<Session>;
@@ -303,10 +301,7 @@ export const createIframeUiHost = (
         return;
       }
       mounted = true;
-      appSourcePromise =
-        options.sourceText === undefined
-          ? fetchSource(fetchImplementation, resolvedAppUrl)
-          : Promise.resolve(options.sourceText);
+      appSourcePromise = fetchSource(fetchImplementation, resolvedAppUrl);
       (options.mountTarget ?? document.body).append(iframe);
       void (async () => {
         try {

@@ -134,11 +134,9 @@ it("retains the latest props and shares callback payload construction", () => {
   store.setProps(latest);
   const stop = store.mount({
     appUrl: "https://host.test/app.js",
-    sourceText: "source",
   });
   expect(requireValue(records[0]).options).toMatchObject({
     props: latest,
-    sourceText: "source",
   });
   store.setProps(undefined);
   expect(requireValue(records[0]).host.setProps).toHaveBeenCalledWith(

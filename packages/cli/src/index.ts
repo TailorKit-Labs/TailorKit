@@ -13,7 +13,6 @@ import { runDeploy } from "./deploy";
 import { generateTypes } from "./generator/types";
 import { runInit } from "./init";
 import type { CliOptions } from "./options";
-import { toPreviewOptions, runPreview } from "./preview";
 import { openUrlInBrowser } from "./utils/open-browser";
 
 declare const __TAILORKIT_VERSION__: string;
@@ -71,26 +70,6 @@ const loginWithApproval = async (
     throw error;
   }
 };
-
-cli
-  .command("preview", "Preview the app inside a host app")
-  .option("--cwd <path>", "Working directory", { default: "." })
-  .option("--config <path>", "Path to tailorkit config")
-  .option("--out-dir <path>", "Build output directory")
-  .option("--mode <mode>", "Vite mode")
-  .option(
-    "--replace",
-    "End the active preview for this app and start a new one"
-  )
-  .action(async (options: CliOptions) => {
-    intro(pc.bold("TailorKit"));
-    try {
-      await runPreview(toPreviewOptions(options));
-    } catch (error) {
-      log.error(error instanceof Error ? error.message : String(error));
-      process.exit(1);
-    }
-  });
 
 cli
   .command("login", "Authenticate the TailorKit CLI with a host app")

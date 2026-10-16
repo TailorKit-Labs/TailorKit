@@ -25,9 +25,8 @@ const tailorkitConfigSchema = z.strictObject({
  */
 export interface TailorKitConfig extends z.input<typeof tailorkitConfigSchema> {
   /**
-   * ID of the app on the TailorKit host, used for deployment and remote preview.
+   * ID of the app on the TailorKit host, used for deployment.
    * When omitted, the first deployment creates an app and saves its ID here.
-   * Remote preview requires an existing app ID.
    * @default undefined
    */
   appId?: string;
@@ -40,7 +39,7 @@ export interface TailorKitConfig extends z.input<typeof tailorkitConfigSchema> {
    */
   description?: string | null;
   /**
-   * URL of the TailorKit host used for authentication, deployment, remote preview,
+   * URL of the TailorKit host used for authentication, deployment,
    * and fetching the host schema for generated types. Required; has no default.
    */
   host: string;

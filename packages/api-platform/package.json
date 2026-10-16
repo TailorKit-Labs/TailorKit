@@ -28,11 +28,6 @@
       "types": "./dist/context.d.mts",
       "default": "./dist/context.mjs"
     },
-    "./preview-token": {
-      "development": "./src/preview-token.ts",
-      "types": "./dist/preview-token.d.mts",
-      "default": "./dist/preview-token.mjs"
-    },
     "./*": {
       "development": "./src/*.ts",
       "types": "./dist/*.d.mts",
@@ -40,7 +35,7 @@
     }
   },
   "scripts": {
-    "build": "vp pack src/index.ts src/app-agent-mcp.ts src/runtime/auth.ts src/context.ts src/pagination.ts src/preview-token.ts src/preview-ws.ts src/preview-ws-auth.ts src/preview-build-store.ts src/preview-lifecycle.ts src/procedures.ts src/cli-token.ts src/public-id.ts src/asset-url.ts src/assets.ts src/scope.ts src/routes/apps.ts src/routes/runtime.ts src/routes/cli-auth.ts src/routes/deployments.ts src/routes/preview.ts src/routes/preview-grants.ts src/routes/app-agent.ts --format esm --dts --clean",
+    "build": "vp pack src/index.ts src/app-agent-mcp.ts src/runtime/auth.ts src/context.ts src/pagination.ts src/procedures.ts src/cli-token.ts src/public-id.ts src/asset-url.ts src/assets.ts src/scope.ts src/routes/apps.ts src/routes/runtime.ts src/routes/cli-auth.ts src/routes/deployments.ts src/routes/app-agent.ts --format esm --dts --clean",
     "check-types": "tsc --noEmit",
     "generate:openapi": "node --conditions=development --import tsx scripts/generate-openapi.ts && vp fmt openapi.json",
     "test": "vp test run",

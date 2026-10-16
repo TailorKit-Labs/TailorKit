@@ -48,10 +48,6 @@
       "types": "./dist/client/*.d.ts",
       "import": "./dist/client/*.js"
     },
-    "./preview": {
-      "types": "./dist/preview.d.ts",
-      "import": "./dist/preview.js"
-    },
     "./agent": {
       "types": "./dist/agent.d.ts",
       "import": "./dist/agent.js"
