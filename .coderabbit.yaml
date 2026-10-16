@@ -2,6 +2,10 @@
 
 inheritance: true
 reviews:
+  # Generated artifacts: review their source definitions and SQL migrations instead.
+  path_filters:
+    - "!packages/api-platform/openapi.json"
+    - "!**/migrations/**/*.json"
   auto_review:
     # Matches the version PR title configured in .github/workflows/release.yml.
     ignore_title_keywords:
