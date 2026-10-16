@@ -11,6 +11,8 @@ export type {
   TailorKitHandlerContext,
   TailorKitHandlerOptions,
   TailorKitHostContext,
+  TailorKitInstallAppOptions,
+  TailorKitInstalledApp,
   TailorKitPlatformOptions,
   TailorKitServer,
   TailorKitServerOptions,

@@ -1,6 +1,6 @@
 {
   "name": "@tailorkit/client-platform",
-  "version": "0.1.0-beta.38",
+  "version": "0.1.0-beta.39",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -58,7 +58,7 @@
   },
   "scripts": {
     "build": "tsup 'src/**/*.ts' --format esm --target node20 --clean && tsc -p tsconfig.build.json",
-    "generate": "openapi-ts && node ./scripts/restore-openapi-params.mjs && node ./scripts/normalize-esm-imports.mjs && node ./scripts/normalize-sse-cancellation.mjs && vp fmt src/client",
+    "generate": "openapi-ts && node ./scripts/restore-openapi-params.mjs && node ./scripts/normalize-sse-cancellation.mjs",
     "check-types": "tsc --noEmit",
     "test": "vp test run",
     "lint": "vp lint .",

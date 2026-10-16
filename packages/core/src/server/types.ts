@@ -1,5 +1,8 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
-import type { ClientOptions as PlatformClientOptions } from "@tailorkit/client-platform/client/types.gen";
+import type {
+  AppsInstallResponses,
+  ClientOptions as PlatformClientOptions,
+} from "@tailorkit/client-platform/client/types.gen";
 
 import type {
   ContractTools,
@@ -126,6 +129,20 @@ export interface TailorKitNamedScope {
 
 export type TailorKitScopes = Record<string, TailorKitScope>;
 
+/** Install a deployed app into exactly one scope declared by the host. */
+export interface TailorKitInstallAppOptions<TScopes = TailorKitScopes> {
+  /** Public app ID or UUID of a deployed app in this project. */
+  appId: string;
+  scope: {
+    [TName in keyof TScopes & string]-?: {
+      name: TName;
+      value: NonNullable<TScopes[TName]>;
+    };
+  }[keyof TScopes & string];
+}
+
+export type TailorKitInstalledApp = AppsInstallResponses[200];
+
 export type InferTailorKitServerScopes<
   TOptions extends TailorKitServerInputOptions,
 > = TOptions extends {
@@ -180,6 +197,13 @@ export interface TailorKitServer<
   TTools extends ContractTools = EmptyDefinitionMap,
   TScopes = TailorKitScopes,
 > {
+  /** Experimental server APIs may change outside semantic versioning. */
+  experimental: {
+    /** Create an independent installation pinned to the app's published deployment. */
+    installApp: (
+      options: TailorKitInstallAppOptions<TScopes>
+    ) => Promise<TailorKitInstalledApp>;
+  };
   /** Prepare direct platform MCP HTTP configuration for a server-side client. */
   mcp: {
     transport: (options: TailorKitHostContext<TScopes>) => Promise<{

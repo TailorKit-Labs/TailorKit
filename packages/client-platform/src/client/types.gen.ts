@@ -448,6 +448,77 @@ export type AppsGetResponses = {
 
 export type AppsGetResponse = AppsGetResponses[keyof AppsGetResponses];
 
+export type AppsInstallData = {
+  body: {
+    scope: {
+      name: string;
+      value: {
+        [key: string]: Schema0;
+      };
+    };
+  };
+  path: {
+    appId: string;
+  };
+  query?: never;
+  url: '/apps/{appId}/install';
+};
+
+export type AppsInstallResponses = {
+  /**
+   * OK
+   */
+  200: {
+    createdAt: string;
+    createdByAgent: boolean;
+    currentDeploymentId: string | null;
+    description: string | null;
+    id: string;
+    name: string;
+    projectId: string;
+    publicId: string;
+    scope: {
+      name: string;
+      value: {
+        [key: string]: Schema0;
+      };
+    };
+    updatedAt: string;
+    clientPath?: string;
+    currentDeployment: {
+      appId: string;
+      clientEntryFileId: string | null;
+      createdAt: string;
+      id: string;
+      logoDarkFileId: string | null;
+      logoDarkPath: string | null;
+      logoLightFileId: string | null;
+      logoLightPath: string | null;
+      publicId: string;
+      status: 'uploading' | 'deploying' | 'verifying' | 'published';
+      updatedAt: string;
+      views: Array<{
+        disabled?: true;
+        instances?: true;
+        path: string;
+        slot: string;
+      }>;
+    } | null;
+    logoPaths?: {
+      dark?: string;
+      light?: string;
+    };
+    views: Array<{
+      disabled?: true;
+      instances?: true;
+      path: string;
+      slot: string;
+    }>;
+  };
+};
+
+export type AppsInstallResponse = AppsInstallResponses[keyof AppsInstallResponses];
+
 export type AppsListData = {
   body: {
     page?: number;

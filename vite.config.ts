@@ -56,6 +56,7 @@ const ignorePatterns = [
   "**/.wrangler/**",
   "**/*.generated.*",
   "**/*.gen.*",
+  "packages/client-platform/src/client/**",
 ];
 
 export default defineConfig({

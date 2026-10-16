@@ -18,6 +18,7 @@ import { handleBackendSession } from "./backend";
 import { normalizeBaseUrl } from "./base-url";
 import { handleCliAuthApprovalPage } from "./cli-auth-page";
 import { createContext } from "./context";
+import { createExperimental } from "./experimental";
 import { createMcpTransport } from "./mcp";
 import { tailorkitRouter } from "./router";
 import {
@@ -292,6 +293,11 @@ export const createTailorKitServer = <
 
   return {
     $internal: { platformBaseUrl, router: tailorkitRouter, schema },
+    experimental: createExperimental({
+      platform,
+      platformHeaders,
+      scopeSchemas,
+    }),
     handler,
     mcp,
   };
