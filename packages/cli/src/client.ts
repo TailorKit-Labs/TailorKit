@@ -14,8 +14,6 @@ import {
   deploymentsList,
   deploymentsGet,
   cliAuthVerifyToken,
-  previewStart,
-  previewStop,
   appAgentChat,
   appAgentCreate,
 } from "@tailorkit/client-platform/client";
@@ -63,7 +61,7 @@ const request = async <T>(operation: Promise<T>): Promise<T> => {
 
 export type CliClient = Pick<
   TailorKitRouterClient,
-  "apps" | "deployments" | "preview" | "appAgent"
+  "apps" | "deployments" | "appAgent"
 > & {
   cliAuth: Pick<TailorKitRouterClient["cliAuth"], "verifyToken">;
 };
@@ -236,23 +234,6 @@ export const createCliClient = (options: {
               body: { rollout: input.rollout, scope },
               client,
               path: { deploymentId: input.deploymentId },
-            })
-          ),
-      },
-      preview: {
-        start: async (input: Input<"preview", "start">) =>
-          await request(
-            previewStart({
-              body: { ...input, deployToken: agent.token },
-              client,
-            })
-          ),
-        stop: async (input: Input<"preview", "stop">) =>
-          await request(
-            previewStop({
-              body: { deployToken: agent.token },
-              client,
-              path: { sessionId: input.sessionId },
             })
           ),
       },

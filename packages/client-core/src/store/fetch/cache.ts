@@ -32,7 +32,6 @@ export interface FetchStore<T> {
   getSnapshot: () => FetchSnapshot<T>;
   subscribe: (listener: () => void) => () => void;
   fetch: (options?: FetchOptions) => Promise<void>;
-  setData: (updater: (previous: T | undefined) => T) => void;
   invalidate: () => Promise<void>;
 }
 
@@ -278,27 +277,6 @@ export const createFetchCache = (defaults: FetchCacheOptions = {}) => {
             return store.fetch({ force: true });
           }
           return Promise.resolve();
-        },
-        setData: (updater: (previous: T | undefined) => T) => {
-          const entry = getEntry();
-          entry.generation += 1;
-          entry.controller?.abort();
-          entry.controller = null;
-          entry.pending = null;
-          entry.invalidated = false;
-          // SAFETY: This entry is populated by the store's T-typed fetcher and updater; the shared key table erases that generic.
-          entry.state.set({
-            data: updater(
-              /* oxlint-disable typescript/no-unsafe-type-assertion -- This entry is populated by the store's T-typed fetcher and updater; the shared key table erases that generic. */
-              entry.state.get().data as T | undefined
-              /* oxlint-enable typescript/no-unsafe-type-assertion */
-            ),
-            error: null,
-            isFetching: false,
-            status: "ready",
-            updatedAt: Date.now(),
-          });
-          scheduleGc(key, entry);
         },
         subscribe: (listener: () => void) => {
           const entry = getEntry();

@@ -66,6 +66,21 @@ const visit = async (dir) => {
           );
         }
       );
+      if (
+        filename.endsWith(
+          `${path.sep}client${path.sep}client${path.sep}index.ts`
+        )
+      ) {
+        // This entry point is linted as source; generated parent imports must use package aliases.
+        output = output.replaceAll(
+          /(?<quote>["'])\.\.\/core\/(?<module>[^"']+)\.js\k<quote>/gu,
+          '"#client/core/$<module>"'
+        );
+        output = output.replace(
+          "  TDataShape,",
+          "  // oxlint-disable-next-line anti-slop/no-shape-in-symbol-names -- This re-exports the generated client API; changing its public name would break generated consumers.\n  TDataShape,"
+        );
+      }
       if (output !== input) {
         await writeFile(filename, output);
       }

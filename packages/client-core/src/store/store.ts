@@ -9,7 +9,6 @@ import { toBaseUrl } from "#client/url";
 import type { TailorKitApp } from "#types";
 
 import { createAppsStore } from "./fetch/apps";
-import { createPreviewManager } from "./fetch/preview-manager";
 import { createViewContextStore } from "./local/view-context";
 
 export type TailorKitStore = ReturnType<typeof createTailorKitStore>;
@@ -41,14 +40,6 @@ export const createTailorKitStore = (options: {
     fetch: { apps },
     fetchApps: apps.fetch,
     getAppsSnapshot: apps.getSnapshot,
-    previews: createPreviewManager(
-      client.baseUrl,
-      () => {
-        void apps.refresh();
-      },
-      apps.updateViews,
-      client.endpoints.previewMetadata
-    ),
     setProvidedApps: apps.setProvidedApps,
     subscribeApps: apps.subscribe,
     views: createViewContextStore(contract),

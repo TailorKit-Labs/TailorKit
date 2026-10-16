@@ -2,13 +2,9 @@ import { RPCHandler } from "@orpc/server/fetch";
 import {
   appsList,
   appsRuntimeSession,
-  previewAccepted,
 } from "@tailorkit/client-platform/client";
 import { createClient } from "@tailorkit/client-platform/client/client/index";
-import type {
-  AppsListResponses,
-  PreviewAcceptedResponses,
-} from "@tailorkit/client-platform/client/types.gen";
+import type { AppsListResponses } from "@tailorkit/client-platform/client/types.gen";
 
 import type {
   NoComponentFieldCallbackConflicts,
@@ -23,7 +19,6 @@ import { normalizeBaseUrl } from "./base-url";
 import { handleCliAuthApprovalPage } from "./cli-auth-page";
 import { createContext } from "./context";
 import { createMcpTransport } from "./mcp";
-import { handlePreviewConsent, readPreviewGrantIds } from "./preview-consent";
 import { tailorkitRouter } from "./router";
 import {
   selectTailorKitScopes,
@@ -51,8 +46,6 @@ const isFunctionValue = <TValue>(
 const defaultPlatformBaseUrl = "https://tailorkit.dev/api/platform";
 
 type AbsolutePath = `/${string}`;
-
-const previewShareIdPattern = /^[A-Za-z0-9_-]{43}$/u;
 
 const resolveReadScopes = (url: URL, availableScopes: TailorKitScopes) => {
   try {
@@ -98,17 +91,6 @@ export const createTailorKitServer = <
 } => {
   const { basePath, publicOrigin } = normalizeBaseUrl(options.baseUrl);
   const scopeSchemas = validateTailorKitScopeSchemas(options.scopes);
-  const previewReturnPath = options.preview?.returnPath ?? "/";
-  if (
-    !previewReturnPath.startsWith("/") ||
-    previewReturnPath.startsWith("//") ||
-    previewReturnPath.includes("\\") ||
-    /[\r\n]/u.test(previewReturnPath)
-  ) {
-    throw new Error(
-      "preview.returnPath must be a same-origin root-relative path."
-    );
-  }
   // SAFETY: The server preserves the supplied typed tool table and normalizes the route base path before constructing its handler.
   const schema = createTailorKitSchema<
     InferTailorKitServerComponents<TOptions>,
@@ -177,7 +159,6 @@ export const createTailorKitServer = <
       };
     };
     const url = new URL(request.url);
-    const previewPrefix = `${basePath}/preview/`;
     if (url.pathname === `${basePath}/backend/session`) {
       return await handleBackendSession(
         request,
@@ -224,79 +205,6 @@ export const createTailorKitServer = <
       });
     }
 
-    const previewShareId = url.pathname.startsWith(previewPrefix)
-      ? url.pathname.slice(previewPrefix.length)
-      : "";
-    if (
-      (request.method === "GET" || request.method === "POST") &&
-      previewShareIdPattern.test(previewShareId)
-    ) {
-      const context = await createContext({
-        authenticate,
-        platform,
-        platformHeaders,
-        request,
-        schema,
-        scopeSchemas,
-      });
-      return await handlePreviewConsent({
-        authenticate: context.authenticate,
-        basePath,
-        platform: context.platform,
-        platformHeaders: context.platformHeaders,
-        request,
-        returnPath: previewReturnPath,
-        shareId: previewShareId,
-        signInPath: options.cliAuth?.signInPath,
-      });
-    }
-
-    if (
-      request.method === "GET" &&
-      url.pathname === `${basePath}/preview/metadata`
-    ) {
-      const context = await createContext({
-        authenticate,
-        platform,
-        platformHeaders,
-        request,
-        schema,
-        scopeSchemas,
-      });
-      const viewer = await context.authenticate({ request });
-      if (!viewer) {
-        return new Response("Unauthorized", { status: 401 });
-      }
-      const scopes = resolveReadScopes(url, viewer.scopes);
-      if (scopes instanceof Response) {
-        return scopes;
-      }
-      if (scopes.length === 0) {
-        return new Response("Preview unavailable", {
-          headers: { "cache-control": "no-store" },
-          status: 404,
-        });
-      }
-      const result = await previewAccepted({
-        body: { grantIds: readPreviewGrantIds(request), scopes },
-        client: context.platform,
-        headers: context.platformHeaders,
-        throwOnError: true,
-      });
-      const data = "data" in result ? result.data : result;
-      const selected = data.items.find(
-        (item) => item.preview.sessionId === url.searchParams.get("sessionId")
-      );
-      return selected
-        ? Response.json(selected.preview, {
-            headers: { "cache-control": "no-store" },
-          })
-        : new Response("Preview unavailable", {
-            headers: { "cache-control": "no-store" },
-            status: 404,
-          });
-    }
-
     if (request.method === "GET" && url.pathname === `${basePath}/apps`) {
       const context = await createContext({
         authenticate,
@@ -320,9 +228,7 @@ export const createTailorKitServer = <
         return Response.json([], { headers: { "cache-control": "no-store" } });
       }
 
-      const items: (AppsListResponses[200]["items"][number] & {
-        preview?: PreviewAcceptedResponses[200]["items"][number]["preview"];
-      })[] = [];
+      const items: AppsListResponses[200]["items"] = [];
       let page = 1;
       for (;;) {
         // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
@@ -338,29 +244,6 @@ export const createTailorKitServer = <
           break;
         }
         page += 1;
-      }
-      const grantIds = readPreviewGrantIds(request);
-      if (grantIds.length) {
-        const result = await previewAccepted({
-          body: { grantIds, scopes },
-          client: context.platform,
-          headers: context.platformHeaders,
-          throwOnError: true,
-        });
-        const data = "data" in result ? result.data : result;
-        const byId = new Map(items.map((item, index) => [item.id, index]));
-        for (const accepted of data.items) {
-          const index = byId.get(accepted.app.id);
-          if (index === undefined) {
-            byId.set(accepted.app.id, items.length);
-            items.push({ ...accepted.app, preview: accepted.preview });
-          } else {
-            const existing = items[index];
-            if (existing) {
-              items[index] = { ...existing, preview: accepted.preview };
-            }
-          }
-        }
       }
       return Response.json(items, { headers: { "cache-control": "no-store" } });
     }

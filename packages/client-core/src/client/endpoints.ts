@@ -4,7 +4,6 @@ import {
   createSessionProvider,
   reference,
 } from "@tailorkit/app/client/connection";
-import { previewMetadataSchema } from "@tailorkit/client-platform/preview";
 import type {
   TailorKitContract,
   ToolImplementations,
@@ -39,7 +38,6 @@ const appListSchema = z.array(
         .object({ dark: z.string().optional(), light: z.string().optional() })
         .optional(),
       name: z.string().optional(),
-      preview: previewMetadataSchema.optional(),
       projectId: z.string().optional(),
       scope: z.object({ name: z.string() }).loose().optional(),
       views: z
@@ -135,10 +133,7 @@ export const createEndpointClient = (options: {
     session: createSessionProvider({ appId, baseUrl, fetch: request }),
   });
   const getSessionProvider = (app: TailorKitApp) => {
-    const key = JSON.stringify([
-      app.currentDeployment?.id,
-      app.preview?.sessionId,
-    ]);
+    const key = JSON.stringify([app.currentDeployment?.id]);
     let entry = sessions.get(app.id);
     if (entry && entry.key === undefined) {
       entry.key = key;
@@ -251,20 +246,6 @@ export const createEndpointClient = (options: {
     clearSessions,
     getSessionProvider,
     getToolBridge,
-    previewMetadata: async (
-      sessionId: string
-    ): Promise<NonNullable<TailorKitApp["preview"]> | null> => {
-      const url = new URL("preview/metadata", baseUrl);
-      url.searchParams.set("sessionId", sessionId);
-      const response = await request(url, { credentials: "same-origin" });
-      if (response.status === 404) {
-        return null;
-      }
-      if (!response.ok) {
-        throw new Error("Unable to refresh TailorKit preview metadata.");
-      }
-      return previewMetadataSchema.parse(await response.json());
-    },
     slotInstances: async (
       app: TailorKitApp,
       input: SlotInstancesInput,

@@ -69,13 +69,6 @@ export const createAppsStore = (
       }
       return query.invalidate();
     },
-    // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
-    refresh: () => {
-      if (requested) {
-        return store.fetch({ force: true });
-      }
-      return Promise.resolve();
-    },
     setProvidedApps: (apps: TailorKitApp[] | undefined) => {
       if (provided.get() === apps) {
         return;
@@ -104,23 +97,6 @@ export const createAppsStore = (
         stopQuery();
         subscribers -= 1;
       };
-    },
-    updateViews: (
-      appId: string,
-      appViews: NonNullable<TailorKitApp["views"]>
-    ) => {
-      const update = (apps: TailorKitApp[]) =>
-        apps.map((app) =>
-          app.id === appId ? { ...app, views: appViews } : app
-        );
-      if (supplied) {
-        store.setProvidedApps(update(supplied.apps));
-      } else {
-        const apps = query.getSnapshot().data;
-        if (apps?.some((app) => app.id === appId) === true) {
-          query.setData(() => update(apps));
-        }
-      }
     },
   };
   return {

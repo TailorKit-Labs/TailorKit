@@ -39,7 +39,6 @@ export type SlotRuntimeSnapshot =
   | {
       status: "render";
       appUrl: string;
-      sourceText?: string;
       hostKey: string | number;
       props: RemoteProps;
       toolBridge: ToolBridge;
@@ -65,8 +64,6 @@ export const createSlotRuntime = (
   const input = atom(memoInput(initial));
   let queryKey: string | undefined;
   let query: ReturnType<typeof createAppViewsQuery> | null = null;
-  let previewSession: string | undefined;
-  let preview: ReturnType<typeof store.previews.getStore>;
   let previousSnapshot: SlotRuntimeSnapshot;
   let snapshotKey: string | undefined;
 
@@ -85,14 +82,6 @@ export const createSlotRuntime = (
       query = createAppViewsQuery(store, options.app, options.slot);
     }
     return query;
-  };
-  const getPreview = () => {
-    const session = input.get().app.preview?.sessionId ?? "";
-    if (session !== previewSession) {
-      previewSession = session;
-      preview = store.previews.getStore(() => input.get().app);
-    }
-    return preview;
   };
   // oxlint-disable-next-line complexity -- Keep this existing validation or lifecycle decision tree together; its branches share state and error handling.
   const resolve = (): SlotRuntimeSnapshot => {
@@ -171,7 +160,6 @@ export const createSlotRuntime = (
       }
     }
     const schema = store.contract;
-    const source = getPreview().get();
     const appUrl = (() => {
       if (
         app.clientPath !== undefined &&
@@ -197,7 +185,7 @@ export const createSlotRuntime = (
       }
       return null;
     })();
-    if (appUrl === null && source.source === null) {
+    if (appUrl === null) {
       return hidden;
     }
     const multiple = schema.slots[slot]?.multiple === true;
@@ -228,24 +216,15 @@ export const createSlotRuntime = (
       }
     }
     return {
-      appUrl: (
-        appUrl ??
-        new URL(
-          `preview/${app.preview?.sessionId ?? ""}/client.js`,
-          store.baseUrl
-        )
-      ).toString(),
+      appUrl: appUrl.toString(),
       getBackendSession: store.client.endpoints.getSessionProvider(app),
-      hostKey:
-        (source.revision || appUrl?.toString()) ??
-        `preview/${app.preview?.sessionId ?? ""}`,
+      hostKey: appUrl.toString(),
       props: {
         ...viewState,
         declaredViews: Object.keys(schema.views),
         slot,
         supportedViews: schema.slots[slot]?.views ?? [],
       },
-      sourceText: source.source ?? undefined,
       status: "render",
       toolBridge: store.client.endpoints.getToolBridge(app),
     };
@@ -273,9 +252,7 @@ export const createSlotRuntime = (
       let updating = false;
       let queued = false;
       let observedQuery: typeof query = null;
-      let observedPreview: typeof preview | null = null;
       let stopQuery: (() => void) | undefined;
-      let stopPreview: (() => void) | undefined;
       const refresh = () => {
         if (!active) {
           return;
@@ -294,16 +271,6 @@ export const createSlotRuntime = (
             stopQuery = nextQuery?.state.listen(refresh);
             stopPrevious?.();
           }
-          const hasView =
-            input.get().mode === "controlled" ||
-            store.views.state.get() !== null;
-          const nextPreview = hasView ? getPreview() : null;
-          if (nextPreview !== observedPreview) {
-            const stopPrevious = stopPreview;
-            observedPreview = nextPreview;
-            stopPreview = nextPreview?.listen(refresh);
-            stopPrevious?.();
-          }
           listener();
           if (!queued || !active) {
             break;
@@ -319,13 +286,11 @@ export const createSlotRuntime = (
         stopInput();
         stopView();
         stopQuery?.();
-        stopPreview?.();
       };
     }
   );
   return {
     setInput: (options: SlotRuntimeOptions) => {
-      store.previews.updateApp(options.app);
       input.set(memoInput(options));
     },
     state,

@@ -70,7 +70,6 @@ const SlotRenderer = (options: SlotRuntimeOptions): ReactNode => {
         <RemoteViewHost
           key={snapshot.hostKey}
           appUrl={snapshot.appUrl}
-          sourceText={snapshot.sourceText}
           toolBridge={snapshot.toolBridge}
           getBackendSession={snapshot.getBackendSession}
           components={client.components}

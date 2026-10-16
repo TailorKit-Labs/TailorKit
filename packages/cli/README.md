@@ -31,11 +31,11 @@ By default, `tailorkit deploy` authenticates through the configured host using y
 
 The JWT lasts one hour from issuance. It identifies the platform API URL, project, scope, initial app, and initiating CLI credential. CLI approval does not record a user subject ID.
 
-Set `TAILORKIT_AGENT_TOKEN` or `TAILORKIT_AGENT_TOKEN_FILE` to use this JWT for authenticated commands: `login`, `whoami`, `agent`, `preview`, and `deploy`. It overrides stored credentials and routes requests to the platform. The JWT grants the same project and scope permissions as its initiating CLI session, including app selection and creation.
+Set `TAILORKIT_AGENT_TOKEN` or `TAILORKIT_AGENT_TOKEN_FILE` to use this JWT for authenticated commands: `login`, `whoami`, `agent`, and `deploy`. It overrides stored credentials and routes requests to the platform. The JWT grants the same project and scope permissions as its initiating CLI session, including app selection and creation.
 
 `login` verifies a supplied JWT without browser approval. Environment JWTs are not persisted, so `logout` leaves stored sessions alone. Without a JWT, session tokens use the host. The local `init`, `generate`, `build`, and `db` commands retain their behavior.
 
-Expired or invalid JWTs fail without prompting for login. Start another agent turn with a valid CLI session to obtain a fresh JWT. A turn authenticated with a JWT retains that token’s deadline and cannot renew it. Revoking the initiating CLI credential also revokes JWT access; normal source expiry does not shorten the one-hour grant. JWT preview sessions end at the same deadline.
+Expired or invalid JWTs fail without prompting for login. Start another agent turn with a valid CLI session to obtain a fresh JWT. A turn authenticated with a JWT retains that token’s deadline and cannot renew it. Revoking the initiating CLI credential also revokes JWT access; normal source expiry does not shorten the one-hour grant.
 
 Platform URLs require HTTPS. HTTP is allowed only for the development hosts `localhost`, `127.0.0.1`, and `[::1]`. Both token issuance and client routing enforce these rules.
 

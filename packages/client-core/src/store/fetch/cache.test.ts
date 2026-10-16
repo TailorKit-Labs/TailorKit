@@ -353,7 +353,7 @@ describe("fetch cache", () => {
     stop();
   });
 
-  it("keeps previews, deployments, and input arrays distinct", () => {
+  it("keeps deployments and input arrays distinct", () => {
     expect(serializeCacheKey(["a", { a: { a: 3, b: 2 }, z: 1 }])).toBe(
       serializeCacheKey(["a", { a: { a: 3, b: 2 }, z: 1 }])
     );

@@ -38,18 +38,16 @@ import type { TailorKitApp } from "#tailorkit";
 const hostRecords: {
   appUrl: string;
   props: RemoteProps | undefined;
-  sourceText?: string;
 }[] = [];
 
 vi.mock("@tailorkit/sandbox/host", () => ({
   createIframeUiHost: (
     appUrl: string | URL,
-    options: { props?: RemoteProps; sourceText?: string } = {}
+    options: { props?: RemoteProps } = {}
   ): IframeUiHost => {
     const record = {
       appUrl: appUrl.toString(),
       props: options.props,
-      sourceText: options.sourceText,
     };
     hostRecords.push(record);
 
@@ -193,25 +191,6 @@ const HomeSlot = ({
 };
 
 describe("tailorKitClient React adapter", () => {
-  it("recreates the sandbox when a complete preview source revision changes", () => {
-    const { rerender } = render(
-      <RemoteViewHost
-        appUrl="https://host.test/client.js"
-        sourceText="one"
-        components={{ Button: () => null }}
-      />
-    );
-    expect(hostRecords.at(-1)?.sourceText).toBe("one");
-    rerender(
-      <RemoteViewHost
-        appUrl="https://host.test/client.js"
-        sourceText="two"
-        components={{ Button: () => null }}
-      />
-    );
-    expect(hostRecords.at(-1)?.sourceText).toBe("two");
-    expect(hostRecords).toHaveLength(2);
-  });
   beforeEach(() => {
     hostRecords.length = 0;
     vi.restoreAllMocks();
@@ -226,86 +205,6 @@ describe("tailorKitClient React adapter", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
-  });
-
-  it("keeps a preview subscription when an inline app is rendered again", async () => {
-    // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-    vi.mocked(globalThis.fetch).mockImplementation(async (input) =>
-      input instanceof URL && input.pathname.endsWith("/preview/metadata")
-        ? new Response(null, { status: 503 })
-        : Response.json({ assetsBaseUrl: "http://assets.test/", schema: {} })
-    );
-    class PreviewSocket extends EventTarget {
-      static instances: PreviewSocket[] = [];
-      closed = false;
-      readonly protocol: string;
-
-      constructor(_url: string, protocol: string) {
-        super();
-        this.protocol = protocol;
-        PreviewSocket.instances.push(this);
-      }
-
-      close() {
-        this.closed = true;
-        this.dispatchEvent(new Event("close"));
-      }
-    }
-    vi.stubGlobal("WebSocket", PreviewSocket);
-    const tailor = createClient({
-      baseUrl: "http://runtime.test/api/tailorkit",
-      components,
-      contract,
-    });
-    const suppliedApps: TailorKitApp[] = [];
-    const content = (token: string) => (
-      <tailor.Provider apps={suppliedApps}>
-        <HomeSlot
-          tailor={tailor}
-          app={{
-            clientPath: "/apps/preview.js",
-            id: "preview",
-            preview: {
-              expiresAt: "later",
-              sessionId: "session",
-              token,
-              websocketUrl: "wss://platform.test/preview",
-            },
-          }}
-        />
-      </tailor.Provider>
-    );
-    const view = render(content("initial-token"));
-    await waitFor(() => {
-      expect(PreviewSocket.instances).toHaveLength(1);
-    });
-    const metadataRequest = vi
-      .mocked(globalThis.fetch)
-      .mock.calls.map(([input]) => input)
-      .find(
-        (input) =>
-          input instanceof URL && input.pathname.endsWith("/preview/metadata")
-      );
-    if (!(metadataRequest instanceof URL)) {
-      throw new Error("Expected a preview metadata URL.");
-    }
-    expect(metadataRequest.searchParams.getAll("scopes")).toEqual([]);
-    const [socket] = PreviewSocket.instances;
-    view.rerender(content("updated-token"));
-    expect(PreviewSocket.instances).toHaveLength(1);
-    expect(socket?.closed).toBe(false);
-    socket?.close();
-    await waitFor(
-      () => {
-        expect(PreviewSocket.instances).toHaveLength(2);
-      },
-      {
-        timeout: 2500,
-      }
-    );
-    expect(PreviewSocket.instances[1]?.protocol).toBe("updated-token");
-    view.unmount();
-    expect(PreviewSocket.instances[1]?.closed).toBe(true);
   });
 
   it("fetches and caches apps", async () => {

@@ -17,19 +17,8 @@ const deployedApp: TailorKitApp = {
   currentDeployment: { id: "first" },
   id: "app",
 };
-const previewApp: TailorKitApp = {
-  ...deployedApp,
-  preview: {
-    expiresAt: new Date().toISOString(),
-    sessionId: "preview",
-    token: "preview-token",
-    websocketUrl: "wss://host.test/preview",
-  },
-};
-
 it.each([
   ["deployment", { ...deployedApp, currentDeployment: { id: "second" } }],
-  ["preview", previewApp],
 ])(
   "replaces obsolete %s sessions while held providers follow the current app",
   async (_, next) => {
@@ -172,7 +161,7 @@ it("reauthorizes held consumers after host sign-out and account changes", async 
 
 const respondImplementation2 = () => {};
 
-it.each(["clear", "deployment", "preview"])(
+it.each(["clear", "deployment"])(
   "rejects a late session response after %s invalidates its credentials",
   async (change) => {
     let respond: (response: Response) => void = respondImplementation2;
@@ -208,11 +197,10 @@ it.each(["clear", "deployment", "preview"])(
     if (change === "clear") {
       fetchClient.clear();
     } else {
-      client.getSessionProvider(
-        change === "preview"
-          ? previewApp
-          : { ...deployedApp, currentDeployment: { id: "second" } }
-      );
+      client.getSessionProvider({
+        ...deployedApp,
+        currentDeployment: { id: "second" },
+      });
     }
     await expect(held({ refresh: false })).resolves.toMatchObject({
       token: "current",

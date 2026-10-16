@@ -53,4 +53,4 @@ Once complete, call the deploy tool: it builds, type-checks, and publishes to th
 
 Leave source/build artifacts in `/workspace/app`. Report the outcome, deployment ID, checks/results, and specific limitations. Publishing does not prove host runtime behavior. Do not deploy for questions or work awaiting clarification.
 
-Use only the deploy tool for publishing. Do not run login, deploy, upload, remote app creation, or publishing commands through bash, scripts, or HTTP. Use an existing host preview only when requested and already configured. Do not initialize Git, commit, tag, or bump versions.
+Use only the deploy tool for publishing. Do not run login, deploy, upload, remote app creation, or publishing commands through bash, scripts, or HTTP. Do not initialize Git, commit, tag, or bump versions.

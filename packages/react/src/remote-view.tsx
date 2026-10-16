@@ -62,7 +62,6 @@ class RemoteErrorBoundary extends Component<
 
 interface RemoteViewHostProps {
   appUrl: string | URL;
-  sourceText?: string;
   toolBridge?: ToolBridge;
   getBackendSession?: (options: { refresh: boolean }) => Promise<Session>;
   components: RemoteProps;
@@ -78,7 +77,6 @@ const RemoteRoot = ({ store }: { store: RemoteViewStore }): ReactNode => {
 
 export const RemoteViewHost = ({
   appUrl,
-  sourceText,
   toolBridge,
   getBackendSession,
   components,
@@ -110,10 +108,9 @@ export const RemoteViewHost = ({
         appUrl,
         createIframe,
         getBackendSession,
-        sourceText,
         toolBridge,
       }),
-    [appUrl, sourceText, toolBridge, getBackendSession, createIframe, store]
+    [appUrl, toolBridge, getBackendSession, createIframe, store]
   );
 
   if (snapshot.status === "error" && snapshot.error) {
