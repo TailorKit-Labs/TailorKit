@@ -1,0 +1,22 @@
+.changeset/runtime-upload-manifest.md
+  h_18044dd1b61a81 1-5
+packages/agent/src/tools/publish.ts
+  h_18044dd1b61a81 5
+packages/vite/package.json
+  h_18044dd1b61a81 33-36
+packages/vite/src/upload-manifest-boundary.test.ts
+  h_18044dd1b61a81 1-39
+packages/vite/vite.config.ts
+  h_18044dd1b61a81 13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f2da040cbe9fd2381a4fe6746c89bcb97b65cde0",
+  "prompts": {},
+  "humans": {
+    "h_18044dd1b61a81": {
+      "author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
