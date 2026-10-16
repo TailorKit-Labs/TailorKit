@@ -89,24 +89,30 @@ it("builds responsive Pressable states in interaction precedence order", () => {
   expect(css).toContain("width: var(--tailorkit-size-full);");
   expect(css).toContain("@media (hover: hover)");
   expect(css).toContain(
-    ":enabled:hover { background: var(--tailorkit-background-surface); }"
+    ':not([aria-disabled="true"]):hover { background: var(--tailorkit-background-surface); }'
   );
   expect(css).toContain(
-    ":enabled:focus-visible { border-color: var(--tailorkit-borderColor-default); }"
+    ':not([aria-disabled="true"]):focus-visible { border-color: var(--tailorkit-borderColor-default); }'
   );
   expect(css).toContain("@media (min-width: 640px)");
   expect(css).toContain(
-    ":enabled:active { padding: var(--tailorkit-space-md); }"
+    ':not([aria-disabled="true"]):is(:active, [data-pressed]) { padding: var(--tailorkit-space-md); }'
   );
   expect(css).toContain(
-    ":disabled { color: var(--tailorkit-textColor-muted); }"
+    '[aria-disabled="true"] { color: var(--tailorkit-textColor-muted); }'
   );
-  expect(css.indexOf(":enabled:hover")).toBeLessThan(
-    css.indexOf(":enabled:focus-visible")
+  expect(css.indexOf(':not([aria-disabled="true"]):hover')).toBeLessThan(
+    css.indexOf(':not([aria-disabled="true"]):focus-visible { border-color:')
   );
-  expect(css.indexOf(":enabled:focus-visible")).toBeLessThan(
-    css.indexOf(":enabled:active")
+  expect(
+    css.indexOf(':not([aria-disabled="true"]):focus-visible { border-color:')
+  ).toBeLessThan(
+    css.indexOf(':not([aria-disabled="true"]):is(:active, [data-pressed])')
   );
+  expect(css).toContain("outline: 2px solid var(--ring, currentColor);");
+  expect(css).toContain("outline-offset: 2px;");
+  expect(css).not.toContain(":enabled");
+  expect(css).not.toContain(":disabled");
   expect(css).not.toContain("outline: none");
 });
 
@@ -121,10 +127,10 @@ it("keeps per-prop state breakpoints scoped to their state", () => {
   const css = buildPrimitiveCss({ ...options, pressable: true });
   expect(css).toContain("padding: var(--tailorkit-space-md);");
   expect(css).toContain(
-    '@media (min-width: 1024px) { [data-tailorkit-view="view"] [data-tailorkit-node="node"]:enabled:active { padding: var(--tailorkit-space-lg); } }'
+    '@media (min-width: 1024px) { [data-tailorkit-view="view"] [data-tailorkit-node="node"]:not([aria-disabled="true"]):is(:active, [data-pressed]) { padding: var(--tailorkit-space-lg); } }'
   );
   expect(css).not.toContain(
-    ":enabled:active { padding: var(--tailorkit-space-md); }"
+    ':not([aria-disabled="true"]):is(:active, [data-pressed]) { padding: var(--tailorkit-space-md); }'
   );
   expect(buildPrimitiveCss(options)).toContain(
     ":active { padding: var(--tailorkit-space-lg); }"

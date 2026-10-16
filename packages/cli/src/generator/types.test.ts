@@ -708,6 +708,21 @@ it("generates conditional primitive types from the contract's breakpoint aliases
     "export interface CustomProps {\n  background?: number;"
   );
   expect(output).toContain("onPress?: () => void;");
+  expect(output).toContain(
+    'export type Layout = "inline" | "box" | "flex" | "grid";'
+  );
+  expect(output).toContain("export type Disabled = boolean;");
+  expect(output).toContain("export type AriaLabel = string;");
+  expect(output).toContain("layout?: Layout;");
+  expect(output).toContain("disabled?: Disabled;");
+  expect(output).toContain("ariaLabel?: AriaLabel;");
+  const pressableProps = output.slice(
+    output.indexOf("export interface PressableProps"),
+    output.indexOf("export const Pressable")
+  );
+  expect(pressableProps).not.toContain("asChild");
+  expect(pressableProps).not.toContain("onKeyDown");
+  expect(pressableProps).not.toContain("tabIndex");
   expect(output).not.toContain("states?:");
 });
 

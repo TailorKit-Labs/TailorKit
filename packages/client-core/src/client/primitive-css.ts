@@ -226,12 +226,16 @@ export const buildPrimitiveCss = ({
         "text-align: inherit;",
         "background: transparent;",
         "cursor: pointer;",
+        "user-select: none;",
       ]
     : [];
   base.push(`display: ${display};`);
   const rules = buildStyleRules(selector, props, theme, base);
   if (pressable) {
-    rules.push(`${selector}:disabled { cursor: default; }`);
+    rules.push(
+      `${selector}:not([aria-disabled="true"]):focus-visible { outline: 2px solid var(--ring, currentColor); outline-offset: 2px; }`,
+      `${selector}[aria-disabled="true"] { cursor: default; }`
+    );
   }
   for (const state of interactionStates) {
     const stateProps: PrimitiveProps = {};
@@ -247,8 +251,16 @@ export const buildPrimitiveCss = ({
         stateProps[prop] = value;
       }
     }
-    const pseudo =
-      pressable && state !== ":disabled" ? `:enabled${state}` : state;
+    let pseudo: string = state;
+    if (pressable) {
+      if (state === ":disabled") {
+        pseudo = '[aria-disabled="true"]';
+      } else {
+        const interaction =
+          state === ":active" ? ":is(:active, [data-pressed])" : state;
+        pseudo = `:not([aria-disabled="true"])${interaction}`;
+      }
+    }
     const stateRules = buildStyleRules(
       `${selector}${pseudo}`,
       stateProps,
