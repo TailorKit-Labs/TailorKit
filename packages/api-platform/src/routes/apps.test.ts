@@ -391,6 +391,93 @@ describe("platform appRouter", () => {
     ).toBeDefined();
   });
 
+  it("returns a conflict when an installation appears after the deletion dependency check", async () => {
+    const context = createContext();
+    const { body: source } = await call(
+      appRouter.create,
+      {
+        body: { description: null, name: "Shared app", scope: productionScope },
+      },
+      { context }
+    );
+    await db.insert(appDeployment).values({
+      appId: source.id,
+      publicId: "published001",
+      status: "published",
+    });
+
+    // Insert the dependency during deletion so the initial check cannot see it.
+    await client.exec(`
+      CREATE FUNCTION install_before_delete() RETURNS trigger AS $$
+      BEGIN
+        INSERT INTO app (
+          name, project_id, public_id, scope_json, scope_key, current_deployment_id
+        )
+        SELECT 'Concurrent installation', OLD.project_id, 'installed001',
+          OLD.scope_json, OLD.scope_key, id
+        FROM app_deployment WHERE app_id = OLD.id;
+        RETURN OLD;
+      END;
+      $$ LANGUAGE plpgsql;
+      CREATE TRIGGER install_before_delete
+        BEFORE DELETE ON app
+        FOR EACH ROW EXECUTE FUNCTION install_before_delete();
+    `);
+
+    await expect(
+      call(
+        appRouter.delete,
+        { body: { scope: productionScope }, params: { appId: source.id } },
+        { context }
+      )
+    ).rejects.toMatchObject({
+      code: "CONFLICT",
+      message: "Remove installations using this app before deleting it.",
+    });
+    expect(
+      await db.query.app.findFirst({ where: { id: source.id } })
+    ).toBeDefined();
+  });
+
+  it.each(["23503", "P0001"])(
+    "handles deletion error %s without masking unrelated failures",
+    async (code) => {
+      const context = createContext();
+      const { body: source } = await call(
+        appRouter.create,
+        { body: { description: null, name: "App", scope: productionScope } },
+        { context }
+      );
+      await client.exec(`
+      CREATE FUNCTION fail_delete() RETURNS trigger AS $$
+      BEGIN
+        RAISE EXCEPTION 'Deletion failed' USING ERRCODE = '${code}';
+      END;
+      $$ LANGUAGE plpgsql;
+      CREATE TRIGGER fail_delete
+        BEFORE DELETE ON app
+        FOR EACH ROW EXECUTE FUNCTION fail_delete();
+    `);
+
+      const deletion = call(
+        appRouter.delete,
+        { body: { scope: productionScope }, params: { appId: source.id } },
+        { context }
+      );
+      if (code === "23503") {
+        await expect(deletion).rejects.toMatchObject({
+          code: "CONFLICT",
+          message: "Remove installations using this app before deleting it.",
+        });
+        return;
+      }
+      await expect(deletion).rejects.toMatchObject({
+        cause: { code, message: "Deletion failed" },
+        name: "DrizzleQueryError",
+      });
+    }
+  );
+
   it("limits installation to published apps in the host project and rejects agent credentials", async () => {
     const context = createContext();
     const { body: source } = await call(

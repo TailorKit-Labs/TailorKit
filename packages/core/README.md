@@ -26,22 +26,3 @@ Keep the headers server-side and create them for each authenticated caller. They
 The helper includes the configured host URL so the builder agent can fetch its `/schema` endpoint when creating or editing an app. That endpoint must be reachable from the agent’s sandbox. Contract schemas stay out of HTTP headers; the caller context header has an 8 KiB limit.
 
 Clients must implement MCP 2026-07-28 and request progress notifications to receive agent events. See the [app-agent protocol and client example](../agent/README.md#mcp).
-
-## Install a deployed app (experimental)
-
-Call `tailorkit.experimental.installApp()` on the server returned by `createServer()`:
-
-```ts
-const installed = await tailorkit.experimental.installApp({
-  appId: "deployed_app_id",
-  scope: { name: "org", value: { tenant: organization.id } },
-});
-```
-
-`appId` accepts a public app ID or UUID in the same TailorKit project. `scope.name` and `scope.value` are inferred from your contract's scope validators. The SDK validates and serializes the scope before sending the request with your configured `projectKey`.
-
-Call this from your trusted backend after checking the caller can install into the target scope. It does not call `authenticate()` or expose an installation route to browsers. Agent and CLI deployment credentials cannot use this operation.
-
-Each call creates a new installation and returns its app record, including its ID, published deployment, views, and asset URLs. The installation has its own scope and runtime data, and appears in the existing apps endpoint for that scope. It shares the source's published code and logos; it does not copy app data or agent conversations. Future source deployments do not update existing installations. An app without a current published deployment cannot be installed.
-
-The source deployment is retained by a database reference while installations use it. Deleting its source app is therefore blocked until those installations are removed. This API is experimental and may change outside semantic versioning.
