@@ -1,5 +1,21 @@
 # tailorkit
 
+## 0.1.0-beta.40
+
+### Minor Changes
+
+- 677501e: Add optional `name` and `description` fields to `TailorKitConfig`. Deployment uses them for new apps and synchronizes configured fields on existing apps. Omitted fields preserve existing values; new apps fall back to the package or directory name and have no description. Set `description: null` to clear it.
+
+### Patch Changes
+
+- Updated dependencies [677501e]
+- Updated dependencies [b636758]
+  - @tailorkit/vite@0.1.0-beta.40
+  - @tailorkit/cli@0.1.0-beta.40
+  - @tailorkit/core@0.1.0-beta.40
+  - @tailorkit/react@0.1.0-beta.40
+  - @tailorkit/app@0.1.0-beta.40
+
 ## 0.1.0-beta.39
 
 ### Minor Changes
