@@ -1,5 +1,17 @@
 # @tailorkit/react
 
+## 0.1.0-beta.41
+
+### Patch Changes
+
+- d4798f0: Render Pressable as an accessible div button that supports nested layout primitives, keyboard activation, focus indication, and disabled interaction styles. Keep interaction events in the host and send only the zero-argument onPress callback to the sandbox.
+- Updated dependencies [d4798f0]
+  - @tailorkit/client-core@0.1.0-beta.41
+  - @tailorkit/app@0.1.0-beta.41
+  - @tailorkit/client-platform@0.1.0-beta.41
+  - @tailorkit/core@0.1.0-beta.41
+  - @tailorkit/sandbox@0.1.0-beta.41
+
 ## 0.1.0-beta.40
 
 ### Minor Changes
