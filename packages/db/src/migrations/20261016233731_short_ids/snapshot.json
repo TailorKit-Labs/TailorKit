@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "c3efd54d-cf78-4ae5-84fc-151e6499cf23",
+  "id": "b184ef6c-d1aa-4c69-ba2b-1f935bbf83d2",
   "prevIds": ["3fdb25ef-b4f4-478f-9982-5291b593d5e2"],
   "ddl": [
     {
@@ -1475,7 +1475,7 @@
     {
       "type": "varchar(12)",
       "typeSchema": null,
-      "notNull": false,
+      "notNull": true,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -3854,6 +3854,27 @@
       "schema": "public",
       "table": "preview_session",
       "entityType": "uniques"
+    },
+    {
+      "value": "\"short_id\" ~ '^[a-z0-9]{12}$'",
+      "name": "project_short_id_format",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "project"
+    },
+    {
+      "value": "\"short_id\" ~ '^[a-z0-9]{12}$'",
+      "name": "app_short_id_format",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "app"
+    },
+    {
+      "value": "\"short_id\" ~ '^[a-z0-9]{12}$'",
+      "name": "app_deployment_short_id_format",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "app_deployment"
     }
   ],
   "renames": [

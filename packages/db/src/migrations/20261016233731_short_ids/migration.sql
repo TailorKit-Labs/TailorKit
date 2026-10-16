@@ -1,3 +1,12 @@
+-- Custom migration: apply schema changes, normalize existing IDs, then enforce the final constraints.
+ALTER TABLE "organization" RENAME COLUMN "public_id" TO "short_id";--> statement-breakpoint
+ALTER TABLE "app" RENAME COLUMN "public_id" TO "short_id";--> statement-breakpoint
+ALTER TABLE "app_deployment" RENAME COLUMN "public_id" TO "short_id";--> statement-breakpoint
+ALTER INDEX "app_project_id_public_id_unique" RENAME TO "app_project_id_short_id_unique";--> statement-breakpoint
+ALTER INDEX "app_deployment_app_id_public_id_unique" RENAME TO "app_deployment_app_id_short_id_unique";--> statement-breakpoint
+ALTER TABLE "project" ADD COLUMN "short_id" varchar(12);--> statement-breakpoint
+ALTER TABLE "project" ADD CONSTRAINT "project_short_id_key" UNIQUE("short_id");
+--> statement-breakpoint
 -- The ID and asset contracts intentionally break compatibility with old servers.
 -- Drop the old tenant trigger/check before normalizing the renamed column.
 DROP TRIGGER organization_keep_public_id ON organization;--> statement-breakpoint
@@ -42,3 +51,9 @@ CREATE TRIGGER app_keep_short_id BEFORE UPDATE OF short_id ON app
 FOR EACH ROW EXECUTE FUNCTION tailorkit_keep_short_id();--> statement-breakpoint
 CREATE TRIGGER app_deployment_keep_short_id BEFORE UPDATE OF short_id ON app_deployment
 FOR EACH ROW EXECUTE FUNCTION tailorkit_keep_short_id();
+
+--> statement-breakpoint
+ALTER TABLE "project" ALTER COLUMN "short_id" SET NOT NULL;--> statement-breakpoint
+ALTER TABLE "project" ADD CONSTRAINT "project_short_id_format" CHECK ("short_id" ~ '^[a-z0-9]{12}$');--> statement-breakpoint
+ALTER TABLE "app" ADD CONSTRAINT "app_short_id_format" CHECK ("short_id" ~ '^[a-z0-9]{12}$');--> statement-breakpoint
+ALTER TABLE "app_deployment" ADD CONSTRAINT "app_deployment_short_id_format" CHECK ("short_id" ~ '^[a-z0-9]{12}$');
