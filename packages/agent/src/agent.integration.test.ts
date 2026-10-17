@@ -32,13 +32,13 @@ vi.mock("#env", () => ({ env: authentication.env }));
 const { dirname, join } = nodePath;
 // oxlint-disable-next-line typescript/strict-void-return -- execFile also returns a ChildProcess; promisify consumes its completion callback, not that return value.
 const execute = promisify(execFile);
-const modelId = "openai/gpt-6-luna";
+const modelId = "openai/gpt-6.1-sol";
 const model = {
   context_window: 1_050_000,
   id: modelId,
   max_tokens: 128_000,
   modalities: { input: ["text", "image", "pdf"] },
-  name: "GPT-6 Luna",
+  name: "GPT-6.1 Sol",
   pricing: { input: "0.0000001", output: "0.0000005" },
   tags: ["reasoning", "tool-use", "vision"],
 };
@@ -344,7 +344,7 @@ it.each(["api-key", "runtime-oidc"])(
       for (const request of requests) {
         expect(JSON.parse(request)).toMatchObject({
           model: modelId,
-          reasoning: { effort: "high" },
+          reasoning: { effort: "medium" },
         });
         expect(request).not.toContain(token);
         expect(request).not.toContain("private-token");

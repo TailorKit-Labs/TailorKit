@@ -23,7 +23,7 @@ The Preact skills adapt the applicable principles from the repository's `vercel-
 
 `@tailorkit/agent/workflows` exports `appAgent(input)`. Start it with `start()` from `workflow/api`; the web host discovers it through `apps/web/workflows/app-agent.ts`. The workflow imports the agent dynamically from its step module. Node APIs, credentials, and sandbox objects stay inside steps.
 
-Each turn runs in five-minute slices using `runHarnessAgentTimeSlice()`. Workflow records the returned `continueFrom` checkpoint and reconnects to the same unfinished turn without replaying the prompt.
+Each turn checkpoints at model-step boundaries using `runHarnessAgentStep()`. Workflow records the returned `continueFrom` checkpoint and reconnects to the same unfinished turn without replaying the prompt.
 
 Pi runs in the workflow step’s Node.js process and uses the Vercel sandbox for filesystem and shell tools. There is no sandbox bridge or exposed port. In-process reattachment is disabled: each slice restores Pi’s journal with the current tool context.
 
@@ -67,7 +67,7 @@ Matching `*_BASE_URL` overrides are optional. Pi receives an isolated authentica
 
 Each execution resolves OpenID Connect (OIDC) credentials with `getVercelOidcToken()`. Vercel Functions supply these through the request context. Gateway credentials take precedence; the platform routes still supply the existing Gateway model. Using a direct provider also requires a matching model ID.
 
-The agent loads Gateway model definitions from its published catalog, including models absent from Pi’s bundled registry.
+The platform uses `openai/gpt-6.1-sol` with medium reasoning. The agent loads Gateway model definitions from its published catalog, including models absent from Pi’s bundled registry. Model metadata is cached per endpoint and model for five minutes within a worker; model-call credentials are resolved afresh for each execution.
 
 ## Consume tool events
 
@@ -88,6 +88,8 @@ The host-executed `deploy` tool runs typechecks and builds in the sandbox withou
 The `create_app` and `edit_app` descriptions explain that their agents write code, run commands, and publish apps. Calls without a thread ID start a new conversation; callers must not automatically retry a disconnected create/edit call. List does not launch an agent.
 
 The endpoint implements MCP 2026-07-28 using the official SDK v2. It rejects legacy initialization, HTTP+SSE, and protocol sessions. Responses use request-scoped Server-Sent Events (SSE) with keepalives.
+
+The web host gives `/api/platform/app-agent/mcp` its own Vercel Function with a 1,800-second maximum duration so the request can stream a full agent turn. This requires Vercel’s extended function durations on Pro or Enterprise. Other web routes retain their default duration.
 
 Clients requesting progress receive `notifications/progress`: `progress` is a monotonically increasing event count, and `message` contains JSON `{ runId, appId, threadId, status? , chunk? }`. `chunk` is an AI SDK UI message chunk. The terminal tool result contains `{ appId, threadId, runId, messages, sessionId, finishReason, usage? }`. The `create_app` schema advertises the authorized scope names as an enum.
 

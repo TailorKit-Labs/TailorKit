@@ -41,7 +41,7 @@ const require = <T>(value: T | null | undefined): T => {
   return value;
 };
 
-const APP_AGENT_MODEL = "openai/gpt-6-luna";
+const APP_AGENT_MODEL = "openai/gpt-6.1-sol";
 
 const chunkSchema = asSchema(uiMessageChunkSchema);
 

@@ -178,7 +178,7 @@ export const handleAppAgentMcpRequest = async (
             appId: app.id,
             hostUrl: input.hostUrl,
             messages: [{ content: prompt, role: "user" }],
-            model: "openai/gpt-6-luna",
+            model: "openai/gpt-6.1-sol",
             threadId,
           },
         ],
