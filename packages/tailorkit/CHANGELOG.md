@@ -1,5 +1,20 @@
 # tailorkit
 
+## 0.1.0-beta.44
+
+### Patch Changes
+
+- Restore the 0.x beta release line after the accidental 1.0.0-beta.44 release. This release includes the app slug and validation changes from that release; use 0.1.0-beta.44 instead of 1.0.0-beta.44.
+- 1fb0155: Use Valibot for internal validation to reduce TailorKit bundle sizes. Accept user-provided Standard Schema validators for app functions and view instance data, preserving input/output inference and Zod primitive exports.
+- Updated dependencies [89d328f]
+- Updated dependencies
+- Updated dependencies [1fb0155]
+  - @tailorkit/core@0.1.0-beta.44
+  - @tailorkit/cli@0.1.0-beta.44
+  - @tailorkit/app@0.1.0-beta.44
+  - @tailorkit/react@0.1.0-beta.44
+  - @tailorkit/vite@0.1.0-beta.44
+
 ## 1.0.0-beta.44
 
 ### Patch Changes

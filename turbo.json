@@ -87,6 +87,9 @@
     },
     "//#services:down": {
       "cache": false
+    },
+    "//#test:release": {
+      "outputs": []
     }
   }
 }

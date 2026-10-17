@@ -48,6 +48,9 @@ jobs:
       - name: Install dependencies
         run: vp install --frozen-lockfile
 
+      - name: Check release policy
+        run: vp run release:check
+
       - name: Select Changesets mode
         id: changesets
         uses: changesets/action/select-mode@v2.1.2

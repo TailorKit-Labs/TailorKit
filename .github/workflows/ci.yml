@@ -51,6 +51,9 @@ jobs:
       - name: Check package licenses
         run: vp run licenses:check
 
+      - name: Check release policy
+        run: vp run release:check
+
       - name: Build
         run: vp run build
 
@@ -93,3 +96,6 @@ jobs:
 
       - name: Run tests
         run: vp run test
+
+      - name: Test release policy
+        run: vp exec turbo run test:release --filter=//

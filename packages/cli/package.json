@@ -1,6 +1,6 @@
 {
   "name": "@tailorkit/cli",
-  "version": "1.0.0-beta.44",
+  "version": "0.1.0-beta.44",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

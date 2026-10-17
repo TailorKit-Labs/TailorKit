@@ -1,5 +1,5 @@
 ---
-"@tailorkit/client-platform": major
+"@tailorkit/client-platform": minor
 "@tailorkit/core": patch
 "@tailorkit/cli": patch
 ---
