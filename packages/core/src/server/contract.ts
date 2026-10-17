@@ -138,10 +138,12 @@ export const createServer = <const T extends TailorKitContract>(
       ? platformHeaders()
       : platformHeaders);
     const installation = await appsGet({
-      body: { scopes: [normalizeTailorKitNamedScope(identity.scope)] },
+      body: {
+        app: { id: identity.installationId },
+        scopes: [normalizeTailorKitNamedScope(identity.scope)],
+      },
       client: platform,
       headers: headersValue,
-      path: { appId: identity.installationId },
       throwOnError: true,
     });
     const installed = "data" in installation ? installation.data : installation;

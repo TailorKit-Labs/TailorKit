@@ -66,8 +66,11 @@ const server = createServer({
       expect(request.headers.get("authorization")).toBe(
         "Bearer product-project-key"
       );
-      expect(request.url).toBe(`${issuer}/apps/app/lookup`);
-      expect(await request.json()).toEqual({ scopes: [identity.scope] });
+      expect(request.url).toBe(`${issuer}/apps/lookup`);
+      expect(await request.json()).toEqual({
+        app: { id: identity.installationId },
+        scopes: [identity.scope],
+      });
       return Response.json({
         currentDeployment: { id: "deployment" },
         id: "app",

@@ -6,6 +6,7 @@ import { createShortId } from "@tailorkit/db/short-id";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
+import { appSelectorSchema } from "#app-selector";
 import { withAppAssetUrl } from "#asset-url";
 import type { Context } from "#context";
 import { paginatedOutput, paginationQuery } from "#pagination";
@@ -112,21 +113,16 @@ const getApp = cliRouter
   .meta(
     openapi({
       method: "POST",
-      path: "/apps/{appId}/lookup",
+      path: "/apps/lookup",
     })
   )
   .input(
     z.object({
-      body: z.object({ scopes: scopesSchema }),
-      params: z.object({ appId: z.string() }),
+      body: z.strictObject({ app: appSelectorSchema, scopes: scopesSchema }),
     })
   )
   .output(z.object({ body: AppWithCurrentDeployment }))
-  .use(
-    requireAppInScopes.adaptInput(
-      ({ params: { appId }, body: { scopes } }) => ({ appId, scopes })
-    )
-  )
+  .use(requireAppInScopes.adaptInput(({ body }) => body))
   .handler(({ context }) => ({
     body: withAppAssetUrl(context.app, context.project.shortId),
   }));
@@ -135,6 +131,7 @@ const createAppInput = z.object({
   description: App.shape.description,
   name: App.shape.name,
   scope: scopeSchema,
+  slug: App.shape.slug.optional(),
 });
 
 export const createAppRecord = async (
@@ -153,11 +150,15 @@ export const createAppRecord = async (
       scope: scope.scope,
       scopeKey: scope.scopeKey,
       shortId: await createUniqueAppShortId(context.project.id),
+      slug: input.slug,
     })
+    .onConflictDoNothing({ target: [app.projectId, app.slug] })
     .returning();
 
   if (!createdApp) {
-    throw new ORPCError("BAD_REQUEST", { message: "Failed to create app." });
+    throw new ORPCError("CONFLICT", {
+      message: "App slug is already in use in this project.",
+    });
   }
 
   return {
@@ -182,11 +183,14 @@ const createApp = cliRouter
 
 // Only the trusted host may select a source outside the destination scope.
 const installApp = protectedRouter
-  .meta(openapi({ method: "POST", path: "/apps/{appId}/install" }))
+  .meta(openapi({ method: "POST", path: "/apps/install" }))
   .input(
     z.object({
-      body: z.strictObject({ scope: scopeSchema }),
-      params: z.object({ appId: z.string().min(1).max(256) }),
+      body: z.strictObject({
+        app: appSelectorSchema,
+        scope: scopeSchema,
+        slug: App.shape.slug.optional(),
+      }),
     })
   )
   .output(z.object({ body: AppWithCurrentDeployment }))
@@ -194,9 +198,7 @@ const installApp = protectedRouter
     const source = await db.query.app.findFirst({
       where: {
         projectId: context.project.id,
-        ...(uuidPattern.test(input.params.appId)
-          ? { id: input.params.appId }
-          : { shortId: input.params.appId }),
+        ...input.body.app,
       },
       with: {
         currentDeployment: {
@@ -223,10 +225,14 @@ const installApp = protectedRouter
         scope: scope.scope,
         scopeKey: scope.scopeKey,
         shortId: await createUniqueAppShortId(context.project.id),
+        slug: input.body.slug,
       })
+      .onConflictDoNothing({ target: [app.projectId, app.slug] })
       .returning();
     if (!installed) {
-      throw new ORPCError("BAD_REQUEST", { message: "Failed to install app." });
+      throw new ORPCError("CONFLICT", {
+        message: "App slug is already in use in this project.",
+      });
     }
 
     return {
@@ -240,23 +246,17 @@ const installApp = protectedRouter
 const deleteApp = cliRouter
   .meta(
     openapi({
-      method: "DELETE",
-      path: "/apps/{appId}",
+      method: "POST",
+      path: "/apps/delete",
     })
   )
   .input(
     z.object({
-      body: z.object({ scope: scopeSchema }),
-      params: z.object({ appId: z.string() }),
+      body: z.strictObject({ app: appSelectorSchema, scope: scopeSchema }),
     })
   )
   .output(z.object({ body: App.pick({ id: true }) }))
-  .use(
-    requireApp.adaptInput(({ params: { appId }, body: { scope } }) => ({
-      appId,
-      scope,
-    }))
-  )
+  .use(requireApp.adaptInput(({ body }) => body))
   .handler(async ({ context }) => {
     const dependent = await db.query.app.findFirst({
       columns: { id: true },
@@ -299,25 +299,22 @@ const deleteApp = cliRouter
 const updateApp = cliRouter
   .meta(
     openapi({
-      method: "PUT",
-      path: "/apps/{appId}",
+      method: "POST",
+      path: "/apps/update",
     })
   )
   .input(
     z.object({
-      body: App.pick({ description: true, name: true }).extend({
-        scope: scopeSchema,
-      }),
-      params: z.object({ appId: z.string() }),
+      body: App.pick({ description: true, name: true })
+        .extend({
+          app: appSelectorSchema,
+          scope: scopeSchema,
+        })
+        .strict(),
     })
   )
   .output(z.object({ body: AppWithCurrentDeployment }))
-  .use(
-    requireApp.adaptInput(({ params: { appId }, body: { scope } }) => ({
-      appId,
-      scope,
-    }))
-  )
+  .use(requireApp.adaptInput(({ body }) => body))
   .handler(async ({ context, input }) => {
     const [updatedApp] = await db
       .update(app)
@@ -348,22 +345,20 @@ const deploy = cliRouter
   .meta(
     openapi({
       method: "POST",
-      path: "/apps/{appId}/deploy",
+      path: "/apps/deploy",
     })
   )
   .input(
     z.object({
-      body: z.object({ deploymentId: z.string(), scope: scopeSchema }),
-      params: z.object({ appId: z.string() }),
+      body: z.strictObject({
+        app: appSelectorSchema,
+        deploymentId: z.string(),
+        scope: scopeSchema,
+      }),
     })
   )
   .output(z.object({ body: AppWithCurrentDeployment }))
-  .use(
-    requireApp.adaptInput(({ params: { appId }, body: { scope } }) => ({
-      appId,
-      scope,
-    }))
-  )
+  .use(requireApp.adaptInput(({ body }) => body))
   .handler(async ({ context, input }) => {
     const deploymentByShortId = await db.query.appDeployment.findFirst({
       where: {

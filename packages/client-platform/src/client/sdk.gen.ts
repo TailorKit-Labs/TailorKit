@@ -45,17 +45,8 @@ export const appsCreate = <ThrowOnError extends boolean = false>(options: Option
   }
 });
 
-export const appsDelete = <ThrowOnError extends boolean = false>(options: Options<AppsDeleteData, ThrowOnError>): RequestResult<AppsDeleteResponses, unknown, ThrowOnError> => (options.client ?? client).delete<AppsDeleteResponses, unknown, ThrowOnError>({
-  url: '/apps/{appId}',
-  ...options,
-  headers: {
-    'Content-Type': 'application/json',
-    ...options.headers
-  }
-});
-
-export const appsUpdate = <ThrowOnError extends boolean = false>(options: Options<AppsUpdateData, ThrowOnError>): RequestResult<AppsUpdateResponses, unknown, ThrowOnError> => (options.client ?? client).put<AppsUpdateResponses, unknown, ThrowOnError>({
-  url: '/apps/{appId}',
+export const appsDelete = <ThrowOnError extends boolean = false>(options: Options<AppsDeleteData, ThrowOnError>): RequestResult<AppsDeleteResponses, unknown, ThrowOnError> => (options.client ?? client).post<AppsDeleteResponses, unknown, ThrowOnError>({
+  url: '/apps/delete',
   ...options,
   headers: {
     'Content-Type': 'application/json',
@@ -64,7 +55,7 @@ export const appsUpdate = <ThrowOnError extends boolean = false>(options: Option
 });
 
 export const appsDeploy = <ThrowOnError extends boolean = false>(options: Options<AppsDeployData, ThrowOnError>): RequestResult<AppsDeployResponses, unknown, ThrowOnError> => (options.client ?? client).post<AppsDeployResponses, unknown, ThrowOnError>({
-  url: '/apps/{appId}/deploy',
+  url: '/apps/deploy',
   ...options,
   headers: {
     'Content-Type': 'application/json',
@@ -73,7 +64,7 @@ export const appsDeploy = <ThrowOnError extends boolean = false>(options: Option
 });
 
 export const appsGet = <ThrowOnError extends boolean = false>(options: Options<AppsGetData, ThrowOnError>): RequestResult<AppsGetResponses, unknown, ThrowOnError> => (options.client ?? client).post<AppsGetResponses, unknown, ThrowOnError>({
-  url: '/apps/{appId}/lookup',
+  url: '/apps/lookup',
   ...options,
   headers: {
     'Content-Type': 'application/json',
@@ -82,7 +73,7 @@ export const appsGet = <ThrowOnError extends boolean = false>(options: Options<A
 });
 
 export const appsInstall = <ThrowOnError extends boolean = false>(options: Options<AppsInstallData, ThrowOnError>): RequestResult<AppsInstallResponses, unknown, ThrowOnError> => (options.client ?? client).post<AppsInstallResponses, unknown, ThrowOnError>({
-  url: '/apps/{appId}/install',
+  url: '/apps/install',
   ...options,
   headers: {
     'Content-Type': 'application/json',
@@ -100,7 +91,16 @@ export const appsList = <ThrowOnError extends boolean = false>(options: Options<
 });
 
 export const appsRuntimeSession = <ThrowOnError extends boolean = false>(options: Options<AppsRuntimeSessionData, ThrowOnError>): RequestResult<AppsRuntimeSessionResponses, unknown, ThrowOnError> => (options.client ?? client).post<AppsRuntimeSessionResponses, unknown, ThrowOnError>({
-  url: '/apps/{appId}/runtime/session',
+  url: '/apps/runtime/session',
+  ...options,
+  headers: {
+    'Content-Type': 'application/json',
+    ...options.headers
+  }
+});
+
+export const appsUpdate = <ThrowOnError extends boolean = false>(options: Options<AppsUpdateData, ThrowOnError>): RequestResult<AppsUpdateResponses, unknown, ThrowOnError> => (options.client ?? client).post<AppsUpdateResponses, unknown, ThrowOnError>({
+  url: '/apps/update',
   ...options,
   headers: {
     'Content-Type': 'application/json',

@@ -13,6 +13,7 @@ import type {
 } from "#schema/index";
 import { createTailorKitSchema } from "#schema/schema";
 import type { EmptyDefinitionMap } from "#schema/shared";
+import { platformAppSelector } from "#server/platform-app-selector";
 
 import { handleBackendSession } from "./backend";
 import { normalizeBaseUrl } from "./base-url";
@@ -170,6 +171,7 @@ export const createTailorKitServer = <
             : platformHeaders);
           const session = await appsRuntimeSession({
             body: {
+              app: platformAppSelector(appId),
               scopes: Object.entries(scopes).map(([name, value]) => ({
                 name,
                 value,
@@ -179,7 +181,6 @@ export const createTailorKitServer = <
             },
             client: platform,
             headers,
-            path: { appId },
             responseStyle: "fields",
             throwOnError: false,
           });

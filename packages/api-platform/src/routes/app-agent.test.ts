@@ -79,7 +79,7 @@ const context =
 const scope = canonicalizeScope({ name: "org", value: { tenant: "one" } });
 const input = {
   body: {
-    appId: "a3e7568a-c4f7-4ac0-8c35-71ff0f4cd002",
+    app: { id: "a3e7568a-c4f7-4ac0-8c35-71ff0f4cd002" },
     deployToken: "token",
     hostUrl: "http://localhost:3000/api/tailorkit",
     messages: [
@@ -174,7 +174,7 @@ describe("platform app chat", () => {
       appAgentRouter.chat,
       {
         body: {
-          appId: input.body.appId,
+          app: { id: input.body.app.id },
           deployToken: input.body.deployToken,
           ...resume,
           threadId,
@@ -219,7 +219,7 @@ describe("platform app chat", () => {
           appAgentRouter.chat,
           {
             body: {
-              appId: input.body.appId,
+              app: { id: input.body.app.id },
               deployToken: input.body.deployToken,
               ...resume,
               threadId,
@@ -493,7 +493,7 @@ describe("platform app chat", () => {
         appAgentRouter.chat,
         {
           body: {
-            appId: input.body.appId,
+            app: { id: input.body.app.id },
             deployToken: input.body.deployToken,
             runId: "wrun_test",
             startIndex: 0,

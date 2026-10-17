@@ -5,6 +5,12 @@ import { z } from "zod";
 export const agentCreateAppSchema = z.strictObject({
   description: z.string().max(255).nullable(),
   name: z.string().max(127),
+  slug: z
+    .string()
+    .min(1)
+    .max(64)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u)
+    .optional(),
 });
 
 const chunkSchema = asSchema(uiMessageChunkSchema);

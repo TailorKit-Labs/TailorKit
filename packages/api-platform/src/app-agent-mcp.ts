@@ -101,7 +101,11 @@ export const handleAppAgentMcpRequest = async (
     requestedThreadId?: string
   ) => {
     execution.signal.throwIfAborted();
-    const app = await findAppInScopes(context.project.id, appId, scopes);
+    const app = await findAppInScopes(
+      context.project.id,
+      z.uuid().safeParse(appId).success ? { id: appId } : { shortId: appId },
+      scopes
+    );
     if (
       !(
         env.AUTH_SECRET !== undefined &&

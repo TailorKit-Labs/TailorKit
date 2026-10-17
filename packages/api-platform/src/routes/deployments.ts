@@ -20,6 +20,7 @@ import { setSpanAttributes } from "@tailorkit/observability";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
+import { appSelectorSchema } from "#app-selector";
 import type { Context } from "#context";
 import { forEachSequential } from "#for-each-sequential";
 import { paginatedOutput, paginationQuery } from "#pagination";
@@ -79,7 +80,7 @@ const createDeploymentLogoInput = z.object({
 
 const createDeploymentInput = z
   .object({
-    appId: z.string(),
+    app: appSelectorSchema,
     assets: z.tuple([createDeploymentAssetInput]),
     logos: z
       .object({
@@ -309,16 +310,14 @@ const listAppDeployments = cliRouter
   )
   .input(
     z.object({
-      body: paginationQuery.extend({ appId: z.string(), scopes: scopesSchema }),
+      body: paginationQuery.extend({
+        app: appSelectorSchema,
+        scopes: scopesSchema,
+      }),
     })
   )
   .output(paginatedOutput(AppDeployment))
-  .use(
-    requireAppInScopes.adaptInput(({ body: { appId, scopes } }) => ({
-      appId,
-      scopes,
-    }))
-  )
+  .use(requireAppInScopes.adaptInput(({ body }) => body))
   .handler(async ({ context, input }) => {
     const { page, pageSize } = input.body;
     const deployments = await db.query.appDeployment.findMany({
@@ -390,9 +389,7 @@ const createAppDeployment = cliRouter
       }),
     })
   )
-  .use(
-    requireApp.adaptInput(({ body: { appId, scope } }) => ({ appId, scope }))
-  )
+  .use(requireApp.adaptInput(({ body }) => body))
   .handler(async ({ context, input }) => {
     const deploymentId = crypto.randomUUID();
     const deploymentShortId = createShortId();

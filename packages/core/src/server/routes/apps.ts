@@ -8,6 +8,7 @@ import {
 } from "@tailorkit/client-platform/client";
 import { z } from "zod";
 
+import { platformAppSelector } from "#server/platform-app-selector";
 import {
   getTailorKitScope,
   getTailorKitScopes,
@@ -23,6 +24,7 @@ const paginationInput = z.object({
 const appInput = z.object({
   description: z.string().nullable(),
   name: z.string(),
+  slug: z.string().optional(),
 });
 
 export const appRouter = {
@@ -45,10 +47,12 @@ export const appRouter = {
     .handler(
       async ({ context, input }) =>
         await appsDelete({
-          body: { scope: getTailorKitScope(context) },
+          body: {
+            app: platformAppSelector(input.appId),
+            scope: getTailorKitScope(context),
+          },
           client: context.platform,
           headers: context.platformHeaders,
-          path: { appId: input.appId },
         })
     ),
   deploy: o
@@ -58,12 +62,12 @@ export const appRouter = {
       async ({ context, input }) =>
         await appsDeploy({
           body: {
+            app: platformAppSelector(input.appId),
             deploymentId: input.deploymentId,
             scope: getTailorKitScope(context),
           },
           client: context.platform,
           headers: context.platformHeaders,
-          path: { appId: input.appId },
         })
     ),
   get: o
@@ -73,10 +77,12 @@ export const appRouter = {
     )
     .handler(async ({ context, input }) => {
       const { data } = await appsGet({
-        body: { scopes: getTailorKitScopes(context, input.scopes) },
+        body: {
+          app: platformAppSelector(input.appId),
+          scopes: getTailorKitScopes(context, input.scopes),
+        },
         client: context.platform,
         headers: context.platformHeaders,
-        path: { appId: input.appId },
         responseStyle: "fields",
         throwOnError: true,
       });
@@ -105,18 +111,22 @@ export const appRouter = {
     }),
   update: o
     .use(requireCliDeployToken)
-    .input(z.object({ appId: z.string() }).extend(appInput.shape))
+    .input(
+      z
+        .object({ appId: z.string() })
+        .extend(appInput.omit({ slug: true }).shape)
+    )
     .handler(
       async ({ context, input }) =>
         await appsUpdate({
           body: {
+            app: platformAppSelector(input.appId),
             description: input.description,
             name: input.name,
             scope: getTailorKitScope(context),
           },
           client: context.platform,
           headers: context.platformHeaders,
-          path: { appId: input.appId },
         })
     ),
 };

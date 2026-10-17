@@ -9,6 +9,8 @@ import { db } from "@tailorkit/db";
 import type { Scope } from "@tailorkit/db/schema/scope";
 import { setSpanAttributes } from "@tailorkit/observability";
 
+import type { AppSelector } from "#app-selector";
+
 import type { Context } from "./context";
 import { canonicalizeScope, canonicalizeScopes, scopeMatches } from "./scope";
 
@@ -23,42 +25,36 @@ const requireValue = <T>(value: T | null | undefined): T => {
 };
 
 const rateLimiter = createRateLimiter({ maxRequests: 100, window: 1000 });
-const uuidPattern =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 type CanonicalScope = ReturnType<typeof canonicalizeScope>;
 
 export const findAppInScopes = async (
   projectId: string,
-  appId: string,
+  selector: AppSelector,
   scopes: CanonicalScope[]
 ) => {
-  const find = (identifier: "id" | "shortId") =>
-    db.query.app.findFirst({
-      where: {
-        RAW: (fields, { and, eq, or }) =>
-          requireValue(
-            and(
-              eq(fields.projectId, projectId),
-              eq(fields[identifier], appId),
-              or(
-                ...scopes.map(({ scope, scopeKey }) =>
-                  and(eq(fields.scopeKey, scopeKey), eq(fields.scope, scope))
-                )
+  const app = await db.query.app.findFirst({
+    where: {
+      projectId,
+      ...selector,
+      RAW: (fields, { and, eq, or }) =>
+        requireValue(
+          and(
+            or(
+              ...scopes.map(({ scope, scopeKey }) =>
+                and(eq(fields.scopeKey, scopeKey), eq(fields.scope, scope))
               )
             )
-          ),
+          )
+        ),
+    },
+    with: {
+      currentDeployment: {
+        where: { status: "published" },
+        with: { app: { columns: { shortId: true } } },
       },
-      with: {
-        currentDeployment: {
-          where: { status: "published" },
-          with: { app: { columns: { shortId: true } } },
-        },
-      },
-    });
+    },
+  });
 
-  const app =
-    (uuidPattern.test(appId) ? await find("id") : null) ??
-    (await find("shortId"));
   if (!app) {
     throw new ORPCError("NOT_FOUND");
   }
@@ -128,14 +124,14 @@ export const protectedRouter = authenticatedRouter.use(
 );
 
 export const requireApp = o.middleware(
-  async ({ context, next }, input: { appId: string; scope: Scope }) => {
+  async ({ context, next }, input: { app: AppSelector; scope: Scope }) => {
     setSpanAttributes({
       "tailorkit.middleware": "require_app",
       "tailorkit.package": "api-platform",
       "tailorkit.resource_type": "app",
     });
 
-    const app = await findAppInScopes(context.project.id, input.appId, [
+    const app = await findAppInScopes(context.project.id, input.app, [
       canonicalizeScope(input.scope),
     ]);
 
@@ -144,7 +140,7 @@ export const requireApp = o.middleware(
 );
 
 export const requireAppInScopes = o.middleware(
-  async ({ context, next }, input: { appId: string; scopes: Scope[] }) => {
+  async ({ context, next }, input: { app: AppSelector; scopes: Scope[] }) => {
     setSpanAttributes({
       "tailorkit.middleware": "require_app",
       "tailorkit.package": "api-platform",
@@ -153,7 +149,7 @@ export const requireAppInScopes = o.middleware(
 
     const app = await findAppInScopes(
       context.project.id,
-      input.appId,
+      input.app,
       canonicalizeScopes(input.scopes)
     );
 

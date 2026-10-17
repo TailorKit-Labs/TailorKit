@@ -7,6 +7,7 @@ import {
 } from "@tailorkit/client-platform/client";
 import { z } from "zod";
 
+import { platformAppSelector } from "#server/platform-app-selector";
 import {
   getTailorKitScope,
   getTailorKitScopes,
@@ -107,7 +108,7 @@ export const deploymentRouter = {
       try {
         return await deploymentsCreate({
           body: {
-            appId: input.appId,
+            app: platformAppSelector(input.appId),
             assets: input.assets,
             logos: input.logos,
             scope: getTailorKitScope(context),
@@ -149,7 +150,7 @@ export const deploymentRouter = {
       async ({ context, input }) =>
         await deploymentsList({
           body: {
-            appId: input.appId,
+            app: platformAppSelector(input.appId),
             page: input.page,
             pageSize: input.pageSize,
             scopes: getTailorKitScopes(context, input.scopes),

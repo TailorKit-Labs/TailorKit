@@ -93,12 +93,13 @@ describe("createTailorKitServer", () => {
       throw new Error("Expected a platform token request");
     }
     expect(issuedRequest.url).toBe(
-      "https://tailorkit.dev/api/platform/apps/app/runtime/session"
+      "https://tailorkit.dev/api/platform/apps/runtime/session"
     );
     expect(issuedRequest.headers.get("authorization")).toBe(
       "Bearer project-key"
     );
     expect(await issuedRequest.json()).toEqual({
+      app: { shortId: "app" },
       scopes: [{ name: "org", value: { tenant: "verified" } }],
       toolUrl: "https://host.test/api/tailorkit/tools/execute",
     });
@@ -215,6 +216,7 @@ describe("createTailorKitServer", () => {
       expect(response.status).toBe(200);
       expect(bodies).toEqual([
         {
+          app: { shortId: "app" },
           scopes: [{ name: "org", value: { tenant: "verified" } }],
           toolUrl: `${origin + prefix}/tools/execute`,
         },
@@ -846,9 +848,10 @@ describe("createTailorKitServer", () => {
               });
             }
             expect(request.url).toBe(
-              "https://tailorkit.dev/api/platform/apps/app_1/lookup"
+              "https://tailorkit.dev/api/platform/apps/lookup"
             );
             expect(await request.json()).toEqual({
+              app: { shortId: "app_1" },
               scopes: [{ name: "org", value: { orgId: "org_1" } }],
             });
             return Response.json({ createdByAgent, id: "app_1" });
