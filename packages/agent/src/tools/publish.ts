@@ -4,6 +4,7 @@ import { gzip } from "node:zlib";
 
 import { tailorkitUploadManifestSchema } from "@tailorkit/vite/upload-manifest";
 import type { Sandbox } from "@vercel/sandbox";
+import * as v from "valibot";
 import { z } from "zod";
 
 export const deploymentDirectory = "/tmp/tailorkit-deployment";
@@ -87,7 +88,8 @@ export const publishDeployment = async (
     JSON.parse(Buffer.from(payload, "base64url").toString("utf-8"))
   );
   const manifestContent = await readAsset(sandbox, "tailorkit-upload.json");
-  const manifest = tailorkitUploadManifestSchema.parse(
+  const manifest = v.parse(
+    tailorkitUploadManifestSchema,
     JSON.parse(manifestContent.toString("utf-8"))
   );
   const clientCode = await gzipAsync(

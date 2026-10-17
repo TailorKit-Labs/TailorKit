@@ -10,6 +10,7 @@ import { gzip } from "node:zlib";
 import type { TailorKitUploadManifest } from "@tailorkit/vite/builder";
 import type { LoadedTailorKitConfig } from "@tailorkit/vite/config/loader";
 import { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
+import * as v from "valibot";
 import { z } from "zod";
 
 import { getAgentAuth } from "./agent-auth";
@@ -166,10 +167,10 @@ const isNotFoundError = (cause: unknown): boolean =>
 
 const readUploadManifest = async (
   outDir: string,
-  schema: z.ZodType<TailorKitUploadManifest>
+  schema: v.GenericSchema<unknown, TailorKitUploadManifest>
 ): Promise<TailorKitUploadManifest> => {
   const manifestPath = path.join(outDir, "tailorkit-upload.json");
-  return schema.parse(JSON.parse(await readFile(manifestPath, "utf-8")));
+  return v.parse(schema, JSON.parse(await readFile(manifestPath, "utf-8")));
 };
 
 const sha256Hex = (content: Buffer): string =>

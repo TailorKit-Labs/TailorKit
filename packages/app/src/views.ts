@@ -1,3 +1,4 @@
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { createContext, h } from "preact";
 import type {
   ComponentChild,
@@ -6,7 +7,6 @@ import type {
   VNode,
 } from "preact";
 import { useContext } from "preact/hooks";
-import type { z } from "zod";
 
 import type { FunctionCalls, Identity } from "./server/functions";
 
@@ -51,15 +51,15 @@ export interface InstanceResolverContext<TPath extends AppViewPath> {
 
 export interface ViewInstances<
   TPath extends AppViewPath,
-  TSchema extends z.ZodType,
+  TSchema extends StandardSchemaV1,
 > {
   dataSchema: TSchema;
   /** Runs on the app server. Only registered queries are available. */
   resolve: (
     context: InstanceResolverContext<TPath>
   ) =>
-    | ViewInstance<z.input<TSchema>>[]
-    | Promise<ViewInstance<z.input<TSchema>>[]>;
+    | ViewInstance<StandardSchemaV1.InferInput<TSchema>>[]
+    | Promise<ViewInstance<StandardSchemaV1.InferInput<TSchema>>[]>;
 }
 // oxlint-disable-next-line typescript/no-redundant-type-constituents -- Declaration merging may add symbol or numeric keys; the public view and slot names remain string keys.
 export type SlotName = keyof TailorKitSlots & string;
@@ -168,7 +168,7 @@ export type TailorKitClientWithMeta<
 type ViewOptions<
   TPath extends AppViewPath,
   TSlot extends SlotName,
-  TSchema extends z.ZodType,
+  TSchema extends StandardSchemaV1,
 > = {
   [S in TSlot]: {
     slot: S;
@@ -186,31 +186,31 @@ type ViewOptions<
  * An explicit view must match the file path and provides precise host context typing. */
 export function defineView<
   const TPath extends AppViewPath = AppViewPath,
-  TSchema extends z.ZodType = z.ZodType,
+  TSchema extends StandardSchemaV1 = StandardSchemaV1,
 >(options: {
   slot?: never;
   view?: TPath;
   component: View;
   instances?: ViewInstances<TPath, TSchema>;
-}): ViewDefinition<TPath, z.output<TSchema>>;
+}): ViewDefinition<TPath, StandardSchemaV1.InferOutput<TSchema>>;
 export function defineView<
   const TPath extends AppViewPath,
   const TSlot extends SlotName,
-  TSchema extends z.ZodType,
+  TSchema extends StandardSchemaV1,
 >(
   options: ViewOptions<TPath, TSlot, TSchema>
-): ViewDefinition<TPath, z.output<TSchema>, TSlot> &
+): ViewDefinition<TPath, StandardSchemaV1.InferOutput<TSchema>, TSlot> &
   SlotInstanceDefinition<TSlot>;
 
 export function defineView<
   TPath extends AppViewPath,
-  TSchema extends z.ZodType,
+  TSchema extends StandardSchemaV1,
 >(options: {
   slot?: SlotName;
   view?: TPath;
   component: View;
   instances?: ViewInstances<TPath, TSchema>;
-}): ViewDefinition<TPath, z.output<TSchema>> {
+}): ViewDefinition<TPath, StandardSchemaV1.InferOutput<TSchema>> {
   if (!options.slot || !options.view) {
     throw new Error(
       "Views without a slot or path must be compiled from a .view.tsx file by the TailorKit app build."
@@ -305,7 +305,7 @@ export function defineView<
       // SAFETY: Generated bindings associate this view path with its context and instance schema; the adapter retains that relationship while erasing renderer generics.
       return (
         /* oxlint-disable typescript/no-unsafe-type-assertion -- Generated bindings associate this view path with its context and instance schema; the adapter retains that relationship while erasing renderer generics. */
-        value.instance as ViewInstance<z.output<TSchema>>
+        value.instance
         /* oxlint-enable typescript/no-unsafe-type-assertion */
       );
     },

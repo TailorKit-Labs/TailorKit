@@ -5,7 +5,7 @@ import {
   deploymentsList,
   deploymentsPublish,
 } from "@tailorkit/client-platform/client";
-import { z } from "zod";
+import * as v from "valibot";
 
 import {
   getTailorKitScope,
@@ -20,40 +20,44 @@ const isStringValue = <TValue>(value: TValue): value is TValue & string =>
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
   typeof value === "object" && value !== null;
 
-const paginationInput = z.object({
-  page: z.number().int().min(1).optional(),
-  pageSize: z.number().int().min(1).max(100).optional(),
+const paginationInput = v.object({
+  page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
+  pageSize: v.optional(
+    v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100))
+  ),
 });
 
-const clientAssetInput = z.object({
-  checksum: z.string(),
-  contentLength: z.number().int().min(1),
-  contentType: z.literal("application/javascript"),
-  encoding: z.enum(["utf-8", "gzip"]),
-  objectKey: z.literal("client.js"),
+const clientAssetInput = v.object({
+  checksum: v.string(),
+  contentLength: v.pipe(v.number(), v.integer(), v.minValue(1)),
+  contentType: v.literal("application/javascript"),
+  encoding: v.picklist(["utf-8", "gzip"]),
+  objectKey: v.literal("client.js"),
 });
 
-const serverAssetInput = clientAssetInput.extend({
-  objectKey: z.literal("server.js"),
+const serverAssetInput = v.object({
+  ...clientAssetInput.entries,
+  objectKey: v.literal("server.js"),
 });
 
-const logoAssetInput = z.object({
-  checksum: z.string(),
-  contentLength: z
-    .number()
-    .int()
-    .min(1)
-    .max(256 * 1024),
-  contentType: z.enum(["image/svg+xml", "image/png", "image/webp"]),
+const logoAssetInput = v.object({
+  checksum: v.string(),
+  contentLength: v.pipe(
+    v.number(),
+    v.integer(),
+    v.minValue(1),
+    v.maxValue(256 * 1024)
+  ),
+  contentType: v.picklist(["image/svg+xml", "image/png", "image/webp"]),
 });
 
-const deploymentAssetsInput = z.tuple([clientAssetInput]);
-const deploymentLogosInput = z
-  .object({
-    dark: logoAssetInput.optional(),
-    light: logoAssetInput.optional(),
+const deploymentAssetsInput = v.tuple([clientAssetInput]);
+const deploymentLogosInput = v.optional(
+  v.object({
+    dark: v.optional(logoAssetInput),
+    light: v.optional(logoAssetInput),
   })
-  .optional();
+);
 
 const getErrorMessage = (cause: unknown): string | undefined => {
   if (cause instanceof Error) {
@@ -85,22 +89,24 @@ export const deploymentRouter = {
   create: o
     .use(requireCliDeployToken)
     .input(
-      z.object({
-        appId: z.string(),
+      v.object({
+        appId: v.string(),
         assets: deploymentAssetsInput,
         logos: deploymentLogosInput,
-        server: serverAssetInput.optional(),
-        views: z
-          .array(
-            z.object({
-              disabled: z.literal(true).optional(),
-              instances: z.literal(true).optional(),
-              path: z.string().startsWith("/").max(1024),
-              slot: z.string().min(1).max(255),
-            })
+        server: v.optional(serverAssetInput),
+        views: v.optional(
+          v.pipe(
+            v.array(
+              v.object({
+                disabled: v.optional(v.literal(true)),
+                instances: v.optional(v.literal(true)),
+                path: v.pipe(v.string(), v.startsWith("/"), v.maxLength(1024)),
+                slot: v.pipe(v.string(), v.minLength(1), v.maxLength(255)),
+              })
+            ),
+            v.maxLength(1000)
           )
-          .max(1000)
-          .optional(),
+        ),
       })
     )
     .handler(async ({ context, input }) => {
@@ -124,9 +130,9 @@ export const deploymentRouter = {
   get: o
     .use(requireCliDeployToken)
     .input(
-      z.object({
-        deploymentId: z.string(),
-        scopes: z.array(z.string()).optional(),
+      v.object({
+        deploymentId: v.string(),
+        scopes: v.optional(v.array(v.string())),
       })
     )
     .handler(
@@ -141,9 +147,11 @@ export const deploymentRouter = {
   list: o
     .use(requireCliDeployToken)
     .input(
-      z
-        .object({ appId: z.string(), scopes: z.array(z.string()).optional() })
-        .extend(paginationInput.shape)
+      v.object({
+        appId: v.string(),
+        scopes: v.optional(v.array(v.string())),
+        ...paginationInput.entries,
+      })
     )
     .handler(
       async ({ context, input }) =>
@@ -161,9 +169,9 @@ export const deploymentRouter = {
   publish: o
     .use(requireCliDeployToken)
     .input(
-      z.object({
-        deploymentId: z.string(),
-        rollout: z.boolean().optional(),
+      v.object({
+        deploymentId: v.string(),
+        rollout: v.optional(v.boolean()),
       })
     )
     .handler(

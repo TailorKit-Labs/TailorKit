@@ -1,7 +1,7 @@
 import type { StandardJSONSchemaV1 } from "@standard-schema/spec";
-import { z } from "zod";
+import * as v from "valibot";
 
-const JSONType = z.enum([
+const JSONType = v.picklist([
   "object",
   "array",
   "string",
@@ -17,37 +17,40 @@ const JSONType = z.enum([
  * We're being strict just so we know exactly what we're dealing with. If we need
  * to support additional schema features, we can add them incrementally.
  */
-const JsonSchemaSchema: z.ZodType<
+const JsonSchemaSchema: v.GenericSchema<
+  unknown,
   ReturnType<StandardJSONSchemaV1.Converter["output"]>
-> = z
-  .object({
-    $defs: z.lazy(() => z.record(z.string(), JsonSchemaSchema)).optional(),
-    $ref: z.string().optional(),
-    $schema: z
-      .enum(["https://json-schema.org/draft/2020-12/schema"])
-      .optional(),
-    additionalProperties: z
-      .union([z.boolean(), z.lazy(() => JsonSchemaSchema)])
-      .optional(),
-    allOf: z.lazy(() => z.array(JsonSchemaSchema)).optional(),
-    anyOf: z.lazy(() => z.array(JsonSchemaSchema)).optional(),
-    const: z.unknown().optional(),
-    enum: z.array(z.unknown()).optional(),
-    items: z.union([z.boolean(), z.lazy(() => JsonSchemaSchema)]).optional(),
-    maxItems: z.number().int().nonnegative().optional(),
-    maximum: z.number().optional(),
-    minItems: z.number().int().nonnegative().optional(),
-    minimum: z.number().optional(),
-    not: z.lazy(() => JsonSchemaSchema).optional(),
-    oneOf: z.lazy(() => z.array(JsonSchemaSchema)).optional(),
-    prefixItems: z.lazy(() => z.array(JsonSchemaSchema)).optional(),
-    properties: z.lazy(() => z.record(z.string(), JsonSchemaSchema)).optional(),
-    propertyNames: z.lazy(() => JsonSchemaSchema).optional(),
-    required: z.array(z.string()).optional(),
-    type: z.union([JSONType, z.array(z.string())]).optional(),
-  })
-  .strict();
+> = v.strictObject({
+  $defs: v.optional(v.lazy(() => v.record(v.string(), JsonSchemaSchema))),
+  $ref: v.optional(v.string()),
+  $schema: v.optional(
+    v.picklist(["https://json-schema.org/draft/2020-12/schema"])
+  ),
+  additionalProperties: v.optional(
+    v.union([v.boolean(), v.lazy(() => JsonSchemaSchema)])
+  ),
+  allOf: v.optional(v.lazy(() => v.array(JsonSchemaSchema))),
+  anyOf: v.optional(v.lazy(() => v.array(JsonSchemaSchema))),
+  const: v.optional(v.unknown()),
+  enum: v.optional(v.array(v.unknown())),
+  items: v.optional(v.union([v.boolean(), v.lazy(() => JsonSchemaSchema)])),
+  maxItems: v.optional(
+    v.pipe(v.pipe(v.number(), v.finite()), v.integer(), v.minValue(0))
+  ),
+  maximum: v.optional(v.pipe(v.number(), v.finite())),
+  minItems: v.optional(
+    v.pipe(v.pipe(v.number(), v.finite()), v.integer(), v.minValue(0))
+  ),
+  minimum: v.optional(v.pipe(v.number(), v.finite())),
+  not: v.optional(v.lazy(() => JsonSchemaSchema)),
+  oneOf: v.optional(v.lazy(() => v.array(JsonSchemaSchema))),
+  prefixItems: v.optional(v.lazy(() => v.array(JsonSchemaSchema))),
+  properties: v.optional(v.lazy(() => v.record(v.string(), JsonSchemaSchema))),
+  propertyNames: v.optional(v.lazy(() => JsonSchemaSchema)),
+  required: v.optional(v.array(v.string())),
+  type: v.optional(v.union([JSONType, v.array(v.string())])),
+});
 
-export type JsonSchema = z.infer<typeof JsonSchemaSchema>;
+export type JsonSchema = v.InferOutput<typeof JsonSchemaSchema>;
 
 export { JsonSchemaSchema as JsonSchema };

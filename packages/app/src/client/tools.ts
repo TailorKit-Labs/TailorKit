@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as v from "valibot";
 
 import { AppError } from "#errors";
 
@@ -53,9 +53,10 @@ export const executeServerTool = async (
       "Tool call failed"
     );
   }
-  return z
-    .object({ output: z.unknown().optional() })
-    .parse(await response.json()).output;
+  return v.parse(
+    v.object({ output: v.optional(v.unknown()) }),
+    await response.json()
+  ).output;
 };
 
 /** Generated callers delegate only transport; host/server declarations validate both directions. */

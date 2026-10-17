@@ -5,6 +5,7 @@ import type {
   AppDefinition,
   Identity,
 } from "@tailorkit/app/server";
+import * as v from "valibot";
 import { expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
@@ -427,8 +428,11 @@ it("dispatches by exact slot/path pairs and validates against the selected data 
   ]);
   const app = withInstanceResolvers(defineServer({}), [
     {
-      dataSchema: z.object({
-        id: z.string().transform((id) => id.toUpperCase()),
+      dataSchema: v.objectAsync({
+        id: v.pipeAsync(
+          v.string(),
+          v.transform((id) => id.toUpperCase())
+        ),
       }),
       path: "/reports/annual.summary",
       resolve: first,

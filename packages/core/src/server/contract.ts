@@ -1,7 +1,7 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { appsGet } from "@tailorkit/client-platform/client";
 import { createClient } from "@tailorkit/client-platform/client/client/index";
-import { z } from "zod";
+import * as v from "valibot";
 
 import type { TailorKitContract } from "#schema/contract";
 import type {
@@ -201,14 +201,14 @@ export const createServer = <const T extends TailorKitContract>(
         }
         let input: { path: string; input?: unknown; requestId: string };
         try {
-          input = z
-            .object({
-              input: z.unknown().optional(),
-              path: z.string(),
-              requestId: z.string().regex(/^[0-9a-f-]{36}$/u),
-            })
-            .strict()
-            .parse(await request.json());
+          input = v.parse(
+            v.strictObject({
+              input: v.optional(v.unknown()),
+              path: v.string(),
+              requestId: v.pipe(v.string(), v.regex(/^[0-9a-f-]{36}$/u)),
+            }),
+            await request.json()
+          );
         } catch {
           return new Response("Invalid tool request", {
             headers,

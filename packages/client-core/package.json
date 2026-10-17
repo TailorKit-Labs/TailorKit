@@ -70,12 +70,13 @@
     "@tailorkit/core": "workspace:*",
     "@tailorkit/sandbox": "workspace:*",
     "nanostores": "1.5.5",
-    "zod": "catalog:"
+    "valibot": "^1.5.0"
   },
   "devDependencies": {
     "@tailorkit/config": "workspace:*",
     "@types/node": "catalog:",
     "tsup": "^8.5.1",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "zod": "catalog:"
   }
 }

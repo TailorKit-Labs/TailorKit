@@ -23,9 +23,9 @@ import type {
 } from "@tailorkit/app/server";
 import { Window } from "happy-dom";
 import type { VNode } from "preact";
+import * as v from "valibot";
 import { build } from "vite";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vite-plus/test";
-import type { z } from "zod";
 
 import { tailorkit } from "#index";
 import { linkTestDependencies, createDatabaseTestApp } from "#test-utils";
@@ -413,8 +413,8 @@ it("builds colocated instance resolvers as query-only server actions", async () 
         string,
         FunctionDefinition<
           "action",
-          z.ZodType,
-          z.output<z.ZodType>,
+          v.GenericSchema,
+          v.InferOutput<v.GenericSchema>,
           ApplicationModule["default"]["functions"]
         > & { functions: ApplicationModule["default"]["functions"] }
       >
@@ -442,7 +442,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
     const resolved = await fn.handler(
       /* oxlint-disable typescript/no-unsafe-type-assertion -- This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input. */
       {
-        args: fn.args.parse({
+        args: v.parse(fn.args, {
           context: { userId: "user_123" },
           path: "/",
           slot: "page",
@@ -468,7 +468,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
     const shared = await fn.handler(
       /* oxlint-disable typescript/no-unsafe-type-assertion -- This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input. */
       {
-        args: fn.args.parse({
+        args: v.parse(fn.args, {
           context: { userId: "user_123" },
           path: "/",
           slot: "panel.links",

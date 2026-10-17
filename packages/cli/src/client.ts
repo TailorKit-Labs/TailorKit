@@ -20,6 +20,7 @@ import {
 import { createClient } from "@tailorkit/client-platform/client/client/index";
 import { createTailorKitClient } from "@tailorkit/core/server";
 import type { TailorKitRouterClient } from "@tailorkit/core/server";
+import * as v from "valibot";
 
 import { getAgentAuth, validatePlatformUrl } from "./agent-auth";
 
@@ -123,9 +124,9 @@ export const createCliClient = (options: {
             sseMaxRetryAttempts: 1,
           });
           for await (const chunk of stream) {
-            const event = await agentChunkSchema.parseAsync(chunk);
+            const event = await v.parseAsync(agentChunkSchema, chunk);
             if (
-              agentRunCompleteChunkSchema.safeParse(event).success ||
+              v.safeParse(agentRunCompleteChunkSchema, event).success ||
               event.type === "error"
             ) {
               done = true;

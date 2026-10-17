@@ -5,7 +5,7 @@ import {
   cliAuthPoll,
   cliAuthStart,
 } from "@tailorkit/client-platform/client";
-import { z } from "zod";
+import * as v from "valibot";
 
 import {
   getTailorKitScope,
@@ -37,7 +37,12 @@ const runPlatformCliAuthRequest = async <T>(
 export const cliAuthRouter = {
   approve: o
     .use(requireHostAuth)
-    .input(z.object({ scope: z.string().min(1), userCode: z.string().min(1) }))
+    .input(
+      v.object({
+        scope: v.pipe(v.string(), v.minLength(1)),
+        userCode: v.pipe(v.string(), v.minLength(1)),
+      })
+    )
     .handler(
       async ({ context, input }) =>
         await runPlatformCliAuthRequest(
@@ -53,7 +58,7 @@ export const cliAuthRouter = {
     ),
   deny: o
     .use(requireHostAuth)
-    .input(z.object({ userCode: z.string().min(1) }))
+    .input(v.object({ userCode: v.pipe(v.string(), v.minLength(1)) }))
     .handler(
       async ({ context, input }) =>
         await runPlatformCliAuthRequest(
@@ -66,19 +71,21 @@ export const cliAuthRouter = {
           })
         )
     ),
-  poll: o.input(z.object({ deviceCode: z.string().min(1) })).handler(
-    async ({ context, input }) =>
-      await runPlatformCliAuthRequest(
-        cliAuthPoll({
-          body: {
-            deviceCode: input.deviceCode,
-          },
-          client: context.platform,
-          headers: context.platformHeaders,
-        })
-      )
-  ),
-  start: o.input(z.object({})).handler(
+  poll: o
+    .input(v.object({ deviceCode: v.pipe(v.string(), v.minLength(1)) }))
+    .handler(
+      async ({ context, input }) =>
+        await runPlatformCliAuthRequest(
+          cliAuthPoll({
+            body: {
+              deviceCode: input.deviceCode,
+            },
+            client: context.platform,
+            headers: context.platformHeaders,
+          })
+        )
+    ),
+  start: o.input(v.object({})).handler(
     async ({ context }) =>
       await runPlatformCliAuthRequest(
         cliAuthStart({
@@ -89,7 +96,7 @@ export const cliAuthRouter = {
       )
   ),
   verifyToken: o
-    .input(z.object({}))
+    .input(v.object({}))
     .use(requireCliDeployToken)
     .handler(({ context }) => ({ scope: getTailorKitScope(context) })),
 };

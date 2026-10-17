@@ -2,6 +2,7 @@ import { createApi } from "@tailorkit/app/client";
 import type { Invocation } from "@tailorkit/app/protocol";
 import { fn, defineServer } from "@tailorkit/app/server";
 import type { AppDefinition, Identity } from "@tailorkit/app/server";
+import * as v from "valibot";
 import { expect, it, vi } from "vite-plus/test";
 
 import { createActionExecution } from "./actions";
@@ -55,7 +56,7 @@ it("dispatches nested functions and preserves their names, identity, execution a
   });
   expect(
     execution.query(
-      invocationSchema.parse({ name: api.todos.read.name }),
+      v.parse(invocationSchema, { name: api.todos.read.name }),
       identity
     ).value
   ).toBe("rows");
@@ -92,7 +93,7 @@ it("validates names inside nested groups", () => {
     "_tailorkit.instances._page",
     "_tailorkit..page",
   ]) {
-    expect(invocationSchema.safeParse({ name }).success).toBe(false);
+    expect(v.safeParse(invocationSchema, { name }).success).toBe(false);
   }
 });
 
@@ -101,7 +102,7 @@ it("allows the reserved internal invocation namespace without allowing apps to r
     "_tailorkit.instances.resolve",
     "_tailorkit.future.resolve",
   ]) {
-    expect(invocationSchema.parse({ name })).toEqual({ name });
+    expect(v.parse(invocationSchema, { name })).toEqual({ name });
   }
   expect(() => defineServer({ _tailorkit: {} })).toThrow(
     "Invalid function name"

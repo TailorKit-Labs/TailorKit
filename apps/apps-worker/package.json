@@ -24,6 +24,7 @@
     "@tailorkit/asset-delivery": "workspace:*",
     "drizzle-orm": "catalog:",
     "effect": "catalog:",
+    "valibot": "^1.5.0",
     "zod": "catalog:"
   },
   "devDependencies": {

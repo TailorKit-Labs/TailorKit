@@ -3,6 +3,7 @@ import type { Invocation } from "@tailorkit/app/protocol";
 import type { AppDefinition, Identity } from "@tailorkit/app/server";
 import { Effect } from "effect";
 import { catch as catchEffect } from "effect/Effect";
+import * as v from "valibot";
 import { z } from "zod";
 
 import { createActionExecution } from "./actions";
@@ -186,25 +187,29 @@ export const createExecution = (
         return Effect.try({
           catch: appError,
           try: () => {
-            const parsed = (
+            const parsed = v.safeParse(
               kind === "mutation"
-                ? invocationSchema.extend({ requestId: z.uuid() })
-                : invocationSchema
-            ).safeParse(input);
+                ? v.strictObject({
+                    ...invocationSchema.entries,
+                    requestId: v.pipe(v.string(), v.uuid()),
+                  })
+                : invocationSchema,
+              input
+            );
             if (!parsed.success) {
               throw new AppError("BAD_REQUEST", "Invalid database invocation");
             }
-            // SAFETY: kind selected the mutation schema above, which required a UUID requestId before parsed.data reaches this branch.
+            // SAFETY: kind selected the mutation schema above, which required a UUID requestId before parsed.output reaches this branch.
             const result =
               kind === "mutation"
                 ? mutate(
-                    /* oxlint-disable typescript/no-unsafe-type-assertion -- kind selected the mutation schema above, which required a UUID requestId before parsed.data reaches this branch. */
-                    parsed.data as Invocation & { requestId: string },
+                    /* oxlint-disable typescript/no-unsafe-type-assertion -- kind selected the mutation schema above, which required a UUID requestId before parsed.output reaches this branch. */
+                    parsed.output as Invocation & { requestId: string },
                     /* oxlint-enable typescript/no-unsafe-type-assertion */
                     identity,
                     tables
                   )
-                : execute(parsed.data, identity, kind, tables);
+                : execute(parsed.output, identity, kind, tables);
             return {
               committed: "committed" in result && result.committed === true,
               result: { ok: true as const, value: result.value },

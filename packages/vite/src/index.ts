@@ -4,8 +4,8 @@ import path from "node:path";
 
 import { validateLogoAsset } from "@tailorkit/asset-delivery/logo-validation";
 import type { LogoContentType } from "@tailorkit/asset-delivery/logo-validation";
+import * as v from "valibot";
 import type { Plugin, PluginOption, ResolvedConfig } from "vite";
-import { z } from "zod";
 
 import { forEachSequential } from "#for-each-sequential";
 
@@ -53,9 +53,10 @@ const getInstalledPreactVersion = (root: string): string => {
 
   try {
     const packageJsonPath = require.resolve("preact/package.json");
-    const packageJson = z
-      .object({ version: z.string().optional() })
-      .parse(require(packageJsonPath));
+    const packageJson = v.parse(
+      v.object({ version: v.optional(v.string()) }),
+      require(packageJsonPath)
+    );
 
     if (packageJson.version !== undefined) {
       return packageJson.version;

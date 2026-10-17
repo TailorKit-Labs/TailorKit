@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 
-import { z } from "zod";
+import * as v from "valibot";
 
 import { appDatabasePaths } from "./database-paths";
 import { drizzleGenerateArguments } from "./drizzle";
@@ -41,19 +41,20 @@ const snapshot = async (directory: string): Promise<Snapshot | undefined> => {
     return undefined;
   }
   const filename = path.join(directory, latest, "snapshot.json");
-  const parsed = z
-    .object({
-      ddl: z.array(z.unknown()),
-      dialect: z.literal("sqlite"),
-      version: z.literal("7"),
-    })
-    .safeParse(JSON.parse(await readFile(filename, "utf-8")));
+  const parsed = v.safeParse(
+    v.object({
+      ddl: v.array(v.unknown()),
+      dialect: v.literal("sqlite"),
+      version: v.literal("7"),
+    }),
+    JSON.parse(await readFile(filename, "utf-8"))
+  );
   if (!parsed.success) {
     throw new Error(
       `Unsupported app schema snapshot: ${filename}. Use Drizzle Kit v1 SQLite migrations.`
     );
   }
-  return parsed.data;
+  return parsed.output;
 };
 
 // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser, serializer, or runtime adapter handles arbitrary values before validating or encoding their domain representation.

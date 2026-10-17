@@ -71,9 +71,10 @@
     "@nanostores/preact": "1.1.1",
     "@orpc/client": "catalog:",
     "@orpc/contract": "catalog:",
+    "@standard-schema/spec": "^1.1.0",
     "drizzle-orm": "catalog:",
     "nanostores": "1.5.5",
-    "zod": "catalog:"
+    "valibot": "^1.5.0"
   },
   "devDependencies": {
     "@tailorkit/config": "workspace:*",
@@ -83,7 +84,8 @@
     "tsup": "^8.5.1",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-plus": "catalog:"
+    "vite-plus": "catalog:",
+    "zod": "catalog:"
   },
   "peerDependencies": {
     "preact": "^11.0.0"

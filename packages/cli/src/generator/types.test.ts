@@ -10,6 +10,7 @@ import {
 } from "@tailorkit/core/schema";
 import { createServer } from "@tailorkit/core/server";
 import { compactJsonSchema, TailorKitSchemaSpec } from "@tailorkit/core/spec";
+import * as v from "valibot";
 import { transformWithOxc } from "vite";
 import { assert, describe, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
@@ -211,7 +212,7 @@ describe("renderGeneratedTypes", () => {
     );
     expect(response.ok).toBe(true);
     const output = renderGeneratedTypes(
-      TailorKitSchemaSpec.parse(await response.json())
+      v.parse(TailorKitSchemaSpec, await response.json())
     );
     expect(output).toContain(
       '    /**\n     * Right-hand panel, typically 360px wide.\n     * Scrolls independently.\n     */\n    "panel": { views: "/"; multiple: false };'
@@ -251,7 +252,7 @@ describe("renderGeneratedTypes", () => {
       },
     }).serialize();
 
-    const output = renderGeneratedTypes(TailorKitSchemaSpec.parse(schema));
+    const output = renderGeneratedTypes(v.parse(TailorKitSchemaSpec, schema));
 
     expect(output).toContain(
       "customer: {\n        id: string;\n        name: string;\n      } | null;"
@@ -544,7 +545,7 @@ describe("renderGeneratedTypes", () => {
     );
     expect(response.ok).toBe(true);
     const output = renderGeneratedTypes(
-      TailorKitSchemaSpec.parse(await response.json())
+      v.parse(TailorKitSchemaSpec, await response.json())
     );
     expect(output).toContain("increment: (input: string) => Promise<number>;");
   });
@@ -640,7 +641,7 @@ it("preserves optional ancestor fields through schema serialization and generati
       "/detail": z.object({ id: z.string() }),
     },
   }).serialize();
-  const parsed = TailorKitSchemaSpec.parse(schema);
+  const parsed = v.parse(TailorKitSchemaSpec, schema);
   expect(parsed.views["/"]?.contextOptional).toBe(true);
   expect(parsed.views["/detail"]?.contextOptional).toBeUndefined();
   const output = renderGeneratedTypes(parsed);
@@ -753,7 +754,7 @@ it("generates identical types from inline and referenced schemas in every contra
   expect(renderGeneratedTypes(schema)).toBe(
     renderGeneratedTypes(schemaWith(original))
   );
-  const serialized = TailorKitSchemaSpec.parse({ ...schema, version: 1 });
+  const serialized = v.parse(TailorKitSchemaSpec, { ...schema, version: 1 });
   expect(renderGeneratedTypes(serialized)).toBe(
     renderGeneratedTypes(schemaWith(original))
   );
