@@ -1,0 +1,35 @@
+packages/api-platform/src/app-slug.test.ts
+  s_67e41f3ba1fbd5::t_24b922a4eb265c 16-17,34,52-57,65
+packages/db/src/migrations/20261017022028_parched_madripoor/migration.sql
+  s_f96fecabf79f7b::t_2fe458c9c42c98 1
+packages/db/src/migrations/20261017022028_parched_madripoor/snapshot.json
+  s_f96fecabf79f7b::t_dd76324c474787 4,1645,1649
+packages/db/src/migrations/20261017022029_immutable-app-slugs/snapshot.json
+  s_f96fecabf79f7b::t_142dba8ce27e10 2-3,1645,1649
+packages/db/src/schema/apps.ts
+  s_67e41f3ba1fbd5::t_68aaf20dfabeaf 49,51-53,74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b6a29650e4e1bc4ececd199da0167d9a901bc813",
+  "prompts": {},
+  "sessions": {
+    "s_67e41f3ba1fbd5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a147a8-e43f-7f03-8e37-212425d28586",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_f96fecabf79f7b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14739-b9ed-7673-99c7-1b8a10ba2383",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
