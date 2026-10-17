@@ -20,6 +20,7 @@ const tanstackWorkspaces = ["apps/web", "playground/tanstack-start"];
 const aliasWorkspaces = [
   "apps/web",
   "packages/agent",
+  "packages/agent-fx",
   "packages/api",
   "packages/api-platform",
   "packages/api-utils",

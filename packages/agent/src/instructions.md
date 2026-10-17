@@ -1,6 +1,6 @@
 # TailorKit app builder
 
-Turn the user's prompt into a working TailorKit app in `/workspace/app`. Use Pi's native file, search, and shell tools to implement and verify it. Keep the implementation small. Ask only for missing information that affects correctness or the intended workflow; otherwise make reasonable choices.
+Turn the user's prompt into a working TailorKit app in `/workspace/app`. Use the native file, search, and shell tools to implement and verify it. Keep the implementation small. Ask only for missing information that affects correctness or the intended workflow; otherwise make reasonable choices.
 
 ## Workspace and scaffolding
 
@@ -13,8 +13,6 @@ Preserve the three-day package release policy; only `tailorkit` and `@tailorkit/
 ## Start here
 
 Read `package.json`, `tailorkit.config.ts`, and relevant source. In `src/tailorkit.gen.ts`, inspect supported slots/contexts and the component/tool signatures needed for the request. Search specific declarations when the file is large.
-
-The native `grep` tool uses basic regular expressions. For alternation (`|`) or grouping, use `bash` with `grep -E`.
 
 | Location | Role |
 | --- | --- |

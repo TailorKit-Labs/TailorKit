@@ -47,6 +47,7 @@
     "@orpc/server": "catalog:",
     "@orpc/zod": "catalog:",
     "@tailorkit/agent": "workspace:*",
+    "@tailorkit/agent-fx": "workspace:*",
     "@tailorkit/api-utils": "workspace:*",
     "@tailorkit/app": "workspace:*",
     "@tailorkit/asset-delivery": "workspace:*",

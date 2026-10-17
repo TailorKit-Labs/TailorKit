@@ -46,7 +46,7 @@ vi.mock("./routes/apps.ts", () => ({
       .handler(calls.list),
   },
 }));
-vi.mock("@tailorkit/agent/workflows", () => ({
+vi.mock("@tailorkit/agent-fx/workflows", () => ({
   appAgent: vi.fn(),
   cancelAppAgent: vi.fn(),
 }));

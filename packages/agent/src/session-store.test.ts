@@ -240,7 +240,11 @@ describe("agent threads and app workspace leases (Postgres)", () => {
       appId,
       second,
       "run-b",
-      { ...resumeFrom, data: { sessionFileName: "native-2.jsonl" } },
+      {
+        ...resumeFrom,
+        data: { stateFileName: "state.json", version: 1 },
+        harnessId: "fx",
+      },
       threadSandboxName(second)
     );
     await releaseSessionStep(appId, "run-b");
@@ -248,10 +252,21 @@ describe("agent threads and app workspace leases (Postgres)", () => {
       resumeFrom,
       sandboxName: threadSandboxName(first),
     });
+    await releaseSessionStep(appId, "run-c");
+    await expect(loadResumeStep(appId, second, "run-d")).resolves.toMatchObject(
+      {
+        resumeFrom: {
+          ...resumeFrom,
+          data: { stateFileName: "state.json", version: 1 },
+          harnessId: "fx",
+        },
+      }
+    );
     expect(await thread(second)).toMatchObject({
       resumeState: JSON.stringify({
         ...resumeFrom,
-        data: { sessionFileName: "native-2.jsonl" },
+        data: { stateFileName: "state.json", version: 1 },
+        harnessId: "fx",
       }),
     });
   });

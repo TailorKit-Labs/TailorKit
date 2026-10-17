@@ -36,20 +36,28 @@
     "./threads": {
       "types": "./dist/threads.d.mts",
       "import": "./dist/threads.mjs"
+    },
+    "./runtime": {
+      "types": "./dist/runtime.d.mts",
+      "import": "./dist/runtime.mjs"
+    },
+    "./workflow-support": {
+      "types": "./dist/workflow-support.d.mts",
+      "import": "./src/workflow-support.ts"
     }
   },
   "scripts": {
-    "build": "vp pack src/threads.ts src/index.ts src/workflows.ts src/mcp.ts src/source-export.ts --format esm --dts --clean",
+    "build": "vp pack src/threads.ts src/index.ts src/workflows.ts src/mcp.ts src/source-export.ts src/runtime.ts src/workflow-support.ts --format esm --dts --clean",
     "check-types": "tsc --noEmit",
     "test": "vp test run",
     "lint": "vp lint .",
     "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
-    "@ai-sdk/harness": "1.0.148",
-    "@ai-sdk/harness-pi": "1.0.150",
-    "@ai-sdk/sandbox-vercel": "1.0.148",
-    "@ai-sdk/workflow-harness": "1.0.148",
+    "@ai-sdk/harness": "1.0.154",
+    "@ai-sdk/harness-pi": "1.0.156",
+    "@ai-sdk/sandbox-vercel": "1.0.154",
+    "@ai-sdk/workflow-harness": "1.0.154",
     "@modelcontextprotocol/server": "2.3.1",
     "@tailorkit/db": "workspace:*",
     "@tailorkit/env": "workspace:*",
