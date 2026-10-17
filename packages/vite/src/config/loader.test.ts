@@ -3,15 +3,29 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import * as v from "valibot";
-import { expect, it } from "vite-plus/test";
+import { expect, expectTypeOf, it } from "vite-plus/test";
 
+import type { TailorKitConfig, ResolvedTailorKitConfig } from "./config";
 import { tailorkitConfigSchema } from "./config";
 import { loadTailorKitConfig } from "./loader";
 
+const config = { host: "https://host.test", name: "My App", slug: "my-app" };
+
+it("requires name and slug in the public and resolved config types", () => {
+  expectTypeOf<TailorKitConfig>().toExtend<{ name: string; slug: string }>();
+  expectTypeOf<ResolvedTailorKitConfig>().toExtend<{
+    name: string;
+    slug: string;
+  }>();
+});
+
+it.each(["name", "slug"])("rejects a missing %s", (field) => {
+  const input = { ...config, [field]: undefined };
+  expect(() => v.parse(tailorkitConfigSchema, input)).toThrow();
+});
+
 it.each(["", "   "])("rejects a blank app name: %j", (name) => {
-  expect(() =>
-    v.parse(tailorkitConfigSchema, { host: "https://host.test", name })
-  ).toThrow();
+  expect(() => v.parse(tailorkitConfigSchema, { ...config, name })).toThrow();
 });
 
 it("loads and trims the configured app name and description", async () => {
@@ -19,7 +33,7 @@ it("loads and trims the configured app name and description", async () => {
   try {
     await writeFile(
       path.join(root, "tailorkit.config.mjs"),
-      'export default { host: "https://host.test", name: "  My App  ", description: "  My app description  " };'
+      'export default { host: "https://host.test", name: "  My App  ", slug: "my-app", description: "  My app description  " };'
     );
     const loaded = await loadTailorKitConfig(undefined, root);
     expect(loaded.config.name).toBe("My App");
@@ -33,7 +47,7 @@ it.each([null, "", "a".repeat(255)])(
   "accepts a clear, empty, or maximum-length description: %j",
   (description) => {
     expect(
-      v.parse(tailorkitConfigSchema, { description, host: "https://host.test" })
+      v.parse(tailorkitConfigSchema, { ...config, description })
     ).toMatchObject({ description });
   }
 );
@@ -41,8 +55,8 @@ it.each([null, "", "a".repeat(255)])(
 it("rejects app descriptions longer than 255 characters", () => {
   expect(() =>
     v.parse(tailorkitConfigSchema, {
+      ...config,
       description: "a".repeat(256),
-      host: "https://host.test",
     })
   ).toThrow();
 });
@@ -50,29 +64,25 @@ it("rejects app descriptions longer than 255 characters", () => {
 it.each([{ server: { entry: "./backend.ts" } }])(
   "accepts configured server entry points: %j",
   (override) => {
-    expect(
-      v.parse(tailorkitConfigSchema, { host: "https://host.test", ...override })
-    ).toEqual({
-      host: "https://host.test",
+    expect(v.parse(tailorkitConfigSchema, { ...config, ...override })).toEqual({
+      ...config,
       ...override,
     });
   }
 );
 
 it("defaults entries while preserving backend enablement and migration configuration", () => {
-  expect(
-    v.parse(tailorkitConfigSchema, { host: "https://host.test", server: {} })
-  ).toEqual({
-    host: "https://host.test",
+  expect(v.parse(tailorkitConfigSchema, { ...config, server: {} })).toEqual({
+    ...config,
     server: { entry: "src/server.ts" },
   });
   expect(
     v.parse(tailorkitConfigSchema, {
-      host: "https://host.test",
+      ...config,
       server: { migrations: "./migrations" },
     })
   ).toEqual({
-    host: "https://host.test",
+    ...config,
     server: { entry: "src/server.ts", migrations: "./migrations" },
   });
 });
@@ -82,7 +92,7 @@ it("rejects unsupported storage configuration", async () => {
   try {
     await writeFile(
       path.join(root, "tailorkit.config.mjs"),
-      'export default { host: "https://host.test", storage: { entry: "./server.ts" } };'
+      'export default { host: "https://host.test", name: "My App", slug: "my-app", storage: { entry: "./server.ts" } };'
     );
     await expect(loadTailorKitConfig(undefined, root)).rejects.toThrow(
       "Invalid key"
@@ -96,7 +106,24 @@ it("rejects manual client entry configuration", () => {
   expect(() =>
     v.parse(tailorkitConfigSchema, {
       client: { entry: "./frontend.ts" },
-      host: "https://host.test",
+      ...config,
     })
   ).toThrow();
+});
+
+it.each([
+  "",
+  " ",
+  "UPPER",
+  "my_app",
+  "-app",
+  "app-",
+  "my--app",
+  "a".repeat(33),
+])("rejects an invalid app slug: %j", (slug) => {
+  expect(() => v.parse(tailorkitConfigSchema, { ...config, slug })).toThrow();
+});
+
+it.each(["a", "my-app-1", "a".repeat(32)])("accepts app slug %j", (slug) => {
+  expect(v.parse(tailorkitConfigSchema, { ...config, slug }).slug).toBe(slug);
 });

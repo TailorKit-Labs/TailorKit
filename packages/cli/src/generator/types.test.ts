@@ -65,7 +65,7 @@ it("links the app to the configured server entry and never falls back to an unre
     await mkdir(path.join(root, "src"));
     await writeFile(
       path.join(root, "tailorkit.config.mjs"),
-      'export default { host: "https://host.test", server: { entry: "./backend/api.ts" } };'
+      'export default { name: "Test App", slug: "test-app", host: "https://host.test", server: { entry: "./backend/api.ts" } };'
     );
     await writeFile(
       path.join(root, "backend/api.ts"),
@@ -106,7 +106,7 @@ it("preserves the type-only API link when regenerating host types, including cus
     );
     await writeFile(
       path.join(root, "tailorkit.config.mjs"),
-      'export default { host: "https://host.test", server: {} };'
+      'export default { name: "Test App", slug: "test-app", host: "https://host.test", server: {} };'
     );
     const generated = await generateTypes({ cwd: root });
     const output = await readFile(generated, "utf-8");
@@ -136,7 +136,7 @@ it("detects the default server file without server configuration and removes sta
   try {
     await writeFile(
       path.join(root, "tailorkit.config.mjs"),
-      'export default { host: "https://host.test" };'
+      'export default { name: "Test App", slug: "test-app", host: "https://host.test" };'
     );
     const generated = await generateTypes({ cwd: root });
     expect(await readFile(generated, "utf-8")).not.toContain("createApi");

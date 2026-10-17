@@ -9,6 +9,7 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import { z } from "zod";
 
@@ -274,10 +275,40 @@ describe("generateApp", () => {
     );
     expect(content).toContain("satisfies TailorKitConfig");
     expect(content).toContain('host: "https://host.example.com/api/tailorkit"');
+    expect(content).toContain('name: "test-app"');
+    expect(content).toContain('slug: "test-app"');
     expect(content).toContain('dark: "logo-dark.svg"');
     expect(content).toContain('light: "logo-light.svg"');
     expect(content).not.toContain("defineTailorKitConfig");
+    const { config } = await loadTailorKitConfig(undefined, targetDirectory);
+    expect(config).toMatchObject({
+      name: "test-app",
+      slug: "test-app",
+    });
   });
+
+  it.each([
+    ["@my-org/my_app.name", "my-org-my-app-name"],
+    [`${"a".repeat(31)}-long`, "a".repeat(31)],
+    ["___", "tailorkit-app"],
+  ])(
+    "generates a valid slug from package name %s",
+    async (packageName, slug) => {
+      const targetDirectory = await createTempDir();
+      await generateApp({ ...defaultOptions, packageName, targetDirectory });
+      const content = await readFile(
+        path.join(targetDirectory, "tailorkit.config.ts"),
+        "utf-8"
+      );
+      expect(content).toContain(`name: ${JSON.stringify(packageName)}`);
+      expect(content).toContain(`slug: ${JSON.stringify(slug)}`);
+      const { config } = await loadTailorKitConfig(undefined, targetDirectory);
+      expect(config).toMatchObject({
+        name: packageName,
+        slug,
+      });
+    }
+  );
 
   it.each(["dark", "light"])(
     "generates the %s TailorKit logo",

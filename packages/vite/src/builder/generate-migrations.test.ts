@@ -20,7 +20,7 @@ it.each([undefined, "history"])(
       await writeFile(path.join(root, "src/db/schema.ts"), testSchema);
       await writeFile(
         path.join(root, "tailorkit.config.mjs"),
-        `export default { host: "https://host.example.com", server: ${JSON.stringify(directory !== undefined && directory !== null && directory !== "" ? { migrations: directory } : {})} };`
+        `export default { name: "Test App", slug: "test-app", host: "https://host.example.com", server: ${JSON.stringify(directory !== undefined && directory !== null && directory !== "" ? { migrations: directory } : {})} };`
       );
       const migrations = await generateAppMigrations({
         cwd: root,

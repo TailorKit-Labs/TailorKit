@@ -137,7 +137,7 @@ describe("agent command", () => {
 
   it("ignores an existing config when choosing an app", async () => {
     const source =
-      'export default { host: "https://other.test", appId: "other-app" };\n';
+      'export default { name: "Test App", slug: "test-app", host: "https://other.test", appId: "other-app" };\n';
     await writeFile(configPath, source);
     mocks.select.mockResolvedValueOnce("selected-app");
     await runAgentCommand({ host });
@@ -147,7 +147,7 @@ describe("agent command", () => {
   it("requires --host even when a config exists", async () => {
     await writeFile(
       configPath,
-      'export default { host: "https://other.test" };\n'
+      'export default { name: "Test App", slug: "test-app", host: "https://other.test" };\n'
     );
     await expect(runAgentCommand({})).rejects.toThrow("--host <url>");
     expect(mocks.whoami).not.toHaveBeenCalled();

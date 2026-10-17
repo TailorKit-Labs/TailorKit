@@ -12,12 +12,18 @@ const tailorkitConfigSchema = v.strictObject({
   ),
   host: v.pipe(v.string(), v.url()),
   logos: v.optional(logosConfigSchema),
-  name: v.optional(v.pipe(v.string(), v.trim(), v.minLength(1))),
+  name: v.pipe(v.string(), v.trim(), v.minLength(1)),
   server: v.optional(
     v.strictObject({
       entry: v.optional(v.pipe(v.string(), v.minLength(1)), "src/server.ts"),
       migrations: v.optional(v.pipe(v.string(), v.minLength(1))),
     })
+  ),
+  slug: v.pipe(
+    v.string(),
+    v.minLength(1),
+    v.maxLength(32),
+    v.regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u)
   ),
 });
 
@@ -66,11 +72,10 @@ export interface TailorKitConfig extends v.InferInput<
   };
   /**
    * App name applied during deployment, including updates to an existing app.
-   * When omitted, new apps use the package.json name or app directory name,
-   * and existing apps keep their current name.
-   * @default undefined
+   * Trimmed to remove surrounding whitespace; must not be blank.
+   * Required; has no default.
    */
-  name?: string;
+  name: string;
   /**
    * Enables the private app backend and its database migrations when present.
    * Set to `{}` to use the default paths; omit for a client-only app.
@@ -90,6 +95,12 @@ export interface TailorKitConfig extends v.InferInput<
      */
     migrations?: string;
   };
+  /**
+   * Permanent app slug used when creating an app during deployment.
+   * Use 1–32 lowercase letters or digits, separated by single hyphens.
+   * Existing linked apps keep their slug. Required; has no default.
+   */
+  slug: string;
 }
 export type ResolvedTailorKitConfig = v.InferOutput<
   typeof tailorkitConfigSchema

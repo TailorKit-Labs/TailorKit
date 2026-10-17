@@ -14,7 +14,7 @@ import * as v from "valibot";
 import { z } from "zod";
 
 import { getAgentAuth } from "./agent-auth";
-import { readAppName, writeAppIdToConfig } from "./app-link";
+import { writeAppIdToConfig } from "./app-link";
 import { getDeployToken, NotLoggedInError, runWhoami } from "./auth";
 import { buildProject } from "./build";
 import { createCliClient } from "./client";
@@ -435,7 +435,7 @@ export const runDeploy = async (
     ) {
       throw new Error("The requested deployment app was not found.");
     }
-    const appName = loaded.config.name ?? (await readAppName(loaded.root));
+    const appName = loaded.config.name;
     const shouldCreateApp = await options.onMissingAppId?.({
       appName,
       configPath: loaded.filepath,
@@ -452,6 +452,7 @@ export const runDeploy = async (
       await client.apps.create({
         description: loaded.config.description ?? null,
         name: appName,
+        slug: loaded.config.slug,
       })
     );
 
@@ -544,21 +545,20 @@ export const runDeploy = async (
   ]);
 
   const { description, name } = loaded.config;
-  if ((name !== undefined || description !== undefined) && !createdApp) {
+  if (!createdApp) {
     const app = unwrapRpcResult(
       appDetailsSchema,
       await client.apps.get({ appId })
     );
-    const appName = name ?? app.name;
     const appDescription =
       description === undefined ? app.description : description;
-    if (app.name !== appName || app.description !== appDescription) {
+    if (app.name !== name || app.description !== appDescription) {
       unwrapRpcResult(
         appCreateSchema,
         await client.apps.update({
           appId,
           description: appDescription,
-          name: appName,
+          name,
         })
       );
     }

@@ -69,7 +69,7 @@ export default defineServer({
   privateMarker: fn.query.handler(() => "PRIVATE_DATABASE_TEST"),
 });`,
     "tailorkit.config.mjs":
-      'export default { host: "https://host.test", server: {} };',
+      'export default { name: "Test App", slug: "test-app", host: "https://host.test", server: {} };',
   };
   await Promise.all(
     Object.entries(files).map(async ([filename, source]) => {

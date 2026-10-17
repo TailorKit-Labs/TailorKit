@@ -165,7 +165,15 @@ export const generateApp = async (
       ? "workspace:*"
       : packageVersions.tailorkit;
 
+  const appSlug =
+    packageName
+      .toLowerCase()
+      .replaceAll(/[^a-z0-9]+/gu, "-")
+      .slice(0, 32)
+      .replaceAll(/^-+|-+$/gu, "") || "tailorkit-app";
   const templateData = {
+    appName: JSON.stringify(packageName),
+    appSlug: JSON.stringify(appSlug),
     drizzleKitVersion: packageVersions.drizzleKit ?? TEMPLATE_DRIZZLE_VERSION,
     drizzleOrmVersion: packageVersions.drizzleOrm ?? TEMPLATE_DRIZZLE_VERSION,
     hostUrl,
