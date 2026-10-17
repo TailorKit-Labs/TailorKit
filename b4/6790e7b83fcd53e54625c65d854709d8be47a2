@@ -1,0 +1,31 @@
+apps/web/package.json
+  s_7d1277528c5eb4::t_548d2ac8e2ad1f 17
+apps/web/scripts/benchmark-mcp.ts
+  s_7d1277528c5eb4::t_9b266d06f795c5 1-125
+apps/web/src/server/app-agent-mcp.ts
+  s_7d1277528c5eb4::t_290185f80d3c04 1-37
+apps/web/vite.config.ts
+  s_7d1277528c5eb4::t_ae8c413f8c9256 56-84,113
+packages/agent/README.md
+  s_7d1277528c5eb4::t_38e45d1e1a496c 92,94-96
+packages/api-platform/src/app-agent-mcp-backend.ts
+  s_7d1277528c5eb4::t_cc2179e6c33852 1-251
+packages/api-platform/src/app-agent-mcp.ts
+  s_7d1277528c5eb4::t_ce5d4f023eccb8 5,13-14,66-69,73-79,81-83,86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b46790e7b83fcd53e54625c65d854709d8be47a2",
+  "prompts": {},
+  "sessions": {
+    "s_7d1277528c5eb4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1497e-9fb2-72a0-980b-c455db548beb",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
