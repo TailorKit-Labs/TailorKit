@@ -44,7 +44,7 @@
   "dependencies": {
     "@tailorkit/app": "workspace:*",
     "@tailorkit/core": "workspace:*",
-    "valibot": "^1.5.0"
+    "valibot": "catalog:"
   },
   "devDependencies": {
     "@tailorkit/config": "workspace:*",

@@ -1,9 +1,10 @@
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { AnyRelations, EmptyRelations } from "drizzle-orm/relations";
-import type { z } from "zod";
 
 import type { TailorKitServerTools } from "#client/tools";
 import type { DatabaseDefinition } from "#database/definition";
 import type { QueryDatabase, MutationDatabase } from "#database/types";
+import type { JsonValue } from "#validation";
 
 // oxlint-disable-next-line typescript/no-generated-empty-object-type -- Omitted function tables must have no keys so actions expose no undeclared capabilities.
 export type EmptyFunctions = Record<never, never>;
@@ -12,7 +13,7 @@ export interface Identity {
   readonly subjectId?: string;
   readonly scope: {
     name: string;
-    value: Record<string, z.output<ReturnType<typeof z.json>>>;
+    value: Record<string, JsonValue>;
   };
   readonly toolUrl: string;
   readonly projectId: string;
@@ -23,8 +24,10 @@ export interface Identity {
 }
 
 export type FunctionKind = "query" | "mutation" | "action";
-export type FunctionResult<D> = D extends { result: infer R extends z.ZodType }
-  ? z.output<R>
+export type FunctionResult<D> = D extends {
+  result: infer R extends StandardSchemaV1;
+}
+  ? StandardSchemaV1.InferOutput<R>
   : D extends { handler: (context: never) => infer O }
     ? Awaited<O>
     : never;
@@ -36,19 +39,25 @@ export type FunctionCalls<F, K extends "query" | "mutation"> = {
         : never
       : N
   ]: F[N] extends {
-    args: infer A extends z.ZodType;
+    args: infer A extends StandardSchemaV1;
     handler: (context: never) => infer _Output;
   }
     ? K extends "mutation"
       ? (
-          ...args: undefined extends z.input<A>
-            ? [args?: z.input<A>, options?: { requestId?: string }]
-            : [args: z.input<A>, options?: { requestId?: string }]
+          ...args: undefined extends StandardSchemaV1.InferInput<A>
+            ? [
+                args?: StandardSchemaV1.InferInput<A>,
+                options?: { requestId?: string },
+              ]
+            : [
+                args: StandardSchemaV1.InferInput<A>,
+                options?: { requestId?: string },
+              ]
         ) => Promise<FunctionResult<F[N]>>
       : (
-          ...args: undefined extends z.input<A>
-            ? [args?: z.input<A>]
-            : [args: z.input<A>]
+          ...args: undefined extends StandardSchemaV1.InferInput<A>
+            ? [args?: StandardSchemaV1.InferInput<A>]
+            : [args: StandardSchemaV1.InferInput<A>]
         ) => Promise<FunctionResult<F[N]>>
     : F[N] extends Functions
       ? FunctionCalls<F[N], K>
@@ -67,7 +76,7 @@ export interface ActionContext<F extends Functions = EmptyFunctions> {
 
 export interface FunctionDefinition<
   K extends FunctionKind,
-  A extends z.ZodType,
+  A extends StandardSchemaV1,
   O,
   F extends Functions = EmptyFunctions,
   D extends AnyRelations = EmptyRelations,
@@ -75,9 +84,9 @@ export interface FunctionDefinition<
   readonly kind: K;
   readonly args: A;
   readonly database?: K extends "action" ? never : DatabaseDefinition<D>;
-  readonly result?: z.ZodType<O>;
+  readonly result?: StandardSchemaV1<unknown, O>;
   readonly handler: (
-    context: { args: z.output<A> } & (K extends "action"
+    context: { args: StandardSchemaV1.InferOutput<A> } & (K extends "action"
       ? ActionContext<F>
       : {
           db: K extends "query" ? QueryDatabase<D> : MutationDatabase<D>;
@@ -87,7 +96,7 @@ export interface FunctionDefinition<
 }
 
 export const query = <
-  A extends z.ZodType,
+  A extends StandardSchemaV1,
   O,
   const D extends AnyRelations = EmptyRelations,
 >(
@@ -104,7 +113,7 @@ export const query = <
   }
 ) => Object.freeze({ ...definition, kind: "query" as const });
 export const mutation = <
-  A extends z.ZodType,
+  A extends StandardSchemaV1,
   O,
   const D extends AnyRelations = EmptyRelations,
 >(
@@ -128,7 +137,7 @@ export const mutation = <
 ) => Object.freeze({ ...definition, kind: "mutation" as const });
 
 export const action = <
-  A extends z.ZodType,
+  A extends StandardSchemaV1,
   O,
   const F extends Functions = EmptyFunctions,
 >(
@@ -140,8 +149,8 @@ export const action = <
 // Erasure is private to dispatch; the generic definitions preserve app argument/result types.
 export interface RegisteredFunction<TOutput = unknown> {
   kind: FunctionKind;
-  args: z.ZodType;
-  result?: z.ZodType;
+  args: StandardSchemaV1;
+  result?: StandardSchemaV1;
   handler: (context: never) => TOutput;
   functions?: Functions;
   database?: DatabaseDefinition;

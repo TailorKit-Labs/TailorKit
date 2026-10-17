@@ -52,6 +52,7 @@
     "jose": "6.2.12",
     "liquidjs": "^10.30.0",
     "picocolors": "^1.1.1",
+    "valibot": "catalog:",
     "vite": "catalog:",
     "zod": "catalog:"
   },

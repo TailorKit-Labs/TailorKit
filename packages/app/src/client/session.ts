@@ -1,33 +1,36 @@
-import { z } from "zod";
+import * as v from "valibot";
 
 import { AppError } from "#errors";
 import type { Identity } from "#server/functions";
+import { jsonValueSchema } from "#validation";
 
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
   typeof value === "object" && value !== null;
 
-const identitySchema = z.object({
-  appId: z.string(),
-  deploymentId: z.string(),
-  expiresAt: z.number(),
-  installationId: z.string(),
-  projectId: z.string(),
-  scope: z.object({ name: z.string(), value: z.record(z.string(), z.json()) }),
-  subjectId: z.string().optional(),
-  toolUrl: z.string(),
+const identitySchema = v.object({
+  appId: v.string(),
+  deploymentId: v.string(),
+  expiresAt: v.pipe(v.number(), v.finite()),
+  installationId: v.string(),
+  projectId: v.string(),
+  scope: v.object({
+    name: v.string(),
+    value: v.record(v.string(), jsonValueSchema),
+  }),
+  subjectId: v.optional(v.string()),
+  toolUrl: v.string(),
 });
-const sessionSchema = z.object({
-  expiresAt: z.number(),
-  identity: identitySchema.optional(),
-  subjectId: z.string().optional(),
-  token: z.string(),
-  toolUrl: z.string().optional(),
-  url: z.string(),
+const sessionSchema = v.object({
+  expiresAt: v.pipe(v.number(), v.finite()),
+  identity: v.optional(identitySchema),
+  subjectId: v.optional(v.string()),
+  token: v.string(),
+  toolUrl: v.optional(v.string()),
+  url: v.string(),
 });
 
-export const parseSession = (
-  value: Parameters<typeof sessionSchema.parse>[0]
-): Session => sessionSchema.parse(value);
+export const parseSession = (value: Parameters<typeof v.parse>[1]): Session =>
+  v.parse(sessionSchema, value);
 
 const APP_SESSION_RENEWAL_MS = 60_000;
 
@@ -101,11 +104,11 @@ export const createSessionProvider = (options: {
               "Unable to authorize the app backend"
             );
           }
-          const parsed = sessionSchema.safeParse(await response.json());
+          const parsed = v.safeParse(sessionSchema, await response.json());
           if (!parsed.success) {
             throw new AppError("UNAVAILABLE", "Invalid app session");
           }
-          cached = parsed.data;
+          cached = parsed.output;
           if (cached.identity) {
             cached.identity = freezeIdentity(cached.identity);
           }

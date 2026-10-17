@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
-import { z } from "zod";
+import * as v from "valibot";
 
 import { tailorkitUploadManifestSchema } from "./upload-manifest";
 
@@ -35,18 +35,19 @@ export const readClientManifest = async (filename: string) => {
     const result = stdout.slice(
       stdout.lastIndexOf("\nTAILORKIT_VIEWS=") + "\nTAILORKIT_VIEWS=".length
     );
-    const manifest = z
-      .object({
-        instanceResolvers: z.array(
-          z.object({
-            path: z.string(),
-            resolver: z.string().regex(/^i[0-9a-f]{24}$/u),
-            slot: z.string(),
+    const manifest = v.parse(
+      v.object({
+        instanceResolvers: v.array(
+          v.object({
+            path: v.string(),
+            resolver: v.pipe(v.string(), v.regex(/^i[0-9a-f]{24}$/u)),
+            slot: v.string(),
           })
         ),
-        views: tailorkitUploadManifestSchema.shape.views.unwrap(),
-      })
-      .parse(JSON.parse(result));
+        views: v.unwrap(tailorkitUploadManifestSchema.entries.views),
+      }),
+      JSON.parse(result)
+    );
     return manifest;
   } catch (error) {
     throw new Error(

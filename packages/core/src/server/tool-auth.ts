@@ -1,6 +1,7 @@
-import { z } from "zod";
+import * as v from "valibot";
 
 import type { ToolIdentity } from "#schema/tools";
+import { jsonValueSchema } from "#validation";
 
 const audience = "tailorkit-app";
 const decode = (part: string) =>
@@ -29,29 +30,29 @@ export const createToolVerifier = (options: {
           if (!response.ok) {
             throw new Error("Signing keys unavailable");
           }
-          const parsed = z
-            .object({
-              keys: z
-                .array(
-                  z
-                    .object({
-                      crv: z.literal("P-256"),
-                      d: z.never().optional(),
-                      kid: z.string().min(1),
-                      kty: z.literal("EC"),
-                      x: z.string().min(1),
-                      y: z.string().min(1),
-                    })
-                    .loose()
-                )
-                .min(1)
-                .max(32),
-            })
-            .safeParse(await response.json());
+          const parsed = v.safeParse(
+            v.object({
+              keys: v.pipe(
+                v.array(
+                  v.looseObject({
+                    crv: v.literal("P-256"),
+                    d: v.optional(v.never()),
+                    kid: v.pipe(v.string(), v.minLength(1)),
+                    kty: v.literal("EC"),
+                    x: v.pipe(v.string(), v.minLength(1)),
+                    y: v.pipe(v.string(), v.minLength(1)),
+                  })
+                ),
+                v.minLength(1),
+                v.maxLength(32)
+              ),
+            }),
+            await response.json()
+          );
           if (!parsed.success) {
             throw new Error("Invalid signing keys");
           }
-          const result = parsed.data;
+          const result = parsed.output;
           cached = { expiresAt: Date.now() + 60_000, keys: result.keys };
         })();
       } finally {
@@ -75,20 +76,21 @@ export const createToolVerifier = (options: {
     ) {
       throw new Error("Invalid tool credential");
     }
-    const parsedHeader = z
-      .object({
-        alg: z.literal("ES256"),
-        crit: z
-          .union([z.literal(false), z.literal(0), z.literal(""), z.null()])
-          .optional(),
-        kid: z.string(),
-        typ: z.literal("JWT"),
-      })
-      .safeParse(JSON.parse(new TextDecoder().decode(decode(headerPart))));
+    const parsedHeader = v.safeParse(
+      v.object({
+        alg: v.literal("ES256"),
+        crit: v.optional(
+          v.union([v.literal(false), v.literal(0), v.literal(""), v.null()])
+        ),
+        kid: v.string(),
+        typ: v.literal("JWT"),
+      }),
+      JSON.parse(new TextDecoder().decode(decode(headerPart)))
+    );
     if (!parsedHeader.success) {
       throw new Error("Invalid tool credential");
     }
-    const header = parsedHeader.data;
+    const header = parsedHeader.output;
     let refreshed = false;
     if (!cached || cached.expiresAt <= Date.now()) {
       await refreshKeys();
@@ -124,32 +126,33 @@ export const createToolVerifier = (options: {
     ) {
       throw new Error("Invalid signature");
     }
-    const identifier = z.string().min(1).max(256);
-    const parsedClaims = z
-      .object({
+    const identifier = v.pipe(v.string(), v.minLength(1), v.maxLength(256));
+    const parsedClaims = v.safeParse(
+      v.object({
         appId: identifier,
         appShortId: identifier,
-        aud: z.literal(audience),
+        aud: v.literal(audience),
         deploymentId: identifier,
-        exp: z.number().int(),
-        iat: z.number().int(),
+        exp: v.pipe(v.number(), v.integer()),
+        iat: v.pipe(v.number(), v.integer()),
         installationId: identifier,
-        iss: z.literal(issuer),
+        iss: v.literal(issuer),
         projectId: identifier,
         projectShortId: identifier,
-        scope: z.object({
-          name: z.string().min(1),
-          value: z.record(z.string(), z.json()),
+        scope: v.object({
+          name: v.pipe(v.string(), v.minLength(1)),
+          value: v.record(v.string(), jsonValueSchema),
         }),
-        sub: z.string(),
-        subjectId: identifier.optional(),
-        toolUrl: z.literal(toolUrl),
-      })
-      .safeParse(JSON.parse(new TextDecoder().decode(decode(payloadPart))));
+        sub: v.string(),
+        subjectId: v.optional(identifier),
+        toolUrl: v.literal(toolUrl),
+      }),
+      JSON.parse(new TextDecoder().decode(decode(payloadPart)))
+    );
     if (!parsedClaims.success) {
       throw new Error("Invalid tool claims");
     }
-    const claims = parsedClaims.data;
+    const claims = parsedClaims.output;
     const now = Math.floor(Date.now() / 1000);
     if (
       claims.exp <= now ||

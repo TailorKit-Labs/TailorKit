@@ -1,18 +1,17 @@
-import { z } from "zod";
+import * as v from "valibot";
 
 import { JsonSchema } from "./json-schema";
 
 const viewKeyPattern = /^\/.*$/u;
 
-const viewKeySchema = z.string().regex(viewKeyPattern, {
-  message: 'View keys must start with "/".',
+const viewKeySchema = v.pipe(
+  v.string(),
+  v.regex(viewKeyPattern, 'View keys must start with "/".')
+);
+
+const SerializedView = v.strictObject({
+  context: v.optional(JsonSchema),
+  contextOptional: v.optional(v.boolean()),
 });
 
-const SerializedView = z
-  .object({
-    context: JsonSchema.optional(),
-    contextOptional: z.boolean().optional(),
-  })
-  .strict();
-
-export const viewRecord = z.record(viewKeySchema, SerializedView);
+export const viewRecord = v.record(viewKeySchema, SerializedView);

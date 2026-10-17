@@ -1,5 +1,5 @@
+import * as v from "valibot";
 import { expect, it } from "vite-plus/test";
-import { z } from "zod";
 
 import { agentCreateAppSchema } from "../src/agent";
 import { createClient } from "../src/client/client/index";
@@ -45,7 +45,7 @@ it("serializes explicit app namespaces through the generated client", async () =
     { method: "POST", url: "https://platform.test/api/platform/apps/delete" },
   ]);
   const bodies = await Promise.all(
-    requests.map(async (request) => z.json().parse(await request.json()))
+    requests.map(async (request) => v.parse(v.unknown(), await request.json()))
   );
   expect(bodies).toEqual([
     { app: { id: "11111111-1111-4111-8111-111111111111" }, scopes: [scope] },
@@ -63,8 +63,9 @@ it("serializes explicit app namespaces through the generated client", async () =
 
 it("limits agent app slugs to 32 characters", () => {
   const input = { description: null, name: "Inbox", slug: "a".repeat(32) };
-  expect(agentCreateAppSchema.parse(input).slug).toBe(input.slug);
+  expect(v.parse(agentCreateAppSchema, input).slug).toBe(input.slug);
   expect(
-    agentCreateAppSchema.safeParse({ ...input, slug: "a".repeat(33) }).success
+    v.safeParse(agentCreateAppSchema, { ...input, slug: "a".repeat(33) })
+      .success
   ).toBe(false);
 });

@@ -1,17 +1,18 @@
 import { oc, type } from "@orpc/contract";
 import type { ContractRouterClient } from "@orpc/contract";
-import { z } from "zod";
+import * as v from "valibot";
 
-export const invocationSchema = z.strictObject({
-  args: z.unknown().optional(),
-  name: z
-    .string()
-    .max(512)
-    .regex(
+export const invocationSchema = v.strictObject({
+  args: v.optional(v.unknown()),
+  name: v.pipe(
+    v.string(),
+    v.maxLength(512),
+    v.regex(
       /^(?:[a-zA-Z][a-zA-Z0-9_]{0,63}|_tailorkit)(?:\.[a-zA-Z][a-zA-Z0-9_]{0,63})*$/u
-    ),
+    )
+  ),
 });
-export type Invocation = z.infer<typeof invocationSchema>;
+export type Invocation = v.InferOutput<typeof invocationSchema>;
 export type MutationInvocation = Invocation & { requestId: string };
 
 const procedure = oc.errors({
@@ -30,7 +31,12 @@ export const appContract = {
   actions: procedure.input(invocationSchema).output(type<unknown>()),
 
   mutations: procedure
-    .input(invocationSchema.extend({ requestId: z.uuid() }))
+    .input(
+      v.strictObject({
+        ...invocationSchema.entries,
+        requestId: v.pipe(v.string(), v.uuid()),
+      })
+    )
     .output(type<unknown>()),
 
   queries: procedure.input(invocationSchema).output(type<unknown>()),

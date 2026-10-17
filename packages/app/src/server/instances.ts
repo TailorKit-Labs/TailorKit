@@ -1,4 +1,5 @@
-import { z } from "zod";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
+import * as v from "valibot";
 
 import { AppError } from "#errors";
 import type { ViewDataFields } from "#views";
@@ -9,7 +10,7 @@ import type { AppDefinition, Functions, Identity } from "./functions";
 interface InstanceResolver<TOutput = unknown> {
   slot: string;
   path: string;
-  dataSchema: z.ZodType;
+  dataSchema: StandardSchemaV1;
   resolve: (context: {
     context: ViewDataFields;
     identity: Identity;
@@ -18,10 +19,24 @@ interface InstanceResolver<TOutput = unknown> {
   }) => TOutput;
 }
 
-const addressSchema = z.object({
-  path: z.string().startsWith("/").max(1024),
-  slot: z.string().min(1).max(255),
+const addressSchema = v.object({
+  path: v.pipe(v.string(), v.startsWith("/"), v.maxLength(1024)),
+  slot: v.pipe(v.string(), v.minLength(1), v.maxLength(255)),
 });
+
+const instanceResults = v.pipe(
+  v.array(
+    v.object({
+      data: v.unknown(),
+      key: v.pipe(v.string(), v.minLength(1)),
+      metadata: v.record(v.string(), v.unknown()),
+    })
+  ),
+  v.check(
+    (items) => new Set(items.map((item) => item.key)).size === items.length,
+    "Instance keys must be unique"
+  )
+);
 
 const registeredQueries = (functions: Functions): Functions => {
   const queries: Record<string, Functions[string]> = {};
@@ -51,12 +66,9 @@ export const withInstanceResolvers = (
     );
   }
   const queries = registeredQueries(app.functions);
-  const registry = new Map<
-    string,
-    Map<string, { resolver: InstanceResolver; result: z.ZodType }>
-  >();
+  const registry = new Map<string, Map<string, InstanceResolver>>();
   for (const resolver of resolvers) {
-    addressSchema.parse(resolver);
+    v.parse(addressSchema, resolver);
     let paths = registry.get(resolver.slot);
     if (!paths) {
       paths = new Map();
@@ -67,51 +79,50 @@ export const withInstanceResolvers = (
         `Duplicate instance resolver for slot "${resolver.slot}" and path "${resolver.path}".`
       );
     }
-    const result = z
-      .array(
-        z.object({
-          data: resolver.dataSchema,
-          key: z.string().min(1),
-          metadata: z.record(z.string(), z.unknown()),
-        })
-      )
-      .refine(
-        (items) => new Set(items.map((item) => item.key)).size === items.length,
-        {
-          message: "Instance keys must be unique",
-        }
-      );
-    paths.set(resolver.path, { resolver, result });
+    paths.set(resolver.path, resolver);
   }
   const instances = {
     resolve: action({
-      args: addressSchema.extend({
-        context: z.record(z.string(), z.unknown()),
+      args: v.object({
+        ...addressSchema.entries,
+        context: v.record(v.string(), v.unknown()),
       }),
       functions: queries,
       handler: async ({ args, identity, signal, queries: queriesValue }) => {
-        const entry = registry.get(args.slot)?.get(args.path);
-        if (!entry) {
+        const resolver = registry.get(args.slot)?.get(args.path);
+        if (!resolver) {
           throw new AppError("NOT_FOUND", "Instance resolver not found");
         }
-        const value = await entry.resolver.resolve({
+        const value = await resolver.resolve({
           context: args.context,
           identity,
           queries: queriesValue,
           signal,
         });
-        const result = entry.result.safeParse(value);
+        const result = v.safeParse(instanceResults, value);
         if (!result.success) {
           throw new AppError(
             "INTERNAL_SERVER_ERROR",
             "Invalid function result"
           );
         }
-        return result.data;
+        return await Promise.all(
+          result.output.map(async (item) => {
+            const parsed = await resolver.dataSchema["~standard"].validate(
+              item.data
+            );
+            if (parsed.issues) {
+              throw new AppError(
+                "INTERNAL_SERVER_ERROR",
+                "Invalid function result"
+              );
+            }
+            return { ...item, data: parsed.value };
+          })
+        );
       },
     }),
   };
-  // Validate generated functions before attaching the reserved namespace.
   const internal = defineServer({ instances });
   return Object.freeze({
     functions: { ...app.functions, _tailorkit: internal.functions },

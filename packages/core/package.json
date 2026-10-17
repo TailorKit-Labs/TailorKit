@@ -91,7 +91,7 @@
     "@orpc/server": "catalog:",
     "@standard-schema/spec": "^1.1.0",
     "@tailorkit/client-platform": "workspace:*",
-    "zod": "^4.6.5"
+    "valibot": "catalog:"
   },
   "devDependencies": {
     "@orpc/openapi": "catalog:",
@@ -103,7 +103,7 @@
     "tsup": "^8.5.1",
     "tsx": "catalog:",
     "typescript": "catalog:",
-    "valibot": "^1.5.0"
+    "zod": "^4.6.5"
   },
   "peerDependencies": {
     "arktype": ">=2.1.0",

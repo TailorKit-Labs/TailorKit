@@ -6,7 +6,7 @@ import {
   appsList,
   appsUpdate,
 } from "@tailorkit/client-platform/client";
-import { z } from "zod";
+import * as v from "valibot";
 
 import { platformAppSelector } from "#server/platform-app-selector";
 import {
@@ -16,21 +16,23 @@ import {
   requireCliDeployToken,
 } from "#server/procedures";
 
-const paginationInput = z.object({
-  page: z.number().int().min(1).optional(),
-  pageSize: z.number().int().min(1).max(100).optional(),
+const paginationInput = v.object({
+  page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
+  pageSize: v.optional(
+    v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100))
+  ),
 });
 
-const appInput = z.object({
-  description: z.string().nullable(),
-  name: z.string(),
-  slug: z.string().optional(),
+const appInput = v.object({
+  description: v.nullable(v.string()),
+  name: v.string(),
+  slug: v.optional(v.string()),
 });
 
 export const appRouter = {
   create: o
     .use(requireCliDeployToken)
-    .input(appInput.strict())
+    .input(v.strictObject(appInput.entries))
     .handler(async ({ context, input }) => {
       const { data } = await appsCreate({
         body: { ...input, scope: getTailorKitScope(context) },
@@ -43,7 +45,7 @@ export const appRouter = {
     }),
   delete: o
     .use(requireCliDeployToken)
-    .input(z.object({ appId: z.string() }))
+    .input(v.object({ appId: v.string() }))
     .handler(
       async ({ context, input }) =>
         await appsDelete({
@@ -57,7 +59,7 @@ export const appRouter = {
     ),
   deploy: o
     .use(requireCliDeployToken)
-    .input(z.object({ appId: z.string(), deploymentId: z.string() }))
+    .input(v.object({ appId: v.string(), deploymentId: v.string() }))
     .handler(
       async ({ context, input }) =>
         await appsDeploy({
@@ -73,7 +75,7 @@ export const appRouter = {
   get: o
     .use(requireCliDeployToken)
     .input(
-      z.object({ appId: z.string(), scopes: z.array(z.string()).optional() })
+      v.object({ appId: v.string(), scopes: v.optional(v.array(v.string())) })
     )
     .handler(async ({ context, input }) => {
       const { data } = await appsGet({
@@ -91,9 +93,12 @@ export const appRouter = {
   list: o
     .use(requireCliDeployToken)
     .input(
-      paginationInput
-        .extend({ scopes: z.array(z.string()).optional() })
-        .optional()
+      v.optional(
+        v.object({
+          ...paginationInput.entries,
+          scopes: v.optional(v.array(v.string())),
+        })
+      )
     )
     .handler(async ({ context, input }) => {
       const { data } = await appsList({
@@ -112,10 +117,10 @@ export const appRouter = {
   update: o
     .use(requireCliDeployToken)
     .input(
-      z
-        .object({ appId: z.string() })
-        .extend(appInput.omit({ slug: true }).shape)
-        .strict()
+      v.strictObject({
+        appId: v.string(),
+        ...v.omit(appInput, ["slug"]).entries,
+      })
     )
     .handler(
       async ({ context, input }) =>

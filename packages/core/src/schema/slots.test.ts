@@ -1,3 +1,4 @@
+import * as v from "valibot";
 import { describe, expect, it } from "vite-plus/test";
 import { z } from "zod";
 
@@ -25,7 +26,7 @@ describe("slot view contracts", () => {
       views: { "/": z.object({}) },
     });
     const schema = createTailorKitSchema(contract).serialize();
-    expect(TailorKitSchemaSpec.parse(schema).slots).toEqual({
+    expect(v.parse(TailorKitSchemaSpec, schema).slots).toEqual({
       empty: { description: "", views: ["/"] },
       navbar: { views: ["/"] },
       page: {
@@ -59,7 +60,7 @@ describe("slot view contracts", () => {
         })
       ).toThrow('Slot "panel" description must be a string.');
       expect(
-        TailorKitSchemaSpec.safeParse({
+        v.safeParse(TailorKitSchemaSpec, {
           components: {},
           slots: { panel: { description, views: ["/"] } },
           version: 1,
@@ -79,13 +80,13 @@ describe("slot view contracts", () => {
       },
       views: { "/": z.object({}) },
     });
-    expect(TailorKitSchemaSpec.parse(host.serialize()).slots).toEqual({
+    expect(v.parse(TailorKitSchemaSpec, host.serialize()).slots).toEqual({
       navbar: { views: ["/"] },
       page: { multiple: true, views: ["/"] },
       panel: { multiple: false, views: ["/"] },
     });
     expect(
-      TailorKitSchemaSpec.safeParse({
+      v.safeParse(TailorKitSchemaSpec, {
         ...host.serialize(),
         slots: { page: { multiple: "true", views: ["/"] } },
       }).success
@@ -105,7 +106,7 @@ describe("slot view contracts", () => {
       required: ["userId"],
       type: "object",
     });
-    expect(TailorKitSchemaSpec.parse(schema).slots).toEqual({
+    expect(v.parse(TailorKitSchemaSpec, schema).slots).toEqual({
       navbar: { views: ["/"] },
       panel: { views: ["/users"] },
     });
@@ -113,7 +114,7 @@ describe("slot view contracts", () => {
 
   it("rejects unknown view references in serialized schemas", () => {
     expect(
-      TailorKitSchemaSpec.safeParse({
+      v.safeParse(TailorKitSchemaSpec, {
         components: {},
         slots: { panel: { views: ["/missing"] } },
         version: 1,

@@ -9,6 +9,7 @@ import {
   appAgentChat,
   appAgentCreate,
 } from "@tailorkit/client-platform/client";
+import * as v from "valibot";
 
 import { platformAppSelector } from "#server/platform-app-selector";
 import {
@@ -53,10 +54,10 @@ export const appAgentRouter = {
           sseMaxRetryAttempts: 1,
         });
         for await (const value of stream) {
-          const event = await agentChunkSchema.parseAsync(value);
+          const event = await v.parseAsync(agentChunkSchema, value);
           if (
             event.type === "error" ||
-            agentRunCompleteChunkSchema.safeParse(event).success
+            v.safeParse(agentRunCompleteChunkSchema, event).success
           ) {
             done = true;
           }

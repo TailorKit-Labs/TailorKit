@@ -1,3 +1,4 @@
+import * as v from "valibot";
 import { describe, expect, it } from "vite-plus/test";
 
 import { SerializedComponent } from "#spec/component";
@@ -29,7 +30,7 @@ describe("component children contract", () => {
       fields: undefined,
     });
     for (const component of Object.values(schema.components)) {
-      expect(SerializedComponent.parse(component)).toEqual(component);
+      expect(v.parse(SerializedComponent, component)).toEqual(component);
     }
   });
 });

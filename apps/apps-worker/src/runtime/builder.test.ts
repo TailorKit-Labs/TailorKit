@@ -1,6 +1,7 @@
 import type { Invocation } from "@tailorkit/app/protocol";
 import { fn, defineServer } from "@tailorkit/app/server";
 import type { AppDefinition, Identity } from "@tailorkit/app/server";
+import * as v from "valibot";
 import { expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
@@ -40,8 +41,8 @@ it("validates and transforms fluent inputs and outputs through the real executio
     invalid: fn.query.output(z.number().min(10)).handler(() => 1),
     nullable: fn.query.input(z.null()).handler(({ input }) => input),
     transformed: fn.query
-      .input(z.object({ value: z.string().transform(Number) }))
-      .output(z.string().transform(Number))
+      .input(v.object({ value: v.pipe(v.string(), v.transform(Number)) }))
+      .output(v.pipe(v.string(), v.transform(Number)))
       .handler(({ input, identity: viewer }) => {
         expect(viewer.subjectId).toBe("u");
         expect(input.value).toBe(4);
@@ -59,7 +60,7 @@ it("validates and transforms fluent inputs and outputs through the real executio
     inferred: "no schema needed",
   });
   expect(
-    execute.query(invocationSchema.parse({ name: "empty" }), identity).value
+    execute.query(v.parse(invocationSchema, { name: "empty" }), identity).value
   ).toEqual({
     inferred: "no schema needed",
   });
@@ -68,10 +69,12 @@ it("validates and transforms fluent inputs and outputs through the real executio
       "Invalid function arguments"
     );
   }
-  expect(invocationSchema.parse({ args: undefined, name: "empty" })).toEqual({
-    args: undefined,
-    name: "empty",
-  });
+  expect(v.parse(invocationSchema, { args: undefined, name: "empty" })).toEqual(
+    {
+      args: undefined,
+      name: "empty",
+    }
+  );
   expect(
     execute.query({ args: null, name: "nullable" }, identity).value
   ).toBeNull();

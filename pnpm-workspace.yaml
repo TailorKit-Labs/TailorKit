@@ -63,6 +63,7 @@ catalog:
   tailwindcss: ^4.3.3
   tsx: ^4.23.15
   typescript: ^7.0.2
+  valibot: ^1.5.0
   vite: npm:@voidzero-dev/vite-plus-core@1.1.0
   zod: ^4.6.5
   vite-plus: 1.1.0

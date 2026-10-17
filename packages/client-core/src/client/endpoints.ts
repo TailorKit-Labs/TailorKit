@@ -11,7 +11,7 @@ import type {
 } from "@tailorkit/core/schema";
 import { flattenTools, validateToolValue } from "@tailorkit/core/schema";
 import type { ViewContextValues } from "@tailorkit/core/views";
-import { z } from "zod";
+import * as v from "valibot";
 
 import type { TailorKitApp } from "#types";
 
@@ -23,37 +23,31 @@ const isToolHandler = (
 ): value is Exclude<ClientToolTree[string], ClientToolTree> =>
   typeof value === "function";
 
-const appListSchema = z.array(
-  z
-    .object({
-      clientPath: z.string().optional(),
-      currentDeployment: z
-        .object({ id: z.string() })
-        .loose()
-        .nullable()
-        .optional(),
-      description: z.string().nullable().optional(),
-      id: z.string(),
-      logoPaths: z
-        .object({ dark: z.string().optional(), light: z.string().optional() })
-        .optional(),
-      name: z.string().optional(),
-      projectId: z.string().optional(),
-      scope: z.object({ name: z.string() }).loose().optional(),
-      views: z
-        .array(
-          z
-            .object({
-              disabled: z.literal(true).optional(),
-              instances: z.literal(true).optional(),
-              path: z.string(),
-              slot: z.string(),
-            })
-            .loose()
-        )
-        .optional(),
-    })
-    .loose()
+const appListSchema = v.array(
+  v.looseObject({
+    clientPath: v.optional(v.string()),
+    currentDeployment: v.optional(
+      v.nullable(v.looseObject({ id: v.string() }))
+    ),
+    description: v.optional(v.nullable(v.string())),
+    id: v.string(),
+    logoPaths: v.optional(
+      v.object({ dark: v.optional(v.string()), light: v.optional(v.string()) })
+    ),
+    name: v.optional(v.string()),
+    projectId: v.optional(v.string()),
+    scope: v.optional(v.looseObject({ name: v.string() })),
+    views: v.optional(
+      v.array(
+        v.looseObject({
+          disabled: v.optional(v.literal(true)),
+          instances: v.optional(v.literal(true)),
+          path: v.string(),
+          slot: v.string(),
+        })
+      )
+    ),
+  })
 );
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
@@ -240,7 +234,7 @@ export const createEndpointClient = (options: {
           `Unable to fetch TailorKit apps from ${baseUrl.toString()}.`
         );
       }
-      return appListSchema.parse(await response.json());
+      return v.parse(appListSchema, await response.json());
     },
     baseUrl,
     clearSessions,

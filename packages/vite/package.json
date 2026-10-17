@@ -56,7 +56,7 @@
   "dependencies": {
     "@tailorkit/app": "workspace:*",
     "cosmiconfig": "^10.0.1",
-    "zod": "catalog:"
+    "valibot": "catalog:"
   },
   "devDependencies": {
     "@tailorkit/asset-delivery": "workspace:*",
@@ -68,7 +68,8 @@
     "preact": "^11.0.1",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-plus": "catalog:"
+    "vite-plus": "catalog:",
+    "zod": "catalog:"
   },
   "peerDependencies": {
     "vite": "^8.0.0 || ^1.0.0"
