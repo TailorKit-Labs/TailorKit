@@ -101,14 +101,16 @@ describe("project asset gateway", () => {
     get.mockResolvedValueOnce(object());
     const response = await fetchAsset(new Request(url));
     expect(get).toHaveBeenCalledWith(key);
-    expect(match.mock.calls[0]?.[0].url).toBe(url);
+    expect(match.mock.calls[0]?.[0].url).toBe(
+      `${url}?__tailorkit_asset_cache=opaque-v1`
+    );
     expect(put).toHaveBeenCalledOnce();
     expect(waitUntil).toHaveBeenCalledOnce();
     expect(await response.text()).toBe(bundle);
     expect(response.headers.get("Cache-Control")).toBe("private, max-age=3600");
     const cachedResponse = put.mock.calls[0]?.[1];
     expect(cachedResponse?.headers.get("Cache-Control")).toBe(
-      "public, max-age=86400"
+      "public, max-age=86400, no-transform"
     );
     expect(response.headers.get("Content-Type")).toBe(
       "application/javascript; charset=utf-8"
@@ -278,6 +280,40 @@ const gzipObject = (body = bundle) => {
   };
 };
 
+const cachedGzipHeaders = (size: number, etag?: string) => {
+  const headers = assetHeaders({ contentLength: size, etag });
+  headers.set("X-TailorKit-Content-Encoding", "gzip");
+  headers.set("Vary", "Accept-Encoding");
+  return headers;
+};
+
+it.each(["R2", "cache"])(
+  "allows CDN negotiation while retaining stored gzip from %s",
+  async (source) => {
+    const stored = gzipObject();
+    if (source === "R2") {
+      get.mockResolvedValueOnce(stored);
+    } else {
+      const headers = cachedGzipHeaders(stored.size);
+      headers.set("Cache-Control", "public, max-age=86400, no-transform");
+      match.mockResolvedValueOnce(new Response(stored.body, { headers }));
+    }
+    const request = new Request(url, {
+      headers: { "Accept-Encoding": "br, gzip" },
+    });
+    // Cloudflare normalizes the Worker-facing header even for identity clients.
+    Object.defineProperty(request, "cf", {
+      value: { clientAcceptEncoding: "identity" },
+    });
+    const response = await fetchAsset(request);
+    expect(response.headers.get("Content-Encoding")).toBe("gzip");
+    expect(response.headers.get("Cache-Control")).toBe("private, max-age=3600");
+    expect(response.headers.get("Vary")).toBe("Accept-Encoding");
+    expect(response.headers.get("X-TailorKit-Content-Encoding")).toBeNull();
+    expect(Buffer.from(await response.arrayBuffer())).toEqual(gzipSync(bundle));
+  }
+);
+
 it("serves stored gzip bytes and caches them without double compression", async () => {
   const stored = gzipObject();
   get.mockResolvedValueOnce(stored);
@@ -291,11 +327,44 @@ it("serves stored gzip bytes and caches them without double compression", async 
     bundle
   );
   const [, cached] = requireValue(put.mock.calls[0]);
-  expect(cached.headers.get("Content-Encoding")).toBe("gzip");
+  expect(cached.headers.get("Content-Encoding")).toBeNull();
+  expect(cached.headers.get("X-TailorKit-Content-Encoding")).toBe("gzip");
   expect(gunzipSync(Buffer.from(await cached.arrayBuffer())).toString()).toBe(
     bundle
   );
 });
+
+it.each(["GET", "HEAD"])(
+  "serves opaque cached gzip bytes for %s without reading R2 again",
+  async (method) => {
+    const stored = gzipObject();
+    get.mockResolvedValueOnce(stored);
+    const initial = await fetchAsset(
+      new Request(url, { headers: { "Accept-Encoding": "gzip" } })
+    );
+    await initial.arrayBuffer();
+    await requireValue(waitUntil.mock.calls[0])[0];
+    const [, cached] = requireValue(put.mock.calls[0]);
+    match.mockResolvedValueOnce(cached);
+
+    const response = await fetchAsset(
+      new Request(url, { headers: { "Accept-Encoding": "gzip" }, method })
+    );
+    expect(response.headers.get("Content-Encoding")).toBe("gzip");
+    expect(response.headers.get("Content-Length")).toBe(String(stored.size));
+    expect(response.headers.get("X-TailorKit-Content-Encoding")).toBeNull();
+    const bytes = Buffer.from(await response.arrayBuffer());
+    if (method === "HEAD") {
+      expect(bytes.byteLength).toBe(0);
+    } else {
+      expect(bytes).toEqual(gzipSync(bundle));
+      expect(gunzipSync(bytes).toString()).toBe(bundle);
+    }
+    expect(get).toHaveBeenCalledOnce();
+    expect(head).not.toHaveBeenCalled();
+    expect(put).toHaveBeenCalledOnce();
+  }
+);
 
 it.each(["R2", "cache"])(
   "caps inflated bytes from %s at 3 MiB",
@@ -307,10 +376,7 @@ it.each(["R2", "cache"])(
     } else {
       match.mockResolvedValueOnce(
         new Response(stored.body, {
-          headers: assetHeaders({
-            contentEncoding: "gzip",
-            contentLength: stored.size,
-          }),
+          headers: cachedGzipHeaders(stored.size),
         })
       );
     }
@@ -344,11 +410,7 @@ it.each([undefined, "identity", "gzip;q=0, *;q=1"])(
     const stored = gzipObject();
     match.mockResolvedValueOnce(
       new Response(stored.body, {
-        headers: assetHeaders({
-          contentEncoding: "gzip",
-          contentLength: stored.size,
-          etag: stored.httpEtag,
-        }),
+        headers: cachedGzipHeaders(stored.size, stored.httpEtag),
       })
     );
     const response = await fetchAsset(
@@ -361,6 +423,7 @@ it.each([undefined, "identity", "gzip;q=0, *;q=1"])(
     );
     expect(await response.text()).toBe(bundle);
     expect(response.headers.get("Content-Encoding")).toBeNull();
+    expect(response.headers.get("X-TailorKit-Content-Encoding")).toBeNull();
     expect(response.headers.get("Content-Length")).toBeNull();
     expect(response.headers.get("ETag")).toBe('W/"etag"');
     expect(response.headers.get("Vary")).toBe("Accept-Encoding");
