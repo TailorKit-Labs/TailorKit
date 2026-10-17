@@ -2,7 +2,7 @@
 
 `@tailorkit/client-platform` is the API client for the TailorKit platform.
 
-Apps have an immutable `slug`, unique within their project across all scopes. Slugs contain 1–64 lowercase letters or digits, separated by single hyphens. Set `slug` when creating an app or installation; omitting it generates a stable `app-<uuid>` username. Renaming an app does not change its slug. Duplicate slugs return `CONFLICT`.
+Apps have an immutable `slug`, unique within their project across all scopes. Slugs contain 1–32 lowercase letters or digits, separated by single hyphens. Set `slug` when creating an app or installation; omitting it generates a stable `app-` followed by 28 random hexadecimal characters username. Renaming an app does not change its slug. Duplicate slugs return `CONFLICT`.
 
 App operations take an explicit `app` selector containing exactly one of `{ id }` (UUID), `{ shortId }`, or `{ slug }`. Identifier namespaces never fall back to one another. Project credentials and scope authorization still apply to every lookup.
 

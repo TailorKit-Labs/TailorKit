@@ -1302,10 +1302,11 @@ describe("platform appRouter", () => {
     expect(update.response?.status).toBe(400);
   });
 
-  it("distinguishes slugs from identical short IDs and UUIDs without bypassing project or scope checks", async () => {
+  it("distinguishes slugs from identical short IDs without bypassing project or scope checks", async () => {
     const context = createContext();
     const id = "55555555-5555-4555-8555-555555555555";
     const shortId = "app000000001";
+    const scopedSlug = "staging-inbox";
     await db.insert(appTable).values([
       {
         id,
@@ -1322,9 +1323,9 @@ describe("platform appRouter", () => {
         ...canonicalizeScope(productionScope),
       },
       {
-        name: "UUID slug",
+        name: "Scoped slug",
         projectId,
-        slug: id,
+        slug: scopedSlug,
         ...canonicalizeScope(stagingScope),
       },
     ]);
@@ -1332,7 +1333,7 @@ describe("platform appRouter", () => {
       [{ id }, "Original"],
       [{ shortId }, "Original"],
       [{ slug: shortId }, "Short ID slug"],
-      [{ slug: id }, "UUID slug"],
+      [{ slug: scopedSlug }, "Scoped slug"],
     ] as const) {
       // oxlint-disable-next-line no-await-in-loop -- Verify each namespace against the same fixture.
       const found = await call(
@@ -1345,7 +1346,7 @@ describe("platform appRouter", () => {
     await expect(
       call(
         appRouter.get,
-        { body: { app: { slug: id }, scopes: [productionScope] } },
+        { body: { app: { slug: scopedSlug }, scopes: [productionScope] } },
         { context }
       )
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
@@ -1370,6 +1371,8 @@ describe("platform appRouter", () => {
       { id: "invalid" },
       { shortId: "invalid" },
       { slug: "UPPER" },
+      { slug: "a".repeat(33) },
+      { slug: "55555555-5555-4555-8555-555555555555" },
       { shortId: "app000000001", slug: "valid" },
     ]) {
       // oxlint-disable-next-line no-await-in-loop -- Check each independent HTTP validation failure.
@@ -1390,7 +1393,7 @@ describe("platform appRouter", () => {
       "-leading",
       "trailing-",
       "double--hyphen",
-      "a".repeat(65),
+      "a".repeat(33),
     ]) {
       // oxlint-disable-next-line no-await-in-loop -- Check each independent HTTP validation failure.
       const result = await handler.handle(
@@ -1409,5 +1412,27 @@ describe("platform appRouter", () => {
       expect(result.response?.status).toBe(400);
     }
     expect(await db.select().from(appTable)).toHaveLength(0);
+    const maxLengthSlug = "a".repeat(32);
+    const created = await call(
+      appRouter.create,
+      {
+        body: {
+          description: null,
+          name: "Max length",
+          scope: productionScope,
+          slug: maxLengthSlug,
+        },
+      },
+      { context }
+    );
+    expect(created.body.slug).toBe(maxLengthSlug);
+    const found = await call(
+      appRouter.get,
+      {
+        body: { app: { slug: maxLengthSlug }, scopes: [productionScope] },
+      },
+      { context }
+    );
+    expect(found.body.id).toBe(created.body.id);
   });
 });

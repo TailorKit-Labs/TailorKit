@@ -8,7 +8,7 @@ export const agentCreateAppSchema = z.strictObject({
   slug: z
     .string()
     .min(1)
-    .max(64)
+    .max(32)
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u)
     .optional(),
 });

@@ -1,6 +1,7 @@
 import { expect, it } from "vite-plus/test";
 import { z } from "zod";
 
+import { agentCreateAppSchema } from "../src/agent";
 import { createClient } from "../src/client/client/index";
 import { appsDelete, appsGet, appsUpdate } from "../src/client/sdk.gen";
 
@@ -58,4 +59,12 @@ it("serializes explicit app namespaces through the generated client", async () =
     },
     { app: { slug: "shared-inbox" }, scope },
   ]);
+});
+
+it("limits agent app slugs to 32 characters", () => {
+  const input = { description: null, name: "Inbox", slug: "a".repeat(32) };
+  expect(agentCreateAppSchema.parse(input).slug).toBe(input.slug);
+  expect(
+    agentCreateAppSchema.safeParse({ ...input, slug: "a".repeat(33) }).success
+  ).toBe(false);
 });
