@@ -59,6 +59,26 @@ export default defineConfig(({ mode }) => {
             inlineDynamicImports: false,
             minify: true,
 
+            modules: [
+              {
+                name: "lazy-workflow-handlers",
+                setup(server) {
+                  server.hooks.hook("build:before", () => {
+                    if (server.options.dev) {
+                      return;
+                    }
+                    // Workflow registers these handlers eagerly. Load its
+                    // generated execution bundle only for workflow callbacks.
+                    for (const handler of server.options.handlers) {
+                      if (handler.route?.startsWith("/.well-known/workflow/")) {
+                        handler.lazy = true;
+                      }
+                    }
+                  });
+                },
+              },
+            ],
+
             routeRules: {
               "/sign-in": {
                 redirect: {
