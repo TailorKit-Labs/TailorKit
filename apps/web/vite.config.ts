@@ -80,8 +80,10 @@ export default defineConfig(({ mode }) => {
 
             vercel: {
               functionRules: {
+                // Share instances with platform setup calls: a separate MCP
+                // cold start can exceed AI SDK's one-second discovery probe.
                 // MCP streams stay open for the entire durable agent turn.
-                "/api/platform/app-agent/mcp": { maxDuration: 1800 },
+                "/api/platform/**": { maxDuration: 1800 },
               },
             },
 

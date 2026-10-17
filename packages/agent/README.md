@@ -89,7 +89,9 @@ The `create_app` and `edit_app` descriptions explain that their agents write cod
 
 The endpoint implements MCP 2026-07-28 using the official SDK v2. It rejects legacy initialization, HTTP+SSE, and protocol sessions. Responses use request-scoped Server-Sent Events (SSE) with keepalives.
 
-The web host gives `/api/platform/app-agent/mcp` its own Vercel Function with a 1,800-second maximum duration so the request can stream a full agent turn. This requires Vercel’s extended function durations on Pro or Enterprise. Other web routes retain their default duration.
+The web host serves `/api/platform/**`, including `/api/platform/app-agent/mcp`, from one Vercel Function with a 1,800-second maximum duration so MCP can stream a full agent turn. Sharing the function lets platform setup requests warm the same instance used for MCP discovery. This requires Vercel’s extended function durations on Pro or Enterprise. Other web routes retain their default duration.
+
+AI SDK MCP 2.0.77 gives protocol discovery a fixed one-second timeout, even when `initializationOptions.timeout` is longer. A slow discovery response makes it fall back to legacy initialization, which this endpoint rejects. Sharing platform instances reduces that risk but does not guarantee sub-second discovery on cold starts. Clients that need a longer discovery window can use the official SDK with the pinned protocol shown below.
 
 Clients requesting progress receive `notifications/progress`: `progress` is a monotonically increasing event count, and `message` contains JSON `{ runId, appId, threadId, status? , chunk? }`. `chunk` is an AI SDK UI message chunk. The terminal tool result contains `{ appId, threadId, runId, messages, sessionId, finishReason, usage? }`. The `create_app` schema advertises the authorized scope names as an enum.
 
