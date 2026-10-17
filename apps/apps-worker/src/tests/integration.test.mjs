@@ -4,10 +4,11 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdtemp, rm, readFile, writeFile, readdir } from "node:fs/promises";
+import { get } from "node:http";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { gzipSync } from "node:zlib";
+import { gzipSync, gunzipSync } from "node:zlib";
 
 import {
   issueAppToken,
@@ -19,6 +20,32 @@ import { build } from "vite";
 import { it } from "vite-plus/test";
 
 import { createTestBackend } from "./backend";
+
+/**
+ * Read the wire bytes without fetch/dispatchFetch's transparent gzip decoding.
+ * @param {URL} url Local runtime URL.
+ * @param {Record<string, string>} headers Request headers, including the public host.
+ */
+const fetchWireBytes = async (url, headers) => {
+  /** @type {import("node:http").IncomingMessage} */
+  // oxlint-disable-next-line promise/avoid-new -- node:http exposes callbacks; bridge them to await without fetch's automatic decompression.
+  const response = await new Promise((resolve, reject) => {
+    get(url, { headers }, resolve).on("error", reject);
+  });
+  /** @type {Buffer[]} */
+  const chunks = [];
+  for await (const chunk of response) {
+    if (!Buffer.isBuffer(chunk)) {
+      throw new TypeError("Expected HTTP response bytes");
+    }
+    chunks.push(chunk);
+  }
+  return {
+    body: Buffer.concat(chunks),
+    headers: response.headers,
+    status: response.statusCode,
+  };
+};
 
 /** @typedef {NonNullable<import("wrangler").unstable_DevEnv["runtimes"][number]["mf"]>} LocalMiniflare */
 /** @typedef {{ Miniflare: new(options: Record<string, unknown>) => LocalMiniflare, convertV4MiniflareOptions: (options: Record<string, unknown>) => Record<string, unknown> }} WranglerRuntimeModule */
@@ -853,24 +880,44 @@ export const migrations = ${JSON.stringify(history)};`;
     await assets.put(clientKey, clientBytes, {
       httpMetadata: { contentEncoding: "gzip" },
     });
+    const publicClientUrl = new URL(`${assetBase}/client/client.js`);
+    const wireUrl = new URL(publicClientUrl.pathname, await mf.ready);
     await Array.fromAsync(
       Array.from({ length: 2 }, (_, attempt) => attempt),
       async (attempt) => {
-        const compressed = await mf.dispatchFetch(
-          `${assetBase}/client/client.js`,
-          {
-            headers: { "Accept-Encoding": "gzip" },
-          }
-        );
-        assert.equal(compressed.headers.get("mf-content-encoding"), "gzip");
-        assert.equal(compressed.headers.get("vary"), "Accept-Encoding");
-        // Miniflare dispatchFetch decodes HTTP gzip and preserves its header here.
+        const compressed = await fetchWireBytes(wireUrl, {
+          "Accept-Encoding": "gzip",
+          Host: publicClientUrl.host,
+          "MF-Original-URL": publicClientUrl.href,
+        });
+        assert.equal(compressed.status, 200);
+        assert.equal(compressed.headers["content-encoding"], "gzip");
+        assert.equal(compressed.headers.vary, "Accept-Encoding");
         assert.equal(
-          await compressed.text(),
+          compressed.headers["x-tailorkit-content-encoding"],
+          undefined
+        );
+        assert.deepEqual(compressed.body, clientBytes);
+        assert.equal(
+          gunzipSync(compressed.body).toString(),
           "export default 'client';",
           `gzip request ${attempt}`
         );
       }
+    );
+    const cache = await mf.getCaches();
+    const cacheUrl = new URL(publicClientUrl);
+    cacheUrl.searchParams.set("__tailorkit_asset_cache", "opaque-v1");
+    const cachedClient = await cache.default.match(cacheUrl);
+    assert.ok(cachedClient !== undefined);
+    assert.equal(cachedClient.headers.get("content-encoding"), null);
+    assert.equal(
+      cachedClient.headers.get("x-tailorkit-content-encoding"),
+      "gzip"
+    );
+    assert.deepEqual(
+      Buffer.from(await cachedClient.arrayBuffer()),
+      clientBytes
     );
     const client = await mf.dispatchFetch(`${assetBase}/client/client.js`, {
       headers: { "Accept-Encoding": "identity" },

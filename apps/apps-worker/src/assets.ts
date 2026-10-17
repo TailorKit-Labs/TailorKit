@@ -12,8 +12,14 @@ import type { AssetIdentity } from "@tailorkit/asset-delivery";
 import { Effect } from "effect";
 import { catch as catchEffect } from "effect/Effect";
 
+const cachedEncodingHeader = "X-TailorKit-Content-Encoding";
+
 const downstreamResponse = (response: Response, request: Request) => {
   const headers = new Headers(response.headers);
+  if (headers.get(cachedEncodingHeader) === "gzip") {
+    headers.set("Content-Encoding", "gzip");
+  }
+  headers.delete(cachedEncodingHeader);
   // Keep browser reuse bounded when a deployment is removed.
   headers.set("Cache-Control", "private, max-age=3600");
   let { body } = response;
@@ -49,10 +55,13 @@ const loadAsset = (
       /* oxlint-disable typescript/no-unsafe-type-assertion -- Cloudflare Workers provides caches.default; the standard DOM CacheStorage declaration omits this Workers-only cache. */
       caches as CacheStorage & { readonly default: Cache };
     /* oxlint-enable typescript/no-unsafe-type-assertion */
-    // Cache the stored representation, then negotiate for each downstream request.
-    const cacheKey = new Request(request.url, {
-      headers: { "Accept-Encoding": "gzip" },
-    });
+    // Cache opaque bytes: Cache API responses decode HTTP Content-Encoding when
+    // consumed. Keep the stored encoding in private metadata instead, so manual
+    // downstream responses always receive the original R2 bytes.
+    // A new key also bypasses entries written with the old HTTP encoding contract.
+    const cacheUrl = new URL(request.url);
+    cacheUrl.searchParams.set("__tailorkit_asset_cache", "opaque-v1");
+    const cacheKey = new Request(cacheUrl);
     const cached = yield* Effect.tryPromise(
       async () => await edgeCache.default.match(cacheKey)
     ).pipe(
@@ -99,13 +108,18 @@ const loadAsset = (
         etag: object.httpEtag,
       }),
     });
-    // workerd clones reset encodeBody; keep cached bytes compressed exactly once.
+    const cacheHeaders = new Headers(response.headers);
+    if (cacheHeaders.get("Content-Encoding") === "gzip") {
+      cacheHeaders.set(cachedEncodingHeader, "gzip");
+      cacheHeaders.delete("Content-Encoding");
+    }
+    cacheHeaders.set("Cache-Control", "public, max-age=86400, no-transform");
     const cacheWrite = Effect.tryPromise(async () => {
       await edgeCache.default.put(
         cacheKey,
         new Response(response.clone().body, {
           encodeBody: "manual",
-          headers: response.headers,
+          headers: cacheHeaders,
         })
       );
     }).pipe(
