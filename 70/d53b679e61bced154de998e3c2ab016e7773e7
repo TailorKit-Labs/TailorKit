@@ -1,0 +1,39 @@
+packages/agent/README.md
+  s_fef38c9ea574eb::t_90763d46631360 94,99,129-132
+packages/agent/src/mcp.test.ts
+  s_496593eb752d12::t_b60db18fcb20d3 6,86,104,148-154,165-170,229-345
+packages/agent/src/mcp.ts
+  s_529404e6ccf7ec::t_6de9054d1c4332 37,43,74-99,112-113
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "70d53b679e61bced154de998e3c2ab016e7773e7",
+  "prompts": {},
+  "sessions": {
+    "s_496593eb752d12": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14c05-5ed9-7f50-a79f-6bf07b2edd9e",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_529404e6ccf7ec": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14bf8-94cd-7880-a375-35ed2b932aeb",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_fef38c9ea574eb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14bf7-90fd-7333-9b9d-f4f0c0262995",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
