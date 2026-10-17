@@ -70,7 +70,7 @@
     "@tailorkit/core": "workspace:*",
     "@tailorkit/sandbox": "workspace:*",
     "nanostores": "1.5.5",
-    "valibot": "^1.5.0"
+    "valibot": "catalog:"
   },
   "devDependencies": {
     "@tailorkit/config": "workspace:*",

@@ -56,7 +56,7 @@
   "dependencies": {
     "@tailorkit/app": "workspace:*",
     "cosmiconfig": "^10.0.1",
-    "valibot": "^1.5.0"
+    "valibot": "catalog:"
   },
   "devDependencies": {
     "@tailorkit/asset-delivery": "workspace:*",
