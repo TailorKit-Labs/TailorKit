@@ -1,0 +1,23 @@
+packages/client-platform/README.md
+  s_f96fecabf79f7b::t_5026658fa77191 5
+packages/core/src/server/handler.test.ts
+  s_f96fecabf79f7b::t_19b27c9ceb0fba 757,835-852
+packages/core/src/server/routes/apps.ts
+  s_f96fecabf79f7b::t_889deb8c8c1e85 118
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ffed8373c7fa8c8022b13e54ec3a05a416242568",
+  "prompts": {},
+  "sessions": {
+    "s_f96fecabf79f7b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14739-b9ed-7673-99c7-1b8a10ba2383",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
