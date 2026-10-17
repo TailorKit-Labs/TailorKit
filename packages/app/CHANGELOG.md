@@ -1,5 +1,11 @@
 # @tailorkit/app
 
+## 1.0.0-beta.44
+
+### Patch Changes
+
+- 1fb0155: Use Valibot for internal validation to reduce TailorKit bundle sizes. Accept user-provided Standard Schema validators for app functions and view instance data, preserving input/output inference and Zod primitive exports.
+
 ## 0.1.0-beta.43
 
 No changes in this release.
