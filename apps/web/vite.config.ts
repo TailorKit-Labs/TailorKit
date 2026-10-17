@@ -53,6 +53,35 @@ export default defineConfig(({ mode }) => {
             // Forward this prefix to Start, which owns the endpoint and its handlers.
             handlers: [
               { env: "dev", handler: "#start-assets", route: "/api/assets/**" },
+              {
+                handler: resolve(
+                  import.meta.dirname,
+                  "src/server/app-agent-mcp.ts"
+                ),
+                lazy: true,
+                route: "/api/platform/app-agent/mcp",
+              },
+            ],
+
+            // Keep workflow execution and the UI router out of MCP startup.
+            inlineDynamicImports: false,
+            minify: true,
+
+            modules: [
+              {
+                name: "lazy-workflow-handlers",
+                setup(server) {
+                  server.hooks.hook("build:before", () => {
+                    // Workflow registers these handlers eagerly. Its step
+                    // registry is only needed for workflow callbacks.
+                    for (const handler of server.options.handlers) {
+                      if (handler.route?.startsWith("/.well-known/workflow/")) {
+                        handler.lazy = true;
+                      }
+                    }
+                  });
+                },
+              },
             ],
 
             routeRules: {
@@ -80,10 +109,8 @@ export default defineConfig(({ mode }) => {
 
             vercel: {
               functionRules: {
-                // Share instances with platform setup calls: a separate MCP
-                // cold start can exceed AI SDK's one-second discovery probe.
                 // MCP streams stay open for the entire durable agent turn.
-                "/api/platform/**": { maxDuration: 1800 },
+                "/api/platform/app-agent/mcp": { maxDuration: 1800 },
               },
             },
 
