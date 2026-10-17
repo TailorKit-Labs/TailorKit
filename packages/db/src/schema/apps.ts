@@ -46,6 +46,9 @@ export const app = pgTable(
     shortId: varchar("short_id", { length: 12 })
       .notNull()
       .$defaultFn(createShortId),
+    slug: varchar("slug", { length: 64 })
+      .notNull()
+      .default(sql`('app-' || pg_catalog.gen_random_uuid()::text)`),
     updatedAt: timestamp("updated_at")
       .defaultNow()
       .$onUpdate(() => new Date())
@@ -53,6 +56,8 @@ export const app = pgTable(
   },
   (table) => [
     check("app_short_id_format", sql`${table.shortId} ~ '^[a-z0-9]{12}$'`),
+    check("app_slug_format", sql`${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$'`),
+    uniqueIndex("app_project_id_slug_unique").on(table.projectId, table.slug),
     index("app_project_scope_key_idx").on(table.projectId, table.scopeKey),
     uniqueIndex("app_project_id_short_id_unique").on(
       table.projectId,
@@ -61,12 +66,22 @@ export const app = pgTable(
   ]
 );
 
+export const appSlugSchema = z
+  .string()
+  .min(1)
+  .max(64)
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u)
+  .describe(
+    "Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens."
+  );
+
 const AppSchema = createSelectSchema(app, {
   description: z.string().max(255).nullable(),
   name: z.string().max(127),
   scope: scopeSchema,
   scopeKey: scopeKeySchema,
   shortId: z.string().regex(/^[a-z0-9]{12}$/u),
+  slug: appSlugSchema,
 });
 export type App = z.output<typeof AppSchema>;
 
