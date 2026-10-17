@@ -19,6 +19,7 @@ it("validates upload manifests without loading build tooling in a server runtime
       "--input-type=module",
       "--eval",
       `
+        import * as v from "valibot";
         import assert from "node:assert/strict";
         import { registerHooks } from "node:module";
 
@@ -35,8 +36,8 @@ it("validates upload manifests without loading build tooling in a server runtime
           await import("@tailorkit/vite/upload-manifest");
         const manifest = createTailorKitUploadManifest(undefined, true);
         assert.equal(manifest.assets.server, "server/server.js");
-        assert.deepEqual(tailorkitUploadManifestSchema.parse(manifest), manifest);
-        assert.equal(tailorkitUploadManifestSchema.safeParse({
+        assert.deepEqual(v.parse(tailorkitUploadManifestSchema, manifest), manifest);
+        assert.equal(v.safeParse(tailorkitUploadManifestSchema, {
           assets: { client: "../../secret" }, version: 1,
         }).success, false);
         console.log("manifest runtime ready");

@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 
 import type { FunctionResult, Functions } from "#server/functions";
 
@@ -16,10 +16,10 @@ export const reference = <K extends "query" | "mutation" | "action", I, O>(
 export type References<F> = {
   readonly [N in keyof F]: F[N] extends {
     kind: infer K extends "query" | "mutation" | "action";
-    args: infer A extends z.ZodType;
+    args: infer A extends StandardSchemaV1;
     handler: (...args: never[]) => infer _Output;
   }
-    ? Reference<K, z.input<A>, FunctionResult<F[N]>>
+    ? Reference<K, StandardSchemaV1.InferInput<A>, FunctionResult<F[N]>>
     : F[N] extends Functions
       ? References<F[N]>
       : never;

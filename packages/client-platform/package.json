@@ -67,7 +67,7 @@
   "dependencies": {
     "@orpc/client": "catalog:",
     "ai": "catalog:",
-    "zod": "catalog:"
+    "valibot": "catalog:"
   },
   "devDependencies": {
     "@hey-api/openapi-ts": "next",
@@ -75,6 +75,7 @@
     "@tailorkit/config": "workspace:*",
     "@types/node": "catalog:",
     "tsup": "^8.5.1",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "zod": "catalog:"
   }
 }

@@ -1,75 +1,76 @@
-import { asSchema, uiMessageChunkSchema } from "ai";
 import type { UIMessageChunk } from "ai";
-import { z } from "zod";
+import * as v from "valibot";
 
-export const agentCreateAppSchema = z.strictObject({
-  description: z.string().max(255).nullable(),
-  name: z.string().max(127),
+export const agentCreateAppSchema = v.strictObject({
+  description: v.nullable(v.pipe(v.string(), v.maxLength(255))),
+  name: v.pipe(v.string(), v.maxLength(127)),
 });
 
-const chunkSchema = asSchema(uiMessageChunkSchema);
-
-/** Use the SDK's validator so transport parts stay aligned with its protocol. */
-export const agentChunkSchema = z
-  .custom<UIMessageChunk>(async (value) => {
-    const awaitedResult1 = await chunkSchema.validate?.(value);
-    return awaitedResult1?.success === true;
-  })
-  .describe("An AI SDK UIMessageChunk. Fields depend on the chunk type.");
+export { agentChunkSchema } from "#agent-chunks";
 
 export type AgentChunk = UIMessageChunk;
 /** Parts stay extensible; the platform validates their SDK shapes before running. */
-export const agentMessagesSchema = z
-  .array(
-    z.object({
-      id: z.string().min(1),
-      metadata: z.unknown().optional(),
-      parts: z.array(z.looseObject({ type: z.string() })).min(1),
-      role: z.enum(["user", "assistant"]),
+export const agentMessagesSchema = v.pipe(
+  v.array(
+    v.object({
+      id: v.pipe(v.string(), v.minLength(1)),
+      metadata: v.optional(v.unknown()),
+      parts: v.pipe(
+        v.array(v.looseObject({ type: v.string() })),
+        v.minLength(1)
+      ),
+      role: v.picklist(["user", "assistant"]),
     })
-  )
-  .min(1);
+  ),
+  v.minLength(1)
+);
 
-const agentTurnSchema = z.object({
-  appId: z.string().min(1),
-  hostUrl: z.url({ protocol: /^https?$/u }),
+const agentTurnSchema = v.object({
+  appId: v.pipe(v.string(), v.minLength(1)),
+  hostUrl: v.pipe(
+    v.string(),
+    v.url(),
+    v.check((value) => /^https?:$/u.test(new URL(value).protocol))
+  ),
   messages: agentMessagesSchema,
-  schema: z.record(z.string(), z.unknown()).optional(),
-  threadId: z.uuid().optional(),
-  type: z.literal("turn"),
+  schema: v.optional(v.record(v.string(), v.unknown())),
+  threadId: v.optional(v.pipe(v.string(), v.uuid())),
+  type: v.literal("turn"),
 });
 
-const agentResumeSchema = z.object({
-  appId: z.string().min(1),
-  runId: z.string().startsWith("wrun_"),
-  startIndex: z.number().int().nonnegative(),
-  threadId: z.uuid(),
-  token: z.string().min(1),
-  type: z.literal("resume"),
+const agentResumeSchema = v.object({
+  appId: v.pipe(v.string(), v.minLength(1)),
+  runId: v.pipe(v.string(), v.startsWith("wrun_")),
+  startIndex: v.pipe(v.number(), v.integer(), v.minValue(0)),
+  threadId: v.pipe(v.string(), v.uuid()),
+  token: v.pipe(v.string(), v.minLength(1)),
+  type: v.literal("resume"),
 });
 
-export const agentChatSchema = z.discriminatedUnion("type", [
+export const agentChatSchema = v.variant("type", [
   agentTurnSchema,
   agentResumeSchema,
 ]);
 
 /** The signed run identity permits reconnecting without submitting another turn. */
-export const agentRunChunkSchema = z.object({
-  data: z.object({
-    runId: z.string().startsWith("wrun_"),
-    threadId: z.uuid(),
-    token: z.string().min(1),
+export const agentRunChunkSchema = v.object({
+  data: v.object({
+    runId: v.pipe(v.string(), v.startsWith("wrun_")),
+    threadId: v.pipe(v.string(), v.uuid()),
+    token: v.pipe(v.string(), v.minLength(1)),
   }),
-  transient: z.literal(true),
-  type: z.literal("data-run"),
+  transient: v.literal(true),
+  type: v.literal("data-run"),
 });
 
-export const agentRunCompleteChunkSchema = z.object({
-  data: z.object({ runId: z.string().startsWith("wrun_") }),
-  transient: z.literal(true),
-  type: z.literal("data-run-complete"),
+export const agentRunCompleteChunkSchema = v.object({
+  data: v.object({ runId: v.pipe(v.string(), v.startsWith("wrun_")) }),
+  transient: v.literal(true),
+  type: v.literal("data-run-complete"),
 });
 
-export type AgentRunCursor = z.infer<typeof agentRunChunkSchema>["data"] & {
+export type AgentRunCursor = v.InferOutput<
+  typeof agentRunChunkSchema
+>["data"] & {
   startIndex: number;
 };

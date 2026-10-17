@@ -10,6 +10,7 @@ import {
 import type { AgentRunCursor } from "@tailorkit/client-platform/agent";
 import type { TailorKitRouterClient } from "@tailorkit/core/server";
 import type { ChatTransport, UIMessage, UIMessageChunk } from "ai";
+import * as v from "valibot";
 
 import { fetchSchemaFromHost, readSchemaFile } from "./generator/types";
 import type { TailorKitSchemaFile } from "./generator/types";
@@ -73,14 +74,14 @@ export const openAgentTui = async (
         initialChunks = undefined;
         // oxlint-disable-next-line no-await-in-loop -- Each chunk advances the reconnect cursor before reading the next one.
         for await (const chunk of chunks) {
-          const run = agentRunChunkSchema.safeParse(chunk);
-          const complete = agentRunCompleteChunkSchema.safeParse(chunk);
+          const run = v.safeParse(agentRunChunkSchema, chunk);
+          const complete = v.safeParse(agentRunCompleteChunkSchema, chunk);
           if (run.success) {
-            ({ threadId } = run.data.data);
-            resume = { ...run.data.data, startIndex };
+            ({ threadId } = run.output.data);
+            resume = { ...run.output.data, startIndex };
           } else if (
             complete.success &&
-            complete.data.data.runId === resume?.runId
+            complete.output.data.runId === resume?.runId
           ) {
             finished = true;
           } else {

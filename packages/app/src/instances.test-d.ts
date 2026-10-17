@@ -1,3 +1,4 @@
+import * as v from "valibot";
 import { vi } from "vite-plus/test";
 import { z } from "zod";
 
@@ -73,7 +74,7 @@ defineView({
 const instanceView = defineView({
   component: () => null,
   instances: {
-    dataSchema: z.object({ count: z.string().transform(Number) }),
+    dataSchema: v.object({ count: v.pipe(v.string(), v.transform(Number)) }),
     resolve: () => [{ data: { count: "42" }, key: "summary", metadata: {} }],
   },
   slot: "page",

@@ -34,7 +34,7 @@ it("compacts real primitive schemas and preserves their expanded meaning", () =>
     if (!original || !compact) {
       throw new Error("Expected serialized primitive schemas.");
     }
-    expect(JsonSchema.parse(compact)).toEqual(compact);
+    expect(v.parse(JsonSchema, compact)).toEqual(compact);
     expect(resolveJsonSchema(compact)).toEqual(original);
     expect(JSON.stringify(compact).length).toBeLessThan(
       JSON.stringify(original).length / 3
@@ -168,7 +168,7 @@ it("preserves schemas from native ArkType and Valibot converters", () => {
     if (!original || !compact) {
       throw new Error("Expected a serialized native schema.");
     }
-    expect(JsonSchema.parse(compact)).toEqual(compact);
+    expect(v.parse(JsonSchema, compact)).toEqual(compact);
     expect(resolveJsonSchema(compact)).toEqual(resolveJsonSchema(original));
     expect(JSON.stringify(compact).length).toBeLessThan(
       JSON.stringify(original).length

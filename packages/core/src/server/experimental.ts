@@ -1,6 +1,6 @@
 import { appsInstall } from "@tailorkit/client-platform/client";
 import type { Client } from "@tailorkit/client-platform/client/client/index";
-import { z } from "zod";
+import * as v from "valibot";
 
 import { selectTailorKitScopes, validateTailorKitScopes } from "./scope";
 import type { TailorKitScopeSchemas } from "./scope";
@@ -22,9 +22,10 @@ export const createExperimental = (options: {
     if (!input.appId || input.appId.length > 256) {
       throw new TypeError("A deployed app ID is required.");
     }
-    const scope = z
-      .strictObject({ name: z.string(), value: z.unknown() })
-      .parse(input.scope);
+    const scope = v.parse(
+      v.strictObject({ name: v.string(), value: v.unknown() }),
+      input.scope
+    );
     const scopes = await validateTailorKitScopes(options.scopeSchemas, {
       [scope.name]: scope.value,
     });

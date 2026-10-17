@@ -58,7 +58,7 @@ let globals = 0;
 export const runtimeManifest = { apiVersion: 1, requires: ["database", "actions"] };
 export const migrations = [];
 export default { functions: { probe: {
- kind: "query", args: { safeParse: value => ({ success: true, data: value }) },
+ kind: "query", args: { "~standard": { version: 1, vendor: "fixture", validate: value => ({ value }) } },
  handler({ identity }) {
    let networkBlocked = false;
    try { fetch("https://example.com"); } catch { networkBlocked = true; }

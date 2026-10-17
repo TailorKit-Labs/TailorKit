@@ -58,6 +58,7 @@
     "@vercel/sandbox": "3.6.1",
     "ai": "catalog:",
     "drizzle-orm": "catalog:",
+    "valibot": "catalog:",
     "workflow": "5.2.0",
     "zod": "catalog:"
   },

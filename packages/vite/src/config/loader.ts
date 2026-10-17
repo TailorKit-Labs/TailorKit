@@ -1,6 +1,7 @@
 import path from "node:path";
 
 import { cosmiconfig } from "cosmiconfig";
+import * as v from "valibot";
 
 import type { ResolvedTailorKitConfig } from "./config";
 import { tailorkitConfigSchema } from "./config";
@@ -33,7 +34,7 @@ export const loadTailorKitConfig = async (
     throw new Error(`Could not find tailorkit config from ${searchFrom}.`);
   }
   return {
-    config: tailorkitConfigSchema.parse(result.config),
+    config: v.parse(tailorkitConfigSchema, result.config),
     filepath: result.filepath,
     root: path.dirname(result.filepath),
   };

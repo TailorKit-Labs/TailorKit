@@ -1,3 +1,4 @@
+import * as v from "valibot";
 import { describe, expect, it } from "vite-plus/test";
 import { z } from "zod";
 
@@ -24,7 +25,7 @@ describe("JSON Schema spec", () => {
     const serialized = schema["~standard"].jsonSchema.output({
       target: "draft-2020-12",
     });
-    expect(JsonSchema.parse(serialized)).toEqual(serialized);
+    expect(v.parse(JsonSchema, serialized)).toEqual(serialized);
   });
 
   it("preserves local definitions and references", () => {
@@ -33,26 +34,26 @@ describe("JSON Schema spec", () => {
       properties: { value: { $ref: "#/$defs/value" } },
       type: "object",
     };
-    expect(JsonSchema.parse(schema)).toEqual(schema);
+    expect(v.parse(JsonSchema, schema)).toEqual(schema);
     expect(
-      JsonSchema.safeParse({ $defs: { value: { "x-unsupported": true } } })
+      v.safeParse(JsonSchema, { $defs: { value: { "x-unsupported": true } } })
         .success
     ).toBe(false);
-    expect(JsonSchema.safeParse({ $ref: 42 }).success).toBe(false);
+    expect(v.safeParse(JsonSchema, { $ref: 42 }).success).toBe(false);
   });
 
   it("continues to reject unsupported keywords", () => {
     expect(
-      JsonSchema.safeParse({ type: "string", "x-custom": true }).success
+      v.safeParse(JsonSchema, { type: "string", "x-custom": true }).success
     ).toBe(false);
   });
 
   it.each([-1, 1.5])("rejects invalid tuple lengths: %s", (length) => {
     expect(
-      JsonSchema.safeParse({ minItems: length, type: "array" }).success
+      v.safeParse(JsonSchema, { minItems: length, type: "array" }).success
     ).toBe(false);
     expect(
-      JsonSchema.safeParse({ maxItems: length, type: "array" }).success
+      v.safeParse(JsonSchema, { maxItems: length, type: "array" }).success
     ).toBe(false);
   });
 });

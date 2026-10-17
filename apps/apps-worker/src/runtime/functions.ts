@@ -61,11 +61,21 @@ export const prepareFunction = (
   if (!fn || fn.kind !== kind) {
     throw new AppError("NOT_FOUND", "App function not found");
   }
-  const args = fn.args.safeParse(input.args);
-  if (!args.success) {
+  const args = fn.args["~standard"].validate(input.args);
+  if (args instanceof Promise) {
+    // oxlint-disable-next-line promise/prefer-await-to-then -- Database dispatch must remain synchronous; drain an unsupported async validator before rejecting it.
+    void args.catch(() => {
+      // The synchronous boundary reports the failure below.
+    });
+    throw new AppError(
+      "BAD_REQUEST",
+      "Function arguments require synchronous validation"
+    );
+  }
+  if (args.issues) {
     throw new AppError("BAD_REQUEST", "Invalid function arguments");
   }
-  return { args: args.data, fn };
+  return { args: args.value, fn };
 };
 
 /** Validate serialization before a mutation can commit or an action can return. */
@@ -76,15 +86,24 @@ export const functionValue = (
   // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser, serializer, or runtime adapter handles arbitrary values before validating or encoding their domain representation.
   initialValue: unknown
 ): FunctionValue => {
-  let value: Parameters<RegisteredFunction["args"]["safeParse"]>[0] =
-    initialValue;
+  let value = initialValue;
 
   if (fn.result) {
-    const result = fn.result.safeParse(value);
-    if (!result.success) {
+    const result = fn.result["~standard"].validate(value);
+    if (result instanceof Promise) {
+      // oxlint-disable-next-line promise/prefer-await-to-then -- Result validation runs before a synchronous database transaction commits.
+      void result.catch(() => {
+        // The synchronous boundary reports the failure below.
+      });
+      throw new AppError(
+        "INTERNAL_SERVER_ERROR",
+        "Function results require synchronous validation"
+      );
+    }
+    if (result.issues) {
       throw new AppError("INTERNAL_SERVER_ERROR", "Invalid function result");
     }
-    value = result.data;
+    ({ value } = result);
   }
   const serialized = JSON.stringify(value ?? null);
   return jsonResultSchema.parse(JSON.parse(serialized));
