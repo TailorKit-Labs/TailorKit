@@ -1,15 +1,23 @@
+import { os } from "@orpc/server";
 import type { RouterClient } from "@orpc/server";
 
-import { appsRouter } from "./apps";
-import { orgRouter } from "./org";
-import { projectRouter } from "./project";
-import { userRouter } from "./user";
-
 export const appRouter = {
-  apps: appsRouter,
-  org: orgRouter,
-  project: projectRouter,
-  user: userRouter,
+  apps: os.lazy(async () => {
+    const { appsRouter } = await import("./apps");
+    return { default: appsRouter };
+  }),
+  org: os.lazy(async () => {
+    const { orgRouter } = await import("./org");
+    return { default: orgRouter };
+  }),
+  project: os.lazy(async () => {
+    const { projectRouter } = await import("./project");
+    return { default: projectRouter };
+  }),
+  user: os.lazy(async () => {
+    const { userRouter } = await import("./user");
+    return { default: userRouter };
+  }),
 };
 export type AppRouter = typeof appRouter;
 export type AppRouterClient = RouterClient<typeof appRouter>;
