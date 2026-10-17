@@ -1,13 +1,7 @@
-import { OpenAPIHandler } from "@orpc/openapi/fetch";
-import { onError } from "@orpc/server";
-import { platformRouter } from "@tailorkit/api-platform";
-import { handleAppAgentMcpRequest } from "@tailorkit/api-platform/app-agent-mcp";
 import {
   createContext,
   contextErrorResponse,
 } from "@tailorkit/api-platform/context";
-import { handlePublicRuntimeRequest } from "@tailorkit/api-platform/routes/runtime";
-import { RateLimitHandlerPlugin } from "@tailorkit/api-utils/rate-limiting";
 import {
   initializeObservability,
   recordException,
@@ -16,15 +10,30 @@ import {
 } from "@tailorkit/observability";
 import { createFileRoute } from "@tanstack/react-router";
 
-const handler = new OpenAPIHandler(platformRouter, {
-  interceptors: [
-    onError((failure) => {
-      recordException(failure, { "tailorkit.adapter": "orpc-openapi" });
-      console.error("OpenAPI request failed", sanitizeErrorForLog(failure));
-    }),
-  ],
-  plugins: [new RateLimitHandlerPlugin()],
-});
+const createOpenAPIHandler = async () => {
+  const [
+    { OpenAPIHandler },
+    { onError },
+    { platformRouter },
+    { RateLimitHandlerPlugin },
+  ] = await Promise.all([
+    import("@orpc/openapi/fetch"),
+    import("@orpc/server"),
+    import("@tailorkit/api-platform"),
+    import("@tailorkit/api-utils/rate-limiting"),
+  ]);
+  return new OpenAPIHandler(platformRouter, {
+    interceptors: [
+      onError((failure) => {
+        recordException(failure, { "tailorkit.adapter": "orpc-openapi" });
+        console.error("OpenAPI request failed", sanitizeErrorForLog(failure));
+      }),
+    ],
+    plugins: [new RateLimitHandlerPlugin()],
+  });
+};
+
+let openAPIHandler: ReturnType<typeof createOpenAPIHandler> | undefined;
 
 const handle = async ({ request }: { request: Request }) => {
   await initializeObservability("tailorkit-web");
@@ -33,9 +42,11 @@ const handle = async ({ request }: { request: Request }) => {
     "tailorkit.package": "apps-web",
   });
 
-  const publicResponse = handlePublicRuntimeRequest(request);
-  if (publicResponse) {
-    return publicResponse;
+  const { pathname } = new URL(request.url);
+  if (request.method === "GET" && pathname === "/api/platform/runtime/keys") {
+    const { appRuntimeKeysResponse } =
+      await import("@tailorkit/api-platform/routes/runtime");
+    return appRuntimeKeysResponse();
   }
 
   // oxlint-disable-next-line anti-slop/no-unknown-parameters -- JavaScript may reject with arbitrary values; this boundary records or preserves the original failure.
@@ -46,10 +57,7 @@ const handle = async ({ request }: { request: Request }) => {
     throw contextErrorResponse(error);
   });
 
-  if (new URL(request.url).pathname === "/api/platform/app-agent/mcp") {
-    return await handleAppAgentMcpRequest(request, context);
-  }
-
+  const handler = await (openAPIHandler ??= createOpenAPIHandler());
   const rpcResult = await handler.handle(request, {
     context,
     prefix: "/api/platform",
