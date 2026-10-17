@@ -10,9 +10,9 @@ The host SDK uses its existing `authenticate` callback and calls `POST /apps/{ap
 
 The canonical app ID is the stable installation ID and JWT `sub`. Optional `subjectId` identifies any product-defined principal; calls without it are attributed to the installation. Apps cannot supply a verified subject.
 
-The platform returns `https://<teamPublicId>.tailorkit.app/p/<projectId>/a/<appPublicId>/rpc`, deriving the hostname from `ASSET_DOMAIN` (default `tailorkit.app`). `APP_RUNTIME_URL` is an optional origin override for local development.
+The platform returns `https://<projectShortId>.tailorkit.app/a/<appShortId>/rpc`, deriving the hostname from `ASSET_DOMAIN` (default `tailorkit.app`). `APP_RUNTIME_URL` is an optional origin override for local development.
 
-The signed JWT binds the public team and app identifiers as well as the canonical project/app IDs; the gateway checks the hostname and path before routing to a trusted installation. Sandboxed apps obtain scoped JWTs through the host bridge and call the backend over authenticated HTTP, with a WebSocket for query subscriptions. Platform credentials remain in the host server.
+The signed JWT binds the project and app short IDs as well as the canonical project/app IDs; the gateway checks the hostname and path before routing to a trusted installation. Sandboxed apps obtain scoped JWTs through the host bridge and call the backend over authenticated HTTP, with a WebSocket for query subscriptions. Platform credentials remain in the host server.
 
 The installation ID stays the same across public/internal app IDs, scope-list ordering and published deployments.
 
@@ -61,7 +61,7 @@ The host returns the runtime's `/rpc` base URL. The client selects the route:
 | `/rpc/actions` | POST JSON | Shared dynamic facet, outbound HTTPS through a scoped capability |
 | `/rpc/queries` | GET WebSocket upgrade | Trusted Durable Object, query subscriptions |
 
-The table paths are relative to `/p/<projectId>/a/<appPublicId>`. HTTP requests and responses use the oRPC wire protocol. Procedure inputs contain `{ name, args }`; mutations also require a UUID `requestId`. oRPC preserves typed errors and their HTTP statuses. The URL determines the operation type, so bodies cannot override it. Nested names such as `todos.list` retain their full path. WebSockets expose subscriptions only.
+The table paths are relative to `/a/<appShortId>`. HTTP requests and responses use the oRPC wire protocol. Procedure inputs contain `{ name, args }`; mutations also require a UUID `requestId`. oRPC preserves typed errors and their HTTP statuses. The URL determines the operation type, so bodies cannot override it. Nested names such as `todos.list` retain their full path. WebSockets expose subscriptions only.
 
 The gateway authenticates and selects the trusted installation Durable Object. The installation verifies the published deployment with Effect, owns WebSockets and subscriptions, and calls the isolated SQLite facet directly over RPC.
 
@@ -155,7 +155,7 @@ Breaking handler/module changes increment `apiVersion`; additive capabilities ca
 
 ## Deployment metadata cache
 
-The platform sends `POST https://internal.tailorkit.app/p/<projectId>/a/<appPublicId>/new-deployment` after publication or a rollout. `APP_RUNTIME_INTERNAL_URL` optionally overrides that origin; by default it is `https://internal.<ASSET_DOMAIN>`. Only the reserved internal hostname accepts publication requests.
+The platform sends `POST https://internal.tailorkit.app/p/<projectId>/a/<appShortId>/new-deployment` after publication or a rollout. `APP_RUNTIME_INTERNAL_URL` optionally overrides that origin; by default it is `https://internal.<ASSET_DOMAIN>`. Only the reserved internal hostname accepts publication requests.
 
 The worker checks that the body project and private bundle path match the URL. The body contains `{ projectId, appId, deploymentId, objectKey, checksum, contentLength }`.
 
@@ -173,17 +173,19 @@ Sandbox iframes allow HTTP(S) and WebSocket connections. They retain an opaque `
 
 One `tailorkit-apps-worker` deployment handles the wildcard `*.tailorkit.app/*` route and the `internal.tailorkit.app` custom domain. Keep the existing worker name and `STORES` binding to preserve installation databases. Configure wildcard proxied DNS for `*.tailorkit.app`; Wrangler provisions the internal custom domain. The platform's `ASSET_DOMAIN` must match this worker's value.
 
-Tenant routes:
+Project routes:
 
-- `/p/<projectId>/a/<appPublicId>/d/<deploymentPublicId>/client/client.js`: immutable public client bundle.
-- `/p/<projectId>/a/<appPublicId>/d/<deploymentPublicId>/logos/<filename>`: logos. Content-addressed logos use shared R2 storage.
-- `/p/<projectId>/a/<appPublicId>/rpc/queries`, `/rpc/mutations`, `/rpc/actions`: HTTP backend calls; query subscriptions use WebSockets on the queries route.
+- `/a/<appShortId>/d/<deploymentShortId>/client/client.js`: immutable public client bundle.
+- `/a/<appShortId>/d/<deploymentShortId>/logos/<filename>`: logos. Content-addressed logos use shared R2 storage.
+- `/a/<appShortId>/rpc/queries`, `/rpc/mutations`, `/rpc/actions`: HTTP backend calls; query subscriptions use WebSockets on the queries route.
+
+R2 keys start at `projects/<projectShortId>/apps/<appShortId>/deployments/<deploymentShortId>/`. Content-addressed logos remain shared under the app prefix. Local asset URLs use `/api/assets/p/<projectShortId>/a/<appShortId>/d/<deploymentShortId>/` instead of a project subdomain.
 
 RPC URLs omit the deployment ID and run the latest published backend. Deployment claims never select a separate database or pin execution. Asset responses preserve their edge cache, bounded browser TTL and security headers. RPC responses are not cached.
 
 Shared asset admission, size checks, and sanitized error responses are Effect programs in `@tailorkit/asset-delivery`; the Cloudflare and Node adapters compose storage, fetch and cache operations with Effect and run them at the request boundary. Cache lookup/write failures do not prevent asset delivery.
 
-The platform needs `APP_RUNTIME_SIGNING_KEY` and `APP_RUNTIME_SERVICE_TOKEN`; no `APP_RUNTIME_URL` is needed for production's default team subdomains. Deploy the combined worker and platform, and delete the standalone `tailorkit-assets` Worker and its Workers Builds integration. Only the new URLs and signed routing claims are supported.
+The platform needs `APP_RUNTIME_SIGNING_KEY` and `APP_RUNTIME_SERVICE_TOKEN`; no `APP_RUNTIME_URL` is needed for production's default project subdomains. Deploy the combined worker and platform, and delete the standalone `tailorkit-assets` Worker and its Workers Builds integration. Only the new URLs and signed routing claims are supported.
 
 ## Product tools
 

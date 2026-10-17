@@ -192,7 +192,7 @@ export const handleAppAgentMcpRequest = async (
         }
       })();
       await execution.onProgress({
-        appId: app.publicId,
+        appId: app.shortId,
         runId: run.runId,
         status: "started",
         threadId,
@@ -203,7 +203,7 @@ export const handleAppAgentMcpRequest = async (
         new TransformStream<UIMessageChunk, UIMessageChunk>({
           async transform(chunk, writer) {
             await execution.onProgress({
-              appId: app.publicId,
+              appId: app.shortId,
               chunk,
               runId,
               threadId,
@@ -223,7 +223,7 @@ export const handleAppAgentMcpRequest = async (
       finished = true;
       return {
         ...output,
-        appId: app.publicId,
+        appId: app.shortId,
         message,
         runId: run.runId,
         threadId,

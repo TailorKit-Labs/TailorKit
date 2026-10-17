@@ -15,6 +15,7 @@ import {
   appDeploymentFile,
 } from "@tailorkit/db/schema/apps";
 import type { Scope } from "@tailorkit/db/schema/scope";
+import { createShortId } from "@tailorkit/db/short-id";
 import { setSpanAttributes } from "@tailorkit/observability";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
@@ -23,7 +24,6 @@ import type { Context } from "#context";
 import { forEachSequential } from "#for-each-sequential";
 import { paginatedOutput, paginationQuery } from "#pagination";
 import { o, cliRouter, requireApp, requireAppInScopes } from "#procedures";
-import { createPublicId } from "#public-id";
 import {
   canonicalizeScope,
   canonicalizeScopes,
@@ -395,7 +395,7 @@ const createAppDeployment = cliRouter
   )
   .handler(async ({ context, input }) => {
     const deploymentId = crypto.randomUUID();
-    const deploymentPublicId = createPublicId();
+    const deploymentShortId = createShortId();
     const requestedLogos = Object.entries(input.body.logos ?? {}).map(
       ([variant, logo]) => ({
         asset: {
@@ -421,11 +421,11 @@ const createAppDeployment = cliRouter
     const assets = await Promise.all(
       requestedAssets.map(async ({ asset, kind }) => {
         const fileId = crypto.randomUUID();
-        const appBaseKey = `teams/${context.organization.publicId}/projects/${context.project.id}/apps/${context.app.publicId}`;
+        const appBaseKey = `projects/${context.project.shortId}/apps/${context.app.shortId}`;
         const objectKey =
           kind === "logo"
             ? `${appBaseKey}/${asset.objectKey}`
-            : `${appBaseKey}/deployments/${deploymentPublicId}/${kind}/${asset.objectKey}`;
+            : `${appBaseKey}/deployments/${deploymentShortId}/${kind}/${asset.objectKey}`;
         const shouldReuse =
           kind === "logo" &&
           (await hasMatchingLogo(context.storage, asset, objectKey));
@@ -456,7 +456,7 @@ const createAppDeployment = cliRouter
         .values({
           appId: context.app.id,
           id: deploymentId,
-          publicId: deploymentPublicId,
+          shortId: deploymentShortId,
           status: "uploading",
           views: input.body.views ?? [],
         })
@@ -806,7 +806,7 @@ const publishAppDeployment = cliRouter
             objectKey: server.objectKey,
             projectId: context.project.id,
           },
-          context.app.publicId
+          context.app.shortId
         );
       }
     }

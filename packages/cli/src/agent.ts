@@ -60,7 +60,7 @@ const chooseApp = async (
     message: "Select an AI-created app or create a new one",
     options: [
       ...apps.map((app) => ({
-        hint: app.publicId,
+        hint: app.shortId,
         label: app.name,
         value: app.id,
       })),

@@ -91,13 +91,13 @@ export type AppAgentCreateResponses = {
     id: string;
     name: string;
     projectId: string;
-    publicId: string;
     scope: {
       name: string;
       value: {
         [key: string]: Schema0;
       };
     };
+    shortId: string;
     updatedAt: string;
     clientPath?: string;
     currentDeployment: {
@@ -109,7 +109,7 @@ export type AppAgentCreateResponses = {
       logoDarkPath: string | null;
       logoLightFileId: string | null;
       logoLightPath: string | null;
-      publicId: string;
+      shortId: string;
       status: 'uploading' | 'deploying' | 'verifying' | 'published';
       updatedAt: string;
       views: Array<{
@@ -162,13 +162,13 @@ export type AppsCreateResponses = {
     id: string;
     name: string;
     projectId: string;
-    publicId: string;
     scope: {
       name: string;
       value: {
         [key: string]: Schema0;
       };
     };
+    shortId: string;
     updatedAt: string;
     clientPath?: string;
     currentDeployment: {
@@ -180,7 +180,7 @@ export type AppsCreateResponses = {
       logoDarkPath: string | null;
       logoLightFileId: string | null;
       logoLightPath: string | null;
-      publicId: string;
+      shortId: string;
       status: 'uploading' | 'deploying' | 'verifying' | 'published';
       updatedAt: string;
       views: Array<{
@@ -262,13 +262,13 @@ export type AppsUpdateResponses = {
     id: string;
     name: string;
     projectId: string;
-    publicId: string;
     scope: {
       name: string;
       value: {
         [key: string]: Schema0;
       };
     };
+    shortId: string;
     updatedAt: string;
     clientPath?: string;
     currentDeployment: {
@@ -280,7 +280,7 @@ export type AppsUpdateResponses = {
       logoDarkPath: string | null;
       logoLightFileId: string | null;
       logoLightPath: string | null;
-      publicId: string;
+      shortId: string;
       status: 'uploading' | 'deploying' | 'verifying' | 'published';
       updatedAt: string;
       views: Array<{
@@ -334,13 +334,13 @@ export type AppsDeployResponses = {
     id: string;
     name: string;
     projectId: string;
-    publicId: string;
     scope: {
       name: string;
       value: {
         [key: string]: Schema0;
       };
     };
+    shortId: string;
     updatedAt: string;
     clientPath?: string;
     currentDeployment: {
@@ -352,7 +352,7 @@ export type AppsDeployResponses = {
       logoDarkPath: string | null;
       logoLightFileId: string | null;
       logoLightPath: string | null;
-      publicId: string;
+      shortId: string;
       status: 'uploading' | 'deploying' | 'verifying' | 'published';
       updatedAt: string;
       views: Array<{
@@ -405,13 +405,13 @@ export type AppsGetResponses = {
     id: string;
     name: string;
     projectId: string;
-    publicId: string;
     scope: {
       name: string;
       value: {
         [key: string]: Schema0;
       };
     };
+    shortId: string;
     updatedAt: string;
     clientPath?: string;
     currentDeployment: {
@@ -423,7 +423,7 @@ export type AppsGetResponses = {
       logoDarkPath: string | null;
       logoLightFileId: string | null;
       logoLightPath: string | null;
-      publicId: string;
+      shortId: string;
       status: 'uploading' | 'deploying' | 'verifying' | 'published';
       updatedAt: string;
       views: Array<{
@@ -476,13 +476,13 @@ export type AppsInstallResponses = {
     id: string;
     name: string;
     projectId: string;
-    publicId: string;
     scope: {
       name: string;
       value: {
         [key: string]: Schema0;
       };
     };
+    shortId: string;
     updatedAt: string;
     clientPath?: string;
     currentDeployment: {
@@ -494,7 +494,7 @@ export type AppsInstallResponses = {
       logoDarkPath: string | null;
       logoLightFileId: string | null;
       logoLightPath: string | null;
-      publicId: string;
+      shortId: string;
       status: 'uploading' | 'deploying' | 'verifying' | 'published';
       updatedAt: string;
       views: Array<{
@@ -548,13 +548,13 @@ export type AppsListResponses = {
       id: string;
       name: string;
       projectId: string;
-      publicId: string;
       scope: {
         name: string;
         value: {
           [key: string]: Schema0;
         };
       };
+      shortId: string;
       updatedAt: string;
       clientPath?: string;
       currentDeployment: {
@@ -566,7 +566,7 @@ export type AppsListResponses = {
         logoDarkPath: string | null;
         logoLightFileId: string | null;
         logoLightPath: string | null;
-        publicId: string;
+        shortId: string;
         status: 'uploading' | 'deploying' | 'verifying' | 'published';
         updatedAt: string;
         views: Array<{
@@ -623,10 +623,12 @@ export type AppsRuntimeSessionResponses = {
     expiresAt: number;
     identity: {
       appId: string;
+      appShortId: string;
       deploymentId: string;
       expiresAt: number;
       installationId: string;
       projectId: string;
+      projectShortId: string;
       scope: {
         name: string;
         value: {
@@ -851,7 +853,7 @@ export type DeploymentsCreateResponses = {
       logoDarkPath: string | null;
       logoLightFileId: string | null;
       logoLightPath: string | null;
-      publicId: string;
+      shortId: string;
       status: 'uploading' | 'deploying' | 'verifying' | 'published';
       updatedAt: string;
       views: Array<{
@@ -951,7 +953,7 @@ export type DeploymentsGetResponses = {
     logoDarkPath: string | null;
     logoLightFileId: string | null;
     logoLightPath: string | null;
-    publicId: string;
+    shortId: string;
     status: 'uploading' | 'deploying' | 'verifying' | 'published';
     updatedAt: string;
     views: Array<{
@@ -996,7 +998,7 @@ export type DeploymentsListResponses = {
       logoDarkPath: string | null;
       logoLightFileId: string | null;
       logoLightPath: string | null;
-      publicId: string;
+      shortId: string;
       status: 'uploading' | 'deploying' | 'verifying' | 'published';
       updatedAt: string;
       views: Array<{
@@ -1046,7 +1048,7 @@ export type DeploymentsPublishResponses = {
     logoDarkPath: string | null;
     logoLightFileId: string | null;
     logoLightPath: string | null;
-    publicId: string;
+    shortId: string;
     status: 'uploading' | 'deploying' | 'verifying' | 'published';
     updatedAt: string;
     views: Array<{

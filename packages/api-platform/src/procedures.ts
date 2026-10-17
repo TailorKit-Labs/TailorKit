@@ -32,7 +32,7 @@ export const findAppInScopes = async (
   appId: string,
   scopes: CanonicalScope[]
 ) => {
-  const find = (identifier: "id" | "publicId") =>
+  const find = (identifier: "id" | "shortId") =>
     db.query.app.findFirst({
       where: {
         RAW: (fields, { and, eq, or }) =>
@@ -51,14 +51,14 @@ export const findAppInScopes = async (
       with: {
         currentDeployment: {
           where: { status: "published" },
-          with: { app: { columns: { publicId: true } } },
+          with: { app: { columns: { shortId: true } } },
         },
       },
     });
 
   const app =
     (uuidPattern.test(appId) ? await find("id") : null) ??
-    (await find("publicId"));
+    (await find("shortId"));
   if (!app) {
     throw new ORPCError("NOT_FOUND");
   }

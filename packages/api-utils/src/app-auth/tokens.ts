@@ -7,11 +7,11 @@ import { z } from "zod";
 import { APP_TOKEN_LIFETIME_SECONDS } from "./policy";
 
 export type AppTokenIdentity = Omit<Identity, "expiresAt"> & {
-  publicTeamId: string;
-  appPublicId: string;
+  projectShortId: string;
+  appShortId: string;
 };
 export type VerifiedAppTokenIdentity = Identity &
-  Pick<AppTokenIdentity, "publicTeamId" | "appPublicId">;
+  Pick<AppTokenIdentity, "projectShortId" | "appShortId">;
 
 export const appRuntimeIssuer = (platformUrl: string) => {
   const url = new URL(platformUrl);
@@ -47,13 +47,13 @@ export interface AppTokenTrust {
 }
 const access = z.object({
   appId: z.string().min(1).max(256),
-  appPublicId: z.string().min(1).max(256),
+  appShortId: z.string().min(1).max(256),
   deploymentId: z.string().min(1).max(256),
   exp: z.number().int(),
   iat: z.number().int(),
   installationId: z.string().min(1).max(256),
   projectId: z.string().min(1).max(256),
-  publicTeamId: z.string().min(1).max(256),
+  projectShortId: z.string().min(1).max(256),
   scope: z.object({
     name: z.string().min(1),
     value: z.record(z.string(), z.json()),
@@ -114,13 +114,13 @@ export const issueAppTokenEffect = (
       try: () =>
         access.parse({
           appId: identity.appId,
-          appPublicId: identity.appPublicId,
+          appShortId: identity.appShortId,
           deploymentId: identity.deploymentId,
           exp: now + lifetime,
           iat: now,
           installationId: identity.installationId,
           projectId: identity.projectId,
-          publicTeamId: identity.publicTeamId,
+          projectShortId: identity.projectShortId,
           scope: identity.scope,
           sub: identity.installationId,
           subjectId: identity.subjectId,
@@ -139,11 +139,11 @@ export const issueAppTokenEffect = (
       try: async () =>
         await new SignJWT({
           appId: identity.appId,
-          appPublicId: identity.appPublicId,
+          appShortId: identity.appShortId,
           deploymentId: identity.deploymentId,
           installationId: identity.installationId,
           projectId: identity.projectId,
-          publicTeamId: identity.publicTeamId,
+          projectShortId: identity.projectShortId,
           scope: identity.scope,
           subjectId: identity.subjectId,
           toolUrl: identity.toolUrl,
@@ -204,8 +204,8 @@ export const appTokenVerifierEffect = (trust: AppTokenTrust) => {
               "installationId",
               "projectId",
               "deploymentId",
-              "publicTeamId",
-              "appPublicId",
+              "projectShortId",
+              "appShortId",
               "scope",
               "toolUrl",
             ],
@@ -231,12 +231,12 @@ export const appTokenVerifierEffect = (trust: AppTokenTrust) => {
       }
       return Object.freeze({
         appId: claims.appId,
-        appPublicId: claims.appPublicId,
+        appShortId: claims.appShortId,
         deploymentId: claims.deploymentId,
         expiresAt: claims.exp * 1000,
         installationId: claims.installationId,
         projectId: claims.projectId,
-        publicTeamId: claims.publicTeamId,
+        projectShortId: claims.projectShortId,
         scope: Object.freeze(claims.scope),
         subjectId: claims.subjectId,
         toolUrl: claims.toolUrl,

@@ -122,7 +122,7 @@ const AppsTable = ({
                 {row.original.name}
               </span>
               <span className="truncate text-xs text-muted-foreground">
-                {row.original.publicId}
+                {row.original.shortId}
               </span>
             </div>
           </div>
@@ -220,7 +220,7 @@ const AppsTable = ({
                 void (async () => {
                   await navigate({
                     params: {
-                      appId: row.original.publicId,
+                      appId: row.original.shortId,
                       orgSlug,
                       projectSlug,
                     },
@@ -233,7 +233,7 @@ const AppsTable = ({
                   event.preventDefault();
                   void navigate({
                     params: {
-                      appId: row.original.publicId,
+                      appId: row.original.shortId,
                       orgSlug,
                       projectSlug,
                     },
@@ -420,7 +420,7 @@ export const Route = createFileRoute("/(app)/$orgSlug/$projectSlug/apps/")({
 
 interface AppRow {
   id: string;
-  publicId: string;
+  shortId: string;
   name: string;
   scope: Scope;
   createdAt: Date | string;

@@ -33,11 +33,11 @@ const signing = {
 };
 const identity = {
   appId: "app",
-  appPublicId: "app000000001",
+  appShortId: "app000000001",
   deploymentId: "deployment",
   installationId: "installation",
   projectId: "project",
-  publicTeamId: "abc123def45678",
+  projectShortId: "abc123def456",
   scope: { name: "org", value: { id: "tenant" } },
   subjectId: "principal",
   toolUrl: "https://host.test/api/tailorkit/tools/execute",
@@ -220,7 +220,7 @@ it("rejects a token that expires while its signature is being verified", async (
   await expect(Effect.runPromise(program)).resolves.toBe("UNAUTHORIZED");
 });
 
-it.each(["projectId", "deploymentId", "publicTeamId", "appPublicId"])(
+it.each(["projectId", "deploymentId", "projectShortId", "appShortId"])(
   "requires the signed %s claim",
   async (field) => {
     const now = Math.floor(Date.now() / 1000);

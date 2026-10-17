@@ -131,7 +131,7 @@ beforeEach(async () => {
     createdAt: new Date(),
     id: organizationId,
     name: "Team",
-    publicId: "team0000000001",
+    shortId: "team00000001",
     slug: "team",
   });
   const otherProjectId = "33333333-3333-4333-8333-333333333333";
@@ -155,19 +155,19 @@ beforeEach(async () => {
   const apps = await db
     .insert(app)
     .values([
-      { projectId, ...scope, name: "Allowed", publicId: "app000000001" },
-      { projectId, ...scope, name: "Same scope", publicId: "app000000004" },
+      { projectId, ...scope, name: "Allowed", shortId: "app000000001" },
+      { projectId, ...scope, name: "Same scope", shortId: "app000000004" },
       {
         projectId,
         ...canonicalizeScope({ name: "user", value: { userId: "user-two" } }),
         name: "Other scope",
-        publicId: "app000000002",
+        shortId: "app000000002",
       },
       {
         projectId: otherProjectId,
         ...scope,
         name: "Other project",
-        publicId: "app000000003",
+        shortId: "app000000003",
       },
     ])
     .returning();
@@ -262,7 +262,6 @@ it("rejects apps outside the scope or project", async () => {
       .insert(appDeployment)
       .values({
         appId,
-        publicId: appId.slice(0, 12),
         status: "uploading",
       })
       .returning();

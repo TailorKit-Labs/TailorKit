@@ -47,7 +47,7 @@ const createContext = (): Context => ({
     logo: null,
     metadata: null,
     name: "Analytical Engines",
-    publicId: "team0000000001",
+    shortId: "team00000001",
     slug: "analytical-engines",
   },
   project: {
@@ -55,6 +55,7 @@ const createContext = (): Context => ({
     id: projectId,
     name: "Compiler",
     organizationId,
+    shortId: "proj00000001",
     slug: "compiler",
     updatedAt: new Date("2026-01-02T00:00:00.000Z"),
   },
@@ -92,7 +93,7 @@ describe("platform CLI auth scopes", () => {
       createdAt: new Date("2026-01-01T00:00:00.000Z"),
       id: organizationId,
       name: "Analytical Engines",
-      publicId: "team0000000001",
+      shortId: "team00000001",
       slug: "analytical-engines",
     });
     await db.insert(projectTable).values({

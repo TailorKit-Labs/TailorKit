@@ -73,9 +73,9 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
 
   const projectId = "22222222-2222-4222-8222-222222222222";
   const otherProjectId = "33333333-3333-4333-8333-333333333333";
-  const publicTeamId = "abc123def45678";
-  const appPublicId = "app000000001";
-  const rpcUrl = `https://${publicTeamId}.tailorkit.app/p/${projectId}/a/${appPublicId}/rpc`;
+  const projectShortId = "abc123def456";
+  const appShortId = "app000000001";
+  const rpcUrl = `https://${projectShortId}.tailorkit.app/a/${appShortId}/rpc`;
   /** @type {PublishedDeployment} */
   let published;
   /** @type {Set<string>} */
@@ -200,7 +200,7 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
   /** @param {number} version Fixture deployment to publish. */
   const publish = async (version) => {
     const code = bundle(version);
-    const objectKey = `teams/${publicTeamId}/projects/${projectId}/apps/${appPublicId}/deployments/deploy00000${version}/server/server.js`;
+    const objectKey = `projects/${projectShortId}/apps/${appShortId}/deployments/deploy00000${version}/server/server.js`;
     const bucket = await mf.getR2Bucket("BUNDLES");
     const bytes = version === 1 ? Buffer.from(code) : gzipSync(code);
     await bucket.put(objectKey, bytes, {
@@ -226,7 +226,7 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
             projectId,
           };
     const response = await mf.dispatchFetch(
-      `https://internal.tailorkit.app/p/${projectId}/a/${appPublicId}/new-deployment`,
+      `https://internal.tailorkit.app/p/${projectId}/a/${appShortId}/new-deployment`,
       {
         body: JSON.stringify(published),
         headers: {
@@ -250,11 +250,11 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
     const input = rawInput ?? { name: "probe" };
     const session = await issueAppToken(signing, {
       appId: "app",
-      appPublicId,
+      appShortId,
       deploymentId,
       installationId,
       projectId,
-      publicTeamId,
+      projectShortId,
       scope: { name: "org", value: { id: "tenant" } },
       subjectId: "user",
       toolUrl: "https://host.test/api/tailorkit/tools/execute",
@@ -403,11 +403,11 @@ export const migrations = ${JSON.stringify(history)};`;
             { ...signing, lifetimeSeconds: 65 },
             {
               appId: "app",
-              appPublicId,
+              appShortId,
               deploymentId: published.deploymentId,
               installationId,
               projectId,
-              publicTeamId,
+              projectShortId,
               scope: { name: "org", value: { id: "tenant" } },
               subjectId: "user",
               toolUrl: "https://host.test/api/tailorkit/tools/execute",
@@ -848,7 +848,7 @@ export const migrations = ${JSON.stringify(history)};`;
     // Assets and app code share one R2 binding, but public routes cannot expose server code.
     const assets = await mf.getR2Bucket("BUNDLES");
     const assetBase = `${rpcUrl.replace(/\/rpc$/u, "")}/d/deploy000001`;
-    const clientKey = `teams/${publicTeamId}/projects/${projectId}/apps/${appPublicId}/deployments/deploy000001/client/client.js`;
+    const clientKey = `projects/${projectShortId}/apps/${appShortId}/deployments/deploy000001/client/client.js`;
     const clientBytes = gzipSync("export default 'client';");
     await assets.put(clientKey, clientBytes, {
       httpMetadata: { contentEncoding: "gzip" },
@@ -893,7 +893,7 @@ export const migrations = ${JSON.stringify(history)};`;
     );
     const logoHash = "a".repeat(64);
     await assets.put(
-      `teams/${publicTeamId}/projects/${projectId}/apps/${appPublicId}/logos/${logoHash}.svg`,
+      `projects/${projectShortId}/apps/${appShortId}/logos/${logoHash}.svg`,
       "<svg/>"
     );
     const logo = await mf.dispatchFetch(`${assetBase}/logos/${logoHash}.svg`);

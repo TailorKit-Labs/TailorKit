@@ -146,12 +146,12 @@ const token = async (
     data.encode(
       JSON.stringify({
         ...identity,
-        appPublicId: "public-app",
+        appShortId: "public-app",
         aud: "tailorkit-app",
         exp: now + 300,
         iat: now,
         iss: issuer,
-        publicTeamId: "team",
+        projectShortId: "team",
         sub: identity.installationId,
         toolUrl,
         ...overrides,

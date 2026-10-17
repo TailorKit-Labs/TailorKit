@@ -70,7 +70,7 @@ const DeploymentsTable = ({
         cell: ({ row }) => (
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">
-              {row.original.publicId}
+              {row.original.shortId}
             </p>
             {row.original.id === currentDeploymentId ? (
               <p className="text-xs text-muted-foreground">
@@ -263,7 +263,7 @@ const AppPage = () => {
             <CardFrameTitle>Current deployment</CardFrameTitle>
             <CardFrameDescription>
               {app.currentDeployment
-                ? app.currentDeployment.publicId
+                ? app.currentDeployment.shortId
                 : "No deployment published"}
             </CardFrameDescription>
           </CardFrameHeader>
@@ -326,7 +326,7 @@ export const Route = createFileRoute(
 
 interface DeploymentRow {
   id: string;
-  publicId: string;
+  shortId: string;
   status: string;
   createdAt: Date | string;
   updatedAt: Date | string;

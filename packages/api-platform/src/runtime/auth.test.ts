@@ -28,11 +28,11 @@ it("publishes only public keys and issues platform-bound short-lived access", as
   expect(publicKeys.keys[0]).not.toHaveProperty("d");
   const identity = {
     appId: "app",
-    appPublicId: "app000000001",
+    appShortId: "app000000001",
     deploymentId: "deployment",
     installationId: "installation",
     projectId: "project",
-    publicTeamId: "abc123def45678",
+    projectShortId: "abc123def456",
     scope: { name: "org", value: { id: "tenant" } },
     subjectId: "service-principal",
     toolUrl: "https://host.test/api/tailorkit/tools/execute",

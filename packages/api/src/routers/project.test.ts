@@ -101,14 +101,14 @@ describe("projectRouter", () => {
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
         id: orgId,
         name: "Analytical Engines",
-        publicId: "team0000000001",
+        shortId: "team00000001",
         slug: "analytical-engines",
       },
       {
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
         id: otherOrgId,
         name: "Compilers Inc",
-        publicId: "team0000000002",
+        shortId: "team00000002",
         slug: "compilers-inc",
       },
     ]);

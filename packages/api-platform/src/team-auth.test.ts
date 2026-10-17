@@ -36,13 +36,13 @@ describe("Better Auth public team identity", () => {
     });
     const body = {
       name: "Original",
-      publicId: "attacker00",
+      shortId: "attacker00",
       slug: "original",
       userId,
     };
     const created = await auth.api.createOrganization({ body });
-    expect(created?.publicId).toMatch(/^[a-z0-9][a-z0-9-]{12}[a-z0-9]$/u);
-    expect(created?.publicId).not.toBe("attacker00");
+    expect(created?.shortId).toMatch(/^[a-z0-9]{12}$/u);
+    expect(created?.shortId).not.toBe("attacker00");
     if (!(created !== undefined && created !== null)) {
       throw new Error("Organization not created");
     }
@@ -65,13 +65,13 @@ describe("Better Auth public team identity", () => {
       },
       headers,
     });
-    expect(updated?.publicId).toBe(created.publicId);
+    expect(updated?.shortId).toBe(created.shortId);
     expect(updated?.slug).toBe("renamed");
     // Exercise the real HTTP input schema, not just the TypeScript input type.
     const response = await auth.handler(
       new Request("http://localhost:3000/api/auth/organization/update", {
         body: JSON.stringify({
-          data: { name: "HTTP rename", publicId: "attacker00" },
+          data: { name: "HTTP rename", shortId: "attacker00" },
           organizationId: created.id,
         }),
         headers: {
@@ -86,7 +86,7 @@ describe("Better Auth public team identity", () => {
     const persisted = await fixture.db.query.organization.findFirst({
       where: { id: created.id },
     });
-    expect(persisted?.publicId).toBe(created.publicId);
+    expect(persisted?.shortId).toBe(created.shortId);
     expect(persisted?.name).toBe("HTTP rename");
   });
 });

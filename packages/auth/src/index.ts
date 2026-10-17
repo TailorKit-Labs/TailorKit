@@ -33,9 +33,9 @@ import { env } from "#env";
 import { captchaEndpoints } from "./lib/captcha-endpoints";
 import { ac, roles } from "./lib/permissions";
 import {
-  initializePublicTeamId,
-  publicTeamIdField,
-} from "./lib/public-team-id";
+  initializeTenantShortId,
+  tenantShortIdField,
+} from "./lib/tenant-short-id";
 
 void initializeObservability("tailorkit-web");
 
@@ -250,13 +250,13 @@ const buildAuth = () => {
           // oxlint-disable-next-line eslint/require-await -- This asynchronous protocol method resolves synchronously but must preserve Promise results and rejected exceptions.
           beforeCreateOrganization: async ({
             organization: organizationValue,
-          }) => initializePublicTeamId(organizationValue),
+          }) => initializeTenantShortId(organizationValue),
         },
         roles,
         schema: {
           organization: {
             additionalFields: {
-              publicId: publicTeamIdField,
+              shortId: tenantShortIdField,
               slug: {
                 fieldName: "slug",
                 required: true,

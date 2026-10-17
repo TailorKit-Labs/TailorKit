@@ -22,8 +22,8 @@ it("installs from the public server API with host credentials and validated scop
   const requests: Request[] = [];
   const installed = {
     id: "installation",
-    publicId: "installed001",
     scope: { name: "org", value: { tenant: "workspace" } },
+    shortId: "installed001",
   };
   const tailorkit = createServer({
     $internal: {
