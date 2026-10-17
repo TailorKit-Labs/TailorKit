@@ -1,0 +1,99 @@
+packages/client-platform/README.md
+  s_f96fecabf79f7b::t_f6d714d06f76de 4-30
+packages/cli/src/platform-app-selector.ts
+  s_f96fecabf79f7b::t_101ed67fc76d68 1-10
+packages/api-platform/src/routes/apps.ts
+  s_f96fecabf79f7b::t_c79c29a4cc0677 9,116,121,125,134,153,155,159-161,186
+  s_f96fecabf79f7b::t_2db227ea2c9841 189-193,201,228,230,233-235,249-250,255,259,302-303,308-313,317,348,353-357,361
+packages/core/src/server/experimental.ts
+  s_f96fecabf79f7b::t_101ed67fc76d68 49
+  s_f96fecabf79f7b::t_c751d67dafe874 5-6
+packages/api-platform/src/routes/deployments.ts
+  s_f96fecabf79f7b::t_c79c29a4cc0677 23,83,313
+  s_f96fecabf79f7b::t_f5cad1cd32acd6 314-316,320,392
+packages/cli/src/client.ts
+  s_f96fecabf79f7b::t_101ed67fc76d68 118,122,165,172-174,176,183-184,186,204-207,209,221-224,227-229,242
+  s_f96fecabf79f7b::t_453fc2e862504b 25,113,119-121,175,185,208,225-226
+packages/core/src/server/routes/deployments.ts
+  s_f96fecabf79f7b::t_101ed67fc76d68 111,153
+  s_f96fecabf79f7b::t_a737951426915d 10
+packages/api-platform/src/routes/runtime.ts
+  s_f96fecabf79f7b::t_c79c29a4cc0677 13,49,53
+  s_f96fecabf79f7b::t_45714d0f5fdc92 93
+packages/api-platform/src/procedures.ts
+  s_f96fecabf79f7b::t_101ed67fc76d68 37-38
+  s_f96fecabf79f7b::t_c79c29a4cc0677 12-13,32,35,127,134,143,152
+  s_f96fecabf79f7b::t_a47171b0153c1b 36,39-44,47-53,55-56
+packages/core/src/server/platform-app-selector.ts
+  s_f96fecabf79f7b::t_101ed67fc76d68 1-10
+packages/client-platform/test/apps.test.ts
+  s_f96fecabf79f7b::t_f6d714d06f76de 1,3-27,37-38,43-45,49-52,59-61
+  s_f96fecabf79f7b::t_98d2f065e4de99 2,28-36,39-42,46-48,53-58
+packages/core/src/server/routes/apps.ts
+  s_f96fecabf79f7b::t_101ed67fc76d68 27,50
+  s_f96fecabf79f7b::t_80dcaf105edc10 11,51-53,65,80-83,114-118,123
+packages/api-platform/openapi.json
+  s_f96fecabf79f7b::t_4c50ba1d8d867b 25-64,125,135-174,205,312-318,406-412,609,668-674,762-768,965,978-979,988-1028,1052-1053,1079-1083,1091,1094-1103,1106-1128,1132-1133,1158-1159,1243-1249,1446,1459,1461,1469-1481,1483,1485-1517,1519,1521-1530,1532-1535,1538-1539,1623-1629,1826,1839,1841,1849-1858,1860-1877,1880-1882,1884-1895,1897-1917,1920-1921,2005-2011,2208,2221,2223,2231-2247,2360-2366,2563,2601,2611-2651,2689,2735-3015,3017-3097,3101-3114,3117-3127,3129,3136-3164,3168-3180,3511-3550,3721,4519-4558,4588
+packages/api-platform/src/routes/app-agent.ts
+  s_f96fecabf79f7b::t_c79c29a4cc0677 69,78,91
+  s_f96fecabf79f7b::t_929b844b092507 29,92-94,108,128
+packages/client-platform/src/agent.ts
+  s_f96fecabf79f7b::t_101ed67fc76d68 8
+  s_f96fecabf79f7b::t_c3015061bb232f 9-13
+packages/core/src/server/handler.ts
+  s_f96fecabf79f7b::t_101ed67fc76d68 174
+  s_f96fecabf79f7b::t_deb861ebe34155 16
+.changeset/immutable-app-slugs.md
+  s_f96fecabf79f7b::t_f6d714d06f76de 1-9
+packages/api-platform/src/app-selector.ts
+  s_f96fecabf79f7b::t_c79c29a4cc0677 1-11
+packages/api-platform/src/app-agent-mcp.ts
+  s_f96fecabf79f7b::t_101ed67fc76d68 104-105,107-108
+  s_f96fecabf79f7b::t_62362e903ef2a8 106
+packages/core/src/server/routes/app-agent.ts
+  s_f96fecabf79f7b::t_101ed67fc76d68 36,40
+  s_f96fecabf79f7b::t_c120cf137d771d 13,27,37-39
+packages/api-platform/src/routes/apps.test.ts
+  s_f96fecabf79f7b::t_b5cd1e6dc0209e 286-287,1156-1161,1178-1202,1240-1405
+  s_f96fecabf79f7b::t_f71d821c2e70aa 173,200-201,210-211,280-285,288,293,297-310,335,343,353,383,396,402,446,480,500,662,894,919,962-966,1001-1006,1016,1045-1049,1070,1107,1153-1155,1406-1412
+packages/api-platform/src/routes/agent-deployment.test.ts
+  s_f96fecabf79f7b::t_25e29f48027e62 112,337-338
+packages/api-platform/src/routes/app-agent.test.ts
+  s_f96fecabf79f7b::t_522c2904112269 82,177,222,496
+packages/api-platform/src/routes/deployments.test.ts
+  s_f96fecabf79f7b::t_5ea3118a10d24c 236,274,319,325,331,415,614,706,776
+packages/cli/src/deploy-name.test.ts
+  s_f96fecabf79f7b::t_a6217162bd46eb 59,63,226,236-237,239,253-254,271-272,274,289
+packages/cli/src/deploy.test.ts
+  s_f96fecabf79f7b::t_0d99459bbafefc 624
+packages/client-platform/src/client/sdk.gen.ts
+  s_f96fecabf79f7b::t_b5ba9a5bd80e65 48-49,57-58,66-67,75-76,84-85,93-94,102-103
+packages/client-platform/src/client/types.gen.ts
+  s_f96fecabf79f7b::t_2cf2df80cd4876 13-22,40-49,94-97,123-126,173-176,202-205,244-253,261,263,277,279,281,283-287,297,299,321-324,363-372,380,382,404-407,446-455,462-465,467,469,491-494,567-570,615-624,634,636,670-754,883-892,1089-1098
+packages/core/src/server/agent.test.ts
+  s_f96fecabf79f7b::t_fde27ccba92bdd 210,243
+packages/core/src/server/contract.ts
+  s_f96fecabf79f7b::t_8c58c4dc8443fb 141-144
+packages/core/src/server/experimental.test.ts
+  s_f96fecabf79f7b::t_f5f0a4051a22bb 54,57-60,67
+packages/core/src/server/handler.test.ts
+  s_f96fecabf79f7b::t_e812d9309f43f2 96,102,219,851,854
+packages/core/src/server/tools.test.ts
+  s_f96fecabf79f7b::t_2e17a11f44b536 69-73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "89d328f41d9be9c5728c8d0d58cb8501d5b349aa",
+  "prompts": {},
+  "sessions": {
+    "s_f96fecabf79f7b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14739-b9ed-7673-99c7-1b8a10ba2383",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
