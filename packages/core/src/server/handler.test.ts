@@ -754,7 +754,7 @@ describe("createTailorKitServer", () => {
     expect(requests[2]?.headers.get("authorization")).toBe("Bearer host-token");
   });
 
-  it("attaches the validated CLI deploy token scope when creating platform apps", async () => {
+  it("validates host app mutations and attaches the CLI deploy token scope", async () => {
     const requests: Request[] = [];
     const hostRequests: Request[] = [];
     const server = createTailorKitServer({
@@ -832,6 +832,24 @@ describe("createTailorKitServer", () => {
       name: "Calendar",
       scope: { name: "org", value: { orgId: "org_1" } },
     });
+    const updateInput = { appId: "app_1", description: null, name: "Renamed" };
+    const slugChange = { ...updateInput, slug: "changed" };
+    await expect(client.apps.update(slugChange)).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    const unknownField = { ...updateInput, unexpected: true };
+    await expect(client.apps.update(unknownField)).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    expect(
+      requests.filter((request) => request.url.endsWith("/apps/update"))
+    ).toHaveLength(0);
+    await expect(client.apps.update(updateInput)).resolves.toEqual({
+      id: "app_1",
+    });
+    expect(
+      requests.filter((request) => request.url.endsWith("/apps/update"))
+    ).toHaveLength(1);
   });
 
   it.each([true, false])(

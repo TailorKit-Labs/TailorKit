@@ -115,6 +115,7 @@ export const appRouter = {
       z
         .object({ appId: z.string() })
         .extend(appInput.omit({ slug: true }).shape)
+        .strict()
     )
     .handler(
       async ({ context, input }) =>
