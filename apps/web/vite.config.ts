@@ -63,26 +63,9 @@ export default defineConfig(({ mode }) => {
               },
             ],
 
-            // Keep workflow execution and the UI router out of MCP startup.
+            // Split server code into chunks and minify every generated function.
             inlineDynamicImports: false,
             minify: true,
-
-            modules: [
-              {
-                name: "lazy-workflow-handlers",
-                setup(server) {
-                  server.hooks.hook("build:before", () => {
-                    // Workflow registers these handlers eagerly. Its step
-                    // registry is only needed for workflow callbacks.
-                    for (const handler of server.options.handlers) {
-                      if (handler.route?.startsWith("/.well-known/workflow/")) {
-                        handler.lazy = true;
-                      }
-                    }
-                  });
-                },
-              },
-            ],
 
             routeRules: {
               "/sign-in": {

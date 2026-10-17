@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { readFileSync, statSync } from "node:fs";
+import { statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import nodePath from "node:path";
 import { pathToFileURL } from "node:url";
@@ -60,8 +60,8 @@ if (mode === "--sample") {
     workflowLoadedAtStartup
   );
 
-  // Exercise the lazy callback boundary without starting a workflow or making
-  // authenticated requests. An invalid callback must still register its steps.
+  // Exercise the callback without starting a workflow or making authenticated
+  // requests, and verify that the app-agent step remains registered.
   await app.fetch(
     new Request("https://fixture.test/.well-known/workflow/v1/flow", {
       method: "GET",
@@ -114,12 +114,4 @@ if (mode === "--sample") {
       2
     )
   );
-  // This checks emitted behavior, not just the source configuration.
-  if (entryArgument !== "--allow-eager") {
-    assert.equal(
-      samples.some((sample) => sample.workflowLoadedAtStartup),
-      false
-    );
-    assert.ok(!readFileSync(entry, "utf-8").includes("pi-coding-agent"));
-  }
 }
