@@ -36,7 +36,7 @@ export const createAppAgent = async (
       },
       providers,
       reattachInProcess: false,
-      thinkingLevel: "medium",
+      thinkingLevel: input.model === "openai/gpt-6.1-sol" ? "low" : "medium",
     }),
     instructions: `${instructions.trim()}\n\n## Host and generation commands\n\n${hostInstructions}`,
     model: input.model,

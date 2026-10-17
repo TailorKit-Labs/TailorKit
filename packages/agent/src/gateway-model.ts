@@ -22,7 +22,9 @@ export const gatewayModelProviders = (
       // Pi requires a complete entry to override a bundled model's protocol.
       models: [
         {
-          contextWindow: 1_050_000,
+          // Operational budget: Pi's 16,384-token reserve triggers compaction
+          // around 256K, leaving headroom below the 272K pricing threshold.
+          contextWindow: 272_000,
           cost: { cacheRead: 0.1, cacheWrite: 2.5, input: 2, output: 10 },
           id: modelId,
           input: ["text", "image"],

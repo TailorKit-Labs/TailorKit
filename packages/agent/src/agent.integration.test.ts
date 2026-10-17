@@ -330,7 +330,7 @@ it.each(["api-key", "runtime-oidc"])(
       for (const request of requests) {
         expect(JSON.parse(request)).toMatchObject({
           model: modelId,
-          reasoning: { effort: "medium" },
+          reasoning: { effort: "low" },
         });
         expect(request).not.toContain(token);
         expect(request).not.toContain("private-token");
