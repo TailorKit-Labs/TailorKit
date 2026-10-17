@@ -4,6 +4,18 @@
 
 The TailorKit command-line interface (CLI) uploads server bundles to the private blob bucket under `server/server.js`. Client code uses `client/client.js`. The worker’s asset allowlist excludes server bundles.
 
+## Store gzip and negotiate browser delivery
+
+The CLI compresses client and server bundles with gzip before uploading them to R2. Store one gzip representation per bundle; browser delivery formats do not require additional R2 objects.
+
+The public asset response preserves the stored gzip bytes with `Content-Encoding: gzip` and `encodeBody: "manual"`. This prevents workerd from compressing them again. Cloudflare's CDN can still negotiate the browser-facing format according to the visitor's capabilities and the zone's Compression Rules. The Worker-facing `Accept-Encoding` is normalized by Cloudflare; do not use `request.cf.clientAcceptEncoding` to select the stored representation. Direct/local requests retain an identity fallback.
+
+Internal edge-cache entries store opaque bytes with private encoding metadata and `Cache-Control: public, max-age=86400, no-transform`. Public responses remove the private metadata and use `Cache-Control: private, max-age=3600`, allowing CDN compression transformations. Keep `no-transform` off the public response when delegating negotiation to Cloudflare.
+
+Backend execution reads the private gzip object through the R2 binding and decompresses it in the trusted supervisor before passing source code to the dynamic loader. Browser format negotiation does not affect this path.
+
+Local Miniflare tests verify stored bytes, cache behavior, and public headers. Validate the deployed zone separately with `Accept-Encoding: br`, `gzip`, and `identity`; the selected delivery encoding depends on the zone configuration. See [Cloudflare's compression behavior](https://developers.cloudflare.com/speed/optimization/content/compression/).
+
 ## Authenticate app requests
 
 The host SDK uses its existing `authenticate` callback and calls `POST /apps/{appId}/runtime/session` with its project key, verified scopes, optional product-defined `subjectId`, and product tool URL. The platform checks the app belongs to that project and one of those scopes, resolves its published deployment, and issues a short-lived ES256 JSON Web Token (JWT).
