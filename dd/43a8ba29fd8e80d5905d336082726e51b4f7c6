@@ -1,0 +1,25 @@
+packages/agent/README.md
+  s_fef38c9ea574eb::t_715abae5ee16ef 94-99,126,129-133,138-139
+packages/agent/src/mcp.test.ts
+  s_fef38c9ea574eb::t_3421a94872f06f 8,83-89,98-161,163,165,167-168,170,173-175,177,246-251
+packages/agent/src/mcp.ts
+  s_fef38c9ea574eb::t_8c3bf756c41201 6,31-48,52,143,160
+packages/api-platform/src/app-agent-mcp.ts
+  s_fef38c9ea574eb::t_dd300d19da565b 213
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dd43a8ba29fd8e80d5905d336082726e51b4f7c6",
+  "prompts": {},
+  "sessions": {
+    "s_fef38c9ea574eb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14bf7-90fd-7333-9b9d-f4f0c0262995",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
