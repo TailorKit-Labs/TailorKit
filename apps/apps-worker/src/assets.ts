@@ -20,9 +20,13 @@ const downstreamResponse = (response: Response, request: Request) => {
     headers.set("Content-Encoding", "gzip");
   }
   headers.delete(cachedEncodingHeader);
-  // Keep browser reuse bounded when a deployment is removed.
+  // Keep browser reuse bounded and allow the CDN to negotiate delivery encoding.
+  // no-transform belongs only on the opaque internal cache entry below.
   headers.set("Cache-Control", "private, max-age=3600");
   let { body } = response;
+  // At the edge this is Cloudflare's normalized Accept-Encoding, not the original
+  // browser header in request.cf.clientAcceptEncoding. The CDN negotiates with
+  // the browser; direct/local requests still need the identity fallback here.
   if (headers.get("Content-Encoding") === "gzip" && !acceptsGzip(request)) {
     headers.delete("Content-Encoding");
     headers.delete("Content-Length");
@@ -34,6 +38,8 @@ const downstreamResponse = (response: Response, request: Request) => {
     }
   }
   return new Response(request.method === "HEAD" ? null : body, {
+    // The body is already encoded. This prevents workerd compression, while the
+    // CDN can still transcode it according to the zone's Compression Rules.
     encodeBody: "manual",
     headers,
     status: response.status,

@@ -287,6 +287,33 @@ const cachedGzipHeaders = (size: number, etag?: string) => {
   return headers;
 };
 
+it.each(["R2", "cache"])(
+  "allows CDN negotiation while retaining stored gzip from %s",
+  async (source) => {
+    const stored = gzipObject();
+    if (source === "R2") {
+      get.mockResolvedValueOnce(stored);
+    } else {
+      const headers = cachedGzipHeaders(stored.size);
+      headers.set("Cache-Control", "public, max-age=86400, no-transform");
+      match.mockResolvedValueOnce(new Response(stored.body, { headers }));
+    }
+    const request = new Request(url, {
+      headers: { "Accept-Encoding": "br, gzip" },
+    });
+    // Cloudflare normalizes the Worker-facing header even for identity clients.
+    Object.defineProperty(request, "cf", {
+      value: { clientAcceptEncoding: "identity" },
+    });
+    const response = await fetchAsset(request);
+    expect(response.headers.get("Content-Encoding")).toBe("gzip");
+    expect(response.headers.get("Cache-Control")).toBe("private, max-age=3600");
+    expect(response.headers.get("Vary")).toBe("Accept-Encoding");
+    expect(response.headers.get("X-TailorKit-Content-Encoding")).toBeNull();
+    expect(Buffer.from(await response.arrayBuffer())).toEqual(gzipSync(bundle));
+  }
+);
+
 it("serves stored gzip bytes and caches them without double compression", async () => {
   const stored = gzipObject();
   get.mockResolvedValueOnce(stored);
