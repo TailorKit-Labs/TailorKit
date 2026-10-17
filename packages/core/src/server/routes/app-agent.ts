@@ -11,6 +11,7 @@ import {
 } from "@tailorkit/client-platform/client";
 import * as v from "valibot";
 
+import { platformAppSelector } from "#server/platform-app-selector";
 import {
   getCliDeployToken,
   o,
@@ -24,6 +25,7 @@ export const appAgentRouter = {
     .input(agentChatSchema)
     .output(eventIterator(agentChunkSchema))
     .handler(async function* chat({ context, input, signal: clientSignal }) {
+      const { appId, ...turn } = input;
       const controller = new AbortController();
       const signal = clientSignal
         ? AbortSignal.any([clientSignal, controller.signal])
@@ -32,7 +34,11 @@ export const appAgentRouter = {
         let streamFailed = false;
         let done = false;
         const { stream } = await appAgentChat({
-          body: { ...input, deployToken: getCliDeployToken(context.request) },
+          body: {
+            ...turn,
+            app: platformAppSelector(appId),
+            deployToken: getCliDeployToken(context.request),
+          },
 
           client: context.platform,
 

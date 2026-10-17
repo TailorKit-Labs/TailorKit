@@ -10,7 +10,16 @@ export type Schema0 = string | number | boolean | null | Array<Schema0> | {
 
 export type AppAgentChatData = {
   body: {
-    appId: string;
+    app: {
+      id: string;
+    } | {
+      shortId: string;
+    } | {
+      /**
+       * Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens.
+       */
+      slug: string;
+    };
     hostUrl: string;
     messages: Array<{
       id: string;
@@ -28,7 +37,16 @@ export type AppAgentChatData = {
     type: 'turn';
     deployToken: string;
   } | {
-    appId: string;
+    app: {
+      id: string;
+    } | {
+      shortId: string;
+    } | {
+      /**
+       * Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens.
+       */
+      slug: string;
+    };
     runId: string;
     startIndex: number;
     threadId: string;
@@ -73,6 +91,10 @@ export type AppAgentCreateData = {
     description: string | null;
     name: string;
     deployToken: string;
+    /**
+     * Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens.
+     */
+    slug?: string;
   };
   path?: never;
   query?: never;
@@ -98,6 +120,10 @@ export type AppAgentCreateResponses = {
       };
     };
     shortId: string;
+    /**
+     * Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens.
+     */
+    slug: string;
     updatedAt: string;
     clientPath?: string;
     currentDeployment: {
@@ -144,6 +170,10 @@ export type AppsCreateData = {
         [key: string]: Schema0;
       };
     };
+    /**
+     * Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens.
+     */
+    slug?: string;
   };
   path?: never;
   query?: never;
@@ -169,6 +199,10 @@ export type AppsCreateResponses = {
       };
     };
     shortId: string;
+    /**
+     * Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens.
+     */
+    slug: string;
     updatedAt: string;
     clientPath?: string;
     currentDeployment: {
@@ -207,6 +241,16 @@ export type AppsCreateResponse = AppsCreateResponses[keyof AppsCreateResponses];
 
 export type AppsDeleteData = {
   body: {
+    app: {
+      id: string;
+    } | {
+      shortId: string;
+    } | {
+      /**
+       * Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens.
+       */
+      slug: string;
+    };
     scope: {
       name: string;
       value: {
@@ -214,11 +258,9 @@ export type AppsDeleteData = {
       };
     };
   };
-  path: {
-    appId: string;
-  };
+  path?: never;
   query?: never;
-  url: '/apps/{appId}';
+  url: '/apps/delete';
 };
 
 export type AppsDeleteResponses = {
@@ -232,81 +274,18 @@ export type AppsDeleteResponses = {
 
 export type AppsDeleteResponse = AppsDeleteResponses[keyof AppsDeleteResponses];
 
-export type AppsUpdateData = {
-  body: {
-    description: string | null;
-    name: string;
-    scope: {
-      name: string;
-      value: {
-        [key: string]: Schema0;
-      };
-    };
-  };
-  path: {
-    appId: string;
-  };
-  query?: never;
-  url: '/apps/{appId}';
-};
-
-export type AppsUpdateResponses = {
-  /**
-   * OK
-   */
-  200: {
-    createdAt: string;
-    createdByAgent: boolean;
-    currentDeploymentId: string | null;
-    description: string | null;
-    id: string;
-    name: string;
-    projectId: string;
-    scope: {
-      name: string;
-      value: {
-        [key: string]: Schema0;
-      };
-    };
-    shortId: string;
-    updatedAt: string;
-    clientPath?: string;
-    currentDeployment: {
-      appId: string;
-      clientEntryFileId: string | null;
-      createdAt: string;
-      id: string;
-      logoDarkFileId: string | null;
-      logoDarkPath: string | null;
-      logoLightFileId: string | null;
-      logoLightPath: string | null;
-      shortId: string;
-      status: 'uploading' | 'deploying' | 'verifying' | 'published';
-      updatedAt: string;
-      views: Array<{
-        disabled?: true;
-        instances?: true;
-        path: string;
-        slot: string;
-      }>;
-    } | null;
-    logoPaths?: {
-      dark?: string;
-      light?: string;
-    };
-    views: Array<{
-      disabled?: true;
-      instances?: true;
-      path: string;
-      slot: string;
-    }>;
-  };
-};
-
-export type AppsUpdateResponse = AppsUpdateResponses[keyof AppsUpdateResponses];
-
 export type AppsDeployData = {
   body: {
+    app: {
+      id: string;
+    } | {
+      shortId: string;
+    } | {
+      /**
+       * Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens.
+       */
+      slug: string;
+    };
     deploymentId: string;
     scope: {
       name: string;
@@ -315,11 +294,9 @@ export type AppsDeployData = {
       };
     };
   };
-  path: {
-    appId: string;
-  };
+  path?: never;
   query?: never;
-  url: '/apps/{appId}/deploy';
+  url: '/apps/deploy';
 };
 
 export type AppsDeployResponses = {
@@ -341,6 +318,10 @@ export type AppsDeployResponses = {
       };
     };
     shortId: string;
+    /**
+     * Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens.
+     */
+    slug: string;
     updatedAt: string;
     clientPath?: string;
     currentDeployment: {
@@ -379,6 +360,16 @@ export type AppsDeployResponse = AppsDeployResponses[keyof AppsDeployResponses];
 
 export type AppsGetData = {
   body: {
+    app: {
+      id: string;
+    } | {
+      shortId: string;
+    } | {
+      /**
+       * Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens.
+       */
+      slug: string;
+    };
     scopes: Array<{
       name: string;
       value: {
@@ -386,11 +377,9 @@ export type AppsGetData = {
       };
     }>;
   };
-  path: {
-    appId: string;
-  };
+  path?: never;
   query?: never;
-  url: '/apps/{appId}/lookup';
+  url: '/apps/lookup';
 };
 
 export type AppsGetResponses = {
@@ -412,6 +401,10 @@ export type AppsGetResponses = {
       };
     };
     shortId: string;
+    /**
+     * Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens.
+     */
+    slug: string;
     updatedAt: string;
     clientPath?: string;
     currentDeployment: {
@@ -450,18 +443,30 @@ export type AppsGetResponse = AppsGetResponses[keyof AppsGetResponses];
 
 export type AppsInstallData = {
   body: {
+    app: {
+      id: string;
+    } | {
+      shortId: string;
+    } | {
+      /**
+       * Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens.
+       */
+      slug: string;
+    };
     scope: {
       name: string;
       value: {
         [key: string]: Schema0;
       };
     };
+    /**
+     * Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens.
+     */
+    slug?: string;
   };
-  path: {
-    appId: string;
-  };
+  path?: never;
   query?: never;
-  url: '/apps/{appId}/install';
+  url: '/apps/install';
 };
 
 export type AppsInstallResponses = {
@@ -483,6 +488,10 @@ export type AppsInstallResponses = {
       };
     };
     shortId: string;
+    /**
+     * Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens.
+     */
+    slug: string;
     updatedAt: string;
     clientPath?: string;
     currentDeployment: {
@@ -555,6 +564,10 @@ export type AppsListResponses = {
         };
       };
       shortId: string;
+      /**
+       * Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens.
+       */
+      slug: string;
       updatedAt: string;
       clientPath?: string;
       currentDeployment: {
@@ -599,6 +612,16 @@ export type AppsListResponse = AppsListResponses[keyof AppsListResponses];
 
 export type AppsRuntimeSessionData = {
   body: {
+    app: {
+      id: string;
+    } | {
+      shortId: string;
+    } | {
+      /**
+       * Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens.
+       */
+      slug: string;
+    };
     scopes: Array<{
       name: string;
       value: {
@@ -608,11 +631,9 @@ export type AppsRuntimeSessionData = {
     subjectId?: string;
     toolUrl: string;
   };
-  path: {
-    appId: string;
-  };
+  path?: never;
   query?: never;
-  url: '/apps/{appId}/runtime/session';
+  url: '/apps/runtime/session';
 };
 
 export type AppsRuntimeSessionResponses = {
@@ -645,6 +666,91 @@ export type AppsRuntimeSessionResponses = {
 };
 
 export type AppsRuntimeSessionResponse = AppsRuntimeSessionResponses[keyof AppsRuntimeSessionResponses];
+
+export type AppsUpdateData = {
+  body: {
+    description: string | null;
+    name: string;
+    app: {
+      id: string;
+    } | {
+      shortId: string;
+    } | {
+      /**
+       * Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens.
+       */
+      slug: string;
+    };
+    scope: {
+      name: string;
+      value: {
+        [key: string]: Schema0;
+      };
+    };
+  };
+  path?: never;
+  query?: never;
+  url: '/apps/update';
+};
+
+export type AppsUpdateResponses = {
+  /**
+   * OK
+   */
+  200: {
+    createdAt: string;
+    createdByAgent: boolean;
+    currentDeploymentId: string | null;
+    description: string | null;
+    id: string;
+    name: string;
+    projectId: string;
+    scope: {
+      name: string;
+      value: {
+        [key: string]: Schema0;
+      };
+    };
+    shortId: string;
+    /**
+     * Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens.
+     */
+    slug: string;
+    updatedAt: string;
+    clientPath?: string;
+    currentDeployment: {
+      appId: string;
+      clientEntryFileId: string | null;
+      createdAt: string;
+      id: string;
+      logoDarkFileId: string | null;
+      logoDarkPath: string | null;
+      logoLightFileId: string | null;
+      logoLightPath: string | null;
+      shortId: string;
+      status: 'uploading' | 'deploying' | 'verifying' | 'published';
+      updatedAt: string;
+      views: Array<{
+        disabled?: true;
+        instances?: true;
+        path: string;
+        slot: string;
+      }>;
+    } | null;
+    logoPaths?: {
+      dark?: string;
+      light?: string;
+    };
+    views: Array<{
+      disabled?: true;
+      instances?: true;
+      path: string;
+      slot: string;
+    }>;
+  };
+};
+
+export type AppsUpdateResponse = AppsUpdateResponses[keyof AppsUpdateResponses];
 
 export type CliAuthApproveData = {
   body: {
@@ -774,7 +880,16 @@ export type CliAuthVerifyTokenResponse = CliAuthVerifyTokenResponses[keyof CliAu
 
 export type DeploymentsCreateData = {
   body: {
-    appId: string;
+    app: {
+      id: string;
+    } | {
+      shortId: string;
+    } | {
+      /**
+       * Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens.
+       */
+      slug: string;
+    };
     assets: [
       {
         checksum: string;
@@ -971,7 +1086,16 @@ export type DeploymentsListData = {
   body: {
     page?: number;
     pageSize?: number;
-    appId: string;
+    app: {
+      id: string;
+    } | {
+      shortId: string;
+    } | {
+      /**
+       * Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens.
+       */
+      slug: string;
+    };
     scopes: Array<{
       name: string;
       value: {

@@ -170,7 +170,7 @@ describe("platform appRouter", () => {
     vi.clearAllMocks();
   });
 
-  it("serves the existing OpenAPI create and lookup URLs with detailed inputs", async () => {
+  it("serves OpenAPI create and explicit lookup selectors with detailed inputs", async () => {
     const handler = new OpenAPIHandler(
       { apps: appRouter },
       { plugins: [new RateLimitHandlerPlugin()] }
@@ -197,7 +197,8 @@ describe("platform appRouter", () => {
       .object({ id: z.string() })
       .parse(await created.response?.json());
 
-    const found = await handle(`/apps/${app.id}/lookup`, {
+    const found = await handle("/apps/lookup", {
+      app: { id: app.id },
       scopes: [productionScope],
     });
     expect(found.response?.status).toBe(200);
@@ -206,7 +207,8 @@ describe("platform appRouter", () => {
       name: "Compiler",
     });
 
-    const missing = await handle("/apps/missing/lookup", {
+    const missing = await handle("/apps/lookup", {
+      app: { slug: "missing" },
       scopes: [productionScope],
     });
     expect(missing.response?.status).toBe(404);
@@ -275,22 +277,37 @@ describe("platform appRouter", () => {
 
     const handler = new OpenAPIHandler({ apps: appRouter });
     const response = await handler.handle(
-      new Request(
-        `https://platform.test/api/platform/apps/${source.shortId}/install`,
-        {
-          body: JSON.stringify({ scope: stagingScope }),
-          headers: { "content-type": "application/json" },
-          method: "POST",
-        }
-      ),
+      new Request("https://platform.test/api/platform/apps/install", {
+        body: JSON.stringify({
+          app: { slug: source.slug },
+          scope: stagingScope,
+          slug: "installed-inbox",
+        }),
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      }),
       { context, prefix: "/api/platform" }
     );
     expect(response.response?.status).toBe(200);
     const installed = z
-      .object({ id: z.string(), shortId: z.string() })
+      .object({ id: z.string(), shortId: z.string(), slug: z.string() })
       .parse(await response.response?.json());
     expect(installed.id).not.toBe(source.id);
     expect(installed.shortId).not.toBe(source.shortId);
+    expect(installed.slug).toBe("installed-inbox");
+    await expect(
+      call(
+        appRouter.install,
+        {
+          body: {
+            app: { slug: source.slug },
+            scope: productionScope,
+            slug: installed.slug,
+          },
+        },
+        { context }
+      )
+    ).rejects.toMatchObject({ code: "CONFLICT" });
 
     const { body: listed } = await call(
       appRouter.list,
@@ -315,7 +332,7 @@ describe("platform appRouter", () => {
     );
     const lookup = await call(
       appRouter.get,
-      { body: { scopes: [stagingScope] }, params: { appId: installed.id } },
+      { body: { app: { id: installed.id }, scopes: [stagingScope] } },
       { context }
     );
     expect(lookup.body.clientPath).toBe(listed.items[0]?.clientPath);
@@ -323,8 +340,7 @@ describe("platform appRouter", () => {
       call(
         appRouter.get,
         {
-          body: { scopes: [productionScope] },
-          params: { appId: installed.id },
+          body: { app: { id: installed.id }, scopes: [productionScope] },
         },
         { context }
       )
@@ -334,10 +350,10 @@ describe("platform appRouter", () => {
       appRouter.runtimeSession,
       {
         body: {
+          app: { id: installed.id },
           scopes: [stagingScope],
           toolUrl: "https://host.test/api/tailorkit/tools/execute",
         },
-        params: { appId: installed.id },
       },
       { context }
     );
@@ -364,8 +380,7 @@ describe("platform appRouter", () => {
       call(
         appRouter.delete,
         {
-          body: { scope: productionScope },
-          params: { appId: source.id },
+          body: { app: { id: source.id }, scope: productionScope },
         },
         { context }
       )
@@ -378,13 +393,13 @@ describe("platform appRouter", () => {
       .where(eq(appTable.id, source.id));
     const pinned = await call(
       appRouter.get,
-      { body: { scopes: [stagingScope] }, params: { appId: installed.id } },
+      { body: { app: { id: installed.id }, scopes: [stagingScope] } },
       { context }
     );
     expect(pinned.body.currentDeployment?.id).toBe(deployment.id);
     await call(
       appRouter.delete,
-      { body: { scope: stagingScope }, params: { appId: installed.id } },
+      { body: { app: { id: installed.id }, scope: stagingScope } },
       { context }
     );
     expect(
@@ -428,7 +443,7 @@ describe("platform appRouter", () => {
     await expect(
       call(
         appRouter.delete,
-        { body: { scope: productionScope }, params: { appId: source.id } },
+        { body: { app: { id: source.id }, scope: productionScope } },
         { context }
       )
     ).rejects.toMatchObject({
@@ -462,7 +477,7 @@ describe("platform appRouter", () => {
 
       const deletion = call(
         appRouter.delete,
-        { body: { scope: productionScope }, params: { appId: source.id } },
+        { body: { app: { id: source.id }, scope: productionScope } },
         { context }
       );
       await expect(deletion).rejects.toMatchObject({
@@ -482,8 +497,7 @@ describe("platform appRouter", () => {
       { context }
     );
     const input = {
-      body: { scope: stagingScope },
-      params: { appId: source.id },
+      body: { app: { id: source.id }, scope: stagingScope },
     };
     await expect(
       call(appRouter.install, input, { context })
@@ -645,8 +659,7 @@ describe("platform appRouter", () => {
       const found = await call(
         appRouter.get,
         {
-          body: { scopes: [productionScope] },
-          params: { appId: created.body.id },
+          body: { app: { id: created.body.id }, scopes: [productionScope] },
         },
         { context }
       );
@@ -878,7 +891,7 @@ describe("platform appRouter", () => {
     await expect(
       call(
         appRouter.get,
-        { body: { scopes: [productionScope] }, params: { appId: created.id } },
+        { body: { app: { id: created.id }, scopes: [productionScope] } },
         { context: createContext() }
       )
     ).rejects.toEqual(
@@ -903,8 +916,7 @@ describe("platform appRouter", () => {
       call(
         appRouter.get,
         {
-          body: { scopes: [productionScope] },
-          params: { appId: otherScopeApp.id },
+          body: { app: { id: otherScopeApp.id }, scopes: [productionScope] },
         },
         { context: createContext() }
       )
@@ -947,8 +959,11 @@ describe("platform appRouter", () => {
       await call(
         appRouter.deploy,
         {
-          body: { deploymentId: deployment.shortId, scope: productionScope },
-          params: { appId: created.shortId },
+          body: {
+            app: { shortId: created.shortId },
+            deploymentId: deployment.shortId,
+            scope: productionScope,
+          },
         },
         { context }
       );
@@ -983,8 +998,12 @@ describe("platform appRouter", () => {
       call(
         appRouter.update,
         {
-          body: { description: null, name: "Wrong scope", scope: stagingScope },
-          params: { appId: created.shortId },
+          body: {
+            app: { shortId: created.shortId },
+            description: null,
+            name: "Wrong scope",
+            scope: stagingScope,
+          },
         },
         { context }
       )
@@ -994,11 +1013,11 @@ describe("platform appRouter", () => {
       appRouter.update,
       {
         body: {
+          app: { shortId: created.shortId },
           description: null,
           name: "Updated inbox",
           scope: productionScope,
         },
-        params: { appId: created.shortId },
       },
       { context }
     );
@@ -1023,8 +1042,11 @@ describe("platform appRouter", () => {
     const deployed = await call(
       appRouter.deploy,
       {
-        body: { deploymentId: deployment.shortId, scope: productionScope },
-        params: { appId: created.shortId },
+        body: {
+          app: { shortId: created.shortId },
+          deploymentId: deployment.shortId,
+          scope: productionScope,
+        },
       },
       { context }
     );
@@ -1045,7 +1067,7 @@ describe("platform appRouter", () => {
 
     const deleted = await call(
       appRouter.delete,
-      { body: { scope: productionScope }, params: { appId: created.shortId } },
+      { body: { app: { shortId: created.shortId }, scope: productionScope } },
       { context }
     );
     expect(deleted.body.id).toBe(created.id);
@@ -1082,10 +1104,10 @@ describe("platform appRouter", () => {
       .where(eq(appTable.id, created.id));
     const input = {
       body: {
+        app: { shortId: created.shortId },
         scopes: [productionScope],
         toolUrl: "https://host.test/api/tailorkit/tools/execute",
       },
-      params: { appId: created.shortId },
     };
     const session = await call(appRouter.runtimeSession, input, { context });
     expect(session.body.token).toBe("platform-token");
@@ -1128,17 +1150,15 @@ describe("platform appRouter", () => {
     expect(testState.issueToken).toHaveBeenCalledTimes(1);
     const handler = new OpenAPIHandler({ apps: appRouter });
     const http = await handler.handle(
-      new Request(
-        `https://platform.test/api/platform/apps/${created.shortId}/runtime/session`,
-        {
-          body: JSON.stringify({
-            scopes: [productionScope],
-            toolUrl: input.body.toolUrl,
-          }),
-          headers: { "content-type": "application/json" },
-          method: "POST",
-        }
-      ),
+      new Request("https://platform.test/api/platform/apps/runtime/session", {
+        body: JSON.stringify({
+          app: { shortId: created.shortId },
+          scopes: [productionScope],
+          toolUrl: input.body.toolUrl,
+        }),
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      }),
       { context, prefix: "/api/platform" }
     );
     expect(http.response?.status).toBe(200);
@@ -1155,25 +1175,31 @@ describe("platform appRouter", () => {
       `https://proj00000001.tailorkit.app/a/${created.shortId}/rpc`
     );
     const identity = testState.issueToken.mock.calls.at(-1)?.[0];
-    await Array.fromAsync([created.id, created.shortId], async (appId) => {
-      await Array.fromAsync(
-        [
-          [stagingScope, productionScope],
-          [productionScope, stagingScope],
-        ],
-        async (scopes) => {
-          await call(
-            appRouter.runtimeSession,
-            {
-              body: { scopes, toolUrl: input.body.toolUrl },
-              params: { appId },
-            },
-            { context }
-          );
-          expect(testState.issueToken).toHaveBeenLastCalledWith(identity);
-        }
-      );
-    });
+    await Array.fromAsync(
+      [
+        { id: created.id },
+        { shortId: created.shortId },
+        { slug: created.slug },
+      ],
+      async (app) => {
+        await Array.fromAsync(
+          [
+            [stagingScope, productionScope],
+            [productionScope, stagingScope],
+          ],
+          async (scopes) => {
+            await call(
+              appRouter.runtimeSession,
+              {
+                body: { app, scopes, toolUrl: input.body.toolUrl },
+              },
+              { context }
+            );
+            expect(testState.issueToken).toHaveBeenLastCalledWith(identity);
+          }
+        );
+      }
+    );
     const tokenCalls = testState.issueToken.mock.calls.length;
     await Array.fromAsync(
       [
@@ -1210,5 +1236,203 @@ describe("platform appRouter", () => {
     ).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
+  });
+  it("creates immutable usernames with project-wide uniqueness, including concurrent writes", async () => {
+    const context = createContext();
+    const input = {
+      body: {
+        description: null,
+        name: "Inbox",
+        scope: productionScope,
+        slug: "shared-inbox",
+      },
+    };
+    const outcomes = await Promise.allSettled([
+      call(appRouter.create, input, { context }),
+      call(appRouter.create, input, { context }),
+    ]);
+    expect(
+      outcomes.filter((outcome) => outcome.status === "fulfilled")
+    ).toHaveLength(1);
+    expect(
+      outcomes.find((outcome) => outcome.status === "rejected")
+    ).toMatchObject({ reason: { code: "CONFLICT" } });
+    await expect(
+      call(
+        appRouter.create,
+        { body: { ...input.body, scope: stagingScope } },
+        { context }
+      )
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+    const otherContext = createContext({
+      project: { ...context.project, id: otherProjectId },
+    });
+    await expect(
+      call(appRouter.create, input, { context: otherContext })
+    ).resolves.toMatchObject({ body: { slug: "shared-inbox" } });
+    const selector = { slug: "shared-inbox" };
+    const renamed = await call(
+      appRouter.update,
+      {
+        body: {
+          app: selector,
+          description: null,
+          name: "Renamed",
+          scope: productionScope,
+        },
+      },
+      { context }
+    );
+    expect(renamed.body.slug).toBe("shared-inbox");
+    const handler = new OpenAPIHandler({ apps: appRouter });
+    const update = await handler.handle(
+      new Request("https://platform.test/apps/update", {
+        body: JSON.stringify({
+          app: selector,
+          description: null,
+          name: "Renamed",
+          scope: productionScope,
+          slug: "changed",
+        }),
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      }),
+      { context }
+    );
+    expect(update.response?.status).toBe(400);
+  });
+
+  it("distinguishes slugs from identical short IDs without bypassing project or scope checks", async () => {
+    const context = createContext();
+    const id = "55555555-5555-4555-8555-555555555555";
+    const shortId = "app000000001";
+    const scopedSlug = "staging-inbox";
+    await db.insert(appTable).values([
+      {
+        id,
+        name: "Original",
+        projectId,
+        shortId,
+        slug: "original",
+        ...canonicalizeScope(productionScope),
+      },
+      {
+        name: "Short ID slug",
+        projectId,
+        slug: shortId,
+        ...canonicalizeScope(productionScope),
+      },
+      {
+        name: "Scoped slug",
+        projectId,
+        slug: scopedSlug,
+        ...canonicalizeScope(stagingScope),
+      },
+    ]);
+    for (const [app, name] of [
+      [{ id }, "Original"],
+      [{ shortId }, "Original"],
+      [{ slug: shortId }, "Short ID slug"],
+      [{ slug: scopedSlug }, "Scoped slug"],
+    ] as const) {
+      // oxlint-disable-next-line no-await-in-loop -- Verify each namespace against the same fixture.
+      const found = await call(
+        appRouter.get,
+        { body: { app, scopes: [productionScope, stagingScope] } },
+        { context }
+      );
+      expect(found.body.name).toBe(name);
+    }
+    await expect(
+      call(
+        appRouter.get,
+        { body: { app: { slug: scopedSlug }, scopes: [productionScope] } },
+        { context }
+      )
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(
+      call(
+        appRouter.get,
+        { body: { app: { slug: shortId }, scopes: [productionScope] } },
+        {
+          context: createContext({
+            project: { ...context.project, id: otherProjectId },
+          }),
+        }
+      )
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("rejects invalid or ambiguous selectors and invalid slugs at the HTTP boundary", async () => {
+    const handler = new OpenAPIHandler({ apps: appRouter });
+    const context = createContext();
+    for (const app of [
+      {},
+      { id: "invalid" },
+      { shortId: "invalid" },
+      { slug: "UPPER" },
+      { slug: "a".repeat(33) },
+      { slug: "55555555-5555-4555-8555-555555555555" },
+      { shortId: "app000000001", slug: "valid" },
+    ]) {
+      // oxlint-disable-next-line no-await-in-loop -- Check each independent HTTP validation failure.
+      const result = await handler.handle(
+        new Request("https://platform.test/apps/lookup", {
+          body: JSON.stringify({ app, scopes: [productionScope] }),
+          headers: { "content-type": "application/json" },
+          method: "POST",
+        }),
+        { context }
+      );
+      expect(result.response?.status).toBe(400);
+    }
+    for (const slug of [
+      "",
+      "UPPER",
+      "has space",
+      "-leading",
+      "trailing-",
+      "double--hyphen",
+      "a".repeat(33),
+    ]) {
+      // oxlint-disable-next-line no-await-in-loop -- Check each independent HTTP validation failure.
+      const result = await handler.handle(
+        new Request("https://platform.test/apps", {
+          body: JSON.stringify({
+            description: null,
+            name: "App",
+            scope: productionScope,
+            slug,
+          }),
+          headers: { "content-type": "application/json" },
+          method: "POST",
+        }),
+        { context }
+      );
+      expect(result.response?.status).toBe(400);
+    }
+    expect(await db.select().from(appTable)).toHaveLength(0);
+    const maxLengthSlug = "a".repeat(32);
+    const created = await call(
+      appRouter.create,
+      {
+        body: {
+          description: null,
+          name: "Max length",
+          scope: productionScope,
+          slug: maxLengthSlug,
+        },
+      },
+      { context }
+    );
+    expect(created.body.slug).toBe(maxLengthSlug);
+    const found = await call(
+      appRouter.get,
+      {
+        body: { app: { slug: maxLengthSlug }, scopes: [productionScope] },
+      },
+      { context }
+    );
+    expect(found.body.id).toBe(created.body.id);
   });
 });

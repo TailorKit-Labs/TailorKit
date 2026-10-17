@@ -56,11 +56,11 @@ const handleRequest = async (
       respond(response, { scope });
       return;
     }
-    case "/apps/app-one/lookup": {
+    case "/apps/lookup": {
       respond(response, { description, name: currentName });
       return;
     }
-    case "/apps/app-one": {
+    case "/apps/update": {
       respond(
         response,
         updateFails
@@ -223,9 +223,7 @@ it.each([
     expect(
       await readFile(path.join(root, "tailorkit.config.ts"), "utf-8")
     ).toContain('appId: "new-app"');
-    expect(
-      requests.some((r) => r.method === "PUT" && r.path !== "/upload")
-    ).toBe(false);
+    expect(requests.some((r) => r.path === "/apps/update")).toBe(false);
   }
 );
 
@@ -235,9 +233,10 @@ it.each(["Keep this description", null])(
     description = savedDescription;
     await writeConfig("  My App  ");
     await runDeploy({ appId: "app-one", cwd: root });
-    const update = requests.find((r) => r.path === "/apps/app-one");
-    expect(update?.method).toBe("PUT");
+    const update = requests.find((r) => r.path === "/apps/update");
+    expect(update?.method).toBe("POST");
     expect(JSON.parse(update?.body ?? "null")).toEqual({
+      app: { shortId: "app-one" },
       description: savedDescription,
       name: "My App",
       scope,
@@ -251,8 +250,8 @@ it.each([undefined, "Old Name"])(
   async (name) => {
     await writeConfig(name);
     await runDeploy({ cwd: root });
-    expect(requests.some((r) => r.path === "/apps/app-one")).toBe(false);
-    expect(requests.some((r) => r.path === "/apps/app-one/lookup")).toBe(
+    expect(requests.some((r) => r.path === "/apps/update")).toBe(false);
+    expect(requests.some((r) => r.path === "/apps/lookup")).toBe(
       name !== undefined
     );
     expect(requests.at(-1)?.path).toBe("/deployments/deployment");
@@ -269,9 +268,10 @@ it.each([
   async ({ appDescription, name }) => {
     await writeConfig(name, appDescription);
     await runDeploy({ cwd: root });
-    const update = requests.find((r) => r.path === "/apps/app-one");
-    expect(update?.method).toBe("PUT");
+    const update = requests.find((r) => r.path === "/apps/update");
+    expect(update?.method).toBe("POST");
     expect(JSON.parse(update?.body ?? "null")).toEqual({
+      app: { shortId: "app-one" },
       description: appDescription?.trim() ?? null,
       name: name ?? "Old Name",
       scope,
@@ -286,7 +286,7 @@ it.each(["Keep this description", null])(
     description = savedDescription;
     await writeConfig(undefined, savedDescription);
     await runDeploy({ cwd: root });
-    expect(requests.some((r) => r.path === "/apps/app-one")).toBe(false);
+    expect(requests.some((r) => r.path === "/apps/update")).toBe(false);
     expect(requests.at(-1)?.path).toBe("/deployments/deployment");
   }
 );

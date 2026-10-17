@@ -207,7 +207,7 @@ describe("host agent relay", () => {
       requests.find((request) => request.url.endsWith("/chat"))
     );
     expect(await chat.json()).toEqual({
-      appId,
+      app: { id: appId },
       deployToken: "cli-token",
       hostUrl,
       messages,
@@ -240,7 +240,7 @@ describe("host agent relay", () => {
       requests.find((request) => request.url.endsWith("/chat"))
     );
     expect(await chat.json()).toEqual({
-      appId,
+      app: { id: appId },
       deployToken: "cli-token",
       hostUrl,
       messages,

@@ -2,6 +2,8 @@ import { appsInstall } from "@tailorkit/client-platform/client";
 import type { Client } from "@tailorkit/client-platform/client/client/index";
 import * as v from "valibot";
 
+import { platformAppSelector } from "#server/platform-app-selector";
+
 import { selectTailorKitScopes, validateTailorKitScopes } from "./scope";
 import type { TailorKitScopeSchemas } from "./scope";
 import type {
@@ -45,10 +47,9 @@ export const createExperimental = (options: {
       throw new Error("A TailorKit projectKey is required to install apps.");
     }
     const { data } = await appsInstall({
-      body: { scope: validatedScope },
+      body: { app: platformAppSelector(input.appId), scope: validatedScope },
       client: options.platform,
       headers,
-      path: { appId: input.appId },
       responseStyle: "fields",
       throwOnError: true,
     });

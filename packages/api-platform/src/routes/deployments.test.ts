@@ -233,7 +233,7 @@ describe("platform deployment uploads", () => {
         deploymentRouter.create,
         {
           body: {
-            appId: currentApp.id,
+            app: { id: currentApp.id },
             assets: [{ ...metadata, objectKey: "client.js" }],
             scope: productionScope,
             server: { ...metadata, objectKey: "server.js" },
@@ -268,14 +268,10 @@ describe("platform deployment uploads", () => {
           key: created.body.server?.file.objectKey,
         })
       );
-      const lookup = {
-        body: { scope: productionScope },
-        params: { appId: currentApp.id },
-      };
       await expect(
         call(
           deploymentRouter.runtime,
-          { body: {}, params: lookup.params },
+          { body: {}, params: { appId: currentApp.id } },
           { context: { ...context, runtimeService: true } }
         )
       ).rejects.toMatchObject({ code: "NOT_FOUND" });
@@ -320,19 +316,19 @@ describe("platform deployment uploads", () => {
       await expect(
         call(
           deploymentRouter.runtime,
-          { body: {}, params: lookup.params },
+          { body: {}, params: { appId: currentApp.id } },
           { context }
         )
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
       const runtime = await call(
         deploymentRouter.runtime,
-        { body: {}, params: lookup.params },
+        { body: {}, params: { appId: currentApp.id } },
         { context: { ...context, runtimeService: true } }
       );
       await expect(
         call(
           deploymentRouter.runtime,
-          { body: {}, params: lookup.params },
+          { body: {}, params: { appId: currentApp.id } },
           {
             context: {
               ...context,
@@ -416,7 +412,7 @@ describe("platform deployment uploads", () => {
       deploymentRouter.create,
       {
         body: {
-          appId: currentApp.id,
+          app: { id: currentApp.id },
           assets: [
             {
               checksum,
@@ -615,7 +611,7 @@ describe("platform deployment uploads", () => {
       deploymentRouter.create,
       {
         body: {
-          appId: app.id,
+          app: { id: app.id },
           assets: [
             {
               checksum: "a".repeat(64),
@@ -707,7 +703,7 @@ describe("platform deployment uploads", () => {
       deploymentRouter.create,
       {
         body: {
-          appId: currentApp.id,
+          app: { id: currentApp.id },
           assets: [
             {
               checksum: "a".repeat(64),
@@ -777,7 +773,7 @@ describe("platform deployment uploads", () => {
         deploymentRouter.create,
         {
           body: {
-            appId: app.id,
+            app: { id: app.id },
             assets: [
               {
                 checksum: "a".repeat(64),

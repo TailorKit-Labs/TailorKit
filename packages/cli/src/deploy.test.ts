@@ -621,7 +621,7 @@ it("agent JWT deployment uses shared authentication and the configured app witho
     const request = input instanceof Request ? input : undefined;
     if (request?.url === "https://platform.example/api/platform/deployments") {
       expect(await request.json()).toMatchObject({
-        appId: "app-one",
+        app: { shortId: "app-one" },
         scope: {
           name: "user",
           value: { userId: "one" },

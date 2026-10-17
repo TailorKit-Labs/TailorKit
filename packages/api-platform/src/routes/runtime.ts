@@ -10,6 +10,7 @@ import { Effect } from "effect";
 import { catch as catchEffect } from "effect/Effect";
 import { z } from "zod";
 
+import { appSelectorSchema } from "#app-selector";
 import { env } from "#env";
 import { o, protectedRouter, requireAppInScopes } from "#procedures";
 import { appRuntimePublicKeys, issueAppRuntimeToken } from "#runtime/auth";
@@ -45,10 +46,11 @@ export const handlePublicRuntimeRequest = (
 
 // Hosts authenticate with their project key and assert membership using verified scopes.
 export const runtimeSession = protectedRouter
-  .meta(openapi({ method: "POST", path: "/apps/{appId}/runtime/session" }))
+  .meta(openapi({ method: "POST", path: "/apps/runtime/session" }))
   .input(
     z.object({
       body: z.strictObject({
+        app: appSelectorSchema,
         scopes: scopesSchema,
         subjectId: z.string().min(1).max(256).optional(),
         toolUrl: z.url().refine((value) => {
@@ -64,7 +66,6 @@ export const runtimeSession = protectedRouter
           );
         }, "Tool URL requires HTTPS"),
       }),
-      params: z.object({ appId: z.string().min(1).max(256) }),
     })
   )
   .output(
@@ -89,11 +90,7 @@ export const runtimeSession = protectedRouter
       }),
     })
   )
-  .use(
-    requireAppInScopes.adaptInput(
-      ({ params: { appId }, body: { scopes } }) => ({ appId, scopes })
-    )
-  )
+  .use(requireAppInScopes.adaptInput(({ body }) => body))
   .handler(async ({ context, input }) => {
     const deployment = context.app.currentDeployment;
     if (!deployment) {

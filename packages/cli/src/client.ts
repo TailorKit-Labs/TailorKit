@@ -23,6 +23,7 @@ import type { TailorKitRouterClient } from "@tailorkit/core/server";
 import * as v from "valibot";
 
 import { getAgentAuth, validatePlatformUrl } from "./agent-auth";
+import { platformAppSelector } from "./platform-app-selector";
 
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
   typeof value === "object" && value !== null;
@@ -110,11 +111,16 @@ export const createCliClient = (options: {
           input: Input<"appAgent", "chat">,
           optionsValue: { signal?: AbortSignal }
         ) {
+          const { appId, ...turn } = input;
           let streamError: unknown;
           let streamFailed = false;
           let done = false;
           const { stream } = await appAgentChat({
-            body: { ...input, deployToken: agent.token },
+            body: {
+              ...turn,
+              app: platformAppSelector(appId),
+              deployToken: agent.token,
+            },
             client,
             onSseError: (error) => {
               streamError = error;
@@ -157,25 +163,29 @@ export const createCliClient = (options: {
         delete: async (input: Input<"apps", "delete">) =>
           await request(
             appsDelete({
-              body: { scope },
+              body: { app: platformAppSelector(input.appId), scope },
               client,
-              path: { appId: input.appId },
             })
           ),
         deploy: async (input: Input<"apps", "deploy">) =>
           await request(
             appsDeploy({
-              body: { deploymentId: input.deploymentId, scope },
+              body: {
+                app: platformAppSelector(input.appId),
+                deploymentId: input.deploymentId,
+                scope,
+              },
               client,
-              path: { appId: input.appId },
             })
           ),
         get: async (input: Input<"apps", "get">) =>
           await request(
             appsGet({
-              body: { scopes: scopes(input.scopes) },
+              body: {
+                app: platformAppSelector(input.appId),
+                scopes: scopes(input.scopes),
+              },
               client,
-              path: { appId: input.appId },
             })
           ),
         list: async (input?: Input<"apps", "list">) =>
@@ -192,9 +202,13 @@ export const createCliClient = (options: {
         update: async (input: Input<"apps", "update">) =>
           await request(
             appsUpdate({
-              body: { description: input.description, name: input.name, scope },
+              body: {
+                app: platformAppSelector(input.appId),
+                description: input.description,
+                name: input.name,
+                scope,
+              },
               client,
-              path: { appId: input.appId },
             })
           ),
       },
@@ -205,10 +219,15 @@ export const createCliClient = (options: {
           ),
       },
       deployments: {
-        create: async (input: Input<"deployments", "create">) =>
-          await request(
-            deploymentsCreate({ body: { ...input, scope }, client })
-          ),
+        create: async (input: Input<"deployments", "create">) => {
+          const { appId, ...deployment } = input;
+          return await request(
+            deploymentsCreate({
+              body: { ...deployment, app: platformAppSelector(appId), scope },
+              client,
+            })
+          );
+        },
         get: async (input: Input<"deployments", "get">) =>
           await request(
             deploymentsGet({
@@ -221,7 +240,7 @@ export const createCliClient = (options: {
           await request(
             deploymentsList({
               body: {
-                appId: input.appId,
+                app: platformAppSelector(input.appId),
                 page: input.page,
                 pageSize: input.pageSize,
                 scopes: scopes(input.scopes),

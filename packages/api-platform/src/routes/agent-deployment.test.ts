@@ -109,7 +109,7 @@ const post = async (path: string, body: AgentRequestBody = {}) => {
   };
 };
 const deploymentInput = (appId: string) => ({
-  appId,
+  app: { id: appId },
   assets: [
     {
       checksum: "a".repeat(64),
@@ -334,7 +334,8 @@ it("uses the same CLI permissions for verification, listing, app creation, and d
     scope: scope.scope,
   });
   expect(created).toMatchObject({ body: { scope: scope.scope }, status: 200 });
-  const awaitedResult2 = await post(`/apps/${sameScopeAppId}/lookup`, {
+  const awaitedResult2 = await post("/apps/lookup", {
+    app: { id: sameScopeAppId },
     scopes: [scope.scope],
   });
   expect(awaitedResult2.status).toBe(200);

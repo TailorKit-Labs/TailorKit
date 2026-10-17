@@ -8,6 +8,7 @@ import {
 } from "@tailorkit/client-platform/client";
 import * as v from "valibot";
 
+import { platformAppSelector } from "#server/platform-app-selector";
 import {
   getTailorKitScope,
   getTailorKitScopes,
@@ -25,6 +26,7 @@ const paginationInput = v.object({
 const appInput = v.object({
   description: v.nullable(v.string()),
   name: v.string(),
+  slug: v.optional(v.string()),
 });
 
 export const appRouter = {
@@ -47,10 +49,12 @@ export const appRouter = {
     .handler(
       async ({ context, input }) =>
         await appsDelete({
-          body: { scope: getTailorKitScope(context) },
+          body: {
+            app: platformAppSelector(input.appId),
+            scope: getTailorKitScope(context),
+          },
           client: context.platform,
           headers: context.platformHeaders,
-          path: { appId: input.appId },
         })
     ),
   deploy: o
@@ -60,12 +64,12 @@ export const appRouter = {
       async ({ context, input }) =>
         await appsDeploy({
           body: {
+            app: platformAppSelector(input.appId),
             deploymentId: input.deploymentId,
             scope: getTailorKitScope(context),
           },
           client: context.platform,
           headers: context.platformHeaders,
-          path: { appId: input.appId },
         })
     ),
   get: o
@@ -75,10 +79,12 @@ export const appRouter = {
     )
     .handler(async ({ context, input }) => {
       const { data } = await appsGet({
-        body: { scopes: getTailorKitScopes(context, input.scopes) },
+        body: {
+          app: platformAppSelector(input.appId),
+          scopes: getTailorKitScopes(context, input.scopes),
+        },
         client: context.platform,
         headers: context.platformHeaders,
-        path: { appId: input.appId },
         responseStyle: "fields",
         throwOnError: true,
       });
@@ -111,22 +117,22 @@ export const appRouter = {
   update: o
     .use(requireCliDeployToken)
     .input(
-      v.object({
-        ...v.object({ appId: v.string() }).entries,
-        ...appInput.entries,
+      v.strictObject({
+        appId: v.string(),
+        ...v.omit(appInput, ["slug"]).entries,
       })
     )
     .handler(
       async ({ context, input }) =>
         await appsUpdate({
           body: {
+            app: platformAppSelector(input.appId),
             description: input.description,
             name: input.name,
             scope: getTailorKitScope(context),
           },
           client: context.platform,
           headers: context.platformHeaders,
-          path: { appId: input.appId },
         })
     ),
 };

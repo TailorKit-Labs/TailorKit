@@ -51,18 +51,20 @@ it("installs from the public server API with host credentials and validated scop
   if (!request) {
     throw new Error("Expected installation request");
   }
-  expect(request.url).toBe(
-    "https://platform.test/api/platform/apps/published001/install"
-  );
+  expect(request.url).toBe("https://platform.test/api/platform/apps/install");
   expect(request.method).toBe("POST");
   expect(request.headers.get("authorization")).toBe("Bearer project-secret");
-  expect(await request.json()).toEqual({ scope: installed.scope });
+  expect(await request.json()).toEqual({
+    app: { shortId: "published001" },
+    scope: installed.scope,
+  });
 
   await tailorkit.experimental.installApp({
     appId: "published001",
     scope: { name: "day", value: { at: new Date("2026-10-16T00:00:00.000Z") } },
   });
   expect(await requests.at(-1)?.json()).toEqual({
+    app: { shortId: "published001" },
     scope: { name: "day", value: { at: "2026-10-16T00:00:00.000Z" } },
   });
 });

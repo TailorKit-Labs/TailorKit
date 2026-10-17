@@ -93,12 +93,13 @@ describe("createTailorKitServer", () => {
       throw new Error("Expected a platform token request");
     }
     expect(issuedRequest.url).toBe(
-      "https://tailorkit.dev/api/platform/apps/app/runtime/session"
+      "https://tailorkit.dev/api/platform/apps/runtime/session"
     );
     expect(issuedRequest.headers.get("authorization")).toBe(
       "Bearer project-key"
     );
     expect(await issuedRequest.json()).toEqual({
+      app: { shortId: "app" },
       scopes: [{ name: "org", value: { tenant: "verified" } }],
       toolUrl: "https://host.test/api/tailorkit/tools/execute",
     });
@@ -215,6 +216,7 @@ describe("createTailorKitServer", () => {
       expect(response.status).toBe(200);
       expect(bodies).toEqual([
         {
+          app: { shortId: "app" },
           scopes: [{ name: "org", value: { tenant: "verified" } }],
           toolUrl: `${origin + prefix}/tools/execute`,
         },
@@ -752,7 +754,7 @@ describe("createTailorKitServer", () => {
     expect(requests[2]?.headers.get("authorization")).toBe("Bearer host-token");
   });
 
-  it("attaches the validated CLI deploy token scope when creating platform apps", async () => {
+  it("validates host app mutations and attaches the CLI deploy token scope", async () => {
     const requests: Request[] = [];
     const hostRequests: Request[] = [];
     const server = createTailorKitServer({
@@ -830,6 +832,24 @@ describe("createTailorKitServer", () => {
       name: "Calendar",
       scope: { name: "org", value: { orgId: "org_1" } },
     });
+    const updateInput = { appId: "app_1", description: null, name: "Renamed" };
+    const slugChange = { ...updateInput, slug: "changed" };
+    await expect(client.apps.update(slugChange)).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    const unknownField = { ...updateInput, unexpected: true };
+    await expect(client.apps.update(unknownField)).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    expect(
+      requests.filter((request) => request.url.endsWith("/apps/update"))
+    ).toHaveLength(0);
+    await expect(client.apps.update(updateInput)).resolves.toEqual({
+      id: "app_1",
+    });
+    expect(
+      requests.filter((request) => request.url.endsWith("/apps/update"))
+    ).toHaveLength(1);
   });
 
   it.each([true, false])(
@@ -846,9 +866,10 @@ describe("createTailorKitServer", () => {
               });
             }
             expect(request.url).toBe(
-              "https://tailorkit.dev/api/platform/apps/app_1/lookup"
+              "https://tailorkit.dev/api/platform/apps/lookup"
             );
             expect(await request.json()).toEqual({
+              app: { shortId: "app_1" },
               scopes: [{ name: "org", value: { orgId: "org_1" } }],
             });
             return Response.json({ createdByAgent, id: "app_1" });

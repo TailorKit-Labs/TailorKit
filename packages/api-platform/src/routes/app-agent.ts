@@ -26,6 +26,7 @@ import {
   createAgentStreamToken,
   verifyAgentStreamToken,
 } from "#agent-stream-token";
+import { appSelectorSchema } from "#app-selector";
 import { authenticateCliRequest } from "#cli-token";
 import { env } from "#env";
 import { findAppInScopes, o, cliRouter } from "#procedures";
@@ -65,7 +66,7 @@ const agentMessagesSchema = z
   .min(1);
 
 const agentTurnSchema = z.object({
-  appId: z.string().min(1),
+  app: appSelectorSchema,
   hostUrl: z.url({ protocol: /^https?$/u }),
   messages: agentMessagesSchema,
   schema: z.record(z.string(), z.unknown()).optional(),
@@ -74,7 +75,7 @@ const agentTurnSchema = z.object({
 });
 
 const agentResumeSchema = z.object({
-  appId: z.string().min(1),
+  app: appSelectorSchema,
   runId: z.string().startsWith("wrun_"),
   startIndex: z.number().int().nonnegative(),
   threadId: z.uuid(),
@@ -87,7 +88,10 @@ const create = cliRouter
   .input(
     z.object({
       body: AppWithCurrentDeployment.pick({ description: true, name: true })
-        .extend({ deployToken: z.string().min(1) })
+        .extend({
+          deployToken: z.string().min(1),
+          slug: AppWithCurrentDeployment.shape.slug.optional(),
+        })
         .strict(),
     })
   )
@@ -101,6 +105,7 @@ const create = cliRouter
           description: input.body.description,
           name: input.body.name,
           scope: token.scope,
+          slug: input.body.slug,
         },
         true
       ),
@@ -120,7 +125,7 @@ const chat = cliRouter
   .output(eventIterator(agentChunkSchema))
   .handler(async ({ context, input, signal }) => {
     const token = await authenticateCliRequest(context, input.body.deployToken);
-    const app = await findAppInScopes(context.project.id, input.body.appId, [
+    const app = await findAppInScopes(context.project.id, input.body.app, [
       canonicalizeScope(token.scope),
     ]);
     if (!app.createdByAgent) {

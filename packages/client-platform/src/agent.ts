@@ -4,6 +4,14 @@ import * as v from "valibot";
 export const agentCreateAppSchema = v.strictObject({
   description: v.nullable(v.pipe(v.string(), v.maxLength(255))),
   name: v.pipe(v.string(), v.maxLength(127)),
+  slug: v.optional(
+    v.pipe(
+      v.string(),
+      v.minLength(1),
+      v.maxLength(32),
+      v.regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u)
+    )
+  ),
 });
 
 export { agentChunkSchema } from "#agent-chunks";
