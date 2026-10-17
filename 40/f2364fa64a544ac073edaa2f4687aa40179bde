@@ -1,0 +1,18 @@
+apps/apps-worker/src/assets.test.ts
+  h_18044dd1b61a81 104-106,113,283-289,303-304,310-341,352,386,399
+apps/apps-worker/src/assets.ts
+  h_18044dd1b61a81 15-16,19-22,58-64,111-116,122
+apps/apps-worker/src/tests/integration.test.mjs
+  h_18044dd1b61a81 7,11,24-49,883-884,888-898,900,902,908-921
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "40f2364fa64a544ac073edaa2f4687aa40179bde",
+  "prompts": {},
+  "humans": {
+    "h_18044dd1b61a81": {
+      "author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
