@@ -1,5 +1,17 @@
 # @tailorkit/client-platform
 
+## 1.0.0-beta.44
+
+### Major Changes
+
+- 89d328f: Add immutable, project-scoped app slugs of 1–32 characters and expose them in app responses. Apps and installations can choose a slug at creation; omitted slugs receive a stable generated username.
+
+  Platform app operations now require an explicit `app: { id }`, `app: { shortId }`, or `app: { slug }` selector instead of guessing an identifier namespace. App operations use POST endpoints with the selector in the body. Deployment creation/listing and agent chat use the same selector. Update the platform client, host, and CLI together with the backend.
+
+### Patch Changes
+
+- 1fb0155: Use Valibot for internal validation to reduce TailorKit bundle sizes. Accept user-provided Standard Schema validators for app functions and view instance data, preserving input/output inference and Zod primitive exports.
+
 ## 0.1.0-beta.43
 
 ### Minor Changes
