@@ -16,7 +16,7 @@ export const createAppAgent = async (
   sandboxName: string
 ) => {
   const auth = await resolveAgentAuth();
-  const providers = await gatewayModelProviders(input.model, auth);
+  const providers = gatewayModelProviders(input.model, auth);
   const schemaArgument =
     input.schema === undefined ? "" : ` --schema ${agentSchemaPath}`;
   const hostInstructions = [
