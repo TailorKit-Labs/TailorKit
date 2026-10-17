@@ -34,13 +34,13 @@ interface AppAgentMcpRun {
   threadId: string;
 }
 
-/** JSON carried by notifications/progress.message for app-building tools. */
+/** Structured event carried in notifications/progress.params._meta. */
 export type AppAgentMcpProgress = AppAgentMcpRun &
   ({ status: "started" } | { chunk: UIMessageChunk; status: "streaming" });
 
 const agentStreamMetadata = {
   "dev.tailorkit/agent-stream": {
-    encoding: "json",
+    eventKey: "dev.tailorkit/agent-stream",
     notification: "notifications/progress",
     version: 1,
   },
@@ -71,6 +71,32 @@ export interface AppAgentMcpBackend {
   ) => Promise<NonNullable<CallToolResult["structuredContent"]>>;
 }
 
+const progressMessage = (event: AppAgentMcpProgress): string => {
+  if (event.status === "started") {
+    return "App agent started.";
+  }
+  const { chunk } = event;
+  if (chunk.type === "text-delta") {
+    return chunk.delta || "App agent is writing.";
+  }
+  if (
+    chunk.type === "tool-input-start" ||
+    chunk.type === "tool-input-available"
+  ) {
+    return `App agent is running ${chunk.toolName}.`;
+  }
+  if (chunk.type === "tool-output-available") {
+    return "App agent tool completed.";
+  }
+  if (chunk.type === "error" || chunk.type === "tool-output-error") {
+    return "App agent encountered an error.";
+  }
+  if (chunk.type === "finish") {
+    return "App agent finished generating; waiting for workflow cleanup.";
+  }
+  return "App agent is working.";
+};
+
 const execution = (context: ServerContext): AppAgentMcpExecution => {
   let progress = 0;
   const progressToken = context.mcpReq._meta?.progressToken;
@@ -83,7 +109,8 @@ const execution = (context: ServerContext): AppAgentMcpExecution => {
       await context.mcpReq.notify({
         method: "notifications/progress",
         params: {
-          message: JSON.stringify(event),
+          _meta: { "dev.tailorkit/agent-stream": event },
+          message: progressMessage(event),
           progress: (progress += 1),
           progressToken,
         },

@@ -91,12 +91,12 @@ The endpoint implements MCP 2026-07-28 using the official SDK v2. It rejects leg
 
 The web host gives `/api/platform/app-agent/mcp` its own Vercel Function with a 1,800-second maximum duration so the request can stream a full agent turn. This requires Vercel’s extended function durations on Pro or Enterprise. Other web routes retain their default duration.
 
-`create_app` and `edit_app` advertise `dev.tailorkit/agent-stream` metadata with version `1`, encoding `json`, and notification `notifications/progress`. Request progress to receive the nested agent stream. The exported `AppAgentMcpProgress` type describes the JSON carried by `notifications/progress.message`:
+`create_app` and `edit_app` advertise `dev.tailorkit/agent-stream` metadata with version `1`, event key `dev.tailorkit/agent-stream`, and notification `notifications/progress`. Request progress to receive the nested agent stream. The exported `AppAgentMcpProgress` type describes the structured object carried by `notifications/progress.params._meta["dev.tailorkit/agent-stream"]`:
 
 - `{ status: "started", appId, runId, threadId }` identifies the running agent.
 - `{ status: "streaming", appId, runId, threadId, chunk }` carries an AI SDK `UIMessageChunk`, including text, reasoning, tool activity, and errors. Feed these chunks into `readUIMessageStream` to assemble the nested agent's message.
 
-`progress` is a monotonically increasing event count. The final tool result contains `{ appId, threadId, runId, message, messages, sessionId, finishReason, usage? }`. A streamed `finish` chunk does not establish success: wait for the final result. Failed tool results have `isError: true`. Clients that do not request progress still receive the final result. The `create_app` schema advertises the authorized scope names as an enum.
+`message` contains human-readable status text, as recommended by the [MCP progress specification](https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/progress). Agent chunks use namespaced `_meta` so ordinary MCP clients can display progress without understanding TailorKit's payload. This metadata uses the core protocol's metadata facility; it adds no RPC methods, result types, or negotiated extension requirements. `progress` is a monotonically increasing event count. The final tool result contains `{ appId, threadId, runId, message, messages, sessionId, finishReason, usage? }`. A streamed `finish` chunk does not establish success: wait for the final result. Failed tool results have `isError: true`. Clients that do not request progress still receive the final result. The `create_app` schema advertises the authorized scope names as an enum.
 
 For example, connect an MCP client and render progress events while the agent edits an app:
 
@@ -126,10 +126,10 @@ const result = await client.callTool(
     signal,
     timeout: 35 * 60_000,
     resetTimeoutOnProgress: true,
-    onprogress: ({ message }) => {
-      if (message === undefined) return;
-      // Validate this remote payload before routing it to this tool call's UI.
-      renderAgentEvent(JSON.parse(message));
+    onprogress: (progress) => {
+      // Validate the remote progress notification and read the namespaced event
+      // from params._meta["dev.tailorkit/agent-stream"] in this callback.
+      renderAgentProgress(progress);
     },
   }
 );
