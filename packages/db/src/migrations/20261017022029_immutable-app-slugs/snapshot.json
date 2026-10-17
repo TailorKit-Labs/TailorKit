@@ -1,8 +1,8 @@
 {
+  "id": "f8e65a9b-58b0-41be-b937-715a7d457661",
+  "prevIds": ["8598ba4f-05dc-4906-b6bb-20d258008115"],
   "version": "8",
   "dialect": "postgres",
-  "id": "b5c53b11-3fb7-404a-9d33-31e38b41a29c",
-  "prevIds": ["b184ef6c-d1aa-4c69-ba2b-1f935bbf83d2"],
   "ddl": [
     {
       "values": [
@@ -1642,11 +1642,11 @@
       "table": "app"
     },
     {
-      "type": "varchar(64)",
+      "type": "varchar(32)",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
-      "default": "('app-' || pg_catalog.gen_random_uuid()::text)",
+      "default": "('app-' || substr(replace(pg_catalog.gen_random_uuid()::text, '-', ''), 1, 28))",
       "generated": null,
       "identity": null,
       "name": "slug",

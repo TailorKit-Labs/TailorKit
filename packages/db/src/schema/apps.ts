@@ -46,9 +46,11 @@ export const app = pgTable(
     shortId: varchar("short_id", { length: 12 })
       .notNull()
       .$defaultFn(createShortId),
-    slug: varchar("slug", { length: 64 })
+    slug: varchar("slug", { length: 32 })
       .notNull()
-      .default(sql`('app-' || pg_catalog.gen_random_uuid()::text)`),
+      .default(
+        sql`('app-' || substr(replace(pg_catalog.gen_random_uuid()::text, '-', ''), 1, 28))`
+      ),
     updatedAt: timestamp("updated_at")
       .defaultNow()
       .$onUpdate(() => new Date())
@@ -69,7 +71,7 @@ export const app = pgTable(
 export const appSlugSchema = z
   .string()
   .min(1)
-  .max(64)
+  .max(32)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u)
   .describe(
     "Immutable app username, unique within the project. Lowercase letters, digits, and single hyphens."
