@@ -16,7 +16,7 @@ const sessionStore = async () => {
 const leaseDurationMs = 60 * 60_000;
 const resumeEnvelope = z.object({
   data: z.json(),
-  harnessId: z.literal("pi"),
+  harnessId: z.enum(["pi", "fx"]),
   specificationVersion: z.literal("harness-v1"),
   type: z.literal("resume-session"),
 });

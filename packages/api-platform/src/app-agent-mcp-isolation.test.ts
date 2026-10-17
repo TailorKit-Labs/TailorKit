@@ -1,4 +1,4 @@
-import type { appAgent } from "@tailorkit/agent/workflows";
+import type { appAgent } from "@tailorkit/agent-fx/workflows";
 import { verifyAgentToken } from "@tailorkit/api-utils/agent-token";
 import { app } from "@tailorkit/db/schema/apps";
 import { organization } from "@tailorkit/db/schema/auth";
@@ -48,7 +48,7 @@ vi.mock("@tailorkit/db", () => ({
   },
 }));
 vi.mock("@tailorkit/kv", () => ({ getKV: () => {} }));
-vi.mock("@tailorkit/agent/workflows", () => ({
+vi.mock("@tailorkit/agent-fx/workflows", () => ({
   appAgent: vi.fn(),
   cancelAppAgent: vi.fn(),
 }));
