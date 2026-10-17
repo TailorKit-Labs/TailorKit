@@ -4,7 +4,6 @@ import { FatalError } from "workflow";
 import { z } from "zod";
 
 import { threadSandboxName } from "./identity";
-import type { AppAgentHarness } from "./input";
 import { deleteSandbox } from "./sandbox";
 
 const sessionStore = async () => {
@@ -17,7 +16,7 @@ const sessionStore = async () => {
 const leaseDurationMs = 60 * 60_000;
 const resumeEnvelope = z.object({
   data: z.json(),
-  harnessId: z.enum(["pi", "fx"]),
+  harnessId: z.literal("pi"),
   specificationVersion: z.literal("harness-v1"),
   type: z.literal("resume-session"),
 });
@@ -25,16 +24,6 @@ const resumeEnvelope = z.object({
 const resumeSchema = z.custom<HarnessV1ResumeSessionState>(
   (value) => resumeEnvelope.safeParse(value).success
 );
-
-const parseResumeState = (serialized: string, harnessId?: AppAgentHarness) => {
-  const state = resumeSchema.parse(JSON.parse(serialized));
-  if (harnessId !== undefined && state.harnessId !== harnessId) {
-    throw new FatalError(
-      `This conversation uses ${state.harnessId}. Start a new conversation to edit this app with ${harnessId}.`
-    );
-  }
-  return state;
-};
 
 export interface SavedAgentSession {
   cleanupSandboxName?: string;
@@ -72,8 +61,7 @@ const assertLeaseAvailable = async (
 export const loadResumeStep = async (
   appId: string,
   threadId: string,
-  runId: string,
-  harnessId?: AppAgentHarness
+  runId: string
 ): Promise<SavedAgentSession> => {
   "use step";
   const { appAgentLease, appAgentThread, db } = await sessionStore();
@@ -109,10 +97,6 @@ export const loadResumeStep = async (
         "Thread not found for this app or no longer resumable. Start a new thread."
       );
     }
-    const resumeFrom =
-      thread.resumeState === null
-        ? undefined
-        : parseResumeState(thread.resumeState, harnessId);
     // The previous worker may have mutated its journal beyond its checkpoint.
     const abandonedThreadId = otherRun
       ? (lease.activeThreadId ?? undefined)
@@ -147,7 +131,10 @@ export const loadResumeStep = async (
       .where(eq(appAgentLease.appId, appId));
     return {
       cleanupSandboxName,
-      resumeFrom,
+      resumeFrom:
+        thread.resumeState === null
+          ? undefined
+          : resumeSchema.parse(JSON.parse(thread.resumeState)),
       sandboxName: thread.sandboxName ?? undefined,
     };
   });

@@ -1,2 +1,2 @@
 export { createAppAgent } from "./agent";
-export type { AppAgentInput } from "@tailorkit/agent/runtime";
+export type { AppAgentInput } from "./input";

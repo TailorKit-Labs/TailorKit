@@ -240,11 +240,7 @@ describe("agent threads and app workspace leases (Postgres)", () => {
       appId,
       second,
       "run-b",
-      {
-        ...resumeFrom,
-        data: { stateFileName: "state.json", version: 1 },
-        harnessId: "fx",
-      },
+      { ...resumeFrom, data: { sessionFileName: "native-2.jsonl" } },
       threadSandboxName(second)
     );
     await releaseSessionStep(appId, "run-b");
@@ -252,40 +248,12 @@ describe("agent threads and app workspace leases (Postgres)", () => {
       resumeFrom,
       sandboxName: threadSandboxName(first),
     });
-    await releaseSessionStep(appId, "run-c");
-    await expect(loadResumeStep(appId, second, "run-d")).resolves.toMatchObject(
-      {
-        resumeFrom: {
-          ...resumeFrom,
-          data: { stateFileName: "state.json", version: 1 },
-          harnessId: "fx",
-        },
-      }
-    );
     expect(await thread(second)).toMatchObject({
       resumeState: JSON.stringify({
         ...resumeFrom,
-        data: { stateFileName: "state.json", version: 1 },
-        harnessId: "fx",
+        data: { sessionFileName: "native-2.jsonl" },
       }),
     });
-  });
-
-  it("rejects another harness before claiming the app or changing its saved conversation", async () => {
-    const id = await resolveAppAgentThread(appId);
-    await complete(id, "run-pi");
-    await expect(loadResumeStep(appId, id, "run-fx", "fx")).rejects.toThrow(
-      "Start a new conversation"
-    );
-    expect(await thread(id)).toMatchObject({
-      invalidatedAt: null,
-      resumeState: JSON.stringify(resumeFrom),
-    });
-    expect(await lease()).toMatchObject({ activeRunId: null });
-    expect(mocks.deleteSandbox).not.toHaveBeenCalled();
-    await expect(
-      loadResumeStep(appId, id, "run-pi-next", "pi")
-    ).resolves.toMatchObject({ resumeFrom });
   });
 
   it("reclaims its own lease on step retry without resetting the conversation", async () => {

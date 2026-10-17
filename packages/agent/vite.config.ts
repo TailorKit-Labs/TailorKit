@@ -10,8 +10,6 @@ export default defineConfig({
     deps: { neverBundle: Object.keys(packageJson.dependencies) },
     dts: true,
     entry: [
-      "src/runtime.ts",
-      "src/app-workflow.ts",
       "src/threads.ts",
       "src/index.ts",
       "src/workflows.ts",

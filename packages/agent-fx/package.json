@@ -31,11 +31,16 @@
   "dependencies": {
     "@ai-sdk/harness": "1.0.154",
     "@ai-sdk/harness-fx": "1.0.69",
+    "@ai-sdk/sandbox-vercel": "1.0.154",
     "@ai-sdk/workflow-harness": "1.0.154",
-    "@tailorkit/agent": "workspace:*",
+    "@tailorkit/db": "workspace:*",
     "@tailorkit/env": "workspace:*",
+    "@tailorkit/vite": "workspace:*",
     "@vercel/oidc": "3.5.0",
-    "ai": "catalog:",
+    "@vercel/sandbox": "3.6.1",
+    "ai": "catalog:fx",
+    "drizzle-orm": "catalog:",
+    "valibot": "catalog:",
     "workflow": "5.2.0",
     "zod": "catalog:"
   },

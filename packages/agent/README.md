@@ -1,6 +1,6 @@
 # TailorKit agent
 
-`@tailorkit/agent` runs a Pi-backed `HarnessAgent` to build and edit TailorKit extensions. New platform chat and Model Context Protocol (MCP) conversations use [`@tailorkit/agent-fx`](../agent-fx/README.md). This package retains the Pi workflow and supplies shared app instructions, skills, workspace/session lifecycle, MCP registration, source export, and host-side deployment.
+`@tailorkit/agent` runs a Pi-backed `HarnessAgent` to build and edit TailorKit extensions. The web host, platform chat routes, Model Context Protocol (MCP) routes, and app source export use this package.
 
 ## Instructions and skills
 
