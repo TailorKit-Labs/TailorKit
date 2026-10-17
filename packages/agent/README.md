@@ -91,7 +91,12 @@ The endpoint implements MCP 2026-07-28 using the official SDK v2. It rejects leg
 
 The web host gives `/api/platform/app-agent/mcp` its own Vercel Function with a 1,800-second maximum duration so the request can stream a full agent turn. This requires Vercel’s extended function durations on Pro or Enterprise. Other web routes retain their default duration.
 
-Clients requesting progress receive `notifications/progress`: `progress` is a monotonically increasing event count, and `message` contains JSON `{ runId, appId, threadId, status? , chunk? }`. `chunk` is an AI SDK UI message chunk. The terminal tool result contains `{ appId, threadId, runId, messages, sessionId, finishReason, usage? }`. The `create_app` schema advertises the authorized scope names as an enum.
+`create_app` and `edit_app` advertise `dev.tailorkit/agent-stream` metadata with version `1`, encoding `json`, and notification `notifications/progress`. Request progress to receive the nested agent stream. The exported `AppAgentMcpProgress` type describes the JSON carried by `notifications/progress.message`:
+
+- `{ status: "started", appId, runId, threadId }` identifies the running agent.
+- `{ status: "streaming", appId, runId, threadId, chunk }` carries an AI SDK `UIMessageChunk`, including text, reasoning, tool activity, and errors. Feed these chunks into `readUIMessageStream` to assemble the nested agent's message.
+
+`progress` is a monotonically increasing event count. The final tool result contains `{ appId, threadId, runId, message, messages, sessionId, finishReason, usage? }`. A streamed `finish` chunk does not establish success: wait for the final result. Failed tool results have `isError: true`. Clients that do not request progress still receive the final result. The `create_app` schema advertises the authorized scope names as an enum.
 
 For example, connect an MCP client and render progress events while the agent edits an app:
 
@@ -118,12 +123,19 @@ await client.connect(
 const result = await client.callTool(
   { name: "edit_app", arguments: { appId, prompt: "Add a calendar view" } },
   {
+    signal,
     timeout: 35 * 60_000,
     resetTimeoutOnProgress: true,
-    onprogress: ({ message }) => renderAgentEvent(JSON.parse(message!)),
+    onprogress: ({ message }) => {
+      if (message === undefined) return;
+      // Validate this remote payload before routing it to this tool call's UI.
+      renderAgentEvent(JSON.parse(message));
+    },
   }
 );
 ```
+
+The AI SDK MCP client currently does not expose `onprogress`; its standard tool adapter receives only the final result. Use an MCP client with progress support and forward updates into the host chat stream to display live builds. Keep the URL and headers returned by `mcp.transport` on the server.
 
 The [current transport specification](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http) does not support resumable SSE or `Last-Event-ID`. Closing a stream cancels the request. The platform attempts to stop the agent, delete its sandbox, and clear its resume state, then revokes its grant.
 

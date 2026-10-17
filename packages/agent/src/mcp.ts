@@ -3,6 +3,7 @@ import type {
   CallToolResult,
   ServerContext,
 } from "@modelcontextprotocol/server";
+import type { UIMessageChunk } from "ai";
 import { z } from "zod";
 
 const promptSchema = z.string().trim().min(1).max(32_000);
@@ -27,13 +28,28 @@ const createSchema = z.strictObject({
     .describe("Name of one scope authorized by the host."),
 });
 
+interface AppAgentMcpRun {
+  appId: string;
+  runId: string;
+  threadId: string;
+}
+
+/** JSON carried by notifications/progress.message for app-building tools. */
+export type AppAgentMcpProgress = AppAgentMcpRun &
+  ({ status: "started" } | { chunk: UIMessageChunk; status: "streaming" });
+
+const agentStreamMetadata = {
+  "dev.tailorkit/agent-stream": {
+    encoding: "json",
+    notification: "notifications/progress",
+    version: 1,
+  },
+};
+
 export interface AppAgentMcpExecution {
   signal: AbortSignal;
   /** Stream agent events through the MCP request's progress notifications. */
-  onProgress: (
-    // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-    event: NonNullable<CallToolResult["structuredContent"]>
-  ) => Promise<void>;
+  onProgress: (event: AppAgentMcpProgress) => Promise<void>;
 }
 
 /** Implementations receive authorization from the host, never from tool arguments. */
@@ -124,6 +140,7 @@ export const createAppAgentMcp = (
       server.registerTool(
         "create_app",
         {
+          _meta: agentStreamMetadata,
           annotations: {
             destructiveHint: false,
             idempotentHint: false,
@@ -140,6 +157,7 @@ export const createAppAgentMcp = (
       server.registerTool(
         "edit_app",
         {
+          _meta: agentStreamMetadata,
           annotations: {
             destructiveHint: true,
             idempotentHint: false,

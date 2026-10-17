@@ -5,7 +5,7 @@ import {
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { createAppAgentMcp } from "./mcp";
-import type { AppAgentMcpBackend } from "./mcp";
+import type { AppAgentMcpBackend, AppAgentMcpProgress } from "./mcp";
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -80,6 +80,13 @@ describe("app agent MCP", () => {
         ?.scope
     ).toMatchObject({ enum: ["org"] });
     for (const name of ["create_app", "edit_app"]) {
+      expect(tools.find((tool) => tool.name === name)?._meta).toEqual({
+        "dev.tailorkit/agent-stream": {
+          encoding: "json",
+          notification: "notifications/progress",
+          version: 1,
+        },
+      });
       expect(tools.find((tool) => tool.name === name)?.description).toMatch(
         /create an autonomous app agent/iu
       );
@@ -88,50 +95,86 @@ describe("app agent MCP", () => {
     expect(backend.listApps).toHaveBeenCalledWith({ page: 1, pageSize: 100 });
   });
 
-  it("streams progress before the final agent result", async () => {
-    const events: unknown[] = [];
-    let received!: () => void;
-    const progressReceived = (async () => {
-      const {
-        promise: pendingPromise,
-        resolve,
-        reject: rejectPending,
-      } = Promise.withResolvers<ReturnType<() => void>>();
-      try {
-        received = resolve;
-      } catch (error) {
-        rejectPending(error);
-      }
-      await pendingPromise;
-    })();
+  it.each(["create_app", "edit_app"])(
+    "streams ordered agent chunks from %s before its final result",
+    async (name) => {
+      const events: unknown[] = [];
+      const progressValues: number[] = [];
+      const received = Promise.withResolvers<ReturnType<() => void>>();
+      const identity = { appId: "app", runId: "run", threadId: "thread" };
+      const updates: AppAgentMcpProgress[] = [
+        { ...identity, status: "started" },
+        {
+          ...identity,
+          chunk: { id: "text", type: "text-start" },
+          status: "streaming",
+        },
+        {
+          ...identity,
+          chunk: { delta: "Building", id: "text", type: "text-delta" },
+          status: "streaming",
+        },
+        {
+          ...identity,
+          chunk: { id: "text", type: "text-end" },
+          status: "streaming",
+        },
+      ];
+      const build = async (
+        _input: { prompt: string },
+        execution: Parameters<AppAgentMcpBackend["editApp"]>[1]
+      ) => {
+        for (const update of updates) {
+          // oxlint-disable-next-line no-await-in-loop -- Preserve the order of the agent stream.
+          await execution.onProgress(update);
+        }
+        // The result cannot complete until the client receives the text delta.
+        await received.promise;
+        return { ...identity, finishReason: "stop" };
+      };
+      const { client } = await connect({ createApp: build, editApp: build });
+      const result = await client.callTool(
+        {
+          arguments:
+            name === "create_app"
+              ? { name: "App", prompt: "Build it", scope: "org" }
+              : { appId: "app", prompt: "Change it" },
+          name,
+        },
+        {
+          onprogress: (progress) => {
+            events.push(JSON.parse(requireValue(progress.message)));
+            progressValues.push(progress.progress);
+            if (events.length === updates.length) {
+              received.resolve();
+            }
+          },
+        }
+      );
+      expect(result.isError).not.toBe(true);
+      expect(events).toEqual(updates);
+      expect(progressValues).toEqual([1, 2, 3, 4]);
+      expect(result.structuredContent).toMatchObject(identity);
+    }
+  );
+
+  it("returns the final result when a client does not request progress", async () => {
     const { client } = await connect({
-      async editApp(input, execution) {
-        expect(input).toEqual({ appId: "app", prompt: "Change it" });
+      async editApp(_input, execution) {
         await execution.onProgress({
-          chunk: { delta: "Building", type: "text-delta" },
+          appId: "app",
           runId: "run",
+          status: "started",
+          threadId: "thread",
         });
-        await progressReceived;
-        return { appId: "app", finishReason: "stop", runId: "run" };
+        return { appId: "app" };
       },
     });
-    const result = await client.callTool(
-      { arguments: { appId: "app", prompt: "Change it" }, name: "edit_app" },
-      {
-        onprogress: (progress) => {
-          events.push(JSON.parse(requireValue(progress.message)));
-          received();
-        },
-      }
-    );
-    expect(result.isError).not.toBe(true);
-    expect(events).toEqual([
-      { chunk: { delta: "Building", type: "text-delta" }, runId: "run" },
-    ]);
-    expect(result.structuredContent).toMatchObject({
-      appId: "app",
-      runId: "run",
+    const result = await client.callTool({
+      arguments: { appId: "app", prompt: "Change it" },
+      name: "edit_app",
     });
+    expect(result.structuredContent).toEqual({ appId: "app" });
   });
 
   it("rejects legacy initialization and mismatched metadata headers", async () => {
@@ -200,7 +243,12 @@ describe("app agent MCP", () => {
     })();
     const { client } = await connect({
       async editApp(_input, execution) {
-        await execution.onProgress({ status: "started" });
+        await execution.onProgress({
+          appId: "app",
+          runId: "run",
+          status: "started",
+          threadId: "thread",
+        });
         await (async () => {
           const {
             promise: pendingPromise,
