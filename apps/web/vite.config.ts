@@ -78,6 +78,13 @@ export default defineConfig(({ mode }) => {
 
             serverDir: false,
 
+            vercel: {
+              functionRules: {
+                // MCP streams stay open for the entire durable agent turn.
+                "/api/platform/app-agent/mcp": { maxDuration: 1800 },
+              },
+            },
+
             virtual: {
               "#start-assets": `
             import { fetchViteEnv } from "nitro/vite/runtime";

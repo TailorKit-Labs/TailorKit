@@ -32,16 +32,7 @@ vi.mock("#env", () => ({ env: authentication.env }));
 const { dirname, join } = nodePath;
 // oxlint-disable-next-line typescript/strict-void-return -- execFile also returns a ChildProcess; promisify consumes its completion callback, not that return value.
 const execute = promisify(execFile);
-const modelId = "openai/gpt-6-luna";
-const model = {
-  context_window: 1_050_000,
-  id: modelId,
-  max_tokens: 128_000,
-  modalities: { input: ["text", "image", "pdf"] },
-  name: "GPT-6 Luna",
-  pricing: { input: "0.0000001", output: "0.0000005" },
-  tags: ["reasoning", "tool-use", "vision"],
-};
+const modelId = "openai/gpt-6.1-sol";
 
 const bytes = async (path: string) => await readFile(path).catch(() => null);
 const write = async (path: string, content: Uint8Array | string) => {
@@ -202,12 +193,6 @@ it.each(["api-key", "runtime-oidc"])(
       "fetch",
       vi.fn<typeof fetch>(async (url, options) => {
         const request = new Request(url, options);
-        if (request.url.endsWith("/v1/models")) {
-          if (request.headers.get("authorization") !== `Bearer ${token}`) {
-            return new Response("Unauthorized", { status: 401 });
-          }
-          return Response.json({ data: [model] });
-        }
         const endpoint = new URL(request.url);
         endpoints.push({
           authorization: request.headers.get("authorization"),
@@ -247,6 +232,7 @@ it.each(["api-key", "runtime-oidc"])(
     try {
       const agent = await createAppAgent(input, "fixture");
       expect(agent.harnessId).toBe("pi");
+      expect(endpoints).toHaveLength(0);
       const chunks: HarnessWorkflowChunk[] = [];
       const writable = () =>
         new WritableStream<HarnessWorkflowChunk>({
@@ -344,7 +330,7 @@ it.each(["api-key", "runtime-oidc"])(
       for (const request of requests) {
         expect(JSON.parse(request)).toMatchObject({
           model: modelId,
-          reasoning: { effort: "high" },
+          reasoning: { effort: "low" },
         });
         expect(request).not.toContain(token);
         expect(request).not.toContain("private-token");

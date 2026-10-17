@@ -14,6 +14,8 @@ Preserve the three-day package release policy; only `tailorkit` and `@tailorkit/
 
 Read `package.json`, `tailorkit.config.ts`, and relevant source. In `src/tailorkit.gen.ts`, inspect supported slots/contexts and the component/tool signatures needed for the request. Search specific declarations when the file is large.
 
+The native `grep` tool uses basic regular expressions. For alternation (`|`) or grouping, use `bash` with `grep -E`.
+
 | Location | Role |
 | --- | --- |
 | `src/tailorkit.gen.ts` (`#tailorkit`) | Generated host components, `tools`, context types, and backend function `api` when enabled. |

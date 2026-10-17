@@ -16,7 +16,7 @@ export const createAppAgent = async (
   sandboxName: string
 ) => {
   const auth = await resolveAgentAuth();
-  const providers = await gatewayModelProviders(input.model, auth);
+  const providers = gatewayModelProviders(input.model, auth);
   const schemaArgument =
     input.schema === undefined ? "" : ` --schema ${agentSchemaPath}`;
   const hostInstructions = [
@@ -36,7 +36,7 @@ export const createAppAgent = async (
       },
       providers,
       reattachInProcess: false,
-      thinkingLevel: "high",
+      thinkingLevel: input.model === "openai/gpt-6.1-sol" ? "low" : "medium",
     }),
     instructions: `${instructions.trim()}\n\n## Host and generation commands\n\n${hostInstructions}`,
     model: input.model,

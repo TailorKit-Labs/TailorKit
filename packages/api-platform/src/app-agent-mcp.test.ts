@@ -269,6 +269,7 @@ describe("platform MCP endpoint", () => {
       appId: app.id,
       hostUrl: "https://host.test/api/tailorkit",
       messages: [{ content: "Change it", role: "user" }],
+      model: "openai/gpt-6.1-sol",
     });
     expect(
       await verifyAgentToken(
