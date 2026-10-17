@@ -1,0 +1,81 @@
+packages/sandbox/package.json
+  s_2c908f1aa1518f::t_d11e189f70ed35 3
+package.json
+  s_2c908f1aa1518f::t_e74576d9065a76 48
+  s_2c908f1aa1518f::t_10faf9ddde3c92 32,34,42-44
+packages/cli/CHANGELOG.md
+  s_2c908f1aa1518f::t_d11e189f70ed35 3-19
+packages/client-core/CHANGELOG.md
+  s_2c908f1aa1518f::t_d11e189f70ed35 3-15
+packages/vite/package.json
+  s_2c908f1aa1518f::t_d11e189f70ed35 3
+scripts/check-prerelease.mjs
+  s_2c908f1aa1518f::t_70835f4cc2b54f 3-4,22-23,43,51,54,92-99
+  s_2c908f1aa1518f::t_e74576d9065a76 52-53
+  s_2c908f1aa1518f::t_dc6144e1b9af63 100-101
+turbo.json
+  s_2c908f1aa1518f::t_10faf9ddde3c92 90-92
+packages/client-platform/package.json
+  s_2c908f1aa1518f::t_d11e189f70ed35 3
+packages/app/package.json
+  s_2c908f1aa1518f::t_d11e189f70ed35 3
+packages/client-core/package.json
+  s_2c908f1aa1518f::t_d11e189f70ed35 3
+scripts/check-prerelease.test.mjs
+  s_2c908f1aa1518f::t_ab05f92325be91 40-42,96-99
+  s_2c908f1aa1518f::t_87b20d19aac19f 66,80,88,104,118,127,138
+  s_2c908f1aa1518f::t_8f0f4bfbd3107f 22-25,33-37,48-57,61
+  s_2c908f1aa1518f::t_46a9a65e975d18 1-8,10-21,26-32,38-39,43-47,58-60,62,64-65,67-79,81-87,89-95,100-103,105-117,119-126,128-137,139-147
+  s_2c908f1aa1518f::t_69fdc98dfac4e6 9,63
+.github/workflows/ci.yml
+  s_2c908f1aa1518f::t_c26cd686348c21 54-56,99-101
+packages/app/CHANGELOG.md
+  s_2c908f1aa1518f::t_d11e189f70ed35 3-9
+packages/react/CHANGELOG.md
+  s_2c908f1aa1518f::t_d11e189f70ed35 3-16
+packages/tailorkit/package.json
+  s_2c908f1aa1518f::t_d11e189f70ed35 3
+.github/workflows/release.yml
+  s_2c908f1aa1518f::t_2dbb981239190b 51-53
+packages/core/package.json
+  s_2c908f1aa1518f::t_d11e189f70ed35 3
+packages/cli/package.json
+  s_2c908f1aa1518f::t_d11e189f70ed35 3
+RELEASING.md
+  s_2c908f1aa1518f::t_2dbb981239190b 3,9-10,17-19
+  s_2c908f1aa1518f::t_4bfca41e368201 20
+packages/client-platform/CHANGELOG.md
+  s_2c908f1aa1518f::t_d11e189f70ed35 3-15
+packages/react/package.json
+  s_2c908f1aa1518f::t_d11e189f70ed35 3
+packages/sandbox/CHANGELOG.md
+  s_2c908f1aa1518f::t_d11e189f70ed35 3-13
+packages/vite/CHANGELOG.md
+  s_2c908f1aa1518f::t_d11e189f70ed35 3-12
+packages/core/CHANGELOG.md
+  s_2c908f1aa1518f::t_d11e189f70ed35 3-17
+packages/tailorkit/CHANGELOG.md
+  s_2c908f1aa1518f::t_d11e189f70ed35 3-17
+.changeset/pre/immutable-app-slugs.md
+  s_2c908f1aa1518f::t_72010ff7ae58de 2
+.changeset/pre/restore-zero-major-releases.md
+  s_2c908f1aa1518f::t_92837d947f3b5b 1-13
+pnpm-lock.yaml
+  s_2c908f1aa1518f::t_9350a2a427bbd8 306-308
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "be0a95c69f443a0e28b913b2bd92adf3795fcd71",
+  "prompts": {},
+  "sessions": {
+    "s_2c908f1aa1518f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14817-f38b-7283-9581-88cd8fe7813d",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
