@@ -1,5 +1,15 @@
 # @tailorkit/vite
 
+## 0.1.0-beta.45
+
+### Minor Changes
+
+- cc1631f: Require `name` and `slug` in `TailorKitConfig` and validate both when loading app configuration. Add a nonblank display name and a slug containing 3–32 lowercase letters or digits separated by single hyphens to existing `tailorkit.config.ts` files. Deployment uses the configured slug when creating an app; existing linked apps keep their permanent slug. New app scaffolds include both fields using the package name, appending `-app` when the derived slug is shorter than three characters.
+
+### Patch Changes
+
+- @tailorkit/app@0.1.0-beta.45
+
 ## 0.1.0-beta.44
 
 ### Patch Changes
