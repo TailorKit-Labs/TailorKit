@@ -31,7 +31,7 @@
     "release:status": "vp exec changeset status --verbose",
     "release:version": "vp run release:check && vp exec changeset version && vp run release:check",
     "release:build": "turbo run build --filter=tailorkit --filter=@tailorkit/app --filter=@tailorkit/vite --filter=@tailorkit/cli --filter=@tailorkit/client-core --filter=@tailorkit/client-platform --filter=@tailorkit/core --filter=@tailorkit/react --filter=@tailorkit/sandbox",
-    "release:publish": "vp run release:check && vp run release:build && vp run release:check && vp exec changeset publish --tag beta",
+    "release:publish": "vp run release:check && vp run release:build && vp run release:check && vp exec changeset publish",
     "tailorkit": "vp -C packages/cli build && node ./packages/cli/dist/index.js",
     "playground:dev": "vp run playground:generate && vp -C playground/apps/todo run build && vp -C playground/tanstack-start run dev",
     "playground:db:push": "vp -C playground/shared run db:push",

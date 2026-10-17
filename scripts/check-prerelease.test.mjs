@@ -6,6 +6,8 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import rootManifest from "../package.json" with { type: "json" };
+
 const script = fileURLToPath(new URL("check-prerelease.mjs", import.meta.url));
 const packageDirectories = [
   "tailorkit",
@@ -144,4 +146,49 @@ void test("rejects exiting prerelease mode", async (context) => {
   const result = check(root);
   assert.equal(result.status, 1);
   assert.match(result.stderr, /must remain in alpha or beta prerelease mode/u);
+});
+
+void test("the configured publish command works in prerelease mode", async (context) => {
+  const root = await fixture(context);
+  await Promise.all([
+    writeFile(
+      path.join(root, "package.json"),
+      JSON.stringify({ name: "release-fixture", private: true })
+    ),
+    writeFile(
+      path.join(root, "pnpm-workspace.yaml"),
+      "packages:\n  - packages/*\n"
+    ),
+    writeFile(
+      path.join(root, ".changeset", "config.json"),
+      JSON.stringify({ privatePackages: { tag: false, version: false } })
+    ),
+    // Private fixture packages exercise the real CLI without registry requests or publishing.
+    ...packageDirectories.map(async (directory) => {
+      await writeFile(
+        path.join(root, "packages", directory, "package.json"),
+        JSON.stringify({
+          ...manifest(directory, "0.1.0-beta.44"),
+          private: true,
+        })
+      );
+    }),
+  ]);
+
+  const [, publishCommand] =
+    rootManifest.scripts["release:publish"].split("vp exec changeset ");
+  assert.ok(
+    publishCommand !== undefined && publishCommand.length > 0,
+    "The release script must invoke Changesets"
+  );
+  const result = spawnSync(
+    process.execPath,
+    [
+      fileURLToPath(import.meta.resolve("@changesets/cli/bin.js")),
+      ...publishCommand.trim().split(/\s+/u),
+    ],
+    { cwd: root, encoding: "utf-8", timeout: 30_000 }
+  );
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /No unpublished projects to publish/u);
 });
