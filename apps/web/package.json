@@ -71,6 +71,7 @@
     "@tailorkit/config": "workspace:*",
     "@tanstack/react-query-devtools": "^5.104.1",
     "@tanstack/react-router-devtools": "catalog:",
+    "@tanstack/router-plugin": "1.168.43",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",

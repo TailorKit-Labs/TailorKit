@@ -3,6 +3,7 @@ import nodePath from "node:path";
 import tailwindcss from "@tailwindcss/vite";
 import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
 import { defineConfig, lazyPlugins } from "vite-plus";
@@ -47,6 +48,7 @@ export default defineConfig(({ mode }) => {
           }),
           devtools(),
           tailwindcss(),
+          tanstackRouter({ autoCodeSplitting: true }),
           tanstackStart(),
           nitro({
             // Nitro's dev server otherwise treats client.js as a Vite static asset.
