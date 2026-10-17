@@ -1,33 +1,13 @@
 # TailorKit fx agent
 
-`@tailorkit/agent-fx` runs the stock [fx harness adapter](https://ai-sdk.dev/providers/ai-sdk-harnesses/fx) with TailorKit instructions, skills, and the host-executed `deploy` tool. New platform chat and MCP conversations use this package. Existing Pi conversations continue with Pi when resumed.
+`@tailorkit/agent-fx` uses the stock [fx harness adapter](https://ai-sdk.dev/providers/ai-sdk-harnesses/fx) to create, edit, and deploy TailorKit apps. New chat and MCP conversations use fx. Start a new conversation to try it against an existing app; Pi session histories stay separate; choosing a Pi thread returns a request to start a new fx conversation without changing the Pi history.
 
-## Runtime and capabilities
+The agent configures `HarnessAgent` with the requested model, TailorKit instructions and skills, the app working directory, and one host-executed `deploy` tool. Everything else uses fx defaults: its native backend selection, reasoning, filesystem/search/shell tools, and session checkpoints. Model and deployment credentials stay on the host.
 
-libfx runs in the host process. Its native `read`, `write`, `edit`, `bash`, `grep`, `glob`, and `ls` tools operate through the Vercel sandbox session. There is no sandbox bridge, executable installation, or exposed port. The adapter chooses its backend and reasoning defaults; the package adds no model catalog overrides or custom file tools.
+`agent-step.ts` connects the existing Vercel sandbox through the shared platform sandbox session and calls `runHarnessAgentStep()`. `isStepCount(1)` preserves a workflow checkpoint per model step. There is no Pi fallback, legacy-token cleanup, or custom file tool in the fx flow. The shared sandbox wrapper sets the app working directory to `/workspace/app`, since the SDK only accepts a working directory relative to its sandbox session.
 
-`@tailorkit/agent/runtime` supplies the same app instructions, six skills, generated-contract guidance, and host-side deployment tool as Pi. fx's stock skills adapter includes the supplied skill content in its instructions. File tools are scoped to `/workspace/app`; sandbox bash can read the supplied schema and CLI types outside that directory.
+`workflows.ts` supplies those fx steps to the shared platform app-turn runner. The platform owns app scaffolding, persistent source Drives, authorized threads, editing leases, saved resume handles, and cancellation. Both adapters reuse that app infrastructure instead of copying it into fx. Pi's old snapshot cleanup stays on the Pi path.
 
-Workspace scaffolding, shared app source Drives, thread authorization, editing leases, sandbox lifetime management, source export, cancellation, and publication reuse `@tailorkit/agent`. Deployment credentials stay in the host tool context and never enter the sandbox shell or model instructions.
+Configure `AI_GATEWAY_API_KEY` or Vercel OIDC, with optional `AI_GATEWAY_BASE_URL`. Each step resolves request-scoped OIDC again. The web build externalizes libfx and traces its complete package to preserve native addons. Exact release-age exceptions for the required native adapter/SDK releases live in `pnpm-workspace.yaml`.
 
-## Durable turns
-
-`@tailorkit/agent-fx/workflows` exports `appAgent(input)`. The web host registers it in `apps/web/workflows/app-agent.ts`; chat and MCP start this same workflow.
-
-Each model step uses `runHarnessAgentStep()` with `isStepCount(1)`. The workflow continues an unfinished turn from `continueFrom`, then stores `resumeFrom` for the next user turn. fx checkpoints live in the sandbox's private home directory, outside the app source Drive. The same thread VM survives step boundaries and is snapshotted and stopped after a successful turn. The existing 30-minute turn budget and app-wide writer lease remain in effect.
-
-Saved state identifies its harness. Pi threads keep their Pi adapter and journal; new threads receive fx state. Conversations are never converted between harnesses. Both share the current app source, and cancellation invalidates only its owning conversation.
-
-## Authentication and dependencies
-
-Configure `AI_GATEWAY_API_KEY` or Vercel OIDC on the platform. Each workflow slice resolves request-scoped OIDC again; `AI_GATEWAY_API_KEY` takes precedence. `AI_GATEWAY_BASE_URL` is optional. fx supports Gateway authentication; direct OpenAI/Anthropic keys and local fx subscription credentials are not used.
-
-The web build externalizes libfx from both Workflow and Vite/Nitro bundles, then traces the complete package so its native addons remain beside its JavaScript entry points. The web workspace declares the matching libfx version for that trace.
-
-The native libfx adapter and isolated authentication record require the pinned SDK releases in this PR. Older fx adapters use ACP. `pnpm-workspace.yaml` records exact release-age exceptions for those releases and the compatible harness/workflow SDK dependencies.
-
-## Verification
-
-Run `pnpm exec turbo run check-types test --filter=@tailorkit/agent-fx --filter=@tailorkit/agent --filter=@tailorkit/api-platform --filter=web` and `pnpm check` from the repository root.
-
-The integration test runs real libfx against a disposable local filesystem/shell and a deterministic Gateway transport fixture. It verifies API-key and runtime OIDC authentication, native file writes, shared skills and deploy registration, typed UI chunks, workflow checkpoints, and follow-up history. Linux provides the GNU utilities the production sandbox requires; macOS tests use Homebrew coreutils when installed.
+Run `pnpm check` and `pnpm exec turbo run check-types test --filter=@tailorkit/agent-fx --filter=@tailorkit/agent --filter=@tailorkit/api-platform --filter=web`. The fx integration tests run real libfx against a disposable filesystem/shell and deterministic Gateway responses, verifying native file tools, skills/deploy registration, per-step continuation, follow-up history, and host-only credentials. macOS needs Homebrew coreutils; the production sandbox supplies GNU tools.

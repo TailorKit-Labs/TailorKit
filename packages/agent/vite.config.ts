@@ -11,7 +11,7 @@ export default defineConfig({
     dts: true,
     entry: [
       "src/runtime.ts",
-      "src/workflow-support.ts",
+      "src/app-workflow.ts",
       "src/threads.ts",
       "src/index.ts",
       "src/workflows.ts",

@@ -2,6 +2,8 @@ import type { ModelMessage } from "ai";
 
 import type { HostSchemaDocument } from "./schema";
 
+export type AppAgentHarness = "pi" | "fx";
+
 export interface AppAgentInput {
   /** Globally unique, authorized app identity; owns the shared source workspace. */
   appId: string;

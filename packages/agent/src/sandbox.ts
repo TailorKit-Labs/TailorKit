@@ -74,11 +74,10 @@ export const removeLegacyAgentToken = async (sandbox: Sandbox) => {
   }
 };
 
-export const prepareSandboxStep = async (
+const prepareAppSandbox = async (
   input: AppAgentInput,
   saved: SavedAgentSession
 ) => {
-  "use step";
   const { Drive, Sandbox } = await import("@vercel/sandbox");
   const sandboxName = threadSandboxName(input.threadId);
   let sandbox: Sandbox;
@@ -120,7 +119,10 @@ export const prepareSandboxStep = async (
       timeout: sandboxIdleTimeoutMs,
     });
   }
-  await removeLegacyAgentToken(sandbox);
+  return sandbox;
+};
+
+const prepareAppWorkspace = async (sandbox: Sandbox, input: AppAgentInput) => {
   if (input.schema !== undefined) {
     await writeAgentSchema(sandbox, input.schema);
   }
@@ -138,4 +140,31 @@ export const stopSandboxStep = async (sandboxName: string) => {
   const sandbox = await getSandbox(sandboxName);
   await removeLegacyAgentToken(sandbox);
   await sandbox.stop();
+};
+
+/** New adapters prepare app source without Pi's snapshot migration. */
+export const prepareAppSandboxStep = async (
+  input: AppAgentInput,
+  saved: SavedAgentSession
+) => {
+  "use step";
+  const sandbox = await prepareAppSandbox(input, saved);
+  await prepareAppWorkspace(sandbox, input);
+};
+
+export const stopAppSandboxStep = async (sandboxName: string) => {
+  "use step";
+  const sandbox = await getSandbox(sandboxName);
+  await sandbox.stop();
+};
+
+/** Pi alone retains cleanup for snapshots created by its earlier implementation. */
+export const prepareSandboxStep = async (
+  input: AppAgentInput,
+  saved: SavedAgentSession
+) => {
+  "use step";
+  const sandbox = await prepareAppSandbox(input, saved);
+  await removeLegacyAgentToken(sandbox);
+  await prepareAppWorkspace(sandbox, input);
 };

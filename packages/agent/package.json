@@ -41,13 +41,13 @@
       "types": "./dist/runtime.d.mts",
       "import": "./dist/runtime.mjs"
     },
-    "./workflow-support": {
-      "types": "./dist/workflow-support.d.mts",
-      "import": "./src/workflow-support.ts"
+    "./app-workflow": {
+      "types": "./dist/app-workflow.d.mts",
+      "import": "./src/app-workflow.ts"
     }
   },
   "scripts": {
-    "build": "vp pack src/threads.ts src/index.ts src/workflows.ts src/mcp.ts src/source-export.ts src/runtime.ts src/workflow-support.ts --format esm --dts --clean",
+    "build": "vp pack src/threads.ts src/index.ts src/workflows.ts src/mcp.ts src/source-export.ts src/runtime.ts src/app-workflow.ts --format esm --dts --clean",
     "check-types": "tsc --noEmit",
     "test": "vp test run",
     "lint": "vp lint .",

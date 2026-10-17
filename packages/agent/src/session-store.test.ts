@@ -271,6 +271,23 @@ describe("agent threads and app workspace leases (Postgres)", () => {
     });
   });
 
+  it("rejects another harness before claiming the app or changing its saved conversation", async () => {
+    const id = await resolveAppAgentThread(appId);
+    await complete(id, "run-pi");
+    await expect(loadResumeStep(appId, id, "run-fx", "fx")).rejects.toThrow(
+      "Start a new conversation"
+    );
+    expect(await thread(id)).toMatchObject({
+      invalidatedAt: null,
+      resumeState: JSON.stringify(resumeFrom),
+    });
+    expect(await lease()).toMatchObject({ activeRunId: null });
+    expect(mocks.deleteSandbox).not.toHaveBeenCalled();
+    await expect(
+      loadResumeStep(appId, id, "run-pi-next", "pi")
+    ).resolves.toMatchObject({ resumeFrom });
+  });
+
   it("reclaims its own lease on step retry without resetting the conversation", async () => {
     const id = await resolveAppAgentThread(appId);
     await loadResumeStep(appId, id, "run-a");
