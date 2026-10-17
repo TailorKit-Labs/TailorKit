@@ -1,5 +1,11 @@
 # @tailorkit/client-platform
 
+## 0.1.0-beta.43
+
+### Minor Changes
+
+- 6a68ba5: Rename publicId fields to shortId and use permanent 12-character DNS-safe identifiers. Address assets and app runtime calls through project short-ID subdomains, and bind runtime tokens to project and app short IDs.
+
 ## 0.1.0-beta.42
 
 ### Minor Changes
