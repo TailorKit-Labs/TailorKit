@@ -21,7 +21,7 @@ const tailorkitConfigSchema = v.strictObject({
   ),
   slug: v.pipe(
     v.string(),
-    v.minLength(1),
+    v.minLength(3),
     v.maxLength(32),
     v.regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u)
   ),
@@ -97,7 +97,7 @@ export interface TailorKitConfig extends v.InferInput<
   };
   /**
    * Permanent app slug used when creating an app during deployment.
-   * Use 1–32 lowercase letters or digits, separated by single hyphens.
+   * Use 3–32 lowercase letters or digits, separated by single hyphens.
    * Existing linked apps keep their slug. Required; has no default.
    */
   slug: string;

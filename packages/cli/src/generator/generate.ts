@@ -165,12 +165,13 @@ export const generateApp = async (
       ? "workspace:*"
       : packageVersions.tailorkit;
 
-  const appSlug =
+  const slugBase =
     packageName
       .toLowerCase()
       .replaceAll(/[^a-z0-9]+/gu, "-")
       .slice(0, 32)
       .replaceAll(/^-+|-+$/gu, "") || "tailorkit-app";
+  const appSlug = slugBase.length < 3 ? `${slugBase}-app` : slugBase;
   const templateData = {
     appName: JSON.stringify(packageName),
     appSlug: JSON.stringify(appSlug),

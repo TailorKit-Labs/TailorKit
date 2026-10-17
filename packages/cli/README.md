@@ -56,7 +56,7 @@ export default {
 
 `tailorkit deploy` uses this name when creating an app and updates an existing linked app's name before publishing. Names are trimmed and must contain at least one non-whitespace character. Both `name` and `slug` are required.
 
-The slug is used when creating an app. It must contain 1–32 lowercase letters or digits, separated by single hyphens, and be unique within the project. Existing linked apps keep their permanent slug. `tailorkit init` fills in the name and a valid slug from the package name.
+The slug is used when creating an app. It must contain 3–32 lowercase letters or digits, separated by single hyphens, and be unique within the project. Existing linked apps keep their permanent slug. `tailorkit init` fills in the name and a valid slug from the package name, appending `-app` when the derived slug is shorter than three characters.
 
 Deploy also applies `description` when creating or updating an app. Descriptions are trimmed and may contain up to 255 characters. Set `description: null` to clear it. Omit `description` to preserve an existing app's description or create a new app without one.
 

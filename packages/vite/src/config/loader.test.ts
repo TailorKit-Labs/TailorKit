@@ -114,6 +114,8 @@ it("rejects manual client entry configuration", () => {
 it.each([
   "",
   " ",
+  "a",
+  "ab",
   "UPPER",
   "my_app",
   "-app",
@@ -124,6 +126,9 @@ it.each([
   expect(() => v.parse(tailorkitConfigSchema, { ...config, slug })).toThrow();
 });
 
-it.each(["a", "my-app-1", "a".repeat(32)])("accepts app slug %j", (slug) => {
-  expect(v.parse(tailorkitConfigSchema, { ...config, slug }).slug).toBe(slug);
-});
+it.each(["abc", "a-b", "my-app-1", "a".repeat(32)])(
+  "accepts app slug %j",
+  (slug) => {
+    expect(v.parse(tailorkitConfigSchema, { ...config, slug }).slug).toBe(slug);
+  }
+);

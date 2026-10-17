@@ -291,6 +291,10 @@ describe("generateApp", () => {
     ["@my-org/my_app.name", "my-org-my-app-name"],
     [`${"a".repeat(31)}-long`, "a".repeat(31)],
     ["___", "tailorkit-app"],
+    ["a", "a-app"],
+    ["ab", "ab-app"],
+    ["__a", "a-app"],
+    ["abc", "abc"],
   ])(
     "generates a valid slug from package name %s",
     async (packageName, slug) => {
