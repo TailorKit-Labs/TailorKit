@@ -53,14 +53,6 @@ export default defineConfig(({ mode }) => {
             // Forward this prefix to Start, which owns the endpoint and its handlers.
             handlers: [
               { env: "dev", handler: "#start-assets", route: "/api/assets/**" },
-              {
-                handler: resolve(
-                  import.meta.dirname,
-                  "src/server/app-agent-mcp.ts"
-                ),
-                lazy: true,
-                route: "/api/platform/app-agent/mcp",
-              },
             ],
 
             // Split server code into chunks and minify every generated function.

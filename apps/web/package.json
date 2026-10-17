@@ -14,7 +14,6 @@
     ]
   },
   "scripts": {
-    "benchmark:mcp": "node scripts/benchmark-mcp.ts .vercel/output/functions/api/platform/app-agent/mcp.func/index.mjs",
     "check-types": "tsc --noEmit",
     "test": "vp test run",
     "build": "vp build",
