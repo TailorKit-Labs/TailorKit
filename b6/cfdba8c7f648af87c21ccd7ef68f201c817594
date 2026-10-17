@@ -1,0 +1,23 @@
+packages/agent/src/agent.integration.test.ts
+  s_7d1277528c5eb4::t_7d6f53d91af36b 333
+packages/agent/src/agent.ts
+  s_7d1277528c5eb4::t_2744e553b945e2 39
+packages/agent/src/gateway-model.ts
+  s_7d1277528c5eb4::t_d4b3c21ec7c56a 25-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b6cfdba8c7f648af87c21ccd7ef68f201c817594",
+  "prompts": {},
+  "sessions": {
+    "s_7d1277528c5eb4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1497e-9fb2-72a0-980b-c455db548beb",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
