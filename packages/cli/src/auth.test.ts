@@ -189,7 +189,11 @@ describe("auth store", () => {
   it("resolves the host URL from tailorkit.config.ts", async () => {
     const homeDirectory = await createTemporaryHome();
     vi.mocked(loadTailorKitConfig).mockResolvedValue({
-      config: { host: "https://example.com///" },
+      config: {
+        host: "https://example.com///",
+        name: "Test App",
+        slug: "test-app",
+      },
       filepath: path.join(homeDirectory, "tailorkit.config.ts"),
       root: homeDirectory,
     });
@@ -295,7 +299,11 @@ describe("auth store", () => {
   it("identifies missing host credentials as not logged in", async () => {
     const homeDirectory = await createTemporaryHome();
     vi.mocked(loadTailorKitConfig).mockResolvedValue({
-      config: { host: "https://example.com" },
+      config: {
+        host: "https://example.com",
+        name: "Test App",
+        slug: "test-app",
+      },
       filepath: path.join(homeDirectory, "tailorkit.config.ts"),
       root: homeDirectory,
     });
@@ -309,7 +317,11 @@ describe("auth store", () => {
   it("treats unauthorized token verification as not logged in", async () => {
     const homeDirectory = await createTemporaryHome();
     vi.mocked(loadTailorKitConfig).mockResolvedValue({
-      config: { host: "https://example.com" },
+      config: {
+        host: "https://example.com",
+        name: "Test App",
+        slug: "test-app",
+      },
       filepath: path.join(homeDirectory, "tailorkit.config.ts"),
       root: homeDirectory,
     });
@@ -370,7 +382,11 @@ describe("auth store", () => {
   ])("preserves $label unchanged", async ({ error, rejected }) => {
     const homeDirectory = await createTemporaryHome();
     vi.mocked(loadTailorKitConfig).mockResolvedValue({
-      config: { host: "https://example.com" },
+      config: {
+        host: "https://example.com",
+        name: "Test App",
+        slug: "test-app",
+      },
       filepath: path.join(homeDirectory, "tailorkit.config.ts"),
       root: homeDirectory,
     });
@@ -404,7 +420,11 @@ describe("auth store", () => {
   it("returns the verified named scope", async () => {
     const homeDirectory = await createTemporaryHome();
     vi.mocked(loadTailorKitConfig).mockResolvedValue({
-      config: { host: "https://example.com" },
+      config: {
+        host: "https://example.com",
+        name: "Test App",
+        slug: "test-app",
+      },
       filepath: path.join(homeDirectory, "tailorkit.config.ts"),
       root: homeDirectory,
     });
@@ -443,7 +463,11 @@ describe("auth store", () => {
   it("rejects a legacy verification response before changing stored auth", async () => {
     const homeDirectory = await createTemporaryHome();
     vi.mocked(loadTailorKitConfig).mockResolvedValue({
-      config: { host: "https://example.com" },
+      config: {
+        host: "https://example.com",
+        name: "Test App",
+        slug: "test-app",
+      },
       filepath: path.join(homeDirectory, "tailorkit.config.ts"),
       root: homeDirectory,
     });

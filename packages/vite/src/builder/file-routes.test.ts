@@ -264,7 +264,7 @@ const withFileRouteApp = async (check: (root: string) => Promise<void>) => {
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(
       path.join(root, "tailorkit.config.mjs"),
-      'export default { host: "https://host.example.com", server: {} };'
+      'export default { name: "Test App", slug: "test-app", host: "https://host.example.com", server: {} };'
     );
     await writeFile(
       path.join(root, "src/server.ts"),
@@ -381,7 +381,7 @@ it.each([
       await writeFile(path.join(root, "package.json"), '{"type":"module"}');
       await writeFile(
         path.join(root, "tailorkit.config.mjs"),
-        'export default { host: "https://host.example.com" };'
+        'export default { name: "Test App", slug: "test-app", host: "https://host.example.com" };'
       );
       await writeFile(
         path.join(root, "src/slots/panel/index.view.tsx"),
@@ -402,7 +402,7 @@ it("checks re-exported view paths against their file locations during the build"
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(
       path.join(root, "tailorkit.config.mjs"),
-      'export default { host: "https://host.example.com" };'
+      'export default { name: "Test App", slug: "test-app", host: "https://host.example.com" };'
     );
     const card = path.join(root, "src/slots/panel/card.tsx");
     const source =
@@ -433,7 +433,7 @@ it("resolves the client runtime from the app when build output is outside the pr
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(
       path.join(root, "tailorkit.config.mjs"),
-      'export default { host: "https://host.example.com" };'
+      'export default { name: "Test App", slug: "test-app", host: "https://host.example.com" };'
     );
     await writeFile(
       path.join(root, "src/slots/panel/index.view.tsx"),

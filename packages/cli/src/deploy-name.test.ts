@@ -157,58 +157,30 @@ afterEach(async () => {
   await rm(root, { force: true, recursive: true });
 });
 
-const writeConfig = async (name?: string, appDescription?: string | null) => {
+const writeConfig = async (
+  name = "Old Name",
+  appDescription?: string | null
+) => {
   await writeFile(
     path.join(root, "tailorkit.config.ts"),
-    `export default ${JSON.stringify({ description: appDescription, host, name })};`
+    `export default ${JSON.stringify({ description: appDescription, host, name, slug: "my-app" })};`
   );
 };
 
-it.each([
-  {
-    appDescription: "  My app description  ",
-    expectedName: "My App",
-    name: "  My App  ",
-    source: "config",
-  },
-  {
-    appDescription: undefined,
-    expectedName: "package-name",
-    name: undefined,
-    source: "package",
-  },
-  {
-    appDescription: "Description without a configured name",
-    expectedName: "package-name",
-    name: undefined,
-    source: "package-description",
-  },
-  {
-    appDescription: null,
-    expectedName: undefined,
-    name: undefined,
-    source: "directory",
-  },
-])(
-  "creates replacement apps using the $source name and shows it in the prompt",
-  async ({ appDescription, expectedName, name, source }) => {
+it.each(["  My app description  ", undefined, null])(
+  "creates replacement apps with the configured name and slug and description %j",
+  async (appDescription) => {
     missingApp = true;
-    await writeConfig(name, appDescription);
-    if (source === "directory") {
-      await writeFile(path.join(root, "package.json"), '{"type":"module"}');
-    }
-    const appName = expectedName ?? path.basename(root);
+    await writeConfig("  My App  ", appDescription);
     const onMissingAppId = vi
       .fn<NonNullable<Parameters<typeof runDeploy>[0]["onMissingAppId"]>>()
       .mockResolvedValue(true);
-    expect(
-      await runDeploy({
-        cwd: root,
-        onMissingAppId,
-      })
-    ).toMatchObject({ appId: "new-app", createdApp: true });
+    expect(await runDeploy({ cwd: root, onMissingAppId })).toMatchObject({
+      appId: "new-app",
+      createdApp: true,
+    });
     expect(onMissingAppId).toHaveBeenCalledExactlyOnceWith({
-      appName,
+      appName: "My App",
       configPath: path.join(root, "tailorkit.config.ts"),
       hostUrl: host,
       reason: "not-found",
@@ -217,8 +189,9 @@ it.each([
       JSON.parse(requests.find((r) => r.path === "/apps")?.body ?? "null")
     ).toEqual({
       description: appDescription?.trim() ?? null,
-      name: appName,
+      name: "My App",
       scope,
+      slug: "my-app",
     });
     expect(
       await readFile(path.join(root, "tailorkit.config.ts"), "utf-8")
@@ -245,18 +218,13 @@ it.each(["Keep this description", null])(
   }
 );
 
-it.each([undefined, "Old Name"])(
-  "keeps existing names without an update when configured as %j",
-  async (name) => {
-    await writeConfig(name);
-    await runDeploy({ cwd: root });
-    expect(requests.some((r) => r.path === "/apps/update")).toBe(false);
-    expect(requests.some((r) => r.path === "/apps/lookup")).toBe(
-      name !== undefined
-    );
-    expect(requests.at(-1)?.path).toBe("/deployments/deployment");
-  }
-);
+it("keeps an existing name without an update when it matches the config", async () => {
+  await writeConfig("Old Name");
+  await runDeploy({ cwd: root });
+  expect(requests.some((r) => r.path === "/apps/update")).toBe(false);
+  expect(requests.some((r) => r.path === "/apps/lookup")).toBe(true);
+  expect(requests.at(-1)?.path).toBe("/deployments/deployment");
+});
 
 it.each([
   { appDescription: "  New description  ", name: undefined },

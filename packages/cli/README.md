@@ -39,9 +39,9 @@ Expired or invalid JWTs fail without prompting for login. Start another agent tu
 
 Platform URLs require HTTPS. HTTP is allowed only for the development hosts `localhost`, `127.0.0.1`, and `[::1]`. Both token issuance and client routing enforce these rules.
 
-## Configure the app name and description
+## Configure the app name, slug, and description
 
-Set an optional display name and description in `tailorkit.config.ts`:
+Set the required display name and slug, and an optional description in `tailorkit.config.ts`:
 
 ```ts
 import type { TailorKitConfig } from "tailorkit/app/config";
@@ -50,12 +50,15 @@ export default {
   description: "Track tasks for your team.",
   host: "https://your-product.com/api/tailorkit",
   name: "My App",
+  slug: "my-app",
 } satisfies TailorKitConfig;
 ```
 
-`tailorkit deploy` uses this name when creating an app and updates an existing linked app's name before publishing. Names are trimmed and must contain at least one non-whitespace character. When `name` is omitted, new apps use the `package.json` name, falling back to the app directory name. Existing apps keep their current name.
+`tailorkit deploy` uses this name when creating an app and updates an existing linked app's name before publishing. Names are trimmed and must contain at least one non-whitespace character. Both `name` and `slug` are required.
 
-Deploy also applies `description` when creating or updating an app. Descriptions are trimmed and may contain up to 255 characters. Set `description: null` to clear it. Omit `description` to preserve an existing app's description or create a new app without one. You can configure either field independently.
+The slug is used when creating an app. It must contain 3–32 lowercase letters or digits, separated by single hyphens, and be unique within the project. Existing linked apps keep their permanent slug. `tailorkit init` fills in the name and a valid slug from the package name, appending `-app` when the derived slug is shorter than three characters.
+
+Deploy also applies `description` when creating or updating an app. Descriptions are trimmed and may contain up to 255 characters. Set `description: null` to clear it. Omit `description` to preserve an existing app's description or create a new app without one.
 
 ## Deploy without prompts
 

@@ -90,7 +90,7 @@ it("builds file routes with a configured server and blocks server imports from t
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(
       path.join(root, "tailorkit.config.mjs"),
-      'export default { host: "https://host.example.com", server: { entry: "./backend/api.ts" } };'
+      'export default { name: "Test App", slug: "test-app", host: "https://host.example.com", server: { entry: "./backend/api.ts" } };'
     );
     await Promise.all(
       ["src", "backend"].map(async (directory) => {
@@ -343,7 +343,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(
       path.join(root, "tailorkit.config.mjs"),
-      'export default { host: "https://host.example.com", server: {} };'
+      'export default { name: "Test App", slug: "test-app", host: "https://host.example.com", server: {} };'
     );
     await writeFile(
       path.join(root, "src/server.ts"),
@@ -643,7 +643,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
     );
     await writeFile(
       path.join(root, "no-server.config.mjs"),
-      'export default { host: "https://host.example.com" };'
+      'export default { name: "Test App", slug: "test-app", host: "https://host.example.com" };'
     );
     await expect(
       buildFixture({ configPath: "no-server.config.mjs", cwd: root })

@@ -109,7 +109,9 @@ beforeEach(async () => {
     config: {
       appId: "app-one",
       host: "https://host.example",
+      name: "Test App",
       server: { entry: "src/server.ts" },
+      slug: "test-app",
     },
     filepath: path.join(root, "tailorkit.config.ts"),
     root,
@@ -117,6 +119,9 @@ beforeEach(async () => {
   mocks.whoami.mockResolvedValue({ hostUrl: "https://host.example" });
   mocks.token.mockResolvedValue({ deployToken: "deploy-token" });
   mocks.client.mockReturnValue({
+    apps: {
+      get: vi.fn().mockResolvedValue({ description: null, name: "Test App" }),
+    },
     deployments: { create: mocks.create, publish: mocks.publish },
   });
   mocks.create.mockResolvedValue({
@@ -213,6 +218,8 @@ it.each([
       prelude +
       template
         .replace("{{ hostUrl }}", "https://host.example")
+        .replace("{{ appName }}", JSON.stringify("Test App"))
+        .replace("{{ appSlug }}", JSON.stringify("test-app"))
         .replace("const config =", `const ${name}${annotation} =`)
         .replace("export default config;", `export default ${name};`);
     const configPath = path.join(root, "tailorkit.config.ts");
@@ -220,7 +227,9 @@ it.each([
     mocks.load.mockResolvedValue({
       config: {
         host: "https://host.example",
+        name: "Test App",
         server: { entry: "src/server.ts" },
+        slug: "test-app",
       },
       filepath: configPath,
       root,
@@ -414,7 +423,9 @@ it.each(["vite config", "option"])(
       config: {
         appId: "app-one",
         host: "https://host.example",
+        name: "Test App",
         server: { entry: "src/server.ts" },
+        slug: "test-app",
       },
       filepath: path.join(root, "tailorkit.config.ts"),
       root,
@@ -639,6 +650,9 @@ it("agent JWT deployment uses shared authentication and the configured app witho
       "https://platform.example/api/platform/deployments/deployment"
     ) {
       return Response.json({ id: "deployment", status: "published" });
+    }
+    if (request?.url === "https://platform.example/api/platform/apps/lookup") {
+      return Response.json({ description: null, name: "Test App" });
     }
     if (isStringValue(input) && input.startsWith("https://uploads.example/")) {
       return new Response(null, { status: 200 });
