@@ -1143,6 +1143,10 @@ describe("platform appRouter", () => {
     );
     expect(http.response?.status).toBe(200);
     await expect(http.response?.json()).resolves.toMatchObject({
+      identity: {
+        appShortId: created.shortId,
+        projectShortId: context.project.shortId,
+      },
       token: "platform-token",
       url: `https://proj00000001.tailorkit.app/a/${created.shortId}/rpc`,
     });

@@ -623,10 +623,12 @@ export type AppsRuntimeSessionResponses = {
     expiresAt: number;
     identity: {
       appId: string;
+      appShortId: string;
       deploymentId: string;
       expiresAt: number;
       installationId: string;
       projectId: string;
+      projectShortId: string;
       scope: {
         name: string;
         value: {

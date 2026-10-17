@@ -2760,6 +2760,9 @@
                         "appId": {
                           "type": "string"
                         },
+                        "appShortId": {
+                          "type": "string"
+                        },
                         "deploymentId": {
                           "type": "string"
                         },
@@ -2770,6 +2773,9 @@
                           "type": "string"
                         },
                         "projectId": {
+                          "type": "string"
+                        },
+                        "projectShortId": {
                           "type": "string"
                         },
                         "scope": {
@@ -2804,10 +2810,12 @@
                       },
                       "required": [
                         "appId",
+                        "appShortId",
                         "deploymentId",
                         "expiresAt",
                         "installationId",
                         "projectId",
+                        "projectShortId",
                         "scope",
                         "toolUrl"
                       ],

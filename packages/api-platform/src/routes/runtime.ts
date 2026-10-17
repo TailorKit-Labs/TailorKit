@@ -73,10 +73,12 @@ export const runtimeSession = protectedRouter
         expiresAt: z.number(),
         identity: z.object({
           appId: z.string(),
+          appShortId: z.string(),
           deploymentId: z.string(),
           expiresAt: z.number(),
           installationId: z.string(),
           projectId: z.string(),
+          projectShortId: z.string(),
           scope: scopeSchema,
           subjectId: z.string().optional(),
           toolUrl: z.url(),
