@@ -1,0 +1,18 @@
+apps/apps-worker/README.md
+  h_18044dd1b61a81 7-18
+apps/apps-worker/src/assets.test.ts
+  h_18044dd1b61a81 290-316
+apps/apps-worker/src/assets.ts
+  h_18044dd1b61a81 23-24,27-29,41-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2e636362816787d5a3a69065d077a8ab410d3085",
+  "prompts": {},
+  "humans": {
+    "h_18044dd1b61a81": {
+      "author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
