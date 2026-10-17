@@ -12,11 +12,11 @@ Changesets versions the public packages as one fixed group to keep their version
 
 ## Publish a beta
 
-After changes reach `main`, the `Prerelease` GitHub Actions workflow opens or updates a version PR. That PR contains the prerelease versions and generated `CHANGELOG.md` files. Review and merge it to publish packages under npm’s `beta` dist-tag and create GitHub releases.
+After changes reach `main`, the `Prerelease` GitHub Actions workflow opens or updates a version PR. That PR contains the prerelease versions and generated `CHANGELOG.md` files. Review and merge it to publish packages and create GitHub releases.
 
 Run `pnpm release:check` to check the release policy locally. CI and the release workflow run the same check. `pnpm release:version` checks before and after generating versions, and `pnpm release:publish` checks before building and publishing. These checks reject major changesets, versions outside `0.x`, stable releases, and mismatched versions in the fixed package group. Releasing `1.x` requires an explicit change to this policy first.
 
-The publish command explicitly selects the `beta` dist-tag so Changesets cannot redirect beta-only packages to `latest`. If you intentionally switch to the `alpha` channel, update both `.changeset/pre.json` and the publish command’s `--tag` argument.
+Changesets selects npm dist-tags from `.changeset/pre.json`. Do not pass `--tag` to `changeset publish` while prerelease mode is active: Changesets rejects custom tags in this mode. Packages with only releases in the current prerelease channel can be published under `latest` through Changesets’ built-in tag selection; other packages use the prerelease channel tag. If you intentionally switch to the `alpha` channel, update `.changeset/pre.json`.
 
 Publishing uses npm trusted publishing through GitHub OpenID Connect (OIDC). Each npm package trusts repository `tailorkit-labs/TailorKit`, workflow `release.yml`, and environment `npm-release`. The version PR job does not receive npm permissions; only the protected publish environment can request an identity token.
 
