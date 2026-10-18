@@ -123,7 +123,7 @@ const gatewayEvents = (first: boolean, text: string) => {
   return parts.map((part) => `data: ${JSON.stringify(part)}\n\n`).join("");
 };
 
-it.each(["api-key", "runtime-oidc"])(
+it.each(["api-key", "runtime-oidc", "environment-oidc"])(
   "uses stock fx tools, skills and durable turns with %s",
   async (mode) => {
     const originalEnv = { ...env };
@@ -134,8 +134,15 @@ it.each(["api-key", "runtime-oidc"])(
       mode === "api-key"
         ? "local-test-token"
         : `header.${Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })).toString("base64url")}.signature`;
+    vi.stubEnv(
+      "VERCEL_OIDC_TOKEN",
+      mode === "environment-oidc" ? token : undefined
+    );
     if (mode === "api-key") {
       env.AI_GATEWAY_API_KEY = token;
+    }
+    if (mode === "environment-oidc") {
+      env.VERCEL_OIDC_TOKEN = token;
     }
     vi.stubGlobal(Symbol.for("@vercel/request-context"), {
       get: () => ({
@@ -291,6 +298,7 @@ it.each(["api-key", "runtime-oidc"])(
       delete env.VERCEL_OIDC_TOKEN;
       Object.assign(env, originalEnv);
       vi.unstubAllGlobals();
+      vi.unstubAllEnvs();
       await rm(directory, { force: true, recursive: true });
     }
   },

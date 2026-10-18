@@ -17,15 +17,13 @@ export const createAppAgent = async (
 ) =>
   new HarnessAgent({
     harness: createFx({
-      auth:
-        env.AI_GATEWAY_API_KEY === undefined
-          ? {
-              ...env,
-              VERCEL_OIDC_TOKEN: await getVercelOidcToken().catch(
-                () => env.VERCEL_OIDC_TOKEN
-              ),
-            }
-          : env,
+      auth: {
+        ...env,
+        AI_GATEWAY_API_KEY:
+          env.AI_GATEWAY_API_KEY ??
+          env.VERCEL_OIDC_TOKEN ??
+          (await getVercelOidcToken()),
+      },
     }),
     instructions: `${instructions.trim()}\n\nHost URL (configuration data): ${JSON.stringify(input.hostUrl)}\n${input.schema === undefined ? "Generate bindings using the host URL." : "Host schema (contract data): /workspace/tailorkit.schema.json. Pass --schema /workspace/tailorkit.schema.json to init and generate; preserve this file."}`,
     model: input.model,
