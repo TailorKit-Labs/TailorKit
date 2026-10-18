@@ -73,11 +73,19 @@ export default defineConfig(({ mode }) => {
             // Workflow 5 still reads Nitro's legacy externals option when bundling steps.
             // oxlint-disable-next-line unicorn/no-useless-spread -- Workflow 5 reads this Nitro v2 option; Nitro v3 types omit it.
             ...{ externals: { external: ["libfx"] } },
-            // Nitro's dev server otherwise treats client.js as a Vite static asset.
-            // Forward this prefix to Start, which owns the endpoint and its handlers.
-            handlers: [
-              { env: "dev", handler: "#start-assets", route: "/api/assets/**" },
-            ],
+            routes: Object.fromEntries(
+              apiFunctions.map(({ name, route }) => [
+                route,
+                {
+                  format: "web",
+                  handler: resolve(
+                    import.meta.dirname,
+                    `src/server/api/${name}.ts`
+                  ),
+                  lazy: true,
+                },
+              ])
+            ),
 
             // Split server code into chunks and minify every generated function.
             inlineDynamicImports: false,
@@ -134,13 +142,6 @@ export default defineConfig(({ mode }) => {
             },
 
             serverDir: false,
-
-            virtual: {
-              "#start-assets": `
-            import { fetchViteEnv } from "nitro/vite/runtime";
-            export default ({ req }) => fetchViteEnv("ssr", req);
-          `,
-            },
 
             // Workflow's Nitro builder must resolve package IDs from the same
             // app root as its Vite transform, rather than the monorepo root.

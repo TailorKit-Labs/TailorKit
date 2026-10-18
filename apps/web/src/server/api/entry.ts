@@ -19,7 +19,7 @@ export const createApiEntry = (
         try {
           response = await handle({ request });
         } catch (error) {
-          // TanStack routes allow throwing HTTP responses at their boundary.
+          // Authorization handlers may throw an HTTP response at their boundary.
           if (!(error instanceof Response)) {
             throw error;
           }

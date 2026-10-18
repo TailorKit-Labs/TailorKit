@@ -9,6 +9,7 @@ const { dirname, resolve } = nodePath;
 
 interface ApiFunction {
   name: string;
+  route: string;
   source: string;
   destination: string;
   maxDuration?: number;
@@ -17,6 +18,7 @@ interface ApiFunction {
 export const apiFunctions: ApiFunction[] = [
   {
     name: "mcp",
+    route: "/api/platform/app-agent/mcp",
     source: "^/api/platform/app-agent/mcp/?$",
     destination: "api/platform/app-agent/mcp",
     // MCP streams stay open for the entire durable agent turn.
@@ -24,21 +26,25 @@ export const apiFunctions: ApiFunction[] = [
   },
   {
     name: "platform",
+    route: "/api/platform/**",
     source: "^/api/platform(?:/.*)?$",
     destination: "api/platform/[...]",
   },
   {
     name: "auth",
+    route: "/api/auth/**",
     source: "^/api/auth(?:/.*)?$",
     destination: "api/auth/[...]",
   },
   {
     name: "rpc",
+    route: "/api/rpc/**",
     source: "^/api/rpc(?:/.*)?$",
     destination: "api/rpc/[...]",
   },
   {
     name: "assets",
+    route: "/api/assets/**",
     source: "^/api/assets(?:/.*)?$",
     destination: "api/assets/[...]",
   },

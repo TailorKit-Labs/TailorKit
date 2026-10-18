@@ -25,7 +25,7 @@ describe("API server entry", () => {
       { headers: { "www-authenticate": "Bearer" }, status: 401 }
     );
     const entry = createApiEntry(() => {
-      // oxlint-disable-next-line typescript/only-throw-error -- Shared TanStack handlers throw HTTP responses; the standalone adapter must preserve them.
+      // oxlint-disable-next-line typescript/only-throw-error -- Authorization handlers throw HTTP responses; the API adapter must preserve them.
       throw unauthorized;
     }, ["POST"]);
 
