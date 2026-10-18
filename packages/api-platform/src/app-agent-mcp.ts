@@ -1,13 +1,13 @@
 import { randomBytes } from "node:crypto";
 
 import { call, ORPCError } from "@orpc/server";
+import { appAgent, cancelAppAgent } from "@tailorkit/agent-fx/workflows";
 import { createAppAgentMcp } from "@tailorkit/agent/mcp";
 import type { AppAgentMcpExecution } from "@tailorkit/agent/mcp";
 import {
   AppAgentThreadError,
   resolveAppAgentThread,
 } from "@tailorkit/agent/threads";
-import { appAgent, cancelAppAgent } from "@tailorkit/agent/workflows";
 import { issueAgentToken } from "@tailorkit/api-utils/agent-token";
 import { hashSecret } from "@tailorkit/api-utils/hashing";
 import { db } from "@tailorkit/db";

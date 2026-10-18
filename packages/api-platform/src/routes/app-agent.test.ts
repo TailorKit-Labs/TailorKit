@@ -1,8 +1,8 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { call, asyncIteratorToUnproxiedDataStream } from "@orpc/server";
+import type { appAgent } from "@tailorkit/agent-fx/workflows";
 import { AppAgentThreadError } from "@tailorkit/agent/threads";
 import type * as threadsModule from "@tailorkit/agent/threads";
-import type { appAgent } from "@tailorkit/agent/workflows";
 import {
   issueAgentToken,
   verifyAgentToken,
@@ -59,7 +59,7 @@ vi.mock("@tailorkit/api-utils/rate-limiting", () => ({
     async <TResult>({ next }: { next: () => TResult }) =>
       await next(),
 }));
-vi.mock("@tailorkit/agent/workflows", () => ({ appAgent: vi.fn() }));
+vi.mock("@tailorkit/agent-fx/workflows", () => ({ appAgent: vi.fn() }));
 vi.mock("@tailorkit/agent/threads", async (importOriginal) => ({
   ...(await importOriginal<typeof threadsModule>()),
   resolveAppAgentThread: mocks.thread,

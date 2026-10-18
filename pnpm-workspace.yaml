@@ -3,6 +3,16 @@ minimumReleaseAgeStrict: true
 # Temporary exception authorized for the Ultracite migration.
 minimumReleaseAgeExclude:
   - ultracite@8.0.0
+  # Native libfx and isolated runtime auth require these releases (older fx uses ACP).
+  - "@ai-sdk/harness-fx@1.0.69"
+  - "@ai-sdk/harness@1.0.154"
+  - "@ai-sdk/mcp@2.0.78"
+  - "@ai-sdk/provider@4.0.29"
+  - "@ai-sdk/provider-utils@5.0.62"
+  - "@ai-sdk/gateway@4.0.116"
+  - "ai@7.0.143"
+  - "@ai-sdk/workflow-harness@1.0.154"
+  - "@ai-sdk/sandbox-vercel@1.0.154"
 virtualStoreType: global
 
 overrides:
@@ -19,6 +29,11 @@ packages:
   - playground/*
   - playground/apps/*
   - packages/*
+
+# fx requires a newer AI SDK; keep the existing agent on its original catalog.
+catalogs:
+  fx:
+    ai: 7.0.143
 
 catalog:
   "@ai-sdk/react": ^3.0.192

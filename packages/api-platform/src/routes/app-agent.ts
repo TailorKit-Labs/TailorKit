@@ -4,11 +4,11 @@ import {
   ORPCError,
   streamToAsyncIteratorObject,
 } from "@orpc/server";
+import { appAgent } from "@tailorkit/agent-fx/workflows";
 import {
   AppAgentThreadError,
   resolveAppAgentThread,
 } from "@tailorkit/agent/threads";
-import { appAgent } from "@tailorkit/agent/workflows";
 import { issueAgentToken } from "@tailorkit/api-utils/agent-token";
 import {
   asSchema,

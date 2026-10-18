@@ -1,7 +1,7 @@
 import { os } from "@orpc/server";
+import type { appAgent } from "@tailorkit/agent-fx/workflows";
 import { AppAgentThreadError } from "@tailorkit/agent/threads";
 import type * as threadsModule from "@tailorkit/agent/threads";
-import type { appAgent } from "@tailorkit/agent/workflows";
 import { verifyAgentToken } from "@tailorkit/api-utils/agent-token";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
@@ -89,7 +89,7 @@ vi.mock("./routes/apps", () => ({
   },
   createAppRecord: mocks.create,
 }));
-vi.mock("@tailorkit/agent/workflows", () => ({
+vi.mock("@tailorkit/agent-fx/workflows", () => ({
   appAgent: vi.fn(),
   cancelAppAgent: mocks.cleanup,
 }));

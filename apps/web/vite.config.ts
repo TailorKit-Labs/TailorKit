@@ -19,6 +19,7 @@ const serverPackages = [
   "@tailorkit/db",
   "@tailorkit/env",
   "@tailorkit/observability",
+  "libfx",
 ];
 
 export default defineConfig(({ mode }) => {
@@ -49,6 +50,11 @@ export default defineConfig(({ mode }) => {
           tailwindcss(),
           tanstackStart({}),
           nitro({
+            // Keep libfx beside its native addons and include all platform assets.
+            traceDeps: ["libfx*"],
+            // Workflow 5 still reads Nitro's legacy externals option when bundling steps.
+            // oxlint-disable-next-line unicorn/no-useless-spread -- Workflow 5 reads this Nitro v2 option; Nitro v3 types omit it.
+            ...{ externals: { external: ["libfx"] } },
             // Nitro's dev server otherwise treats client.js as a Vite static asset.
             // Forward this prefix to Start, which owns the endpoint and its handlers.
             handlers: [
@@ -127,7 +133,11 @@ export default defineConfig(({ mode }) => {
     },
     ssr: {
       external: isDev ? undefined : serverPackages,
-      noExternal: ["@tailorkit/api-platform", "@tailorkit/agent"],
+      noExternal: [
+        "@tailorkit/api-platform",
+        "@tailorkit/agent",
+        "@tailorkit/agent-fx",
+      ],
     },
   };
 });
