@@ -12,7 +12,16 @@
       "./src/*/index.tsx"
     ]
   },
+  "exports": {
+    "./testing": "./testing.ts",
+    "./*": "./*"
+  },
+  "scripts": {
+    "lint": "vp lint .",
+    "lint:fix": "vp lint --fix ."
+  },
   "devDependencies": {
-    "@types/node": "catalog:"
+    "@types/node": "catalog:",
+    "vite-plus": "catalog:"
   }
 }

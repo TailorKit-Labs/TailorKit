@@ -4,6 +4,8 @@ import { PGlite } from "@electric-sql/pglite";
 import { appSlugSchema } from "@tailorkit/db/schema/apps";
 import { expect, it } from "vite-plus/test";
 
+import { forEachSequential } from "#for-each-sequential";
+
 it("backfills app slugs and preserves old inserts while enforcing project uniqueness and immutability", async () => {
   const client = new PGlite();
   try {
@@ -12,21 +14,22 @@ it("backfills app slugs and preserves old inserts while enforcing project unique
       CREATE TABLE app (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), project_id uuid NOT NULL, name text NOT NULL);
       INSERT INTO app (project_id, name) VALUES ('11111111-1111-4111-8111-111111111111', 'Existing app');
     `);
-    for (const migration of [
-      "20261017022028_parched_madripoor",
-      "20261017022029_immutable-app-slugs",
-    ]) {
-      // oxlint-disable-next-line no-await-in-loop -- Read migrations in their application order.
-      const sql = await readFile(
-        new URL(
-          `../../db/src/migrations/${migration}/migration.sql`,
-          import.meta.url
-        ),
-        "utf-8"
-      );
-      // oxlint-disable-next-line no-await-in-loop -- Migrations must run in order.
-      await client.exec(sql);
-    }
+    await forEachSequential(
+      [
+        "20261017022028_parched_madripoor",
+        "20261017022029_immutable-app-slugs",
+      ],
+      async (migration) => {
+        const sql = await readFile(
+          new URL(
+            `../../db/src/migrations/${migration}/migration.sql`,
+            import.meta.url
+          ),
+          "utf-8"
+        );
+        await client.exec(sql);
+      }
+    );
     const { rows } = await client.query<{ slug: string }>(
       "SELECT slug FROM app"
     );
@@ -55,24 +58,26 @@ it("backfills app slugs and preserves old inserts while enforcing project unique
       "INSERT INTO app (project_id, name, slug) VALUES ('11111111-1111-4111-8111-111111111111', 'Max length', $1)",
       [maxLengthSlug]
     );
-    for (const slug of [
-      "",
-      "UPPER",
-      "has space",
-      "-leading",
-      "trailing-",
-      "double--hyphen",
-      "a".repeat(33),
-    ]) {
-      expect(appSlugSchema.safeParse(slug).success).toBe(false);
-      // oxlint-disable-next-line no-await-in-loop -- Each independent failed insert must finish before the next assertion.
-      await expect(
-        client.query(
-          "INSERT INTO app (project_id, name, slug) VALUES ('11111111-1111-4111-8111-111111111111', 'Invalid', $1)",
-          [slug]
-        )
-      ).rejects.toThrow();
-    }
+    await forEachSequential(
+      [
+        "",
+        "UPPER",
+        "has space",
+        "-leading",
+        "trailing-",
+        "double--hyphen",
+        "a".repeat(33),
+      ],
+      async (slug) => {
+        expect(appSlugSchema.safeParse(slug).success).toBe(false);
+        await expect(
+          client.query(
+            "INSERT INTO app (project_id, name, slug) VALUES ('11111111-1111-4111-8111-111111111111', 'Invalid', $1)",
+            [slug]
+          )
+        ).rejects.toThrow();
+      }
+    );
   } finally {
     await client.close();
   }

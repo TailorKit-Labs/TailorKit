@@ -386,13 +386,17 @@ export const runDeploy = async (
   const serverAssetGzip = serverAsset
     ? await gzipAsync(serverAsset)
     : undefined;
-  // SAFETY: The upload manifest validator permits only dark and light logo keys, with string asset paths; Object.entries loses those validated literal keys.
-  const logoEntries =
-    /* oxlint-disable typescript/no-unsafe-type-assertion -- The upload manifest validator permits only dark and light logo keys, with string asset paths; Object.entries loses those validated literal keys. */
-    Object.entries(manifest.assets.logos ?? {}) as ["dark" | "light", string][];
-  /* oxlint-enable typescript/no-unsafe-type-assertion */
+  const logoEntries = Object.entries(manifest.assets.logos ?? {}).flatMap<{
+    filename: string;
+    variant: "dark" | "light";
+  }>(([variant, filename]) => {
+    if (variant === "dark" || variant === "light") {
+      return [{ filename, variant }];
+    }
+    return [];
+  });
   const logoAssets = await Promise.all(
-    logoEntries.map(async ([variant, filename]) => {
+    logoEntries.map(async ({ variant, filename }) => {
       const content = await readFile(path.join(outDir, filename));
       const extension = path.extname(filename).slice(1);
       const contentType = logoContentTypeByExtension.get(extension);

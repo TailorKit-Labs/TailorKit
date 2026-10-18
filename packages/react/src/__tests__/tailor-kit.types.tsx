@@ -1,13 +1,11 @@
-import type {
-  StandardJSONSchemaV1,
-  StandardSchemaV1,
-} from "@standard-schema/spec";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { ComponentRenderer } from "@tailorkit/client-core";
 import { defineContract } from "@tailorkit/core/schema";
 import type { ComponentDefinition } from "@tailorkit/core/schema";
 /* oxlint-disable react/rules-of-hooks -- Compile-only API tests exercise hook signatures outside runtime components. */
 import type { ViewContextValues } from "@tailorkit/core/views";
 import type { ReactNode } from "react";
+import { z } from "zod";
 
 import type { TailorKitInstance, UseAppsResult, UseViewsResult } from "#index";
 import { components, createClient } from "#tailorkit";
@@ -48,32 +46,15 @@ const optionalChildrenRenderer: ComponentRenderer<
 > = async ({ children }) => await children;
 void optionalChildrenRenderer;
 
-// oxlint-disable-next-line typescript/no-empty-object-type, typescript/ban-types -- This negative type case verifies a component with no declared children property.
-const leafRenderer: ComponentRenderer<{}, ReactNode> = (args) => {
+type LeafComponent = Omit<ComponentDefinition, "children">;
+const leafRenderer: ComponentRenderer<LeafComponent, ReactNode> = (args) => {
   // @ts-expect-error leaf component renderer arguments do not include children
   void args.children;
   return null;
 };
 void leafRenderer;
 
-// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-const typedSchema = <TValue,>(): StandardSchemaV1<TValue, TValue> &
-  StandardJSONSchemaV1<TValue, TValue> =>
-  ({
-    "~standard": {
-      jsonSchema: {
-        input: () => ({}),
-        output: () => ({}),
-      },
-      validate: (
-        value: Parameters<StandardSchemaV1["~standard"]["validate"]>[0]
-        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-      ) => ({ value: value as TValue }),
-      vendor: "test",
-      version: 1,
-    },
-  }) as const satisfies StandardSchemaV1<TValue, TValue> &
-    StandardJSONSchemaV1<TValue, TValue>;
+const typedSchema = <TValue,>() => z.custom<TValue>();
 
 const contract = defineContract({
   components: {
@@ -574,22 +555,10 @@ const slotName: "page" | "navbar" = Math.random() > 0.5 ? "page" : "navbar";
 <RenderSlot app={app} slot={slotName} />;
 
 // Registration accepts schema input; apps receive the validated output.
-// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const transformedSchema: StandardSchemaV1<
   { count: string },
   { count: number }
-> = {
-  "~standard": {
-    validate: (
-      value: Parameters<StandardSchemaV1["~standard"]["validate"]>[0]
-    ) => ({
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-      value: { count: Number((value as { count: string }).count) },
-    }),
-    vendor: "test",
-    version: 1,
-  },
-};
+> = z.object({ count: z.string().transform(Number) });
 const transformedClient = createClient({
   baseUrl: "https://host.test",
   contract: defineContract({ views: { "/": transformedSchema } }),

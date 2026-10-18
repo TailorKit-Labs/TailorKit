@@ -29,6 +29,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@tailorkit/config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",

@@ -2,6 +2,7 @@ import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import { asyncFixture } from "@tailorkit/config/testing";
 import { SignJWT } from "jose";
 import { afterEach, assert, expect, it, vi } from "vite-plus/test";
 
@@ -164,10 +165,8 @@ it("rejects insecure routing before creating a client or sending requests", asyn
 it("routes every authenticated CLI surface through existing platform endpoints for JWTs", async () => {
   const jwt = await token();
   vi.stubEnv("TAILORKIT_AGENT_TOKEN", jwt);
-  const fetch = vi
-    .spyOn(globalThis, "fetch")
-    // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-    .mockImplementation(async (input) => {
+  const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(
+    asyncFixture((input) => {
       const request = requireRequest(input);
       expect(request.headers.get("authorization")).toBe(`Bearer ${jwt}`);
       expect(request.redirect).toBe("error");
@@ -178,7 +177,8 @@ it("routes every authenticated CLI surface through existing platform endpoints f
         );
       }
       return Response.json({ scope });
-    });
+    })
+  );
   const client = createCliClient({
     token: "stored-session",
     url: "http://localhost:1",

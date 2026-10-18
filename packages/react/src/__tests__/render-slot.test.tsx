@@ -2,6 +2,7 @@ import type {
   StandardJSONSchemaV1,
   StandardSchemaV1,
 } from "@standard-schema/spec";
+import { asyncFixture } from "@tailorkit/config/testing";
 import { defineContract } from "@tailorkit/core/schema";
 import type { RemoteProps } from "@tailorkit/sandbox/protocol";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
@@ -14,6 +15,7 @@ import {
   it,
   vi,
 } from "vite-plus/test";
+import { z } from "zod";
 
 import { RenderSlot } from "#index";
 import { createClient } from "#tailorkit";
@@ -27,30 +29,25 @@ vi.mock("../remote-view", () => ({
   },
 }));
 
-// SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-const typedSchema = <T,>(): StandardSchemaV1<unknown, T> &
-  StandardJSONSchemaV1<unknown, T> => ({
-  "~standard": {
-    jsonSchema: { input: () => ({}), output: () => ({}) },
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-    validate: (value) => ({ value: value as T }),
-    vendor: "test",
-    version: 1,
-  },
-});
+const customerContextSchema = z.looseObject({ canEdit: z.boolean() });
+type CustomerContext = Pick<z.infer<typeof customerContextSchema>, "canEdit">;
+
+// Retain extra fields for the duplicate-context fixture with its declared contract.
+const customerContext: StandardSchemaV1<unknown, CustomerContext> &
+  StandardJSONSchemaV1<unknown, CustomerContext> = customerContextSchema;
 
 const contract = defineContract({
   components: {},
-  scopes: { user: typedSchema<{ id: string }>() },
+  scopes: { user: z.object({ id: z.string() }) },
   slots: {
     navbar: { views: ["/"] },
     page: { multiple: true, views: ["/"] },
     panel: { views: ["/", "/customers", "/customers/detail"] },
   },
   views: {
-    "/": typedSchema<{ user: { id: string } }>(),
-    "/customers": typedSchema<{ canEdit: boolean }>(),
-    "/customers/detail": typedSchema<{ customer: { id: string } }>(),
+    "/": z.object({ user: z.object({ id: z.string() }) }),
+    "/customers": customerContext,
+    "/customers/detail": z.object({ customer: z.object({ id: z.string() }) }),
   },
 });
 
@@ -422,30 +419,31 @@ it("resolves the key and sends a complete controlled instance through the render
 });
 
 it("reports resolver failures and missing keys without mounting stale instances", async () => {
-  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-  vi.mocked(globalThis.fetch).mockImplementation(async (input) => {
-    const url = input instanceof Request ? input.url : String(input);
-    if (url.endsWith("/backend/session")) {
-      return Response.json({
-        expiresAt: Date.now() + 300_000,
-        token: "token",
-        url: "https://runtime.test/rpc",
-      });
-    }
-    if (url.endsWith("/actions")) {
-      return Response.json(
-        {
-          json: {
-            code: "FORBIDDEN",
-            defined: false,
-            message: "No reports available",
+  vi.mocked(globalThis.fetch).mockImplementation(
+    asyncFixture((input) => {
+      const url = input instanceof Request ? input.url : String(input);
+      if (url.endsWith("/backend/session")) {
+        return Response.json({
+          expiresAt: Date.now() + 300_000,
+          token: "token",
+          url: "https://runtime.test/rpc",
+        });
+      }
+      if (url.endsWith("/actions")) {
+        return Response.json(
+          {
+            json: {
+              code: "FORBIDDEN",
+              defined: false,
+              message: "No reports available",
+            },
           },
-        },
-        { status: 403 }
-      );
-    }
-    return Response.json({ schema: {} });
-  });
+          { status: 403 }
+        );
+      }
+      return Response.json({ schema: {} });
+    })
+  );
   render(
     <client.Provider>
       <Context />

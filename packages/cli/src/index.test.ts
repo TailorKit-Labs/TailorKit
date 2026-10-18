@@ -1,3 +1,4 @@
+import { asyncFixture } from "@tailorkit/config/testing";
 import { beforeEach, expect, it, vi } from "vite-plus/test";
 
 import type { runAgentCommand } from "./agent";
@@ -65,18 +66,19 @@ await import("./index");
 
 beforeEach(() => {
   vi.clearAllMocks();
-  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-  mocks.login.mockImplementation(async (_options, onUserCode) => {
-    onUserCode({
-      expiresAt: new Date("2030-01-01"),
-      hostUrl: "https://host.example",
-      userCode: "ABC-123",
-    });
-    return {
-      hostUrl: "https://host.example",
-      scope: { name: "org", value: { id: "org" } },
-    };
-  });
+  mocks.login.mockImplementation(
+    asyncFixture((_options, onUserCode) => {
+      onUserCode({
+        expiresAt: new Date("2030-01-01"),
+        hostUrl: "https://host.example",
+        userCode: "ABC-123",
+      });
+      return {
+        hostUrl: "https://host.example",
+        scope: { name: "org", value: { id: "org" } },
+      };
+    })
+  );
 });
 
 it("passes --schema through generate with its working directory and config", async () => {

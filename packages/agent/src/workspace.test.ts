@@ -1,3 +1,4 @@
+import { asyncFixture } from "@tailorkit/config/testing";
 import { beforeEach, expect, it, vi } from "vite-plus/test";
 
 import type { AppAgentInput } from "./input";
@@ -152,11 +153,10 @@ it.each(["init", "install", "generate"])(
   "keeps failed %s setup pending and redacts authorization",
   async (command) => {
     session.runCommand.mockImplementation(
-      // oxlint-disable-next-line require-await -- Preserve the sandbox API's Promise-based command completion in this failure fixture.
-      async ({ args }: { args: string[] }) => ({
+      asyncFixture(({ args }: { args: string[] }) => ({
         exitCode: args.includes(command) ? 1 : 0,
         stderr: vi.fn().mockResolvedValue(`Failure ${input.agentToken}`),
-      })
+      }))
     );
     await expect(prepareWorkspace(session, input)).rejects.toThrow(
       "Failure [redacted]"

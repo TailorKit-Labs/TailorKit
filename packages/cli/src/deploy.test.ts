@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { gunzipSync } from "node:zlib";
 
+import { asyncFixture } from "@tailorkit/config/testing";
 import type { createTailorKitClient } from "@tailorkit/core/server";
 import type { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
 import { SignJWT } from "jose";
@@ -396,15 +397,16 @@ it("typechecks file route roots, layouts and views without a manual client entry
 
 it("does not publish when the server upload fails", async () => {
   vi.spyOn(globalThis, "fetch").mockImplementation(
-    // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-    async (url) =>
-      new Response(null, {
-        status: (url instanceof Request ? url.url : String(url)).endsWith(
-          "server"
-        )
-          ? 403
-          : 200,
-      })
+    asyncFixture(
+      (url) =>
+        new Response(null, {
+          status: (url instanceof Request ? url.url : String(url)).endsWith(
+            "server"
+          )
+            ? 403
+            : 200,
+        })
+    )
   );
   await expect(runDeploy({ cwd: root })).rejects.toThrow("Asset upload failed");
   expect(mocks.publish).not.toHaveBeenCalled();
@@ -457,13 +459,14 @@ it.each(["missing", "expired"])(
     mocks.token.mockResolvedValue(
       credentials === "missing" ? undefined : { deployToken: "expired-token" }
     );
-    // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-    const onLoginRequired = vi.fn().mockImplementation(async () => {
-      expect(mocks.build).not.toHaveBeenCalled();
-      expect(mocks.create).not.toHaveBeenCalled();
-      mocks.token.mockResolvedValue({ deployToken: "new-token" });
-      return { hostUrl: "https://host.example" };
-    });
+    const onLoginRequired = vi.fn().mockImplementation(
+      asyncFixture(() => {
+        expect(mocks.build).not.toHaveBeenCalled();
+        expect(mocks.create).not.toHaveBeenCalled();
+        mocks.token.mockResolvedValue({ deployToken: "new-token" });
+        return { hostUrl: "https://host.example" };
+      })
+    );
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(null, { status: 200 })
     );

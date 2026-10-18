@@ -7,6 +7,7 @@ import {
 } from "@tailorkit/api-utils/agent-token";
 import { hashSecret } from "@tailorkit/api-utils/hashing";
 import { RateLimitHandlerPlugin } from "@tailorkit/api-utils/rate-limiting";
+import { asyncFixture } from "@tailorkit/config/testing";
 import {
   app as appTable,
   appDeployment,
@@ -27,6 +28,7 @@ import {
 import { z } from "zod";
 
 import type { Context } from "#context";
+import { forEachSequential } from "#for-each-sequential";
 import { createTestDb } from "#test/pglite";
 
 import { appAgentRouter } from "./app-agent";
@@ -39,16 +41,16 @@ const testState = vi.hoisted(() => ({
     APP_RUNTIME_URL: undefined as string | undefined,
     AUTH_SECRET: "test-only-agent-creation-secret-32-chars",
   },
-  issueToken: vi.fn(
-    // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-    async (_identity: {
-      userId: string;
-      installationId: string;
-      projectId: string;
-      appId: string;
-      deploymentId: string;
-    }) => ({ expiresAt: Date.now() + 300_000, token: "platform-token" })
-  ),
+  issueToken:
+    vi.fn<
+      (identity: {
+        userId: string;
+        installationId: string;
+        projectId: string;
+        appId: string;
+        deploymentId: string;
+      }) => Promise<{ expiresAt: number; token: string }>
+    >(),
   publishMetadata: vi.fn(),
 }));
 
@@ -122,6 +124,12 @@ describe("platform appRouter", () => {
   let db: Awaited<ReturnType<typeof createTestDb>>["db"];
 
   beforeEach(async () => {
+    testState.issueToken.mockImplementation(
+      asyncFixture(() => ({
+        expiresAt: Date.now() + 300_000,
+        token: "platform-token",
+      }))
+    );
     testState.env.APP_RUNTIME_URL = undefined;
     const testDb = await createTestDb();
     ({ client } = testDb);
@@ -1329,20 +1337,22 @@ describe("platform appRouter", () => {
         ...canonicalizeScope(stagingScope),
       },
     ]);
-    for (const [app, name] of [
-      [{ id }, "Original"],
-      [{ shortId }, "Original"],
-      [{ slug: shortId }, "Short ID slug"],
-      [{ slug: scopedSlug }, "Scoped slug"],
-    ] as const) {
-      // oxlint-disable-next-line no-await-in-loop -- Verify each namespace against the same fixture.
-      const found = await call(
-        appRouter.get,
-        { body: { app, scopes: [productionScope, stagingScope] } },
-        { context }
-      );
-      expect(found.body.name).toBe(name);
-    }
+    await forEachSequential(
+      [
+        [{ id }, "Original"],
+        [{ shortId }, "Original"],
+        [{ slug: shortId }, "Short ID slug"],
+        [{ slug: scopedSlug }, "Scoped slug"],
+      ] as const,
+      async ([app, name]) => {
+        const found = await call(
+          appRouter.get,
+          { body: { app, scopes: [productionScope, stagingScope] } },
+          { context }
+        );
+        expect(found.body.name).toBe(name);
+      }
+    );
     await expect(
       call(
         appRouter.get,
@@ -1366,51 +1376,55 @@ describe("platform appRouter", () => {
   it("rejects invalid or ambiguous selectors and invalid slugs at the HTTP boundary", async () => {
     const handler = new OpenAPIHandler({ apps: appRouter });
     const context = createContext();
-    for (const app of [
-      {},
-      { id: "invalid" },
-      { shortId: "invalid" },
-      { slug: "UPPER" },
-      { slug: "a".repeat(33) },
-      { slug: "55555555-5555-4555-8555-555555555555" },
-      { shortId: "app000000001", slug: "valid" },
-    ]) {
-      // oxlint-disable-next-line no-await-in-loop -- Check each independent HTTP validation failure.
-      const result = await handler.handle(
-        new Request("https://platform.test/apps/lookup", {
-          body: JSON.stringify({ app, scopes: [productionScope] }),
-          headers: { "content-type": "application/json" },
-          method: "POST",
-        }),
-        { context }
-      );
-      expect(result.response?.status).toBe(400);
-    }
-    for (const slug of [
-      "",
-      "UPPER",
-      "has space",
-      "-leading",
-      "trailing-",
-      "double--hyphen",
-      "a".repeat(33),
-    ]) {
-      // oxlint-disable-next-line no-await-in-loop -- Check each independent HTTP validation failure.
-      const result = await handler.handle(
-        new Request("https://platform.test/apps", {
-          body: JSON.stringify({
-            description: null,
-            name: "App",
-            scope: productionScope,
-            slug,
+    await forEachSequential(
+      [
+        {},
+        { id: "invalid" },
+        { shortId: "invalid" },
+        { slug: "UPPER" },
+        { slug: "a".repeat(33) },
+        { slug: "55555555-5555-4555-8555-555555555555" },
+        { shortId: "app000000001", slug: "valid" },
+      ],
+      async (app) => {
+        const result = await handler.handle(
+          new Request("https://platform.test/apps/lookup", {
+            body: JSON.stringify({ app, scopes: [productionScope] }),
+            headers: { "content-type": "application/json" },
+            method: "POST",
           }),
-          headers: { "content-type": "application/json" },
-          method: "POST",
-        }),
-        { context }
-      );
-      expect(result.response?.status).toBe(400);
-    }
+          { context }
+        );
+        expect(result.response?.status).toBe(400);
+      }
+    );
+    await forEachSequential(
+      [
+        "",
+        "UPPER",
+        "has space",
+        "-leading",
+        "trailing-",
+        "double--hyphen",
+        "a".repeat(33),
+      ],
+      async (slug) => {
+        const result = await handler.handle(
+          new Request("https://platform.test/apps", {
+            body: JSON.stringify({
+              description: null,
+              name: "App",
+              scope: productionScope,
+              slug,
+            }),
+            headers: { "content-type": "application/json" },
+            method: "POST",
+          }),
+          { context }
+        );
+        expect(result.response?.status).toBe(400);
+      }
+    );
     expect(await db.select().from(appTable)).toHaveLength(0);
     const maxLengthSlug = "a".repeat(32);
     const created = await call(

@@ -79,29 +79,18 @@ const waitForRetry = async (
   if (signal.aborted) {
     return;
   }
-  await (async () => {
-    const {
-      promise: pendingPromise,
-      resolve,
-      reject: rejectPending,
-    } = Promise.withResolvers<ReturnType<() => void>>();
-    try {
-      const wake = () => {
-        // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
-        clearTimeout(timer);
-        signal.removeEventListener("abort", wake);
-        resolve();
-      };
-      const timer: ReturnType<typeof setTimeout> | undefined = setTimeout(
-        wake,
-        delayMs
-      );
-      signal.addEventListener("abort", wake, { once: true });
-    } catch (error) {
-      rejectPending(error);
-    }
-    await pendingPromise;
-  })();
+  const { promise, resolve } = Promise.withResolvers<ReturnType<() => void>>();
+  const timer = setTimeout(resolve, delayMs);
+  const wake = () => {
+    resolve();
+  };
+  try {
+    signal.addEventListener("abort", wake, { once: true });
+    await promise;
+  } finally {
+    clearTimeout(timer);
+    signal.removeEventListener("abort", wake);
+  }
 };
 
 export const createClient = (

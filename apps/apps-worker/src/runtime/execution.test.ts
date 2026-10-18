@@ -16,6 +16,7 @@ import {
   fn,
   AppError,
 } from "@tailorkit/app/server";
+import { asyncFixture } from "@tailorkit/config/testing";
 import { sql } from "drizzle-orm";
 import { sqliteView } from "drizzle-orm/sqlite-core";
 import { Effect } from "effect";
@@ -530,16 +531,17 @@ it("runs action database calls locally and notifies only committed writes before
       }),
   });
   const execution = createExecution(app, persistence);
-  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-  const notify = vi.fn(async (tables: string[]) => {
-    expect(tables).toEqual(["todos"]);
-    expect(
-      sqlite.prepare("SELECT count(*) AS n FROM tailorkit_receipts").get()
-    ).toMatchObject({
-      n: 1,
-    });
-    ready();
-  });
+  const notify = vi.fn(
+    asyncFixture((tables: string[]) => {
+      expect(tables).toEqual(["todos"]);
+      expect(
+        sqlite.prepare("SELECT count(*) AS n FROM tailorkit_receipts").get()
+      ).toMatchObject({
+        n: 1,
+      });
+      ready();
+    })
+  );
   let finished = false;
   const running = Effect.runPromise(
     execution.action(

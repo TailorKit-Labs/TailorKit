@@ -1,4 +1,3 @@
-/* oxlint-disable typescript/no-unsafe-return -- This integration fixture loads workspace or generated modules dynamically and supplies minimal platform doubles; its assertions validate the observed runtime contract. */
 // @vitest-environment happy-dom
 import { h, render } from "preact";
 import type { ComponentType, VNode } from "preact";
@@ -13,8 +12,8 @@ const { createFileClient, defineRoute, Route } = await import("./routing");
 const { defineView } = await import("./views");
 
 it("keeps app and slot shells and common layouts mounted, and isolates mounted slots", async () => {
-  const mounts = vi.fn();
-  const cleanup = vi.fn();
+  const mounts = vi.fn<(name: string) => void>();
+  const cleanup = vi.fn<(name: string) => void>();
   const Root = ({ children }: ShellProps) => {
     useLayoutEffect(() => {
       mounts("root");

@@ -302,12 +302,7 @@ export function defineView<
           `View instance is only available while rendering an instance of "${path}".`
         );
       }
-      // SAFETY: Generated bindings associate this view path with its context and instance schema; the adapter retains that relationship while erasing renderer generics.
-      return (
-        /* oxlint-disable typescript/no-unsafe-type-assertion -- Generated bindings associate this view path with its context and instance schema; the adapter retains that relationship while erasing renderer generics. */
-        value.instance
-        /* oxlint-enable typescript/no-unsafe-type-assertion */
-      );
+      return value.instance;
     },
   };
 }
