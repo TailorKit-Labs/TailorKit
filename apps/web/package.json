@@ -55,6 +55,7 @@
     "@tanstack/react-start": "catalog:",
     "@tanstack/react-table": "^9.2.8",
     "@vercel/functions": "^3.9.11",
+    "@vercel/speed-insights": "^2.0.0",
     "better-auth": "catalog:",
     "botid": "1.5.11",
     "drizzle-orm": "catalog:",
