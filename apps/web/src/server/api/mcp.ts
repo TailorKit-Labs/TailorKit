@@ -9,9 +9,10 @@ import {
   setSpanAttributes,
   withSpan,
 } from "@tailorkit/observability";
-import { createFileRoute } from "@tanstack/react-router";
 
-const handle = async ({ request }: { request: Request }) => {
+import { createApiEntry } from "./entry";
+
+export const handleMcpRequest = async ({ request }: { request: Request }) => {
   await initializeObservability("tailorkit-web");
   setSpanAttributes({
     "tailorkit.adapter": "mcp",
@@ -41,15 +42,11 @@ const handle = async ({ request }: { request: Request }) => {
   );
 };
 
-export const Route = createFileRoute("/api/platform/app-agent/mcp")({
-  server: {
-    handlers: {
-      DELETE: handle,
-      GET: handle,
-      HEAD: handle,
-      PATCH: handle,
-      POST: handle,
-      PUT: handle,
-    },
-  },
-});
+export default createApiEntry(handleMcpRequest, [
+  "DELETE",
+  "GET",
+  "HEAD",
+  "PATCH",
+  "POST",
+  "PUT",
+]);

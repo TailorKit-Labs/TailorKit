@@ -8,7 +8,8 @@ import {
   sanitizeErrorForLog,
   setSpanAttributes,
 } from "@tailorkit/observability";
-import { createFileRoute } from "@tanstack/react-router";
+
+import { createApiEntry } from "./entry";
 
 const createOpenAPIHandler = async () => {
   const [
@@ -35,7 +36,11 @@ const createOpenAPIHandler = async () => {
 
 let openAPIHandler: ReturnType<typeof createOpenAPIHandler> | undefined;
 
-const handle = async ({ request }: { request: Request }) => {
+export const handlePlatformRequest = async ({
+  request,
+}: {
+  request: Request;
+}) => {
   await initializeObservability("tailorkit-web");
   setSpanAttributes({
     "tailorkit.adapter": "orpc-openapi",
@@ -70,15 +75,11 @@ const handle = async ({ request }: { request: Request }) => {
   return new Response("Not found", { status: 404 });
 };
 
-export const Route = createFileRoute("/api/platform/$")({
-  server: {
-    handlers: {
-      DELETE: handle,
-      GET: handle,
-      HEAD: handle,
-      PATCH: handle,
-      POST: handle,
-      PUT: handle,
-    },
-  },
-});
+export default createApiEntry(handlePlatformRequest, [
+  "DELETE",
+  "GET",
+  "HEAD",
+  "PATCH",
+  "POST",
+  "PUT",
+]);

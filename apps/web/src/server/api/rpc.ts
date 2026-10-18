@@ -9,7 +9,8 @@ import {
   sanitizeErrorForLog,
   setSpanAttributes,
 } from "@tailorkit/observability";
-import { createFileRoute } from "@tanstack/react-router";
+
+import { createApiEntry } from "./entry";
 
 const rpcHandler = new RPCHandler(appRouter, {
   interceptors: [
@@ -22,7 +23,7 @@ const rpcHandler = new RPCHandler(appRouter, {
   plugins: [new RateLimitHandlerPlugin()],
 });
 
-const handle = async ({ request }: { request: Request }) => {
+export const handleRpcRequest = async ({ request }: { request: Request }) => {
   await initializeObservability("tailorkit-web");
   setSpanAttributes({
     "tailorkit.adapter": "orpc-rpc",
@@ -40,15 +41,11 @@ const handle = async ({ request }: { request: Request }) => {
   return new Response("Not found", { status: 404 });
 };
 
-export const Route = createFileRoute("/api/rpc/$")({
-  server: {
-    handlers: {
-      DELETE: handle,
-      GET: handle,
-      HEAD: handle,
-      PATCH: handle,
-      POST: handle,
-      PUT: handle,
-    },
-  },
-});
+export default createApiEntry(handleRpcRequest, [
+  "DELETE",
+  "GET",
+  "HEAD",
+  "PATCH",
+  "POST",
+  "PUT",
+]);
