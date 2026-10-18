@@ -54,13 +54,24 @@ export interface GenerateAppOptions {
 
 const engine = new Liquid({ strictVariables: true });
 
-// eslint-disable-next-line no-control-regex -- Host-provided file names cannot contain control characters.
-const invalidFilenameCharacters = /[<>:"/\\|?*#\u0000-\u001F]/u;
-const isFilenameSegment = (segment: string) =>
-  segment !== "" &&
-  segment !== "." &&
-  segment !== ".." &&
-  !invalidFilenameCharacters.test(segment);
+const invalidFilenameCharacters = /[<>:"/\\|?*#]/u;
+const isFilenameSegment = (segment: string): boolean => {
+  if (
+    segment === "" ||
+    segment === "." ||
+    segment === ".." ||
+    invalidFilenameCharacters.test(segment)
+  ) {
+    return false;
+  }
+  for (const character of segment) {
+    const code = character.codePointAt(0);
+    if (code !== undefined && code < 32) {
+      return false;
+    }
+  }
+  return true;
+};
 
 const getViewModulePath = (slotName: string, viewPath: string) => {
   const viewSegments =
@@ -83,10 +94,18 @@ const getViewModulePath = (slotName: string, viewPath: string) => {
   return ["slots", slotName, routeName].join("/");
 };
 
+const supportsBox = (
+  box: NonNullable<TailorKitSchemaFile["components"]>[string] | undefined
+): boolean => {
+  const required = box?.fields?.required;
+  return (
+    box?.children === true && (required === undefined || required.length === 0)
+  );
+};
+
 const renderTemplate = async (
   template: string,
-  // oxlint-disable-next-line anti-slop/no-object-parameters -- This structural adapter enumerates caller-owned fields; a concrete domain shape would exclude supported schema or attribute objects.
-  data: object
+  data: Record<string, string | boolean>
 ): Promise<string> => {
   const output: unknown = await engine.parseAndRender(template, data);
   return z.string().parse(output);
@@ -110,7 +129,6 @@ const writeTemplateFile = async (
   await writeFile(filepath, contents, "utf-8");
 };
 
-// oxlint-disable-next-line eslint/complexity -- Keep this validation or rendering lifecycle together: its guards share the same state, cleanup, and error handling.
 export const generateApp = async (
   options: GenerateAppOptions
 ): Promise<void> => {
@@ -143,16 +161,7 @@ export const generateApp = async (
   );
   const viewModulePath = getViewModulePath(slotName, viewPath);
   const viewFile = path.join("src", `${viewModulePath}.view.tsx`);
-  const box = schema.components?.Box;
-  // Only use a wrapper that accepts children without requiring host-specific props.
-  const useBox =
-    box?.children === true &&
-    !(
-      box.fields?.required?.length !== undefined &&
-      box.fields?.required?.length !== null &&
-      box.fields?.required?.length !== 0 &&
-      !Number.isNaN(box.fields?.required?.length)
-    );
+  const useBox = supportsBox(schema.components?.Box);
   const bindingsPath = path.join(targetDirectory, "src", "tailorkit.gen.ts");
   if (!force && existsSync(bindingsPath)) {
     throw new Error(

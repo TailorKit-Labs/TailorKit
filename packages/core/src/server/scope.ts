@@ -298,12 +298,10 @@ export const normalizeTailorKitScope = (value: unknown): TailorKitScope => {
       `TailorKit scope values may not exceed ${maximumJsonBytes} bytes of JSON.`
     );
   }
-  // SAFETY: The root was checked as a plain record, and normalization preserves its root kind while rejecting non-JSON descendants.
-  return (
-    /* oxlint-disable typescript/no-unsafe-type-assertion -- The root was checked as a plain record, and normalization preserves its root kind while rejecting non-JSON descendants. */
-    normalized as TailorKitScope
-    /* oxlint-enable typescript/no-unsafe-type-assertion */
-  );
+  if (!isObjectValue(normalized) || Array.isArray(normalized)) {
+    throw new TypeError("TailorKit scope values must be JSON objects.");
+  }
+  return normalized;
 };
 
 export const validateTailorKitScopes = async (

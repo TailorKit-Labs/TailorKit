@@ -29,10 +29,10 @@ const bundle = "export default 'tenant bundle';";
 const get = vi.fn();
 const head = vi.fn();
 // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-const match = vi.fn(
-  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-  async (_request: Request) => undefined as Response | undefined
-);
+const cacheMiss: Response | undefined = undefined;
+const match = vi
+  .fn<(request: Request) => Promise<Response | undefined>>()
+  .mockResolvedValue(cacheMiss);
 const put = vi
   .fn<(_request: Request, _response: Response) => Promise<void>>()
   .mockReturnValue(Promise.resolve());

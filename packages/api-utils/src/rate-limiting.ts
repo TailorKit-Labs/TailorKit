@@ -36,13 +36,13 @@ export const createRateLimiter = ({
     const redis = kv.engine;
     // Keep the shared ioredis connection through oRPC's Redis adapter base.
     class IORedisRateLimiter extends BaseRedisRateLimiter {
-      // oxlint-disable-next-line class-methods-use-this -- The adapter overrides an instance method required by the upstream interface.
+      private readonly redis = redis;
       protected async evalScript(
         script: string,
         keys: string[],
         args: string[]
       ): ReturnType<typeof redis.eval> {
-        return await redis.eval(script, keys.length, ...keys, ...args);
+        return await this.redis.eval(script, keys.length, ...keys, ...args);
       }
     }
 

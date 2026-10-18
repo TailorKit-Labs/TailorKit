@@ -92,30 +92,21 @@ const boundNames = (node: Node | null | undefined): string[] => {
   if (!node) {
     return [];
   }
-  /* oxlint-disable typescript/switch-exhaustiveness-check -- This syntax visitor handles selected node kinds; other kinds use its generic traversal or default branch. */
-  switch (node.type) {
-    case "Identifier": {
-      return [node.name];
-    }
-    case "RestElement": {
-      return boundNames(node.argument);
-    }
-    case "AssignmentPattern": {
-      return boundNames(node.left);
-    }
-    case "ArrayPattern": {
-      return node.elements.flatMap(boundNames);
-    }
-    case "ObjectPattern": {
-      return node.properties.flatMap((p) =>
-        boundNames(p.type === "Property" ? p.value : p.argument)
-      );
-    }
-    default: {
-      return [];
-    }
+
+  if (node.type === "Identifier") {
+    return [node.name];
+  } else if (node.type === "RestElement") {
+    return boundNames(node.argument);
+  } else if (node.type === "AssignmentPattern") {
+    return boundNames(node.left);
+  } else if (node.type === "ArrayPattern") {
+    return node.elements.flatMap(boundNames);
+  } else if (node.type === "ObjectPattern") {
+    return node.properties.flatMap((p) =>
+      boundNames(p.type === "Property" ? p.value : p.argument)
+    );
   }
-  /* oxlint-enable typescript/switch-exhaustiveness-check */
+  return [];
 };
 const declarations = (node: Node): string[] => {
   if (node.type === "VariableDeclaration") {

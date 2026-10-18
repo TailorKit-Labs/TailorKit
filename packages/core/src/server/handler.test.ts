@@ -1,3 +1,4 @@
+import { asyncFixture } from "@tailorkit/config/testing";
 import type { Mock } from "vite-plus/test";
 import { describe, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
@@ -683,8 +684,7 @@ describe("createTailorKitServer", () => {
     const server = createTailorKitServer({
       $internal: {
         platformBaseUrl: "http://localhost:3000/api/platform",
-        // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-        platformFetch: async (request, init) => {
+        platformFetch: asyncFixture((request, init) => {
           const platformRequest =
             request instanceof Request ? request : new Request(request, init);
           requests.push(platformRequest);
@@ -699,7 +699,7 @@ describe("createTailorKitServer", () => {
             items: [],
             pagination: { hasMore: false, page: 1, pageSize: 20 },
           });
-        },
+        }),
         platformHeaders: { authorization: "Bearer host-token" },
       },
       baseUrl: "https://example.com/api/tailorkit",
@@ -760,8 +760,7 @@ describe("createTailorKitServer", () => {
     const server = createTailorKitServer({
       $internal: {
         platformBaseUrl: "http://localhost:3000/api/platform",
-        // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-        platformFetch: async (request, init) => {
+        platformFetch: asyncFixture((request, init) => {
           const platformRequest =
             request instanceof Request ? request : new Request(request, init);
           requests.push(platformRequest);
@@ -773,7 +772,7 @@ describe("createTailorKitServer", () => {
           }
 
           return Response.json({ id: "app_1" });
-        },
+        }),
         platformHeaders: { authorization: "Bearer host-token" },
       },
       baseUrl: "https://example.com/api/tailorkit",
@@ -905,8 +904,7 @@ describe("createTailorKitServer", () => {
     const requests: Request[] = [];
     const server = createTailorKitServer({
       $internal: {
-        // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-        platformFetch: async (input, init) => {
+        platformFetch: asyncFixture((input, init) => {
           const request =
             input instanceof Request ? input : new Request(input, init);
           requests.push(request);
@@ -919,7 +917,7 @@ describe("createTailorKitServer", () => {
             assets: [],
             deployment: { id: "deployment" },
           });
-        },
+        }),
       },
       baseUrl: "https://example.com/api/tailorkit",
       components: {},

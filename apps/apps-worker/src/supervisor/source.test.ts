@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 
 import { appDeploymentMetadata } from "@tailorkit/api-utils/app-auth";
+import { asyncFixture } from "@tailorkit/config/testing";
 import { Effect } from "effect";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
@@ -40,11 +41,12 @@ const identity = {
 };
 
 const setup = (contents: string | Uint8Array<ArrayBuffer> | null = code) => {
-  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-  const get = vi.fn(async () =>
-    contents === null
-      ? null
-      : { body: requireValue(new Response(contents).body) }
+  const get = vi.fn(
+    asyncFixture(() =>
+      contents === null
+        ? null
+        : { body: requireValue(new Response(contents).body) }
+    )
   );
 
   return {
@@ -118,10 +120,11 @@ it("serves KV hits to old clients and fills misses from the platform", async () 
     string,
     ReturnType<typeof appDeploymentMetadata.parse>
   >();
-  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-  const put = vi.fn(async (key: string, value: string) => {
-    values.set(key, appDeploymentMetadata.parse(JSON.parse(value)));
-  });
+  const put = vi.fn(
+    asyncFixture((key: string, value: string) => {
+      values.set(key, appDeploymentMetadata.parse(JSON.parse(value)));
+    })
+  );
   const fetch = vi
     .spyOn(globalThis, "fetch")
     .mockResolvedValueOnce(Response.json({ ...deployment, deploymentId: "v2" }))
@@ -133,8 +136,7 @@ it("serves KV hits to old clients and fills misses from the platform", async () 
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
     DEPLOYMENTS: {
-      // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-      get: async (key: string) => values.get(key) ?? null,
+      get: asyncFixture((key: string) => values.get(key) ?? null),
       put,
     },
 

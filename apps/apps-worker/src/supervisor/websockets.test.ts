@@ -1,5 +1,6 @@
 import type { Invocation } from "@tailorkit/app/protocol";
 import type { Identity } from "@tailorkit/app/server";
+import { asyncFixture } from "@tailorkit/config/testing";
 import { Effect, Semaphore } from "effect";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
@@ -44,12 +45,10 @@ const setup = () => {
     {
       getWebSockets: () => sockets,
       storage: {
-        // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-        deleteAlarm: async () => {
+        deleteAlarm: asyncFixture(() => {
           alarm = null;
-        },
-        // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-        getAlarm: async () => alarm,
+        }),
+        getAlarm: asyncFixture(() => alarm),
         kv: {
           delete: (key: string) => records.delete(key),
           get: (key: string) => records.get(key),
@@ -57,10 +56,9 @@ const setup = () => {
           put: (key: string, value: SubscriptionSession) =>
             records.set(key, value),
         },
-        // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-        setAlarm: async (time: number) => {
+        setAlarm: asyncFixture((time: number) => {
           alarm = time;
-        },
+        }),
       },
     } as unknown as DurableObjectState;
   /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */

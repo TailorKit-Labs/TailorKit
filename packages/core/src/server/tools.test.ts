@@ -1,3 +1,4 @@
+import { asyncFixture } from "@tailorkit/config/testing";
 import { expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
@@ -331,8 +332,7 @@ it("uses the trusted public origin to verify tool destinations behind a proxy", 
   const proxied = createServer({
     $internal: {
       platformBaseUrl: issuer,
-      // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-      platformFetch: async (url) =>
+      platformFetch: asyncFixture((url) =>
         (url instanceof Request ? url.url : String(url)).endsWith(
           "/runtime/keys"
         )
@@ -341,7 +341,8 @@ it("uses the trusted public origin to verify tool destinations behind a proxy", 
               currentDeployment: { id: "deployment" },
               id: "app",
               projectId: "project",
-            }),
+            })
+      ),
     },
     baseUrl: new URL("https://product.test/custom/tailorkit/"),
     contract,

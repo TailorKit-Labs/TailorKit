@@ -3,6 +3,7 @@ import type {
   StandardSchemaV1,
 } from "@standard-schema/spec";
 import { createTailorKitStore } from "@tailorkit/client-core";
+import { asyncFixture } from "@tailorkit/config/testing";
 import type { EmptyDefinitionMap } from "@tailorkit/core/schema";
 import { defineContract } from "@tailorkit/core/schema";
 import type { IframeUiHost } from "@tailorkit/sandbox/host";
@@ -144,9 +145,8 @@ const CurrentViewRoute = ({
   nested: boolean;
   tailor: ReturnType<typeof createClient<typeof contract>>;
 }) => {
-  const { useViewContext } = tailor;
   // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
-  useViewContext(
+  tailor.useViewContext(
     nested ? "/home/detail" : "/home",
     nested
       ? {
@@ -184,9 +184,8 @@ const HomeSlot = ({
   app: TailorKitApp;
   tailor: ReturnType<typeof createClient<typeof contract>>;
 }) => {
-  const { useViewContext } = tailor;
   // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
-  useViewContext("/home", { context: { page: { title: "home" } } });
+  tailor.useViewContext("/home", { context: { page: { title: "home" } } });
   return <RenderSlot slot="panel" app={app} />;
 };
 
@@ -393,9 +392,7 @@ describe("tailorKitClient React adapter", () => {
     });
 
     const Route = ({ status }: { status: "error" | "loading" }) => {
-      const { useViewContext } = tailor;
-      // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
-      useViewContext("/home/detail", {
+      tailor.useViewContext("/home/detail", {
         context: undefined,
         error: status === "error" ? new Error("Failed to load context") : null,
         loading: status === "loading",
@@ -445,9 +442,7 @@ describe("tailorKitClient React adapter", () => {
     });
 
     const Route = () => {
-      const { useViewContext } = tailor;
-      // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
-      useViewContext("/home", { context: { page: { title: "home" } } });
+      tailor.useViewContext("/home", { context: { page: { title: "home" } } });
       return (
         <>
           <RenderSlot
@@ -574,16 +569,12 @@ describe("tailorKitClient React adapter", () => {
     });
 
     const HomeRoute = () => {
-      const { useViewContext } = tailor;
-      // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
-      useViewContext("/home", { context: { page: { title: "home" } } });
+      tailor.useViewContext("/home", { context: { page: { title: "home" } } });
       return null;
     };
 
     const UserRoute = () => {
-      const { useViewContext } = tailor;
-      // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
-      useViewContext("/user", { context: { userId: "user_1" } });
+      tailor.useViewContext("/user", { context: { userId: "user_1" } });
       return (
         <RenderSlot
           slot="panel"
@@ -722,9 +713,7 @@ const DetailImplementation = ({
 }: {
   client: ReturnType<typeof createClient<typeof contract>>;
 }) => {
-  const { useViewContext } = client;
-  // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
-  useViewContext("/home/detail", { context: undefined, loading: true });
+  client.useViewContext("/home/detail", { context: undefined, loading: true });
   return null;
 };
 
@@ -735,11 +724,10 @@ const Layers = ({
   client: ReturnType<typeof createClient<typeof contract>>;
   detail?: boolean;
 }) => {
-  const { useViewContext } = client;
   // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
-  useViewContext("/", { context: { user: { id: "u1" } } });
+  client.useViewContext("/", { context: { user: { id: "u1" } } });
   // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
-  useViewContext("/home", { context: { page: { title: "Home" } } });
+  client.useViewContext("/home", { context: { page: { title: "Home" } } });
   return (
     <>
       {detail ? <DetailImplementation client={client} /> : null}
@@ -811,9 +799,7 @@ describe("view registries", () => {
       contract,
     });
     const OtherRoute = () => {
-      const { useViewContext } = client;
-      // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
-      useViewContext("/user", { context: { userId: "other" } });
+      client.useViewContext("/user", { context: { userId: "other" } });
       return (
         <RenderSlot
           slot="panel"
@@ -859,11 +845,11 @@ const ContentsImplementation = ({
 }: {
   client: ReturnType<typeof createClient<typeof contract>>;
 }) => {
-  const { useApps: useAppsValue, useViewContext } = client;
+  const { useApps: useAppsValue } = client;
   // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
   const { data } = useAppsValue();
   // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
-  useViewContext("/user", { context: { userId: "u1" } });
+  client.useViewContext("/user", { context: { userId: "u1" } });
   return (
     <>
       <span>{data?.[0]?.id}</span>
@@ -873,17 +859,16 @@ const ContentsImplementation = ({
 };
 
 it("isolates a new client cache even when its endpoint is equivalent", async () => {
-  const fetchMock = vi
-    .spyOn(globalThis, "fetch")
-    // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-    .mockImplementation(async (input) => {
+  const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(
+    asyncFixture((input) => {
       const url = new URL(
         input instanceof Request ? input.url : input.toString()
       );
       return Response.json(
         url.pathname.endsWith("/apps") ? [{ id: url.hostname }] : { schema: {} }
       );
-    });
+    })
+  );
   const Contents = ContentsImplementation;
   const createRootClient = createRootClientImplementation;
   const firstClient = createRootClient("http://first.test/api");

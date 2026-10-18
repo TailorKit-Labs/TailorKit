@@ -1,4 +1,5 @@
 import { AppError } from "@tailorkit/app/server";
+import { asyncFixture } from "@tailorkit/config/testing";
 import { Effect } from "effect";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import type { z } from "zod";
@@ -46,8 +47,7 @@ const metadata = {
 };
 
 const fetchInstallation = vi.fn(
-  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-  async (_request: Request) => new Response("result")
+  asyncFixture((_request: Request) => new Response("result"))
 );
 
 const getByName = vi.fn(() => ({ fetch: fetchInstallation }));

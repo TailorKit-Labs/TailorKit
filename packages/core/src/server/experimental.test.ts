@@ -1,5 +1,5 @@
 import { createClient } from "@tailorkit/client-platform/client/client/index";
-import { expect, it } from "vite-plus/test";
+import { expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
 import { defineContract } from "#schema/contract";
@@ -19,22 +19,23 @@ const contract = defineContract({
 });
 
 it("installs from the public server API with host credentials and validated scope output", async () => {
-  const requests: Request[] = [];
   const installed = {
     id: "installation",
     scope: { name: "org", value: { tenant: "workspace" } },
     shortId: "installed001",
   };
+  const platformFetch = vi
+    .fn<typeof fetch>()
+    .mockResolvedValueOnce(Response.json(installed))
+    .mockResolvedValueOnce(Response.json(installed));
+  const requests = () =>
+    platformFetch.mock.calls.map(([input, init]) =>
+      input instanceof Request ? input : new Request(input, init)
+    );
   const tailorkit = createServer({
     $internal: {
       platformBaseUrl: "https://platform.test/api/platform",
-      // oxlint-disable-next-line eslint/require-await -- The injected fetch returns an in-memory response without network I/O.
-      platformFetch: async (input, init) => {
-        requests.push(
-          input instanceof Request ? input : new Request(input, init)
-        );
-        return Response.json(installed);
-      },
+      platformFetch,
     },
     baseUrl: "https://host.test/api/tailorkit",
     contract,
@@ -46,8 +47,8 @@ it("installs from the public server API with host credentials and validated scop
       scope: { name: "org", value: { tenant: "  workspace  " } },
     })
   ).resolves.toEqual(installed);
-  expect(requests).toHaveLength(1);
-  const [request] = requests;
+  expect(platformFetch).toHaveBeenCalledOnce();
+  const [request] = requests();
   if (!request) {
     throw new Error("Expected installation request");
   }
@@ -63,21 +64,19 @@ it("installs from the public server API with host credentials and validated scop
     appId: "published001",
     scope: { name: "day", value: { at: new Date("2026-10-16T00:00:00.000Z") } },
   });
-  expect(await requests.at(-1)?.json()).toEqual({
+  expect(await requests().at(-1)?.json()).toEqual({
     app: { shortId: "published001" },
     scope: { name: "day", value: { at: "2026-10-16T00:00:00.000Z" } },
   });
 });
 
 it("rejects invalid or undeclared scopes before sending a platform request", async () => {
-  let requestCount = 0;
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValue(Response.json({}));
   const experimental = createExperimental({
     platform: createClient({
-      // oxlint-disable-next-line eslint/require-await -- This injected transport records calls without network I/O.
-      fetch: async () => {
-        requestCount += 1;
-        return Response.json({});
-      },
+      fetch,
     }),
     platformHeaders: { authorization: "Bearer secret" },
     scopeSchemas: contract.scopes,
@@ -100,17 +99,19 @@ it("rejects invalid or undeclared scopes before sending a platform request", asy
       scope: { name: "org", value: { tenant: "workspace" } },
     })
   ).rejects.toThrow("app ID");
-  expect(requestCount).toBe(0);
+  expect(fetch).not.toHaveBeenCalled();
 });
 
 it("requires host credentials and propagates platform installation errors", async () => {
   const server = createServer({
     $internal: {
-      // oxlint-disable-next-line eslint/require-await -- The injected fetch returns an in-memory error response without network I/O.
-      platformFetch: async () =>
-        Response.json(
-          { code: "NOT_FOUND", message: "No published app" },
-          { status: 404 }
+      platformFetch: vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(
+          Response.json(
+            { code: "NOT_FOUND", message: "No published app" },
+            { status: 404 }
+          )
         ),
     },
     baseUrl: "https://host.test/api/tailorkit",
@@ -125,11 +126,13 @@ it("requires host credentials and propagates platform installation errors", asyn
   );
   const authorized = createServer({
     $internal: {
-      // oxlint-disable-next-line eslint/require-await -- The injected fetch returns an in-memory error response without network I/O.
-      platformFetch: async () =>
-        Response.json(
-          { code: "NOT_FOUND", message: "No published app" },
-          { status: 404 }
+      platformFetch: vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(
+          Response.json(
+            { code: "NOT_FOUND", message: "No published app" },
+            { status: 404 }
+          )
         ),
     },
     baseUrl: "https://host.test/api/tailorkit",

@@ -3,6 +3,7 @@ import { gzipSync } from "node:zlib";
 
 import { call } from "@orpc/server";
 import { maxDeploymentBytes } from "@tailorkit/asset-delivery";
+import { asyncFixture } from "@tailorkit/config/testing";
 import {
   app as appTable,
   appDeployment,
@@ -213,11 +214,12 @@ describe("platform deployment uploads", () => {
     "uploads and verifies %s client and private server code",
     async (encoding) => {
       const context = publishContext("https://private.example/server");
-      // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-      const uploads = vi.fn(async ({ key }: { key: string }) => ({
-        key,
-        uploadUrl: `https://uploads.example/${key}`,
-      }));
+      const uploads = vi.fn(
+        asyncFixture(({ key }: { key: string }) => ({
+          key,
+          uploadUrl: `https://uploads.example/${key}`,
+        }))
+      );
       context.storage.createUploadUrl = uploads;
       const currentApp = await db.query.app.findFirst();
       if (!currentApp) {
@@ -388,21 +390,19 @@ describe("platform deployment uploads", () => {
     context.storage.createUploadUrl = vi.fn<
       typeof context.storage.createUploadUrl
     >(
-      // oxlint-disable-next-line eslint/require-await -- The storage fixture implements the asynchronous upload API.
-      async ({ key }) => ({
+      asyncFixture(({ key }) => ({
         key,
         uploadUrl: `https://uploads.example/${key}`,
-      })
+      }))
     );
     context.storage.head = vi.fn<typeof context.storage.head>(
-      // oxlint-disable-next-line eslint/require-await -- The storage fixture implements the asynchronous metadata API.
-      async ({ key }) => ({
+      asyncFixture(({ key }) => ({
         checksumSha256: Buffer.from(checksum, "hex").toString("base64"),
         contentEncoding: "gzip",
         contentLength: bytes.byteLength,
         contentType: "application/javascript",
         key,
-      })
+      }))
     );
     const currentApp = await db.query.app.findFirst();
     if (!currentApp) {
@@ -569,11 +569,12 @@ describe("platform deployment uploads", () => {
   });
 
   it("creates optional logo assets alongside the client bundle", async () => {
-    // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-    const createUploadUrl = vi.fn(async ({ key }: { key: string }) => ({
-      key,
-      uploadUrl: `https://uploads.example/${key}`,
-    }));
+    const createUploadUrl = vi.fn(
+      asyncFixture(({ key }: { key: string }) => ({
+        key,
+        uploadUrl: `https://uploads.example/${key}`,
+      }))
+    );
     const context = {
       organization: {
         createdAt: new Date(),
@@ -658,11 +659,12 @@ describe("platform deployment uploads", () => {
   });
 
   it("reuses a matching app logo without creating another upload URL", async () => {
-    // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-    const createUploadUrl = vi.fn(async ({ key }: { key: string }) => ({
-      key,
-      uploadUrl: `https://uploads.example/${key}`,
-    }));
+    const createUploadUrl = vi.fn(
+      asyncFixture(({ key }: { key: string }) => ({
+        key,
+        uploadUrl: `https://uploads.example/${key}`,
+      }))
+    );
     const context = {
       organization: {
         createdAt: new Date(),
@@ -815,26 +817,27 @@ describe("platform deployment uploads", () => {
     vi.useFakeTimers();
     vi.stubGlobal(
       "fetch",
-      // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-      vi.fn(async (_url: URL, init?: RequestInit) => ({
-        arrayBuffer: async () =>
-          await (async () => {
-            const {
-              promise: pendingPromise,
-              resolve: _resolve,
-              reject,
-            } = Promise.withResolvers<ArrayBuffer>();
-            try {
-              init?.signal?.addEventListener("abort", () => {
-                reject(new DOMException("Aborted", "AbortError"));
-              });
-            } catch (error) {
-              reject(error);
-            }
-            return await pendingPromise;
-          })(),
-        ok: true,
-      }))
+      vi.fn(
+        asyncFixture((_url: URL, init?: RequestInit) => ({
+          arrayBuffer: async () =>
+            await (async () => {
+              const {
+                promise: pendingPromise,
+                resolve: _resolve,
+                reject,
+              } = Promise.withResolvers<ArrayBuffer>();
+              try {
+                init?.signal?.addEventListener("abort", () => {
+                  reject(new DOMException("Aborted", "AbortError"));
+                });
+              } catch (error) {
+                reject(error);
+              }
+              return await pendingPromise;
+            })(),
+          ok: true,
+        }))
+      )
     );
 
     const publish = call(

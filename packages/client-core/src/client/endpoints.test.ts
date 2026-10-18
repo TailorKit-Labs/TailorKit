@@ -1,3 +1,4 @@
+import { asyncFixture } from "@tailorkit/config/testing";
 import { expect, it, vi } from "vite-plus/test";
 
 import type { TailorKitApp } from "#types";
@@ -116,16 +117,17 @@ it("clears sessions for held consumers through the public client and shares repl
 
 it("reauthorizes held consumers after host sign-out and account changes", async () => {
   let user: string | null = "first-user";
-  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-  const request = vi.fn<typeof fetch>().mockImplementation(async () =>
-    user !== undefined && user !== null && user !== ""
-      ? Response.json({
-          expiresAt: Date.now() + 300_000,
-          subjectId: user,
-          token: `${user}-token`,
-          url: "https://runtime.test/rpc",
-        })
-      : new Response(null, { status: 401 })
+  const request = vi.fn<typeof fetch>().mockImplementation(
+    asyncFixture(() =>
+      user !== undefined && user !== null && user !== ""
+        ? Response.json({
+            expiresAt: Date.now() + 300_000,
+            subjectId: user,
+            token: `${user}-token`,
+            url: "https://runtime.test/rpc",
+          })
+        : new Response(null, { status: 401 })
+    )
   );
   const fetchClient = createTailorKitFetchClient({
     baseUrl: "https://host.test/",

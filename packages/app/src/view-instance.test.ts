@@ -41,8 +41,7 @@ it("supplies instance data and context, updates data, and resets component state
     view: "/",
   });
   const container = root();
-  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This fixture must represent malformed input so the runtime validation boundary can be tested.
-  const show = async (key: string, data: unknown) => {
+  const show = async (key: string, data: { count: number } | null) => {
     await act(() => {
       render(
         h(view.component, {

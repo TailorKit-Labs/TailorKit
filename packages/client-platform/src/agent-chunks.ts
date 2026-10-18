@@ -44,10 +44,7 @@ const chunks = {
   }),
   custom: v.looseObject({
     // The SDK accepts every string here, while exposing a dotted name type.
-    kind: v.custom<`${string}.${string}`>(
-      // oxlint-disable-next-line anti-slop/no-runtime-typeof -- This custom schema is the I/O parser for the SDK's opaque custom chunk name.
-      (value) => typeof value === "string"
-    ),
+    kind: v.custom<`${string}.${string}`>((value) => v.is(v.string(), value)),
     providerMetadata,
     type: v.literal("custom"),
   }),
@@ -186,9 +183,8 @@ export const agentChunkSchema: v.GenericSchema<unknown, UIMessageChunk> =
       data: v.unknown(),
       id: v.optional(v.string()),
       transient: v.optional(v.boolean()),
-      type: v.custom<`data-${string}`>(
-        // oxlint-disable-next-line anti-slop/no-runtime-typeof -- This custom schema validates the template-literal discriminator at the wire boundary.
-        (value) => typeof value === "string" && value.startsWith("data-")
+      type: v.custom<`data-${string}`>((value) =>
+        v.is(v.pipe(v.string(), v.startsWith("data-")), value)
       ),
     }),
     v.variant("type", Object.values(chunks)),

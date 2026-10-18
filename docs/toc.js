@@ -11,38 +11,8 @@
   /** @type {number | undefined} */
   let frame;
 
-  // oxlint-disable-next-line eslint/complexity -- Keep this validation or rendering lifecycle together: its guards share the same state, cleanup, and error handling.
-  const draw = () => {
-    frame = undefined;
-    const candidate = document.querySelector("#table-of-contents .toc");
-    const list = candidate instanceof HTMLElement ? candidate : null;
-    if (list !== currentList) {
-      // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
-      resizeObserver.disconnect();
-      currentList = list;
-      if (list) {
-        // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
-        resizeObserver.observe(list);
-      }
-    }
-    if (!list) {
-      return;
-    }
-
-    const items = [...list.querySelectorAll(".toc-item")]
-      .filter((item) => item instanceof HTMLElement)
-      .filter((item) => item.querySelector(":scope > a") !== null);
-    if (!items.length) {
-      list.querySelector(".tailorkit-toc-rail")?.remove();
-      delete list.dataset.tailorkitRail;
-      return;
-    }
-
-    for (const item of items) {
-      const depth = Math.max(0, Number(item.dataset.depth) || 0);
-      item.style.setProperty("--tailorkit-toc-indent", `${depth * indent}px`);
-    }
-    list.dataset.tailorkitRail = "";
+  /** @param {HTMLElement} list @param {HTMLElement[]} items */
+  const drawRail = (list, items) => {
     const bounds = list.getBoundingClientRect();
     if (!bounds.width || !bounds.height) {
       return;
@@ -121,14 +91,48 @@
     }
   };
 
-  const schedule = () => {
-    if (frame !== undefined) {
-      return;
-    }
-    frame = requestAnimationFrame(draw);
-  };
+  const renderer = {
+    draw: () => {
+      frame = undefined;
+      const candidate = document.querySelector("#table-of-contents .toc");
+      const list = candidate instanceof HTMLElement ? candidate : null;
+      if (list !== currentList) {
+        renderer.resizeObserver.disconnect();
+        currentList = list;
+        if (list) {
+          renderer.resizeObserver.observe(list);
+        }
+      }
+      if (!list) {
+        return;
+      }
 
-  const resizeObserver = new ResizeObserver(schedule);
+      const items = [...list.querySelectorAll(".toc-item")]
+        .filter((item) => item instanceof HTMLElement)
+        .filter((item) => item.querySelector(":scope > a") !== null);
+      if (!items.length) {
+        list.querySelector(".tailorkit-toc-rail")?.remove();
+        delete list.dataset.tailorkitRail;
+        return;
+      }
+
+      for (const item of items) {
+        const depth = Math.max(0, Number(item.dataset.depth) || 0);
+        item.style.setProperty("--tailorkit-toc-indent", `${depth * indent}px`);
+      }
+      list.dataset.tailorkitRail = "";
+      drawRail(list, items);
+    },
+    resizeObserver: new ResizeObserver(() => {
+      renderer.schedule();
+    }),
+    schedule: () => {
+      if (frame !== undefined) {
+        return;
+      }
+      frame = requestAnimationFrame(renderer.draw);
+    },
+  };
 
   new MutationObserver((records) => {
     if (
@@ -146,7 +150,7 @@
         );
       })
     ) {
-      schedule();
+      renderer.schedule();
     }
   }).observe(document.documentElement, {
     attributeFilter: ["data-active-deepest", "data-depth"],
@@ -155,12 +159,12 @@
     subtree: true,
   });
 
-  window.addEventListener("resize", schedule, { passive: true });
+  window.addEventListener("resize", renderer.schedule, { passive: true });
 
   void (async () => {
     await document.fonts?.ready;
-    schedule();
+    renderer.schedule();
   })();
 
-  schedule();
+  renderer.schedule();
 })();

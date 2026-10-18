@@ -1,3 +1,4 @@
+import { asyncFixture } from "@tailorkit/config/testing";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
 import { createSlotStore } from "#store/fetch/slot";
@@ -116,28 +117,29 @@ it("isolates authenticated clients at the same endpoint and clears credentials w
 });
 
 it("deduplicates instance requests and sessions across framework-neutral consumers", async () => {
-  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-  const fetchMock = vi.fn(async (input) => {
-    const path = new URL(String(input)).pathname;
-    if (path.endsWith("/meta")) {
+  const fetchMock = vi.fn(
+    asyncFixture((input) => {
+      const path = new URL(String(input)).pathname;
+      if (path.endsWith("/meta")) {
+        return Response.json({
+          schema: {
+            slots: { page: { multiple: true, views: ["/"] } },
+            views: { "/": {} },
+          },
+        });
+      }
+      if (path.endsWith("/backend/session")) {
+        return Response.json({
+          expiresAt: Date.now() + 300_000,
+          token: "token",
+          url: "https://runtime.test/rpc",
+        });
+      }
       return Response.json({
-        schema: {
-          slots: { page: { multiple: true, views: ["/"] } },
-          views: { "/": {} },
-        },
+        json: [{ data: {}, key: "overview", metadata: {} }],
       });
-    }
-    if (path.endsWith("/backend/session")) {
-      return Response.json({
-        expiresAt: Date.now() + 300_000,
-        token: "token",
-        url: "https://runtime.test/rpc",
-      });
-    }
-    return Response.json({
-      json: [{ data: {}, key: "overview", metadata: {} }],
-    });
-  });
+    })
+  );
   const client = createTailorKitFetchClient({
     baseUrl: "https://host.test/",
     fetch: fetchMock,
