@@ -5,6 +5,10 @@ import { passkey } from "@better-auth/passkey";
 import { createDb } from "@tailorkit/db";
 import * as schema from "@tailorkit/db/schema/auth";
 import {
+  sendBetterAuthOtpEmail,
+  sendOrganizationInvitationEmail,
+} from "@tailorkit/email";
+import {
   getBaseUrl,
   getProductionUrl,
   getTrustedOrigins,
@@ -27,7 +31,6 @@ import { checkBotId } from "botid/server";
 import { env } from "#env";
 
 import { captchaEndpoints } from "./lib/captcha-endpoints";
-import { sendInvitationEmail, sendOtpEmail } from "./lib/email";
 import { ac, roles } from "./lib/permissions";
 import {
   initializeTenantShortId,
@@ -235,7 +238,7 @@ const buildAuth = () => {
         overrideDefaultEmailVerification: true,
         // oxlint-disable-next-line eslint/require-await -- This asynchronous protocol method resolves synchronously but must preserve Promise results and rejected exceptions.
         sendVerificationOTP: async ({ email, otp, type }) => {
-          backgroundTaskHandler(sendOtpEmail({ email, otp, type }));
+          backgroundTaskHandler(sendBetterAuthOtpEmail({ email, otp, type }));
         },
         sendVerificationOnSignUp: false,
         storeOTP: "hashed",
@@ -264,7 +267,7 @@ const buildAuth = () => {
           },
         },
         sendInvitationEmail: async (data) => {
-          await sendInvitationEmail({
+          await sendOrganizationInvitationEmail({
             email: data.email,
             invitationId: data.id,
             inviterName: data.inviter.user.name,
