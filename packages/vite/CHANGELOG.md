@@ -1,5 +1,16 @@
 # @tailorkit/vite
 
+## 0.1.0-beta.46
+
+### Patch Changes
+
+- 20947c7: Move the app database API into the new `@tailorkit/app-db` package, exposed through `tailorkit/db`. Import `defineDatabase`, table and column builders, query helpers, and database types from `tailorkit/db` instead of `tailorkit/server`.
+
+  Use TailorKit's `defineRelations` from `tailorkit/db` instead of importing it directly from `drizzle-orm`. New apps scaffold these imports automatically. Existing relation callbacks keep the same typed one/many navigation syntax.
+
+- Updated dependencies [20947c7]
+  - @tailorkit/app@0.1.0-beta.46
+
 ## 0.1.0-beta.45
 
 ### Minor Changes
