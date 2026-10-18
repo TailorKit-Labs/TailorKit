@@ -10,6 +10,15 @@ import type { AppAgentMcpProgress } from "./mcp-progress";
 
 export type { AppAgentMcpProgress } from "./mcp-progress";
 
+const serverInfo = { name: "tailorkit-app-agent", version: "1.0.0" };
+const capabilities = { tools: { listChanged: true } };
+
+/** Public protocol advertisement only; no tool handlers or backend dependencies. */
+export const appAgentMcpDiscovery = createMcpHandler(
+  () => new McpServer(serverInfo, { capabilities }),
+  { legacy: "reject" }
+);
+
 const promptSchema = z.string().trim().min(1).max(32_000);
 
 const editSchema = z.strictObject({
@@ -167,10 +176,7 @@ export const createAppAgentMcp = (
   });
   return createMcpHandler(
     () => {
-      const server = new McpServer({
-        name: "tailorkit-app-agent",
-        version: "1.0.0",
-      });
+      const server = new McpServer(serverInfo, { capabilities });
       server.registerTool(
         "list_apps",
         {
