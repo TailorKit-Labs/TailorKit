@@ -72,7 +72,7 @@
     "@orpc/client": "catalog:",
     "@orpc/contract": "catalog:",
     "@standard-schema/spec": "^1.1.0",
-    "drizzle-orm": "catalog:",
+    "@tailorkit/app-db": "workspace:*",
     "nanostores": "1.5.5",
     "valibot": "catalog:"
   },

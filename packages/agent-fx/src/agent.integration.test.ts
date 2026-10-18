@@ -134,10 +134,8 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
       mode === "api-key"
         ? "local-test-token"
         : `header.${Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })).toString("base64url")}.signature`;
-    vi.stubEnv(
-      "VERCEL_OIDC_TOKEN",
-      mode === "environment-oidc" ? token : undefined
-    );
+    // libfx 0.0.13 caches libc's environment pointer on Linux. Supply test
+    // credentials through #env to avoid invalidating it between native sessions.
     if (mode === "api-key") {
       env.AI_GATEWAY_API_KEY = token;
     }
@@ -304,7 +302,6 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
       delete env.VERCEL_OIDC_TOKEN;
       Object.assign(env, originalEnv);
       vi.unstubAllGlobals();
-      vi.unstubAllEnvs();
       await rm(directory, { force: true, recursive: true });
     }
   },

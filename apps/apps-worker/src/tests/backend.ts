@@ -12,7 +12,7 @@ export const createTestBackend = async (root: string): Promise<void> => {
   await writeFile(path.join(root, "package.json"), '{"type":"module"}');
   await writeFile(
     path.join(root, "db/schema.ts"),
-    `import { boolean, table, text } from "@tailorkit/app/server";
+    `import { boolean, table, text } from "@tailorkit/app-db";
 export const todos = table("todos", {
   id: text().primaryKey(),
   text: text().notNull(),
@@ -22,8 +22,8 @@ export const todos = table("todos", {
   );
   await writeFile(
     path.join(root, "server.ts"),
-    `import { AppError, defineDatabase, defineServer, fn } from "@tailorkit/app/server";
-import { defineRelations } from "drizzle-orm";
+    `import { AppError, defineServer, fn } from "@tailorkit/app/server";
+import { defineDatabase, defineRelations } from "@tailorkit/app-db";
 import { z } from "zod";
 import * as schema from "./db/schema";
 

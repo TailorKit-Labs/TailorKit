@@ -1,18 +1,15 @@
-import { defineRelations } from "drizzle-orm";
+import {
+  defineDatabase,
+  defineRelations,
+  table,
+  text,
+  boolean,
+} from "@tailorkit/app-db";
 import { z } from "zod";
 
 import type { Client } from "#client/connection";
 import { createApi } from "#client/reference";
-import {
-  defineDatabase,
-  table,
-  text,
-  boolean,
-  fn,
-  query,
-  mutation,
-  defineServer,
-} from "#server";
+import { fn, query, mutation, defineServer } from "#server";
 
 const users = table("users", { id: text().primaryKey() });
 const posts = table("posts", {

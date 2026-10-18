@@ -6,7 +6,7 @@ Keep the scaffold's three database files:
 
 ```ts
 // src/db/schema.ts
-import { table, text, boolean } from "tailorkit/server";
+import { table, text, boolean } from "tailorkit/db";
 
 export const todos = table("todos", {
   id: text().primaryKey(),
@@ -15,27 +15,27 @@ export const todos = table("todos", {
 });
 
 // src/db/relations.ts
-import { defineRelations } from "drizzle-orm";
+import { defineRelations } from "tailorkit/db";
 
 import * as schema from "./schema";
 
 export const relations = defineRelations(schema);
 
 // src/db/index.ts
-import { defineDatabase } from "tailorkit/server";
+import { defineDatabase } from "tailorkit/db";
 
 import { relations } from "./relations";
 
 export const db = defineDatabase({ relations });
 ```
 
-Import column builders (`table`, `text`, `integer`, `real`, `boolean`) and supported filter/order helpers from `tailorkit/server`. `boolean()` stores SQLite integers. Generate IDs in mutations, for example with `crypto.randomUUID()`; a text primary key has no automatic ID. Use explicit nullability/defaults and foreign-key references where enforcement is required. Table names must start with a letter, contain only letters/digits/underscores, be at most 63 characters, and avoid `sqlite_` and `tailorkit_` prefixes.
+Import column builders (`table`, `text`, `integer`, `real`, `boolean`) and supported filter/order helpers from `tailorkit/db`. `boolean()` stores SQLite integers. Generate IDs in mutations, for example with `crypto.randomUUID()`; a text primary key has no automatic ID. Use explicit nullability/defaults and foreign-key references where enforcement is required. Table names must start with a letter, contain only letters/digits/underscores, be at most 63 characters, and avoid `sqlite_` and `tailorkit_` prefixes.
 
-The scaffold uses Drizzle's `defineRelations` API, not the older `relations(table, ...)` API. Include all tables, even those without relationships. To link tables:
+Use TailorKit's `defineRelations` from `tailorkit/db` to define navigation. Include all tables, even those without relationships. To link tables:
 
 ```ts
 // src/db/relations.ts
-import { defineRelations } from "drizzle-orm";
+import { defineRelations } from "tailorkit/db";
 
 import * as schema from "./schema";
 

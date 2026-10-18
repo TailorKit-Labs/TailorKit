@@ -38,7 +38,15 @@ These are scaffold defaults; inspect an existing app's configured paths and alia
 
 ## Resolve unfamiliar SDK APIs
 
-Use public imports such as `tailorkit/client`, `tailorkit/server`, and `tailorkit/vite`. Inspect installed declaration files for the version actually used by the app. The umbrella package can re-export transitive SDK packages; pnpm may not expose those packages at the app's top-level node_modules. Resolve their package location through the umbrella import before assuming an API is missing. Avoid depending on private runtime modules or reinstalling packages just to browse them.
+Use `tailorkit/client` for frontend APIs, `tailorkit/server` for backend functions, `tailorkit/db` for database APIs, and `tailorkit/vite` for the build plugin. The database skill covers schema builders, relations, database definitions, and query helpers.
+
+Inspect installed declaration files for the version actually used by the app. The umbrella package re-exports transitive SDK packages; pnpm may not expose those packages at the app's top-level node_modules. Resolve their package location through the umbrella import before assuming an API is missing. For database declarations, resolve `@tailorkit/app-db` through `tailorkit/db` from the app root:
+
+```sh
+node --input-type=module -e 'import { findPackageJSON } from "node:module"; import { dirname, join } from "node:path"; console.log(join(dirname(findPackageJSON("@tailorkit/app-db", import.meta.resolve("tailorkit/db"))), "dist"));'
+```
+
+Read `index.d.ts` there and follow the declaration imports relevant to the task. Keep app imports on `tailorkit/db`; `@tailorkit/app-db` is its backing package. Avoid depending on private runtime modules or reinstalling packages just to browse them.
 
 ## Build and deploy
 

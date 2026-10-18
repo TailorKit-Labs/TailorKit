@@ -25,6 +25,7 @@ const aliasWorkspaces = [
   "packages/api-platform",
   "packages/api-utils",
   "packages/app",
+  "packages/app-db",
   "packages/asset-delivery",
   "packages/auth",
   "packages/cli",

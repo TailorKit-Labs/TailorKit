@@ -12,6 +12,7 @@ const script = fileURLToPath(new URL("check-prerelease.mjs", import.meta.url));
 const packageDirectories = [
   "tailorkit",
   "app",
+  "app-db",
   "cli",
   "client-core",
   "client-platform",

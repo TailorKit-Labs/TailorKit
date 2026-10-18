@@ -2,6 +2,8 @@
 
 Use `@tailorkit/app` to build TailorKit extensions. Apps require Preact 11; install `preact@^11` alongside the SDK.
 
+Define app tables, relations, and database capabilities with `tailorkit/db`, backed by [`@tailorkit/app-db`](../app-db/README.md). Define queries, mutations, and actions with `tailorkit/server`.
+
 ## File routing
 
 The builder registers views from `src/slots` automatically. Only files ending in `.view.tsx` register views, so supporting components can live beside them:

@@ -1,6 +1,9 @@
 import type { AnyRelations, EmptyRelations } from "drizzle-orm/relations";
 import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core";
 
+export type DatabaseRelations = AnyRelations;
+export type EmptyDatabaseRelations = EmptyRelations;
+
 type Database<R extends AnyRelations> = BaseSQLiteDatabase<
   "sync",
   { changes: number },

@@ -322,7 +322,8 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
     const publishRpc = async (history, deploymentId) => {
       // Use the same migration bootstrap bundled into production server artifacts.
       const setup = `import app from ${JSON.stringify(path.join(backend, "server.ts"))};
-import { defineServer, action, query, table, text, integer, AppError } from ${JSON.stringify(path.join(repo, "packages/app/dist/server.js"))};
+import { defineServer, action, query, AppError } from ${JSON.stringify(path.join(repo, "packages/app/dist/server.js"))};
+import { table, text, integer } from ${JSON.stringify(path.join(repo, "packages/app-db/dist/index.js"))};
 import { env } from "cloudflare:workers";
 
 let globals = 0;

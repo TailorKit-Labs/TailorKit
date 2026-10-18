@@ -4,15 +4,17 @@
 
 Each app installation has its own persistent SQLite database in the managed Cloudflare Durable Object runtime. App releases and backend code replacement use that installation's storage; they do not create a fresh database. Client Preact state and module globals are temporary. Host-owned records remain behind the host's tools and context.
 
-App functions receive restricted Drizzle capabilities. Queries can read; mutations can read and write. There is no raw SQLite connection, filesystem database, D1 binding, Postgres service, or unrestricted transaction handle to configure. Use actions to coordinate external work with queries/mutations; the functions skill covers those boundaries.
+App functions receive restricted TailorKit database capabilities, implemented with Drizzle internally. Queries can read; mutations can read and write. There is no raw SQLite connection, filesystem database, D1 binding, Postgres service, or unrestricted transaction handle to configure. Use actions to coordinate external work with queries/mutations; the functions skill covers those boundaries.
 
 ## Define tables and relations
+
+Import schema builders, `defineRelations`, `defineDatabase`, filter/order helpers, and database types (`DatabaseDefinition`, `QueryDatabase`, `MutationDatabase`) from `tailorkit/db`. This public entry point wraps `@tailorkit/app-db` and owns the adapter to Drizzle. When updating existing database code, move database imports from `tailorkit/server` and relation imports from `drizzle-orm` to `tailorkit/db`. Function builders and registration remain on `tailorkit/server`. Keep database modules in the backend; the browser build rejects `tailorkit/db` imports.
 
 Follow an existing app's database organization. The default scaffold separates `src/db/schema.ts`, `src/db/relations.ts`, and `src/db/index.ts`:
 
 ```ts
 // src/db/schema.ts
-import { table, text, boolean } from "tailorkit/server";
+import { table, text, boolean } from "tailorkit/db";
 
 export const notes = table("notes", {
   id: text().primaryKey(),
@@ -23,7 +25,7 @@ export const notes = table("notes", {
 
 ```ts
 // src/db/relations.ts
-import { defineRelations } from "drizzle-orm";
+import { defineRelations } from "tailorkit/db";
 
 import * as schema from "./schema";
 
@@ -32,16 +34,34 @@ export const relations = defineRelations(schema);
 
 ```ts
 // src/db/index.ts
-import { defineDatabase } from "tailorkit/server";
+import { defineDatabase } from "tailorkit/db";
 
 import { relations } from "./relations";
 
 export const db = defineDatabase({ relations });
 ```
 
-Use `table`, `text`, `integer`, `real`, and `boolean` from `tailorkit/server`. Boolean columns use SQLite integer storage; text primary keys need explicit IDs, for example `crypto.randomUUID()` in a mutation. Choose nullability, defaults, and references deliberately. Table names start with a letter, contain letters/digits/underscores, have at most 63 characters, and cannot start with the reserved `sqlite_` or `tailorkit_` prefixes.
+Use `table`, `text`, `integer`, `real`, and `boolean` from `tailorkit/db`. Boolean columns use SQLite integer storage; text primary keys need explicit IDs, for example `crypto.randomUUID()` in a mutation. Choose nullability, defaults, and references deliberately. Table names start with a letter, contain letters/digits/underscores, have at most 63 characters, and cannot start with the reserved `sqlite_` or `tailorkit_` prefixes.
 
-Use Drizzle's `defineRelations` API with all schema tables, including tables without relationships. For relationships, define navigation using the actual local/remote columns, for example `author: r.one.users({ from: r.notes.authorId, to: r.users.id })` and the reverse `r.many.notes()`. A relation describes query navigation; it does not create a foreign-key constraint. Declare the reference on the column when enforcement is required. Follow the installed Drizzle version for relation details rather than using an older `relations(table, ...)` recipe.
+Pass all schema tables to TailorKit's `defineRelations`, including tables without relationships. Without a callback, it includes every table with no navigation. When the schema defines `users.id` and `notes.authorId`, add typed navigation in both directions:
+
+```ts
+// src/db/relations.ts
+import { defineRelations } from "tailorkit/db";
+
+import * as schema from "./schema";
+
+export const relations = defineRelations(schema, (r) => ({
+  notes: {
+    author: r.one.users({ from: r.notes.authorId, to: r.users.id }),
+  },
+  users: {
+    notes: r.many.notes({ from: r.users.id, to: r.notes.authorId }),
+  },
+}));
+```
+
+A relation describes query navigation; it does not create a foreign-key constraint. Declare the reference on the column when enforcement is required. Inspect the installed `tailorkit/db` declarations for relation options.
 
 ## Read and write through function capabilities
 
@@ -57,7 +77,7 @@ db.query.notes
   .sync();
 ```
 
-Use `findFirst(...).sync()` for an optional record and handle absence. Use select builders with `.all()`/`.get()` for projections, joins, or aggregates, and execute mutation writes with `.run()` or `.returning(...).all()`/`.get()`. Import supported filters and ordering helpers from `tailorkit/server`. Do not return a builder or await database execution inside a synchronous handler.
+Use `findFirst(...).sync()` for an optional record and handle absence. Use select builders with `.all()`/`.get()` for projections, joins, or aggregates, and execute mutation writes with `.run()` or `.returning(...).all()`/`.get()`. Import supported filters and ordering helpers from `tailorkit/db`. Do not return a builder or await database execution inside a synchronous handler.
 
 Filter and paginate on the backend; return the fields the UI needs rather than the whole database or one query per list item. Scope updates/deletes with conditions. A mutation is already atomic, and its handle is revoked when it returns. Raw SQL execution and ad hoc schema changes are not app runtime capabilities; schema changes belong in migrations.
 
