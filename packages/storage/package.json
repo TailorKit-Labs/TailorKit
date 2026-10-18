@@ -31,8 +31,7 @@
     "check-types": "tsc --noEmit",
     "test": "node --test test/*.test.mjs",
     "lint": "vp lint .",
-    "lint:fix": "vp lint --fix .",
-    "measure:bundle": "node scripts/measure-bundle.mjs"
+    "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
     "@tailorkit/env": "workspace:*",
@@ -44,8 +43,7 @@
     "@aws-sdk/s3-request-presigner": "^3.1149.0",
     "@tailorkit/config": "workspace:*",
     "@types/node": "catalog:",
-    "typescript": "catalog:",
-    "vite-plus": "catalog:"
+    "typescript": "catalog:"
   },
   "peerDependencies": {
     "@aws-sdk/client-s3": "^3.956.0",
