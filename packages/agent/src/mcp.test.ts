@@ -5,7 +5,7 @@ import {
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
-import { createAppAgentMcp } from "./mcp";
+import { appAgentMcpDiscovery, createAppAgentMcp } from "./mcp";
 import type { AppAgentMcpBackend, AppAgentMcpProgress } from "./mcp";
 
 const requireValue = <T>(value: T | null | undefined): T => {
@@ -67,6 +67,31 @@ const connect = async (overrides: Partial<AppAgentMcpBackend> = {}) => {
 };
 
 describe("app agent MCP", () => {
+  it("advertises identical identity and capabilities through public discovery", async () => {
+    const { client } = await connect();
+    const publicClient = new Client(
+      { name: "public-discovery", version: "1" },
+      { versionNegotiation: { mode: "auto" } }
+    );
+    cleanup.push(async () => {
+      await publicClient.close();
+    });
+    await publicClient.connect(
+      new StreamableHTTPClientTransport(new URL("https://host.test/mcp"), {
+        fetch: async (input, init) =>
+          await appAgentMcpDiscovery.fetch(new Request(input, init)),
+      })
+    );
+
+    expect(publicClient.getProtocolEra()).toBe("modern");
+    expect(publicClient.getServerCapabilities()).toEqual(
+      client.getServerCapabilities()
+    );
+    expect(publicClient.getServerVersion()).toEqual(client.getServerVersion());
+    const { tools } = await publicClient.listTools();
+    expect(tools).toEqual([]);
+  });
+
   it("discovers only three tools over the current protocol and explains agent creation", async () => {
     const { client, backend } = await connect();
     expect(client.getProtocolEra()).toBe("modern");
