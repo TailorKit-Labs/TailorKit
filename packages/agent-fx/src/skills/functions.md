@@ -16,7 +16,7 @@ Enable `server: {}` in `tailorkit.config.ts`. Define functions with `fn` from `t
 
 Chain `.input(zodSchema)` and optional `.output(zodSchema)` before `.handler(...)`. Builder handlers receive `input`; omit `.input` for an inputless function. Inputs and outputs must support synchronous validation. Return serializable data: plain objects, arrays, strings, numbers, booleans, or null. Convert dates and special objects deliberately, and return null for an absent record.
 
-For a `notes` table and database definition described in the database skill:
+For a `notes` table and database definition created with `tailorkit/db` as described in the database skill:
 
 ```ts
 import { fn } from "tailorkit/server";

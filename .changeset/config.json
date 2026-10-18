@@ -6,6 +6,7 @@
     [
       "tailorkit",
       "@tailorkit/app",
+      "@tailorkit/app-db",
       "@tailorkit/cli",
       "@tailorkit/client-core",
       "@tailorkit/client-platform",

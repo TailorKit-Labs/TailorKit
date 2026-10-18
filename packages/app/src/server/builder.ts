@@ -1,9 +1,12 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
-import type { AnyRelations, EmptyRelations } from "drizzle-orm/relations";
+import type {
+  DatabaseRelations,
+  EmptyDatabaseRelations,
+  DatabaseDefinition,
+  QueryDatabase,
+  MutationDatabase,
+} from "@tailorkit/app-db";
 import * as v from "valibot";
-
-import type { DatabaseDefinition } from "#database/definition";
-import type { MutationDatabase, QueryDatabase } from "#database/types";
 
 import type {
   ActionContext,
@@ -17,7 +20,7 @@ type HandlerContext<
   K extends FunctionKind,
   A extends StandardSchemaV1,
   F extends Functions,
-  D extends AnyRelations,
+  D extends DatabaseRelations,
 > = {
   input: StandardSchemaV1.InferOutput<A>;
 } & (K extends "action"
@@ -45,7 +48,7 @@ type BuiltFunction<
   R,
   O,
   F extends Functions,
-  D extends AnyRelations,
+  D extends DatabaseRelations,
 > = {
   readonly kind: K;
   readonly args: A;
@@ -58,7 +61,7 @@ type BuiltFunction<
 } & (R extends StandardSchemaV1 ? { readonly result: R } : unknown) &
   (K extends "action" ? { readonly functions: F } : unknown);
 
-interface FunctionMetadata<R, F, D extends AnyRelations> {
+interface FunctionMetadata<R, F, D extends DatabaseRelations> {
   database?: DatabaseDefinition<D>;
   result?: R;
   functions?: F;
@@ -70,7 +73,7 @@ class FunctionBuilder<
   A extends StandardSchemaV1,
   R extends StandardSchemaV1 | undefined = undefined,
   F extends Functions = EmptyFunctions,
-  D extends AnyRelations = EmptyRelations,
+  D extends DatabaseRelations = EmptyDatabaseRelations,
 > {
   private readonly kind: K;
   private readonly args: A;
@@ -125,7 +128,7 @@ class FunctionBuilder<
     );
   }
 
-  database<const E extends AnyRelations>(
+  database<const E extends DatabaseRelations>(
     this: FunctionBuilder<K, A, R, F, D> &
       (K extends "action" ? never : unknown),
     database: DatabaseDefinition<E>

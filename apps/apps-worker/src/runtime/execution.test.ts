@@ -6,14 +6,17 @@ import {
   text,
   boolean,
   eq,
-  defineServer,
   defineDatabase,
+  defineRelations,
+} from "@tailorkit/app-db";
+import {
+  defineServer,
   query,
   mutation,
   fn,
   AppError,
 } from "@tailorkit/app/server";
-import { defineRelations, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { sqliteView } from "drizzle-orm/sqlite-core";
 import { Effect } from "effect";
 import { afterEach, expect, it, vi } from "vite-plus/test";

@@ -10,6 +10,7 @@ import {
 const publishablePackages = [
   "packages/tailorkit/package.json",
   "packages/app/package.json",
+  "packages/app-db/package.json",
   "packages/cli/package.json",
   "packages/client-core/package.json",
   "packages/client-platform/package.json",

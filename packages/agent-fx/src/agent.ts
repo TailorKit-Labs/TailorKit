@@ -59,7 +59,7 @@ export const createAppAgent = async (
       {
         content: database,
         description:
-          "Database: read when defining SQLite tables/relations, writing database queries, or generating and upgrading migrations.",
+          "Database: read when using tailorkit/db, defining SQLite tables/relations, writing database queries, or changing database imports or migrations.",
         name: "tailorkit-database",
       },
     ],

@@ -308,22 +308,25 @@ describe("database app builds", () => {
     });
   });
 
-  it.each(["./server", "tailorkit/server", "effect"])(
-    "rejects the browser's accidental import of %s",
-    async (specifier) => {
-      await withDatabaseApp(async (root) => {
-        const clientPath = path.join(root, "src/root.tsx");
-        const client = await readFile(clientPath, "utf-8");
-        await writeFile(
-          clientPath,
-          `import ${JSON.stringify(specifier)};\n${client}`
-        );
-        await expect(buildFixture({ cwd: root })).rejects.toThrow(
-          "cannot be imported into a browser bundle"
-        );
-      });
-    }
-  );
+  it.each([
+    "./server",
+    "tailorkit/server",
+    "tailorkit/db",
+    "@tailorkit/app-db",
+    "effect",
+  ])("rejects the browser's accidental import of %s", async (specifier) => {
+    await withDatabaseApp(async (root) => {
+      const clientPath = path.join(root, "src/root.tsx");
+      const client = await readFile(clientPath, "utf-8");
+      await writeFile(
+        clientPath,
+        `import ${JSON.stringify(specifier)};\n${client}`
+      );
+      await expect(buildFixture({ cwd: root })).rejects.toThrow(
+        "cannot be imported into a browser bundle"
+      );
+    });
+  });
 
   it("rejects build output overlapping the migration source", async () => {
     await withDatabaseApp(async (root) => {

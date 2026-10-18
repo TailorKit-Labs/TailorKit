@@ -21,6 +21,7 @@
     "@standard-server/peer": "0.10.2",
     "@tailorkit/api-utils": "workspace:*",
     "@tailorkit/app": "workspace:*",
+    "@tailorkit/app-db": "workspace:*",
     "@tailorkit/asset-delivery": "workspace:*",
     "drizzle-orm": "catalog:",
     "effect": "catalog:",

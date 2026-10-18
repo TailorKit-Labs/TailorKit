@@ -32,7 +32,7 @@ Read each matching skill before implementing that area:
 - **tailorkit-frontend:** UI, forms, callback handling, state, composition, responsiveness, and accessibility.
 - **tailorkit-views:** slots, context paths, roots and layouts, or repeated view instances.
 - **tailorkit-functions:** queries, mutations, actions, host tool calls from the backend, and reactive client hooks.
-- **tailorkit-database:** SQLite tables, relations, database queries, and migrations.
+- **tailorkit-database:** `tailorkit/db`, SQLite tables and relations, database queries, or changing database imports and migrations.
 
 ## Verify and finish
 

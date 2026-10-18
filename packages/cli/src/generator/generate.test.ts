@@ -105,11 +105,16 @@ describe("generateApp", () => {
       "utf-8"
     );
     expect(database).toContain("defineDatabase({ relations })");
+    expect(database).toContain('from "tailorkit/db"');
     expect(database).toContain('export * from "./schema"');
     expect(database).not.toContain("import * as schema");
-    expect(
-      await readFile(path.join(targetDirectory, "src/db/relations.ts"), "utf-8")
-    ).toContain("defineRelations(schema)");
+    const relations = await readFile(
+      path.join(targetDirectory, "src/db/relations.ts"),
+      "utf-8"
+    );
+    expect(relations).toContain("defineRelations(schema)");
+    expect(relations).toContain('from "tailorkit/db"');
+    expect(relations).not.toContain("drizzle-orm");
     expect(
       await readFile(
         path.join(targetDirectory, "src/functions/greeting.ts"),

@@ -6,7 +6,7 @@ import { promisify } from "node:util";
 import { drizzleGenerateArguments } from "./builder/drizzle";
 import { getBuildEnvironment } from "./builder/env";
 
-export const testSchema = `import { boolean, table, text } from "tailorkit/server";
+export const testSchema = `import { boolean, table, text } from "tailorkit/db";
 export const todos = table("todos", {
   id: text().primaryKey(),
   text: text().notNull(),
@@ -60,8 +60,8 @@ export const createDatabaseTestApp = async (root: string): Promise<void> => {
     "src/db/schema.ts": testSchema,
     "src/root.tsx": `import { defineRoute } from "tailorkit/client";
 export default defineRoute({ shellComponent: () => "Database test client" });`,
-    "src/server.ts": `import { defineDatabase, defineServer, fn } from "tailorkit/server";
-import { defineRelations } from "drizzle-orm";
+    "src/server.ts": `import { defineServer, fn } from "tailorkit/server";
+import { defineDatabase, defineRelations } from "tailorkit/db";
 import * as schema from "./db/schema";
 const database = defineDatabase({ relations: defineRelations(schema) });
 export default defineServer({

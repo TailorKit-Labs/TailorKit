@@ -278,7 +278,7 @@ export const tailorkit = (options: TailorKitPluginOptions = {}): Plugin[] => {
       name: "tailorkit-browser-server-boundary",
       async resolveId(id, importer) {
         if (
-          /^(?:@tailorkit\/app\/server$|tailorkit\/(?:server|app\/server)$|effect(?:\/|$))/u.test(
+          /^(?:@tailorkit\/(?:app\/server|app-db)$|tailorkit\/(?:server|db|app\/server)$|effect(?:\/|$))/u.test(
             id
           ) ||
           (importer !== undefined &&

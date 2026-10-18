@@ -1,9 +1,13 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
-import type { AnyRelations, EmptyRelations } from "drizzle-orm/relations";
+import type {
+  DatabaseRelations,
+  EmptyDatabaseRelations,
+  DatabaseDefinition,
+  QueryDatabase,
+  MutationDatabase,
+} from "@tailorkit/app-db";
 
 import type { TailorKitServerTools } from "#client/tools";
-import type { DatabaseDefinition } from "#database/definition";
-import type { QueryDatabase, MutationDatabase } from "#database/types";
 import type { JsonValue } from "#validation";
 
 // oxlint-disable-next-line typescript/no-generated-empty-object-type -- Omitted function tables must have no keys so actions expose no undeclared capabilities.
@@ -79,7 +83,7 @@ export interface FunctionDefinition<
   A extends StandardSchemaV1,
   O,
   F extends Functions = EmptyFunctions,
-  D extends AnyRelations = EmptyRelations,
+  D extends DatabaseRelations = EmptyDatabaseRelations,
 > {
   readonly kind: K;
   readonly args: A;
@@ -98,7 +102,7 @@ export interface FunctionDefinition<
 export const query = <
   A extends StandardSchemaV1,
   O,
-  const D extends AnyRelations = EmptyRelations,
+  const D extends DatabaseRelations = EmptyDatabaseRelations,
 >(
   definition: Omit<
     FunctionDefinition<"query", A, O, EmptyFunctions, D>,
@@ -115,7 +119,7 @@ export const query = <
 export const mutation = <
   A extends StandardSchemaV1,
   O,
-  const D extends AnyRelations = EmptyRelations,
+  const D extends DatabaseRelations = EmptyDatabaseRelations,
 >(
   definition: Omit<
     FunctionDefinition<"mutation", A, O, EmptyFunctions, D>,
