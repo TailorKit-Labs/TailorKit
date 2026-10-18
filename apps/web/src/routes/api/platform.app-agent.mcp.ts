@@ -7,6 +7,7 @@ import {
   recordException,
   sanitizeErrorForLog,
   setSpanAttributes,
+  withSpan,
 } from "@tailorkit/observability";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -25,9 +26,19 @@ const handle = async ({ request }: { request: Request }) => {
     throw contextErrorResponse(error);
   });
 
-  const { handleAppAgentMcpRequest } =
-    await import("@tailorkit/api-platform/app-agent-mcp");
-  return await handleAppAgentMcpRequest(request, context);
+  const { handleAppAgentMcpRequest } = await withSpan(
+    "mcp.load_handler",
+    async () => await import("@tailorkit/api-platform/app-agent-mcp")
+  );
+  return await withSpan(
+    "mcp.dispatch",
+    {
+      attributes: {
+        "mcp.method.name": request.headers.get("mcp-method") ?? undefined,
+      },
+    },
+    async () => await handleAppAgentMcpRequest(request, context)
+  );
 };
 
 export const Route = createFileRoute("/api/platform/app-agent/mcp")({
