@@ -35,10 +35,6 @@ const toolInputSchema = z.object({
   path: z.string().optional(),
   pattern: z.string().optional(),
 });
-const toolOutcomeSchema = z.object({
-  exitCode: z.number().optional(),
-  isError: z.boolean().optional(),
-});
 interface ToolAction {
   detail?: string;
   label: string;
@@ -91,47 +87,15 @@ const toolAction = (
   return { label };
 };
 
-const describeTool = (action: ToolAction, outcome?: string): string => {
-  const label =
-    outcome === undefined ? action.label : `${action.label} ${outcome}`;
-  return preview(
-    action.detail === undefined ? `${label}.` : `${label}: ${action.detail}`
+const describeTool = (action: ToolAction): string =>
+  preview(
+    action.detail === undefined
+      ? `${action.label}.`
+      : `${action.label}: ${action.detail}`
   );
-};
-
-const toolOutcome = (
-  chunk: Extract<
-    UIMessageChunk,
-    {
-      type:
-        | "tool-output-available"
-        | "tool-output-error"
-        | "tool-output-denied";
-    }
-  >
-): string => {
-  if (chunk.type === "tool-output-error") {
-    return "failed";
-  }
-  if (chunk.type === "tool-output-denied") {
-    return "denied";
-  }
-  const parsed = toolOutcomeSchema.safeParse(chunk.output);
-  if (parsed.success) {
-    const { exitCode, isError } = parsed.data;
-    if (isError === true) {
-      return "failed";
-    }
-    if (exitCode !== undefined && exitCode !== 0) {
-      return `failed (exit ${exitCode})`;
-    }
-  }
-  return chunk.preliminary === true ? "running" : "completed";
-};
 
 /** Request-local state lets ordinary MCP clients display meaningful snapshots. */
 export const createProgressMessage = () => {
-  const tools = new Map<string, ToolAction>();
   const text = new Map<string, string>();
   let message = "App agent is working.";
 
@@ -141,6 +105,8 @@ export const createProgressMessage = () => {
       return message;
     }
     const { chunk } = event;
+    // Tool results and bookkeeping retain the last visible message. Detailed
+    // outcomes remain available in the structured stream.
     if (chunk.type === "text-delta") {
       // Bound the text retained per active block. Progress messages contain
       // cumulative text, not individual token fragments or private reasoning.
@@ -156,24 +122,7 @@ export const createProgressMessage = () => {
       chunk.type === "tool-input-available" ||
       chunk.type === "tool-input-error"
     ) {
-      const action = toolAction(chunk);
-      tools.set(chunk.toolCallId, action);
-      const outcome =
-        chunk.type === "tool-input-error" ? "could not start" : undefined;
-      message = describeTool(action, outcome);
-    } else if (
-      chunk.type === "tool-output-available" ||
-      chunk.type === "tool-output-error" ||
-      chunk.type === "tool-output-denied"
-    ) {
-      const action = tools.get(chunk.toolCallId) ?? { label: "Tool" };
-      message = describeTool(action, toolOutcome(chunk));
-      if (
-        chunk.type !== "tool-output-available" ||
-        chunk.preliminary !== true
-      ) {
-        tools.delete(chunk.toolCallId);
-      }
+      message = describeTool(toolAction(chunk));
     } else if (chunk.type === "error") {
       message =
         "App agent encountered an error. Check the app before retrying.";
