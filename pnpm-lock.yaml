@@ -300,6 +300,9 @@ overrides:
   vite@*: npm:@voidzero-dev/vite-plus-core@1.1.0
   vitest@*: 5.0.1
 
+patchedDependencies:
+  '@ai-sdk/harness-fx@1.0.69': 0605d90342228c045e68938011d14d55eed20ae3831e5f9313e507484f15ce5d
+
 importers:
 
   .:
@@ -651,7 +654,7 @@ importers:
         version: 1.0.154(ws@8.22.0)(zod@4.6.5)
       '@ai-sdk/harness-fx':
         specifier: 1.0.69
-        version: 1.0.69(ws@8.22.0)(zod@4.6.5)
+        version: 1.0.69(patch_hash=0605d90342228c045e68938011d14d55eed20ae3831e5f9313e507484f15ce5d)(ws@8.22.0)(zod@4.6.5)
       '@ai-sdk/sandbox-vercel':
         specifier: 1.0.154
         version: 1.0.154(ws@8.22.0)(zod@4.6.5)
@@ -13294,7 +13297,7 @@ snapshots:
       '@vercel/oidc': 3.2.0
       zod: 4.6.5
 
-  '@ai-sdk/harness-fx@1.0.69(ws@8.22.0)(zod@4.6.5)':
+  '@ai-sdk/harness-fx@1.0.69(patch_hash=0605d90342228c045e68938011d14d55eed20ae3831e5f9313e507484f15ce5d)(ws@8.22.0)(zod@4.6.5)':
     dependencies:
       '@ai-sdk/harness': 1.0.154(ws@8.22.0)(zod@4.6.5)
       '@ai-sdk/mcp': 2.0.78(zod@4.6.5)

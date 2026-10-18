@@ -106,3 +106,5 @@ peerDependencyRules:
     - vite
   allowedVersions:
     vite: "*"
+patchedDependencies:
+  "@ai-sdk/harness-fx@1.0.69": patches/@ai-sdk__harness-fx@1.0.69.patch
