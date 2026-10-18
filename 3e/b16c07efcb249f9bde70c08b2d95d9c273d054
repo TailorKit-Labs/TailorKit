@@ -1,0 +1,21 @@
+apps/web/config/server-functions.ts
+  s_7d1277528c5eb4::t_c0d0544d7de2ee 1,7,67-71,85,89,106-108,117-119,137-145,148
+apps/web/vite.config.ts
+  s_7d1277528c5eb4::t_2d9a45d0469c95 96-97,122-131
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3eb16c07efcb249f9bde70c08b2d95d9c273d054",
+  "prompts": {},
+  "sessions": {
+    "s_7d1277528c5eb4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1497e-9fb2-72a0-980b-c455db548beb",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
