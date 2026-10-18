@@ -1,0 +1,118 @@
+apps/apps-worker/package.json
+  h_18044dd1b61a81 32
+apps/apps-worker/src/assets.test.ts
+  h_18044dd1b61a81 32-35
+apps/apps-worker/src/routing.test.ts
+  h_18044dd1b61a81 2,50
+apps/apps-worker/src/runtime/builder.test.ts
+  h_18044dd1b61a81 4,135-138,141-144
+apps/apps-worker/src/runtime/execution.test.ts
+  h_18044dd1b61a81 19,534-544
+apps/apps-worker/src/supervisor/capabilities.test.ts
+  h_18044dd1b61a81 1,64-72
+apps/apps-worker/src/supervisor/source.test.ts
+  h_18044dd1b61a81 5,44-49,123-127,139
+apps/apps-worker/src/supervisor/subscriptions.test.ts
+  h_18044dd1b61a81 6,43-48,201-206,253-258
+apps/apps-worker/src/supervisor/websockets.test.ts
+  h_18044dd1b61a81 3,48,50-51,59,61
+apps/apps-worker/src/transport.test.ts
+  h_18044dd1b61a81 220-224
+apps/apps-worker/src/worker.test.ts
+  h_18044dd1b61a81 4,179-181
+docs/toc.js
+  h_18044dd1b61a81 14-15,94-108,110-135,153,162,166,169
+packages/agent/src/workspace.test.ts
+  h_18044dd1b61a81 1,156,159
+packages/api-platform/src/app-slug.test.ts
+  h_18044dd1b61a81 7-8,17-32,61-80
+packages/api-platform/src/routes/app-agent.test.ts
+  h_18044dd1b61a81 10,133-147
+packages/api-platform/src/routes/apps.test.ts
+  h_18044dd1b61a81 10,31,44-53,127-132,1340-1355,1379-1394,1396-1427
+packages/api-platform/src/routes/deployments.test.ts
+  h_18044dd1b61a81 6,217-222,393,396,399,405,572-577,662-667,820-840
+packages/api-platform/src/scope.ts
+  h_18044dd1b61a81 204-206,220
+packages/api-utils/src/rate-limiting.ts
+  h_18044dd1b61a81 39,45
+packages/app/src/client/connection.ts
+  h_18044dd1b61a81 82-93
+packages/app/src/client/session.test.ts
+  h_18044dd1b61a81 1,7-15,48-49,56-57
+packages/app/src/routing.test.ts
+  h_18044dd1b61a81 15-16
+packages/app/src/view-instance.test.ts
+  h_18044dd1b61a81 44
+packages/app/src/views.ts
+  h_18044dd1b61a81 305
+packages/cli/src/agent-tui.test.ts
+  h_18044dd1b61a81 1,3,15-37,49-71,104-117,124,142,148,165,175,189,196,204-209,218,225,239-241,254,265,272,296,304,324,365-367,388-392,395,401-403,412-414,421,425-427,444,447-449,461,466
+packages/cli/src/agent.test.ts
+  h_18044dd1b61a81 5-7,17,35-36,38,41-42,207-217,227-232,297,324-330
+packages/cli/src/client.test.ts
+  h_18044dd1b61a81 5,168-169,180-181
+packages/cli/src/deploy.test.ts
+  h_18044dd1b61a81 15,400-409,462-469
+packages/cli/src/deploy.ts
+  h_18044dd1b61a81 389-397,399
+packages/cli/src/generator/generate.ts
+  h_18044dd1b61a81 57-74,97-105,108,164
+packages/cli/src/index.test.ts
+  h_18044dd1b61a81 1,69-81
+packages/cli/src/testing.test.ts
+  h_18044dd1b61a81 1-39
+packages/client-core/src/client/config.test.ts
+  h_18044dd1b61a81 1,42-43,53-54
+packages/client-core/src/client/endpoints.test.ts
+  h_18044dd1b61a81 1,120-130
+packages/client-core/src/client/fetch-client.test.ts
+  h_18044dd1b61a81 1,120-137,139,141-142
+packages/client-platform/src/agent-chunks.ts
+  h_18044dd1b61a81 47,186-187
+packages/client-platform/test/apps.test.ts
+  h_18044dd1b61a81 1,11-15,19,23,25,37,45
+packages/config/README.md
+  h_18044dd1b61a81 4-5
+packages/config/package.json
+  h_18044dd1b61a81 15-22,24-25
+packages/config/testing.ts
+  h_18044dd1b61a81 1-7
+packages/core/src/server/experimental.test.ts
+  h_18044dd1b61a81 2,27-34,38,50-51,67,74-76,79,102,108-114,129-135
+packages/core/src/server/handler.test.ts
+  h_18044dd1b61a81 1,687,702,763,775,907,920
+packages/core/src/server/scope.ts
+  h_18044dd1b61a81 301-304
+packages/core/src/server/tools.test.ts
+  h_18044dd1b61a81 1,335,344-345
+packages/react/src/__tests__/render-slot.test.tsx
+  h_18044dd1b61a81 5,18,32-37,41,48-50,422-439,441-446
+packages/react/src/__tests__/tailor-kit.test.tsx
+  h_18044dd1b61a81 6,149,188,395,445,572,577,716,728,730,802,848,852,862-863,870-871
+packages/react/src/__tests__/tailor-kit.types.tsx
+  h_18044dd1b61a81 1,8,49-50,57,561
+packages/react/src/__tests__/use-views.test.tsx
+  h_18044dd1b61a81 5,95-113
+packages/react/src/remote-view.tsx
+  h_18044dd1b61a81 72-150,153
+packages/vite/src/builder/define-view.ts
+  h_18044dd1b61a81 33-49,51,163-188,190-204,206
+packages/vite/src/builder/instances.ts
+  h_18044dd1b61a81 95-107,109
+packages/vite/src/builder/server.test.ts
+  h_18044dd1b61a81 440,509,522,525-535,551,554,573-580
+pnpm-lock.yaml
+  h_18044dd1b61a81 383-385,1182-1184
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c185b146203965b2303160255823653c925ef431",
+  "prompts": {},
+  "humans": {
+    "h_18044dd1b61a81": {
+      "author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
