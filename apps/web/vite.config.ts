@@ -10,7 +10,10 @@ import { workflow } from "workflow/vite";
 
 import { env } from "#env";
 
-import { apiFunctions, isolatedApiFunctions } from "./config/api-functions";
+import {
+  apiFunctions,
+  isolatedServerFunctions,
+} from "./config/server-functions";
 
 const { resolve } = nodePath;
 
@@ -100,13 +103,27 @@ export default defineConfig(({ mode }) => {
             },
 
             modules: [
-              isolatedApiFunctions,
+              isolatedServerFunctions,
               {
                 name: "lazy-workflow-handlers",
                 setup(server) {
                   server.hooks.hook("build:before", () => {
                     if (server.options.dev) {
                       return;
+                    }
+                    if (server.options.preset === "vercel") {
+                      const flow =
+                        server.options.vercel?.functionRules?.[
+                          "/.well-known/workflow/v1/flow"
+                        ];
+                      if (!flow) {
+                        throw new Error(
+                          "Workflow's flow function rule is missing."
+                        );
+                      }
+                      // Workflow registers "max", which Vercel resolves to 800s.
+                      // Override after module setup and preserve its queue trigger.
+                      flow.maxDuration = 1800;
                     }
                     // Workflow registers these handlers eagerly. Load its
                     // generated execution bundle only for workflow callbacks.

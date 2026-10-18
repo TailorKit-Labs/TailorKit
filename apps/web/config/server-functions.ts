@@ -7,12 +7,15 @@ import { z } from "zod";
 
 const { dirname, resolve } = nodePath;
 
-interface ApiFunction {
+interface ServerFunction {
   name: string;
-  route: string;
-  source: string;
   destination: string;
   maxDuration?: number;
+}
+
+interface ApiFunction extends ServerFunction {
+  route: string;
+  source: string;
 }
 
 export const apiFunctions: ApiFunction[] = [
@@ -58,10 +61,14 @@ const buildOutputSchema = z.looseObject({
   ),
 });
 
-const buildApiFunction = async (server: Nitro, entry: ApiFunction) => {
+const buildServerFunction = async (
+  server: Nitro,
+  entry: ServerFunction,
+  service: string
+) => {
   const outputDir = resolve(
     server.options.buildDir,
-    "api-functions",
+    "server-functions",
     entry.name,
     "output"
   );
@@ -69,8 +76,8 @@ const buildApiFunction = async (server: Nitro, entry: ApiFunction) => {
   if (entry.maxDuration !== undefined) {
     functions.maxDuration = entry.maxDuration;
   }
-  // Compile one Vite service at a time; functionRules copy the shared SSR output.
-  const api = await createNitro({
+  // Compile each Vite service separately; functionRules copy the shared output.
+  const isolated = await createNitro({
     builder: "rolldown",
     buildDir: resolve(outputDir, "../build"),
     compatibilityDate: server.options.compatibilityDate,
@@ -83,12 +90,13 @@ const buildApiFunction = async (server: Nitro, entry: ApiFunction) => {
     },
     preset: "vercel",
     rootDir: server.options.rootDir,
+    routeRules: server.options.routeRules,
     serverDir: false,
     serverEntry: {
       handler: resolve(
         server.options.buildDir,
         "vite/services",
-        `api_${entry.name}`,
+        service,
         "index.js"
       ),
     },
@@ -105,8 +113,8 @@ const buildApiFunction = async (server: Nitro, entry: ApiFunction) => {
     },
   });
   try {
-    await prepare(api);
-    await build(api);
+    await prepare(isolated);
+    await build(isolated);
     const destination = resolve(
       server.options.output.dir,
       "functions",
@@ -114,20 +122,28 @@ const buildApiFunction = async (server: Nitro, entry: ApiFunction) => {
     );
     await rm(destination, { force: true, recursive: true });
     await mkdir(dirname(destination), { recursive: true });
-    await cp(api.options.output.serverDir, destination, {
+    await cp(isolated.options.output.serverDir, destination, {
       recursive: true,
       verbatimSymlinks: true,
     });
   } finally {
-    await api.close();
+    await isolated.close();
   }
 };
 
-const buildApiFunctions = async (server: Nitro) => {
+const buildServerFunctions = async (server: Nitro) => {
   for (const entry of apiFunctions) {
     // oxlint-disable-next-line no-await-in-loop -- Each build runs a bundler; keep them sequential to bound build memory and worker usage.
-    await buildApiFunction(server, entry);
+    await buildServerFunction(server, entry, `api_${entry.name}`);
   }
+
+  // Workflow's callback functions have already copied the shared execution
+  // bundle. Replace only the UI fallback with its own SSR dependency graph.
+  await buildServerFunction(
+    server,
+    { name: "ssr", destination: "__server" },
+    "ssr"
+  );
 
   const configFile = resolve(server.options.output.dir, "config.json");
   const config = buildOutputSchema.parse(
@@ -156,12 +172,12 @@ const buildApiFunctions = async (server: Nitro) => {
   await writeFile(configFile, `${JSON.stringify(config, null, 2)}\n`);
 };
 
-export const isolatedApiFunctions: NitroModule = {
-  name: "isolated-api-functions",
+export const isolatedServerFunctions: NitroModule = {
+  name: "isolated-server-functions",
   setup(server) {
     server.hooks.hook("compiled", async () => {
       if (!server.options.dev && server.options.preset === "vercel") {
-        await buildApiFunctions(server);
+        await buildServerFunctions(server);
       }
     });
   },
