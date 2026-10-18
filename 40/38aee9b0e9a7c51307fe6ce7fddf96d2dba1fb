@@ -1,0 +1,29 @@
+patches/README.md
+  s_faea48823e0f97::t_3fea7a1d3f4071 1-13
+packages/agent-fx/src/agent.integration.test.ts
+  s_faea48823e0f97::t_1d4189addbb463 21-22,95-98,101,104-106,111-113,124-125,186,241-244,249-259,261-264,266
+  s_faea48823e0f97::t_3fea7a1d3f4071 107-110,224,238,240,245,260,265,267-280
+  s_faea48823e0f97::t_22ac967435c4b8 239
+patches/@ai-sdk__harness-fx@1.0.69.patch
+  s_faea48823e0f97::t_dd66035057abb7 1-97
+pnpm-lock.yaml
+  s_faea48823e0f97::t_9a4f330ff4e734 303-305,657,13300
+pnpm-workspace.yaml
+  s_faea48823e0f97::t_16aa56422fe8a0 109-110
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4038aee9b0e9a7c51307fe6ce7fddf96d2dba1fb",
+  "prompts": {},
+  "sessions": {
+    "s_faea48823e0f97": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14ec2-4a50-74e1-9782-8cbfbcca1938",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
