@@ -1,21 +1,8 @@
 import assert from "node:assert/strict";
-import { registerHooks } from "node:module";
 import { test } from "node:test";
 
-// Isolate telemetry/env setup; exercise the real storage code and AWS signer.
-const hooks = registerHooks({
-  resolve(specifier, context, nextResolve) {
-    if (specifier === "@tailorkit/observability") {
-      return {
-        shortCircuit: true,
-        url: "data:text/javascript,export const withSpan = (_name, _options, run) => run();",
-      };
-    }
-    return nextResolve(specifier, context);
-  },
-});
-const { createS3CompatibleStorage } = await import("../src/s3.ts");
-hooks.deregister();
+import { createS3CompatibleStorage } from "../dist/s3.mjs";
+
 const storage = createS3CompatibleStorage({
   accessKeyId: "test",
   bucket: "test",
