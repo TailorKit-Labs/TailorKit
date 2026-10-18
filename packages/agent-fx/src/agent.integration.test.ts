@@ -18,7 +18,8 @@ import {
   runHarnessAgentStep,
 } from "@ai-sdk/workflow-harness";
 import type { HarnessWorkflowChunk } from "@ai-sdk/workflow-harness";
-import type { Experimental_SandboxSession } from "ai";
+import { readUIMessageStream } from "ai";
+import type { Experimental_SandboxSession, UIMessageChunk } from "ai";
 import { expect, it, vi } from "vite-plus/test";
 
 import { env } from "#env";
@@ -91,18 +92,25 @@ const localSession = (
   },
 });
 
-const gatewayEvents = (first: boolean, text: string) => {
+const gatewayEvents = (requestIndex: number, text: string) => {
+  const first = requestIndex === 1;
+  const second = requestIndex === 2;
+  const toolCall = first || second;
   const parts = [
     { type: "stream-start", warnings: [] },
-    ...(first
+    ...(toolCall
       ? [
           {
-            input: JSON.stringify({
-              content: "First turn",
-              file_path: "example.txt",
-            }),
-            toolCallId: "write-1",
-            toolName: "write",
+            input: JSON.stringify(
+              first
+                ? { content: "First turn", file_path: "example.txt" }
+                : {
+                    command:
+                      "printf 'once\\n' >> executions.txt; cat example.txt",
+                  }
+            ),
+            toolCallId: first ? "write-1" : "bash-2",
+            toolName: first ? "write" : "bash",
             type: "tool-call",
           },
         ]
@@ -113,8 +121,8 @@ const gatewayEvents = (first: boolean, text: string) => {
         ]),
     {
       finishReason: {
-        raw: first ? "tool_calls" : "stop",
-        unified: first ? "tool-calls" : "stop",
+        raw: toolCall ? "tool_calls" : "stop",
+        unified: toolCall ? "tool-calls" : "stop",
       },
       type: "finish",
       usage: { inputTokens: { total: 10 }, outputTokens: { total: 5 } },
@@ -175,7 +183,7 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
         });
         return new Response(
           gatewayEvents(
-            requests.length === 1,
+            requests.length,
             body.includes("Now update it") ? "Updated" : "Built"
           ),
           { headers: { "content-type": "text/event-stream" } }
@@ -213,7 +221,7 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
         agent,
         sandboxSession,
         state: createHarnessWorkflowState({
-          prompt: "Build a file",
+          messages: [{ content: "Build a file", role: "user" }],
           sessionId: input.threadId,
         }),
         writable: writable(),
@@ -227,10 +235,49 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
       state = await runHarnessAgentStep({
         agent: await createAppAgent(input, "fixture"),
         sandboxSession,
-        state,
+        state: structuredClone(state),
+        writable: writable(),
+      });
+      expect(state.status).toBe("ready_for_next_step");
+      state = await runHarnessAgentStep({
+        agent: await createAppAgent(input, "fixture"),
+        sandboxSession,
+        state: structuredClone(state),
         writable: writable(),
       });
       expect(state.status).toBe("finished");
+      // Consume the same event sequence as MCP, including tools after a checkpoint.
+      const stream = new ReadableStream<UIMessageChunk>({
+        start(controller) {
+          for (const chunk of chunks) {
+            // SAFETY: These are the UI message chunks returned by the real harness runner.
+            // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The runner exposes a structural chunk type to avoid depending on ai.
+            controller.enqueue(chunk as UIMessageChunk);
+          }
+          controller.close();
+        },
+      });
+      let finalMessage;
+      for await (const message of readUIMessageStream({
+        stream,
+        terminateOnError: true,
+      })) {
+        finalMessage = message;
+      }
+      expect(finalMessage?.parts).toContainEqual({
+        state: "done",
+        text: "Built",
+        type: "text",
+      });
+      expect(
+        chunks.filter((chunk) => chunk.type === "tool-input-available")
+      ).toHaveLength(2);
+      expect(
+        chunks.filter((chunk) => chunk.type === "tool-output-available")
+      ).toHaveLength(2);
+      expect(await readFile(join(workspace, "executions.txt"), "utf-8")).toBe(
+        "once\n"
+      );
       expect(chunks.filter((chunk) => chunk.type === "start")).toHaveLength(1);
       expect(chunks.filter((chunk) => chunk.type === "finish")).toHaveLength(1);
       expect(chunks).toContainEqual(
