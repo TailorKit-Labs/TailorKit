@@ -93,49 +93,8 @@ export default defineConfig(({ mode }) => {
             // Split server code into chunks and minify every generated function.
             inlineDynamicImports: false,
             minify: true,
-            hooks: {
-              "rollup:before": (_server, config) => {
-                if ("codeSplitting" in config.output) {
-                  // Split by actual imports instead of merging package dependencies.
-                  Object.assign(config.output, { codeSplitting: true });
-                }
-              },
-            },
-
-            modules: [
-              isolatedServerFunctions,
-              {
-                name: "lazy-workflow-handlers",
-                setup(server) {
-                  server.hooks.hook("build:before", () => {
-                    if (server.options.dev) {
-                      return;
-                    }
-                    if (server.options.preset === "vercel") {
-                      const flow =
-                        server.options.vercel?.functionRules?.[
-                          "/.well-known/workflow/v1/flow"
-                        ];
-                      if (!flow) {
-                        throw new Error(
-                          "Workflow's flow function rule is missing."
-                        );
-                      }
-                      // Workflow registers "max", which Vercel resolves to 800s.
-                      // Override after module setup and preserve its queue trigger.
-                      flow.maxDuration = 1800;
-                    }
-                    // Workflow registers these handlers eagerly. Load its
-                    // generated execution bundle only for workflow callbacks.
-                    for (const handler of server.options.handlers) {
-                      if (handler.route?.startsWith("/.well-known/workflow/")) {
-                        handler.lazy = true;
-                      }
-                    }
-                  });
-                },
-              },
-            ],
+            rolldownConfig: { output: { codeSplitting: true } },
+            modules: [isolatedServerFunctions],
 
             routeRules: {
               "/sign-in": {
@@ -159,6 +118,16 @@ export default defineConfig(({ mode }) => {
             },
 
             serverDir: false,
+
+            vercel: {
+              config: {
+                version: 3,
+                routes: apiFunctions.map(({ source, destination }) => ({
+                  src: source,
+                  dest: `/${destination}`,
+                })),
+              },
+            },
 
             // Workflow's Nitro builder must resolve package IDs from the same
             // app root as its Vite transform, rather than the monorepo root.

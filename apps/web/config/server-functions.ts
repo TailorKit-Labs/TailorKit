@@ -1,11 +1,10 @@
-import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { rm } from "node:fs/promises";
 import nodePath from "node:path";
 
 import { build, createNitro, prepare } from "nitro/builder";
 import type { Nitro, NitroModule } from "nitro/types";
-import { z } from "zod";
 
-const { dirname, resolve } = nodePath;
+const { resolve } = nodePath;
 
 interface ServerFunction {
   name: string;
@@ -53,14 +52,6 @@ export const apiFunctions: ApiFunction[] = [
   },
 ];
 
-const buildOutputSchema = z.looseObject({
-  routes: z.array(
-    z.looseObject({
-      dest: z.string().optional(),
-    })
-  ),
-});
-
 const buildServerFunction = async (
   server: Nitro,
   entry: ServerFunction,
@@ -73,6 +64,11 @@ const buildServerFunction = async (
     "output"
   );
   const functions = { ...server.options.vercel?.functions };
+  const destination = resolve(
+    server.options.output.dir,
+    "functions",
+    `${entry.destination}.func`
+  );
   if (entry.maxDuration !== undefined) {
     functions.maxDuration = entry.maxDuration;
   }
@@ -86,10 +82,11 @@ const buildServerFunction = async (
     output: {
       dir: outputDir,
       publicDir: resolve(outputDir, "static"),
-      serverDir: resolve(outputDir, "functions/__server.func"),
+      serverDir: destination,
     },
     preset: "vercel",
     rootDir: server.options.rootDir,
+    rolldownConfig: { output: { codeSplitting: true } },
     routeRules: server.options.routeRules,
     serverDir: false,
     serverEntry: {
@@ -104,34 +101,22 @@ const buildServerFunction = async (
       functions,
     },
     workspaceDir: server.options.workspaceDir,
-    hooks: {
-      "rollup:before": (_api, config) => {
-        if (config.output !== undefined && "codeSplitting" in config.output) {
-          Object.assign(config.output, { codeSplitting: true });
-        }
-      },
-    },
   });
   try {
+    // Nitro can emit a symlink to the shared bundle for these routes.
+    // Remove it before building directly into the function directory.
+    await rm(destination, { force: true, recursive: true });
     await prepare(isolated);
     await build(isolated);
-    const destination = resolve(
-      server.options.output.dir,
-      "functions",
-      `${entry.destination}.func`
-    );
-    await rm(destination, { force: true, recursive: true });
-    await mkdir(dirname(destination), { recursive: true });
-    await cp(isolated.options.output.serverDir, destination, {
-      recursive: true,
-      verbatimSymlinks: true,
-    });
   } finally {
     await isolated.close();
   }
 };
 
 const buildServerFunctions = async (server: Nitro) => {
+  if (server.options.dev || server.options.preset !== "vercel") {
+    return;
+  }
   for (const entry of apiFunctions) {
     // oxlint-disable-next-line no-await-in-loop -- Each build runs a bundler; keep them sequential to bound build memory and worker usage.
     await buildServerFunction(server, entry, `api_${entry.name}`);
@@ -144,41 +129,22 @@ const buildServerFunctions = async (server: Nitro) => {
     { name: "ssr", destination: "__server" },
     "ssr"
   );
-
-  const configFile = resolve(server.options.output.dir, "config.json");
-  const config = buildOutputSchema.parse(
-    JSON.parse(await readFile(configFile, "utf-8"))
-  );
-  const destinations = new Set(
-    apiFunctions.map((entry) => `/${entry.destination}`)
-  );
-  config.routes = config.routes.filter(
-    (route) => route.dest === undefined || !destinations.has(route.dest)
-  );
-  const fallback = config.routes.findIndex(
-    (route) => route.dest === "/__server"
-  );
-  if (fallback === -1) {
-    throw new Error("Nitro's Vercel fallback route is missing.");
-  }
-  config.routes.splice(
-    fallback,
-    0,
-    ...apiFunctions.map((entry) => ({
-      src: entry.source,
-      dest: `/${entry.destination}`,
-    }))
-  );
-  await writeFile(configFile, `${JSON.stringify(config, null, 2)}\n`);
 };
 
 export const isolatedServerFunctions: NitroModule = {
   name: "isolated-server-functions",
   setup(server) {
-    server.hooks.hook("compiled", async () => {
-      if (!server.options.dev && server.options.preset === "vercel") {
-        await buildServerFunctions(server);
+    server.hooks.hook("build:before", () => {
+      if (server.options.dev) {
+        return;
+      }
+      // Workflow registers its execution handlers eagerly.
+      for (const handler of server.options.handlers) {
+        if (handler.route?.startsWith("/.well-known/workflow/")) {
+          handler.lazy = true;
+        }
       }
     });
+    server.hooks.hook("compiled", buildServerFunctions);
   },
 };
