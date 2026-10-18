@@ -1,7 +1,6 @@
 import { randomBytes } from "node:crypto";
 
 import { call, ORPCError } from "@orpc/server";
-import { appAgent, cancelAppAgent } from "@tailorkit/agent-fx/workflows";
 import { createAppAgentMcp } from "@tailorkit/agent/mcp";
 import type { AppAgentMcpExecution } from "@tailorkit/agent/mcp";
 import {
@@ -13,17 +12,14 @@ import { hashSecret } from "@tailorkit/api-utils/hashing";
 import { db } from "@tailorkit/db";
 import { cliToken } from "@tailorkit/db/schema/cli-auth";
 import { sanitizeErrorForLog } from "@tailorkit/observability";
-import { readUIMessageStream } from "ai";
 import type { UIMessage, UIMessageChunk } from "ai";
 import { eq } from "drizzle-orm";
-import { start } from "workflow/api";
 import type { Run } from "workflow/api";
 import { z } from "zod";
 
 import type { Context } from "./context";
 import { env } from "./env";
 import { findAppInScopes, protectedRouter } from "./procedures";
-import { appRouter, createAppRecord } from "./routes/apps";
 import {
   canonicalizeScope,
   canonicalizeScopes,
@@ -100,6 +96,15 @@ export const handleAppAgentMcpRequest = async (
     execution: AppAgentMcpExecution,
     requestedThreadId?: string
   ) => {
+    execution.signal.throwIfAborted();
+    // Discovery and tool definitions do not execute an agent. Keep workflow
+    // startup and stream processing out of those requests' import graph.
+    const [{ appAgent, cancelAppAgent }, { readUIMessageStream }, { start }] =
+      await Promise.all([
+        import("@tailorkit/agent-fx/workflows"),
+        import("ai"),
+        import("workflow/api"),
+      ]);
     execution.signal.throwIfAborted();
     const app = await findAppInScopes(
       context.project.id,
@@ -276,6 +281,7 @@ export const handleAppAgentMcpRequest = async (
             message: "Scope is not authorized by the host.",
           });
         }
+        const { createAppRecord } = await import("./routes/apps");
         const app = await createAppRecord(
           context,
           {
@@ -296,6 +302,7 @@ export const handleAppAgentMcpRequest = async (
           { context }
         ),
       listApps: async (pagination) => {
+        const { appRouter } = await import("./routes/apps");
         const { body } = await call(
           appRouter.list,
           { body: { ...pagination, scopes: authorizedScopes } },

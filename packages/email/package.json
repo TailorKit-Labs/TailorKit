@@ -19,10 +19,15 @@
       "development": "./src/index.ts",
       "types": "./dist/index.d.mts",
       "default": "./dist/index.mjs"
+    },
+    "./templates": {
+      "development": "./src/templates.ts",
+      "types": "./dist/templates.d.mts",
+      "default": "./dist/templates.mjs"
     }
   },
   "scripts": {
-    "build": "vp pack src/index.ts --format esm --dts --clean",
+    "build": "vp pack src/index.ts src/templates.ts --format esm --dts --clean",
     "check-types": "tsc --noEmit",
     "dev": "email dev --dir src/templates --port 3003",
     "lint": "vp lint .",
