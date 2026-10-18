@@ -10,6 +10,8 @@ import { workflow } from "workflow/vite";
 
 import { env } from "#env";
 
+import { apiFunctions, isolatedApiFunctions } from "./config/api-functions";
+
 const { resolve } = nodePath;
 
 const serverPackages = [
@@ -50,6 +52,22 @@ export default defineConfig(({ mode }) => {
           tailwindcss(),
           tanstackStart({}),
           nitro({
+            // Compile API services through Vite so Workflow transforms still apply.
+            experimental: {
+              vite: {
+                services: Object.fromEntries(
+                  apiFunctions.map(({ name }) => [
+                    `api_${name}`,
+                    {
+                      entry: resolve(
+                        import.meta.dirname,
+                        `src/server/api/${name}.ts`
+                      ),
+                    },
+                  ])
+                ),
+              },
+            },
             // Keep libfx beside its native addons and include all platform assets.
             traceDeps: ["libfx*"],
             // Workflow 5 still reads Nitro's legacy externals option when bundling steps.
@@ -74,6 +92,7 @@ export default defineConfig(({ mode }) => {
             },
 
             modules: [
+              isolatedApiFunctions,
               {
                 name: "lazy-workflow-handlers",
                 setup(server) {
@@ -115,13 +134,6 @@ export default defineConfig(({ mode }) => {
             },
 
             serverDir: false,
-
-            vercel: {
-              functionRules: {
-                // MCP streams stay open for the entire durable agent turn.
-                "/api/platform/app-agent/mcp": { maxDuration: 1800 },
-              },
-            },
 
             virtual: {
               "#start-assets": `
