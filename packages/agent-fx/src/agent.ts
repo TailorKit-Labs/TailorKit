@@ -8,8 +8,11 @@ import { env } from "#env";
 import { deployTool } from "./deploy";
 import type { AppAgentInput } from "./input";
 import instructions from "./instructions.md?raw";
-import backend from "./skills/backend.md?raw";
-import ui from "./skills/ui.md?raw";
+import database from "./skills/database.md?raw";
+import frontend from "./skills/frontend.md?raw";
+import functions from "./skills/functions.md?raw";
+import setup from "./skills/setup.md?raw";
+import views from "./skills/views.md?raw";
 
 export const createAppAgent = async (
   input: AppAgentInput,
@@ -30,16 +33,34 @@ export const createAppAgent = async (
     sandboxConfig: { workDir: "." },
     skills: [
       {
-        content: ui,
+        content: setup,
         description:
-          "UI: read when building views, routing, host components, or host tool calls.",
-        name: "tailorkit-ui",
+          "Setup: read when scaffolding an app, configuring its host or backend, generating bindings, locating SDK types, or fixing build/deployment failures.",
+        name: "tailorkit-setup",
       },
       {
-        content: backend,
+        content: frontend,
         description:
-          "Backend: read when adding server functions, reactive clients, or SQLite storage.",
-        name: "tailorkit-backend",
+          "Frontend: read when building UI, forms, callbacks, component composition, state, accessibility, or performance across the async host bridge.",
+        name: "tailorkit-frontend",
+      },
+      {
+        content: views,
+        description:
+          "Views: read when choosing slots and context paths, adding roots/layouts, or supplying repeated view instances.",
+        name: "tailorkit-views",
+      },
+      {
+        content: functions,
+        description:
+          "Functions: read when implementing queries, mutations, actions, backend host tool calls, authorization, or reactive client hooks.",
+        name: "tailorkit-functions",
+      },
+      {
+        content: database,
+        description:
+          "Database: read when defining SQLite tables/relations, writing database queries, or generating and upgrading migrations.",
+        name: "tailorkit-database",
       },
     ],
     stopWhen: isStepCount(1),

@@ -287,7 +287,13 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
         expect(request.body).not.toContain("private-deployment-token");
         expect(request.body).not.toContain(token);
       }
-      for (const name of ["tailorkit-ui", "tailorkit-backend"]) {
+      for (const name of [
+        "tailorkit-setup",
+        "tailorkit-frontend",
+        "tailorkit-views",
+        "tailorkit-functions",
+        "tailorkit-database",
+      ]) {
         expect(requests[0]?.body).toContain(name);
       }
       expect(requests[0]?.body).toContain("deploy");

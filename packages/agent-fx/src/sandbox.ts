@@ -57,14 +57,6 @@ export const prepareSandbox = async (input: AppAgentInput, resume: boolean) => {
   if (result.exitCode !== 0) {
     throw new Error("Could not prepare app directory.");
   }
-  await sandbox.currentSession().writeFiles([
-    {
-      content: Buffer.from(
-        'minimumReleaseAge: 4320\nminimumReleaseAgeStrict: true\nminimumReleaseAgeExclude:\n  - tailorkit\n  - "@tailorkit/*"\n'
-      ),
-      path: "/workspace/pnpm-workspace.yaml",
-    },
-  ]);
   return sandbox;
 };
 

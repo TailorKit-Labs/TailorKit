@@ -1,6 +1,6 @@
 # @tailorkit/agent-fx
 
-The default app builder for chat and MCP. Uses the stock `@ai-sdk/harness-fx` adapter, native tools and session persistence, with TailorKit instructions, two skills, and one host-side deployment tool.
+The default app builder for chat and MCP. Uses the stock `@ai-sdk/harness-fx` adapter, native tools and session persistence, with TailorKit instructions, five app-building skills, and one host-side deployment tool.
 
 fx runs on the host. File and shell tools run in a persistent Vercel Sandbox; source is stored on the app's shared Drive. fx handles scaffolding through the TailorKit CLI. Deployment credentials stay on the host.
 
