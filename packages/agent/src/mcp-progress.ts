@@ -60,7 +60,11 @@ const toolAction = (
     { type: "tool-input-start" | "tool-input-available" | "tool-input-error" }
   >
 ): ToolAction => {
-  const label = toolLabels.get(chunk.toolName) ?? preview(chunk.toolName);
+  const label = toolLabels.get(chunk.toolName);
+  if (label === undefined) {
+    const name = preview(chunk.toolName);
+    return name === "" ? { label: "Tool" } : { detail: name, label: "Tool" };
+  }
   if (chunk.toolName === "deploy") {
     return { detail: "type-checking, building, and publishing app", label };
   }

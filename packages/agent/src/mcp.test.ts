@@ -241,6 +241,43 @@ describe("app agent MCP", () => {
           toolCallId: "deploy",
           type: "tool-output-available",
         },
+        {
+          toolCallId: "snapshot",
+          toolName: "browser_snapshot",
+          type: "tool-input-start",
+        },
+        {
+          input: {
+            command: "Sensitive unknown arguments",
+            token: "private-value",
+          },
+          toolCallId: "snapshot",
+          toolName: "browser_snapshot",
+          type: "tool-input-available",
+        },
+        {
+          output: { snapshot: "Partial tool output" },
+          preliminary: true,
+          toolCallId: "snapshot",
+          type: "tool-output-available",
+        },
+        {
+          output: { snapshot: "Full tool output" },
+          toolCallId: "snapshot",
+          type: "tool-output-available",
+        },
+        {
+          input: null,
+          toolCallId: "unnamed",
+          toolName: "\u001B[0m\u200B",
+          type: "tool-input-available",
+        },
+        { toolCallId: "unnamed", type: "tool-output-denied" },
+        {
+          errorText: "Output arrived without a known input event",
+          toolCallId: "unseen",
+          type: "tool-output-error",
+        },
         { type: "finish" },
       ] satisfies Extract<
         AppAgentMcpProgress,
@@ -310,6 +347,13 @@ describe("app agent MCP", () => {
         "Read completed: src/calendar.tsx",
         "Deploy: type-checking, building, and publishing app",
         "Deploy failed (exit 1): type-checking, building, and publishing app",
+        "Tool: browser_snapshot",
+        "Tool: browser_snapshot",
+        "Tool running: browser_snapshot",
+        "Tool completed: browser_snapshot",
+        "Tool.",
+        "Tool denied.",
+        "Tool failed.",
         "App agent finished generating; waiting for workflow cleanup.",
       ]);
       const answer = z

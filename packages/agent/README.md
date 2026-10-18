@@ -100,6 +100,8 @@ The web host gives `/api/platform/app-agent/mcp` its own Vercel Function with a 
 
 Standard progress messages include cumulative assistant text, command previews such as `Bash: pnpm check`, file paths such as `Read: src/app.tsx`, and tool completion, failure, or denial. Previews collapse whitespace, remove terminal control sequences, and stay within 320 characters. Commands containing credential markers are hidden in these previews; file contents and tool output are excluded. Structured events retain the original chunks, so clients must treat `_meta` as agent data rather than a sanitized display string. Reasoning chunks do not become human-readable progress messages.
 
+Unrecognized tools use their sanitized name, for example `Tool: browser_snapshot`, `Tool running: browser_snapshot`, or `Tool completed: browser_snapshot`. Their arbitrary arguments are not previewed. A blank name falls back to `Tool.`; an output without a matching input event uses a generic outcome such as `Tool failed.`.
+
 The first final `content` text block contains the assistant's answer, app/run/thread IDs, and instructions for continuing with `edit_app`. The full result remains in `structuredContent` and a second, assistant-audience JSON text block, following MCP's backwards-compatibility recommendation. Clients that ignore TailorKit metadata, or do not request progress, can display the first block as a readable result without the internal transcript. Audience annotations are hints; clients control which blocks they display.
 
 For example, connect an MCP client and render progress events while the agent edits an app:
