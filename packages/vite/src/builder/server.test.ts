@@ -146,6 +146,23 @@ it("builds file routes with a configured server and blocks server imports from t
     expect(browser).not.toContain("Configured server loaded");
     expect(browser).not.toContain("Unused default client");
     expect(server).not.toContain("Unused default server");
+    // The host deployment tool must build beneath the app so the generated
+    // temporary server entry can resolve tailorkit/server from node_modules.
+    const deploymentOutput = path.join(root, ".tailorkit/agent-deployment");
+    await buildFixture({ cwd: root, outDir: deploymentOutput });
+    expect(
+      await readFile(path.join(deploymentOutput, "server/server.js"), "utf-8")
+    ).toContain("Configured server loaded");
+    expect(
+      JSON.parse(
+        await readFile(
+          path.join(deploymentOutput, "tailorkit-upload.json"),
+          "utf-8"
+        )
+      )
+    ).toMatchObject({
+      assets: { client: "client/client.js", server: "server/server.js" },
+    });
     await writeFile(
       path.join(root, "src/root.tsx"),
       `import type app from "../backend/api";\n${client}`

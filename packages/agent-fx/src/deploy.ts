@@ -9,7 +9,8 @@ import { z } from "zod";
 
 import { getSandbox } from "./sandbox";
 
-const outputDirectory = "/tmp/fx-deployment";
+// Server entry modules resolve the app's dependencies from beneath this path.
+const outputDirectory = "/workspace/app/.tailorkit/agent-deployment";
 const authorizationSchema = z.object({
   platformUrl: z.url().refine((value) => {
     const url = new URL(value);
@@ -131,7 +132,38 @@ export const publish = async (
       }
     );
     if (!response.ok) {
-      throw new Error(`Deployment request failed (${response.status}).`);
+      const failure = z
+        .object({
+          code: z.string().optional(),
+          data: z
+            .object({
+              issues: z.array(
+                z.object({
+                  message: z.string(),
+                  path: z.array(z.json()).optional(),
+                })
+              ),
+            })
+            .optional(),
+          message: z.string().optional(),
+        })
+        .safeParse(await response.json().catch(() => null));
+      const detail = failure.success
+        ? [
+            failure.data.code,
+            failure.data.message,
+            ...(failure.data.data?.issues ?? []).map(
+              (issue) => `${JSON.stringify(issue.path ?? [])}: ${issue.message}`
+            ),
+          ]
+            .filter(Boolean)
+            .join(": ")
+            .replaceAll(authorization.agentToken, "[redacted]")
+            .slice(0, 1000)
+        : "";
+      throw new Error(
+        `Deployment request failed (${response.status}).${detail ? ` ${detail}` : ""}`
+      );
     }
     return await response.json();
   };
@@ -139,7 +171,7 @@ export const publish = async (
     await request(
       "",
       JSON.stringify({
-        appId: authorization.appId,
+        app: { id: authorization.appId },
         assets: [client.metadata],
         logos: Object.fromEntries(
           logos.flatMap((logo) => (logo ? [[logo.variant, logo.metadata]] : []))
