@@ -201,17 +201,9 @@ const serializeJsonValue = (value: JsonValue): string => {
   if (Array.isArray(value)) {
     return `[${value.map((item) => serializeJsonValue(item)).join(",")}]`;
   }
-  return `{${Object.keys(value)
-    .toSorted()
-    .map(
-      // SAFETY: Object.keys enumerates own entries of this canonical JsonObject, whose values cannot be undefined.
-      (key) =>
-        `${JSON.stringify(key)}:${serializeJsonValue(
-          /* oxlint-disable typescript/no-unsafe-type-assertion -- Object.keys enumerates own entries of this canonical JsonObject, whose values cannot be undefined. */
-          value[key] as JsonValue
-          /* oxlint-enable typescript/no-unsafe-type-assertion */
-        )}`
-    )
+  return `{${Object.entries(value)
+    .toSorted(([left], [right]) => Number(left > right) - Number(left < right))
+    .map(([key, item]) => `${JSON.stringify(key)}:${serializeJsonValue(item)}`)
     .join(",")}}`;
 };
 
@@ -225,8 +217,7 @@ const canonicalizeScopeValue = (value: unknown): JsonObject => {
   if (
     Array.isArray(canonicalValue) ||
     canonicalValue === null ||
-    // oxlint-disable-next-line anti-slop/no-runtime-typeof -- Narrow the closed canonical JSON union to its object member.
-    typeof canonicalValue !== "object"
+    !isObjectValue(canonicalValue)
   ) {
     throw new TypeError("Named scope value must be a plain object.");
   }

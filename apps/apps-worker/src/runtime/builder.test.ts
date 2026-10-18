@@ -1,6 +1,7 @@
 import type { Invocation } from "@tailorkit/app/protocol";
 import { fn, defineServer } from "@tailorkit/app/server";
 import type { AppDefinition, Identity } from "@tailorkit/app/server";
+import { asyncFixture } from "@tailorkit/config/testing";
 import * as v from "valibot";
 import { expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
@@ -131,14 +132,16 @@ it("uses undefined input and infers returns for mutations and async actions with
   expect(perform).not.toHaveProperty("result");
   const execute = createExecution(app, persistence);
   const query = vi.fn(
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    async (input: Parameters<typeof execute.query>[0]) =>
-      execute.query(input, identity).value
+    asyncFixture(
+      (input: Parameters<typeof execute.query>[0]) =>
+        execute.query(input, identity).value
+    )
   );
   const mutate = vi.fn(
-    // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-    async (input: Parameters<typeof execute.mutate>[0]) =>
-      execute.mutate(input, identity).value
+    asyncFixture(
+      (input: Parameters<typeof execute.mutate>[0]) =>
+        execute.mutate(input, identity).value
+    )
   );
   const run = actionRunner(app, { mutate, query });
   expect(await run({ name: "perform" }, identity)).toEqual({

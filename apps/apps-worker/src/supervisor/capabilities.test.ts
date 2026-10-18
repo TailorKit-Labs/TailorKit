@@ -1,3 +1,4 @@
+import { asyncFixture } from "@tailorkit/config/testing";
 import { expect, it, vi } from "vite-plus/test";
 
 import { cancellationStream } from "../runtime/cancellation";
@@ -60,14 +61,15 @@ it("keeps response bodies alive and propagates per-request cancellation", async 
   let outgoing!: AbortSignal;
   vi.stubGlobal(
     "fetch",
-    // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-    vi.fn<typeof fetch>(async (_request, init) => {
-      if (!init?.signal) {
-        throw new Error("Expected a cancellation signal");
-      }
-      outgoing = init.signal;
-      return new Response("response body");
-    })
+    vi.fn<typeof fetch>(
+      asyncFixture((_request, init) => {
+        if (!init?.signal) {
+          throw new Error("Expected a cancellation signal");
+        }
+        outgoing = init.signal;
+        return new Response("response body");
+      })
+    )
   );
   try {
     const response = await bridge.fetch(

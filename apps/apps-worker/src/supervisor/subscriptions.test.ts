@@ -3,6 +3,7 @@ import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/websocket";
 import type { Invocation, SubscriptionClient } from "@tailorkit/app/protocol";
 import type { Identity } from "@tailorkit/app/server";
+import { asyncFixture } from "@tailorkit/config/testing";
 import { Effect, Semaphore } from "effect";
 import { expect, it, vi } from "vite-plus/test";
 
@@ -39,11 +40,12 @@ const setup = () => {
   };
   const values = { private: 2, public: 1 };
   // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-  const query = vi.fn(async (input: Invocation, identity: Identity) => ({
-    tables: [input.name],
-    value: `${identity.subjectId}:${Object.entries(values).find(([name]) => name === input.name)?.[1]}`,
-  }));
+  const query = vi.fn(
+    asyncFixture((input: Invocation, identity: Identity) => ({
+      tables: [input.name],
+      value: `${identity.subjectId}:${Object.entries(values).find(([name]) => name === input.name)?.[1]}`,
+    }))
+  );
   const connection = (user = "alice"): SubscriptionConnection => {
     records.set(
       user,
@@ -196,11 +198,12 @@ it("restores multiple subscriptions and cancellation after recreation with isola
 it("refreshes view subscriptions on table writes after recreation without broadening table subscriptions", async () => {
   const test = setup();
   // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-  // oxlint-disable-next-line eslint/require-await -- This Promise-based test double must convert synchronous failures to rejections and preserve the asynchronous API contract.
-  test.query.mockImplementation(async (input, identity) => ({
-    tables: input.name === "public" ? ["*"] : ["private"],
-    value: `${identity.subjectId}:${Object.entries(test.values).find(([name]) => name === input.name)?.[1]}`,
-  }));
+  test.query.mockImplementation(
+    asyncFixture((input, identity) => ({
+      tables: input.name === "public" ? ["*"] : ["private"],
+      value: `${identity.subjectId}:${Object.entries(test.values).find(([name]) => name === input.name)?.[1]}`,
+    }))
+  );
   const viewStream = await test.client.subscribe({ name: "public" });
   const tableStream = await test.client.subscribe({ name: "private" });
   expect(await viewStream.next()).toMatchObject({ value: "alice:1" });
@@ -247,11 +250,12 @@ it("delivers typed errors and removes failed subscriptions after recreation", as
 
 it("does not register a snapshot after the connection disappears during its query", async () => {
   const test = setup();
-  // oxlint-disable-next-line require-await -- The mock or negative type case must retain the asynchronous API contract.
-  test.query.mockImplementationOnce(async () => {
-    test.records.delete("alice");
-    return { tables: ["public"], value: "gone" };
-  });
+  test.query.mockImplementationOnce(
+    asyncFixture(() => {
+      test.records.delete("alice");
+      return { tables: ["public"], value: "gone" };
+    })
+  );
   const stream = await test.client.subscribe({ name: "public" });
   await test.flush();
   expect(test.records.size).toBe(0);

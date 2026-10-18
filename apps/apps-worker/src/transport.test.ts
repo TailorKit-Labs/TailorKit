@@ -217,9 +217,11 @@ it("routes HTTP calls with shared client types, CORS and typed error statuses", 
 it("encodes gateway authentication errors in the oRPC format", async () => {
   const client = createORPCClient<PlatformClient>(
     new RPCLink({
-      // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-      fetch: async () =>
-        rpcErrorResponse({ code: "UNAUTHORIZED", message: "Expired" }),
+      fetch: vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(
+          rpcErrorResponse({ code: "UNAUTHORIZED", message: "Expired" })
+        ),
       origin: "https://runtime.test",
       url: "/rpc",
     })

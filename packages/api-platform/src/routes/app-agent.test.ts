@@ -7,6 +7,7 @@ import {
   issueAgentToken,
   verifyAgentToken,
 } from "@tailorkit/api-utils/agent-token";
+import { asyncFixture } from "@tailorkit/config/testing";
 import { readUIMessageStream } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
@@ -129,20 +130,21 @@ beforeEach(() => {
     scope: scope.scope,
     scopeKey: scope.scopeKey,
   });
-  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-  mocks.start.mockImplementation(async () =>
-    run([
-      { messageId: "assistant-1", type: "start" },
-      { id: "text-1", type: "text-start" },
-      { delta: "Hello", id: "text-1", type: "text-delta" },
-      { id: "text-1", type: "text-end" },
-      {
-        input: {},
-        toolCallId: "call-1",
-        toolName: "write_file",
-        type: "tool-input-available",
-      },
-    ])
+  mocks.start.mockImplementation(
+    asyncFixture(() =>
+      run([
+        { messageId: "assistant-1", type: "start" },
+        { id: "text-1", type: "text-start" },
+        { delta: "Hello", id: "text-1", type: "text-delta" },
+        { id: "text-1", type: "text-end" },
+        {
+          input: {},
+          toolCallId: "call-1",
+          toolName: "write_file",
+          type: "tool-input-available",
+        },
+      ])
+    )
   );
 });
 

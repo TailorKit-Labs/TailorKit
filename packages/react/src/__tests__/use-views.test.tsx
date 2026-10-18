@@ -2,6 +2,7 @@ import type {
   StandardSchemaV1,
   StandardJSONSchemaV1,
 } from "@standard-schema/spec";
+import { asyncFixture } from "@tailorkit/config/testing";
 import type { EmptyDefinitionMap } from "@tailorkit/core/schema";
 import { defineContract } from "@tailorkit/core/schema";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
@@ -91,24 +92,25 @@ const url = (input: Parameters<typeof fetch>[0]) =>
   new URL(input instanceof Request ? input.url : String(input));
 
 const mockFetch = () =>
-  // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-  vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
-    const path = url(input).pathname;
-    if (path.endsWith("/apps")) {
-      return Response.json([app]);
-    }
-    if (path.endsWith("/backend/session")) {
-      return Response.json({
-        expiresAt: Date.now() + 300_000,
-        token: "app-token",
-        url: "https://runtime.test/rpc",
-      });
-    }
-    if (path.endsWith("/actions")) {
-      return Response.json({ json: instances });
-    }
-    throw new Error(`Unexpected request: ${path}`);
-  });
+  vi.spyOn(globalThis, "fetch").mockImplementation(
+    asyncFixture((input) => {
+      const path = url(input).pathname;
+      if (path.endsWith("/apps")) {
+        return Response.json([app]);
+      }
+      if (path.endsWith("/backend/session")) {
+        return Response.json({
+          expiresAt: Date.now() + 300_000,
+          token: "app-token",
+          url: "https://runtime.test/rpc",
+        });
+      }
+      if (path.endsWith("/actions")) {
+        return Response.json({ json: instances });
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    })
+  );
 
 const calls = (path: string) =>
   vi

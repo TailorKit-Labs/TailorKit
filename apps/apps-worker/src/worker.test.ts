@@ -1,6 +1,7 @@
 // oxlint-disable-next-line max-classes-per-file -- These related adapter or mock classes implement one runtime boundary.
 import { issueAppToken, APP_AUDIENCE } from "@tailorkit/api-utils/app-auth";
 import { AppError } from "@tailorkit/app/server";
+import { asyncFixture } from "@tailorkit/config/testing";
 import { afterAll, beforeEach, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
@@ -175,8 +176,9 @@ const setup = () => {
   );
 
   const routeFetch = vi.fn(
-    // oxlint-disable-next-line eslint/require-await -- This synchronous fixture retains Promise results and rejected exceptions for the asynchronous adapter.
-    async (_request: Request) => new Response("forwarded", { status: 202 })
+    asyncFixture(
+      (_request: Request) => new Response("forwarded", { status: 202 })
+    )
   );
   const getByName = vi.fn((_name: string) => ({ fetch: routeFetch }));
   const idFromName = vi.fn(() => id);

@@ -128,7 +128,6 @@ export const createTailorKitServer = <
     scopeSchemas,
   });
 
-  // oxlint-disable-next-line complexity -- request dispatch is intentionally centralized here.
   const handler = async (
     request: Request,
     handlerOptions: TailorKitHandlerOptions<
