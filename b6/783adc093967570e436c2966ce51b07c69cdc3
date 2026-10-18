@@ -1,0 +1,21 @@
+packages/storage/package.json
+  s_9c0311e273b1b4::t_9f1b5e7084aa4c 34,46
+packages/storage/turbo.json
+  s_9c0311e273b1b4::t_b6af2dc1efe175 4-9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b6783adc093967570e436c2966ce51b07c69cdc3",
+  "prompts": {},
+  "sessions": {
+    "s_9c0311e273b1b4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14ea1-8ef8-7c53-b355-ee83028924af",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
