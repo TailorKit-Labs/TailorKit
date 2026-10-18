@@ -64,6 +64,14 @@ export default defineConfig(({ mode }) => {
             // Split server code into chunks and minify every generated function.
             inlineDynamicImports: false,
             minify: true,
+            hooks: {
+              "rollup:before": (_server, config) => {
+                if ("codeSplitting" in config.output) {
+                  // Split by actual imports instead of merging package dependencies.
+                  Object.assign(config.output, { codeSplitting: true });
+                }
+              },
+            },
 
             modules: [
               {
