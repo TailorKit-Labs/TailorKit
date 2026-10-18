@@ -210,6 +210,7 @@ export const handleAppAgentMcpRequest = async (
               appId: app.shortId,
               chunk,
               runId,
+              status: "streaming",
               threadId,
             });
             writer.enqueue(chunk);
