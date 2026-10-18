@@ -1,0 +1,19 @@
+apps/web/vite.config.ts
+  s_7d1277528c5eb4::t_bc3b4dce2397c6 67-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bc28b9dcc4e9e3cabb566fae422a4fe77b89ef5c",
+  "prompts": {},
+  "sessions": {
+    "s_7d1277528c5eb4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1497e-9fb2-72a0-980b-c455db548beb",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
