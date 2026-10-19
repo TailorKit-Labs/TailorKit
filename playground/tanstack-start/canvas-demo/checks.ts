@@ -53,9 +53,24 @@ const pixels = async (label: string) => {
   reader.drawImage(bitmap, 0, 0);
   bitmap.close();
   const { data } = reader.getImageData(0, 0, element.width, element.height);
+  let barPixels = 0;
+  let labelPixels = 0;
+  for (let index = 0; index < data.length; index += 4) {
+    const red = data[index] ?? 0;
+    const green = data[index + 1] ?? 0;
+    const blue = data[index + 2] ?? 0;
+    if (red === 101 && green === 181 && blue === 255) {
+      barPixels += 1;
+    }
+    if (red > 150 && green > 150 && blue > 150) {
+      labelPixels += 1;
+    }
+  }
   const digest = await crypto.subtle.digest("SHA-256", data);
   return {
+    barPixels,
     hash: [...new Uint8Array(digest)].join(","),
+    labelPixels,
     painted: data[3] === 255,
     width: element.width,
   };
@@ -80,6 +95,13 @@ export const runCanvasChecks = async () => {
   );
   const first = region("First app");
   const initial = await pixels("First app");
+  if (
+    !first.textContent?.includes("Chart.js 4.5.1") ||
+    initial.barPixels < 100 ||
+    initial.labelPixels < 20
+  ) {
+    throw new Error("Chart.js did not render both bars and axis labels.");
+  }
   click(first, "Redraw chart");
   await waitFor(
     async () => (await hash("First app")) !== initial.hash,
@@ -88,12 +110,18 @@ export const runCanvasChecks = async () => {
   click(first, "Resize chart");
   await waitFor(async () => {
     const result = await pixels("First app");
-    return result.width === 640 && result.painted;
+    return (
+      result.width === 640 &&
+      result.painted &&
+      first.textContent?.includes("Active Chart.js instances: 1")
+    );
   }, "Resize did not reconnect and repaint.");
   click(first, "Hide chart");
   await waitFor(
-    () => first.querySelector("canvas") === null,
-    "Unmount retained the canvas."
+    () =>
+      first.querySelector("canvas") === null &&
+      first.textContent?.includes("Active Chart.js instances: 0"),
+    "Unmount retained the canvas or Chart.js instance."
   );
   click(first, "Show chart");
   await waitFor(
@@ -108,11 +136,18 @@ export const runCanvasChecks = async () => {
     "Animation did not start."
   );
   click(first, "Stop animation");
-  // Allow the last submitted frame and static redraw to settle, then verify stability.
-  const settledAt = performance.now() + 150;
   await waitFor(
-    () => performance.now() >= settledAt,
-    "Animation did not settle."
+    () =>
+      [...first.querySelectorAll("button")].some(
+        (button) => button.textContent?.trim() === "Animate chart"
+      ),
+    "Stop action did not reach the sandbox."
+  );
+  // The remote button update can precede the sandbox effect and final frame.
+  // Wait for the known static chart rather than assuming a fixed settling time.
+  await waitFor(
+    async () => (await hash("First app")) === staticFrame.hash,
+    "Stopping animation did not restore the static chart."
   );
   const stopped = await pixels("First app");
   const checkedAt = performance.now() + 150;
@@ -158,10 +193,10 @@ export const runCanvasChecks = async () => {
   return {
     passed: true,
     checks: [
-      "initial paint",
+      "Chart.js bars and axis labels",
       "dependency redraw",
       "resize",
-      "unmount",
+      "unmount and Chart.js instance cleanup",
       "remount",
       "animation start/stop",
       "app isolation",
