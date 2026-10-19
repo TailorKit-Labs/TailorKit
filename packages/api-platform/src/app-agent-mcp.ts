@@ -2,7 +2,10 @@ import { randomBytes } from "node:crypto";
 
 import { call, ORPCError } from "@orpc/server";
 import { createAppAgentMcp } from "@tailorkit/agent/mcp";
-import type { AppAgentMcpExecution } from "@tailorkit/agent/mcp";
+import type {
+  AppAgentMcpExecution,
+  AppAgentMcpResult,
+} from "@tailorkit/agent/mcp";
 import {
   AppAgentThreadError,
   resolveAppAgentThread,
@@ -12,7 +15,7 @@ import { hashSecret } from "@tailorkit/api-utils/hashing";
 import { db } from "@tailorkit/db";
 import { cliToken } from "@tailorkit/db/schema/cli-auth";
 import { sanitizeErrorForLog } from "@tailorkit/observability";
-import type { UIMessage, UIMessageChunk } from "ai";
+import type { UIMessageChunk } from "ai";
 import { eq } from "drizzle-orm";
 import type { Run } from "workflow/api";
 import { z } from "zod";
@@ -95,16 +98,14 @@ export const handleAppAgentMcpRequest = async (
     prompt: string,
     execution: AppAgentMcpExecution,
     requestedThreadId?: string
-  ) => {
+  ): Promise<AppAgentMcpResult> => {
     execution.signal.throwIfAborted();
     // Discovery and tool definitions do not execute an agent. Keep workflow
     // startup and stream processing out of those requests' import graph.
-    const [{ appAgent, cancelAppAgent }, { readUIMessageStream }, { start }] =
-      await Promise.all([
-        import("@tailorkit/agent-fx/workflows"),
-        import("ai"),
-        import("workflow/api"),
-      ]);
+    const [{ appAgent, cancelAppAgent }, { start }] = await Promise.all([
+      import("@tailorkit/agent-fx/workflows"),
+      import("workflow/api"),
+    ]);
     execution.signal.throwIfAborted();
     const app = await findAppInScopes(
       context.project.id,
@@ -200,35 +201,36 @@ export const handleAppAgentMcpRequest = async (
         status: "started",
         threadId,
       });
-      let message: UIMessage | undefined;
+      let answer = "";
       const { runId } = run;
-      const stream = run.getReadable<UIMessageChunk>().pipeThrough(
-        new TransformStream<UIMessageChunk, UIMessageChunk>({
-          async transform(chunk, writer) {
-            await execution.onProgress({
-              appId: app.shortId,
-              chunk,
-              runId,
-              status: "streaming",
-              threadId,
-            });
-            writer.enqueue(chunk);
-          },
-        }),
-        { signal }
-      );
-      for await (const update of readUIMessageStream({
-        stream,
-        terminateOnError: true,
-      })) {
-        message = update;
+      const stream = run
+        .getReadable<UIMessageChunk>()
+        .pipeThrough(new TransformStream<UIMessageChunk, UIMessageChunk>(), {
+          signal,
+        });
+      for await (const chunk of stream) {
+        // oxlint-disable-next-line no-await-in-loop -- Preserve the order of progress updates from the agent.
+        await execution.onProgress({
+          appId: app.shortId,
+          chunk,
+          runId,
+          status: "streaming",
+          threadId,
+        });
+        if (chunk.type === "text-delta") {
+          answer += chunk.delta;
+        } else if (chunk.type === "text-end") {
+          answer += "\n\n";
+        } else if (chunk.type === "error" || chunk.type === "abort") {
+          throw new Error("App agent stopped before completing its response.");
+        }
       }
       const output = await completed;
       finished = true;
       return {
-        ...output,
+        answer: answer.trim() || "App agent run ended.",
         appId: app.shortId,
-        message,
+        finishReason: output.finishReason,
         runId: run.runId,
         threadId,
       };

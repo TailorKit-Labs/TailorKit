@@ -9,9 +9,26 @@ interface AppAgentMcpRun {
   threadId: string;
 }
 
-/** Structured event carried in notifications/progress.params._meta. */
-export type AppAgentMcpProgress = AppAgentMcpRun &
+/** Internal events supplied by the backend, never forwarded directly to clients. */
+export type AppAgentMcpEvent = AppAgentMcpRun &
   ({ status: "started" } | { chunk: UIMessageChunk; status: "streaming" });
+
+/** Activity snapshots carried in progress notification metadata. */
+export type AppAgentMcpActivity = AppAgentMcpRun &
+  (
+    | { status: "started" | "error" | "aborted" | "finishing" }
+    | { status: "text"; text: string }
+    | (ToolAction & {
+        outcome: "running" | "completed" | "failed" | "denied";
+        status: "tool";
+        toolCallId: string;
+      })
+  );
+
+interface ProgressSnapshot {
+  activity: AppAgentMcpActivity;
+  message: string;
+}
 
 const maximumPreviewLength = 320;
 const whitespace = /\s+/gu;
@@ -94,43 +111,254 @@ const describeTool = (action: ToolAction): string =>
       : `${action.label}: ${action.detail}`
   );
 
-/** Request-local state lets ordinary MCP clients display meaningful snapshots. */
-export const createProgressMessage = () => {
-  const text = new Map<string, string>();
-  let message = "App agent is working.";
+const toolOutputSchema = z.object({
+  exitCode: z.number().optional(),
+  isError: z.boolean().optional(),
+});
 
-  return (event: AppAgentMcpProgress): string => {
+type ToolOutcome = Extract<AppAgentMcpActivity, { status: "tool" }>["outcome"];
+
+const toolSnapshot = (
+  run: AppAgentMcpRun,
+  action: ToolAction,
+  toolCallId: string,
+  outcome: ToolOutcome
+): ProgressSnapshot => ({
+  activity: { ...run, ...action, outcome, status: "tool", toolCallId },
+  message:
+    outcome === "running"
+      ? describeTool(action)
+      : preview(`${outcome}: ${describeTool(action)}`),
+});
+
+const toolOutcome = (
+  chunk: Extract<
+    UIMessageChunk,
+    {
+      type:
+        | "tool-output-available"
+        | "tool-output-error"
+        | "tool-output-denied";
+    }
+  >
+): ToolOutcome => {
+  if (chunk.type === "tool-output-denied") {
+    return "denied";
+  }
+  if (chunk.type === "tool-output-error") {
+    return "failed";
+  }
+  const output = toolOutputSchema.safeParse(chunk.output);
+  const failed =
+    output.success &&
+    (output.data.isError === true ||
+      (output.data.exitCode !== undefined && output.data.exitCode !== 0));
+  return failed ? "failed" : "completed";
+};
+
+/** Reduce internal chunks to bounded, human-readable activity snapshots. */
+export const createProgressSnapshot = () => {
+  const text = new Map<string, string>();
+  const tools = new Map<string, ToolAction>();
+
+  return (event: AppAgentMcpEvent): ProgressSnapshot | undefined => {
+    const { appId, runId, threadId } = event;
+    const run = { appId, runId, threadId };
     if (event.status === "started") {
-      message = preview(`App agent started for app ${event.appId}.`);
-      return message;
+      return {
+        activity: { ...run, status: "started" },
+        message: preview(`App agent started for app ${appId}.`),
+      };
     }
     const { chunk } = event;
-    // Tool results and bookkeeping retain the last visible message. Detailed
-    // outcomes remain available in the structured stream.
     if (chunk.type === "text-delta") {
-      // Bound the text retained per active block. Progress messages contain
-      // cumulative text, not individual token fragments or private reasoning.
-      const current = `${text.get(chunk.id) ?? ""}${chunk.delta}`.slice(
-        -maximumPreviewLength
-      );
+      const combined = `${text.get(chunk.id) ?? ""}${chunk.delta}`;
+      const current =
+        combined.length > maximumPreviewLength
+          ? `…${combined.slice(-(maximumPreviewLength - 1))}`
+          : combined;
       text.set(chunk.id, current);
-      message = preview(current) || message;
-    } else if (chunk.type === "text-end") {
+      const message = preview(current);
+      return message === ""
+        ? undefined
+        : { activity: { ...run, status: "text", text: message }, message };
+    }
+    if (chunk.type === "text-end") {
       text.delete(chunk.id);
-    } else if (
+    }
+    if (
       chunk.type === "tool-input-start" ||
       chunk.type === "tool-input-available" ||
       chunk.type === "tool-input-error"
     ) {
-      message = describeTool(toolAction(chunk));
-    } else if (chunk.type === "error") {
-      message =
-        "App agent encountered an error. Check the app before retrying.";
-    } else if (chunk.type === "abort") {
-      message = "App agent stopped. Check the app before repeating a change.";
-    } else if (chunk.type === "finish") {
-      message = "App agent finished generating; waiting for workflow cleanup.";
+      const action = toolAction(chunk);
+      tools.set(chunk.toolCallId, action);
+      const outcome = chunk.type === "tool-input-error" ? "failed" : "running";
+      return toolSnapshot(run, action, chunk.toolCallId, outcome);
     }
-    return message;
+    if (
+      chunk.type === "tool-output-available" ||
+      chunk.type === "tool-output-error" ||
+      chunk.type === "tool-output-denied"
+    ) {
+      if (
+        chunk.type === "tool-output-available" &&
+        chunk.preliminary === true
+      ) {
+        return undefined;
+      }
+      const action = tools.get(chunk.toolCallId) ?? { label: "Tool" };
+      tools.delete(chunk.toolCallId);
+      return toolSnapshot(run, action, chunk.toolCallId, toolOutcome(chunk));
+    }
+    if (chunk.type === "error") {
+      return {
+        activity: { ...run, status: "error" },
+        message:
+          "App agent encountered an error. Check the app before retrying.",
+      };
+    }
+    if (chunk.type === "abort") {
+      return {
+        activity: { ...run, status: "aborted" },
+        message: "App agent stopped. Check the app before repeating a change.",
+      };
+    }
+    if (chunk.type === "finish") {
+      return {
+        activity: { ...run, status: "finishing" },
+        message: "App agent finished generating; waiting for workflow cleanup.",
+      };
+    }
+    return undefined;
+  };
+};
+
+const textIntervalMs = 750;
+const heartbeatIntervalMs = 15_000;
+
+/** Serialize notifications, coalesce text, and release timers when a call ends. */
+export const createProgressReporter = (
+  notify: (snapshot: ProgressSnapshot) => Promise<void>,
+  signal: AbortSignal
+) => {
+  const snapshot = createProgressSnapshot();
+  let queue = Promise.resolve();
+  let latest: ProgressSnapshot | undefined;
+  let pendingText: ProgressSnapshot | undefined;
+  let textTimer: ReturnType<typeof setTimeout> | undefined;
+  let heartbeatTimer: ReturnType<typeof setTimeout> | undefined;
+  let lastTextAt = -textIntervalMs;
+  let closed = false;
+  let failure: Error | undefined;
+
+  const close = () => {
+    closed = true;
+    clearTimeout(textTimer);
+    clearTimeout(heartbeatTimer);
+    pendingText = undefined;
+    signal.removeEventListener("abort", close);
+  };
+
+  const send = async (update: ProgressSnapshot): Promise<void> => {
+    latest = update;
+    clearTimeout(heartbeatTimer);
+    const previous = queue;
+    // Observe background failures without rejecting the serialization queue.
+    // The next backend update or final flush still reports the original error.
+    queue = (async () => {
+      await previous;
+      if (closed) {
+        return;
+      }
+      try {
+        signal.throwIfAborted();
+        await notify(update);
+      } catch (error) {
+        failure =
+          error instanceof Error
+            ? error
+            : new Error("MCP progress delivery failed", { cause: error });
+        close();
+      }
+    })();
+    heartbeatTimer = setTimeout(() => {
+      if (!closed) {
+        void (async () => {
+          try {
+            await send(update);
+          } catch {
+            close();
+          }
+        })();
+      }
+    }, heartbeatIntervalMs);
+    await queue;
+    if (failure !== undefined) {
+      throw failure;
+    }
+  };
+  const flush = async (): Promise<void> => {
+    await queue;
+    if (failure !== undefined) {
+      throw failure;
+    }
+    clearTimeout(textTimer);
+    textTimer = undefined;
+    const update = pendingText;
+    pendingText = undefined;
+    if (update === undefined) {
+      await queue;
+      return;
+    }
+    lastTextAt = Date.now();
+    await send(update);
+  };
+  signal.addEventListener("abort", close, { once: true });
+
+  return {
+    close,
+    flush,
+    onProgress: async (event: AppAgentMcpEvent): Promise<void> => {
+      signal.throwIfAborted();
+      await queue;
+      if (failure !== undefined) {
+        throw failure;
+      }
+      if (closed) {
+        return;
+      }
+      const update = snapshot(event);
+      if (update === undefined) {
+        if (event.status === "streaming" && event.chunk.type === "text-end") {
+          await flush();
+        }
+        return;
+      }
+      const previous = pendingText ?? latest;
+      if (JSON.stringify(update) === JSON.stringify(previous)) {
+        return;
+      }
+      if (update.activity.status !== "text") {
+        await flush();
+        await send(update);
+        return;
+      }
+      pendingText = update;
+      const remaining = textIntervalMs - (Date.now() - lastTextAt);
+      if (remaining <= 0) {
+        await flush();
+      } else {
+        textTimer ??= setTimeout(() => {
+          void (async () => {
+            try {
+              await flush();
+            } catch {
+              close();
+            }
+          })();
+        }, remaining);
+      }
+    },
   };
 };
