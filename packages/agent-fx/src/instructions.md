@@ -8,7 +8,7 @@ The host can expose components, tools, slots (UI locations), and context (such a
 
 Tools run host-defined code with declared inputs and results. Client tools run in the host's frontend; server tools run in its backend. App UI can call both; app actions can call server tools.
 
-`#tailorkit` exports generated host bindings and app function references. `.agents/skills/tailorkit-capabilities/SKILL.md` describes the available host capabilities. `tailorkit-frontend` covers components and tools; `tailorkit-views` covers UI placement, context, and routing.
+`#tailorkit` exports generated host bindings and app function references. Other `#...` imports resolve from `src/`, such as `#components/editor` or `#db`. `.agents/skills/tailorkit-capabilities/SKILL.md` describes the available host capabilities. `tailorkit-frontend` covers components and tools; `tailorkit-views` covers UI placement, context, and routing.
 
 Use the capability skills for host APIs; consult relevant sections of the large generated `src/tailorkit.gen.ts` only for essential details the skills don't cover.
 

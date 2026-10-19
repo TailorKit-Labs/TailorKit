@@ -4,9 +4,13 @@
   "private": true,
   "imports": {
     "#tailorkit": "./src/tailorkit.gen.ts",
-    "#db": "./src/db/index.ts",
-    "#db/*": "./src/db/*.ts",
-    "#functions/*": "./src/functions/*.ts"
+    "#*": [
+      "./src/*",
+      "./src/*.ts",
+      "./src/*.tsx",
+      "./src/*/index.ts",
+      "./src/*/index.tsx"
+    ]
   },
   "scripts": {
     "build": "{% if vitePlus %}vp{% else %}vite{% endif %} build",

@@ -8,6 +8,7 @@ import { promisify } from "node:util";
 
 import { primitives } from "@tailorkit/core/primitives/zod";
 import { createTailorKitSchema } from "@tailorkit/core/schema";
+import { build } from "vite";
 import { expect, it } from "vite-plus/test";
 
 import { generateApp } from "./generate";
@@ -106,6 +107,7 @@ const schema: TailorKitSchemaFile = {
 const fileExample =
   /<!-- (?<mode>example|continue): (?<filename>[^ ]+) -->\s*```tsx?\n(?<source>[\s\S]*?)```/gu;
 const codeBlock = /```(?<language>tsx?)\n(?<source>[\s\S]*?)```/gu;
+const externalPackage = /^(?:tailorkit|preact|valibot)(?:\/|$)/u;
 
 const declaration = (specifier: string) =>
   fileURLToPath(import.meta.resolve(specifier)).replace(
@@ -113,7 +115,7 @@ const declaration = (specifier: string) =>
     ".d.$<kind>ts"
   );
 
-it("typechecks authored and generated examples with scaffold imports and the public SDK", async () => {
+it("typechecks and bundles examples with scaffold imports and the public SDK", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-agent-examples-"));
   try {
     await generateApp({
@@ -165,6 +167,10 @@ it("typechecks authored and generated examples with scaffold imports and the pub
       }
     }
     expect(Object.keys(sources).length).toBeGreaterThanOrEqual(10);
+    sources["src/examples/source-aliases.ts"] =
+      'export { NoteEditor } from "#components/note-editor";\nexport { Empty } from "#components/empty";\nexport { default as notes } from "#functions/notes";';
+    sources["src/components/empty/index.tsx"] =
+      "export const Empty = () => null;";
     // Compile the independent action and legacy form snippets with their API namespaces.
     const server = sources["src/server.ts"];
     if (server === undefined) {
@@ -255,6 +261,18 @@ it("typechecks authored and generated examples with scaffold imports and the pub
       path.join(root, "tsconfig.json"),
     ]);
     expect(result.stdout).toBe("");
+    await build({
+      build: {
+        lib: {
+          entry: path.join(root, "src/examples/source-aliases.ts"),
+          formats: ["es"],
+        },
+        rolldownOptions: { external: [externalPackage] },
+        write: false,
+      },
+      configFile: false,
+      root,
+    });
   } finally {
     await rm(root, { force: true, recursive: true });
   }

@@ -2,4 +2,4 @@
 "@tailorkit/cli": patch
 ---
 
-Add `#db`, `#db/*`, and `#functions/*` imports to new app scaffolds so backend examples work without additional alias configuration.
+Add a generic `#*` source import alias to new app scaffolds alongside `#tailorkit`, so frontend and backend modules share one import convention.
