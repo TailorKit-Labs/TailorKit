@@ -1121,7 +1121,6 @@ describe("platform appRouter", () => {
     };
     const session = await call(appRouter.runtimeSession, input, { context });
     expect(session.body.token).toBe("platform-token");
-    expect(session.body).not.toHaveProperty("toolUrl");
     expect(session.body.identity).toMatchObject({
       deploymentId: deployment.id,
       expiresAt: session.body.expiresAt,

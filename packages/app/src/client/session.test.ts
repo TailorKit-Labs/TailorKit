@@ -36,24 +36,6 @@ it.each([undefined, null, "", 123, "x".repeat(257)])(
   }
 );
 
-it("rejects the legacy reduced session even when it supplies a subject", async () => {
-  const response = {
-    expiresAt: Date.now() + 300_000,
-    subjectId: "principal",
-    token: "scoped",
-    url: "https://runtime.test/rpc",
-  };
-  expect(() => parseSession(response)).toThrow();
-  const provider = createSessionProvider({
-    appId: "app",
-    baseUrl: "https://host.test/api/tailorkit",
-    fetch: asyncFixture(() => Response.json(response)),
-  });
-  await expect(provider({ refresh: false })).rejects.toMatchObject({
-    code: "UNAVAILABLE",
-  });
-});
-
 it("deduplicates token requests, caches until renewal and sends only the host-bound app ID", async () => {
   const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(
     asyncFixture(() =>

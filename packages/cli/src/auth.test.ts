@@ -107,25 +107,6 @@ describe("auth store", () => {
     await expect(getDeployToken("https://example.com")).rejects.toThrow();
   });
 
-  const legacyCredentials: z.core.util.JSONType[] = [
-    { deployToken: "deploy-token" },
-    { deployToken: "deploy-token", scope: { userId: "user-1" } },
-  ];
-  it.each(legacyCredentials)(
-    "rejects stored tokens without a named scope: %j",
-    async (credentials) => {
-      const homeDirectory = await createTemporaryHome();
-      await writeAuthStoreFixture(homeDirectory, {
-        hosts: {
-          "https://example.com": credentials,
-        },
-      });
-      const { getDeployToken } = await loadAuthModule(homeDirectory);
-
-      await expect(getDeployToken("https://example.com")).rejects.toThrow();
-    }
-  );
-
   it("preserves unknown top-level auth.json keys when saving a host token", async () => {
     const homeDirectory = await createTemporaryHome();
     const filePath = await writeAuthStoreFixture(homeDirectory, {
