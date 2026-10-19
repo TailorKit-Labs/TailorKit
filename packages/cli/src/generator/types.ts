@@ -571,7 +571,12 @@ const renderComponent = (
       callback.input === undefined
         ? ""
         : `input: ${toTypeScriptType(callback.input, 2)}`;
-    lines.push(`  ${toPropertyKey(key)}?: (${parameters}) => void;`);
+    const output =
+      callback.output === undefined
+        ? "void"
+        : toTypeScriptType(callback.output, 2);
+    const result = `${output} | Promise<${output}>`;
+    lines.push(`  ${toPropertyKey(key)}?: (${parameters}) => ${result};`);
   }
 
   lines.push("}", "");

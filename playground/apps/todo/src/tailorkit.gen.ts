@@ -248,7 +248,7 @@ export interface PressableProps {
   ariaLabel?: AriaLabel;
   disabled?: Disabled;
   layout?: Layout;
-  onPress?: () => void;
+  onPress?: () => void | Promise<void>;
 }
 
 export const Pressable = /* @__PURE__ */ createRemoteComponent<PressableProps, true>("Pressable", {
@@ -260,7 +260,7 @@ export interface ButtonProps {
   disabled?: boolean;
   size?: "default" | "sm" | "lg" | "icon" | "icon-sm";
   variant?: "default" | "secondary" | "ghost" | "outline" | "destructive";
-  onClick?: () => void;
+  onClick?: () => void | Promise<void>;
 }
 
 export const Button = /* @__PURE__ */ createRemoteComponent<ButtonProps, true>("Button", {
@@ -273,7 +273,7 @@ export interface InputProps {
   value?: string;
   onValueChange?: (input: {
     value: string;
-  }) => void;
+  }) => void | Promise<void>;
 }
 
 export const Input = /* @__PURE__ */ createRemoteComponent<InputProps, false>("Input", {

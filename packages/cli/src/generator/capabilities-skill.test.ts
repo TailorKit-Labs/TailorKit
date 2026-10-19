@@ -20,7 +20,7 @@ import type { TailorKitSchemaFile } from "./types";
 const schema: TailorKitSchemaFile = {
   components: {
     Button: {
-      callbacks: { onPress: {} },
+      callbacks: { onPress: {}, onValidate: { output: { type: "boolean" } } },
       children: true,
       fields: {
         properties: { variant: { enum: ["primary", "secondary"] } },
@@ -177,7 +177,14 @@ it("typechecks components, callbacks, tools and context from one bindings file",
 import { Button, Input, tools } from "./host";
 import type { ButtonProps, InputProps, ViewProps, TailorKitBackendTools } from "./host";
 const button: ButtonProps = { variant: "primary", onPress: () => {} };
-const input: InputProps = { onChange: ({ value }) => value.toUpperCase() };
+const input: InputProps = { onChange: ({ value }) => { value.toUpperCase(); } };
+const syncResult: ButtonProps = { onValidate: () => true };
+const asyncResult: ButtonProps = { onValidate: async () => true };
+const asyncVoid: ButtonProps = { onPress: async () => {} };
+// @ts-expect-error Callback output schemas reject incompatible synchronous results.
+const invalidResult: ButtonProps = { onValidate: () => "yes" };
+// @ts-expect-error Callback output schemas reject incompatible promised results.
+const invalidAsyncResult: ButtonProps = { onValidate: async () => "yes" };
 const context: ViewProps<"/">["context"] = { teamId: "team-1" };
 const backend: TailorKitBackendTools = tools;
 const added: Promise<boolean> = backend.todos.add("title");

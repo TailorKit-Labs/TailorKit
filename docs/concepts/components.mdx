@@ -72,15 +72,33 @@ Each entry in `defineContract({ components })` describes one component. `Schema`
 | `callbacks` | Callback definitions by name | Function props for events such as `onClick`. |
 | `children` | `boolean` | Defaults to `false`. Allows text or nested components inside. |
 
-A callback can declare `input` for its event payload, `output` for its result, and `async: true` for a promise. `{}` declares no arguments and no return value.
+A callback can declare `input` for its event payload and `output` for its result. Its app implementation can return the result directly or return a promise. `{}` declares no arguments and a `void | Promise<void>` app return type.
+
+Host callbacks always return promises because results cross the sandbox bridge. Await the result in your host component:
+
+```ts
+const contract = defineContract({
+  components: {
+    Editor: {
+      callbacks: { onValidate: { output: z.boolean() } },
+    },
+  },
+});
+
+// App implementation; returning Promise<boolean> is also accepted.
+const onValidate = () => true;
+
+// Host component:
+const valid = await props.onValidate();
+```
+
+Callbacks cannot supply an immediate return value to a host API that requires a synchronous result. Callback exceptions and rejected promises reject the host promise. Pending calls reject when the sandbox closes or after 30 seconds without a result.
 
 ```ts
 export interface CallbackDefinition<
   TInput extends Schema | undefined = Schema | undefined,
   TOutput extends Schema | undefined = Schema | undefined,
-  TAsync extends boolean | undefined = boolean | undefined,
 > {
-  async?: TAsync;
   input?: TInput;
   output?: TOutput;
 }

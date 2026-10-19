@@ -119,8 +119,9 @@ const renderPressable = (overrides: PrimitiveProps = {}) => {
       props: overrides,
       type: "Pressable",
     },
-    (event) => {
+    async (event) => {
       events.push(event);
+      await Promise.resolve();
     }
   );
   const rendered = render(<ThemedPressable props={props} />);
@@ -175,9 +176,18 @@ describe("Pressable", () => {
     const { button, events } = renderPressable();
     fireEvent.pointerDown(button, { button: 0 });
     fireEvent.click(button, { detail: 1 });
+    const [callback] = events;
+    const callbackId =
+      callback?.type === "dispatchCallback" ? callback.data.id : undefined;
+    expect(callbackId).toEqual(expect.any(String));
     expect(events).toEqual([
       {
-        data: { args: [], event: "press", nodeId: "pressable" },
+        data: {
+          args: [],
+          event: "press",
+          id: callbackId,
+          nodeId: "pressable",
+        },
         type: "dispatchCallback",
       },
     ]);

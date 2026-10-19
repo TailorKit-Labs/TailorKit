@@ -47,7 +47,7 @@ export const tailor = createClient({
     Input: ({ props: { onValueChange, ...rest } }) => (
       <Input
         onChange={(event) => {
-          onValueChange({ value: event.target.value });
+          void onValueChange({ value: event.target.value });
         }}
         {...rest}
       />

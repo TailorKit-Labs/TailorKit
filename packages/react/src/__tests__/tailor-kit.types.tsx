@@ -162,6 +162,7 @@ const callbackContract = defineContract({
     Button: {
       callbacks: {
         onClick: {},
+        onValidate: { output: typedSchema<boolean>() },
       },
       children: true,
       fields: typedSchema<{ variant?: "default" | "secondary" }>(),
@@ -173,9 +174,11 @@ const callbackContract = defineContract({
 components(callbackContract, {
   Button: ({ props }) => {
     const variant: "default" | "secondary" | undefined = props.variant;
-    const onClick: (() => void) | undefined = props.onClick;
+    const onClick: (() => Promise<void>) | undefined = props.onClick;
+    const onValidate: () => Promise<boolean> = props.onValidate;
     void variant;
     void onClick;
+    void onValidate;
     return null;
   },
 });

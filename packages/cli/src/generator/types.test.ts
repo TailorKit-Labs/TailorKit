@@ -349,11 +349,37 @@ describe("renderGeneratedTypes", () => {
     expect(output).not.toContain("export type Label = string;");
     expect(output).toContain("disabled?: boolean;");
     expect(output).toContain("label?: string;");
-    expect(output).toContain("onClick?: () => void;");
+    expect(output).toContain("onClick?: () => void | Promise<void>;");
     expect(output).toContain("onValueChange?: (input: {");
     expect(output).toContain("value: string;");
     expect(output).toContain("createRemoteComponent<ButtonProps, true>");
     expect(output).toContain('callbacks: { "onClick": 0, "onValueChange": 1 }');
+  });
+
+  it("generates synchronous and asynchronous callback outputs", () => {
+    const output = renderGeneratedTypes({
+      components: {
+        Editor: {
+          callbacks: {
+            onClose: {},
+            onSave: {
+              input: { type: "string" },
+              output: { type: "number" },
+            },
+            onValidate: { output: { type: "boolean" } },
+          },
+          children: false,
+        },
+      },
+      views: {},
+    });
+    expect(output).toContain("onValidate?: () => boolean | Promise<boolean>;");
+    expect(output).toContain(
+      "onSave?: (input: string) => number | Promise<number>;"
+    );
+    expect(output).toContain("onClose?: () => void | Promise<void>;");
+    expect(output).toContain('"onValidate": 0');
+    expect(output).toContain('"onSave": 1');
   });
 
   it("generates primitive component props from serialized fields", () => {
@@ -708,7 +734,7 @@ it("generates conditional primitive types from the contract's breakpoint aliases
   expect(output).toContain(
     "export interface CustomProps {\n  background?: number;"
   );
-  expect(output).toContain("onPress?: () => void;");
+  expect(output).toContain("onPress?: () => void | Promise<void>;");
   expect(output).toContain(
     'export type Layout = "inline" | "box" | "flex" | "grid";'
   );

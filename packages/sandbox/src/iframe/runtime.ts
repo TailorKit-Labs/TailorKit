@@ -1,3 +1,4 @@
+import type { RemoteCallbackOperation } from "@tailorkit/app/client";
 import * as v from "valibot";
 
 import { iframeReadyType, sandboxMessageType } from "#bridge";
@@ -223,23 +224,59 @@ export const startIframeRuntime = (options: {
         }
       })();
     } else if (payload?.type === "dispatchCallback") {
-      const target = nodes.get(payload.data.nodeId)?.deref();
-      if (!(target instanceof Element)) {
-        nodes.delete(payload.data.nodeId);
-        sendError(
-          new Error(
-            `Cannot dispatch callback to unknown node "${payload.data.nodeId}".`
-          )
-        );
+      const { id, nodeId, event: eventName, args } = payload.data;
+      const respond = async (
+        operation: RemoteCallbackOperation
+      ): Promise<void> => {
+        try {
+          const output = await operation();
+          send({ data: { id, output }, type: "callbackResult" });
+        } catch (error) {
+          send({
+            data: {
+              error: error instanceof Error ? error.message : String(error),
+              id,
+            },
+            type: "callbackResult",
+          });
+        }
+      };
+      const target = nodes.get(nodeId)?.deref();
+      if (
+        !(target instanceof Element) ||
+        !root.contains(target) ||
+        !readCallbacks(target).some((binding) => binding.event === eventName)
+      ) {
+        void respond(() => {
+          throw new Error(
+            `Cannot dispatch callback "${eventName}" to node "${nodeId}".`
+          );
+        });
         return;
       }
-      target.dispatchEvent(
-        new CustomEvent(payload.data.event, {
+      let invoked = false;
+      const callbackEvent = Object.assign(
+        new CustomEvent(eventName, {
           bubbles: false,
           cancelable: true,
-          detail: payload.data.args ?? [],
-        })
+          detail: args ?? [],
+        }),
+        {
+          respondWith: (operation: RemoteCallbackOperation) => {
+            if (invoked) {
+              return;
+            }
+            invoked = true;
+            void respond(operation);
+          },
+        }
       );
+      target.dispatchEvent(callbackEvent);
+      if (!invoked) {
+        void respond(() => {
+          throw new Error(`Callback "${eventName}" did not return a result.`);
+        });
+      }
     }
   };
   window.addEventListener("message", handleMessage);

@@ -61,11 +61,15 @@ describe("sandbox protocol", () => {
       data: {
         args: [undefined, null, { custom: true }],
         event: "click",
+        id: "callback",
         nodeId: "button",
       },
       type: "dispatchCallback",
     },
-    { data: { event: "click", nodeId: "button" }, type: "dispatchCallback" },
+    {
+      data: { event: "click", id: "callback", nodeId: "button" },
+      type: "dispatchCallback",
+    },
     { data: { timestamp: 1.5 }, type: "animationFrame" },
   ] satisfies HostToIframePayload[])(
     "accepts host message $type",
@@ -77,6 +81,11 @@ describe("sandbox protocol", () => {
   it.each([
     { data: { id: "session", refresh: true }, type: "backendSessionRequest" },
     { type: "ready" },
+    {
+      data: { id: "callback", output: { saved: true } },
+      type: "callbackResult",
+    },
+    { data: { error: "Save failed", id: "callback" }, type: "callbackResult" },
     { data: { revision: 1, tree }, type: "snapshot" },
     { data: { patches, revision: 2 }, type: "patches" },
     { data: { message: "Failure" }, type: "error" },

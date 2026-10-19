@@ -12,7 +12,7 @@ import type { FunctionCalls, Identity } from "./server/functions";
 
 const isFunctionValue = <TValue>(
   value: TValue
-): value is Extract<TValue, CallableFunction> => typeof value === "function";
+): value is TValue & RemoteCallbackOperation => typeof value === "function";
 
 // oxlint-disable-next-line typescript/no-empty-interface, typescript/no-empty-object-type -- Generated bindings augment this interface.
 export interface TailorKitViews {}
@@ -307,6 +307,14 @@ export function defineView<
   };
 }
 
+// oxlint-disable-next-line anti-slop/no-unknown-returns -- Callback values are owned by the host contract; the sandbox bridge forwards them without interpreting their heterogeneous schemas.
+export type RemoteCallbackOperation = (...inputs: unknown[]) => unknown;
+
+export interface RemoteCallbackEvent {
+  detail: unknown[];
+  respondWith: (operation: RemoteCallbackOperation) => void;
+}
+
 const componentTagPrefix = "tailorkit-";
 
 const toComponentTagName = (name: string): string =>
@@ -352,13 +360,10 @@ export const createRemoteComponent = <
 
       const eventName = toCallbackEventName(key);
       callbackMap[eventName] = { callback: key, inputCount };
-      nextProps[toEventProp(eventName)] = (event: { detail?: unknown[] }) => {
-        // SAFETY: The callback binding declares its input count, and CustomEvent detail carries those positional inputs.
-        (
-          operation as (
-            ...inputs: CustomEvent["detail"][]
-          ) => ReturnType<() => void>
-        )(...(event.detail ?? []).slice(0, inputCount));
+      nextProps[toEventProp(eventName)] = (event: RemoteCallbackEvent) => {
+        event.respondWith(() =>
+          operation(...event.detail.slice(0, inputCount))
+        );
       };
     }
 

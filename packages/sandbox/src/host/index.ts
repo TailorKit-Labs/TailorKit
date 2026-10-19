@@ -6,6 +6,7 @@ import iframeSource from "virtual:tailorkit-iframe";
 
 import { iframeReadyType, sandboxMessageType } from "#bridge";
 import type {
+  CallbackResult,
   RemoteProps,
   HostToIframePayload as HostToIframePayloadType,
 } from "#protocol";
@@ -25,7 +26,9 @@ interface IframeBridgeMessage {
 
 export interface IframeUiHost extends RemoteUiStore {
   destroy: () => void;
-  dispatch: (payload: HostToIframePayloadType) => void;
+  dispatch: (
+    payload: HostToIframePayloadType
+  ) => Promise<CallbackResult["output"]>;
   iframe: HTMLIFrameElement;
   mount: () => void;
   setProps: (props: RemoteProps | undefined) => void;
@@ -118,6 +121,22 @@ export const createIframeUiHost = (
   const sessionCalls = new Set<string>();
   const toolCalls = new Set<string>();
   const queuedPayloads: HostToIframePayloadType[] = [];
+  const callbackCalls = new Map<
+    string,
+    {
+      resolve: (output: CallbackResult["output"]) => void;
+      reject: (error: Error) => void;
+      timer: ReturnType<typeof setTimeout>;
+    }
+  >();
+  const rejectCallbacks = (error: Error) => {
+    for (const call of callbackCalls.values()) {
+      clearTimeout(call.timer);
+      call.reject(error);
+    }
+    callbackCalls.clear();
+    queuedPayloads.length = 0;
+  };
   let appSourcePromise: Promise<string> | null = null;
   let destroyed = false;
   let iframeReady = false;
@@ -128,6 +147,7 @@ export const createIframeUiHost = (
   configureIframe(iframe, channel);
 
   const reportError = (cause: unknown): void => {
+    rejectCallbacks(cause instanceof Error ? cause : new Error(String(cause)));
     options.onError?.(
       cause instanceof Error ? cause : new Error(String(cause))
     );
@@ -192,6 +212,24 @@ export const createIframeUiHost = (
           `Invalid sandbox message: ${result.issues.map((issue) => issue.message).join("; ")}`
         )
       );
+      return;
+    }
+    if (result.output.type === "callbackResult") {
+      const { id, output, error } = result.output.data;
+      const call = callbackCalls.get(id);
+      if (call) {
+        callbackCalls.delete(id);
+        clearTimeout(call.timer);
+        if (error === undefined) {
+          call.resolve(output);
+        } else {
+          call.reject(new Error(error));
+        }
+      }
+      return;
+    }
+    if (result.output.type === "error") {
+      reportError(new Error(result.output.data.message));
       return;
     }
     if (result.output.type === "toolRequest") {
@@ -283,17 +321,49 @@ export const createIframeUiHost = (
         return;
       }
       destroyed = true;
-      queuedPayloads.length = 0;
+      rejectCallbacks(new Error("TailorKit sandbox was destroyed."));
       window.removeEventListener("message", handleMessage);
       iframe.remove();
     },
-    dispatch: (payload) => {
+    dispatch: async (payload): Promise<CallbackResult["output"]> => {
       v.parse(HostToIframePayload, payload);
-      if (!iframeReady) {
-        queuedPayloads.push(payload);
-        return;
+      if (destroyed) {
+        throw new Error("TailorKit sandbox was destroyed.");
       }
-      postToIframe(payload);
+      const sendPayload = () => {
+        if (iframeReady) {
+          postToIframe(payload);
+        } else {
+          queuedPayloads.push(payload);
+        }
+      };
+      if (payload.type !== "dispatchCallback") {
+        sendPayload();
+        return undefined;
+      }
+      const { id } = payload.data;
+      if (callbackCalls.has(id)) {
+        throw new Error("Duplicate callback request ID.");
+      }
+      const { promise, resolve, reject } =
+        Promise.withResolvers<CallbackResult["output"]>();
+      const timer = setTimeout(() => {
+        callbackCalls.delete(id);
+        const queuedIndex = queuedPayloads.indexOf(payload);
+        if (queuedIndex !== -1) {
+          queuedPayloads.splice(queuedIndex, 1);
+        }
+        reject(new Error("TailorKit callback timed out."));
+      }, 30_000);
+      callbackCalls.set(id, { reject, resolve, timer });
+      try {
+        sendPayload();
+      } catch (error) {
+        callbackCalls.delete(id);
+        clearTimeout(timer);
+        reject(error instanceof Error ? error : new Error(String(error)));
+      }
+      return await promise;
     },
     iframe,
     mount: () => {

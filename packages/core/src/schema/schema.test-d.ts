@@ -61,7 +61,6 @@ const callbacks = createTailorKitSchema({
       callbacks: {
         onClose: {},
         onLoad: {
-          async: true,
           output: z.object({ ready: z.literal(true) }),
         },
         onSave: {
@@ -74,19 +73,24 @@ const callbacks = createTailorKitSchema({
 });
 
 const dialogProps: ComponentProps<typeof callbacks.components.Dialog> = {
-  onClose: () => {},
+  onClose: async () => {
+    await Promise.resolve();
+  },
   onLoad: vi
     .fn<() => Promise<{ ready: true }>>()
     .mockResolvedValue({ ready: true }),
-  onSave: (input) => {
+  onSave: async (input) => {
     expectTypeOf(input).toEqualTypeOf<{ title: string; version: number }>();
-    return { saved: true };
+    return await Promise.resolve({ saved: true });
   },
 };
 void dialogProps;
 expectTypeOf<ComponentProps<typeof callbacks.components.Dialog>>().toExtend<{
-  onSave: (input: { title: string; version: number }) => { saved: boolean };
-  onClose: () => void;
+  onSave: (input: {
+    title: string;
+    version: number;
+  }) => Promise<{ saved: boolean }>;
+  onClose: () => Promise<void>;
   onLoad: () => Promise<{ ready: true }>;
 }>();
 
