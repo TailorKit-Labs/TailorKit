@@ -85,7 +85,6 @@ export const runtimeSession = protectedRouter
           toolUrl: z.url(),
         }),
         token: z.string(),
-        toolUrl: z.url(),
         url: z.url(),
       }),
     })
@@ -136,7 +135,6 @@ export const runtimeSession = protectedRouter
       body: {
         ...session,
         identity: { ...identity, expiresAt: session.expiresAt },
-        toolUrl: identity.toolUrl,
         url: url.href,
       },
     };

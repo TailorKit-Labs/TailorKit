@@ -1,3 +1,4 @@
+import { sessionSchema } from "@tailorkit/app/protocol";
 import * as v from "valibot";
 
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
@@ -123,9 +124,7 @@ const HostToIframePayloadSchema = v.pipe(
         id: SessionId,
         session: v.optional(
           strictObject({
-            expiresAt: FiniteNumber,
-            subjectId: v.pipe(v.string(), v.minLength(1), v.maxLength(256)),
-            token: v.pipe(v.string(), v.maxLength(8192)),
+            ...sessionSchema.entries,
             url: SessionUrl,
           })
         ),

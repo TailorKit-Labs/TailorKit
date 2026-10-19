@@ -20,6 +20,17 @@ import { z } from "zod";
 import { RenderSlot } from "#index";
 import { createClient } from "#tailorkit";
 
+const identity = {
+  appId: "app",
+  deploymentId: "deployment",
+  expiresAt: Date.now() + 300_000,
+  installationId: "app",
+  projectId: "project",
+  scope: { name: "workspace", value: { id: "workspace" } },
+  subjectId: "principal",
+  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+};
+
 const requests: { appUrl: string; props: RemoteProps }[] = [];
 
 vi.mock("../remote-view", () => ({
@@ -350,7 +361,7 @@ it("resolves the key and sends a complete controlled instance through the render
       if (url.endsWith("/backend/session")) {
         return Response.json({
           expiresAt: Date.now() + 300_000,
-          subjectId: "principal",
+          identity,
           token: "token",
           url: "https://runtime.test/rpc",
         });
@@ -426,7 +437,7 @@ it("reports resolver failures and missing keys without mounting stale instances"
       if (url.endsWith("/backend/session")) {
         return Response.json({
           expiresAt: Date.now() + 300_000,
-          subjectId: "principal",
+          identity,
           token: "token",
           url: "https://runtime.test/rpc",
         });

@@ -14,6 +14,17 @@ import { z } from "zod";
 import { createClient } from "#index";
 import type { TailorKitApp } from "#index";
 
+const identity = {
+  appId: "app",
+  deploymentId: "deployment",
+  expiresAt: Date.now() + 300_000,
+  installationId: "app",
+  projectId: "project",
+  scope: { name: "workspace", value: { id: "workspace" } },
+  subjectId: "principal",
+  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+};
+
 const actionRequestSchema = z.object({
   json: z.object({
     args: z.object({
@@ -101,7 +112,7 @@ const mockFetch = () =>
       if (path.endsWith("/backend/session")) {
         return Response.json({
           expiresAt: Date.now() + 300_000,
-          subjectId: "principal",
+          identity,
           token: "app-token",
           url: "https://runtime.test/rpc",
         });
@@ -819,7 +830,7 @@ it("aggregates apps in discovery order, resolves in parallel, and preserves dupl
         .parse(await new Response(options?.body).json());
       return Response.json({
         expiresAt: Date.now() + 300_000,
-        subjectId: "principal",
+        identity,
         token: appId,
         url: "https://runtime.test/rpc",
       });

@@ -44,9 +44,7 @@ it("binds client tool calls to the installation and validates transformed inputs
       return Response.json({
         expiresAt: identity.expiresAt,
         identity,
-        subjectId: identity.subjectId,
         token: "verified-token",
-        toolUrl: identity.toolUrl,
         url: "https://runtime.test/rpc",
       });
     },
@@ -111,9 +109,7 @@ it("discards a pending credential when the session cache is cleared", async () =
     Response.json({
       expiresAt: identity.expiresAt,
       identity,
-      subjectId: identity.subjectId,
       token: "old-subject",
-      toolUrl: identity.toolUrl,
       url: "https://runtime.test/rpc",
     })
   );

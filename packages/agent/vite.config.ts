@@ -30,4 +30,8 @@ export default defineConfig({
     sourcemap: true,
     target: "node24",
   },
+  test: {
+    // PGlite startup competes with imports in the other files and package tasks.
+    maxWorkers: 2,
+  },
 });

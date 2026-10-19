@@ -95,7 +95,8 @@ jobs:
           team: ${{ vars.TURBO_TEAM }}
 
       - name: Run tests
-        run: vp run test
+        # Each package also starts its own test workers; budget both levels on this 4-vCPU runner.
+        run: vp run test --concurrency=2
 
       - name: Test release policy
         run: vp exec turbo run test:release --filter=//

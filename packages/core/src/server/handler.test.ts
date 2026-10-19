@@ -90,13 +90,24 @@ describe("createTailorKitServer", () => {
   });
 
   it("requests app backend tokens from the platform with host credentials and verified scopes", async () => {
-    const platformFetch = vi.fn<typeof fetch>().mockResolvedValueOnce(
-      Response.json({
+    const session = {
+      expiresAt: 123,
+      identity: {
+        appId: "app",
+        deploymentId: "deployment",
         expiresAt: 123,
-        token: "platform-token",
-        url: "https://runtime.test/rpc",
-      })
-    );
+        installationId: "app",
+        projectId: "project",
+        scope: { name: "org", value: { tenant: "verified" } },
+        subjectId: "user",
+        toolUrl: "https://host.test/api/tailorkit/tools/execute",
+      },
+      token: "platform-token",
+      url: "https://runtime.test/rpc",
+    };
+    const platformFetch = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json(session));
     const server = createTailorKitServer({
       $internal: {
         platformFetch,
@@ -122,12 +133,7 @@ describe("createTailorKitServer", () => {
         }),
       }
     );
-    expect(await response.json()).toEqual({
-      expiresAt: 123,
-      subjectId: "user",
-      token: "platform-token",
-      url: "https://runtime.test/rpc",
-    });
+    expect(await response.json()).toEqual(session);
     const [issuedRequest] = platformRequests(platformFetch);
     if (!issuedRequest) {
       throw new Error("Expected a platform token request");
