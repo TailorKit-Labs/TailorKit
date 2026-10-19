@@ -1,0 +1,85 @@
+.changeset/tidy-canvas-surfaces.md
+  s_1b71a98e64139b::t_759feeaa851e36 13-14
+packages/app/src/client.ts
+  s_1b71a98e64139b::t_8f51a777c6fa19 24-25,29,32,37-38
+packages/app/src/client/canvas-controller.test.ts
+  s_1b71a98e64139b::t_b1369877b0ffb8 1-264
+packages/app/src/client/canvas-controller.ts
+  s_1b71a98e64139b::t_4458f41343dba7 1-329
+packages/app/src/client/canvas-hook.ts
+  s_1b71a98e64139b::t_d3925c1e8918a4 4-10,12-23,25-35,38-40,51-61,64,66,68-85
+packages/app/src/client/canvas-input.test.ts
+  s_1b71a98e64139b::t_5baf58e6fed82d 1-108
+packages/app/src/client/canvas-input.ts
+  s_1b71a98e64139b::t_7c40baeb715e7c 1-99
+packages/app/src/client/canvas.ts
+  s_1b71a98e64139b::t_248ab178e67379 3-4,23-24,29-33,36-39,57-73,94-95,100-112,135,157-174,177
+packages/core/src/schema/canvas.test.ts
+  s_1b71a98e64139b::t_58c7f843975182 61-84
+packages/core/src/schema/canvas.ts
+  s_1b71a98e64139b::t_0d7a4b6d42d357 7-21,23,28-32,54-55,96-106,108
+packages/core/src/schema/index.ts
+  s_1b71a98e64139b::t_a87b4257e1d80b 4
+packages/sandbox/README.md
+  s_a19e48c197cacd::t_a5577f1e6a7f0a 21,51,69,71-83,128,135,151,177
+packages/sandbox/benchmarks/client.ts
+  s_1b71a98e64139b::t_db8b4775490cb2 6,11-45,92-94,101-104,114-116
+packages/sandbox/benchmarks/main.ts
+  s_1b71a98e64139b::t_6d7213df829496 62-69,98-101,138-140
+packages/sandbox/benchmarks/shared.ts
+  s_1b71a98e64139b::t_fe2313c8220b88 9-11
+packages/sandbox/src/host/canvas-input.test.ts
+  s_1b71a98e64139b::t_392a1e617038c2 1-219
+packages/sandbox/src/host/canvas-input.ts
+  s_1b71a98e64139b::t_479f6ede906c1c 1-208
+packages/sandbox/src/host/canvas.ts
+  s_1b71a98e64139b::t_387d83c8b7ab17 1-2,5-16,36,64-65,80,89,95,106-113,138-142
+packages/sandbox/src/host/index.ts
+  s_1b71a98e64139b::t_3bd1fa85fde4e6 192,197,209
+packages/sandbox/src/iframe/canvas.test.ts
+  s_1b71a98e64139b::t_8b4195c17bfd6b 100-115
+packages/sandbox/src/iframe/canvas.ts
+  s_1b71a98e64139b::t_53e4a9ec659675 11-16,32-33,47
+packages/sandbox/src/protocol.ts
+  s_1b71a98e64139b::t_97efa1e3358f70 265
+packages/tailorkit/src/index.ts
+  s_1b71a98e64139b::t_883ab9573c7558 4
+playground/README.md
+  s_1b71a98e64139b::t_28751425e5022e 95-97,101
+playground/apps/todo/src/slots/panel/canvas-chart-platform.ts
+  s_1b71a98e64139b::t_e92e24304c1c06 1-40
+playground/apps/todo/src/slots/panel/canvas-prototype.tsx
+  s_1b71a98e64139b::t_2f471649823f14 7,10,15,17-23,25-75,79,85,87-94,101,116-117,119,131-132
+playground/shared/src/contracts/arktype.ts
+  s_1b71a98e64139b::t_c8db620e49259a 12
+playground/shared/src/contracts/valibot.ts
+  s_1b71a98e64139b::t_02da9bd82e7a71 36
+playground/shared/src/contracts/zod.ts
+  s_1b71a98e64139b::t_99dc20dadae73d 16
+playground/tanstack-start/canvas-demo/checks.ts
+  s_1b71a98e64139b::t_1467c07d495cc3 105-157,250-254
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9e86bae9a24921c2cd85a00ec045a69e95f9c2bf",
+  "prompts": {},
+  "sessions": {
+    "s_1b71a98e64139b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15653-d85a-7f00-822b-4116140d9b23",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_a19e48c197cacd": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15654-0b30-71e2-8079-69eb4b77e1d0",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
