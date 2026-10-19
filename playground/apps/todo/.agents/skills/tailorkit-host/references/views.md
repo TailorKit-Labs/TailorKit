@@ -9,6 +9,8 @@ Supported views: "/".
 Instances: single; omit instances.
 
 
+Exact contracts: [generated bindings](../../../../src/tailorkit.gen.ts); search for `ViewPropsByPath` or `TailorKitSlots`.
+
 ## Context declarations
 
 Each path inherits its ancestor contexts. Read context through the view's useContext() hook.

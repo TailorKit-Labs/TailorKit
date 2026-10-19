@@ -511,7 +511,7 @@ describe("generateApp", () => {
     expect(view).toContain("dataSchema: z.object({})");
     expect(view).toContain('key: "default"');
     const types = await readFile(
-      path.join(targetDirectory, "src/tailorkit.gen/views.ts"),
+      path.join(targetDirectory, "src/tailorkit.gen.ts"),
       "utf-8"
     );
     expect(types).toContain(
@@ -547,31 +547,37 @@ describe("generateApp", () => {
     expect(content).not.toContain("DefaultViewProps");
   });
 
-  it("generates focused modules behind the existing import", async () => {
+  it("generates one bindings file and focused references inside the host skill", async () => {
     const targetDirectory = await createTempDir();
     await generateApp({ ...defaultOptions, targetDirectory });
-    const read = async (file: string) =>
-      await readFile(path.join(targetDirectory, "src", file), "utf-8");
-    const barrel = await read("tailorkit.gen.ts");
-    expect(barrel).toContain('export * from "./tailorkit.gen/components/Box"');
-    expect(barrel).toContain('export * from "./tailorkit.gen/views"');
-    expect(barrel).not.toContain("export const Box");
-    const component = await read("tailorkit.gen/components/Box.ts");
-    expect(component).toContain(
+    const bindings = await readFile(
+      path.join(targetDirectory, "src/tailorkit.gen.ts"),
+      "utf-8"
+    );
+    expect(bindings).toContain(
       'import { createRemoteComponent } from "tailorkit/client"'
     );
-    expect(component).toContain("export const Box");
-    const api = await read("tailorkit.gen/api.ts");
-    expect(api).toContain('import type app from "../server"');
-    expect(api).toContain(
+    expect(bindings).toContain("export const Box");
+    expect(bindings).toContain('import type app from "./server"');
+    expect(bindings).toContain(
       "export const api = createApi<typeof app.functions>();"
     );
-    const views = await read("tailorkit.gen/views.ts");
-    expect(views).toContain('"/customers": {');
-    expect(views).toContain("customer?: string;");
-    expect(await read("tailorkit.gen/reference/index.md")).toContain(
-      "components/Box.md"
-    );
+    expect(bindings).toContain('"/customers": {');
+    expect(bindings).toContain("customer?: string;");
+    expect(
+      await readFile(
+        path.join(
+          targetDirectory,
+          ".agents/skills/tailorkit-host/references/index.md"
+        ),
+        "utf-8"
+      )
+    ).toContain("components/Box.md");
+    await expect(
+      readFile(
+        path.join(targetDirectory, "src/tailorkit.gen/components/Box.ts")
+      )
+    ).rejects.toThrow();
   });
 
   it("generates a valid tsconfig.json", async () => {

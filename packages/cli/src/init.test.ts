@@ -112,7 +112,7 @@ it("fetches the host schema and generates real bindings even when installation i
     }
   );
   const bindings = await readFile(
-    path.join(directory, "src/tailorkit.gen/views.ts"),
+    path.join(directory, "src/tailorkit.gen.ts"),
     "utf-8"
   );
   expect(bindings).toContain(
@@ -174,7 +174,7 @@ it("scaffolds and regenerates from a schema file while the local host is unreach
   });
   vi.stubGlobal("fetch", fetch);
   const directory = await runInit(options);
-  const generated = path.join(directory, "src/tailorkit.gen/views.ts");
+  const generated = path.join(directory, "src/tailorkit.gen.ts");
   const initial = await readFile(generated, "utf-8");
   expect(initial).toContain('"sidebar": { views: "/local"; multiple: false }');
   expect(initial).toContain("name?: string");

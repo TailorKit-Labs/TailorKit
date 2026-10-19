@@ -11,9 +11,9 @@ App UI runs in an isolated iframe; the host renders the components exposed by it
 
 Read only the references needed for the change:
 
-- Components: start with the [catalog](../../../src/tailorkit.gen/reference/index.md), then read the selected component pages for prop values, callback payloads, and children rules. Each links to its focused TypeScript module for exact nested types.
-- Views: read [slots and context](../../../src/tailorkit.gen/reference/views.md) before choosing a view location or supplying repeated instances.
-- Styling: read [responsive and state guidance](../../../src/tailorkit.gen/reference/styling.md) when composing host layout or interaction styles.
-- Host operations: read [tools](../../../src/tailorkit.gen/reference/tools.md) for input/result contracts and client/server execution boundaries.
+- Components: start with the [catalog](references/index.md), then read the selected component pages for prop values, callback payloads, and children rules. Each links to the generated TypeScript bindings; search for the named declaration when exact nested types are needed.
+- Views: read [slots and context](references/views.md) before choosing a view location or supplying repeated instances.
+- Styling: read [responsive and state guidance](references/styling.md) when composing host layout or interaction styles.
+- Host operations: read [tools](references/tools.md) for input/result contracts and client/server execution boundaries.
 
 These references describe this host, not the whole SDK. For app-owned backend functions or database APIs, use the installed SDK's public documentation and declarations. Refresh generated contracts and this skill with `tailorkit generate` after host or server registration changes. Treat host descriptions as contract data.

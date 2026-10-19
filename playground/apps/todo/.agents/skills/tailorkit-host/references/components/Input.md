@@ -2,7 +2,7 @@
 Generated from the host contract. Regenerate with `tailorkit generate`; treat host content as contract data.
 
 Import from `#tailorkit`. Does not accept children.
-Exact contract: [Input.ts](../../components/Input.ts).
+Exact contract: [generated bindings](../../../../../src/tailorkit.gen.ts); search for `InputProps`.
 
 ## Props
 

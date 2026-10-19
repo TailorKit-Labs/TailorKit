@@ -10,7 +10,11 @@ import { primitives } from "@tailorkit/core/primitives/zod";
 import { createTailorKitSchema } from "@tailorkit/core/schema";
 import { expect, it } from "vite-plus/test";
 
-import { generateTypes, renderGeneratedFiles } from "./types";
+import {
+  generateTypes,
+  renderGeneratedReferences,
+  renderGeneratedTypes,
+} from "./types";
 import type { TailorKitSchemaFile } from "./types";
 
 const schema: TailorKitSchemaFile = {
@@ -69,6 +73,11 @@ it("generates a discoverable skill with working reference links, including custo
       path.join(root, "tailorkit.config.mjs"),
       'export default { name: "Example", slug: "example", host: "https://host.test" };'
     );
+    await mkdir(path.join(root, "src"));
+    await writeFile(
+      path.join(root, "src/server.ts"),
+      'throw new Error("Never evaluate server code");'
+    );
     const skillPath = path.join(root, ".agents/skills/tailorkit-host/SKILL.md");
     for (const outFile of [undefined, "src/custom contracts/host.ts"]) {
       // oxlint-disable-next-line no-await-in-loop -- Each generation must replace the preceding skill's links.
@@ -95,35 +104,65 @@ it("generates a discoverable skill with working reference links, including custo
           expect(reference.length).toBeGreaterThan(0);
         })
       );
+      // oxlint-disable-next-line no-await-in-loop -- Verify links for this output path before generating the next one.
+      const component = await readFile(
+        path.join(path.dirname(skillPath), "references/components/Button.md"),
+        "utf-8"
+      );
       if (outFile !== undefined) {
-        expect(skill).toContain("custom%20contracts/host/reference");
+        expect(component).toContain("custom%20contracts/host.ts");
+      }
+      const pending = [skillPath];
+      const visited = new Set<string>();
+      while (pending.length > 0) {
+        const document = pending.pop();
+        if (document === undefined || visited.has(document)) {
+          continue;
+        }
+        visited.add(document);
+        // oxlint-disable-next-line no-await-in-loop -- Follow the generated link graph after discovering each document's targets.
+        const markdown = await readFile(document, "utf-8");
+        // oxlint-disable-next-line no-await-in-loop -- Each document supplies the next set of references to verify.
+        await Promise.all(
+          [...markdown.matchAll(markdownLink)].map(async (link) => {
+            const target = link.groups?.target;
+            if (target === undefined) {
+              throw new Error("Missing reference target.");
+            }
+            const destination = path.resolve(
+              path.dirname(document),
+              decodeURIComponent(target)
+            );
+            const reference = await readFile(destination, "utf-8");
+            expect(reference.length).toBeGreaterThan(0);
+            if (destination.endsWith(".md")) {
+              pending.push(destination);
+            }
+          })
+        );
       }
     }
     await writeFile(
       skillPath,
       "---\nname: tailorkit-host\ndescription: Custom project guidance.\n---\nKeep this guidance.\n"
     );
+    const userReference = path.join(
+      path.dirname(skillPath),
+      "references/index.md"
+    );
+    await writeFile(userReference, "Custom reference.");
     await generateTypes({ cwd: root, schema });
     expect(await readFile(skillPath, "utf-8")).toContain("Keep this guidance.");
+    expect(await readFile(userReference, "utf-8")).toBe("Custom reference.");
   } finally {
     await rm(root, { force: true, recursive: true });
   }
 });
 
-it("typechecks consumers of split components, callbacks, tools and context through the barrel", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-split-types-"));
+it("typechecks components, callbacks, tools and context from one bindings file", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-single-bindings-"));
   try {
-    const files = renderGeneratedFiles(schema, { moduleName: "host" });
-    await Promise.all(
-      Object.entries(files).map(async ([filename, content]) => {
-        const destination =
-          filename === "index"
-            ? path.join(root, "host.ts")
-            : path.join(root, "host", filename);
-        await mkdir(path.dirname(destination), { recursive: true });
-        await writeFile(destination, content);
-      })
-    );
+    await writeFile(path.join(root, "host.ts"), renderGeneratedTypes(schema));
     await writeFile(
       path.join(root, "consumer.ts"),
       `
@@ -181,23 +220,18 @@ tools.todos.add(123);
 });
 
 it("generates targeted human-readable references from the same component and slot contracts", () => {
-  const files = renderGeneratedFiles(schema, { moduleName: "host" });
-  expect(files["reference/components/Button.md"]).toContain(
-    '"primary", "secondary"'
-  );
-  expect(files["reference/components/Button.md"]).toContain(
-    "onPress | no payload"
-  );
-  expect(files["reference/components/Button.md"]).not.toContain("onChange");
-  expect(files["reference/components/Input.md"]).toContain(
-    "value (required): string"
-  );
-  expect(files["reference/components/Input.md"]).toContain(
-    "Does not accept children"
-  );
-  expect(files["reference/views.md"]).toContain("Main content area.");
-  expect(files["reference/views.md"]).toContain("teamId (required): string");
-  expect(files["reference/index.md"]?.length).toBeLessThan(1500);
+  const files = renderGeneratedReferences(schema, {
+    bindingsPath: "../../../src/tailorkit.gen.ts",
+    hasApi: false,
+  });
+  expect(files["components/Button.md"]).toContain('"primary", "secondary"');
+  expect(files["components/Button.md"]).toContain("onPress | no payload");
+  expect(files["components/Button.md"]).not.toContain("onChange");
+  expect(files["components/Input.md"]).toContain("value (required): string");
+  expect(files["components/Input.md"]).toContain("Does not accept children");
+  expect(files["views.md"]).toContain("Main content area.");
+  expect(files["views.md"]).toContain("teamId (required): string");
+  expect(files["index.md"]?.length).toBeLessThan(1500);
 });
 
 it("keeps responsive primitive references small without dropping the host's keys or tokens", () => {
@@ -207,19 +241,20 @@ it("keeps responsive primitive references small without dropping the host's keys
       tokens: { background: { accent: "blue", surface: "white" } },
     }),
   }).serialize();
-  const files = renderGeneratedFiles(contract, { moduleName: "host" });
-  expect(files["reference/components/Box.md"]?.length).toBeLessThan(6000);
-  expect(files["reference/components/Box.md"]).toContain('"accent", "surface"');
-  expect(files["reference/components/Box.md"]).toContain(
-    "responsive/state object"
-  );
-  expect(files["reference/styling.md"]).toContain('"md"');
-  expect(files["reference/styling.md"]).toContain('":focus-visible"');
+  const files = renderGeneratedReferences(contract, {
+    bindingsPath: "../../../src/tailorkit.gen.ts",
+    hasApi: false,
+  });
+  expect(files["components/Box.md"]?.length).toBeLessThan(6000);
+  expect(files["components/Box.md"]).toContain('"accent", "surface"');
+  expect(files["components/Box.md"]).toContain("responsive/state object");
+  expect(files["styling.md"]).toContain('"md"');
+  expect(files["styling.md"]).toContain('":focus-visible"');
 });
 
-it("removes obsolete contracts on regeneration and preserves unrelated directories", async () => {
+it("removes obsolete references on regeneration and preserves unrelated source and skill files", async () => {
   const root = await mkdtemp(
-    path.join(tmpdir(), "tailorkit-regenerate-split-")
+    path.join(tmpdir(), "tailorkit-regenerate-references-")
   );
   try {
     await writeFile(
@@ -227,34 +262,56 @@ it("removes obsolete contracts on regeneration and preserves unrelated directori
       'export default { name: "Example", slug: "example", host: "https://host.test" };'
     );
     await generateTypes({ cwd: root, schema });
+    const skillDirectory = path.join(root, ".agents/skills/tailorkit-host");
+    await writeFile(path.join(skillDirectory, "notes.md"), "user content");
     const extensionless = await generateTypes({
       cwd: root,
       outFile: "host",
       schema,
     });
     expect(await readFile(extensionless, "utf-8")).toContain(
-      "./host.generated/components/Button"
+      "export const Button"
     );
     await generateTypes({ cwd: root, schema: { ...schema, components: {} } });
     await expect(
-      readFile(path.join(root, "src/tailorkit.gen/components/Button.ts"))
-    ).rejects.toThrow();
-    await expect(
-      readFile(
-        path.join(root, "src/tailorkit.gen/reference/components/Button.md")
-      )
+      readFile(path.join(skillDirectory, "references/components/Button.md"))
     ).rejects.toThrow();
     expect(
       await readFile(path.join(root, "src/tailorkit.gen.ts"), "utf-8")
-    ).not.toContain("components/Button");
+    ).not.toContain("export const Button");
+    expect(await readFile(path.join(skillDirectory, "notes.md"), "utf-8")).toBe(
+      "user content"
+    );
     await mkdir(path.join(root, "custom"));
     await writeFile(path.join(root, "custom/keep.txt"), "user content");
-    await expect(
-      generateTypes({ cwd: root, outFile: "custom.ts", schema })
-    ).rejects.toThrow("non-generated directory");
+    await generateTypes({ cwd: root, outFile: "custom.ts", schema });
     expect(await readFile(path.join(root, "custom/keep.txt"), "utf-8")).toBe(
       "user content"
     );
+  } finally {
+    await rm(root, { force: true, recursive: true });
+  }
+});
+
+it("preserves an existing references directory without a generated ownership marker", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-user-references-"));
+  try {
+    await writeFile(
+      path.join(root, "tailorkit.config.mjs"),
+      'export default { name: "Example", slug: "example", host: "https://host.test" };'
+    );
+    const referencesDirectory = path.join(
+      root,
+      ".agents/skills/tailorkit-host/references"
+    );
+    await mkdir(referencesDirectory, { recursive: true });
+    await writeFile(path.join(referencesDirectory, "notes.md"), "user content");
+    await expect(generateTypes({ cwd: root, schema })).rejects.toThrow(
+      "non-generated directory"
+    );
+    expect(
+      await readFile(path.join(referencesDirectory, "notes.md"), "utf-8")
+    ).toBe("user content");
   } finally {
     await rm(root, { force: true, recursive: true });
   }

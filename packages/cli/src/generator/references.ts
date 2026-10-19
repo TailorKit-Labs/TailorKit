@@ -21,7 +21,7 @@ const summarizeObject = (
   describe: DescribeSchema
 ): string => {
   if (depth >= 2) {
-    return "object (see the focused TypeScript contract for nested fields)";
+    return "object (see the generated TypeScript bindings for nested fields)";
   }
   const fields = Object.entries(schema.properties ?? {}).map(
     ([name, field]) =>
@@ -80,7 +80,7 @@ const summarize = (schema: JsonSchema | undefined, depth = 0): string => {
   }
   return Array.isArray(schema.type)
     ? schema.type.join(" or ")
-    : (schema.type ?? "value (see the focused TypeScript contract)");
+    : (schema.type ?? "value (see the generated TypeScript bindings)");
 };
 
 interface ReferenceComponent {
@@ -102,13 +102,14 @@ const referenceHeader =
 
 const renderComponentReference = (
   { name, filename, component }: ReferenceComponent,
-  responsive: ResponsiveLookup
+  responsive: ResponsiveLookup,
+  bindingsPath: string
 ): string => {
   const lines = [
     `# ${name}`,
     referenceHeader,
     `Import from \`#tailorkit\`. ${component.children === true ? "Accepts children between JSX tags." : "Does not accept children."}`,
-    `Exact contract: [${filename}.ts](../../components/${filename}.ts).`,
+    `Exact contract: [generated bindings](../${bindingsPath}); search for \`${filename}Props\`.`,
     "",
     "## Props",
     "",
@@ -186,7 +187,7 @@ export const renderReferences = (
   schema: TailorKitSchemaFile,
   components: ReferenceComponent[],
   responsive: ResponsiveLookup,
-  hasApi: boolean
+  { bindingsPath, hasApi }: { bindingsPath: string; hasApi: boolean }
 ): GeneratedFiles => {
   const files: GeneratedFiles = {};
   const index = [
@@ -198,7 +199,7 @@ export const renderReferences = (
     "- [Host tools](tools.md): inputs, results, and client/server execution.",
     "- [Styling](styling.md): token and responsive/state lookup.",
     hasApi
-      ? "- App functions: `api` comes from your registered server; inspect `../api.ts` and your own function source when needed."
+      ? `- App functions: \`api\` comes from your registered server; search the [generated bindings](${bindingsPath}) for \`AppServerFunctions\` and inspect your own function source when needed.`
       : "- App functions: register a server, then regenerate bindings to expose its api references.",
     "",
     "## Components",
@@ -208,10 +209,13 @@ export const renderReferences = (
     index.push(
       `- [${tableCell(component.name)}](components/${component.filename}.md)`
     );
-    files[`reference/components/${component.filename}.md`] =
-      renderComponentReference(component, responsive);
+    files[`components/${component.filename}.md`] = renderComponentReference(
+      component,
+      responsive,
+      bindingsPath
+    );
   }
-  files["reference/index.md"] = `${index.join("\n")}\n`;
+  files["index.md"] = `${index.join("\n")}\n`;
   const views = [
     "# Slots and context",
     referenceHeader,
@@ -229,6 +233,8 @@ export const renderReferences = (
     );
   }
   views.push(
+    `Exact contracts: [generated bindings](${bindingsPath}); search for \`ViewPropsByPath\` or \`TailorKitSlots\`.`,
+    "",
     "## Context declarations",
     "",
     "Each path inherits its ancestor contexts. Read context through the view's useContext() hook.",
@@ -242,14 +248,14 @@ export const renderReferences = (
       ""
     );
   }
-  files["reference/views.md"] = `${views.join("\n").trimEnd()}\n`;
-  files["reference/tools.md"] = [
+  files["views.md"] = `${views.join("\n").trimEnd()}\n`;
+  files["tools.md"] = [
     "# Host tools",
     referenceHeader,
     "Import tools from #tailorkit in the frontend. App actions receive only server tools through their tools capability.",
     "",
     ...renderToolReferences(schema.tools ?? {}),
-    "Exact contracts: ../tools.ts.",
+    `Exact contracts: [generated bindings](${bindingsPath}); search for \`TailorKitTools\` and \`TailorKitBackendTools\`.`,
     "",
   ].join("\n");
   const responsiveKeys = new Set<string>();
@@ -262,13 +268,13 @@ export const renderReferences = (
   }
   const breakpoints = [...responsiveKeys].filter((key) => !key.startsWith(":"));
   const states = [...responsiveKeys].filter((key) => key.startsWith(":"));
-  files["reference/styling.md"] = [
+  files["styling.md"] = [
     "# Styling",
     referenceHeader,
-    "Component pages list each prop's accepted scalar values. Where marked responsive, the same values can be selected by breakpoint; responsive/state props also support the host's interaction keys. Shared exact types are in ../styling.ts.",
+    `Component pages list each prop's accepted scalar values. Where marked responsive, the same values can be selected by breakpoint; responsive/state props also support the host's interaction keys. Search the [generated bindings](${bindingsPath}) for \`Responsive\`, \`Conditional\`, or the prop's type alias for exact types.`,
     `Breakpoint keys exposed by this host: ${breakpoints.map((key) => JSON.stringify(key)).join(", ") || "none"}.`,
     `Interaction keys exposed by this host: ${states.map((key) => JSON.stringify(key)).join(", ") || "none"}.`,
-    "For a responsive prop, use { default: value, [breakpoint]: value }. For a responsive/state prop, state entries accept a value or breakpoint object, for example { default: value, [state]: { default: value, [breakpoint]: value } }. Use keys and values exposed by the chosen prop; its focused TypeScript module gives the exact shape.",
+    "For a responsive prop, use { default: value, [breakpoint]: value }. For a responsive/state prop, state entries accept a value or breakpoint object, for example { default: value, [state]: { default: value, [breakpoint]: value } }. Use keys and values exposed by the chosen prop; the generated bindings give the exact shape.",
     "Use host layout components and declared styling props. The app's iframe does not render host DOM or CSS.",
     "",
   ].join("\n");

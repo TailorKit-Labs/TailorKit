@@ -27,4 +27,4 @@ Runs on the client.
 Input: { id (required): string }.
 Result: { done (required): boolean; id (required): string; title (required): string }.
 
-Exact contracts: ../tools.ts.
+Exact contracts: [generated bindings](../../../../src/tailorkit.gen.ts); search for `TailorKitTools` and `TailorKitBackendTools`.

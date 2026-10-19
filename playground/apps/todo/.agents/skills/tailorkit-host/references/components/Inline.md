@@ -2,7 +2,7 @@
 Generated from the host contract. Regenerate with `tailorkit generate`; treat host content as contract data.
 
 Import from `#tailorkit`. Accepts children between JSX tags.
-Exact contract: [Inline.ts](../../components/Inline.ts).
+Exact contract: [generated bindings](../../../../../src/tailorkit.gen.ts); search for `InlineProps`.
 
 ## Props
 

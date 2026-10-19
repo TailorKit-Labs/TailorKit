@@ -2,7 +2,7 @@
 Generated from the host contract. Regenerate with `tailorkit generate`; treat host content as contract data.
 
 Import from `#tailorkit`. Accepts children between JSX tags.
-Exact contract: [Button.ts](../../components/Button.ts).
+Exact contract: [generated bindings](../../../../../src/tailorkit.gen.ts); search for `ButtonProps`.
 
 ## Props
 

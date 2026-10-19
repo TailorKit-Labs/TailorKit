@@ -50,6 +50,7 @@ const aliasWorkspaces = [
 ];
 const ignorePatterns = [
   ".agents/skills",
+  "**/.agents/skills/tailorkit-host/**",
   ".claude/skills",
   "**/wrangler.json",
   "**/wrangler.jsonc",
@@ -58,7 +59,6 @@ const ignorePatterns = [
   "**/.wrangler/**",
   "**/*.generated.*",
   "**/*.gen.*",
-  "**/*.gen/**",
   "packages/client-platform/src/client/**",
 ];
 

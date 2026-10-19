@@ -2,7 +2,7 @@
 
 ## Build with the host's components
 
-Find components through `src/tailorkit.gen/reference/index.md`, then read `reference/components/<Name>.md` for just the controls and layout needed. Each page lists props and accepted values, callback payloads, children rules, and a link to the exact component module for uncommon nested types. Import components from `#tailorkit`. Local Preact components can compose them with fragments and providers. Use exposed layout, typography, spacing, color, and interaction props to match the host's design system.
+Find components through `.agents/skills/tailorkit-host/references/index.md`, then read the selected `references/components/<Name>.md` pages inside that skill for just the controls and layout needed. Each page lists props and accepted values, callback payloads, children rules, and a link to the generated bindings with a declaration to search for for uncommon nested types. Import components from `#tailorkit`. Local Preact components can compose them with fragments and providers. Use exposed layout, typography, spacing, color, and interaction props to match the host's design system.
 
 The visible elements belong to the host renderer. App JSX runs in a hidden iframe and describes remote UI; adding HTML, CSS, Tailwind, a DOM UI kit, or direct DOM access cannot extend the host contract. Use an exposed image or icon component when available; file assets alone do not add a host component. If a control or styling option is missing, use a supported alternative or explain the necessary host addition.
 
