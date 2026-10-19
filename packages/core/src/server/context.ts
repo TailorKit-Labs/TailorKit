@@ -10,7 +10,7 @@ const isFunctionValue = <TValue>(
 ): value is Extract<TValue, CallableFunction> => typeof value === "function";
 
 export interface TailorKitRuntimeContext {
-  subjectId?: string;
+  subjectId: string;
   scopes: TailorKitScopes;
 }
 
@@ -20,7 +20,8 @@ export interface Context {
   request: Request;
   schema: TailorKitSchema;
   scopeSchemas: TailorKitScopeSchemas;
-  tailorkit?: TailorKitRuntimeContext;
+  /** Scope authorization shared by host sessions and CLI deployment grants. */
+  tailorkit?: Pick<TailorKitRuntimeContext, "scopes">;
   authenticate: (ctx: {
     request: Request;
   }) =>

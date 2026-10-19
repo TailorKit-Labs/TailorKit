@@ -178,7 +178,8 @@ export interface TailorKitServerOptions<
 
 export interface TailorKitHostContext<TScopes = TailorKitScopes> {
   scopes: TScopes;
-  subjectId?: string;
+  /** Stable identifier of the authenticated product user or service principal. */
+  subjectId: string;
 }
 export interface TailorKitHandlerOptions<TScopes = TailorKitScopes> {
   authenticate: (ctx: {

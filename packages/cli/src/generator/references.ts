@@ -162,17 +162,19 @@ const renderComponentReference = (
   responsive: ResponsiveLookup,
   bindingsPath: string
 ): string => {
-  const lines = [
-    `# ${name}`,
-    referenceHeader,
+  const lines = [`# ${name}`, referenceHeader];
+  if (component.description !== undefined) {
+    lines.push(component.description, "");
+  }
+  lines.push(
     `Import from \`#tailorkit\`. ${component.children === true ? "Accepts children between JSX tags." : "Does not accept children."}`,
     `Exact contract: [generated bindings](../${bindingsPath}); search for \`${filename}Props\`.`,
     "",
     "## Props",
     "",
     "| Prop | Required | Accepted values |",
-    "| --- | --- | --- |",
-  ];
+    "| --- | --- | --- |"
+  );
   for (const [prop, field] of Object.entries(
     component.fields?.properties ?? {}
   )) {

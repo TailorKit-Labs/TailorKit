@@ -2686,7 +2686,7 @@
                     "format": "uri"
                   }
                 },
-                "required": ["app", "scopes", "toolUrl"],
+                "required": ["app", "scopes", "subjectId", "toolUrl"],
                 "additionalProperties": false
               }
             }
@@ -2750,7 +2750,9 @@
                           "additionalProperties": false
                         },
                         "subjectId": {
-                          "type": "string"
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 256
                         },
                         "toolUrl": {
                           "type": "string",
@@ -2766,6 +2768,7 @@
                         "projectId",
                         "projectShortId",
                         "scope",
+                        "subjectId",
                         "toolUrl"
                       ],
                       "additionalProperties": false

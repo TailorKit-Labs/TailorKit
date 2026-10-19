@@ -25,10 +25,9 @@ export const createMcpTransport = (options: {
     headers: Record<string, string>;
   }> => {
     if (
-      context.subjectId !== undefined &&
-      (!isStringValue(context.subjectId) ||
-        !context.subjectId ||
-        context.subjectId.length > 256)
+      !isStringValue(context.subjectId) ||
+      !context.subjectId ||
+      context.subjectId.length > 256
     ) {
       throw new TypeError("Invalid MCP subjectId.");
     }

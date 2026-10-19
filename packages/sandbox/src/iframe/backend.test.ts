@@ -20,6 +20,7 @@ it("correlates scoped JWT requests, forwards renewal and ignores unsolicited res
   ]);
   const session = {
     expiresAt: Date.now() + 120_000,
+    subjectId: "principal",
     token: "token",
     url: "https://runtime.test/rpc",
   };

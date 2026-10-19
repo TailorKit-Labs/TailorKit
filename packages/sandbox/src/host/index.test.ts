@@ -245,6 +245,7 @@ describe("backend JWT bridge", () => {
   it("mounts without fetching a session and renews scoped sessions", async () => {
     const session = {
       expiresAt: Date.now() + 120_000,
+      subjectId: "principal",
       token: "scoped-token",
       url: "https://runtime.test/rpc",
     };
@@ -322,6 +323,7 @@ it.each(["backend-first", "tools-first"])(
   async (order) => {
     const session = {
       expiresAt: Date.now() + 120_000,
+      subjectId: "principal",
       token: "token",
       url: "https://runtime.test/rpc",
     };

@@ -10,7 +10,7 @@ TailorKit generates stand-in components for the sandbox. A local bridge passes U
 
 ## Define a component
 
-A button shows the three parts of a component schema:
+A button shows a component schema with behavior guidance:
 
 ```ts title="tailorkit.ts"
 import { defineContract } from "tailorkit";
@@ -19,6 +19,8 @@ import { z } from "zod";
 export const contract = defineContract({
   components: {
     Button: {
+      description:
+        "Runs onClick when activated by pointer or keyboard. disabled blocks activation. Children provide the button label.",
       fields: z.object({
         variant: z.enum(["default", "secondary"]).optional(),
         disabled: z.boolean().optional(),
@@ -32,6 +34,7 @@ export const contract = defineContract({
 
 | Part | What it does | Button example |
 | --- | --- | --- |
+| `description` | Explains usage and behavior to app authors and agents | How activation and disabled state work |
 | `fields` | Describes data props | `variant="secondary"`, `disabled` |
 | `callbacks` | Describes events sent back to app code | `onClick` |
 | `children` | Allows text or nested components inside | The button's label |
@@ -68,6 +71,7 @@ Each entry in `defineContract({ components })` describes one component. `Schema`
 
 | Field | Type | Meaning |
 | --- | --- | --- |
+| `description` | `string` | Optional usage and behavior guidance, included in generated component references and binding comments. |
 | `fields` | `Schema` | Data props. Field names must differ from callback names. |
 | `callbacks` | Callback definitions by name | Function props for events such as `onClick`. |
 | `children` | `boolean` | Defaults to `false`. Allows text or nested components inside. |

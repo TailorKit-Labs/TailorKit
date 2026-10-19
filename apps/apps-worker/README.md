@@ -18,9 +18,9 @@ Local Miniflare tests verify stored bytes, cache behavior, and public headers. V
 
 ## Authenticate app requests
 
-The host SDK uses its existing `authenticate` callback and calls `POST /apps/{appId}/runtime/session` with its project key, verified scopes, optional product-defined `subjectId`, and product tool URL. The platform checks the app belongs to that project and one of those scopes, resolves its published deployment, and issues a short-lived ES256 JSON Web Token (JWT).
+The host SDK uses its existing `authenticate` callback and calls `POST /apps/{appId}/runtime/session` with its project key, verified scopes, required product-defined `subjectId`, and product tool URL. The platform checks the app belongs to that project and one of those scopes, resolves its published deployment, and issues a short-lived ES256 JSON Web Token (JWT).
 
-The canonical app ID is the stable installation ID and JWT `sub`. Optional `subjectId` identifies any product-defined principal; calls without it are attributed to the installation. Apps cannot supply a verified subject.
+The canonical app ID is the stable installation ID and JWT `sub`. `subjectId` identifies the authenticated product user or service principal and is required on every session and signed token. Apps cannot supply a verified subject.
 
 The platform returns `https://<projectShortId>.tailorkit.app/a/<appShortId>/rpc`, deriving the hostname from `ASSET_DOMAIN` (default `tailorkit.app`). `APP_RUNTIME_URL` is an optional origin override for local development.
 

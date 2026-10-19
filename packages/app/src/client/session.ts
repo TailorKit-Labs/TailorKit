@@ -17,13 +17,13 @@ const identitySchema = v.object({
     name: v.string(),
     value: v.record(v.string(), jsonValueSchema),
   }),
-  subjectId: v.optional(v.string()),
+  subjectId: v.pipe(v.string(), v.minLength(1), v.maxLength(256)),
   toolUrl: v.string(),
 });
 const sessionSchema = v.object({
   expiresAt: v.pipe(v.number(), v.finite()),
   identity: v.optional(identitySchema),
-  subjectId: v.optional(v.string()),
+  subjectId: v.pipe(v.string(), v.minLength(1), v.maxLength(256)),
   token: v.string(),
   toolUrl: v.optional(v.string()),
   url: v.string(),
@@ -37,7 +37,7 @@ const APP_SESSION_RENEWAL_MS = 60_000;
 export interface Session {
   toolUrl?: string;
   identity?: Identity;
-  subjectId?: string;
+  subjectId: string;
   token: string;
   expiresAt: number;
   url: string;

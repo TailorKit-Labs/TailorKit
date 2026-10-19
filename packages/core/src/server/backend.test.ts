@@ -14,6 +14,7 @@ const authenticate = vi
   .fn<Parameters<typeof handleBackendSession>[1]>()
   .mockResolvedValue({
     scopes: { workspace: { id: "authorized-workspace" } },
+    subjectId: "principal",
   });
 
 interface BackendSessionFixture {
@@ -36,7 +37,7 @@ const request = (
 
 beforeEach(() => vi.clearAllMocks());
 
-it("uses existing host authentication and passes only verified scopes to the platform", async () => {
+it("uses existing host authentication and passes the verified subject and scopes to the platform", async () => {
   const input = request({ appId: "installed-app" });
   const response = await handleBackendSession(
     input,
@@ -45,17 +46,15 @@ it("uses existing host authentication and passes only verified scopes to the pla
   );
   expect(response.status).toBe(200);
   expect(response.headers.get("cache-control")).toBe("no-store");
-  expect(await response.json()).toEqual(session);
+  expect(await response.json()).toEqual({ ...session, subjectId: "principal" });
   expect(authenticate).toHaveBeenCalledWith({ request: input });
-  // oxlint-disable unicorn/no-useless-undefined -- The exact mock call includes its optional subject argument.
   expect(issueSession).toHaveBeenCalledExactlyOnceWith(
     "installed-app",
     {
       workspace: { id: "authorized-workspace" },
     },
-    undefined
+    "principal"
   );
-  // oxlint-enable unicorn/no-useless-undefined
 });
 
 it("rejects unauthenticated requests before issuing tokens", async () => {

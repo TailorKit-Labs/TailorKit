@@ -10,6 +10,9 @@ import type {
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
   typeof value === "object" && value !== null;
 
+const isStringValue = <TValue>(value: TValue): value is TValue & string =>
+  typeof value === "string";
+
 type EmptyCallbackMap = EmptyDefinitionMap;
 
 export type Fields = Schema;
@@ -19,6 +22,8 @@ export interface ComponentDefinition<
   TCallbacks extends Callbacks = EmptyCallbackMap,
   TChildren extends boolean | undefined = boolean | undefined,
 > {
+  /** Usage and behavior guidance included in generated app references. */
+  description?: string;
   callbacks?: TCallbacks;
   fields?: TFields;
   children?: TChildren;
@@ -41,6 +46,7 @@ export type ComponentProps<TComponent> = MergeProps<
 >;
 
 export interface ResolvedComponentMetadata {
+  description?: string;
   callbacks: CallbackMap;
   fields?: Schema;
   children: boolean;
@@ -108,20 +114,37 @@ const assertNoLocalFieldCallbackConflicts = (
   }
 };
 
+export const assertComponentDescription = (
+  name: string,
+  definition: ComponentDefinition
+): void => {
+  if (
+    definition.description !== undefined &&
+    !isStringValue(definition.description)
+  ) {
+    throw new TypeError(`Component "${name}" description must be a string.`);
+  }
+};
+
 export const resolveComponentMetadata = (
   name: string,
   definition: ComponentDefinition
 ): ResolvedComponentMetadata => {
+  assertComponentDescription(name, definition);
   const { fields } = definition;
   const fieldKeys = fields ? getObjectKeys(fields) : [];
   const callbackKeys = Object.keys(definition.callbacks ?? {});
   assertNoLocalFieldCallbackConflicts(name, fieldKeys, callbackKeys);
 
-  return {
+  const metadata: ResolvedComponentMetadata = {
     callbacks: definition.callbacks ?? {},
     children: definition.children ?? false,
     fields,
   };
+  if (definition.description !== undefined) {
+    metadata.description = definition.description;
+  }
+  return metadata;
 };
 
 export type Component = AnyComponentDefinition;

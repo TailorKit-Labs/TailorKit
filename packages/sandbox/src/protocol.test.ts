@@ -30,12 +30,32 @@ const patches = [
 ] satisfies RemotePatch[];
 
 describe("sandbox protocol", () => {
+  it.each([undefined, null, "", 123, "x".repeat(257)])(
+    "rejects backend sessions without a valid authenticated subject: %j",
+    (subjectId) => {
+      expect(
+        v.safeParse(HostToIframePayload, {
+          data: {
+            id: "session",
+            session: {
+              expiresAt: 123,
+              subjectId,
+              token: "jwt",
+              url: "https://runtime.test/rpc",
+            },
+          },
+          type: "backendSessionResult",
+        }).success
+      ).toBe(false);
+    }
+  );
   it.each([
     {
       data: {
         id: "session",
         session: {
           expiresAt: 123,
+          subjectId: "principal",
           token: "jwt",
           url: "https://runtime.test/rpc",
         },
@@ -213,6 +233,7 @@ describe("sandbox protocol", () => {
             id: "session",
             session: {
               expiresAt: value,
+              subjectId: "principal",
               token: "jwt",
               url: "https://runtime.test",
             },
@@ -262,6 +283,7 @@ describe("sandbox protocol", () => {
   it("enforces session token limits and strict session fields", () => {
     const session = {
       expiresAt: 123,
+      subjectId: "principal",
       token: "t".repeat(8192),
       url: "https://runtime.test",
     };
@@ -303,7 +325,10 @@ describe("sandbox protocol", () => {
     "  https://run\ntime.test/rpc  ",
   ])("preserves absolute URL validation: %s", (url) => {
     const payload = {
-      data: { id: "session", session: { expiresAt: 123, token: "jwt", url } },
+      data: {
+        id: "session",
+        session: { expiresAt: 123, subjectId: "principal", token: "jwt", url },
+      },
       type: "backendSessionResult",
     };
     expect(v.parse(HostToIframePayload, payload)).toEqual({
@@ -325,7 +350,12 @@ describe("sandbox protocol", () => {
         v.safeParse(HostToIframePayload, {
           data: {
             id: "session",
-            session: { expiresAt: 123, token: "jwt", url },
+            session: {
+              expiresAt: 123,
+              subjectId: "principal",
+              token: "jwt",
+              url,
+            },
           },
           type: "backendSessionResult",
         }).success

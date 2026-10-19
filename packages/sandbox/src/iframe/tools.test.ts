@@ -26,6 +26,7 @@ it("correlates client calls and server credentials and rejects pending calls on 
     id: second.id,
     output: {
       expiresAt: 1000,
+      subjectId: "principal",
       token: "tool-token",
       url: "https://product.test/tools",
     },

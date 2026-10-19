@@ -191,6 +191,44 @@ const responsiveConstUnionImplementationImplementation = (
 });
 
 describe("renderGeneratedTypes", () => {
+  it("preserves component descriptions from the host schema endpoint in binding comments", async () => {
+    const description = "Controlled input.\nUpdate value after onChange.";
+    const server = createServer({
+      baseUrl: "https://host.test/api/tailorkit",
+      contract: defineContract({
+        components: { Input: { description } },
+        scopes: { user: z.object({ userId: z.string() }) },
+      }),
+    });
+    const response = await server.handler(
+      new Request("https://host.test/api/tailorkit/schema"),
+      { authenticate: () => null }
+    );
+    expect(response.ok).toBe(true);
+    const output = renderGeneratedTypes(
+      v.parse(TailorKitSchemaSpec, await response.json())
+    );
+    expect(output).toContain(
+      "/**\n * Controlled input.\n * Update value after onChange.\n */\nexport const Input"
+    );
+  });
+
+  it.each([
+    "",
+    "Input */\r\nexport const injected = true; /*\rMore\u2028Text\u2029End",
+  ])(
+    "keeps component description %j inside generated comments",
+    async (description) => {
+      const output = renderGeneratedTypes({
+        components: { Input: { callbacks: {}, children: false, description } },
+      });
+      expect(output).toContain(" */\nexport const Input");
+      const { code } = await transformWithOxc(output, "tailorkit.gen.ts");
+      expect(code).not.toMatch(/^\s*export\s+const\s+injected\b/mu);
+      expect(code).not.toContain("description");
+    }
+  );
+
   it("includes slot descriptions from the host schema endpoint in generated documentation", async () => {
     const server = createServer({
       baseUrl: "https://host.test/api/tailorkit",

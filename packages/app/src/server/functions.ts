@@ -14,7 +14,7 @@ import type { JsonValue } from "#validation";
 export type EmptyFunctions = Record<never, never>;
 
 export interface Identity {
-  readonly subjectId?: string;
+  readonly subjectId: string;
   readonly scope: {
     name: string;
     value: Record<string, JsonValue>;

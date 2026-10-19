@@ -1,6 +1,7 @@
 import { cliAuthApprove, cliAuthDeny } from "@tailorkit/client-platform/client";
 import type { Client as PlatformClient } from "@tailorkit/client-platform/client/client/index";
 
+import type { TailorKitRuntimeContext } from "./context";
 import { selectTailorKitScopes } from "./scope";
 import type { TailorKitNamedScope, TailorKitScopes } from "./types";
 
@@ -15,10 +16,6 @@ const requireValue = <T>(value: T | null | undefined): T => {
 };
 
 type HeaderInput = ConstructorParameters<typeof Headers>[0];
-
-interface TailorKitRuntimeContext {
-  scopes: TailorKitScopes;
-}
 
 export interface CliAuthApprovalPageOptions {
   authenticate: (ctx: {

@@ -12,11 +12,11 @@ export const handleBackendSession = async (
   request: Request,
   authenticate: (input: {
     request: Request;
-  }) => Promise<{ scopes: TailorKitScopes; subjectId?: string } | null>,
+  }) => Promise<{ scopes: TailorKitScopes; subjectId: string } | null>,
   issueSession: (
     appId: string,
     scopes: TailorKitScopes,
-    subjectId?: string
+    subjectId: string
   ) => Promise<{ token: string; expiresAt: number; url: string } | Response>,
   publicOrigin = new URL(request.url).origin
 ) => {

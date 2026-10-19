@@ -9,6 +9,7 @@ import { promisify } from "node:util";
 import { primitives } from "@tailorkit/core/primitives/zod";
 import { createTailorKitSchema } from "@tailorkit/core/schema";
 import { expect, it } from "vite-plus/test";
+import { z } from "zod";
 
 import {
   generateTypes,
@@ -22,6 +23,8 @@ const schema: TailorKitSchemaFile = {
     Button: {
       callbacks: { onPress: {}, onValidate: { output: { type: "boolean" } } },
       children: true,
+      description:
+        "Activates on pointer or keyboard input. Disabled buttons do not emit onPress.",
       fields: {
         properties: { variant: { enum: ["primary", "secondary"] } },
         type: "object",
@@ -115,6 +118,7 @@ it("generates a discoverable skill with working reference links, including custo
         path.join(path.dirname(skillPath), "references/components/Button.md"),
         "utf-8"
       );
+      expect(component).toContain(schema.components?.Button?.description);
       if (outFile !== undefined) {
         expect(component).toContain("custom%20contracts/host.ts");
       }
@@ -240,6 +244,9 @@ it("generates targeted human-readable references from the same component and slo
     hasApi: false,
   });
   expect(files["components/Button.md"]).toContain('"primary", "secondary"');
+  expect(files["components/Button.md"]).toContain(
+    schema.components?.Button?.description
+  );
   expect(files["components/Button.md"]).toContain("onPress | no payload");
   expect(files["components/Button.md"]).not.toContain("onChange");
   expect(files["components/Input.md"]).toContain("value (required): string");
@@ -247,6 +254,30 @@ it("generates targeted human-readable references from the same component and slo
   expect(files["views.md"]).toContain("Main content area.");
   expect(files["views.md"]).toContain("teamId (required): string");
   expect(files["index.md"]?.length).toBeLessThan(1500);
+});
+
+it("carries component and slot descriptions from a host contract into skill references", () => {
+  const contract = createTailorKitSchema({
+    components: {
+      Form: {
+        children: true,
+        description:
+          "disabled blocks submission only.\nInputs remain editable.",
+      },
+      Input: {},
+    },
+    slots: { panel: { description: "Compact workspace panel.", views: ["/"] } },
+    views: { "/": z.object({}) },
+  }).serialize();
+  const files = renderGeneratedReferences(contract, {
+    bindingsPath: "../../../src/tailorkit.gen.ts",
+    hasApi: false,
+  });
+  expect(files["components/Form.md"]).toContain(
+    "disabled blocks submission only.\nInputs remain editable."
+  );
+  expect(files["views.md"]).toContain("Compact workspace panel.");
+  expect(files["components/Input.md"]).not.toContain("undefined");
 });
 
 it("keeps responsive primitive references small without dropping the host's keys or tokens", () => {

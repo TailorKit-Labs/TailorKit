@@ -95,7 +95,7 @@ export const createExecution = (
     }
     z.uuid().parse(input.requestId);
     const fingerprint = JSON.stringify([
-      identity.subjectId ?? null,
+      identity.subjectId,
       identity.projectId,
       identity.appId,
       identity.installationId,

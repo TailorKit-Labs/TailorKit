@@ -4,7 +4,7 @@ Use `@tailorkit/core` to define a host contract and connect your server to Tailo
 
 ## Connect an app agent over MCP
 
-`createServer()` exposes `server.mcp.transport({ scopes, subjectId? })` to prepare an HTTP connection for a server-side Model Context Protocol (MCP) client. Pass the same data shape returned by your host’s `authenticate()` callback. The helper validates scope values against the contract’s Standard Schema validators; it does not call `authenticate()` or require a `Request`.
+`createServer()` exposes `server.mcp.transport({ scopes, subjectId })` to prepare an HTTP connection for a server-side Model Context Protocol (MCP) client. Pass the same data shape returned by your host’s `authenticate()` callback. The helper validates scope values against the contract’s Standard Schema validators; it does not call `authenticate()` or require a `Request`.
 
 For example, use the returned URL and headers with the AI SDK’s `createMCPClient`:
 

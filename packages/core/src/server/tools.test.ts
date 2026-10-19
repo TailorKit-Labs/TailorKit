@@ -48,7 +48,7 @@ const contract = defineContract({
 const handler = vi.fn<
   ToolImplementations<typeof contract.tools, "server">["math"]["increment"]
 >(({ input, context }) => ({
-  principal: context.identity.subjectId ?? context.identity.installationId,
+  principal: context.identity.subjectId,
   value: input + 1,
 }));
 // SAFETY: This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input.
@@ -124,7 +124,10 @@ it("uses the authentication supplied for each handler call", async () => {
   const denied = await host.handler(request, { authenticate: () => null });
   expect(denied.status).toBe(401);
   expect(fetchApps).not.toHaveBeenCalled();
-  const authenticate = vi.fn(() => ({ scopes: { org: { id: "tenant" } } }));
+  const authenticate = vi.fn(() => ({
+    scopes: { org: { id: "tenant" } },
+    subjectId: "user",
+  }));
   const allowed = await host.handler(request, { authenticate });
   expect(allowed.status).toBe(200);
   expect(authenticate).toHaveBeenCalledWith({ request });
@@ -239,12 +242,6 @@ it("validates transformed inputs and exposes verified installation, principal, s
     input: 41,
   });
 });
-it("attributes a call without a subject to its installation", async () => {
-  const response = await execute(await token({ subjectId: undefined }));
-  expect(await response.json()).toEqual({
-    output: { principal: "app", value: 42 },
-  });
-});
 it.each([
   { iss: "https://attacker.test" },
   { aud: "another-service" },
@@ -254,6 +251,10 @@ it.each([
   () => ({ iat: Math.floor(Date.now() / 1000) + 1 }),
   { scope: { name: "other", value: {} } },
   { subjectId: 123 },
+  { subjectId: undefined },
+  { subjectId: null },
+  { subjectId: "" },
+  { subjectId: "x".repeat(257) },
   { projectId: "other-project" },
   { deploymentId: "unpublished" },
   { installationId: "victim" },

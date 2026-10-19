@@ -124,7 +124,7 @@ const HostToIframePayloadSchema = v.pipe(
         session: v.optional(
           strictObject({
             expiresAt: FiniteNumber,
-            subjectId: v.optional(v.string()),
+            subjectId: v.pipe(v.string(), v.minLength(1), v.maxLength(256)),
             token: v.pipe(v.string(), v.maxLength(8192)),
             url: SessionUrl,
           })

@@ -360,6 +360,7 @@ describe("platform appRouter", () => {
         body: {
           app: { id: installed.id },
           scopes: [stagingScope],
+          subjectId: "principal",
           toolUrl: "https://host.test/api/tailorkit/tools/execute",
         },
       },
@@ -1114,6 +1115,7 @@ describe("platform appRouter", () => {
       body: {
         app: { shortId: created.shortId },
         scopes: [productionScope],
+        subjectId: "principal",
         toolUrl: "https://host.test/api/tailorkit/tools/execute",
       },
     };
@@ -1126,6 +1128,7 @@ describe("platform appRouter", () => {
       installationId: created.id,
       projectId,
       scope: created.scope,
+      subjectId: "principal",
       toolUrl: input.body.toolUrl,
     });
     expect(testState.issueToken).toHaveBeenCalledWith({
@@ -1136,7 +1139,7 @@ describe("platform appRouter", () => {
       projectId,
       projectShortId: context.project.shortId,
       scope: created.scope,
-      subjectId: undefined,
+      subjectId: "principal",
       toolUrl: input.body.toolUrl,
     });
     await expect(
@@ -1162,6 +1165,7 @@ describe("platform appRouter", () => {
         body: JSON.stringify({
           app: { shortId: created.shortId },
           scopes: [productionScope],
+          subjectId: "principal",
           toolUrl: input.body.toolUrl,
         }),
         headers: { "content-type": "application/json" },
@@ -1178,6 +1182,25 @@ describe("platform appRouter", () => {
       token: "platform-token",
       url: `https://proj00000001.tailorkit.app/a/${created.shortId}/rpc`,
     });
+
+    const issued = testState.issueToken.mock.calls.length;
+    await Promise.all(
+      [undefined, null, "", 123, "x".repeat(257)].map(async (subjectId) => {
+        const invalid = await handler.handle(
+          new Request(
+            "https://platform.test/api/platform/apps/runtime/session",
+            {
+              body: JSON.stringify({ ...input.body, subjectId }),
+              headers: { "content-type": "application/json" },
+              method: "POST",
+            }
+          ),
+          { context, prefix: "/api/platform" }
+        );
+        expect(invalid.response?.status).toBe(400);
+      })
+    );
+    expect(testState.issueToken.mock.calls).toHaveLength(issued);
 
     expect(session.body.url).toBe(
       `https://proj00000001.tailorkit.app/a/${created.shortId}/rpc`
@@ -1199,7 +1222,12 @@ describe("platform appRouter", () => {
             await call(
               appRouter.runtimeSession,
               {
-                body: { app, scopes, toolUrl: input.body.toolUrl },
+                body: {
+                  app,
+                  scopes,
+                  subjectId: "principal",
+                  toolUrl: input.body.toolUrl,
+                },
               },
               { context }
             );

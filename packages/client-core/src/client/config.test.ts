@@ -46,6 +46,7 @@ it("clears shared app data and sessions through clearCache", async () => {
           ? [{ id: user }]
           : {
               expiresAt: Date.now() + 300_000,
+              subjectId: "principal",
               token: user,
               url: "https://runtime.test/rpc",
             }
