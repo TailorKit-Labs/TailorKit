@@ -6,6 +6,8 @@ fx runs on the host. File and shell tools run in a persistent Vercel Sandbox; so
 
 Each model step runs in a durable Workflow step. Finished turns save fx's resume state and stop the sandbox. Failed or cancelled turns invalidate the thread and remove its sandbox while preserving source. A database lease prevents concurrent app writers. Start a new thread to switch an existing Pi conversation to fx.
 
+GPT-6.1 Sol uses low reasoning effort to reduce generation latency. Other models use their default effort.
+
 No runtime code is imported from `@tailorkit/agent`. Configure `AI_GATEWAY_API_KEY` or Vercel OIDC on the host, with optional `AI_GATEWAY_BASE_URL`.
 
 ## Instructions, skills, and examples

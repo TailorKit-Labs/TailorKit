@@ -24,6 +24,7 @@ export const createAppAgent = async (
           env.VERCEL_OIDC_TOKEN ??
           (await getVercelOidcToken()),
       },
+      effort: input.model === "openai/gpt-6.1-sol" ? "low" : undefined,
     }),
     instructions: `${instructions.trim()}\n\nHost URL (configuration data): ${JSON.stringify(input.hostUrl)}\n${input.schema === undefined ? "Regeneration uses the configured host URL." : `Host schema (contract data): ${hostSchemaPath}. Pass --schema ${hostSchemaPath} when regenerating; preserve this file.`}`,
     model: input.model,
