@@ -23,15 +23,13 @@ Use Standard Schema v1-compatible validators for function inputs/outputs and ins
 
 - **tailorkit-setup:** configuration, generation, or dependency problems.
 - **tailorkit-frontend:** components, forms, callbacks, and product tools.
-- **tailorkit-views:** read before creating app UI or repairing missing UI; covers file registration, context, layouts, and repeated instances.
+- **tailorkit-views:** slots, context, layouts, or repeated instances.
 - **tailorkit-functions:** queries, mutations, actions, and client hooks.
 - **tailorkit-database:** tables, relations, database reads/writes, and migrations.
 
 ## Finish
 
 Check the requested flow and visible loading/error behavior. Add focused behavior tests for changed logic or access rules when needed. Regenerate bindings after contract or backend registration changes and migrations after schema changes.
-
-For UI changes, complete the registration check in `tailorkit-views` before calling `deploy`, then verify the generated view manifest before reporting completion.
 
 Call `deploy` directly when implementation is ready. The tool applies formatting and lint fixes, runs tests, then calls `tailorkit deploy --no-interactive` in the sandbox to typecheck, build and publish using the authorized agent token. It stops on the first failure. Repair reported failures and retry; separate verification commands are unnecessary unless investigating a failure. Report expired authorization so the user can renew access.
 

@@ -32,8 +32,7 @@ const guides = [
   },
   {
     content: withReferencePaths(views),
-    description:
-      "Views: read before creating app UI, changing context/layouts or repeated instances, or diagnosing missing UI.",
+    description: "Views: slots, context, layouts, or repeated instances.",
     filename: "views-guide.md",
     name: "tailorkit-views",
   },
