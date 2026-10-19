@@ -1,5 +1,12 @@
 # @tailorkit/vite
 
+## 0.1.0-beta.52
+
+### Patch Changes
+
+- Updated dependencies [1fa87fe]
+  - @tailorkit/app@0.1.0-beta.52
+
 ## 0.1.0-beta.51
 
 ### Patch Changes
