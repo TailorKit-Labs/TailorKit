@@ -1,94 +1,47 @@
-# Installation SQLite, schemas, and migrations
+# App SQLite
 
-## Storage model
+Each installation has persistent SQLite shared by its users. Use it only for app-owned data and enforce the feature's access rules in functions. Queries/mutations receive a restricted database capability; there is no driver or database service to configure.
 
-Each app installation has its own persistent SQLite database in the managed Cloudflare Durable Object runtime. App releases and backend code replacement use that installation's storage; they do not create a fresh database. Client Preact state and module globals are temporary. Host-owned records remain behind the host's tools and context.
+Use `tailorkit/db` for table/column builders, `defineRelations`, `defineDatabase`, and query helpers. Keep database imports in backend modules. Follow the scaffold's `src/db/schema.ts`, `relations.ts`, and `index.ts`; the [function example](references/functions.md) shows them together.
 
-App functions receive restricted TailorKit database capabilities, implemented with Drizzle internally. Queries can read; mutations can read and write. There is no raw SQLite connection, filesystem database, D1 binding, Postgres service, or unrestricted transaction handle to configure. Use actions to coordinate external work with queries/mutations; the functions skill covers those boundaries.
+## Columns and inserts
 
-## Define tables and relations
+Use `table`, `text`, `integer`, `real`, and `boolean`. Choose required fields and defaults to match the feature; generate text IDs with `crypto.randomUUID()`. Table names start with a letter, contain letters/digits/underscores, are at most 63 characters, and avoid `sqlite_`/`tailorkit_` prefixes.
 
-Import schema builders, `defineRelations`, `defineDatabase`, filter/order helpers, and database types (`DatabaseDefinition`, `QueryDatabase`, `MutationDatabase`) from `tailorkit/db`. This public entry point wraps `@tailorkit/app-db` and owns the adapter to Drizzle. When updating existing database code, move database imports from `tailorkit/server` and relation imports from `drizzle-orm` to `tailorkit/db`. Function builders and registration remain on `tailorkit/server`. Keep database modules in the backend; the browser build rejects `tailorkit/db` imports.
+For a finite text type, `.$type<T>()` narrows TypeScript; validate inputs at runtime too. `$inferInsert` describes complete insert rows. For example:
 
-Follow an existing app's database organization. The default scaffold separates `src/db/schema.ts`, `src/db/relations.ts`, and `src/db/index.ts`:
+<!-- example: typed-insert -->
 
 ```ts
-// src/db/schema.ts
-import { table, text, boolean } from "tailorkit/db";
+import { integer, table, text } from "tailorkit/db";
 
-export const notes = table("notes", {
+export type Priority = "low" | "medium" | "high";
+export const tasks = table("tasks", {
   id: text().primaryKey(),
   title: text().notNull(),
-  archived: boolean().notNull().default(false),
+  priority: text().$type<Priority>().notNull().default("medium"),
+  createdAt: integer().notNull(),
 });
+
+export type TaskInsert = typeof tasks.$inferInsert;
+export const row: TaskInsert = {
+  id: crypto.randomUUID(),
+  title: "Review design",
+  priority: "high",
+  createdAt: Date.now(),
+};
 ```
 
-```ts
-// src/db/relations.ts
-import { defineRelations } from "tailorkit/db";
+Insert the row inside a mutation. The table only needs the columns required by the feature.
 
-import * as schema from "./schema";
+## Relations and execution
 
-export const relations = defineRelations(schema);
-```
+Pass all tables to `defineRelations(schema)`, then `defineDatabase({ relations })`. Add a relation callback only when querying related records. `r.one.users({ from: r.notes.authorId, to: r.users.id })` defines navigation; a column reference defines a foreign-key constraint.
 
-```ts
-// src/db/index.ts
-import { defineDatabase } from "tailorkit/db";
+Attach the database with `.database(database)`. Relational reads end in `.sync()`, select builders in `.all()`/`.get()`, and writes in `.run()` or `.returning(...).all()`/`.get()`. Apply appropriate ownership conditions to reads/updates/deletes. Filter and limit in the query when needed. Mutations already provide a transaction; raw SQL/connection access and runtime schema changes are unavailable.
 
-import { relations } from "./relations";
+## Migrations
 
-export const db = defineDatabase({ relations });
-```
+After schema changes, run `db:generate` (`tailorkit db generate`). Inspect the generated SQL and keep it with its snapshots under the configured migrations directory, normally `src/db/migrations`. Append migrations and preserve applied history. For existing data, ensure new required fields have suitable defaults or a backfill.
 
-Use `table`, `text`, `integer`, `real`, and `boolean` from `tailorkit/db`. Boolean columns use SQLite integer storage; text primary keys need explicit IDs, for example `crypto.randomUUID()` in a mutation. Choose nullability, defaults, and references deliberately. Table names start with a letter, contain letters/digits/underscores, have at most 63 characters, and cannot start with the reserved `sqlite_` or `tailorkit_` prefixes.
-
-Pass all schema tables to TailorKit's `defineRelations`, including tables without relationships. Without a callback, it includes every table with no navigation. When the schema defines `users.id` and `notes.authorId`, add typed navigation in both directions:
-
-```ts
-// src/db/relations.ts
-import { defineRelations } from "tailorkit/db";
-
-import * as schema from "./schema";
-
-export const relations = defineRelations(schema, (r) => ({
-  notes: {
-    author: r.one.users({ from: r.notes.authorId, to: r.users.id }),
-  },
-  users: {
-    notes: r.many.notes({ from: r.users.id, to: r.notes.authorId }),
-  },
-}));
-```
-
-A relation describes query navigation; it does not create a foreign-key constraint. Declare the reference on the column when enforcement is required. Inspect the installed `tailorkit/db` declarations for relation options.
-
-## Read and write through function capabilities
-
-Attach the exported definition using `.database(database)` on `fn.query` or `fn.mutation`. Prefer bounded relational reads when loading related records:
-
-```ts
-db.query.notes
-  .findMany({
-    columns: { id: true, title: true },
-    where: { archived: false },
-    limit: 50,
-  })
-  .sync();
-```
-
-Use `findFirst(...).sync()` for an optional record and handle absence. Use select builders with `.all()`/`.get()` for projections, joins, or aggregates, and execute mutation writes with `.run()` or `.returning(...).all()`/`.get()`. Import supported filters and ordering helpers from `tailorkit/db`. Do not return a builder or await database execution inside a synchronous handler.
-
-Filter and paginate on the backend; return the fields the UI needs rather than the whole database or one query per list item. Scope updates/deletes with conditions. A mutation is already atomic, and its handle is revoked when it returns. Raw SQL execution and ad hoc schema changes are not app runtime capabilities; schema changes belong in migrations.
-
-The installation may be shared by multiple users and views. For private or record-scoped data, store appropriate ownership/context identifiers and enforce them against trusted identity or authorized context in every read and write. Do not trust a supplied userId or record ID merely because it is well-formed. Missing or inaccessible records should produce a safe, explicit result or app error.
-
-## Generate migrations
-
-Enable `server: {}` before adding database functionality. After changing schema definitions, run the app's `db:generate` script or its package-manager equivalent of `tailorkit db generate`. The CLI uses Drizzle Kit for SQLite. Defaults are `src/db/schema.ts` and `src/db/migrations`; a configured `server.migrations` directory overrides the migration location.
-
-Inspect generated SQL and schema snapshots. Confirm additions, defaults, foreign keys and rename intent. Avoid a drop/recreate when the request is a rename. For populated tables, plan how existing rows receive new required values. Keep generated SQL and snapshots together with the app source. Preserve every applied migration's order and contents; append new migrations instead of rewriting or deleting history.
-
-The TailorKit build checks schema drift and bundles migrations into the private backend. Deployment publishes that bundle. On backend initialization, the runtime checks the migration history and applies pending migrations transactionally before serving database functions. A failed upgrade does not count as a successful schema deployment. The agent should not connect to a live database or run a schema-push command to bypass this path.
-
-Treat upgrades as changes to existing installation data. Prefer additive changes, make destructive changes only when requested and understood, and test migration effects on representative old data when practical. A rollback to older app code does not automatically reverse SQLite migrations; preserve compatibility with data already written. Resolve build-time drift or incompatible-history errors by correcting source and generating a forward migration, not disabling validation or resetting the installation's database.
+The build checks drift and bundles migrations; deployment applies pending migrations before database functions run. Correct source and generate a forward migration for upgrade failures. Preserve existing data; do not bypass this path with schema push or database resets.

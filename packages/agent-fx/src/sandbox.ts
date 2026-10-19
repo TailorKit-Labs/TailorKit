@@ -2,6 +2,7 @@ import { createVercelNetworkSandboxSessionFromNativeSandbox } from "@ai-sdk/sand
 import { APIError, Drive, Sandbox } from "@vercel/sandbox";
 
 import type { AppAgentInput } from "./input";
+import { appAgentReferences, appAgentReferencesDirectory } from "./skills";
 
 export const sandboxName = (threadId: string) => `fx-${threadId}`;
 const timeout = 30 * 60_000;
@@ -24,10 +25,41 @@ export const sandboxSession = (sandbox: Sandbox) => {
   return session;
 };
 
+const prepareWorkspace = async (sandbox: Sandbox) => {
+  // Refresh TailorKit releases immediately while keeping the three-day delay for
+  // third-party packages, including in sandboxes resumed from older snapshots.
+  const result = await sandbox.currentSession().runCommand({
+    args: [
+      "-c",
+      'pnpm config set --global minimumReleaseAge 4320 && pnpm config set --global --json minimumReleaseAgeExclude \'["tailorkit", "@tailorkit/*"]\' && pnpm config set --global dlxCacheMaxAge 0',
+    ],
+    cmd: "bash",
+  });
+  if (result.exitCode !== 0) {
+    throw new Error("Could not prepare the app package manager.");
+  }
+  const directoryResult = await sandbox.currentSession().runCommand({
+    args: ["-p", "/workspace/app"],
+    cmd: "mkdir",
+  });
+  if (directoryResult.exitCode !== 0) {
+    throw new Error("Could not prepare the app directory.");
+  }
+  const referencesResult = await sandbox.currentSession().runCommand({
+    args: ["-p", appAgentReferencesDirectory],
+    cmd: "mkdir",
+  });
+  if (referencesResult.exitCode !== 0) {
+    throw new Error("Could not prepare the app agent references directory.");
+  }
+  await sandbox.currentSession().writeFiles(appAgentReferences);
+  return sandbox;
+};
+
 export const prepareSandbox = async (input: AppAgentInput, resume: boolean) => {
   const name = sandboxName(input.threadId);
   if (resume) {
-    return await getSandbox(name);
+    return await prepareWorkspace(await getSandbox(name));
   }
   const drive = await Drive.getOrCreate({
     maxSize: 5 * 1024 ** 3,
@@ -51,13 +83,7 @@ export const prepareSandbox = async (input: AppAgentInput, resume: boolean) => {
     region: drive.region,
     timeout,
   });
-  const result = await sandbox
-    .currentSession()
-    .runCommand({ args: ["-p", "/workspace/app"], cmd: "mkdir" });
-  if (result.exitCode !== 0) {
-    throw new Error("Could not prepare app directory.");
-  }
-  return sandbox;
+  return await prepareWorkspace(sandbox);
 };
 
 export const deleteSandbox = async (threadId: string) => {

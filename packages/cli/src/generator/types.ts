@@ -12,6 +12,10 @@ import * as v from "valibot";
 
 import { isMissingFile } from "#utils/fs-errors";
 
+import { renderReferences } from "./references";
+import type { ResponsiveReference } from "./references";
+import { prepareAppSkill, writeAppSkill } from "./skill";
+
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
 
@@ -24,7 +28,7 @@ const isBooleanValue = <TValue>(value: TValue): value is TValue & boolean =>
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
   typeof value === "object" && value !== null;
 
-interface JsonSchema {
+export interface JsonSchema {
   $defs?: Record<string, JsonSchema>;
   $ref?: string;
   additionalProperties?: boolean | JsonSchema;
@@ -36,6 +40,9 @@ interface JsonSchema {
   items?: boolean | JsonSchema;
   prefixItems?: JsonSchema[];
   minItems?: number;
+  maxItems?: number;
+  minimum?: number;
+  maximum?: number;
   not?: JsonSchema;
   properties?: Record<string, JsonSchema>;
   required?: string[];
@@ -47,7 +54,7 @@ interface SerializedCallback {
   output?: JsonSchema;
 }
 
-interface SerializedComponent {
+export interface SerializedComponent {
   callbacks?: Record<string, SerializedCallback>;
   fields?: JsonSchema;
   children?: boolean;
@@ -64,11 +71,11 @@ interface SerializedSlot {
   views: readonly string[];
 }
 
-interface SerializedTools {
+export interface SerializedTools {
   [key: string]: SerializedTool | SerializedTools;
 }
 
-interface SerializedTool {
+export interface SerializedTool {
   kind: "client" | "server";
   input?: JsonSchema;
   output?: JsonSchema;
@@ -79,6 +86,10 @@ export interface TailorKitSchemaFile extends Record<string, unknown> {
   components?: Record<string, SerializedComponent>;
   views?: Record<string, SerializedView>;
   slots?: Record<string, SerializedSlot>;
+}
+
+export interface GeneratedFiles {
+  [filename: string]: string;
 }
 
 export interface GenerateTypesOptions {
@@ -392,6 +403,29 @@ const renderFieldType = (
   depth: number
 ): string =>
   renderResponsiveType(schema, depth) ?? toTypeScriptType(schema, depth);
+
+const getResponsiveReference = (
+  schema: JsonSchema
+): ResponsiveReference | undefined => {
+  const rendered = renderResponsiveType(schema, 0);
+  if (rendered === undefined) {
+    return undefined;
+  }
+  const value = schema.anyOf?.find(
+    (option) => option.properties === undefined && !isNeverSchema(option)
+  );
+  const object = schema.anyOf?.find(
+    (option) => option.properties !== undefined
+  );
+  if (value === undefined || object === undefined) {
+    return undefined;
+  }
+  return {
+    conditional: rendered.startsWith("Conditional<"),
+    keys: Object.keys(object.properties ?? {}),
+    value,
+  };
+};
 
 const collectFieldTypeAliases = (
   components: Record<string, SerializedComponent>
@@ -748,6 +782,27 @@ export const tools = ${renderToolRuntime(schema.tools ?? {})} as TailorKitTools;
   return `${chunks.join("\n\n")}\n`;
 };
 
+/** Markdown references share the resolved schema used by the single bindings file. */
+export const renderGeneratedReferences = (
+  schemaFile: TailorKitSchemaFile,
+  options: { bindingsPath: string; hasApi: boolean }
+): GeneratedFiles => {
+  const schema = resolveSchemaFile(schemaFile);
+  const components = Object.entries(schema.components ?? {}).map(
+    ([name, component]) => ({ component, filename: toIdentifier(name), name })
+  );
+  const filenames = new Set<string>();
+  for (const { filename, name } of components) {
+    if (filenames.has(filename)) {
+      throw new Error(
+        `Component names collide in generated references: ${name}`
+      );
+    }
+    filenames.add(filename);
+  }
+  return renderReferences(schema, components, getResponsiveReference, options);
+};
+
 const joinUrlPath = (baseUrl: string, pathName: string): string => {
   const url = new URL(baseUrl);
   url.pathname = `${url.pathname.replace(/\/$/u, "")}/${pathName.replace(/^\//u, "")}`;
@@ -829,9 +884,19 @@ export const generateTypes = async (
     serverModule = relative.startsWith(".") ? relative : `./${relative}`;
   }
   const output = renderGeneratedTypes(schema, { serverModule });
-
+  const skill = await prepareAppSkill(root, outPath);
+  const references =
+    skill === null
+      ? null
+      : renderGeneratedReferences(schema, {
+          bindingsPath: skill.bindingsPath,
+          hasApi: serverExists,
+        });
   await mkdir(path.dirname(outPath), { recursive: true });
   await writeFile(outPath, output, "utf-8");
+  if (skill !== null && references !== null) {
+    await writeAppSkill(skill, references);
+  }
 
   return outPath;
 };

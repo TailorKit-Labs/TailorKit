@@ -66,6 +66,59 @@ afterEach(async () => {
 });
 
 describe("generateApp", () => {
+  it("scaffolds Valibot as the default validator for app functions", async () => {
+    const targetDirectory = await createTempDir();
+    await generateApp({ ...defaultOptions, targetDirectory });
+    const manifest = z
+      .object({
+        dependencies: z.record(z.string(), z.string()),
+      })
+      .parse(
+        JSON.parse(
+          await readFile(path.join(targetDirectory, "package.json"), "utf-8")
+        )
+      );
+    expect(manifest.dependencies.valibot).toBe("^1.5.0");
+    expect(manifest.dependencies).not.toHaveProperty("zod");
+    const greeting = await readFile(
+      path.join(targetDirectory, "src/functions/greeting.ts"),
+      "utf-8"
+    );
+    expect(greeting).toContain('import * as v from "valibot"');
+    expect(greeting).toContain(".input(v.object({ name: v.string() }))");
+  });
+
+  it("limits fresh package exclusions to TailorKit and permits esbuild's required build", async () => {
+    const targetDirectory = await createTempDir();
+    await generateApp({
+      ...defaultOptions,
+      packageManager: "pnpm",
+      targetDirectory,
+    });
+    const policy = await readFile(
+      path.join(targetDirectory, "pnpm-workspace.yaml"),
+      "utf-8"
+    );
+    expect(policy).toContain("esbuild: true");
+    expect(policy).not.toContain("dangerouslyAllowAllBuilds");
+    expect(policy).toContain("minimumReleaseAge: 4320");
+    expect(policy).toContain(
+      'minimumReleaseAgeExclude:\n  - tailorkit\n  - "@tailorkit/*"'
+    );
+  });
+
+  it("keeps pnpm settings out of apps scaffolded for other package managers", async () => {
+    const targetDirectory = await createTempDir();
+    await generateApp({
+      ...defaultOptions,
+      packageManager: "npm",
+      targetDirectory,
+    });
+    await expect(
+      readFile(path.join(targetDirectory, "pnpm-workspace.yaml"))
+    ).rejects.toThrow();
+  });
+
   it("generates all expected files", async () => {
     const targetDirectory = await createTempDir();
     await generateApp({ ...defaultOptions, targetDirectory });
@@ -471,8 +524,8 @@ describe("generateApp", () => {
       "utf-8"
     );
     expect(view).not.toContain("slot:");
-    expect(view).toContain('import { z } from "zod"');
-    expect(view).toContain("dataSchema: z.object({})");
+    expect(view).toContain('import * as v from "valibot"');
+    expect(view).toContain("dataSchema: v.object({})");
     expect(view).toContain('key: "default"');
     const types = await readFile(
       path.join(targetDirectory, "src/tailorkit.gen.ts"),
@@ -511,26 +564,37 @@ describe("generateApp", () => {
     expect(content).not.toContain("DefaultViewProps");
   });
 
-  it("generates a valid generated types file", async () => {
+  it("generates one bindings file and focused references inside the host skill", async () => {
     const targetDirectory = await createTempDir();
     await generateApp({ ...defaultOptions, targetDirectory });
-
-    const content = await readFile(
-      path.join(targetDirectory, "src", "tailorkit.gen.ts"),
+    const bindings = await readFile(
+      path.join(targetDirectory, "src/tailorkit.gen.ts"),
       "utf-8"
     );
-    expect(content).toContain(
+    expect(bindings).toContain(
       'import { createRemoteComponent } from "tailorkit/client"'
     );
-    expect(content).toContain('import { createApi } from "tailorkit/client"');
-    expect(content).toContain('import type app from "./server"');
-    expect(content).toContain(
+    expect(bindings).toContain("export const Box");
+    expect(bindings).toContain('import type app from "./server"');
+    expect(bindings).toContain(
       "export const api = createApi<typeof app.functions>();"
     );
-    expect(content).toContain('"/customers": {');
-    expect(content).toContain("customer?: string;");
-    expect(content).toContain("export const Box");
-    expect(content).not.toContain("export const Card");
+    expect(bindings).toContain('"/customers": {');
+    expect(bindings).toContain("customer?: string;");
+    expect(
+      await readFile(
+        path.join(
+          targetDirectory,
+          ".agents/skills/tailorkit-capabilities/references/index.md"
+        ),
+        "utf-8"
+      )
+    ).toContain("components/Box.md");
+    await expect(
+      readFile(
+        path.join(targetDirectory, "src/tailorkit.gen/components/Box.ts")
+      )
+    ).rejects.toThrow();
   });
 
   it("generates a valid tsconfig.json", async () => {

@@ -10,7 +10,7 @@ export interface TemplatePackageVersions {
   preact: string;
   tailorkit: string;
   typescript: string;
-  zod: string;
+  valibot: string;
 }
 
 // Match the SDK's supported Drizzle v1 snapshot format and runtime version.
@@ -31,14 +31,14 @@ interface SemverVersion {
 
 const REGISTRY_URL = "https://registry.npmjs.org";
 const REGISTRY_TIMEOUT_MS = 5000;
-const MINIMUM_RELEASE_AGE_MS = 3 * 24 * 60 * 60 * 1000;
+export const DEFAULT_MINIMUM_RELEASE_AGE = 3 * 24 * 60;
 
 const REQUESTS = {
   preact: { fallback: "11.0.0", matcher: "^11", packageName: "preact" },
   typescript: { fallback: "6.0.3", matcher: "^6", packageName: "typescript" },
+  valibot: { fallback: "1.5.0", matcher: "^1", packageName: "valibot" },
   vite: { fallback: "8.0.0", matcher: "^8", packageName: "vite" },
   vitePlus: { fallback: "1.0.0", matcher: "^1", packageName: "vite-plus" },
-  zod: { fallback: "4.0.0", matcher: "^4", packageName: "zod" },
 } satisfies Record<
   Exclude<
     keyof TemplatePackageVersions,
@@ -125,7 +125,7 @@ const resolvePackageVersion = async ({
       .filter(
         (v) =>
           Date.parse(data.time?.[v.raw] ?? "") <=
-          Date.now() - MINIMUM_RELEASE_AGE_MS
+          Date.now() - DEFAULT_MINIMUM_RELEASE_AGE * 60_000
       )
       .toSorted(compareVersions)
       .at(-1);
@@ -138,7 +138,7 @@ const resolvePackageVersion = async ({
 export const resolveTemplatePackageVersions = async (
   tooling: "vite-plus" | "vite" = "vite-plus"
 ): Promise<TemplatePackageVersions> => {
-  const [vite, vitePlus, preact, typescript, zod] = await Promise.all([
+  const [vite, vitePlus, preact, typescript, valibot] = await Promise.all([
     tooling === "vite"
       ? resolvePackageVersion(REQUESTS.vite)
       : Promise.resolve(REQUESTS.vite.fallback),
@@ -147,7 +147,7 @@ export const resolveTemplatePackageVersions = async (
       : undefined,
     resolvePackageVersion(REQUESTS.preact),
     resolvePackageVersion(REQUESTS.typescript),
-    resolvePackageVersion(REQUESTS.zod),
+    resolvePackageVersion(REQUESTS.valibot),
   ]);
   return {
     drizzleKit: TEMPLATE_DRIZZLE_VERSION,
@@ -155,8 +155,8 @@ export const resolveTemplatePackageVersions = async (
     preact,
     tailorkit: packageJson.version,
     typescript,
+    valibot,
     vite,
     vitePlus,
-    zod,
   };
 };

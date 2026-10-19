@@ -274,6 +274,7 @@ export const runInit = async (options: InitOptions): Promise<string> => {
   await generateApp({
     force,
     hostUrl,
+    packageManager,
     packageName,
     packageVersions,
     schema,

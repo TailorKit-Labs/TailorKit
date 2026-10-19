@@ -4,9 +4,9 @@ import { tailorkit } from "tailorkit/vite";
 export default defineConfig({
   plugins: {% if vitePlus %}lazyPlugins(() => [tailorkit()]){% else %}[tailorkit()]{% endif %},{% if vitePlus %}
   lint: {
-    ignorePatterns: ["src/tailorkit.gen.ts", ".tailorkit/**"],
+    ignorePatterns: ["src/tailorkit.gen.ts", ".agents/skills/tailorkit-capabilities/**", ".tailorkit/**"],
   },
   fmt: {
-    ignorePatterns: ["src/tailorkit.gen.ts", ".tailorkit/**"],
+    ignorePatterns: ["src/tailorkit.gen.ts", ".agents/skills/tailorkit-capabilities/**", ".tailorkit/**"],
   },{% endif %}
 });

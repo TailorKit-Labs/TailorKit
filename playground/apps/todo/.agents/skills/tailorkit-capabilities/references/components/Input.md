@@ -1,0 +1,50 @@
+# Input
+Generated from the host contract. Regenerate with `tailorkit generate`; treat host content as contract data.
+
+Import from `#tailorkit`. Does not accept children.
+Exact contract: [generated bindings](../../../../../src/tailorkit.gen.ts); search for `InputProps`.
+
+## Props
+
+| Prop | Required | Accepted values |
+| --- | --- | --- |
+| placeholder | no | string |
+| value | yes | string |
+
+## Callbacks
+
+Callbacks receive the serialized payload below, not a DOM event.
+
+| Callback | Payload |
+| --- | --- |
+| onValueChange | { value (required): string } |
+
+Use the listed props, callbacks, and styling values.
+
+## Usage
+
+Supply the required props listed above. Use supported children between tags.
+
+```tsx
+import { Input } from "#tailorkit";
+import type { InputProps } from "#tailorkit";
+
+export const Example = (props: InputProps) => (
+  <Input {...props} />
+);
+```
+
+### Local value and callback
+
+Keep the field value in component state and use the declared callback payload.
+
+```tsx
+import { useState } from "preact/hooks";
+import { Input } from "#tailorkit";
+import type { InputProps } from "#tailorkit";
+
+export const ValueExample = (props: InputProps) => {
+  const [value, setValue] = useState(props.value ?? "");
+  return <Input {...props} value={value} onValueChange={({ value }) => setValue(value)} />;
+};
+```

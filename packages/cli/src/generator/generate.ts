@@ -5,13 +5,17 @@ import path from "node:path";
 import { Liquid } from "liquidjs";
 import { z } from "zod";
 
-import { TEMPLATE_DRIZZLE_VERSION } from "./package-versions";
+import {
+  DEFAULT_MINIMUM_RELEASE_AGE,
+  TEMPLATE_DRIZZLE_VERSION,
+} from "./package-versions";
 import {
   rootTemplate,
   defaultViewTemplate,
   gitignoreTemplate,
   viteConfigTemplate,
   packageJsonTemplate,
+  pnpmWorkspaceTemplate,
   tailorkitConfigTemplate,
   tsconfigTemplate,
   serverTemplate,
@@ -47,9 +51,10 @@ export interface GenerateAppOptions {
     preact: string;
     tailorkit: string;
     typescript: string;
-    zod?: string;
+    valibot?: string;
   };
   useWorkspaceDependencies?: boolean;
+  packageManager?: string;
 }
 
 const engine = new Liquid({ strictVariables: true });
@@ -187,6 +192,7 @@ export const generateApp = async (
     drizzleKitVersion: packageVersions.drizzleKit ?? TEMPLATE_DRIZZLE_VERSION,
     drizzleOrmVersion: packageVersions.drizzleOrm ?? TEMPLATE_DRIZZLE_VERSION,
     hostUrl,
+    minimumReleaseAge: String(DEFAULT_MINIMUM_RELEASE_AGE),
     multiple: schema.slots?.[slotName]?.multiple === true,
     packageName,
     preactVersion: packageVersions.preact,
@@ -195,11 +201,11 @@ export const generateApp = async (
     tooling,
     typescriptVersion: packageVersions.typescript,
     useBox,
+    valibotVersion: packageVersions.valibot ?? "^1.5.0",
     viewPath: JSON.stringify(viewPath),
     vitePlus: tooling === "vite-plus",
     vitePlusVersion: packageVersions.vitePlus ?? "1.0.0",
     viteVersion: packageVersions.vite,
-    zodVersion: packageVersions.zod ?? "^4.0.0",
   };
 
   await ensureDirectory(path.dirname(path.join(targetDirectory, viewFile)));
@@ -207,6 +213,13 @@ export const generateApp = async (
   await ensureDirectory(path.join(targetDirectory, "src", "db", "migrations"));
 
   const files: { template: string; dest: string; condition?: boolean }[] = [
+    {
+      condition:
+        options.packageManager === undefined ||
+        options.packageManager === "pnpm",
+      dest: "pnpm-workspace.yaml",
+      template: pnpmWorkspaceTemplate,
+    },
     { dest: "package.json", template: packageJsonTemplate },
     { dest: "tsconfig.json", template: tsconfigTemplate },
     { dest: "tailorkit.config.ts", template: tailorkitConfigTemplate },
