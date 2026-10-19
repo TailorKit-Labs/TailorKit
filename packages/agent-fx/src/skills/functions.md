@@ -1,5 +1,7 @@
 # Queries, mutations, actions, and reactive clients
 
+For private records, CRUD writes, or external integration actions, read the [complete functions recipe](references/functions.md). It includes the database, authorization on each operation, registration, and an action with response validation.
+
 ## Choose the execution boundary
 
 App backend code runs in a Cloudflare Workers/Durable Object sandbox, with Web APIs and installation-scoped SQLite supplied by TailorKit. It is not a Node server: do not add an HTTP listener, filesystem storage, a database driver, or a Wrangler deployment. Choose dependencies compatible with that runtime. In-memory module state is not durable storage, and build-machine environment variables are not deployed app secrets.
@@ -16,38 +18,7 @@ Enable `server: {}` in `tailorkit.config.ts`. Define functions with `fn` from `t
 
 Chain `.input(zodSchema)` and optional `.output(zodSchema)` before `.handler(...)`. Builder handlers receive `input`; omit `.input` for an inputless function. Inputs and outputs must support synchronous validation. Return serializable data: plain objects, arrays, strings, numbers, booleans, or null. Convert dates and special objects deliberately, and return null for an absent record.
 
-For a `notes` table and database definition created with `tailorkit/db` as described in the database skill:
-
-```ts
-import { fn } from "tailorkit/server";
-import { z } from "zod";
-
-import { db as database } from "../db";
-import { notes } from "../db/schema";
-
-export const list = fn.query
-  .database(database)
-  .handler(({ db }) => db.query.notes.findMany({ limit: 50 }).sync());
-
-export const add = fn.mutation
-  .database(database)
-  .input(z.object({ title: z.string().trim().min(1).max(200) }))
-  .handler(({ db, input }) => {
-    const id = crypto.randomUUID();
-    db.insert(notes).values({ id, title: input.title }).run();
-    return { id };
-  });
-```
-
-This minimal example assumes notes are shared by the installation; add identity/context restrictions when records are private. Explicitly register the functions:
-
-```ts
-import { defineServer } from "tailorkit/server";
-
-import * as notes from "./functions/notes";
-
-export default defineServer({ notes });
-```
+Register definitions explicitly with `defineServer({ notes })` in the configured entry; the recipe shows the files and registration together.
 
 Nested objects establish function namespaces, such as `api.notes.list`. Files are not registered automatically. Modules spread into the registration should export function definitions, not unrelated helpers. The alternative object-style `query`, `mutation`, and `action` API names its validated argument `args`; do not mix that signature with the builder's `input`.
 

@@ -13,7 +13,9 @@
 - Preact composition
 - Preact performance
 
-The harness makes these skills discoverable each turn; app workspaces do not need copies of this repository's `.agents` directory.
+The harness makes these skills discoverable each turn; app workspaces do not need copies of this repository's `.agents` directory. App-specific component, callback, styling, slot, and tool pages come from the CLI-generated `tailorkit-capabilities` skill.
+
+The frontend and composition skills bundle longer examples from `src/skills/references/` as on-demand files. The CLI's `agent-examples.test.ts` compiles complete marked recipes against public SDK declarations, and integration tests check that their bodies stay outside the initial model prompt.
 
 The skills document SDK patterns for use with the scaffold and generated contract declarations. The agent consults installed public types for missing details or version mismatches. Host component names, props, and tools always come from that app's generated bindings.
 

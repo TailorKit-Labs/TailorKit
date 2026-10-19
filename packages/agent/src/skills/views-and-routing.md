@@ -17,8 +17,14 @@ For example, a repeated `tile` slot supporting `/` can use this shape, with meta
 ```tsx
 // src/slots/tile/index.view.tsx
 import "#tailorkit";
+import type { ComponentChildren } from "preact";
 import { defineView } from "tailorkit/client";
 import { z } from "zod";
+
+const Tile = (): ComponentChildren => {
+  const { data } = view.useInstance();
+  return <>{data.title}</>;
+};
 
 const view = defineView({
   view: "/",
@@ -31,12 +37,9 @@ const view = defineView({
   component: Tile,
 });
 
-function Tile() {
-  const { data } = view.useInstance();
-  return <>{data.title}</>;
-}
-
 export default view;
 ```
 
 Use a generated host component to style the content. For a single-instance view, omit `instances` and read host data with `view.useContext()`. Match the slot/path and metadata to the generated contract; filenames do not create new host routes.
+
+Instance discovery and reactive query updates are separate flows. Confirm how the product refreshes instances after records are created or removed; a committed mutation does not by itself promise new product tiles. Prefer one reactive list view when the slot's discovery behavior cannot provide the requested live updates.

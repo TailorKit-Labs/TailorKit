@@ -342,6 +342,7 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
         expect(requests[0]?.body).toContain(name);
       }
       expect(requests[0]?.body).toContain("deploy");
+      expect(requests[0]?.body).not.toContain("src/functions/notes.ts");
     } finally {
       await session?.destroy();
       delete env.AI_GATEWAY_API_KEY;

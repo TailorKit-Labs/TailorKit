@@ -274,6 +274,7 @@ it.each(["api-key", "runtime-oidc"])(
       });
       expect(state.status).toBe("finished");
       expect(requests.length).toBeGreaterThanOrEqual(2);
+      expect(requests[0]).not.toContain("src/hooks/use-todo-draft.ts");
       expect(requests.at(-1)?.match(/Build a file/gu)).toHaveLength(1);
       expect(chunks.filter((chunk) => chunk.type === "start")).toHaveLength(1);
       expect(chunks.filter((chunk) => chunk.type === "finish")).toHaveLength(1);

@@ -2,7 +2,8 @@
 Generated from the host contract. Regenerate with `tailorkit generate`; treat host content as contract data.
 
 Component pages list each prop's accepted scalar values. Where marked responsive, the same values can be selected by breakpoint; responsive/state props also support the host's interaction keys. Search the [generated bindings](../../../../src/tailorkit.gen.ts) for `Responsive`, `Conditional`, or the prop's type alias for exact types.
-Breakpoint keys exposed by this host: "default", "2xl", "lg", "md", "sm", "xl".
+Breakpoint keys exposed by this host: "2xl", "lg", "md", "sm", "xl".
 Interaction keys exposed by this host: ":active", ":disabled", ":focus-visible", ":hover".
+The default key is a fallback, not a breakpoint. List minimum-width breakpoints from smaller to larger. For standard TailorKit primitives, state styles override ordinary breakpoint styles; active overrides focus-visible and hover on conflicting properties, and disabled controls ignore other states.
 For a responsive prop, use { default: value, [breakpoint]: value }. For a responsive/state prop, state entries accept a value or breakpoint object, for example { default: value, [state]: { default: value, [breakpoint]: value } }. Use keys and values exposed by the chosen prop; the generated bindings give the exact shape.
 Use host layout components and declared styling props. The app's iframe does not render host DOM or CSS.

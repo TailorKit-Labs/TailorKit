@@ -65,6 +65,7 @@ const schema: TailorKitSchemaFile = {
 };
 
 const markdownLink = /\]\((?<target>[^)]+)\)/gu;
+const fencedCode = /```[\s\S]*?```/gu;
 
 it("generates a discoverable skill with working reference links, including custom output paths", async () => {
   const root = await mkdtemp(
@@ -129,21 +130,23 @@ it("generates a discoverable skill with working reference links, including custo
         const markdown = await readFile(document, "utf-8");
         // oxlint-disable-next-line no-await-in-loop -- Each document supplies the next set of references to verify.
         await Promise.all(
-          [...markdown.matchAll(markdownLink)].map(async (link) => {
-            const target = link.groups?.target;
-            if (target === undefined) {
-              throw new Error("Missing reference target.");
+          [...markdown.replaceAll(fencedCode, "").matchAll(markdownLink)].map(
+            async (link) => {
+              const target = link.groups?.target;
+              if (target === undefined) {
+                throw new Error("Missing reference target.");
+              }
+              const destination = path.resolve(
+                path.dirname(document),
+                decodeURIComponent(target)
+              );
+              const reference = await readFile(destination, "utf-8");
+              expect(reference.length).toBeGreaterThan(0);
+              if (destination.endsWith(".md")) {
+                pending.push(destination);
+              }
             }
-            const destination = path.resolve(
-              path.dirname(document),
-              decodeURIComponent(target)
-            );
-            const reference = await readFile(destination, "utf-8");
-            expect(reference.length).toBeGreaterThan(0);
-            if (destination.endsWith(".md")) {
-              pending.push(destination);
-            }
-          })
+          )
         );
       }
     }

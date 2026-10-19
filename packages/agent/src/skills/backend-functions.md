@@ -18,19 +18,21 @@ Read `server.d.ts` or `client.d.ts` in that directory and follow only the declar
 
 Use `fn.query`, `fn.mutation`, and `fn.action` from `tailorkit/server`. Chain `.input(zodSchema)` and optionally `.output(zodSchema)` before `.handler(...)`. Handlers receive validated `input`; without an input schema it is `undefined`. Return JSON-compatible values (use `null` for an absent record).
 
-For a `todos` table and database definition from the database skill:
+This example deliberately shares todos across an installation. For personal records, add an owner column from verified identity and authorize every read and write. It uses the `todos` table and database definition from the database skill:
 
 ```ts
 // src/functions/todos.ts
 import { fn } from "tailorkit/server";
 import { z } from "zod";
 
-import { db as database } from "../db";
-import { todos } from "../db/schema";
+import { db as database } from "#db";
+import { todos } from "#db/schema";
 
 export const list = fn.query
   .database(database)
-  .handler(({ db }) => db.query.todos.findMany({ limit: 100 }).sync());
+  .handler(({ db }) =>
+    db.query.todos.findMany({ orderBy: { id: "asc" }, limit: 100 }).sync()
+  );
 
 export const add = fn.mutation
   .database(database)
@@ -48,7 +50,7 @@ Register explicitly; files alone do not register functions:
 // src/server.ts
 import { defineServer } from "tailorkit/server";
 
-import * as todos from "./functions/todos";
+import * as todos from "#functions/todos";
 
 export default defineServer({ todos });
 ```
@@ -70,11 +72,11 @@ Keep the scaffold's stable `<ClientProvider><Route /></ClientProvider>` shell. I
 
 ```ts
 const todos = useQuery(api.todos.list);
-const add = useMutation(api.todos.add, { onSuccess: () => setTitle("") });
+const add = useMutation(api.todos.add);
 // In a generated host callback:
 add.mutate({ title });
 ```
 
 - `useQuery(ref, input?, options?)` subscribes reactively; committed writes rerun affected queries. Use `data`, `error`, `isLoading`, and `isError`; pending data is `undefined`. Do not poll or manually refetch after writes.
 - Keep hooks unconditional. Defer with `{ enabled: false }` in the third argument; preserve `undefined` as the second argument for an inputless query with options. Disabled queries have `isLoading: false` and `isPending: true`.
-- Mutations expose `mutate`/`mutateAsync`; actions expose `execute`/`executeAsync`. The non-async variants return void and report failures through hook state and optional `onError`; await the async variants when later behavior needs a result or caught error. Both hooks expose `data`, `error`, `isPending`, and `reset`. Disable duplicate submissions while pending.
+- Mutations expose `mutate`/`mutateAsync`; actions expose `execute`/`executeAsync`. The non-async variants return void and report failures through hook state and optional `onError`; await the async variants when later behavior needs a result or caught error. Both hooks expose `data`, `error`, `isPending`, and `reset`. Disable duplicate submissions while pending. If a user can keep typing during a save, clear only the submitted draft after success; an unconditional success callback can erase a newer edit. For required query input, mount a child only when its identifier exists rather than passing undefined to a required input.

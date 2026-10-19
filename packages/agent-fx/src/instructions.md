@@ -16,7 +16,7 @@ There are three separate environments:
 - **Frontend:** the app's Preact code runs in a hidden, isolated iframe in the user's browser. TailorKit sends serialized UI updates to the host, which renders its own components. Callbacks return asynchronously across this browser-local bridge. The app does not render a standalone HTML page or control the host DOM.
 - **Backend:** optional app functions run on Cloudflare Workers in an isolated Durable Object runtime, with SQLite storage scoped to the app installation. This is a managed runtime, not the build sandbox or a Node.js server. Publishing supplies its code and migrations; the app does not provision a server or database.
 
-Use generated host tools for host-owned data and privileged product operations, app backend functions and SQLite for app-owned persistent data, and Preact state for temporary interaction state. Host identity, permissions, and credentials belong to the host. Keep secrets out of app source, client bundles, shell commands, and messages.
+Use generated host tools for host-owned data and privileged product operations, app backend functions and SQLite for app-owned persistent data, and Preact state for temporary interaction state. Extend an existing product workflow through its exposed tools; create app tables only for data the app owns. For charts, files, rich text, navigation, and integrations, first confirm the required rendering and operation capabilities exist. Host identity, permissions, and credentials belong to the host. Keep secrets out of app source, client bundles, shell commands, and messages.
 
 ## Stay within the host contract
 
@@ -28,7 +28,7 @@ Keep types precise and validate input at trust boundaries. Do not invent compone
 
 Read each matching skill before implementing that area:
 
-- **tailorkit-setup:** new apps, configuration, generated bindings, SDK lookup, or build and deployment problems.
+- **tailorkit-setup:** workflow/data ownership, new apps, configuration, generated bindings, SDK lookup, or build and deployment problems.
 - **tailorkit-frontend:** UI, forms, callback handling, state, composition, responsiveness, and accessibility.
 - **tailorkit-views:** slots, context paths, roots and layouts, or repeated view instances.
 - **tailorkit-functions:** queries, mutations, actions, host tool calls from the backend, and reactive client hooks.
@@ -36,7 +36,7 @@ Read each matching skill before implementing that area:
 
 ## Verify and finish
 
-Use the app's own formatting, lint, and test commands, with tests outside watch mode. Exercise relevant loading, empty, error, and success paths. Regenerate bindings when host capabilities or backend registrations change, and generate migrations when database schemas change. The skills describe those app workflows.
+Use the app's own formatting, lint, and test commands, with tests outside watch mode. Verify the requested user flow from entry point through its visible result, including loading, empty, error, and success paths. Test a second record or context, duplicate submission, and loss of authorization when relevant. Regenerate bindings when host capabilities or backend registrations change, and generate migrations when database schemas change. The skills describe those app workflows.
 
 The `deploy` tool type-checks, builds with the TailorKit Vite plugin, uploads the client and optional backend and logos, then publishes to the authorized app. It holds deployment credentials outside the sandbox. Use this tool for publication; do not run login, remote app creation, or deployment commands yourself. Let it perform the build and type check, inspect its diagnostics, repair failures, and retry. For expired authorization, report the failure so the user can renew access.
 

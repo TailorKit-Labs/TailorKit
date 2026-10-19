@@ -4,6 +4,8 @@ import functions from "./skills/backend-functions.md?raw";
 import hostUi from "./skills/host-ui.md?raw";
 import composition from "./skills/preact-composition.md?raw";
 import performance from "./skills/preact-performance.md?raw";
+import draftExample from "./skills/references/drafts.md?raw";
+import localStateExample from "./skills/references/local-state.md?raw";
 import database from "./skills/sqlite-database.md?raw";
 import routing from "./skills/views-and-routing.md?raw";
 
@@ -12,8 +14,9 @@ export const appAgentSkills = [
   {
     content: hostUi,
     description:
-      "Host UI: read when building app UI, choosing generated components or styling props, handling callbacks, or calling host tools.",
-    name: "tailorkit-host-ui",
+      "Frontend: read when building app UI, choosing generated components or styling props, handling callbacks, or calling host tools.",
+    files: [{ content: draftExample, path: "references/drafts.md" }],
+    name: "tailorkit-frontend",
   },
   {
     content: routing,
@@ -37,6 +40,7 @@ export const appAgentSkills = [
     content: composition,
     description:
       "Composition: read when building reusable Preact components, variants, or shared state providers.",
+    files: [{ content: localStateExample, path: "references/local-state.md" }],
     name: "tailorkit-preact-composition",
   },
   {

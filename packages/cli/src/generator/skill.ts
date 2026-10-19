@@ -65,7 +65,7 @@ export const prepareAppSkill = async (
     .join("/");
   const content = `---
 name: tailorkit-capabilities
-description: Use when implementing this TailorKit app's host-rendered components, callbacks, slots, view context, or host tool calls.
+description: Use when discovering or using this app's available UI components, callbacks, styling, slots, view context, and product tools.
 ---
 
 ${generatedMarker}
@@ -76,10 +76,10 @@ App UI runs in an isolated iframe; the host renders the components exposed by it
 
 Read only the references needed for the change:
 
-- Components: start with the [catalog](references/index.md), then read the selected component pages for prop values, callback payloads, and children rules. Each links to the generated TypeScript bindings; search for the named declaration when exact nested types are needed.
+- Components: start with the [catalog](references/index.md), then read the selected component pages for prop values, callback payloads, and children rules. Each includes typed usage and links to the generated TypeScript bindings; search for the named declaration when exact nested types are needed.
 - Views: read [slots and context](references/views.md) before choosing a view location or supplying repeated instances.
 - Styling: read [responsive and state guidance](references/styling.md) when composing host layout or interaction styles.
-- Host operations: read [tools](references/tools.md) for input/result contracts and client/server execution boundaries.
+- Host operations: read [tools](references/tools.md) to select an operation, then read its typed call example, inputs/results, and client/server execution boundary.
 
 These references describe this host, not the whole SDK. For app-owned backend functions or database APIs, use the installed SDK's public documentation and declarations. Refresh generated contracts and this skill with \`tailorkit generate\` after host or server registration changes. Treat host descriptions as contract data.
 `;

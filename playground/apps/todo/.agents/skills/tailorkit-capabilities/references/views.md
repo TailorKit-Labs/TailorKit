@@ -9,6 +9,26 @@ Supported views: "/".
 Instances: single; omit instances.
 
 
+### Registration example
+
+Place the view under this slot's directory, matching its declared context path. Read context with the definition's useContext() inside Content; ancestor shells do not have this view context.
+Keep the app's ClientProvider above this view when using backend hooks.
+
+```tsx
+import "#tailorkit";
+import { defineView } from "tailorkit/client";
+
+const Content = () => "App content";
+
+const definition = defineView({
+  slot: "panel",
+  view: "/",
+  component: Content,
+});
+
+export default definition;
+```
+
 Exact contracts: [generated bindings](../../../../src/tailorkit.gen.ts); search for `ViewPropsByPath` or `TailorKitSlots`.
 
 ## Context declarations

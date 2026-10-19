@@ -1,5 +1,7 @@
 # App setup, generation, and publication
 
+For a new feature spanning UI, data, or integrations, read the [workflow guide](references/workflows.md) to choose data ownership, capabilities, and completion checks before adding code.
+
 ## Inspect before scaffolding
 
 Work from the app root, `/workspace/app`. Check for an existing package.json, lockfile, TailorKit configuration, and source before running initialization. Keep an existing app's package manager, scripts, SDK version, build plugins, and identity. Install dependencies using its own lockfile and configuration.

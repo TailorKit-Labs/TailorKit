@@ -11,3 +11,5 @@ Compose generated host components with local Preact components, fragments, and p
 - Keep server functions and database modules in the backend. UI imports generated `api`, components, and tools from `#tailorkit`.
 
 Adapt composition ideas to the installed Preact API. React 19 and Next.js examples require translation; the host contract determines which UI capabilities are available.
+
+For state shared by sibling controls, use the [local provider example](references/local-state.md). It keeps view-local state separate from durable backend data.

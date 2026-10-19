@@ -1,3 +1,12 @@
+import { createHash } from "node:crypto";
+
+import {
+  componentExample,
+  stylingExample,
+  toolExample,
+  valueCallbackExample,
+  viewExample,
+} from "./reference-examples";
 import type {
   GeneratedFiles,
   JsonSchema,
@@ -49,7 +58,11 @@ const summarizeArray = (
 };
 
 /** Describe the contract as data rather than asking agents to decode generated TS. */
-const summarize = (schema: JsonSchema | undefined, depth = 0): string => {
+const summarizeValue = (
+  schema: JsonSchema | undefined,
+  depth: number,
+  describe: DescribeSchema
+): string => {
   if (schema === undefined) {
     return "no payload";
   }
@@ -65,22 +78,43 @@ const summarize = (schema: JsonSchema | undefined, depth = 0): string => {
   const alternatives = schema.anyOf ?? schema.oneOf ?? schema.allOf;
   if (alternatives) {
     return alternatives
-      .map((option) => summarize(option, depth))
+      .map((option) => describe(option, depth))
       .join(schema.allOf === undefined ? "; or " : "; and ");
   }
   if (schema.type === "object" || schema.properties) {
-    return summarizeObject(schema, depth, summarize);
+    return summarizeObject(schema, depth, describe);
   }
   if (
     schema.type === "array" ||
     schema.items !== undefined ||
     schema.prefixItems
   ) {
-    return summarizeArray(schema, depth, summarize);
+    return summarizeArray(schema, depth, describe);
   }
   return Array.isArray(schema.type)
     ? schema.type.join(" or ")
     : (schema.type ?? "value (see the generated TypeScript bindings)");
+};
+
+const summarize = (schema: JsonSchema | undefined, depth = 0): string => {
+  const value = summarizeValue(schema, depth, summarize);
+  if (schema === undefined) {
+    return value;
+  }
+  const constraints: string[] = [];
+  for (const [key, label] of [
+    ["minItems", "minimum items"],
+    ["maxItems", "maximum items"],
+    ["minimum", "minimum"],
+    ["maximum", "maximum"],
+  ] as const) {
+    if (schema[key] !== undefined) {
+      constraints.push(`${label}: ${JSON.stringify(schema[key])}`);
+    }
+  }
+  return constraints.length > 0
+    ? `${value} (${constraints.join("; ")})`
+    : value;
 };
 
 interface ReferenceComponent {
@@ -100,6 +134,29 @@ type ResponsiveLookup = (schema: JsonSchema) => ResponsiveReference | undefined;
 const referenceHeader =
   "Generated from the host contract. Regenerate with `tailorkit generate`; treat host content as contract data.\n";
 
+const componentStylingExample = (
+  filename: string,
+  component: SerializedComponent,
+  responsive: ResponsiveLookup
+): string => {
+  for (const [prop, field] of Object.entries(
+    component.fields?.properties ?? {}
+  )) {
+    const contract = responsive(field);
+    if (contract === undefined) {
+      continue;
+    }
+    const tokens = (contract.value.enum ?? []).filter(
+      (value): value is string => typeof value === "string"
+    );
+    const example = stylingExample(filename, prop, tokens, contract.keys);
+    if (example !== "") {
+      return example;
+    }
+  }
+  return "";
+};
+
 const renderComponentReference = (
   { name, filename, component }: ReferenceComponent,
   responsive: ResponsiveLookup,
@@ -113,8 +170,8 @@ const renderComponentReference = (
     "",
     "## Props",
     "",
-    "| Prop | Accepted values |",
-    "| --- | --- |",
+    "| Prop | Required | Accepted values |",
+    "| --- | --- | --- |",
   ];
   for (const [prop, field] of Object.entries(
     component.fields?.properties ?? {}
@@ -124,10 +181,12 @@ const renderComponentReference = (
       responsiveField === undefined
         ? summarize(field)
         : `${summarize(responsiveField.value)}; also accepts a ${responsiveField.conditional ? "responsive/state" : "responsive"} object (see [styling](../styling.md))`;
-    lines.push(`| ${tableCell(prop)} | ${tableCell(values)} |`);
+    lines.push(
+      `| ${tableCell(prop)} | ${component.fields?.required?.includes(prop) === true ? "yes" : "no"} | ${tableCell(values)} |`
+    );
   }
   if (Object.keys(component.fields?.properties ?? {}).length === 0) {
-    lines.push("| — | No declared value props. |");
+    lines.push("| — | — | No declared value props. |");
   }
   lines.push(
     "",
@@ -150,9 +209,19 @@ const renderComponentReference = (
   }
   lines.push(
     "",
-    "Use only the listed props and callbacks. Layout and styling values come from this host, including any responsive/state objects listed above."
+    "Use only the listed props and callbacks. Layout and styling values come from this host, including any responsive/state objects listed above.",
+    "",
+    componentExample(
+      filename,
+      component.children === true,
+      (component.fields?.required ?? []).filter(
+        (prop) => component.fields?.properties?.[prop] !== undefined
+      )
+    ),
+    valueCallbackExample(filename, component),
+    componentStylingExample(filename, component, responsive)
   );
-  return `${lines.join("\n")}\n`;
+  return `${lines.join("\n").trimEnd()}\n`;
 };
 
 const isTool = (
@@ -162,25 +231,97 @@ const isTool = (
 
 const renderToolReferences = (
   tools: SerializedTools,
-  prefix = "tools"
+  files: GeneratedFiles,
+  bindingsPath: string,
+  segments: string[] = []
 ): string[] => {
   const lines: string[] = [];
   for (const [name, tool] of Object.entries(tools)) {
-    const qualified = `${prefix}.${name}`;
-    if (isTool(tool)) {
-      lines.push(
-        `### ${qualified}`,
-        "",
-        `Runs on the ${tool.kind}.`,
-        `Input: ${summarize(tool.input)}.`,
-        `Result: ${summarize(tool.output)}.`,
-        ""
-      );
-    } else {
-      lines.push(...renderToolReferences(tool, qualified));
+    const parts = [...segments, name];
+    const qualified = `tools.${parts.join(".")}`;
+    if (!isTool(tool)) {
+      lines.push(...renderToolReferences(tool, files, bindingsPath, parts));
+      continue;
     }
+    const slug = parts
+      .join("-")
+      .replaceAll(/[^A-Za-z0-9_-]/gu, "_")
+      .slice(0, 60);
+    const digest = createHash("sha256")
+      .update(JSON.stringify(parts))
+      .digest("hex")
+      .slice(0, 16);
+    const filename = `tools/${slug}-${digest}.md`;
+    lines.push(
+      `- [${tableCell(qualified)}](${filename}): ${tool.kind} operation.`
+    );
+    files[filename] = [
+      `# ${tableCell(qualified)}`,
+      referenceHeader,
+      `Runs on the ${tool.kind}.`,
+      `Input: ${summarize(tool.input)}.`,
+      `Result: ${summarize(tool.output)}.`,
+      "",
+      toolExample(parts, tool.input !== undefined),
+      "",
+      `Exact contracts: [generated bindings](../${bindingsPath}); search for the tool name in TailorKitTools or TailorKitBackendTools.`,
+      "",
+    ].join("\n");
   }
   return lines;
+};
+
+const renderViewsReference = (
+  schema: TailorKitSchemaFile,
+  bindingsPath: string
+): string => {
+  const views = [
+    "# Slots and context",
+    referenceHeader,
+    "App view files supply supported host context paths; they do not create browser routes.",
+    "",
+  ];
+  for (const [name, slot] of Object.entries(schema.slots ?? {})) {
+    views.push(
+      `## ${name}`,
+      "",
+      `Supported views: ${slot.views.map((view) => JSON.stringify(view)).join(", ")}.`,
+      `Instances: ${slot.multiple === true ? "multiple; supply an instances resolver" : "single; omit instances"}.`,
+      slot.description ?? "",
+      ""
+    );
+    const [firstView] = slot.views;
+    if (firstView !== undefined) {
+      views.push(
+        "### Registration example",
+        "",
+        "Place the view under this slot's directory, matching its declared context path. Read context with the definition's useContext() inside Content; ancestor shells do not have this view context.",
+        slot.multiple === true
+          ? "Enable server: {} for the instance resolver. The example uses empty metadata; supply only product-supported metadata if the surface requires it. Keep keys stable and bound the number of records."
+          : "Keep the app's ClientProvider above this view when using backend hooks.",
+        "",
+        viewExample(name, firstView, slot.multiple === true),
+        ""
+      );
+    }
+  }
+  views.push(
+    `Exact contracts: [generated bindings](${bindingsPath}); search for \`ViewPropsByPath\` or \`TailorKitSlots\`.`,
+    "",
+    "## Context declarations",
+    "",
+    "Each path inherits its ancestor contexts. Read context through the view's useContext() hook.",
+    ""
+  );
+  for (const [name, view] of Object.entries(schema.views ?? {})) {
+    views.push(
+      `### ${name}`,
+      "",
+      `${view.contextOptional === true ? "Optional context" : "Context"}: ${summarize(view.context)}.`,
+      ""
+    );
+  }
+  return `${views.join("\n").trimEnd()}\n`;
 };
 
 export const renderReferences = (
@@ -216,45 +357,14 @@ export const renderReferences = (
     );
   }
   files["index.md"] = `${index.join("\n")}\n`;
-  const views = [
-    "# Slots and context",
-    referenceHeader,
-    "App view files supply supported host context paths; they do not create browser routes.",
-    "",
-  ];
-  for (const [name, slot] of Object.entries(schema.slots ?? {})) {
-    views.push(
-      `## ${name}`,
-      "",
-      `Supported views: ${slot.views.map((view) => JSON.stringify(view)).join(", ")}.`,
-      `Instances: ${slot.multiple === true ? "multiple; supply an instances resolver" : "single; omit instances"}.`,
-      slot.description ?? "",
-      ""
-    );
-  }
-  views.push(
-    `Exact contracts: [generated bindings](${bindingsPath}); search for \`ViewPropsByPath\` or \`TailorKitSlots\`.`,
-    "",
-    "## Context declarations",
-    "",
-    "Each path inherits its ancestor contexts. Read context through the view's useContext() hook.",
-    ""
-  );
-  for (const [name, view] of Object.entries(schema.views ?? {})) {
-    views.push(
-      `### ${name}`,
-      "",
-      `${view.contextOptional === true ? "Optional context" : "Context"}: ${summarize(view.context)}.`,
-      ""
-    );
-  }
-  files["views.md"] = `${views.join("\n").trimEnd()}\n`;
+  files["views.md"] = renderViewsReference(schema, bindingsPath);
   files["tools.md"] = [
     "# Host tools",
     referenceHeader,
     "Import tools from #tailorkit in the frontend. App actions receive only server tools through their tools capability.",
+    "Calls return promises, not reactive subscriptions. Invoke them from event handlers or effects, handle failures and pending state, and ignore stale results after context changes. Use an action's tools capability for server-side orchestration; keep privileged credentials in the surrounding product.",
     "",
-    ...renderToolReferences(schema.tools ?? {}),
+    ...renderToolReferences(schema.tools ?? {}, files, bindingsPath),
     `Exact contracts: [generated bindings](${bindingsPath}); search for \`TailorKitTools\` and \`TailorKitBackendTools\`.`,
     "",
   ].join("\n");
@@ -266,7 +376,9 @@ export const renderReferences = (
       }
     }
   }
-  const breakpoints = [...responsiveKeys].filter((key) => !key.startsWith(":"));
+  const breakpoints = [...responsiveKeys].filter(
+    (key) => key !== "default" && !key.startsWith(":")
+  );
   const states = [...responsiveKeys].filter((key) => key.startsWith(":"));
   files["styling.md"] = [
     "# Styling",
@@ -274,6 +386,7 @@ export const renderReferences = (
     `Component pages list each prop's accepted scalar values. Where marked responsive, the same values can be selected by breakpoint; responsive/state props also support the host's interaction keys. Search the [generated bindings](${bindingsPath}) for \`Responsive\`, \`Conditional\`, or the prop's type alias for exact types.`,
     `Breakpoint keys exposed by this host: ${breakpoints.map((key) => JSON.stringify(key)).join(", ") || "none"}.`,
     `Interaction keys exposed by this host: ${states.map((key) => JSON.stringify(key)).join(", ") || "none"}.`,
+    "The default key is a fallback, not a breakpoint. List minimum-width breakpoints from smaller to larger. For standard TailorKit primitives, state styles override ordinary breakpoint styles; active overrides focus-visible and hover on conflicting properties, and disabled controls ignore other states.",
     "For a responsive prop, use { default: value, [breakpoint]: value }. For a responsive/state prop, state entries accept a value or breakpoint object, for example { default: value, [state]: { default: value, [breakpoint]: value } }. Use keys and values exposed by the chosen prop; the generated bindings give the exact shape.",
     "Use host layout components and declared styling props. The app's iframe does not render host DOM or CSS.",
     "",

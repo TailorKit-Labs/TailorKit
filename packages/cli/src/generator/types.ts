@@ -40,6 +40,9 @@ export interface JsonSchema {
   items?: boolean | JsonSchema;
   prefixItems?: JsonSchema[];
   minItems?: number;
+  maxItems?: number;
+  minimum?: number;
+  maximum?: number;
   not?: JsonSchema;
   properties?: Record<string, JsonSchema>;
   required?: string[];
