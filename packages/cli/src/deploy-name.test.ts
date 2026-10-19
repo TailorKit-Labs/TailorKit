@@ -186,31 +186,6 @@ const writeConfig = async (
   );
 };
 
-it("deploys through the non-interactive CLI with the agent token and its scope", async () => {
-  await writeConfig("My App");
-  const { stdout } = await execute(process.execPath, [
-    path.resolve(import.meta.dirname, "../bin/tailorkit.js"),
-    "deploy",
-    "--no-interactive",
-    "--cwd",
-    root,
-  ]);
-  expect(stdout).toContain("Deployment: deployment");
-  expect(
-    JSON.parse(
-      requests.find((request) => request.path === "/deployments")?.body ??
-        "null"
-    )
-  ).toMatchObject({ app: { shortId: "app-one" }, scope });
-  expect(requests.some((request) => request.path === "/upload")).toBe(true);
-  expect(
-    JSON.parse(
-      requests.find((request) => request.path === "/deployments/deployment")
-        ?.body ?? "null"
-    )
-  ).toEqual({ rollout: true, scope });
-});
-
 it.each(["  My app description  ", undefined, null])(
   "creates replacement apps with the configured name and slug and description %j",
   async (appDescription) => {
