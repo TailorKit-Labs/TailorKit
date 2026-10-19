@@ -7,3 +7,5 @@ Generate a project skill at `.agents/skills/tailorkit-capabilities/SKILL.md` wit
 New pnpm projects explicitly allow esbuild's required installation script for Drizzle Kit. Keep the three-day minimum release age for third-party dependencies and exempt only `tailorkit` and `@tailorkit/*` through `minimumReleaseAgeExclude` so new TailorKit releases can be installed immediately.
 
 Include schema-specific component, callback, responsive styling, tool-call, and view-registration examples in generated references, and mark required props explicitly.
+
+Use Valibot by default in new app dependencies, scaffold functions and repeated views, generated examples, and agent recipes. Function and instance schemas accept Standard Schema v1-compatible validators; existing apps can retain their chosen validator.

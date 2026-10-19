@@ -66,6 +66,28 @@ afterEach(async () => {
 });
 
 describe("generateApp", () => {
+  it("scaffolds Valibot as the default validator for app functions", async () => {
+    const targetDirectory = await createTempDir();
+    await generateApp({ ...defaultOptions, targetDirectory });
+    const manifest = z
+      .object({
+        dependencies: z.record(z.string(), z.string()),
+      })
+      .parse(
+        JSON.parse(
+          await readFile(path.join(targetDirectory, "package.json"), "utf-8")
+        )
+      );
+    expect(manifest.dependencies.valibot).toBe("^1.5.0");
+    expect(manifest.dependencies).not.toHaveProperty("zod");
+    const greeting = await readFile(
+      path.join(targetDirectory, "src/functions/greeting.ts"),
+      "utf-8"
+    );
+    expect(greeting).toContain('import * as v from "valibot"');
+    expect(greeting).toContain(".input(v.object({ name: v.string() }))");
+  });
+
   it("limits fresh package exclusions to TailorKit and permits esbuild's required build", async () => {
     const targetDirectory = await createTempDir();
     await generateApp({
@@ -502,8 +524,8 @@ describe("generateApp", () => {
       "utf-8"
     );
     expect(view).not.toContain("slot:");
-    expect(view).toContain('import { z } from "zod"');
-    expect(view).toContain("dataSchema: z.object({})");
+    expect(view).toContain('import * as v from "valibot"');
+    expect(view).toContain("dataSchema: v.object({})");
     expect(view).toContain('key: "default"');
     const types = await readFile(
       path.join(targetDirectory, "src/tailorkit.gen.ts"),

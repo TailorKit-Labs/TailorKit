@@ -130,7 +130,7 @@ export const viewExample = (
   if (multiple) {
     lines.push(
       'import type { ComponentChildren } from "preact";',
-      'import { z } from "zod";',
+      'import * as v from "valibot";',
       "",
       "const Content = (): ComponentChildren => {",
       "  const { data } = definition.useInstance();",
@@ -150,7 +150,7 @@ export const viewExample = (
   if (multiple) {
     lines.push(
       "  instances: {",
-      "    dataSchema: z.object({ title: z.string() }),",
+      "    dataSchema: v.object({ title: v.string() }),",
       "    resolve: () => [",
       '      { key: "overview", metadata: {}, data: { title: "Overview" } },',
       "    ],",

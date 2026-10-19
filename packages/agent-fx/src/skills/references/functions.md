@@ -50,7 +50,7 @@ Derive ownership from verified identity; the caller never chooses `ownerId`. Bot
 import { and, eq } from "tailorkit/db";
 import { AppError, fn } from "tailorkit/server";
 import type { Identity } from "tailorkit/server";
-import { z } from "zod";
+import * as v from "valibot";
 
 import { db as database } from "#db";
 import { notes } from "#db/schema";
@@ -75,7 +75,11 @@ export const list = fn.query.database(database).handler(({ db, identity }) =>
 
 export const add = fn.mutation
   .database(database)
-  .input(z.object({ title: z.string().trim().min(1).max(200) }))
+  .input(
+    v.object({
+      title: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(200)),
+    })
+  )
   .handler(({ db, identity, input }) => {
     const id = crypto.randomUUID();
     db.insert(notes)
@@ -91,7 +95,12 @@ export const add = fn.mutation
 
 export const setArchived = fn.mutation
   .database(database)
-  .input(z.object({ id: z.string().min(1), archived: z.boolean() }))
+  .input(
+    v.object({
+      id: v.pipe(v.string(), v.minLength(1)),
+      archived: v.boolean(),
+    })
+  )
   .handler(({ db, identity, input }) => {
     const saved = db
       .update(notes)
@@ -107,7 +116,7 @@ export const setArchived = fn.mutation
 
 export const remove = fn.mutation
   .database(database)
-  .input(z.object({ id: z.string().min(1) }))
+  .input(v.object({ id: v.pipe(v.string(), v.minLength(1)) }))
   .handler(({ db, identity, input }) => {
     const removed = db
       .delete(notes)
@@ -131,11 +140,11 @@ This read-only example combines an authorized app query with a public external r
 
 ```ts
 import { AppError, fn } from "tailorkit/server";
-import { z } from "zod";
+import * as v from "valibot";
 
 import * as notes from "./notes";
 
-const result = z.object({ summary: z.string().max(2000) });
+const result = v.object({ summary: v.pipe(v.string(), v.maxLength(2000)) });
 
 export const preview = fn.action
   .functions({ notes })
@@ -149,7 +158,7 @@ export const preview = fn.action
     if (!response.ok) {
       throw new AppError("UNAVAILABLE", "The summary service is unavailable.");
     }
-    const external = result.parse(await response.json());
+    const external = v.parse(result, await response.json());
     return {
       summary: `${visibleNotes.length} notes. ${external.summary}`.slice(
         0,

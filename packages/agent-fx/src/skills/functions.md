@@ -16,7 +16,7 @@ Enable `server: {}` in `tailorkit.config.ts`. Define functions with `fn` from `t
 
 ## Define and register functions
 
-Chain `.input(zodSchema)` and optional `.output(zodSchema)` before `.handler(...)`. Builder handlers receive `input`; omit `.input` for an inputless function. Inputs and outputs must support synchronous validation. Return serializable data: plain objects, arrays, strings, numbers, booleans, or null. Convert dates and special objects deliberately, and return null for an absent record.
+Chain `.input(schema)` and optional `.output(schema)` before `.handler(...)`, using Standard Schema v1-compatible schemas. Builder handlers receive `input`; omit `.input` for an inputless function. Inputs and outputs must support synchronous validation. Return serializable data: plain objects, arrays, strings, numbers, booleans, or null. Convert dates and special objects deliberately, and return null for an absent record.
 
 Register definitions explicitly with `defineServer({ notes })` in the configured entry; the recipe shows the files and registration together.
 

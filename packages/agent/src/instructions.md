@@ -25,7 +25,9 @@ The native `grep` tool uses basic regular expressions. For alternation (`|`) or 
 | `src/db/` | SQLite schema, relations, database definition, and generated migrations. |
 | `tailorkit.config.ts`, `vite.config.ts` | Host/app identity, optional backend, and the TailorKit Vite plugin. |
 
-Use TypeScript, Preact 11, Zod, and the existing Vite+ tooling. Preserve Preact JSX and the TailorKit plugin. Enable `server: {}` in `tailorkit.config.ts` for backend functions or repeated-slot resolvers; backend files alone do not enable them.
+Use TypeScript, Preact 11, and the existing Vite+ tooling. Preserve Preact JSX and the TailorKit plugin. Enable `server: {}` in `tailorkit.config.ts` for backend functions or repeated-slot resolvers; backend files alone do not enable them.
+
+Use Standard Schema v1-compatible validators for function inputs/outputs and instance data. Default to Valibot for new schemas; preserve an existing compatible validator unless migration is requested. Function inputs and outputs must validate synchronously.
 
 Read the matching skill for UI/tools, routing, backend functions, or database work; use composition/performance skills as needed. Use their recipes first. Inspect installed public types only for uncovered details or version/type mismatches; avoid scanning dependency implementations. Generated bindings define host capabilities.
 

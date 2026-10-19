@@ -16,6 +16,7 @@ vi.mock("./generator", async (importOriginal) => ({
     preact: "11.0.0",
     tailorkit: "0.1.0-beta.16",
     typescript: "6.0.3",
+    valibot: "1.5.0",
     vite: "8.0.0",
     vitePlus: "1.0.0",
   }),

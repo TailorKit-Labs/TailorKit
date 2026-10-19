@@ -51,7 +51,7 @@ export interface GenerateAppOptions {
     preact: string;
     tailorkit: string;
     typescript: string;
-    zod?: string;
+    valibot?: string;
   };
   useWorkspaceDependencies?: boolean;
   packageManager?: string;
@@ -201,11 +201,11 @@ export const generateApp = async (
     tooling,
     typescriptVersion: packageVersions.typescript,
     useBox,
+    valibotVersion: packageVersions.valibot ?? "^1.5.0",
     viewPath: JSON.stringify(viewPath),
     vitePlus: tooling === "vite-plus",
     vitePlusVersion: packageVersions.vitePlus ?? "1.0.0",
     viteVersion: packageVersions.vite,
-    zodVersion: packageVersions.zod ?? "^4.0.0",
   };
 
   await ensureDirectory(path.dirname(path.join(targetDirectory, viewFile)));

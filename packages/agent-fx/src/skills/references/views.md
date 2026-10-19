@@ -51,7 +51,7 @@ Enable `server: {}` and register the notes query from the functions recipe. The 
 ```tsx
 import type { ComponentChildren } from "preact";
 import { defineView } from "tailorkit/client";
-import { z } from "zod";
+import * as v from "valibot";
 
 import { Box } from "#tailorkit";
 
@@ -65,7 +65,7 @@ const definition = defineView({
   view: "/",
   component: Tile,
   instances: {
-    dataSchema: z.object({ title: z.string() }),
+    dataSchema: v.object({ title: v.string() }),
     resolve: async ({ queries }) => {
       const rows = await queries.notes.list();
       return rows.map((note) => ({

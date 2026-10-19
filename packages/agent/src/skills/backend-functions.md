@@ -16,14 +16,14 @@ Read `server.d.ts` or `client.d.ts` in that directory and follow only the declar
 
 ## Define and register
 
-Use `fn.query`, `fn.mutation`, and `fn.action` from `tailorkit/server`. Chain `.input(zodSchema)` and optionally `.output(zodSchema)` before `.handler(...)`. Handlers receive validated `input`; without an input schema it is `undefined`. Return JSON-compatible values (use `null` for an absent record).
+Use `fn.query`, `fn.mutation`, and `fn.action` from `tailorkit/server`. Chain `.input(schema)` and optionally `.output(schema)` before `.handler(...)`, using Standard Schema v1-compatible schemas. Handlers receive validated `input`; without an input schema it is `undefined`. Return JSON-compatible values (use `null` for an absent record).
 
 This example deliberately shares todos across an installation. For personal records, add an owner column from verified identity and authorize every read and write. It uses the `todos` table and database definition from the database skill:
 
 ```ts
 // src/functions/todos.ts
 import { fn } from "tailorkit/server";
-import { z } from "zod";
+import * as v from "valibot";
 
 import { db as database } from "#db";
 import { todos } from "#db/schema";
@@ -36,7 +36,11 @@ export const list = fn.query
 
 export const add = fn.mutation
   .database(database)
-  .input(z.object({ title: z.string().trim().min(1).max(200) }))
+  .input(
+    v.object({
+      title: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(200)),
+    })
+  )
   .handler(({ db, input }) => {
     const id = crypto.randomUUID();
     db.insert(todos).values({ id, title: input.title }).run();
@@ -61,7 +65,7 @@ Regenerate bindings to expose `api.todos.list` and `api.todos.add`. Nested objec
 
 - Queries read through `db`; mutations read and write. Attach `.database(database)` for typed relations. Both handlers must finish synchronously: no `async`, promises, fetch, host tools, timers, or external side effects. Execute reads with `.sync()` or `.all()`/`.get()` and writes with `.run()`.
 - A mutation is atomic; thrown errors roll back its writes. Database handles expire when the handler returns.
-- Actions may await `fetch` and exposed server tools through context `tools`; they have no `db`. Declare `.functions({ todos })` using the same definitions and namespaces as `defineServer`, then await `queries.todos.list()` or `mutations.todos.add({ title })`. These helpers cannot call actions. Pass context `signal` to fetch, check response status, and validate external data with Zod.
+- Actions may await `fetch` and exposed server tools through context `tools`; they have no `db`. Declare `.functions({ todos })` using the same definitions and namespaces as `defineServer`, then await `queries.todos.list()` or `mutations.todos.add({ title })`. These helpers cannot call actions. Pass context `signal` to fetch, check response status, and validate external data with the app's validator.
 - Each action mutation commits separately. External work and multiple mutations are not one transaction; make retries safe for side effects. Persist external results with a mutation if reactive queries should update.
 - Handlers receive verified `identity`; actions also receive `scope`. SQLite is shared within an installation, not automatically isolated per user or context record. For private or record-specific data, validate access and filter reads/writes using trusted identity/context identifiers. `identity.subjectId` is optional; do not assume a signed-in user or trust a supplied subject ID.
 - For expected failures, throw `new AppError("NOT_FOUND", "Record no longer exists")` (import from `tailorkit/server`) or another supported code such as `FORBIDDEN` or `CONFLICT`. Unexpected errors become generic client failures. Never return secrets.

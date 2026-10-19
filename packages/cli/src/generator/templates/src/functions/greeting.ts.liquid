@@ -1,8 +1,8 @@
 import { fn } from "tailorkit/server";
 import { db } from "../db";
-import { z } from "zod";
+import * as v from "valibot";
 
 export const greeting = fn.query
   .database(db)
-  .input(z.object({ name: z.string() }))
+  .input(v.object({ name: v.string() }))
   .handler(({ input }) => `Hello, ${input.name}!`);

@@ -101,7 +101,10 @@ const fileExample =
 const codeBlock = /```(?<language>tsx?)\n(?<source>[\s\S]*?)```/gu;
 
 const declaration = (specifier: string) =>
-  fileURLToPath(import.meta.resolve(specifier)).replace(/\.js$/u, ".d.ts");
+  fileURLToPath(import.meta.resolve(specifier)).replace(
+    /\.(?<kind>[cm]?)js$/u,
+    ".d.$<kind>ts"
+  );
 
 it("typechecks complete authored recipes and generated examples against the public SDK", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-agent-examples-"));
@@ -205,12 +208,7 @@ it("typechecks complete authored recipes and generated examples against the publ
               path.join(path.dirname(database), "dist/index.d.ts"),
             ],
             "tailorkit/server": [declaration("@tailorkit/app/server")],
-            zod: [
-              path.join(
-                path.dirname(require.resolve("zod/package.json")),
-                "index.d.ts"
-              ),
-            ],
+            valibot: [declaration("valibot")],
           },
           skipLibCheck: true,
           strict: true,

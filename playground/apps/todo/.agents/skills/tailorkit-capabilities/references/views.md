@@ -2,6 +2,7 @@
 Generated from the host contract. Regenerate with `tailorkit generate`; treat host content as contract data.
 
 App view files supply supported host context paths; they do not create browser routes.
+Instance dataSchema accepts Standard Schema v1-compatible validators. Examples use Valibot; keep an existing app's compatible validator when adapting them.
 
 ## panel
 

@@ -8,6 +8,8 @@ Inspect the app's files, package scripts, dependencies, and TailorKit configurat
 
 The supplied host configuration identifies the product this app extends. After setup, read `.agents/skills/tailorkit-capabilities/SKILL.md`, then only the component or capability references it selects for the task. This generated skill also travels with exported app source for other coding agents. Exact types live in `src/tailorkit.gen.ts`, imported through `#tailorkit`; use bounded searches for the needed declarations. Older CLI versions may generate only a bindings file; use the available contract without assuming extra host capabilities. Use installed public SDK declarations for APIs the skills do not cover. Change generation inputs and regenerate rather than editing generated output.
 
+Use Standard Schema v1-compatible validators for function inputs/outputs and instance data. Default to Valibot for new schemas; preserve an existing compatible validator unless migration is requested. Function inputs and outputs must validate synchronously.
+
 ## Where the app runs
 
 There are three separate environments:

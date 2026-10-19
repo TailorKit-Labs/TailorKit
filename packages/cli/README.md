@@ -2,6 +2,8 @@
 
 Use the TailorKit command-line interface (CLI) to create, develop, and publish extensions. You can also ask the app agent to build against a running host.
 
+New apps use Valibot for validation. Function inputs/outputs and instance data accept Standard Schema v1-compatible validators; existing apps can keep their current compatible library. Function input/output validation must be synchronous.
+
 ## Build against a local host
 
 Start a conversation with the agent using your local host URL:

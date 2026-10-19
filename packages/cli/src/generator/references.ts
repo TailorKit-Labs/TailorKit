@@ -279,6 +279,7 @@ const renderViewsReference = (
     "# Slots and context",
     referenceHeader,
     "App view files supply supported host context paths; they do not create browser routes.",
+    "Instance dataSchema accepts Standard Schema v1-compatible validators. Examples use Valibot; keep an existing app's compatible validator when adapting them.",
     "",
   ];
   for (const [name, slot] of Object.entries(schema.slots ?? {})) {

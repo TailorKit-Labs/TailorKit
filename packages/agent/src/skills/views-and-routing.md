@@ -19,7 +19,7 @@ For example, a repeated `tile` slot supporting `/` can use this shape, with meta
 import "#tailorkit";
 import type { ComponentChildren } from "preact";
 import { defineView } from "tailorkit/client";
-import { z } from "zod";
+import * as v from "valibot";
 
 const Tile = (): ComponentChildren => {
   const { data } = view.useInstance();
@@ -29,7 +29,7 @@ const Tile = (): ComponentChildren => {
 const view = defineView({
   view: "/",
   instances: {
-    dataSchema: z.object({ title: z.string() }),
+    dataSchema: v.object({ title: v.string() }),
     resolve: () => [
       { key: "overview", metadata: {}, data: { title: "Overview" } },
     ],
