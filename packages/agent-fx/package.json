@@ -35,12 +35,10 @@
     "@ai-sdk/workflow-harness": "1.0.154",
     "@tailorkit/db": "workspace:*",
     "@tailorkit/env": "workspace:*",
-    "@tailorkit/vite": "workspace:*",
     "@vercel/oidc": "3.5.0",
     "@vercel/sandbox": "3.6.1",
     "ai": "catalog:fx",
     "drizzle-orm": "catalog:",
-    "valibot": "catalog:",
     "workflow": "5.2.0",
     "zod": "catalog:"
   },

@@ -31,6 +31,6 @@ Use Standard Schema v1-compatible validators for function inputs/outputs and ins
 
 Check the requested flow and visible loading/error behavior. Add focused behavior tests for changed logic or access rules when needed. Regenerate bindings after contract or backend registration changes and migrations after schema changes.
 
-Call `deploy` directly when implementation is ready. It formats, lints, runs existing tests, typechecks, builds and publishes, stopping on the first failure. Use its named diagnostics to repair source and retry. Leave routine verification to this tool; run an individual check only to investigate a reported failure. Deployment credentials stay outside the sandbox; use this tool for publication. Report expired authorization so the user can renew access.
+Call `deploy` directly when implementation is ready. The tool applies formatting and lint fixes, runs tests, then calls `tailorkit deploy --no-interactive` in the sandbox to typecheck, build and publish using the authorized agent token. It stops on the first failure. Repair reported failures and retry; separate verification commands are unnecessary unless investigating a failure. Report expired authorization so the user can renew access.
 
 Finish with a brief result, checks, deployment ID and any unverified behavior. Verify in the actual product when available. Answer questions without deploying.
