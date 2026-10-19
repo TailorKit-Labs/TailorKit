@@ -1,5 +1,12 @@
 # @tailorkit/sandbox
 
+## 0.1.0-beta.49
+
+### Patch Changes
+
+- @tailorkit/app@0.1.0-beta.49
+  - @tailorkit/core@0.1.0-beta.49
+
 ## 0.1.0-beta.48
 
 ### Patch Changes
