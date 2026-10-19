@@ -6,7 +6,7 @@ Import UI components and host tools from `#tailorkit`. The generated capability 
 
 ## Forms and callbacks
 
-Host callbacks send serialized payloads back to the app's Preact code in the iframe; UI updates travel back to the host. This messaging is asynchronous and adds latency, even with synchronous handlers. Callback return values aren't sent back to the host.
+Host callbacks send serialized payloads back to the app's Preact code in the iframe; UI updates travel back to the host. This messaging is asynchronous and adds latency, even with synchronous handlers.
 
 Prefer uncontrolled inputs when the host supports them, so typing doesn't wait for sandbox updates. Store values needed only on submit in `useRef`; use state when a value affects rendered UI. Controlled inputs remain useful when required by the host or feature.
 
