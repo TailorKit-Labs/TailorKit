@@ -93,7 +93,7 @@ The endpoint implements MCP 2026-07-28 using the official SDK v2. It rejects leg
 
 The web host gives `/api/platform/app-agent/mcp` its own Vercel Function with a 1,800-second maximum duration so the request can stream a full agent turn. This requires Vercel’s extended function durations on Pro or Enterprise. Other web routes retain their default duration.
 
-`create_app` and `edit_app` advertise `dev.tailorkit/agent-stream` metadata with version `2`, event key `dev.tailorkit/agent-stream`, and notification `notifications/progress`. Request progress to receive compact activity snapshots. The exported `AppAgentMcpActivity` type describes the structured object carried by `notifications/progress.params._meta["dev.tailorkit/agent-stream"]`:
+`create_app` and `edit_app` advertise `dev.tailorkit/agent-stream` metadata with event key `dev.tailorkit/agent-stream` and notification `notifications/progress`. Request progress to receive compact activity snapshots. The exported `AppAgentMcpActivity` type describes the structured object carried by `notifications/progress.params._meta["dev.tailorkit/agent-stream"]`:
 
 - `{ status: "started", appId, runId, threadId }` identifies the running agent.
 - `{ status: "text", appId, runId, threadId, text }` carries a bounded snapshot of the assistant's current text.

@@ -13,7 +13,7 @@ interface AppAgentMcpRun {
 export type AppAgentMcpEvent = AppAgentMcpRun &
   ({ status: "started" } | { chunk: UIMessageChunk; status: "streaming" });
 
-/** Version 2 activity snapshots carried in progress notification metadata. */
+/** Activity snapshots carried in progress notification metadata. */
 export type AppAgentMcpActivity = AppAgentMcpRun &
   (
     | { status: "started" | "error" | "aborted" | "finishing" }

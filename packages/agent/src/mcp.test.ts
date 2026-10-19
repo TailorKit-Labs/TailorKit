@@ -122,7 +122,6 @@ describe("app agent MCP", () => {
         "dev.tailorkit/agent-stream": {
           eventKey: "dev.tailorkit/agent-stream",
           notification: "notifications/progress",
-          version: 2,
         },
       });
       expect(tools.find((tool) => tool.name === name)?.description).toMatch(

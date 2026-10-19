@@ -45,7 +45,6 @@ const agentStreamMetadata = {
   "dev.tailorkit/agent-stream": {
     eventKey: "dev.tailorkit/agent-stream",
     notification: "notifications/progress",
-    version: 2,
   },
 };
 
