@@ -58,3 +58,20 @@ it("scaffolds against the CLI's SDK version", async () => {
   const awaitedResult4 = await resolveTemplatePackageVersions();
   expect(awaitedResult4.tailorkit).toBe(packageJson.version);
 });
+
+it("allows fresh dependency releases when the agent opts out of the age delay", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json({
+        time: {
+          "8.0.0": "2026-01-01",
+          "8.1.0": new Date(Date.now() - 1000).toISOString(),
+        },
+        versions: { "8.0.0": {}, "8.1.0": {} },
+      })
+    )
+  );
+  const versions = await resolveTemplatePackageVersions("vite", 0);
+  expect(versions.vite).toBe("8.1.0");
+});

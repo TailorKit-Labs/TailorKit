@@ -24,10 +24,26 @@ export const sandboxSession = (sandbox: Sandbox) => {
   return session;
 };
 
+const preparePackageManager = async (sandbox: Sandbox) => {
+  // Agent workspaces intentionally accept newly published packages. Configure this
+  // once per turn, including old snapshots, rather than on every model step.
+  const result = await sandbox.currentSession().runCommand({
+    args: [
+      "-c",
+      "pnpm config set --global minimumReleaseAge 0 && pnpm config set --global dlxCacheMaxAge 0 && mkdir -p /workspace/app",
+    ],
+    cmd: "bash",
+  });
+  if (result.exitCode !== 0) {
+    throw new Error("Could not prepare the app package manager.");
+  }
+  return sandbox;
+};
+
 export const prepareSandbox = async (input: AppAgentInput, resume: boolean) => {
   const name = sandboxName(input.threadId);
   if (resume) {
-    return await getSandbox(name);
+    return await preparePackageManager(await getSandbox(name));
   }
   const drive = await Drive.getOrCreate({
     maxSize: 5 * 1024 ** 3,
@@ -51,13 +67,7 @@ export const prepareSandbox = async (input: AppAgentInput, resume: boolean) => {
     region: drive.region,
     timeout,
   });
-  const result = await sandbox
-    .currentSession()
-    .runCommand({ args: ["-p", "/workspace/app"], cmd: "mkdir" });
-  if (result.exitCode !== 0) {
-    throw new Error("Could not prepare app directory.");
-  }
-  return sandbox;
+  return await preparePackageManager(sandbox);
 };
 
 export const deleteSandbox = async (threadId: string) => {

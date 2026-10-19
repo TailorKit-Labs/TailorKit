@@ -2,7 +2,7 @@
 
 ## Match the host's surfaces
 
-A slot is a named UI surface supplied by the host. A view supplies app UI for a supported context path in that slot. Read the generated slot and context definitions before choosing a file location. These paths describe host context, not browser URLs; app filenames do not create host pages.
+A slot is a named UI surface supplied by the host. A view supplies app UI for a supported context path in that slot. Read `src/tailorkit.gen/reference/views.md` for slot descriptions, supported paths, multiplicity, and context before choosing a file location. Consult the adjacent `views.ts` only for exact context types. These paths describe host context, not browser URLs; app filenames do not create host pages.
 
 Put views in `src/slots/<slot>/**/*.view.tsx`, default-exporting `defineView` from `tailorkit/client`. The directory determines the slot. Dots and directories separate path segments: `members.detail.view.tsx` and `members/detail.view.tsx` both mean `/members/detail`; a final `index` is omitted, so `index.view.tsx` means `/`. Explicit `slot` and `view` declarations must agree with the file location. Each slot/path pair must be unique.
 

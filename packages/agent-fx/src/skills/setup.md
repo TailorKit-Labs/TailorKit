@@ -7,10 +7,12 @@ Work from the app root, `/workspace/app`. Check for an existing package.json, lo
 For an empty app directory, the TailorKit CLI creates a Preact and TypeScript app against the supplied host. A noninteractive pnpm example is:
 
 ```sh
-pnpm dlx tailorkit@beta init /workspace --name app --host '<supplied-host-url>' --package-manager pnpm --tooling vite-plus --force --no-install
+PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm dlx tailorkit@beta init /workspace --name app --host '<supplied-host-url>' --package-manager pnpm --tooling vite-plus --force --no-install
 ```
 
 Replace the host placeholder with the supplied URL, quoted as one shell argument. `init` creates `/workspace/app` from this parent directory and name. Use `--force` only after confirming there is no existing app or source to overwrite. If the directory contains partial or unfamiliar work, inspect and repair it instead. Use a different package manager or tooling when the app or user requires it. Install dependencies in the generated app and follow its scripts.
+
+The agent sandbox resolves fresh packages without a release-age delay or a reused `dlx` resolution. The environment setting also tells newer CLIs to resolve fresh scaffold dependencies; older CLIs ignore it without failing. `@beta` is TailorKit's current release channel; keep the SDK version selected by that CLI. The generated pnpm configuration allows esbuild's install script: Drizzle Kit requires it for database tooling even when Vite+ uses Rolldown for app builds. Keep build permissions scoped to required packages.
 
 If a schema file was supplied, add `--schema <supplied-schema-path>` to initialization and subsequent generation. This uses the provided contract instead of fetching it from the host. Keep that document intact. Without a supplied schema, the CLI fetches the contract from the configured host URL.
 
@@ -40,13 +42,15 @@ These are scaffold defaults; inspect an existing app's configured paths and alia
 
 Use `tailorkit/client` for frontend APIs, `tailorkit/server` for backend functions, `tailorkit/db` for database APIs, and `tailorkit/vite` for the build plugin. The database skill covers schema builders, relations, database definitions, and query helpers.
 
-Inspect installed declaration files for the version actually used by the app. The umbrella package re-exports transitive SDK packages; pnpm may not expose those packages at the app's top-level node_modules. Resolve their package location through the umbrella import before assuming an API is missing. For database declarations, resolve `@tailorkit/app-db` through `tailorkit/db` from the app root:
+Generation creates `.agents/skills/tailorkit-host/SKILL.md` for project skill discovery. Read it to select the relevant host references; it points to the component catalog, slots/context, styling, and host operations without loading all contracts. Component pages describe accepted props, callback payloads, and children; the adjacent focused `.ts` module supplies exact types when needed. An older CLI may generate only one bindings file; use bounded searches in it for the relevant declarations.
+
+For SDK APIs absent from the skills, inspect only the installed public declaration needed. The umbrella package re-exports transitive SDK packages; pnpm may not expose those packages at the app's top-level node_modules. Resolve their package location through the umbrella import before assuming an API is missing. For database declarations, resolve `@tailorkit/app-db` through `tailorkit/db` from the app root:
 
 ```sh
 node --input-type=module -e 'import { findPackageJSON } from "node:module"; import { dirname, join } from "node:path"; console.log(join(dirname(findPackageJSON("@tailorkit/app-db", import.meta.resolve("tailorkit/db"))), "dist"));'
 ```
 
-Read `index.d.ts` there and follow the declaration imports relevant to the task. Keep app imports on `tailorkit/db`; `@tailorkit/app-db` is its backing package. Avoid depending on private runtime modules or reinstalling packages just to browse them.
+Read `index.d.ts` there and follow the declaration imports relevant to the task. Keep app imports on `tailorkit/db`; `@tailorkit/app-db` is its backing package. Bound searches to relevant declarations and source lines so bundled implementation code does not fill the conversation.
 
 ## Build and deploy
 

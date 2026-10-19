@@ -55,6 +55,14 @@ const mockSchemaFetch = (requests: number) => {
   return fetch;
 };
 
+const readGeneratedApi = async (barrel: string): Promise<string> => {
+  const api = path.join(
+    barrel.slice(0, -path.extname(barrel).length),
+    "api.ts"
+  );
+  return await readFile(api, "utf-8").catch(() => "");
+};
+
 it("links the app to the configured server entry and never falls back to an unrelated default file", async () => {
   const root = await mkdtemp(
     path.join(tmpdir(), "tailorkit-configured-server-types-")
@@ -76,19 +84,19 @@ it("links the app to the configured server entry and never falls back to an unre
       'throw new Error("Unused default server");'
     );
     const generated = await generateTypes({ cwd: root });
-    expect(await readFile(generated, "utf-8")).toContain(
-      'import type app from "../backend/api"'
+    expect(await readGeneratedApi(generated)).toContain(
+      'import type app from "../../backend/api"'
     );
     const custom = await generateTypes({
       cwd: root,
       outFile: "src/generated/host.ts",
     });
-    expect(await readFile(custom, "utf-8")).toContain(
-      'import type app from "../../backend/api"'
+    expect(await readGeneratedApi(custom)).toContain(
+      'import type app from "../../../backend/api"'
     );
     await rm(path.join(root, "backend/api.ts"));
     await generateTypes({ cwd: root });
-    expect(await readFile(generated, "utf-8")).not.toContain("createApi");
+    expect(await readGeneratedApi(generated)).not.toContain("createApi");
   } finally {
     fetch.mockRestore();
     await rm(root, { force: true, recursive: true });
@@ -109,8 +117,8 @@ it("preserves the type-only API link when regenerating host types, including cus
       'export default { name: "Test App", slug: "test-app", host: "https://host.test", server: {} };'
     );
     const generated = await generateTypes({ cwd: root });
-    const output = await readFile(generated, "utf-8");
-    expect(output).toContain('import type app from "./server"');
+    const output = await readGeneratedApi(generated);
+    expect(output).toContain('import type app from "../server"');
     expect(output).toContain(
       "export const api = createApi<typeof app.functions>();"
     );
@@ -118,12 +126,12 @@ it("preserves the type-only API link when regenerating host types, including cus
       cwd: root,
       outFile: "src/generated/host.ts",
     });
-    expect(await readFile(custom, "utf-8")).toContain(
-      'import type app from "../server"'
+    expect(await readGeneratedApi(custom)).toContain(
+      'import type app from "../../server"'
     );
     await rm(path.join(root, "src/server.ts"));
     const missing = await generateTypes({ cwd: root });
-    expect(await readFile(missing, "utf-8")).not.toContain("createApi");
+    expect(await readGeneratedApi(missing)).not.toContain("createApi");
   } finally {
     fetch.mockRestore();
     await rm(root, { force: true, recursive: true });
@@ -139,29 +147,29 @@ it("detects the default server file without server configuration and removes sta
       'export default { name: "Test App", slug: "test-app", host: "https://host.test" };'
     );
     const generated = await generateTypes({ cwd: root });
-    expect(await readFile(generated, "utf-8")).not.toContain("createApi");
+    expect(await readGeneratedApi(generated)).not.toContain("createApi");
     const server = path.join(root, "src/server.ts");
     await writeFile(server, 'throw new Error("Never evaluate server code");');
     await generateTypes({ cwd: root });
-    expect(await readFile(generated, "utf-8")).toContain(
-      'import type app from "./server"'
+    expect(await readGeneratedApi(generated)).toContain(
+      'import type app from "../server"'
     );
-    expect(await readFile(generated, "utf-8")).toContain(
+    expect(await readGeneratedApi(generated)).toContain(
       "export const api = createApi<typeof app.functions>();"
     );
     const custom = await generateTypes({
       cwd: root,
       outFile: "src/generated/host.ts",
     });
-    expect(await readFile(custom, "utf-8")).toContain(
-      'import type app from "../server"'
+    expect(await readGeneratedApi(custom)).toContain(
+      'import type app from "../../server"'
     );
     await rm(server);
     await generateTypes({ cwd: root });
-    expect(await readFile(generated, "utf-8")).not.toContain("createApi");
+    expect(await readGeneratedApi(generated)).not.toContain("createApi");
     await mkdir(server);
     await generateTypes({ cwd: root });
-    expect(await readFile(generated, "utf-8")).not.toContain("createApi");
+    expect(await readGeneratedApi(generated)).not.toContain("createApi");
   } finally {
     fetch.mockRestore();
     await rm(root, { force: true, recursive: true });

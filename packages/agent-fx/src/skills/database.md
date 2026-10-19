@@ -43,6 +43,37 @@ export const db = defineDatabase({ relations });
 
 Use `table`, `text`, `integer`, `real`, and `boolean` from `tailorkit/db`. Boolean columns use SQLite integer storage; text primary keys need explicit IDs, for example `crypto.randomUUID()` in a mutation. Choose nullability, defaults, and references deliberately. Table names start with a letter, contain letters/digits/underscores, have at most 63 characters, and cannot start with the reserved `sqlite_` or `tailorkit_` prefixes.
 
+## Typed values and insert rows
+
+TailorKit's column helpers accept an optional column name: `text()` or `text("priority")`. For a finite set of text values, use `.$type<Priority>()`; validate incoming values with the same union in the function's input schema. The type annotation alone does not validate runtime data.
+
+This complete schema/row example is checked against the SDK in the app-db tests:
+
+<!-- example: typed-insert -->
+
+```ts
+import { integer, table, text } from "tailorkit/db";
+
+export type Priority = "low" | "medium" | "high";
+export const tasks = table("tasks", {
+  id: text().primaryKey(),
+  title: text().notNull(),
+  priority: text().$type<Priority>().notNull().default("medium"),
+  createdAt: integer().notNull(),
+});
+
+export type TaskInsert = typeof tasks.$inferInsert;
+export type TaskDraft = Pick<TaskInsert, "title" | "priority">;
+
+export const createTaskRow = (draft: TaskDraft): TaskInsert => ({
+  ...draft,
+  id: crypto.randomUUID(),
+  createdAt: Date.now(),
+});
+```
+
+Pass `createTaskRow(input)` to `db.insert(tasks).values(...).run()` inside a mutation. For starter data, type the drafts as `TaskDraft[]` and map them through `createTaskRow` before inserting. `$inferInsert` describes insertable rows, including required IDs/timestamps without defaults; it is not the type of an unfinished form or seed draft. Keep shared input validators/types outside backend database modules so frontend code can import them.
+
 Pass all schema tables to TailorKit's `defineRelations`, including tables without relationships. Without a callback, it includes every table with no navigation. When the schema defines `users.id` and `notes.authorId`, add typed navigation in both directions:
 
 ```ts

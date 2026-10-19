@@ -58,6 +58,7 @@ const ignorePatterns = [
   "**/.wrangler/**",
   "**/*.generated.*",
   "**/*.gen.*",
+  "**/*.gen/**",
   "packages/client-platform/src/client/**",
 ];
 

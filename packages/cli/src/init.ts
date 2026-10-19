@@ -14,6 +14,9 @@ import {
 } from "@clack/prompts";
 import pc from "picocolors";
 
+import { readInitEnvironment } from "#env";
+import { DEFAULT_MINIMUM_RELEASE_AGE } from "#generator/package-versions";
+
 import { generateApp, resolveTemplatePackageVersions } from "./generator";
 import { fetchSchemaFromHost, readSchemaFile } from "./generator/types";
 import { normalizeHostUrl } from "./utils/url";
@@ -28,6 +31,7 @@ export interface InitOptions {
   packageManager?: string;
   schemaPath?: string;
   tooling?: string;
+  minimumReleaseAge?: number;
 }
 
 const PACKAGE_MANAGERS = ["pnpm", "yarn", "npm", "bun"] as const;
@@ -238,6 +242,14 @@ const runFormat = async (
 };
 
 export const runInit = async (options: InitOptions): Promise<string> => {
+  const configuredReleaseAge =
+    options.minimumReleaseAge ?? readInitEnvironment().minimumReleaseAge;
+  const minimumReleaseAge = configuredReleaseAge ?? DEFAULT_MINIMUM_RELEASE_AGE;
+  if (!Number.isSafeInteger(minimumReleaseAge) || minimumReleaseAge < 0) {
+    throw new Error(
+      "--minimum-release-age must be a non-negative integer in minutes."
+    );
+  }
   const baseDir = promptDirectory(options.directory, options.cwd);
   const packageName = await promptPackageName(options.name, baseDir);
   const targetDirectory = path.join(baseDir, packageName);
@@ -266,7 +278,10 @@ export const runInit = async (options: InitOptions): Promise<string> => {
     throw error;
   }
   s.start("Resolving package versions");
-  const packageVersions = await resolveTemplatePackageVersions(tooling);
+  const packageVersions = await resolveTemplatePackageVersions(
+    tooling,
+    minimumReleaseAge
+  );
   s.stop("Resolved package versions.");
 
   await mkdir(targetDirectory, { recursive: true });
@@ -274,6 +289,8 @@ export const runInit = async (options: InitOptions): Promise<string> => {
   await generateApp({
     force,
     hostUrl,
+    minimumReleaseAge: configuredReleaseAge,
+    packageManager,
     packageName,
     packageVersions,
     schema,

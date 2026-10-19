@@ -5,13 +5,17 @@ import path from "node:path";
 import { Liquid } from "liquidjs";
 import { z } from "zod";
 
-import { TEMPLATE_DRIZZLE_VERSION } from "./package-versions";
+import {
+  DEFAULT_MINIMUM_RELEASE_AGE,
+  TEMPLATE_DRIZZLE_VERSION,
+} from "./package-versions";
 import {
   rootTemplate,
   defaultViewTemplate,
   gitignoreTemplate,
   viteConfigTemplate,
   packageJsonTemplate,
+  pnpmWorkspaceTemplate,
   tailorkitConfigTemplate,
   tsconfigTemplate,
   serverTemplate,
@@ -50,6 +54,8 @@ export interface GenerateAppOptions {
     zod?: string;
   };
   useWorkspaceDependencies?: boolean;
+  minimumReleaseAge?: number;
+  packageManager?: string;
 }
 
 const engine = new Liquid({ strictVariables: true });
@@ -184,9 +190,13 @@ export const generateApp = async (
   const templateData = {
     appName: JSON.stringify(packageName),
     appSlug: JSON.stringify(appSlug),
+    configureReleaseAge: options.minimumReleaseAge !== undefined,
     drizzleKitVersion: packageVersions.drizzleKit ?? TEMPLATE_DRIZZLE_VERSION,
     drizzleOrmVersion: packageVersions.drizzleOrm ?? TEMPLATE_DRIZZLE_VERSION,
     hostUrl,
+    minimumReleaseAge: String(
+      options.minimumReleaseAge ?? DEFAULT_MINIMUM_RELEASE_AGE
+    ),
     multiple: schema.slots?.[slotName]?.multiple === true,
     packageName,
     preactVersion: packageVersions.preact,
@@ -207,6 +217,13 @@ export const generateApp = async (
   await ensureDirectory(path.join(targetDirectory, "src", "db", "migrations"));
 
   const files: { template: string; dest: string; condition?: boolean }[] = [
+    {
+      condition:
+        options.packageManager === undefined ||
+        options.packageManager === "pnpm",
+      dest: "pnpm-workspace.yaml",
+      template: pnpmWorkspaceTemplate,
+    },
     { dest: "package.json", template: packageJsonTemplate },
     { dest: "tsconfig.json", template: tsconfigTemplate },
     { dest: "tailorkit.config.ts", template: tailorkitConfigTemplate },

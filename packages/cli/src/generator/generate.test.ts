@@ -66,6 +66,42 @@ afterEach(async () => {
 });
 
 describe("generateApp", () => {
+  it.each([undefined, 0, 4320])(
+    "configures pnpm's required build script with release-age override %s",
+    async (minimumReleaseAge) => {
+      const targetDirectory = await createTempDir();
+      await generateApp({
+        ...defaultOptions,
+        minimumReleaseAge,
+        packageManager: "pnpm",
+        targetDirectory,
+      });
+      const policy = await readFile(
+        path.join(targetDirectory, "pnpm-workspace.yaml"),
+        "utf-8"
+      );
+      expect(policy).toContain("esbuild: true");
+      expect(policy).not.toContain("dangerouslyAllowAllBuilds");
+      if (minimumReleaseAge === undefined) {
+        expect(policy).not.toContain("minimumReleaseAge:");
+      } else {
+        expect(policy).toContain(`minimumReleaseAge: ${minimumReleaseAge}`);
+      }
+    }
+  );
+
+  it("keeps pnpm settings out of apps scaffolded for other package managers", async () => {
+    const targetDirectory = await createTempDir();
+    await generateApp({
+      ...defaultOptions,
+      packageManager: "npm",
+      targetDirectory,
+    });
+    await expect(
+      readFile(path.join(targetDirectory, "pnpm-workspace.yaml"))
+    ).rejects.toThrow();
+  });
+
   it("generates all expected files", async () => {
     const targetDirectory = await createTempDir();
     await generateApp({ ...defaultOptions, targetDirectory });
@@ -475,7 +511,7 @@ describe("generateApp", () => {
     expect(view).toContain("dataSchema: z.object({})");
     expect(view).toContain('key: "default"');
     const types = await readFile(
-      path.join(targetDirectory, "src/tailorkit.gen.ts"),
+      path.join(targetDirectory, "src/tailorkit.gen/views.ts"),
       "utf-8"
     );
     expect(types).toContain(
@@ -511,26 +547,31 @@ describe("generateApp", () => {
     expect(content).not.toContain("DefaultViewProps");
   });
 
-  it("generates a valid generated types file", async () => {
+  it("generates focused modules behind the existing import", async () => {
     const targetDirectory = await createTempDir();
     await generateApp({ ...defaultOptions, targetDirectory });
-
-    const content = await readFile(
-      path.join(targetDirectory, "src", "tailorkit.gen.ts"),
-      "utf-8"
-    );
-    expect(content).toContain(
+    const read = async (file: string) =>
+      await readFile(path.join(targetDirectory, "src", file), "utf-8");
+    const barrel = await read("tailorkit.gen.ts");
+    expect(barrel).toContain('export * from "./tailorkit.gen/components/Box"');
+    expect(barrel).toContain('export * from "./tailorkit.gen/views"');
+    expect(barrel).not.toContain("export const Box");
+    const component = await read("tailorkit.gen/components/Box.ts");
+    expect(component).toContain(
       'import { createRemoteComponent } from "tailorkit/client"'
     );
-    expect(content).toContain('import { createApi } from "tailorkit/client"');
-    expect(content).toContain('import type app from "./server"');
-    expect(content).toContain(
+    expect(component).toContain("export const Box");
+    const api = await read("tailorkit.gen/api.ts");
+    expect(api).toContain('import type app from "../server"');
+    expect(api).toContain(
       "export const api = createApi<typeof app.functions>();"
     );
-    expect(content).toContain('"/customers": {');
-    expect(content).toContain("customer?: string;");
-    expect(content).toContain("export const Box");
-    expect(content).not.toContain("export const Card");
+    const views = await read("tailorkit.gen/views.ts");
+    expect(views).toContain('"/customers": {');
+    expect(views).toContain("customer?: string;");
+    expect(await read("tailorkit.gen/reference/index.md")).toContain(
+      "components/Box.md"
+    );
   });
 
   it("generates a valid tsconfig.json", async () => {

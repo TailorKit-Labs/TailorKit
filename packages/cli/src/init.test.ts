@@ -30,6 +30,7 @@ vi.mock("@clack/prompts", async (importOriginal) => ({
 const directories: string[] = [];
 afterEach(async () => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
   await Promise.all(
     directories.splice(0).map(async (directory) => {
       await rm(directory, { force: true, recursive: true });
@@ -49,6 +50,42 @@ const initOptions = async () => {
     tooling: "vite" as const,
   };
 };
+
+it.each([undefined, 120])(
+  "inherits release age from pnpm's environment unless overridden by %s",
+  async (minimumReleaseAge) => {
+    vi.stubEnv("PNPM_CONFIG_MINIMUM_RELEASE_AGE", "0");
+    const options = await initOptions();
+    await writeFile(
+      path.join(options.cwd, "schema.json"),
+      JSON.stringify({
+        components: {},
+        slots: { page: { views: ["/"] } },
+        version: 1,
+        views: { "/": { context: { type: "object" } } },
+      })
+    );
+    const directory = await runInit({
+      ...options,
+      minimumReleaseAge,
+      schemaPath: "schema.json",
+    });
+    expect(
+      await readFile(path.join(directory, "pnpm-workspace.yaml"), "utf-8")
+    ).toContain(`minimumReleaseAge: ${minimumReleaseAge ?? 0}`);
+  }
+);
+
+it.each([-1, Number.NaN, 0.5])(
+  "rejects invalid release age %s before creating an app",
+  async (minimumReleaseAge) => {
+    const options = await initOptions();
+    await expect(runInit({ ...options, minimumReleaseAge })).rejects.toThrow(
+      "non-negative integer"
+    );
+    await expect(stat(path.join(options.cwd, options.name))).rejects.toThrow();
+  }
+);
 
 it("fetches the host schema and generates real bindings even when installation is skipped", async () => {
   const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(
@@ -75,7 +112,7 @@ it("fetches the host schema and generates real bindings even when installation i
     }
   );
   const bindings = await readFile(
-    path.join(directory, "src/tailorkit.gen.ts"),
+    path.join(directory, "src/tailorkit.gen/views.ts"),
     "utf-8"
   );
   expect(bindings).toContain(
@@ -137,7 +174,7 @@ it("scaffolds and regenerates from a schema file while the local host is unreach
   });
   vi.stubGlobal("fetch", fetch);
   const directory = await runInit(options);
-  const generated = path.join(directory, "src/tailorkit.gen.ts");
+  const generated = path.join(directory, "src/tailorkit.gen/views.ts");
   const initial = await readFile(generated, "utf-8");
   expect(initial).toContain('"sidebar": { views: "/local"; multiple: false }');
   expect(initial).toContain("name?: string");

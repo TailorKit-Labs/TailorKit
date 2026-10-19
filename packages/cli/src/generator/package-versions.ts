@@ -31,7 +31,7 @@ interface SemverVersion {
 
 const REGISTRY_URL = "https://registry.npmjs.org";
 const REGISTRY_TIMEOUT_MS = 5000;
-const MINIMUM_RELEASE_AGE_MS = 3 * 24 * 60 * 60 * 1000;
+export const DEFAULT_MINIMUM_RELEASE_AGE = 3 * 24 * 60;
 
 const REQUESTS = {
   preact: { fallback: "11.0.0", matcher: "^11", packageName: "preact" },
@@ -97,11 +97,10 @@ const satisfiesCaretMatcher = (
   return version.major === minMajor && version.minor >= minMinor;
 };
 
-const resolvePackageVersion = async ({
-  fallback,
-  matcher,
-  packageName,
-}: PackageVersionRequest): Promise<string> => {
+const resolvePackageVersion = async (
+  { fallback, matcher, packageName }: PackageVersionRequest,
+  minimumReleaseAge: number
+): Promise<string> => {
   try {
     const res = await fetch(
       `${REGISTRY_URL}/${encodeURIComponent(packageName)}`,
@@ -125,7 +124,7 @@ const resolvePackageVersion = async ({
       .filter(
         (v) =>
           Date.parse(data.time?.[v.raw] ?? "") <=
-          Date.now() - MINIMUM_RELEASE_AGE_MS
+          Date.now() - minimumReleaseAge * 60_000
       )
       .toSorted(compareVersions)
       .at(-1);
@@ -136,18 +135,19 @@ const resolvePackageVersion = async ({
 };
 
 export const resolveTemplatePackageVersions = async (
-  tooling: "vite-plus" | "vite" = "vite-plus"
+  tooling: "vite-plus" | "vite" = "vite-plus",
+  minimumReleaseAge = DEFAULT_MINIMUM_RELEASE_AGE
 ): Promise<TemplatePackageVersions> => {
   const [vite, vitePlus, preact, typescript, zod] = await Promise.all([
     tooling === "vite"
-      ? resolvePackageVersion(REQUESTS.vite)
+      ? resolvePackageVersion(REQUESTS.vite, minimumReleaseAge)
       : Promise.resolve(REQUESTS.vite.fallback),
     tooling === "vite-plus"
-      ? resolvePackageVersion(REQUESTS.vitePlus)
+      ? resolvePackageVersion(REQUESTS.vitePlus, minimumReleaseAge)
       : undefined,
-    resolvePackageVersion(REQUESTS.preact),
-    resolvePackageVersion(REQUESTS.typescript),
-    resolvePackageVersion(REQUESTS.zod),
+    resolvePackageVersion(REQUESTS.preact, minimumReleaseAge),
+    resolvePackageVersion(REQUESTS.typescript, minimumReleaseAge),
+    resolvePackageVersion(REQUESTS.zod, minimumReleaseAge),
   ]);
   return {
     drizzleKit: TEMPLATE_DRIZZLE_VERSION,
