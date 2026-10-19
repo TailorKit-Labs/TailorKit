@@ -1,5 +1,9 @@
 # @tailorkit/app-db
 
+## 0.1.0-beta.51
+
+No changes in this release.
+
 ## 0.1.0-beta.50
 
 No changes in this release.
