@@ -110,7 +110,7 @@ describe("app agent MCP", () => {
         "dev.tailorkit/agent-stream": {
           eventKey: "dev.tailorkit/agent-stream",
           notification: "notifications/progress",
-          version: 1,
+          version: 2,
         },
       });
       expect(tools.find((tool) => tool.name === name)?.description).toMatch(
@@ -122,7 +122,7 @@ describe("app agent MCP", () => {
   });
 
   it.each(["create_app", "edit_app"])(
-    "streams ordered agent chunks from %s before its final result",
+    "streams compact activity from %s before its final result",
     async (name) => {
       const events: unknown[] = [];
       const progressValues: number[] = [];
@@ -178,21 +178,19 @@ describe("app agent MCP", () => {
             events.push(notification._meta["dev.tailorkit/agent-stream"]);
             messages.push(progress.message);
             progressValues.push(progress.progress);
-            if (events.length === updates.length) {
+            if (events.length === 2) {
               received.resolve();
             }
           },
         }
       );
       expect(result.isError).not.toBe(true);
-      expect(events).toEqual(updates);
-      expect(progressValues).toEqual([1, 2, 3, 4]);
-      expect(messages).toEqual([
-        "App agent started for app app.",
-        "App agent started for app app.",
-        "Building",
-        "Building",
+      expect(events).toEqual([
+        { ...identity, status: "started" },
+        { ...identity, status: "text", text: "Building" },
       ]);
+      expect(progressValues).toEqual([1, 2]);
+      expect(messages).toEqual(["App agent started for app app.", "Building"]);
       expect(result.structuredContent).toMatchObject(identity);
     }
   );
@@ -213,13 +211,17 @@ describe("app agent MCP", () => {
       arguments: { appId: "app", prompt: "Change it" },
       name: "edit_app",
     });
-    expect(result.structuredContent).toEqual({ appId: "app" });
+    expect(result.structuredContent).toEqual({
+      answer: "App agent run ended.",
+      appId: "app",
+    });
   });
 
   it.each(["create_app", "edit_app"])(
     "gives standard clients useful %s progress and a readable final answer",
     async (name) => {
       const messages: (string | undefined)[] = [];
+      const activities: unknown[] = [];
       const received = Promise.withResolvers<ReturnType<() => void>>();
       const identity = { appId: "calendar", runId: "run", threadId: "thread" };
       const chunks = [
@@ -310,6 +312,8 @@ describe("app agent MCP", () => {
       >["chunk"][];
       const finalOutput = {
         ...identity,
+        deploymentUrl: "https://calendar.test",
+        finishReason: "stop",
         message: {
           parts: [
             {
@@ -320,8 +324,13 @@ describe("app agent MCP", () => {
           ],
         },
         messages: [
-          { content: "Full internal tool transcript", role: "assistant" },
+          {
+            content: "Full internal tool transcript".repeat(10_000),
+            role: "assistant",
+          },
         ],
+        sessionId: "internal-session",
+        usage: { inputTokens: 100_000 },
       };
       const build = async (
         _input: { prompt: string },
@@ -350,9 +359,19 @@ describe("app agent MCP", () => {
         },
         {
           // This client deliberately uses only standard MCP progress fields.
-          onprogress: ({ message }) => {
+          onprogress: (progress) => {
+            const { message } = progress;
             messages.push(message);
-            if (messages.length === chunks.length + 1) {
+            const notification = z
+              .object({
+                _meta: z.object({ "dev.tailorkit/agent-stream": z.unknown() }),
+              })
+              .parse(progress);
+            activities.push(notification._meta["dev.tailorkit/agent-stream"]);
+            if (
+              message ===
+              "App agent finished generating; waiting for workflow cleanup."
+            ) {
               received.resolve();
             }
           },
@@ -360,25 +379,20 @@ describe("app agent MCP", () => {
       );
       expect(messages).toEqual([
         "App agent started for app calendar.",
-        "App agent started for app calendar.",
         "I am",
         "I am building a calendar.",
-        "I am building a calendar.",
-        "Bash.",
         "Bash.",
         "Bash: pnpm check",
         "Read: src/calendar.tsx",
-        "Read: src/calendar.tsx",
-        "Read: src/calendar.tsx",
+        "failed: Bash: pnpm check",
+        "completed: Read: src/calendar.tsx",
         "Deploy: type-checking, building, and publishing app",
-        "Deploy: type-checking, building, and publishing app",
+        "failed: Deploy: type-checking, building, and publishing app",
         "Tool: browser_snapshot",
-        "Tool: browser_snapshot",
-        "Tool: browser_snapshot",
-        "Tool: browser_snapshot",
+        "completed: Tool: browser_snapshot",
         "Tool.",
-        "Tool.",
-        "Tool.",
+        "denied: Tool.",
+        "failed: Tool.",
         "App agent finished generating; waiting for workflow cleanup.",
       ]);
       const answer = z
@@ -394,18 +408,37 @@ describe("app agent MCP", () => {
       expect(answer.text).toContain("edit_app");
       expect(answer.text).not.toContain("Private reasoning");
       expect(answer.text).not.toContain("Full internal tool transcript");
-      expect(response.content[1]).toEqual({
+      const compact = {
+        ...identity,
+        answer: "The calendar is implemented. Deployment needs a build fix.",
+        deploymentUrl: "https://calendar.test",
+        finishReason: "stop",
+      };
+      expect(response.content[1]).toMatchObject({
         annotations: { audience: ["assistant"], priority: 0.2 },
-        text: JSON.stringify(finalOutput),
         type: "text",
       });
-      expect(response.structuredContent).toEqual(finalOutput);
+      expect(
+        JSON.parse(
+          z.object({ text: z.string() }).parse(response.content[1]).text
+        )
+      ).toEqual(compact);
+      expect(response.structuredContent).toEqual(compact);
+      expect(JSON.stringify(response).length).toBeLessThan(2000);
+      const activityPayload = JSON.stringify(activities);
+      expect(activityPayload).not.toContain("Private reasoning");
+      expect(activityPayload).not.toContain(
+        "File contents are not progress messages"
+      );
+      expect(activityPayload).not.toContain("Sensitive unknown arguments");
+      expect(activityPayload).not.toContain('snapshot":');
+      expect(activityPayload).not.toContain("private-value");
     }
   );
 
-  it("bounds and sanitizes command previews without changing structured tool inputs", async () => {
+  it("bounds and sanitizes command previews without forwarding raw tool inputs", async () => {
     const messages: (string | undefined)[] = [];
-    const inputs: unknown[] = [];
+    const activities: unknown[] = [];
     const commands = [
       "pnpm check\n  --filter=calendar",
       `pnpm check ${"--very-long-option ".repeat(40)}`,
@@ -442,12 +475,12 @@ describe("app agent MCP", () => {
             .object({
               _meta: z.object({
                 "dev.tailorkit/agent-stream": z.object({
-                  chunk: z.object({ input: z.unknown() }),
+                  detail: z.string(),
                 }),
               }),
             })
             .parse(progress);
-          inputs.push(event._meta["dev.tailorkit/agent-stream"].chunk.input);
+          activities.push(event._meta["dev.tailorkit/agent-stream"]);
         },
       }
     );
@@ -460,30 +493,70 @@ describe("app agent MCP", () => {
         () => "Bash: [command with credential markers hidden]"
       )
     );
-    expect(inputs).toEqual(commands.map((command) => ({ command })));
+    expect(JSON.stringify(activities)).not.toContain("private-value");
+    for (const activity of activities) {
+      expect(activity).not.toHaveProperty("chunk");
+      expect(activity).not.toHaveProperty("input");
+    }
   });
 
-  it("returns a readable final answer even when progress is not requested", async () => {
+  it.each(["create_app", "edit_app"])(
+    "returns a compact %s answer even when progress is not requested",
+    async (name) => {
+      const answer = "Published your notes panel.";
+      const build = async () =>
+        await Promise.resolve({
+          appId: "app",
+          message: {
+            parts: [
+              { text: answer, type: "text" },
+              { text: "Private reasoning", type: "reasoning" },
+              { output: "Large tool output".repeat(10_000), type: "tool-read" },
+            ],
+          },
+          messages: [{ content: "Internal transcript".repeat(10_000) }],
+          runId: "run",
+          threadId: "thread",
+        });
+      const { client } = await connect({ createApp: build, editApp: build });
+      const response = await client.callTool({
+        arguments:
+          name === "create_app"
+            ? { name: "Notes", prompt: "Build notes", scope: "org" }
+            : { appId: "app", prompt: "Build notes" },
+        name,
+      });
+      expect(response.content[0]).toEqual({
+        text: "Published your notes panel.\n\nApp ID: app\n\nThread ID: thread\n\nRun ID: run\n\nFor a related follow-up, call edit_app with this appId and threadId.",
+        type: "text",
+      });
+      expect(response.structuredContent).toEqual({
+        answer,
+        appId: "app",
+        runId: "run",
+        threadId: "thread",
+      });
+      expect(JSON.stringify(response).length).toBeLessThan(1500);
+      expect(JSON.stringify(response)).not.toContain("Private reasoning");
+      expect(JSON.stringify(response)).not.toContain("Large tool output");
+      expect(JSON.stringify(response)).not.toContain("Internal transcript");
+    }
+  );
+
+  it("rejects malformed backend output instead of returning an unfiltered fallback", async () => {
     const { client } = await connect({
       async editApp() {
         return await Promise.resolve({
-          appId: "app",
-          message: {
-            parts: [{ text: "Published your notes panel.", type: "text" }],
-          },
-          runId: "run",
-          threadId: "thread",
+          messages: "Internal transcript".repeat(10_000),
         });
       },
     });
     const response = await client.callTool({
-      arguments: { appId: "app", prompt: "Build notes" },
+      arguments: { appId: "app", prompt: "Change it" },
       name: "edit_app",
     });
-    expect(response.content[0]).toEqual({
-      text: "Published your notes panel.\n\nApp ID: app\n\nThread ID: thread\n\nRun ID: run\n\nFor a related follow-up, call edit_app with this appId and threadId.",
-      type: "text",
-    });
+    expect(response.isError).toBe(true);
+    expect(JSON.stringify(response)).not.toContain("Internal transcript");
   });
 
   it("rejects legacy initialization and mismatched metadata headers", async () => {
