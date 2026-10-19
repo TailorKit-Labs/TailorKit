@@ -4,6 +4,16 @@ Use the TailorKit command-line interface (CLI) to create, develop, and publish e
 
 New apps use Valibot for validation. Function inputs/outputs and instance data accept Standard Schema v1-compatible validators; existing apps can keep their current compatible library. Function input/output validation must be synchronous.
 
+## Start with a bare app
+
+Use `--bare` to generate configuration, tooling, host bindings and capabilities, and the client root without example slots, functions, database files or logos:
+
+```sh
+tailorkit init --name my-app --host https://example.com/api/tailorkit --bare
+```
+
+Add views and backend source as the feature needs them. The SDK, validator and database tooling remain installed so adding app storage does not require another dependency setup. Omit `--bare` for the existing example app scaffold.
+
 ## Build against a local host
 
 Start a conversation with the agent using your local host URL:
@@ -69,7 +79,7 @@ Use these options to control unattended deployments:
 - `--no-interactive`: fail instead of prompting for login, app creation, or a typecheck override
 - `--app-id your_app_id`: deploy to an existing app; never create a replacement
 
-The app agent keeps its JWT in the host process. Its deployment tool builds without credentials in the sandbox, then uploads and publishes through the host. The token stays out of the model prompt, sandbox filesystem and environment, persistent Drive, and CLI credential store.
+The app agent keeps its JWT in the host process. Its deployment tool automatically formats, lints, runs existing tests, typechecks and builds in the sandbox, then uploads and publishes through the host. It stops on the first failed check and returns diagnostics for the agent to repair. The token stays out of the model prompt, sandbox filesystem and environment, persistent Drive, and CLI credential store.
 
 ## Resume a conversation
 

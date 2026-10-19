@@ -1,12 +1,12 @@
 # Build simple TailorKit apps
 
-Build the app the user asked for in `/workspace/app`, verify it, and publish completed changes with the `deploy` tool. Preserve existing source, data, identity, and configuration when editing an app.
+Build the requested app in `/workspace/app` and publish completed changes with `deploy`. Setup has already installed dependencies and generated host bindings. New apps use the bare scaffold: configuration, bindings and a client root, with no example views, functions or database. Add only the source needed for the request. Preserve existing app data, identity and configuration.
 
 ## Keep the implementation simple
 
 Choose the smallest working solution. Start with ordinary components, local state, and the SDK's queries and mutations. Keep each piece of state in one place and use the SDK's pending/error state. Add a helper, custom hook, provider, dependency, or optimization only when it makes the current feature simpler. Handle the requested workflow and its normal failures; scale the design and checks to the task.
 
-Inspect the existing app before editing. Read `.agents/skills/tailorkit-capabilities/SKILL.md`, then only the component, tool, or view pages needed. Import the generated API from `#tailorkit`. For older apps, search the needed declarations in `src/tailorkit.gen.ts`. Change source definitions and regenerate rather than editing generated files.
+Inspect `package.json`, `tailorkit.config.ts` and relevant source together. Read `.agents/skills/tailorkit-capabilities/SKILL.md`, then only the needed component, tool or view pages. Batch related reads; search named declarations instead of dumping generated files or entire SDK directories. Import the generated API from `#tailorkit`. Change source definitions and regenerate rather than editing generated files.
 
 Use Standard Schema v1-compatible validators for function inputs/outputs and instance data. Valibot is the default for new schemas; keep an existing compatible validator. Function inputs and outputs must validate synchronously.
 
@@ -19,7 +19,7 @@ Use Standard Schema v1-compatible validators for function inputs/outputs and ins
 
 ## Read skills as needed
 
-- **tailorkit-setup:** scaffolding, configuration, generation, or build problems.
+- **tailorkit-setup:** configuration, generation, or dependency problems.
 - **tailorkit-frontend:** components, forms, callbacks, and product tools.
 - **tailorkit-views:** slots, context, layouts, or repeated instances.
 - **tailorkit-functions:** queries, mutations, actions, and client hooks.
@@ -27,8 +27,8 @@ Use Standard Schema v1-compatible validators for function inputs/outputs and ins
 
 ## Finish
 
-Run the app's formatting/lint commands and relevant existing tests. Check the requested flow and visible loading/error behavior. Regenerate bindings after contract or backend registration changes and migrations after schema changes.
+Check the requested flow and visible loading/error behavior. Add focused behavior tests for changed logic or access rules when needed. Regenerate bindings after contract or backend registration changes and migrations after schema changes.
 
-Publish through `deploy`, which holds credentials outside the sandbox and performs the typecheck and build. Read its diagnostics and fix failures. Use this tool for publication; do not run login, remote app creation, or publishing commands yourself. Report expired authorization so the user can renew access.
+Call `deploy` directly when implementation is ready. It formats, lints, runs existing tests, typechecks, builds and publishes, stopping on the first failure. Use its named diagnostics to repair source and retry. Leave routine verification to this tool; run an individual check only to investigate a reported failure. Deployment credentials stay outside the sandbox; use this tool for publication. Report expired authorization so the user can renew access.
 
-Report the result, checks, and deployment ID. Verify in the actual product when available and state any unverified behavior. Answer questions without deploying.
+Finish with a brief result, checks, deployment ID and any unverified behavior. Verify in the actual product when available. Answer questions without deploying.

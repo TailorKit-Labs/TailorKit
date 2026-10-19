@@ -19,6 +19,7 @@ import { fetchSchemaFromHost, readSchemaFile } from "./generator/types";
 import { normalizeHostUrl } from "./utils/url";
 
 export interface InitOptions {
+  bare?: boolean;
   cwd: string;
   directory?: string;
   force?: boolean;
@@ -272,6 +273,7 @@ export const runInit = async (options: InitOptions): Promise<string> => {
   await mkdir(targetDirectory, { recursive: true });
 
   await generateApp({
+    bare: options.bare,
     force,
     hostUrl,
     packageManager,

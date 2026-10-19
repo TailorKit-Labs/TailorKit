@@ -2,7 +2,7 @@
 
 Each installation has persistent SQLite shared by its users. Use it only for app-owned data and enforce the feature's access rules in functions. Queries/mutations receive a restricted database capability; there is no driver or database service to configure.
 
-Use `tailorkit/db` for table/column builders, `defineRelations`, `defineDatabase`, and query helpers. Keep database imports in backend modules. Follow the scaffold's `src/db/schema.ts`, `relations.ts`, and `index.ts`; the [function example](references/functions.md) shows them together.
+Use `tailorkit/db` for table/column builders, `defineRelations`, `defineDatabase`, and query helpers. Keep database imports in backend modules. When adding storage to a bare app, create `src/db/schema.ts`, `relations.ts` and `index.ts` using the [function example](references/functions.md).
 
 ## Columns and inserts
 

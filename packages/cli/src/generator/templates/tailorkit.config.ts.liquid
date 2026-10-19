@@ -2,10 +2,11 @@ import type { TailorKitConfig } from "tailorkit/app/config";
 
 const config = {
   host: "{{ hostUrl }}",
-  logos: {
+{% unless bare %}  logos: {
     dark: "logo-dark.svg",
     light: "logo-light.svg",
   },
+{% endunless %}
   name: {{ appName }},
   slug: {{ appSlug }},
 } satisfies TailorKitConfig;

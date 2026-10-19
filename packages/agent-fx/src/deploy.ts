@@ -2,15 +2,14 @@ import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 
 import { tailorkitUploadManifestSchema } from "@tailorkit/vite/upload-manifest";
-import type { Sandbox } from "@vercel/sandbox";
 import { tool } from "ai";
 import * as v from "valibot";
 import { z } from "zod";
 
 import { getSandbox } from "./sandbox";
+import type { AppSandboxSession } from "./sandbox-session";
+import { outputDirectory, verifyApp } from "./verification";
 
-// Server entry modules resolve the app's dependencies from beneath this path.
-const outputDirectory = "/workspace/app/.tailorkit/agent-deployment";
 const authorizationSchema = z.object({
   platformUrl: z.url().refine((value) => {
     const url = new URL(value);
@@ -39,7 +38,7 @@ const deploymentSchema = z.object({
   server: uploadSchema.extend({ uploadUrl: z.url() }).optional(),
 });
 type DeploymentSandbox = Pick<
-  ReturnType<Sandbox["currentSession"]>,
+  AppSandboxSession,
   "runCommand" | "readFileToBuffer"
 >;
 interface Authorization {
@@ -226,52 +225,57 @@ export const publish = async (
     );
 };
 
-export const deployTool = tool({
-  contextSchema: z.object({
-    agentToken: z.string(),
-    appId: z.string(),
-    sandboxName: z.string(),
-  }),
-  description:
-    "Type-check, build, and publish the completed app. Run lint and relevant tests first. Repair diagnostics and retry if needed.",
-  execute: async (_input, { context, abortSignal }) => {
-    try {
-      const vm = await getSandbox(context.sandboxName);
-      const sandbox = vm.currentSession();
-      const result = await sandbox.runCommand({
-        args: [
-          "-c",
-          `pnpm exec tsc --noEmit && pnpm exec node --input-type=module --eval 'import {build} from "vite"; await build({build:{outDir:"${outputDirectory}"}});'`,
-        ],
-        cmd: "bash",
-        cwd: "/workspace/app",
-        env: { CI: "true", NO_COLOR: "1" },
-        signal: abortSignal,
-        timeoutMs: 15 * 60_000,
-      });
-      if (result.exitCode !== 0) {
+export const createDeployTool = (dependencies: {
+  sandbox: (name: string) => Promise<DeploymentSandbox>;
+  publish: typeof publish;
+}) =>
+  tool({
+    contextSchema: z.object({
+      agentToken: z.string(),
+      appId: z.string(),
+      sandboxName: z.string(),
+    }),
+    description:
+      "Verify and publish the completed app. Automatically formats, lints, runs existing tests, typechecks and builds. Call this directly when implementation is ready; separate verification commands are unnecessary. Failures report the check and diagnostics for repair. Publication requires every check to pass.",
+    execute: async (_input, { context, abortSignal }) => {
+      try {
+        const sandbox = await dependencies.sandbox(context.sandboxName);
+        const result = await verifyApp(sandbox, abortSignal);
+        if (result.exitCode !== 0) {
+          return {
+            exitCode: result.exitCode,
+            stderr: result.stderr.replaceAll(context.agentToken, "[redacted]"),
+            stdout: result.stdout.replaceAll(context.agentToken, "[redacted]"),
+          };
+        }
+        const deployment = await dependencies.publish(
+          sandbox,
+          context,
+          abortSignal
+        );
         return {
-          exitCode: result.exitCode,
-          stderr: await result.stderr(),
-          stdout: await result.stdout(),
+          exitCode: 0,
+          stderr: "",
+          stdout: `${result.stdout}\nDeployment: ${deployment.id}`,
+        };
+      } catch (error) {
+        return {
+          exitCode: 1,
+          stderr: (error instanceof Error
+            ? error.message
+            : String(error)
+          ).replaceAll(context.agentToken, "[redacted]"),
+          stdout: "",
         };
       }
-      const deployment = await publish(sandbox, context, abortSignal);
-      return {
-        exitCode: 0,
-        stderr: "",
-        stdout: `Deployment: ${deployment.id}`,
-      };
-    } catch (error) {
-      return {
-        exitCode: 1,
-        stderr: (error instanceof Error
-          ? error.message
-          : String(error)
-        ).replaceAll(context.agentToken, "[redacted]"),
-        stdout: "",
-      };
-    }
+    },
+    inputSchema: z.strictObject({}),
+  });
+
+export const deployTool = createDeployTool({
+  publish,
+  sandbox: async (name) => {
+    const sandbox = await getSandbox(name);
+    return sandbox.currentSession();
   },
-  inputSchema: z.strictObject({}),
 });

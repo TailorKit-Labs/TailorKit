@@ -97,7 +97,7 @@ it("passes --schema through generate with its working directory and config", asy
   });
 });
 
-it("passes --schema through init while retaining the required host", async () => {
+it("passes --bare and --schema through init while retaining the required host", async () => {
   mocks.init.mockResolvedValue("/workspace/app");
   // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
   // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
@@ -106,6 +106,7 @@ it("passes --schema through init while retaining the required host", async () =>
     options: CliOptions
   ) => Promise<void>;
   await init("/workspace", {
+    bare: true,
     cwd: "/tmp",
     host: "http://localhost:3000/api/tailorkit",
     install: false,
@@ -115,6 +116,7 @@ it("passes --schema through init while retaining the required host", async () =>
   });
   expect(mocks.init).toHaveBeenCalledWith(
     expect.objectContaining({
+      bare: true,
       cwd: "/tmp",
       directory: "/workspace",
       host: "http://localhost:3000/api/tailorkit",

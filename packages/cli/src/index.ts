@@ -336,6 +336,10 @@ cli
   .option("--package-manager <pm>", "Package manager: bun, yarn, pnpm, or npm")
   .option("--tooling <tooling>", "Tooling: vite-plus (recommended) or vite")
   .option(
+    "--bare",
+    "Create only app configuration, bindings and the client root"
+  )
+  .option(
     "--install",
     "Install dependencies after scaffolding (use --no-install to skip)"
   )
@@ -345,6 +349,7 @@ cli
     try {
       const cwd = options.cwd ?? ".";
       const targetDirectory = await runInit({
+        bare: options.bare,
         cwd,
         directory,
         force: options.force,

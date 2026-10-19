@@ -173,7 +173,17 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
       vi.fn<typeof fetch>(async (url, options) => {
         const request = new Request(url, options);
         if (request.method === "GET") {
-          return Response.json({ data: [] });
+          return Response.json({
+            data: [
+              {
+                id: "openai/gpt-6.1-sol",
+                reasoning_options: [
+                  { type: "effort", values: ["low", "medium", "high"] },
+                ],
+                type: "language",
+              },
+            ],
+          });
         }
         const body = await request.text();
         requests.push({
@@ -327,6 +337,9 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
       expect(requests.at(-1)?.body).toContain("Build a file");
       expect(requests.at(-1)?.body).toContain("Now update it");
       for (const request of requests) {
+        expect(JSON.parse(request.body)).toMatchObject({
+          reasoning: "low",
+        });
         expect(request.url).toBe("https://gateway.test/v4/ai/language-model");
         expect(request.authorization).toBe(`Bearer ${token}`);
         expect(request.body).not.toContain("private-deployment-token");

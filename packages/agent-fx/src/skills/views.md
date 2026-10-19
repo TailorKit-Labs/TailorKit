@@ -1,6 +1,6 @@
 # Views and context
 
-Choose a supported slot/path from the generated capabilities. Start with one list or panel; use multiple instances only when the product surface needs separate items. The [view examples](references/views.md) cover a shell, record context, and repeated tiles.
+Choose a supported slot/path from the generated capabilities. Implement only surfaces needed by the requested workflow; a slot's availability does not require a view. Use multiple instances only when the product surface needs separate items. The [view examples](references/views.md) cover a shell, record context, and repeated tiles.
 
 Put views in `src/slots/<slot>/**/*.view.tsx`, default-exporting `defineView` from `tailorkit/client`. `members.detail.view.tsx` maps to `/members/detail`; `index.view.tsx` maps to `/`. Explicit `slot`/`view` values must match the file location and product contract. Import `#tailorkit` for its type augmentation.
 

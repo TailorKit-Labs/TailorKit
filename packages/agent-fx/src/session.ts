@@ -10,6 +10,7 @@ import {
   prepareSandbox,
   sandboxName,
 } from "./sandbox";
+import { hostSchemaPath, prepareWorkspace } from "./workspace";
 
 const store = async () => {
   const { db } = await import("@tailorkit/db");
@@ -78,10 +79,11 @@ export const startTurn = async (input: AppAgentInput, runId: string) => {
     await sandbox.currentSession().writeFiles([
       {
         content: Buffer.from(JSON.stringify(input.schema)),
-        path: "/workspace/tailorkit.schema.json",
+        path: hostSchemaPath,
       },
     ]);
   }
+  await prepareWorkspace(sandbox.currentSession(), input);
   return resumeFrom;
 };
 
