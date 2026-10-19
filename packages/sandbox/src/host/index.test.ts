@@ -89,11 +89,11 @@ describe("createIframeUiHost", () => {
     const postMessage = vi.spyOn(getContentWindow(host.iframe), "postMessage");
     const channel = getChannel(host.iframe);
     const callback = {
-      data: { event: "tailorkitcallbackonclick", nodeId: "n:2" },
+      data: { event: "tailorkitcallbackonclick", id: "queued", nodeId: "n:2" },
       type: "dispatchCallback" as const,
     };
 
-    host.dispatch(callback);
+    const pending = host.dispatch(callback);
     expect(postMessage).not.toHaveBeenCalled();
     emitFromIframe(host.iframe, { channel, type: iframeReadyType });
 
@@ -103,6 +103,13 @@ describe("createIframeUiHost", () => {
         "*"
       );
     });
+    emitFromIframe(host.iframe, {
+      channel,
+      payload: { data: { id: "queued" }, type: "callbackResult" },
+      type: sandboxMessageType,
+    });
+    await expect(pending).resolves.toBeUndefined();
+    host.destroy();
   });
 
   it("stores strictly validated snapshots received through the iframe bridge", () => {
@@ -155,9 +162,7 @@ describe("createIframeUiHost", () => {
       type: "animationFrame" as const,
     };
 
-    expect(() => {
-      host.dispatch(invalid);
-    }).toThrow();
+    await expect(host.dispatch(invalid)).rejects.toThrow();
     emitFromIframe(host.iframe, {
       channel: getChannel(host.iframe),
       type: iframeReadyType,
@@ -165,9 +170,7 @@ describe("createIframeUiHost", () => {
     await vi.waitFor(() => {
       expect(postMessage).toHaveBeenCalledTimes(1);
     });
-    expect(() => {
-      host.dispatch(invalid);
-    }).toThrow();
+    await expect(host.dispatch(invalid)).rejects.toThrow();
     expect(postMessage).toHaveBeenCalledTimes(1);
     host.destroy();
   });
@@ -409,3 +412,94 @@ it.each(["backend-first", "tools-first"])(
     }
   }
 );
+
+it("correlates concurrent callback results and rejects failures", async () => {
+  const host = createIframeUiHost("https://assets.test/app.js", {
+    fetch: createFetch(),
+  });
+  host.mount();
+  const channel = getChannel(host.iframe);
+  const first = host.dispatch({
+    data: { event: "save", id: "first", nodeId: "n:1" },
+    type: "dispatchCallback",
+  });
+  const second = host.dispatch({
+    data: { event: "save", id: "second", nodeId: "n:1" },
+    type: "dispatchCallback",
+  });
+  const failure = host.dispatch({
+    data: { event: "save", id: "failure", nodeId: "n:1" },
+    type: "dispatchCallback",
+  });
+  const failed = expect(failure).rejects.toThrow("Save failed");
+  const reply = (data: { id: string; output?: unknown; error?: string }) => {
+    emitFromIframe(host.iframe, {
+      channel,
+      payload: { data, type: "callbackResult" },
+      type: sandboxMessageType,
+    });
+  };
+  reply({ id: "unknown", output: "ignored" });
+  reply({ id: "second", output: false });
+  reply({ id: "first", output: { saved: true } });
+  reply({ error: "Save failed", id: "failure" });
+  await expect(first).resolves.toEqual({ saved: true });
+  await expect(second).resolves.toBe(false);
+  await failed;
+  host.destroy();
+});
+
+it("rejects pending callbacks on destruction and timeout", async () => {
+  vi.useFakeTimers();
+  try {
+    const host = createIframeUiHost("https://assets.test/app.js", {
+      fetch: createFetch(),
+    });
+    const timed = host.dispatch({
+      data: { event: "save", id: "timed", nodeId: "n:1" },
+      type: "dispatchCallback",
+    });
+    const timeout = expect(timed).rejects.toThrow("timed out");
+    await vi.advanceTimersByTimeAsync(30_000);
+    await timeout;
+    const pending = host.dispatch({
+      data: { event: "save", id: "pending", nodeId: "n:1" },
+      type: "dispatchCallback",
+    });
+    const destroyed = expect(pending).rejects.toThrow("destroyed");
+    host.destroy();
+    await destroyed;
+    await expect(
+      host.dispatch({
+        data: { event: "save", id: "late", nodeId: "n:1" },
+        type: "dispatchCallback",
+      })
+    ).rejects.toThrow("destroyed");
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+it("rejects queued callbacks when the app fails to load", async () => {
+  const onError = vi.fn<(error: Error) => void>();
+  const host = createIframeUiHost("https://assets.test/app.js", {
+    fetch: async () => {
+      await Promise.resolve();
+      throw new Error("App unavailable");
+    },
+    onError,
+  });
+  host.mount();
+  const pending = host.dispatch({
+    data: { event: "save", id: "queued", nodeId: "n:1" },
+    type: "dispatchCallback",
+  });
+  const rejected = expect(pending).rejects.toThrow("App unavailable");
+  emitFromIframe(host.iframe, {
+    channel: getChannel(host.iframe),
+    type: iframeReadyType,
+  });
+  await rejected;
+  expect(onError).toHaveBeenCalled();
+  host.destroy();
+});

@@ -1,4 +1,6 @@
 // @vitest-environment happy-dom
+import { createFileClient, createRemoteComponent } from "@tailorkit/app/client";
+import type { RemoteCallbackOperation } from "@tailorkit/app/client";
 import * as v from "valibot";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
@@ -119,7 +121,7 @@ it("imports once, publishes updates, clears unsupported slots, and dispatches ca
     { callback: "onClick", event: "click", inputCount: 0 },
   ]);
   runtime.send({
-    data: { args: [], event: "click", nodeId: button.id },
+    data: { args: [], event: "click", id: "click", nodeId: button.id },
     type: "dispatchCallback",
   });
   await vi.waitFor(() => {
@@ -276,4 +278,156 @@ it("forwards selected instances through the bridge and switches them without rei
     expect(runtime.root.textContent).toBe('overview:{"count":1}');
   });
   expect(runtime.importModule).toHaveBeenCalledTimes(1);
+});
+
+const renderCallback = async (operation: RemoteCallbackOperation) => {
+  vi.stubGlobal("__PREACT_VERSION__", "11.0.0");
+  const Editor = createRemoteComponent<{ onSave: RemoteCallbackOperation }>(
+    "Editor",
+    { callbacks: { onSave: 1 } }
+  );
+  const app = createFileClient({
+    layouts: [],
+    roots: [],
+    views: [
+      {
+        definition: {
+          component: () => Editor({ onSave: operation }),
+          path: "/",
+          slot: "panel",
+        },
+        filename: "src/slots/panel/index.tsx",
+        path: "/",
+        slot: "panel",
+      },
+    ],
+  });
+  const runtime = setup({ default: app });
+  runtime.update(requestImplementation("editor"));
+  await vi.waitFor(() => {
+    expect(runtime.root.querySelector("tailorkit-editor")).not.toBeNull();
+  });
+  const snapshot = runtime.messages.findLast(
+    (message) => message.type === "snapshot"
+  );
+  if (snapshot?.type !== "snapshot" || snapshot.data.tree.kind === "text") {
+    throw new Error("Expected a snapshot");
+  }
+  const [editor] = snapshot.data.tree.children;
+  if (editor?.kind !== "element") {
+    throw new Error("Expected an editor");
+  }
+  const invoke = (id: string, args: unknown[] = []) => {
+    runtime.send({
+      data: { args, event: "tailorkitcallbackonsave", id, nodeId: editor.id },
+      type: "dispatchCallback",
+    });
+  };
+  return { ...runtime, editor, invoke };
+};
+
+it.each<{ name: string; operation: RemoteCallbackOperation; output: unknown }>([
+  { name: "sync", operation: () => ({ saved: true }), output: { saved: true } },
+  {
+    name: "async",
+    operation: async () => await Promise.resolve(false),
+    output: false,
+  },
+  { name: "void", operation: () => {}, output: undefined },
+  {
+    name: "async void",
+    operation: async () => {
+      await Promise.resolve();
+    },
+    output: undefined,
+  },
+])(
+  "returns $name callback results through the real app adapter",
+  async ({ operation, output }) => {
+    const runtime = await renderCallback(operation);
+    runtime.invoke("save");
+    await vi.waitFor(() => {
+      expect(runtime.messages).toContainEqual({
+        data: { id: "save", output },
+        type: "callbackResult",
+      });
+    });
+  }
+);
+
+it.each([
+  {
+    name: "thrown",
+    operation: () => {
+      throw new Error("Save failed");
+    },
+  },
+  {
+    name: "rejected",
+    operation: async () => {
+      await Promise.resolve();
+      throw new Error("Save failed");
+    },
+  },
+])("returns $name callback failures", async ({ operation }) => {
+  const runtime = await renderCallback(operation);
+  runtime.invoke("save");
+  await vi.waitFor(() => {
+    expect(runtime.messages).toContainEqual({
+      data: { error: "Save failed", id: "save" },
+      type: "callbackResult",
+    });
+  });
+});
+
+it("correlates overlapping callbacks and slices serialized arguments", async () => {
+  const resolveCalls: ((output: string) => void)[] = [];
+  const operation = vi.fn<RemoteCallbackOperation>(async () => {
+    const { promise, resolve } = Promise.withResolvers<string>();
+    resolveCalls.push(resolve);
+    return await promise;
+  });
+  const runtime = await renderCallback(operation);
+  runtime.invoke("first", ["first", "extra"]);
+  runtime.invoke("second", ["second"]);
+  expect(operation).toHaveBeenNthCalledWith(1, "first");
+  expect(operation).toHaveBeenNthCalledWith(2, "second");
+  const [first, second] = resolveCalls;
+  if (!first || !second) {
+    throw new Error("Expected pending calls");
+  }
+  second("second result");
+  first("first result");
+  await vi.waitFor(() => {
+    expect(runtime.messages).toContainEqual({
+      data: { id: "first", output: "first result" },
+      type: "callbackResult",
+    });
+    expect(runtime.messages).toContainEqual({
+      data: { id: "second", output: "second result" },
+      type: "callbackResult",
+    });
+  });
+});
+
+it("rejects callbacks to detached nodes and undeclared events", async () => {
+  const operation = vi.fn<RemoteCallbackOperation>();
+  const runtime = await renderCallback(operation);
+  runtime.send({
+    data: { event: "undeclared", id: "undeclared", nodeId: runtime.editor.id },
+    type: "dispatchCallback",
+  });
+  runtime.root.replaceChildren();
+  runtime.invoke("detached");
+  await vi.waitFor(() => {
+    for (const id of ["undeclared", "detached"]) {
+      const result = runtime.messages.find(
+        (message) => message.type === "callbackResult" && message.data.id === id
+      );
+      expect(
+        result?.type === "callbackResult" ? result.data.error : undefined
+      ).toContain("Cannot dispatch callback");
+    }
+  });
+  expect(operation).not.toHaveBeenCalled();
 });

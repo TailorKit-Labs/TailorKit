@@ -144,6 +144,7 @@ const HostToIframePayloadSchema = v.pipe(
       data: strictObject({
         args: v.optional(v.array(v.unknown())),
         event: v.string(),
+        id: SessionId,
         nodeId: v.string(),
       }),
       type: v.literal("dispatchCallback"),
@@ -233,6 +234,14 @@ const IframeToHostPayloadSchema = v.pipe(
   v.variant("type", [
     v.strictObject({
       data: strictObject({
+        error: v.optional(v.string()),
+        id: SessionId,
+        output: v.optional(v.unknown()),
+      }),
+      type: v.literal("callbackResult"),
+    }),
+    v.strictObject({
+      data: strictObject({
         id: SessionId,
         input: v.optional(v.unknown()),
         kind: v.picklist(["client", "server"]),
@@ -274,6 +283,11 @@ const IframeToHostPayloadSchema = v.pipe(
 export type IframeToHostPayload = v.InferOutput<
   typeof IframeToHostPayloadSchema
 >;
+
+export type CallbackResult = Extract<
+  IframeToHostPayload,
+  { type: "callbackResult" }
+>["data"];
 
 export { HostToIframePayloadSchema as HostToIframePayload };
 

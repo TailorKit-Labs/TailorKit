@@ -139,7 +139,6 @@ export function createTailorKitSchema(schema: {
           continue;
         }
         callbacks[callbackName] = {
-          async: callback.async,
           input: serializeSchema(callback.input, schemaSerializer),
           output: serializeSchema(callback.output, schemaSerializer),
         };

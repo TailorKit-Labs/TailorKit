@@ -3,7 +3,6 @@ import * as v from "valibot";
 import { JsonSchema } from "./json-schema";
 
 const SerializedCallbackSchema = v.object({
-  async: v.optional(v.boolean()),
   input: v.optional(JsonSchema),
   output: v.optional(JsonSchema),
 });

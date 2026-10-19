@@ -36,7 +36,7 @@ export type ComponentProps<TComponent> = MergeProps<
     ? InferSchema<TFields>
     : EmptyObject,
   TComponent extends { callbacks: infer TCallbacks }
-    ? InferCallbacks<TCallbacks>
+    ? InferCallbacks<TCallbacks, true>
     : EmptyObject
 >;
 

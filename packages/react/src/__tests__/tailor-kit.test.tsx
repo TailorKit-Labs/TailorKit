@@ -75,7 +75,9 @@ vi.mock("@tailorkit/sandbox/host", () => ({
       /* oxlint-disable typescript/no-unsafe-type-assertion -- The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below. */
       {
         destroy: () => {},
-        dispatch: (_payload: HostToIframePayload) => {},
+        dispatch: async (_payload: HostToIframePayload) => {
+          await Promise.resolve();
+        },
         getSnapshot: () => tree,
         iframe: document.createElement("iframe"),
         mount: () => {

@@ -8,8 +8,11 @@ const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
 
 const isCallback = <TValue>(
   value: TValue
-): value is TValue & ((event: { detail: unknown[] }) => void) =>
-  typeof value === "function";
+): value is TValue &
+  ((event: {
+    detail: unknown[];
+    respondWith: (operation: () => void) => void;
+  }) => void) => typeof value === "function";
 
 describe("children-only components", () => {
   it("generates opt-in children and leaf component bindings", () => {
@@ -78,7 +81,12 @@ describe("children-only components", () => {
     ) {
       throw new Error("Expected an onClick callback.");
     }
-    props.ontailorkitcallbackonclick({ detail: [] });
+    props.ontailorkitcallbackonclick({
+      detail: [],
+      respondWith: (operation) => {
+        operation();
+      },
+    });
     expect(onClick).toHaveBeenCalledExactlyOnceWith();
   });
 
