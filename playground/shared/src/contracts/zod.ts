@@ -13,6 +13,7 @@ const todo = z.object({
 export const contract = defineContract({
   components: {
     experimental_Canvas: experimental_canvas({
+      input: { keyboard: ["ArrowLeft", "ArrowRight"], pointer: true },
       maxFramesPerSecond: 60,
       maxPixels: 1_048_576,
     }),

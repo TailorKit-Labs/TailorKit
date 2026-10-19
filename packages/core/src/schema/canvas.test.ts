@@ -58,3 +58,27 @@ describe("experimental_canvas", () => {
     expect(definition.experimental_canvas.maxFramesPerSecond).toBe(60);
   });
 });
+
+it("keeps input disabled by default and validates immutable host input grants", () => {
+  expect(experimental_canvas().experimental_canvas.input).toBeUndefined();
+  for (const code of [
+    "Tab",
+    "Escape",
+    "MetaLeft",
+    "ControlLeft",
+    "AltLeft",
+    "invalid",
+  ]) {
+    expect(() =>
+      experimental_canvas({ input: { keyboard: [code] } })
+    ).toThrow();
+  }
+  const keyboard = ["ArrowLeft", "KeyW"];
+  const policy = experimental_canvas({
+    input: { keyboard, pointer: true },
+  }).experimental_canvas;
+  keyboard.push("Tab");
+  expect(policy.input?.keyboard).toEqual(["ArrowLeft", "KeyW"]);
+  expect(Object.isFrozen(policy.input)).toBe(true);
+  expect(Object.isFrozen(policy.input?.keyboard)).toBe(true);
+});

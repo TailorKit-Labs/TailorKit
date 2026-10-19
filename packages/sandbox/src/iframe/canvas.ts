@@ -8,7 +8,12 @@ type CanvasReply = Extract<
 >["data"];
 
 export const createIframeCanvases = (
-  send: (data: { id: string; name: string; generation?: string }) => void
+  send: (data: {
+    id: string;
+    name: string;
+    generation?: string;
+    input?: boolean;
+  }) => void
 ) => {
   const pending = new Map<
     string,
@@ -24,7 +29,8 @@ export const createIframeCanvases = (
   let closed = false;
   const request = async (
     name: string,
-    generation?: string
+    generation?: string,
+    input = false
   ): Promise<experimental_CanvasConnection> => {
     if (closed || pending.size >= 8 || name.length === 0 || name.length > 128) {
       throw new Error("Canvas request unavailable.");
@@ -38,7 +44,7 @@ export const createIframeCanvases = (
     }, 30_000);
     pending.set(id, { reject, resolve, timer });
     try {
-      send({ generation, id, name });
+      send({ generation, id, input, name });
     } catch (error) {
       pending.delete(id);
       clearTimeout(timer);

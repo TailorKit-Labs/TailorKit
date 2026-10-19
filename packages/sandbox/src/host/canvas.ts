@@ -1,4 +1,18 @@
+import { experimental_canvas } from "@tailorkit/core/schema";
+import type { experimental_CanvasInputPolicy } from "@tailorkit/core/schema";
 import * as v from "valibot";
+
+import { createCanvasInput } from "./canvas-input";
+
+const InputAck = v.strictObject({
+  sequence: v.pipe(
+    v.number(),
+    v.integer(),
+    v.minValue(1),
+    v.maxValue(Number.MAX_SAFE_INTEGER)
+  ),
+  type: v.literal("inputAck"),
+});
 
 const Frame = v.strictObject({
   bitmap: v.custom<ImageBitmap>(
@@ -19,6 +33,7 @@ export interface experimental_CanvasTargetOptions {
   /** Presentation is also gated by the browser's animation frames. Default: 60. */
   maxFramesPerSecond?: number;
   maxPixels?: number;
+  input?: experimental_CanvasInputPolicy;
 }
 
 /** Keeps the visible canvas and presentation scheduling under host control. */
@@ -46,6 +61,8 @@ export const createCanvasTarget = (
   ) {
     throw new Error("Invalid canvas dimensions or presentation rate.");
   }
+  const inputPolicy =
+    experimental_canvas(options).experimental_canvas.input ?? {};
   const context = canvas.getContext("bitmaprenderer");
   if (!context) {
     throw new Error(
@@ -60,7 +77,7 @@ export const createCanvasTarget = (
       disposed = true;
       connection?.close("Host revoked the canvas surface.");
     },
-    connect: () => {
+    connect: (enableInput = false) => {
       if (disposed || connection) {
         throw new Error("Canvas surface is already connected or revoked.");
       }
@@ -69,11 +86,13 @@ export const createCanvasTarget = (
       let animationFrame: number | null = null;
       let sequence = 0;
       let closed = false;
+      let input: ReturnType<typeof createCanvasInput> | null = null;
       const close = (message: string) => {
         if (closed) {
           return;
         }
         closed = true;
+        input?.close();
         if (animationFrame !== null) {
           cancelAnimationFrame(animationFrame);
         }
@@ -84,6 +103,14 @@ export const createCanvasTarget = (
         connection = null;
         context.transferFromImageBitmap(null);
       };
+      input = createCanvasInput(
+        canvas,
+        port1,
+        enableInput ? inputPolicy : {},
+        () => {
+          close("Invalid canvas input acknowledgement.");
+        }
+      );
       const present = (timestamp: number) => {
         if (closed || !pending) {
           return;
@@ -108,6 +135,11 @@ export const createCanvasTarget = (
         }
       };
       port1.addEventListener("message", (event: MessageEvent<unknown>) => {
+        const ack = v.safeParse(InputAck, event.data);
+        if (ack.success) {
+          input?.acknowledge(ack.output.sequence);
+          return;
+        }
         if (v.safeParse(Close, event.data).success) {
           close("Canvas surface closed.");
           return;

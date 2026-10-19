@@ -4,9 +4,30 @@ import type {
 } from "@standard-schema/spec";
 import * as v from "valibot";
 
+export interface experimental_CanvasInputPolicy {
+  pointer?: boolean;
+  /** Physical key codes forwarded only while this canvas is focused. */
+  keyboard?: readonly string[];
+}
+
+const keyboardCode =
+  /^(?:Key[A-Z]|Digit[0-9]|Arrow(?:Up|Down|Left|Right)|Space|Enter|Backspace|Delete|Home|End|PageUp|PageDown|ShiftLeft|ShiftRight)$/u;
+const InputPolicy = v.strictObject({
+  keyboard: v.optional(
+    v.pipe(v.array(v.pipe(v.string(), v.regex(keyboardCode))), v.maxLength(32))
+  ),
+  pointer: v.optional(v.boolean()),
+});
+
 export interface experimental_CanvasPolicy {
+  input?: experimental_CanvasInputPolicy;
   maxPixels?: number;
   maxFramesPerSecond?: number;
+}
+
+interface ResolvedCanvasPolicy extends experimental_CanvasPolicy {
+  maxPixels: number;
+  maxFramesPerSecond: number;
 }
 
 export interface experimental_CanvasProps {
@@ -30,6 +51,8 @@ export const experimental_canvas = (policy: experimental_CanvasPolicy = {}) => {
   ) {
     throw new Error("Invalid experimental canvas policy.");
   }
+  const inputPolicy =
+    policy.input === undefined ? undefined : v.parse(InputPolicy, policy.input);
   const fields = v.pipe(
     v.strictObject({
       ariaLabel: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(512)),
@@ -70,8 +93,19 @@ export const experimental_canvas = (policy: experimental_CanvasPolicy = {}) => {
       version: 1,
     },
   };
+  const resolvedPolicy: ResolvedCanvasPolicy = {
+    maxFramesPerSecond,
+    maxPixels,
+  };
+  if (inputPolicy !== undefined) {
+    const resolvedInput: experimental_CanvasInputPolicy = { ...inputPolicy };
+    if (inputPolicy.keyboard !== undefined) {
+      resolvedInput.keyboard = Object.freeze([...inputPolicy.keyboard]);
+    }
+    resolvedPolicy.input = Object.freeze(resolvedInput);
+  }
   return {
-    experimental_canvas: Object.freeze({ maxFramesPerSecond, maxPixels }),
+    experimental_canvas: Object.freeze(resolvedPolicy),
     fields: standardFields,
   };
 };

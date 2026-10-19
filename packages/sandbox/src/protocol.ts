@@ -262,6 +262,7 @@ const IframeToHostPayloadSchema = v.pipe(
       data: strictObject({
         generation: v.optional(SessionId),
         id: SessionId,
+        input: v.optional(v.boolean()),
         name: SessionId,
       }),
       type: v.literal("canvasRequest"),

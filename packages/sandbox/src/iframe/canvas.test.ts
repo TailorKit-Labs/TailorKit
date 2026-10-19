@@ -97,3 +97,19 @@ it("expires a request and closes a late transferred port", async () => {
     vi.useRealTimers();
   }
 });
+
+it("negotiates native input only for SDK requests that opt in", async () => {
+  const requests: { id: string; input?: boolean }[] = [];
+  const bridge = createIframeCanvases((request) => {
+    requests.push(request);
+  });
+  const legacy = bridge.request("legacy");
+  const native = bridge.request("native", "generation", true);
+  const denied = Promise.all([
+    expect(legacy).rejects.toThrow("destroyed"),
+    expect(native).rejects.toThrow("destroyed"),
+  ]);
+  expect(requests.map(({ input }) => input)).toEqual([false, true]);
+  bridge.close();
+  await denied;
+});

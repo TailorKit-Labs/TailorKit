@@ -3,9 +3,45 @@ import {
   createFileClient,
   experimental_requestCanvas,
 } from "@tailorkit/app/client";
+import type { experimental_CanvasSurface } from "@tailorkit/app/client";
 import * as v from "valibot";
 
 import { Configuration } from "./shared";
+
+const checkLegacyInput = async () => {
+  const request = globalThis.__tailorkitRequestCanvas;
+  if (!request) {
+    throw new Error("Canvas ABI unavailable.");
+  }
+  const { port, release } = await request("display");
+  try {
+    await callTool("client", "verifyInput", { focusable: false });
+    return { passed: true };
+  } finally {
+    port.postMessage({ type: "close" });
+    port.close();
+    release();
+  }
+};
+
+const checkPreservedBuffer = async (
+  surface: experimental_CanvasSurface,
+  context: OffscreenCanvasRenderingContext2D
+) => {
+  context.fillStyle = "rgb(42, 128, 0)";
+  context.fillRect(0, 0, surface.canvas.width, surface.canvas.height);
+  await surface.present({ preserveDrawingBuffer: true });
+  if (context.getImageData(0, 0, 1, 1).data[0] !== 42) {
+    throw new Error("Snapshot presentation cleared the source canvas.");
+  }
+  await surface.present({ preserveDrawingBuffer: true });
+  await callTool("client", "verify", { red: 42 });
+  await surface.present();
+  if (context.getImageData(0, 0, 1, 1).data[3] !== 0) {
+    throw new Error("Transfer presentation failed to clear the source canvas.");
+  }
+  return { passed: true };
+};
 
 const run = async (configuration: v.InferOutput<typeof Configuration>) => {
   if (configuration.mode === "unregistered") {
@@ -53,12 +89,19 @@ const run = async (configuration: v.InferOutput<typeof Configuration>) => {
     }
     return await promise;
   }
+  if (configuration.mode === "legacy-input") {
+    return await checkLegacyInput();
+  }
   const surface = await experimental_requestCanvas("display");
   const context = surface.canvas.getContext("2d");
   if (!context) {
     throw new Error("Offscreen 2D context unavailable.");
   }
   try {
+    if (configuration.mode === "native-input") {
+      await callTool("client", "verifyInput", { focusable: true });
+      return { passed: true };
+    }
     if (configuration.mode === "revoke") {
       await callTool("client", "revoke");
       try {
@@ -67,6 +110,9 @@ const run = async (configuration: v.InferOutput<typeof Configuration>) => {
         return { passed: true };
       }
       throw new Error("Revoked surface accepted a frame.");
+    }
+    if (configuration.mode === "preserve-buffer") {
+      return await checkPreservedBuffer(surface, context);
     }
     if (configuration.mode === "concurrent") {
       const first = surface.present();

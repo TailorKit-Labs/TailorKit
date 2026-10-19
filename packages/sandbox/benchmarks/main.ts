@@ -59,6 +59,14 @@ const runCase = async (
       client: async (path, input) => {
         if (path === "revoke") {
           unregister?.();
+        } else if (path === "verifyInput") {
+          const { focusable } = v.parse(
+            v.object({ focusable: v.boolean() }),
+            input
+          );
+          if ((canvas.tabIndex === 0) !== focusable) {
+            throw new Error("Canvas input was not negotiated correctly.");
+          }
         } else if (path === "verify") {
           const { red } = v.parse(v.object({ red: v.number() }), input);
           const bitmap = await createImageBitmap(canvas);
@@ -87,6 +95,10 @@ const runCase = async (
   }, 20_000);
   try {
     unregister = host.experimental_registerCanvas("display", canvas, {
+      input:
+        mode === "legacy-input" || mode === "native-input"
+          ? { keyboard: ["ArrowLeft"], pointer: true }
+          : undefined,
       maxFramesPerSecond,
     });
     host.subscribe(() => {
@@ -123,6 +135,9 @@ const runChecks = async () => {
     const modes: BenchmarkConfiguration["mode"][] = [
       "unregistered",
       "concurrent",
+      "preserve-buffer",
+      "legacy-input",
+      "native-input",
       "wrong-size",
       "flood",
       "revoke",

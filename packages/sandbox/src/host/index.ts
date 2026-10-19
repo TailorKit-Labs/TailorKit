@@ -189,10 +189,12 @@ export const createIframeUiHost = (
     id,
     name,
     generation,
+    input,
   }: {
     id: string;
     name: string;
     generation?: string;
+    input?: boolean;
   }) => {
     const registration = canvases.get(name);
     const target = registration?.target;
@@ -204,7 +206,7 @@ export const createIframeUiHost = (
       ) {
         throw new Error("Canvas surface is not registered by the host.");
       }
-      const connection = target.connect();
+      const connection = target.connect(input);
       try {
         postToIframe({ data: { id, ...connection }, type: "canvasResult" }, [
           connection.port,

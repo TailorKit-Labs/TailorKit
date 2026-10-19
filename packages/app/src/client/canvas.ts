@@ -1,5 +1,7 @@
 import * as v from "valibot";
 
+import { CanvasInputBatch, createCanvasInput } from "./canvas-input";
+
 /** Runtime ABI. The host grants a port, never a DOM element or rendering context. */
 export interface experimental_CanvasConnection {
   width: number;
@@ -18,15 +20,23 @@ declare global {
   var __tailorkitRequestCanvas:
     | ((
         name: string,
-        generation?: string
+        generation?: string,
+        input?: boolean
       ) => Promise<experimental_CanvasConnection>)
     | undefined;
 }
 
+export interface experimental_CanvasPresentationOptions {
+  /** Snapshot without clearing the source. Uses an additional bitmap allocation. */
+  preserveDrawingBuffer?: boolean;
+}
+
 export interface experimental_CanvasSurface {
   canvas: OffscreenCanvas;
-  /** Transfers a complete frame and waits for host presentation. Redraw each frame. */
-  present: () => Promise<void>;
+  /** Aborted when the connection closes, with an Error reason. */
+  signal: AbortSignal;
+  /** Presents one complete frame; transfer mode clears the source by default. */
+  present: (options?: experimental_CanvasPresentationOptions) => Promise<void>;
   close: () => void;
 }
 
@@ -44,8 +54,23 @@ export const experimental_requestCanvas = async (
   if (!request || typeof OffscreenCanvas === "undefined") {
     throw new Error("Sandbox canvas rendering is unavailable.");
   }
-  const { port, width, height, release } = await request(name, generation);
-  const canvas = new OffscreenCanvas(width, height);
+  const { port, width, height, release } = await request(
+    name,
+    generation,
+    true
+  );
+  let canvas: OffscreenCanvas;
+  try {
+    canvas = new OffscreenCanvas(width, height);
+  } catch (error) {
+    port.postMessage({ type: "close" });
+    port.close();
+    release();
+    throw error;
+  }
+  const lifetime = new AbortController();
+  const input = createCanvasInput(canvas);
+  let inputSequence = 0;
   let closed = false;
   let sequence = 0;
   let pending: {
@@ -66,10 +91,25 @@ export const experimental_requestCanvas = async (
     port.postMessage({ type: "close" });
     port.close();
     release();
+    input.reset();
+    lifetime.abort(new Error(message));
     canvas.width = 0;
     canvas.height = 0;
   };
   port.addEventListener("message", (event: MessageEvent<unknown>) => {
+    const batch = v.safeParse(CanvasInputBatch, event.data);
+    if (batch.success) {
+      if (batch.output.sequence !== inputSequence + 1) {
+        close("Invalid canvas input sequence.");
+        return;
+      }
+      inputSequence = batch.output.sequence;
+      for (const inputEvent of batch.output.events) {
+        input.dispatch(inputEvent);
+      }
+      port.postMessage({ sequence: inputSequence, type: "inputAck" });
+      return;
+    }
     const parsed = v.safeParse(Reply, event.data);
     if (!parsed.success) {
       close("Invalid canvas reply.");
@@ -92,7 +132,7 @@ export const experimental_requestCanvas = async (
   return {
     canvas,
     close,
-    present: async () => {
+    present: async (options = {}) => {
       if (closed) {
         throw new Error("Canvas surface closed.");
       }
@@ -102,7 +142,6 @@ export const experimental_requestCanvas = async (
       if (canvas.width !== width || canvas.height !== height) {
         throw new Error("Canvas dimensions must match the host surface.");
       }
-      const bitmap = canvas.transferToImageBitmap();
       const { promise, resolve, reject } = Promise.withResolvers<boolean>();
       sequence += 1;
       const timer = setTimeout(() => {
@@ -115,13 +154,26 @@ export const experimental_requestCanvas = async (
         },
         timer,
       };
-      try {
-        port.postMessage({ bitmap, sequence, type: "frame" }, [bitmap]);
-      } catch (error) {
-        bitmap.close();
-        close(error instanceof Error ? error.message : String(error));
-      }
+      const sendFrame = async () => {
+        let bitmap: ImageBitmap | null = null;
+        try {
+          bitmap =
+            options.preserveDrawingBuffer === true
+              ? await createImageBitmap(canvas)
+              : canvas.transferToImageBitmap();
+          if (closed) {
+            bitmap.close();
+            return;
+          }
+          port.postMessage({ bitmap, sequence, type: "frame" }, [bitmap]);
+        } catch (error) {
+          bitmap?.close();
+          close(error instanceof Error ? error.message : String(error));
+        }
+      };
+      void sendFrame();
       await promise;
     },
+    signal: lifetime.signal,
   };
 };

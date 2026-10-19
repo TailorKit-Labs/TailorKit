@@ -1,58 +1,104 @@
 import {
   BarController,
   BarElement,
-  BasicPlatform,
   CategoryScale,
   Chart as ChartJS,
   LinearScale,
+  Tooltip,
 } from "chart.js";
 import type { ChartItem } from "chart.js";
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useState } from "preact/hooks";
 import { experimental_useCanvasSurface as useCanvasSurface } from "tailorkit/client";
 
 import { Box, Button, experimental_Canvas as Canvas, Flex } from "#tailorkit";
 
-ChartJS.register(BarController, BarElement, CategoryScale, LinearScale);
+import { CanvasChartPlatform } from "./canvas-chart-platform";
 
-interface ChartInstance {
-  canvas: OffscreenCanvas;
-  chart: ChartJS<"bar", number[], string>;
-}
+ChartJS.register(
+  BarController,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  Tooltip
+);
 
-const createChartRenderer = (
-  onInstanceCountChange: (count: number) => void
-) => {
-  let instance: ChartInstance | null = null;
-  return {
-    destroy: () => {
-      instance?.chart.destroy();
-      instance = null;
-      onInstanceCountChange(Object.keys(ChartJS.instances).length);
-    },
-    draw: (canvas: OffscreenCanvas, values: number[]) => {
-      if (instance?.canvas !== canvas) {
-        instance?.chart.destroy();
-        instance = null;
-        // SAFETY: Chart.js documents OffscreenCanvas support, but ChartItem omits it. BasicPlatform acquires its 2D context without DOM access.
-        // oxlint-disable-next-line typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- Chart.js's published input type omits its supported OffscreenCanvas input.
+const Chart = ({
+  expanded,
+  revision,
+  continuous,
+  onInstanceCountChange,
+}: {
+  expanded: boolean;
+  revision: number;
+  continuous: boolean;
+  onInstanceCountChange: (count: number) => void;
+}) => {
+  const [hovered, setHovered] = useState("none");
+  const [heldKeys, setHeldKeys] = useState("none");
+  const surface = useCanvasSurface<ChartJS<"bar", number[], string>>(
+    {
+      dispose: (chart) => {
+        chart.destroy();
+        onInstanceCountChange(Object.keys(ChartJS.instances).length);
+      },
+      draw: (chart) => {
+        const animation = continuous ? Math.floor(performance.now() / 25) : 0;
+        const [dataset] = chart.data.datasets;
+        dataset.data = [45, 90, 65, 120, 80].map(
+          (value) => ((value + revision * 19 + animation) % 150) + 20
+        );
+        chart.update("none");
+      },
+      setup: (canvas, { signal }) => {
+        const keys = new Set<string>();
+        const key = (event: Event) => {
+          if (!(event instanceof KeyboardEvent)) {
+            return;
+          }
+          if (event.type === "keydown") {
+            keys.add(event.code);
+          } else {
+            keys.delete(event.code);
+          }
+          setHeldKeys([...keys].join(", ") || "none");
+        };
+        canvas.addEventListener("keydown", key, { signal });
+        canvas.addEventListener("keyup", key, { signal });
+        canvas.addEventListener(
+          "mouseout",
+          () => {
+            setHovered("none");
+          },
+          { signal }
+        );
+        // SAFETY: Chart.js documents OffscreenCanvas support, but ChartItem omits it. The platform uses the canvas's local EventTarget and 2D context.
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- Chart.js's input type omits its supported OffscreenCanvas input.
         const item = canvas as unknown as ChartItem;
         const chart = new ChartJS<"bar", number[], string>(item, {
           data: {
-            datasets: [{ backgroundColor: "#65b5ff", data: values }],
+            datasets: [{ backgroundColor: "#65b5ff", data: [] }],
             labels: ["Jan", "Feb", "Mar", "Apr", "May"],
           },
           options: {
             animation: false,
             devicePixelRatio: 1,
-            events: [],
+            events: ["mousemove", "mouseout", "click"],
             maintainAspectRatio: false,
+            onHover: (_event, elements) => {
+              const [first] = elements;
+              setHovered(
+                first === undefined
+                  ? "none"
+                  : (chart.data.labels?.[first.index] ?? "none")
+              );
+            },
             responsive: false,
             scales: {
               x: { ticks: { color: "#cbd5e1" } },
               y: { max: 180, min: 0, ticks: { color: "#cbd5e1" } },
             },
           },
-          platform: BasicPlatform,
+          platform: CanvasChartPlatform,
           plugins: [
             {
               beforeDraw: ({ ctx, width, height }) => {
@@ -66,49 +112,11 @@ const createChartRenderer = (
           ],
           type: "bar",
         });
-        instance = { canvas, chart };
         onInstanceCountChange(Object.keys(ChartJS.instances).length);
-        return;
-      }
-      const { chart } = instance;
-      const [dataset] = chart.data.datasets;
-      dataset.data = values;
-      // Bitmap transfer clears the source, so redraw the complete chart each time.
-      chart.update("none");
+        return chart;
+      },
     },
-  };
-};
-
-const Chart = ({
-  expanded,
-  revision,
-  continuous,
-  onInstanceCountChange,
-}: {
-  expanded: boolean;
-  revision: number;
-  continuous: boolean;
-  onInstanceCountChange: (count: number) => void;
-}) => {
-  const renderer = useMemo(
-    () => createChartRenderer(onInstanceCountChange),
-    [onInstanceCountChange]
-  );
-  useEffect(
-    () => () => {
-      renderer.destroy();
-    },
-    [renderer]
-  );
-  const surface = useCanvasSurface(
-    (canvas) => {
-      const animation = continuous ? Math.floor(performance.now() / 25) : 0;
-      const values = [45, 90, 65, 120, 80].map(
-        (value) => ((value + revision * 19 + animation) % 150) + 20
-      );
-      renderer.draw(canvas, values);
-    },
-    [revision, continuous, renderer],
+    [revision, continuous],
     { continuous }
   );
   return (
@@ -120,6 +128,8 @@ const Chart = ({
         width={expanded ? 640 : 320}
       />
       <Box>{surface.error?.message ?? `Canvas ${surface.status}`}</Box>
+      <Box>Hovered: {hovered}</Box>
+      <Box>Held keys: {heldKeys}</Box>
     </>
   );
 };

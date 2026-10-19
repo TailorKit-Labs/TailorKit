@@ -102,6 +102,59 @@ export const runCanvasChecks = async () => {
   ) {
     throw new Error("Chart.js did not render both bars and axis labels.");
   }
+  const inputCanvas = canvas("First app");
+  const rect = inputCanvas.getBoundingClientRect();
+  inputCanvas.dispatchEvent(
+    new PointerEvent("pointermove", {
+      clientX: rect.left + (60 * rect.width) / inputCanvas.width,
+      clientY: rect.top + (150 * rect.height) / inputCanvas.height,
+      pointerId: 1,
+      pointerType: "mouse",
+    })
+  );
+  await waitFor(
+    async () =>
+      first.textContent?.includes("Hovered: Jan") &&
+      (await hash("First app")) !== initial.hash,
+    "Hover did not reach Chart.js or render its tooltip."
+  );
+  inputCanvas.dispatchEvent(
+    new PointerEvent("pointerleave", { pointerId: 1, pointerType: "mouse" })
+  );
+  await waitFor(
+    async () =>
+      first.textContent?.includes("Hovered: none") &&
+      (await hash("First app")) === initial.hash,
+    "Pointer leave did not clear the tooltip."
+  );
+  inputCanvas.focus();
+  const denied = new KeyboardEvent("keydown", {
+    cancelable: true,
+    code: "KeyW",
+    key: "w",
+  });
+  inputCanvas.dispatchEvent(denied);
+  if (denied.defaultPrevented) {
+    throw new Error("An unapproved key suppressed browser behavior.");
+  }
+  const approved = new KeyboardEvent("keydown", {
+    cancelable: true,
+    code: "ArrowLeft",
+    key: "ArrowLeft",
+  });
+  inputCanvas.dispatchEvent(approved);
+  if (!approved.defaultPrevented) {
+    throw new Error("Host-approved input was not captured while focused.");
+  }
+  await waitFor(
+    () => first.textContent?.includes("Held keys: ArrowLeft"),
+    "Keyboard input did not reach the sandbox."
+  );
+  inputCanvas.blur();
+  await waitFor(
+    () => first.textContent?.includes("Held keys: none"),
+    "Focus loss left a key held in the sandbox."
+  );
   click(first, "Redraw chart");
   await waitFor(
     async () => (await hash("First app")) !== initial.hash,
@@ -194,6 +247,11 @@ export const runCanvasChecks = async () => {
     passed: true,
     checks: [
       "Chart.js bars and axis labels",
+      "Chart.js hover and tooltip through scaled coordinates",
+      "pointer leave",
+      "host keyboard allowlist",
+      "focused keyboard input",
+      "held-key release on blur",
       "dependency redraw",
       "resize",
       "unmount and Chart.js instance cleanup",

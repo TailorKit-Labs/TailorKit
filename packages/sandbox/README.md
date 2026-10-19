@@ -18,6 +18,7 @@ const contract = defineContract({
     experimental_Canvas: experimental_canvas({
       maxPixels: 1_048_576,
       maxFramesPerSecond: 60,
+      input: { pointer: true, keyboard: ["ArrowLeft", "ArrowRight"] },
     }),
   },
   views: { "/": z.object({}) },
@@ -47,6 +48,7 @@ const Chart = ({ value }: { value: number }) => {
     (canvas) => {
       const context = canvas.getContext("2d");
       if (!context) throw new Error("2D rendering is unavailable");
+      context.clearRect(0, 0, canvas.width, canvas.height);
       context.fillStyle = "royalblue";
       context.fillRect(0, canvas.height - value, canvas.width, value);
     },
@@ -64,9 +66,21 @@ const Chart = ({ value }: { value: number }) => {
 };
 ```
 
-The hook returns `binding`, `status` (`pending`, `ready`, or `error`), and `error`. It waits for host registration, creates the sandbox's OffscreenCanvas, draws and presents once, and redraws on dependency or backing-dimension changes. `ready` means that the surface connection is available, rather than a physical display acknowledgement. Keep drawing dependencies stable in the same way as effect dependencies. Unmounting releases the connection; draw errors are exposed through `error` and a later dependency change can retry.
+The hook returns `binding`, `status` (`pending`, `ready`, or `error`), `error`, `invalidate()`, and `retry()`. It waits for host registration, creates the sandbox's OffscreenCanvas, draws and presents once, and redraws on dependency or backing-dimension changes. `ready` means that the surface connection is available, rather than a physical display acknowledgement. Keep drawing dependencies stable in the same way as effect dependencies. Unmounting releases the connection; draw errors are exposed through `error` and a later dependency change can retry.
 
-For a host-paced animation, pass `{ continuous: true }` as the third argument. Each iteration awaits the draw callback and host presentation before drawing another frame. Switching continuous mode off draws one final static frame. Drawing callbacks may return a promise; they should finish promptly and should not resize the OffscreenCanvas or retain it after teardown.
+For a host-paced animation, pass `{ continuous: true }` as the third argument. Each iteration awaits the draw callback and host presentation before drawing another frame. Switching continuous mode off draws one final static frame. Drawing callbacks may return a promise; they should finish promptly and should not resize the OffscreenCanvas or retain it after teardown. The hook preserves the drawing buffer by default using `createImageBitmap`, so libraries can retain or incrementally update their pixels. This allocates a snapshot bitmap in addition to the source buffer. Pass `{ preserveDrawingBuffer: false }` for the original transfer-and-clear path when drawing complete frames and measuring throughput.
+
+### Library lifecycle and native local input
+
+The hook also accepts a lifecycle object with `setup(canvas, { signal, invalidate })`, `draw(resource, canvas)`, and optional `dispose(resource)` callbacks. `setup` returns the library resource (or a promise for it); `draw` receives that same resource and the latest dependency values through its closure. Use an explicit resource type parameter when TypeScript cannot infer it from the object. Setup runs once per granted surface. Resize, revocation, restart, and unmount abort the setup signal and dispose the resource. An async setup result arriving after teardown is disposed without drawing. Async work must honor the signal; it cannot be forcibly stopped.
+
+Register local canvas listeners inside setup with `{ signal }` so they are removed at teardown. Call `invalidate()` when a library draws outside the normal callback; repeated invalidations coalesce while a presentation is pending. Dependency changes and forwarded input also schedule presentation. A closed connection gets one automatic retry per host registration, followed by an explicit `retry()` or recovery when the tab becomes visible. Repeated errors do not create an automatic reconnect loop.
+
+Input is disabled by default and negotiated per connection, so SDKs that do not request native input continue receiving output-only surfaces. A host can grant `input.pointer` and an allowlist of `input.keyboard` physical key codes through the contract or low-level registration. Pointer coordinates are scaled from the visible canvas rectangle into its backing pixels. The sandbox's OffscreenCanvas receives synthetic `pointermove`, `pointerdown`, `pointerup`, `pointerleave`, and `click` events plus mouse compatibility events (`mousemove`, `mousedown`, `mouseup`, `mouseout`). These are local, untrusted events. Their `clientX`/`clientY` describe backing coordinates; they carry no host DOM target or reference. They do not grant browser user activation. DOM-dependent libraries still need their documented non-DOM platform integration; the Chart.js playground uses a small BasicPlatform extension to register local listeners and enables its ordinary on-canvas tooltip.
+
+Keyboard events are forwarded only while that specific canvas is focused. Clicking a keyboard-enabled canvas focuses it, and it is reachable with Tab. Only approved keys may prevent browser defaults. Tab, Escape, control/meta/alt shortcuts, and global keyboard capture are excluded. Canvas/window focus loss, page hiding, input-queue overflow, and connection closure reset local held keys and pointer state. Pointer input does not grant pointer lock, fullscreen, global capture, text composition, clipboard, drag/drop, or wheel interception.
+
+Input uses one acknowledged batch in flight, at most 32 queued transitions, and one latest pointer movement. Queues reset on overflow to prevent stuck controls. Incoming sandbox messages can acknowledge input; they cannot request focus or synthesize privileged host actions. Preventing defaults or stopping propagation on a local event does not affect the original host event.
 
 ### Low-level transport
 
@@ -111,14 +125,14 @@ try {
 
 `transferToImageBitmap()` replaces the source image with a blank image: redraw the complete frame before each `present()`. Await presentation before sending another frame. The acknowledgement means that the host consumed the bitmap during an animation-frame callback, rather than proof that pixels have reached the physical display. Keep a surface open for as long as its output should remain visible; closing it clears the host canvas.
 
-The low-level API is useful for custom adapters; React hosts can use the contract and renderer above. Keyboard/pointer input on the canvas, audio, WebAssembly policy changes, and dedicated workers remain separate capabilities.
+The low-level API is useful for custom adapters; React hosts can use the contract and renderer above. Keyboard/pointer input requires the explicit grants described above. Audio, WebAssembly policy changes, and dedicated workers remain separate capabilities.
 
 ## Limits and lifecycle
 
 - A host can register eight surfaces per sandbox, each at most 4096 pixels per axis and 4,194,304 total pixels. Names must contain 1–128 characters. Duplicate names or elements within a sandbox are rejected.
 - Each registration accepts one connection at a time and one pending frame. Frame dimensions and increasing sequence numbers are checked on the host. Oversized, malformed, or overlapping frames close the connection and release received bitmaps.
 - Host presentation is gated by `requestAnimationFrame` and `maxFramesPerSecond` (default 60, accepted range 1–240). Background tabs may pause presentation. Registration rate limits persist across reconnections.
-- The SDK rejects overlapping `present()` calls and changed source dimensions. Requests and presentations time out after 30 seconds. Hosts can revoke at any time; destroying the host closes every surface and removes the iframe.
+- The SDK rejects overlapping `present()` calls and changed source dimensions. Low-level `present()` transfers and clears the source by default; `present({ preserveDrawingBuffer: true })` snapshots it without clearing. Each surface exposes an AbortSignal for connection closure. Requests and presentations time out after 30 seconds. Hosts can revoke at any time; destroying the host closes every surface and removes the iframe.
 - Apps receive pixel output capability only. They do not receive the host canvas, rendering context, DOM references, credentials, or an arbitrary host API. The existing iframe sandbox flags and CSP remain in place.
 
 These limits bound accepted output and retained application queues, not all browser resources. An untrusted app can still consume CPU/GPU/memory or enqueue transport messages before disconnection; large bitmaps exist before the host can inspect them. An iframe is not a hard resource quota. Pixel content also needs an accessibility alternative supplied by the app/host, and may imitate UI within its allocated rectangle.
@@ -134,7 +148,7 @@ pnpm --filter @tailorkit/sandbox bench:canvas
 
 Open http://127.0.0.1:5190 and click **Run checks and throughput measurements**. Keep the tab visible. Browser automation can also await `window.runCanvasChecks()`; failures reject and successful results are available in `window.canvasResults`.
 
-The harness bundles a real app and runs it under the production iframe runtime, opaque origin, sandbox flags, and CSP. It checks denied surfaces, overlapping SDK calls, incorrect dimensions, a producer ignoring backpressure, and revocation. Throughput cases fill a pixel buffer and call `putImageData`, transfer the resulting frame, and await host presentation. A final pixel readback verifies the output. It also checks that frame traffic creates no additional component snapshots and that measured presentation respects the host cap.
+The harness bundles a real app and runs it under the production iframe runtime, opaque origin, sandbox flags, and CSP. It checks denied surfaces, overlapping SDK calls, buffer preservation and transfer clearing, output-only legacy connections, native input negotiation, incorrect dimensions, a producer ignoring backpressure, and revocation. Throughput cases fill a pixel buffer and call `putImageData`, transfer the resulting frame, and await host presentation. A final pixel readback verifies the output. It also checks that frame traffic creates no additional component snapshots and that measured presentation respects the host cap.
 
 A local Chromium 154 run on 2026-10-19, with 120 measured frames per case after warm-up, produced:
 
@@ -160,4 +174,4 @@ pnpm --filter @playground/tanstack-start dev:canvas
 
 Open http://127.0.0.1:5191/canvas-demo.html. No database or TailorKit platform process is needed for this demo. Try redraw, resize, animation, hide/show, a second app instance, and sandbox restart. The ordinary Todo panel also contains the same chart.
 
-From a freshly loaded standalone demo, browser automation can await `window.experimental_runCanvasChecks()`. It reads back real host pixels and checks dependency redraw, resize, unmount/remount, animation start/stop, isolation between two app instances, sandbox restart, and iframe cleanup. It throws on failure. The existing low-level throughput harness remains available through `bench:canvas`.
+From a freshly loaded standalone demo, browser automation can await `window.experimental_runCanvasChecks()`. It reads back real host pixels and checks dependency redraw, resize, unmount/remount, animation start/stop, hover and on-canvas tooltips with CSS-scaled coordinates, keyboard allowlists, focused key input, key release on blur, isolation between two app instances, sandbox restart, and iframe cleanup. It throws on failure. The existing low-level throughput harness remains available through `bench:canvas`.
