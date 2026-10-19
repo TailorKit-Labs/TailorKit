@@ -4,10 +4,6 @@ Choose a supported slot/path from the generated capabilities. Implement only sur
 
 ## File-based routing
 
-The bundler discovers views, roots, and layouts and generates the client entry with imports of their default exports. App code supplies these files; the bundler supplies their registration.
-
-### Views
-
 Views use `src/slots/<slot>/**/*.view.tsx`. The directory immediately under `src/slots/` is the literal slot name, including any dots in that name. The remaining directories and filename define the context path:
 
 | View file | Slot | Context path |
@@ -22,8 +18,6 @@ Views use `src/slots/<slot>/**/*.view.tsx`. The directory immediately under `src
 Dots and directories both separate path segments and can be mixed. A final `index` segment is omitted for views; every segment must be nonempty. Each slot/path pair has one view file and must be supported by the product contract. Alternative spellings of the same pair are duplicates, not separate views.
 
 View files default-export `defineView` from `tailorkit/client`, called with an inline options object containing named properties. The build fills omitted `slot` and `view` values from the file location. Explicit values must be matching string literals; an explicit `view` also gives precise context typing. Import `#tailorkit` for its type augmentation. Repeated views also supply the instance configuration below.
-
-Only `.view.tsx` files under a slot directory register views. Other files hold helpers or components imported by the discovered modules. A `defineView` call in an ordinary source file does not make that file a route.
 
 ## Context
 

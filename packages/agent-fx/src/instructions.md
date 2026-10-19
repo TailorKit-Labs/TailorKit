@@ -16,14 +16,14 @@ Use Standard Schema v1-compatible validators for function inputs/outputs and ins
 
 | Path | Purpose |
 | --- | --- |
-| `tailorkit.config.ts` | Host URL, app identity, and optional backend configuration. |
-| `vite.config.ts` | Build configuration with the TailorKit/Preact plugins. |
-| `src/tailorkit.gen.ts` | Generated host components, tools, context types, and app function API, imported through `#tailorkit`. |
-| `src/root.tsx` | Shared app shell with a `<Route />` outlet. |
-| `src/slots/<slot>/` | UI for a host slot. The bundler registers `*.view.tsx` files; dots and nested directories map to context paths, and the slot-level `index.view.tsx` maps to `/`. Slot `root.tsx` and layout files wrap views. See `tailorkit-views` for routing conventions. |
-| `src/functions/` | Backend function modules, explicitly registered through `src/server.ts`. |
-| `src/server.ts` | Backend entry that exports `defineServer(...)` with the app's function routers. |
-| `src/db/` | SQLite schema, relations, shared database/function builder, and generated migrations. |
+| `tailorkit.config.ts` | Host URL, app identity, and backend options. |
+| `vite.config.ts` | TailorKit/Preact build setup. |
+| `src/tailorkit.gen.ts` | Generated host bindings and app API (`#tailorkit`). |
+| `src/root.tsx` | App shell with a `<Route />` outlet. |
+| `src/slots/<slot>/` | UI views (`*.view.tsx`), slot roots, and layouts. See `tailorkit-views`. |
+| `src/functions/` | Backend queries, mutations, and actions. |
+| `src/server.ts` | Function routers registered with `defineServer`. |
+| `src/db/` | SQLite schema, relations, database builder, and migrations. |
 
 ## Platform requirements
 
