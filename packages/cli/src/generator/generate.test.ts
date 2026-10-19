@@ -568,7 +568,7 @@ describe("generateApp", () => {
       await readFile(
         path.join(
           targetDirectory,
-          ".agents/skills/tailorkit-app/references/index.md"
+          ".agents/skills/tailorkit-capabilities/references/index.md"
         ),
         "utf-8"
       )

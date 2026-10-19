@@ -20,7 +20,12 @@ export const prepareAppSkill = async (
   root: string,
   bindingsFile: string
 ): Promise<GeneratedAppSkill | null> => {
-  const directory = path.join(root, ".agents", "skills", "tailorkit-app");
+  const directory = path.join(
+    root,
+    ".agents",
+    "skills",
+    "tailorkit-capabilities"
+  );
   const destination = path.join(directory, "SKILL.md");
   const existing = await readFile(destination, "utf-8").catch(
     (error: ErrorOptions["cause"]) => {
@@ -59,13 +64,13 @@ export const prepareAppSkill = async (
     .map(encodeURIComponent)
     .join("/");
   const content = `---
-name: tailorkit-app
+name: tailorkit-capabilities
 description: Use when implementing this TailorKit app's host-rendered components, callbacks, slots, view context, or host tool calls.
 ---
 
 ${generatedMarker}
 
-# TailorKit app
+# TailorKit capabilities
 
 App UI runs in an isolated iframe; the host renders the components exposed by its contract. Import those components and tools from the app's generated bindings, normally \`#tailorkit\`. Callbacks receive serialized values asynchronously across the host bridge, rather than DOM events.
 
