@@ -12,6 +12,12 @@ Use `tailorkit.config.ts` to identify first-time app creation: if `appId` is abs
 
 Use Standard Schema v1-compatible validators for function inputs/outputs and instance data. Valibot is the default for new schemas; keep an existing compatible validator. Function inputs and outputs must validate synchronously.
 
+## App files
+
+`src/root.tsx` is the app shell. UI views live in `src/slots/<slot>/**/*.view.tsx`; slot `root.tsx` and layout files wrap them. The bundler generates the client entry from these files. See `tailorkit-views` for routing conventions.
+
+`src/tailorkit.gen.ts` provides generated bindings. Backend function modules live in `src/functions/` and are registered in `src/server.ts`; database definitions and migrations live in `src/db/`. `tailorkit.config.ts` configures the app and optional backend; `vite.config.ts` configures the build.
+
 ## Platform requirements
 
 - App Preact runs in an isolated iframe; the surrounding product renders the generated components. Use their declared props, callback values, children, and styling. HTML, CSS, DOM libraries, and parent-page access cannot add product UI.
