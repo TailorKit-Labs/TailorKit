@@ -1,5 +1,13 @@
 # @tailorkit/vite
 
+## 0.1.0-beta.49
+
+### Patch Changes
+
+- 354c1fc: Expose the config app-ID updater at `@tailorkit/vite/config/app-link` so the fx deploy tool can persist the existing app identity before verification and publication, using the same config editing logic as the CLI.
+- 127b09e: Include the configured app ID in build upload manifests so host deployment tools can use the app identity from tailorkit.config.ts.
+- @tailorkit/app@0.1.0-beta.49
+
 ## 0.1.0-beta.48
 
 ### Patch Changes
