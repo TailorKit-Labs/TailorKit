@@ -8,7 +8,7 @@ Keep the scaffold's dependency policy: three days for third-party releases, with
 
 ## Configuration and generation
 
-Keep `tailorkit.config.ts` identity fields and the TailorKit/Preact Vite plugins. Enable `server: {}` for functions or repeated-slot resolvers; add `src/server.ts` and database files as needed using the function recipe. Defaults are `src/server.ts` and `src/db/migrations`.
+Keep the TailorKit/Preact Vite plugins. Enable `server: {}` for functions or repeated-slot resolvers; add `src/server.ts` and database files as needed using the function recipe. Defaults are `src/server.ts` and `src/db/migrations`.
 
 Run `pnpm run generate` after contract or backend registration changes. Pass any supplied `--schema` path; preserve that file. Otherwise generation uses the configured host. Generated bindings and capability pages describe supported components, tools, slots and context.
 

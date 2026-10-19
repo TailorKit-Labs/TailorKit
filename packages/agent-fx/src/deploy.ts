@@ -44,7 +44,6 @@ type DeploymentSandbox = Pick<
 >;
 interface Authorization {
   agentToken: string;
-  appId: string;
 }
 
 /** Parse build output and publish on the host; authorization never enters the VM. */
@@ -76,6 +75,14 @@ export const publish = async (
     tailorkitUploadManifestSchema,
     JSON.parse(manifestBytes.toString("utf-8"))
   );
+  if (manifest.appId === undefined) {
+    throw new Error(
+      "Missing appId in tailorkit.config.ts. Link the app before deploying."
+    );
+  }
+  const app = z.uuid().safeParse(manifest.appId).success
+    ? { id: manifest.appId }
+    : { shortId: manifest.appId };
   const artifact = async (
     filename: string,
     contentType: string,
@@ -171,7 +178,7 @@ export const publish = async (
     await request(
       "",
       JSON.stringify({
-        app: { id: authorization.appId },
+        app,
         assets: [client.metadata],
         logos: Object.fromEntries(
           logos.flatMap((logo) => (logo ? [[logo.variant, logo.metadata]] : []))
@@ -233,7 +240,6 @@ export const createDeployTool = (dependencies: {
   tool({
     contextSchema: z.object({
       agentToken: z.string(),
-      appId: z.string(),
       sandboxName: z.string(),
     }),
     description:
