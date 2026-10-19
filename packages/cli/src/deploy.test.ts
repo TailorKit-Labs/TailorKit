@@ -16,6 +16,7 @@ import { asyncFixture } from "@tailorkit/config/testing";
 import type { createTailorKitClient } from "@tailorkit/core/server";
 import type { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
 import { SignJWT } from "jose";
+import { Liquid } from "liquidjs";
 import { afterEach, beforeEach, assert, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
@@ -215,12 +216,17 @@ it.each([
       ),
       "utf-8"
     );
+    const rendered = z.string().parse(
+      await new Liquid({ strictVariables: true }).parseAndRender(template, {
+        appName: JSON.stringify("Test App"),
+        appSlug: JSON.stringify("test-app"),
+        bare: false,
+        hostUrl: "https://host.example",
+      })
+    );
     const source =
       prelude +
-      template
-        .replace("{{ hostUrl }}", "https://host.example")
-        .replace("{{ appName }}", JSON.stringify("Test App"))
-        .replace("{{ appSlug }}", JSON.stringify("test-app"))
+      rendered
         .replace("const config =", `const ${name}${annotation} =`)
         .replace("export default config;", `export default ${name};`);
     const configPath = path.join(root, "tailorkit.config.ts");

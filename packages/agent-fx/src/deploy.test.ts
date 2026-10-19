@@ -5,7 +5,8 @@ import { gunzipSync, gzipSync } from "node:zlib";
 import { expect, it } from "vite-plus/test";
 import { z } from "zod";
 
-import { publish } from "./deploy";
+import { createDeployTool, publish } from "./deploy";
+import type { AppSandboxSession } from "./sandbox-session";
 
 const scope = { name: "user", value: { userId: "owner" } };
 const authorization = {
@@ -31,6 +32,118 @@ const reader = (document = JSON.stringify(manifest)) => ({
         path.endsWith("tailorkit-upload.json") ? document : "fixture bytes"
       )
     ),
+});
+
+const checks = ["format:fix", "lint", "format", "test", "typecheck", "build"];
+const runDeployment = async (
+  options: { failedCheck?: string; scripts?: Record<string, string> } = {}
+) => {
+  const commands: Parameters<AppSandboxSession["runCommand"]>[0][] = [];
+  let published = false;
+  const scripts = options.scripts ?? {
+    format: "vp fmt --check",
+    "format:fix": "vp fmt",
+    lint: "vp lint",
+    test: "vp test",
+  };
+  const tool = createDeployTool({
+    publish: async () => {
+      published = true;
+      return await Promise.resolve({ id: "deployment" });
+    },
+    sandbox: async () =>
+      await Promise.resolve({
+        readFileToBuffer: async () =>
+          await Promise.resolve(Buffer.from(JSON.stringify({ scripts }))),
+        runCommand: async (command) => {
+          commands.push(command);
+          const args = command.args ?? [];
+          let [, name] = args;
+          if (args[0] !== "run") {
+            name = args[1] === "tsc" ? "typecheck" : "build";
+          }
+          const failed = options.failedCheck === name;
+          return await Promise.resolve({
+            exitCode: failed ? 1 : 0,
+            stderr: async () =>
+              await Promise.resolve(
+                failed ? `Fix source: ${authorization.agentToken}` : ""
+              ),
+            stdout: async () =>
+              await Promise.resolve(
+                failed ? authorization.agentToken : "verbose success log"
+              ),
+          });
+        },
+      }),
+  });
+  const result = await tool.execute(
+    {},
+    {
+      context: { ...authorization, sandboxName: "sandbox" },
+      messages: [],
+      toolCallId: "deploy",
+    }
+  );
+  if (!("exitCode" in result)) {
+    throw new Error("Deploy must return a completed command result.");
+  }
+  return { commands, published, result };
+};
+
+it("runs all checks once before publishing, with credentials confined to the host", async () => {
+  const { commands, published, result } = await runDeployment();
+  expect(published).toBe(true);
+  expect(commands.map((command) => command.args?.slice(0, 2))).toEqual([
+    ["run", "format:fix"],
+    ["run", "lint"],
+    ["run", "format"],
+    ["run", "test"],
+    ["exec", "tsc"],
+    ["exec", "node"],
+  ]);
+  expect(commands[3]?.args).toEqual(["run", "test", "--passWithNoTests"]);
+  expect(result).toMatchObject({ exitCode: 0, stderr: "" });
+  for (const check of checks) {
+    expect(result.stdout).toContain(`${check} passed (`);
+  }
+  expect(result.stdout).toContain("Deployment: deployment");
+  expect(result.stdout).not.toContain("verbose success log");
+  for (const command of commands) {
+    expect(command.env).toEqual({ CI: "true", NO_COLOR: "1" });
+    expect(JSON.stringify(command)).not.toContain(authorization.agentToken);
+  }
+});
+
+it.each(checks)(
+  "returns %s diagnostics and stops before further checks or publication",
+  async (failedCheck) => {
+    const { commands, published, result } = await runDeployment({
+      failedCheck,
+    });
+    expect(published).toBe(false);
+    expect(commands).toHaveLength(checks.indexOf(failedCheck) + 1);
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain(`${failedCheck} failed (`);
+    expect(result.stderr).toContain("Fix source: [redacted]");
+    expect(result.stdout).toContain("[redacted]");
+    expect(JSON.stringify(result)).not.toContain(authorization.agentToken);
+  }
+);
+
+it("supports a build-only app with no optional verification scripts", async () => {
+  const { commands, published } = await runDeployment({ scripts: {} });
+  expect(published).toBe(true);
+  expect(commands.map((command) => command.args?.[1])).toEqual(["tsc", "node"]);
+});
+
+it("uses a standalone check script and preserves custom test arguments", async () => {
+  const { commands, published } = await runDeployment({
+    scripts: { check: "custom-check", test: "node --test" },
+  });
+  expect(published).toBe(true);
+  expect(commands[0]?.args).toEqual(["run", "check"]);
+  expect(commands[1]?.args).toEqual(["run", "test"]);
 });
 
 it("publishes client, server and logos using host authorization", async () => {

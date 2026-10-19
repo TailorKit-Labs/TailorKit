@@ -37,6 +37,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
 };
 
 export interface GenerateAppOptions {
+  bare?: boolean;
   targetDirectory: string;
   force: boolean;
   hostUrl: string;
@@ -108,6 +109,44 @@ const supportsBox = (
   );
 };
 
+const getStarterView = (schema: TailorKitSchemaFile) => {
+  const slots = Object.keys(schema.slots ?? {}).toSorted();
+  const viewPath = Object.keys(schema.views ?? {})
+    .toSorted()
+    .find((view) =>
+      slots.some((slot) => schema.slots?.[slot]?.views.includes(view) === true)
+    );
+  if (viewPath === undefined) {
+    throw new Error(
+      "The host schema has no views supported by a slot. Add a view and slot before running tailorkit init."
+    );
+  }
+  const slotName = requireValue(
+    slots.find(
+      (slot) => schema.slots?.[slot]?.views.includes(viewPath) === true
+    )
+  );
+  return {
+    multiple: schema.slots?.[slotName]?.multiple === true,
+    slotName,
+    viewFile: path.join(
+      "src",
+      `${getViewModulePath(slotName, viewPath)}.view.tsx`
+    ),
+    viewPath,
+  };
+};
+
+const getAppSlug = (packageName: string) => {
+  const slugBase =
+    packageName
+      .toLowerCase()
+      .replaceAll(/[^a-z0-9]+/gu, "-")
+      .slice(0, 32)
+      .replaceAll(/^-+|-+$/gu, "") || "tailorkit-app";
+  return slugBase.length < 3 ? `${slugBase}-app` : slugBase;
+};
+
 const renderTemplate = async (
   template: string,
   data: Record<string, string | boolean>
@@ -138,6 +177,7 @@ export const generateApp = async (
   options: GenerateAppOptions
 ): Promise<void> => {
   const {
+    bare = false,
     targetDirectory,
     force,
     hostUrl,
@@ -148,24 +188,7 @@ export const generateApp = async (
     useWorkspaceDependencies,
   } = options;
 
-  const slots = Object.keys(schema.slots ?? {}).toSorted();
-  const viewPath = Object.keys(schema.views ?? {})
-    .toSorted()
-    .find((view) =>
-      slots.some((slot) => schema.slots?.[slot]?.views.includes(view) === true)
-    );
-  if (viewPath === undefined) {
-    throw new Error(
-      "The host schema has no views supported by a slot. Add a view and slot before running tailorkit init."
-    );
-  }
-  const slotName = requireValue(
-    slots.find(
-      (slot) => schema.slots?.[slot]?.views.includes(viewPath) === true
-    )
-  );
-  const viewModulePath = getViewModulePath(slotName, viewPath);
-  const viewFile = path.join("src", `${viewModulePath}.view.tsx`);
+  const starter = bare ? undefined : getStarterView(schema);
   const useBox = supportsBox(schema.components?.Box);
   const bindingsPath = path.join(targetDirectory, "src", "tailorkit.gen.ts");
   if (!force && existsSync(bindingsPath)) {
@@ -179,38 +202,34 @@ export const generateApp = async (
       ? "workspace:*"
       : packageVersions.tailorkit;
 
-  const slugBase =
-    packageName
-      .toLowerCase()
-      .replaceAll(/[^a-z0-9]+/gu, "-")
-      .slice(0, 32)
-      .replaceAll(/^-+|-+$/gu, "") || "tailorkit-app";
-  const appSlug = slugBase.length < 3 ? `${slugBase}-app` : slugBase;
   const templateData = {
     appName: JSON.stringify(packageName),
-    appSlug: JSON.stringify(appSlug),
+    appSlug: JSON.stringify(getAppSlug(packageName)),
+    bare,
     drizzleKitVersion: packageVersions.drizzleKit ?? TEMPLATE_DRIZZLE_VERSION,
     drizzleOrmVersion: packageVersions.drizzleOrm ?? TEMPLATE_DRIZZLE_VERSION,
     hostUrl,
     minimumReleaseAge: String(DEFAULT_MINIMUM_RELEASE_AGE),
-    multiple: schema.slots?.[slotName]?.multiple === true,
+    multiple: starter?.multiple ?? false,
     packageName,
     preactVersion: packageVersions.preact,
-    slotName: JSON.stringify(slotName),
+    slotName: JSON.stringify(starter?.slotName ?? ""),
     tailorkitVersion,
     tooling,
     typescriptVersion: packageVersions.typescript,
     useBox,
     valibotVersion: packageVersions.valibot ?? "^1.5.0",
-    viewPath: JSON.stringify(viewPath),
+    viewPath: JSON.stringify(starter?.viewPath ?? ""),
     vitePlus: tooling === "vite-plus",
     vitePlusVersion: packageVersions.vitePlus ?? "1.0.0",
     viteVersion: packageVersions.vite,
   };
 
-  await ensureDirectory(path.dirname(path.join(targetDirectory, viewFile)));
-  await ensureDirectory(path.join(targetDirectory, "src", "functions"));
-  await ensureDirectory(path.join(targetDirectory, "src", "db", "migrations"));
+  if (!bare) {
+    await ensureDirectory(
+      path.join(targetDirectory, "src", "db", "migrations")
+    );
+  }
 
   const files: { template: string; dest: string; condition?: boolean }[] = [
     {
@@ -223,20 +242,36 @@ export const generateApp = async (
     { dest: "package.json", template: packageJsonTemplate },
     { dest: "tsconfig.json", template: tsconfigTemplate },
     { dest: "tailorkit.config.ts", template: tailorkitConfigTemplate },
-    { dest: "logo-dark.svg", template: logoDarkTemplate },
-    { dest: "logo-light.svg", template: logoLightTemplate },
+    { condition: !bare, dest: "logo-dark.svg", template: logoDarkTemplate },
+    { condition: !bare, dest: "logo-light.svg", template: logoLightTemplate },
     { dest: ".gitignore", template: gitignoreTemplate },
     { dest: "vite.config.ts", template: viteConfigTemplate },
     { dest: path.join("src", "root.tsx"), template: rootTemplate },
-    { dest: viewFile, template: defaultViewTemplate },
-    { dest: path.join("src", "server.ts"), template: serverTemplate },
-    { dest: path.join("src", "db", "schema.ts"), template: schemaTemplate },
-    { dest: path.join("src", "db", "index.ts"), template: databaseTemplate },
+    ...(starter === undefined
+      ? []
+      : [{ dest: starter.viewFile, template: defaultViewTemplate }]),
     {
+      condition: !bare,
+      dest: path.join("src", "server.ts"),
+      template: serverTemplate,
+    },
+    {
+      condition: !bare,
+      dest: path.join("src", "db", "schema.ts"),
+      template: schemaTemplate,
+    },
+    {
+      condition: !bare,
+      dest: path.join("src", "db", "index.ts"),
+      template: databaseTemplate,
+    },
+    {
+      condition: !bare,
       dest: path.join("src", "db", "relations.ts"),
       template: relationsTemplate,
     },
     {
+      condition: !bare,
       dest: path.join("src", "functions", "greeting.ts"),
       template: greetingTemplate,
     },
@@ -247,6 +282,7 @@ export const generateApp = async (
       .filter((f) => f.condition !== false)
       .map(async ({ template, dest }) => {
         const rendered = await renderTemplate(template, templateData);
+        await ensureDirectory(path.dirname(path.join(targetDirectory, dest)));
         await writeTemplateFile(
           path.join(targetDirectory, dest),
           rendered,

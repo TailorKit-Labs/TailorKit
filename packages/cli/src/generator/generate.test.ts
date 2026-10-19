@@ -66,6 +66,51 @@ afterEach(async () => {
 });
 
 describe("generateApp", () => {
+  it.each(["vite", "vite-plus"] as const)(
+    "creates a bare %s app without choosing a surface or adding backend examples",
+    async (tooling) => {
+      const targetDirectory = await createTempDir();
+      await generateApp({
+        ...defaultOptions,
+        bare: true,
+        targetDirectory,
+        tooling,
+      });
+      const sourceFiles = await readdir(path.join(targetDirectory, "src"));
+      expect(sourceFiles.toSorted()).toEqual(["root.tsx", "tailorkit.gen.ts"]);
+      const config = await loadTailorKitConfig(undefined, targetDirectory);
+      expect(config.config).not.toHaveProperty("logos");
+      expect(config.config).not.toHaveProperty("server");
+      expect(await readdir(targetDirectory)).not.toContain("logo-light.svg");
+      const bindings = await readFile(
+        path.join(targetDirectory, "src/tailorkit.gen.ts"),
+        "utf-8"
+      );
+      expect(bindings).toContain('"sidebar"');
+      expect(bindings).not.toContain("createApi");
+      expect(
+        await readFile(
+          path.join(
+            targetDirectory,
+            ".agents/skills/tailorkit-capabilities/SKILL.md"
+          ),
+          "utf-8"
+        )
+      ).toContain("TailorKit capabilities");
+    }
+  );
+
+  it("allows a bare app before the host exposes any slots", async () => {
+    const targetDirectory = await createTempDir();
+    await generateApp({
+      ...defaultOptions,
+      bare: true,
+      schema: { components: {} },
+      targetDirectory,
+    });
+    expect(await readdir(path.join(targetDirectory, "src"))).toHaveLength(2);
+  });
+
   it("scaffolds Valibot as the default validator for app functions", async () => {
     const targetDirectory = await createTempDir();
     await generateApp({ ...defaultOptions, targetDirectory });

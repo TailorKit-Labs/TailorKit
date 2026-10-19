@@ -1,4 +1,11 @@
-import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import {
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -93,6 +100,26 @@ it("fetches the host schema and generates real bindings even when installation i
   expect(
     await readFile(path.join(directory, "src/root.tsx"), "utf-8")
   ).toContain("shellComponent: Shell");
+});
+
+it("passes bare mode through initialization and still generates host capabilities", async () => {
+  const options = await initOptions();
+  await writeFile(
+    path.join(options.cwd, "schema.json"),
+    JSON.stringify({
+      components: {},
+      slots: { navbar: { views: ["/"] } },
+      version: 1,
+      views: { "/": {} },
+    })
+  );
+  const directory = await runInit({
+    ...options,
+    bare: true,
+    schemaPath: "schema.json",
+  });
+  const files = await readdir(path.join(directory, "src"));
+  expect(files.toSorted()).toEqual(["root.tsx", "tailorkit.gen.ts"]);
 });
 
 it("reports schema fetch failures without creating a project", async () => {
