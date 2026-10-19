@@ -6,6 +6,7 @@ export default defineConfig({
     deps: { alwaysBundle: [/^@tailorkit\/asset-delivery(?:\/|$)/u] },
     dts: true,
     entry: {
+      "app-link": "src/config/app-link.ts",
       builder: "src/builder/index.ts",
       config: "src/config/index.ts",
       "config-loader": "src/config/loader.ts",
