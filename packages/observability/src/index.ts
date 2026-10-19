@@ -16,6 +16,9 @@ import {
 import { ORPCInstrumentation } from "@orpc/opentelemetry";
 
 import { env } from "#env";
+import { getTraceId } from "#logging";
+
+export { getTraceId, logger } from "#logging";
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
@@ -333,12 +336,6 @@ export const withRequestSpan = async <T>(
       handler
     );
   });
-};
-
-export const getTraceId = () => {
-  const span = trace.getSpan(context.active());
-  const spanContext = span?.spanContext();
-  return spanContext?.traceId;
 };
 
 export const sanitizeErrorForLog = (cause: unknown) => {

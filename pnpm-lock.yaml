@@ -667,6 +667,9 @@ importers:
       '@tailorkit/env':
         specifier: workspace:*
         version: link:../env
+      '@tailorkit/observability':
+        specifier: workspace:*
+        version: link:../observability
       '@tailorkit/vite':
         specifier: workspace:*
         version: link:../vite

@@ -77,18 +77,18 @@ describe("workflow logging", () => {
       resumeFrom: { data: "private-session" },
     };
     logWorkflowEvent("run_started", input);
-    expect(info).toHaveBeenCalledWith(
-      JSON.stringify({
-        appId: context.appId,
-        attempt: context.attempt,
-        event: "run_started",
-        phase: context.phase,
-        runId: context.runId,
-        stepId: context.stepId,
-        threadId: context.threadId,
-        workflow: "appAgent",
-      })
-    );
+    expect(info).toHaveBeenCalledOnce();
+    expect(JSON.parse(String(info.mock.calls[0]?.[0]))).toEqual({
+      appId: context.appId,
+      attempt: context.attempt,
+      event: "run_started",
+      level: "info",
+      phase: context.phase,
+      runId: context.runId,
+      stepId: context.stepId,
+      threadId: context.threadId,
+      workflow: "appAgent",
+    });
   });
 
   it("reports a failed harness checkpoint at error level even if the step returns", () => {

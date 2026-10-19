@@ -10,7 +10,7 @@ No runtime code is imported from `@tailorkit/agent`. Configure `AI_GATEWAY_API_K
 
 ## Workflow logs
 
-The fx workflow emits JSON runtime logs for run start/completion/failure, each start/agent/finish/cancel step attempt, and agent checkpoints. Entries include `runId`, `appId`, `threadId` when available, and step `stepId`/`attempt` metadata inside durable steps. Finished and failed attempts include `durationMs`. A failed attempt may retry; `run_failed` means orchestration reached its failure cleanup. `cleanup_failed` records cleanup errors separately. Direct API cancellation logs the run and app IDs without step metadata.
+The fx workflow uses the shared `@tailorkit/observability/logging` logger for run start/completion/failure, each start/agent/finish/cancel step attempt, and agent checkpoints. JSON entries include `runId`, `appId`, `threadId` when available, and step `stepId`/`attempt` metadata inside durable steps. The shared logger adds `level` and the active OpenTelemetry `traceId` when available, without loading Node instrumentation into the workflow sandbox. Finished and failed attempts include `durationMs`. A failed attempt may retry; `run_failed` means orchestration reached its failure cleanup. `cleanup_failed` records cleanup errors separately. Direct API cancellation logs the run and app IDs without step metadata.
 
 On Vercel, open the workflow run details and choose **View Logs**. Vercel's Logs tab supports Workflow Run ID and Workflow Step ID filters across the run's requests ([Vercel announcement](https://vercel.com/changelog/logs-filtering-for-vercel-workflows-now-available)). Locally, these entries appear in the server console.
 

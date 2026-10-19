@@ -1,3 +1,4 @@
+import { logger } from "@tailorkit/observability/logging";
 import { getStepMetadata } from "workflow";
 
 interface WorkflowLogContext {
@@ -29,29 +30,28 @@ export const logWorkflowEvent = (
 ) => {
   // Allowlist fields: inputs, model output, resume state and error messages can
   // contain credentials or private app data. Inspect errors in Workflow instead.
-  const entry = JSON.stringify({
+  const attributes = {
     appId: context.appId,
     attempt: context.attempt,
     durationMs: context.durationMs,
     errorType: error instanceof Error ? error.name : undefined,
-    event,
     phase: context.phase,
     runId: context.runId,
     status: context.status,
     stepId: context.stepId,
     threadId: context.threadId,
     workflow: "appAgent",
-  });
+  };
   if (
     event === "run_failed" ||
     event === "step_failed" ||
     event === "cleanup_failed" ||
     context.status === "failed"
   ) {
-    console.error(entry);
+    logger.error(event, attributes);
     return;
   }
-  console.info(entry);
+  logger.info(event, attributes);
 };
 
 const stepMetadata = () => {

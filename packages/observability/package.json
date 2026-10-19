@@ -19,10 +19,15 @@
       "development": "./src/index.ts",
       "types": "./dist/index.d.mts",
       "default": "./dist/index.mjs"
+    },
+    "./logging": {
+      "development": "./src/logging.ts",
+      "types": "./dist/logging.d.mts",
+      "default": "./dist/logging.mjs"
     }
   },
   "scripts": {
-    "build": "vp pack src/index.ts --format esm --dts --clean",
+    "build": "vp pack src/index.ts src/logging.ts --format esm --dts --clean",
     "check-types": "tsc --noEmit",
     "test": "vp test run",
     "lint": "vp lint .",
