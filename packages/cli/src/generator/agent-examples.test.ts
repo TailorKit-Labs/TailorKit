@@ -10,6 +10,7 @@ import { primitives } from "@tailorkit/core/primitives/zod";
 import { createTailorKitSchema } from "@tailorkit/core/schema";
 import { expect, it } from "vite-plus/test";
 
+import { generateApp } from "./generate";
 import { renderGeneratedReferences, renderGeneratedTypes } from "./types";
 import type { TailorKitSchemaFile } from "./types";
 
@@ -112,11 +113,27 @@ const declaration = (specifier: string) =>
     ".d.$<kind>ts"
   );
 
-it("typechecks complete authored recipes and generated examples against the public SDK", async () => {
+it("typechecks authored and generated examples with scaffold imports and the public SDK", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-agent-examples-"));
   try {
+    await generateApp({
+      bare: true,
+      force: false,
+      hostUrl: "https://host.test",
+      packageName: "agent-examples",
+      packageVersions: {
+        preact: "11.0.1",
+        tailorkit: "0.1.0-beta.49",
+        typescript: "7.0.2",
+        vite: "8.0.0",
+      },
+      schema,
+      targetDirectory: root,
+      tooling: "vite",
+    });
     const documents = await Promise.all(
       [
+        "../../../agent-fx/src/skills/database.md",
         "../../../agent-fx/src/skills/references/functions.md",
         "../../../agent-fx/src/skills/references/interactions.md",
         "../../../agent-fx/src/skills/references/views.md",
@@ -202,8 +219,6 @@ it("typechecks complete authored recipes and generated examples against the publ
           moduleResolution: "Bundler",
           noEmit: true,
           paths: {
-            "#*": [path.join(root, "src/*"), path.join(root, "src/*/index.ts")],
-            "#tailorkit": [path.join(root, "src/tailorkit.gen.ts")],
             preact: [path.join(preact, "src/index.d.ts")],
             "preact/hooks": [path.join(preact, "hooks/src/index.d.ts")],
             "preact/jsx-runtime": [

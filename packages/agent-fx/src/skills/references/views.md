@@ -1,8 +1,10 @@
-# View examples
+# Display a record or repeated items
 
-Choose the example needed. These assume a `panel` at `/records/detail` with `context.recordId: string`, and a repeated `tile` at `/`; use the actual product capabilities.
+These examples assume a `panel` slot at `/records/detail` with `context.recordId: string`, and a repeated `tile` slot at `/`. Use the slot names, paths, context, and components in the host's generated views page.
 
-## Shell for backend hooks
+## App shell
+
+The scaffold's root supplies `ClientProvider` for backend hooks. `<Route />` renders the selected view or layout:
 
 <!-- example: src/root.tsx -->
 
@@ -17,9 +19,9 @@ const Shell = () => (
 export default defineRoute({ shellComponent: Shell });
 ```
 
-## Read context inside the selected view
+## Show the selected record
 
-Read context inside the view. The explicit return type allows the component to refer to its definition below.
+Read the host's record ID with `definition.useContext()` inside the view. The return type lets this component refer to its definition below:
 
 <!-- example: src/slots/panel/records.detail.view.tsx -->
 
@@ -42,9 +44,9 @@ const definition = defineView({
 export default definition;
 ```
 
-## Repeated tiles
+## Show one tile per note
 
-Only use this for a multiple-instance slot. Enable `server: {}` and register the notes query from the functions example. The query enforces access; record IDs supply stable keys. Use product-supported metadata.
+For a slot with `multiple: true`, return one instance per note. Enable `server: {}` and register the backend example's `notes.list` query. It returns authorized notes; their IDs identify each tile. Use the host's supported metadata fields:
 
 <!-- example: src/slots/tile/index.view.tsx -->
 
@@ -79,4 +81,4 @@ const definition = defineView({
 export default definition;
 ```
 
-For a normal reactive list, keep one view and use `useQuery` instead.
+For a list inside one panel, use one view with `useQuery` instead of repeated instances.

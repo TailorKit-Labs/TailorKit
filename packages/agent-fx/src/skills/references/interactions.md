@@ -1,8 +1,8 @@
-# A simple form
+# Save a form
 
-Use local state for the field and the mutation hook for pending/error state. This example assumes generated `Input` supports `value`, `disabled`, and `onValueChange({ value })`; `Button` supports `disabled` and `onClick()`; `Box` accepts children. Match controls and accessible labeling to the product's actual capabilities.
+Keep the draft in local state and saving/errors in the mutation hook. This example uses generated `Input`, `Button`, and `Box` controls. Adapt props and accessible labels to the host's component pages; these names and signatures vary by host.
 
-The `notes.add` mutation comes from the functions example. While saving, disable the controls. Clear the field after success; a failure keeps its value.
+Use `notes.add` from the backend example and render this component under `ClientProvider`. The input callback receives `{ value }`. Saving disables the form; success clears it, and failure keeps the draft:
 
 <!-- example: src/components/note-editor.tsx -->
 
@@ -37,4 +37,4 @@ export const NoteEditor = () => {
 };
 ```
 
-Render lists directly from `useQuery` data. Add coordination for overlapping requests only when the requested interaction allows them and needs it.
+For a saved list, render `useQuery` data. Mutations update the query subscription; keep only unsaved edits in local state.

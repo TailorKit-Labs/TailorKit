@@ -1,27 +1,31 @@
-# App functions
+# Load and save app data
 
-Use functions for app-owned data or external work. Enable `server: {}`. Import the shared `fn` from `#db` for database functions; use `fn` from `tailorkit/server` for standalone actions.
+App functions run on TailorKit's managed backend. Use them to store app data or call external services. Enable `server: {}` in `tailorkit.config.ts`.
 
-| Kind | Use | Capabilities |
+| Function | Use | Handler access |
 | --- | --- | --- |
-| Query | Reactive reads | Synchronous read-only `db`, verified `identity` |
-| Mutation | Atomic writes | Synchronous read/write `db`, verified `identity` |
-| Action | External calls | Async `queries`, `mutations`, server `tools`, `identity`, `scope`, `signal`, `requestId`; no `db` |
+| Query | Read saved data and subscribe to changes | Synchronous read-only `db`, verified `identity` |
+| Mutation | Save changes in one transaction | Synchronous read/write `db`, verified `identity` |
+| Action | Call external services or host tools | Async `queries`, `mutations`, server `tools`, `identity`, `signal` |
 
-Chain `.input(schema)` and optional `.output(schema)` before `.handler(...)`. Schemas use Standard Schema v1 and must validate synchronously. Builder handlers receive `input`; inputless functions omit `.input`. Return JSON-compatible values and `null` for an absent result.
+## Define and register functions
 
-Export each function module with `export default defineRouter({ list, add })` from `tailorkit/server`. Import the default router as `notes` and register it with `defineServer({ notes })` in `src/server.ts`, then regenerate bindings. Names become `api.notes.list`, etc.; files alone do not register functions. See the [function examples](references/functions.md) for a small database-backed feature and an external action.
+Use the shared `fn` from `#db` for database functions; use `fn` from `tailorkit/server` for standalone actions. Chain `.input(schema)` and optional `.output(schema)` before `.handler(...)`.
 
-## Database work
+A schema validates accepted values. Use Valibot for new schemas or keep the app's existing Standard Schema v1 validator; function schemas validate synchronously. Handlers receive validated `input`; inputless functions omit `.input`. Return JSON-compatible data, using `null` for an absent result.
 
-Configure `export const fn = createFunctions({ database: db })` once in `src/db/index.ts`, using `createFunctions` from `tailorkit/server`. The shared builder supplies typed `db` in every query/mutation handler. Queries/mutations finish synchronously: execute relational reads with `.sync()`, select builders with `.all()`/`.get()`, and writes with `.run()` or `.returning(...).all()`/`.get()`. A mutation is already one transaction and rolls back on throw. Keep network work in actions.
+Group a module's functions with `export default defineRouter({ list, add })` from `tailorkit/server`. Import that router as `notes` in `src/server.ts` and export `defineServer({ notes })`. Run `pnpm run generate` to make `api.notes.list` and `api.notes.add` available in `#tailorkit`. The [backend examples](references/functions.md) show the complete files.
 
-An installation can have multiple users. Enforce the feature's access rules in every read/write using verified identity; caller-supplied IDs are not proof of access. `identity.subjectId` is optional. Throw `AppError` from `tailorkit/server` for expected errors, such as `UNAUTHORIZED` or `NOT_FOUND`.
+## Database access and identity
 
-## Actions and clients
+Bind the database once with `createFunctions({ database: db })` in `src/db/index.ts`; handlers then receive typed `db`. Queries and mutations finish synchronously. The database guide covers reads and writes; use actions for network calls.
 
-For calls to app functions from an action, declare `.functions({ notes })`, then use `queries.notes.list()` or `mutations.notes.add(input)`. Use context `tools` for exposed product server operations. For public fetches, pass `signal`, check the status, and validate the response. Each mutation commits separately; external writes need retry semantics appropriate to the service.
+`identity` describes the verified caller and installation. `identity.subjectId` is the user ID when available. For private records, require it and filter every read/update/delete by that owner. For shared records, enforce the intended shared access rule. Caller-supplied IDs alone do not grant access. Throw `AppError` from `tailorkit/server` for expected failures, such as `UNAUTHORIZED` or `NOT_FOUND`.
 
-Under `ClientProvider`, use `useQuery(api.notes.list)`, `useMutation(api.notes.add)`, and `useAction(api.preview.summary)`. Render hook data/loading/error state directly. Committed mutations refresh affected queries. Use `mutate`/`execute` for ordinary callbacks and their async variants when subsequent work needs a result. Avoid duplicating their state in custom hooks.
+## External services and client hooks
 
-Keep hooks unconditional. For required record input, mount the consuming child when the ID exists. To defer an inputless query, use `useQuery(api.notes.list, undefined, { enabled: isOpen })`.
+Actions use `fetch` or exposed server `tools`; they have no `db`. Declare `.functions({ notes })` to call `queries.notes.list()` or `mutations.notes.add(input)`. Each mutation commits separately. Pass `signal` to fetch, handle unsuccessful responses, and validate returned data. Design external writes for the service's retry behavior.
+
+Under `ClientProvider`, call `useQuery(api.notes.list)`, `useMutation(api.notes.add)`, or `useAction(api.preview.summary)` from `tailorkit/client`. Queries subscribe to saved data; committed mutations update affected subscriptions. Render hook data/loading/error state directly. Call `mutate` or `execute` in callbacks; use `mutateAsync` or `executeAsync` when awaiting the result.
+
+Mount a query component once its required record ID exists. To defer an inputless query, use `useQuery(api.notes.list, undefined, { enabled: isOpen })`.

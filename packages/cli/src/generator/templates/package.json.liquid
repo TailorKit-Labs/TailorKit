@@ -3,7 +3,10 @@
   "description": "A TailorKit.dev app that embeds in a host app to extend what it can do.",
   "private": true,
   "imports": {
-    "#tailorkit": "./src/tailorkit.gen.ts"
+    "#tailorkit": "./src/tailorkit.gen.ts",
+    "#db": "./src/db/index.ts",
+    "#db/*": "./src/db/*.ts",
+    "#functions/*": "./src/functions/*.ts"
   },
   "scripts": {
     "build": "{% if vitePlus %}vp{% else %}vite{% endif %} build",

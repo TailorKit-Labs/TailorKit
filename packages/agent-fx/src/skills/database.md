@@ -1,16 +1,16 @@
-# App SQLite
+# Store app data
 
-Each installation has persistent SQLite shared by its users. Use it only for app-owned data and enforce the feature's access rules in functions. Queries/mutations receive a restricted database capability; there is no driver or database service to configure.
+Each installation, an installed copy of the app, has persistent SQLite shared by its users. Use it for data the app owns. Backend functions enforce who can read or change that data; TailorKit manages the connection and transactions.
 
-Use `tailorkit/db` for table/column builders, `defineRelations`, `defineDatabase`, and query helpers. Keep database imports in backend modules. When adding storage to a bare app, create `src/db/schema.ts`, `relations.ts` and `index.ts` using the [function example](references/functions.md).
+Import table builders, `defineRelations`, `defineDatabase`, and query helpers from `tailorkit/db`. Keep these imports in backend files. The [backend example](references/functions.md) shows the schema, relations, database builder, and functions together.
 
-## Columns and inserts
+## Tables and columns
 
-Use `table`, `text`, `integer`, `real`, and `boolean`. Choose required fields and defaults to match the feature; generate text IDs with `crypto.randomUUID()`. Table names start with a letter, contain letters/digits/underscores, are at most 63 characters, and avoid `sqlite_`/`tailorkit_` prefixes.
+Define tables in `src/db/schema.ts` with `table`, `text`, `integer`, `real`, and `boolean`. Use `crypto.randomUUID()` for text IDs. Table names start with a letter, contain letters/digits/underscores, have at most 63 characters, and avoid `sqlite_` and `tailorkit_` prefixes.
 
-For a finite text type, `.$type<T>()` narrows TypeScript; validate inputs at runtime too. `$inferInsert` describes complete insert rows. For example:
+Set required fields and defaults for the feature. `.$type<T>()` narrows TypeScript values; validate function input at runtime too. `$inferInsert` gives the insert row type:
 
-<!-- example: typed-insert -->
+<!-- example: src/examples/typed-insert.ts -->
 
 ```ts
 import { integer, table, text } from "tailorkit/db";
@@ -32,16 +32,16 @@ export const row: TaskInsert = {
 };
 ```
 
-Insert the row inside a mutation. The table only needs the columns required by the feature.
+Create and insert rows inside mutations.
 
-## Relations and execution
+## Relations and queries
 
-Pass all tables to `defineRelations(schema)`, then `defineDatabase({ relations })`. Add a relation callback only when querying related records. `r.one.users({ from: r.notes.authorId, to: r.users.id })` defines navigation; a column reference defines a foreign-key constraint.
+Pass all tables to `defineRelations(schema)`, then `defineDatabase({ relations })`. Relations describe how queries follow connected records. Add a relation callback when needed: `r.one.users({ from: r.notes.authorId, to: r.users.id })`. A column reference defines a foreign-key constraint.
 
-Export `fn = createFunctions({ database: db })` from `src/db/index.ts`, importing `createFunctions` from `tailorkit/server`. Function modules import that shared `fn` from `#db`; their handlers receive typed `db` automatically. Relational reads end in `.sync()`, select builders in `.all()`/`.get()`, and writes in `.run()` or `.returning(...).all()`/`.get()`. Apply appropriate ownership conditions to reads/updates/deletes. Filter and limit in the query when needed. Mutations already provide a transaction; raw SQL/connection access and runtime schema changes are unavailable.
+Export `fn = createFunctions({ database: db })` from `src/db/index.ts`, importing `createFunctions` from `tailorkit/server`. Function modules import `fn` from `#db`. Run relational reads with `.sync()`, select builders with `.all()`/`.get()`, and writes with `.run()` or `.returning(...).all()`/`.get()`. Filter by access rules, select needed fields, and limit growing lists. A mutation already runs in a transaction.
 
-## Migrations
+## Schema changes
 
-After schema changes, run `db:generate` (`tailorkit db generate`). Inspect the generated SQL and keep it with its snapshots under the configured migrations directory, normally `src/db/migrations`. Append migrations and preserve applied history. For existing data, ensure new required fields have suitable defaults or a backfill.
+Run `pnpm run db:generate` after table changes. Keep the generated SQL and snapshots, normally under `src/db/migrations`. Add forward migrations; preserve applied history and existing data. New required columns need defaults or a backfill for existing rows.
 
-The build checks drift and bundles migrations; deployment applies pending migrations before database functions run. Correct source and generate a forward migration for upgrade failures. Preserve existing data; do not bypass this path with schema push or database resets.
+The build detects missing migrations; deployment applies pending migrations before database functions run. Correct the definitions and add a migration for upgrades. Use this migration path rather than schema push, runtime SQL, or database resets.

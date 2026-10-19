@@ -1,10 +1,12 @@
-# Small backend examples
+# Save notes and call an external service
 
-Use these patterns only for app-owned data. Product-owned records use generated tools. This notes example is private to the signed-in user; use installation-wide sharing when that is the feature's intended access model.
+Use the notes files for new data your app owns. Each user sees only their own notes. Use host tools for records the product already owns.
 
-Enable `server: {}`, generate migrations after adding tables, and regenerate bindings after registration.
+Enable `server: {}` in `tailorkit.config.ts`. After adding these files, run `pnpm run db:generate` and `pnpm run generate`.
 
 ## Notes: table, query, and mutation
+
+Define the stored fields, include the tables in the database, and create the shared function builder:
 
 <!-- example: src/db/schema.ts -->
 
@@ -85,11 +87,11 @@ const add = fn.mutation
 export default defineRouter({ list, add });
 ```
 
-The caller cannot choose the owner. Apply the same ownership condition to edit/delete operations when adding those features. Return only the fields needed by the UI.
+`identity.subjectId` supplies the owner; input cannot choose it. `list` reads that owner's notes, and `add` saves one. Use the same owner filter for edits/deletes. For shared notes, replace this private access rule with the feature's intended sharing rule.
 
 ## Public external data
 
-An external lookup needs an action, not another database layer. Replace the example URL with the feature's actual endpoint. Credentialed product integrations use exposed server tools.
+Use an action for an external request. Replace the URL with the requested service's endpoint. For a host integration, use its exposed server tool.
 
 <!-- example: src/functions/preview.ts -->
 
@@ -110,7 +112,9 @@ const summary = fn.action.output(result).handler(async ({ signal }) => {
 export default defineRouter({ summary });
 ```
 
-## Register what the app uses
+## Expose functions to the UI
+
+Register the routers in `src/server.ts`; their names become `api.notes` and `api.preview` in generated bindings:
 
 <!-- example: src/server.ts -->
 
@@ -123,4 +127,4 @@ import preview from "#functions/preview";
 export default defineServer({ notes, preview });
 ```
 
-Use `useQuery(api.notes.list)`, `useMutation(api.notes.add)`, or `useAction(api.preview.summary)` from the client. An app needing only notes can omit the external action and its registration.
+After generation, import `api` from `#tailorkit`. Use `useQuery(api.notes.list)`, `useMutation(api.notes.add)`, or `useAction(api.preview.summary)` under `ClientProvider`. An app needing only notes omits `preview` and its file.

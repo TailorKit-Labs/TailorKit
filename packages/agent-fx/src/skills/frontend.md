@@ -1,13 +1,15 @@
-# Build the UI
+# Build controls and forms
 
-Read the generated component pages for the controls needed, then compose them directly with Preact. Import components and tools from `#tailorkit`. Use the product's layout, spacing, color, and accessibility props.
+Import UI components and host tools from `#tailorkit`. The generated capability pages list each control's props, callbacks, children, and styling options. Compose those controls with Preact; use their layout, spacing, color, and accessibility props.
 
-Keep form state in the component with `useState`. Use `useQuery` for app data and `useMutation`/`useAction` for operations; their pending and error state is usually enough. The [form example](references/interactions.md) shows this pattern. Share state through props before introducing a provider or custom hook.
+## Inputs and callbacks
 
-Callbacks receive the generated payload, such as `{ value }`, a string, or no argument. They cross an asynchronous browser bridge and are not DOM events. Use the declared values directly; `event.target` and `preventDefault()` are unavailable.
+Keep form drafts in `useState`. Callbacks receive the payload in the generated signature: an object such as `{ value }`, a string, or no argument. Use that value directly; callbacks are not DOM events.
 
-Keep local edits responsive. Use supported disabled/pending props during saves and display failures through available components. Use an exposed uncontrolled control when it fits the form; a regular controlled input is also valid. Add debounce, cancellation, or other coordination only when the feature actually needs it.
+For saved app data, use `useQuery` to read, `useMutation` to save, and `useAction` to call external services. Import these hooks from `tailorkit/client` and function references from `api` in `#tailorkit`. Keep `ClientProvider` in the app root above these hooks. The [form example](references/interactions.md) shows draft, saving, and failure behavior.
 
-Product tools are promise-returning calls, not subscriptions. Call them from an event handler or an effect and show the result/error. Backend orchestration uses action context `tools`. Keep the required `ClientProvider` above backend hooks; use stable record keys for lists and keep components at module scope.
+Use hook pending/error state directly. Disable controls while saving when overlapping edits are unwanted, keep drafts on failure, and use stable record keys for lists. Share state through props before adding a provider or custom hook. Define components at module scope and call hooks unconditionally.
 
-Verify the requested interaction in the product when possible. Add performance work in response to a visible problem.
+## Host operations
+
+Host tools perform exposed product operations, such as updating a contact or navigating. Call `tools` from `#tailorkit` in an event handler or effect and handle the promise's result/error. Tools return one result per call; they do not subscribe to changes. Backend actions receive server tools through their handler's `tools` value.

@@ -1,10 +1,12 @@
-# Views and context
+# Place UI in the host
 
-Choose a supported slot/path from the generated capabilities. Implement only surfaces needed by the requested workflow; a slot's availability does not require a view. Use multiple instances only when the product surface needs separate items. The [view examples](references/views.md) cover a shell, record context, and repeated tiles.
+A slot is a host UI location, such as a sidebar, panel, or page. A view is your component for a supported context path in that slot. Context is host-supplied data, such as the selected record. Read the generated views page for available slots, paths, and context fields. Use only the surfaces the requested feature needs.
 
-## File-based routing
+The [view examples](references/views.md) show an app shell, selected-record data, and repeated items.
 
-Views use `src/slots/<slot>/**/*.view.tsx`. The directory immediately under `src/slots/` is the literal slot name, including any dots in that name. The remaining directories and filename define the context path:
+## View files
+
+Views live in `src/slots/<slot>/**/*.view.tsx`. The first directory names the slot literally, including any dots. The remaining directories and filename determine the context path:
 
 | View file | Slot | Context path |
 | --- | --- | --- |
@@ -15,33 +17,33 @@ Views use `src/slots/<slot>/**/*.view.tsx`. The directory immediately under `src
 | `src/slots/panel/members/detail.view.tsx` | `panel` | `/members/detail` |
 | `src/slots/panel/some.new.new.view.tsx` or `src/slots/panel/some/new/new/index.view.tsx` | `panel` | `/some/new/new` |
 
-Dots and directories both separate path segments and can be mixed. A final `index` segment is omitted for views; every segment must be nonempty. Each slot/path pair has one view file and must be supported by the product contract. Alternative spellings of the same pair are duplicates, not separate views.
+Dots and directories both separate path segments and can be mixed. A final `index` is omitted; segments must be nonempty. Choose one filename per slot/path pair. The alternative spellings above describe the same view.
 
-View files default-export `defineView` from `tailorkit/client`, called with an inline options object containing named properties. The build fills omitted `slot` and `view` values from the file location. Explicit values must be matching string literals; an explicit `view` also gives precise context typing. Import `#tailorkit` for its type augmentation. Repeated views also supply the instance configuration below.
+Default-export `defineView` from `tailorkit/client` with an inline options object and named properties. Omitted `slot` and `view` come from the file location. Explicit values must be matching string literals; an explicit `view` gives precise context typing. Import `#tailorkit` for the host types.
 
-## Context
+## Selected-record and page data
 
-These paths describe product context, not browser routes. The product selects the deepest matching view or falls back to an ancestor. Read context with the definition's `useContext()` inside its component tree. Context belongs to that view, not ancestor shells.
+Paths describe host context, not browser URLs. The host chooses the deepest matching view, falling back to ancestors. Read its data with the definition's `useContext()` inside the view component tree. Ancestor shells do not have that view's context.
 
-## Shells and layouts
+## Shared shells and layouts
 
-Roots and layouts are optional wrappers around discovered views:
+A shell wraps UI with shared controls or providers. These files are optional:
 
-| File | Scope |
+| File | Wraps |
 | --- | --- |
-| `src/root.tsx` | App shell across slots. |
-| `src/slots/panel/root.tsx` | Shell for the `panel` slot. |
-| `src/slots/panel/layout.tsx` | All views in `panel`. |
-| `src/slots/panel/members.layout.tsx` or `src/slots/panel/members/layout.tsx` | `/members` and its descendant views in `panel`. |
+| `src/root.tsx` | App UI across slots |
+| `src/slots/panel/root.tsx` | The `panel` slot |
+| `src/slots/panel/layout.tsx` | All views in `panel` |
+| `src/slots/panel/members.layout.tsx` or `src/slots/panel/members/layout.tsx` | `/members` and its descendants in `panel` |
 
-App and slot roots default-export `defineRoute({ shellComponent: Shell })`. A slot root belongs directly in its slot directory. Layouts default-export either a component or `defineRoute({ shellComponent: Layout })`; `layout.tsx` uses its directory path, while `*.layout.tsx` adds the filename's dotted segments. Unlike view filenames, layout filenames retain a final `index`: `index.layout.tsx` wraps `/index`. Each layout path is unique within its slot.
+Roots default-export `defineRoute({ shellComponent: Shell })`. A slot root sits directly in its slot directory. Layouts default-export a component or `defineRoute({ shellComponent: Layout })`. `layout.tsx` uses its directory path; `*.layout.tsx` adds filename segments. Layout paths retain `index`, so `index.layout.tsx` wraps `/index`. Each layout path is unique within its slot.
 
-Render `<Route />` from `tailorkit/client` inside shells and layouts to render the next child. The nesting order is app root → slot root → matching layouts from shallowest to deepest → selected view. A layout matches the selected view's path or a slash-separated ancestor, so `/members` wraps `/members/detail` but not `/membership`. Common shells and layouts stay mounted as views change, preserving their local state within that mounted app. Keep `ClientProvider` above backend hooks.
+Render `<Route />` inside shells/layouts for the next child. Nesting is app root → slot root → matching layouts from shallowest to deepest → selected view. Layouts match whole path segments: `/members` includes `/members/detail`, not `/membership`. Shared shells/layouts retain local state as views change. Keep `ClientProvider` above backend hooks.
 
-## Repeated instances
+## One view per item
 
-For `multiple: true` slots, enable `server: {}` and supply inline `instances: { dataSchema, resolve: (...) => ... }` on a module-level `defineView`. Use an inline arrow or function expression for `resolve`. The view path is inferred from the file or supplied as a matching string literal. Single slots omit `instances`.
+A slot with `multiple: true` displays separate instances of a view, such as one tile per record. Each instance has a stable unique `key`, host-supported `metadata` for labels/placement, and `data` for the component.
 
-The build extracts the inline resolver into the backend. It receives `{ context, identity, signal, queries }` and can await registered queries, not mutations/actions. Use backend-safe dependencies and enforce access through those queries. Return stable unique keys, product-supported `metadata`, and data matching `dataSchema`. Read instance data with `useInstance()` inside the view.
+Enable `server: {}` and declare `instances: { dataSchema, resolve: (...) => ... }` in a module-level `defineView`. Use an inline arrow/function expression for `resolve`; the path is inferred or a matching literal. `dataSchema` validates each item's data. Single-instance slots omit `instances`.
 
-Instance discovery is separate from reactive query updates. Check how the product refreshes instances when that behavior matters to the feature.
+The resolver runs on the backend with `{ context, identity, signal, queries }`. Read saved records through registered queries and enforce access there. Return the instances; read the selected item's data with `definition.useInstance()` inside the view. Keep resolver dependencies backend-safe. Instance lists refresh through the host separately from query subscriptions.
