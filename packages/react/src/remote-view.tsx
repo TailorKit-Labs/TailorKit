@@ -2,9 +2,14 @@ import { useStore } from "@nanostores/react";
 import type { ToolBridge, Session } from "@tailorkit/app/client";
 import {
   createRemoteViewStore,
+  toComponentTagName,
   createRemoteElementProps,
 } from "@tailorkit/client-core";
 import type { RemoteViewStore } from "@tailorkit/client-core";
+import type {
+  TailorKitContract,
+  experimental_CanvasPolicy,
+} from "@tailorkit/core/schema";
 import type {
   RemoteProps,
   RemoteElementNode,
@@ -21,6 +26,8 @@ import {
   useState,
 } from "react";
 import type { ComponentType, ReactNode } from "react";
+
+import { CanvasPoliciesContext, CanvasNodeContext } from "./canvas-context";
 
 const RemoteUIContext = createContext<RemoteViewStore | null>(null);
 
@@ -62,6 +69,7 @@ class RemoteErrorBoundary extends Component<
 
 interface RemoteViewHostProps {
   appUrl: string | URL;
+  contract?: TailorKitContract;
   toolBridge?: ToolBridge;
   getBackendSession?: (options: { refresh: boolean }) => Promise<Session>;
   components: RemoteProps;
@@ -85,6 +93,12 @@ const RemoteElementViewComponent = ({
     [ctx, node.type]
   );
   const component = useStore(componentStore);
+  const policies = useContext(CanvasPoliciesContext);
+  const policy = policies[node.type];
+  const canvasContext = useMemo(
+    () => ({ nodeId: node.id, policy, store: ctx }),
+    [ctx, node.id, policy]
+  );
 
   if (component === undefined) {
     throw new Error(`TailorKit component "${node.type}" is not registered.`);
@@ -92,12 +106,16 @@ const RemoteElementViewComponent = ({
   const props = createRemoteElementProps(node, ctx.dispatch.bind(ctx));
 
   // SAFETY: The renderer was supplied through the typed component registry; React's createElement overload erases its heterogeneous props.
-  return createElement(
-    /* oxlint-disable typescript/no-unsafe-type-assertion -- The renderer was supplied through the typed component registry; React's createElement overload erases its heterogeneous props. */
-    component as string | ComponentType<RemoteProps>,
-    /* oxlint-enable typescript/no-unsafe-type-assertion */
-    props,
-    ...children
+  return (
+    <CanvasNodeContext.Provider value={canvasContext}>
+      {createElement(
+        /* oxlint-disable typescript/no-unsafe-type-assertion -- The renderer was supplied through the typed component registry; React's createElement overload erases its heterogeneous props. */
+        component as string | ComponentType<RemoteProps>,
+        /* oxlint-enable typescript/no-unsafe-type-assertion */
+        props,
+        ...children
+      )}
+    </CanvasNodeContext.Provider>
   );
 };
 const RemoteElementView = memo(RemoteElementViewComponent);
@@ -159,9 +177,22 @@ export const RemoteViewHost = ({
   toolBridge,
   getBackendSession,
   components,
+  contract,
   createIframe,
   props,
 }: RemoteViewHostProps): ReactNode => {
+  const policies = useMemo(() => {
+    const result: Record<string, experimental_CanvasPolicy> = {};
+    for (const [name, definition] of Object.entries(
+      contract?.components ?? {}
+    )) {
+      if (definition.experimental_canvas) {
+        result[name] = definition.experimental_canvas;
+        result[toComponentTagName(name)] = definition.experimental_canvas;
+      }
+    }
+    return result;
+  }, [contract]);
   const appKey = appUrl.toString();
   const [state, setState] = useState(() => ({
     appKey,
@@ -197,10 +228,12 @@ export const RemoteViewHost = ({
   }
 
   return (
-    <RemoteUIContext.Provider value={store}>
-      <RemoteErrorBoundary key={`${appKey}:${snapshot.generation}`}>
-        <RemoteRoot store={store} />
-      </RemoteErrorBoundary>
-    </RemoteUIContext.Provider>
+    <CanvasPoliciesContext.Provider value={policies}>
+      <RemoteUIContext.Provider value={store}>
+        <RemoteErrorBoundary key={`${appKey}:${snapshot.generation}`}>
+          <RemoteRoot store={store} />
+        </RemoteErrorBoundary>
+      </RemoteUIContext.Provider>
+    </CanvasPoliciesContext.Provider>
   );
 };

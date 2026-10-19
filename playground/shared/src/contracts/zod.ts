@@ -1,4 +1,4 @@
-import { tool, defineContract } from "tailorkit";
+import { experimental_canvas, tool, defineContract } from "tailorkit";
 import { primitives } from "tailorkit/zod";
 import { z } from "zod";
 
@@ -12,6 +12,10 @@ const todo = z.object({
 
 export const contract = defineContract({
   components: {
+    experimental_Canvas: experimental_canvas({
+      maxFramesPerSecond: 60,
+      maxPixels: 1_048_576,
+    }),
     ...primitives(theme),
     Button: {
       callbacks: { onClick: {} },
@@ -36,7 +40,7 @@ export const contract = defineContract({
     team: z.object({ teamId: z.string().min(1) }),
     user: z.object({ userId: z.string().min(1) }),
   },
-  slots: { panel: { views: ["/"] } },
+  slots: { canvas: { views: ["/"] }, panel: { views: ["/"] } },
   tools: {
     todos: {
       add: tool

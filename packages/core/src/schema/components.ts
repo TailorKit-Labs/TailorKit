@@ -1,4 +1,5 @@
 import type { CallbackMap, Callbacks, InferCallbacks } from "./callbacks";
+import type { experimental_CanvasPolicy } from "./canvas";
 import type {
   EmptyDefinitionMap,
   EmptyObject,
@@ -19,6 +20,7 @@ export interface ComponentDefinition<
   TCallbacks extends Callbacks = EmptyCallbackMap,
   TChildren extends boolean | undefined = boolean | undefined,
 > {
+  experimental_canvas?: experimental_CanvasPolicy;
   callbacks?: TCallbacks;
   fields?: TFields;
   children?: TChildren;

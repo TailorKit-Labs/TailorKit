@@ -10,6 +10,7 @@ Read this index, then only the component or capability needed for the change. Ke
 
 ## Components
 
+- [experimental_Canvas](components/experimental_Canvas.md)
 - [Box](components/Box.md)
 - [Flex](components/Flex.md)
 - [Grid](components/Grid.md)

@@ -86,7 +86,9 @@ const runCase = async (
     reject(new Error(`Case ${mode} timed out.`));
   }, 20_000);
   try {
-    unregister = host.registerCanvas("display", canvas, { maxFramesPerSecond });
+    unregister = host.experimental_registerCanvas("display", canvas, {
+      maxFramesPerSecond,
+    });
     host.subscribe(() => {
       snapshots += 1;
     });

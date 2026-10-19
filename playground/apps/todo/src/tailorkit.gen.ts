@@ -37,6 +37,7 @@ export interface ViewPropsByPath {
 declare module "tailorkit/client" {
   interface TailorKitViews extends ViewPropsByPath {}
   interface TailorKitSlots {
+    "canvas": { views: "/"; multiple: false };
     "panel": { views: "/"; multiple: false };
   }
 }
@@ -116,6 +117,17 @@ export type Columns = Conditional<1 | 2 | 3 | 4 | 6 | 12>;
 export type AriaLabel = string;
 export type Disabled = boolean;
 export type Layout = "inline" | "box" | "flex" | "grid";
+
+export interface experimental_CanvasProps {
+  ariaLabel?: string;
+  height?: number;
+  surface?: string;
+  width?: number;
+}
+
+export const experimental_Canvas = /* @__PURE__ */ createRemoteComponent<experimental_CanvasProps, false>("experimental_Canvas", {
+  children: false,
+});
 
 export interface BoxProps {
   background?: Background;

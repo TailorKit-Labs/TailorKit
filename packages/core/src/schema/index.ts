@@ -1,4 +1,9 @@
 export { tool, flattenTools, validateToolValue } from "./tools";
+export { experimental_canvas } from "./canvas";
+export type {
+  experimental_CanvasPolicy,
+  experimental_CanvasProps,
+} from "./canvas";
 export type {
   ContractTool,
   ContractTools,

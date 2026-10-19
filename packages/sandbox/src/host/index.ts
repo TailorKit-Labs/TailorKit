@@ -13,13 +13,13 @@ import type {
 import { HostToIframePayload, IframeToHostPayload } from "#protocol";
 
 import { createCanvasTarget } from "./canvas";
-import type { CanvasTargetOptions } from "./canvas";
+import type { experimental_CanvasTargetOptions } from "./canvas";
 import { createRemoteUiStore } from "./store.js";
 import type { RemoteUiStore } from "./store.js";
 
 export { type RemoteUiStore } from "./store.js";
 export { createRemoteUiStore } from "./store.js";
-export type { CanvasTargetOptions } from "./canvas";
+export type { experimental_CanvasTargetOptions } from "./canvas";
 
 interface IframeBridgeMessage {
   channel: string;
@@ -29,10 +29,10 @@ interface IframeBridgeMessage {
 
 export interface IframeUiHost extends RemoteUiStore {
   /** Opt in a named pixel surface for this sandbox; cleanup revokes and clears it. */
-  registerCanvas: (
+  experimental_registerCanvas: (
     name: string,
     canvas: HTMLCanvasElement,
-    options?: CanvasTargetOptions
+    options?: experimental_CanvasTargetOptions
   ) => () => void;
   destroy: () => void;
   dispatch: (
@@ -129,7 +129,10 @@ export const createIframeUiHost = (
   const resolvedAppUrl = toUrl(appUrl);
   const sessionCalls = new Set<string>();
   const toolCalls = new Set<string>();
-  const canvases = new Map<string, ReturnType<typeof createCanvasTarget>>();
+  const canvases = new Map<
+    string,
+    { target: ReturnType<typeof createCanvasTarget>; generation: string }
+  >();
   const canvasElements = new Set<HTMLCanvasElement>();
   const queuedPayloads: HostToIframePayloadType[] = [];
   const callbackCalls = new Map<
@@ -182,10 +185,23 @@ export const createIframeUiHost = (
     );
   };
 
-  const connectCanvas = ({ id, name }: { id: string; name: string }) => {
-    const target = canvases.get(name);
+  const connectCanvas = ({
+    id,
+    name,
+    generation,
+  }: {
+    id: string;
+    name: string;
+    generation?: string;
+  }) => {
+    const registration = canvases.get(name);
+    const target = registration?.target;
     try {
-      if (!target || destroyed) {
+      if (
+        !target ||
+        destroyed ||
+        (generation !== undefined && generation !== registration?.generation)
+      ) {
         throw new Error("Canvas surface is not registered by the host.");
       }
       const connection = target.connect();
@@ -227,6 +243,12 @@ export const createIframeUiHost = (
       },
       type: "init",
     });
+    for (const [name, registration] of canvases) {
+      postToIframe({
+        data: { generation: registration.generation, name },
+        type: "canvasAvailability",
+      });
+    }
     for (const payload of queuedPayloads.splice(0)) {
       postToIframe(payload);
     }
@@ -374,7 +396,7 @@ export const createIframeUiHost = (
         return;
       }
       destroyed = true;
-      for (const target of canvases.values()) {
+      for (const { target } of canvases.values()) {
         target.close();
       }
       canvases.clear();
@@ -423,6 +445,41 @@ export const createIframeUiHost = (
       }
       return await promise;
     },
+    experimental_registerCanvas: (name, canvas, canvasOptions) => {
+      if (
+        destroyed ||
+        name.length === 0 ||
+        name.length > 128 ||
+        canvases.has(name) ||
+        canvasElements.has(canvas) ||
+        canvases.size >= 8
+      ) {
+        throw new Error("Canvas registration unavailable or duplicated.");
+      }
+      const target = createCanvasTarget(canvas, canvasOptions);
+      const registration = { generation: crypto.randomUUID(), target };
+      canvases.set(name, registration);
+      if (iframeReady) {
+        postToIframe({
+          data: { generation: registration.generation, name },
+          type: "canvasAvailability",
+        });
+      }
+      canvasElements.add(canvas);
+      return () => {
+        target.close();
+        if (canvases.get(name) === registration) {
+          canvases.delete(name);
+          canvasElements.delete(canvas);
+          if (iframeReady && !destroyed) {
+            postToIframe({
+              data: { generation: null, name },
+              type: "canvasAvailability",
+            });
+          }
+        }
+      };
+    },
     iframe,
     mount: () => {
       if (mounted || destroyed) {
@@ -438,28 +495,6 @@ export const createIframeUiHost = (
           reportError(error);
         }
       })();
-    },
-    registerCanvas: (name, canvas, canvasOptions) => {
-      if (
-        destroyed ||
-        name.length === 0 ||
-        name.length > 128 ||
-        canvases.has(name) ||
-        canvasElements.has(canvas) ||
-        canvases.size >= 8
-      ) {
-        throw new Error("Canvas registration unavailable or duplicated.");
-      }
-      const target = createCanvasTarget(canvas, canvasOptions);
-      canvases.set(name, target);
-      canvasElements.add(canvas);
-      return () => {
-        target.close();
-        if (canvases.get(name) === target) {
-          canvases.delete(name);
-          canvasElements.delete(canvas);
-        }
-      };
     },
     setProps: (props) => {
       if (currentProps === props || destroyed) {

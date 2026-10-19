@@ -1,4 +1,4 @@
-import type { CanvasConnection } from "@tailorkit/app/client";
+import type { experimental_CanvasConnection } from "@tailorkit/app/client";
 
 import type { HostToIframePayload } from "#protocol";
 
@@ -8,32 +8,37 @@ type CanvasReply = Extract<
 >["data"];
 
 export const createIframeCanvases = (
-  send: (data: { id: string; name: string }) => void
+  send: (data: { id: string; name: string; generation?: string }) => void
 ) => {
   const pending = new Map<
     string,
     {
-      resolve: (connection: CanvasConnection) => void;
+      resolve: (connection: experimental_CanvasConnection) => void;
       reject: (error: Error) => void;
       timer: ReturnType<typeof setTimeout>;
     }
   >();
   const ports = new Set<MessagePort>();
+  const available = new Map<string, string>();
+  const listeners = new Map<string, Set<(generation: string | null) => void>>();
   let closed = false;
-  const request = async (name: string): Promise<CanvasConnection> => {
+  const request = async (
+    name: string,
+    generation?: string
+  ): Promise<experimental_CanvasConnection> => {
     if (closed || pending.size >= 8 || name.length === 0 || name.length > 128) {
       throw new Error("Canvas request unavailable.");
     }
     const id = crypto.randomUUID();
     const { promise, resolve, reject } =
-      Promise.withResolvers<CanvasConnection>();
+      Promise.withResolvers<experimental_CanvasConnection>();
     const timer = setTimeout(() => {
       pending.delete(id);
       reject(new Error("Canvas request timed out."));
     }, 30_000);
     pending.set(id, { reject, resolve, timer });
     try {
-      send({ id, name });
+      send({ generation, id, name });
     } catch (error) {
       pending.delete(id);
       clearTimeout(timer);
@@ -42,6 +47,19 @@ export const createIframeCanvases = (
     return await promise;
   };
   return {
+    availability: (name: string, generation: string | null) => {
+      if (closed || (available.get(name) ?? null) === generation) {
+        return;
+      }
+      if (generation === null) {
+        available.delete(name);
+      } else {
+        available.set(name, generation);
+      }
+      for (const listener of listeners.get(name) ?? []) {
+        listener(generation);
+      }
+    },
     close: () => {
       closed = true;
       for (const entry of pending.values()) {
@@ -49,7 +67,15 @@ export const createIframeCanvases = (
         entry.reject(new Error("Sandbox destroyed."));
       }
       pending.clear();
+      available.clear();
+      for (const entries of listeners.values()) {
+        for (const listener of entries) {
+          listener(null);
+        }
+      }
+      listeners.clear();
       for (const port of ports) {
+        port.postMessage({ type: "close" });
         port.close();
       }
       ports.clear();
@@ -85,5 +111,17 @@ export const createIframeCanvases = (
       });
     },
     request,
+    watch: (name: string, listener: (generation: string | null) => void) => {
+      const entries = listeners.get(name) ?? new Set();
+      entries.add(listener);
+      listeners.set(name, entries);
+      listener(available.get(name) ?? null);
+      return () => {
+        entries.delete(listener);
+        if (entries.size === 0) {
+          listeners.delete(name);
+        }
+      };
+    },
   };
 };

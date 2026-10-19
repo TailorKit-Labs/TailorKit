@@ -17,7 +17,8 @@
     "preview": "vp preview",
     "check-types": "tsc --noEmit",
     "lint": "vp lint .",
-    "lint:fix": "vp lint --fix ."
+    "lint:fix": "vp lint --fix .",
+    "dev:canvas": "vp dev --config canvas-demo.vite.config.ts --host 127.0.0.1 --port 5191"
   },
   "dependencies": {
     "@playground/shared": "workspace:*",

@@ -2,6 +2,25 @@ import { expect, it, vi } from "vite-plus/test";
 
 import { createIframeCanvases } from "./canvas";
 
+it("observes host registration generations, ignores duplicates, and releases subscriptions", () => {
+  const bridge = createIframeCanvases(() => {
+    throw new Error("No canvas request expected.");
+  });
+  const generations: (string | null)[] = [];
+  bridge.availability("surface", "first");
+  const unsubscribe = bridge.watch("surface", (generation) => {
+    generations.push(generation);
+  });
+  bridge.availability("surface", "first");
+  bridge.availability("surface", null);
+  bridge.availability("surface", "resized");
+  expect(generations).toEqual(["first", null, "resized"]);
+  unsubscribe();
+  bridge.availability("surface", "unobserved");
+  bridge.close();
+  expect(generations).toEqual(["first", null, "resized"]);
+});
+
 it("rejects denied grants, bounds outstanding requests, and rejects them on teardown", async () => {
   const requests: { id: string; name: string }[] = [];
   const bridge = createIframeCanvases((request) => {

@@ -91,6 +91,7 @@ export const startIframeRuntime = (options: {
     send({ data, type: "canvasRequest" });
   });
   backendGlobal.__tailorkitRequestCanvas = canvases.request;
+  backendGlobal.__tailorkitWatchCanvas = canvases.watch;
   backendGlobal.__tailorkitTools = tools.bridge;
   backendGlobal.__tailorkitBackendSession = backend.getSession;
   const sendError = (cause: unknown) => {
@@ -213,6 +214,10 @@ export const startIframeRuntime = (options: {
       return;
     }
     const { payload } = parsed.output;
+    if (payload.type === "canvasAvailability") {
+      canvases.availability(payload.data.name, payload.data.generation);
+      return;
+    }
     if (payload.type === "canvasResult") {
       canvases.receive(payload.data);
       return;
@@ -293,6 +298,9 @@ export const startIframeRuntime = (options: {
   send({ type: "ready" });
   return () => {
     canvases.close();
+    if (backendGlobal.__tailorkitWatchCanvas === canvases.watch) {
+      delete backendGlobal.__tailorkitWatchCanvas;
+    }
     if (backendGlobal.__tailorkitRequestCanvas === canvases.request) {
       delete backendGlobal.__tailorkitRequestCanvas;
     }

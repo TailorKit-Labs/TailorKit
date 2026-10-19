@@ -4,14 +4,84 @@
 
 ## Experimental canvas surfaces
 
+All public canvas APIs and types use the `experimental_` prefix. They may change while the API is being evaluated.
+
+### Host contract and renderer
+
+```tsx
+import { defineContract, experimental_canvas } from "tailorkit";
+import { createClient, experimental_canvasRenderer } from "tailorkit/react";
+import { z } from "zod";
+
+const contract = defineContract({
+  components: {
+    experimental_Canvas: experimental_canvas({
+      maxPixels: 1_048_576,
+      maxFramesPerSecond: 60,
+    }),
+  },
+  views: { "/": z.object({}) },
+  slots: { panel: { views: ["/"] } },
+});
+
+const tailor = createClient({
+  contract,
+  baseUrl: "/api/tailorkit/",
+  components: { experimental_Canvas: experimental_canvasRenderer },
+});
+```
+
+Use `tailor.Provider` and `tailor.RenderSlot` normally. The renderer binds each canvas to its mounted remote node and sandbox instance. It registers the visible element, enforces the contract policy, and revokes the old registration when dimensions change or the component unmounts. A generation identifier prevents stale requests from attaching to a replacement surface. App props cannot raise the host's limits.
+
+### App hook and generated component
+
+The normal generator produces `experimental_Canvas` from that contract. Alias the import for JSX, and alias the hook so hook lint rules recognize it:
+
+```tsx
+import { experimental_useCanvasSurface as useCanvasSurface } from "tailorkit/client";
+
+import { experimental_Canvas as Canvas } from "#tailorkit";
+
+const Chart = ({ value }: { value: number }) => {
+  const surface = useCanvasSurface(
+    (canvas) => {
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("2D rendering is unavailable");
+      context.fillStyle = "royalblue";
+      context.fillRect(0, canvas.height - value, canvas.width, value);
+    },
+    [value]
+  );
+
+  return (
+    <Canvas
+      surface={surface.binding}
+      width={320}
+      height={200}
+      ariaLabel={`Sample value: ${value}`}
+    />
+  );
+};
+```
+
+The hook returns `binding`, `status` (`pending`, `ready`, or `error`), and `error`. It waits for host registration, creates the sandbox's OffscreenCanvas, draws and presents once, and redraws on dependency or backing-dimension changes. `ready` means that the surface connection is available, rather than a physical display acknowledgement. Keep drawing dependencies stable in the same way as effect dependencies. Unmounting releases the connection; draw errors are exposed through `error` and a later dependency change can retry.
+
+For a host-paced animation, pass `{ continuous: true }` as the third argument. Each iteration awaits the draw callback and host presentation before drawing another frame. Switching continuous mode off draws one final static frame. Drawing callbacks may return a promise; they should finish promptly and should not resize the OffscreenCanvas or retain it after teardown.
+
+### Low-level transport
+
 The low-level `createIframeUiHost` API can grant named pixel surfaces. The sandbox draws into its own `OffscreenCanvas`, transfers completed `ImageBitmap` frames through a dedicated `MessagePort`, and waits for the host to present each frame. Frames bypass component serialization and React reconciliation. This is an explicit frame-transfer design; it does not transfer control of the visible host canvas to untrusted code.
 
 The host registers an unused canvas before the app requests it:
 
 ```ts
-const revoke = host.registerCanvas("visualization", canvasElement, {
-  maxFramesPerSecond: 60,
-});
+const revoke = host.experimental_registerCanvas(
+  "visualization",
+  canvasElement,
+  {
+    maxFramesPerSecond: 60,
+  }
+);
 
 // Revoke access, discard any pending frame, and clear the visible surface.
 revoke();
@@ -22,9 +92,9 @@ The canvas must support `getContext("bitmaprenderer")` and must not already have
 Inside the app:
 
 ```ts
-import { requestCanvas } from "tailorkit/client";
+import { experimental_requestCanvas } from "tailorkit/client";
 
-const surface = await requestCanvas("visualization");
+const surface = await experimental_requestCanvas("visualization");
 try {
   const context = surface.canvas.getContext("2d");
   if (!context) {
@@ -41,7 +111,7 @@ try {
 
 `transferToImageBitmap()` replaces the source image with a blank image: redraw the complete frame before each `present()`. Await presentation before sending another frame. The acknowledgement means that the host consumed the bitmap during an animation-frame callback, rather than proof that pixels have reached the physical display. Keep a surface open for as long as its output should remain visible; closing it clears the host canvas.
 
-This first API is available on the low-level sandbox host. `RenderSlot` does not automatically expose a canvas component. Framework adapters and host contracts can build on the registration API in a follow-up. Keyboard/pointer input, audio, WebAssembly policy changes, and dedicated workers are separate capabilities; this change adds none of them.
+The low-level API is useful for custom adapters; React hosts can use the contract and renderer above. Keyboard/pointer input on the canvas, audio, WebAssembly policy changes, and dedicated workers remain separate capabilities.
 
 ## Limits and lifecycle
 
@@ -76,3 +146,18 @@ A local Chromium 154 run on 2026-10-19, with 120 measured frames per case after 
 Each case produced one initial component snapshot. The measured browser ran at approximately 60 Hz; the 240 FPS test cap avoids an additional host throttle and does not claim 240 FPS support. These are local observations, not portable performance thresholds or a game benchmark. The reported equivalent MB/s is `width × height × 4 × FPS`; it is a pixel-volume calculation, not measured IPC bandwidth or proof of zero-copy transfer. Other browsers/devices still need verification.
 
 A follow-up local run on 2026-10-20 with approximately 120 Hz browser scheduling also passed all nine cases: 120.85 FPS at 320×200, 120.83 FPS at 1280×720, and 119.93 FPS at 1920×1080 (p95 frame times 9.0–9.2 ms). The 30 FPS cap case averaged 29.23 FPS. These differing runs demonstrate the effect of scheduling and refresh rate; neither establishes a guaranteed throughput floor.
+
+## Try the complete experimental API
+
+The playground has a canvas-only slot and a standalone host that uses the real generated bindings, app builder, `RenderSlot.Controlled`, and sandbox. From the repository root:
+
+```sh
+pnpm playground:generate
+pnpm playground:todo:build
+pnpm --filter @tailorkit/ui build
+pnpm --filter @playground/tanstack-start dev:canvas
+```
+
+Open http://127.0.0.1:5191/canvas-demo.html. No database or TailorKit platform process is needed for this demo. Try redraw, resize, animation, hide/show, a second app instance, and sandbox restart. The ordinary Todo panel also contains the same chart.
+
+From a freshly loaded standalone demo, browser automation can await `window.experimental_runCanvasChecks()`. It reads back real host pixels and checks dependency redraw, resize, unmount/remount, animation start/stop, isolation between two app instances, sandbox restart, and iframe cleanup. It throws on failure. The existing low-level throughput harness remains available through `bench:canvas`.

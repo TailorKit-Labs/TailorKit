@@ -15,17 +15,19 @@ const Frame = v.strictObject({
 });
 const Close = v.strictObject({ type: v.literal("close") });
 
-export interface CanvasTargetOptions {
+export interface experimental_CanvasTargetOptions {
   /** Presentation is also gated by the browser's animation frames. Default: 60. */
   maxFramesPerSecond?: number;
+  maxPixels?: number;
 }
 
 /** Keeps the visible canvas and presentation scheduling under host control. */
 export const createCanvasTarget = (
   canvas: HTMLCanvasElement,
-  options: CanvasTargetOptions = {}
+  options: experimental_CanvasTargetOptions = {}
 ) => {
   const { width, height } = canvas;
+  const maxPixels = options.maxPixels ?? 4_194_304;
   const maxFramesPerSecond = options.maxFramesPerSecond ?? 60;
   if (
     !Number.isInteger(width) ||
@@ -34,7 +36,10 @@ export const createCanvasTarget = (
     height < 1 ||
     width > 4096 ||
     height > 4096 ||
-    width * height > 4_194_304 ||
+    width * height > maxPixels ||
+    !Number.isInteger(maxPixels) ||
+    maxPixels < 1 ||
+    maxPixels > 4_194_304 ||
     !Number.isFinite(maxFramesPerSecond) ||
     maxFramesPerSecond < 1 ||
     maxFramesPerSecond > 240

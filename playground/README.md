@@ -34,7 +34,7 @@ pnpm playground:todo:build
 
 `playground:generate` serializes the selected contract to `playground/schema.json`, then runs `tailorkit generate --schema` for the todo app. It does not need the host to be running. Repeated JSON Schema definitions use local `$defs`/`$ref` references in both the generated file and the host response; the app type generator resolves them before producing TypeScript. The file contains the raw schema object accepted by `tailorkit generate --schema`, matching the `schema` value inside the host's `/meta` response.
 
-The host contract exposes these components: the standard `Box`, `Flex`, `Grid`, `Inline`, and `Pressable` primitives, plus `Button` and `Input`. The host maps `Button` and `Input` to `@tailorkit/ui` and uses the standard React renderers for primitives.
+The host contract exposes these components: the standard `Box`, `Flex`, `Grid`, `Inline`, and `Pressable` primitives, plus `Button`, `Input`, and the opt-in `experimental_Canvas`. The host maps `Button` and `Input` to `@tailorkit/ui` and uses the standard React renderers for primitives.
 
 The Todo panel includes Pressable examples with inline, box, flex, and grid layouts, an email row with nested layout children, an icon-only action with an explicit name, and a disable toggle. Try hover, hold, Tab / Shift+Tab, Enter, and Space.
 
@@ -87,3 +87,11 @@ The contracts in `playground/shared/src/contracts/` are deliberately written wit
 ## Update the playground database
 
 The host data model is in `playground/shared/src/db/schema.ts`. It uses Drizzle with Node's built-in SQLite driver. Push schema changes with `pnpm playground:db:push`; this playground does not keep migration files. Profiles, teams, memberships, and starter issues are seeded by `pnpm playground:db:seed`.
+
+## Experimental canvas demo
+
+The Todo panel includes a chart drawn inside the sandbox with `experimental_useCanvasSurface`. Its host component is declared with `experimental_canvas` and rendered by `experimental_canvasRenderer`; all three validator contracts expose the same policy. Controls exercise dependency redraw, backing-size changes, animation, and unmount/remount.
+
+To try the same app through a standalone `RenderSlot.Controlled` host without database or platform setup, run `pnpm playground:generate`, `pnpm playground:todo:build`, `pnpm --filter @tailorkit/ui build`, and `pnpm --filter @playground/tanstack-start dev:canvas`. Open http://127.0.0.1:5191/canvas-demo.html. The standalone host adds sandbox restart and a second app instance for isolation checks. From a fresh load, `await window.experimental_runCanvasChecks()` runs the repeatable browser checks, including pixel readback.
+
+See [the sandbox guide](../packages/sandbox/README.md) for the host/app API, limits, and low-level throughput harness. Canvas input, audio, and WebAssembly remain separate capabilities.

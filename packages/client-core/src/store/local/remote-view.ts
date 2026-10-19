@@ -2,6 +2,7 @@ import { createIframeUiHost } from "@tailorkit/sandbox/host";
 import type {
   IframeUiHost,
   IframeUiHostOptions,
+  experimental_CanvasTargetOptions,
 } from "@tailorkit/sandbox/host";
 import type {
   RemoteProps,
@@ -93,6 +94,22 @@ export const createRemoteViewStore = (
         throw new Error("TailorKit remote view is not mounted.");
       }
       return await current.host.dispatch(payload);
+    },
+    experimental_registerCanvas: (
+      nodeId: string,
+      name: string,
+      canvas: HTMLCanvasElement,
+      policy: experimental_CanvasTargetOptions
+    ) => {
+      const node = nodes.selectNode(nodeId).get();
+      if (
+        !current?.host ||
+        node?.kind !== "element" ||
+        node.props.surface !== name
+      ) {
+        throw new Error("Canvas must belong to a mounted remote component.");
+      }
+      return current.host.experimental_registerCanvas(name, canvas, policy);
     },
     mount: ({
       appUrl,

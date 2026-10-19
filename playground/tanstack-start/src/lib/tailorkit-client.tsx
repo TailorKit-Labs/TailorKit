@@ -2,7 +2,11 @@ import { contract } from "@playground/shared/contracts/active";
 import { theme } from "@playground/shared/contracts/theme";
 import { Button } from "@tailorkit/ui/button";
 import { Input } from "@tailorkit/ui/input";
-import { createClient, primitives as reactPrimitives } from "tailorkit/react";
+import {
+  experimental_canvasRenderer,
+  createClient,
+  primitives as reactPrimitives,
+} from "tailorkit/react";
 import { z } from "zod";
 
 const isObjectValue = <TValue,>(value: TValue): value is TValue & object =>
@@ -43,6 +47,7 @@ export const tailor = createClient({
       : new URL("/api/tailorkit/", window.location.origin),
   components: {
     ...reactPrimitives,
+    experimental_Canvas: experimental_canvasRenderer,
     Button: ({ props, children }) => <Button {...props}>{children}</Button>,
     Input: ({ props: { onValueChange, ...rest } }) => (
       <Input

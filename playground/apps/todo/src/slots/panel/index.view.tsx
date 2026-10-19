@@ -3,6 +3,7 @@ import { defineView } from "tailorkit/client";
 
 import { Box, Button, Flex, Input, tools } from "#tailorkit";
 
+import { CanvasPrototype } from "./canvas-prototype";
 import { PressablePrototype } from "./pressable-prototype";
 
 interface Todo {
@@ -178,6 +179,7 @@ const TodoPanel = () => {
           ))}
         </Flex>
         <PressablePrototype />
+        <CanvasPrototype />
       </Flex>
     </Box>
   );

@@ -1,7 +1,7 @@
 import * as v from "valibot";
 
 /** Runtime ABI. The host grants a port, never a DOM element or rendering context. */
-export interface CanvasConnection {
+export interface experimental_CanvasConnection {
   width: number;
   height: number;
   port: MessagePort;
@@ -9,12 +9,21 @@ export interface CanvasConnection {
 }
 
 declare global {
+  var __tailorkitWatchCanvas:
+    | ((
+        name: string,
+        listener: (generation: string | null) => void
+      ) => () => void)
+    | undefined;
   var __tailorkitRequestCanvas:
-    | ((name: string) => Promise<CanvasConnection>)
+    | ((
+        name: string,
+        generation?: string
+      ) => Promise<experimental_CanvasConnection>)
     | undefined;
 }
 
-export interface CanvasSurface {
+export interface experimental_CanvasSurface {
   canvas: OffscreenCanvas;
   /** Transfers a complete frame and waits for host presentation. Redraw each frame. */
   present: () => Promise<void>;
@@ -27,12 +36,15 @@ const Reply = v.variant("type", [
 ]);
 
 /** Request a surface explicitly registered by this app's host. */
-export const requestCanvas = async (name: string): Promise<CanvasSurface> => {
+export const experimental_requestCanvas = async (
+  name: string,
+  generation?: string
+): Promise<experimental_CanvasSurface> => {
   const request = globalThis.__tailorkitRequestCanvas;
   if (!request || typeof OffscreenCanvas === "undefined") {
     throw new Error("Sandbox canvas rendering is unavailable.");
   }
-  const { port, width, height, release } = await request(name);
+  const { port, width, height, release } = await request(name, generation);
   const canvas = new OffscreenCanvas(width, height);
   let closed = false;
   let sequence = 0;

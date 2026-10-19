@@ -69,7 +69,7 @@ describe("createIframeUiHost", () => {
     );
     host.destroy();
     expect(() =>
-      host.registerCanvas("plot", document.createElement("canvas"))
+      host.experimental_registerCanvas("plot", document.createElement("canvas"))
     ).toThrow("unavailable");
   });
 
@@ -80,7 +80,9 @@ describe("createIframeUiHost", () => {
     const canvas = document.createElement("canvas");
     canvas.width = 4096;
     canvas.height = 4096;
-    expect(() => host.registerCanvas("plot", canvas)).toThrow("dimensions");
+    expect(() => host.experimental_registerCanvas("plot", canvas)).toThrow(
+      "dimensions"
+    );
     host.destroy();
   });
   afterEach(() => {

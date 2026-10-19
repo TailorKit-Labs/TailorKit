@@ -5,6 +5,7 @@ import path from "node:path";
 import { primitives } from "@tailorkit/core/primitives/zod";
 import {
   tool,
+  experimental_canvas,
   defineContract,
   createTailorKitSchema,
 } from "@tailorkit/core/schema";
@@ -809,4 +810,16 @@ it("resolves each embedded schema against its own definitions", () => {
   });
   expect(output).toContain("export interface TextProps {\n  value?: string;");
   expect(output).toContain("export interface CountProps {\n  value?: number;");
+});
+
+it("generates experimental canvas bindings with serializable fields and their public experimental name", () => {
+  const schema = createTailorKitSchema({
+    components: { experimental_Canvas: experimental_canvas() },
+  }).serialize();
+  const output = renderGeneratedTypes(v.parse(TailorKitSchemaSpec, schema));
+  expect(output).toContain("export const experimental_Canvas");
+  expect(output).toContain("surface?: string;");
+  expect(output).toContain("width?: number;");
+  expect(output).toContain("height?: number;");
+  expect(output).toContain("ariaLabel?: string;");
 });

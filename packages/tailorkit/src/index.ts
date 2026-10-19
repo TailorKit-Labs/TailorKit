@@ -1,4 +1,9 @@
 export { tool, defineContract } from "@tailorkit/core/schema";
+export { experimental_canvas } from "@tailorkit/core/schema";
+export type {
+  experimental_CanvasPolicy,
+  experimental_CanvasProps,
+} from "@tailorkit/core/schema";
 export type {
   ContractTool,
   ContractTools,

@@ -1,7 +1,7 @@
 import {
   callTool,
   createFileClient,
-  requestCanvas,
+  experimental_requestCanvas,
 } from "@tailorkit/app/client";
 import * as v from "valibot";
 
@@ -10,7 +10,7 @@ import { Configuration } from "./shared";
 const run = async (configuration: v.InferOutput<typeof Configuration>) => {
   if (configuration.mode === "unregistered") {
     try {
-      await requestCanvas("not-granted");
+      await experimental_requestCanvas("not-granted");
     } catch {
       return { passed: true };
     }
@@ -53,7 +53,7 @@ const run = async (configuration: v.InferOutput<typeof Configuration>) => {
     }
     return await promise;
   }
-  const surface = await requestCanvas("display");
+  const surface = await experimental_requestCanvas("display");
   const context = surface.canvas.getContext("2d");
   if (!context) {
     throw new Error("Offscreen 2D context unavailable.");
