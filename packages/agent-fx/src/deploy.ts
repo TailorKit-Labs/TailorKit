@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 
-import { setConfigAppId } from "@tailorkit/vite/config/app-link";
 import { tailorkitUploadManifestSchema } from "@tailorkit/vite/upload-manifest";
 import { tool } from "ai";
 import * as v from "valibot";
@@ -40,7 +39,7 @@ const deploymentSchema = z.object({
 });
 type DeploymentSandbox = Pick<
   AppSandboxSession,
-  "runCommand" | "readFileToBuffer" | "writeFiles"
+  "runCommand" | "readFileToBuffer"
 >;
 interface Authorization {
   agentToken: string;
@@ -247,18 +246,6 @@ export const createDeployTool = (dependencies: {
     execute: async (_input, { context, abortSignal }) => {
       try {
         const sandbox = await dependencies.sandbox(context.sandboxName);
-        const configPath = "/workspace/app/tailorkit.config.ts";
-        const config = await sandbox.readFileToBuffer({ path: configPath });
-        if (!config) {
-          throw new Error("Missing app tailorkit.config.ts.");
-        }
-        const source = config.toString("utf-8");
-        const linked = await setConfigAppId(source, context.appId, configPath);
-        if (linked !== source) {
-          await sandbox.writeFiles([
-            { content: Buffer.from(linked), path: configPath },
-          ]);
-        }
         const result = await verifyApp(sandbox, abortSignal);
         if (result.exitCode !== 0) {
           return {

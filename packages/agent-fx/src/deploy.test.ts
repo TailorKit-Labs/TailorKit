@@ -37,18 +37,17 @@ const reader = (document = JSON.stringify(manifest)) => ({
 const checks = ["format:fix", "lint", "format", "test", "typecheck", "build"];
 const runDeployment = async (
   options: {
-    config?: string | null;
+    config?: string;
     failedCheck?: string;
-    failConfigWrite?: boolean;
     scripts?: Record<string, string>;
   } = {}
 ) => {
   const commands: Parameters<AppSandboxSession["runCommand"]>[0][] = [];
   let published = false;
-  let config =
-    options.config === undefined
-      ? 'export default { host: "https://host.test" };\n'
-      : options.config;
+  const source =
+    options.config ??
+    `export default { appId: "${manifest.appId}", host: "https://host.test" };\n`;
+  let config = source;
   const writes: string[] = [];
   const scripts = options.scripts ?? {
     format: "vp fmt --check",
@@ -56,56 +55,49 @@ const runDeployment = async (
     lint: "vp lint",
     test: "vp test",
   };
+  const sandbox: AppSandboxSession = {
+    readFileToBuffer: async ({ path }) => {
+      if (path.endsWith("tailorkit.config.ts")) {
+        return await Promise.resolve(Buffer.from(config));
+      }
+      return await Promise.resolve(Buffer.from(JSON.stringify({ scripts })));
+    },
+    runCommand: async (command) => {
+      // Every check, including the build, must preserve the configured identity.
+      expect(config).toBe(source);
+      commands.push(command);
+      const args = command.args ?? [];
+      let [, name] = args;
+      if (args[0] !== "run") {
+        name = args[1] === "tsc" ? "typecheck" : "build";
+      }
+      const failed = options.failedCheck === name;
+      return await Promise.resolve({
+        exitCode: failed ? 1 : 0,
+        stderr: async () =>
+          await Promise.resolve(
+            failed ? `Fix source: ${authorization.agentToken}` : ""
+          ),
+        stdout: async () =>
+          await Promise.resolve(
+            failed ? authorization.agentToken : "verbose success log"
+          ),
+      });
+    },
+    writeFiles: async (entries) => {
+      for (const entry of entries) {
+        writes.push(entry.path);
+        config = Buffer.from(entry.content).toString("utf-8");
+      }
+      await Promise.resolve();
+    },
+  };
   const tool = createDeployTool({
     publish: async () => {
       published = true;
       return await Promise.resolve({ id: "deployment" });
     },
-    sandbox: async () =>
-      await Promise.resolve({
-        readFileToBuffer: async ({ path }) => {
-          if (path.endsWith("tailorkit.config.ts")) {
-            return await Promise.resolve(
-              config === null ? null : Buffer.from(config)
-            );
-          }
-          return await Promise.resolve(
-            Buffer.from(JSON.stringify({ scripts }))
-          );
-        },
-        runCommand: async (command) => {
-          // Every check, including the build, must see the persisted identity.
-          expect(config).toContain(`appId: "${authorization.appId}"`);
-          commands.push(command);
-          const args = command.args ?? [];
-          let [, name] = args;
-          if (args[0] !== "run") {
-            name = args[1] === "tsc" ? "typecheck" : "build";
-          }
-          const failed = options.failedCheck === name;
-          return await Promise.resolve({
-            exitCode: failed ? 1 : 0,
-            stderr: async () =>
-              await Promise.resolve(
-                failed ? `Fix source: ${authorization.agentToken}` : ""
-              ),
-            stdout: async () =>
-              await Promise.resolve(
-                failed ? authorization.agentToken : "verbose success log"
-              ),
-          });
-        },
-        writeFiles: async (entries) => {
-          if (options.failConfigWrite === true) {
-            throw new Error(`Config write failed: ${authorization.agentToken}`);
-          }
-          for (const entry of entries) {
-            writes.push(entry.path);
-            config = Buffer.from(entry.content).toString("utf-8");
-          }
-          await Promise.resolve();
-        },
-      }),
+    sandbox: async () => await Promise.resolve(sandbox),
   });
   const result = await tool.execute(
     {},
@@ -146,49 +138,19 @@ it("runs all checks once before publishing, with credentials confined to the hos
 });
 
 it.each([
-  'export default { host: "https://host.test" };\n',
-  'export default defineConfig({ appId: "stale-app", host: "https://host.test" });\n',
-  'const other = { appId: "unrelated" };\nconst config = { host: "https://host.test" } satisfies TailorKitConfig;\nexport default config;\n',
-])(
-  "persists the authorized app ID before checks and publication in %s",
-  async (source) => {
-    const { config, published, result, writes } = await runDeployment({
-      config: source,
-    });
-    expect(result.exitCode).toBe(0);
-    expect(published).toBe(true);
-    expect(config).toContain(`appId: "${authorization.appId}"`);
-    expect(config).toContain('host: "https://host.test"');
-    if (source.includes("unrelated")) {
-      expect(config).toContain('const other = { appId: "unrelated" }');
-    }
-    expect(config).not.toContain(authorization.agentToken);
-    expect(writes).toEqual(["/workspace/app/tailorkit.config.ts"]);
-    const repeated = await runDeployment({ config });
-    expect(repeated.result.exitCode).toBe(0);
-    expect(repeated.config).toBe(config);
-    expect(repeated.writes).toEqual([]);
-  }
-);
-
-it.each([
-  { config: null, diagnostic: "Missing app tailorkit.config.ts." },
-  {
-    config: "export default getConfig();\n",
-    diagnostic: "Could not write appId",
-  },
-  { diagnostic: "Config write failed: [redacted]", failConfigWrite: true },
-])(
-  "stops before checking or publishing if config linking fails: $diagnostic",
-  async ({ diagnostic, ...options }) => {
-    const { commands, published, result } = await runDeployment(options);
-    expect(result.exitCode).toBe(1);
-    expect(result.stderr).toContain(diagnostic);
-    expect(JSON.stringify(result)).not.toContain(authorization.agentToken);
-    expect(commands).toEqual([]);
-    expect(published).toBe(false);
-  }
-);
+  `export default { appId: "${manifest.appId}", host: "https://host.test" };\n`,
+  'export default defineConfig({ appId: "app000000001", host: "https://host.test" });\n',
+  'const other = { appId: "unrelated" };\nconst config = { appId: "app000000001", host: "https://host.test" } satisfies TailorKitConfig;\nexport default config;\n',
+  "export default getConfig();\n",
+])("preserves the sandbox config through deployment: %s", async (source) => {
+  const { config, published, result, writes } = await runDeployment({
+    config: source,
+  });
+  expect(result.exitCode).toBe(0);
+  expect(published).toBe(true);
+  expect(config).toBe(source);
+  expect(writes).toEqual([]);
+});
 
 it.each(checks)(
   "returns %s diagnostics and stops before further checks or publication",
