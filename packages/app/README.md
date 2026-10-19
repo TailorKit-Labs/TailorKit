@@ -123,3 +123,45 @@ The plugin discovers file routes, extracts private instance resolvers, bundles t
 For builds outside the app's directory, pass `tailorkit({ cwd: appDirectory })`. To use a different TailorKit configuration file, pass `configPath` to the plugin.
 
 File routing is the app client entry point. Generated entries live in the build output and are cleaned up after builds or when a build watcher closes.
+
+## Backend function routers
+
+Bind your database once in `src/db/index.ts`:
+
+```ts
+import { defineDatabase } from "tailorkit/db";
+import { createFunctions } from "tailorkit/server";
+
+import { relations } from "./relations";
+
+export const db = defineDatabase({ relations });
+export const fn = createFunctions({ database: db });
+```
+
+Each function file exports its public router. Handlers receive the scoped database automatically, with read-only access in queries and write access in mutations:
+
+```ts
+// src/functions/tasks.ts
+import { defineRouter } from "tailorkit/server";
+
+import { fn } from "#db";
+
+const listTasks = fn.query.handler(({ db }) =>
+  db.query.tasks.findMany().sync()
+);
+
+export default defineRouter({ listTasks });
+```
+
+Import default routers in the server entry point:
+
+```ts
+// src/server.ts
+import { defineServer } from "tailorkit/server";
+
+import tasks from "#functions/tasks";
+
+export default defineServer({ tasks });
+```
+
+Regenerate bindings after registration. The client calls `api.tasks.listTasks`. Actions can declare `.functions({ tasks })` and call `queries.tasks.listTasks()`; they receive no direct database handle.

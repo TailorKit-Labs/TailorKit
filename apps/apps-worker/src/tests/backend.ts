@@ -22,16 +22,17 @@ export const todos = table("todos", {
   );
   await writeFile(
     path.join(root, "server.ts"),
-    `import { AppError, defineServer, fn } from "@tailorkit/app/server";
+    `import { AppError, createFunctions, defineRouter, defineServer } from "@tailorkit/app/server";
 import { defineDatabase, defineRelations } from "@tailorkit/app-db";
 import { z } from "zod";
 import * as schema from "./db/schema";
 
 const database = defineDatabase({ relations: defineRelations(schema) });
-const list = fn.query.database(database).handler(({ db }) =>
+const fn = createFunctions({ database });
+const list = fn.query.handler(({ db }) =>
   db.query.todos.findMany({ orderBy: { id: "asc" }, limit: 1000 }).sync()
 );
-const add = fn.mutation.database(database)
+const add = fn.mutation
   .input(z.object({ text: z.string().trim().min(1).max(500) }))
   .handler(({ db, input }) => {
     const todo = db.insert(schema.todos)
@@ -51,6 +52,7 @@ const importTodo = fn.action.functions({ list, add })
     const text = await tools.echo(data.title);
     return mutations.add({ text });
   });
-export default defineServer({ list, add, importTodo });`
+const router = defineRouter({ list, add, importTodo });
+export default defineServer(router);`
   );
 };

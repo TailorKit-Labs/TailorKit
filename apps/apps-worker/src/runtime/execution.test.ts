@@ -10,6 +10,8 @@ import {
   defineRelations,
 } from "@tailorkit/app-db";
 import {
+  createFunctions,
+  defineRouter,
   defineServer,
   query,
   mutation,
@@ -230,16 +232,16 @@ it.each([
         users: { todos: r.many.view({ from: r.users.id, to: r.view.id }) },
       })),
     });
+    const directFunctions = createFunctions({ database: directDatabase });
+    const nestedFunctions = createFunctions({ database: nestedDatabase });
     const execution = createExecution(
       defineServer({
-        direct: fn.query
-          .database(directDatabase)
-          .handler(({ db }) => db.query.view.findMany().sync()),
-        nested: fn.query
-          .database(nestedDatabase)
-          .handler(({ db }) =>
-            db.query.users.findMany({ with: { todos: true } }).sync()
-          ),
+        direct: directFunctions.query.handler(({ db }) =>
+          db.query.view.findMany().sync()
+        ),
+        nested: nestedFunctions.query.handler(({ db }) =>
+          db.query.users.findMany({ with: { todos: true } }).sync()
+        ),
       }),
       persistence
     );
@@ -575,45 +577,38 @@ it("runs nested relational queries and preserves scope, permissions and invalida
     users: { todos: r.many.todos({ from: r.users.id, to: r.todos.id }) },
   }));
   const database = defineDatabase({ relations });
-  const app = defineServer({
-    absent: fn.query
-      .database(database)
-      .handler(
-        ({ db }) =>
-          db.query.todos.findFirst({ where: { id: "missing" } }).sync() ?? null
-      ),
-    first: query({
-      args: z.undefined(),
-      database,
-      handler: ({ db }) =>
+  const dbFn = createFunctions({ database });
+  const records = defineRouter({
+    absent: dbFn.query.handler(
+      ({ db }) =>
+        db.query.todos.findFirst({ where: { id: "missing" } }).sync() ?? null
+    ),
+    first: dbFn.query.handler(
+      ({ db }) =>
         db.query.todos
           .findFirst({ where: { id: "one" }, with: { user: true } })
-          .sync() ?? null,
+          .sync() ?? null
+    ),
+    insert: dbFn.mutation.input(z.string()).handler(({ db, input }) => {
+      db.insert(todos)
+        .values({ done: true, id: input, title: "Nested todo" })
+        .run();
+      return db.query.todos
+        .findFirst({ where: { id: input }, with: { user: true } })
+        .sync();
     }),
-    insert: fn.mutation
-      .database(database)
-      .input(z.string())
-      .handler(({ db, input }) => {
-        db.insert(todos)
-          .values({ done: true, id: input, title: "Nested todo" })
-          .run();
-        return db.query.todos
-          .findFirst({ where: { id: input }, with: { user: true } })
-          .sync();
-      }),
-    list: fn.query
-      .database(database)
-      .handler(({ db }) =>
-        db.query.users
-          .findMany({ orderBy: { id: "asc" }, with: { todos: true } })
-          .sync()
-      ),
-    writeInQuery: fn.query.database(database).handler(({ db }) => {
+    list: dbFn.query.handler(({ db }) =>
+      db.query.users
+        .findMany({ orderBy: { id: "asc" }, with: { todos: true } })
+        .sync()
+    ),
+    writeInQuery: dbFn.query.handler(({ db }) => {
       // @ts-expect-error Verify runtime enforcement even if a caller bypasses the type restriction.
       db.insert(todos).values({ id: "forbidden", title: "No" }).run();
       return null;
     }),
   });
+  const app = defineServer(records);
   const execution = createExecution(app, persistence);
   expect(execution.query({ name: "list" }, identity)).toEqual({
     tables: ["todos", "users"],

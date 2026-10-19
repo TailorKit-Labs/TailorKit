@@ -1,42 +1,41 @@
 # App functions
 
-Enable `server: {}`. Use `fn` from `tailorkit/server`: queries read reactively, mutations write atomically, and actions await external work. Queries/mutations are synchronous; actions use `queries`, `mutations`, and exposed server `tools` instead of a direct `db`.
+Enable `server: {}`. Queries read reactively, mutations write atomically, and actions await external work. Queries/mutations are synchronous; actions use `queries`, `mutations`, and exposed server `tools` instead of a direct `db`.
 
-Chain `.input(schema)` and optional `.output(schema)` with synchronous Standard Schema v1-compatible validators. Builder handlers receive validated `input`. Return JSON-compatible values, using `null` for absence. Register definitions explicitly and regenerate bindings.
+Chain `.input(schema)` and optional `.output(schema)` with synchronous Standard Schema v1-compatible validators. Builder handlers receive validated `input`. Return JSON-compatible values, using `null` for absence. Export each function module with `export default defineRouter({ list, add })`, import its router in `src/server.ts`, and regenerate bindings.
 
 ## Small example
 
-This uses the database skill's `todos` table, shared by the installation. For private records, add ownership from verified identity and enforce it in every read/write.
+Import the shared `fn` from `#db`, configured once with `createFunctions({ database: db })` in `src/db/index.ts`. This uses the database skill's `todos` table, shared by the installation. For private records, add ownership from verified identity and enforce it in every read/write.
 
 ```ts
 // src/functions/todos.ts
-import { fn } from "tailorkit/server";
+import { defineRouter } from "tailorkit/server";
 import * as v from "valibot";
 
-import { db as database } from "#db";
+import { fn } from "#db";
 import { todos } from "#db/schema";
 
-export const list = fn.query
-  .database(database)
-  .handler(({ db }) =>
-    db.query.todos.findMany({ orderBy: { id: "asc" }, limit: 100 }).sync()
-  );
+const list = fn.query.handler(({ db }) =>
+  db.query.todos.findMany({ orderBy: { id: "asc" }, limit: 100 }).sync()
+);
 
-export const add = fn.mutation
-  .database(database)
+const add = fn.mutation
   .input(v.object({ title: v.pipe(v.string(), v.trim(), v.minLength(1)) }))
   .handler(({ db, input }) => {
     const id = crypto.randomUUID();
     db.insert(todos).values({ id, title: input.title }).run();
     return { id };
   });
+
+export default defineRouter({ list, add });
 ```
 
 ```ts
 // src/server.ts
 import { defineServer } from "tailorkit/server";
 
-import * as todos from "#functions/todos";
+import todos from "#functions/todos";
 
 export default defineServer({ todos });
 ```
