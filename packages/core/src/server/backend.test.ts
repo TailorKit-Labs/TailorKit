@@ -4,6 +4,18 @@ import { handleBackendSession } from "./backend";
 
 const session = {
   expiresAt: 123,
+  identity: {
+    appId: "app",
+    appShortId: "short-app",
+    deploymentId: "deployment",
+    expiresAt: 123,
+    installationId: "app",
+    projectId: "project",
+    projectShortId: "short-project",
+    scope: { name: "workspace", value: { id: "authorized-workspace" } },
+    subjectId: "principal",
+    toolUrl: "https://host.test/api/tailorkit/tools/execute",
+  },
   token: "platform-issued-token",
   url: "https://runtime.test/rpc",
 };
@@ -46,7 +58,7 @@ it("uses existing host authentication and passes the verified subject and scopes
   );
   expect(response.status).toBe(200);
   expect(response.headers.get("cache-control")).toBe("no-store");
-  expect(await response.json()).toEqual({ ...session, subjectId: "principal" });
+  expect(await response.json()).toEqual(session);
   expect(authenticate).toHaveBeenCalledWith({ request: input });
   expect(issueSession).toHaveBeenCalledExactlyOnceWith(
     "installed-app",

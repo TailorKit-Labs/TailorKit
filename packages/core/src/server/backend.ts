@@ -1,3 +1,5 @@
+import type { AppsRuntimeSessionResponses } from "@tailorkit/client-platform/client/types.gen";
+
 import type { TailorKitScopes } from "./types";
 
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
@@ -17,7 +19,7 @@ export const handleBackendSession = async (
     appId: string,
     scopes: TailorKitScopes,
     subjectId: string
-  ) => Promise<{ token: string; expiresAt: number; url: string } | Response>,
+  ) => Promise<AppsRuntimeSessionResponses[200] | Response>,
   publicOrigin = new URL(request.url).origin
 ) => {
   const headers = { "cache-control": "no-store" };
@@ -85,8 +87,5 @@ export const handleBackendSession = async (
       status: session.status,
     });
   }
-  return Response.json(
-    { ...session, subjectId: viewer.subjectId },
-    { headers }
-  );
+  return Response.json(session, { headers });
 };

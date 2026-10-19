@@ -6,10 +6,21 @@ import type { TailorKitApp } from "#types";
 import { createEndpointClient } from "./endpoints";
 import { createTailorKitFetchClient } from "./fetch-client";
 
+const identity = {
+  appId: "app",
+  deploymentId: "deployment",
+  expiresAt: Date.now() + 300_000,
+  installationId: "app",
+  projectId: "project",
+  scope: { name: "workspace", value: { id: "workspace" } },
+  subjectId: "principal",
+  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+};
+
 const session = (token: string) =>
   Response.json({
     expiresAt: Date.now() + 300_000,
-    subjectId: "principal",
+    identity,
     token,
     url: "https://runtime.test/rpc",
   });
@@ -122,7 +133,7 @@ it("reauthorizes held consumers after host sign-out and account changes", async 
       user !== undefined && user !== null && user !== ""
         ? Response.json({
             expiresAt: Date.now() + 300_000,
-            subjectId: user,
+            identity: { ...identity, subjectId: user },
             token: `${user}-token`,
             url: "https://runtime.test/rpc",
           })

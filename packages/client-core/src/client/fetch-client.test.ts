@@ -7,6 +7,17 @@ import { testContract } from "#test-contract";
 
 import { createTailorKitFetchClient } from "./fetch-client";
 
+const identity = {
+  appId: "app",
+  deploymentId: "deployment",
+  expiresAt: Date.now() + 300_000,
+  installationId: "app",
+  projectId: "project",
+  scope: { name: "workspace", value: { id: "workspace" } },
+  subjectId: "principal",
+  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+};
+
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.useRealTimers();
@@ -131,7 +142,7 @@ it("deduplicates instance requests and sessions across framework-neutral consume
       if (path.endsWith("/backend/session")) {
         return Response.json({
           expiresAt: Date.now() + 300_000,
-          subjectId: "principal",
+          identity,
           token: "token",
           url: "https://runtime.test/rpc",
         });

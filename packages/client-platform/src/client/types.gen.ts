@@ -660,7 +660,6 @@ export type AppsRuntimeSessionResponses = {
       toolUrl: string;
     };
     token: string;
-    toolUrl: string;
     url: string;
   };
 };

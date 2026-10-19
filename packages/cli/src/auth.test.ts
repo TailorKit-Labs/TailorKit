@@ -107,23 +107,24 @@ describe("auth store", () => {
     await expect(getDeployToken("https://example.com")).rejects.toThrow();
   });
 
-  it("keeps legacy tokens readable while discarding their unnamed scope", async () => {
-    const homeDirectory = await createTemporaryHome();
-    await writeAuthStoreFixture(homeDirectory, {
-      hosts: {
-        "https://example.com": {
-          deployToken: "deploy-token",
-          scope: { userId: "user-1" },
+  const legacyCredentials: z.core.util.JSONType[] = [
+    { deployToken: "deploy-token" },
+    { deployToken: "deploy-token", scope: { userId: "user-1" } },
+  ];
+  it.each(legacyCredentials)(
+    "rejects stored tokens without a named scope: %j",
+    async (credentials) => {
+      const homeDirectory = await createTemporaryHome();
+      await writeAuthStoreFixture(homeDirectory, {
+        hosts: {
+          "https://example.com": credentials,
         },
-      },
-    });
-    const { getDeployToken } = await loadAuthModule(homeDirectory);
+      });
+      const { getDeployToken } = await loadAuthModule(homeDirectory);
 
-    await expect(getDeployToken("https://example.com")).resolves.toEqual({
-      deployToken: "deploy-token",
-      scope: undefined,
-    });
-  });
+      await expect(getDeployToken("https://example.com")).rejects.toThrow();
+    }
+  );
 
   it("preserves unknown top-level auth.json keys when saving a host token", async () => {
     const homeDirectory = await createTemporaryHome();
@@ -132,6 +133,7 @@ describe("auth store", () => {
       hosts: {
         "https://existing.example.com": {
           deployToken: "existing-token",
+          scope: { name: "user", value: { userId: "user-1" } },
         },
       },
     });
@@ -148,6 +150,7 @@ describe("auth store", () => {
         hosts: {
           "https://existing.example.com": {
             deployToken: "existing-token",
+            scope: { name: "user", value: { userId: "user-1" } },
           },
           "https://new.example.com": {
             deployToken: "new-token",
@@ -343,6 +346,7 @@ describe("auth store", () => {
       hosts: {
         "https://example.com": {
           deployToken: "expired-token",
+          scope: { name: "user", value: { userId: "user-1" } },
         },
       },
     });
@@ -406,7 +410,12 @@ describe("auth store", () => {
       /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
     );
     const fixture = {
-      hosts: { "https://example.com": { deployToken: "deploy-token" } },
+      hosts: {
+        "https://example.com": {
+          deployToken: "deploy-token",
+          scope: { name: "user", value: { userId: "user-1" } },
+        },
+      },
     };
     const filePath = await writeAuthStoreFixture(homeDirectory, fixture);
     const { runWhoami } = await loadAuthModule(homeDirectory);
@@ -447,7 +456,12 @@ describe("auth store", () => {
       /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
     );
     await writeAuthStoreFixture(homeDirectory, {
-      hosts: { "https://example.com": { deployToken: "deploy-token" } },
+      hosts: {
+        "https://example.com": {
+          deployToken: "deploy-token",
+          scope: { name: "user", value: { userId: "user-1" } },
+        },
+      },
     });
     const { runWhoami } = await loadAuthModule(homeDirectory);
 
@@ -485,7 +499,12 @@ describe("auth store", () => {
       /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
     );
     const filePath = await writeAuthStoreFixture(homeDirectory, {
-      hosts: { "https://example.com": { deployToken: "deploy-token" } },
+      hosts: {
+        "https://example.com": {
+          deployToken: "deploy-token",
+          scope: { name: "user", value: { userId: "user-1" } },
+        },
+      },
     });
     const { runWhoami } = await loadAuthModule(homeDirectory);
 
@@ -494,7 +513,12 @@ describe("auth store", () => {
     );
     await expect(readFile(filePath, "utf-8").then(JSON.parse)).resolves.toEqual(
       {
-        hosts: { "https://example.com": { deployToken: "deploy-token" } },
+        hosts: {
+          "https://example.com": {
+            deployToken: "deploy-token",
+            scope: { name: "user", value: { userId: "user-1" } },
+          },
+        },
       }
     );
   });
@@ -517,7 +541,12 @@ describe("auth store", () => {
       .sign(new TextEncoder().encode("test-only-signing-secret"));
     vi.stubEnv("TAILORKIT_AGENT_TOKEN", jwt);
     const stored = await writeAuthStoreFixture(home, {
-      hosts: { "http://localhost:1": { deployToken: "existing-token" } },
+      hosts: {
+        "http://localhost:1": {
+          deployToken: "existing-token",
+          scope: { name: "user", value: { userId: "user-1" } },
+        },
+      },
     });
     const original = await readFile(stored, "utf-8");
     const { runLogin, runWhoami, runLogout } = await loadAuthModule(home);

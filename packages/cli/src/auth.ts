@@ -27,7 +27,7 @@ type NamedScope = z.output<typeof namedScopeSchema>;
 
 interface StoredHostAuth {
   deployToken: string;
-  scope?: NamedScope;
+  scope: NamedScope;
 }
 
 interface AuthStore {
@@ -59,20 +59,6 @@ const cliAuthPollSchema = z.discriminatedUnion("status", [
   }),
 ]);
 
-const legacyFlatScopeSchema = z.record(z.string(), z.string());
-
-const storedScopeSchema = z.preprocess(
-  (value) =>
-    value !== null &&
-    isObjectValue(value) &&
-    !Array.isArray(value) &&
-    !Object.hasOwn(value, "value") &&
-    legacyFlatScopeSchema.safeParse(value).success
-      ? undefined
-      : value,
-  namedScopeSchema.optional()
-);
-
 const authStorePath = path.join(homedir(), ".tailorkit", "auth.json");
 
 const defaultLoginTimeoutMs = 30 * 60 * 1000;
@@ -81,7 +67,7 @@ const pollIntervalMs = 2000;
 
 const storedHostAuthSchema = z.object({
   deployToken: z.string().min(1),
-  scope: storedScopeSchema,
+  scope: namedScopeSchema,
 });
 
 const approvedCliAuthResultSchema = z.object({
@@ -206,7 +192,7 @@ export class NotLoggedInError extends Error {
 
 export const saveDeployToken = async (
   hostUrl: string,
-  auth: Required<StoredHostAuth>
+  auth: StoredHostAuth
 ): Promise<void> => {
   const store = await readAuthStore();
   await writeAuthStore({

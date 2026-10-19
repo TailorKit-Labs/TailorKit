@@ -3,32 +3,27 @@ import { expect, it, vi } from "vite-plus/test";
 
 import { createSessionProvider, parseSession } from "./session";
 
+const identity = {
+  appId: "app",
+  deploymentId: "deployment",
+  expiresAt: Date.now() + 300_000,
+  installationId: "app",
+  projectId: "project",
+  scope: { name: "workspace", value: {} },
+  subjectId: "principal",
+  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+};
+
 it.each([undefined, null, "", 123, "x".repeat(257)])(
-  "rejects session metadata without a valid subject: %j",
+  "rejects session identities without a valid subject: %j",
   async (subjectId) => {
     const response = {
       expiresAt: Date.now() + 300_000,
-      subjectId,
+      identity: { ...identity, subjectId },
       token: "scoped",
       url: "https://runtime.test/rpc",
     };
     expect(() => parseSession(response)).toThrow();
-    expect(() =>
-      parseSession({
-        ...response,
-        identity: {
-          appId: "app",
-          deploymentId: "deployment",
-          expiresAt: response.expiresAt,
-          installationId: "installation",
-          projectId: "project",
-          scope: { name: "workspace", value: {} },
-          subjectId,
-          toolUrl: "https://host.test/api/tailorkit/tools/execute",
-        },
-        subjectId: "principal",
-      })
-    ).toThrow();
     const provider = createSessionProvider({
       appId: "app",
       baseUrl: "https://host.test/api/tailorkit",
@@ -41,12 +36,30 @@ it.each([undefined, null, "", 123, "x".repeat(257)])(
   }
 );
 
+it("rejects the legacy reduced session even when it supplies a subject", async () => {
+  const response = {
+    expiresAt: Date.now() + 300_000,
+    subjectId: "principal",
+    token: "scoped",
+    url: "https://runtime.test/rpc",
+  };
+  expect(() => parseSession(response)).toThrow();
+  const provider = createSessionProvider({
+    appId: "app",
+    baseUrl: "https://host.test/api/tailorkit",
+    fetch: asyncFixture(() => Response.json(response)),
+  });
+  await expect(provider({ refresh: false })).rejects.toMatchObject({
+    code: "UNAVAILABLE",
+  });
+});
+
 it("deduplicates token requests, caches until renewal and sends only the host-bound app ID", async () => {
   const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(
     asyncFixture(() =>
       Response.json({
         expiresAt: Date.now() + 300_000,
-        subjectId: "principal",
+        identity,
         token: "scoped",
         url: "https://runtime.test/rpc",
       })
@@ -87,7 +100,7 @@ it("renews cached sessions when one minute remains", async () => {
       asyncFixture(() =>
         Response.json({
           expiresAt: Date.now() + 300_000,
-          subjectId: "principal",
+          identity,
           token: "scoped",
           url: "https://runtime.test/rpc",
         })
@@ -117,7 +130,7 @@ it("does not cache failed authorization or malformed sessions", async () => {
     .mockResolvedValueOnce(
       Response.json({
         expiresAt: Date.now() + 300_000,
-        subjectId: "principal",
+        identity,
         token: "scoped",
         url: "https://runtime.test/rpc",
       })
@@ -145,7 +158,7 @@ it("reports session network failures as retryable and allows the next request to
     .mockResolvedValueOnce(
       Response.json({
         expiresAt: Date.now() + 300_000,
-        subjectId: "principal",
+        identity,
         token: "scoped",
         url: "https://runtime.test/rpc",
       })
@@ -168,7 +181,7 @@ it("caches server-authenticated sessions without a subject cache key and refresh
     .mockResolvedValueOnce(
       Response.json({
         expiresAt: Date.now() + 300_000,
-        subjectId: "first-user",
+        identity: { ...identity, subjectId: "first-user" },
         token: "first",
         url: "https://runtime.test/rpc",
       })
@@ -176,7 +189,7 @@ it("caches server-authenticated sessions without a subject cache key and refresh
     .mockResolvedValueOnce(
       Response.json({
         expiresAt: Date.now() + 300_000,
-        subjectId: "next-user",
+        identity: { ...identity, subjectId: "next-user" },
         token: "refreshed",
         url: "https://runtime.test/rpc",
       })
@@ -187,16 +200,16 @@ it("caches server-authenticated sessions without a subject cache key and refresh
     fetch,
   });
   await expect(session({ refresh: false })).resolves.toMatchObject({
-    subjectId: "first-user",
+    identity: { ...identity, subjectId: "first-user" },
     token: "first",
   });
   await expect(session({ refresh: false })).resolves.toMatchObject({
-    subjectId: "first-user",
+    identity: { ...identity, subjectId: "first-user" },
     token: "first",
   });
   expect(fetch).toHaveBeenCalledTimes(1);
   await expect(session({ refresh: true })).resolves.toMatchObject({
-    subjectId: "next-user",
+    identity: { ...identity, subjectId: "next-user" },
     token: "refreshed",
   });
   expect(fetch).toHaveBeenCalledTimes(2);

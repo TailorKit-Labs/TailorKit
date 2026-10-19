@@ -2776,22 +2776,12 @@
                     "token": {
                       "type": "string"
                     },
-                    "toolUrl": {
-                      "type": "string",
-                      "format": "uri"
-                    },
                     "url": {
                       "type": "string",
                       "format": "uri"
                     }
                   },
-                  "required": [
-                    "expiresAt",
-                    "identity",
-                    "token",
-                    "toolUrl",
-                    "url"
-                  ],
+                  "required": ["expiresAt", "identity", "token", "url"],
                   "additionalProperties": false
                 }
               }

@@ -2,6 +2,31 @@ import { oc, type } from "@orpc/contract";
 import type { ContractRouterClient } from "@orpc/contract";
 import * as v from "valibot";
 
+import { jsonValueSchema } from "#validation";
+
+export type { JsonValue } from "#validation";
+
+export const sessionSchema = v.object({
+  expiresAt: v.pipe(v.number(), v.finite()),
+  identity: v.object({
+    appId: v.string(),
+    deploymentId: v.string(),
+    expiresAt: v.pipe(v.number(), v.finite()),
+    installationId: v.string(),
+    projectId: v.string(),
+    scope: v.object({
+      name: v.string(),
+      value: v.record(v.string(), jsonValueSchema),
+    }),
+    subjectId: v.pipe(v.string(), v.minLength(1), v.maxLength(256)),
+    toolUrl: v.string(),
+  }),
+  token: v.pipe(v.string(), v.maxLength(8192)),
+  url: v.string(),
+});
+
+export type Session = v.InferOutput<typeof sessionSchema>;
+
 export const invocationSchema = v.strictObject({
   args: v.optional(v.unknown()),
   name: v.pipe(

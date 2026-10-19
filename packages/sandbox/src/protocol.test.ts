@@ -4,6 +4,17 @@ import { describe, expect, it } from "vite-plus/test";
 import { HostToIframePayload, IframeToHostPayload } from "./protocol.js";
 import type { RemoteNode, RemotePatch } from "./protocol.js";
 
+const identity = {
+  appId: "app",
+  deploymentId: "deployment",
+  expiresAt: Date.now() + 300_000,
+  installationId: "app",
+  projectId: "project",
+  scope: { name: "workspace", value: { id: "workspace" } },
+  subjectId: "principal",
+  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+};
+
 const text = { id: "text", kind: "text", text: "Hello" } satisfies RemoteNode;
 const callback = { callback: "onClick", event: "click", inputCount: 1 };
 const tree = {
@@ -39,7 +50,7 @@ describe("sandbox protocol", () => {
             id: "session",
             session: {
               expiresAt: 123,
-              subjectId,
+              identity: { ...identity, subjectId },
               token: "jwt",
               url: "https://runtime.test/rpc",
             },
@@ -55,7 +66,7 @@ describe("sandbox protocol", () => {
         id: "session",
         session: {
           expiresAt: 123,
-          subjectId: "principal",
+          identity,
           token: "jwt",
           url: "https://runtime.test/rpc",
         },
@@ -233,7 +244,7 @@ describe("sandbox protocol", () => {
             id: "session",
             session: {
               expiresAt: value,
-              subjectId: "principal",
+              identity,
               token: "jwt",
               url: "https://runtime.test",
             },
@@ -283,7 +294,7 @@ describe("sandbox protocol", () => {
   it("enforces session token limits and strict session fields", () => {
     const session = {
       expiresAt: 123,
-      subjectId: "principal",
+      identity,
       token: "t".repeat(8192),
       url: "https://runtime.test",
     };
@@ -327,7 +338,7 @@ describe("sandbox protocol", () => {
     const payload = {
       data: {
         id: "session",
-        session: { expiresAt: 123, subjectId: "principal", token: "jwt", url },
+        session: { expiresAt: 123, identity, token: "jwt", url },
       },
       type: "backendSessionResult",
     };
@@ -352,7 +363,7 @@ describe("sandbox protocol", () => {
             id: "session",
             session: {
               expiresAt: 123,
-              subjectId: "principal",
+              identity,
               token: "jwt",
               url,
             },

@@ -1,10 +1,26 @@
 // @vitest-environment happy-dom
 
+import { createSessionProvider } from "@tailorkit/app/client";
+import { asyncFixture } from "@tailorkit/config/testing";
+import * as v from "valibot";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { iframeReadyType, sandboxMessageType } from "#bridge";
+import { createIframeBackend } from "#iframe/backend";
+import { HostToIframePayload } from "#protocol";
 
 import { createIframeUiHost } from "./index.js";
+
+const identity = {
+  appId: "app",
+  deploymentId: "deployment",
+  expiresAt: Date.now() + 300_000,
+  installationId: "app",
+  projectId: "project",
+  scope: { name: "workspace", value: { id: "workspace" } },
+  subjectId: "principal",
+  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+};
 
 const getChannel = (iframe: HTMLIFrameElement): string => {
   const match = /data-tailorkit-channel="(?<channel>[a-f0-9]+)"/u.exec(
@@ -242,10 +258,64 @@ describe("backend JWT bridge", () => {
     document.body.replaceChildren();
     vi.restoreAllMocks();
   });
+  it("delivers platform session identity through the provider and strict iframe protocol", async () => {
+    const session = {
+      expiresAt: identity.expiresAt,
+      identity,
+      token: "platform-token",
+      url: "https://runtime.test/rpc",
+    };
+    const getBackendSession = createSessionProvider({
+      appId: identity.appId,
+      baseUrl: "https://host.test/api/tailorkit",
+      fetch: asyncFixture(() =>
+        Response.json({
+          ...session,
+          identity: {
+            ...identity,
+            appShortId: "short-app",
+            projectShortId: "short-project",
+          },
+        })
+      ),
+    });
+    const host = createIframeUiHost("https://assets.test/app.js", {
+      fetch: createFetch(),
+      getBackendSession,
+    });
+    host.mount();
+    const channel = getChannel(host.iframe);
+    const bridge = createIframeBackend((data) => {
+      emitFromIframe(host.iframe, {
+        channel,
+        payload: { data, type: "backendSessionRequest" },
+        type: sandboxMessageType,
+      });
+    });
+    vi.spyOn(getContentWindow(host.iframe), "postMessage").mockImplementation(
+      (message) => {
+        const { payload: parsed } = v.parse(
+          v.object({ payload: HostToIframePayload }),
+          message
+        );
+        if (parsed.type === "backendSessionResult") {
+          bridge.receive(parsed.data);
+        }
+      }
+    );
+    try {
+      await expect(bridge.getSession({ refresh: false })).resolves.toEqual(
+        session
+      );
+    } finally {
+      bridge.close();
+      host.destroy();
+    }
+  });
   it("mounts without fetching a session and renews scoped sessions", async () => {
     const session = {
       expiresAt: Date.now() + 120_000,
-      subjectId: "principal",
+      identity,
       token: "scoped-token",
       url: "https://runtime.test/rpc",
     };
@@ -323,7 +393,7 @@ it.each(["backend-first", "tools-first"])(
   async (order) => {
     const session = {
       expiresAt: Date.now() + 120_000,
-      subjectId: "principal",
+      identity,
       token: "token",
       url: "https://runtime.test/rpc",
     };

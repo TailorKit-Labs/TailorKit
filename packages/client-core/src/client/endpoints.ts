@@ -50,9 +50,6 @@ const appListSchema = v.array(
   })
 );
 
-const isStringValue = <TValue>(value: TValue): value is TValue & string =>
-  typeof value === "string";
-
 const isFunctionValue = <TValue>(
   value: TValue
 ): value is Extract<TValue, CallableFunction> => typeof value === "function";
@@ -161,15 +158,12 @@ export const createEndpointClient = (options: {
         throw new Error("Tool identity changed");
       }
       if (
-        !isStringValue(result.token) ||
-        !isStringValue(result.toolUrl) ||
-        !Number.isFinite(result.expiresAt) ||
         result.expiresAt <= Date.now() ||
-        result.identity?.installationId !== app.id
+        result.identity.installationId !== app.id
       ) {
         throw new Error("Invalid tool session");
       }
-      return { ...result, identity: result.identity, url: result.toolUrl };
+      return { ...result, url: result.identity.toolUrl };
     };
     const bridge: ToolBridge = {
       client: async (path, input) => {
