@@ -6,8 +6,7 @@ import type { AppSandboxSession } from "./sandbox-session";
 const agentToken = "scoped-agent-grant";
 const context = { agentToken, sandboxName: "app-sandbox" };
 const checkArguments = [
-  ["run", "format:fix"],
-  ["run", "check"],
+  ["run", "fix"],
   ["run", "test", "--passWithNoTests"],
 ];
 
@@ -72,7 +71,7 @@ it.each([
   }
 );
 
-it.each([0, 1, 2])(
+it.each([0, 1])(
   "stops before publication when check %i fails",
   async (failedCheck) => {
     const commands: string[][] = [];

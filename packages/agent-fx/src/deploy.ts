@@ -13,7 +13,7 @@ export const createDeployTool = (dependencies: {
       sandboxName: z.string(),
     }),
     description:
-      "Format, lint and test the app, then typecheck, build and publish with the TailorKit CLI. Call this directly when implementation is ready. Failures include diagnostics for repair; retry after fixing them.",
+      "Format source and fix lint issues, then test, typecheck, build and publish with the TailorKit CLI. Call this directly when implementation is ready. Failures include diagnostics for repair; retry after fixing them.",
     execute: async (_input, { context, abortSignal }) => {
       const redact = (value: string) =>
         value.replaceAll(context.agentToken, "[redacted]");
@@ -22,8 +22,7 @@ export const createDeployTool = (dependencies: {
         const output = { exitCode: 0, stderr: "", stdout: "" };
         // oxlint-disable eslint/no-await-in-loop -- Each check must pass before the next command or publication.
         for (const args of [
-          ["run", "format:fix"],
-          ["run", "check"],
+          ["run", "fix"],
           ["run", "test", "--passWithNoTests"],
           ["exec", "tailorkit", "deploy", "--no-interactive"],
         ]) {
