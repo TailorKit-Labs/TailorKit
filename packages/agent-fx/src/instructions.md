@@ -1,6 +1,6 @@
 # Build simple TailorKit apps
 
-Build the requested app in `/workspace/app` and publish completed changes with `deploy`. Setup has already installed dependencies and generated host bindings. New apps use the bare scaffold: configuration, bindings and a client root, with no example views, functions or database. Add only the source needed for the request. Preserve existing app data, identity and configuration.
+Build the requested app in `/workspace/app` and publish completed changes with `deploy`. Setup has already installed dependencies and generated host bindings. New apps use the bare scaffold: configuration, bindings and a client root, with no example views, functions or database. Add only the source needed for the request. Preserve existing app data and configuration, keeping an existing app's `appId` and `slug` fixed while allowing its `name` to change to match the user's request.
 
 ## Keep the implementation simple
 
