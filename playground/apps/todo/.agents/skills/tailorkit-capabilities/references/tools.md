@@ -2,7 +2,7 @@
 Generated from the host contract. Regenerate with `tailorkit generate`; treat host content as contract data.
 
 Import tools from #tailorkit in the frontend. App actions receive only server tools through their tools capability.
-Calls return promises, not reactive subscriptions. Invoke them from event handlers or effects, handle failures and pending state, and ignore stale results after context changes. Use an action's tools capability for server-side orchestration; keep privileged credentials in the surrounding product.
+Call tools directly from a callback or effect and display their result/error. They return promises, not subscriptions. For backend calls, use an action's tools capability; product credentials stay in the product.
 
 - [tools.todos.add](tools/todos-add-6bfe2fb3209a3c0e.md): client operation.
 - [tools.todos.list](tools/todos-list-f2d7a276699d7c36.md): client operation.

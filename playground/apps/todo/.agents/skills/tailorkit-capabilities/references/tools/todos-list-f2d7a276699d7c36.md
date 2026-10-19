@@ -9,7 +9,7 @@ Result: list of { done (required): boolean; id (required): string; title (requir
 import { tools } from "#tailorkit";
 
 export const run = async () =>
-  await tools["todos"]["list"]();
+  await tools.todos.list();
 ```
 
 Exact contracts: [generated bindings](../../../../../src/tailorkit.gen.ts); search for the tool name in TailorKitTools or TailorKitBackendTools.

@@ -192,7 +192,7 @@ const renderComponentReference = (
     "",
     "## Callbacks",
     "",
-    "Callbacks cross the asynchronous host bridge. Payloads below are serialized values; use them directly.",
+    "Callbacks receive the serialized payload below, not a DOM event.",
     "",
     "| Callback | Payload |",
     "| --- | --- |"
@@ -209,15 +209,9 @@ const renderComponentReference = (
   }
   lines.push(
     "",
-    "Use only the listed props and callbacks. Layout and styling values come from this host, including any responsive/state objects listed above.",
+    "Use the listed props, callbacks, and styling values.",
     "",
-    componentExample(
-      filename,
-      component.children === true,
-      (component.fields?.required ?? []).filter(
-        (prop) => component.fields?.properties?.[prop] !== undefined
-      )
-    ),
+    componentExample(filename, component.children === true),
     valueCallbackExample(filename, component),
     componentStylingExample(filename, component, responsive)
   );
@@ -296,9 +290,9 @@ const renderViewsReference = (
       views.push(
         "### Registration example",
         "",
-        "Place the view under this slot's directory, matching its declared context path. Read context with the definition's useContext() inside Content; ancestor shells do not have this view context.",
+        "Place the view under this slot's directory at the declared path. Read context with useContext() inside the view.",
         slot.multiple === true
-          ? "Enable server: {} for the instance resolver. The example uses empty metadata; supply only product-supported metadata if the surface requires it. Keep keys stable and bound the number of records."
+          ? "Enable server: {}. Use stable instance keys and product-supported metadata."
           : "Keep the app's ClientProvider above this view when using backend hooks.",
         "",
         viewExample(name, firstView, slot.multiple === true),
@@ -363,7 +357,7 @@ export const renderReferences = (
     "# Host tools",
     referenceHeader,
     "Import tools from #tailorkit in the frontend. App actions receive only server tools through their tools capability.",
-    "Calls return promises, not reactive subscriptions. Invoke them from event handlers or effects, handle failures and pending state, and ignore stale results after context changes. Use an action's tools capability for server-side orchestration; keep privileged credentials in the surrounding product.",
+    "Call tools directly from a callback or effect and display their result/error. They return promises, not subscriptions. For backend calls, use an action's tools capability; product credentials stay in the product.",
     "",
     ...renderToolReferences(schema.tools ?? {}, files, bindingsPath),
     `Exact contracts: [generated bindings](${bindingsPath}); search for \`TailorKitTools\` and \`TailorKitBackendTools\`.`,
@@ -387,7 +381,7 @@ export const renderReferences = (
     `Component pages list each prop's accepted scalar values. Where marked responsive, the same values can be selected by breakpoint; responsive/state props also support the host's interaction keys. Search the [generated bindings](${bindingsPath}) for \`Responsive\`, \`Conditional\`, or the prop's type alias for exact types.`,
     `Breakpoint keys exposed by this host: ${breakpoints.map((key) => JSON.stringify(key)).join(", ") || "none"}.`,
     `Interaction keys exposed by this host: ${states.map((key) => JSON.stringify(key)).join(", ") || "none"}.`,
-    "The default key is a fallback, not a breakpoint. List minimum-width breakpoints from smaller to larger. For standard TailorKit primitives, state styles override ordinary breakpoint styles; active overrides focus-visible and hover on conflicting properties, and disabled controls ignore other states.",
+    "Start with scalar styles. Use responsive/state objects when the design needs them. The default key is the fallback; list minimum-width breakpoints from smaller to larger. Standard primitives apply state styles after breakpoint styles, with active above focus-visible/hover and disabled ignoring other states.",
     "For a responsive prop, use { default: value, [breakpoint]: value }. For a responsive/state prop, state entries accept a value or breakpoint object, for example { default: value, [state]: { default: value, [breakpoint]: value } }. Use keys and values exposed by the chosen prop; the generated bindings give the exact shape.",
     "Use host layout components and declared styling props. The app's iframe does not render host DOM or CSS.",
     "",

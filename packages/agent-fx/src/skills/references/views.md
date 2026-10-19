@@ -1,8 +1,8 @@
-# Record context, shells, and repeated instances
+# View examples
 
-These examples assume a single `panel` slot supports `/records/detail` with `context.recordId: string`, and a repeated `tile` slot supports `/`. Choose the actual slot/path from the generated capabilities. A different filename cannot create an unsupported product page.
+Choose the example needed. These assume a `panel` at `/records/detail` with `context.recordId: string`, and a repeated `tile` at `/`; use the actual product capabilities.
 
-## Keep the provider stable
+## Shell for backend hooks
 
 <!-- example: src/root.tsx -->
 
@@ -19,7 +19,7 @@ export default defineRoute({ shellComponent: Shell });
 
 ## Read context inside the selected view
 
-Annotating the component's return type permits its hook to refer to the module-level definition declared below. Context is available to descendants of this view, not the app shell. Pass record identifiers into backend functions only with the required backend authorization.
+Read context inside the view. The explicit return type allows the component to refer to its definition below.
 
 <!-- example: src/slots/panel/records.detail.view.tsx -->
 
@@ -42,9 +42,9 @@ const definition = defineView({
 export default definition;
 ```
 
-## Resolve a bounded, authorized set of tiles
+## Repeated tiles
 
-Enable `server: {}` and register the notes query from the functions recipe. The inline resolver runs on the backend; the query enforces ownership. Stable record IDs preserve instance identity. The data schema limits what is sent to the UI. Empty metadata is valid for this example; adapt labels/placement only to the product's supported metadata.
+Only use this for a multiple-instance slot. Enable `server: {}` and register the notes query from the functions example. The query enforces access; record IDs supply stable keys. Use product-supported metadata.
 
 <!-- example: src/slots/tile/index.view.tsx -->
 
@@ -79,4 +79,4 @@ const definition = defineView({
 export default definition;
 ```
 
-The resolver's captured imports must be backend-safe. It receives no mutation/action capability and cannot read component state. Instance discovery is separate from a view's reactive query subscription; do not assume a mutation automatically adds/removes product tiles. Verify the product's instance refresh behavior, and use a single list view when live collection updates are the intended behavior.
+For a normal reactive list, keep one view and use `useQuery` instead.

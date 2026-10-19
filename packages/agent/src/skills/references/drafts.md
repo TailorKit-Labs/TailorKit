@@ -1,41 +1,36 @@
-# A local draft with a backend save
+# A simple save form
 
-The hook below needs a registered `api.todos.add({ title })` mutation. Render its returned state with the product's available controls; callback payloads still come from the generated pages. A ref prevents a second bridge callback before pending state renders. An older successful request cannot erase a newer draft.
+This example needs `api.todos.add({ title })` and generated controls with the shown props, including disabled inputs/buttons. Use the product's supported accessible labels. Local state owns the field; the mutation hook owns pending/error state.
 
-<!-- example: src/hooks/use-todo-draft.ts -->
+<!-- example: src/components/todo-editor.tsx -->
 
-```ts
-import { useRef, useState } from "preact/hooks";
+```tsx
+import { useState } from "preact/hooks";
 import { useMutation } from "tailorkit/client";
 
-import { api } from "#tailorkit";
+import { api, Box, Button, Input } from "#tailorkit";
 
-export const useTodoDraft = () => {
+export const TodoEditor = () => {
   const [title, setTitle] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const latest = useRef("");
-  const busy = useRef(false);
-  const add = useMutation(api.todos.add);
-  const change = (value: string) => {
-    latest.current = value;
-    setTitle(value);
-  };
-  const submit = async () => {
-    const submitted = latest.current;
-    if (busy.current || submitted.trim() === "") return;
-    busy.current = true;
-    setError(null);
-    try {
-      await add.mutateAsync({ title: submitted });
-      if (latest.current === submitted) change("");
-    } catch {
-      setError("Could not save. Try again.");
-    } finally {
-      busy.current = false;
-    }
-  };
-  return { title, change, submit, error, pending: add.isPending };
+  const add = useMutation(api.todos.add, {
+    onSuccess: () => setTitle(""),
+  });
+
+  return (
+    <Box>
+      <Input
+        value={title}
+        disabled={add.isPending}
+        onValueChange={({ value }) => setTitle(value)}
+      />
+      <Button
+        disabled={add.isPending || title.trim() === ""}
+        onClick={() => add.mutate({ title })}
+      >
+        {add.isPending ? "Saving…" : "Add todo"}
+      </Button>
+      {add.isError ? <Box>Could not save. Try again.</Box> : null}
+    </Box>
+  );
 };
 ```
-
-Handle the returned submit promise in the callback (`void submit()` is safe here because the hook catches the mutation failure). Keep the editor mounted on save failures. Key it by record ID only when changing records should intentionally discard that record's draft.

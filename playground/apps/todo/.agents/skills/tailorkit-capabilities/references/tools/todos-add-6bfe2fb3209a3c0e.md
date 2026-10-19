@@ -8,8 +8,8 @@ Result: { done (required): boolean; id (required): string; title (required): str
 ```ts
 import { tools } from "#tailorkit";
 
-export const run = async (input: Parameters<typeof tools["todos"]["add"]>[0]) =>
-  await tools["todos"]["add"](input);
+export const run = async (input: Parameters<typeof tools.todos.add>[0]) =>
+  await tools.todos.add(input);
 ```
 
 Exact contracts: [generated bindings](../../../../../src/tailorkit.gen.ts); search for the tool name in TailorKitTools or TailorKitBackendTools.

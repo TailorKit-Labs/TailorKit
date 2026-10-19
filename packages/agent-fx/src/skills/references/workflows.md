@@ -1,18 +1,18 @@
-# Choose a workflow before choosing APIs
+# Choose the simplest data flow
 
-Start with the product's generated capabilities and the app's existing data model. Select the smallest flow that satisfies the request; use the recipes in the matching skill after choosing these boundaries.
+Use what the app and product already provide. Pick only the pieces needed for the request.
 
-| Request | Information to establish | Implementation and verification |
-| --- | --- | --- |
-| Todo list, notes, saved filters | Does the product already own these records? Are records personal or shared? | Use product tools for existing product records. Otherwise use app SQLite plus reactive queries and mutations. Verify add/edit/complete/delete, empty/error states, and access from a second user when personal. |
-| Dashboard or report | Which data can the caller access? Which chart, table, or layout components exist? | Fetch bounded aggregates through tools or queries. Use exposed charts, or compose supported text/layout components. Verify loading and no-data states, changed filters, and slow responses. A file/image asset cannot add a missing chart component. |
-| Record detail panel | Which slot/path supplies the record identifier? What grants access to that record? | Read the view's context inside its tree; pass identifiers to authorized backend operations. Verify switching records, inaccessible/deleted records, and retention/reset of drafts. Context paths are not URLs. |
-| Personal or installation settings | Is the setting per person, installation, or product record? What are its defaults? | Persist app-owned settings with the correct ownership key. Use product tools for product settings. Verify first use, persistence across view changes, and behavior when identity is absent. |
-| Public API lookup or product integration | Does an exposed tool already provide it? Does it require product credentials or write externally? | Use a server tool for privileged integrations; use an action for public fetch. Validate status and data. For writes, define idempotency and partial-failure recovery before retrying. Build-machine secrets are not deployed credentials. |
-| Repeated cards or tiles | Is the slot multiple? What metadata and refresh behavior does the product support? | Use an inline instance resolver with stable keys and bounded, authorized queries. Verify placement, initial discovery, and refresh after collection changes. Use one reactive list when instance refresh cannot meet the request. |
-| Larger lists, search, filters | What limits and ordering are needed? Which input and pagination controls exist? | Filter and paginate on the backend. Keep input feedback local, debounce costly work, and ignore outdated tool responses. Verify empty pages and changes of filter/selection while requests are pending. |
-| Change an existing app | Which behavior, identity fields, backend registrations, and migrations already exist? | Extend those paths; preserve applied migration history. For schema upgrades, plan defaults/backfills and verify representative old data. A source rollback does not reverse migrated data. |
+| Request | Starting point |
+| --- | --- |
+| Product records, navigation, or integrations | Generated product tools and components |
+| App-owned notes, todos, or saved settings | One table, a query, and the mutations the feature needs |
+| Form drafts, filters, or open/closed state | Component state; pass it through props when shared |
+| Dashboard or report | A query/tool call and the available display components |
+| Record panel | The selected view's context and an authorized query |
+| Repeated tiles | An instance resolver only when the slot requires multiple items |
+| Public external data | An action that fetches and validates the response |
+| Existing app changes | Extend the current flow and preserve its data/configuration |
 
-A requirement the product cannot expose is a capability gap. Implement the supported portion, explain the smallest addition needed, and keep the remaining limitation visible. A mock record, guessed tool, or new database copy is not a substitute for an unavailable product operation.
+Decide whether app data is shared or private and apply that access rule in functions. For lists that can grow large, add an appropriate query limit; add pagination when the feature needs it.
 
-Finish when the requested path works from its entry surface through its visible result, relevant failure/retry states are handled, and the app's checks and authorized deployment succeed. State which product interactions remain unverified when the actual product is unavailable; a typecheck or successful upload does not exercise them.
+Finish when the requested flow works and the relevant checks and authorized publication succeed. Explain any unavailable product capability or behavior that could not be verified.

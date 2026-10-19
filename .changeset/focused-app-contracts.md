@@ -9,3 +9,5 @@ New pnpm projects explicitly allow esbuild's required installation script for Dr
 Include schema-specific component, callback, responsive styling, tool-call, and view-registration examples in generated references, and mark required props explicitly.
 
 Use Valibot by default in new app dependencies, scaffold functions and repeated views, generated examples, and agent recipes. Function and instance schemas accept Standard Schema v1-compatible validators; existing apps can retain their chosen validator.
+
+Keep app-building guidance focused on the simplest working solution, with direct component/state examples and platform requirements separated from optional patterns.

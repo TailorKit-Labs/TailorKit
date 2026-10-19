@@ -12,7 +12,7 @@ Instances: single; omit instances.
 
 ### Registration example
 
-Place the view under this slot's directory, matching its declared context path. Read context with the definition's useContext() inside Content; ancestor shells do not have this view context.
+Place the view under this slot's directory at the declared path. Read context with useContext() inside the view.
 Keep the app's ClientProvider above this view when using backend hooks.
 
 ```tsx

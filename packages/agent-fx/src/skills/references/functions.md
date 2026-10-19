@@ -1,22 +1,20 @@
-# Private records and external actions
+# Small backend examples
 
-Use this recipe for app-owned notes, tasks, saved filters, or settings that belong to an authenticated user. For records deliberately shared by an installation, define that access model explicitly. For product-owned records, use the generated tools instead of making a second database copy.
+Use these patterns only for app-owned data. Product-owned records use generated tools. This notes example is private to the signed-in user; use installation-wide sharing when that is the feature's intended access model.
 
-## Tables and registration
+Enable `server: {}`, generate migrations after adding tables, and regenerate bindings after registration.
 
-The examples form one app. Enable `server: {}`, generate migrations after adding the tables, then regenerate bindings after registration. Keep validators shared with the frontend in a separate module if both need them; database modules stay server-only.
+## Notes: table, query, and mutation
 
 <!-- example: src/db/schema.ts -->
 
 ```ts
-import { boolean, integer, table, text } from "tailorkit/db";
+import { table, text } from "tailorkit/db";
 
 export const notes = table("notes", {
   id: text().primaryKey(),
   ownerId: text().notNull(),
   title: text().notNull(),
-  archived: boolean().notNull().default(false),
-  createdAt: integer().notNull(),
 });
 ```
 
@@ -40,15 +38,10 @@ import { relations } from "./relations";
 export const db = defineDatabase({ relations });
 ```
 
-## Authorize every read and write
-
-Derive ownership from verified identity; the caller never chooses `ownerId`. Both update and delete include ownership in the write condition. The list is bounded and returns only UI fields. Add pagination for larger collections and a revision check when concurrent edits must detect conflicts.
-
 <!-- example: src/functions/notes.ts -->
 
 ```ts
-import { and, eq } from "tailorkit/db";
-import { AppError, fn } from "tailorkit/server";
+import { fn, AppError } from "tailorkit/server";
 import type { Identity } from "tailorkit/server";
 import * as v from "valibot";
 
@@ -66,8 +59,8 @@ export const list = fn.query.database(database).handler(({ db, identity }) =>
   db.query.notes
     .findMany({
       where: { ownerId: subject(identity) },
-      columns: { id: true, title: true, archived: true, createdAt: true },
-      orderBy: { createdAt: "desc", id: "desc" },
+      columns: { id: true, title: true },
+      orderBy: { id: "asc" },
       limit: 50,
     })
     .sync()
@@ -83,58 +76,17 @@ export const add = fn.mutation
   .handler(({ db, identity, input }) => {
     const id = crypto.randomUUID();
     db.insert(notes)
-      .values({
-        id,
-        ownerId: subject(identity),
-        title: input.title,
-        createdAt: Date.now(),
-      })
+      .values({ id, ownerId: subject(identity), title: input.title })
       .run();
     return { id };
   });
-
-export const setArchived = fn.mutation
-  .database(database)
-  .input(
-    v.object({
-      id: v.pipe(v.string(), v.minLength(1)),
-      archived: v.boolean(),
-    })
-  )
-  .handler(({ db, identity, input }) => {
-    const saved = db
-      .update(notes)
-      .set({ archived: input.archived })
-      .where(and(eq(notes.id, input.id), eq(notes.ownerId, subject(identity))))
-      .returning({ id: notes.id })
-      .get();
-    if (!saved) {
-      throw new AppError("NOT_FOUND", "This note is unavailable.");
-    }
-    return saved;
-  });
-
-export const remove = fn.mutation
-  .database(database)
-  .input(v.object({ id: v.pipe(v.string(), v.minLength(1)) }))
-  .handler(({ db, identity, input }) => {
-    const removed = db
-      .delete(notes)
-      .where(and(eq(notes.id, input.id), eq(notes.ownerId, subject(identity))))
-      .returning({ id: notes.id })
-      .get();
-    if (!removed) {
-      throw new AppError("NOT_FOUND", "This note is unavailable.");
-    }
-    return removed;
-  });
 ```
 
-Keep `subject` private to this module: only function definitions go into `defineServer`. Each mutation is one transaction; a bulk operation that must be atomic belongs in one mutation too.
+The caller cannot choose the owner. Apply the same ownership condition to edit/delete operations when adding those features. Return only the fields needed by the UI.
 
-## Fetch and validate external data in an action
+## Public external data
 
-This read-only example combines an authorized app query with a public external read. Replace the example-domain URL with the endpoint required by the feature. Use a product server tool for an integration requiring product credentials. The runtime does not deploy secrets from the build machine.
+An external lookup needs an action, not another database layer. Replace the example URL with the feature's actual endpoint. Credentialed product integrations use exposed server tools.
 
 <!-- example: src/functions/preview.ts -->
 
@@ -142,33 +94,18 @@ This read-only example combines an authorized app query with a public external r
 import { AppError, fn } from "tailorkit/server";
 import * as v from "valibot";
 
-import * as notes from "./notes";
-
 const result = v.object({ summary: v.pipe(v.string(), v.maxLength(2000)) });
 
-export const preview = fn.action
-  .functions({ notes })
-  .output(result)
-  .handler(async ({ queries, signal }) => {
-    const visibleNotes = await queries.notes.list();
-    const response = await fetch("https://data.example/summary.json", {
-      signal,
-      redirect: "error",
-    });
-    if (!response.ok) {
-      throw new AppError("UNAVAILABLE", "The summary service is unavailable.");
-    }
-    const external = v.parse(result, await response.json());
-    return {
-      summary: `${visibleNotes.length} notes. ${external.summary}`.slice(
-        0,
-        2000
-      ),
-    };
-  });
+export const preview = fn.action.output(result).handler(async ({ signal }) => {
+  const response = await fetch("https://data.example/summary.json", { signal });
+  if (!response.ok) {
+    throw new AppError("UNAVAILABLE", "The summary service is unavailable.");
+  }
+  return v.parse(result, await response.json());
+});
 ```
 
-For writes to an external service, persist an operation key and reuse it on retry according to that service's idempotency API. A disconnected action may already have committed work. Keep related database changes in one mutation, await every effect, and provide a way to reconcile partial completion. Validate and bound external responses before storing or returning them; an output schema does not itself cap downloaded bytes.
+## Register what the app uses
 
 <!-- example: src/server.ts -->
 
@@ -181,4 +118,4 @@ import { preview } from "#functions/preview";
 export default defineServer({ notes, preview });
 ```
 
-`useQuery(api.notes.list)` provides reactive lists. Use `useMutation` for add/archive/remove and `useAction` for preview. Host context identifiers are validated input, not authorization; for team or record sharing, enforce the product's membership/access rules through a trusted capability before accessing that data.
+Use `useQuery(api.notes.list)`, `useMutation(api.notes.add)`, or `useAction(api.preview)` from the client. An app needing only notes can omit the external action and its registration.

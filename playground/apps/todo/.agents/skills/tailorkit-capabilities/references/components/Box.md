@@ -30,17 +30,17 @@ Exact contract: [generated bindings](../../../../../src/tailorkit.gen.ts); searc
 
 ## Callbacks
 
-Callbacks cross the asynchronous host bridge. Payloads below are serialized values; use them directly.
+Callbacks receive the serialized payload below, not a DOM event.
 
 | Callback | Payload |
 | --- | --- |
 | — | No declared callbacks. |
 
-Use only the listed props and callbacks. Layout and styling values come from this host, including any responsive/state objects listed above.
+Use the listed props, callbacks, and styling values.
 
 ## Usage
 
-Supply required values from app state or validated data. Children belong between tags only when supported.
+Supply the required props listed above. Use supported children between tags.
 
 ```tsx
 import { Box } from "#tailorkit";

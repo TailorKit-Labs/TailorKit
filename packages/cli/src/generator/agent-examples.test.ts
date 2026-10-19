@@ -40,7 +40,13 @@ const schema: TailorKitSchemaFile = {
         },
       },
       children: false,
-      fields: { properties: { value: { type: "string" } }, type: "object" },
+      fields: {
+        properties: {
+          disabled: { type: "boolean" },
+          value: { type: "string" },
+        },
+        type: "object",
+      },
     },
     RequiredText: {
       children: false,
@@ -135,7 +141,7 @@ it("typechecks complete authored recipes and generated examples against the publ
       }
     }
     expect(Object.keys(sources).length).toBeGreaterThanOrEqual(10);
-    // The legacy draft recipe uses the same add input under its documented namespace.
+    // The legacy form example uses the same add input under its documented namespace.
     const server = sources["src/server.ts"];
     if (server === undefined) {
       throw new Error("Missing registration example.");

@@ -1,16 +1,11 @@
 # Preact performance
 
-Focus on work and data crossing the app/host boundary.
+Start with the direct implementation. Optimize a visible or measured problem.
 
-- Use `useQuery` for backend reads. Within a `ClientProvider`, subscriptions deduplicate by function name and serialized input. Objects with the same serialized input need no memoization for subscription stability. Render the query result directly instead of copying it into local state.
-- Keep the provider/client stable. Subscribe near consumers and return bounded results from the backend; fetch only the columns and relations the UI needs.
-- Run interactions in event callbacks. Use effects for lifecycle synchronization, with complete dependencies and cleanup. Cancel or ignore stale async results after context changes or unmounts.
-- Parallelize independent external calls in actions with `Promise.all`, bounding large fan-outs. Await dependent work in order. Database handlers remain synchronous.
-- Derive simple render values directly. Reserve `useMemo` for expensive calculations and `useCallback` for useful identity stability. Use functional state updates when reading previous state.
-- Split frequently changing UI into focused components. Refs may hold local bookkeeping, while host components own visible state and DOM behavior.
-- Prefer focused imports and defer heavy optional modules when the app build supports it. Keep server/schema imports out of the client bundle.
-- Use explicit numeric conditions: `count > 0 ? <Component /> : null` avoids accidentally rendering `0`.
+- Render query data directly. A stable `ClientProvider` shares subscriptions by function and serialized input.
+- For slow lists, filter/limit on the backend and return the fields needed. Add pagination when appropriate.
+- Keep frequently changing state near its controls. Keep components at module scope and list keys stable.
+- Run independent external calls together when it helps the requested flow. Database handlers remain synchronous.
+- Use memoization, debounce, caching, or request coordination only when it addresses the problem being fixed.
 
-For a large collection, filter/order/page in one backend query before adding render memoization. For product tools, handle late responses when the selected record changes; an obsolete response must not overwrite the new selection.
-
-Verify the changed interaction and run the app's available checks. Bundle size alone does not establish runtime performance.
+Verify the interaction that was slow. A smaller bundle or extra memoization alone does not prove it improved.

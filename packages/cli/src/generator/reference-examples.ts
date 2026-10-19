@@ -1,27 +1,24 @@
 import type { SerializedComponent } from "./types";
 
+const identifierPattern = /^[A-Za-z_$][\w$]*$/u;
+
 /** Examples use generated types for caller-supplied values instead of guessing required data. */
 export const componentExample = (
   identifier: string,
-  children: boolean,
-  required: string[]
+  children: boolean
 ): string => {
   const tag = /^[a-z]/u.test(identifier) ? "Component" : identifier;
   const imported = tag === identifier ? identifier : `${identifier} as ${tag}`;
-  const props =
-    required.length > 0
-      ? `${identifier}Props & Required<Pick<${identifier}Props, ${required.map((name) => JSON.stringify(name)).join(" | ")}>>`
-      : `${identifier}Props`;
   return [
     "## Usage",
     "",
-    "Supply required values from app state or validated data. Children belong between tags only when supported.",
+    "Supply the required props listed above. Use supported children between tags.",
     "",
     "```tsx",
     `import { ${imported} } from "#tailorkit";`,
     `import type { ${identifier}Props } from "#tailorkit";`,
     "",
-    `export const Example = (props: ${props}) => (`,
+    `export const Example = (props: ${identifier}Props) => (`,
     children
       ? `  <${tag} {...props}>Example content</${tag}>`
       : `  <${tag} {...props} />`,
@@ -51,18 +48,25 @@ export const valueCallbackExample = (
     return "";
   }
   const [name] = callback;
+  if (!identifierPattern.test(name)) {
+    return "";
+  }
+  const tag = /^[a-z]/u.test(identifier) ? "Component" : identifier;
+  const imported = tag === identifier ? identifier : `${identifier} as ${tag}`;
   return [
     "",
     "### Local value and callback",
     "",
-    "Call this hook unconditionally at the top of a component and spread its returned props into the control. The callback receives a serialized value, not a DOM event. Changing initialValue alone does not reset a dirty draft; key the editor by record ID when a record change should reset it.",
+    "Keep the field value in component state and use the declared callback payload.",
     "",
-    "```ts",
+    "```tsx",
     'import { useState } from "preact/hooks";',
+    `import { ${imported} } from "#tailorkit";`,
     `import type { ${identifier}Props } from "#tailorkit";`,
-    `export const useValue = (initialValue: string): Pick<${identifier}Props, "value" | ${JSON.stringify(name)}> => {`,
-    "  const [value, setValue] = useState(initialValue);",
-    `  return { value, ${JSON.stringify(name)}: ({ value }) => setValue(value) };`,
+    "",
+    `export const ValueExample = (props: ${identifier}Props) => {`,
+    '  const [value, setValue] = useState(props.value ?? "");',
+    `  return <${tag} {...props} value={value} ${name}={({ value }) => setValue(value)} />;`,
     "};",
     "```",
   ].join("\n");
@@ -105,7 +109,7 @@ export const stylingExample = (
 };
 
 export const toolExample = (segments: string[], hasInput: boolean): string => {
-  const reference = `tools${segments.map((segment) => `[${JSON.stringify(segment)}]`).join("")}`;
+  const reference = `tools${segments.map((segment) => (identifierPattern.test(segment) ? `.${segment}` : `[${JSON.stringify(segment)}]`)).join("")}`;
   const parameter = hasInput ? `input: Parameters<typeof ${reference}>[0]` : "";
   return [
     "```ts",

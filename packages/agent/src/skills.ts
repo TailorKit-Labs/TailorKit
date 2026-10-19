@@ -13,40 +13,35 @@ import routing from "./skills/views-and-routing.md?raw";
 export const appAgentSkills = [
   {
     content: hostUi,
-    description:
-      "Frontend: read when building app UI, choosing generated components or styling props, handling callbacks, or calling host tools.",
+    description: "Frontend: components, forms, callbacks, or product tools.",
     files: [{ content: draftExample, path: "references/drafts.md" }],
     name: "tailorkit-frontend",
   },
   {
     content: routing,
-    description:
-      "Routing: read when adding or changing views, layouts, host context, or repeated slot instances.",
+    description: "Views: slots, context, layouts, or repeated instances.",
     name: "tailorkit-views-and-routing",
   },
   {
     content: functions,
     description:
-      "Functions: read when adding backend queries, mutations, external-call actions, or client subscriptions.",
+      "Functions: queries, mutations, actions, or reactive client hooks.",
     name: "tailorkit-backend-functions",
   },
   {
     content: database,
-    description:
-      "Database: read when changing SQLite tables, Drizzle relations, database reads/writes, or migrations.",
+    description: "Database: tables, relations, reads/writes, or migrations.",
     name: "tailorkit-sqlite-database",
   },
   {
     content: composition,
-    description:
-      "Composition: read when building reusable Preact components, variants, or shared state providers.",
+    description: "Composition: simplify repeated components or shared state.",
     files: [{ content: localStateExample, path: "references/local-state.md" }],
     name: "tailorkit-preact-composition",
   },
   {
     content: performance,
-    description:
-      "Performance: read when fixing excessive renders, duplicate subscriptions, async waterfalls, or large client bundles.",
+    description: "Performance: diagnose slow interactions or excessive work.",
     name: "tailorkit-preact-performance",
   },
 ] satisfies readonly HarnessAgentSkill[];

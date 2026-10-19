@@ -15,11 +15,11 @@
 
 The harness makes these skills discoverable each turn; app workspaces do not need copies of this repository's `.agents` directory. App-specific component, callback, styling, slot, and tool pages come from the CLI-generated `tailorkit-capabilities` skill.
 
-The frontend and composition skills bundle longer examples from `src/skills/references/` as on-demand files. The CLI's `agent-examples.test.ts` compiles complete marked recipes against public SDK declarations, and integration tests check that their bodies stay outside the initial model prompt.
+The frontend and composition skills bundle small form and state examples from `src/skills/references/` as on-demand files. The CLI's `agent-examples.test.ts` compiles complete marked recipes against public SDK declarations, and integration tests check that their bodies stay outside the initial model prompt.
 
 The skills document SDK patterns for use with the scaffold and generated contract declarations. The agent consults installed public types for missing details or version mismatches. Host component names, props, and tools always come from that app's generated bindings.
 
-The Preact skills adapt the applicable principles from the repository's `vercel-composition-patterns` and `vercel-react-best-practices` skills to generated host components and reactive TailorKit clients. React 19, Next.js, and DOM-specific APIs do not apply. Keep the app guidance aligned with the CLI scaffold, `packages/app/src` public APIs, `packages/vite/src/builder` routing/migrations, and the Durable Object runtime in `apps/apps-worker/src`.
+The guidance favors ordinary components, local state, and direct SDK calls. Add abstractions or performance work for a current need. Keep platform requirements aligned with the CLI scaffold and public SDK; use Preact APIs rather than React/Next.js-specific patterns.
 
 ## Durable turns
 

@@ -37,31 +37,29 @@ export const appAgentSkills = [
   {
     content: withReferencePaths(setup),
     description:
-      "Setup: choosing workflow/data ownership, scaffolding, configuration, dependency installation, generated bindings, SDK lookup, or build/deployment failures.",
+      "Setup: scaffold, configure, generate bindings, or resolve build failures.",
     name: "tailorkit-setup",
   },
   {
     content: withReferencePaths(frontend),
     description:
-      "Frontend: UI, forms, serialized callbacks, product tool calls, shared state, accessibility, or bridge responsiveness.",
+      "Frontend: compose components, handle forms/callbacks, or call product tools.",
     name: "tailorkit-frontend",
   },
   {
     content: withReferencePaths(views),
-    description:
-      "Views: slots, record context, shared shells/layouts, or repeated instances and their resolvers.",
+    description: "Views: slots, context, layouts, or repeated instances.",
     name: "tailorkit-views",
   },
   {
     content: withReferencePaths(functions),
     description:
-      "Functions: reactive queries, atomic mutations, external actions, access checks, or client hooks.",
+      "Functions: queries, mutations, external actions, or reactive client hooks.",
     name: "tailorkit-functions",
   },
   {
-    content: database,
-    description:
-      "Database: tailorkit/db tables, typed inserts, relations, database queries, or migrations of existing data.",
+    content: withReferencePaths(database),
+    description: "Database: tables, relations, reads/writes, or migrations.",
     name: "tailorkit-database",
   },
 ] satisfies readonly HarnessAgentSkill[];

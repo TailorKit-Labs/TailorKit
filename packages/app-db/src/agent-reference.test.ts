@@ -25,10 +25,9 @@ it("keeps the agent's typed column and insert example compatible with the public
     await writeFile(
       path.join(root, "example.ts"),
       `${source}
-const row: TaskInsert = createTaskRow({ title: "Review design", priority: "high" });
 const id: string = row.id;
-// @ts-expect-error Arbitrary text is not a validated priority.
-createTaskRow({ title: "Review design", priority: "urgent" });
+// @ts-expect-error Arbitrary text is not a supported priority.
+const invalid: TaskInsert = { ...row, priority: "urgent" };
 // @ts-expect-error Drafts are not complete insert rows.
 const incomplete: TaskInsert = { title: "Review design" };
 `
