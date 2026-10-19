@@ -6,13 +6,25 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
 import { appAgentMcpDiscovery, createAppAgentMcp } from "./mcp";
-import type { AppAgentMcpBackend, AppAgentMcpProgress } from "./mcp";
+import type {
+  AppAgentMcpBackend,
+  AppAgentMcpEvent,
+  AppAgentMcpResult,
+} from "./mcp";
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
   return value;
+};
+
+const completedRun: AppAgentMcpResult = {
+  answer: "App agent run ended.",
+  appId: "app",
+  finishReason: "stop",
+  runId: "run",
+  threadId: "thread",
 };
 
 const cleanup: (() => Promise<void>)[] = [];
@@ -28,11 +40,11 @@ const connect = async (overrides: Partial<AppAgentMcpBackend> = {}) => {
   const backend = {
     createApp: vi
       .fn<AppAgentMcpBackend["createApp"]>()
-      .mockResolvedValue({ appId: "new-app" }),
+      .mockResolvedValue({ ...completedRun, appId: "new-app" }),
 
     editApp: vi
       .fn<AppAgentMcpBackend["editApp"]>()
-      .mockResolvedValue({ appId: "existing-app" }),
+      .mockResolvedValue({ ...completedRun, appId: "existing-app" }),
 
     listApps: vi.fn<AppAgentMcpBackend["listApps"]>().mockResolvedValue({
       items: [],
@@ -116,6 +128,9 @@ describe("app agent MCP", () => {
       expect(tools.find((tool) => tool.name === name)?.description).toMatch(
         /create an autonomous app agent/iu
       );
+      expect(
+        tools.find((tool) => tool.name === name)?.outputSchema?.required
+      ).toEqual(["answer", "appId", "finishReason", "runId", "threadId"]);
     }
     await client.callTool({ arguments: {}, name: "list_apps" });
     expect(backend.listApps).toHaveBeenCalledWith({ page: 1, pageSize: 100 });
@@ -129,7 +144,7 @@ describe("app agent MCP", () => {
       const messages: (string | undefined)[] = [];
       const received = Promise.withResolvers<ReturnType<() => void>>();
       const identity = { appId: "app", runId: "run", threadId: "thread" };
-      const updates: AppAgentMcpProgress[] = [
+      const updates: AppAgentMcpEvent[] = [
         { ...identity, status: "started" },
         {
           ...identity,
@@ -157,7 +172,7 @@ describe("app agent MCP", () => {
         }
         // The result cannot complete until the client receives the text delta.
         await received.promise;
-        return { ...identity, finishReason: "stop" };
+        return { ...completedRun, ...identity };
       };
       const { client } = await connect({ createApp: build, editApp: build });
       const result = await client.callTool(
@@ -204,17 +219,14 @@ describe("app agent MCP", () => {
           status: "started",
           threadId: "thread",
         });
-        return { appId: "app" };
+        return completedRun;
       },
     });
     const result = await client.callTool({
       arguments: { appId: "app", prompt: "Change it" },
       name: "edit_app",
     });
-    expect(result.structuredContent).toEqual({
-      answer: "App agent run ended.",
-      appId: "app",
-    });
+    expect(result.structuredContent).toEqual(completedRun);
   });
 
   it.each(["create_app", "edit_app"])(
@@ -306,31 +318,11 @@ describe("app agent MCP", () => {
           type: "tool-output-error",
         },
         { type: "finish" },
-      ] satisfies Extract<
-        AppAgentMcpProgress,
-        { status: "streaming" }
-      >["chunk"][];
-      const finalOutput = {
+      ] satisfies Extract<AppAgentMcpEvent, { status: "streaming" }>["chunk"][];
+      const finalOutput: AppAgentMcpResult = {
         ...identity,
-        deploymentUrl: "https://calendar.test",
+        answer: "The calendar is implemented. Deployment needs a build fix.",
         finishReason: "stop",
-        message: {
-          parts: [
-            {
-              text: "The calendar is implemented. Deployment needs a build fix.",
-              type: "text",
-            },
-            { text: "Private reasoning", type: "reasoning" },
-          ],
-        },
-        messages: [
-          {
-            content: "Full internal tool transcript".repeat(10_000),
-            role: "assistant",
-          },
-        ],
-        sessionId: "internal-session",
-        usage: { inputTokens: 100_000 },
       };
       const build = async (
         _input: { prompt: string },
@@ -402,28 +394,10 @@ describe("app agent MCP", () => {
       expect(answer.text).toContain(
         "The calendar is implemented. Deployment needs a build fix."
       );
-      expect(answer.text).toContain("App ID: calendar");
-      expect(answer.text).toContain("Thread ID: thread");
-      expect(answer.text).toContain("Run ID: run");
-      expect(answer.text).toContain("edit_app");
       expect(answer.text).not.toContain("Private reasoning");
       expect(answer.text).not.toContain("Full internal tool transcript");
-      const compact = {
-        ...identity,
-        answer: "The calendar is implemented. Deployment needs a build fix.",
-        deploymentUrl: "https://calendar.test",
-        finishReason: "stop",
-      };
-      expect(response.content[1]).toMatchObject({
-        annotations: { audience: ["assistant"], priority: 0.2 },
-        type: "text",
-      });
-      expect(
-        JSON.parse(
-          z.object({ text: z.string() }).parse(response.content[1]).text
-        )
-      ).toEqual(compact);
-      expect(response.structuredContent).toEqual(compact);
+      expect(response.content).toHaveLength(1);
+      expect(response.structuredContent).toEqual(finalOutput);
       expect(JSON.stringify(response).length).toBeLessThan(2000);
       const activityPayload = JSON.stringify(activities);
       expect(activityPayload).not.toContain("Private reasoning");
@@ -463,7 +437,7 @@ describe("app agent MCP", () => {
             threadId: "thread",
           });
         }
-        return { appId: "app" };
+        return completedRun;
       },
     });
     await client.callTool(
@@ -505,19 +479,7 @@ describe("app agent MCP", () => {
     async (name) => {
       const answer = "Published your notes panel.";
       const build = async () =>
-        await Promise.resolve({
-          appId: "app",
-          message: {
-            parts: [
-              { text: answer, type: "text" },
-              { text: "Private reasoning", type: "reasoning" },
-              { output: "Large tool output".repeat(10_000), type: "tool-read" },
-            ],
-          },
-          messages: [{ content: "Internal transcript".repeat(10_000) }],
-          runId: "run",
-          threadId: "thread",
-        });
+        await Promise.resolve({ ...completedRun, answer });
       const { client } = await connect({ createApp: build, editApp: build });
       const response = await client.callTool({
         arguments:
@@ -527,37 +489,17 @@ describe("app agent MCP", () => {
         name,
       });
       expect(response.content[0]).toEqual({
-        text: "Published your notes panel.\n\nApp ID: app\n\nThread ID: thread\n\nRun ID: run\n\nFor a related follow-up, call edit_app with this appId and threadId.",
+        text: answer,
         type: "text",
       });
       expect(response.structuredContent).toEqual({
+        ...completedRun,
         answer,
-        appId: "app",
-        runId: "run",
-        threadId: "thread",
       });
+      expect(response.content).toHaveLength(1);
       expect(JSON.stringify(response).length).toBeLessThan(1500);
-      expect(JSON.stringify(response)).not.toContain("Private reasoning");
-      expect(JSON.stringify(response)).not.toContain("Large tool output");
-      expect(JSON.stringify(response)).not.toContain("Internal transcript");
     }
   );
-
-  it("rejects malformed backend output instead of returning an unfiltered fallback", async () => {
-    const { client } = await connect({
-      async editApp() {
-        return await Promise.resolve({
-          messages: "Internal transcript".repeat(10_000),
-        });
-      },
-    });
-    const response = await client.callTool({
-      arguments: { appId: "app", prompt: "Change it" },
-      name: "edit_app",
-    });
-    expect(response.isError).toBe(true);
-    expect(JSON.stringify(response)).not.toContain("Internal transcript");
-  });
 
   it("rejects legacy initialization and mismatched metadata headers", async () => {
     const { handler, requests } = await connect();
@@ -768,7 +710,7 @@ describe("app agent MCP", () => {
           }
           await pendingPromise;
         })();
-        return {};
+        return completedRun;
       },
     });
     const controller = new AbortController();

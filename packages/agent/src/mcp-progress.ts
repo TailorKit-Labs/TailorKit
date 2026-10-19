@@ -10,7 +10,7 @@ interface AppAgentMcpRun {
 }
 
 /** Internal events supplied by the backend, never forwarded directly to clients. */
-export type AppAgentMcpProgress = AppAgentMcpRun &
+export type AppAgentMcpEvent = AppAgentMcpRun &
   ({ status: "started" } | { chunk: UIMessageChunk; status: "streaming" });
 
 /** Version 2 activity snapshots carried in progress notification metadata. */
@@ -161,7 +161,7 @@ export const createProgressSnapshot = () => {
   const text = new Map<string, string>();
   const tools = new Map<string, ToolAction>();
 
-  return (event: AppAgentMcpProgress): ProgressSnapshot | undefined => {
+  return (event: AppAgentMcpEvent): ProgressSnapshot | undefined => {
     const { appId, runId, threadId } = event;
     const run = { appId, runId, threadId };
     if (event.status === "started") {
@@ -264,19 +264,16 @@ export const createProgressReporter = (
     latest = update;
     clearTimeout(heartbeatTimer);
     const previous = queue;
-    const delivered = (async () => {
-      await previous;
-      signal.throwIfAborted();
-      if (failure !== undefined) {
-        throw failure;
-      }
-      await notify(update);
-    })();
     // Observe background failures without rejecting the serialization queue.
     // The next backend update or final flush still reports the original error.
     queue = (async () => {
+      await previous;
+      if (closed) {
+        return;
+      }
       try {
-        await delivered;
+        signal.throwIfAborted();
+        await notify(update);
       } catch (error) {
         failure =
           error instanceof Error
@@ -296,7 +293,10 @@ export const createProgressReporter = (
         })();
       }
     }, heartbeatIntervalMs);
-    await delivered;
+    await queue;
+    if (failure !== undefined) {
+      throw failure;
+    }
   };
   const flush = async (): Promise<void> => {
     await queue;
@@ -319,7 +319,7 @@ export const createProgressReporter = (
   return {
     close,
     flush,
-    onProgress: async (event: AppAgentMcpProgress): Promise<void> => {
+    onProgress: async (event: AppAgentMcpEvent): Promise<void> => {
       signal.throwIfAborted();
       await queue;
       if (failure !== undefined) {

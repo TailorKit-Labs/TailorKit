@@ -1,15 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { createProgressReporter, createProgressSnapshot } from "./mcp-progress";
-import type { AppAgentMcpProgress } from "./mcp-progress";
+import type { AppAgentMcpEvent } from "./mcp-progress";
 
 type ProgressSnapshot = Parameters<
   Parameters<typeof createProgressReporter>[0]
 >[0];
-type Chunk = Extract<AppAgentMcpProgress, { status: "streaming" }>["chunk"];
+type Chunk = Extract<AppAgentMcpEvent, { status: "streaming" }>["chunk"];
 
 const identity = { appId: "app", runId: "run", threadId: "thread" };
-const event = (chunk: Chunk): AppAgentMcpProgress => ({
+const event = (chunk: Chunk): AppAgentMcpEvent => ({
   ...identity,
   chunk,
   status: "streaming",

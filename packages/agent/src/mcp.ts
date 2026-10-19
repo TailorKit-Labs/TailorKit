@@ -6,9 +6,9 @@ import type {
 import { z } from "zod";
 
 import { createProgressReporter } from "./mcp-progress";
-import type { AppAgentMcpProgress } from "./mcp-progress";
+import type { AppAgentMcpEvent } from "./mcp-progress";
 
-export type { AppAgentMcpActivity, AppAgentMcpProgress } from "./mcp-progress";
+export type { AppAgentMcpActivity, AppAgentMcpEvent } from "./mcp-progress";
 
 const serverInfo = { name: "tailorkit-app-agent", version: "1.0.0" };
 const capabilities = { tools: { listChanged: true } };
@@ -52,8 +52,18 @@ const agentStreamMetadata = {
 export interface AppAgentMcpExecution {
   signal: AbortSignal;
   /** Supply internal agent events for compact MCP activity reporting. */
-  onProgress: (event: AppAgentMcpProgress) => Promise<void>;
+  onProgress: (event: AppAgentMcpEvent) => Promise<void>;
 }
+
+const agentResultSchema = z.object({
+  answer: z.string(),
+  appId: z.string(),
+  finishReason: z.string(),
+  runId: z.string(),
+  threadId: z.string(),
+});
+
+export type AppAgentMcpResult = z.infer<typeof agentResultSchema>;
 
 /** Implementations receive authorization from the host, never from tool arguments. */
 export interface AppAgentMcpBackend {
@@ -65,46 +75,12 @@ export interface AppAgentMcpBackend {
   createApp: (
     input: z.infer<typeof createSchema>,
     execution: AppAgentMcpExecution
-    // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-  ) => Promise<NonNullable<CallToolResult["structuredContent"]>>;
+  ) => Promise<AppAgentMcpResult>;
   editApp: (
     input: z.infer<typeof editSchema>,
     execution: AppAgentMcpExecution
-    // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
-  ) => Promise<NonNullable<CallToolResult["structuredContent"]>>;
+  ) => Promise<AppAgentMcpResult>;
 }
-
-const execution = (context: ServerContext) => {
-  let progress = 0;
-  const progressToken = context.mcpReq._meta?.progressToken;
-  const reporter = createProgressReporter(async ({ activity, message }) => {
-    if (progressToken === undefined) {
-      return;
-    }
-    await context.mcpReq.notify({
-      method: "notifications/progress",
-      params: {
-        _meta: { "dev.tailorkit/agent-stream": activity },
-        message,
-        progress: (progress += 1),
-        progressToken,
-      },
-    });
-  }, context.mcpReq.signal);
-  return {
-    close: reporter.close,
-    execution: {
-      onProgress: async (event: AppAgentMcpProgress) => {
-        context.mcpReq.signal.throwIfAborted();
-        if (progressToken !== undefined) {
-          await reporter.onProgress(event);
-        }
-      },
-      signal: context.mcpReq.signal,
-    },
-    flush: reporter.flush,
-  };
-};
 
 // oxlint-disable-next-line typescript/no-generated-empty-object-type -- This empty mapped type is intentional: its keyof is never, so generic defaults do not introduce arbitrary keys.
 const result = (value: NonNullable<CallToolResult["structuredContent"]>) => ({
@@ -112,83 +88,47 @@ const result = (value: NonNullable<CallToolResult["structuredContent"]>) => ({
   structuredContent: value,
 });
 
-const agentResultSchema = z.object({
-  appId: z.string(),
-  deploymentUrl: z.url().optional(),
-  finishReason: z.string().optional(),
-  message: z
-    .object({
-      parts: z.array(
-        z.object({ text: z.string().optional(), type: z.string() })
-      ),
-    })
-    .optional(),
-  runId: z.string().optional(),
-  threadId: z.string().optional(),
-});
-
-const compactAgentResultSchema = agentResultSchema
-  .omit({ message: true })
-  .extend({
-    answer: z.string(),
-  });
-
-const agentResult = (
-  // oxlint-disable-next-line typescript/no-generated-empty-object-type -- Match MCP's structuredContent type without introducing arbitrary keys.
-  value: NonNullable<CallToolResult["structuredContent"]>
-) => {
-  const { message, ...identity } = agentResultSchema.parse(value);
-  const { appId, deploymentUrl, runId, threadId } = identity;
-  const answer = message?.parts
-    .filter((part) => part.type === "text" && part.text !== undefined)
-    .map((part) => part.text)
-    .join("\n\n");
-  const summary =
-    answer === undefined || answer === "" ? "App agent run ended." : answer;
-  const compact = { ...identity, answer: summary };
-  const lines = [summary, `App ID: ${appId}`];
-  if (deploymentUrl !== undefined) {
-    lines.push(`Deployment URL: ${deploymentUrl}`);
-  }
-  if (threadId !== undefined) {
-    lines.push(`Thread ID: ${threadId}`);
-  }
-  if (runId !== undefined) {
-    lines.push(`Run ID: ${runId}`);
-  }
-  if (threadId !== undefined) {
-    lines.push(
-      "For a related follow-up, call edit_app with this appId and threadId."
-    );
-  }
-  return {
-    content: [
-      { text: lines.join("\n\n"), type: "text" as const },
-      // MCP recommends a serialized JSON fallback for structuredContent.
-      // Serialize only the compact result, never the internal transcript.
-      {
-        annotations: { audience: ["assistant" as const], priority: 0.2 },
-        text: JSON.stringify(compact),
-        type: "text" as const,
-      },
-    ],
-    structuredContent: compact,
-  };
-};
-
 const runAgentTool = async (
   context: ServerContext,
-  operation: (
-    execution: AppAgentMcpExecution
-  ) => ReturnType<AppAgentMcpBackend["editApp"]>
+  operation: (execution: AppAgentMcpExecution) => Promise<AppAgentMcpResult>
 ) => {
-  const progress = execution(context);
+  let progress = 0;
+  const { signal } = context.mcpReq;
+  const progressToken = context.mcpReq._meta?.progressToken;
+  const reporter =
+    progressToken === undefined
+      ? undefined
+      : createProgressReporter(async ({ activity, message }) => {
+          await context.mcpReq.notify({
+            method: "notifications/progress",
+            params: {
+              _meta: { "dev.tailorkit/agent-stream": activity },
+              message,
+              progress: (progress += 1),
+              progressToken,
+            },
+          });
+        }, signal);
   try {
-    const value = await operation(progress.execution);
-    await progress.flush();
-    return agentResult(value);
+    const value = await operation({
+      onProgress: async (event) => {
+        signal.throwIfAborted();
+        await reporter?.onProgress(event);
+      },
+      signal,
+    });
+    await reporter?.flush();
+    return {
+      content: [
+        {
+          text: value.answer,
+          type: "text" as const,
+        },
+      ],
+      structuredContent: value,
+    };
   } finally {
-    progress.close();
+    reporter?.close();
   }
 };
 
@@ -240,7 +180,7 @@ export const createAppAgentMcp = (
           description:
             "Create a new app and create an autonomous app agent to build and deploy it from your prompt. The agent writes code, runs commands, and publishes the app. Wait for the streamed agent progress and final result. A new conversation is created and its threadId is returned. Continue it with edit_app and that threadId; do not automatically retry a disconnected call.",
           inputSchema: authorizedCreateSchema,
-          outputSchema: compactAgentResultSchema,
+          outputSchema: agentResultSchema,
         },
         async (input, context) =>
           await runAgentTool(
@@ -261,7 +201,7 @@ export const createAppAgentMcp = (
           description:
             "Create an autonomous app agent to edit and deploy an existing app from your prompt. The agent writes code, runs commands, and publishes the changes. Wait for the streamed agent progress and final result. Omit threadId to start a new conversation; supply a returned threadId for a related follow-up. Do not automatically retry a disconnected call.",
           inputSchema: editSchema,
-          outputSchema: compactAgentResultSchema,
+          outputSchema: agentResultSchema,
         },
         async (input, context) =>
           await runAgentTool(

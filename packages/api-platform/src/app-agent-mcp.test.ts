@@ -313,6 +313,135 @@ describe("platform MCP endpoint", () => {
     expect(mocks.start).toHaveBeenCalledOnce();
   });
 
+  it.each(["create_app", "edit_app"])(
+    "returns a compact %s result without assembling or forwarding internal transcripts",
+    async (name) => {
+      mocks.start.mockResolvedValueOnce({
+        cancel: mocks.cancel,
+        getReadable: () =>
+          new ReadableStream({
+            start(controller) {
+              for (const chunk of [
+                {
+                  delta: "Private reasoning".repeat(10_000),
+                  id: "reason",
+                  type: "reasoning-delta",
+                },
+                {
+                  input: {
+                    content: "Large source code".repeat(10_000),
+                    file_path: "src/app.tsx",
+                  },
+                  toolCallId: "write",
+                  toolName: "write",
+                  type: "tool-input-available",
+                },
+                {
+                  output: "Large tool output".repeat(10_000),
+                  toolCallId: "write",
+                  type: "tool-output-available",
+                },
+                {
+                  delta: "Published your app.",
+                  id: "text",
+                  type: "text-delta",
+                },
+                { id: "text", type: "text-end" },
+                { delta: "Ready for review.", id: "next", type: "text-delta" },
+                { id: "next", type: "text-end" },
+                { type: "finish" },
+              ]) {
+                controller.enqueue(chunk);
+              }
+              controller.close();
+            },
+          }),
+        returnValue: Promise.resolve({
+          finishReason: "stop",
+          messages: "Internal transcript".repeat(10_000),
+          sessionId: "internal-session",
+          usage: { inputTokens: 100_000 },
+        }),
+        runId: "run",
+      });
+      const response = await handleAppAgentMcpRequest(
+        request(
+          name,
+          name === "create_app"
+            ? { name: "App", prompt: "Build it", scope: "org" }
+            : { appId: "public-app", prompt: "Change it" }
+        ),
+        context
+      );
+      const body = await response.text();
+      const final = body
+        .split("\n")
+        .filter((line) => line.startsWith("data:"))
+        .map((line) =>
+          z
+            .object({
+              result: z
+                .object({
+                  content: z.array(
+                    z.object({ text: z.string(), type: z.literal("text") })
+                  ),
+                  structuredContent: z.json(),
+                })
+                .optional(),
+            })
+            .parse(JSON.parse(line.slice(5)))
+        )
+        .find(({ result }) => result !== undefined)?.result;
+      expect(final?.structuredContent).toEqual({
+        answer: "Published your app.\n\nReady for review.",
+        appId: "public-app",
+        finishReason: "stop",
+        runId: "run",
+        threadId: "e773a870-df5a-4bea-9ebd-9be4c0b1897a",
+      });
+      expect(final?.content).toHaveLength(1);
+      expect(body.length).toBeLessThan(5000);
+      for (const internal of [
+        "Private reasoning",
+        "Large source code",
+        "Large tool output",
+        "Internal transcript",
+        "internal-session",
+        "inputTokens",
+      ]) {
+        expect(body).not.toContain(internal);
+      }
+    }
+  );
+
+  it.each(["error", "abort"])(
+    "cancels and cleans up after a streamed %s",
+    async (type) => {
+      mocks.start.mockResolvedValueOnce({
+        cancel: mocks.cancel,
+        getReadable: () =>
+          new ReadableStream({
+            start(controller) {
+              controller.enqueue({ errorText: "Private diagnostics", type });
+              controller.close();
+            },
+          }),
+        returnValue: Promise.resolve({ finishReason: "stop" }),
+        runId: "run",
+      });
+      const response = await handleAppAgentMcpRequest(
+        request("edit_app", { appId: "public-app", prompt: "Change it" }),
+        context
+      );
+      const body = await response.text();
+      expect(body).toContain('"isError":true');
+      expect(body).not.toContain("Private diagnostics");
+      expect(mocks.cancel).toHaveBeenCalledOnce();
+      expect(mocks.cleanup).toHaveBeenCalledWith(app.id, "run");
+      expect(mocks.revoke).toHaveBeenCalledOnce();
+    }
+  );
+
   it("rejects unauthorized app/scope selections without grants or agents", async () => {
     mocks.app.mockResolvedValue(null);
     const missing = await handleAppAgentMcpRequest(
