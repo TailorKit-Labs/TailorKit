@@ -34,7 +34,7 @@ interface AgentRunAttributes {
 const contextSchema = z.strictObject({
   hostUrl: z.url({ protocol: /^https?$/u }),
   scopes: z.record(z.string(), scopeValueSchema),
-  subjectId: z.string().min(1).max(256).optional(),
+  subjectId: z.string().min(1).max(256),
 });
 
 /** Standard MCP endpoint. Host project keys authenticate caller context carried in headers. */
@@ -167,14 +167,8 @@ export const handleAppAgentMcpRequest = async (
       execution.signal.throwIfAborted();
       const attributes: AgentRunAttributes = {
         "tailorkit.projectId": context.project.id,
+        "tailorkit.subjectId": input.subjectId,
       };
-      if (
-        input.subjectId !== undefined &&
-        input.subjectId !== null &&
-        input.subjectId !== ""
-      ) {
-        attributes["tailorkit.subjectId"] = input.subjectId;
-      }
       run = await start(
         appAgent,
         [

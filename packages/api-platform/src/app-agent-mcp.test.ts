@@ -349,15 +349,21 @@ describe("platform MCP endpoint", () => {
       })
     );
     await Promise.all(
-      [{ scopes: {} }, { subjectId: "" }, { scopes: { org: {} } }].map(
-        async (invalid) => {
-          const awaitedResult2 = await handleAppAgentMcpRequest(
-            request("list_apps", {}, invalid),
-            context
-          );
-          expect(awaitedResult2.status).toBe(400);
-        }
-      )
+      [
+        { scopes: {} },
+        { subjectId: undefined },
+        { subjectId: null },
+        { subjectId: "" },
+        { subjectId: 123 },
+        { subjectId: "x".repeat(257) },
+        { scopes: { org: {} } },
+      ].map(async (invalid) => {
+        const awaitedResult2 = await handleAppAgentMcpRequest(
+          request("list_apps", {}, invalid),
+          context
+        );
+        expect(awaitedResult2.status).toBe(400);
+      })
     );
     expect(mocks.list).not.toHaveBeenCalled();
   });

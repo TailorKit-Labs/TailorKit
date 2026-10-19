@@ -131,6 +131,7 @@ it("deduplicates instance requests and sessions across framework-neutral consume
       if (path.endsWith("/backend/session")) {
         return Response.json({
           expiresAt: Date.now() + 300_000,
+          subjectId: "principal",
           token: "token",
           url: "https://runtime.test/rpc",
         });

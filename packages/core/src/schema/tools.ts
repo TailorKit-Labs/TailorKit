@@ -53,7 +53,7 @@ export type InferToolOutput<T> =
       : ReturnType<() => void>
     : never;
 export interface ToolIdentity {
-  readonly subjectId?: string;
+  readonly subjectId: string;
   readonly installationId: string;
   readonly appId: string;
   readonly projectId: string;

@@ -93,7 +93,7 @@ Actions have no `db`. Declare `.functions({ notes })` to use `queries.notes.list
 
 ## Access control
 
-`identity` describes the verified caller. For private records, require `identity.subjectId` and filter reads, updates, and deletes by an owner column. Shared records follow the feature's shared access rule. Throw `AppError` for expected failures such as `UNAUTHORIZED` or `NOT_FOUND`; caller-supplied IDs do not grant access.
+`identity.subjectId` is the authenticated user or service principal supplied by the host and is always a nonempty string. For private records, filter reads, updates, and deletes by an owner column matched to that subject. Shared records follow the feature's shared access rule. Throw `AppError` for expected failures such as `UNAUTHORIZED` or `NOT_FOUND`; caller-supplied IDs do not grant access.
 
 ## Client hooks
 

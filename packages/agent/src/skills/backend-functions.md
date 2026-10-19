@@ -48,4 +48,4 @@ Execute relational reads with `.sync()`, selects with `.all()`/`.get()`, and wri
 
 For actions calling app functions, declare `.functions({ todos })` and use `queries.todos.list()` or `mutations.todos.add(input)`. Public fetches use `signal`, status checks, and response validation. Product credentials remain behind exposed server tools. External effects and separate mutations do not form one transaction; choose retry behavior for the operation being implemented.
 
-`identity` is verified, but `subjectId` is optional. Installation isolation is not user authorization. Use `AppError` from `tailorkit/server` for expected failures. For uncovered APIs, inspect installed public declarations behind `tailorkit/server` or `tailorkit/client`.
+`identity.subjectId` is the authenticated user or service principal supplied by the host and is always a nonempty string. Installation isolation is not user authorization; filter private records by that subject. Use `AppError` from `tailorkit/server` for expected failures. For uncovered APIs, inspect installed public declarations behind `tailorkit/server` or `tailorkit/client`.

@@ -101,6 +101,7 @@ const mockFetch = () =>
       if (path.endsWith("/backend/session")) {
         return Response.json({
           expiresAt: Date.now() + 300_000,
+          subjectId: "principal",
           token: "app-token",
           url: "https://runtime.test/rpc",
         });
@@ -818,6 +819,7 @@ it("aggregates apps in discovery order, resolves in parallel, and preserves dupl
         .parse(await new Response(options?.body).json());
       return Response.json({
         expiresAt: Date.now() + 300_000,
+        subjectId: "principal",
         token: appId,
         url: "https://runtime.test/rpc",
       });

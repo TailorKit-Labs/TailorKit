@@ -21,6 +21,7 @@ const optionalSchemaTailor = tailor;
 
 const authenticateImplementation2Implementation = () => ({
   scopes: { org: { tenant: "workspace" } },
+  subjectId: "user",
 });
 
 const authenticateImplementationImplementation = () => ({
@@ -28,6 +29,7 @@ const authenticateImplementationImplementation = () => ({
     org: { tenant: "org" },
     userOrg: { tenant: "user_org" },
   },
+  subjectId: "user",
 });
 
 const requestImplementationImplementation = (origin: string) =>
@@ -43,6 +45,37 @@ const requestImplementationImplementation = (origin: string) =>
   });
 
 describe("createTailorKitServer", () => {
+  it.each([undefined, null, "", 123, "x".repeat(257)])(
+    "rejects authenticated host contexts without a valid subject: %j",
+    async (subjectId) => {
+      const platformFetch = vi.fn<typeof fetch>();
+      const server = createTailorKitServer({
+        $internal: { platformFetch },
+        baseUrl: "https://host.test/api/tailorkit",
+        components: {},
+        projectKey: "project-key",
+        scopes: { org: testScopeSchema },
+      });
+      await expect(
+        server.handler(
+          new Request("https://host.test/api/tailorkit/backend/session", {
+            body: JSON.stringify({ appId: "app" }),
+            headers: { "content-type": "application/json" },
+            method: "POST",
+          }),
+          {
+            authenticate: () => ({
+              scopes: { org: { tenant: "verified" } },
+              // @ts-expect-error Exercise host integrations supplying invalid runtime authentication data.
+              subjectId,
+            }),
+          }
+        )
+      ).rejects.toThrow("Invalid authenticated subject");
+      expect(platformFetch).not.toHaveBeenCalled();
+    }
+  );
+
   it.each([
     ["GET", "preview/metadata?sessionId=removed"],
     ["GET", `preview/${"a".repeat(43)}`],
@@ -82,10 +115,16 @@ describe("createTailorKitServer", () => {
         },
         method: "POST",
       }),
-      { authenticate: () => ({ scopes: { org: { tenant: "verified" } } }) }
+      {
+        authenticate: () => ({
+          scopes: { org: { tenant: "verified" } },
+          subjectId: "user",
+        }),
+      }
     );
     expect(await response.json()).toEqual({
       expiresAt: 123,
+      subjectId: "user",
       token: "platform-token",
       url: "https://runtime.test/rpc",
     });
@@ -102,6 +141,7 @@ describe("createTailorKitServer", () => {
     expect(await issuedRequest.json()).toEqual({
       app: { shortId: "app" },
       scopes: [{ name: "org", value: { tenant: "verified" } }],
+      subjectId: "user",
       toolUrl: "https://host.test/api/tailorkit/tools/execute",
     });
   });
@@ -127,7 +167,10 @@ describe("createTailorKitServer", () => {
     });
     const request = requestImplementation;
     const authentication = {
-      authenticate: () => ({ scopes: { org: { tenant: "verified" } } }),
+      authenticate: () => ({
+        scopes: { org: { tenant: "verified" } },
+        subjectId: "user",
+      }),
     };
     const awaitedResult1 = await server.handler(
       request("https://host.test"),
@@ -195,7 +238,10 @@ describe("createTailorKitServer", () => {
         scopes: { org: testScopeSchema },
       });
       const authentication = {
-        authenticate: () => ({ scopes: { org: { tenant: "verified" } } }),
+        authenticate: () => ({
+          scopes: { org: { tenant: "verified" } },
+          subjectId: "user",
+        }),
       };
       await Promise.all(
         ["schema", "meta"].map(async (route) => {
@@ -219,6 +265,7 @@ describe("createTailorKitServer", () => {
         {
           app: { shortId: "app" },
           scopes: [{ name: "org", value: { tenant: "verified" } }],
+          subjectId: "user",
           toolUrl: `${origin + prefix}/tools/execute`,
         },
       ]);
@@ -278,7 +325,12 @@ describe("createTailorKitServer", () => {
         headers: { "content-type": "application/json" },
         method: "POST",
       }),
-      { authenticate: () => ({ scopes: { org: { tenant: "verified" } } }) }
+      {
+        authenticate: () => ({
+          scopes: { org: { tenant: "verified" } },
+          subjectId: "user",
+        }),
+      }
     );
     expect(response.status).toBe(404);
     expect(response.headers.get("cache-control")).toBe("no-store");
@@ -379,7 +431,10 @@ describe("createTailorKitServer", () => {
     const response = await server.handler(
       new Request("https://host.test/api/tailorkit/apps"),
       {
-        authenticate: () => ({ scopes: { org: { tenant: "workspace" } } }),
+        authenticate: () => ({
+          scopes: { org: { tenant: "workspace" } },
+          subjectId: "user",
+        }),
       }
     );
     expect(response.status).toBe(200);
@@ -388,7 +443,12 @@ describe("createTailorKitServer", () => {
   it("serves the serialized schema from the handler", async () => {
     const response = await optionalSchemaTailor.handler(
       new Request("https://example.com/api/tailorkit/schema"),
-      { authenticate: () => ({ scopes: { org: { tenant: "test" } } }) }
+      {
+        authenticate: () => ({
+          scopes: { org: { tenant: "test" } },
+          subjectId: "user",
+        }),
+      }
     );
 
     await expect(response.json()).resolves.toMatchObject({
@@ -403,7 +463,12 @@ describe("createTailorKitServer", () => {
       new Request(
         "https://example.com/api/tailorkit/cli-auth/approve?code=ABC-123-XYZ"
       ),
-      { authenticate: () => ({ scopes: { org: { tenant: "test" } } }) }
+      {
+        authenticate: () => ({
+          scopes: { org: { tenant: "test" } },
+          subjectId: "user",
+        }),
+      }
     );
 
     const html = await response.text();
@@ -449,6 +514,7 @@ describe("createTailorKitServer", () => {
       {
         authenticate: () => ({
           scopes: { org: { tenant: "test" }, userOrg: { tenant: "user" } },
+          subjectId: "user",
         }),
       }
     );
@@ -480,6 +546,7 @@ describe("createTailorKitServer", () => {
       {
         authenticate: () => ({
           scopes: { org: { tenant: "test" }, userOrg: { tenant: "user" } },
+          subjectId: "user",
         }),
       }
     );
@@ -523,7 +590,12 @@ describe("createTailorKitServer", () => {
         new Request(
           "https://example.com/api/tailorkit/cli-auth/approve?code=ABC-123-XYZ"
         ),
-        { authenticate: () => ({ scopes: { org: { orgId: "" } } }) }
+        {
+          authenticate: () => ({
+            scopes: { org: { orgId: "" } },
+            subjectId: "user",
+          }),
+        }
       )
     ).rejects.toThrow(/failed its Standard Schema validation/u);
   });
@@ -551,7 +623,12 @@ describe("createTailorKitServer", () => {
         body,
         method: "POST",
       }),
-      { authenticate: () => ({ scopes: { org: { orgId: "org_1" } } }) }
+      {
+        authenticate: () => ({
+          scopes: { org: { orgId: "org_1" } },
+          subjectId: "user",
+        }),
+      }
     );
 
     const html = await response.text();
@@ -592,7 +669,12 @@ describe("createTailorKitServer", () => {
         body,
         method: "POST",
       }),
-      { authenticate: () => ({ scopes: { org: { orgId: "org_1" } } }) }
+      {
+        authenticate: () => ({
+          scopes: { org: { orgId: "org_1" } },
+          subjectId: "user",
+        }),
+      }
     );
 
     expect(
@@ -619,7 +701,10 @@ describe("createTailorKitServer", () => {
           request instanceof Request ? request : new Request(request, init);
 
         return await server.handler(hostRequest, {
-          authenticate: () => ({ scopes: { org: { orgId: "org_1" } } }),
+          authenticate: () => ({
+            scopes: { org: { orgId: "org_1" } },
+            subjectId: "user",
+          }),
         });
       },
       url: "https://example.com/api/tailorkit",

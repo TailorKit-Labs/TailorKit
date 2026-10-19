@@ -350,6 +350,7 @@ it("resolves the key and sends a complete controlled instance through the render
       if (url.endsWith("/backend/session")) {
         return Response.json({
           expiresAt: Date.now() + 300_000,
+          subjectId: "principal",
           token: "token",
           url: "https://runtime.test/rpc",
         });
@@ -425,6 +426,7 @@ it("reports resolver failures and missing keys without mounting stale instances"
       if (url.endsWith("/backend/session")) {
         return Response.json({
           expiresAt: Date.now() + 300_000,
+          subjectId: "principal",
           token: "token",
           url: "https://runtime.test/rpc",
         });

@@ -1,7 +1,45 @@
 import { asyncFixture } from "@tailorkit/config/testing";
 import { expect, it, vi } from "vite-plus/test";
 
-import { createSessionProvider } from "./session";
+import { createSessionProvider, parseSession } from "./session";
+
+it.each([undefined, null, "", 123, "x".repeat(257)])(
+  "rejects session metadata without a valid subject: %j",
+  async (subjectId) => {
+    const response = {
+      expiresAt: Date.now() + 300_000,
+      subjectId,
+      token: "scoped",
+      url: "https://runtime.test/rpc",
+    };
+    expect(() => parseSession(response)).toThrow();
+    expect(() =>
+      parseSession({
+        ...response,
+        identity: {
+          appId: "app",
+          deploymentId: "deployment",
+          expiresAt: response.expiresAt,
+          installationId: "installation",
+          projectId: "project",
+          scope: { name: "workspace", value: {} },
+          subjectId,
+          toolUrl: "https://host.test/api/tailorkit/tools/execute",
+        },
+        subjectId: "principal",
+      })
+    ).toThrow();
+    const provider = createSessionProvider({
+      appId: "app",
+      baseUrl: "https://host.test/api/tailorkit",
+      fetch: asyncFixture(() => Response.json(response)),
+    });
+    await expect(provider({ refresh: false })).rejects.toMatchObject({
+      code: "UNAVAILABLE",
+      message: "Invalid app session",
+    });
+  }
+);
 
 it("deduplicates token requests, caches until renewal and sends only the host-bound app ID", async () => {
   const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(

@@ -147,10 +147,9 @@ export const createTailorKitServer = <
       }
 
       if (
-        hostContext.subjectId !== undefined &&
-        (!isStringValue(hostContext.subjectId) ||
-          !hostContext.subjectId ||
-          hostContext.subjectId.length > 256)
+        !isStringValue(hostContext.subjectId) ||
+        !hostContext.subjectId ||
+        hostContext.subjectId.length > 256
       ) {
         throw new Error("Invalid authenticated subject");
       }

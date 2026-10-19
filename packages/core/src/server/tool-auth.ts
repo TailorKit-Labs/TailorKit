@@ -144,7 +144,7 @@ export const createToolVerifier = (options: {
           value: v.record(v.string(), jsonValueSchema),
         }),
         sub: v.string(),
-        subjectId: v.optional(identifier),
+        subjectId: identifier,
         toolUrl: v.literal(toolUrl),
       }),
       JSON.parse(new TextDecoder().decode(decode(payloadPart)))

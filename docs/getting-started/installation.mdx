@@ -448,7 +448,7 @@ export default tailorKitClient;
 
 Mount the handler at your TailorKit base path. If you use a path other than `/api/tailorkit`, update `baseUrl` in both `tailorkit-server.ts` and `tailorkit-client.tsx` to match.
 
-Choose your framework below. Replace `auth` with your authentication implementation and return verified scope values from the session.
+Choose your framework below. Replace `auth` with your authentication implementation and return a stable `subjectId` and verified scope values from the session.
 
 <Tabs>
 
@@ -468,6 +468,7 @@ async function handleRequest(request: Request) {
       }
 
       return {
+        subjectId: session.user.id,
         scopes: { user: { userId: session.user.id } },
       };
     },
@@ -506,6 +507,7 @@ async function handleRequest({ request }: { request: Request }) {
       }
 
       return {
+        subjectId: session.user.id,
         scopes: { user: { userId: session.user.id } },
       };
     },
@@ -532,6 +534,7 @@ async function handleRequest(request: Request) {
       }
 
       return {
+        subjectId: session.user.id,
         scopes: { user: { userId: session.user.id } },
       };
     },
@@ -567,6 +570,7 @@ export default defineEventHandler(async (event) => {
       }
 
       return {
+        subjectId: session.user.id,
         scopes: { user: { userId: session.user.id } },
       };
     },
@@ -595,6 +599,7 @@ app.on(["GET", "POST"], "/api/tailorkit/*", async (c) => {
       }
 
       return {
+        subjectId: session.user.id,
         scopes: { user: { userId: session.user.id } },
       };
     },
@@ -624,6 +629,7 @@ export async function handleRequest(request: Request): Promise<Response> {
       }
 
       return {
+        subjectId: session.user.id,
         scopes: { user: { userId: session.user.id } },
       };
     },

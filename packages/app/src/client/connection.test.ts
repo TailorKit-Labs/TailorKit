@@ -5,6 +5,7 @@ import { createClient, reference } from "./connection";
 
 const session = {
   expiresAt: Date.now() + 60_000,
+  subjectId: "principal",
   token: "token",
   url: "https://runtime.test/rpc/",
 };
