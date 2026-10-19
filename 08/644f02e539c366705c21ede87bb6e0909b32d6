@@ -1,0 +1,69 @@
+.changeset/focused-app-contracts.md
+  s_0e8ff9416b2f13::t_eeac0e892861f8 8-9
+packages/agent-fx/src/agent.ts
+  s_44975098974bf2::t_504a983f9ecf2f 11,30
+packages/agent-fx/src/instructions.md
+  s_44975098974bf2::t_dffeb6b0734c0e 19,31,39
+packages/agent-fx/src/skills/frontend.md
+  s_44975098974bf2::t_361d6033574487 3-4,7
+packages/agent-fx/src/skills/functions.md
+  s_44975098974bf2::t_9b2249e047c387 3-4,21
+packages/agent-fx/src/skills/references/interactions.md
+  s_0e8ff9416b2f13::t_37228be93534bf 1-129
+packages/agent-fx/src/skills/references/views.md
+  s_44975098974bf2::t_c26fc16ae60194 1-82
+packages/agent-fx/src/skills/references/workflows.md
+  s_44975098974bf2::t_6792917378a764 1-18
+packages/agent-fx/src/skills/setup.md
+  s_44975098974bf2::t_70f34d676346b1 3-4
+packages/agent-fx/src/skills/views.md
+  s_0e8ff9416b2f13::t_1d4e6894f25857 3-4,25
+packages/agent/src/instructions.md
+  s_44975098974bf2::t_2f6e09ee74d3a6 15,30,36,52
+packages/agent/src/skills.test.ts
+  s_44975098974bf2::t_941f1279bde72a 1-24
+packages/agent/src/skills.ts
+  s_44975098974bf2::t_f39f89e5c80aa3 7-8,17-19,43
+packages/agent/src/skills/preact-composition.md
+  s_44975098974bf2::t_6a0b62e02d7b36 14-15
+packages/agent/src/skills/preact-performance.md
+  s_44975098974bf2::t_ab69b3863aa417 5,14-15
+packages/agent/src/skills/references/drafts.md
+  s_44975098974bf2::t_8ae7510103eba2 1-41
+packages/agent/src/skills/references/local-state.md
+  s_44975098974bf2::t_37dcaf842d6871 1-35
+packages/agent/src/skills/sqlite-database.md
+  s_44975098974bf2::t_89e4bd5e4dd8ff 71-74
+packages/cli/src/generator/capabilities-skill.test.ts
+  s_44975098974bf2::t_b830d352ea31ad 68,133-147,149
+packages/cli/src/generator/reference-examples.ts
+  s_44975098974bf2::t_7b4890c5bda050 1-162
+packages/cli/src/generator/types.ts
+  s_0e8ff9416b2f13::t_59de6d8c5e2437 43-45
+packages/cli/turbo.json
+  s_44975098974bf2::t_1a8721ed97de7e 5-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "08644f02e539c366705c21ede87bb6e0909b32d6",
+  "prompts": {},
+  "sessions": {
+    "s_0e8ff9416b2f13": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15184-be85-7591-86e0-05ff41d91b66",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_44975098974bf2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15182-bddb-71e2-8ef7-0ada4d2e5ba6",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
