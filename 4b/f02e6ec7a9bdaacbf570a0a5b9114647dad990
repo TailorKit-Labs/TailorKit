@@ -1,0 +1,73 @@
+.changeset/focused-app-contracts.md
+  s_44975098974bf2::t_d1413a8d5af4b1 5
+packages/agent-fx/src/instructions.md
+  s_44975098974bf2::t_b1df8aed8282ba 9
+packages/agent-fx/src/skills/frontend.md
+  s_44975098974bf2::t_87cdcb49d23ed5 5
+packages/agent-fx/src/skills/setup.md
+  s_44975098974bf2::t_b721b0cc09011e 45
+packages/agent-fx/src/skills/views.md
+  s_44975098974bf2::t_3a7b24ff2e4c29 5
+packages/cli/src/generator/generate.test.ts
+  s_44975098974bf2::t_a1c3f00772fb48 514,550,553-557,560-562,565-580
+packages/cli/src/generator/host-skill.test.ts
+  s_44975098974bf2::t_64e5911822319a 13-17,76-80,107-111,113-142,149-153,156,162-163,165,223-234,244-252,255,257,265-266,273,277,281-284,287,295-318
+packages/cli/src/generator/references.ts
+  s_44975098974bf2::t_f29c86eaf5b0d4 24,83,105-106,112,190,202,212-216,218,236-237,251-252,258,271,274,277
+packages/cli/src/generator/skill.ts
+  s_44975098974bf2::t_841cfb7e0648fc 1,6-7,11-12,15,21,36-57,74-77,81-103
+packages/cli/src/generator/templates/vite.config.ts.liquid
+  s_44975098974bf2::t_ba82b46af06594 7,10
+packages/cli/src/generator/types.test.ts
+  s_44975098974bf2::t_3efdfce9499273 79-80,86-87,91,112-113,121-122,126,142,146-147,149,156-157,161,164
+packages/cli/src/generator/types.ts
+  s_44975098974bf2::t_15c0c77081ad84 1,17,100,107,586-587,721-733,752-753,756-758,760-779,782-783,785,788-789,791-800,878,883-895
+packages/cli/src/init.test.ts
+  s_44975098974bf2::t_842fb3ca7e81f3 115,177
+playground/apps/todo/.agents/skills/tailorkit-host/SKILL.md
+  s_44975098974bf2::t_4422ee7ec100c4 14-17
+playground/apps/todo/.agents/skills/tailorkit-host/references/.generated
+  s_44975098974bf2::t_db69e0ba469efb 1
+playground/apps/todo/.agents/skills/tailorkit-host/references/components/Box.md
+  s_44975098974bf2::t_1c581f8d4cb349 5
+playground/apps/todo/.agents/skills/tailorkit-host/references/components/Button.md
+  s_44975098974bf2::t_4caa9aca4d71c7 5
+playground/apps/todo/.agents/skills/tailorkit-host/references/components/Flex.md
+  s_44975098974bf2::t_031bb8246a28a0 5
+playground/apps/todo/.agents/skills/tailorkit-host/references/components/Grid.md
+  s_44975098974bf2::t_3b0a91cf386bb2 5
+playground/apps/todo/.agents/skills/tailorkit-host/references/components/Inline.md
+  s_44975098974bf2::t_21fc1ad57ae735 5
+playground/apps/todo/.agents/skills/tailorkit-host/references/components/Input.md
+  s_44975098974bf2::t_a6db566adfbf16 5
+playground/apps/todo/.agents/skills/tailorkit-host/references/components/Pressable.md
+  s_44975098974bf2::t_ceb951a8d599e0 5
+playground/apps/todo/.agents/skills/tailorkit-host/references/index.md
+  s_44975098974bf2::t_ae346e358b3d72 9
+playground/apps/todo/.agents/skills/tailorkit-host/references/styling.md
+  s_44975098974bf2::t_c84e59cd085c37 4,7
+playground/apps/todo/.agents/skills/tailorkit-host/references/tools.md
+  s_44975098974bf2::t_173ea05c05e31c 30
+playground/apps/todo/.agents/skills/tailorkit-host/references/views.md
+  s_44975098974bf2::t_3e38469642e64f 12-13
+playground/apps/todo/src/tailorkit.gen.ts
+  s_44975098974bf2::t_3bf13397f23ec3 8-282
+vite.config.ts
+  s_44975098974bf2::t_b9c70487b3a1f5 53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4bf02e6ec7a9bdaacbf570a0a5b9114647dad990",
+  "prompts": {},
+  "sessions": {
+    "s_44975098974bf2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15182-bddb-71e2-8ef7-0ada4d2e5ba6",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
