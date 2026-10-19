@@ -55,6 +55,7 @@ interface SerializedCallback {
 }
 
 export interface SerializedComponent {
+  description?: string;
   callbacks?: Record<string, SerializedCallback>;
   fields?: JsonSchema;
   children?: boolean;
@@ -547,6 +548,13 @@ const renderViewProps = (views: Record<string, SerializedView>): string => {
   return lines.join("\n");
 };
 
+const renderDescription = (description: string, indent = ""): string => {
+  const text = description
+    .replaceAll("*/", "* /")
+    .replaceAll(/\r\n?|\n|\u2028|\u2029/gu, `\n${indent} * `);
+  return `${indent}/**\n${indent} * ${text}\n${indent} */`;
+};
+
 const renderComponent = (
   name: string,
   component: SerializedComponent,
@@ -590,6 +598,9 @@ const renderComponent = (
       ? `,\n  callbacks: { ${callbackEntries.join(", ")} }`
       : "";
 
+  if (component.description !== undefined) {
+    lines.push(renderDescription(component.description));
+  }
   lines.push(
     `export const ${toIdentifier(name)} = /* @__PURE__ */ createRemoteComponent<${propsName}, ${component.children === true}>(${quote(name)}, {`,
     `  children: ${component.children === true}${callbackOptions},`,
@@ -747,10 +758,7 @@ ${Object.entries(schema.slots ?? {})
     if (slot.description === undefined) {
       return definition;
     }
-    const description = slot.description
-      .replaceAll("*/", "* /")
-      .replaceAll(/\r\n?|\n|\u2028|\u2029/gu, "\n     * ");
-    return `    /**\n     * ${description}\n     */\n${definition}`;
+    return `${renderDescription(slot.description, "    ")}\n${definition}`;
   })
   .join("\n")}
   }

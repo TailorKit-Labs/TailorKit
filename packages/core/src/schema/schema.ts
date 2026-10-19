@@ -149,6 +149,9 @@ export function createTailorKitSchema(schema: {
         children: metadata.children,
         fields: serializeSchema(metadata.fields, schemaSerializer),
       };
+      if (metadata.description !== undefined) {
+        serializedComponents[name].description = metadata.description;
+      }
     }
 
     for (const [name, metadata] of Object.entries(views)) {

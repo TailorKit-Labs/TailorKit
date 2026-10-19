@@ -4,6 +4,7 @@ import type {
   ComponentDefinitions,
   NoComponentFieldCallbackConflicts,
 } from "./components";
+import { assertComponentDescription } from "./components";
 import type { EmptyDefinitionMap, Schema } from "./shared";
 import type { ContractTools } from "./tools";
 import { flattenTools } from "./tools";
@@ -64,6 +65,9 @@ export function defineContract(definition: {
     }
   }
   flattenTools(definition.tools ?? {});
+  for (const [name, component] of Object.entries(definition.components ?? {})) {
+    assertComponentDescription(name, component);
+  }
   for (const [name, slot] of Object.entries(definition.slots ?? {})) {
     if (slot.description !== undefined && !isStringValue(slot.description)) {
       throw new TypeError(`Slot "${name}" description must be a string.`);
