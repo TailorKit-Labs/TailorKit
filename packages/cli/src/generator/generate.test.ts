@@ -66,29 +66,24 @@ afterEach(async () => {
 });
 
 describe("generateApp", () => {
-  it.each([undefined, 0, 4320])(
-    "configures pnpm's required build script with release-age override %s",
-    async (minimumReleaseAge) => {
-      const targetDirectory = await createTempDir();
-      await generateApp({
-        ...defaultOptions,
-        minimumReleaseAge,
-        packageManager: "pnpm",
-        targetDirectory,
-      });
-      const policy = await readFile(
-        path.join(targetDirectory, "pnpm-workspace.yaml"),
-        "utf-8"
-      );
-      expect(policy).toContain("esbuild: true");
-      expect(policy).not.toContain("dangerouslyAllowAllBuilds");
-      if (minimumReleaseAge === undefined) {
-        expect(policy).not.toContain("minimumReleaseAge:");
-      } else {
-        expect(policy).toContain(`minimumReleaseAge: ${minimumReleaseAge}`);
-      }
-    }
-  );
+  it("limits fresh package exclusions to TailorKit and permits esbuild's required build", async () => {
+    const targetDirectory = await createTempDir();
+    await generateApp({
+      ...defaultOptions,
+      packageManager: "pnpm",
+      targetDirectory,
+    });
+    const policy = await readFile(
+      path.join(targetDirectory, "pnpm-workspace.yaml"),
+      "utf-8"
+    );
+    expect(policy).toContain("esbuild: true");
+    expect(policy).not.toContain("dangerouslyAllowAllBuilds");
+    expect(policy).toContain("minimumReleaseAge: 4320");
+    expect(policy).toContain(
+      'minimumReleaseAgeExclude:\n  - tailorkit\n  - "@tailorkit/*"'
+    );
+  });
 
   it("keeps pnpm settings out of apps scaffolded for other package managers", async () => {
     const targetDirectory = await createTempDir();

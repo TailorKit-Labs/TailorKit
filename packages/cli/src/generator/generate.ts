@@ -54,7 +54,6 @@ export interface GenerateAppOptions {
     zod?: string;
   };
   useWorkspaceDependencies?: boolean;
-  minimumReleaseAge?: number;
   packageManager?: string;
 }
 
@@ -190,13 +189,10 @@ export const generateApp = async (
   const templateData = {
     appName: JSON.stringify(packageName),
     appSlug: JSON.stringify(appSlug),
-    configureReleaseAge: options.minimumReleaseAge !== undefined,
     drizzleKitVersion: packageVersions.drizzleKit ?? TEMPLATE_DRIZZLE_VERSION,
     drizzleOrmVersion: packageVersions.drizzleOrm ?? TEMPLATE_DRIZZLE_VERSION,
     hostUrl,
-    minimumReleaseAge: String(
-      options.minimumReleaseAge ?? DEFAULT_MINIMUM_RELEASE_AGE
-    ),
+    minimumReleaseAge: String(DEFAULT_MINIMUM_RELEASE_AGE),
     multiple: schema.slots?.[slotName]?.multiple === true,
     packageName,
     preactVersion: packageVersions.preact,

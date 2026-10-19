@@ -7,12 +7,12 @@ Work from the app root, `/workspace/app`. Check for an existing package.json, lo
 For an empty app directory, the TailorKit CLI creates a Preact and TypeScript app against the supplied host. A noninteractive pnpm example is:
 
 ```sh
-PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm dlx tailorkit@beta init /workspace --name app --host '<supplied-host-url>' --package-manager pnpm --tooling vite-plus --force --no-install
+pnpm dlx tailorkit@beta init /workspace --name app --host '<supplied-host-url>' --package-manager pnpm --tooling vite-plus --force --no-install
 ```
 
 Replace the host placeholder with the supplied URL, quoted as one shell argument. `init` creates `/workspace/app` from this parent directory and name. Use `--force` only after confirming there is no existing app or source to overwrite. If the directory contains partial or unfamiliar work, inspect and repair it instead. Use a different package manager or tooling when the app or user requires it. Install dependencies in the generated app and follow its scripts.
 
-The agent sandbox resolves fresh packages without a release-age delay or a reused `dlx` resolution. The environment setting also tells newer CLIs to resolve fresh scaffold dependencies; older CLIs ignore it without failing. `@beta` is TailorKit's current release channel; keep the SDK version selected by that CLI. The generated pnpm configuration allows esbuild's install script: Drizzle Kit requires it for database tooling even when Vite+ uses Rolldown for app builds. Keep build permissions scoped to required packages.
+The agent sandbox keeps a three-day release-age delay for third-party packages and exempts only `tailorkit` and `@tailorkit/*` so new TailorKit beta releases are available immediately. It also refreshes `dlx` resolution on each invocation. Generated pnpm projects retain the same package exclusions. `@beta` is TailorKit's current release channel; keep the SDK version selected by that CLI. The generated pnpm configuration allows esbuild's install script: Drizzle Kit requires it for database tooling even when Vite+ uses Rolldown for app builds. Keep build permissions scoped to required packages.
 
 If a schema file was supplied, add `--schema <supplied-schema-path>` to initialization and subsequent generation. This uses the provided contract instead of fetching it from the host. Keep that document intact. Without a supplied schema, the CLI fetches the contract from the configured host URL.
 

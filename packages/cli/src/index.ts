@@ -336,10 +336,6 @@ cli
   .option("--package-manager <pm>", "Package manager: bun, yarn, pnpm, or npm")
   .option("--tooling <tooling>", "Tooling: vite-plus (recommended) or vite")
   .option(
-    "--minimum-release-age <minutes>",
-    "Minimum dependency release age in minutes (default: 4320; 0 accepts new releases)"
-  )
-  .option(
     "--install",
     "Install dependencies after scaffolding (use --no-install to skip)"
   )
@@ -354,10 +350,6 @@ cli
         force: options.force,
         host: options.host,
         install: options.install,
-        minimumReleaseAge:
-          options.minimumReleaseAge === undefined
-            ? undefined
-            : Number(options.minimumReleaseAge),
         name: options.name,
         packageManager: options.packageManager,
         schemaPath: options.schema,

@@ -15,7 +15,6 @@ export interface CliOptions {
   out?: string;
   outDir?: string;
   packageManager?: string;
-  minimumReleaseAge?: string | number;
   schema?: string;
   timeout?: string | number;
   tooling?: string;

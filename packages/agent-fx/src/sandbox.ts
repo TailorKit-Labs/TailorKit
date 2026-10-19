@@ -25,12 +25,12 @@ export const sandboxSession = (sandbox: Sandbox) => {
 };
 
 const preparePackageManager = async (sandbox: Sandbox) => {
-  // Agent workspaces intentionally accept newly published packages. Configure this
-  // once per turn, including old snapshots, rather than on every model step.
+  // Refresh TailorKit releases immediately while keeping the three-day delay for
+  // third-party packages, including in sandboxes resumed from older snapshots.
   const result = await sandbox.currentSession().runCommand({
     args: [
       "-c",
-      "pnpm config set --global minimumReleaseAge 0 && pnpm config set --global dlxCacheMaxAge 0",
+      'pnpm config set --global minimumReleaseAge 4320 && pnpm config set --global --json minimumReleaseAgeExclude \'["tailorkit", "@tailorkit/*"]\' && pnpm config set --global dlxCacheMaxAge 0',
     ],
     cmd: "bash",
   });

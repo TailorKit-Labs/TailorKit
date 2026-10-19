@@ -14,9 +14,6 @@ import {
 } from "@clack/prompts";
 import pc from "picocolors";
 
-import { readInitEnvironment, readInitInstallEnvironment } from "#env";
-import { DEFAULT_MINIMUM_RELEASE_AGE } from "#generator/package-versions";
-
 import { generateApp, resolveTemplatePackageVersions } from "./generator";
 import { fetchSchemaFromHost, readSchemaFile } from "./generator/types";
 import { normalizeHostUrl } from "./utils/url";
@@ -31,7 +28,6 @@ export interface InitOptions {
   packageManager?: string;
   schemaPath?: string;
   tooling?: string;
-  minimumReleaseAge?: number;
 }
 
 const PACKAGE_MANAGERS = ["pnpm", "yarn", "npm", "bun"] as const;
@@ -193,8 +189,7 @@ const promptForce = async (
 const exec = async (
   cmd: string,
   args: string[],
-  cwd: string,
-  env?: NodeJS.ProcessEnv
+  cwd: string
 ): Promise<number> =>
   await (async () => {
     const {
@@ -203,7 +198,7 @@ const exec = async (
       reject,
     } = Promise.withResolvers<number>();
     try {
-      const proc = spawn(cmd, args, { cwd, env, stdio: "inherit" });
+      const proc = spawn(cmd, args, { cwd, stdio: "inherit" });
       proc.on("close", resolve);
       proc.on("error", reject);
     } catch (error) {
@@ -214,19 +209,11 @@ const exec = async (
 
 const runInstall = async (
   targetDir: string,
-  packageManager: PackageManager,
-  minimumReleaseAge: number | undefined
+  packageManager: PackageManager
 ): Promise<void> => {
   const s = spinner();
   s.start(`Installing dependencies with ${packageManager}`);
-  const code = await exec(
-    packageManager,
-    ["install"],
-    targetDir,
-    packageManager === "pnpm"
-      ? readInitInstallEnvironment(minimumReleaseAge)
-      : undefined
-  );
+  const code = await exec(packageManager, ["install"], targetDir);
   if (code !== 0) {
     s.stop("Install failed.");
     throw new Error(`${packageManager} install exited with code ${code}.`);
@@ -251,14 +238,6 @@ const runFormat = async (
 };
 
 export const runInit = async (options: InitOptions): Promise<string> => {
-  const configuredReleaseAge =
-    options.minimumReleaseAge ?? readInitEnvironment().minimumReleaseAge;
-  const minimumReleaseAge = configuredReleaseAge ?? DEFAULT_MINIMUM_RELEASE_AGE;
-  if (!Number.isSafeInteger(minimumReleaseAge) || minimumReleaseAge < 0) {
-    throw new Error(
-      "--minimum-release-age must be a non-negative integer in minutes."
-    );
-  }
   const baseDir = promptDirectory(options.directory, options.cwd);
   const packageName = await promptPackageName(options.name, baseDir);
   const targetDirectory = path.join(baseDir, packageName);
@@ -287,10 +266,7 @@ export const runInit = async (options: InitOptions): Promise<string> => {
     throw error;
   }
   s.start("Resolving package versions");
-  const packageVersions = await resolveTemplatePackageVersions(
-    tooling,
-    minimumReleaseAge
-  );
+  const packageVersions = await resolveTemplatePackageVersions(tooling);
   s.stop("Resolved package versions.");
 
   await mkdir(targetDirectory, { recursive: true });
@@ -298,7 +274,6 @@ export const runInit = async (options: InitOptions): Promise<string> => {
   await generateApp({
     force,
     hostUrl,
-    minimumReleaseAge: configuredReleaseAge,
     packageManager,
     packageName,
     packageVersions,
@@ -308,7 +283,7 @@ export const runInit = async (options: InitOptions): Promise<string> => {
   });
 
   if (install) {
-    await runInstall(targetDirectory, packageManager, configuredReleaseAge);
+    await runInstall(targetDirectory, packageManager);
     if (tooling === "vite-plus") {
       await runFormat(targetDirectory, packageManager);
     }

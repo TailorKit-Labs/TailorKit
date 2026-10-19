@@ -97,10 +97,11 @@ const satisfiesCaretMatcher = (
   return version.major === minMajor && version.minor >= minMinor;
 };
 
-const resolvePackageVersion = async (
-  { fallback, matcher, packageName }: PackageVersionRequest,
-  minimumReleaseAge: number
-): Promise<string> => {
+const resolvePackageVersion = async ({
+  fallback,
+  matcher,
+  packageName,
+}: PackageVersionRequest): Promise<string> => {
   try {
     const res = await fetch(
       `${REGISTRY_URL}/${encodeURIComponent(packageName)}`,
@@ -124,7 +125,7 @@ const resolvePackageVersion = async (
       .filter(
         (v) =>
           Date.parse(data.time?.[v.raw] ?? "") <=
-          Date.now() - minimumReleaseAge * 60_000
+          Date.now() - DEFAULT_MINIMUM_RELEASE_AGE * 60_000
       )
       .toSorted(compareVersions)
       .at(-1);
@@ -135,19 +136,18 @@ const resolvePackageVersion = async (
 };
 
 export const resolveTemplatePackageVersions = async (
-  tooling: "vite-plus" | "vite" = "vite-plus",
-  minimumReleaseAge = DEFAULT_MINIMUM_RELEASE_AGE
+  tooling: "vite-plus" | "vite" = "vite-plus"
 ): Promise<TemplatePackageVersions> => {
   const [vite, vitePlus, preact, typescript, zod] = await Promise.all([
     tooling === "vite"
-      ? resolvePackageVersion(REQUESTS.vite, minimumReleaseAge)
+      ? resolvePackageVersion(REQUESTS.vite)
       : Promise.resolve(REQUESTS.vite.fallback),
     tooling === "vite-plus"
-      ? resolvePackageVersion(REQUESTS.vitePlus, minimumReleaseAge)
+      ? resolvePackageVersion(REQUESTS.vitePlus)
       : undefined,
-    resolvePackageVersion(REQUESTS.preact, minimumReleaseAge),
-    resolvePackageVersion(REQUESTS.typescript, minimumReleaseAge),
-    resolvePackageVersion(REQUESTS.zod, minimumReleaseAge),
+    resolvePackageVersion(REQUESTS.preact),
+    resolvePackageVersion(REQUESTS.typescript),
+    resolvePackageVersion(REQUESTS.zod),
   ]);
   return {
     drizzleKit: TEMPLATE_DRIZZLE_VERSION,
