@@ -1,0 +1,109 @@
+.changeset/required-host-subject.md
+  s_f329dbdc7cbf09::t_e51c8fe6da8bbf 1-12
+apps/apps-worker/README.md
+  s_f329dbdc7cbf09::t_b311185ab08adb 21,23
+apps/apps-worker/src/runtime/execution.ts
+  s_f329dbdc7cbf09::t_3c3453f790e0f0 98
+docs/concepts/tools.mdx
+  s_f329dbdc7cbf09::t_581fee3d4ab74c 88
+docs/getting-started/installation.mdx
+  s_f329dbdc7cbf09::t_4edbf89987ea7f 451,471,510,537,573,602,632
+packages/agent-fx/src/instructions.md
+  s_f329dbdc7cbf09::t_30d96c77830f3d 15-20
+packages/agent-fx/src/skills/functions.md
+  s_f329dbdc7cbf09::t_1a7c0a96ffab98 96
+packages/agent/src/skills/backend-functions.md
+  s_f329dbdc7cbf09::t_d4f3d1e11e9f86 51
+packages/api-platform/README.md
+  s_f329dbdc7cbf09::t_b858848aa9459d 12,14,18,20
+packages/api-platform/openapi.json
+  s_f329dbdc7cbf09::t_b0700829e21e15 2689,2753-2755,2771
+packages/api-platform/src/app-agent-mcp.test.ts
+  s_f329dbdc7cbf09::t_13a0bf297849c9 352-366
+packages/api-platform/src/app-agent-mcp.ts
+  s_f329dbdc7cbf09::t_e5adfc2e38ab5f 37,170
+packages/api-platform/src/routes/apps.test.ts
+  s_f329dbdc7cbf09::t_7e84e0477121ca 363,1118,1131,1142,1168,1186-1204,1225-1230
+packages/api-platform/src/routes/runtime.ts
+  s_f329dbdc7cbf09::t_97f555d5e3536d 55,84
+packages/api-utils/src/app-auth/tokens.test.ts
+  s_f329dbdc7cbf09::t_f3ed318ce777f6 223-232,234,236,238-247,264-283
+packages/api-utils/src/app-auth/tokens.ts
+  s_f329dbdc7cbf09::t_e17457b5b6cd4c 62,210
+packages/app/src/client/connection.test.ts
+  s_f329dbdc7cbf09::t_481e619a03701d 8
+packages/app/src/client/session.test.ts
+  s_f329dbdc7cbf09::t_eb004e954f3f83 4-42
+packages/app/src/client/session.ts
+  s_f329dbdc7cbf09::t_9cce1f02f9b3ae 20,26,40
+packages/app/src/server/functions.ts
+  s_f329dbdc7cbf09::t_16587b0f292c68 17
+packages/app/src/server/tools.test-d.ts
+  s_f329dbdc7cbf09::t_0b0a2ee2e40899 18
+packages/client-core/src/client/config.test.ts
+  s_f329dbdc7cbf09::t_0fc74f931840b4 49
+packages/client-core/src/client/fetch-client.test.ts
+  s_f329dbdc7cbf09::t_115a34cf878943 134
+packages/client-platform/src/client/types.gen.ts
+  s_f329dbdc7cbf09::t_4e344bb9907204 631,659
+packages/core/README.md
+  s_f329dbdc7cbf09::t_1fe902214fad61 7
+packages/core/src/schema/tools.ts
+  s_f329dbdc7cbf09::t_ab095574abeb0a 56
+packages/core/src/server/backend.test.ts
+  s_f329dbdc7cbf09::t_b8ee555940cba5 17,40,49,56
+packages/core/src/server/backend.ts
+  s_f329dbdc7cbf09::t_ea3adb0dc23594 15,19
+packages/core/src/server/cli-auth-page.ts
+  s_f329dbdc7cbf09::t_c941c1d910a82c 4
+packages/core/src/server/context.ts
+  s_f329dbdc7cbf09::t_05e724fce3f00d 13,23-24
+packages/core/src/server/handler.test.ts
+  s_f329dbdc7cbf09::t_cc9b3e9c991bb5 24,32,48-78,118-123,127,144,170-173,241-244,268,328-333,434-437,446-451,466-471,517,549,593-598,626-631,672-677,704-707
+packages/core/src/server/handler.ts
+  s_f329dbdc7cbf09::t_2036d963165f63 150-152
+packages/core/src/server/mcp.test.ts
+  s_f329dbdc7cbf09::t_5d776b543df114 41,54,80,83,89-92,106-111,116-117,131,140,151,157-160,175
+packages/core/src/server/mcp.ts
+  s_f329dbdc7cbf09::t_d5c9497402a217 28-30
+packages/core/src/server/tool-auth.ts
+  s_f329dbdc7cbf09::t_ba807a29b9415c 147
+packages/core/src/server/tools.test.ts
+  s_f329dbdc7cbf09::t_30cf369bdd2a42 51,127-130,254-257
+packages/core/src/server/types.test-d.ts
+  s_f329dbdc7cbf09::t_b7f59875a20fd4 14,57-67,76,88,95-98,105,116,149-152
+packages/core/src/server/types.ts
+  s_f329dbdc7cbf09::t_0e581997a42403 181-182
+packages/react/src/__tests__/render-slot.test.tsx
+  s_f329dbdc7cbf09::t_e48ce01d16e5fc 353,429
+packages/react/src/__tests__/use-views.test.tsx
+  s_f329dbdc7cbf09::t_1bcf58e4a61e9a 104,822
+packages/sandbox/src/host/index.test.ts
+  s_f329dbdc7cbf09::t_d0a6b2a718b85c 248,326
+packages/sandbox/src/iframe/backend.test.ts
+  s_f329dbdc7cbf09::t_4892800f6faf34 23
+packages/sandbox/src/iframe/tools.test.ts
+  s_f329dbdc7cbf09::t_18fe7b693ab451 29
+packages/sandbox/src/protocol.test.ts
+  s_f329dbdc7cbf09::t_68aa1d536fbca3 33-51,58,236,286,328-331,353-358
+packages/sandbox/src/protocol.ts
+  s_f329dbdc7cbf09::t_ce1245b37448c5 127
+packages/tailorkit/src/server.test-d.ts
+  s_f329dbdc7cbf09::t_6d8a2e6b08252d 1-32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "38e1ced83f7e62b11ea909151447a1fd10c25a19",
+  "prompts": {},
+  "sessions": {
+    "s_f329dbdc7cbf09": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a153b2-28de-7cf2-ab39-a061b398ea9a",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
