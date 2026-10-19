@@ -1,19 +1,115 @@
-# Views and context
+# Views and routing
 
-Choose a supported slot/path from the generated capabilities. Implement only surfaces needed by the requested workflow; a slot's availability does not require a view. Use multiple instances only when the product surface needs separate items. The [view examples](references/views.md) cover a shell, record context, and repeated tiles.
+A slot is a host UI location, such as a sidebar, panel, or page. A view is your component for a supported context path. The generated views page lists available slots, paths, and host-supplied data called context.
 
-Put views in `src/slots/<slot>/**/*.view.tsx`, default-exporting `defineView` from `tailorkit/client`. `members.detail.view.tsx` maps to `/members/detail`; `index.view.tsx` maps to `/`. Explicit `slot`/`view` values must match the file location and product contract. Import `#tailorkit` for its type augmentation.
+## View files
 
-These paths describe product context, not browser routes. The product selects the deepest matching view or falls back to an ancestor. Read context with the definition's `useContext()` inside its component tree. Context belongs to that view, not ancestor shells.
+Views live in `src/slots/<slot>/**/*.view.tsx`. The first directory names the slot literally, including any dots. The remaining directories and filename determine the context path:
 
-## Shells and layouts
+| View file | Slot | Context path |
+| --- | --- | --- |
+| `src/slots/page/index.view.tsx` | `page` | `/` |
+| `src/slots/panel/members.view.tsx` | `panel` | `/members` |
+| `src/slots/panel/members/index.view.tsx` | `panel` | `/members` |
+| `src/slots/panel/members.detail.view.tsx` | `panel` | `/members/detail` |
+| `src/slots/panel/members/detail.view.tsx` | `panel` | `/members/detail` |
+| `src/slots/panel/some.new.new.view.tsx` or `src/slots/panel/some/new/new/index.view.tsx` | `panel` | `/some/new/new` |
 
-`src/root.tsx` wraps the app; a slot `root.tsx` wraps that slot. Export `defineRoute({ shellComponent: Shell })` and render `<Route />` to continue the tree. Keep `ClientProvider` above backend hooks. Add layouts only for UI shared by the current views: `layout.tsx` wraps its directory, and `members.layout.tsx` wraps `/members` and descendants.
+Dots and directories both separate path segments and can be mixed. A final `index` is omitted; segments must be nonempty. Choose one filename per slot/path pair. The alternative spellings above describe the same view.
 
-## Repeated instances
+Default-export `defineView` from `tailorkit/client` with an inline options object and named properties. Omitted `slot` and `view` come from the file location. Explicit values must be matching string literals; an explicit `view` gives precise context typing. Import `#tailorkit` for the host types.
 
-For `multiple: true` slots, enable `server: {}` and supply inline `instances: { dataSchema, resolve: (...) => ... }` on a module-level `defineView` with a literal path. Single slots omit `instances`.
+## Host context
 
-The build extracts the inline resolver into the backend. It receives `{ context, identity, signal, queries }` and can await registered queries, not mutations/actions. Use backend-safe dependencies and enforce access through those queries. Return stable unique keys, product-supported `metadata`, and data matching `dataSchema`. Read instance data with `useInstance()` inside the view.
+Paths describe host context, not browser URLs. The host chooses the deepest matching view or an ancestor fallback. Read its data with `definition.useContext()` inside the view; ancestor shells do not have that view's context.
 
-Instance discovery is separate from reactive query updates. Check how the product refreshes instances when that behavior matters to the feature.
+For a `panel` at `/records/detail` with `context.recordId`:
+
+<!-- example: src/slots/panel/records.detail.view.tsx -->
+
+```tsx
+import type { ComponentChildren } from "preact";
+import { defineView } from "tailorkit/client";
+
+import { Box } from "#tailorkit";
+
+const Detail = (): ComponentChildren => {
+  const { recordId } = definition.useContext();
+  return <Box>Selected record: {recordId}</Box>;
+};
+const definition = defineView({
+  slot: "panel",
+  view: "/records/detail",
+  component: Detail,
+});
+export default definition;
+```
+
+## Roots and layouts
+
+A shell wraps UI with shared controls or providers. These files are optional:
+
+| File | Wraps |
+| --- | --- |
+| `src/root.tsx` | App UI across slots |
+| `src/slots/panel/root.tsx` | The `panel` slot |
+| `src/slots/panel/layout.tsx` | All views in `panel` |
+| `src/slots/panel/members.layout.tsx` or `src/slots/panel/members/layout.tsx` | `/members` and its descendants in `panel` |
+
+Roots default-export `defineRoute({ shellComponent: Shell })`. A slot root sits directly in its slot directory. Layouts default-export a component or `defineRoute({ shellComponent: Layout })`. `layout.tsx` uses its directory path; `*.layout.tsx` adds filename segments. Layout paths retain `index`, so `index.layout.tsx` wraps `/index`. Each layout path is unique within its slot.
+
+Render `<Route />` inside shells/layouts for the next child. Nesting is app root → slot root → matching layouts from shallowest to deepest → selected view. Layouts match whole path segments: `/members` includes `/members/detail`, not `/membership`. Shared shells/layouts retain local state as views change. Keep `ClientProvider` above backend hooks.
+
+The existing `src/root.tsx` includes `ClientProvider` for backend hooks:
+
+<!-- example: src/root.tsx -->
+
+```tsx
+import { ClientProvider, defineRoute, Route } from "tailorkit/client";
+
+const Shell = () => (
+  <ClientProvider>
+    <Route />
+  </ClientProvider>
+);
+export default defineRoute({ shellComponent: Shell });
+```
+
+## Repeated views
+
+A slot with `multiple: true` displays separate instances of a view, such as one tile per record. Each instance has a stable unique `key`, host-supported `metadata` for labels/placement, and `data` for the component.
+
+Enable `server: {}` in `tailorkit.config.ts` and declare inline `instances` in a module-level `defineView`. The `resolve` arrow/function expression returns items; `dataSchema` validates their data. Single-instance slots omit `instances`. The backend entry, `src/server.ts`, can export `defineServer({})` if no app functions are needed.
+
+The resolver runs on the backend with `{ context, identity, signal, queries }`. Read saved records through registered queries and enforce access there. Return the instances; read the selected item's data with `definition.useInstance()` inside the view. Keep resolver dependencies backend-safe. Instance lists refresh through the host separately from query subscriptions.
+
+For a repeated `tile` at `/`, `notes.list` from `tailorkit-functions` supplies each item:
+
+<!-- example: src/slots/tile/index.view.tsx -->
+
+```tsx
+import type { ComponentChildren } from "preact";
+import { defineView } from "tailorkit/client";
+import * as v from "valibot";
+
+import { Box } from "#tailorkit";
+
+const definition = defineView({
+  slot: "tile",
+  view: "/",
+  component: (): ComponentChildren => {
+    const { data } = definition.useInstance();
+    return <Box>{data.title}</Box>;
+  },
+  instances: {
+    dataSchema: v.object({ title: v.string() }),
+    resolve: async ({ queries }) =>
+      (await queries.notes.list()).map(({ id, title }) => ({
+        key: id,
+        metadata: {},
+        data: { title },
+      })),
+  },
+});
+export default definition;
+```

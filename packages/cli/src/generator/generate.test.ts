@@ -218,14 +218,14 @@ describe("generateApp", () => {
       path.join(targetDirectory, "src/functions/greeting.ts"),
       "utf-8"
     );
-    expect(functions).toContain('import { fn } from "../db"');
+    expect(functions).toContain('import { fn } from "#db"');
     expect(functions).toContain("export default defineRouter({ getGreeting })");
     expect(functions).not.toContain(".database(");
     const server = await readFile(
       path.join(targetDirectory, "src/server.ts"),
       "utf-8"
     );
-    expect(server).toContain('import greeting from "./functions/greeting"');
+    expect(server).toContain('import greeting from "#functions/greeting"');
     expect(server).toContain("defineServer({ greeting })");
     expect(
       await readFile(

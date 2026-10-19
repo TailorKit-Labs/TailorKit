@@ -8,8 +8,10 @@ import { promisify } from "node:util";
 
 import { primitives } from "@tailorkit/core/primitives/zod";
 import { createTailorKitSchema } from "@tailorkit/core/schema";
+import { build } from "vite";
 import { expect, it } from "vite-plus/test";
 
+import { generateApp } from "./generate";
 import { renderGeneratedReferences, renderGeneratedTypes } from "./types";
 import type { TailorKitSchemaFile } from "./types";
 
@@ -103,8 +105,9 @@ const schema: TailorKitSchemaFile = {
 };
 
 const fileExample =
-  /<!-- example: (?<filename>[^ ]+) -->\s*```tsx?\n(?<source>[\s\S]*?)```/gu;
+  /<!-- (?<mode>example|continue): (?<filename>[^ ]+) -->\s*```tsx?\n(?<source>[\s\S]*?)```/gu;
 const codeBlock = /```(?<language>tsx?)\n(?<source>[\s\S]*?)```/gu;
+const externalPackage = /^(?:tailorkit|preact|valibot)(?:\/|$)/u;
 
 const declaration = (specifier: string) =>
   fileURLToPath(import.meta.resolve(specifier)).replace(
@@ -112,14 +115,30 @@ const declaration = (specifier: string) =>
     ".d.$<kind>ts"
   );
 
-it("typechecks complete authored recipes and generated examples against the public SDK", async () => {
+it("typechecks and bundles examples with scaffold imports and the public SDK", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "tailorkit-agent-examples-"));
   try {
+    await generateApp({
+      bare: true,
+      force: false,
+      hostUrl: "https://host.test",
+      packageName: "agent-examples",
+      packageVersions: {
+        preact: "11.0.1",
+        tailorkit: "0.1.0-beta.49",
+        typescript: "7.0.2",
+        vite: "8.0.0",
+      },
+      schema,
+      targetDirectory: root,
+      tooling: "vite",
+    });
     const documents = await Promise.all(
       [
-        "../../../agent-fx/src/skills/references/functions.md",
-        "../../../agent-fx/src/skills/references/interactions.md",
-        "../../../agent-fx/src/skills/references/views.md",
+        "../../../agent-fx/src/skills/database.md",
+        "../../../agent-fx/src/skills/functions.md",
+        "../../../agent-fx/src/skills/frontend.md",
+        "../../../agent-fx/src/skills/views.md",
         "../../../agent/src/skills/references/drafts.md",
         "../../../agent/src/skills/references/local-state.md",
       ].map(
@@ -130,9 +149,16 @@ it("typechecks complete authored recipes and generated examples against the publ
     const sources: Record<string, string> = {};
     for (const document of documents) {
       for (const match of document.matchAll(fileExample)) {
-        const { filename, source } = match.groups ?? {};
+        const { filename, mode, source } = match.groups ?? {};
         if (filename === undefined || source === undefined) {
           throw new Error("Invalid example marker.");
+        }
+        if (mode === "continue") {
+          if (sources[filename] === undefined) {
+            throw new Error(`Missing initial snippet: ${filename}`);
+          }
+          sources[filename] += `\n${source}`;
+          continue;
         }
         if (sources[filename] !== undefined) {
           throw new Error(`Duplicate example: ${filename}`);
@@ -141,15 +167,17 @@ it("typechecks complete authored recipes and generated examples against the publ
       }
     }
     expect(Object.keys(sources).length).toBeGreaterThanOrEqual(10);
-    // The legacy form example uses the same add input under its documented namespace.
+    sources["src/examples/source-aliases.ts"] =
+      'export { NoteEditor } from "#components/note-editor";\nexport { Empty } from "#components/empty";\nexport { default as notes } from "#functions/notes";';
+    sources["src/components/empty/index.tsx"] =
+      "export const Empty = () => null;";
+    // Compile the independent action and legacy form snippets with their API namespaces.
     const server = sources["src/server.ts"];
     if (server === undefined) {
       throw new Error("Missing registration example.");
     }
-    sources["src/server.ts"] = server.replace(
-      "defineServer({ notes, preview })",
-      "defineServer({ notes, todos: notes, preview })"
-    );
+    sources["src/server.ts"] =
+      `import preview from "#functions/preview";\n${server.replace("defineServer({ notes })", "defineServer({ notes, todos: notes, preview })")}`;
     sources["src/tailorkit.gen.ts"] = renderGeneratedTypes(schema, {
       serverModule: "./server",
     });
@@ -202,8 +230,6 @@ it("typechecks complete authored recipes and generated examples against the publ
           moduleResolution: "Bundler",
           noEmit: true,
           paths: {
-            "#*": [path.join(root, "src/*"), path.join(root, "src/*/index.ts")],
-            "#tailorkit": [path.join(root, "src/tailorkit.gen.ts")],
             preact: [path.join(preact, "src/index.d.ts")],
             "preact/hooks": [path.join(preact, "hooks/src/index.d.ts")],
             "preact/jsx-runtime": [
@@ -235,6 +261,18 @@ it("typechecks complete authored recipes and generated examples against the publ
       path.join(root, "tsconfig.json"),
     ]);
     expect(result.stdout).toBe("");
+    await build({
+      build: {
+        lib: {
+          entry: path.join(root, "src/examples/source-aliases.ts"),
+          formats: ["es"],
+        },
+        rolldownOptions: { external: [externalPackage] },
+        write: false,
+      },
+      configFile: false,
+      root,
+    });
   } finally {
     await rm(root, { force: true, recursive: true });
   }
