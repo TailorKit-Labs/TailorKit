@@ -12,6 +12,7 @@ import type { AppSandboxSession } from "./sandbox-session";
 import { outputDirectory, verifyApp } from "./verification";
 
 const authorizationSchema = z.object({
+  appId: z.string().min(1),
   platformUrl: z.url().refine((value) => {
     const url = new URL(value);
     return (
@@ -46,6 +47,17 @@ interface Authorization {
   agentToken: string;
 }
 
+const readAuthorization = (agentToken: string) => {
+  const [, payload] = agentToken.split(".");
+  if (payload === undefined || payload === "") {
+    throw new Error("Missing deployment authorization.");
+  }
+  // Identity and routing metadata only; the platform verifies authorization.
+  return authorizationSchema.parse(
+    JSON.parse(Buffer.from(payload, "base64url").toString("utf-8"))
+  );
+};
+
 /** Parse build output and publish on the host; authorization never enters the VM. */
 export const publish = async (
   sandbox: Pick<DeploymentSandbox, "readFileToBuffer">,
@@ -53,14 +65,7 @@ export const publish = async (
   signal?: AbortSignal,
   send: typeof fetch = fetch
 ) => {
-  const [, payload] = authorization.agentToken.split(".");
-  if (payload === undefined || payload === "") {
-    throw new Error("Missing deployment authorization.");
-  }
-  // Routing claims only; the platform verifies authorization on both requests.
-  const { platformUrl, scope } = authorizationSchema.parse(
-    JSON.parse(Buffer.from(payload, "base64url").toString("utf-8"))
-  );
+  const { platformUrl, scope } = readAuthorization(authorization.agentToken);
   const read = async (filename: string) => {
     const bytes = await sandbox.readFileToBuffer({
       path: `${outputDirectory}/${filename}`,
@@ -246,6 +251,7 @@ export const createDeployTool = (dependencies: {
       "Verify and publish the completed app. Automatically formats, lints, runs existing tests, typechecks and builds. Call this directly when implementation is ready; separate verification commands are unnecessary. Failures report the check and diagnostics for repair. Publication requires every check to pass.",
     execute: async (_input, { context, abortSignal }) => {
       try {
+        const { appId } = readAuthorization(context.agentToken);
         const sandbox = await dependencies.sandbox(context.sandboxName);
         const configPath = "/workspace/app/tailorkit.config.ts";
         const config = await sandbox.readFileToBuffer({ path: configPath });
@@ -253,7 +259,7 @@ export const createDeployTool = (dependencies: {
           throw new Error("Missing app tailorkit.config.ts.");
         }
         const source = config.toString("utf-8");
-        const linked = await setConfigAppId(source, context.appId, configPath);
+        const linked = await setConfigAppId(source, appId, configPath);
         if (linked !== source) {
           await sandbox.writeFiles([
             { content: Buffer.from(linked), path: configPath },

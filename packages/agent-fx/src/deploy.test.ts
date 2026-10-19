@@ -9,11 +9,12 @@ import { createDeployTool, publish } from "./deploy";
 import type { AppSandboxSession } from "./sandbox-session";
 
 const scope = { name: "user", value: { userId: "owner" } };
+const authorizedAppId = "23f9b80a-bce5-46c8-8fa4-6a319fd5be37";
 const authorization = {
-  agentToken: `header.${Buffer.from(JSON.stringify({ platformUrl: "https://platform.test", scope })).toString("base64url")}.signature`,
+  agentToken: `header.${Buffer.from(JSON.stringify({ appId: authorizedAppId, platformUrl: "https://platform.test", scope })).toString("base64url")}.signature`,
 };
 const manifest = {
-  appId: "23f9b80a-bce5-46c8-8fa4-6a319fd5be37",
+  appId: authorizedAppId,
   assets: {
     client: "client/client.js",
     logos: { dark: "client/logo-dark.svg" },
@@ -37,6 +38,7 @@ const reader = (document = JSON.stringify(manifest)) => ({
 const checks = ["format:fix", "lint", "format", "test", "typecheck", "build"];
 const runDeployment = async (
   options: {
+    agentToken?: string;
     config?: string | null;
     failedCheck?: string;
     failConfigWrite?: boolean;
@@ -75,7 +77,7 @@ const runDeployment = async (
         },
         runCommand: async (command) => {
           // Every check, including the build, must see the persisted identity.
-          expect(config).toContain(`appId: "${authorization.appId}"`);
+          expect(config).toContain(`appId: "${authorizedAppId}"`);
           commands.push(command);
           const args = command.args ?? [];
           let [, name] = args;
@@ -110,7 +112,10 @@ const runDeployment = async (
   const result = await tool.execute(
     {},
     {
-      context: { ...authorization, sandboxName: "sandbox" },
+      context: {
+        agentToken: options.agentToken ?? authorization.agentToken,
+        sandboxName: "sandbox",
+      },
       messages: [],
       toolCallId: "deploy",
     }
@@ -157,7 +162,7 @@ it.each([
     });
     expect(result.exitCode).toBe(0);
     expect(published).toBe(true);
-    expect(config).toContain(`appId: "${authorization.appId}"`);
+    expect(config).toContain(`appId: "${authorizedAppId}"`);
     expect(config).toContain('host: "https://host.test"');
     if (source.includes("unrelated")) {
       expect(config).toContain('const other = { appId: "unrelated" }');
@@ -186,6 +191,24 @@ it.each([
     expect(result.stderr).toContain(diagnostic);
     expect(JSON.stringify(result)).not.toContain(authorization.agentToken);
     expect(commands).toEqual([]);
+    expect(published).toBe(false);
+  }
+);
+
+it.each([undefined, "", 42])(
+  "rejects a token with appId %j before writing config or deploying",
+  async (appId) => {
+    const agentToken = `header.${Buffer.from(
+      JSON.stringify({ appId, platformUrl: "https://platform.test", scope })
+    ).toString("base64url")}.signature`;
+    const { commands, published, result, writes } = await runDeployment({
+      agentToken,
+    });
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("appId");
+    expect(JSON.stringify(result)).not.toContain(agentToken);
+    expect(commands).toEqual([]);
+    expect(writes).toEqual([]);
     expect(published).toBe(false);
   }
 );
