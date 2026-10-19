@@ -1,13 +1,13 @@
-# Data ownership
+# Data options
 
-The host owns existing product records; the app owns its added data. Component state holds unsaved UI values.
+Host tools expose operations defined by the host. An app can also store data in its database or keep temporary values in component state.
 
 | Request | Starting point |
 | --- | --- |
 | Existing product records, navigation, or integrations | Generated host tools and components |
-| App-owned notes, todos, or saved settings | One table, a query, and the mutations the feature needs |
+| Persistent data stored by the app | One table, a query, and the mutations the feature needs |
 | Form drafts, filters, or open/closed state | Component state; pass it through props when shared |
-| Dashboard or report | A host tool for product data, or a query for app data |
+| Dashboard or report | Host tools for available data, or a query for data stored by the app |
 | Details for the selected record | Read its ID/data from the view's host context |
 | One tile/page per record | A repeated slot's instance resolver |
 | Public external data | An action that fetches and validates the response |
