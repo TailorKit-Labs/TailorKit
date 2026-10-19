@@ -165,15 +165,13 @@ it("typechecks authored and generated examples with scaffold imports and the pub
       }
     }
     expect(Object.keys(sources).length).toBeGreaterThanOrEqual(10);
-    // The legacy form example uses the same add input under its documented namespace.
+    // Compile the independent action and legacy form snippets with their API namespaces.
     const server = sources["src/server.ts"];
     if (server === undefined) {
       throw new Error("Missing registration example.");
     }
-    sources["src/server.ts"] = server.replace(
-      "defineServer({ notes, preview })",
-      "defineServer({ notes, todos: notes, preview })"
-    );
+    sources["src/server.ts"] =
+      `import preview from "#functions/preview";\n${server.replace("defineServer({ notes })", "defineServer({ notes, todos: notes, preview })")}`;
     sources["src/tailorkit.gen.ts"] = renderGeneratedTypes(schema, {
       serverModule: "./server",
     });

@@ -1,6 +1,6 @@
-# Choose where data belongs
+# Data ownership
 
-Start from the requested behavior. Host tools access data and operations the product exposes. App functions save new app-owned data; component state holds unsaved UI values.
+The host owns existing product records; the app owns its added data. Component state holds unsaved UI values.
 
 | Request | Starting point |
 | --- | --- |
@@ -15,4 +15,4 @@ Start from the requested behavior. Host tools access data and operations the pro
 
 For example, a contact panel can use host context and a host update tool without a database. Private notes need a table, a query filtered by user ID, and a mutation to save. A draft input needs only `useState` until saved.
 
-Choose shared or private storage from the feature's requirements and enforce that choice in functions. Limit growing lists; add pagination when needed. When the host exposes no required control or operation, explain the missing capability and use a supported alternative.
+Shared or private storage follows the feature's requirements. Enforce that access rule in backend functions.

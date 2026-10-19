@@ -346,7 +346,6 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
         expect(request.body).not.toContain(token);
       }
       for (const name of [
-        "tailorkit-setup",
         "tailorkit-frontend",
         "tailorkit-views",
         "tailorkit-functions",

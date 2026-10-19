@@ -1,6 +1,6 @@
-# Load and save app data
+# Backend functions
 
-App functions run on TailorKit's managed backend. Enable `server: {}` in `tailorkit.config.ts`.
+App functions run on TailorKit's managed backend. Enable `server: {}` in `tailorkit.config.ts`; no separate server deployment is needed.
 
 | Function | Use | Handler access |
 | --- | --- | --- |
@@ -8,9 +8,9 @@ App functions run on TailorKit's managed backend. Enable `server: {}` in `tailor
 | Mutation | Save changes in one transaction | Synchronous read/write `db`, verified `identity` |
 | Action | Call external services or host tools | Async `queries`, `mutations`, server `tools`, `identity`, `signal` |
 
-## Read and write data
+## Queries and mutations
 
-Import the shared `fn` from `#db` for database functions. These snippets use the database guide's installation-shared `notes` table with `id` and `title` fields.
+Database functions use `fn` from `#db`. These snippets use the shared `notes` table (`id`, `title`) from `tailorkit-database`.
 
 A query reads data synchronously. For example, in `src/functions/notes.ts`:
 
@@ -42,9 +42,9 @@ const add = fn.mutation
   });
 ```
 
-Queries and mutations finish synchronously; each mutation runs in one transaction. Use Valibot for new schemas or keep the app's Standard Schema v1 validator. Function schemas validate synchronously. `.output(schema)` optionally validates results. Return JSON-compatible data and use `null` for an absent result.
+Queries, mutations, and their validators finish synchronously; each mutation runs in one transaction. Use Valibot or the app's existing Standard Schema v1 validator. `.output(schema)` validates results. Return JSON-compatible data, with `null` for an absent result.
 
-## Expose functions to the UI
+## Function registration
 
 A router groups named functions. Export the handlers from the same module:
 
@@ -64,14 +64,10 @@ Register routers in `src/server.ts`, then run `pnpm run generate`. Router names 
 import { defineServer } from "tailorkit/server";
 
 import notes from "#functions/notes";
-import preview from "#functions/preview";
-
-export default defineServer({ notes, preview });
+export default defineServer({ notes });
 ```
 
-Include only the routers the app uses; `preview` is the optional external action below.
-
-## Call external services
+## Actions
 
 Use `fn` from `tailorkit/server` for actions without a database. This action fetches a summary; replace the URL with the requested service:
 
@@ -95,13 +91,13 @@ export default defineRouter({ summary });
 
 Actions have no `db`. Declare `.functions({ notes })` to use `queries.notes.list()` or `mutations.notes.add(input)` in the handler. Each mutation commits separately. Use handler `tools` for host server operations. Pass `signal` to fetch and design external writes for the service's retry behavior.
 
-## Control access
+## Access control
 
-`identity` describes the verified caller and installation; `identity.subjectId` is the user ID when available. For private records, require it and filter every read/update/delete by an owner column. Shared records follow the feature's shared access rule. Caller-supplied IDs alone do not grant access. Throw `AppError` for expected failures such as `UNAUTHORIZED` or `NOT_FOUND`.
+`identity` describes the verified caller. For private records, require `identity.subjectId` and filter reads, updates, and deletes by an owner column. Shared records follow the feature's shared access rule. Throw `AppError` for expected failures such as `UNAUTHORIZED` or `NOT_FOUND`; caller-supplied IDs do not grant access.
 
-## Call functions from components
+## Client hooks
 
-Import hooks from `tailorkit/client` and `api` from `#tailorkit`. Inside a component under `ClientProvider`:
+After registering each function's router, import `api` from `#tailorkit`. Inside a component under `ClientProvider`:
 
 <!-- example: src/examples/function-hooks.ts -->
 
