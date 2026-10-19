@@ -4,13 +4,8 @@ export const setConfigAppId = async (
   appId: string,
   configPath: string
 ): Promise<string> => {
-  // The host links sandbox source as data; Vite's native parser is build tooling.
-  const { parse } = await import("@babel/parser");
-  const { program } = parse(source, {
-    plugins: ["typescript"],
-    sourceFilename: configPath,
-    sourceType: "module",
-  });
+  const { parseSync } = await import("vite");
+  const { program } = parseSync(configPath, source);
   const defaultExport = program.body.find(
     (node) => node.type === "ExportDefaultDeclaration"
   );
@@ -38,17 +33,9 @@ export const setConfigAppId = async (
     ["defineTailorKitConfig", "defineConfig"].includes(initializer.callee.name)
   ) {
     const [argument] = initializer.arguments;
-    initializer =
-      argument?.type === "SpreadElement" ||
-      argument?.type === "ArgumentPlaceholder"
-        ? undefined
-        : argument;
+    initializer = argument?.type === "SpreadElement" ? undefined : argument;
   }
-  if (
-    initializer?.type !== "ObjectExpression" ||
-    initializer.start === null ||
-    initializer.start === undefined
-  ) {
+  if (initializer?.type !== "ObjectExpression") {
     throw new Error(
       `Could not write appId to ${configPath}. Add appId: ${JSON.stringify(appId)} manually.`
     );
@@ -56,18 +43,12 @@ export const setConfigAppId = async (
 
   const property = initializer.properties.find(
     (node) =>
-      node.type === "ObjectProperty" &&
+      node.type === "Property" &&
       !node.computed &&
       ((node.key.type === "Identifier" && node.key.name === "appId") ||
-        (node.key.type === "StringLiteral" && node.key.value === "appId"))
+        (node.key.type === "Literal" && node.key.value === "appId"))
   );
-  if (
-    property?.type === "ObjectProperty" &&
-    property.start !== null &&
-    property.start !== undefined &&
-    property.end !== null &&
-    property.end !== undefined
-  ) {
+  if (property?.type === "Property") {
     return `${source.slice(0, property.start)}appId: ${JSON.stringify(appId)}${source.slice(property.end)}`;
   }
 

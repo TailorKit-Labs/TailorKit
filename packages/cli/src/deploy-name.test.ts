@@ -1,16 +1,35 @@
+import { execFile } from "node:child_process";
 import { once } from "node:events";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { promisify } from "node:util";
 
 import { SignJWT } from "jose";
-import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  expect,
+  it,
+  vi,
+} from "vite-plus/test";
 import { z } from "zod";
 
 import { runDeploy } from "./deploy";
 import { linkTestDependencies } from "./test-utils";
+
+// oxlint-disable-next-line typescript/strict-void-return -- promisify consumes execFile's completion callback, not its ChildProcess return value.
+const execute = promisify(execFile);
+
+beforeAll(async () => {
+  await execute("pnpm", ["run", "build"], {
+    cwd: path.resolve(import.meta.dirname, ".."),
+    timeout: 60_000,
+  });
+}, 60_000);
 
 const scope = { name: "user", value: { userId: "one" } };
 const requests: { body: string; method?: string; path?: string }[] = [];
@@ -166,6 +185,31 @@ const writeConfig = async (
     `export default ${JSON.stringify({ description: appDescription, host, name, slug: "my-app" })};`
   );
 };
+
+it("deploys through the non-interactive CLI with the agent token and its scope", async () => {
+  await writeConfig("My App");
+  const { stdout } = await execute(process.execPath, [
+    path.resolve(import.meta.dirname, "../bin/tailorkit.js"),
+    "deploy",
+    "--no-interactive",
+    "--cwd",
+    root,
+  ]);
+  expect(stdout).toContain("Deployment: deployment");
+  expect(
+    JSON.parse(
+      requests.find((request) => request.path === "/deployments")?.body ??
+        "null"
+    )
+  ).toMatchObject({ app: { shortId: "app-one" }, scope });
+  expect(requests.some((request) => request.path === "/upload")).toBe(true);
+  expect(
+    JSON.parse(
+      requests.find((request) => request.path === "/deployments/deployment")
+        ?.body ?? "null"
+    )
+  ).toEqual({ rollout: true, scope });
+});
 
 it.each(["  My app description  ", undefined, null])(
   "creates replacement apps with the configured name and slug and description %j",

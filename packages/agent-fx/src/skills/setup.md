@@ -22,4 +22,4 @@ Read only the declarations needed. App imports still use `tailorkit/db`.
 
 ## Checks and publication
 
-Use `deploy` for formatting, lint, existing tests, typechecking, building and publication. Repair its reported failure before retrying. Generate missing migrations rather than resetting data or disabling validation. A TailorKit app needs no separate server deployment.
+Run lint, formatting checks and relevant tests, then use `deploy` for typechecking, building and publication through the TailorKit CLI. Repair its reported failure before retrying. Generate missing migrations rather than resetting data or disabling validation. A TailorKit app needs no separate server deployment.
