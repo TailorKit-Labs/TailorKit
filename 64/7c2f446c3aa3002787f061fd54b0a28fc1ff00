@@ -1,0 +1,25 @@
+packages/agent/src/instructions.md
+  s_d3057019e73af2::t_de1765e3e0aee1 28,50
+  s_d3057019e73af2::t_6df0a6dcc591fb 51
+packages/agent/src/skills.ts
+  s_d3057019e73af2::t_de1765e3e0aee1 21
+packages/agent/src/skills/views-and-routing.md
+  s_d3057019e73af2::t_de1765e3e0aee1 5-19,21-23,27-30
+  s_d3057019e73af2::t_c2270d6dca2129 20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "647c2f446c3aa3002787f061fd54b0a28fc1ff00",
+  "prompts": {},
+  "sessions": {
+    "s_d3057019e73af2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15312-993f-77e2-97fd-a77f6c7bbcd7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
