@@ -1,10 +1,12 @@
-# Save notes and call an external service
+# App function examples
 
-Use the notes files for new data your app owns. Each user sees only their own notes. Use host tools for records the product already owns.
+These examples show database queries and mutations, an action that calls an external service, and function registration in `src/server.ts`.
 
 Enable `server: {}` in `tailorkit.config.ts`. After adding these files, run `pnpm run db:generate` and `pnpm run generate`.
 
 ## Notes: table, query, and mutation
+
+This example stores private notes owned by the signed-in user. For shared notes, use the feature's intended access rule. Host-owned records use host tools instead.
 
 Define the stored fields, include the tables in the database, and create the shared function builder:
 
@@ -87,7 +89,7 @@ const add = fn.mutation
 export default defineRouter({ list, add });
 ```
 
-`identity.subjectId` supplies the owner; input cannot choose it. `list` reads that owner's notes, and `add` saves one. Use the same owner filter for edits/deletes. For shared notes, replace this private access rule with the feature's intended sharing rule.
+`identity.subjectId` supplies the owner; input cannot choose it. `list` reads that owner's notes, and `add` saves one. Use the same owner filter for edits/deletes.
 
 ## Public external data
 
