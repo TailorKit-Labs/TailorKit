@@ -36,6 +36,53 @@ const createFetch = (source = "// bundled app client") =>
   vi.fn<typeof fetch>(async () => await Promise.resolve(new Response(source)));
 
 describe("createIframeUiHost", () => {
+  it("denies canvas requests unless the host registers a target", () => {
+    const host = createIframeUiHost("https://assets.test/app.js", {
+      fetch: createFetch(),
+    });
+    host.mount();
+    const postMessage = vi.spyOn(getContentWindow(host.iframe), "postMessage");
+    const channel = getChannel(host.iframe);
+    const message = {
+      channel,
+      payload: { data: { id: "request", name: "plot" }, type: "canvasRequest" },
+      type: sandboxMessageType,
+    };
+    window.dispatchEvent(new MessageEvent("message", { data: message }));
+    expect(postMessage).not.toHaveBeenCalled();
+    emitFromIframe(host.iframe, { ...message, channel: "wrong" });
+    expect(postMessage).not.toHaveBeenCalled();
+    emitFromIframe(host.iframe, message);
+    expect(postMessage).toHaveBeenCalledWith(
+      {
+        channel,
+        payload: {
+          data: {
+            error: "Canvas surface is not registered by the host.",
+            id: "request",
+          },
+          type: "canvasResult",
+        },
+        type: sandboxMessageType,
+      },
+      "*"
+    );
+    host.destroy();
+    expect(() =>
+      host.registerCanvas("plot", document.createElement("canvas"))
+    ).toThrow("unavailable");
+  });
+
+  it("rejects oversized canvas targets before creating a rendering context", () => {
+    const host = createIframeUiHost("https://assets.test/app.js", {
+      fetch: createFetch(),
+    });
+    const canvas = document.createElement("canvas");
+    canvas.width = 4096;
+    canvas.height = 4096;
+    expect(() => host.registerCanvas("plot", canvas)).toThrow("dimensions");
+    host.destroy();
+  });
   afterEach(() => {
     document.body.replaceChildren();
     vi.restoreAllMocks();

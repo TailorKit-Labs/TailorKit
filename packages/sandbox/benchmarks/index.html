@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sandbox canvas checks</title>
+  </head>
+  <body>
+    <h1>Sandbox canvas checks</h1>
+    <p>
+      Real opaque-origin iframe, transferred ImageBitmap frames, host
+      presentation and acknowledgements. Keep this tab visible for timing.
+    </p>
+    <button type="button" id="run">
+      Run checks and throughput measurements
+    </button>
+    <p id="status" role="status">Ready</p>
+    <canvas id="display" aria-label="Sandbox graphics output"></canvas>
+    <pre id="results"></pre>
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>

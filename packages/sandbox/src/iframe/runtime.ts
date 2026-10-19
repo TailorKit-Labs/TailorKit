@@ -11,6 +11,7 @@ import type {
 } from "#protocol";
 
 import { createIframeBackend } from "./backend";
+import { createIframeCanvases } from "./canvas";
 import { assertAppClient, renderClient } from "./resolve-view";
 import type { AppClient, ViewRequest } from "./resolve-view";
 import { createIframeTools } from "./tools";
@@ -86,6 +87,10 @@ export const startIframeRuntime = (options: {
     send({ data, type: "backendSessionRequest" });
   });
   const backendGlobal = globalThis;
+  const canvases = createIframeCanvases((data) => {
+    send({ data, type: "canvasRequest" });
+  });
+  backendGlobal.__tailorkitRequestCanvas = canvases.request;
   backendGlobal.__tailorkitTools = tools.bridge;
   backendGlobal.__tailorkitBackendSession = backend.getSession;
   const sendError = (cause: unknown) => {
@@ -208,6 +213,10 @@ export const startIframeRuntime = (options: {
       return;
     }
     const { payload } = parsed.output;
+    if (payload.type === "canvasResult") {
+      canvases.receive(payload.data);
+      return;
+    }
     if (payload?.type === "toolResult") {
       tools.receive(payload.data);
       return;
@@ -283,6 +292,10 @@ export const startIframeRuntime = (options: {
   parentWindow.postMessage({ channel, type: iframeReadyType }, "*");
   send({ type: "ready" });
   return () => {
+    canvases.close();
+    if (backendGlobal.__tailorkitRequestCanvas === canvases.request) {
+      delete backendGlobal.__tailorkitRequestCanvas;
+    }
     tools.close();
     if (backendGlobal.__tailorkitTools === tools.bridge) {
       delete backendGlobal.__tailorkitTools;

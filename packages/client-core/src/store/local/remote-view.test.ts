@@ -51,6 +51,7 @@ const setup = () => {
 
         mount: vi.fn<IframeUiHost["mount"]>(),
 
+        registerCanvas: vi.fn<IframeUiHost["registerCanvas"]>(),
         setProps: vi.fn<IframeUiHost["setProps"]>(),
         subscribe: vi.fn(
           (listener: Parameters<IframeUiHost["subscribe"]>[0]) => {
@@ -241,6 +242,7 @@ it("reports startup failures, releases partial hosts, and recovers on the next m
         throw failure;
       },
 
+      registerCanvas: vi.fn<IframeUiHost["registerCanvas"]>(),
       setProps: vi.fn<IframeUiHost["setProps"]>(),
     };
     records.push({ host, listeners: [], options });

@@ -18,4 +18,6 @@ export type {
 export { AppError, appError } from "./errors";
 export type { ErrorCode } from "./errors";
 export { callTool } from "./client/tools";
+export { requestCanvas } from "./client/canvas";
+export type { CanvasConnection, CanvasSurface } from "./client/canvas";
 export type { TailorKitServerTools, ToolBridge } from "./client/tools";

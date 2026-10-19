@@ -79,6 +79,7 @@ describe("sandbox protocol", () => {
   );
 
   it.each([
+    { data: { id: "canvas", name: "plot" }, type: "canvasRequest" },
     { data: { id: "session", refresh: true }, type: "backendSessionRequest" },
     { type: "ready" },
     {
@@ -99,6 +100,12 @@ describe("sandbox protocol", () => {
 
   it.each([
     { extra: true, type: "ready" },
+    { data: { id: "canvas", name: "" }, type: "canvasRequest" },
+    { data: { id: "canvas", name: "x".repeat(129) }, type: "canvasRequest" },
+    {
+      data: { appId: "another", id: "canvas", name: "plot" },
+      type: "canvasRequest",
+    },
     {
       data: { appId: "forged", id: "session", refresh: true },
       type: "backendSessionRequest",

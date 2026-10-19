@@ -12,11 +12,14 @@ import type {
 } from "#protocol";
 import { HostToIframePayload, IframeToHostPayload } from "#protocol";
 
+import { createCanvasTarget } from "./canvas";
+import type { CanvasTargetOptions } from "./canvas";
 import { createRemoteUiStore } from "./store.js";
 import type { RemoteUiStore } from "./store.js";
 
 export { type RemoteUiStore } from "./store.js";
 export { createRemoteUiStore } from "./store.js";
+export type { CanvasTargetOptions } from "./canvas";
 
 interface IframeBridgeMessage {
   channel: string;
@@ -25,6 +28,12 @@ interface IframeBridgeMessage {
 }
 
 export interface IframeUiHost extends RemoteUiStore {
+  /** Opt in a named pixel surface for this sandbox; cleanup revokes and clears it. */
+  registerCanvas: (
+    name: string,
+    canvas: HTMLCanvasElement,
+    options?: CanvasTargetOptions
+  ) => () => void;
   destroy: () => void;
   dispatch: (
     payload: HostToIframePayloadType
@@ -120,6 +129,8 @@ export const createIframeUiHost = (
   const resolvedAppUrl = toUrl(appUrl);
   const sessionCalls = new Set<string>();
   const toolCalls = new Set<string>();
+  const canvases = new Map<string, ReturnType<typeof createCanvasTarget>>();
+  const canvasElements = new Set<HTMLCanvasElement>();
   const queuedPayloads: HostToIframePayloadType[] = [];
   const callbackCalls = new Map<
     string,
@@ -153,11 +164,49 @@ export const createIframeUiHost = (
     );
   };
 
-  const postToIframe = (payload: HostToIframePayloadType): void => {
+  const postToIframe = (
+    payload: HostToIframePayloadType,
+    transfer?: Transferable[]
+  ): void => {
+    if (transfer) {
+      iframe.contentWindow?.postMessage(
+        { channel, payload, type: sandboxMessageType },
+        "*",
+        transfer
+      );
+      return;
+    }
     iframe.contentWindow?.postMessage(
       { channel, payload, type: sandboxMessageType },
       "*"
     );
+  };
+
+  const connectCanvas = ({ id, name }: { id: string; name: string }) => {
+    const target = canvases.get(name);
+    try {
+      if (!target || destroyed) {
+        throw new Error("Canvas surface is not registered by the host.");
+      }
+      const connection = target.connect();
+      try {
+        postToIframe({ data: { id, ...connection }, type: "canvasResult" }, [
+          connection.port,
+        ]);
+      } catch (error) {
+        connection.port.close();
+        target.close();
+        throw error;
+      }
+    } catch (error) {
+      postToIframe({
+        data: {
+          error: error instanceof Error ? error.message : "Canvas unavailable.",
+          id,
+        },
+        type: "canvasResult",
+      });
+    }
   };
 
   const sendInit = async (): Promise<void> => {
@@ -226,6 +275,10 @@ export const createIframeUiHost = (
           call.reject(new Error(error));
         }
       }
+      return;
+    }
+    if (result.output.type === "canvasRequest") {
+      connectCanvas(result.output.data);
       return;
     }
     if (result.output.type === "error") {
@@ -321,6 +374,11 @@ export const createIframeUiHost = (
         return;
       }
       destroyed = true;
+      for (const target of canvases.values()) {
+        target.close();
+      }
+      canvases.clear();
+      canvasElements.clear();
       rejectCallbacks(new Error("TailorKit sandbox was destroyed."));
       window.removeEventListener("message", handleMessage);
       iframe.remove();
@@ -380,6 +438,28 @@ export const createIframeUiHost = (
           reportError(error);
         }
       })();
+    },
+    registerCanvas: (name, canvas, canvasOptions) => {
+      if (
+        destroyed ||
+        name.length === 0 ||
+        name.length > 128 ||
+        canvases.has(name) ||
+        canvasElements.has(canvas) ||
+        canvases.size >= 8
+      ) {
+        throw new Error("Canvas registration unavailable or duplicated.");
+      }
+      const target = createCanvasTarget(canvas, canvasOptions);
+      canvases.set(name, target);
+      canvasElements.add(canvas);
+      return () => {
+        target.close();
+        if (canvases.get(name) === target) {
+          canvases.delete(name);
+          canvasElements.delete(canvas);
+        }
+      };
     },
     setProps: (props) => {
       if (currentProps === props || destroyed) {
