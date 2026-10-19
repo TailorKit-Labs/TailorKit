@@ -1,0 +1,39 @@
+.changeset/focused-app-contracts.md
+  s_44975098974bf2::t_fe99f135954246 5
+packages/agent-fx/src/instructions.md
+  s_44975098974bf2::t_0fb07b07539f41 9
+packages/agent-fx/src/skills/frontend.md
+  s_44975098974bf2::t_57540249d76aef 5
+packages/agent-fx/src/skills/setup.md
+  s_44975098974bf2::t_8e5d5a3167fafe 45
+packages/agent-fx/src/skills/views.md
+  s_44975098974bf2::t_ef9bc43be6b2ac 5
+packages/cli/src/generator/app-skill.test.ts
+  s_44975098974bf2::t_e2ab1315138ab2 70,81,88,147,265,305
+packages/cli/src/generator/generate.test.ts
+  s_44975098974bf2::t_7f31ee18589daa 571
+packages/cli/src/generator/skill.ts
+  s_44975098974bf2::t_15339785e384d7 8,15-16,19,22-23,62,68,85-86
+packages/cli/src/generator/templates/vite.config.ts.liquid
+  s_44975098974bf2::t_0fc86a470d78a8 7,10
+packages/cli/src/generator/types.ts
+  s_44975098974bf2::t_f3192ee43f8a4b 17,884,895
+vite.config.ts
+  s_44975098974bf2::t_d5e2e79528b0d4 53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6a8afb85f944c2d64219cd3a2b4ae146458e7d9c",
+  "prompts": {},
+  "sessions": {
+    "s_44975098974bf2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15182-bddb-71e2-8ef7-0ada4d2e5ba6",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
