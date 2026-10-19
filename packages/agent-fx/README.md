@@ -8,6 +8,14 @@ Each model step runs in a durable Workflow step. Finished turns save fx's resume
 
 No runtime code is imported from `@tailorkit/agent`. Configure `AI_GATEWAY_API_KEY` or Vercel OIDC on the host, with optional `AI_GATEWAY_BASE_URL`.
 
+## Workflow logs
+
+The fx workflow emits JSON runtime logs for run start/completion/failure, each start/agent/finish/cancel step attempt, and agent checkpoints. Entries include `runId`, `appId`, `threadId` when available, and step `stepId`/`attempt` metadata inside durable steps. Finished and failed attempts include `durationMs`. A failed attempt may retry; `run_failed` means orchestration reached its failure cleanup. `cleanup_failed` records cleanup errors separately. Direct API cancellation logs the run and app IDs without step metadata.
+
+On Vercel, open the workflow run details and choose **View Logs**. Vercel's Logs tab supports Workflow Run ID and Workflow Step ID filters across the run's requests ([Vercel announcement](https://vercel.com/changelog/logs-filtering-for-vercel-workflows-now-available)). Locally, these entries appear in the server console.
+
+Step logs run inside durable steps, so replaying completed checkpoints does not emit them again. Retries emit another attempt. Orchestration failure messages can repeat while cleanup is retried. Prompts, model/tool output, schemas, credentials, resume state, and raw error messages/stacks are omitted. Use the Workflow run inspector for detailed errors and the SDK's authoritative run status, including external cancellation or runtime failures that bypass workflow cleanup.
+
 ## Instructions, skills, and examples
 
 `src/instructions.md` favors the smallest working app and routes tasks to the five skills registered in `src/skills.ts`. App-specific UI, callback, styling, view, and tool contracts come from the CLI-generated `.agents/skills/tailorkit-capabilities/` skill in the app workspace.

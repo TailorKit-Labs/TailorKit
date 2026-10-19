@@ -7,11 +7,18 @@ import { FatalError, getWorkflowMetadata } from "workflow";
 
 import { agentStep } from "./agent-step";
 import type { AppAgentInput } from "./input";
+import { logWorkflowEvent, withStepLogging } from "./logging";
 
 const start = async (input: AppAgentInput, runId: string) => {
   "use step";
-  const { startTurn } = await import("./session");
-  return await startTurn(input, runId);
+  return await withStepLogging(
+    { appId: input.appId, phase: "start", runId, threadId: input.threadId },
+    async (context) => {
+      logWorkflowEvent("run_started", context);
+      const { startTurn } = await import("./session");
+      return await startTurn(input, runId);
+    }
+  );
 };
 const finish = async (
   input: AppAgentInput,
@@ -19,13 +26,20 @@ const finish = async (
   resumeFrom: HarnessV1ResumeSessionState
 ) => {
   "use step";
-  const { finishTurn } = await import("./session");
-  await finishTurn(input, runId, resumeFrom);
+  await withStepLogging(
+    { appId: input.appId, phase: "finish", runId, threadId: input.threadId },
+    async () => {
+      const { finishTurn } = await import("./session");
+      await finishTurn(input, runId, resumeFrom);
+    }
+  );
 };
 export const cancelAppAgent = async (appId: string, runId: string) => {
   "use step";
-  const { cancelTurn } = await import("./session");
-  await cancelTurn(appId, runId);
+  await withStepLogging({ appId, phase: "cancel", runId }, async () => {
+    const { cancelTurn } = await import("./session");
+    await cancelTurn(appId, runId);
+  });
 };
 
 /** One durable step per model step, using fx's own session checkpoints. */
@@ -33,6 +47,7 @@ export const appAgent = async (input: AppAgentInput) => {
   "use workflow";
   const runId = getWorkflowMetadata().workflowRunId;
   const deadline = Date.now() + 30 * 60_000;
+  const logContext = { appId: input.appId, runId, threadId: input.threadId };
   try {
     const resumeFrom = await start(input, runId);
     let state = createHarnessWorkflowState({
@@ -54,9 +69,16 @@ export const appAgent = async (input: AppAgentInput) => {
       throw new FatalError("fx did not return resumable session state.");
     }
     await finish(input, runId, state.resumeFrom);
+    logWorkflowEvent("run_completed", logContext);
     return { ...result, threadId: input.threadId };
   } catch (error) {
-    await cancelAppAgent(input.appId, runId);
+    logWorkflowEvent("run_failed", logContext, error);
+    try {
+      await cancelAppAgent(input.appId, runId);
+    } catch (cleanupError) {
+      logWorkflowEvent("cleanup_failed", logContext, cleanupError);
+      throw cleanupError;
+    }
     throw error;
   }
 };
