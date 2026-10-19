@@ -1,4 +1,11 @@
-import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -6,6 +13,8 @@ import type * as clackpromptsModule from "@clack/prompts";
 import { select } from "@clack/prompts";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
+
+import { readInitInstallEnvironment } from "#env";
 
 import type * as generatorModule from "./generator";
 import { runInit } from "./init";
@@ -84,6 +93,68 @@ it.each([-1, Number.NaN, 0.5])(
       "non-negative integer"
     );
     await expect(stat(path.join(options.cwd, options.name))).rejects.toThrow();
+  }
+);
+
+it.each([
+  { inherited: undefined, minimumReleaseAge: undefined, selected: undefined },
+  { inherited: "0", minimumReleaseAge: 120, selected: "120" },
+  { inherited: "120", minimumReleaseAge: 0, selected: "0" },
+  { inherited: "120", minimumReleaseAge: undefined, selected: "120" },
+])(
+  "passes release age $selected to pnpm install with CLI value $minimumReleaseAge and inherited value $inherited",
+  async ({ inherited, minimumReleaseAge, selected }) => {
+    const options = await initOptions();
+    const bin = path.join(options.cwd, "bin");
+    await mkdir(bin);
+    await writeFile(
+      path.join(bin, "pnpm"),
+      `#!/usr/bin/env node
+const { writeFileSync } = require("node:fs");
+writeFileSync("install-environment.json", JSON.stringify({
+  inherited: process.env.TAILORKIT_INIT_TEST_VALUE,
+  minimumReleaseAge: process.env.PNPM_CONFIG_MINIMUM_RELEASE_AGE,
+}));
+`,
+      { mode: 0o755 }
+    );
+    const { PATH: inheritedPath } = readInitInstallEnvironment();
+    vi.stubEnv("PATH", `${bin}${path.delimiter}${inheritedPath ?? ""}`);
+    vi.stubEnv("PNPM_CONFIG_MINIMUM_RELEASE_AGE", inherited);
+    vi.stubEnv("TAILORKIT_INIT_TEST_VALUE", "preserved");
+    await writeFile(
+      path.join(options.cwd, "schema.json"),
+      JSON.stringify({
+        components: {},
+        slots: { page: { views: ["/"] } },
+        version: 1,
+        views: { "/": { context: { type: "object" } } },
+      })
+    );
+    const directory = await runInit({
+      ...options,
+      install: true,
+      minimumReleaseAge,
+      schemaPath: "schema.json",
+    });
+    const installed = z
+      .object({
+        inherited: z.string(),
+        minimumReleaseAge: z.string().optional(),
+      })
+      .parse(
+        JSON.parse(
+          await readFile(
+            path.join(directory, "install-environment.json"),
+            "utf-8"
+          )
+        )
+      );
+    expect(installed.inherited).toBe("preserved");
+    expect(installed.minimumReleaseAge).toBe(selected);
+    expect(readInitInstallEnvironment().PNPM_CONFIG_MINIMUM_RELEASE_AGE).toBe(
+      inherited
+    );
   }
 );
 

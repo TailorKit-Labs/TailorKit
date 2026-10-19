@@ -3,6 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 import { expect, it } from "vite-plus/test";
@@ -40,7 +41,9 @@ const incomplete: TaskInsert = { title: "Review design" };
           moduleResolution: "Bundler",
           noEmit: true,
           paths: {
-            "tailorkit/db": [new URL("index.ts", import.meta.url).pathname],
+            "tailorkit/db": [
+              fileURLToPath(new URL("index.ts", import.meta.url)),
+            ],
           },
           skipLibCheck: true,
           strict: true,

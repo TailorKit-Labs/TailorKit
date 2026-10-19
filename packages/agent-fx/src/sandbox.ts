@@ -30,12 +30,19 @@ const preparePackageManager = async (sandbox: Sandbox) => {
   const result = await sandbox.currentSession().runCommand({
     args: [
       "-c",
-      "pnpm config set --global minimumReleaseAge 0 && pnpm config set --global dlxCacheMaxAge 0 && mkdir -p /workspace/app",
+      "pnpm config set --global minimumReleaseAge 0 && pnpm config set --global dlxCacheMaxAge 0",
     ],
     cmd: "bash",
   });
   if (result.exitCode !== 0) {
     throw new Error("Could not prepare the app package manager.");
+  }
+  const directoryResult = await sandbox.currentSession().runCommand({
+    args: ["-p", "/workspace/app"],
+    cmd: "mkdir",
+  });
+  if (directoryResult.exitCode !== 0) {
+    throw new Error("Could not prepare the app directory.");
   }
   return sandbox;
 };

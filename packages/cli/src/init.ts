@@ -14,7 +14,7 @@ import {
 } from "@clack/prompts";
 import pc from "picocolors";
 
-import { readInitEnvironment } from "#env";
+import { readInitEnvironment, readInitInstallEnvironment } from "#env";
 import { DEFAULT_MINIMUM_RELEASE_AGE } from "#generator/package-versions";
 
 import { generateApp, resolveTemplatePackageVersions } from "./generator";
@@ -193,7 +193,8 @@ const promptForce = async (
 const exec = async (
   cmd: string,
   args: string[],
-  cwd: string
+  cwd: string,
+  env?: NodeJS.ProcessEnv
 ): Promise<number> =>
   await (async () => {
     const {
@@ -202,7 +203,7 @@ const exec = async (
       reject,
     } = Promise.withResolvers<number>();
     try {
-      const proc = spawn(cmd, args, { cwd, stdio: "inherit" });
+      const proc = spawn(cmd, args, { cwd, env, stdio: "inherit" });
       proc.on("close", resolve);
       proc.on("error", reject);
     } catch (error) {
@@ -213,11 +214,19 @@ const exec = async (
 
 const runInstall = async (
   targetDir: string,
-  packageManager: PackageManager
+  packageManager: PackageManager,
+  minimumReleaseAge: number | undefined
 ): Promise<void> => {
   const s = spinner();
   s.start(`Installing dependencies with ${packageManager}`);
-  const code = await exec(packageManager, ["install"], targetDir);
+  const code = await exec(
+    packageManager,
+    ["install"],
+    targetDir,
+    packageManager === "pnpm"
+      ? readInitInstallEnvironment(minimumReleaseAge)
+      : undefined
+  );
   if (code !== 0) {
     s.stop("Install failed.");
     throw new Error(`${packageManager} install exited with code ${code}.`);
@@ -299,7 +308,7 @@ export const runInit = async (options: InitOptions): Promise<string> => {
   });
 
   if (install) {
-    await runInstall(targetDirectory, packageManager);
+    await runInstall(targetDirectory, packageManager, configuredReleaseAge);
     if (tooling === "vite-plus") {
       await runFormat(targetDirectory, packageManager);
     }
