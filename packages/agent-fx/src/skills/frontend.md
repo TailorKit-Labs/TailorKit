@@ -4,37 +4,49 @@ Import UI components and host tools from `#tailorkit`. The generated capability 
 
 ## Forms and callbacks
 
-Keep form drafts in `useState`. Callbacks receive the payload in the generated signature: an object such as `{ value }`, a string, or no argument. Use that value directly; callbacks are not DOM events.
+Prefer uncontrolled inputs when the host supports them, so typing doesn't wait for sandbox updates. Store values needed only on submit in `useRef`; use state when a value affects rendered UI. Controlled inputs remain useful when required by the host or feature.
+
+Callbacks receive the payload in the generated signature: an object such as `{ value }`, a string, or no argument. Use that value directly; callbacks are not DOM events.
 
 Backend hooks come from `tailorkit/client`; function references come from `api` in `#tailorkit`. They require `ClientProvider` above the component. See `tailorkit-functions` for queries, mutations, and actions.
 
 Use the hook's pending/error state, disable overlapping saves, and keep drafts on failure.
 
-For example, keep a note draft until its mutation succeeds. These controls assume `onValueChange({ value })` and `onClick()`; use the host's declared props and accessible labels:
+This uncontrolled input keeps its draft on failure and remounts empty after a successful save. It assumes the host supports omitting `value`, `onValueChange({ value })`, and `onClick()`; use the host's declared props and accessible labels:
 
 <!-- example: src/components/note-editor.tsx -->
 
 ```tsx
-import { useState } from "preact/hooks";
+import { useRef, useState } from "preact/hooks";
 import { useMutation } from "tailorkit/client";
 
 import { api, Box, Button, Input } from "#tailorkit";
 
 export const NoteEditor = () => {
-  const [title, setTitle] = useState("");
+  const title = useRef("");
+  const [resetKey, setResetKey] = useState(0);
   const save = useMutation(api.notes.add, {
-    onSuccess: () => setTitle(""),
+    onSuccess: () => {
+      title.current = "";
+      setResetKey((key) => key + 1);
+    },
   });
   return (
     <Box>
       <Input
-        value={title}
+        key={resetKey}
         disabled={save.isPending}
-        onValueChange={({ value }) => setTitle(value)}
+        onValueChange={({ value }) => {
+          title.current = value;
+        }}
       />
       <Button
-        disabled={save.isPending || title.trim() === ""}
-        onClick={() => save.mutate({ title })}
+        disabled={save.isPending}
+        onClick={() => {
+          if (title.current.trim()) {
+            save.mutate({ title: title.current });
+          }
+        }}
       >
         {save.isPending ? "Saving…" : "Add note"}
       </Button>
