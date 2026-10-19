@@ -38,6 +38,10 @@
       "types": "./dist/config.d.mts",
       "import": "./dist/config.mjs"
     },
+    "./config/app-link": {
+      "types": "./dist/app-link.d.mts",
+      "import": "./dist/app-link.mjs"
+    },
     "./config/loader": {
       "types": "./dist/config-loader.d.mts",
       "import": "./dist/config-loader.mjs"
