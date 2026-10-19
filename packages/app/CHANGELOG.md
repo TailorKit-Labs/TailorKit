@@ -1,5 +1,11 @@
 # @tailorkit/app
 
+## 0.1.0-beta.47
+
+### Patch Changes
+
+- @tailorkit/app-db@0.1.0-beta.47
+
 ## 0.1.0-beta.46
 
 ### Minor Changes
