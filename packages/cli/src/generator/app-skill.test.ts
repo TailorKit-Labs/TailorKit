@@ -67,7 +67,7 @@ const schema: TailorKitSchemaFile = {
 const markdownLink = /\]\((?<target>[^)]+)\)/gu;
 
 it("generates a discoverable skill with working reference links, including custom output paths", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-host-skill-"));
+  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-app-skill-"));
   try {
     await writeFile(
       path.join(root, "tailorkit.config.mjs"),
@@ -78,14 +78,14 @@ it("generates a discoverable skill with working reference links, including custo
       path.join(root, "src/server.ts"),
       'throw new Error("Never evaluate server code");'
     );
-    const skillPath = path.join(root, ".agents/skills/tailorkit-host/SKILL.md");
+    const skillPath = path.join(root, ".agents/skills/tailorkit-app/SKILL.md");
     for (const outFile of [undefined, "src/custom contracts/host.ts"]) {
       // oxlint-disable-next-line no-await-in-loop -- Each generation must replace the preceding skill's links.
       await generateTypes({ cwd: root, outFile, schema });
       // oxlint-disable-next-line no-await-in-loop -- Verify the artifact produced by this generation before replacing it.
       const skill = await readFile(skillPath, "utf-8");
       expect(skill).toMatch(
-        /^---\nname: tailorkit-host\ndescription: .+\n---\n/u
+        /^---\nname: tailorkit-app\ndescription: .+\n---\n/u
       );
       expect(skill.length).toBeLessThan(2200);
       const links = [...skill.matchAll(markdownLink)];
@@ -144,7 +144,7 @@ it("generates a discoverable skill with working reference links, including custo
     }
     await writeFile(
       skillPath,
-      "---\nname: tailorkit-host\ndescription: Custom project guidance.\n---\nKeep this guidance.\n"
+      "---\nname: tailorkit-app\ndescription: Custom project guidance.\n---\nKeep this guidance.\n"
     );
     const userReference = path.join(
       path.dirname(skillPath),
@@ -262,7 +262,7 @@ it("removes obsolete references on regeneration and preserves unrelated source a
       'export default { name: "Example", slug: "example", host: "https://host.test" };'
     );
     await generateTypes({ cwd: root, schema });
-    const skillDirectory = path.join(root, ".agents/skills/tailorkit-host");
+    const skillDirectory = path.join(root, ".agents/skills/tailorkit-app");
     await writeFile(path.join(skillDirectory, "notes.md"), "user content");
     const extensionless = await generateTypes({
       cwd: root,
@@ -302,7 +302,7 @@ it("preserves an existing references directory without a generated ownership mar
     );
     const referencesDirectory = path.join(
       root,
-      ".agents/skills/tailorkit-host/references"
+      ".agents/skills/tailorkit-app/references"
     );
     await mkdir(referencesDirectory, { recursive: true });
     await writeFile(path.join(referencesDirectory, "notes.md"), "user content");

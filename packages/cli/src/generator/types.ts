@@ -14,7 +14,7 @@ import { isMissingFile } from "#utils/fs-errors";
 
 import { renderReferences } from "./references";
 import type { ResponsiveReference } from "./references";
-import { prepareHostSkill, writeHostSkill } from "./skill";
+import { prepareAppSkill, writeAppSkill } from "./skill";
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
@@ -881,7 +881,7 @@ export const generateTypes = async (
     serverModule = relative.startsWith(".") ? relative : `./${relative}`;
   }
   const output = renderGeneratedTypes(schema, { serverModule });
-  const skill = await prepareHostSkill(root, outPath);
+  const skill = await prepareAppSkill(root, outPath);
   const references =
     skill === null
       ? null
@@ -892,7 +892,7 @@ export const generateTypes = async (
   await mkdir(path.dirname(outPath), { recursive: true });
   await writeFile(outPath, output, "utf-8");
   if (skill !== null && references !== null) {
-    await writeHostSkill(skill, references);
+    await writeAppSkill(skill, references);
   }
 
   return outPath;
