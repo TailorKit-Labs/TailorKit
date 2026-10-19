@@ -11,9 +11,9 @@ import type { AppSandboxSession } from "./sandbox-session";
 const scope = { name: "user", value: { userId: "owner" } };
 const authorization = {
   agentToken: `header.${Buffer.from(JSON.stringify({ platformUrl: "https://platform.test", scope })).toString("base64url")}.signature`,
-  appId: "23f9b80a-bce5-46c8-8fa4-6a319fd5be37",
 };
 const manifest = {
+  appId: "23f9b80a-bce5-46c8-8fa4-6a319fd5be37",
   assets: {
     client: "client/client.js",
     logos: { dark: "client/logo-dark.svg" },
@@ -146,96 +146,126 @@ it("uses a standalone check script and preserves custom test arguments", async (
   expect(commands[1]?.args).toEqual(["run", "test"]);
 });
 
-it("publishes client, server and logos using host authorization", async () => {
-  // Validate the selector against the platform's generated HTTP contract,
-  // rather than maintaining a second, potentially outdated app schema here.
-  const contract = z
-    .object({
-      paths: z.object({
-        "/deployments": z.object({
-          post: z.object({
-            requestBody: z.object({
-              content: z.object({
-                "application/json": z.object({
-                  schema: z.object({
-                    properties: z.object({
-                      app: z.record(z.string(), z.json()),
+it.each([{ id: manifest.appId }, { shortId: "app000000001" }])(
+  "publishes the configured app %j using host authorization",
+  async (app) => {
+    // Validate the selector against the platform's generated HTTP contract,
+    // rather than maintaining a second, potentially outdated app schema here.
+    const contract = z
+      .object({
+        paths: z.object({
+          "/deployments": z.object({
+            post: z.object({
+              requestBody: z.object({
+                content: z.object({
+                  "application/json": z.object({
+                    schema: z.object({
+                      properties: z.object({
+                        app: z.record(z.string(), z.json()),
+                      }),
+                      required: z.array(z.string()),
                     }),
-                    required: z.array(z.string()),
                   }),
                 }),
               }),
             }),
           }),
         }),
-      }),
-    })
-    .parse(
-      JSON.parse(
-        await readFile(
-          new URL("../../api-platform/openapi.json", import.meta.url),
-          "utf-8"
+      })
+      .parse(
+        JSON.parse(
+          await readFile(
+            new URL("../../api-platform/openapi.json", import.meta.url),
+            "utf-8"
+          )
         )
-      )
-    ).paths["/deployments"].post.requestBody.content["application/json"].schema;
-  const selector = z.fromJSONSchema(contract.properties.app);
-  const calls: Request[] = [];
-  const send: typeof fetch = async (url, init) => {
-    const request = new Request(url, init);
-    calls.push(request);
-    if (request.method === "PUT") {
-      expect(request.headers.has("authorization")).toBe(false);
-      const bytes = Buffer.from(await request.arrayBuffer());
-      const raw =
-        request.headers.get("content-encoding") === "gzip"
-          ? gunzipSync(bytes)
-          : bytes;
-      expect(raw.toString()).toBe("fixture bytes");
-      return new Response(null);
-    }
-    expect(request.headers.get("authorization")).toBe(
-      `Bearer ${authorization.agentToken}`
-    );
-    const body = z.record(z.string(), z.json()).parse(await request.json());
-    if (request.url.endsWith("/deployments")) {
-      for (const field of contract.required) {
-        expect(body).toHaveProperty(field);
+      ).paths["/deployments"].post.requestBody.content[
+      "application/json"
+    ].schema;
+    const selector = z.fromJSONSchema(contract.properties.app);
+    const calls: Request[] = [];
+    const send: typeof fetch = async (url, init) => {
+      const request = new Request(url, init);
+      calls.push(request);
+      if (request.method === "PUT") {
+        expect(request.headers.has("authorization")).toBe(false);
+        const bytes = Buffer.from(await request.arrayBuffer());
+        const raw =
+          request.headers.get("content-encoding") === "gzip"
+            ? gunzipSync(bytes)
+            : bytes;
+        expect(raw.toString()).toBe("fixture bytes");
+        return new Response(null);
       }
-      expect(selector.parse(body.app)).toEqual({ id: authorization.appId });
-      expect(body).toMatchObject({
-        app: { id: authorization.appId },
-        scope,
-        views: manifest.views,
-      });
-      const code = gzipSync(Buffer.from("fixture bytes"));
-      expect(body).toMatchObject({
-        assets: [
-          {
-            checksum: createHash("sha256").update(code).digest("hex"),
-            contentLength: code.byteLength,
-            encoding: "gzip",
-            objectKey: "client.js",
-          },
-        ],
-      });
-      return Response.json({
-        assets: [upload("client")],
-        deployment: { id: "deployment" },
-        logos: { dark: upload("logo") },
-        server: upload("server"),
-      });
-    }
-    expect(body).toEqual({ rollout: true, scope });
-    return Response.json({ id: "deployment" });
+      expect(request.headers.get("authorization")).toBe(
+        `Bearer ${authorization.agentToken}`
+      );
+      const body = z.record(z.string(), z.json()).parse(await request.json());
+      if (request.url.endsWith("/deployments")) {
+        for (const field of contract.required) {
+          expect(body).toHaveProperty(field);
+        }
+        expect(selector.parse(body.app)).toEqual(app);
+        expect(body).toMatchObject({
+          app,
+          scope,
+          views: manifest.views,
+        });
+        const code = gzipSync(Buffer.from("fixture bytes"));
+        expect(body).toMatchObject({
+          assets: [
+            {
+              checksum: createHash("sha256").update(code).digest("hex"),
+              contentLength: code.byteLength,
+              encoding: "gzip",
+              objectKey: "client.js",
+            },
+          ],
+        });
+        return Response.json({
+          assets: [upload("client")],
+          deployment: { id: "deployment" },
+          logos: { dark: upload("logo") },
+          server: upload("server"),
+        });
+      }
+      expect(body).toEqual({ rollout: true, scope });
+      return Response.json({ id: "deployment" });
+    };
+    const appId = "id" in app ? app.id : app.shortId;
+    expect(
+      await publish(
+        reader(JSON.stringify({ ...manifest, appId })),
+        authorization,
+        undefined,
+        send
+      )
+    ).toEqual({
+      id: "deployment",
+    });
+    const uploads = calls.filter((request) => request.method === "PUT");
+    expect(uploads).toHaveLength(3);
+    expect(calls.at(-1)?.url).toBe(
+      "https://platform.test/deployments/deployment"
+    );
+  }
+);
+
+it("rejects a missing configured appId before making requests", async () => {
+  let requests = 0;
+  const send: typeof fetch = async () => {
+    requests += 1;
+    return await Promise.resolve(Response.json({}));
   };
-  expect(await publish(reader(), authorization, undefined, send)).toEqual({
-    id: "deployment",
-  });
-  const uploads = calls.filter((request) => request.method === "PUT");
-  expect(uploads).toHaveLength(3);
-  expect(calls.at(-1)?.url).toBe(
-    "https://platform.test/deployments/deployment"
-  );
+  await expect(
+    publish(
+      reader(JSON.stringify({ ...manifest, appId: undefined })),
+      authorization,
+      undefined,
+      send
+    )
+  ).rejects.toThrow("Missing appId in tailorkit.config.ts");
+  expect(requests).toBe(0);
 });
 
 it("includes platform diagnostics while redacting deployment credentials", async () => {

@@ -90,7 +90,7 @@ it("builds file routes with a configured server and blocks server imports from t
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(
       path.join(root, "tailorkit.config.mjs"),
-      'export default { name: "Test App", slug: "test-app", host: "https://host.example.com", server: { entry: "./backend/api.ts" } };'
+      'export default { appId: "configured-app", name: "Test App", slug: "test-app", host: "https://host.example.com", server: { entry: "./backend/api.ts" } };'
     );
     await Promise.all(
       ["src", "backend"].map(async (directory) => {
@@ -161,6 +161,7 @@ it("builds file routes with a configured server and blocks server imports from t
         )
       )
     ).toMatchObject({
+      appId: "configured-app",
       assets: { client: "client/client.js", server: "server/server.js" },
     });
     await writeFile(

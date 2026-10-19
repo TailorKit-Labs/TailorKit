@@ -1,6 +1,7 @@
 import * as v from "valibot";
 
 export const tailorkitUploadManifestSchema = v.object({
+  appId: v.optional(v.pipe(v.string(), v.minLength(1))),
   assets: v.object({
     client: v.literal("client/client.js"),
     logos: v.optional(
@@ -38,7 +39,8 @@ export type TailorKitUploadManifest = v.InferOutput<
 export const createTailorKitUploadManifest = (
   logos?: TailorKitUploadManifest["assets"]["logos"],
   server = false,
-  views?: TailorKitUploadManifest["views"]
+  views?: TailorKitUploadManifest["views"],
+  appId?: string
 ): TailorKitUploadManifest => {
   const assets: TailorKitUploadManifest["assets"] = {
     client: "client/client.js",
@@ -49,5 +51,10 @@ export const createTailorKitUploadManifest = (
   if (logos && Object.keys(logos).length > 0) {
     assets.logos = logos;
   }
-  return v.parse(tailorkitUploadManifestSchema, { assets, version: 1, views });
+  return v.parse(tailorkitUploadManifestSchema, {
+    appId,
+    assets,
+    version: 1,
+    views,
+  });
 };

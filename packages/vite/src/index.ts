@@ -173,7 +173,7 @@ export const tailorkit = (options: TailorKitPluginOptions = {}): Plugin[] => {
     );
     await writeFile(
       path.join(resolvedOutDir, "tailorkit-upload.json"),
-      `${JSON.stringify(createTailorKitUploadManifest(logoManifest, Boolean(loaded.config.server), views), null, 2)}\n`,
+      `${JSON.stringify(createTailorKitUploadManifest(logoManifest, Boolean(loaded.config.server), views, loaded.config.appId), null, 2)}\n`,
       "utf-8"
     );
   };
