@@ -104,7 +104,7 @@ const schema: TailorKitSchemaFile = {
 };
 
 const fileExample =
-  /<!-- example: (?<filename>[^ ]+) -->\s*```tsx?\n(?<source>[\s\S]*?)```/gu;
+  /<!-- (?<mode>example|continue): (?<filename>[^ ]+) -->\s*```tsx?\n(?<source>[\s\S]*?)```/gu;
 const codeBlock = /```(?<language>tsx?)\n(?<source>[\s\S]*?)```/gu;
 
 const declaration = (specifier: string) =>
@@ -134,9 +134,9 @@ it("typechecks authored and generated examples with scaffold imports and the pub
     const documents = await Promise.all(
       [
         "../../../agent-fx/src/skills/database.md",
-        "../../../agent-fx/src/skills/references/functions.md",
-        "../../../agent-fx/src/skills/references/interactions.md",
-        "../../../agent-fx/src/skills/references/views.md",
+        "../../../agent-fx/src/skills/functions.md",
+        "../../../agent-fx/src/skills/frontend.md",
+        "../../../agent-fx/src/skills/views.md",
         "../../../agent/src/skills/references/drafts.md",
         "../../../agent/src/skills/references/local-state.md",
       ].map(
@@ -147,9 +147,16 @@ it("typechecks authored and generated examples with scaffold imports and the pub
     const sources: Record<string, string> = {};
     for (const document of documents) {
       for (const match of document.matchAll(fileExample)) {
-        const { filename, source } = match.groups ?? {};
+        const { filename, mode, source } = match.groups ?? {};
         if (filename === undefined || source === undefined) {
           throw new Error("Invalid example marker.");
+        }
+        if (mode === "continue") {
+          if (sources[filename] === undefined) {
+            throw new Error(`Missing initial snippet: ${filename}`);
+          }
+          sources[filename] += `\n${source}`;
+          continue;
         }
         if (sources[filename] !== undefined) {
           throw new Error(`Duplicate example: ${filename}`);

@@ -2,43 +2,46 @@
 
 Each installation, an installed copy of the app, has persistent SQLite shared by its users. Use it for data the app owns. Backend functions enforce who can read or change that data; TailorKit manages the connection and transactions.
 
-Import table builders, `defineRelations`, `defineDatabase`, and query helpers from `tailorkit/db`. Keep these imports in backend files. The [backend example](references/functions.md) shows the schema, relations, database builder, and functions together.
+Import table builders, `defineRelations`, `defineDatabase`, and query helpers from `tailorkit/db`. Keep these imports in backend files.
 
 ## Tables and columns
 
 Define tables in `src/db/schema.ts` with `table`, `text`, `integer`, `real`, and `boolean`. Use `crypto.randomUUID()` for text IDs. Table names start with a letter, contain letters/digits/underscores, have at most 63 characters, and avoid `sqlite_` and `tailorkit_` prefixes.
 
-Set required fields and defaults for the feature. `.$type<T>()` narrows TypeScript values; validate function input at runtime too. `$inferInsert` gives the insert row type:
+For example, define installation-shared notes in `src/db/schema.ts`:
 
-<!-- example: src/examples/typed-insert.ts -->
+<!-- example: src/db/schema.ts -->
 
 ```ts
-import { integer, table, text } from "tailorkit/db";
+import { table, text } from "tailorkit/db";
 
-export type Priority = "low" | "medium" | "high";
-export const tasks = table("tasks", {
+export const notes = table("notes", {
   id: text().primaryKey(),
   title: text().notNull(),
-  priority: text().$type<Priority>().notNull().default("medium"),
-  createdAt: integer().notNull(),
 });
-
-export type TaskInsert = typeof tasks.$inferInsert;
-export const row: TaskInsert = {
-  id: crypto.randomUUID(),
-  title: "Review design",
-  priority: "high",
-  createdAt: Date.now(),
-};
 ```
 
-Create and insert rows inside mutations.
+Set required fields and defaults for the feature. `.$type<T>()` narrows TypeScript values; validate function input at runtime too. `typeof notes.$inferInsert` gives the insert row type. Create and insert rows inside mutations.
 
 ## Relations and queries
 
-Pass all tables to `defineRelations(schema)`, then `defineDatabase({ relations })`. Relations describe how queries follow connected records. Add a relation callback when needed: `r.one.users({ from: r.notes.authorId, to: r.users.id })`. A column reference defines a foreign-key constraint.
+In `src/db/index.ts`, include the tables and bind the function builder:
 
-Export `fn = createFunctions({ database: db })` from `src/db/index.ts`, importing `createFunctions` from `tailorkit/server`. Function modules import `fn` from `#db`. Run relational reads with `.sync()`, select builders with `.all()`/`.get()`, and writes with `.run()` or `.returning(...).all()`/`.get()`. Filter by access rules, select needed fields, and limit growing lists. A mutation already runs in a transaction.
+<!-- example: src/db/index.ts -->
+
+```ts
+import { defineDatabase, defineRelations } from "tailorkit/db";
+import { createFunctions } from "tailorkit/server";
+
+import * as schema from "./schema";
+
+export const db = defineDatabase({ relations: defineRelations(schema) });
+export const fn = createFunctions({ database: db });
+```
+
+Function modules import `fn` from `#db`. Run relational reads with `.sync()`, select builders with `.all()`/`.get()`, and writes with `.run()` or `.returning(...).all()`/`.get()`. Filter by access rules, select needed fields, and limit growing lists. A mutation already runs in a transaction.
+
+Relations describe connected records. Add a `defineRelations` callback when needed: `r.one.users({ from: r.notes.authorId, to: r.users.id })`. A column reference defines a foreign-key constraint.
 
 ## Schema changes
 
