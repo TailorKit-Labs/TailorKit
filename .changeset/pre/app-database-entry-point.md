@@ -1,9 +1,9 @@
 ---
-"tailorkit": minor
-"@tailorkit/app": minor
-"@tailorkit/app-db": minor
-"@tailorkit/cli": patch
-"@tailorkit/vite": patch
+"patchsmith": minor
+"@patchsmith/app": minor
+"@patchsmith/app-db": minor
+"@patchsmith/cli": patch
+"@patchsmith/vite": patch
 ---
 
 Move the app database API into the new `@tailorkit/app-db` package, exposed through `tailorkit/db`. Import `defineDatabase`, table and column builders, query helpers, and database types from `tailorkit/db` instead of `tailorkit/server`.

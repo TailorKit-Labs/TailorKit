@@ -1,3 +1,3 @@
-import { defineServer } from "tailorkit/server";
+import { defineServer } from "patchsmith/server";
 
 export default defineServer({});

@@ -1,4 +1,4 @@
-import { validateOrgSlug } from "@tailorkit/db/validate-org-slug";
+import { validateOrgSlug } from "@patchsmith/db/validate-org-slug";
 import { useEffect, useState } from "react";
 
 import { client } from "#lib/orpc";

@@ -1,5 +1,5 @@
 import type { runAgentTUI } from "@ai-sdk/tui";
-import type { TailorKitRouterClient } from "@tailorkit/core/server";
+import type { PatchSmithRouterClient } from "@patchsmith/core/server";
 import type { ChatTransport, UIMessage, UIMessageChunk } from "ai";
 import { readUIMessageStream } from "ai";
 import {
@@ -51,7 +51,7 @@ type TuiOptions = Extract<
   { transport: ChatTransport<UIMessage> }
 >;
 type Chat = (
-  ...args: Parameters<TailorKitRouterClient["appAgent"]["chat"]>
+  ...args: Parameters<PatchSmithRouterClient["appAgent"]["chat"]>
 ) => Promise<AsyncIterable<UIMessageChunk>>;
 
 const turnRequest = (
@@ -93,7 +93,7 @@ const messages: UIMessage[] = [
   },
   { id: "user-2", parts: [{ text: "Continue", type: "text" }], role: "user" },
 ];
-const hostUrl = "http://localhost:3000/api/tailorkit";
+const hostUrl = "http://localhost:3000/api/patchsmith";
 const schema = { components: {}, slots: {}, tools: {}, version: 1, views: {} };
 beforeEach(() => {
   vi.clearAllMocks();
@@ -326,7 +326,7 @@ describe("AI SDK terminal transport", () => {
     const [options] = requireValue(mocks.tui.mock.lastCall);
     expect(options).toMatchObject({
       reasoning: "hidden",
-      title: `TailorKit Agent · ${hostUrl}`,
+      title: `PatchSmith Agent · ${hostUrl}`,
       tools: "collapsed",
     });
     const controller = new AbortController();

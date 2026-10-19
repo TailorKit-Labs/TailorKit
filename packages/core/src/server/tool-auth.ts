@@ -3,7 +3,7 @@ import * as v from "valibot";
 import type { ToolIdentity } from "#schema/tools";
 import { jsonValueSchema } from "#validation";
 
-const audience = "tailorkit-app";
+const audience = "patchsmith-app";
 const decode = (part: string) =>
   Uint8Array.from(
     atob(part.replaceAll("-", "+").replaceAll("_", "/")),

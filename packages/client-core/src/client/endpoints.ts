@@ -1,19 +1,19 @@
-import type { ToolBridge, ViewInstance } from "@tailorkit/app/client";
+import type { ToolBridge, ViewInstance } from "@patchsmith/app/client";
 import {
   createClient,
   createSessionProvider,
   reference,
-} from "@tailorkit/app/client/connection";
+} from "@patchsmith/app/client/connection";
 import type {
-  TailorKitContract,
+  PatchSmithContract,
   ToolImplementations,
   ContractTools,
-} from "@tailorkit/core/schema";
-import { flattenTools, validateToolValue } from "@tailorkit/core/schema";
-import type { ViewContextValues } from "@tailorkit/core/views";
+} from "@patchsmith/core/schema";
+import { flattenTools, validateToolValue } from "@patchsmith/core/schema";
+import type { ViewContextValues } from "@patchsmith/core/views";
 import * as v from "valibot";
 
-import type { TailorKitApp } from "#types";
+import type { PatchSmithApp } from "#types";
 
 import { toBaseUrl } from "./url";
 
@@ -74,14 +74,14 @@ const resolveInstances = reference<
   "action",
   SlotInstancesInput,
   ViewInstance[]
->("_tailorkit.instances.resolve", "action");
+>("_patchsmith.instances.resolve", "action");
 
 /** Endpoint transport owns no response stores. */
 export const createEndpointClient = (options: {
   baseUrl: string | URL;
   fetch?: typeof fetch;
-  contract?: TailorKitContract;
-  tools?: ToolImplementations<TailorKitContract["tools"], "client">;
+  contract?: PatchSmithContract;
+  tools?: ToolImplementations<PatchSmithContract["tools"], "client">;
 }) => {
   const baseUrl = toBaseUrl(options.baseUrl);
   const request: typeof fetch = async (input, init) =>
@@ -95,7 +95,7 @@ export const createEndpointClient = (options: {
   let generation = 0;
   const toolBridges = new Map<
     string,
-    { bridge: ToolBridge; app: TailorKitApp }
+    { bridge: ToolBridge; app: PatchSmithApp }
   >();
   const declarations = flattenTools(options.contract?.tools ?? {});
   const sessions = new Map<string, SessionEntry>();
@@ -126,7 +126,7 @@ export const createEndpointClient = (options: {
 
     session: createSessionProvider({ appId, baseUrl, fetch: request }),
   });
-  const getSessionProvider = (app: TailorKitApp) => {
+  const getSessionProvider = (app: PatchSmithApp) => {
     const key = JSON.stringify([app.currentDeployment?.id]);
     let entry = sessions.get(app.id);
     if (entry && entry.key === undefined) {
@@ -141,7 +141,7 @@ export const createEndpointClient = (options: {
     }
     return entry.provider;
   };
-  const getToolBridge = (app: TailorKitApp): ToolBridge => {
+  const getToolBridge = (app: PatchSmithApp): ToolBridge => {
     const existing = toolBridges.get(app.id);
     if (existing) {
       existing.app = app;
@@ -224,14 +224,14 @@ export const createEndpointClient = (options: {
     return bridge;
   };
   return {
-    apps: async (signal: AbortSignal): Promise<TailorKitApp[]> => {
+    apps: async (signal: AbortSignal): Promise<PatchSmithApp[]> => {
       const response = await request(new URL("apps", baseUrl), {
         credentials: "same-origin",
         signal,
       });
       if (!response.ok) {
         throw new Error(
-          `Unable to fetch TailorKit apps from ${baseUrl.toString()}.`
+          `Unable to fetch PatchSmith apps from ${baseUrl.toString()}.`
         );
       }
       return v.parse(appListSchema, await response.json());
@@ -241,7 +241,7 @@ export const createEndpointClient = (options: {
     getSessionProvider,
     getToolBridge,
     slotInstances: async (
-      app: TailorKitApp,
+      app: PatchSmithApp,
       input: SlotInstancesInput,
       signal: AbortSignal
     ) => {

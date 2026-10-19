@@ -1,4 +1,4 @@
-import { Button } from "@tailorkit/ui/button";
+import { Button } from "@patchsmith/ui/button";
 import {
   Card,
   CardDescription,
@@ -7,9 +7,9 @@ import {
   CardHeader,
   CardPanel,
   CardTitle,
-} from "@tailorkit/ui/card";
-import { Field, FieldLabel } from "@tailorkit/ui/field";
-import { Input } from "@tailorkit/ui/input";
+} from "@patchsmith/ui/card";
+import { Field, FieldLabel } from "@patchsmith/ui/field";
+import { Input } from "@patchsmith/ui/input";
 import { useParams, createFileRoute } from "@tanstack/react-router";
 
 import { PageLayout } from "#components/page-layout";
@@ -41,7 +41,7 @@ const OrgSettingsGeneral = () => {
                 <FieldLabel>Slug</FieldLabel>
                 <Input defaultValue={orgSlug} />
                 <p className="text-xs text-muted-foreground">
-                  Your org URL: tailorkit.com/{orgSlug}
+                  Your org URL: patchsmith.com/{orgSlug}
                 </p>
               </Field>
             </div>

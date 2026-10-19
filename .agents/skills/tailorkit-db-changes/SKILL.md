@@ -1,9 +1,9 @@
 ---
 name: tailorkit-db-changes
-description: Plan, implement, or review TailorKit platform schema changes, Drizzle migrations, backfills, and auth-schema changes. Use for separate database PRs and compatibility across backend rollouts. Playground-only SQLite changes follow playground/README.md instead.
+description: Plan, implement, or review PatchSmith platform schema changes, Drizzle migrations, backfills, and auth-schema changes. Use for separate database PRs and compatibility across backend rollouts. Playground-only SQLite changes follow playground/README.md instead.
 ---
 
-# TailorKit database changes
+# PatchSmith database changes
 
 ## Deployment and PRs
 
@@ -15,11 +15,11 @@ description: Plan, implement, or review TailorKit platform schema changes, Drizz
 ## Make changes
 
 1. Read `packages/db/AGENTS.md` for auth generation and relation composition, and `packages/db/drizzle.config.ts` for schema/migration paths. Paths here are relative to the repo root unless linked otherwise.
-2. Edit the TypeScript schema. For auth-schema changes, edit Better Auth configuration and run `pnpm --filter @tailorkit/auth generate` first.
+2. Edit the TypeScript schema. For auth-schema changes, edit Better Auth configuration and run `pnpm --filter @patchsmith/auth generate` first.
 3. Run `pnpm db:generate` with the installed Drizzle CLI. Commit schema and generated artifacts together. Review rename prompts against the rollout plan; generated renames can still break old servers.
 4. Review the SQL and affected readers/writers using the checklist below. If unsafe, revise the schema or split the rollout and regenerate. **Do not hand-edit generated SQL or snapshots.** Preserve merged/applied migration history; corrections go in new forward migrations. After rebasing, regenerate only this change's unmerged, unapplied artifacts as needed.
 
-When generation cannot express a necessary operation, use `pnpm --filter @tailorkit/db drizzle-kit generate --custom --name=<name>`. Write SQL only in that new custom migration and explain why it is needed. See [Drizzle custom migrations](https://orm.drizzle.team/docs/kit-custom-migrations).
+When generation cannot express a necessary operation, use `pnpm --filter @patchsmith/db drizzle-kit generate --custom --name=<name>`. Write SQL only in that new custom migration and explain why it is needed. See [Drizzle custom migrations](https://orm.drizzle.team/docs/kit-custom-migrations).
 
 ## Review checklist
 

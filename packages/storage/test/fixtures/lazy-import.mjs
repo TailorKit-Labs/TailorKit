@@ -26,7 +26,7 @@ const direct = createS3CompatibleStorage(options);
 assert.equal(direct.type, "s3");
 assert.equal(loaded.has("@aws-sdk/client-s3"), false);
 assert.equal(loaded.has("@aws-sdk/s3-request-presigner"), false);
-assert.equal(loaded.has("@tailorkit/observability"), false);
+assert.equal(loaded.has("@patchsmith/observability"), false);
 
 if (entry === "index") {
   const { getStorage } = await import("../../dist/index.mjs");
@@ -39,7 +39,7 @@ if (entry === "index") {
     assert.equal(configuredStorage, null);
   }
   assert.equal(loaded.has("@aws-sdk/client-s3"), false);
-  assert.equal(loaded.has("@tailorkit/observability"), false);
+  assert.equal(loaded.has("@patchsmith/observability"), false);
   if (configuredStorage) {
     const result = await configuredStorage.createDownloadUrl({
       key: "configured.txt",
@@ -56,5 +56,5 @@ assert.ok(new URL(results[0].url).searchParams.has("X-Amz-Signature"));
 assert.ok(new URL(results[1].uploadUrl).searchParams.has("X-Amz-Signature"));
 assert.equal(loaded.has("@aws-sdk/client-s3"), true);
 assert.equal(loaded.has("@aws-sdk/s3-request-presigner"), true);
-assert.equal(loaded.has("@tailorkit/observability"), true);
+assert.equal(loaded.has("@patchsmith/observability"), true);
 hooks.deregister();

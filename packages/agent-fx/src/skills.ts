@@ -11,7 +11,7 @@ import setup from "./skills/setup.md?raw";
 import views from "./skills/views.md?raw";
 
 export const appAgentReferencesDirectory =
-  "/workspace/.tailorkit-agent/references";
+  "/workspace/.patchsmith-agent/references";
 const withReferencePaths = (content: string) =>
   content.replaceAll("](references/", `](${appAgentReferencesDirectory}/`);
 
@@ -21,33 +21,33 @@ const guides = [
     description:
       "Setup: configure the app, generate bindings, or resolve dependency problems.",
     filename: "setup-guide.md",
-    name: "tailorkit-setup",
+    name: "patchsmith-setup",
   },
   {
     content: withReferencePaths(frontend),
     description:
       "Frontend: compose components, handle forms/callbacks, or call product tools.",
     filename: "frontend-guide.md",
-    name: "tailorkit-frontend",
+    name: "patchsmith-frontend",
   },
   {
     content: withReferencePaths(views),
     description: "Views: slots, context, layouts, or repeated instances.",
     filename: "views-guide.md",
-    name: "tailorkit-views",
+    name: "patchsmith-views",
   },
   {
     content: withReferencePaths(functions),
     description:
       "Functions: queries, mutations, external actions, or reactive client hooks.",
     filename: "functions-guide.md",
-    name: "tailorkit-functions",
+    name: "patchsmith-functions",
   },
   {
     content: withReferencePaths(database),
     description: "Database: tables, relations, reads/writes, or migrations.",
     filename: "database-guide.md",
-    name: "tailorkit-database",
+    name: "patchsmith-database",
   },
 ];
 

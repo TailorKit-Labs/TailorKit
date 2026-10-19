@@ -7,7 +7,7 @@ Choose the example needed. These assume a `panel` at `/records/detail` with `con
 <!-- example: src/root.tsx -->
 
 ```tsx
-import { ClientProvider, defineRoute, Route } from "tailorkit/client";
+import { ClientProvider, defineRoute, Route } from "patchsmith/client";
 
 const Shell = () => (
   <ClientProvider>
@@ -24,10 +24,10 @@ Read context inside the view. The explicit return type allows the component to r
 <!-- example: src/slots/panel/records.detail.view.tsx -->
 
 ```tsx
+import { defineView } from "patchsmith/client";
 import type { ComponentChildren } from "preact";
-import { defineView } from "tailorkit/client";
 
-import { Box } from "#tailorkit";
+import { Box } from "#patchsmith";
 
 const Detail = (): ComponentChildren => {
   const { recordId } = definition.useContext();
@@ -49,11 +49,11 @@ Only use this for a multiple-instance slot. Enable `server: {}` and register the
 <!-- example: src/slots/tile/index.view.tsx -->
 
 ```tsx
+import { defineView } from "patchsmith/client";
 import type { ComponentChildren } from "preact";
-import { defineView } from "tailorkit/client";
 import * as v from "valibot";
 
-import { Box } from "#tailorkit";
+import { Box } from "#patchsmith";
 
 const Tile = (): ComponentChildren => {
   const { data } = definition.useInstance();

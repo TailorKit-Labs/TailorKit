@@ -33,6 +33,6 @@ export const createAppAgent = async (
     stopWhen: isStepCount(1),
     tools: { deploy: deployTool },
     toolsContext: {
-      deploy: { agentToken: input.agentToken, sandboxName },
+      deploy: { agentToken: input.agentToken, appId: input.appId, sandboxName },
     },
   });

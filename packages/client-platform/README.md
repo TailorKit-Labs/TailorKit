@@ -1,6 +1,6 @@
-# TailorKit platform client
+# PatchSmith platform client
 
-`@tailorkit/client-platform` is the API client for the TailorKit platform.
+`@patchsmith/client-platform` is the API client for the PatchSmith platform.
 
 Apps have an immutable `slug`, unique within their project across all scopes. Slugs contain 1–32 lowercase letters or digits, separated by single hyphens. Set `slug` when creating an app or installation; omitting it generates a stable slug consisting of `app-` followed by 28 random hexadecimal characters. Renaming an app does not change its slug. Duplicate slugs return `CONFLICT`.
 
@@ -9,7 +9,7 @@ App operations take an explicit `app` selector containing exactly one of `{ id }
 With a configured `client` and authorized `scope`:
 
 ```ts
-import { appsCreate, appsGet } from "@tailorkit/client-platform";
+import { appsCreate, appsGet } from "@patchsmith/client-platform";
 
 await appsCreate({
   body: {

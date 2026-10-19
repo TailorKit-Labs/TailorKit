@@ -1,13 +1,13 @@
 import { openapi } from "@orpc/openapi";
 import { ORPCError, os } from "@orpc/server";
-import { devDelayMiddleware } from "@tailorkit/api-utils/dev-delay";
+import { devDelayMiddleware } from "@patchsmith/api-utils/dev-delay";
 import {
   createRateLimiter,
   ratelimitMiddleware,
-} from "@tailorkit/api-utils/rate-limiting";
-import { db } from "@tailorkit/db";
-import type { Scope } from "@tailorkit/db/schema/scope";
-import { setSpanAttributes } from "@tailorkit/observability";
+} from "@patchsmith/api-utils/rate-limiting";
+import { db } from "@patchsmith/db";
+import type { Scope } from "@patchsmith/db/schema/scope";
+import { setSpanAttributes } from "@patchsmith/observability";
 
 import type { AppSelector } from "#app-selector";
 
@@ -126,9 +126,9 @@ export const protectedRouter = authenticatedRouter.use(
 export const requireApp = o.middleware(
   async ({ context, next }, input: { app: AppSelector; scope: Scope }) => {
     setSpanAttributes({
-      "tailorkit.middleware": "require_app",
-      "tailorkit.package": "api-platform",
-      "tailorkit.resource_type": "app",
+      "patchsmith.middleware": "require_app",
+      "patchsmith.package": "api-platform",
+      "patchsmith.resource_type": "app",
     });
 
     const app = await findAppInScopes(context.project.id, input.app, [
@@ -142,9 +142,9 @@ export const requireApp = o.middleware(
 export const requireAppInScopes = o.middleware(
   async ({ context, next }, input: { app: AppSelector; scopes: Scope[] }) => {
     setSpanAttributes({
-      "tailorkit.middleware": "require_app",
-      "tailorkit.package": "api-platform",
-      "tailorkit.resource_type": "app",
+      "patchsmith.middleware": "require_app",
+      "patchsmith.package": "api-platform",
+      "patchsmith.resource_type": "app",
     });
 
     const app = await findAppInScopes(

@@ -1,3 +1,3 @@
-# TailorKit observability
+# PatchSmith observability
 
-`@tailorkit/observability` contains shared tracing and telemetry code for the TailorKit platform.
+`@patchsmith/observability` contains shared tracing and telemetry code for the PatchSmith platform.

@@ -51,6 +51,6 @@ expectTypeOf<
   }>
 >().toExtend<{
   Button: {
-    readonly __tailorkit_error__: "Field and callback keys must be unique. Conflicting key: onClick";
+    readonly __patchsmith_error__: "Field and callback keys must be unique. Conflicting key: onClick";
   };
 }>();

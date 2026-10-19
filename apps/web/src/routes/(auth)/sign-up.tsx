@@ -1,7 +1,7 @@
 "use client";
 
-import { cn } from "@tailorkit/ui";
-import { Button } from "@tailorkit/ui/button";
+import { cn } from "@patchsmith/ui";
+import { Button } from "@patchsmith/ui/button";
 import {
   Card,
   CardFooter,
@@ -10,9 +10,9 @@ import {
   CardHeader,
   CardPanel,
   CardTitle,
-} from "@tailorkit/ui/card";
-import { useAppForm } from "@tailorkit/ui/form";
-import { Logo } from "@tailorkit/ui/logo";
+} from "@patchsmith/ui/card";
+import { useAppForm } from "@patchsmith/ui/form";
+import { Logo } from "@patchsmith/ui/logo";
 import { useQuery } from "@tanstack/react-query";
 import {
   useNavigate,
@@ -175,10 +175,10 @@ const RouteComponent = () => {
       <div className="flex w-full max-w-sm flex-col items-center gap-4">
         <a
           className="flex items-center gap-2"
-          href="https://tailorkit.dev/home"
+          href="https://patchsmith.io/home"
         >
           <Logo className="size-6" />
-          <span className="text-lg font-semibold">TailorKit</span>
+          <span className="text-lg font-semibold">PatchSmith</span>
         </a>
         <CardFrame className="w-full">
           <Card>

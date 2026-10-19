@@ -1,4 +1,4 @@
-import type { ViewDefinition } from "@tailorkit/core/schema";
+import type { ViewDefinition } from "@patchsmith/core/schema";
 
 type DefaultViews = Record<`/${string}`, ViewDefinition>;
 

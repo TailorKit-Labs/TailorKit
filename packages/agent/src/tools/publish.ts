@@ -2,12 +2,12 @@ import { createHash } from "node:crypto";
 import { promisify } from "node:util";
 import { gzip } from "node:zlib";
 
-import { tailorkitUploadManifestSchema } from "@tailorkit/vite/upload-manifest";
+import { patchsmithUploadManifestSchema } from "@patchsmith/vite/upload-manifest";
 import type { Sandbox } from "@vercel/sandbox";
 import * as v from "valibot";
 import { z } from "zod";
 
-export const deploymentDirectory = "/tmp/tailorkit-deployment";
+export const deploymentDirectory = "/tmp/patchsmith-deployment";
 const maxAssetBytes = 3 * 1024 * 1024;
 const gzipAsync = promisify(gzip);
 const claimsSchema = z.object({
@@ -87,9 +87,9 @@ export const publishDeployment = async (
   const { platformUrl, scope } = claimsSchema.parse(
     JSON.parse(Buffer.from(payload, "base64url").toString("utf-8"))
   );
-  const manifestContent = await readAsset(sandbox, "tailorkit-upload.json");
+  const manifestContent = await readAsset(sandbox, "patchsmith-upload.json");
   const manifest = v.parse(
-    tailorkitUploadManifestSchema,
+    patchsmithUploadManifestSchema,
     JSON.parse(manifestContent.toString("utf-8"))
   );
   const clientCode = await gzipAsync(

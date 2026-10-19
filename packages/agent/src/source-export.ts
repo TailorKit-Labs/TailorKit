@@ -67,7 +67,7 @@ export const exportAppAgentWorkspace = async (
       args: [
         "--exclude=node_modules",
         "--exclude=.git",
-        "--exclude=.tailorkit",
+        "--exclude=.patchsmith",
         "--exclude=.env",
         "--exclude=.env.*",
         "-czf",

@@ -1,11 +1,11 @@
 ---
-"@tailorkit/app": minor
-"@tailorkit/cli": minor
-"@tailorkit/client-platform": minor
-"@tailorkit/core": minor
-"@tailorkit/react": minor
-"@tailorkit/sandbox": minor
-"tailorkit": minor
+"@patchsmith/app": minor
+"@patchsmith/cli": minor
+"@patchsmith/client-platform": minor
+"@patchsmith/core": minor
+"@patchsmith/react": minor
+"@patchsmith/sandbox": minor
+"patchsmith": minor
 ---
 
 Consolidate the app SDK in @tailorkit/app and expose app client APIs through tailorkit/client and server APIs through tailorkit/server. Provide SQLite schema builders, synchronous Zod-validated queries/mutations, asynchronous external actions, atomic mutation receipts and typed browser references. Use oRPC v2 HTTP for direct sandbox calls and WebSockets for server-driven query snapshots; the bridge supplies scoped platform JWTs and renews authentication. Execute queries, mutations and actions in one private Cloudflare facet, with an ALS-backed fetch guard and local action query/mutation calls and scoped capabilities for HTTPS egress. Keep synchronous database transactions atomic. Actions do not retry automatically or hold database transactions across external work. Track table dependencies and rerun only active affected queries after commit.

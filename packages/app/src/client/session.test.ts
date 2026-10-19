@@ -1,4 +1,4 @@
-import { asyncFixture } from "@tailorkit/config/testing";
+import { asyncFixture } from "@patchsmith/config/testing";
 import { expect, it, vi } from "vite-plus/test";
 
 import { createSessionProvider } from "./session";
@@ -16,7 +16,7 @@ it("deduplicates token requests, caches until renewal and sends only the host-bo
   );
   const session = createSessionProvider({
     appId: "allowed",
-    baseUrl: "https://host.test/api/tailorkit",
+    baseUrl: "https://host.test/api/patchsmith",
     fetch,
   });
   const [first, second] = await Promise.all([
@@ -31,7 +31,7 @@ it("deduplicates token requests, caches until renewal and sends only the host-bo
     requestedUrl instanceof Request
       ? requestedUrl.url
       : requestedUrl?.toString()
-  ).toBe("https://host.test/api/tailorkit/backend/session");
+  ).toBe("https://host.test/api/patchsmith/backend/session");
   expect(fetch.mock.calls[0]?.[1]).toMatchObject({
     body: JSON.stringify({ appId: "allowed" }),
     credentials: "same-origin",

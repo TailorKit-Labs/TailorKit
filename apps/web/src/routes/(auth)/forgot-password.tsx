@@ -1,7 +1,7 @@
 "use client";
 
-import { cn } from "@tailorkit/ui";
-import { Button } from "@tailorkit/ui/button";
+import { cn } from "@patchsmith/ui";
+import { Button } from "@patchsmith/ui/button";
 import {
   Card,
   CardFooter,
@@ -10,16 +10,16 @@ import {
   CardHeader,
   CardPanel,
   CardTitle,
-} from "@tailorkit/ui/card";
-import { Field, FieldDescription, FieldError } from "@tailorkit/ui/field";
-import { useAppForm } from "@tailorkit/ui/form";
-import { Logo } from "@tailorkit/ui/logo";
+} from "@patchsmith/ui/card";
+import { Field, FieldDescription, FieldError } from "@patchsmith/ui/field";
+import { useAppForm } from "@patchsmith/ui/form";
+import { Logo } from "@patchsmith/ui/logo";
 import {
   OTPField,
   OTPFieldInput,
   OTPFieldSeparator,
-} from "@tailorkit/ui/otp-field";
-import { toastManager } from "@tailorkit/ui/toast";
+} from "@patchsmith/ui/otp-field";
+import { toastManager } from "@patchsmith/ui/toast";
 import {
   useNavigate,
   createFileRoute,
@@ -367,10 +367,10 @@ const RouteComponent = () => {
       <div className="flex w-full max-w-sm flex-col items-center gap-4">
         <a
           className="flex items-center gap-2"
-          href="https://tailorkit.dev/home"
+          href="https://patchsmith.io/home"
         >
           <Logo className="size-6" />
-          <span className="text-lg font-semibold">TailorKit</span>
+          <span className="text-lg font-semibold">PatchSmith</span>
         </a>
         <CardFrame className="w-full">
           <Card>

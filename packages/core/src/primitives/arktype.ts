@@ -9,7 +9,7 @@ import {
 } from "./definition";
 import type { PrimitiveName, PrimitivePropDefinition } from "./definition";
 import { resolveTheme } from "./theme";
-import type { TailorKitTheme } from "./theme";
+import type { PatchSmithTheme } from "./theme";
 
 const isNumberValue = <TValue>(value: TValue): value is TValue & number =>
   typeof value === "number";
@@ -30,7 +30,7 @@ const tokenExpr = (tokens: Record<string, string> | undefined): string => {
 
 const responsive = (
   expr: string,
-  theme: TailorKitTheme,
+  theme: PatchSmithTheme,
   interactive = true
 ): ReturnType<typeof type.raw> => {
   const fields: FieldValidators = {};
@@ -54,7 +54,7 @@ const valueExpr = (values: readonly (number | string)[]): string =>
 
 const propExpr = (
   definition: PrimitivePropDefinition,
-  theme: TailorKitTheme
+  theme: PatchSmithTheme
 ): Parameters<typeof type>[0] => {
   if (definition.kind === "boolean" || definition.kind === "string") {
     return definition.kind;
@@ -68,7 +68,7 @@ const propExpr = (
 
 const primitiveFields = (
   name: PrimitiveName,
-  theme: TailorKitTheme
+  theme: PatchSmithTheme
 ): FieldValidators =>
   Object.fromEntries(
     Object.entries<PrimitivePropDefinition>(primitiveDefinitions[name]).map(
@@ -76,7 +76,9 @@ const primitiveFields = (
     )
   );
 
-export const primitives = (theme: TailorKitTheme = {}): PrimitiveComponents => {
+export const primitives = (
+  theme: PatchSmithTheme = {}
+): PrimitiveComponents => {
   const resolvedTheme = resolveTheme(theme);
   const components = mapPrimitiveDefinitions((name) => ({
     callbacks: name === "Pressable" ? { onPress: {} } : {},

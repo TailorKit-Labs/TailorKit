@@ -31,11 +31,11 @@
       "missing": [
         {
           "type": "cookie",
-          "key": "__Secure-tailorkit.session_token"
+          "key": "__Secure-patchsmith.session_token"
         },
         {
           "type": "cookie",
-          "key": "__Secure-tailorkit-dev.session_token"
+          "key": "__Secure-patchsmith-dev.session_token"
         }
       ]
     },

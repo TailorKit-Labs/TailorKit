@@ -1,9 +1,9 @@
-import type { ViewInstance } from "@tailorkit/app/client";
-import { composeViewContext, getViewHierarchy } from "@tailorkit/core/views";
+import type { ViewInstance } from "@patchsmith/app/client";
+import { composeViewContext, getViewHierarchy } from "@patchsmith/core/views";
 import type {
   ActiveView,
   ResolvedViewProps as ContextProps,
-} from "@tailorkit/core/views";
+} from "@patchsmith/core/views";
 
 const hasText = (value: string | null | undefined): value is string =>
   value !== undefined && value !== null && value.length > 0;
@@ -106,7 +106,7 @@ export const resolveView = (client: AppClient, request: ViewRequest) => {
   const definition = views[selected];
   if (!definition || !isFunctionValue(definition.component)) {
     throw new TypeError(
-      `TailorKit app client view "${selected}" is missing a component.`
+      `PatchSmith app client view "${selected}" is missing a component.`
     );
   }
 
@@ -158,7 +158,7 @@ export const assertAppClient: (value: unknown) => asserts value is AppClient = (
     !isFunctionValue(value.$runtime.render)
   ) {
     throw new TypeError(
-      "TailorKit app must be built with the app builder and include slots and its bundled runtime."
+      "PatchSmith app must be built with the app builder and include slots and its bundled runtime."
     );
   }
 };

@@ -1,10 +1,10 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
-import { issueAgentToken } from "@tailorkit/api-utils/agent-token";
-import { hashSecret } from "@tailorkit/api-utils/hashing";
-import { app, appDeployment } from "@tailorkit/db/schema/apps";
-import { organization } from "@tailorkit/db/schema/auth";
-import { cliToken } from "@tailorkit/db/schema/cli-auth";
-import { project } from "@tailorkit/db/schema/project";
+import { issueAgentToken } from "@patchsmith/api-utils/agent-token";
+import { hashSecret } from "@patchsmith/api-utils/hashing";
+import { app, appDeployment } from "@patchsmith/db/schema/apps";
+import { organization } from "@patchsmith/db/schema/auth";
+import { cliToken } from "@patchsmith/db/schema/cli-auth";
+import { project } from "@patchsmith/db/schema/project";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
@@ -32,16 +32,16 @@ const mocks = vi.hoisted(() => ({
     type: "s3",
   },
 }));
-vi.mock("@tailorkit/db", () => ({
+vi.mock("@patchsmith/db", () => ({
   get db() {
     return mocks.db;
   },
 }));
-vi.mock("@tailorkit/auth", () => ({
+vi.mock("@patchsmith/auth", () => ({
   auth: { api: { verifyApiKey: mocks.apiKey } },
 }));
-vi.mock("@tailorkit/storage", () => ({ getStorage: () => mocks.storage }));
-vi.mock("@tailorkit/kv", () => ({ getKV: () => null }));
+vi.mock("@patchsmith/storage", () => ({ getStorage: () => mocks.storage }));
+vi.mock("@patchsmith/kv", () => ({ getKV: () => null }));
 
 const { createContext, contextErrorResponse } = await import("#context");
 const { appRouter } = await import("./apps");

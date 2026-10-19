@@ -85,9 +85,9 @@ it("imports once, publishes updates, clears unsupported slots, and dispatches ca
       panel: {
         "/": {
           component: (props) => {
-            const button = document.createElement("tailorkit-button");
+            const button = document.createElement("patchsmith-button");
             button.textContent = String(props.context?.name);
-            button.dataset.tailorkitCallbacks = JSON.stringify({
+            button.dataset.patchsmithCallbacks = JSON.stringify({
               click: { callback: "onClick", inputCount: 0 },
             });
             button.addEventListener("click", () => {

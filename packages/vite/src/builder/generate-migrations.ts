@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { access } from "node:fs/promises";
 import path from "node:path";
 
-import { loadTailorKitConfig } from "#config/loader";
+import { loadPatchSmithConfig } from "#config/loader";
 
 import { appDatabasePaths } from "./database-paths";
 import { drizzleGenerateArguments } from "./drizzle";
@@ -17,10 +17,10 @@ export interface GenerateAppMigrationsOptions {
 export const generateAppMigrations = async (
   options: GenerateAppMigrationsOptions = {}
 ) => {
-  const loaded = await loadTailorKitConfig(options.configPath, options.cwd);
+  const loaded = await loadPatchSmithConfig(options.configPath, options.cwd);
   if (!loaded.config.server) {
     throw new Error(
-      "Enable server: {} in tailorkit.config.ts before generating database migrations."
+      "Enable server: {} in patchsmith.config.ts before generating database migrations."
     );
   }
   const paths = appDatabasePaths(loaded.root, loaded.config.server.migrations);

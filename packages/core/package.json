@@ -1,5 +1,5 @@
 {
-  "name": "@tailorkit/core",
+  "name": "@patchsmith/core",
   "version": "0.1.0-beta.49",
   "license": "Apache-2.0",
   "repository": {
@@ -89,13 +89,13 @@
     "@orpc/client": "catalog:",
     "@orpc/contract": "catalog:",
     "@orpc/server": "catalog:",
+    "@patchsmith/client-platform": "workspace:*",
     "@standard-schema/spec": "^1.1.0",
-    "@tailorkit/client-platform": "workspace:*",
     "valibot": "catalog:"
   },
   "devDependencies": {
     "@orpc/openapi": "catalog:",
-    "@tailorkit/config": "workspace:*",
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "@valibot/to-json-schema": "^1.8.0",
     "ai": "catalog:",

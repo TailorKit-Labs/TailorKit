@@ -25,8 +25,8 @@ const reader = (overrides: Record<string, Buffer> = {}) => {
     Object.entries({
       "client/client.js": clientCode,
       "client/logo-dark.svg": logo,
+      "patchsmith-upload.json": Buffer.from(JSON.stringify(manifest)),
       "server/server.js": serverCode,
-      "tailorkit-upload.json": Buffer.from(JSON.stringify(manifest)),
       ...overrides,
     })
   );
@@ -78,7 +78,7 @@ it("uploads data on the host and keeps authorization out of signed asset request
   expect(
     await publishDeployment(
       reader({
-        "tailorkit-upload.json": Buffer.from(
+        "patchsmith-upload.json": Buffer.from(
           JSON.stringify({
             ...manifest,
             appId: "foreign-app",
@@ -148,7 +148,7 @@ it.each([
     await expect(
       publishDeployment(
         reader({
-          "tailorkit-upload.json": Buffer.from(
+          "patchsmith-upload.json": Buffer.from(
             JSON.stringify(untrustedManifest)
           ),
         }),

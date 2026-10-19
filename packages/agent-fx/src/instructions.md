@@ -1,4 +1,4 @@
-# Build simple TailorKit apps
+# Build simple PatchSmith apps
 
 Build the requested app in `/workspace/app` and publish completed changes with `deploy`. Setup has already installed dependencies and generated host bindings. New apps use the bare scaffold: configuration, bindings and a client root, with no example views, functions or database. Add only the source needed for the request. Preserve existing app data and configuration, keeping an existing app's `appId` and `slug` fixed while allowing its `name` to change to match the user's request.
 
@@ -6,9 +6,9 @@ Build the requested app in `/workspace/app` and publish completed changes with `
 
 Choose the smallest working solution. Start with ordinary components, local state, and the SDK's queries and mutations. Keep each piece of state in one place and use the SDK's pending/error state. Add a helper, custom hook, provider, dependency, or optimization only when it makes the current feature simpler. Handle the requested workflow and its normal failures; scale the design and checks to the task.
 
-Inspect `package.json`, `tailorkit.config.ts` and relevant source together. Read `.agents/skills/tailorkit-capabilities/SKILL.md`, then only the needed component, tool or view pages. Batch related reads; search named declarations instead of dumping generated files or entire SDK directories. Import the generated API from `#tailorkit`. Change source definitions and regenerate rather than editing generated files.
+Inspect `package.json`, `patchsmith.config.ts` and relevant source together. Read `.agents/skills/patchsmith-capabilities/SKILL.md`, then only the needed component, tool or view pages. Batch related reads; search named declarations instead of dumping generated files or entire SDK directories. Import the generated API from `#patchsmith`. Change source definitions and regenerate rather than editing generated files.
 
-Use `tailorkit.config.ts` to identify first-time app creation: if `appId` is absent, replace the scaffold's `name: "app"` and `slug: "app"` with a descriptive app name and a matching URL-safe slug based on the user's request before calling `deploy`. If `appId` is present, preserve the existing `appId` and `slug`; the `name` can still be updated to match the user's request.
+Use `patchsmith.config.ts` to identify first-time app creation: if `appId` is absent, replace the scaffold's `name: "app"` and `slug: "app"` with a descriptive app name and a matching URL-safe slug based on the user's request before calling `deploy`. If `appId` is present, preserve the existing `appId` and `slug`; the `name` can still be updated to match the user's request.
 
 Use Standard Schema v1-compatible validators for function inputs/outputs and instance data. Valibot is the default for new schemas; keep an existing compatible validator. Function inputs and outputs must validate synchronously.
 
@@ -21,11 +21,11 @@ Use Standard Schema v1-compatible validators for function inputs/outputs and ins
 
 ## Read skills as needed
 
-- **tailorkit-setup:** configuration, generation, or dependency problems.
-- **tailorkit-frontend:** components, forms, callbacks, and product tools.
-- **tailorkit-views:** slots, context, layouts, or repeated instances.
-- **tailorkit-functions:** queries, mutations, actions, and client hooks.
-- **tailorkit-database:** tables, relations, database reads/writes, and migrations.
+- **patchsmith-setup:** configuration, generation, or dependency problems.
+- **patchsmith-frontend:** components, forms, callbacks, and product tools.
+- **patchsmith-views:** slots, context, layouts, or repeated instances.
+- **patchsmith-functions:** queries, mutations, actions, and client hooks.
+- **patchsmith-database:** tables, relations, database reads/writes, and migrations.
 
 ## Finish
 

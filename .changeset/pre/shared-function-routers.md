@@ -1,7 +1,7 @@
 ---
-"@tailorkit/app": minor
-"@tailorkit/cli": minor
-"tailorkit": minor
+"@patchsmith/app": minor
+"@patchsmith/cli": minor
+"patchsmith": minor
 ---
 
 Add `createFunctions({ database })` to bind database types and relations once for all query and mutation handlers. Add `defineRouter` for explicit function module exports composed in `defineServer`.

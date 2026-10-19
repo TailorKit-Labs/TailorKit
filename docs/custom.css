@@ -60,16 +60,16 @@
   color: var(--toc-active-color);
 }
 
-#table-of-contents .toc[data-tailorkit-rail] .toc-item {
+#table-of-contents .toc[data-patchsmith-rail] .toc-item {
   border-left: 0;
   padding-left: 0;
 }
 
-#table-of-contents .toc[data-tailorkit-rail] .toc-item > a {
-  padding-left: calc(1.25rem + var(--tailorkit-toc-indent, 0px));
+#table-of-contents .toc[data-patchsmith-rail] .toc-item > a {
+  padding-left: calc(1.25rem + var(--patchsmith-toc-indent, 0px));
 }
 
-#table-of-contents .tailorkit-toc-rail {
+#table-of-contents .patchsmith-toc-rail {
   position: absolute;
   inset: 0 auto auto 0;
   overflow: visible;
@@ -78,17 +78,17 @@
   stroke-width: 1;
 }
 
-#table-of-contents .tailorkit-toc-rail-track {
+#table-of-contents .patchsmith-toc-rail-track {
   stroke: var(--toc-rail-color);
 }
 
-#table-of-contents .tailorkit-toc-rail-active {
+#table-of-contents .patchsmith-toc-rail-active {
   stroke: var(--toc-active-color);
   transition: clip-path 200ms ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #table-of-contents .tailorkit-toc-rail-active,
+  #table-of-contents .patchsmith-toc-rail-active,
   #table-of-contents .toc-item > a {
     transition: none;
   }

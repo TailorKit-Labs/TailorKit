@@ -14,7 +14,7 @@
         "!.next/cache/**",
         ".output/**",
         ".vercel/output/**",
-        ".tailorkit/**"
+        ".patchsmith/**"
       ]
     },
     "lint": {
@@ -41,7 +41,7 @@
       "dependsOn": ["^build"],
       "cache": false,
       "persistent": true,
-      "with": ["//#services:watch", "@tailorkit/db#db:studio"]
+      "with": ["//#services:watch", "@patchsmith/db#db:studio"]
     },
     "generate": {
       "cache": false

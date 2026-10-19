@@ -15,14 +15,14 @@ import { buildProject } from "./build";
 import { linkTestDependencies } from "./test-utils";
 
 it("builds the app's Vite config with custom plugins, aliases, constants and output", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-vite-config-"));
+  const root = await mkdtemp(path.join(tmpdir(), "patchsmith-vite-config-"));
   try {
     await linkTestDependencies(root);
     await mkdir(path.join(root, "src"));
     await mkdir(path.join(root, "config"));
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(
-      path.join(root, "config/tailorkit.config.mjs"),
+      path.join(root, "config/patchsmith.config.mjs"),
       'export default { name: "Test App", slug: "test-app", host: "https://host.test", server: {} };'
     );
     await writeFile(
@@ -32,7 +32,7 @@ it("builds the app's Vite config with custom plugins, aliases, constants and out
     await writeFile(
       path.join(root, "src/root.tsx"),
       `
-      import { defineRoute } from "tailorkit/client";
+      import { defineRoute } from "patchsmith/client";
       import { message } from "@/message";
       import value from "virtual:example";
       export default defineRoute({ shellComponent: () => message + value + CUSTOM_CONSTANT });
@@ -41,7 +41,7 @@ it("builds the app's Vite config with custom plugins, aliases, constants and out
     await writeFile(
       path.join(root, "src/server.ts"),
       `
-      import { defineServer, fn } from "tailorkit/server";
+      import { defineServer, fn } from "patchsmith/server";
       import { message } from "@/message";
       import value from "virtual:example";
       export default defineServer({ read: fn.query.handler(() => message + value + CUSTOM_CONSTANT) });
@@ -50,9 +50,9 @@ it("builds the app's Vite config with custom plugins, aliases, constants and out
     await writeFile(
       path.join(root, "vite.config.mjs"),
       `
-      import { tailorkit } from "tailorkit/vite";
+      import { patchsmith } from "patchsmith/vite";
       export default {
-        plugins: [tailorkit({ configPath: "./config/tailorkit.config.mjs" }), {
+        plugins: [patchsmith({ configPath: "./config/patchsmith.config.mjs" }), {
           name: "example-transform",
           resolveId(id) { if (id === "virtual:example") return "\\0example"; },
           load(id) { if (id === "\\0example") return 'export default "CUSTOM_PLUGIN";'; },
@@ -75,7 +75,7 @@ it("builds the app's Vite config with custom plugins, aliases, constants and out
     );
     expect(
       JSON.parse(
-        await readFile(path.join(outDir, "tailorkit-upload.json"), "utf-8")
+        await readFile(path.join(outDir, "patchsmith-upload.json"), "utf-8")
       )
     ).toMatchObject({
       assets: { client: "client/client.js", server: "server/server.js" },
@@ -88,14 +88,14 @@ it("builds the app's Vite config with custom plugins, aliases, constants and out
   }
 });
 
-it("requires the TailorKit plugin when deploying", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-missing-plugin-"));
+it("requires the PatchSmith plugin when deploying", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "patchsmith-missing-plugin-"));
   try {
     await linkTestDependencies(root);
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(path.join(root, "vite.config.mjs"), "export default {};");
     await expect(buildProject({ cwd: root })).rejects.toThrow(
-      "Add tailorkit()"
+      "Add patchsmith()"
     );
   } finally {
     await rm(root, { force: true, recursive: true });

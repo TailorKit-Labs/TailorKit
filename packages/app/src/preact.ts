@@ -57,7 +57,7 @@ const useQueryStore = () => {
   const store = useContext(Context);
   if (!store) {
     throw new Error(
-      "TailorKit backend hooks require a ClientProvider at the app root."
+      "PatchSmith backend hooks require a ClientProvider at the app root."
     );
   }
   return store;

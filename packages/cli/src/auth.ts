@@ -2,8 +2,8 @@ import { chmod, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 
-import { createTailorKitClient } from "@tailorkit/core/server";
-import { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
+import { createPatchSmithClient } from "@patchsmith/core/server";
+import { loadPatchSmithConfig } from "@patchsmith/vite/config/loader";
 import { z } from "zod";
 
 import { getAgentAuth } from "./agent-auth";
@@ -73,7 +73,7 @@ const storedScopeSchema = z.preprocess(
   namedScopeSchema.optional()
 );
 
-const authStorePath = path.join(homedir(), ".tailorkit", "auth.json");
+const authStorePath = path.join(homedir(), ".patchsmith", "auth.json");
 
 const defaultLoginTimeoutMs = 30 * 60 * 1000;
 
@@ -160,23 +160,23 @@ export const resolveHostUrl = async (options: AuthOptions): Promise<string> => {
       url = new URL(options.host);
     } catch {
       throw new Error(
-        "Invalid TailorKit host URL. Use an absolute http:// or https:// URL."
+        "Invalid PatchSmith host URL. Use an absolute http:// or https:// URL."
       );
     }
     if (url.protocol !== "http:" && url.protocol !== "https:") {
       throw new Error(
-        "Invalid TailorKit host URL. Use an absolute http:// or https:// URL."
+        "Invalid PatchSmith host URL. Use an absolute http:// or https:// URL."
       );
     }
     return normalizeHostUrl(options.host);
   }
-  const loaded = await loadTailorKitConfig(options.configPath, options.cwd);
+  const loaded = await loadPatchSmithConfig(options.configPath, options.cwd);
   if (loaded.config.host) {
     return normalizeHostUrl(loaded.config.host);
   }
 
   throw new Error(
-    "Missing TailorKit host URL. Set host in tailorkit.config.ts."
+    "Missing PatchSmith host URL. Set host in patchsmith.config.ts."
   );
 };
 
@@ -198,7 +198,7 @@ export const createCliAuthApprovalUrl = (
 export class NotLoggedInError extends Error {
   constructor(hostUrl: string) {
     super(
-      `Not logged in for ${hostUrl}. Run tailorkit login --host ${hostUrl}.`
+      `Not logged in for ${hostUrl}. Run patchsmith login --host ${hostUrl}.`
     );
     this.name = "NotLoggedInError";
   }
@@ -318,7 +318,7 @@ export const runLogin = async (
     return await runWhoami(options);
   }
   const hostUrl = await resolveHostUrl(options);
-  const client = createTailorKitClient({ url: hostUrl });
+  const client = createPatchSmithClient({ url: hostUrl });
   const startResult = await client.cliAuth.start({});
   throwRpcError(startResult);
 

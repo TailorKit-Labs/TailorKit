@@ -23,7 +23,7 @@ const state = vi.hoisted(() => ({
 
 vi.mock("../env", () => ({ env: state.env }));
 
-vi.mock("@tailorkit/db", () => ({
+vi.mock("@patchsmith/db", () => ({
   db: {
     query: {
       app: { findFirst: state.findApp },
@@ -32,7 +32,7 @@ vi.mock("@tailorkit/db", () => ({
   },
 }));
 
-vi.mock("@tailorkit/kv", () => ({ getKV: () => {} }));
+vi.mock("@patchsmith/kv", () => ({ getKV: () => {} }));
 
 vi.mock("../runtime/auth", () => ({
   appRuntimePublicKeys: state.publicKeys,

@@ -1,10 +1,10 @@
+import { asyncFixture } from "@patchsmith/config/testing";
+import { defineContract } from "@patchsmith/core/schema";
+import type { RemoteProps } from "@patchsmith/sandbox/protocol";
 import type {
   StandardJSONSchemaV1,
   StandardSchemaV1,
 } from "@standard-schema/spec";
-import { asyncFixture } from "@tailorkit/config/testing";
-import { defineContract } from "@tailorkit/core/schema";
-import type { RemoteProps } from "@tailorkit/sandbox/protocol";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { StrictMode } from "react";
 import {
@@ -18,7 +18,7 @@ import {
 import { z } from "zod";
 
 import { RenderSlot } from "#index";
-import { createClient } from "#tailorkit";
+import { createClient } from "#patchsmith";
 
 const requests: { appUrl: string; props: RemoteProps }[] = [];
 
@@ -311,7 +311,7 @@ it.each(["managed", "controlled"] as const)(
         </other.Provider>
       )
     ).toThrow(
-      `${mode === "managed" ? "RenderSlot" : "RenderSlot.Controlled"} was created for a different TailorKit client`
+      `${mode === "managed" ? "RenderSlot" : "RenderSlot.Controlled"} was created for a different PatchSmith client`
     );
   }
 );

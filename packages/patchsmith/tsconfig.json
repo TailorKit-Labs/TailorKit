@@ -1,0 +1,12 @@
+{
+  "extends": "@patchsmith/config/tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "strictNullChecks": true,
+    "types": ["node"],
+    "paths": {
+      "#*": ["./src/*"]
+    }
+  },
+  "include": ["src", "../cli/src/liquid.d.ts"]
+}

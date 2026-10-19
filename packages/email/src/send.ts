@@ -1,7 +1,7 @@
 import { SendEmailCommand, SESv2Client } from "@aws-sdk/client-sesv2";
+import { getBaseUrl } from "@patchsmith/env";
+import { withSpan } from "@patchsmith/observability";
 import { render } from "@react-email/render";
-import { getBaseUrl } from "@tailorkit/env";
-import { withSpan } from "@tailorkit/observability";
 import { createTransport } from "nodemailer";
 import type Mail from "nodemailer/lib/mailer";
 import type SESTransport from "nodemailer/lib/ses-transport";
@@ -149,7 +149,7 @@ export const sendEmail = async ({
     {
       attributes: {
         "email.provider": env.EMAIL_PROVIDER,
-        "tailorkit.package": "email",
+        "patchsmith.package": "email",
       },
     },
     async () => await transporter.sendMail(message)
@@ -167,7 +167,7 @@ export const sendBetterAuthOtpEmail = async ({
       attributes: {
         "email.otp_type": type,
         "email.template": "better_auth_otp",
-        "tailorkit.package": "email",
+        "patchsmith.package": "email",
       },
     },
     async () => await renderBetterAuthOtpEmail({ otp, type })
@@ -206,7 +206,7 @@ export const sendOrganizationInvitationEmail = async ({
     {
       attributes: {
         "email.template": "organization_invitation",
-        "tailorkit.package": "email",
+        "patchsmith.package": "email",
       },
     },
     async () => ({

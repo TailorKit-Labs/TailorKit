@@ -5,13 +5,13 @@ export type {
   RenderSlotContext,
   RenderSlotProps,
 } from "./components/render-slot";
-export { components, createClient } from "./tailorkit";
+export { components, createClient } from "./patchsmith";
 export type {
-  TailorKitApp,
-  TailorKitClientConfig,
-  TailorKitInstance,
-  TailorKitProviderProps,
-} from "./tailorkit";
+  PatchSmithApp,
+  PatchSmithClientConfig,
+  PatchSmithInstance,
+  PatchSmithProviderProps,
+} from "./patchsmith";
 export type { UseAppsOptions, UseAppsResult } from "./hooks/use-apps";
 export type {
   SlotItem,

@@ -20,7 +20,7 @@ it("keeps the agent's typed column and insert example compatible with the public
   if (source === undefined) {
     throw new Error("Missing typed insert reference example.");
   }
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-db-reference-"));
+  const root = await mkdtemp(path.join(tmpdir(), "patchsmith-db-reference-"));
   try {
     await writeFile(
       path.join(root, "example.ts"),
@@ -40,7 +40,7 @@ const incomplete: TaskInsert = { title: "Review design" };
           moduleResolution: "Bundler",
           noEmit: true,
           paths: {
-            "tailorkit/db": [
+            "patchsmith/db": [
               fileURLToPath(new URL("index.ts", import.meta.url)),
             ],
           },

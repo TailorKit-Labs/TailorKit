@@ -1,5 +1,5 @@
-import { defineView, useQuery } from "tailorkit/client";
-import { api{% if useBox %}, Box{% endif %} } from "#tailorkit";
+import { defineView, useQuery } from "patchsmith/client";
+import { api{% if useBox %}, Box{% endif %} } from "#patchsmith";
 {% if multiple %}import * as v from "valibot";
 {% endif %}
 
@@ -14,7 +14,7 @@ const view = defineView({
 });
 
 function ViewComponent() {
-  const greeting = useQuery(api.greeting.getGreeting, { name: "TailorKit" });
+  const greeting = useQuery(api.greeting.getGreeting, { name: "PatchSmith" });
 
   return <{% if useBox %}Box{% endif %}>{greeting.isLoading ? "Loading…" : greeting.error?.message ?? greeting.data}</{% if useBox %}Box{% endif %}>;
 }

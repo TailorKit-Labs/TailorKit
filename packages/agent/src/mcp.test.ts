@@ -107,8 +107,8 @@ describe("app agent MCP", () => {
     ).toMatchObject({ enum: ["org"] });
     for (const name of ["create_app", "edit_app"]) {
       expect(tools.find((tool) => tool.name === name)?._meta).toEqual({
-        "dev.tailorkit/agent-stream": {
-          eventKey: "dev.tailorkit/agent-stream",
+        "dev.patchsmith/agent-stream": {
+          eventKey: "dev.patchsmith/agent-stream",
           notification: "notifications/progress",
           version: 1,
         },
@@ -172,10 +172,10 @@ describe("app agent MCP", () => {
           onprogress: (progress) => {
             const notification = z
               .object({
-                _meta: z.object({ "dev.tailorkit/agent-stream": z.unknown() }),
+                _meta: z.object({ "dev.patchsmith/agent-stream": z.unknown() }),
               })
               .parse(progress);
-            events.push(notification._meta["dev.tailorkit/agent-stream"]);
+            events.push(notification._meta["dev.patchsmith/agent-stream"]);
             messages.push(progress.message);
             progressValues.push(progress.progress);
             if (events.length === updates.length) {
@@ -441,13 +441,13 @@ describe("app agent MCP", () => {
           const event = z
             .object({
               _meta: z.object({
-                "dev.tailorkit/agent-stream": z.object({
+                "dev.patchsmith/agent-stream": z.object({
                   chunk: z.object({ input: z.unknown() }),
                 }),
               }),
             })
             .parse(progress);
-          inputs.push(event._meta["dev.tailorkit/agent-stream"].chunk.input);
+          inputs.push(event._meta["dev.patchsmith/agent-stream"].chunk.input);
         },
       }
     );

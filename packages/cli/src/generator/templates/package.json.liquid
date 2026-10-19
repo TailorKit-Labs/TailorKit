@@ -1,15 +1,15 @@
 {
   "name": "{{ packageName }}",
-  "description": "A TailorKit.dev app that embeds in a host app to extend what it can do.",
+  "description": "A PatchSmith app that embeds in a host app to extend what it can do.",
   "private": true,
   "imports": {
-    "#tailorkit": "./src/tailorkit.gen.ts"
+    "#patchsmith": "./src/patchsmith.gen.ts"
   },
   "scripts": {
     "build": "{% if vitePlus %}vp{% else %}vite{% endif %} build",
-    "db:generate": "tailorkit db generate",
-    "deploy": "tailorkit deploy",
-    "generate": "tailorkit generate"{% if vitePlus %},
+    "db:generate": "patchsmith db generate",
+    "deploy": "patchsmith deploy",
+    "generate": "patchsmith generate"{% if vitePlus %},
     "lint": "vp lint",
     "format": "vp fmt --check",
     "format:fix": "vp fmt",
@@ -18,7 +18,7 @@
     "test": "vp test"{% endif %}
   },
   "dependencies": {
-    "tailorkit": "{{ tailorkitVersion }}",
+    "patchsmith": "{{ patchsmithVersion }}",
     "preact": "{{ preactVersion }}",
     "valibot": "{{ valibotVersion }}"
   },

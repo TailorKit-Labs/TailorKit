@@ -1,11 +1,11 @@
 import {
   appDeploymentMetadata,
   deploymentMetadataKey,
-} from "@tailorkit/api-utils/app-auth";
-import type { AppDeploymentMetadata } from "@tailorkit/api-utils/app-auth";
-import { AppError } from "@tailorkit/app/server";
-import type { Identity } from "@tailorkit/app/server";
-import { maxDeploymentBytes } from "@tailorkit/asset-delivery";
+} from "@patchsmith/api-utils/app-auth";
+import type { AppDeploymentMetadata } from "@patchsmith/api-utils/app-auth";
+import { AppError } from "@patchsmith/app/server";
+import type { Identity } from "@patchsmith/app/server";
+import { maxDeploymentBytes } from "@patchsmith/asset-delivery";
 import { Effect } from "effect";
 
 import { appError } from "../runtime/errors";
@@ -155,7 +155,7 @@ export const deploymentSource = (
                 headers: {
                   authorization: `Bearer ${env.RUNTIME_SERVICE_TOKEN}`,
                   "content-type": "application/json",
-                  "x-tailorkit-project-id": identity.projectId,
+                  "x-patchsmith-project-id": identity.projectId,
                 },
                 method: "POST",
                 redirect: "manual",

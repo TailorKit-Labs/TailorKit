@@ -1,5 +1,5 @@
 {
-  "name": "@tailorkit/agent-fx",
+  "name": "@patchsmith/agent-fx",
   "version": "0.0.0",
   "private": true,
   "license": "BUSL-1.1",
@@ -33,9 +33,9 @@
     "@ai-sdk/harness-fx": "1.0.69",
     "@ai-sdk/sandbox-vercel": "1.0.154",
     "@ai-sdk/workflow-harness": "1.0.154",
-    "@tailorkit/db": "workspace:*",
-    "@tailorkit/env": "workspace:*",
-    "@tailorkit/vite": "workspace:*",
+    "@patchsmith/db": "workspace:*",
+    "@patchsmith/env": "workspace:*",
+    "@patchsmith/vite": "workspace:*",
     "@vercel/oidc": "3.5.0",
     "@vercel/sandbox": "3.6.1",
     "ai": "catalog:fx",
@@ -45,7 +45,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@tailorkit/config": "workspace:*",
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"

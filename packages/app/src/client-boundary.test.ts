@@ -7,11 +7,13 @@ import { expect, it } from "vite-plus/test";
 
 it("exports the client API and public contract without importing private runtime code", async () => {
   const modules: string[] = [];
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-client-boundary-"));
+  const root = await mkdtemp(
+    path.join(tmpdir(), "patchsmith-client-boundary-")
+  );
   const entry = path.join(root, "entry.js");
   await writeFile(
     entry,
-    `export * from ${JSON.stringify(path.resolve(import.meta.dirname, "../../tailorkit/dist/client.js"))}; export { defineServer } from ${JSON.stringify(path.resolve(import.meta.dirname, "../dist/index.js"))}; export { appContract } from ${JSON.stringify(path.resolve(import.meta.dirname, "../dist/protocol.js"))};`
+    `export * from ${JSON.stringify(path.resolve(import.meta.dirname, "../../patchsmith/dist/client.js"))}; export { defineServer } from ${JSON.stringify(path.resolve(import.meta.dirname, "../dist/index.js"))}; export { appContract } from ${JSON.stringify(path.resolve(import.meta.dirname, "../dist/protocol.js"))};`
   );
   try {
     const result = await build({
@@ -27,7 +29,7 @@ it("exports the client API and public contract without importing private runtime
           generateBundle() {
             modules.push(...this.getModuleIds());
           },
-          name: "tailorkit-client-boundary-check",
+          name: "patchsmith-client-boundary-check",
         },
       ],
     });

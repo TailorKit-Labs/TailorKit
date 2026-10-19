@@ -2,16 +2,16 @@ import type { Sandbox } from "@vercel/sandbox";
 
 import type { AppAgentInput } from "./input";
 
-const cliDirectory = "/tmp/tailorkit-cli";
-const scaffoldDirectory = "/workspace/.tailorkit-scaffold";
+const cliDirectory = "/tmp/patchsmith-cli";
+const scaffoldDirectory = "/workspace/.patchsmith-scaffold";
 const stagedAppDirectory = `${scaffoldDirectory}/new-app`;
-const setupMarker = ".tailorkit-setup-pending";
+const setupMarker = ".patchsmith-setup-pending";
 
 export const packageReleasePolicy = `minimumReleaseAge: 4320
 minimumReleaseAgeStrict: true
 minimumReleaseAgeExclude:
-  - tailorkit
-  - "@tailorkit/*"
+  - patchsmith
+  - "@patchsmith/*"
 # The platform-specific esbuild binary is installed as an optional dependency.
 allowBuilds:
   esbuild: false
@@ -40,7 +40,7 @@ export const prepareWorkspace = async (
   if (
     appReady &&
     (await session.readFileToBuffer({
-      path: `${cliDirectory}/node_modules/.bin/tailorkit`,
+      path: `${cliDirectory}/node_modules/.bin/patchsmith`,
     }))
   ) {
     return;
@@ -80,9 +80,9 @@ export const prepareWorkspace = async (
   // The umbrella package includes the CLI at the exact same beta version.
   await run(
     "pnpm",
-    ["add", "--save-exact", "tailorkit@beta"],
+    ["add", "--save-exact", "patchsmith@beta"],
     cliDirectory,
-    "TailorKit CLI installation"
+    "PatchSmith CLI installation"
   );
 
   if (appReady) {
@@ -104,7 +104,7 @@ export const prepareWorkspace = async (
       "pnpm",
       [
         "exec",
-        "tailorkit",
+        "patchsmith",
         "init",
         scaffoldDirectory,
         "--name",

@@ -15,21 +15,21 @@ const isFunctionValue = <TValue>(
 ): value is Extract<TValue, CallableFunction> => typeof value === "function";
 
 // oxlint-disable-next-line typescript/no-empty-interface, typescript/no-empty-object-type -- Generated bindings augment this interface.
-export interface TailorKitViews {}
+export interface PatchSmithViews {}
 
 // oxlint-disable-next-line typescript/no-empty-interface, typescript/no-empty-object-type -- Generated bindings augment this interface.
-export interface TailorKitSlots {}
+export interface PatchSmithSlots {}
 // Filled by the generated host bindings using a type-only link to the app server.
 // oxlint-disable-next-line typescript/no-empty-interface, typescript/no-empty-object-type -- Generated bindings augment this interface.
-export interface TailorKitServerFunctions {}
+export interface PatchSmithServerFunctions {}
 
 // Registered view schemas own these heterogeneous field types; shared adapters only forward or encode them.
 // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- Context and instance metadata remain opaque until their owning schema consumes them.
 export type ViewDataFields = Record<string, unknown>;
 
 interface SerializedDomViewProps extends ViewDataFields {
-  "data-tailorkit-props"?: string;
-  "data-tailorkit-callbacks"?: string;
+  "data-patchsmith-props"?: string;
+  "data-patchsmith-callbacks"?: string;
 }
 
 interface CompiledViewMetadata {
@@ -46,7 +46,7 @@ export interface InstanceResolverContext<TPath extends AppViewPath> {
   context: ViewContext<TPath>;
   identity: Identity;
   signal: AbortSignal;
-  queries: FunctionCalls<TailorKitServerFunctions, "query">;
+  queries: FunctionCalls<PatchSmithServerFunctions, "query">;
 }
 
 export interface ViewInstances<
@@ -62,15 +62,15 @@ export interface ViewInstances<
     | Promise<ViewInstance<StandardSchemaV1.InferInput<TSchema>>[]>;
 }
 // oxlint-disable-next-line typescript/no-redundant-type-constituents -- Declaration merging may add symbol or numeric keys; the public view and slot names remain string keys.
-export type SlotName = keyof TailorKitSlots & string;
+export type SlotName = keyof PatchSmithSlots & string;
 
 // oxlint-disable-next-line typescript/no-redundant-type-constituents -- Declaration merging may add symbol or numeric keys; the public view and slot names remain string keys.
-export type ViewPath = Extract<keyof TailorKitViews & string, `/${string}`>;
+export type ViewPath = Extract<keyof PatchSmithViews & string, `/${string}`>;
 export type AppViewPath = ViewPath;
 
 export type ViewProps<TPath extends ViewPath> =
-  TailorKitViews[TPath] extends object
-    ? TailorKitViews[TPath]
+  PatchSmithViews[TPath] extends object
+    ? PatchSmithViews[TPath]
     : Record<string, never>;
 
 export type ViewPropsForPath<TPath extends AppViewPath> = TPath extends ViewPath
@@ -121,13 +121,13 @@ export interface ViewDefinition<
   instances?: { resolver: string };
 }
 
-export type SlotView<TSlot extends SlotName> = TailorKitSlots[TSlot] extends {
+export type SlotView<TSlot extends SlotName> = PatchSmithSlots[TSlot] extends {
   views: infer TViews;
 }
   ? Extract<TViews, AppViewPath>
   : never;
 type SlotInstanceDefinition<TSlot extends SlotName> =
-  TailorKitSlots[TSlot] extends {
+  PatchSmithSlots[TSlot] extends {
     multiple: true;
   }
     ? { instances: { resolver: string } }
@@ -140,17 +140,17 @@ type SlotDefinitions = {
       | false;
   }>;
 };
-export interface TailorKitClient<
+export interface PatchSmithClient<
   TSlots extends SlotDefinitions = SlotDefinitions,
 > {
   slots: TSlots;
 }
 
-export interface TailorKitClientMeta {
+export interface PatchSmithClientMeta {
   preactVersion: string;
 }
 
-export interface TailorKitClientRuntime {
+export interface PatchSmithClientRuntime {
   h: typeof h;
   render: (
     vnode: VNode | null,
@@ -158,11 +158,11 @@ export interface TailorKitClientRuntime {
   ) => void;
 }
 
-export type TailorKitClientWithMeta<
+export type PatchSmithClientWithMeta<
   TViews extends SlotDefinitions = SlotDefinitions,
-> = TailorKitClient<TViews> & {
-  $meta: TailorKitClientMeta;
-  $runtime: TailorKitClientRuntime;
+> = PatchSmithClient<TViews> & {
+  $meta: PatchSmithClientMeta;
+  $runtime: PatchSmithClientRuntime;
 };
 
 type ViewOptions<
@@ -176,8 +176,8 @@ type ViewOptions<
     component: View;
   } & (TPath extends SlotView<S>
     ? unknown
-    : { readonly __tailorkit_error__: "View is not supported by this slot" }) &
-    (TailorKitSlots[S] extends { multiple: true }
+    : { readonly __patchsmith_error__: "View is not supported by this slot" }) &
+    (PatchSmithSlots[S] extends { multiple: true }
       ? { instances: ViewInstances<TPath, TSchema> }
       : { instances?: never });
 }[TSlot];
@@ -213,7 +213,7 @@ export function defineView<
 }): ViewDefinition<TPath, StandardSchemaV1.InferOutput<TSchema>> {
   if (!options.slot || !options.view) {
     throw new Error(
-      "Views without a slot or path must be compiled from a .view.tsx file by the TailorKit app build."
+      "Views without a slot or path must be compiled from a .view.tsx file by the PatchSmith app build."
     );
   }
   const path = options.view;
@@ -235,7 +235,7 @@ export function defineView<
     )
   ) {
     throw new Error(
-      "View instance resolvers must be compiled with the TailorKit app build."
+      "View instance resolvers must be compiled with the PatchSmith app build."
     );
   }
 
@@ -307,7 +307,7 @@ export function defineView<
   };
 }
 
-const componentTagPrefix = "tailorkit-";
+const componentTagPrefix = "patchsmith-";
 
 const toComponentTagName = (name: string): string =>
   `${componentTagPrefix}${name
@@ -319,7 +319,7 @@ const toComponentTagName = (name: string): string =>
     .toLowerCase()}`;
 
 const toCallbackEventName = (name: string): string =>
-  `tailorkitcallback${name.replaceAll(/[^A-Za-z0-9_$]/gu, "").toLowerCase()}`;
+  `patchsmithcallback${name.replaceAll(/[^A-Za-z0-9_$]/gu, "").toLowerCase()}`;
 
 const toEventProp = (event: string): string => `on${event}`;
 
@@ -365,10 +365,10 @@ export const createRemoteComponent = <
     const serializedProps = Object.fromEntries(
       Object.entries(nextProps).filter(([, value]) => !isFunctionValue(value))
     );
-    nextProps["data-tailorkit-props"] = JSON.stringify(serializedProps);
+    nextProps["data-patchsmith-props"] = JSON.stringify(serializedProps);
 
     if (Object.keys(callbackMap).length > 0) {
-      nextProps["data-tailorkit-callbacks"] = JSON.stringify(callbackMap);
+      nextProps["data-patchsmith-callbacks"] = JSON.stringify(callbackMap);
     }
 
     return h(

@@ -9,7 +9,7 @@ Enable `server: {}`, generate migrations after adding tables, and regenerate bin
 <!-- example: src/db/schema.ts -->
 
 ```ts
-import { table, text } from "tailorkit/db";
+import { table, text } from "patchsmith/db";
 
 export const notes = table("notes", {
   id: text().primaryKey(),
@@ -21,7 +21,7 @@ export const notes = table("notes", {
 <!-- example: src/db/relations.ts -->
 
 ```ts
-import { defineRelations } from "tailorkit/db";
+import { defineRelations } from "patchsmith/db";
 
 import * as schema from "./schema";
 
@@ -31,8 +31,8 @@ export const relations = defineRelations(schema);
 <!-- example: src/db/index.ts -->
 
 ```ts
-import { defineDatabase } from "tailorkit/db";
-import { createFunctions } from "tailorkit/server";
+import { defineDatabase } from "patchsmith/db";
+import { createFunctions } from "patchsmith/server";
 
 import { relations } from "./relations";
 
@@ -43,8 +43,8 @@ export const fn = createFunctions({ database: db });
 <!-- example: src/functions/notes.ts -->
 
 ```ts
-import { defineRouter, AppError } from "tailorkit/server";
-import type { Identity } from "tailorkit/server";
+import { defineRouter, AppError } from "patchsmith/server";
+import type { Identity } from "patchsmith/server";
 import * as v from "valibot";
 
 import { fn } from "#db";
@@ -94,7 +94,7 @@ An external lookup needs an action, not another database layer. Replace the exam
 <!-- example: src/functions/preview.ts -->
 
 ```ts
-import { AppError, defineRouter, fn } from "tailorkit/server";
+import { AppError, defineRouter, fn } from "patchsmith/server";
 import * as v from "valibot";
 
 const result = v.object({ summary: v.pipe(v.string(), v.maxLength(2000)) });
@@ -115,7 +115,7 @@ export default defineRouter({ summary });
 <!-- example: src/server.ts -->
 
 ```ts
-import { defineServer } from "tailorkit/server";
+import { defineServer } from "patchsmith/server";
 
 import notes from "#functions/notes";
 import preview from "#functions/preview";

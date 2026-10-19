@@ -1,4 +1,4 @@
-import { asyncFixture } from "@tailorkit/config/testing";
+import { asyncFixture } from "@patchsmith/config/testing";
 import { beforeEach, expect, it, vi } from "vite-plus/test";
 
 import type { runAgentCommand } from "./agent";
@@ -108,7 +108,7 @@ it("passes --bare and --schema through init while retaining the required host", 
   await init("/workspace", {
     bare: true,
     cwd: "/tmp",
-    host: "http://localhost:3000/api/tailorkit",
+    host: "http://localhost:3000/api/patchsmith",
     install: false,
     name: "app",
     schema: "host.json",
@@ -119,7 +119,7 @@ it("passes --bare and --schema through init while retaining the required host", 
       bare: true,
       cwd: "/tmp",
       directory: "/workspace",
-      host: "http://localhost:3000/api/tailorkit",
+      host: "http://localhost:3000/api/patchsmith",
       install: false,
       name: "app",
       schemaPath: "host.json",

@@ -6,7 +6,7 @@ import {
   spinner,
   text,
 } from "@clack/prompts";
-import type { TailorKitRouterClient } from "@tailorkit/core/server";
+import type { PatchSmithRouterClient } from "@patchsmith/core/server";
 
 import {
   getDeployToken,
@@ -26,11 +26,11 @@ interface AgentOptions {
 }
 
 const chooseApp = async (
-  client: Pick<TailorKitRouterClient, "apps" | "appAgent">
+  client: Pick<PatchSmithRouterClient, "apps" | "appAgent">
 ): Promise<string | undefined> => {
   const loading = spinner();
   const apps: Awaited<
-    ReturnType<TailorKitRouterClient["apps"]["list"]>
+    ReturnType<PatchSmithRouterClient["apps"]["list"]>
   >["items"] = [];
   loading.start("Finding apps");
   try {
@@ -105,12 +105,12 @@ const chooseApp = async (
 
 export const runAgentCommand = async (options: AgentOptions) => {
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    throw new Error("tailorkit agent requires an interactive terminal.");
+    throw new Error("patchsmith agent requires an interactive terminal.");
   }
   const host = options.host?.trim();
   if (host === undefined || host === "") {
     throw new Error(
-      "Missing TailorKit host URL. Use tailorkit agent --host <url>."
+      "Missing PatchSmith host URL. Use patchsmith agent --host <url>."
     );
   }
   let { appId } = options;

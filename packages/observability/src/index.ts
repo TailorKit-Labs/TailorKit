@@ -45,7 +45,7 @@ interface VercelOtelModule {
   }) => void;
 }
 
-const stateKey = Symbol.for("tailorkit.observability.state");
+const stateKey = Symbol.for("patchsmith.observability.state");
 
 const sensitiveAttributePattern =
   /(?:authorization|cookie|password|secret|token|key|body|headers|email|url)$/iu;
@@ -59,10 +59,10 @@ globalState[stateKey] ??= { started: false };
 const state = globalState[stateKey];
 
 const isTracingDisabled = () =>
-  env.TAILORKIT_OTEL_DISABLED ?? env.NODE_ENV === "test";
+  env.PATCHSMITH_OTEL_DISABLED ?? env.NODE_ENV === "test";
 
 const resolveServiceName = (serviceName?: string) =>
-  serviceName ?? env.OTEL_SERVICE_NAME ?? "tailorkit-web";
+  serviceName ?? env.OTEL_SERVICE_NAME ?? "patchsmith-web";
 
 const resolveDeploymentEnvironment = () => env.VERCEL_ENV ?? env.NODE_ENV;
 
@@ -104,14 +104,14 @@ const createResourceAttributes = (serviceName: string): Attributes =>
   safeAttributes({
     "cloud.region": env.VERCEL_REGION,
     "deployment.environment.name": resolveDeploymentEnvironment(),
+    "patchsmith.package": "observability",
     "service.name": serviceName,
     "service.version": resolveServiceVersion(),
-    "tailorkit.package": "observability",
   });
 
 const resolveSampleRate = () => {
   const configuredRate =
-    env.TAILORKIT_OTEL_SAMPLE_RATE ?? env.OTEL_TRACES_SAMPLER_ARG;
+    env.PATCHSMITH_OTEL_SAMPLE_RATE ?? env.OTEL_TRACES_SAMPLER_ARG;
 
   if (
     !(
@@ -147,8 +147,8 @@ const createInstrumentations = () => [
       span.setAttributes(
         safeAttributes({
           "operation.name": `db.${operation}`,
+          "patchsmith.package": "db",
           "resource.name": `postgres ${operation}`,
-          "tailorkit.package": "db",
         })
       );
     },
@@ -220,7 +220,7 @@ export const shutdownObservability = () => {
   state.serviceName = undefined;
 };
 
-export const getTracer = (name = "tailorkit") => trace.getTracer(name);
+export const getTracer = (name = "patchsmith") => trace.getTracer(name);
 
 // oxlint-disable-next-line anti-slop/no-object-parameters -- This structural adapter enumerates caller-owned fields; a concrete domain shape would exclude supported schema or attribute objects.
 export const setSpanAttributes = (attributes: object) => {
@@ -256,7 +256,7 @@ export const withSpan = async <T>(
   optionsOrHandler: SpanOptions | ((span: Span) => Promise<T> | T),
   maybeHandler?: (span: Span) => Promise<T> | T
 ): Promise<T> => {
-  const tracer = getTracer("tailorkit.runtime");
+  const tracer = getTracer("patchsmith.runtime");
   const options = isSpanHandler(optionsOrHandler)
     ? undefined
     : optionsOrHandler;

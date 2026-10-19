@@ -11,6 +11,7 @@ import type { AppSandboxSession } from "./sandbox-session";
 const scope = { name: "user", value: { userId: "owner" } };
 const authorization = {
   agentToken: `header.${Buffer.from(JSON.stringify({ platformUrl: "https://platform.test", scope })).toString("base64url")}.signature`,
+  appId: "23f9b80a-bce5-46c8-8fa4-6a319fd5be37",
 };
 const manifest = {
   appId: "23f9b80a-bce5-46c8-8fa4-6a319fd5be37",
@@ -29,7 +30,7 @@ const reader = (document = JSON.stringify(manifest)) => ({
   readFileToBuffer: async ({ path }: { path: string }) =>
     await Promise.resolve(
       Buffer.from(
-        path.endsWith("tailorkit-upload.json") ? document : "fixture bytes"
+        path.endsWith("patchsmith-upload.json") ? document : "fixture bytes"
       )
     ),
 });
@@ -64,7 +65,7 @@ const runDeployment = async (
     sandbox: async () =>
       await Promise.resolve({
         readFileToBuffer: async ({ path }) => {
-          if (path.endsWith("tailorkit.config.ts")) {
+          if (path.endsWith("patchsmith.config.ts")) {
             return await Promise.resolve(
               config === null ? null : Buffer.from(config)
             );
@@ -148,7 +149,7 @@ it("runs all checks once before publishing, with credentials confined to the hos
 it.each([
   'export default { host: "https://host.test" };\n',
   'export default defineConfig({ appId: "stale-app", host: "https://host.test" });\n',
-  'const other = { appId: "unrelated" };\nconst config = { host: "https://host.test" } satisfies TailorKitConfig;\nexport default config;\n',
+  'const other = { appId: "unrelated" };\nconst config = { host: "https://host.test" } satisfies PatchSmithConfig;\nexport default config;\n',
 ])(
   "persists the authorized app ID before checks and publication in %s",
   async (source) => {
@@ -163,7 +164,7 @@ it.each([
       expect(config).toContain('const other = { appId: "unrelated" }');
     }
     expect(config).not.toContain(authorization.agentToken);
-    expect(writes).toEqual(["/workspace/app/tailorkit.config.ts"]);
+    expect(writes).toEqual(["/workspace/app/patchsmith.config.ts"]);
     const repeated = await runDeployment({ config });
     expect(repeated.result.exitCode).toBe(0);
     expect(repeated.config).toBe(config);
@@ -172,7 +173,7 @@ it.each([
 );
 
 it.each([
-  { config: null, diagnostic: "Missing app tailorkit.config.ts." },
+  { config: null, diagnostic: "Missing app patchsmith.config.ts." },
   {
     config: "export default getConfig();\n",
     diagnostic: "Could not write appId",
@@ -339,7 +340,7 @@ it("rejects a missing configured appId before making requests", async () => {
       undefined,
       send
     )
-  ).rejects.toThrow("Missing appId in tailorkit.config.ts");
+  ).rejects.toThrow("Missing appId in patchsmith.config.ts");
   expect(requests).toBe(0);
 });
 

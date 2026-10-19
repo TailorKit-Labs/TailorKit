@@ -6,9 +6,9 @@ import {
   limitAssetBody,
   nodeAssetRequest,
   serveAssetRequest,
-} from "@tailorkit/asset-delivery";
-import type { AssetIdentity } from "@tailorkit/asset-delivery";
-import type { Storage } from "@tailorkit/storage";
+} from "@patchsmith/asset-delivery";
+import type { AssetIdentity } from "@patchsmith/asset-delivery";
+import type { Storage } from "@patchsmith/storage";
 import { Effect } from "effect";
 import { z } from "zod";
 

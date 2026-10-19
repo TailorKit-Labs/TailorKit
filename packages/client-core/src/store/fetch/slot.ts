@@ -1,11 +1,11 @@
-import type { ViewInstance } from "@tailorkit/app/client";
-import type { TailorKitContract } from "@tailorkit/core/schema";
-import type { ActiveView } from "@tailorkit/core/views";
+import type { ViewInstance } from "@patchsmith/app/client";
+import type { PatchSmithContract } from "@patchsmith/core/schema";
+import type { ActiveView } from "@patchsmith/core/views";
 
-import type { TailorKitFetchClient } from "#client/fetch-client";
+import type { PatchSmithFetchClient } from "#client/fetch-client";
 import { resolveSlotView } from "#client/slot-view";
 import { createSnapshotStore } from "#store/snapshot-store";
-import type { TailorKitApp } from "#types";
+import type { PatchSmithApp } from "#types";
 
 import type { FetchCacheOptions, FetchOptions, FetchSnapshot } from "./cache";
 
@@ -16,20 +16,20 @@ const require = <T>(value: T | null | undefined): T => {
   return value;
 };
 
-const contractIds = new WeakMap<TailorKitContract, number>();
+const contractIds = new WeakMap<PatchSmithContract, number>();
 let nextContractId = 0;
 
 interface SingleSlotItem {
-  app: TailorKitApp;
+  app: PatchSmithApp;
 }
 
 export type SlotItem<TMultiple extends boolean = boolean> =
   TMultiple extends true
-    ? ViewInstance & { app: TailorKitApp }
+    ? ViewInstance & { app: PatchSmithApp }
     : SingleSlotItem;
 
 export interface SlotStoreOptions extends FetchCacheOptions {
-  apps: TailorKitApp[];
+  apps: PatchSmithApp[];
   slot: string;
   activeView: ActiveView | null;
   appsStatus?: FetchSnapshot<unknown>["status"];
@@ -50,8 +50,8 @@ interface Result {
 
 /** Match all app contexts before authorizing any app or sending instance requests. */
 export const createSlotStore = (
-  client: TailorKitFetchClient,
-  contract: TailorKitContract,
+  client: PatchSmithFetchClient,
+  contract: PatchSmithContract,
   options: SlotStoreOptions
 ) => {
   const {
@@ -84,7 +84,7 @@ export const createSlotStore = (
   };
   const query = client.cache.getStore<Result>(
     [
-      "tailorkit",
+      "patchsmith",
       client.baseUrl.toString(),
       "slot",
       contractId,

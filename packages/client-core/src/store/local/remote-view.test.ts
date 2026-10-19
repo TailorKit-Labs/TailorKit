@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
-import { createRemoteUiStore } from "@tailorkit/sandbox/host";
+import { createRemoteUiStore } from "@patchsmith/sandbox/host";
 import type {
   IframeUiHost,
   IframeUiHostOptions,
-} from "@tailorkit/sandbox/host";
-import type { RemoteElementNode } from "@tailorkit/sandbox/protocol";
+} from "@patchsmith/sandbox/host";
+import type { RemoteElementNode } from "@patchsmith/sandbox/protocol";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
 import { createRemoteElementProps, createRemoteViewStore } from "./remote-view";
@@ -239,7 +239,7 @@ it("reports startup failures, releases partial hosts, and recovers on the next m
   store.mount({ appUrl: "https://host.test/first.js" });
   expect(store.state.get()).toMatchObject({ error: failure, status: "error" });
   expect(err2).toHaveBeenCalledExactlyOnceWith(
-    "TailorKit remote app failed",
+    "PatchSmith remote app failed",
     failure
   );
   expect(requireValue(records[0]).host.destroy).toHaveBeenCalledOnce();

@@ -15,8 +15,8 @@ export const linkTestDependencies = async (root: string): Promise<void> => {
     })
   );
   await symlink(
-    path.resolve(import.meta.dirname, "../../tailorkit"),
-    path.join(modules, "tailorkit"),
+    path.resolve(import.meta.dirname, "../../patchsmith"),
+    path.join(modules, "patchsmith"),
     "dir"
   );
 };

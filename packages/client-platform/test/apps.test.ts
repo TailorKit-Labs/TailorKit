@@ -1,4 +1,4 @@
-import { asyncFixture } from "@tailorkit/config/testing";
+import { asyncFixture } from "@patchsmith/config/testing";
 import * as v from "valibot";
 import { expect, it } from "vite-plus/test";
 

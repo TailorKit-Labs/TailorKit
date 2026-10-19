@@ -1,4 +1,4 @@
-import { Button } from "@tailorkit/ui/button";
+import { Button } from "@patchsmith/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -9,16 +9,16 @@ import {
   DialogPopup,
   DialogTitle,
   DialogTrigger,
-} from "@tailorkit/ui/dialog";
-import { Input } from "@tailorkit/ui/input";
+} from "@patchsmith/ui/dialog";
+import { Input } from "@patchsmith/ui/input";
 import {
   Select,
   SelectItem,
   SelectPopup,
   SelectTrigger,
   SelectValue,
-} from "@tailorkit/ui/select";
-import { toastManager } from "@tailorkit/ui/toast";
+} from "@patchsmith/ui/select";
+import { toastManager } from "@patchsmith/ui/toast";
 import { useMutation } from "@tanstack/react-query";
 import { PlusIcon, TrashIcon, UserPlusIcon } from "lucide-react";
 import { useState } from "react";

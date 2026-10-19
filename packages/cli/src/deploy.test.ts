@@ -12,9 +12,9 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { gunzipSync } from "node:zlib";
 
-import { asyncFixture } from "@tailorkit/config/testing";
-import type { createTailorKitClient } from "@tailorkit/core/server";
-import type { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
+import { asyncFixture } from "@patchsmith/config/testing";
+import type { createPatchSmithClient } from "@patchsmith/core/server";
+import type { loadPatchSmithConfig } from "@patchsmith/vite/config/loader";
 import { SignJWT } from "jose";
 import { Liquid } from "liquidjs";
 import { afterEach, beforeEach, assert, expect, it, vi } from "vite-plus/test";
@@ -42,7 +42,7 @@ const mocks = vi.hoisted(() => ({
   create: vi.fn<
     (
       input: Parameters<
-        ReturnType<typeof createTailorKitClient>["deployments"]["create"]
+        ReturnType<typeof createPatchSmithClient>["deployments"]["create"]
       >[0]
     ) => Promise<{
       deployment: { id: string };
@@ -56,19 +56,19 @@ const mocks = vi.hoisted(() => ({
   >(),
   load: vi.fn<
     (
-      ...args: Parameters<typeof loadTailorKitConfig>
-    ) => Promise<Partial<Awaited<ReturnType<typeof loadTailorKitConfig>>>>
+      ...args: Parameters<typeof loadPatchSmithConfig>
+    ) => Promise<Partial<Awaited<ReturnType<typeof loadPatchSmithConfig>>>>
   >(),
   publish: vi.fn(),
   token: vi.fn(),
   whoami: vi.fn(),
 }));
-vi.mock("@tailorkit/vite/config/loader", () => ({
-  loadTailorKitConfig: mocks.load,
+vi.mock("@patchsmith/vite/config/loader", () => ({
+  loadPatchSmithConfig: mocks.load,
 }));
 vi.mock("./build", () => ({ buildProject: mocks.build }));
-vi.mock("@tailorkit/core/server", () => ({
-  createTailorKitClient: mocks.client,
+vi.mock("@patchsmith/core/server", () => ({
+  createPatchSmithClient: mocks.client,
 }));
 vi.mock("./auth", async (importOriginal) => ({
   ...(await importOriginal<typeof authModule>()),
@@ -79,24 +79,24 @@ const { runDeploy } = await import("./deploy");
 let root: string;
 beforeEach(async () => {
   vi.resetAllMocks();
-  root = await mkdtemp(path.join(tmpdir(), "tailorkit-private-deploy-"));
-  await mkdir(path.join(root, ".tailorkit/client"), { recursive: true });
-  await mkdir(path.join(root, ".tailorkit/server"));
-  await mkdir(path.join(root, ".tailorkit/migrations"));
+  root = await mkdtemp(path.join(tmpdir(), "patchsmith-private-deploy-"));
+  await mkdir(path.join(root, ".patchsmith/client"), { recursive: true });
+  await mkdir(path.join(root, ".patchsmith/server"));
+  await mkdir(path.join(root, ".patchsmith/migrations"));
   await writeFile(
-    path.join(root, ".tailorkit/client/client.js"),
+    path.join(root, ".patchsmith/client/client.js"),
     "client-code"
   );
   await writeFile(
-    path.join(root, ".tailorkit/server/server.js"),
+    path.join(root, ".patchsmith/server/server.js"),
     "server-code"
   );
   await writeFile(
-    path.join(root, ".tailorkit/migrations/migration.sql"),
+    path.join(root, ".patchsmith/migrations/migration.sql"),
     "DO NOT UPLOAD"
   );
   await writeFile(
-    path.join(root, ".tailorkit/tailorkit-upload.json"),
+    path.join(root, ".patchsmith/patchsmith-upload.json"),
     JSON.stringify({
       assets: { client: "client/client.js", server: "server/server.js" },
       version: 1,
@@ -106,7 +106,7 @@ beforeEach(async () => {
       ],
     })
   );
-  mocks.build.mockResolvedValue({ outDir: path.join(root, ".tailorkit") });
+  mocks.build.mockResolvedValue({ outDir: path.join(root, ".patchsmith") });
   mocks.load.mockResolvedValue({
     config: {
       appId: "app-one",
@@ -115,7 +115,7 @@ beforeEach(async () => {
       server: { entry: "src/server.ts" },
       slug: "test-app",
     },
-    filepath: path.join(root, "tailorkit.config.ts"),
+    filepath: path.join(root, "patchsmith.config.ts"),
     root,
   });
   mocks.whoami.mockResolvedValue({ hostUrl: "https://host.example" });
@@ -188,9 +188,9 @@ it("uploads gzip server and client code with metadata matching the stored bytes"
 it.each([
   { annotation: "", name: "config", prelude: "" },
   { annotation: "", name: "$config", prelude: "" },
-  { annotation: ": TailorKitConfig", name: "config", prelude: "" },
+  { annotation: ": PatchSmithConfig", name: "config", prelude: "" },
   {
-    annotation: ": TailorKitConfig & { callback?: () => void }",
+    annotation: ": PatchSmithConfig & { callback?: () => void }",
     name: "config",
     prelude: "",
   },
@@ -201,10 +201,10 @@ it.each([
       'function nested() {\nconst config = {\n  host: "https://nested.example",\n};\n}\n',
   },
   {
-    annotation: ": TailorKitConfig",
+    annotation: ": PatchSmithConfig",
     name: "config",
     prelude:
-      'function nested() {\nconst config: TailorKitConfig = {\n  host: "https://nested.example",\n};\n}\n',
+      'function nested() {\nconst config: PatchSmithConfig = {\n  host: "https://nested.example",\n};\n}\n',
   },
 ])(
   "links the init config exported as $name with annotation '$annotation' and prelude '$prelude'",
@@ -212,7 +212,7 @@ it.each([
     const template = await readFile(
       path.join(
         import.meta.dirname,
-        "generator/templates/tailorkit.config.ts.liquid"
+        "generator/templates/patchsmith.config.ts.liquid"
       ),
       "utf-8"
     );
@@ -229,7 +229,7 @@ it.each([
       rendered
         .replace("const config =", `const ${name}${annotation} =`)
         .replace("export default config;", `export default ${name};`);
-    const configPath = path.join(root, "tailorkit.config.ts");
+    const configPath = path.join(root, "patchsmith.config.ts");
     await writeFile(configPath, source);
     mocks.load.mockResolvedValue({
       config: {
@@ -272,7 +272,7 @@ it.each([
 
 it("preserves client-only deployment uploads", async () => {
   await writeFile(
-    path.join(root, ".tailorkit/tailorkit-upload.json"),
+    path.join(root, ".patchsmith/patchsmith-upload.json"),
     JSON.stringify({ assets: { client: "client/client.js" }, version: 1 })
   );
   const fetch = vi
@@ -312,7 +312,7 @@ it.each([false, true])(
     await expect(deployment).rejects.toThrow(
       'Command: tsc --noEmit --project "tsconfig.json" --pretty false (app entries: "src/root.tsx", "src/server.ts")'
     );
-    await expect(deployment).rejects.not.toThrow(".tailorkit-typecheck-");
+    await expect(deployment).rejects.not.toThrow(".patchsmith-typecheck-");
     await expect(deployment).rejects.toThrow("src/server.ts");
     await expect(deployment).rejects.toThrow("error TS2322");
     if (interactive) {
@@ -397,7 +397,7 @@ it("typechecks file route roots, layouts and views without a manual client entry
   expect(mocks.publish).not.toHaveBeenCalled();
   const files = await readdir(root);
   expect(
-    files.filter((name) => name.startsWith(".tailorkit-typecheck-"))
+    files.filter((name) => name.startsWith(".patchsmith-typecheck-"))
   ).toEqual([]);
 });
 
@@ -422,10 +422,10 @@ it.each(["vite config", "option"])(
   "uploads all artifacts from a custom %s output directory",
   async (mode) => {
     await writeFile(
-      path.join(root, ".tailorkit/server/server.js"),
+      path.join(root, ".patchsmith/server/server.js"),
       "new-backend-code"
     );
-    await rename(path.join(root, ".tailorkit"), path.join(root, "output"));
+    await rename(path.join(root, ".patchsmith"), path.join(root, "output"));
     mocks.build.mockResolvedValue({ outDir: path.join(root, "output") });
     mocks.load.mockResolvedValue({
       config: {
@@ -435,7 +435,7 @@ it.each(["vite config", "option"])(
         server: { entry: "src/server.ts" },
         slug: "test-app",
       },
-      filepath: path.join(root, "tailorkit.config.ts"),
+      filepath: path.join(root, "patchsmith.config.ts"),
       root,
     });
     const fetch = vi
@@ -536,7 +536,7 @@ it.each(["client", "server"])(
   "rejects oversized raw %s code before creating a deployment",
   async (kind) => {
     await writeFile(
-      path.join(root, `.tailorkit/${kind}/${kind}.js`),
+      path.join(root, `.patchsmith/${kind}/${kind}.js`),
       "x".repeat(3 * 1024 * 1024 + 1)
     );
     await expect(runDeploy({ cwd: root })).rejects.toThrow(/exceed/u);
@@ -547,8 +547,8 @@ it.each(["client", "server"])(
 
 it("preserves signed upload headers and uploads logos without gzip encoding", async () => {
   const logo = '<svg xmlns="http://www.w3.org/2000/svg"/>';
-  await writeFile(path.join(root, ".tailorkit/client/logo-light.svg"), logo);
-  const manifestPath = path.join(root, ".tailorkit/tailorkit-upload.json");
+  await writeFile(path.join(root, ".patchsmith/client/logo-light.svg"), logo);
+  const manifestPath = path.join(root, ".patchsmith/patchsmith-upload.json");
   const manifest = z
     .looseObject({
       assets: z.looseObject({
@@ -606,7 +606,7 @@ it.each(["client", "server"])(
   async (kind) => {
     const size = 3 * 1024 * 1024;
     await writeFile(
-      path.join(root, `.tailorkit/${kind}/${kind}.js`),
+      path.join(root, `.patchsmith/${kind}/${kind}.js`),
       "x".repeat(size)
     );
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
@@ -623,20 +623,20 @@ it.each(["client", "server"])(
 const agentJwt = async (exp = Math.floor(Date.now() / 1000) + 3600) =>
   await new SignJWT({
     appId: "authorized-app",
-    aud: "tailorkit-platform-cli",
+    aud: "patchsmith-platform-cli",
     exp,
     iat: Math.floor(Date.now() / 1000),
-    iss: "tailorkit-agent",
+    iss: "patchsmith-agent",
     platformUrl: "https://platform.example/api/platform",
     projectId: "project",
     scope: { name: "user", value: { userId: "one" } },
   })
-    .setProtectedHeader({ alg: "HS256", typ: "tailorkit-agent+jwt" })
+    .setProtectedHeader({ alg: "HS256", typ: "patchsmith-agent+jwt" })
     .sign(new TextEncoder().encode("test-only-key"));
 
 it("agent JWT deployment uses shared authentication and the configured app without host requests", async () => {
   const jwt = await agentJwt();
-  vi.stubEnv("TAILORKIT_AGENT_TOKEN", jwt);
+  vi.stubEnv("PATCHSMITH_AGENT_TOKEN", jwt);
   vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
     const request = input instanceof Request ? input : undefined;
     if (request?.url === "https://platform.example/api/platform/deployments") {
@@ -682,7 +682,7 @@ it("agent JWT deployment uses shared authentication and the configured app witho
 
 it("fails expired agent authorization before build without falling back to login", async () => {
   vi.stubEnv(
-    "TAILORKIT_AGENT_TOKEN",
+    "PATCHSMITH_AGENT_TOKEN",
     await agentJwt(Math.floor(Date.now() / 1000) - 1)
   );
   const onLoginRequired = vi.fn();

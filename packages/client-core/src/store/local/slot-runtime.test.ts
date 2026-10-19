@@ -1,28 +1,28 @@
 import { allTasks } from "nanostores";
 import { expect, it, vi } from "vite-plus/test";
 
-import { createTailorKitFetchClient } from "#client/fetch-client";
-import { createTailorKitStore } from "#store/store";
+import { createPatchSmithFetchClient } from "#client/fetch-client";
+import { createPatchSmithStore } from "#store/store";
 import { testContract } from "#test-contract";
-import type { TailorKitApp } from "#types";
+import type { PatchSmithApp } from "#types";
 
 import { createSlotRuntime } from "./slot-runtime";
 import type { SlotRuntimeOptions } from "./slot-runtime";
 
 const setup = (multiple = false) => {
   const fetch = vi.fn<typeof globalThis.fetch>();
-  const client = createTailorKitFetchClient({
+  const client = createPatchSmithFetchClient({
     baseUrl: "https://host.test/api/",
     fetch,
   });
-  const store = createTailorKitStore({
+  const store = createPatchSmithStore({
     apps: [],
     assetsBaseUrl: "https://assets.test/",
     baseUrl: client.baseUrl,
     client,
     contract: testContract(multiple),
   });
-  const app: TailorKitApp = {
+  const app: PatchSmithApp = {
     currentDeployment: { id: "deployment" },
     id: "app",
     projectId: "project",

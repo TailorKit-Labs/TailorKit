@@ -159,12 +159,12 @@ const isolatedServerFunctions: NitroModule = {
 };
 
 const serverPackages = [
-  "@tailorkit/api",
-  "@tailorkit/api-utils",
-  "@tailorkit/auth",
-  "@tailorkit/db",
-  "@tailorkit/env",
-  "@tailorkit/observability",
+  "@patchsmith/api",
+  "@patchsmith/api-utils",
+  "@patchsmith/auth",
+  "@patchsmith/db",
+  "@patchsmith/env",
+  "@patchsmith/observability",
   "libfx",
 ];
 
@@ -282,9 +282,9 @@ export default defineConfig(({ mode }) => {
     ssr: {
       external: isDev ? undefined : serverPackages,
       noExternal: [
-        "@tailorkit/api-platform",
-        "@tailorkit/agent",
-        "@tailorkit/agent-fx",
+        "@patchsmith/api-platform",
+        "@patchsmith/agent",
+        "@patchsmith/agent-fx",
       ],
     },
   };

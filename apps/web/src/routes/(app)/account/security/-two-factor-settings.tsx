@@ -1,4 +1,4 @@
-import { Button } from "@tailorkit/ui/button";
+import { Button } from "@patchsmith/ui/button";
 import {
   Card,
   CardDescription,
@@ -7,8 +7,8 @@ import {
   CardHeader,
   CardPanel,
   CardTitle,
-} from "@tailorkit/ui/card";
-import { Checkbox } from "@tailorkit/ui/checkbox";
+} from "@patchsmith/ui/card";
+import { Checkbox } from "@patchsmith/ui/checkbox";
 import {
   Dialog,
   DialogClose,
@@ -18,18 +18,18 @@ import {
   DialogPanel,
   DialogPopup,
   DialogTitle,
-} from "@tailorkit/ui/dialog";
-import { Field, FieldLabel } from "@tailorkit/ui/field";
-import { Frame, FrameFooter, FramePanel } from "@tailorkit/ui/frame";
-import { Input } from "@tailorkit/ui/input";
+} from "@patchsmith/ui/dialog";
+import { Field, FieldLabel } from "@patchsmith/ui/field";
+import { Frame, FrameFooter, FramePanel } from "@patchsmith/ui/frame";
+import { Input } from "@patchsmith/ui/input";
 import {
   OTPField,
   OTPFieldInput,
   OTPFieldSeparator,
-} from "@tailorkit/ui/otp-field";
-import { Skeleton } from "@tailorkit/ui/skeleton";
-import { toastManager } from "@tailorkit/ui/toast";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "@tailorkit/ui/tooltip";
+} from "@patchsmith/ui/otp-field";
+import { Skeleton } from "@patchsmith/ui/skeleton";
+import { toastManager } from "@patchsmith/ui/toast";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "@patchsmith/ui/tooltip";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CopyIcon, DownloadIcon } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";

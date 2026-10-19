@@ -1,46 +1,46 @@
-import type { Client as PlatformClient } from "@tailorkit/client-platform/client/client/index";
+import type { Client as PlatformClient } from "@patchsmith/client-platform/client/client/index";
 
-import type { TailorKitSchema } from "#schema/index";
+import type { PatchSmithSchema } from "#schema/index";
 
-import type { TailorKitScopeSchemas } from "./scope";
-import type { TailorKitPlatformOptions, TailorKitScopes } from "./types";
+import type { PatchSmithScopeSchemas } from "./scope";
+import type { PatchSmithPlatformOptions, PatchSmithScopes } from "./types";
 
 const isFunctionValue = <TValue>(
   value: TValue
 ): value is Extract<TValue, CallableFunction> => typeof value === "function";
 
-export interface TailorKitRuntimeContext {
+export interface PatchSmithRuntimeContext {
   subjectId?: string;
-  scopes: TailorKitScopes;
+  scopes: PatchSmithScopes;
 }
 
 export interface Context {
   platform: PlatformClient;
   platformHeaders: Record<string, string>;
   request: Request;
-  schema: TailorKitSchema;
-  scopeSchemas: TailorKitScopeSchemas;
-  tailorkit?: TailorKitRuntimeContext;
+  schema: PatchSmithSchema;
+  scopeSchemas: PatchSmithScopeSchemas;
+  patchsmith?: PatchSmithRuntimeContext;
   authenticate: (ctx: {
     request: Request;
   }) =>
-    | TailorKitRuntimeContext
+    | PatchSmithRuntimeContext
     | null
-    | Promise<TailorKitRuntimeContext | null>;
+    | Promise<PatchSmithRuntimeContext | null>;
 }
 
 export interface CreateContextOptions {
   platform: PlatformClient;
-  platformHeaders?: TailorKitPlatformOptions["headers"];
+  platformHeaders?: PatchSmithPlatformOptions["headers"];
   request: Request;
-  schema: TailorKitSchema;
-  scopeSchemas: TailorKitScopeSchemas;
+  schema: PatchSmithSchema;
+  scopeSchemas: PatchSmithScopeSchemas;
   authenticate: (ctx: {
     request: Request;
   }) =>
-    | TailorKitRuntimeContext
+    | PatchSmithRuntimeContext
     | null
-    | Promise<TailorKitRuntimeContext | null>;
+    | Promise<PatchSmithRuntimeContext | null>;
 }
 
 export const createContext = async (

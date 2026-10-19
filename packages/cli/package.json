@@ -1,5 +1,5 @@
 {
-  "name": "@tailorkit/cli",
+  "name": "@patchsmith/cli",
   "version": "0.1.0-beta.49",
   "license": "Apache-2.0",
   "repository": {
@@ -8,8 +8,7 @@
     "directory": "packages/cli"
   },
   "bin": {
-    "tailor": "./bin/tailorkit.js",
-    "tailorkit": "./bin/tailorkit.js"
+    "patchsmith": "./bin/patchsmith.js"
   },
   "files": [
     "bin",
@@ -44,9 +43,9 @@
     "@ai-sdk/tui": "1.0.138",
     "@clack/prompts": "^1.8.1",
     "@orpc/client": "catalog:",
-    "@tailorkit/client-platform": "workspace:*",
-    "@tailorkit/core": "workspace:*",
-    "@tailorkit/vite": "workspace:*",
+    "@patchsmith/client-platform": "workspace:*",
+    "@patchsmith/core": "workspace:*",
+    "@patchsmith/vite": "workspace:*",
     "ai": "catalog:",
     "cac": "^7.0.1",
     "jose": "6.2.12",
@@ -57,8 +56,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@tailorkit/app": "workspace:*",
-    "@tailorkit/config": "workspace:*",
+    "@patchsmith/app": "workspace:*",
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "preact": "^11.0.1",
     "typescript": "catalog:",

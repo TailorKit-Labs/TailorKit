@@ -4,11 +4,11 @@ import {
   agentCreateAppSchema,
   agentChunkSchema,
   agentRunCompleteChunkSchema,
-} from "@tailorkit/client-platform/agent";
+} from "@patchsmith/client-platform/agent";
 import {
   appAgentChat,
   appAgentCreate,
-} from "@tailorkit/client-platform/client";
+} from "@patchsmith/client-platform/client";
 import * as v from "valibot";
 
 import { platformAppSelector } from "#server/platform-app-selector";

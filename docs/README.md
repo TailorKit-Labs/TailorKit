@@ -1,6 +1,6 @@
-# TailorKit documentation
+# PatchSmith documentation
 
-This directory contains the TailorKit documentation site. Edit pages in MDX and configure navigation, branding, and site settings in `docs.json`.
+This directory contains the PatchSmith documentation site. Edit pages in MDX and configure navigation, branding, and site settings in `docs.json`.
 
 ## Preview the site
 
@@ -17,7 +17,7 @@ Open the URL printed by the Mintlify CLI. The default is [localhost:3000](http:/
 
 Use the existing sections to choose where a page belongs:
 
-- `getting-started/`: introduce TailorKit and integrate it into a host product
+- `getting-started/`: introduce PatchSmith and integrate it into a host product
 - `concepts/`: explain slots, views, components, and tools
 - `writing-apps/`: create apps against a host contract
 

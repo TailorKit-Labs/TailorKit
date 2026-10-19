@@ -1,34 +1,34 @@
 import type {
   ToolImplementations,
-  TailorKitContract,
-} from "@tailorkit/core/schema";
+  PatchSmithContract,
+} from "@patchsmith/core/schema";
 
-import { createTailorKitFetchClient } from "#client/fetch-client";
-import type { TailorKitFetchClient } from "#client/fetch-client";
+import { createPatchSmithFetchClient } from "#client/fetch-client";
+import type { PatchSmithFetchClient } from "#client/fetch-client";
 import { toBaseUrl } from "#client/url";
-import type { TailorKitApp } from "#types";
+import type { PatchSmithApp } from "#types";
 
 import { createAppsStore } from "./fetch/apps";
 import { createViewContextStore } from "./local/view-context";
 
-export type TailorKitStore = ReturnType<typeof createTailorKitStore>;
+export type PatchSmithStore = ReturnType<typeof createPatchSmithStore>;
 
 /** Compose independent fetch stores and local view state for one root. */
-export const createTailorKitStore = (options: {
+export const createPatchSmithStore = (options: {
   baseUrl: string | URL;
-  contract: TailorKitContract;
-  tools?: ToolImplementations<TailorKitContract["tools"], "client">;
-  apps?: TailorKitApp[];
-  client?: TailorKitFetchClient;
+  contract: PatchSmithContract;
+  tools?: ToolImplementations<PatchSmithContract["tools"], "client">;
+  apps?: PatchSmithApp[];
+  client?: PatchSmithFetchClient;
   assetsBaseUrl?: string | URL;
 }) => {
   const { baseUrl, contract, assetsBaseUrl, apps: initialApps } = options;
   const client =
     options.client ??
-    createTailorKitFetchClient({ baseUrl, contract, tools: options.tools });
+    createPatchSmithFetchClient({ baseUrl, contract, tools: options.tools });
   if (toBaseUrl(baseUrl).href !== toBaseUrl(client.baseUrl).href) {
     throw new Error(
-      "createTailorKitStore: baseUrl does not match the supplied fetch client."
+      "createPatchSmithStore: baseUrl does not match the supplied fetch client."
     );
   }
   const apps = createAppsStore(client, initialApps);

@@ -15,9 +15,9 @@ import { runInit } from "./init";
 import type { CliOptions } from "./options";
 import { openUrlInBrowser } from "./utils/open-browser";
 
-declare const __TAILORKIT_VERSION__: string;
+declare const __PATCHSMITH_VERSION__: string;
 
-const cli = cac("tailorkit");
+const cli = cac("patchsmith");
 
 const formatBytes = (bytes: number): string => {
   if (bytes < 1024) {
@@ -72,10 +72,10 @@ const loginWithApproval = async (
 };
 
 cli
-  .command("login", "Authenticate the TailorKit CLI with a host app")
+  .command("login", "Authenticate the PatchSmith CLI with a host app")
   .option("--cwd <path>", "Working directory", { default: "." })
-  .option("--host <url>", "TailorKit host API URL (overrides config host)")
-  .option("--config <path>", "Path to tailorkit config")
+  .option("--host <url>", "PatchSmith host API URL (overrides config host)")
+  .option("--config <path>", "Path to patchsmith config")
   .option("--open", "Open the approval URL in the default browser", {
     default: true,
   })
@@ -83,7 +83,7 @@ cli
     default: 1800,
   })
   .action(async (options: CliOptions) => {
-    intro(pc.bold("TailorKit"));
+    intro(pc.bold("PatchSmith"));
     try {
       const timeoutSeconds = Math.trunc(
         Number(String(options.timeout ?? "1800"))
@@ -109,12 +109,12 @@ cli
   });
 
 cli
-  .command("logout", "Remove stored TailorKit CLI credentials for a host app")
+  .command("logout", "Remove stored PatchSmith CLI credentials for a host app")
   .option("--cwd <path>", "Working directory", { default: "." })
-  .option("--host <url>", "TailorKit host API URL (overrides config host)")
-  .option("--config <path>", "Path to tailorkit config")
+  .option("--host <url>", "PatchSmith host API URL (overrides config host)")
+  .option("--config <path>", "Path to patchsmith config")
   .action(async (options: CliOptions) => {
-    intro(pc.bold("TailorKit"));
+    intro(pc.bold("PatchSmith"));
     try {
       const result = await runLogout({
         configPath: options.config,
@@ -134,12 +134,12 @@ cli
   });
 
 cli
-  .command("whoami", "Show the current TailorKit CLI authentication scope")
+  .command("whoami", "Show the current PatchSmith CLI authentication scope")
   .option("--cwd <path>", "Working directory", { default: "." })
-  .option("--host <url>", "TailorKit host API URL (overrides config host)")
-  .option("--config <path>", "Path to tailorkit config")
+  .option("--host <url>", "PatchSmith host API URL (overrides config host)")
+  .option("--config <path>", "Path to patchsmith config")
   .action(async (options: CliOptions) => {
-    intro(pc.bold("TailorKit"));
+    intro(pc.bold("PatchSmith"));
     try {
       const result = await runWhoami({
         configPath: options.config,
@@ -157,18 +157,18 @@ cli
   });
 
 cli
-  .command("deploy", "Build and deploy the TailorKit app")
+  .command("deploy", "Build and deploy the PatchSmith app")
   .option("--app-id <id>", "Deploy to this existing app")
   .option(
     "--no-interactive",
     "Fail instead of prompting for login, app creation, or type check overrides"
   )
   .option("--cwd <path>", "Working directory", { default: "." })
-  .option("--config <path>", "Path to tailorkit config")
+  .option("--config <path>", "Path to patchsmith config")
   .option("--out-dir <path>", "Build output directory")
   .option("--mode <mode>", "Vite mode")
   .action(async (options: CliOptions) => {
-    intro(pc.bold("TailorKit"));
+    intro(pc.bold("PatchSmith"));
     const deploySpinner = spinner();
     try {
       deploySpinner.start("Building and deploying app");
@@ -198,8 +198,8 @@ cli
             initialValue: true,
             message:
               reason === "missing"
-                ? `Create a TailorKit app named ${appName}?`
-                : `Create a new TailorKit app named ${appName} and update the config?`,
+                ? `Create a PatchSmith app named ${appName}?`
+                : `Create a new PatchSmith app named ${appName} and update the config?`,
           });
 
           if (isCancel(shouldCreate)) {
@@ -246,7 +246,7 @@ cli
       deploySpinner.stop("Deployed app.");
       if (result.createdApp) {
         log.info(
-          `Created app and updated tailorkit.config.ts with ${pc.cyan(result.appId)}.`
+          `Created app and updated patchsmith.config.ts with ${pc.cyan(result.appId)}.`
         );
       }
       log.info(`Host: ${pc.cyan(result.hostUrl)}`);
@@ -276,17 +276,18 @@ cli
 cli
   .command("db <command>", "Generate database migrations with db generate")
   .option("--cwd <path>", "Working directory", { default: "." })
-  .option("--config <path>", "Path to tailorkit config")
+  .option("--config <path>", "Path to patchsmith config")
   .option("--name <name>", "Migration name")
   .action(async (command: string, options: CliOptions) => {
-    intro(pc.bold("TailorKit"));
+    intro(pc.bold("PatchSmith"));
     try {
       if (command !== "generate") {
         throw new Error(
-          `Unknown database command: ${command}. Use tailorkit db generate.`
+          `Unknown database command: ${command}. Use patchsmith db generate.`
         );
       }
-      const { generateAppMigrations } = await import("@tailorkit/vite/builder");
+      const { generateAppMigrations } =
+        await import("@patchsmith/vite/builder");
       const directory = await generateAppMigrations({
         configPath: options.config,
         cwd: options.cwd ?? ".",
@@ -300,16 +301,16 @@ cli
   });
 
 cli
-  .command("generate", "Generate TailorKit app bindings")
+  .command("generate", "Generate PatchSmith app bindings")
   .option(
     "--schema <path>",
     "Read the host schema from a JSON file instead of the host"
   )
   .option("--cwd <path>", "Working directory", { default: "." })
-  .option("--config <path>", "Path to tailorkit config")
+  .option("--config <path>", "Path to patchsmith config")
   .option("--out <path>", "Generated TypeScript output file")
   .action(async (options: CliOptions) => {
-    intro(pc.bold("TailorKit"));
+    intro(pc.bold("PatchSmith"));
     try {
       const outPath = await generateTypes({
         configPath: options.config,
@@ -325,14 +326,14 @@ cli
   });
 
 cli
-  .command("init [directory]", "Create a new TailorKit app")
+  .command("init [directory]", "Create a new PatchSmith app")
   .option(
     "--schema <path>",
     "Read the host schema from a JSON file instead of the host"
   )
   .option("--cwd <path>", "Working directory", { default: "." })
   .option("--name <name>", "Package name")
-  .option("--host <url>", "TailorKit host URL")
+  .option("--host <url>", "PatchSmith host URL")
   .option("--package-manager <pm>", "Package manager: bun, yarn, pnpm, or npm")
   .option("--tooling <tooling>", "Tooling: vite-plus (recommended) or vite")
   .option(
@@ -345,7 +346,7 @@ cli
   )
   .option("--force", "Overwrite existing files")
   .action(async (directory: string | undefined, options: CliOptions) => {
-    intro(pc.bold("TailorKit"));
+    intro(pc.bold("PatchSmith"));
     try {
       const cwd = options.cwd ?? ".";
       const targetDirectory = await runInit({
@@ -368,7 +369,7 @@ cli
   });
 
 cli
-  .command("agent", "Chat with the TailorKit app agent")
+  .command("agent", "Chat with the PatchSmith app agent")
   .option(
     "--thread <id>",
     "Resume an existing agent conversation (otherwise starts a new thread)"
@@ -377,7 +378,7 @@ cli
     "--schema <path>",
     "Host schema snapshot for generation without host access"
   )
-  .option("--host <url>", "TailorKit host API URL (required)")
+  .option("--host <url>", "PatchSmith host API URL (required)")
   .option("--app <id>", "App ID (otherwise prompts to select or create an app)")
   .action(async (options: CliOptions) => {
     try {
@@ -399,5 +400,5 @@ cli
   });
 
 cli.help();
-cli.version(__TAILORKIT_VERSION__);
+cli.version(__PATCHSMITH_VERSION__);
 cli.parse();

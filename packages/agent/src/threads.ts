@@ -20,8 +20,8 @@ export const resolveAppAgentThread = async (
   if (threadId !== undefined && !threadIdSchema.safeParse(threadId).success) {
     throw new AppAgentThreadError();
   }
-  const { db } = await import("@tailorkit/db");
-  const { appAgentThread } = await import("@tailorkit/db/schema/apps");
+  const { db } = await import("@patchsmith/db");
+  const { appAgentThread } = await import("@patchsmith/db/schema/apps");
   if (threadId !== undefined) {
     const [thread] = await db
       .select()

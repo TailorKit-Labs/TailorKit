@@ -1,4 +1,4 @@
-import { runtimeServiceAuthorized } from "@tailorkit/api-utils/app-auth";
+import { runtimeServiceAuthorized } from "@patchsmith/api-utils/app-auth";
 /** Only the trusted runtime can select projects for private bundle metadata lookups. */
 export const runtimeProjectAccess = async (
   request: Request,
@@ -16,7 +16,7 @@ export const runtimeProjectAccess = async (
     throw new Error("Runtime credential is restricted to bundle metadata");
   }
 
-  const projectId = request.headers.get("x-tailorkit-project-id");
+  const projectId = request.headers.get("x-patchsmith-project-id");
   if (
     !(projectId !== undefined && projectId !== null && projectId !== "") ||
     projectId.length > 256

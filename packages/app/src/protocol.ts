@@ -8,7 +8,7 @@ export const invocationSchema = v.strictObject({
     v.string(),
     v.maxLength(512),
     v.regex(
-      /^(?:[a-zA-Z][a-zA-Z0-9_]{0,63}|_tailorkit)(?:\.[a-zA-Z][a-zA-Z0-9_]{0,63})*$/u
+      /^(?:[a-zA-Z][a-zA-Z0-9_]{0,63}|_patchsmith)(?:\.[a-zA-Z][a-zA-Z0-9_]{0,63})*$/u
     )
   ),
 });

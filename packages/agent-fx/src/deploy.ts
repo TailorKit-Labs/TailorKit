@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 
-import { setConfigAppId } from "@tailorkit/vite/config/app-link";
-import { tailorkitUploadManifestSchema } from "@tailorkit/vite/upload-manifest";
+import { setConfigAppId } from "@patchsmith/vite/config/app-link";
+import { patchsmithUploadManifestSchema } from "@patchsmith/vite/upload-manifest";
 import { tool } from "ai";
 import * as v from "valibot";
 import { z } from "zod";
@@ -70,14 +70,14 @@ export const publish = async (
     }
     return bytes;
   };
-  const manifestBytes = await read("tailorkit-upload.json");
+  const manifestBytes = await read("patchsmith-upload.json");
   const manifest = v.parse(
-    tailorkitUploadManifestSchema,
+    patchsmithUploadManifestSchema,
     JSON.parse(manifestBytes.toString("utf-8"))
   );
   if (manifest.appId === undefined) {
     throw new Error(
-      "Missing appId in tailorkit.config.ts. Link the app before deploying."
+      "Missing appId in patchsmith.config.ts. Link the app before deploying."
     );
   }
   const app = z.uuid().safeParse(manifest.appId).success
@@ -240,6 +240,7 @@ export const createDeployTool = (dependencies: {
   tool({
     contextSchema: z.object({
       agentToken: z.string(),
+      appId: z.string(),
       sandboxName: z.string(),
     }),
     description:
@@ -247,10 +248,10 @@ export const createDeployTool = (dependencies: {
     execute: async (_input, { context, abortSignal }) => {
       try {
         const sandbox = await dependencies.sandbox(context.sandboxName);
-        const configPath = "/workspace/app/tailorkit.config.ts";
+        const configPath = "/workspace/app/patchsmith.config.ts";
         const config = await sandbox.readFileToBuffer({ path: configPath });
         if (!config) {
-          throw new Error("Missing app tailorkit.config.ts.");
+          throw new Error("Missing app patchsmith.config.ts.");
         }
         const source = config.toString("utf-8");
         const linked = await setConfigAppId(source, context.appId, configPath);

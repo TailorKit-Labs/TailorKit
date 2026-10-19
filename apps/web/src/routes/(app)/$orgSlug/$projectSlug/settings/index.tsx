@@ -1,5 +1,5 @@
-import { validateProjectSlug } from "@tailorkit/db/validate-project-slug";
-import { Button } from "@tailorkit/ui/button";
+import { validateProjectSlug } from "@patchsmith/db/validate-project-slug";
+import { Button } from "@patchsmith/ui/button";
 import {
   Card,
   CardDescription,
@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardPanel,
   CardTitle,
-} from "@tailorkit/ui/card";
+} from "@patchsmith/ui/card";
 import {
   Dialog,
   DialogClose,
@@ -18,11 +18,11 @@ import {
   DialogPanel,
   DialogPopup,
   DialogTitle,
-} from "@tailorkit/ui/dialog";
-import { Field, FieldDescription, FieldLabel } from "@tailorkit/ui/field";
-import { useAppForm } from "@tailorkit/ui/form";
-import { Input } from "@tailorkit/ui/input";
-import { toastManager } from "@tailorkit/ui/toast";
+} from "@patchsmith/ui/dialog";
+import { Field, FieldDescription, FieldLabel } from "@patchsmith/ui/field";
+import { useAppForm } from "@patchsmith/ui/form";
+import { Input } from "@patchsmith/ui/input";
+import { toastManager } from "@patchsmith/ui/toast";
 import {
   useMutation,
   useQueryClient,
@@ -179,7 +179,7 @@ const ProjectSettingsPage = () => {
                 <form.AppField name="slug">
                   {(field) => (
                     <field.TextField
-                      description={`tailorkit.com/${orgSlug}/${field.state.value || "project-slug"}`}
+                      description={`patchsmith.com/${orgSlug}/${field.state.value || "project-slug"}`}
                       label="Slug"
                       placeholder="amazing-project"
                       onChange={(event) => {

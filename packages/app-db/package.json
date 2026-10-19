@@ -1,5 +1,5 @@
 {
-  "name": "@tailorkit/app-db",
+  "name": "@patchsmith/app-db",
   "version": "0.1.0-beta.49",
   "license": "Apache-2.0",
   "repository": {
@@ -56,7 +56,7 @@
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {
-    "@tailorkit/config": "workspace:*",
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "tsup": "^8.5.1",
     "typescript": "catalog:"

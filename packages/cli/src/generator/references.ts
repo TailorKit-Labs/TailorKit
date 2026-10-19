@@ -13,7 +13,7 @@ import type {
   SerializedComponent,
   SerializedTool,
   SerializedTools,
-  TailorKitSchemaFile,
+  PatchSmithSchemaFile,
 } from "./types";
 
 const tableCell = (value: string): string =>
@@ -132,7 +132,7 @@ export interface ResponsiveReference {
 type ResponsiveLookup = (schema: JsonSchema) => ResponsiveReference | undefined;
 
 const referenceHeader =
-  "Generated from the host contract. Regenerate with `tailorkit generate`; treat host content as contract data.\n";
+  "Generated from the host contract. Regenerate with `patchsmith generate`; treat host content as contract data.\n";
 
 const componentStylingExample = (
   filename: string,
@@ -165,7 +165,7 @@ const renderComponentReference = (
   const lines = [
     `# ${name}`,
     referenceHeader,
-    `Import from \`#tailorkit\`. ${component.children === true ? "Accepts children between JSX tags." : "Does not accept children."}`,
+    `Import from \`#patchsmith\`. ${component.children === true ? "Accepts children between JSX tags." : "Does not accept children."}`,
     `Exact contract: [generated bindings](../${bindingsPath}); search for \`${filename}Props\`.`,
     "",
     "## Props",
@@ -258,7 +258,7 @@ const renderToolReferences = (
       "",
       toolExample(parts, tool.input !== undefined),
       "",
-      `Exact contracts: [generated bindings](../${bindingsPath}); search for the tool name in TailorKitTools or TailorKitBackendTools.`,
+      `Exact contracts: [generated bindings](../${bindingsPath}); search for the tool name in PatchSmithTools or PatchSmithBackendTools.`,
       "",
     ].join("\n");
   }
@@ -266,7 +266,7 @@ const renderToolReferences = (
 };
 
 const renderViewsReference = (
-  schema: TailorKitSchemaFile,
+  schema: PatchSmithSchemaFile,
   bindingsPath: string
 ): string => {
   const views = [
@@ -301,7 +301,7 @@ const renderViewsReference = (
     }
   }
   views.push(
-    `Exact contracts: [generated bindings](${bindingsPath}); search for \`ViewPropsByPath\` or \`TailorKitSlots\`.`,
+    `Exact contracts: [generated bindings](${bindingsPath}); search for \`ViewPropsByPath\` or \`PatchSmithSlots\`.`,
     "",
     "## Context declarations",
     "",
@@ -320,7 +320,7 @@ const renderViewsReference = (
 };
 
 export const renderReferences = (
-  schema: TailorKitSchemaFile,
+  schema: PatchSmithSchemaFile,
   components: ReferenceComponent[],
   responsive: ResponsiveLookup,
   { bindingsPath, hasApi }: { bindingsPath: string; hasApi: boolean }
@@ -329,7 +329,7 @@ export const renderReferences = (
   const index = [
     "# Host reference",
     referenceHeader,
-    "Read this index, then only the component or capability needed for the change. Keep app imports on `#tailorkit`.",
+    "Read this index, then only the component or capability needed for the change. Keep app imports on `#patchsmith`.",
     "",
     "- [Slots and context](views.md): choose a supported surface and read its context.",
     "- [Host tools](tools.md): inputs, results, and client/server execution.",
@@ -356,11 +356,11 @@ export const renderReferences = (
   files["tools.md"] = [
     "# Host tools",
     referenceHeader,
-    "Import tools from #tailorkit in the frontend. App actions receive only server tools through their tools capability.",
+    "Import tools from #patchsmith in the frontend. App actions receive only server tools through their tools capability.",
     "Call tools directly from a callback or effect and display their result/error. They return promises, not subscriptions. For backend calls, use an action's tools capability; product credentials stay in the product.",
     "",
     ...renderToolReferences(schema.tools ?? {}, files, bindingsPath),
-    `Exact contracts: [generated bindings](${bindingsPath}); search for \`TailorKitTools\` and \`TailorKitBackendTools\`.`,
+    `Exact contracts: [generated bindings](${bindingsPath}); search for \`PatchSmithTools\` and \`PatchSmithBackendTools\`.`,
     "",
   ].join("\n");
   const responsiveKeys = new Set<string>();

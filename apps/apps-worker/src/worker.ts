@@ -3,13 +3,13 @@ import {
   appDeploymentMetadata,
   deploymentMetadataKey,
   runtimeServiceAuthorized,
-} from "@tailorkit/api-utils/app-auth";
-import type { Identity } from "@tailorkit/app/server";
-import { AppError } from "@tailorkit/app/server";
+} from "@patchsmith/api-utils/app-auth";
+import type { Identity } from "@patchsmith/app/server";
+import { AppError } from "@patchsmith/app/server";
 import {
   parseHostedAppRoute,
   parseDeploymentPublicationRoute,
-} from "@tailorkit/asset-delivery";
+} from "@patchsmith/asset-delivery";
 import { Effect } from "effect";
 
 import assets from "./assets";

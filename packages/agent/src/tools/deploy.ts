@@ -35,7 +35,7 @@ export const createDeployTool = (dependencies: {
       appId: z.string().min(1),
     }),
     description:
-      "Build, type-check, and publish the finished app to its authorized TailorKit app. Run lint and relevant tests first; this tool owns the build and type check, so do not run a separate build before calling it. Failures include compiler diagnostics for repair. No login or host access is needed.",
+      "Build, type-check, and publish the finished app to its authorized PatchSmith app. Run lint and relevant tests first; this tool owns the build and type check, so do not run a separate build before calling it. Failures include compiler diagnostics for repair. No login or host access is needed.",
     execute: async (_input, options) => {
       const { agentToken } = options.context;
       const redact = (value: string) =>

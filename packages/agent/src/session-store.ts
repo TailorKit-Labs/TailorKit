@@ -7,9 +7,9 @@ import { threadSandboxName } from "./identity";
 import { deleteSandbox } from "./sandbox";
 
 const sessionStore = async () => {
-  const { db } = await import("@tailorkit/db");
+  const { db } = await import("@patchsmith/db");
   const { appAgentLease, appAgentThread } =
-    await import("@tailorkit/db/schema/apps");
+    await import("@patchsmith/db/schema/apps");
   return { appAgentLease, appAgentThread, db };
 };
 

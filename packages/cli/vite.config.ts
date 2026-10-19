@@ -18,7 +18,7 @@ export default defineConfig({
     rollupOptions: {
       external: [
         /^node:/u,
-        /^@tailorkit\/vite(?:\/|$)/u,
+        /^@patchsmith\/vite(?:\/|$)/u,
         "@clack/prompts",
         "@ai-sdk/tui",
         "@standard-schema/spec",
@@ -35,7 +35,7 @@ export default defineConfig({
       ],
       output: {
         banner:
-          'import { fileURLToPath as __tailorkitFileURLToPath } from "node:url";\nimport { dirname as __tailorkitDirname } from "node:path";\nconst __filename = __tailorkitFileURLToPath(import.meta.url);\nconst __dirname = __tailorkitDirname(__filename);',
+          'import { fileURLToPath as __patchsmithFileURLToPath } from "node:url";\nimport { dirname as __patchsmithDirname } from "node:path";\nconst __filename = __patchsmithFileURLToPath(import.meta.url);\nconst __dirname = __patchsmithDirname(__filename);',
         entryFileNames: "index.js",
       },
     },
@@ -43,7 +43,7 @@ export default defineConfig({
     target: "node24",
   },
   define: {
-    __TAILORKIT_VERSION__: JSON.stringify(packageJson.version),
+    __PATCHSMITH_VERSION__: JSON.stringify(packageJson.version),
   },
   plugins: [liquidRawPlugin()],
 });

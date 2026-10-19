@@ -1,3 +1,3 @@
-# TailorKit sandbox
+# PatchSmith sandbox
 
-`@tailorkit/sandbox` runs TailorKit extensions in an isolated sandbox.
+`@patchsmith/sandbox` runs PatchSmith extensions in an isolated sandbox.

@@ -1,8 +1,8 @@
 import { createServer } from "node:http";
 import { gzipSync } from "node:zlib";
 
-import { maxDeploymentBytes } from "@tailorkit/asset-delivery";
-import type { Storage } from "@tailorkit/storage";
+import { maxDeploymentBytes } from "@patchsmith/asset-delivery";
+import type { Storage } from "@patchsmith/storage";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { handleAssetRequest } from "./assets";

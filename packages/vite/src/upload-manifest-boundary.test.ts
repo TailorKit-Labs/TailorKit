@@ -32,12 +32,12 @@ it("validates upload manifests without loading build tooling in a server runtime
           },
         });
 
-        const { createTailorKitUploadManifest, tailorkitUploadManifestSchema } =
-          await import("@tailorkit/vite/upload-manifest");
-        const manifest = createTailorKitUploadManifest(undefined, true);
+        const { createPatchSmithUploadManifest, patchsmithUploadManifestSchema } =
+          await import("@patchsmith/vite/upload-manifest");
+        const manifest = createPatchSmithUploadManifest(undefined, true);
         assert.equal(manifest.assets.server, "server/server.js");
-        assert.deepEqual(v.parse(tailorkitUploadManifestSchema, manifest), manifest);
-        assert.equal(v.safeParse(tailorkitUploadManifestSchema, {
+        assert.deepEqual(v.parse(patchsmithUploadManifestSchema, manifest), manifest);
+        assert.equal(v.safeParse(patchsmithUploadManifestSchema, {
           assets: { client: "../../secret" }, version: 1,
         }).success, false);
         console.log("manifest runtime ready");

@@ -1,11 +1,11 @@
-import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type {
   DatabaseRelations,
   EmptyDatabaseRelations,
   DatabaseDefinition,
   QueryDatabase,
   MutationDatabase,
-} from "@tailorkit/app-db";
+} from "@patchsmith/app-db";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import * as v from "valibot";
 
 import type {

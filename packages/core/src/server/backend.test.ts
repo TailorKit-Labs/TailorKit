@@ -28,7 +28,7 @@ const request = (
   body: BackendSessionFixture | null,
   origin = "https://host.test"
 ) =>
-  new Request("https://host.test/api/tailorkit/backend/session", {
+  new Request("https://host.test/api/patchsmith/backend/session", {
     body: JSON.stringify(body),
     headers: { "content-type": "application/json", origin },
     method: "POST",
@@ -100,7 +100,7 @@ it("rejects cross-origin requests before authenticating or issuing tokens", asyn
 
 it.each(["GET", "PUT"])("rejects %s session requests", async (method) => {
   const response = await handleBackendSession(
-    new Request("https://host.test/api/tailorkit/backend/session", { method }),
+    new Request("https://host.test/api/patchsmith/backend/session", { method }),
     authenticate,
     issueSession
   );
@@ -120,7 +120,7 @@ it("bounds chunked session request bodies", async () => {
 
 it("rejects malformed JSON", async () => {
   const response = await handleBackendSession(
-    new Request("https://host.test/api/tailorkit/backend/session", {
+    new Request("https://host.test/api/patchsmith/backend/session", {
       body: "{",
       headers: { "content-type": "application/json" },
       method: "POST",

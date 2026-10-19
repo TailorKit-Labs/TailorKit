@@ -6,21 +6,21 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
-import { primitives } from "@tailorkit/core/primitives/zod";
-import { createTailorKitSchema } from "@tailorkit/core/schema";
+import { primitives } from "@patchsmith/core/primitives/zod";
+import { createPatchSmithSchema } from "@patchsmith/core/schema";
 import { expect, it } from "vite-plus/test";
 
 import { renderGeneratedReferences, renderGeneratedTypes } from "./types";
-import type { TailorKitSchemaFile } from "./types";
+import type { PatchSmithSchemaFile } from "./types";
 
-const primitiveSchema = createTailorKitSchema({
+const primitiveSchema = createPatchSmithSchema({
   components: primitives({
     breakpoints: { md: "768px" },
     tokens: { background: { accent: "blue", surface: "white" } },
   }),
 }).serialize();
 
-const schema: TailorKitSchemaFile = {
+const schema: PatchSmithSchemaFile = {
   components: {
     ...primitiveSchema.components,
     Button: {
@@ -113,7 +113,7 @@ const declaration = (specifier: string) =>
   );
 
 it("typechecks complete authored recipes and generated examples against the public SDK", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-agent-examples-"));
+  const root = await mkdtemp(path.join(tmpdir(), "patchsmith-agent-examples-"));
   try {
     const documents = await Promise.all(
       [
@@ -150,11 +150,11 @@ it("typechecks complete authored recipes and generated examples against the publ
       "defineServer({ notes, preview })",
       "defineServer({ notes, todos: notes, preview })"
     );
-    sources["src/tailorkit.gen.ts"] = renderGeneratedTypes(schema, {
+    sources["src/patchsmith.gen.ts"] = renderGeneratedTypes(schema, {
       serverModule: "./server",
     });
     const references = renderGeneratedReferences(schema, {
-      bindingsPath: "../src/tailorkit.gen.ts",
+      bindingsPath: "../src/patchsmith.gen.ts",
       hasApi: true,
     });
     expect(references["components/RequiredText.md"]).toContain(
@@ -187,8 +187,8 @@ it("typechecks complete authored recipes and generated examples against the publ
     );
     const require = createRequire(import.meta.url);
     const preact = path.dirname(require.resolve("preact/package.json"));
-    const appServer = import.meta.resolve("@tailorkit/app/server");
-    const database = findPackageJSON("@tailorkit/app-db", appServer);
+    const appServer = import.meta.resolve("@patchsmith/app/server");
+    const database = findPackageJSON("@patchsmith/app-db", appServer);
     if (database === undefined) {
       throw new Error("Missing public database package.");
     }
@@ -203,17 +203,17 @@ it("typechecks complete authored recipes and generated examples against the publ
           noEmit: true,
           paths: {
             "#*": [path.join(root, "src/*"), path.join(root, "src/*/index.ts")],
-            "#tailorkit": [path.join(root, "src/tailorkit.gen.ts")],
+            "#patchsmith": [path.join(root, "src/patchsmith.gen.ts")],
+            "patchsmith/client": [declaration("@patchsmith/app/client")],
+            "patchsmith/db": [
+              path.join(path.dirname(database), "dist/index.d.ts"),
+            ],
+            "patchsmith/server": [declaration("@patchsmith/app/server")],
             preact: [path.join(preact, "src/index.d.ts")],
             "preact/hooks": [path.join(preact, "hooks/src/index.d.ts")],
             "preact/jsx-runtime": [
               path.join(preact, "jsx-runtime/src/index.d.ts"),
             ],
-            "tailorkit/client": [declaration("@tailorkit/app/client")],
-            "tailorkit/db": [
-              path.join(path.dirname(database), "dist/index.d.ts"),
-            ],
-            "tailorkit/server": [declaration("@tailorkit/app/server")],
             valibot: [declaration("valibot")],
           },
           skipLibCheck: true,

@@ -1,4 +1,4 @@
-import { createEnv } from "@tailorkit/env";
+import { createEnv } from "@patchsmith/env";
 import * as z from "zod";
 
 export const env = createEnv({
@@ -18,7 +18,7 @@ export const env = createEnv({
 
     AUTH_SECRET: z.string().min(32).optional(),
 
-    OPENAPI_SERVER_URL: z.url().default("https://tailorkit.dev/api/platform"),
+    OPENAPI_SERVER_URL: z.url().default("https://patchsmith.io/api/platform"),
 
     PORT: z.coerce.number().optional(),
 

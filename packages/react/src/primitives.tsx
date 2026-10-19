@@ -1,12 +1,12 @@
-import { buildPrimitiveCss } from "@tailorkit/client-core";
-import type { PrimitiveProps } from "@tailorkit/client-core";
-import type { TailorKitTheme } from "@tailorkit/core/schema";
+import { buildPrimitiveCss } from "@patchsmith/client-core";
+import type { PrimitiveProps } from "@patchsmith/client-core";
+import type { PatchSmithTheme } from "@patchsmith/core/schema";
 import { createContext, useContext, useId, useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
 interface PrimitiveThemeContextValue {
   viewId: string;
-  theme: TailorKitTheme;
+  theme: PatchSmithTheme;
 }
 
 export const PrimitiveThemeContext =
@@ -14,7 +14,7 @@ export const PrimitiveThemeContext =
 
 const usePrimitiveNodeId = (): string => {
   const id = useId();
-  return useMemo(() => `tailorkit-${id.replaceAll(":", "")}`, [id]);
+  return useMemo(() => `patchsmith-${id.replaceAll(":", "")}`, [id]);
 };
 
 const Primitive = ({
@@ -42,9 +42,9 @@ const Primitive = ({
     : "";
 
   return (
-    <Element data-tailorkit-node={nodeId}>
+    <Element data-patchsmith-node={nodeId}>
       {css === "" ? null : (
-        <style data-tailorkit-node-style={nodeId}>{css}</style>
+        <style data-patchsmith-node-style={nodeId}>{css}</style>
       )}
       {children}
     </Element>
@@ -98,14 +98,14 @@ const Pressable = ({
   return (
     <>
       {css === "" ? null : (
-        <style data-tailorkit-node-style={nodeId}>{css}</style>
+        <style data-patchsmith-node-style={nodeId}>{css}</style>
       )}
       {/* oxlint-disable jsx-a11y/prefer-tag-over-role -- Pressable owns a div to support nested block layout primitives. */}
       <div
         aria-disabled={disabled || undefined}
         aria-label={isStringValue(ariaLabel) ? ariaLabel : undefined}
         data-pressed={!disabled && pressedKey !== null ? "" : undefined}
-        data-tailorkit-node={nodeId}
+        data-patchsmith-node={nodeId}
         onBlur={() => {
           setPressedKey(null);
         }}

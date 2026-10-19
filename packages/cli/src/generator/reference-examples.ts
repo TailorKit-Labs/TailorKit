@@ -15,8 +15,8 @@ export const componentExample = (
     "Supply the required props listed above. Use supported children between tags.",
     "",
     "```tsx",
-    `import { ${imported} } from "#tailorkit";`,
-    `import type { ${identifier}Props } from "#tailorkit";`,
+    `import { ${imported} } from "#patchsmith";`,
+    `import type { ${identifier}Props } from "#patchsmith";`,
     "",
     `export const Example = (props: ${identifier}Props) => (`,
     children
@@ -61,8 +61,8 @@ export const valueCallbackExample = (
     "",
     "```tsx",
     'import { useState } from "preact/hooks";',
-    `import { ${imported} } from "#tailorkit";`,
-    `import type { ${identifier}Props } from "#tailorkit";`,
+    `import { ${imported} } from "#patchsmith";`,
+    `import type { ${identifier}Props } from "#patchsmith";`,
     "",
     `export const ValueExample = (props: ${identifier}Props) => {`,
     '  const [value, setValue] = useState(props.value ?? "");',
@@ -100,7 +100,7 @@ export const stylingExample = (
     "These tokens and keys come from this prop's schema; other props may accept different values.",
     "",
     "```ts",
-    `import type { ${identifier}Props } from "#tailorkit";`,
+    `import type { ${identifier}Props } from "#patchsmith";`,
     `export const styles: Pick<${identifier}Props, ${JSON.stringify(prop)}> = {`,
     `  ${JSON.stringify(prop)}: { ${values.join(", ")} },`,
     "};",
@@ -113,7 +113,7 @@ export const toolExample = (segments: string[], hasInput: boolean): string => {
   const parameter = hasInput ? `input: Parameters<typeof ${reference}>[0]` : "";
   return [
     "```ts",
-    'import { tools } from "#tailorkit";',
+    'import { tools } from "#patchsmith";',
     "",
     `export const run = async (${parameter}) =>`,
     `  await ${reference}(${hasInput ? "input" : ""});`,
@@ -128,8 +128,8 @@ export const viewExample = (
 ): string => {
   const lines = [
     "```tsx",
-    'import "#tailorkit";',
-    'import { defineView } from "tailorkit/client";',
+    'import "#patchsmith";',
+    'import { defineView } from "patchsmith/client";',
   ];
   if (multiple) {
     lines.push(

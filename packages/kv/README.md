@@ -1,3 +1,3 @@
-# TailorKit KV
+# PatchSmith KV
 
-`@tailorkit/kv` implements shared key-value storage for the TailorKit platform.
+`@patchsmith/kv` implements shared key-value storage for the PatchSmith platform.

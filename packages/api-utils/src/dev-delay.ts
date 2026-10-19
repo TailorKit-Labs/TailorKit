@@ -1,5 +1,5 @@
 import { os } from "@orpc/server";
-import { setSpanAttributes } from "@tailorkit/observability";
+import { setSpanAttributes } from "@patchsmith/observability";
 
 import { env } from "#env";
 
@@ -29,9 +29,9 @@ export const devDelayMiddleware = os.middleware(
 
     const end = Date.now();
     setSpanAttributes({
-      "tailorkit.duration_ms": end - start,
-      "tailorkit.orpc.path": path,
-      "tailorkit.package": "api-utils",
+      "patchsmith.duration_ms": end - start,
+      "patchsmith.orpc.path": path,
+      "patchsmith.package": "api-utils",
     });
 
     return result;

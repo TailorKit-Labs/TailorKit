@@ -1,4 +1,4 @@
-import { appAgentMcpDiscovery } from "@tailorkit/agent/mcp";
+import { appAgentMcpDiscovery } from "@patchsmith/agent/mcp";
 
 export const handleMcpRequest = async ({ request }: { request: Request }) => {
   if (

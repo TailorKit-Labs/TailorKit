@@ -1,25 +1,25 @@
 import { createHmac } from "node:crypto";
 
-import { user } from "@tailorkit/db/schema/auth";
+import { user } from "@patchsmith/db/schema/auth";
 import { afterAll, describe, expect, it, vi } from "vite-plus/test";
 
 import { createTestDb } from "./test/pglite";
 
 // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const state = vi.hoisted(() => ({ db: undefined as unknown }));
-vi.mock("@tailorkit/db", () => ({ createDb: () => state.db }));
-vi.mock("@tailorkit/kv", () => ({ getKV: () => null }));
-vi.mock("@tailorkit/observability", () => ({
+vi.mock("@patchsmith/db", () => ({ createDb: () => state.db }));
+vi.mock("@patchsmith/kv", () => ({ getKV: () => null }));
+vi.mock("@patchsmith/observability", () => ({
   initializeObservability: vi.fn(),
 }));
-vi.mock("@tailorkit/email", () => ({
+vi.mock("@patchsmith/email", () => ({
   sendBetterAuthOtpEmail: vi.fn(),
   sendOrganizationInvitationEmail: vi.fn(),
 }));
 
 const fixture = await createTestDb();
 state.db = fixture.db;
-const { createAuth } = await import("@tailorkit/auth");
+const { createAuth } = await import("@patchsmith/auth");
 const auth = createAuth();
 afterAll(async () => {
   await fixture.client.close();

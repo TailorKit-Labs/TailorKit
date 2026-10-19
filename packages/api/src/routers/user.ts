@@ -1,8 +1,8 @@
-import { auth, getSocialProviderAvailability } from "@tailorkit/auth";
-import { db } from "@tailorkit/db";
-import { account } from "@tailorkit/db/schema/auth";
-import { validateOrgSlug } from "@tailorkit/db/validate-org-slug";
-import { getKV } from "@tailorkit/kv";
+import { auth, getSocialProviderAvailability } from "@patchsmith/auth";
+import { db } from "@patchsmith/db";
+import { account } from "@patchsmith/db/schema/auth";
+import { validateOrgSlug } from "@patchsmith/db/validate-org-slug";
+import { getKV } from "@patchsmith/kv";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -22,7 +22,7 @@ const getGitHubUsername = async (
   accountId: string,
   getAccessToken: () => Promise<string | null>
 ) => {
-  const key = `tailorkit:github-username:${accountId}`;
+  const key = `patchsmith:github-username:${accountId}`;
   let kv: ReturnType<typeof getKV> = null;
 
   try {

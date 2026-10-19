@@ -1,8 +1,8 @@
 ---
-"@tailorkit/react": minor
-"@tailorkit/client-core": minor
-"@tailorkit/app": patch
-"tailorkit": minor
+"@patchsmith/react": minor
+"@patchsmith/client-core": minor
+"@patchsmith/app": patch
+"patchsmith": minor
 ---
 
 Rename `Slot` to `RenderSlot` (including client-bound `RenderSlot.Controlled`) and replace its `name` prop with `slot`. Rename the public types to `RenderSlotProps`, `ControlledRenderSlotProps`, `RuntimeRenderSlotProps`, `RenderSlotContext`, and `RenderSlotComponent`.

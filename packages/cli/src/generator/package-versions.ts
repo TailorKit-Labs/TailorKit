@@ -8,7 +8,7 @@ export interface TemplatePackageVersions {
   vite: string;
   vitePlus?: string;
   preact: string;
-  tailorkit: string;
+  patchsmith: string;
   typescript: string;
   valibot: string;
 }
@@ -42,7 +42,7 @@ const REQUESTS = {
 } satisfies Record<
   Exclude<
     keyof TemplatePackageVersions,
-    "drizzleKit" | "drizzleOrm" | "tailorkit"
+    "drizzleKit" | "drizzleOrm" | "patchsmith"
   >,
   PackageVersionRequest
 >;
@@ -152,8 +152,8 @@ export const resolveTemplatePackageVersions = async (
   return {
     drizzleKit: TEMPLATE_DRIZZLE_VERSION,
     drizzleOrm: TEMPLATE_DRIZZLE_VERSION,
+    patchsmith: packageJson.version,
     preact,
-    tailorkit: packageJson.version,
     typescript,
     valibot,
     vite,

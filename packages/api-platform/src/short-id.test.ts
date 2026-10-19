@@ -1,10 +1,10 @@
 import {
   initializeTenantShortId,
   tenantShortIdField,
-} from "@tailorkit/auth/lib/tenant-short-id";
-import { app, appDeployment } from "@tailorkit/db/schema/apps";
-import { organization } from "@tailorkit/db/schema/auth";
-import { project } from "@tailorkit/db/schema/project";
+} from "@patchsmith/auth/lib/tenant-short-id";
+import { app, appDeployment } from "@patchsmith/db/schema/apps";
+import { organization } from "@patchsmith/db/schema/auth";
+import { project } from "@patchsmith/db/schema/project";
 import { afterAll, expect, it } from "vite-plus/test";
 
 import { createTestDb } from "#test/pglite";

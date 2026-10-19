@@ -1,6 +1,6 @@
 import * as v from "valibot";
 
-export const tailorkitUploadManifestSchema = v.object({
+export const patchsmithUploadManifestSchema = v.object({
   appId: v.optional(v.pipe(v.string(), v.minLength(1))),
   assets: v.object({
     client: v.literal("client/client.js"),
@@ -32,17 +32,17 @@ export const tailorkitUploadManifestSchema = v.object({
   ),
 });
 
-export type TailorKitUploadManifest = v.InferOutput<
-  typeof tailorkitUploadManifestSchema
+export type PatchSmithUploadManifest = v.InferOutput<
+  typeof patchsmithUploadManifestSchema
 >;
 
-export const createTailorKitUploadManifest = (
-  logos?: TailorKitUploadManifest["assets"]["logos"],
+export const createPatchSmithUploadManifest = (
+  logos?: PatchSmithUploadManifest["assets"]["logos"],
   server = false,
-  views?: TailorKitUploadManifest["views"],
+  views?: PatchSmithUploadManifest["views"],
   appId?: string
-): TailorKitUploadManifest => {
-  const assets: TailorKitUploadManifest["assets"] = {
+): PatchSmithUploadManifest => {
+  const assets: PatchSmithUploadManifest["assets"] = {
     client: "client/client.js",
   };
   if (server) {
@@ -51,7 +51,7 @@ export const createTailorKitUploadManifest = (
   if (logos && Object.keys(logos).length > 0) {
     assets.logos = logos;
   }
-  return v.parse(tailorkitUploadManifestSchema, {
+  return v.parse(patchsmithUploadManifestSchema, {
     appId,
     assets,
     version: 1,

@@ -12,7 +12,7 @@ import path from "node:path";
 import { build } from "vite";
 import { assert, expect, it } from "vite-plus/test";
 
-import { tailorkit } from "#index";
+import { patchsmith } from "#index";
 import { linkTestDependencies } from "#test-utils";
 
 import { readClientManifest } from "./client-views";
@@ -36,10 +36,10 @@ const buildFixture = async (options: {
     },
     configFile: false,
     plugins: [
-      tailorkit({
+      patchsmith({
         configPath: path.resolve(
           options.cwd,
-          options.configPath ?? "tailorkit.config.mjs"
+          options.configPath ?? "patchsmith.config.mjs"
         ),
       }),
     ],
@@ -78,7 +78,7 @@ it.each([
 it("infers dotted paths and literal slot names while checking explicit declarations", () => {
   const filename = "/app/src/slots/panel.links/customers.details.view.tsx";
   const source =
-    'import { defineView as view } from "tailorkit/client"; export default view({ component: () => null });';
+    'import { defineView as view } from "patchsmith/client"; export default view({ component: () => null });';
   const inferred = inferFileView(source, filename, "/app");
   expect(inferred).toContain('slot: "panel.links"');
   expect(inferred).toContain('view: "/customers/details"');
@@ -108,7 +108,7 @@ it.each([
 ])("rejects file route declarations with %s", (properties, message) => {
   expect(() =>
     inferFileView(
-      `import { defineView } from "tailorkit/client"; export default defineView({ ${properties}, component: () => null });`,
+      `import { defineView } from "patchsmith/client"; export default defineView({ ${properties}, component: () => null });`,
       "/app/src/slots/panel/customers.details.view.tsx",
       "/app"
     )
@@ -116,11 +116,11 @@ it.each([
 });
 
 it.each([
-  "tailorkit/client",
-  "tailorkit/app",
-  "tailorkit/app/client",
-  "@tailorkit/app/client",
-  "@tailorkit/app",
+  "patchsmith/client",
+  "patchsmith/app",
+  "patchsmith/app/client",
+  "@patchsmith/app/client",
+  "@patchsmith/app",
 ])("infers namespace defineView calls imported from %s", (module) => {
   const filename = "/app/src/slots/panel/customers.details.view.tsx";
   for (const call of ["client.defineView", 'client["defineView"]']) {
@@ -185,9 +185,9 @@ it.each([
 ])("ignores imported defineView names shadowed by a %s", (_scope, body) => {
   const filename = "/app/src/slots/panel/index.view.tsx";
   for (const [imports, name, call] of [
-    ['import { defineView as view } from "tailorkit/client";', "view", "view"],
+    ['import { defineView as view } from "patchsmith/client";', "view", "view"],
     [
-      'import * as client from "tailorkit/client";',
+      'import * as client from "patchsmith/client";',
       "client",
       "client.defineView",
     ],
@@ -203,7 +203,7 @@ it.each([
 });
 
 it("keeps SDK references in closures and parameter defaults outside body declarations", () => {
-  const source = `import * as client from "tailorkit/client";
+  const source = `import * as client from "patchsmith/client";
     function helper(options = client.defineView({ component: () => null })) { var client = other; }
     const view = () => client.defineView({ component: () => null });
     export default view();`;
@@ -216,7 +216,7 @@ it("keeps SDK references in closures and parameter defaults outside body declara
 });
 
 it("discovers only view and layout files, supports roots, and checks the same sources on deploy", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-file-discovery-"));
+  const root = await mkdtemp(path.join(tmpdir(), "patchsmith-file-discovery-"));
   try {
     await mkdir(path.join(root, "src/slots/panel.links/components"), {
       recursive: true,
@@ -257,34 +257,34 @@ it("discovers only view and layout files, supports roots, and checks the same so
 });
 
 const withFileRouteApp = async (check: (root: string) => Promise<void>) => {
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-file-build-"));
+  const root = await mkdtemp(path.join(tmpdir(), "patchsmith-file-build-"));
   try {
     await linkTestDependencies(root);
     await mkdir(path.join(root, "src/slots/page"), { recursive: true });
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(
-      path.join(root, "tailorkit.config.mjs"),
+      path.join(root, "patchsmith.config.mjs"),
       'export default { name: "Test App", slug: "test-app", host: "https://host.example.com", server: {} };'
     );
     await writeFile(
       path.join(root, "src/server.ts"),
-      'import { defineServer } from "tailorkit/server"; export default defineServer({});'
+      'import { defineServer } from "patchsmith/server"; export default defineServer({});'
     );
     await writeFile(
       path.join(root, "src/root.tsx"),
-      'import { defineRoute, ClientProvider } from "tailorkit/client"; export default defineRoute({ shellComponent: ClientProvider });'
+      'import { defineRoute, ClientProvider } from "patchsmith/client"; export default defineRoute({ shellComponent: ClientProvider });'
     );
     await writeFile(
       path.join(root, "src/slots/page/root.tsx"),
-      'import { defineRoute, Route } from "tailorkit/client"; export default defineRoute({ shellComponent: () => <Route /> });'
+      'import { defineRoute, Route } from "patchsmith/client"; export default defineRoute({ shellComponent: () => <Route /> });'
     );
     await writeFile(
       path.join(root, "src/slots/page/layout.tsx"),
-      'import { Route } from "tailorkit/client"; export default () => <Route />;'
+      'import { Route } from "patchsmith/client"; export default () => <Route />;'
     );
     await writeFile(
       path.join(root, "src/slots/page/index.view.tsx"),
-      `import * as client from "tailorkit/client"; import { z } from "zod";
+      `import * as client from "patchsmith/client"; import { z } from "zod";
       export default client.defineView({ view: "/", component: () => "leaf", instances: { dataSchema: z.object({}), resolve: () => [{ key: "all", metadata: { title: "PRIVATE_RESOLVER" }, data: {} }] } });`
     );
     await writeFile(
@@ -300,7 +300,7 @@ const withFileRouteApp = async (check: (root: string) => Promise<void>) => {
 it("builds file routes with extracted private instance resolvers", async () => {
   await withFileRouteApp(async (root) => {
     await buildFixture({ cwd: root });
-    const manifestFile = path.join(root, ".tailorkit/client/client.js");
+    const manifestFile = path.join(root, ".patchsmith/client/client.js");
     const manifest = await readClientManifest(manifestFile);
     expect(manifest.views).toEqual([
       { instances: true, path: "/", slot: "page" },
@@ -309,7 +309,7 @@ it("builds file routes with extracted private instance resolvers", async () => {
       "PRIVATE_RESOLVER"
     );
     expect(
-      await readFile(path.join(root, ".tailorkit/server/server.js"), "utf-8")
+      await readFile(path.join(root, ".patchsmith/server/server.js"), "utf-8")
     ).toContain("PRIVATE_RESOLVER");
   });
 });
@@ -324,7 +324,7 @@ it.each(["add", "rename", "remove"] as const)(
         "src/slots/page/customers.summary.view.tsx"
       );
       const viewSource =
-        'import * as client from "tailorkit/client"; import { z } from "zod"; export default client["defineView"]({ component: () => "details", instances: { dataSchema: z.object({}), resolve: () => [{ key: "details", metadata: { title: "INFERRED_RESOLVER" }, data: {} }] } });';
+        'import * as client from "patchsmith/client"; import { z } from "zod"; export default client["defineView"]({ component: () => "details", instances: { dataSchema: z.object({}), resolve: () => [{ key: "details", metadata: { title: "INFERRED_RESOLVER" }, data: {} }] } });';
       if (change === "rename") {
         await writeFile(next, viewSource);
       }
@@ -336,7 +336,7 @@ it.each(["add", "rename", "remove"] as const)(
       try {
         const paths = async () => {
           const current = await readClientManifest(
-            path.join(root, ".tailorkit/client/client.js")
+            path.join(root, ".patchsmith/client/client.js")
           );
           return current.views.map((view) => view.path).toSorted();
         };
@@ -355,7 +355,7 @@ it.each(["add", "rename", "remove"] as const)(
         await expect
           .poll(async () => {
             const server = await readFile(
-              path.join(root, ".tailorkit/server/server.js"),
+              path.join(root, ".patchsmith/server/server.js"),
               "utf-8"
             );
             return server.includes("PRIVATE_RESOLVER");
@@ -374,18 +374,20 @@ it.each([
 ])(
   "fails the build for a mismatched file route: %s",
   async (declaration, message) => {
-    const root = await mkdtemp(path.join(tmpdir(), "tailorkit-invalid-route-"));
+    const root = await mkdtemp(
+      path.join(tmpdir(), "patchsmith-invalid-route-")
+    );
     try {
       await linkTestDependencies(root);
       await mkdir(path.join(root, "src/slots/panel"), { recursive: true });
       await writeFile(path.join(root, "package.json"), '{"type":"module"}');
       await writeFile(
-        path.join(root, "tailorkit.config.mjs"),
+        path.join(root, "patchsmith.config.mjs"),
         'export default { name: "Test App", slug: "test-app", host: "https://host.example.com" };'
       );
       await writeFile(
         path.join(root, "src/slots/panel/index.view.tsx"),
-        `import { defineView } from "tailorkit/client"; export default defineView({ ${declaration}, component: () => "home" });`
+        `import { defineView } from "patchsmith/client"; export default defineView({ ${declaration}, component: () => "home" });`
       );
       await expect(buildFixture({ cwd: root })).rejects.toThrow(message);
     } finally {
@@ -395,18 +397,18 @@ it.each([
 );
 
 it("checks re-exported view paths against their file locations during the build", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-reexport-route-"));
+  const root = await mkdtemp(path.join(tmpdir(), "patchsmith-reexport-route-"));
   try {
     await linkTestDependencies(root);
     await mkdir(path.join(root, "src/slots/panel"), { recursive: true });
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(
-      path.join(root, "tailorkit.config.mjs"),
+      path.join(root, "patchsmith.config.mjs"),
       'export default { name: "Test App", slug: "test-app", host: "https://host.example.com" };'
     );
     const card = path.join(root, "src/slots/panel/card.tsx");
     const source =
-      'import { defineView } from "tailorkit/client"; export default defineView({ slot: "panel", view: "/", component: () => "home" });';
+      'import { defineView } from "patchsmith/client"; export default defineView({ slot: "panel", view: "/", component: () => "home" });';
     await writeFile(card, source);
     await writeFile(
       path.join(root, "src/slots/panel/index.view.tsx"),
@@ -423,21 +425,21 @@ it("checks re-exported view paths against their file locations during the build"
 });
 
 it("resolves the client runtime from the app when build output is outside the project", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-file-client-"));
+  const root = await mkdtemp(path.join(tmpdir(), "patchsmith-file-client-"));
   const output = await mkdtemp(
-    path.join(tmpdir(), "tailorkit-external-output-")
+    path.join(tmpdir(), "patchsmith-external-output-")
   );
   try {
     await linkTestDependencies(root);
     await mkdir(path.join(root, "src/slots/panel"), { recursive: true });
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');
     await writeFile(
-      path.join(root, "tailorkit.config.mjs"),
+      path.join(root, "patchsmith.config.mjs"),
       'export default { name: "Test App", slug: "test-app", host: "https://host.example.com" };'
     );
     await writeFile(
       path.join(root, "src/slots/panel/index.view.tsx"),
-      'import { defineView } from "tailorkit/client"; export default defineView({ view: "/", component: () => "home" });'
+      'import { defineView } from "patchsmith/client"; export default defineView({ view: "/", component: () => "home" });'
     );
     await buildFixture({ cwd: root, outDir: output });
     const manifest = await readClientManifest(

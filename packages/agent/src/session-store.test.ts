@@ -1,7 +1,7 @@
 import { readFile, readdir } from "node:fs/promises";
 
 import { PGlite } from "@electric-sql/pglite";
-import { appAgentLease, appAgentThread } from "@tailorkit/db/schema/apps";
+import { appAgentLease, appAgentThread } from "@patchsmith/db/schema/apps";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import {
@@ -34,7 +34,7 @@ const mocks = vi.hoisted(() => ({
       >
     >(),
 }));
-vi.mock("@tailorkit/db", () => ({
+vi.mock("@patchsmith/db", () => ({
   get db() {
     return mocks.db();
   },

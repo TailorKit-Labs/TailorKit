@@ -1,13 +1,13 @@
-import { createValueMemo, createViewsQuery } from "@tailorkit/client-core";
-import type { SlotItem, ViewsQueryOptions } from "@tailorkit/client-core";
+import { createValueMemo, createViewsQuery } from "@patchsmith/client-core";
+import type { SlotItem, ViewsQueryOptions } from "@patchsmith/client-core";
 import { useMemo } from "react";
 
-import { useTailorkitContext } from "#components/context";
+import { usePatchSmithContext } from "#components/context";
 
 import { useQueryResult } from "./use-query-result";
 import type { UseQueryResult } from "./use-query-result";
 
-export type { SlotItem } from "@tailorkit/client-core";
+export type { SlotItem } from "@patchsmith/client-core";
 export type UseViewsOptions<
   TScopeNames extends string = string,
   TSlot extends string = string,
@@ -17,7 +17,7 @@ export type UseViewsResult<TMultiple extends boolean = boolean> =
 
 /** Subscribe to the shared views query using React's lifecycle. */
 export const useViews = (options: UseViewsOptions): UseViewsResult => {
-  const { store } = useTailorkitContext("useViews");
+  const { store } = usePatchSmithContext("useViews");
   const memoOptions = useMemo(() => createValueMemo<UseViewsOptions>(), []);
   const stableOptions = memoOptions({
     appIds:

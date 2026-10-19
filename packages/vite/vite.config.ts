@@ -3,7 +3,7 @@ import { defineConfig } from "vite-plus";
 export default defineConfig({
   pack: {
     clean: true,
-    deps: { alwaysBundle: [/^@tailorkit\/asset-delivery(?:\/|$)/u] },
+    deps: { alwaysBundle: [/^@patchsmith\/asset-delivery(?:\/|$)/u] },
     dts: true,
     entry: {
       "app-link": "src/config/app-link.ts",

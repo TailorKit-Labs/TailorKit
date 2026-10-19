@@ -1,4 +1,4 @@
-import { hashSecret } from "@tailorkit/api-utils/hashing";
+import { hashSecret } from "@patchsmith/api-utils/hashing";
 import {
   afterEach,
   beforeEach,
@@ -25,7 +25,7 @@ const mocks = vi.hoisted(() => {
   const env: TestAuthEnv = { AUTH_SECRET: "test-cli-token-secret" };
   return { env, findToken: vi.fn() };
 });
-vi.mock("@tailorkit/db", () => ({
+vi.mock("@patchsmith/db", () => ({
   db: { query: { cliToken: { findFirst: mocks.findToken } } },
 }));
 vi.mock("#env", () => ({ env: mocks.env }));

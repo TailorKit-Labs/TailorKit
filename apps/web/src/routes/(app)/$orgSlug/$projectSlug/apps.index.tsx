@@ -1,8 +1,8 @@
-import type { Scope } from "@tailorkit/db/schema/scope";
-import { Badge } from "@tailorkit/ui/badge";
-import { Button } from "@tailorkit/ui/button";
-import { CardFrame } from "@tailorkit/ui/card";
-import { DateAgo } from "@tailorkit/ui/date";
+import type { Scope } from "@patchsmith/db/schema/scope";
+import { Badge } from "@patchsmith/ui/badge";
+import { Button } from "@patchsmith/ui/button";
+import { CardFrame } from "@patchsmith/ui/card";
+import { DateAgo } from "@patchsmith/ui/date";
 import {
   Empty,
   EmptyContent,
@@ -10,12 +10,12 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@tailorkit/ui/empty";
+} from "@patchsmith/ui/empty";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
-} from "@tailorkit/ui/input-group";
+} from "@patchsmith/ui/input-group";
 import {
   Table,
   TableBody,
@@ -23,7 +23,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@tailorkit/ui/table";
+} from "@patchsmith/ui/table";
 import { useInfiniteQuery } from "@tanstack/react-query";
 /* oxlint-disable react/no-unstable-nested-components */
 import {
@@ -362,7 +362,7 @@ const AppsIndexPage = () => {
               render={
                 <a
                   aria-label="Read the installation guide"
-                  href="https://tailorkit.dev/docs/installation"
+                  href="https://patchsmith.io/docs/installation"
                   rel="noopener noreferrer"
                   target="_blank"
                 />
@@ -395,8 +395,8 @@ const AppsIndexPage = () => {
       actions={isEmptyProject ? undefined : searchControl}
       description={
         isEmptyProject
-          ? "No apps yet. Set up TailorKit to deploy your first app."
-          : "Apps uploaded to this project through TailorKit."
+          ? "No apps yet. Set up PatchSmith to deploy your first app."
+          : "Apps uploaded to this project through PatchSmith."
       }
       title="Apps"
     >

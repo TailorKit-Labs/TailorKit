@@ -1,4 +1,4 @@
-import type { RemoteNode } from "@tailorkit/sandbox/protocol";
+import type { RemoteNode } from "@patchsmith/sandbox/protocol";
 import { atom, computed } from "nanostores";
 
 type Listener = () => void;

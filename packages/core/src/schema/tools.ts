@@ -1,7 +1,7 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
-import type { TailorKitScope } from "#server/types";
-import type { TailorKitSchemaSpec } from "#spec/index";
+import type { PatchSmithScope } from "#server/types";
+import type { PatchSmithSchemaSpec } from "#spec/index";
 
 import type { Schema, SchemaSerializer } from "./shared";
 import { serializeSchema } from "./shared";
@@ -12,7 +12,7 @@ export interface ContractTool<
   I extends Schema | undefined = Schema | undefined,
   O extends Schema | undefined = Schema | undefined,
 > {
-  readonly $tailorkitToolDefinition: true;
+  readonly $patchsmithToolDefinition: true;
   readonly kind: K;
   readonly definition: { input?: I; output?: O };
   input: <N extends Schema>(schema: N) => ContractTool<K, N, O>;
@@ -30,7 +30,7 @@ const build = <
   input?: I,
   output?: O
 ): ContractTool<K, I, O> => ({
-  $tailorkitToolDefinition: true,
+  $patchsmithToolDefinition: true,
   definition: { input, output },
   input: (schema) => build(kind, schema, output),
   kind,
@@ -58,7 +58,7 @@ export interface ToolIdentity {
   readonly appId: string;
   readonly projectId: string;
   readonly deploymentId: string;
-  readonly scope: { name: string; value: TailorKitScope };
+  readonly scope: { name: string; value: PatchSmithScope };
   readonly expiresAt: number;
 }
 export interface ToolContext {
@@ -141,7 +141,7 @@ export type ToolCallers<
     };
 const isContractTool = (
   value: ContractTool | ContractTools
-): value is ContractTool => value.$tailorkitToolDefinition === true;
+): value is ContractTool => value.$patchsmithToolDefinition === true;
 
 export const flattenTools = (
   tools: ContractTools,
@@ -176,8 +176,8 @@ export const flattenTools = (
 export const serializeTools = (
   tools: ContractTools,
   serializer?: SchemaSerializer
-): TailorKitSchemaSpec["tools"] => {
-  const result: TailorKitSchemaSpec["tools"] = {};
+): PatchSmithSchemaSpec["tools"] => {
+  const result: PatchSmithSchemaSpec["tools"] = {};
   for (const [name, value] of Object.entries(tools)) {
     if (!(value !== undefined && value !== null)) {
       continue;

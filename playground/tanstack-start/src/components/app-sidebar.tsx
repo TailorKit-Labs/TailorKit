@@ -1,5 +1,4 @@
-import type { DemoSession } from "@playground/shared/auth";
-import { Button } from "@tailorkit/ui/button";
+import { Button } from "@patchsmith/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -10,7 +9,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@tailorkit/ui/sidebar";
+} from "@patchsmith/ui/sidebar";
+import type { DemoSession } from "@playground/shared/auth";
 import { Link } from "@tanstack/react-router";
 import {
   Blocks,
@@ -19,7 +19,7 @@ import {
   LayoutDashboard,
   LogOut,
 } from "lucide-react";
-import type { TailorKitApp } from "tailorkit/react";
+import type { PatchSmithApp } from "patchsmith/react";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Overview", to: "/" },
@@ -35,11 +35,11 @@ export const AppSidebar = ({
   session,
   signOut,
 }: {
-  apps: TailorKitApp[] | undefined;
+  apps: PatchSmithApp[] | undefined;
   appsError: Error | null;
   appsPending: boolean;
-  onSelectApp: (app: TailorKitApp) => void;
-  selectedApp: TailorKitApp | null;
+  onSelectApp: (app: PatchSmithApp) => void;
+  selectedApp: PatchSmithApp | null;
   session: DemoSession;
   signOut: () => void;
 }) => (
@@ -82,7 +82,7 @@ export const AppSidebar = ({
       <SidebarGroup>
         <SidebarGroupLabel>Apps</SidebarGroupLabel>
         <SidebarMenu>
-          {apps?.map((app: TailorKitApp) => (
+          {apps?.map((app: PatchSmithApp) => (
             <SidebarMenuItem key={app.id}>
               <SidebarMenuButton
                 isActive={selectedApp?.id === app.id}

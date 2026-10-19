@@ -7,9 +7,9 @@ import {
   CardHeader,
   CardPanel,
   CardTitle,
-} from "@tailorkit/ui/card";
-import { useAppForm } from "@tailorkit/ui/form";
-import { toastManager } from "@tailorkit/ui/toast";
+} from "@patchsmith/ui/card";
+import { useAppForm } from "@patchsmith/ui/form";
+import { toastManager } from "@patchsmith/ui/toast";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
@@ -54,7 +54,7 @@ const ProfilePage = () => {
 
   return (
     <PageLayout
-      description="Manage the name shown across your Tailorkit account."
+      description="Manage the name shown across your PatchSmith account."
       title="Profile"
     >
       <CardFrame className="w-full">

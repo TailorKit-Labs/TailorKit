@@ -7,12 +7,12 @@ import {
   hostedAssetRequest,
   limitAssetBody,
   serveAssetRequest,
-} from "@tailorkit/asset-delivery";
-import type { AssetIdentity } from "@tailorkit/asset-delivery";
+} from "@patchsmith/asset-delivery";
+import type { AssetIdentity } from "@patchsmith/asset-delivery";
 import { Effect } from "effect";
 import { catch as catchEffect } from "effect/Effect";
 
-const cachedEncodingHeader = "X-TailorKit-Content-Encoding";
+const cachedEncodingHeader = "X-PatchSmith-Content-Encoding";
 
 const downstreamResponse = (response: Response, request: Request) => {
   const headers = new Headers(response.headers);
@@ -66,7 +66,7 @@ const loadAsset = (
     // downstream responses always receive the original R2 bytes.
     // A new key also bypasses entries written with the old HTTP encoding contract.
     const cacheUrl = new URL(request.url);
-    cacheUrl.searchParams.set("__tailorkit_asset_cache", "opaque-v1");
+    cacheUrl.searchParams.set("__patchsmith_asset_cache", "opaque-v1");
     const cacheKey = new Request(cacheUrl);
     const cached = yield* Effect.tryPromise(
       async () => await edgeCache.default.match(cacheKey)

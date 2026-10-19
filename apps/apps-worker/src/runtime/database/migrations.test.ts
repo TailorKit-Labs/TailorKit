@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 
-import { defineServer, query } from "@tailorkit/app/server";
+import { defineServer, query } from "@patchsmith/app/server";
 import { afterEach, expect, it } from "vite-plus/test";
 import { z } from "zod";
 

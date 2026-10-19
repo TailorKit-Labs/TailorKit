@@ -1,5 +1,5 @@
-import type { ToolBridge } from "@tailorkit/app/client";
-import { AppError } from "@tailorkit/app/server";
+import type { ToolBridge } from "@patchsmith/app/client";
+import { AppError } from "@patchsmith/app/server";
 import { RpcTarget } from "cloudflare:workers";
 import { z } from "zod";
 

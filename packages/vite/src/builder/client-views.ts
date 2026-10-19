@@ -3,7 +3,7 @@ import { promisify } from "node:util";
 
 import * as v from "valibot";
 
-import { tailorkitUploadManifestSchema } from "./upload-manifest";
+import { patchsmithUploadManifestSchema } from "./upload-manifest";
 
 // Inspect the developer's bundled client in a short-lived build process, never on the platform.
 const inspectClient = `
@@ -20,7 +20,7 @@ const views = Object.entries(client.slots).flatMap(([slot, definitions]) =>
     return [{ slot, path, ...(resolver !== undefined ? { instances: true } : {}) }];
   })
 );
-process.stdout.write("\\nTAILORKIT_VIEWS=" + JSON.stringify({ views, instanceResolvers }));
+process.stdout.write("\\nPATCHSMITH_VIEWS=" + JSON.stringify({ views, instanceResolvers }));
 process.exit(0);
 `;
 
@@ -33,7 +33,7 @@ export const readClientManifest = async (filename: string) => {
       { maxBuffer: 2 * 1024 * 1024, timeout: 10_000 }
     );
     const result = stdout.slice(
-      stdout.lastIndexOf("\nTAILORKIT_VIEWS=") + "\nTAILORKIT_VIEWS=".length
+      stdout.lastIndexOf("\nPATCHSMITH_VIEWS=") + "\nPATCHSMITH_VIEWS=".length
     );
     const manifest = v.parse(
       v.object({
@@ -44,7 +44,7 @@ export const readClientManifest = async (filename: string) => {
             slot: v.string(),
           })
         ),
-        views: v.unwrap(tailorkitUploadManifestSchema.entries.views),
+        views: v.unwrap(patchsmithUploadManifestSchema.entries.views),
       }),
       JSON.parse(result)
     );

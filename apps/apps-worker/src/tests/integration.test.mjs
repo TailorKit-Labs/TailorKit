@@ -14,8 +14,8 @@ import {
   issueAppToken,
   appTokenVerifier,
   APP_AUDIENCE,
-} from "@tailorkit/api-utils/app-auth";
-import { createClient, createApi, reference } from "@tailorkit/app/client";
+} from "@patchsmith/api-utils/app-auth";
+import { createClient, createApi, reference } from "@patchsmith/app/client";
 import { build } from "vite";
 import { it } from "vite-plus/test";
 
@@ -134,11 +134,11 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
         .map((name) => ({ path: path.join(dist, name), type: "Text" })),
     ],
     modulesRoot: dist,
-    name: "tailorkit-runtime-test",
+    name: "patchsmith-runtime-test",
     /** @param {Request} request Outbound request made by the isolated worker. */
     // oxlint-disable-next-line eslint/complexity -- Keep this validation or rendering lifecycle together: its guards share the same state, cleanup, and error handling.
     outboundService: async (request) => {
-      if (request.url === "https://host.test/api/tailorkit/tools/execute") {
+      if (request.url === "https://host.test/api/patchsmith/tools/execute") {
         const { path: toolPath, input, requestId } = await request.json();
         assert.match(requestId, /^[0-9a-f-]{36}$/u);
         const token = request.headers.get("authorization").slice(7);
@@ -284,7 +284,7 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
       projectShortId,
       scope: { name: "org", value: { id: "tenant" } },
       subjectId: "user",
-      toolUrl: "https://host.test/api/tailorkit/tools/execute",
+      toolUrl: "https://host.test/api/patchsmith/tools/execute",
       ...overrides,
     });
     return await mf.dispatchFetch(
@@ -294,7 +294,7 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
         headers: {
           authorization: `Bearer ${session.token}`,
           "content-type": "application/json",
-          "x-tailorkit-identity": "forged",
+          "x-patchsmith-identity": "forged",
         },
         method: "POST",
       }
@@ -438,7 +438,7 @@ export const migrations = ${JSON.stringify(history)};`;
               projectShortId,
               scope: { name: "org", value: { id: "tenant" } },
               subjectId: "user",
-              toolUrl: "https://host.test/api/tailorkit/tools/execute",
+              toolUrl: "https://host.test/api/patchsmith/tools/execute",
             }
           );
           appTokens.add(session.token);
@@ -449,9 +449,9 @@ export const migrations = ${JSON.stringify(history)};`;
 
     const first = makeClient();
     const second = makeClient();
-    /** @type {import("@tailorkit/app/client").Reference<"query", undefined, Todo[]>} */
+    /** @type {import("@patchsmith/app/client").Reference<"query", undefined, Todo[]>} */
     const list = reference("list", "query");
-    /** @type {import("@tailorkit/app/client").Reference<"mutation", {text: string}, Todo>} */
+    /** @type {import("@patchsmith/app/client").Reference<"mutation", {text: string}, Todo>} */
     const add = reference("add", "mutation");
     /** @type {Todo[][][]} */
     const snapshots = [[], []];
@@ -895,7 +895,7 @@ export const migrations = ${JSON.stringify(history)};`;
         assert.equal(compressed.headers["content-encoding"], "gzip");
         assert.equal(compressed.headers.vary, "Accept-Encoding");
         assert.equal(
-          compressed.headers["x-tailorkit-content-encoding"],
+          compressed.headers["x-patchsmith-content-encoding"],
           undefined
         );
         assert.deepEqual(compressed.body, clientBytes);
@@ -908,12 +908,12 @@ export const migrations = ${JSON.stringify(history)};`;
     );
     const cache = await mf.getCaches();
     const cacheUrl = new URL(publicClientUrl);
-    cacheUrl.searchParams.set("__tailorkit_asset_cache", "opaque-v1");
+    cacheUrl.searchParams.set("__patchsmith_asset_cache", "opaque-v1");
     const cachedClient = await cache.default.match(cacheUrl);
     assert.ok(cachedClient !== undefined);
     assert.equal(cachedClient.headers.get("content-encoding"), null);
     assert.equal(
-      cachedClient.headers.get("x-tailorkit-content-encoding"),
+      cachedClient.headers.get("x-patchsmith-content-encoding"),
       "gzip"
     );
     assert.deepEqual(
@@ -954,7 +954,7 @@ export const migrations = ${JSON.stringify(history)};`;
 
     const rejected = await mf.dispatchFetch(`${rpcUrl}/queries`, {
       headers: {
-        "sec-websocket-protocol": "tailorkit, jwt.forged",
+        "sec-websocket-protocol": "patchsmith, jwt.forged",
         upgrade: "websocket",
       },
     });

@@ -1,9 +1,9 @@
 /* oxlint-disable typescript/no-unsafe-return -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/websocket";
-import type { Invocation, SubscriptionClient } from "@tailorkit/app/protocol";
-import type { Identity } from "@tailorkit/app/server";
-import { asyncFixture } from "@tailorkit/config/testing";
+import type { Invocation, SubscriptionClient } from "@patchsmith/app/protocol";
+import type { Identity } from "@patchsmith/app/server";
+import { asyncFixture } from "@patchsmith/config/testing";
 import { Effect, Semaphore } from "effect";
 import { expect, it, vi } from "vite-plus/test";
 

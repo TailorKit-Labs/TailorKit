@@ -1,21 +1,21 @@
 ---
-title: "What is TailorKit?"
+title: "What is PatchSmith?"
 description: "Extend your product with apps built by users, partners, and AI."
 ---
 
-TailorKit lets users, partners, and AI agents build apps inside your product. Apps are TypeScript programs that use the UI components, data, and tools you expose. They can add a button, a side panel, or a full-page view.
+PatchSmith lets users, partners, and AI agents build apps inside your product. Apps are TypeScript programs that use the UI components, data, and tools you expose. They can add a button, a side panel, or a full-page view.
 
 ## Let users build features with AI
 
-Users describe what they need, and TailorKit’s agent writes an app using your product’s capabilities. TailorKit manages the agent’s development container and deployment. The agent can also update existing apps when users request changes.
+Users describe what they need, and PatchSmith’s agent writes an app using your product’s capabilities. PatchSmith manages the agent’s development container and deployment. The agent can also update existing apps when users request changes.
 
 Connect the builder to your product’s existing agent as a subagent, or offer it as a dedicated app-building agent.
 
 ## Let partners publish apps
 
-Developers and partners can publish apps for your customers to install. TailorKit handles developer tooling, deployments, versioning, approvals, and distribution.
+Developers and partners can publish apps for your customers to install. PatchSmith handles developer tooling, deployments, versioning, approvals, and distribution.
 
-Each app can have its own Git repository and release cycle. Developers deploy it through the TailorKit command-line interface (CLI).
+Each app can have its own Git repository and release cycle. Developers deploy it through the PatchSmith command-line interface (CLI).
 
 ## Define what apps can access
 
@@ -25,21 +25,21 @@ Keep that contract stable as your product evolves. You can then change your layo
 
 ## Keep app code isolated
 
-TailorKit isolates app code while your product controls rendering and data access:
+PatchSmith isolates app code while your product controls rendering and data access:
 
-- **Sandboxed frontend**: app code runs in an isolated, off-screen iframe. TailorKit renders its UI in your product using your components. App code cannot access your product’s Document Object Model (DOM), cookies, or local storage.
+- **Sandboxed frontend**: app code runs in an isolated, off-screen iframe. PatchSmith renders its UI in your product using your components. App code cannot access your product’s Document Object Model (DOM), cookies, or local storage.
 - **Isolated backends**: backend execution and storage are isolated by installation. Each installation with a database has separate data.
 - **Controlled access**: apps call the tools you expose through your contract or connect to your API using credentials you supply.
 
 ## Run app backends
 
-Apps can store data, run backend logic, and subscribe to live updates. TailorKit manages the databases, servers, and realtime connections:
+Apps can store data, run backend logic, and subscribe to live updates. PatchSmith manages the databases, servers, and realtime connections:
 
 - **Per-installation databases**: each installation with a database gets its own SQLite database. Data persists across app deployments.
 - **Backend functions**: queries and mutations read and write installation data. Actions can also call external services.
 - **Realtime queries**: database changes update connected app clients subscribed to the affected data.
-- **Deployment**: publish app assets through TailorKit’s content delivery network (CDN) and backend code to the managed runtime. Update apps without rebuilding your host product.
+- **Deployment**: publish app assets through PatchSmith’s content delivery network (CDN) and backend code to the managed runtime. Update apps without rebuilding your host product.
 
-## Integrate TailorKit
+## Integrate PatchSmith
 
-Follow the [installation guide](/getting-started/installation) to connect your host product. To discuss your use case, [book a call](https://cal.com/alfiejones) or email [hello@tailorkit.dev](mailto:hello@tailorkit.dev).
+Follow the [installation guide](/getting-started/installation) to connect your host product. To discuss your use case, [book a call](https://cal.com/alfiejones) or email [hello@patchsmith.io](mailto:hello@patchsmith.io).

@@ -1,5 +1,5 @@
-import type { Invocation } from "@tailorkit/app/protocol";
-import type { Identity } from "@tailorkit/app/server";
+import type { Invocation } from "@patchsmith/app/protocol";
+import type { Identity } from "@patchsmith/app/server";
 import { DurableObject } from "cloudflare:workers";
 import { Effect } from "effect";
 

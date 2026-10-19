@@ -1,6 +1,6 @@
-import type { Invocation } from "@tailorkit/app/protocol";
-import type { Identity } from "@tailorkit/app/server";
-import { asyncFixture } from "@tailorkit/config/testing";
+import type { Invocation } from "@patchsmith/app/protocol";
+import type { Identity } from "@patchsmith/app/server";
+import { asyncFixture } from "@patchsmith/config/testing";
 import { Effect, Semaphore } from "effect";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 

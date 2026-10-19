@@ -1,9 +1,9 @@
-import type { Invocation } from "@tailorkit/app/protocol";
+import type { Invocation } from "@patchsmith/app/protocol";
 import type {
   AppDefinition,
   Identity,
   FunctionKind,
-} from "@tailorkit/app/server";
+} from "@patchsmith/app/server";
 import { z } from "zod";
 
 import { AppError } from "./errors";

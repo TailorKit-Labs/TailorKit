@@ -1,5 +1,5 @@
 /* oxlint-disable typescript/no-unsafe-member-access -- Vitest mock call records and asymmetric matchers intentionally erase types; this fixture uses partial doubles and checks their values in assertions. */
-import type { ViewLayer } from "@tailorkit/core/views";
+import type { ViewLayer } from "@patchsmith/core/views";
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from "vite-plus/test";
 

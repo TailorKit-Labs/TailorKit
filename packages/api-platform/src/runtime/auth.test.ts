@@ -1,4 +1,4 @@
-import { APP_AUDIENCE, appTokenVerifier } from "@tailorkit/api-utils/app-auth";
+import { APP_AUDIENCE, appTokenVerifier } from "@patchsmith/api-utils/app-auth";
 import { expect, it, vi } from "vite-plus/test";
 
 import { appRuntimePublicKeys, issueAppRuntimeToken } from "./auth";
@@ -35,7 +35,7 @@ it("publishes only public keys and issues platform-bound short-lived access", as
     projectShortId: "abc123def456",
     scope: { name: "org", value: { id: "tenant" } },
     subjectId: "service-principal",
-    toolUrl: "https://host.test/api/tailorkit/tools/execute",
+    toolUrl: "https://host.test/api/patchsmith/tools/execute",
   };
   const issuedAfter = Math.floor(Date.now() / 1000);
   const session = await issueAppRuntimeToken(identity);

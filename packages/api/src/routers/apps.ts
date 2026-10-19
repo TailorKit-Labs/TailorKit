@@ -3,11 +3,11 @@ import {
   AppAgentWorkspaceBusyError,
   exportAppAgentWorkspace,
   getAppAgentWorkspaceStatus,
-} from "@tailorkit/agent/source-export";
-import { withAppAssetUrl } from "@tailorkit/api-utils/app-asset-url";
-import { db } from "@tailorkit/db";
-import { app, appDeployment } from "@tailorkit/db/schema/apps";
-import { evaluateBooleanFlag } from "@tailorkit/flags";
+} from "@patchsmith/agent/source-export";
+import { withAppAssetUrl } from "@patchsmith/api-utils/app-asset-url";
+import { db } from "@patchsmith/db";
+import { app, appDeployment } from "@patchsmith/db/schema/apps";
+import { evaluateBooleanFlag } from "@patchsmith/flags";
 import { and, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -114,7 +114,7 @@ export const appsRouter = {
           archive: new Blob([Uint8Array.from(archive)], {
             type: "application/gzip",
           }),
-          fileName: `tailorkit-app-${selectedApp.id}-source.tar.gz`,
+          fileName: `patchsmith-app-${selectedApp.id}-source.tar.gz`,
         };
       } catch (error) {
         if (error instanceof AppAgentWorkspaceBusyError) {

@@ -47,7 +47,7 @@ export interface InstanceRegistration {
   path: string;
   resolver: string;
 }
-const suffix = "?tailorkit-instances";
+const suffix = "?patchsmith-instances";
 const browserGlobals = new Set([
   "window",
   "document",
@@ -597,7 +597,7 @@ export const instanceExtractionPlugin = (
   modules: Map<string, InstanceModule>
 ): Plugin => ({
   enforce: "pre",
-  name: "tailorkit-instance-extraction",
+  name: "patchsmith-instance-extraction",
   transform: async (
     source,
     filename
@@ -616,7 +616,7 @@ export const instanceExtractionPlugin = (
     }
     if (!serverConfigured()) {
       throw new Error(
-        "View instances require server configuration in tailorkit.config.ts."
+        "View instances require server configuration in patchsmith.config.ts."
       );
     }
     modules.set(filename, { filename, names: result.names });
@@ -648,7 +648,7 @@ export const instanceServerPlugin = (
     }
     return result.server;
   },
-  name: "tailorkit-instance-server-modules",
+  name: "patchsmith-instance-server-modules",
   resolveId: (id) => (id.endsWith(suffix) ? id : undefined),
 });
 export const instanceServerImports = (modules: InstanceModule[]) =>

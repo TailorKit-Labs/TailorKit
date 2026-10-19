@@ -9,7 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
-} from "@tailorkit/ui/sidebar";
+} from "@patchsmith/ui/sidebar";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { AppWindowIcon, KeyRoundIcon, SettingsIcon } from "lucide-react";

@@ -1,27 +1,30 @@
-import { flattenTools } from "@tailorkit/core/schema";
+import { flattenTools } from "@patchsmith/core/schema";
 import type {
-  TailorKitTheme,
+  PatchSmithTheme,
   CallbackMap,
   ComponentDefinition,
   ComponentProps,
   Schema,
-  TailorKitContract,
+  PatchSmithContract,
   ToolImplementations,
-} from "@tailorkit/core/schema";
+} from "@patchsmith/core/schema";
 
 import type { RemoteComponentRegistry } from "#store/local/remote-view";
 
-import { createTailorKitFetchClient } from "./fetch-client";
+import { createPatchSmithFetchClient } from "./fetch-client";
 import type {
-  TailorKitFetchClient,
-  TailorKitCacheOptions,
+  PatchSmithFetchClient,
+  PatchSmithCacheOptions,
 } from "./fetch-client";
 
 const isFunctionValue = <TValue>(
   value: TValue
 ): value is Extract<TValue, CallableFunction> => typeof value === "function";
 
-type ClientToolTree = ToolImplementations<TailorKitContract["tools"], "client">;
+type ClientToolTree = ToolImplementations<
+  PatchSmithContract["tools"],
+  "client"
+>;
 const isToolHandler = (
   value: ClientToolTree[string]
 ): value is Exclude<ClientToolTree[string], ClientToolTree> =>
@@ -59,7 +62,7 @@ export type CompleteComponentRenderers<
   [TName in keyof TComponents]-?: ComponentRenderer<TComponents[TName], TNode>;
 };
 
-const componentTagPrefix = "tailorkit-";
+const componentTagPrefix = "patchsmith-";
 
 export const toComponentTagName = (name: string): string =>
   `${componentTagPrefix}${name
@@ -70,16 +73,16 @@ export const toComponentTagName = (name: string): string =>
     .replaceAll(/[\s_]+/gu, "-")
     .toLowerCase()}`;
 
-export interface TailorKitClientConfig {
-  readonly tools?: ToolImplementations<TailorKitContract["tools"], "client">;
+export interface PatchSmithClientConfig {
+  readonly tools?: ToolImplementations<PatchSmithContract["tools"], "client">;
   readonly baseUrl: string | URL;
-  readonly contract: TailorKitContract;
+  readonly contract: PatchSmithContract;
   readonly assetsBaseUrl?: string | URL;
-  readonly fetchClient?: TailorKitFetchClient;
+  readonly fetchClient?: PatchSmithFetchClient;
   /** Clear cached app data and sessions after changing the host auth session. */
   readonly clearCache: () => void;
   readonly components: RemoteComponentRegistry;
-  readonly theme: TailorKitTheme;
+  readonly theme: PatchSmithTheme;
 }
 
 export type SlotMultiple<TSlot> = TSlot extends {
@@ -91,16 +94,16 @@ export type SlotMultiple<TSlot> = TSlot extends {
     : false;
 
 /** Build framework-independent client configuration after an adapter wraps its renderers. */
-export const createTailorKitClientConfig = (options: {
-  contract: TailorKitContract;
-  tools?: ToolImplementations<TailorKitContract["tools"], "client">;
+export const createPatchSmithClientConfig = (options: {
+  contract: PatchSmithContract;
+  tools?: ToolImplementations<PatchSmithContract["tools"], "client">;
   assetsBaseUrl?: string | URL;
   baseUrl: string | URL;
   components?: RemoteComponentRegistry;
-  theme?: TailorKitTheme;
-  cache?: TailorKitCacheOptions;
+  theme?: PatchSmithTheme;
+  cache?: PatchSmithCacheOptions;
   fetch?: typeof fetch;
-}): TailorKitClientConfig => {
+}): PatchSmithClientConfig => {
   const declarations = flattenTools(options.contract.tools);
   const visit = (tree: ClientToolTree | undefined, prefix = "") => {
     if (!tree) {
@@ -133,7 +136,7 @@ export const createTailorKitClientConfig = (options: {
       throw new TypeError(`Missing client tool "${path}"`);
     }
   }
-  const fetchClient = createTailorKitFetchClient(options);
+  const fetchClient = createPatchSmithFetchClient(options);
   return {
     assetsBaseUrl: options.assetsBaseUrl,
     baseUrl: options.baseUrl,

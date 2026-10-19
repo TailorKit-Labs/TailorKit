@@ -1,9 +1,9 @@
 ---
-"@tailorkit/core": minor
-"@tailorkit/react": minor
-"@tailorkit/app": minor
-"@tailorkit/cli": minor
-"tailorkit": minor
+"@patchsmith/core": minor
+"@patchsmith/react": minor
+"@patchsmith/app": minor
+"@patchsmith/cli": minor
+"patchsmith": minor
 ---
 
 Declare multi-instance host slots with `multiple: true` (omitted or false means single-instance). Client-bound `Slot` requires `instanceKey` for multi-instance slots and rejects it for single-instance slots; ready `Slot.Controlled` similarly requires or rejects `instance`.

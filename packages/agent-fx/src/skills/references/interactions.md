@@ -7,10 +7,10 @@ The `notes.add` mutation comes from the functions example. While saving, disable
 <!-- example: src/components/note-editor.tsx -->
 
 ```tsx
+import { useMutation } from "patchsmith/client";
 import { useState } from "preact/hooks";
-import { useMutation } from "tailorkit/client";
 
-import { api, Box, Button, Input } from "#tailorkit";
+import { api, Box, Button, Input } from "#patchsmith";
 
 export const NoteEditor = () => {
   const [title, setTitle] = useState("");

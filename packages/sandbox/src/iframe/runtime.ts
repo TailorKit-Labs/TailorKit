@@ -20,7 +20,7 @@ const readCallbacksImplementation = (
   element: Element
 ): RemoteCallbackBinding[] => {
   const value = element.attributes.getNamedItem(
-    "data-tailorkit-callbacks"
+    "data-patchsmith-callbacks"
   )?.value;
   if (!(value !== undefined && value !== null && value !== "")) {
     return [];
@@ -85,8 +85,8 @@ export const startIframeRuntime = (options: {
     send({ data, type: "backendSessionRequest" });
   });
   const backendGlobal = globalThis;
-  backendGlobal.__tailorkitTools = tools.bridge;
-  backendGlobal.__tailorkitBackendSession = backend.getSession;
+  backendGlobal.__patchsmithTools = tools.bridge;
+  backendGlobal.__patchsmithBackendSession = backend.getSession;
   const sendError = (cause: unknown) => {
     let message = String(cause);
     if (cause instanceof Error) {
@@ -171,7 +171,7 @@ export const startIframeRuntime = (options: {
       loadedAppUrl = appUrl;
     }
     if (!client || !props) {
-      throw new Error("TailorKit app requires a view request.");
+      throw new Error("PatchSmith app requires a view request.");
     }
     rendering = true;
     try {
@@ -247,12 +247,12 @@ export const startIframeRuntime = (options: {
   send({ type: "ready" });
   return () => {
     tools.close();
-    if (backendGlobal.__tailorkitTools === tools.bridge) {
-      delete backendGlobal.__tailorkitTools;
+    if (backendGlobal.__patchsmithTools === tools.bridge) {
+      delete backendGlobal.__patchsmithTools;
     }
     backend.close();
-    if (backendGlobal.__tailorkitBackendSession === backend.getSession) {
-      delete backendGlobal.__tailorkitBackendSession;
+    if (backendGlobal.__patchsmithBackendSession === backend.getSession) {
+      delete backendGlobal.__patchsmithBackendSession;
     }
     destroyed = true;
     observer.disconnect();

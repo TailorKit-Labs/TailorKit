@@ -1,11 +1,11 @@
 ---
-"tailorkit": patch
-"@tailorkit/cli": patch
-"@tailorkit/app": patch
-"@tailorkit/client-platform": patch
-"@tailorkit/core": patch
-"@tailorkit/react": patch
-"@tailorkit/sandbox": patch
+"patchsmith": patch
+"@patchsmith/cli": patch
+"@patchsmith/app": patch
+"@patchsmith/client-platform": patch
+"@patchsmith/core": patch
+"@patchsmith/react": patch
+"@patchsmith/sandbox": patch
 ---
 
 Resolve public packages to compiled distribution files in both development and production, without custom source export conditions.

@@ -6,7 +6,7 @@ const packageSchema = z.object({
   scripts: z.record(z.string(), z.string()).default({}),
 });
 const viteTestScript = /^(?:vp test|vitest)(?:\s|$)/u;
-export const outputDirectory = "/workspace/app/.tailorkit/agent-deployment";
+export const outputDirectory = "/workspace/app/.patchsmith/agent-deployment";
 
 interface Check {
   name: string;

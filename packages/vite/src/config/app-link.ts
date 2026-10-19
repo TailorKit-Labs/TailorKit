@@ -30,7 +30,7 @@ export const setConfigAppId = async (
   if (
     initializer?.type === "CallExpression" &&
     initializer.callee.type === "Identifier" &&
-    ["defineTailorKitConfig", "defineConfig"].includes(initializer.callee.name)
+    ["definePatchSmithConfig", "defineConfig"].includes(initializer.callee.name)
   ) {
     const [argument] = initializer.arguments;
     initializer = argument?.type === "SpreadElement" ? undefined : argument;

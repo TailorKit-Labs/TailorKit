@@ -1,5 +1,5 @@
 // oxlint-disable-next-line max-classes-per-file -- These related adapter or mock classes implement one runtime boundary.
-import type { MutationDatabase } from "@tailorkit/app-db";
+import type { MutationDatabase } from "@patchsmith/app-db";
 import type { Query } from "drizzle-orm";
 import { fillPlaceholders, getTableName, isView, isTable } from "drizzle-orm";
 import type { AnyRelations } from "drizzle-orm/relations";

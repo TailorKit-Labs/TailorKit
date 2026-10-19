@@ -1,4 +1,4 @@
-import type { Schema } from "@tailorkit/core/schema";
+import type { Schema } from "@patchsmith/core/schema";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 

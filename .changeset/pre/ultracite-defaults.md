@@ -1,13 +1,13 @@
 ---
-"@tailorkit/app": patch
-"@tailorkit/client-core": patch
-"@tailorkit/client-platform": patch
-"@tailorkit/core": patch
-"@tailorkit/react": patch
-"@tailorkit/sandbox": patch
-"@tailorkit/cli": patch
-"tailorkit": patch
-"@tailorkit/vite": patch
+"@patchsmith/app": patch
+"@patchsmith/client-core": patch
+"@patchsmith/client-platform": patch
+"@patchsmith/core": patch
+"@patchsmith/react": patch
+"@patchsmith/sandbox": patch
+"@patchsmith/cli": patch
+"patchsmith": patch
+"@patchsmith/vite": patch
 ---
 
 Align source code with Ultracite’s default Oxlint and Oxfmt presets while preserving public APIs and runtime lifecycle behavior.

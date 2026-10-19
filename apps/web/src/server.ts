@@ -1,9 +1,9 @@
 import {
   initializeObservability,
   withRequestSpan,
-} from "@tailorkit/observability";
+} from "@patchsmith/observability";
 
-await initializeObservability("tailorkit-web");
+await initializeObservability("patchsmith-web");
 
 const { default: handler, createServerEntry } =
   await import("@tanstack/react-start/server-entry");

@@ -1,7 +1,7 @@
-import { appRuntimeIssuer, bearerToken } from "@tailorkit/api-utils/app-auth";
-import type { Invocation } from "@tailorkit/app/protocol";
-import { AppError } from "@tailorkit/app/server";
-import type { Identity } from "@tailorkit/app/server";
+import { appRuntimeIssuer, bearerToken } from "@patchsmith/api-utils/app-auth";
+import type { Invocation } from "@patchsmith/app/protocol";
+import { AppError } from "@patchsmith/app/server";
+import type { Identity } from "@patchsmith/app/server";
 import { DurableObject } from "cloudflare:workers";
 import { Effect, Semaphore } from "effect";
 import { catch as catchEffect } from "effect/Effect";

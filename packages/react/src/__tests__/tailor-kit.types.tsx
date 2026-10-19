@@ -1,15 +1,15 @@
-import type { StandardSchemaV1 } from "@standard-schema/spec";
-import type { ComponentRenderer } from "@tailorkit/client-core";
-import { defineContract } from "@tailorkit/core/schema";
-import type { ComponentDefinition } from "@tailorkit/core/schema";
+import type { ComponentRenderer } from "@patchsmith/client-core";
+import { defineContract } from "@patchsmith/core/schema";
+import type { ComponentDefinition } from "@patchsmith/core/schema";
 /* oxlint-disable react/rules-of-hooks -- Compile-only API tests exercise hook signatures outside runtime components. */
-import type { ViewContextValues } from "@tailorkit/core/views";
+import type { ViewContextValues } from "@patchsmith/core/views";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { ReactNode } from "react";
 import { z } from "zod";
 
-import type { TailorKitInstance, UseAppsResult, UseViewsResult } from "#index";
-import { components, createClient } from "#tailorkit";
-import type { TailorKitApp } from "#tailorkit";
+import type { PatchSmithInstance, UseAppsResult, UseViewsResult } from "#index";
+import { components, createClient } from "#patchsmith";
+import type { PatchSmithApp } from "#patchsmith";
 
 const requireValue = <T,>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -80,31 +80,31 @@ const contract = defineContract({
   },
 });
 
-const tailor = createClient({ baseUrl: "http://runtime.test", contract });
-tailor.clearCache();
+const patchsmith = createClient({ baseUrl: "http://runtime.test", contract });
+patchsmith.clearCache();
 const {
-  Provider: TailorKitProvider,
+  Provider: PatchSmithProvider,
   RenderSlot,
   useApps,
   useViews,
   useViewContext,
-} = tailor;
+} = patchsmith;
 const app = { clientPath: "/apps/todo.js", id: "todo" };
 
-<TailorKitProvider>
+<PatchSmithProvider>
   <span>Content</span>
-</TailorKitProvider>;
-<TailorKitProvider apps={[app]} />;
+</PatchSmithProvider>;
+<PatchSmithProvider apps={[app]} />;
 // @ts-expect-error the provider does not accept a subject cache key
-<TailorKitProvider subjectId="user" />;
+<PatchSmithProvider subjectId="user" />;
 // @ts-expect-error the provider captures its client internally
-<TailorKitProvider client={tailor} />;
+<PatchSmithProvider client={patchsmith} />;
 // @ts-expect-error the provider only accepts children and apps
-<TailorKitProvider className="wrapper" />;
+<PatchSmithProvider className="wrapper" />;
 // @ts-expect-error the provider does not support a render prop
-<TailorKitProvider render={<div />} />;
+<PatchSmithProvider render={<div />} />;
 // @ts-expect-error provided apps must have a string id
-<TailorKitProvider apps={[{ id: 123 }]} />;
+<PatchSmithProvider apps={[{ id: 123 }]} />;
 
 const childrenContract = defineContract({
   components: {
@@ -309,7 +309,7 @@ if ("key" in selectedItem) {
 createClient({ baseUrl: "http://runtime.test" });
 void requiredKey;
 void requiredMetadata;
-declare const optionalClient: TailorKitInstance<
+declare const optionalClient: PatchSmithInstance<
   Record<string, never>,
   { optional: { views: readonly ["/"]; multiple?: true } }
 >;
@@ -328,7 +328,7 @@ void instanceKey;
 void instanceData;
 // @ts-expect-error slots must be declared by this contract
 useViews({ slot: "missing" });
-const instanceApp: TailorKitApp | undefined = instances.data?.[0]?.app;
+const instanceApp: PatchSmithApp | undefined = instances.data?.[0]?.app;
 void instanceApp;
 // @ts-expect-error app selection is no longer accepted
 useViews({ app, slot: "panel" });

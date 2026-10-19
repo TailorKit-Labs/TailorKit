@@ -9,28 +9,28 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
+import { loadPatchSmithConfig } from "@patchsmith/vite/config/loader";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import { z } from "zod";
 
 import { generateApp } from "./generate";
-import type { TailorKitSchemaFile } from "./types";
+import type { PatchSmithSchemaFile } from "./types";
 
 const testDirectories: string[] = [];
 
 const createTempDir = async (): Promise<string> => {
-  const directory = await mkdtemp(path.join(tmpdir(), "tailorkit-generator-"));
+  const directory = await mkdtemp(path.join(tmpdir(), "patchsmith-generator-"));
   testDirectories.push(directory);
   return directory;
 };
 
 const defaultOptions = {
   force: false,
-  hostUrl: "https://host.example.com/api/tailorkit",
+  hostUrl: "https://host.example.com/api/patchsmith",
   packageName: "test-app",
   packageVersions: {
+    patchsmith: "4.5.6",
     preact: "11.0.0",
-    tailorkit: "4.5.6",
     typescript: "5.1.0",
     vite: "8.0.0",
     vitePlus: "1.0.0",
@@ -77,13 +77,13 @@ describe("generateApp", () => {
         tooling,
       });
       const sourceFiles = await readdir(path.join(targetDirectory, "src"));
-      expect(sourceFiles.toSorted()).toEqual(["root.tsx", "tailorkit.gen.ts"]);
-      const config = await loadTailorKitConfig(undefined, targetDirectory);
+      expect(sourceFiles.toSorted()).toEqual(["patchsmith.gen.ts", "root.tsx"]);
+      const config = await loadPatchSmithConfig(undefined, targetDirectory);
       expect(config.config).not.toHaveProperty("logos");
       expect(config.config).not.toHaveProperty("server");
       expect(await readdir(targetDirectory)).not.toContain("logo-light.svg");
       const bindings = await readFile(
-        path.join(targetDirectory, "src/tailorkit.gen.ts"),
+        path.join(targetDirectory, "src/patchsmith.gen.ts"),
         "utf-8"
       );
       expect(bindings).toContain('"sidebar"');
@@ -92,11 +92,11 @@ describe("generateApp", () => {
         await readFile(
           path.join(
             targetDirectory,
-            ".agents/skills/tailorkit-capabilities/SKILL.md"
+            ".agents/skills/patchsmith-capabilities/SKILL.md"
           ),
           "utf-8"
         )
-      ).toContain("TailorKit capabilities");
+      ).toContain("PatchSmith capabilities");
     }
   );
 
@@ -133,7 +133,7 @@ describe("generateApp", () => {
     expect(greeting).toContain(".input(v.object({ name: v.string() }))");
   });
 
-  it("limits fresh package exclusions to TailorKit and permits esbuild's required build", async () => {
+  it("limits fresh package exclusions to PatchSmith and permits esbuild's required build", async () => {
     const targetDirectory = await createTempDir();
     await generateApp({
       ...defaultOptions,
@@ -148,7 +148,7 @@ describe("generateApp", () => {
     expect(policy).not.toContain("dangerouslyAllowAllBuilds");
     expect(policy).toContain("minimumReleaseAge: 4320");
     expect(policy).toContain(
-      'minimumReleaseAgeExclude:\n  - tailorkit\n  - "@tailorkit/*"'
+      'minimumReleaseAgeExclude:\n  - patchsmith\n  - "@patchsmith/*"'
     );
   });
 
@@ -171,14 +171,14 @@ describe("generateApp", () => {
     const files = [
       "package.json",
       "tsconfig.json",
-      "tailorkit.config.ts",
+      "patchsmith.config.ts",
       "vite.config.ts",
       "logo-dark.svg",
       "logo-light.svg",
       ".gitignore",
       path.join("src", "root.tsx"),
       path.join("src", "slots", "sidebar", "customers.view.tsx"),
-      path.join("src", "tailorkit.gen.ts"),
+      path.join("src", "patchsmith.gen.ts"),
       path.join("src", "server.ts"),
       path.join("src", "db", "schema.ts"),
       path.join("src", "db", "index.ts"),
@@ -203,7 +203,7 @@ describe("generateApp", () => {
       "utf-8"
     );
     expect(database).toContain("defineDatabase({ relations })");
-    expect(database).toContain('from "tailorkit/db"');
+    expect(database).toContain('from "patchsmith/db"');
     expect(database).toContain('export * from "./schema"');
     expect(database).not.toContain("import * as schema");
     const relations = await readFile(
@@ -211,7 +211,7 @@ describe("generateApp", () => {
       "utf-8"
     );
     expect(relations).toContain("defineRelations(schema)");
-    expect(relations).toContain('from "tailorkit/db"');
+    expect(relations).toContain('from "patchsmith/db"');
     expect(relations).not.toContain("drizzle-orm");
     expect(database).toContain("createFunctions({ database: db })");
     const functions = await readFile(
@@ -261,17 +261,17 @@ describe("generateApp", () => {
           )
         );
       expect(config).toContain(`from "${tooling}"`);
-      expect(config).toContain('from "tailorkit/vite"');
+      expect(config).toContain('from "patchsmith/vite"');
       expect(pkg.devDependencies).not.toHaveProperty("oxlint");
       expect(pkg.devDependencies).not.toHaveProperty("oxfmt");
       expect(pkg.scripts.build).toBe(
         tooling === "vite" ? "vite build" : "vp build"
       );
       if (tooling === "vite-plus") {
-        expect(config).toContain("lazyPlugins(() => [tailorkit()])");
+        expect(config).toContain("lazyPlugins(() => [patchsmith()])");
         expect(config).toContain("lint:");
         expect(config).toContain("fmt:");
-        expect(config).toContain("src/tailorkit.gen.ts");
+        expect(config).toContain("src/patchsmith.gen.ts");
         expect(pkg.devDependencies["vite-plus"]).toBe("1.0.0");
         expect(pkg.devDependencies.vite).toBe(
           "npm:@voidzero-dev/vite-plus-core@1.0.0"
@@ -332,8 +332,8 @@ describe("generateApp", () => {
       path.join(targetDirectory, "package.json"),
       "utf-8"
     );
-    expect(content).toContain('"tailorkit": "workspace:*"');
-    expect(content).not.toContain("@tailorkit/cli");
+    expect(content).toContain('"patchsmith": "workspace:*"');
+    expect(content).not.toContain("@patchsmith/cli");
   });
 
   it("uses resolved dependency versions when useWorkspaceDependencies is false", async () => {
@@ -348,8 +348,8 @@ describe("generateApp", () => {
       path.join(targetDirectory, "package.json"),
       "utf-8"
     );
-    expect(content).toContain('"tailorkit": "4.5.6"');
-    expect(content).not.toContain("@tailorkit/cli");
+    expect(content).toContain('"patchsmith": "4.5.6"');
+    expect(content).not.toContain("@patchsmith/cli");
   });
 
   it("renders package versions into package.json", async () => {
@@ -379,25 +379,27 @@ describe("generateApp", () => {
     expect(content).toContain('"name": "my-custom-app"');
   });
 
-  it("generates a valid tailorkit.config.ts", async () => {
+  it("generates a valid patchsmith.config.ts", async () => {
     const targetDirectory = await createTempDir();
     await generateApp({ ...defaultOptions, targetDirectory });
 
     const content = await readFile(
-      path.join(targetDirectory, "tailorkit.config.ts"),
+      path.join(targetDirectory, "patchsmith.config.ts"),
       "utf-8"
     );
     expect(content).toContain(
-      'import type { TailorKitConfig } from "tailorkit/app/config"'
+      'import type { PatchSmithConfig } from "patchsmith/app/config"'
     );
-    expect(content).toContain("satisfies TailorKitConfig");
-    expect(content).toContain('host: "https://host.example.com/api/tailorkit"');
+    expect(content).toContain("satisfies PatchSmithConfig");
+    expect(content).toContain(
+      'host: "https://host.example.com/api/patchsmith"'
+    );
     expect(content).toContain('name: "test-app"');
     expect(content).toContain('slug: "test-app"');
     expect(content).toContain('dark: "logo-dark.svg"');
     expect(content).toContain('light: "logo-light.svg"');
-    expect(content).not.toContain("defineTailorKitConfig");
-    const { config } = await loadTailorKitConfig(undefined, targetDirectory);
+    expect(content).not.toContain("definePatchSmithConfig");
+    const { config } = await loadPatchSmithConfig(undefined, targetDirectory);
     expect(config).toMatchObject({
       name: "test-app",
       slug: "test-app",
@@ -407,7 +409,7 @@ describe("generateApp", () => {
   it.each([
     ["@my-org/my_app.name", "my-org-my-app-name"],
     [`${"a".repeat(31)}-long`, "a".repeat(31)],
-    ["___", "tailorkit-app"],
+    ["___", "patchsmith-app"],
     ["a", "a-app"],
     ["ab", "ab-app"],
     ["__a", "a-app"],
@@ -418,12 +420,12 @@ describe("generateApp", () => {
       const targetDirectory = await createTempDir();
       await generateApp({ ...defaultOptions, packageName, targetDirectory });
       const content = await readFile(
-        path.join(targetDirectory, "tailorkit.config.ts"),
+        path.join(targetDirectory, "patchsmith.config.ts"),
         "utf-8"
       );
       expect(content).toContain(`name: ${JSON.stringify(packageName)}`);
       expect(content).toContain(`slug: ${JSON.stringify(slug)}`);
-      const { config } = await loadTailorKitConfig(undefined, targetDirectory);
+      const { config } = await loadPatchSmithConfig(undefined, targetDirectory);
       expect(config).toMatchObject({
         name: packageName,
         slug,
@@ -432,7 +434,7 @@ describe("generateApp", () => {
   );
 
   it.each(["dark", "light"])(
-    "generates the %s TailorKit logo",
+    "generates the %s PatchSmith logo",
     async (variant) => {
       const targetDirectory = await createTempDir();
       await generateApp({ ...defaultOptions, targetDirectory });
@@ -587,7 +589,7 @@ describe("generateApp", () => {
     expect(view).toContain("dataSchema: v.object({})");
     expect(view).toContain('key: "default"');
     const types = await readFile(
-      path.join(targetDirectory, "src/tailorkit.gen.ts"),
+      path.join(targetDirectory, "src/patchsmith.gen.ts"),
       "utf-8"
     );
     expect(types).toContain(
@@ -603,7 +605,7 @@ describe("generateApp", () => {
       "utf-8"
     );
     expect(content).toContain(
-      'import { ClientProvider, defineRoute, Route } from "tailorkit/client"'
+      'import { ClientProvider, defineRoute, Route } from "patchsmith/client"'
     );
     expect(content).toContain("shellComponent: Shell");
     expect(content).toContain("<ClientProvider><Route /></ClientProvider>");
@@ -616,7 +618,7 @@ describe("generateApp", () => {
     await generateApp({ ...defaultOptions, targetDirectory });
 
     const content = await readFile(
-      path.join(targetDirectory, "src", "tailorkit.gen.ts"),
+      path.join(targetDirectory, "src", "patchsmith.gen.ts"),
       "utf-8"
     );
     expect(content).not.toContain("FallbackViewProps");
@@ -627,11 +629,11 @@ describe("generateApp", () => {
     const targetDirectory = await createTempDir();
     await generateApp({ ...defaultOptions, targetDirectory });
     const bindings = await readFile(
-      path.join(targetDirectory, "src/tailorkit.gen.ts"),
+      path.join(targetDirectory, "src/patchsmith.gen.ts"),
       "utf-8"
     );
     expect(bindings).toContain(
-      'import { createRemoteComponent } from "tailorkit/client"'
+      'import { createRemoteComponent } from "patchsmith/client"'
     );
     expect(bindings).toContain("export const Box");
     expect(bindings).toContain('import type app from "./server"');
@@ -644,14 +646,14 @@ describe("generateApp", () => {
       await readFile(
         path.join(
           targetDirectory,
-          ".agents/skills/tailorkit-capabilities/references/index.md"
+          ".agents/skills/patchsmith-capabilities/references/index.md"
         ),
         "utf-8"
       )
     ).toContain("components/Box.md");
     await expect(
       readFile(
-        path.join(targetDirectory, "src/tailorkit.gen/components/Box.ts")
+        path.join(targetDirectory, "src/patchsmith.gen/components/Box.ts")
       )
     ).rejects.toThrow();
   });
@@ -732,7 +734,7 @@ describe("generateApp", () => {
     {},
     { slots: {}, views: { "/accounts": {} } },
     { slots: { panel: { views: ["/missing"] } }, views: { "/accounts": {} } },
-  ] as TailorKitSchemaFile[])(
+  ] as PatchSmithSchemaFile[])(
     "rejects hosts without a renderable view before writing files: %j",
     async (schema) => {
       const targetDirectory = await createTempDir();
@@ -748,7 +750,7 @@ describe("generateApp", () => {
   it("does not overwrite existing bindings without force", async () => {
     const targetDirectory = await createTempDir();
     await mkdir(path.join(targetDirectory, "src"));
-    const bindings = path.join(targetDirectory, "src/tailorkit.gen.ts");
+    const bindings = path.join(targetDirectory, "src/patchsmith.gen.ts");
     await writeFile(bindings, "existing bindings");
     await expect(
       generateApp({ ...defaultOptions, targetDirectory })

@@ -2,14 +2,14 @@ import { asyncIteratorToUnproxiedDataStream } from "@orpc/client";
 import { openapi } from "@orpc/openapi";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { eventIterator, os } from "@orpc/server";
-import { agentChunkSchema } from "@tailorkit/client-platform/agent";
-import type { AgentChunk } from "@tailorkit/client-platform/agent";
+import { agentChunkSchema } from "@patchsmith/client-platform/agent";
+import type { AgentChunk } from "@patchsmith/client-platform/agent";
 import { readUIMessageStream } from "ai";
 import { describe, expect, it } from "vite-plus/test";
 import { z } from "zod";
 
-import { createTailorKitClient } from "./client";
-import { createTailorKitServer } from "./handler";
+import { createPatchSmithClient } from "./client";
+import { createPatchSmithServer } from "./handler";
 
 const require = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -25,7 +25,7 @@ const messages = [
     role: "user" as const,
   },
 ];
-const hostUrl = "http://localhost:3000/api/tailorkit";
+const hostUrl = "http://localhost:3000/api/patchsmith";
 const appId = "a3e7568a-c4f7-4ac0-8c35-71ff0f4cd002";
 const events: AgentChunk[] = [
   {
@@ -74,7 +74,7 @@ const setup = (
       .meta(openapi({ method: "POST", path: "/app-agent/apps" }))
       .handler(() => ({ createdByAgent: true, id: appId })),
   });
-  const server = createTailorKitServer({
+  const server = createPatchSmithServer({
     $internal: {
       platformBaseUrl: "https://platform.test/api/platform",
       platformFetch: async (input, init) => {
@@ -105,18 +105,18 @@ const setup = (
         );
       },
     },
-    baseUrl: "https://example.com/api/tailorkit",
+    baseUrl: "https://example.com/api/patchsmith",
     components: {},
     projectKey: "host-project-key",
     scopes: { org: z.object({ tenant: z.string() }) },
   });
-  const client = createTailorKitClient({
+  const client = createPatchSmithClient({
     fetch: async (input, init) =>
       await server.handler(new Request(input, init), {
         authenticate: () => null,
       }),
     headers: { authorization: "Bearer cli-token" },
-    url: "https://host.test/api/tailorkit",
+    url: "https://host.test/api/patchsmith",
   });
   return { client, requests, server };
 };
@@ -281,12 +281,12 @@ describe("host agent relay", () => {
 
   it("requires a CLI credential before contacting the platform", async () => {
     const { server, requests } = setup();
-    const client = createTailorKitClient({
+    const client = createPatchSmithClient({
       fetch: async (input, init) =>
         await server.handler(new Request(input, init), {
           authenticate: () => null,
         }),
-      url: "https://host.test/api/tailorkit",
+      url: "https://host.test/api/patchsmith",
     });
     await expect(
       client.appAgent.create({ description: null, name: "AI app" })

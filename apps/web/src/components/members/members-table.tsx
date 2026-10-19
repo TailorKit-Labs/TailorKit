@@ -1,14 +1,14 @@
-import { Avatar, AvatarFallback } from "@tailorkit/ui/avatar";
-import { Badge } from "@tailorkit/ui/badge";
-import { Button } from "@tailorkit/ui/button";
-import { CardFrame } from "@tailorkit/ui/card";
-import { DateAgo } from "@tailorkit/ui/date";
+import { Avatar, AvatarFallback } from "@patchsmith/ui/avatar";
+import { Badge } from "@patchsmith/ui/badge";
+import { Button } from "@patchsmith/ui/button";
+import { CardFrame } from "@patchsmith/ui/card";
+import { DateAgo } from "@patchsmith/ui/date";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@tailorkit/ui/dropdown-menu";
+} from "@patchsmith/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -16,7 +16,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@tailorkit/ui/table";
+} from "@patchsmith/ui/table";
 import { flexRender, useTable } from "@tanstack/react-table";
 import type {
   CellContext,

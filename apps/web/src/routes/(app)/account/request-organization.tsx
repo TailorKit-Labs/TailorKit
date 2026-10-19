@@ -1,11 +1,11 @@
-import { Button } from "@tailorkit/ui/button";
+import { Button } from "@patchsmith/ui/button";
 import {
   Card,
   CardFrame,
   CardHeader,
   CardPanel,
   CardTitle,
-} from "@tailorkit/ui/card";
+} from "@patchsmith/ui/card";
 import { Link, createFileRoute } from "@tanstack/react-router";
 
 import { AccountLayout } from "#components/account-layout";
@@ -18,7 +18,7 @@ const RequestOrganizationPage = () => (
     <PageLayout
       description={
         isOrgCreationManaged
-          ? "Organisation creation is currently managed by the TailorKit team."
+          ? "Organisation creation is currently managed by the PatchSmith team."
           : "Create a workspace for your projects and collaborators."
       }
       title="Create an organisation"
@@ -35,7 +35,7 @@ const RequestOrganizationPage = () => (
               <p className="text-sm text-muted-foreground">
                 {isOrgCreationManaged
                   ? "We're currently onboarding users manually. Contact us to create an organisation for your account."
-                  : "Create an organisation to start building and managing TailorKit projects."}
+                  : "Create an organisation to start building and managing PatchSmith projects."}
               </p>
               <div className="flex flex-wrap gap-2">
                 {isOrgCreationManaged ? (

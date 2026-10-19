@@ -1,5 +1,5 @@
 {
-  "name": "@tailorkit/client-platform",
+  "name": "@patchsmith/client-platform",
   "version": "0.1.0-beta.49",
   "license": "Apache-2.0",
   "repository": {
@@ -71,8 +71,8 @@
   },
   "devDependencies": {
     "@hey-api/openapi-ts": "next",
-    "@tailorkit/api-platform": "workspace:*",
-    "@tailorkit/config": "workspace:*",
+    "@patchsmith/api-platform": "workspace:*",
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "tsup": "^8.5.1",
     "typescript": "catalog:",

@@ -3,27 +3,27 @@ import path from "node:path";
 import { cosmiconfig } from "cosmiconfig";
 import * as v from "valibot";
 
-import type { ResolvedTailorKitConfig } from "./config";
-import { tailorkitConfigSchema } from "./config";
+import type { ResolvedPatchSmithConfig } from "./config";
+import { patchsmithConfigSchema } from "./config";
 
-export interface LoadedTailorKitConfig {
-  config: ResolvedTailorKitConfig;
+export interface LoadedPatchSmithConfig {
+  config: ResolvedPatchSmithConfig;
   filepath: string;
   root: string;
 }
 
-const explorer = cosmiconfig("tailorkit", {
+const explorer = cosmiconfig("patchsmith", {
   searchPlaces: [
-    "tailorkit.config.ts",
-    "tailorkit.config.mjs",
-    "tailorkit.config.js",
+    "patchsmith.config.ts",
+    "patchsmith.config.mjs",
+    "patchsmith.config.js",
   ],
 });
 
-export const loadTailorKitConfig = async (
+export const loadPatchSmithConfig = async (
   configPath: string | undefined,
   cwd = process.cwd()
-): Promise<LoadedTailorKitConfig> => {
+): Promise<LoadedPatchSmithConfig> => {
   const searchFrom = path.resolve(cwd);
   const result =
     configPath === undefined
@@ -31,10 +31,10 @@ export const loadTailorKitConfig = async (
       : await explorer.load(path.resolve(searchFrom, configPath));
 
   if (result === null) {
-    throw new Error(`Could not find tailorkit config from ${searchFrom}.`);
+    throw new Error(`Could not find patchsmith config from ${searchFrom}.`);
   }
   return {
-    config: v.parse(tailorkitConfigSchema, result.config),
+    config: v.parse(patchsmithConfigSchema, result.config),
     filepath: result.filepath,
     root: path.dirname(result.filepath),
   };

@@ -20,7 +20,7 @@ const server = defineServer({
 type ServerFunctions = typeof server.functions;
 declare module "./views" {
   // oxlint-disable-next-line typescript/no-empty-object-type, typescript/no-empty-interface -- Generated bindings augment this public interface through declaration merging.
-  interface TailorKitServerFunctions extends ServerFunctions {}
+  interface PatchSmithServerFunctions extends ServerFunctions {}
 }
 
 defineView({

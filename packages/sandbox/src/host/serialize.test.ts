@@ -8,7 +8,7 @@ describe("readElementProps", () => {
   it.each(["textColor", "textcolor"])(
     "canonicalizes the %s DOM attribute to textColor",
     (name) => {
-      const element = document.createElement("tailorkit-box");
+      const element = document.createElement("patchsmith-box");
       element.setAttribute(name, "muted");
 
       expect(readElementProps(element)).toEqual({ textColor: "muted" });
@@ -16,27 +16,27 @@ describe("readElementProps", () => {
   );
 
   it("preserves typed props and their declared names", () => {
-    const element = document.createElement("tailorkit-card");
-    element.dataset.tailorkitProps = JSON.stringify({
+    const element = document.createElement("patchsmith-card");
+    element.dataset.patchsmithProps = JSON.stringify({
       count: 3,
       enabled: false,
-      metadata: { owner: "TailorKit" },
+      metadata: { owner: "PatchSmith" },
       textColor: "default",
     });
-    element.dataset.tailorkitCallbacks = "{}";
+    element.dataset.patchsmithCallbacks = "{}";
 
     expect(readElementProps(element)).toEqual({
       count: 3,
       enabled: false,
-      metadata: { owner: "TailorKit" },
+      metadata: { owner: "PatchSmith" },
       textColor: "default",
     });
   });
 
   it("excludes internal protocol attributes from the fallback props", () => {
-    const element = document.createElement("tailorkit-button");
-    element.dataset.tailorkitCallbacks = "{}";
-    element.dataset.tailorkitProps = "invalid JSON";
+    const element = document.createElement("patchsmith-button");
+    element.dataset.patchsmithCallbacks = "{}";
+    element.dataset.patchsmithProps = "invalid JSON";
     element.setAttribute("disabled", "false");
 
     expect(readElementProps(element)).toEqual({ disabled: "false" });

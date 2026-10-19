@@ -1,7 +1,7 @@
 ---
-"@tailorkit/cli": minor
-"@tailorkit/core": minor
-"@tailorkit/client-platform": minor
+"@patchsmith/cli": minor
+"@patchsmith/core": minor
+"@patchsmith/client-platform": minor
 ---
 
 Reconnect interrupted agent streams to the existing workflow from the last received chunk, and settle a disconnected turn before sending a follow-up. Relay signed run identities and cleanup completion through the host API.

@@ -1,3 +1,3 @@
-# TailorKit database
+# PatchSmith database
 
-`@tailorkit/db` defines the TailorKit platform database schema and database access.
+`@patchsmith/db` defines the PatchSmith platform database schema and database access.

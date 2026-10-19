@@ -1,21 +1,21 @@
 import { atom } from "nanostores";
 
-import type { TailorKitFetchClient } from "#client/fetch-client";
+import type { PatchSmithFetchClient } from "#client/fetch-client";
 import { createSnapshotStore } from "#store/snapshot-store";
-import type { TailorKitApp } from "#types";
+import type { PatchSmithApp } from "#types";
 
 import type { FetchOptions, FetchSnapshot } from "./cache";
 
-export interface TailorKitAppsSnapshot {
-  apps: TailorKitApp[];
+export interface PatchSmithAppsSnapshot {
+  apps: PatchSmithApp[];
   error: Error | null;
   status: FetchSnapshot<unknown>["status"];
   isFetching: boolean;
 }
 
 const suppliedSnapshotImplementation = (
-  apps: TailorKitApp[]
-): TailorKitAppsSnapshot => ({
+  apps: PatchSmithApp[]
+): PatchSmithAppsSnapshot => ({
   apps,
   error: null,
   isFetching: false,
@@ -23,19 +23,19 @@ const suppliedSnapshotImplementation = (
 });
 
 export const createAppsStore = (
-  client: TailorKitFetchClient,
-  initialApps?: TailorKitApp[]
+  client: PatchSmithFetchClient,
+  initialApps?: PatchSmithApp[]
 ) => {
   const query = client.apps();
   const provided = atom(initialApps);
   const suppliedSnapshot = suppliedSnapshotImplementation;
   let supplied =
     initialApps === undefined ? null : suppliedSnapshot(initialApps);
-  let last: FetchSnapshot<TailorKitApp[]> | undefined;
-  let snapshot: TailorKitAppsSnapshot;
+  let last: FetchSnapshot<PatchSmithApp[]> | undefined;
+  let snapshot: PatchSmithAppsSnapshot;
   let requested = false;
   let subscribers = 0;
-  const empty: TailorKitApp[] = [];
+  const empty: PatchSmithApp[] = [];
   const store = {
     // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
     fetch: (options: FetchOptions = {}) => {
@@ -45,7 +45,7 @@ export const createAppsStore = (
       }
       return query.fetch(options);
     },
-    getSnapshot: (): TailorKitAppsSnapshot => {
+    getSnapshot: (): PatchSmithAppsSnapshot => {
       if (supplied) {
         return supplied;
       }
@@ -69,7 +69,7 @@ export const createAppsStore = (
       }
       return query.invalidate();
     },
-    setProvidedApps: (apps: TailorKitApp[] | undefined) => {
+    setProvidedApps: (apps: PatchSmithApp[] | undefined) => {
       if (provided.get() === apps) {
         return;
       }

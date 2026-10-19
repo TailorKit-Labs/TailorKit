@@ -1,8 +1,8 @@
 ---
-"@tailorkit/cli": minor
-"@tailorkit/core": minor
-"@tailorkit/client-core": minor
-"@tailorkit/react": minor
+"@patchsmith/cli": minor
+"@patchsmith/core": minor
+"@patchsmith/client-core": minor
+"@patchsmith/react": minor
 ---
 
 Add a Pressable primitive with inline, box, flex, and grid layouts, token-based style props that combine breakpoint and interaction state values, and an onPress callback. The host renders a native button with keyboard activation and disabled behavior; interaction styling stays in the host.

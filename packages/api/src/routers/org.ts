@@ -1,7 +1,7 @@
 import { ORPCError } from "@orpc/server";
-import { auth } from "@tailorkit/auth";
-import { db } from "@tailorkit/db";
-import { invitation } from "@tailorkit/db/schema/index";
+import { auth } from "@patchsmith/auth";
+import { db } from "@patchsmith/db";
+import { invitation } from "@patchsmith/db/schema/index";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 

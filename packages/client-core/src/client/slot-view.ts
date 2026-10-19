@@ -1,15 +1,15 @@
-import type { TailorKitContract } from "@tailorkit/core/schema";
-import { composeViewContext, getViewHierarchy } from "@tailorkit/core/views";
-import type { ActiveView } from "@tailorkit/core/views";
+import type { PatchSmithContract } from "@patchsmith/core/schema";
+import { composeViewContext, getViewHierarchy } from "@patchsmith/core/views";
+import type { ActiveView } from "@patchsmith/core/views";
 
-import type { TailorKitApp } from "#types";
+import type { PatchSmithApp } from "#types";
 
 /** Select the supported view without reading or composing its context. */
 export const selectSlotView = (
-  views: NonNullable<TailorKitApp["views"]>,
+  views: NonNullable<PatchSmithApp["views"]>,
   slot: string,
   activePath: string,
-  schema: Pick<TailorKitContract, "slots" | "views">
+  schema: Pick<PatchSmithContract, "slots" | "views">
 ) => {
   const supported = schema.slots[slot]?.views ?? [];
   const path = getViewHierarchy(activePath).find(
@@ -29,10 +29,10 @@ export const selectSlotView = (
 
 /** Match the same path and compose the same ancestor context as the sandbox renderer. */
 export const resolveSlotView = (
-  views: NonNullable<TailorKitApp["views"]>,
+  views: NonNullable<PatchSmithApp["views"]>,
   slot: string,
   activeView: ActiveView,
-  schema: Pick<TailorKitContract, "slots" | "views">
+  schema: Pick<PatchSmithContract, "slots" | "views">
 ) => {
   const view = selectSlotView(views, slot, activeView.view, schema);
   if (!view) {

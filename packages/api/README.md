@@ -1,3 +1,3 @@
-# TailorKit API
+# PatchSmith API
 
-`@tailorkit/api` implements the internal API for the TailorKit dashboard.
+`@patchsmith/api` implements the internal API for the PatchSmith dashboard.

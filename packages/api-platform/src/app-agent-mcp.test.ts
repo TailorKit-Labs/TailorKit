@@ -1,8 +1,8 @@
 import { os } from "@orpc/server";
-import type { appAgent } from "@tailorkit/agent-fx/workflows";
-import { AppAgentThreadError } from "@tailorkit/agent/threads";
-import type * as threadsModule from "@tailorkit/agent/threads";
-import { verifyAgentToken } from "@tailorkit/api-utils/agent-token";
+import type { appAgent } from "@patchsmith/agent-fx/workflows";
+import { AppAgentThreadError } from "@patchsmith/agent/threads";
+import type * as threadsModule from "@patchsmith/agent/threads";
+import { verifyAgentToken } from "@patchsmith/api-utils/agent-token";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
@@ -51,7 +51,7 @@ const mocks = vi.hoisted(() => ({
   >(),
   thread: vi.fn<(appId: string, threadId?: string) => Promise<string>>(),
 }));
-vi.mock("@tailorkit/db", () => ({
+vi.mock("@patchsmith/db", () => ({
   db: {
     insert: () => ({
       values: (value: Parameters<typeof mocks.grant>[0]) => {
@@ -89,20 +89,20 @@ vi.mock("./routes/apps", () => ({
   },
   createAppRecord: mocks.create,
 }));
-vi.mock("@tailorkit/agent-fx/workflows", () => ({
+vi.mock("@patchsmith/agent-fx/workflows", () => ({
   appAgent: vi.fn(),
   cancelAppAgent: mocks.cleanup,
 }));
-vi.mock("@tailorkit/agent/threads", async (importOriginal) => ({
+vi.mock("@patchsmith/agent/threads", async (importOriginal) => ({
   ...(await importOriginal<typeof threadsModule>()),
   resolveAppAgentThread: mocks.thread,
 }));
 vi.mock("workflow/api", () => ({ start: mocks.start }));
-vi.mock("@tailorkit/api-utils/dev-delay", () => ({
+vi.mock("@patchsmith/api-utils/dev-delay", () => ({
   devDelayMiddleware: async <TResult>({ next }: { next: () => TResult }) =>
     await next(),
 }));
-vi.mock("@tailorkit/api-utils/rate-limiting", () => ({
+vi.mock("@patchsmith/api-utils/rate-limiting", () => ({
   createRateLimiter: vi.fn(),
   ratelimitMiddleware:
     () =>
@@ -132,7 +132,7 @@ const request = (
 ) => {
   const contextValue = {
     ...identity,
-    hostUrl: "https://host.test/api/tailorkit",
+    hostUrl: "https://host.test/api/patchsmith",
     ...overrides,
   };
   return new Request("https://platform.test/api/platform/app-agent/mcp", {
@@ -157,7 +157,7 @@ const request = (
       "mcp-method": "tools/call",
       "mcp-name": name,
       "mcp-protocol-version": "2026-07-28",
-      "x-tailorkit-context": Buffer.from(
+      "x-patchsmith-context": Buffer.from(
         JSON.stringify(contextValue),
         "utf-8"
       ).toString("base64url"),
@@ -267,7 +267,7 @@ describe("platform MCP endpoint", () => {
     const [, [input]] = requireValue(mocks.start.mock.lastCall);
     expect(input).toMatchObject({
       appId: app.id,
-      hostUrl: "https://host.test/api/tailorkit",
+      hostUrl: "https://host.test/api/patchsmith",
       messages: [{ content: "Change it", role: "user" }],
       model: "openai/gpt-6.1-sol",
     });
@@ -287,7 +287,7 @@ describe("platform MCP endpoint", () => {
     expect(
       requireValue(mocks.start.mock.lastCall)[2]?.attributes
     ).toMatchObject({
-      "tailorkit.subjectId": "user",
+      "patchsmith.subjectId": "user",
     });
     expect(requireValue(mocks.grant.mock.lastCall)[0]).toMatchObject({
       projectId: "project",
@@ -367,7 +367,7 @@ describe("platform MCP endpoint", () => {
       ["", "not+base64", "eyJ9=", "x".repeat(8193), "_w"].map(
         async (encoded) => {
           const awaitedResult3 = await handleAppAgentMcpRequest(
-            request("list_apps", {}, {}, { "x-tailorkit-context": encoded }),
+            request("list_apps", {}, {}, { "x-patchsmith-context": encoded }),
             context
           );
           expect(awaitedResult3.status).toBe(400);

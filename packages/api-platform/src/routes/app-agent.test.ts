@@ -1,13 +1,13 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { call, asyncIteratorToUnproxiedDataStream } from "@orpc/server";
-import type { appAgent } from "@tailorkit/agent-fx/workflows";
-import { AppAgentThreadError } from "@tailorkit/agent/threads";
-import type * as threadsModule from "@tailorkit/agent/threads";
+import type { appAgent } from "@patchsmith/agent-fx/workflows";
+import { AppAgentThreadError } from "@patchsmith/agent/threads";
+import type * as threadsModule from "@patchsmith/agent/threads";
 import {
   issueAgentToken,
   verifyAgentToken,
-} from "@tailorkit/api-utils/agent-token";
-import { asyncFixture } from "@tailorkit/config/testing";
+} from "@patchsmith/api-utils/agent-token";
+import { asyncFixture } from "@patchsmith/config/testing";
 import { readUIMessageStream } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
@@ -41,7 +41,7 @@ const mocks = vi.hoisted(() => ({
   thread: vi.fn<(appId: string, threadId?: string) => Promise<string>>(),
   token: vi.fn(),
 }));
-vi.mock("@tailorkit/db", () => ({
+vi.mock("@patchsmith/db", () => ({
   db: {
     query: {
       app: { findFirst: mocks.app },
@@ -49,19 +49,19 @@ vi.mock("@tailorkit/db", () => ({
     },
   },
 }));
-vi.mock("@tailorkit/api-utils/dev-delay", () => ({
+vi.mock("@patchsmith/api-utils/dev-delay", () => ({
   devDelayMiddleware: async <TResult>({ next }: { next: () => TResult }) =>
     await next(),
 }));
-vi.mock("@tailorkit/api-utils/rate-limiting", () => ({
+vi.mock("@patchsmith/api-utils/rate-limiting", () => ({
   createRateLimiter: vi.fn(),
   ratelimitMiddleware:
     () =>
     async <TResult>({ next }: { next: () => TResult }) =>
       await next(),
 }));
-vi.mock("@tailorkit/agent-fx/workflows", () => ({ appAgent: vi.fn() }));
-vi.mock("@tailorkit/agent/threads", async (importOriginal) => ({
+vi.mock("@patchsmith/agent-fx/workflows", () => ({ appAgent: vi.fn() }));
+vi.mock("@patchsmith/agent/threads", async (importOriginal) => ({
   ...(await importOriginal<typeof threadsModule>()),
   resolveAppAgentThread: mocks.thread,
 }));
@@ -82,7 +82,7 @@ const input = {
   body: {
     app: { id: "a3e7568a-c4f7-4ac0-8c35-71ff0f4cd002" },
     deployToken: "token",
-    hostUrl: "http://localhost:3000/api/tailorkit",
+    hostUrl: "http://localhost:3000/api/patchsmith",
     messages: [
       {
         id: "user-1",
@@ -258,7 +258,7 @@ describe("platform app chat", () => {
       await verifyAgentToken(
         first.agentToken,
         requireValue(env.AUTH_SECRET),
-        env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform"
+        env.OPENAPI_SERVER_URL ?? "https://patchsmith.io/api/platform"
       )
     ).toMatchObject({
       appId: "app-one",

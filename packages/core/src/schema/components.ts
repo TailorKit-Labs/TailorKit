@@ -59,7 +59,7 @@ type NoFieldCallbackConflicts<TFields, TCallbacks> =
   FieldCallbackConflictKeys<TFields, TCallbacks> extends never
     ? unknown
     : {
-        readonly __tailorkit_error__: `Field and callback keys must be unique. Conflicting key: ${FieldCallbackConflictKeys<TFields, TCallbacks>}`;
+        readonly __patchsmith_error__: `Field and callback keys must be unique. Conflicting key: ${FieldCallbackConflictKeys<TFields, TCallbacks>}`;
       };
 
 export type NoComponentFieldCallbackConflicts<TComponents> = {

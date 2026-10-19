@@ -1,25 +1,25 @@
 import { useStore } from "@nanostores/react";
-import { createSlotRuntime, buildThemeCss } from "@tailorkit/client-core";
+import { createSlotRuntime, buildThemeCss } from "@patchsmith/client-core";
 import type {
   ControlledRenderSlotProps,
   RenderSlotProps,
   RuntimeRenderSlotProps,
   SlotRuntimeOptions,
-} from "@tailorkit/client-core";
-import type { SlotDefinitions, ViewDefinition } from "@tailorkit/core/schema";
+} from "@patchsmith/client-core";
+import type { SlotDefinitions, ViewDefinition } from "@patchsmith/core/schema";
 import { useEffect, useId, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
 import { PrimitiveThemeContext } from "#primitives";
 import { RemoteViewHost } from "#remote-view";
 
-import { useTailorkitContext } from "./context";
+import { usePatchSmithContext } from "./context";
 
 export type {
   ControlledRenderSlotProps,
   RenderSlotProps,
   RenderSlotContext,
-} from "@tailorkit/client-core";
+} from "@patchsmith/client-core";
 
 type DefaultViews = Record<`/${string}`, ViewDefinition>;
 
@@ -31,7 +31,7 @@ export type RenderSlotComponent<
 };
 
 const SlotRenderer = (options: SlotRuntimeOptions): ReactNode => {
-  const { store, client } = useTailorkitContext(
+  const { store, client } = usePatchSmithContext(
     options.mode === "managed" ? "RenderSlot" : "RenderSlot.Controlled"
   );
   const reactId = useId();
@@ -47,7 +47,7 @@ const SlotRenderer = (options: SlotRuntimeOptions): ReactNode => {
     runtime.setInput(options);
   }, [runtime, options]);
   const snapshot = useStore(runtime.state);
-  const viewId = `tailorkit-view-${reactId.replaceAll(":", "")}`;
+  const viewId = `patchsmith-view-${reactId.replaceAll(":", "")}`;
   const themeContext = useMemo(
     () => ({ theme: client.theme, viewId }),
     [client.theme, viewId]
@@ -63,8 +63,8 @@ const SlotRenderer = (options: SlotRuntimeOptions): ReactNode => {
   }
   return (
     <PrimitiveThemeContext.Provider value={themeContext}>
-      <div data-tailorkit-view={viewId}>
-        <style data-tailorkit-theme-style={viewId}>
+      <div data-patchsmith-view={viewId}>
+        <style data-patchsmith-theme-style={viewId}>
           {buildThemeCss(viewId, client.theme)}
         </style>
         <RemoteViewHost

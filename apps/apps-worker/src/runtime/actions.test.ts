@@ -1,10 +1,10 @@
-import type { Invocation } from "@tailorkit/app/protocol";
-import { action, defineServer, query, mutation } from "@tailorkit/app/server";
+import type { Invocation } from "@patchsmith/app/protocol";
+import { action, defineServer, query, mutation } from "@patchsmith/app/server";
 import type {
   ActionContext,
   AppDefinition,
   Identity,
-} from "@tailorkit/app/server";
+} from "@patchsmith/app/server";
 import * as v from "valibot";
 import { expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
@@ -34,7 +34,7 @@ const identity = {
   projectId: "project",
   scope: { name: "org", value: { id: "tenant" } },
   subjectId: "user",
-  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
 };
 const functions = {
   read: query({ args: z.object({}), handler: () => 4 }),
@@ -282,7 +282,7 @@ it("reuses compiled nested bindings while isolating concurrent calls and retaine
 });
 
 it("runs generated instance resolvers with all registered queries and no write capabilities", async () => {
-  const { withInstanceResolvers } = await import("@tailorkit/app/server");
+  const { withInstanceResolvers } = await import("@patchsmith/app/server");
   let retainedQuery!: () => Promise<number>;
   const app = withInstanceResolvers(defineServer({ reports: functions }), [
     {
@@ -328,7 +328,7 @@ it("runs generated instance resolvers with all registered queries and no write c
           path: "/reports/annual.summary",
           slot: "page",
         },
-        name: "_tailorkit.instances.resolve",
+        name: "_patchsmith.instances.resolve",
       },
       identity
     )
@@ -349,7 +349,7 @@ it("runs generated instance resolvers with all registered queries and no write c
     run(
       {
         args: { context: null, path: "/reports/annual.summary", slot: "page" },
-        name: "_tailorkit.instances.resolve",
+        name: "_patchsmith.instances.resolve",
       },
       identity
     )
@@ -358,7 +358,7 @@ it("runs generated instance resolvers with all registered queries and no write c
     run(
       {
         args: { context: {}, path: "/reports/annual.summary", slot: "page" },
-        name: "_tailorkit.instances.resolve",
+        name: "_patchsmith.instances.resolve",
       },
       { ...identity, expiresAt: 0 }
     )
@@ -366,7 +366,7 @@ it("runs generated instance resolvers with all registered queries and no write c
 });
 
 it("validates instance payloads and stable keys before returning resolver results", async () => {
-  const { withInstanceResolvers } = await import("@tailorkit/app/server");
+  const { withInstanceResolvers } = await import("@patchsmith/app/server");
   await Promise.all(
     [
       [{ data: { id: 123 }, key: "overview", metadata: {} }],
@@ -389,7 +389,7 @@ it("validates instance payloads and stable keys before returning resolver result
         actionRunner(app, { mutate: vi.fn(), query: vi.fn() })(
           {
             args: { context: {}, path: "/", slot: "page" },
-            name: "_tailorkit.instances.resolve",
+            name: "_patchsmith.instances.resolve",
           },
           identity
         )
@@ -399,7 +399,7 @@ it("validates instance payloads and stable keys before returning resolver result
 });
 
 it("reserves the internal namespace and rejects duplicate or invalid slot/path addresses", async () => {
-  const { withInstanceResolvers } = await import("@tailorkit/app/server");
+  const { withInstanceResolvers } = await import("@patchsmith/app/server");
   const resolver = {
     dataSchema: z.object({}),
     path: "/",
@@ -408,7 +408,7 @@ it("reserves the internal namespace and rejects duplicate or invalid slot/path a
   };
   const app = withInstanceResolvers(defineServer({}), [resolver]);
   expect(() => withInstanceResolvers(app, [])).toThrow(
-    "The _tailorkit function namespace is reserved by TailorKit."
+    "The _patchsmith function namespace is reserved by PatchSmith."
   );
   expect(() =>
     withInstanceResolvers(defineServer({}), [resolver, resolver])
@@ -419,7 +419,7 @@ it("reserves the internal namespace and rejects duplicate or invalid slot/path a
 });
 
 it("dispatches by exact slot/path pairs and validates against the selected data schema", async () => {
-  const { withInstanceResolvers } = await import("@tailorkit/app/server");
+  const { withInstanceResolvers } = await import("@patchsmith/app/server");
   const first = vi.fn(() => [
     { data: { id: "item" }, key: "one", metadata: {} },
   ]);
@@ -446,7 +446,7 @@ it("dispatches by exact slot/path pairs and validates against the selected data 
     },
   ]);
   const run = actionRunner(app, { mutate: vi.fn(), query: vi.fn() });
-  const name = "_tailorkit.instances.resolve";
+  const name = "_patchsmith.instances.resolve";
   await expect(
     run(
       {

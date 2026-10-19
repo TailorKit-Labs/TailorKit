@@ -46,16 +46,16 @@ vi.mock("@clack/prompts", async (importOriginal) => ({
   spinner: () => ({ start: vi.fn(), stop: vi.fn() }),
   text: mocks.text,
 }));
-vi.mock("@tailorkit/vite/config/loader", () => ({
-  loadTailorKitConfig: mocks.load,
+vi.mock("@patchsmith/vite/config/loader", () => ({
+  loadPatchSmithConfig: mocks.load,
 }));
 vi.mock("./auth", async (importOriginal) => ({
   ...(await importOriginal<typeof authModule>()),
   getDeployToken: mocks.token,
   runWhoami: mocks.whoami,
 }));
-vi.mock("@tailorkit/core/server", () => ({
-  createTailorKitClient: mocks.client,
+vi.mock("@patchsmith/core/server", () => ({
+  createPatchSmithClient: mocks.client,
 }));
 vi.mock("./agent-tui", () => ({ openAgentTui: mocks.tui }));
 const { runAgentCommand } = await import("./agent");
@@ -64,12 +64,12 @@ const stdinTty = Object.getOwnPropertyDescriptor(process.stdin, "isTTY");
 const stdoutTty = Object.getOwnPropertyDescriptor(process.stdout, "isTTY");
 let root: string;
 let configPath: string;
-const host = "https://host.test/api/tailorkit";
+const host = "https://host.test/api/patchsmith";
 
 beforeEach(async () => {
   vi.resetAllMocks();
-  root = await mkdtemp(path.join(tmpdir(), "tailorkit-agent-"));
-  configPath = path.join(root, "tailorkit.config.ts");
+  root = await mkdtemp(path.join(tmpdir(), "patchsmith-agent-"));
+  configPath = path.join(root, "patchsmith.config.ts");
   vi.spyOn(process, "cwd").mockReturnValue(root);
   await writeFile(
     path.join(root, "package.json"),

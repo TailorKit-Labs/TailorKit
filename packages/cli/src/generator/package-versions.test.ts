@@ -57,7 +57,7 @@ it("scaffolds against the CLI's SDK version", async () => {
     with: { type: "json" },
   });
   const awaitedResult4 = await resolveTemplatePackageVersions();
-  expect(awaitedResult4.tailorkit).toBe(packageJson.version);
+  expect(awaitedResult4.patchsmith).toBe(packageJson.version);
 });
 
 it("selects stable Valibot 1 releases that satisfy the release-age policy", async () => {

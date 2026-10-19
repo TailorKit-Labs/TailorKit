@@ -1,5 +1,5 @@
-import { handleAssetRequest } from "@tailorkit/api-platform/assets";
-import { getStorage } from "@tailorkit/storage";
+import { handleAssetRequest } from "@patchsmith/api-platform/assets";
+import { getStorage } from "@patchsmith/storage";
 
 import { createApiEntry } from "./entry";
 

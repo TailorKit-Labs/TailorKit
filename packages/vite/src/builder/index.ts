@@ -1,7 +1,7 @@
 export {
-  createTailorKitUploadManifest,
-  tailorkitUploadManifestSchema,
-  type TailorKitUploadManifest,
+  createPatchSmithUploadManifest,
+  patchsmithUploadManifestSchema,
+  type PatchSmithUploadManifest,
 } from "./upload-manifest";
 export {
   generateAppMigrations,

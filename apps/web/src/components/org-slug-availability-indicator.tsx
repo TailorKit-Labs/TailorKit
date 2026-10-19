@@ -1,5 +1,5 @@
-import { Spinner } from "@tailorkit/ui/spinner";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "@tailorkit/ui/tooltip";
+import { Spinner } from "@patchsmith/ui/spinner";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "@patchsmith/ui/tooltip";
 import { CheckCircle2Icon, XCircleIcon } from "lucide-react";
 
 import type { OrgSlugAvailability } from "#lib/org-slug-availability";

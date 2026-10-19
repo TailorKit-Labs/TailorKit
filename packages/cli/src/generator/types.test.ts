@@ -2,14 +2,14 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { primitives } from "@tailorkit/core/primitives/zod";
+import { primitives } from "@patchsmith/core/primitives/zod";
 import {
   tool,
   defineContract,
-  createTailorKitSchema,
-} from "@tailorkit/core/schema";
-import { createServer } from "@tailorkit/core/server";
-import { compactJsonSchema, TailorKitSchemaSpec } from "@tailorkit/core/spec";
+  createPatchSmithSchema,
+} from "@patchsmith/core/schema";
+import { createServer } from "@patchsmith/core/server";
+import { compactJsonSchema, PatchSmithSchemaSpec } from "@patchsmith/core/spec";
 import * as v from "valibot";
 import { transformWithOxc } from "vite";
 import { assert, describe, expect, it, vi } from "vite-plus/test";
@@ -20,7 +20,7 @@ import { generateTypes, readSchemaFile, renderGeneratedTypes } from "./types";
 it.each([undefined, "{", '{"version":2,"components":{}}'])(
   "includes the original schema loading error and preserves its cause for %s",
   async (content) => {
-    const root = await mkdtemp(path.join(tmpdir(), "tailorkit-schema-error-"));
+    const root = await mkdtemp(path.join(tmpdir(), "patchsmith-schema-error-"));
     const schemaPath = path.join(root, "schema.json");
     try {
       if (content !== undefined) {
@@ -37,7 +37,7 @@ it.each([undefined, "{", '{"version":2,"components":{}}'])(
       const error = failure;
       assert(error.cause instanceof Error);
       expect(error.message).toBe(
-        `Unable to read TailorKit schema from ${schemaPath}: ${error.cause.message}`
+        `Unable to read PatchSmith schema from ${schemaPath}: ${error.cause.message}`
       );
     } finally {
       await rm(root, { force: true, recursive: true });
@@ -57,14 +57,14 @@ const mockSchemaFetch = (requests: number) => {
 
 it("links the app to the configured server entry and never falls back to an unrelated default file", async () => {
   const root = await mkdtemp(
-    path.join(tmpdir(), "tailorkit-configured-server-types-")
+    path.join(tmpdir(), "patchsmith-configured-server-types-")
   );
   const fetch = mockSchemaFetch(3);
   try {
     await mkdir(path.join(root, "backend"));
     await mkdir(path.join(root, "src"));
     await writeFile(
-      path.join(root, "tailorkit.config.mjs"),
+      path.join(root, "patchsmith.config.mjs"),
       'export default { name: "Test App", slug: "test-app", host: "https://host.test", server: { entry: "./backend/api.ts" } };'
     );
     await writeFile(
@@ -96,7 +96,7 @@ it("links the app to the configured server entry and never falls back to an unre
 });
 
 it("preserves the type-only API link when regenerating host types, including custom paths", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-host-types-"));
+  const root = await mkdtemp(path.join(tmpdir(), "patchsmith-host-types-"));
   const fetch = mockSchemaFetch(3);
   try {
     await mkdir(path.join(root, "src"));
@@ -105,7 +105,7 @@ it("preserves the type-only API link when regenerating host types, including cus
       'throw new Error("Never evaluate server code");'
     );
     await writeFile(
-      path.join(root, "tailorkit.config.mjs"),
+      path.join(root, "patchsmith.config.mjs"),
       'export default { name: "Test App", slug: "test-app", host: "https://host.test", server: {} };'
     );
     const generated = await generateTypes({ cwd: root });
@@ -131,11 +131,11 @@ it("preserves the type-only API link when regenerating host types, including cus
 });
 
 it("detects the default server file without server configuration and removes stale API imports", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-detect-server-"));
+  const root = await mkdtemp(path.join(tmpdir(), "patchsmith-detect-server-"));
   const fetch = mockSchemaFetch(5);
   try {
     await writeFile(
-      path.join(root, "tailorkit.config.mjs"),
+      path.join(root, "patchsmith.config.mjs"),
       'export default { name: "Test App", slug: "test-app", host: "https://host.test" };'
     );
     const generated = await generateTypes({ cwd: root });
@@ -193,7 +193,7 @@ const responsiveConstUnionImplementationImplementation = (
 describe("renderGeneratedTypes", () => {
   it("includes slot descriptions from the host schema endpoint in generated documentation", async () => {
     const server = createServer({
-      baseUrl: "https://host.test/api/tailorkit",
+      baseUrl: "https://host.test/api/patchsmith",
       contract: defineContract({
         scopes: { user: z.object({ userId: z.string() }) },
         slots: {
@@ -207,12 +207,12 @@ describe("renderGeneratedTypes", () => {
       }),
     });
     const response = await server.handler(
-      new Request("https://host.test/api/tailorkit/schema"),
+      new Request("https://host.test/api/patchsmith/schema"),
       { authenticate: () => null }
     );
     expect(response.ok).toBe(true);
     const output = renderGeneratedTypes(
-      v.parse(TailorKitSchemaSpec, await response.json())
+      v.parse(PatchSmithSchemaSpec, await response.json())
     );
     expect(output).toContain(
       '    /**\n     * Right-hand panel, typically 360px wide.\n     * Scrolls independently.\n     */\n    "panel": { views: "/"; multiple: false };'
@@ -229,13 +229,13 @@ describe("renderGeneratedTypes", () => {
     expect(output).toContain(
       '    */\n    "panel": { views: "/"; multiple: false };'
     );
-    const { code } = await transformWithOxc(output, "tailorkit.gen.ts");
+    const { code } = await transformWithOxc(output, "patchsmith.gen.ts");
     expect(code).not.toContain("injected");
     expect(code).not.toContain("description");
   });
 
   it("preserves nullable view context fields through schema serialization and generation", () => {
-    const schema = createTailorKitSchema({
+    const schema = createPatchSmithSchema({
       components: {},
       slots: { sidebar: { views: ["/"] } },
       views: {
@@ -252,7 +252,7 @@ describe("renderGeneratedTypes", () => {
       },
     }).serialize();
 
-    const output = renderGeneratedTypes(v.parse(TailorKitSchemaSpec, schema));
+    const output = renderGeneratedTypes(v.parse(PatchSmithSchemaSpec, schema));
 
     expect(output).toContain(
       "customer: {\n        id: string;\n        name: string;\n      } | null;"
@@ -518,7 +518,7 @@ describe("renderGeneratedTypes", () => {
 
   it("generates caller input types before transforms and return types after transforms", async () => {
     const server = createServer({
-      baseUrl: "https://example.com/api/tailorkit",
+      baseUrl: "https://example.com/api/patchsmith",
       contract: defineContract({
         scopes: { user: z.object({ userId: z.string() }) },
         tools: {
@@ -538,14 +538,14 @@ describe("renderGeneratedTypes", () => {
       tools: { nested: { increment: ({ input }) => input + 1 } },
     });
     const response = await server.handler(
-      new Request("https://host.test/api/tailorkit/schema"),
+      new Request("https://host.test/api/patchsmith/schema"),
       {
         authenticate: () => null,
       }
     );
     expect(response.ok).toBe(true);
     const output = renderGeneratedTypes(
-      v.parse(TailorKitSchemaSpec, await response.json())
+      v.parse(PatchSmithSchemaSpec, await response.json())
     );
     expect(output).toContain("increment: (input: string) => Promise<number>;");
   });
@@ -578,7 +578,7 @@ describe("renderGeneratedTypes", () => {
       views: {},
     });
 
-    expect(output).toContain("export type TailorKitTools = {");
+    expect(output).toContain("export type PatchSmithTools = {");
     expect(output).toContain("todo: {");
     expect(output).toContain("create: (input: {");
     expect(output).toContain("title: string;");
@@ -620,7 +620,7 @@ it("composes independent ancestor contexts and generates slot names", () => {
     },
   });
   expect(generated).toContain(
-    'interface TailorKitSlots {\n    "navbar": { views: "/"; multiple: false };\n    "panel": { views: "/" | "/users" | "/users/detail"; multiple: true };\n  }'
+    'interface PatchSmithSlots {\n    "navbar": { views: "/"; multiple: false };\n    "panel": { views: "/" | "/users" | "/users/detail"; multiple: true };\n  }'
   );
   const detail = generated.slice(
     generated.indexOf('"/users/detail":'),
@@ -633,7 +633,7 @@ it("composes independent ancestor contexts and generates slot names", () => {
 });
 
 it("preserves optional ancestor fields through schema serialization and generation", () => {
-  const schema = createTailorKitSchema({
+  const schema = createPatchSmithSchema({
     components: {},
     slots: { panel: { views: ["/detail"] } },
     views: {
@@ -641,7 +641,7 @@ it("preserves optional ancestor fields through schema serialization and generati
       "/detail": z.object({ id: z.string() }),
     },
   }).serialize();
-  const parsed = v.parse(TailorKitSchemaSpec, schema);
+  const parsed = v.parse(PatchSmithSchemaSpec, schema);
   expect(parsed.views["/"]?.contextOptional).toBe(true);
   expect(parsed.views["/detail"]?.contextOptional).toBeUndefined();
   const output = renderGeneratedTypes(parsed);
@@ -669,9 +669,9 @@ it("generates both frontend kinds and excludes client namespaces from backend ca
     'callTool("server", "accounts.nested.balance", input)'
   );
   const backend = generated.slice(
-    generated.indexOf("export type TailorKitBackendTools"),
+    generated.indexOf("export type PatchSmithBackendTools"),
     generated.indexOf(
-      'declare module "tailorkit/client" { interface TailorKitServerTools'
+      'declare module "patchsmith/client" { interface PatchSmithServerTools'
     )
   );
   expect(backend).not.toContain("ui:");
@@ -679,7 +679,7 @@ it("generates both frontend kinds and excludes client namespaces from backend ca
 });
 
 it("generates conditional primitive types from the contract's breakpoint aliases", () => {
-  const schema = createTailorKitSchema({
+  const schema = createPatchSmithSchema({
     components: {
       ...primitives({
         breakpoints: { desktop: "1024px", hover: "640px" },
@@ -754,7 +754,7 @@ it("generates identical types from inline and referenced schemas in every contra
   expect(renderGeneratedTypes(schema)).toBe(
     renderGeneratedTypes(schemaWith(original))
   );
-  const serialized = v.parse(TailorKitSchemaSpec, { ...schema, version: 1 });
+  const serialized = v.parse(PatchSmithSchemaSpec, { ...schema, version: 1 });
   expect(renderGeneratedTypes(serialized)).toBe(
     renderGeneratedTypes(schemaWith(original))
   );

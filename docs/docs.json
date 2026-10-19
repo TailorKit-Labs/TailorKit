@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "TailorKit",
+  "name": "PatchSmith",
   "colors": {
     "primary": "#18181B",
     "light": "#FAFAFA",
@@ -38,7 +38,7 @@
       "anchors": [
         {
           "anchor": "Pricing",
-          "href": "https://tailorkit.dev/pricing",
+          "href": "https://patchsmith.io/pricing",
           "icon": "money-bills-simple"
         },
         {
@@ -52,7 +52,7 @@
   "logo": {
     "light": "/images/logo-with-text-light.svg",
     "dark": "/images/logo-with-text-dark.svg",
-    "href": "https://tailorkit.dev/home"
+    "href": "https://patchsmith.io/home"
   },
   "navbar": {
     "links": [
@@ -64,7 +64,7 @@
     "primary": {
       "type": "button",
       "label": "Get started",
-      "href": "https://tailorkit.dev/signup"
+      "href": "https://patchsmith.io/signup"
     }
   },
   "contextual": {
@@ -84,7 +84,7 @@
       "github": "https://github.com/TailorKit-Labs/tailorkit"
     }
   },
-  "description": "TailorKit lets users, AI, and partners build extensions inside your SaaS. Those extensions run in a sandbox and use the components, data, and tools you choose to expose.",
+  "description": "PatchSmith lets users, AI, and partners build extensions inside your SaaS. Those extensions run in a sandbox and use the components, data, and tools you choose to expose.",
   "icons": {
     "library": "fontawesome"
   },

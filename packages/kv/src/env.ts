@@ -1,4 +1,4 @@
-import { createEnv, warnIfMissing } from "@tailorkit/env";
+import { createEnv, warnIfMissing } from "@patchsmith/env";
 import * as z from "zod";
 
 export const env = createEnv({

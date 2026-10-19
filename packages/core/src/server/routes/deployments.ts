@@ -4,13 +4,13 @@ import {
   deploymentsGet,
   deploymentsList,
   deploymentsPublish,
-} from "@tailorkit/client-platform/client";
+} from "@patchsmith/client-platform/client";
 import * as v from "valibot";
 
 import { platformAppSelector } from "#server/platform-app-selector";
 import {
-  getTailorKitScope,
-  getTailorKitScopes,
+  getPatchSmithScope,
+  getPatchSmithScopes,
   o,
   requireCliDeployToken,
 } from "#server/procedures";
@@ -117,7 +117,7 @@ export const deploymentRouter = {
             app: platformAppSelector(input.appId),
             assets: input.assets,
             logos: input.logos,
-            scope: getTailorKitScope(context),
+            scope: getPatchSmithScope(context),
             server: input.server,
             views: input.views,
           },
@@ -139,7 +139,7 @@ export const deploymentRouter = {
     .handler(
       async ({ context, input }) =>
         await deploymentsGet({
-          body: { scopes: getTailorKitScopes(context, input.scopes) },
+          body: { scopes: getPatchSmithScopes(context, input.scopes) },
           client: context.platform,
           headers: context.platformHeaders,
           path: { deploymentId: input.deploymentId },
@@ -161,7 +161,7 @@ export const deploymentRouter = {
             app: platformAppSelector(input.appId),
             page: input.page,
             pageSize: input.pageSize,
-            scopes: getTailorKitScopes(context, input.scopes),
+            scopes: getPatchSmithScopes(context, input.scopes),
           },
           client: context.platform,
           headers: context.platformHeaders,
@@ -178,7 +178,7 @@ export const deploymentRouter = {
     .handler(
       async ({ context, input }) =>
         await deploymentsPublish({
-          body: { rollout: input.rollout, scope: getTailorKitScope(context) },
+          body: { rollout: input.rollout, scope: getPatchSmithScope(context) },
           client: context.platform,
           headers: context.platformHeaders,
           path: { deploymentId: input.deploymentId },

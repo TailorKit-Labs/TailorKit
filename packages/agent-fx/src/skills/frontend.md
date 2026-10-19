@@ -1,6 +1,6 @@
 # Build the UI
 
-Read the generated component pages for the controls needed, then compose them directly with Preact. Import components and tools from `#tailorkit`. Use the product's layout, spacing, color, and accessibility props.
+Read the generated component pages for the controls needed, then compose them directly with Preact. Import components and tools from `#patchsmith`. Use the product's layout, spacing, color, and accessibility props.
 
 Keep form state in the component with `useState`. Use `useQuery` for app data and `useMutation`/`useAction` for operations; their pending and error state is usually enough. The [form example](references/interactions.md) shows this pattern. Share state through props before introducing a provider or custom hook.
 

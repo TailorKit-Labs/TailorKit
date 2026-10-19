@@ -15,7 +15,7 @@ const authCaptcha = captcha({
 });
 
 const options: BetterAuthOptions = {
-  baseURL: "https://tailorkit.dev",
+  baseURL: "https://patchsmith.io",
   logger: { disabled: true },
   plugins: [authCaptcha],
   secret: "test-secret-with-at-least-32-characters",
@@ -42,7 +42,7 @@ describe("auth captcha", () => {
     });
 
     const response = await auth.handler(
-      new Request(`https://tailorkit.dev/api/auth${path}`, { method: "POST" })
+      new Request(`https://patchsmith.io/api/auth${path}`, { method: "POST" })
     );
 
     expect(response.status).toBe(403);
@@ -56,7 +56,7 @@ describe("auth captcha", () => {
     vi.mocked(checkBotId).mockResolvedValue(humanVerdict);
 
     const result = await authCaptcha.onRequest(
-      new Request(`https://tailorkit.dev/api/auth${path}`, { method: "POST" }),
+      new Request(`https://patchsmith.io/api/auth${path}`, { method: "POST" }),
       await auth.$context
     );
 
@@ -73,7 +73,7 @@ describe("auth captcha", () => {
     });
 
     const response = await auth.handler(
-      new Request("https://tailorkit.dev/api/auth/sign-in/email", {
+      new Request("https://patchsmith.io/api/auth/sign-in/email", {
         method: "POST",
       })
     );
@@ -85,7 +85,7 @@ describe("auth captcha", () => {
     vi.mocked(checkBotId).mockRejectedValue(new Error("BotID unavailable"));
 
     const response = await auth.handler(
-      new Request("https://tailorkit.dev/api/auth/sign-up/email", {
+      new Request("https://patchsmith.io/api/auth/sign-up/email", {
         method: "POST",
       })
     );
@@ -101,7 +101,7 @@ describe("auth captcha", () => {
     "/api-key/verify",
   ])("does not challenge %s", async (path) => {
     const result = await authCaptcha.onRequest(
-      new Request(`https://tailorkit.dev/api/auth${path}`),
+      new Request(`https://patchsmith.io/api/auth${path}`),
       await auth.$context
     );
 

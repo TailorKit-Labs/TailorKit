@@ -1,0 +1,14 @@
+import type { PatchSmithConfig } from "patchsmith/app/config";
+
+const config = {
+  host: "{{ hostUrl }}",
+{% unless bare %}  logos: {
+    dark: "logo-dark.svg",
+    light: "logo-light.svg",
+  },
+{% endunless %}
+  name: {{ appName }},
+  slug: {{ appSlug }},
+} satisfies PatchSmithConfig;
+
+export default config;

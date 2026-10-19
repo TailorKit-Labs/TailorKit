@@ -1,6 +1,6 @@
-import type { TailorKitContract } from "@tailorkit/core/schema";
-import { getViewDepth, isViewAncestor } from "@tailorkit/core/views";
-import type { ActiveView, ViewStatus } from "@tailorkit/core/views";
+import type { PatchSmithContract } from "@patchsmith/core/schema";
+import { getViewDepth, isViewAncestor } from "@patchsmith/core/views";
+import type { ActiveView, ViewStatus } from "@patchsmith/core/views";
 import { atom } from "nanostores";
 
 import { validateViewContext } from "./view-context-diagnostics";
@@ -17,7 +17,7 @@ export interface ViewEntry {
 
 /** Own view state and diagnostics independently of any framework adapter. */
 export const createViewContextStore = (
-  contract: Pick<TailorKitContract, "views">
+  contract: Pick<PatchSmithContract, "views">
 ) => {
   const entries = new Map<symbol, ViewEntry>();
 
@@ -58,12 +58,12 @@ export const createViewContextStore = (
         );
         if (peers.length > 1) {
           console.warn(
-            `TailorKit found multiple active views at the same hierarchy depth: ${peers
+            `PatchSmith found multiple active views at the same hierarchy depth: ${peers
               .toReversed()
               .map((entry) => `"${entry.view}"`)
               .join(
                 ", "
-              )}. TailorKit selected "${selected.view}" by mount order. Only one route at a hierarchy depth should register a view.`
+              )}. PatchSmith selected "${selected.view}" by mount order. Only one route at a hierarchy depth should register a view.`
           );
         }
         state.set({
@@ -109,7 +109,7 @@ export const createViewContextStore = (
     const failed = (cause: unknown) => {
       apply(entry, {
         details: cause,
-        message: `TailorKit could not validate context for view "${entry.view}".`,
+        message: `PatchSmith could not validate context for view "${entry.view}".`,
       });
     };
     try {

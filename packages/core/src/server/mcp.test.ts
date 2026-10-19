@@ -4,7 +4,7 @@ import { z } from "zod";
 import { defineContract } from "#schema/contract";
 
 import { createServer } from "./contract";
-import { createTailorKitServer } from "./handler";
+import { createPatchSmithServer } from "./handler";
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -22,13 +22,13 @@ const setup = (
   } = defaultSetupOptions
 ) => {
   const fetch = vi.fn();
-  const server = createTailorKitServer({
+  const server = createPatchSmithServer({
     $internal: {
       platformBaseUrl: "https://platform.test/api/platform/",
       platformFetch: fetch,
       platformHeaders: options.platformHeaders,
     },
-    baseUrl: "https://host.test/api/tailorkit",
+    baseUrl: "https://host.test/api/patchsmith",
     components: {},
     projectKey: options.projectKey,
     scopes,
@@ -44,7 +44,7 @@ const context = (headers: Record<string, string>) =>
   contextSchema.parse(
     JSON.parse(
       Buffer.from(
-        requireValue(headers["x-tailorkit-context"]),
+        requireValue(headers["x-patchsmith-context"]),
         "base64url"
       ).toString("utf-8")
     )
@@ -62,7 +62,7 @@ describe("MCP transport configuration", () => {
     );
     expect(transport.headers.authorization).toBe("Bearer host-key");
     expect(context(transport.headers)).toEqual({
-      hostUrl: "https://host.test/api/tailorkit",
+      hostUrl: "https://host.test/api/patchsmith",
       scopes: { org: { tenant: "one" } },
       subjectId: "user-one",
     });
@@ -71,14 +71,14 @@ describe("MCP transport configuration", () => {
 
   it("is exposed by createServer with the same object shape as authenticate returns", async () => {
     const server = createServer({
-      baseUrl: "https://host.test/api/tailorkit",
+      baseUrl: "https://host.test/api/patchsmith",
       contract: defineContract({ components: {}, scopes }),
       projectKey: "host-key",
     });
     const result = await server.mcp.transport({
       scopes: { org: { tenant: "one" } },
     });
-    expect(result.url).toBe("https://tailorkit.dev/api/platform/app-agent/mcp");
+    expect(result.url).toBe("https://patchsmith.io/api/platform/app-agent/mcp");
     expect(context(result.headers)).not.toHaveProperty("subjectId");
   });
 
@@ -87,7 +87,7 @@ describe("MCP transport configuration", () => {
     expect(server.mcp).not.toHaveProperty("handler");
     const authenticate = vi.fn(() => ({ scopes: { org: { tenant: "one" } } }));
     const response = await server.handler(
-      new Request("https://host.test/api/tailorkit/mcp", { method: "POST" }),
+      new Request("https://host.test/api/patchsmith/mcp", { method: "POST" }),
       { authenticate }
     );
     expect(response.status).toBe(404);
@@ -124,7 +124,7 @@ describe("MCP transport configuration", () => {
     const second = await server.mcp.transport({
       scopes: { org: { tenant: "two" } },
     });
-    expect(first.headers["x-tailorkit-context"]).toMatch(/^[A-Za-z0-9_-]+$/u);
+    expect(first.headers["x-patchsmith-context"]).toMatch(/^[A-Za-z0-9_-]+$/u);
     expect(context(first.headers)).toMatchObject({
       scopes: { org: { tenant: "墨尔本" } },
       subjectId: "用户",
@@ -151,8 +151,8 @@ describe("MCP transport configuration", () => {
   });
 
   it("bounds the context header before exposing it to a client", async () => {
-    const large = createTailorKitServer({
-      baseUrl: "https://host.test/api/tailorkit",
+    const large = createPatchSmithServer({
+      baseUrl: "https://host.test/api/patchsmith",
       components: {},
       projectKey: "host-key",
       scopes: { org: z.record(z.string(), z.string()) },

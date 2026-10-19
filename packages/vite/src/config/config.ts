@@ -5,7 +5,7 @@ const logosConfigSchema = v.object({
   light: v.optional(v.pipe(v.string(), v.minLength(1))),
 });
 
-const tailorkitConfigSchema = v.strictObject({
+const patchsmithConfigSchema = v.strictObject({
   appId: v.optional(v.pipe(v.string(), v.minLength(1))),
   description: v.optional(
     v.nullable(v.pipe(v.string(), v.trim(), v.maxLength(255)))
@@ -28,14 +28,14 @@ const tailorkitConfigSchema = v.strictObject({
 });
 
 /**
- * App configuration exported from `tailorkit.config.ts`.
+ * App configuration exported from `patchsmith.config.ts`.
  * Relative paths resolve from the app root: the Vite config directory when building.
  */
-export interface TailorKitConfig extends v.InferInput<
-  typeof tailorkitConfigSchema
+export interface PatchSmithConfig extends v.InferInput<
+  typeof patchsmithConfigSchema
 > {
   /**
-   * ID of the app on the TailorKit host, used for deployment.
+   * ID of the app on the PatchSmith host, used for deployment.
    * When omitted, the first deployment creates an app and saves its ID here.
    * @default undefined
    */
@@ -49,7 +49,7 @@ export interface TailorKitConfig extends v.InferInput<
    */
   description?: string | null;
   /**
-   * URL of the TailorKit host used for authentication, deployment,
+   * URL of the PatchSmith host used for authentication, deployment,
    * and fetching the host schema for generated types. Required; has no default.
    */
   host: string;
@@ -102,12 +102,12 @@ export interface TailorKitConfig extends v.InferInput<
    */
   slug: string;
 }
-export type ResolvedTailorKitConfig = v.InferOutput<
-  typeof tailorkitConfigSchema
+export type ResolvedPatchSmithConfig = v.InferOutput<
+  typeof patchsmithConfigSchema
 >;
 
-export { tailorkitConfigSchema };
+export { patchsmithConfigSchema };
 
-export const defineConfig = (config: TailorKitConfig): TailorKitConfig =>
+export const defineConfig = (config: PatchSmithConfig): PatchSmithConfig =>
   config;
-export const defineTailorKitConfig = defineConfig;
+export const definePatchSmithConfig = defineConfig;

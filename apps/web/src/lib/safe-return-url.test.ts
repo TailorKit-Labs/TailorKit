@@ -2,12 +2,12 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { getSameOriginPath, getSameOriginUrl } from "./safe-return-url";
 
-const ORIGIN = "https://tailorkit.dev";
+const ORIGIN = "https://patchsmith.io";
 
 describe("getSameOriginPath", () => {
   it("returns only the path, search, and hash for same-origin URLs", () => {
     expect(
-      getSameOriginPath("https://tailorkit.dev/apps?tab=usage#details", ORIGIN)
+      getSameOriginPath("https://patchsmith.io/apps?tab=usage#details", ORIGIN)
     ).toBe("/apps?tab=usage#details");
     expect(getSameOriginPath("/apps?tab=usage#details", ORIGIN)).toBe(
       "/apps?tab=usage#details"
@@ -25,8 +25,8 @@ describe("getSameOriginPath", () => {
   });
 
   it("returns an absolute same-origin URL for auth callbacks", () => {
-    expect(getSameOriginUrl("/tailorkit/~/projects", ORIGIN)).toBe(
-      "https://tailorkit.dev/tailorkit/~/projects"
+    expect(getSameOriginUrl("/patchsmith/~/projects", ORIGIN)).toBe(
+      "https://patchsmith.io/patchsmith/~/projects"
     );
     expect(
       getSameOriginUrl("https://attacker.example/apps", ORIGIN)

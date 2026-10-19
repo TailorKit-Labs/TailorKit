@@ -1,3 +1,3 @@
-# TailorKit UI
+# PatchSmith UI
 
-`@tailorkit/ui` contains shared UI components and styles for TailorKit apps.
+`@patchsmith/ui` contains shared UI components and styles for PatchSmith apps.

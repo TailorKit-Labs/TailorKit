@@ -1,34 +1,34 @@
 import type {
-  TailorKitContract,
+  PatchSmithContract,
   ToolImplementations,
-} from "@tailorkit/core/schema";
+} from "@patchsmith/core/schema";
 
 import { createFetchCache } from "#store/fetch/cache";
 import type { FetchCacheOptions } from "#store/fetch/cache";
 
 import { createEndpointClient } from "./endpoints";
 
-export interface TailorKitCacheOptions extends FetchCacheOptions {
+export interface PatchSmithCacheOptions extends FetchCacheOptions {
   apps?: FetchCacheOptions;
   slot?: FetchCacheOptions;
 }
 
-export interface TailorKitFetchClientOptions {
-  contract?: TailorKitContract;
-  tools?: ToolImplementations<TailorKitContract["tools"], "client">;
+export interface PatchSmithFetchClientOptions {
+  contract?: PatchSmithContract;
+  tools?: ToolImplementations<PatchSmithContract["tools"], "client">;
   baseUrl: string | URL;
   fetch?: typeof fetch;
-  cache?: TailorKitCacheOptions;
+  cache?: PatchSmithCacheOptions;
 }
 
 /** Share this client between roots to share endpoint requests and cached responses. */
-export const createTailorKitFetchClient = (
-  options: TailorKitFetchClientOptions
+export const createPatchSmithFetchClient = (
+  options: PatchSmithFetchClientOptions
 ) => {
   const endpoints = createEndpointClient(options);
   const cache = createFetchCache(options.cache);
   const { baseUrl } = endpoints;
-  const prefix = ["tailorkit", baseUrl.toString()] as const;
+  const prefix = ["patchsmith", baseUrl.toString()] as const;
   return {
     apps: (settings: FetchCacheOptions = {}) =>
       cache.getStore([...prefix, "apps"], endpoints.apps, {
@@ -46,6 +46,6 @@ export const createTailorKitFetchClient = (
   };
 };
 
-export type TailorKitFetchClient = ReturnType<
-  typeof createTailorKitFetchClient
+export type PatchSmithFetchClient = ReturnType<
+  typeof createPatchSmithFetchClient
 >;

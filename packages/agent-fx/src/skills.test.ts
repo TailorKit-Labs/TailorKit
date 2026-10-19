@@ -3,7 +3,7 @@ import { expect, it } from "vite-plus/test";
 import { appAgentReferences, appAgentSkills } from "./skills";
 
 const linkPattern =
-  /\]\((?<target>\/workspace\/\.tailorkit-agent\/references\/[^)]+)\)/gu;
+  /\]\((?<target>\/workspace\/\.patchsmith-agent\/references\/[^)]+)\)/gu;
 
 it("provisions every linked recipe without embedding it in the initial prompt", () => {
   for (const skill of appAgentSkills) {

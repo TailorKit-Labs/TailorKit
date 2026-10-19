@@ -1,5 +1,5 @@
 {
-  "name": "@tailorkit/api",
+  "name": "@patchsmith/api",
   "version": "0.0.0",
   "private": true,
   "license": "BUSL-1.1",
@@ -36,14 +36,14 @@
   "dependencies": {
     "@orpc/client": "catalog:",
     "@orpc/server": "catalog:",
-    "@tailorkit/agent": "workspace:*",
-    "@tailorkit/api-utils": "workspace:*",
-    "@tailorkit/auth": "workspace:*",
-    "@tailorkit/db": "workspace:*",
-    "@tailorkit/env": "workspace:*",
-    "@tailorkit/flags": "workspace:*",
-    "@tailorkit/kv": "workspace:*",
-    "@tailorkit/observability": "workspace:*",
+    "@patchsmith/agent": "workspace:*",
+    "@patchsmith/api-utils": "workspace:*",
+    "@patchsmith/auth": "workspace:*",
+    "@patchsmith/db": "workspace:*",
+    "@patchsmith/env": "workspace:*",
+    "@patchsmith/flags": "workspace:*",
+    "@patchsmith/kv": "workspace:*",
+    "@patchsmith/observability": "workspace:*",
     "@vercel/functions": "^3.9.11",
     "drizzle-orm": "catalog:",
     "nanoid": "catalog:",
@@ -51,7 +51,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8",
-    "@tailorkit/config": "workspace:*",
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:"
   }

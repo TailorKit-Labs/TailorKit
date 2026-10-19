@@ -1,9 +1,9 @@
 import { ORPCError } from "@orpc/server";
-import { auth } from "@tailorkit/auth";
-import { db } from "@tailorkit/db";
-import { apikey } from "@tailorkit/db/schema/auth";
-import { project } from "@tailorkit/db/schema/project";
-import { validateProjectSlug } from "@tailorkit/db/validate-project-slug";
+import { auth } from "@patchsmith/auth";
+import { db } from "@patchsmith/db";
+import { apikey } from "@patchsmith/db/schema/auth";
+import { project } from "@patchsmith/db/schema/project";
+import { validateProjectSlug } from "@patchsmith/db/validate-project-slug";
 import { and, desc, eq, ne } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import { z } from "zod";

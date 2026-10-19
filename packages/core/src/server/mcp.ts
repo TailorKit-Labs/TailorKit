@@ -1,6 +1,6 @@
-import { validateTailorKitScopes } from "./scope";
-import type { TailorKitScopeSchemas } from "./scope";
-import type { TailorKitHostContext, TailorKitPlatformOptions } from "./types";
+import { validatePatchSmithScopes } from "./scope";
+import type { PatchSmithScopeSchemas } from "./scope";
+import type { PatchSmithHostContext, PatchSmithPlatformOptions } from "./types";
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
@@ -15,11 +15,11 @@ const maximumContextHeaderLength = 8192;
 export const createMcpTransport = (options: {
   hostUrl: string;
   platformUrl: string;
-  platformHeaders?: TailorKitPlatformOptions["headers"];
-  scopeSchemas: TailorKitScopeSchemas;
+  platformHeaders?: PatchSmithPlatformOptions["headers"];
+  scopeSchemas: PatchSmithScopeSchemas;
 }) => ({
   transport: async (
-    context: TailorKitHostContext<unknown>
+    context: PatchSmithHostContext<unknown>
   ): Promise<{
     url: string;
     headers: Record<string, string>;
@@ -32,7 +32,7 @@ export const createMcpTransport = (options: {
     ) {
       throw new TypeError("Invalid MCP subjectId.");
     }
-    const scopes = await validateTailorKitScopes(
+    const scopes = await validatePatchSmithScopes(
       options.scopeSchemas,
       context.scopes
     );
@@ -57,9 +57,9 @@ export const createMcpTransport = (options: {
       : options.platformHeaders);
     const headers = new Headers(configured);
     if (!(headers.get("authorization")?.startsWith("Bearer ") === true)) {
-      throw new Error("A TailorKit projectKey is required for MCP transport.");
+      throw new Error("A PatchSmith projectKey is required for MCP transport.");
     }
-    headers.set("x-tailorkit-context", encoded);
+    headers.set("x-patchsmith-context", encoded);
     return {
       headers: Object.fromEntries(headers),
       url: `${options.platformUrl.replace(/\/$/u, "")}/app-agent/mcp`,

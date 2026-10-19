@@ -2,19 +2,19 @@ import { apiKey } from "@better-auth/api-key";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import { dash } from "@better-auth/infra";
 import { passkey } from "@better-auth/passkey";
-import { createDb } from "@tailorkit/db";
-import * as schema from "@tailorkit/db/schema/auth";
+import { createDb } from "@patchsmith/db";
+import * as schema from "@patchsmith/db/schema/auth";
 import {
   sendBetterAuthOtpEmail,
   sendOrganizationInvitationEmail,
-} from "@tailorkit/email";
+} from "@patchsmith/email";
 import {
   getBaseUrl,
   getProductionUrl,
   getTrustedOrigins,
-} from "@tailorkit/env";
-import { getKV } from "@tailorkit/kv";
-import { initializeObservability } from "@tailorkit/observability";
+} from "@patchsmith/env";
+import { getKV } from "@patchsmith/kv";
+import { initializeObservability } from "@patchsmith/observability";
 import { waitUntil as vercelWaitUntil } from "@vercel/functions";
 import type { BetterAuthOptions, SecondaryStorage } from "better-auth";
 import { createAuthMiddleware } from "better-auth/api";
@@ -37,7 +37,7 @@ import {
   tenantShortIdField,
 } from "./lib/tenant-short-id";
 
-void initializeObservability("tailorkit-web");
+void initializeObservability("patchsmith-web");
 
 const noopWaitUntil = (promise: Promise<unknown>): void => {
   void promise;
@@ -175,7 +175,9 @@ const buildAuth = () => {
         handler: backgroundTaskHandler,
       },
       cookiePrefix:
-        env.VERCEL_TARGET_ENV === "production" ? "tailorkit" : "tailorkit-dev",
+        env.VERCEL_TARGET_ENV === "production"
+          ? "patchsmith"
+          : "patchsmith-dev",
       database: {
         generateId: "uuid",
         joins: true,
@@ -185,7 +187,7 @@ const buildAuth = () => {
       },
     },
 
-    appName: "TailorKit",
+    appName: "PatchSmith",
 
     baseURL: getBaseUrl(env),
 
@@ -225,13 +227,13 @@ const buildAuth = () => {
       haveIBeenPwned(),
       passkey({
         rpID: passkeyRpID,
-        rpName: "TailorKit",
+        rpName: "PatchSmith",
       }),
       twoFactor({
         // OAuth-only accounts must create a password through the verified-email
         // recovery flow before they can enroll a second factor.
         allowPasswordless: false,
-        issuer: "TailorKit",
+        issuer: "PatchSmith",
       }),
       emailOTP({
         expiresIn: 600,

@@ -1,4 +1,4 @@
-import { SidebarInset, SidebarProvider } from "@tailorkit/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "@patchsmith/ui/sidebar";
 import { useParams, Outlet, createFileRoute } from "@tanstack/react-router";
 
 import { HeaderActionsProvider } from "#components/header-actions";

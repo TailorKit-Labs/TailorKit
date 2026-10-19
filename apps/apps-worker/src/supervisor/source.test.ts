@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 
-import { appDeploymentMetadata } from "@tailorkit/api-utils/app-auth";
-import { asyncFixture } from "@tailorkit/config/testing";
+import { appDeploymentMetadata } from "@patchsmith/api-utils/app-auth";
+import { asyncFixture } from "@patchsmith/config/testing";
 import { Effect } from "effect";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
@@ -37,7 +37,7 @@ const identity = {
   installationId: "one",
   scope: { name: "org", value: { id: "tenant" } },
   subjectId: "user",
-  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
 };
 
 const setup = (contents: string | Uint8Array<ArrayBuffer> | null = code) => {
@@ -79,7 +79,7 @@ it("resolves authorized metadata separately from R2 code and never follows redir
   expect(fetch.mock.calls[0]?.[1]).toMatchObject({
     headers: {
       authorization: "Bearer private",
-      "x-tailorkit-project-id": "project",
+      "x-patchsmith-project-id": "project",
     },
     redirect: "manual",
   });

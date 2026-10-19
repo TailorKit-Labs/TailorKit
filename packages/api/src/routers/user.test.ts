@@ -5,7 +5,7 @@ import {
   organization,
   member,
   invitation,
-} from "@tailorkit/db/schema/index";
+} from "@patchsmith/db/schema/index";
 import {
   afterEach,
   beforeEach,
@@ -30,7 +30,7 @@ const testState = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("@tailorkit/db", () => ({
+vi.mock("@patchsmith/db", () => ({
   createDb: () => testState.db,
   get db() {
     return testState.db;
@@ -38,7 +38,7 @@ vi.mock("@tailorkit/db", () => ({
   isOrgSlugReserved: () => false,
 }));
 
-vi.mock("@tailorkit/auth", () => ({
+vi.mock("@patchsmith/auth", () => ({
   auth: {
     api: {
       acceptInvitation: vi.fn(),
@@ -55,7 +55,7 @@ vi.mock("#env", () => ({
 
 const { userRouter } = await import("./user");
 const { orgRouter } = await import("./org");
-const { auth } = await import("@tailorkit/auth");
+const { auth } = await import("@patchsmith/auth");
 
 const userId = "11111111-1111-4111-8111-111111111111";
 const otherUserId = "22222222-2222-4222-8222-222222222222";

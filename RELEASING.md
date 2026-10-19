@@ -1,12 +1,12 @@
-# Releasing TailorKit
+# Releasing PatchSmith
 
-TailorKit uses Changesets to version packages, generate changelogs, publish to npm, and create Git tags and GitHub releases. Only `0.x` prereleases are enabled. The current channel is `beta`; the release policy accepts only `0.x` versions with a numeric `alpha` or `beta` suffix, such as `0.1.0-beta.44`.
+PatchSmith uses Changesets to version packages, generate changelogs, publish to npm, and create Git tags and GitHub releases. Only `0.x` prereleases are enabled. The current channel is `beta`; the release policy accepts only `0.x` versions with a numeric `alpha` or `beta` suffix, such as `0.1.0-beta.44`.
 
 ## Add a change
 
 Run `pnpm changeset`, select the affected public packages, choose the semantic versioning (SemVer) bump, and describe the user-facing change. Commit the generated Markdown file with the change.
 
-Use `minor` for breaking changes while TailorKit remains on `0.x`. Major changesets are blocked, including those retained in `.changeset/pre`. Describe breaking changes and any migration steps in the changeset summary.
+Use `minor` for breaking changes while PatchSmith remains on `0.x`. Major changesets are blocked, including those retained in `.changeset/pre`. Describe breaking changes and any migration steps in the changeset summary.
 
 Changesets versions the public packages as one fixed group to keep their versions aligned. Backend and application-only workspace packages remain private.
 

@@ -1,17 +1,17 @@
 import { randomBytes } from "node:crypto";
 
 import { call, ORPCError } from "@orpc/server";
-import { createAppAgentMcp } from "@tailorkit/agent/mcp";
-import type { AppAgentMcpExecution } from "@tailorkit/agent/mcp";
+import { createAppAgentMcp } from "@patchsmith/agent/mcp";
+import type { AppAgentMcpExecution } from "@patchsmith/agent/mcp";
 import {
   AppAgentThreadError,
   resolveAppAgentThread,
-} from "@tailorkit/agent/threads";
-import { issueAgentToken } from "@tailorkit/api-utils/agent-token";
-import { hashSecret } from "@tailorkit/api-utils/hashing";
-import { db } from "@tailorkit/db";
-import { cliToken } from "@tailorkit/db/schema/cli-auth";
-import { sanitizeErrorForLog } from "@tailorkit/observability";
+} from "@patchsmith/agent/threads";
+import { issueAgentToken } from "@patchsmith/api-utils/agent-token";
+import { hashSecret } from "@patchsmith/api-utils/hashing";
+import { db } from "@patchsmith/db";
+import { cliToken } from "@patchsmith/db/schema/cli-auth";
+import { sanitizeErrorForLog } from "@patchsmith/observability";
 import type { UIMessage, UIMessageChunk } from "ai";
 import { eq } from "drizzle-orm";
 import type { Run } from "workflow/api";
@@ -27,7 +27,7 @@ import {
 } from "./scope";
 
 interface AgentRunAttributes {
-  "tailorkit.projectId": string;
+  "patchsmith.projectId": string;
   [name: string]: string;
 }
 
@@ -54,7 +54,7 @@ export const handleAppAgentMcpRequest = async (
   let input: z.infer<typeof contextSchema>;
   let scopes: ReturnType<typeof canonicalizeScopes>;
   try {
-    const encoded = request.headers.get("x-tailorkit-context");
+    const encoded = request.headers.get("x-patchsmith-context");
     if (
       !(encoded !== undefined && encoded !== null && encoded !== "") ||
       encoded.length > 8192 ||
@@ -101,7 +101,7 @@ export const handleAppAgentMcpRequest = async (
     // startup and stream processing out of those requests' import graph.
     const [{ appAgent, cancelAppAgent }, { readUIMessageStream }, { start }] =
       await Promise.all([
-        import("@tailorkit/agent-fx/workflows"),
+        import("@patchsmith/agent-fx/workflows"),
         import("ai"),
         import("workflow/api"),
       ]);
@@ -162,18 +162,18 @@ export const handleAppAgentMcpRequest = async (
           scope: app.scope,
         },
         env.AUTH_SECRET,
-        env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform"
+        env.OPENAPI_SERVER_URL ?? "https://patchsmith.io/api/platform"
       );
       execution.signal.throwIfAborted();
       const attributes: AgentRunAttributes = {
-        "tailorkit.projectId": context.project.id,
+        "patchsmith.projectId": context.project.id,
       };
       if (
         input.subjectId !== undefined &&
         input.subjectId !== null &&
         input.subjectId !== ""
       ) {
-        attributes["tailorkit.subjectId"] = input.subjectId;
+        attributes["patchsmith.subjectId"] = input.subjectId;
       }
       run = await start(
         appAgent,

@@ -1,5 +1,5 @@
-import { Separator } from "@tailorkit/ui/separator";
-import { SidebarTrigger, useSidebar } from "@tailorkit/ui/sidebar";
+import { Separator } from "@patchsmith/ui/separator";
+import { SidebarTrigger, useSidebar } from "@patchsmith/ui/sidebar";
 
 import { useHeaderActions } from "#components/header-actions";
 import { NavBreadcrumb } from "#components/nav-breadcrumb";

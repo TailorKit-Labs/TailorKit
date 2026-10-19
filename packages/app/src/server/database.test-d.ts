@@ -4,7 +4,7 @@ import {
   table,
   text,
   boolean,
-} from "@tailorkit/app-db";
+} from "@patchsmith/app-db";
 import { z } from "zod";
 
 import type { Client } from "#client/connection";

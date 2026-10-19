@@ -1,7 +1,7 @@
+import { defineView } from "patchsmith/client";
 import { useEffect, useState } from "preact/hooks";
-import { defineView } from "tailorkit/client";
 
-import { Box, Button, Flex, Input, tools } from "#tailorkit";
+import { Box, Button, Flex, Input, tools } from "#patchsmith";
 
 import { PressablePrototype } from "./pressable-prototype";
 

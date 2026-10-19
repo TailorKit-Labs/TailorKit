@@ -171,7 +171,7 @@ it.each(["api-key", "runtime-oidc"])(
       }),
     });
     const directory = await realpath(
-      await mkdtemp(join(tmpdir(), "tailorkit-pi-"))
+      await mkdtemp(join(tmpdir(), "patchsmith-pi-"))
     );
     const workspace = join(directory, "app");
     const sessionHome = join(directory, "home");
@@ -216,7 +216,7 @@ it.each(["api-key", "runtime-oidc"])(
     const input = {
       agentToken: "private-token",
       appId: randomUUID(),
-      hostUrl: "https://host.test/api/tailorkit",
+      hostUrl: "https://host.test/api/patchsmith",
       messages: [],
       model: modelId,
       threadId: sessionId,

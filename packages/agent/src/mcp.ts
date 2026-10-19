@@ -10,7 +10,7 @@ import type { AppAgentMcpProgress } from "./mcp-progress";
 
 export type { AppAgentMcpProgress } from "./mcp-progress";
 
-const serverInfo = { name: "tailorkit-app-agent", version: "1.0.0" };
+const serverInfo = { name: "patchsmith-app-agent", version: "1.0.0" };
 const capabilities = { tools: { listChanged: true } };
 
 /** Public protocol advertisement only; no tool handlers or backend dependencies. */
@@ -42,8 +42,8 @@ const createSchema = z.strictObject({
 });
 
 const agentStreamMetadata = {
-  "dev.tailorkit/agent-stream": {
-    eventKey: "dev.tailorkit/agent-stream",
+  "dev.patchsmith/agent-stream": {
+    eventKey: "dev.patchsmith/agent-stream",
     notification: "notifications/progress",
     version: 1,
   },
@@ -87,7 +87,7 @@ const execution = (context: ServerContext): AppAgentMcpExecution => {
       await context.mcpReq.notify({
         method: "notifications/progress",
         params: {
-          _meta: { "dev.tailorkit/agent-stream": event },
+          _meta: { "dev.patchsmith/agent-stream": event },
           message: progressMessage(event),
           progress: (progress += 1),
           progressToken,

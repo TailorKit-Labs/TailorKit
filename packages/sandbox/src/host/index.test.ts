@@ -7,7 +7,7 @@ import { iframeReadyType, sandboxMessageType } from "#bridge";
 import { createIframeUiHost } from "./index.js";
 
 const getChannel = (iframe: HTMLIFrameElement): string => {
-  const match = /data-tailorkit-channel="(?<channel>[a-f0-9]+)"/u.exec(
+  const match = /data-patchsmith-channel="(?<channel>[a-f0-9]+)"/u.exec(
     iframe.srcdoc
   );
   if (!(match?.[1] !== undefined && match?.[1] !== null && match?.[1] !== "")) {
@@ -89,7 +89,7 @@ describe("createIframeUiHost", () => {
     const postMessage = vi.spyOn(getContentWindow(host.iframe), "postMessage");
     const channel = getChannel(host.iframe);
     const callback = {
-      data: { event: "tailorkitcallbackonclick", nodeId: "n:2" },
+      data: { event: "patchsmithcallbackonclick", nodeId: "n:2" },
       type: "dispatchCallback" as const,
     };
 

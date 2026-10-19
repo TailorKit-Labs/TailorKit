@@ -6,23 +6,25 @@ import { defineContract } from "#schema/contract";
 import type { EmptyDefinitionMap } from "#schema/shared";
 
 import { createServer } from "./contract";
-import { createTailorKitServer } from "./handler";
-import type { TailorKitServerOptions, TailorKitHostContext } from "./types";
+import { createPatchSmithServer } from "./handler";
+import type { PatchSmithServerOptions, PatchSmithHostContext } from "./types";
 
-expectTypeOf<TailorKitHostContext<{ org: { orgId: string } }>>().toEqualTypeOf<{
+expectTypeOf<
+  PatchSmithHostContext<{ org: { orgId: string } }>
+>().toEqualTypeOf<{
   scopes: { org: { orgId: string } };
   subjectId?: string;
 }>();
 
-createTailorKitServer({
-  baseUrl: "https://example.com/api/tailorkit",
+createPatchSmithServer({
+  baseUrl: "https://example.com/api/patchsmith",
   components: {},
   scopes: { account: z.object({ accountId: z.string() }) },
   slots: { navbar: { views: ["/"] }, panel: { views: ["/users"] } },
   views: { "/": z.object({}), "/users": z.object({}) },
 });
-createTailorKitServer({
-  baseUrl: "https://example.com/api/tailorkit",
+createPatchSmithServer({
+  baseUrl: "https://example.com/api/patchsmith",
 
   components: {},
 
@@ -38,24 +40,24 @@ const namedScopes = {
   org: z.object({ orgId: z.string() }),
   userOrg: z.object({ orgId: z.string(), userId: z.string() }),
 };
-const scopedServer = createTailorKitServer({
-  baseUrl: "https://example.com/api/tailorkit",
+const scopedServer = createPatchSmithServer({
+  baseUrl: "https://example.com/api/patchsmith",
   components: {},
   scopes: namedScopes,
 });
-const explicitlyTypedOptions: TailorKitServerOptions<
+const explicitlyTypedOptions: PatchSmithServerOptions<
   EmptyDefinitionMap,
   EmptyDefinitionMap,
   EmptyDefinitionMap,
   typeof namedScopes
 > = {
-  baseUrl: "https://example.com/api/tailorkit",
+  baseUrl: "https://example.com/api/patchsmith",
   components: {},
   scopes: namedScopes,
 };
-const explicitlyTypedServer = createTailorKitServer(explicitlyTypedOptions);
+const explicitlyTypedServer = createPatchSmithServer(explicitlyTypedOptions);
 void explicitlyTypedServer.handler(
-  new Request("https://example.com/api/tailorkit/apps"),
+  new Request("https://example.com/api/patchsmith/apps"),
   {
     authenticate: () => ({
       scopes: {
@@ -66,7 +68,7 @@ void explicitlyTypedServer.handler(
   }
 );
 void scopedServer.handler(
-  new Request("https://example.com/api/tailorkit/apps"),
+  new Request("https://example.com/api/patchsmith/apps"),
   {
     authenticate: () => ({
       scopes: {
@@ -77,20 +79,20 @@ void scopedServer.handler(
   }
 );
 void scopedServer.handler(
-  new Request("https://example.com/api/tailorkit/apps"),
+  new Request("https://example.com/api/patchsmith/apps"),
   {
     authenticate: () => ({ scopes: { org: { orgId: "org_1" } } }),
   }
 );
 void scopedServer.handler(
-  new Request("https://example.com/api/tailorkit/apps"),
+  new Request("https://example.com/api/patchsmith/apps"),
   {
     // @ts-expect-error authenticate must provide at least one declared scope
     authenticate: () => ({ scopes: {} }),
   }
 );
 void scopedServer.handler(
-  new Request("https://example.com/api/tailorkit/apps"),
+  new Request("https://example.com/api/patchsmith/apps"),
   {
     authenticate: () => ({
       scopes: {
@@ -121,20 +123,20 @@ const nonJsonSchemaScope = {
   },
 } satisfies StandardSchemaV1<{ accountId: string }, { accountId: string }>;
 
-const standardOnlyServer = createTailorKitServer({
-  baseUrl: "https://example.com/api/tailorkit",
+const standardOnlyServer = createPatchSmithServer({
+  baseUrl: "https://example.com/api/patchsmith",
   components: {},
   scopes: { account: nonJsonSchemaScope },
 });
 void standardOnlyServer.handler(
-  new Request("https://example.com/api/tailorkit/apps"),
+  new Request("https://example.com/api/patchsmith/apps"),
   {
     authenticate: () => ({ scopes: { account: { accountId: "acct_1" } } }),
   }
 );
 
 const contractServer = createServer({
-  baseUrl: "https://example.com/api/tailorkit",
+  baseUrl: "https://example.com/api/patchsmith",
   contract: defineContract({ scopes: namedScopes }),
 });
 for (const installApp of [
