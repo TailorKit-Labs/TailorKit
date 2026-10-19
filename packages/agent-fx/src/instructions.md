@@ -10,6 +10,8 @@ Tools run host-defined code with declared inputs and results. Client tools run i
 
 `#tailorkit` exports generated host bindings and app function references. `.agents/skills/tailorkit-capabilities/SKILL.md` describes the available host capabilities. `tailorkit-frontend` covers components and tools; `tailorkit-views` covers UI placement, context, and routing.
 
+Use the capability skills for host APIs; consult relevant sections of the large generated `src/tailorkit.gen.ts` only for essential details the skills don't cover.
+
 ## App data
 
 Component state holds temporary values such as drafts and filters. Managed SQLite provides persistent storage for features such as notes or saved settings. Each installation has its own database; backend functions control which users can access its data.
