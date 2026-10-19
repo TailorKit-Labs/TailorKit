@@ -8,6 +8,8 @@ Choose the smallest working solution. Start with ordinary components, local stat
 
 Inspect `package.json`, `tailorkit.config.ts` and relevant source together. Read `.agents/skills/tailorkit-capabilities/SKILL.md`, then only the needed component, tool or view pages. Batch related reads; search named declarations instead of dumping generated files or entire SDK directories. Import the generated API from `#tailorkit`. Change source definitions and regenerate rather than editing generated files.
 
+Use `tailorkit.config.ts` to identify first-time app creation: if `appId` is absent, replace the scaffold's `name: "app"` and `slug: "app"` with a descriptive app name and a matching URL-safe slug based on the user's request before calling `deploy`. If `appId` is present, preserve the existing `appId`, `name` and `slug`.
+
 Use Standard Schema v1-compatible validators for function inputs/outputs and instance data. Valibot is the default for new schemas; keep an existing compatible validator. Function inputs and outputs must validate synchronously.
 
 ## Platform requirements
