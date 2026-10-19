@@ -1,5 +1,15 @@
 # @tailorkit/app
 
+## 0.1.0-beta.50
+
+### Minor Changes
+
+- 71fc3a7: Return component callback results across the sandbox bridge instead of dropping them. Callback definitions use only input and output schemas. App callbacks accept direct or promised results, and every host callback returns a promise, including callbacks without an output schema. Callback failures, sandbox destruction, and a 30-second timeout reject pending results.
+
+### Patch Changes
+
+- @tailorkit/app-db@0.1.0-beta.50
+
 ## 0.1.0-beta.49
 
 ### Patch Changes
