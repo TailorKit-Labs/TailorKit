@@ -128,20 +128,6 @@ class FunctionBuilder<
     );
   }
 
-  database<const E extends DatabaseRelations>(
-    this: FunctionBuilder<K, A, R, F, D> &
-      (K extends "action" ? never : unknown),
-    database: DatabaseDefinition<E>
-  ) {
-    return new FunctionBuilder<K, A, R, F, E>(
-      this.kind,
-      this.args,
-      this.result,
-      this.calls,
-      database
-    );
-  }
-
   handler<O extends OutputInput<R>>(
     handler: (context: HandlerContext<K, A, F, D>) => HandlerOutput<K, O>
   ): BuiltFunction<K, A, R, O, F, D> {
@@ -181,8 +167,28 @@ class FunctionBuilder<
   }
 }
 
-export const fn = Object.freeze({
-  action: new FunctionBuilder("action", v.undefined(), undefined, {}),
-  mutation: new FunctionBuilder("mutation", v.undefined(), undefined, {}),
-  query: new FunctionBuilder("query", v.undefined(), undefined, {}),
-});
+/** Bind the app database once; handlers receive a scoped capability at execution. */
+export const createFunctions = <
+  const D extends DatabaseRelations = EmptyDatabaseRelations,
+>(
+  options: { database?: DatabaseDefinition<D> } = {}
+) =>
+  Object.freeze({
+    action: new FunctionBuilder("action", v.undefined(), undefined, {}),
+    mutation: new FunctionBuilder(
+      "mutation",
+      v.undefined(),
+      undefined,
+      {},
+      options.database
+    ),
+    query: new FunctionBuilder(
+      "query",
+      v.undefined(),
+      undefined,
+      {},
+      options.database
+    ),
+  });
+
+export const fn = createFunctions();

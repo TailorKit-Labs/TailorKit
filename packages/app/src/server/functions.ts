@@ -87,7 +87,6 @@ export interface FunctionDefinition<
 > {
   readonly kind: K;
   readonly args: A;
-  readonly database?: K extends "action" ? never : DatabaseDefinition<D>;
   readonly result?: StandardSchemaV1<unknown, O>;
   readonly handler: (
     context: { args: StandardSchemaV1.InferOutput<A> } & (K extends "action"
@@ -99,16 +98,9 @@ export interface FunctionDefinition<
   ) => K extends "action" ? O | Promise<O> : O;
 }
 
-export const query = <
-  A extends StandardSchemaV1,
-  O,
-  const D extends DatabaseRelations = EmptyDatabaseRelations,
->(
-  definition: Omit<
-    FunctionDefinition<"query", A, O, EmptyFunctions, D>,
-    "kind"
-  > & {
-    handler: FunctionDefinition<"query", A, O, EmptyFunctions, D>["handler"] &
+export const query = <A extends StandardSchemaV1, O>(
+  definition: Omit<FunctionDefinition<"query", A, O>, "kind"> & {
+    handler: FunctionDefinition<"query", A, O>["handler"] &
       ([O] extends [never]
         ? unknown
         : O extends PromiseLike<unknown>
@@ -116,22 +108,9 @@ export const query = <
           : unknown);
   }
 ) => Object.freeze({ ...definition, kind: "query" as const });
-export const mutation = <
-  A extends StandardSchemaV1,
-  O,
-  const D extends DatabaseRelations = EmptyDatabaseRelations,
->(
-  definition: Omit<
-    FunctionDefinition<"mutation", A, O, EmptyFunctions, D>,
-    "kind"
-  > & {
-    handler: FunctionDefinition<
-      "mutation",
-      A,
-      O,
-      EmptyFunctions,
-      D
-    >["handler"] &
+export const mutation = <A extends StandardSchemaV1, O>(
+  definition: Omit<FunctionDefinition<"mutation", A, O>, "kind"> & {
+    handler: FunctionDefinition<"mutation", A, O>["handler"] &
       ([O] extends [never]
         ? unknown
         : O extends PromiseLike<unknown>
@@ -168,15 +147,21 @@ export const isFunction = (
 ): value is RegisteredFunction =>
   typeof value.kind === "string" && typeof value.handler === "function";
 
-export const defineServer = <const F extends Functions>(functions: F) => {
+const functionNamePattern = /^[a-zA-Z][a-zA-Z0-9_]{0,63}$/u;
+
+/** Declare the functions exposed by a module, preserving their inferred types. */
+export const defineRouter = <const F extends Functions>(functions: F): F => {
   for (const [name, value] of Object.entries(functions)) {
-    if (!/^[a-zA-Z][a-zA-Z0-9_]{0,63}$/u.test(name)) {
+    if (!functionNamePattern.test(name)) {
       throw new Error("Invalid function name");
     }
     if (!isFunction(value)) {
-      defineServer(value);
+      defineRouter(value);
     }
   }
-  return Object.freeze({ functions });
+  return Object.freeze(functions);
 };
+
+export const defineServer = <const F extends Functions>(functions: F) =>
+  Object.freeze({ functions: defineRouter(functions) });
 export type AppDefinition = ReturnType<typeof defineServer>;

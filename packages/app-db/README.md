@@ -21,6 +21,14 @@ export const database = defineDatabase({ relations });
 
 `defineRelations(schema)` includes all tables without navigation. Its optional callback adds typed one/many navigation; foreign-key constraints belong on schema columns. TailorKit adapts the relation definitions to Drizzle internally.
 
-Attach the definition with `fn.query.database(database)` or `fn.mutation.database(database)` from `tailorkit/server`. Queries receive read capabilities; mutations also receive write capabilities. Execution remains synchronous inside the managed installation runtime.
+Bind the definition once in your shared database module:
+
+```ts
+import { createFunctions } from "tailorkit/server";
+
+export const fn = createFunctions({ database });
+```
+
+Function modules import this shared `fn` and use `fn.query.handler(({ db }) => ...)` or `fn.mutation.handler(({ db }) => ...)`. The runtime supplies the scoped database handle; the shared builder supplies table and relation types. Queries receive read capabilities; mutations also receive write capabilities. Execution remains synchronous inside the managed installation runtime.
 
 Existing apps should move database imports from `tailorkit/server` to `tailorkit/db`, and import `defineRelations` from `tailorkit/db` instead of `drizzle-orm`. Existing relation callbacks keep their syntax.

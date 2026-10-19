@@ -1,6 +1,5 @@
 import { defineServer } from "tailorkit/server";
-import * as functions from "./functions/greeting";
 
-const app = defineServer(functions);
+import greeting from "./functions/greeting";
 
-export default app;
+export default defineServer({ greeting });

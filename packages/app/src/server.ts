@@ -1,5 +1,11 @@
-export { defineServer, query, mutation, action } from "./server/functions";
-export { fn } from "./server/builder";
+export {
+  defineRouter,
+  defineServer,
+  query,
+  mutation,
+  action,
+} from "./server/functions";
+export { createFunctions, fn } from "./server/builder";
 export { withInstanceResolvers } from "./server/instances";
 export type {
   EmptyFunctions,

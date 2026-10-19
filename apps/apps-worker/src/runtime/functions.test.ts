@@ -1,6 +1,6 @@
 import { createApi } from "@tailorkit/app/client";
 import type { Invocation } from "@tailorkit/app/protocol";
-import { fn, defineServer } from "@tailorkit/app/server";
+import { fn, defineRouter, defineServer } from "@tailorkit/app/server";
 import type { AppDefinition, Identity } from "@tailorkit/app/server";
 import * as v from "valibot";
 import { expect, it, vi } from "vite-plus/test";
@@ -17,19 +17,19 @@ const actionRunner = (app: AppDefinition, calls: ActionCalls) => {
 };
 
 it("dispatches nested functions and preserves their names, identity, execution and typed action calls", async () => {
-  const todos = {
+  const todos = defineRouter({
     read: fn.query.handler(() => "rows"),
     save: fn.mutation.handler(() => "saved"),
-  };
+  });
   const app = defineServer({
-    tasks: {
+    tasks: defineRouter({
       run: fn.action
         .functions({ todos })
         .handler(async ({ queries, mutations }) => ({
           rows: await queries.todos.read(),
           saved: await mutations.todos.save(),
         })),
-    },
+    }),
     todos,
   });
   expect(resolveFunction(app.functions, "todos.read")).toBe(todos.read);

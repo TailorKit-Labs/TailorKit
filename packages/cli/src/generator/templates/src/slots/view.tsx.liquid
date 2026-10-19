@@ -14,7 +14,7 @@ const view = defineView({
 });
 
 function ViewComponent() {
-  const greeting = useQuery(api.greeting, { name: "TailorKit" });
+  const greeting = useQuery(api.greeting.getGreeting, { name: "TailorKit" });
 
   return <{% if useBox %}Box{% endif %}>{greeting.isLoading ? "Loading…" : greeting.error?.message ?? greeting.data}</{% if useBox %}Box{% endif %}>;
 }

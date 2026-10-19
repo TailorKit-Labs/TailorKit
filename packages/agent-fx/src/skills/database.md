@@ -38,7 +38,7 @@ Insert the row inside a mutation. The table only needs the columns required by t
 
 Pass all tables to `defineRelations(schema)`, then `defineDatabase({ relations })`. Add a relation callback only when querying related records. `r.one.users({ from: r.notes.authorId, to: r.users.id })` defines navigation; a column reference defines a foreign-key constraint.
 
-Attach the database with `.database(database)`. Relational reads end in `.sync()`, select builders in `.all()`/`.get()`, and writes in `.run()` or `.returning(...).all()`/`.get()`. Apply appropriate ownership conditions to reads/updates/deletes. Filter and limit in the query when needed. Mutations already provide a transaction; raw SQL/connection access and runtime schema changes are unavailable.
+Export `fn = createFunctions({ database: db })` from `src/db/index.ts`, importing `createFunctions` from `tailorkit/server`. Function modules import that shared `fn` from `#db`; their handlers receive typed `db` automatically. Relational reads end in `.sync()`, select builders in `.all()`/`.get()`, and writes in `.run()` or `.returning(...).all()`/`.get()`. Apply appropriate ownership conditions to reads/updates/deletes. Filter and limit in the query when needed. Mutations already provide a transaction; raw SQL/connection access and runtime schema changes are unavailable.
 
 ## Migrations
 

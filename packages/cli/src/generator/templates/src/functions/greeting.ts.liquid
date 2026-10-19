@@ -1,8 +1,10 @@
-import { fn } from "tailorkit/server";
-import { db } from "../db";
+import { defineRouter } from "tailorkit/server";
 import * as v from "valibot";
 
-export const greeting = fn.query
-  .database(db)
+import { fn } from "../db";
+
+const getGreeting = fn.query
   .input(v.object({ name: v.string() }))
   .handler(({ input }) => `Hello, ${input.name}!`);
+
+export default defineRouter({ getGreeting });

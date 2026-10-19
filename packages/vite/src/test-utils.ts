@@ -60,14 +60,16 @@ export const createDatabaseTestApp = async (root: string): Promise<void> => {
     "src/db/schema.ts": testSchema,
     "src/root.tsx": `import { defineRoute } from "tailorkit/client";
 export default defineRoute({ shellComponent: () => "Database test client" });`,
-    "src/server.ts": `import { defineServer, fn } from "tailorkit/server";
+    "src/server.ts": `import { createFunctions, defineRouter, defineServer } from "tailorkit/server";
 import { defineDatabase, defineRelations } from "tailorkit/db";
 import * as schema from "./db/schema";
 const database = defineDatabase({ relations: defineRelations(schema) });
-export default defineServer({
-  list: fn.query.database(database).handler(({ db }) => db.query.todos.findMany().sync()),
+const fn = createFunctions({ database });
+const router = defineRouter({
+  list: fn.query.handler(({ db }) => db.query.todos.findMany().sync()),
   privateMarker: fn.query.handler(() => "PRIVATE_DATABASE_TEST"),
-});`,
+});
+export default defineServer(router);`,
     "tailorkit.config.mjs":
       'export default { name: "Test App", slug: "test-app", host: "https://host.test", server: {} };',
   };

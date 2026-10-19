@@ -32,20 +32,22 @@ export const relations = defineRelations(schema);
 
 ```ts
 import { defineDatabase } from "tailorkit/db";
+import { createFunctions } from "tailorkit/server";
 
 import { relations } from "./relations";
 
 export const db = defineDatabase({ relations });
+export const fn = createFunctions({ database: db });
 ```
 
 <!-- example: src/functions/notes.ts -->
 
 ```ts
-import { fn, AppError } from "tailorkit/server";
+import { defineRouter, AppError } from "tailorkit/server";
 import type { Identity } from "tailorkit/server";
 import * as v from "valibot";
 
-import { db as database } from "#db";
+import { fn } from "#db";
 import { notes } from "#db/schema";
 
 const subject = (identity: Identity): string => {
@@ -55,7 +57,7 @@ const subject = (identity: Identity): string => {
   return identity.subjectId;
 };
 
-export const list = fn.query.database(database).handler(({ db, identity }) =>
+const list = fn.query.handler(({ db, identity }) =>
   db.query.notes
     .findMany({
       where: { ownerId: subject(identity) },
@@ -66,8 +68,7 @@ export const list = fn.query.database(database).handler(({ db, identity }) =>
     .sync()
 );
 
-export const add = fn.mutation
-  .database(database)
+const add = fn.mutation
   .input(
     v.object({
       title: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(200)),
@@ -80,6 +81,8 @@ export const add = fn.mutation
       .run();
     return { id };
   });
+
+export default defineRouter({ list, add });
 ```
 
 The caller cannot choose the owner. Apply the same ownership condition to edit/delete operations when adding those features. Return only the fields needed by the UI.
@@ -91,18 +94,20 @@ An external lookup needs an action, not another database layer. Replace the exam
 <!-- example: src/functions/preview.ts -->
 
 ```ts
-import { AppError, fn } from "tailorkit/server";
+import { AppError, defineRouter, fn } from "tailorkit/server";
 import * as v from "valibot";
 
 const result = v.object({ summary: v.pipe(v.string(), v.maxLength(2000)) });
 
-export const preview = fn.action.output(result).handler(async ({ signal }) => {
+const summary = fn.action.output(result).handler(async ({ signal }) => {
   const response = await fetch("https://data.example/summary.json", { signal });
   if (!response.ok) {
     throw new AppError("UNAVAILABLE", "The summary service is unavailable.");
   }
   return v.parse(result, await response.json());
 });
+
+export default defineRouter({ summary });
 ```
 
 ## Register what the app uses
@@ -112,10 +117,10 @@ export const preview = fn.action.output(result).handler(async ({ signal }) => {
 ```ts
 import { defineServer } from "tailorkit/server";
 
-import * as notes from "#functions/notes";
-import { preview } from "#functions/preview";
+import notes from "#functions/notes";
+import preview from "#functions/preview";
 
 export default defineServer({ notes, preview });
 ```
 
-Use `useQuery(api.notes.list)`, `useMutation(api.notes.add)`, or `useAction(api.preview)` from the client. An app needing only notes can omit the external action and its registration.
+Use `useQuery(api.notes.list)`, `useMutation(api.notes.add)`, or `useAction(api.preview.summary)` from the client. An app needing only notes can omit the external action and its registration.

@@ -168,12 +168,26 @@ describe("generateApp", () => {
     expect(relations).toContain("defineRelations(schema)");
     expect(relations).toContain('from "tailorkit/db"');
     expect(relations).not.toContain("drizzle-orm");
+    expect(database).toContain("createFunctions({ database: db })");
+    const functions = await readFile(
+      path.join(targetDirectory, "src/functions/greeting.ts"),
+      "utf-8"
+    );
+    expect(functions).toContain('import { fn } from "../db"');
+    expect(functions).toContain("export default defineRouter({ getGreeting })");
+    expect(functions).not.toContain(".database(");
+    const server = await readFile(
+      path.join(targetDirectory, "src/server.ts"),
+      "utf-8"
+    );
+    expect(server).toContain('import greeting from "./functions/greeting"');
+    expect(server).toContain("defineServer({ greeting })");
     expect(
       await readFile(
-        path.join(targetDirectory, "src/functions/greeting.ts"),
+        path.join(targetDirectory, "src/slots/sidebar/customers.view.tsx"),
         "utf-8"
       )
-    ).toContain(".database(db)");
+    ).toContain("api.greeting.getGreeting");
     expect(
       await readdir(path.join(targetDirectory, "src/db/migrations"))
     ).toEqual([]);
