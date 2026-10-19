@@ -1,5 +1,17 @@
 # @tailorkit/react
 
+## 0.1.0-beta.51
+
+### Patch Changes
+
+- Updated dependencies [8cbc3d5]
+- Updated dependencies [38e1ced]
+  - @tailorkit/core@0.1.0-beta.51
+  - @tailorkit/app@0.1.0-beta.51
+  - @tailorkit/sandbox@0.1.0-beta.51
+  - @tailorkit/client-platform@0.1.0-beta.51
+  - @tailorkit/client-core@0.1.0-beta.51
+
 ## 0.1.0-beta.50
 
 ### Minor Changes

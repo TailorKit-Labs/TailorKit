@@ -1,5 +1,19 @@
 # @tailorkit/cli
 
+## 0.1.0-beta.51
+
+### Minor Changes
+
+- 8cbc3d5: Add optional `description` metadata to component definitions. Descriptions survive host contract serialization and schema parsing, appear in generated capability skill component references, and become documentation comments on generated component bindings. Use them to explain behavior such as controlled values, event timing, and disabled-state semantics. Existing slot descriptions remain available in generated references and binding comments.
+
+### Patch Changes
+
+- Updated dependencies [8cbc3d5]
+- Updated dependencies [38e1ced]
+  - @tailorkit/core@0.1.0-beta.51
+  - @tailorkit/client-platform@0.1.0-beta.51
+  - @tailorkit/vite@0.1.0-beta.51
+
 ## 0.1.0-beta.50
 
 ### Minor Changes
