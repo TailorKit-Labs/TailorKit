@@ -1665,6 +1665,9 @@ importers:
 
   packages/vite:
     dependencies:
+      '@babel/parser':
+        specifier: 7.29.8
+        version: 7.29.8
       '@tailorkit/app':
         specifier: workspace:*
         version: link:../app

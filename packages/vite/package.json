@@ -58,6 +58,7 @@
     "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
+    "@babel/parser": "7.29.8",
     "@tailorkit/app": "workspace:*",
     "cosmiconfig": "^10.0.1",
     "valibot": "catalog:"
