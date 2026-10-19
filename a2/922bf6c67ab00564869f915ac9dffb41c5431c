@@ -1,0 +1,19 @@
+packages/db/src/validate-org-slug.ts
+  s_e8b967bba80b79::t_772aecc1d76933 548-655
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a2922bf6c67ab00564869f915ac9dffb41c5431c",
+  "prompts": {},
+  "sessions": {
+    "s_e8b967bba80b79": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a152d0-259a-7c41-9c31-2b9b1e596284",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
