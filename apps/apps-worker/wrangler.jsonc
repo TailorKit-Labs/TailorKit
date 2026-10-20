@@ -3,7 +3,7 @@
   "name": "patchsmith-apps-worker",
   "main": "src/index.ts",
   "build": {
-    "command": "pnpm exec turbo run build --filter=@patchsmith/api-utils... --filter=@patchsmith/app... --filter=@patchsmith/asset-delivery... && node scripts/build-bootstrap.mjs",
+    "command": "pnpm exec turbo run build --filter=@patchsmith/api-utils... --filter=@patchsmith/app... --filter=@patchsmith/asset-delivery...",
     "watch_dir": ["src", "../../packages/asset-delivery/src"],
   },
   "compatibility_date": "2026-10-01",
