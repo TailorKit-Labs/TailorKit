@@ -22,7 +22,7 @@
     "@patchsmith/app": "workspace:*",
     "@patchsmith/app-db": "workspace:*",
     "@patchsmith/asset-delivery": "workspace:*",
-    "@standard-server/peer": "0.10.2",
+    "@standard-server/peer": "0.10.3",
     "drizzle-orm": "catalog:",
     "effect": "catalog:",
     "valibot": "catalog:",
@@ -34,8 +34,8 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:",
-    "workerd": "1.20261010.1",
-    "wrangler": "4.149.0"
+    "workerd": "1.20261016.1",
+    "wrangler": "4.151.1"
   },
   "engines": {
     "node": ">=24"

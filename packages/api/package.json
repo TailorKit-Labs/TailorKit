@@ -44,13 +44,13 @@
     "@patchsmith/flags": "workspace:*",
     "@patchsmith/kv": "workspace:*",
     "@patchsmith/observability": "workspace:*",
-    "@vercel/functions": "^3.9.11",
+    "@vercel/functions": "^3.10.1",
     "drizzle-orm": "catalog:",
     "nanoid": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "0.5.8",
+    "@electric-sql/pglite": "0.5.10",
     "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:"

@@ -68,7 +68,7 @@
     "@types/node": "catalog:",
     "drizzle-kit": "catalog:",
     "drizzle-orm": "catalog:",
-    "happy-dom": "^20.14.6",
+    "happy-dom": "^21.0.3",
     "preact": "^11.0.1",
     "typescript": "catalog:",
     "vite": "catalog:",

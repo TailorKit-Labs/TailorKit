@@ -49,7 +49,7 @@
   "devDependencies": {
     "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
-    "happy-dom": "^20.14.6",
+    "happy-dom": "^21.0.3",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"
