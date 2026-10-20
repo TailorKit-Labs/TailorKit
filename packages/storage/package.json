@@ -27,7 +27,7 @@
     }
   },
   "scripts": {
-    "build": "vp pack src/index.ts src/s3.ts src/storage.ts src/types.ts src/upload-url.ts --format esm --dts --clean",
+    "build": "vp pack src/index.ts src/s3.ts src/storage.ts src/types.ts src/upload-url.ts --target node24 --format esm --dts --clean",
     "check-types": "tsc --noEmit",
     "test": "node --test test/*.test.mjs",
     "lint": "vp lint .",

@@ -7,8 +7,10 @@
 "@tailorkit/react": minor
 "tailorkit": minor
 "@tailorkit/vite": minor
+"@tailorkit/cli": minor
+"@tailorkit/sandbox": minor
 ---
 
 Build packages with Vite+ instead of tsup while preserving public entry points and declaration paths.
 
-Drop Node.js 20 support and raise package build targets to Node.js 22. Use Node.js 22 or newer; packages that already require Node.js 24 retain that requirement.
+Drop Node.js 20 support and target Node.js 22 for all public packages, including the CLI and sandbox library. Use Node.js 22 or newer. Internal package builds target Node.js 24.

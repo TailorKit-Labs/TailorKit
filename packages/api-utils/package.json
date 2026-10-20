@@ -47,7 +47,7 @@
     }
   },
   "scripts": {
-    "build": "vp pack src/rate-limiting.ts src/hashing.ts src/dev-delay.ts src/app-asset-url.ts src/app-auth.ts src/agent-token.ts --format esm --dts --clean",
+    "build": "vp pack src/rate-limiting.ts src/hashing.ts src/dev-delay.ts src/app-asset-url.ts src/app-auth.ts src/agent-token.ts --target node24 --format esm --dts --clean",
     "check-types": "tsc --noEmit",
     "test": "vp test run",
     "lint": "vp lint .",
