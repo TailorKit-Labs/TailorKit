@@ -1,3 +1,4 @@
+import type { experimental_CanvasFrame } from "tailorkit/client";
 import createDoom, { wadBase64 } from "virtual:doomgeneric";
 
 const keyCodes = new Map([
@@ -73,10 +74,10 @@ export const createDoomGame = async (
   canvas.addEventListener("keydown", onKey, { signal });
   canvas.addEventListener("keyup", onKey, { signal });
   return {
+    accumulatedTime: 1000 / 35,
     context,
     engine,
     lastStats: 0,
-    lastTick: 0,
     pixels: new ImageData(width, height),
   };
 };
@@ -85,14 +86,19 @@ export type DoomGame = Awaited<ReturnType<typeof createDoomGame>>;
 
 export const drawDoomGame = (
   game: DoomGame,
+  { timestamp, deltaTime }: experimental_CanvasFrame,
   reportStats: (stats: string) => void
 ) => {
-  const now = performance.now();
-  if (now - game.lastTick < 1000 / 35) {
-    return;
+  // Fixed-step simulation is game-specific; the surface supplies presentation timing.
+  // Bound catch-up after a background pause to avoid a long blocking tick burst.
+  game.accumulatedTime += Math.min(deltaTime, 100);
+  if (game.accumulatedTime < 1000 / 35) {
+    return false;
   }
-  game.lastTick = now - ((now - game.lastTick) % (1000 / 35));
-  game.engine._dg_tick();
+  while (game.accumulatedTime >= 1000 / 35) {
+    game.engine._dg_tick();
+    game.accumulatedTime -= 1000 / 35;
+  }
   const offset = game.engine._dg_framebuffer();
   const source = game.engine.HEAPU8;
   const target = game.pixels.data;
@@ -103,12 +109,13 @@ export const drawDoomGame = (
     target[index + 3] = 255;
   }
   game.context.putImageData(game.pixels, 0, 0);
-  if (now - game.lastStats > 500) {
-    game.lastStats = now;
+  if (timestamp - game.lastStats > 500) {
+    game.lastStats = timestamp;
     reportStats(
       `Frames: ${game.engine._dg_frames()} · Inputs: ${game.engine._dg_inputs()} · Position: ${game.engine._dg_x()}, ${game.engine._dg_y()}`
     );
   }
+  return true;
 };
 
 export const disposeDoomGame = ({ engine }: DoomGame) => {

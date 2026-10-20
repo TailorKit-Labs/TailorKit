@@ -17,12 +17,10 @@ export const Doom = () => {
       create: async (canvas, { signal }) =>
         await createDoomGame(canvas, signal, setHeld),
       dispose: disposeDoomGame,
-      draw: (game) => {
-        drawDoomGame(game, setStats);
-      },
+      draw: (game, _canvas, frame) => drawDoomGame(game, frame, setStats),
     },
     [],
-    { continuous: true, preserveDrawingBuffer: true }
+    { continuous: true, framesPerSecond: 35, preserveDrawingBuffer: false }
   );
   return (
     <Flex direction="column" gap="sm">
