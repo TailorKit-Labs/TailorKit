@@ -118,12 +118,7 @@ describe("app agent MCP", () => {
         ?.scope
     ).toMatchObject({ enum: ["org"] });
     for (const name of ["create_app", "edit_app"]) {
-      expect(tools.find((tool) => tool.name === name)?._meta).toEqual({
-        "dev.tailorkit/agent-stream": {
-          eventKey: "dev.tailorkit/agent-stream",
-          notification: "notifications/progress",
-        },
-      });
+      expect(tools.find((tool) => tool.name === name)?._meta).toBeUndefined();
       expect(tools.find((tool) => tool.name === name)?.description).toMatch(
         /create an autonomous app agent/iu
       );
@@ -136,11 +131,11 @@ describe("app agent MCP", () => {
   });
 
   it.each(["create_app", "edit_app"])(
-    "streams compact activity from %s before its final result",
+    "streams standard progress from %s before its final result",
     async (name) => {
-      const events: unknown[] = [];
       const progressValues: number[] = [];
       const messages: (string | undefined)[] = [];
+      const progressFields: string[][] = [];
       const received = Promise.withResolvers<ReturnType<() => void>>();
       const identity = { appId: "app", runId: "run", threadId: "thread" };
       const updates: AppAgentMcpEvent[] = [
@@ -184,24 +179,20 @@ describe("app agent MCP", () => {
         },
         {
           onprogress: (progress) => {
-            const notification = z
-              .object({
-                _meta: z.object({ "dev.tailorkit/agent-stream": z.unknown() }),
-              })
-              .parse(progress);
-            events.push(notification._meta["dev.tailorkit/agent-stream"]);
+            progressFields.push(Object.keys(progress).toSorted());
             messages.push(progress.message);
             progressValues.push(progress.progress);
-            if (events.length === 2) {
+            if (messages.length === 2) {
               received.resolve();
             }
           },
         }
       );
       expect(result.isError).not.toBe(true);
-      expect(events).toEqual([
-        { ...identity, status: "started" },
-        { ...identity, status: "text", text: "Building" },
+      // The SDK consumes progressToken before invoking onprogress.
+      expect(progressFields).toEqual([
+        ["message", "progress"],
+        ["message", "progress"],
       ]);
       expect(progressValues).toEqual([1, 2]);
       expect(messages).toEqual(["App agent started for app app.", "Building"]);
@@ -232,7 +223,7 @@ describe("app agent MCP", () => {
     "gives standard clients useful %s progress and a readable final answer",
     async (name) => {
       const messages: (string | undefined)[] = [];
-      const activities: unknown[] = [];
+      const progressFields: string[][] = [];
       const received = Promise.withResolvers<ReturnType<() => void>>();
       const identity = { appId: "calendar", runId: "run", threadId: "thread" };
       const chunks = [
@@ -353,12 +344,7 @@ describe("app agent MCP", () => {
           onprogress: (progress) => {
             const { message } = progress;
             messages.push(message);
-            const notification = z
-              .object({
-                _meta: z.object({ "dev.tailorkit/agent-stream": z.unknown() }),
-              })
-              .parse(progress);
-            activities.push(notification._meta["dev.tailorkit/agent-stream"]);
+            progressFields.push(Object.keys(progress).toSorted());
             if (
               message ===
               "App agent finished generating; waiting for workflow cleanup."
@@ -386,6 +372,9 @@ describe("app agent MCP", () => {
         "failed: Tool.",
         "App agent finished generating; waiting for workflow cleanup.",
       ]);
+      for (const fields of progressFields) {
+        expect(fields).toEqual(["message", "progress"]);
+      }
       const answer = z
         .object({ text: z.string(), type: z.literal("text") })
         .parse(response.content[0]);
@@ -398,20 +387,19 @@ describe("app agent MCP", () => {
       expect(response.content).toHaveLength(1);
       expect(response.structuredContent).toEqual(finalOutput);
       expect(JSON.stringify(response).length).toBeLessThan(2000);
-      const activityPayload = JSON.stringify(activities);
-      expect(activityPayload).not.toContain("Private reasoning");
-      expect(activityPayload).not.toContain(
+      const progressPayload = JSON.stringify(messages);
+      expect(progressPayload).not.toContain("Private reasoning");
+      expect(progressPayload).not.toContain(
         "File contents are not progress messages"
       );
-      expect(activityPayload).not.toContain("Sensitive unknown arguments");
-      expect(activityPayload).not.toContain('snapshot":');
-      expect(activityPayload).not.toContain("private-value");
+      expect(progressPayload).not.toContain("Sensitive unknown arguments");
+      expect(progressPayload).not.toContain('snapshot":');
+      expect(progressPayload).not.toContain("private-value");
     }
   );
 
   it("bounds and sanitizes command previews without forwarding raw tool inputs", async () => {
     const messages: (string | undefined)[] = [];
-    const activities: unknown[] = [];
     const commands = [
       "pnpm check\n  --filter=calendar",
       `pnpm check ${"--very-long-option ".repeat(40)}`,
@@ -422,7 +410,7 @@ describe("app agent MCP", () => {
     const { client } = await connect({
       async editApp(_input, execution) {
         for (const [index, command] of commands.entries()) {
-          // oxlint-disable-next-line no-await-in-loop -- Preserve event order for the standard and metadata consumers.
+          // oxlint-disable-next-line no-await-in-loop -- Preserve the order of standard progress messages.
           await execution.onProgress({
             appId: "app",
             chunk: {
@@ -444,33 +432,16 @@ describe("app agent MCP", () => {
       {
         onprogress: (progress) => {
           messages.push(progress.message);
-          const event = z
-            .object({
-              _meta: z.object({
-                "dev.tailorkit/agent-stream": z.object({
-                  detail: z.string(),
-                }),
-              }),
-            })
-            .parse(progress);
-          activities.push(event._meta["dev.tailorkit/agent-stream"]);
         },
       }
     );
     expect(messages[0]).toBe("Bash: pnpm check --filter=calendar");
     expect(messages[1]?.length).toBeLessThanOrEqual(320);
     expect(messages[1]).toMatch(/…$/u);
-    expect(messages.slice(2)).toEqual(
-      Array.from(
-        { length: 3 },
-        () => "Bash: [command with credential markers hidden]"
-      )
-    );
-    expect(JSON.stringify(activities)).not.toContain("private-value");
-    for (const activity of activities) {
-      expect(activity).not.toHaveProperty("chunk");
-      expect(activity).not.toHaveProperty("input");
-    }
+    expect(messages.slice(2)).toEqual([
+      "Bash: [command with credential markers hidden]",
+    ]);
+    expect(JSON.stringify(messages)).not.toContain("private-value");
   });
 
   it.each(["create_app", "edit_app"])(

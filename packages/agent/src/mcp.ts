@@ -8,7 +8,7 @@ import { z } from "zod";
 import { createProgressReporter } from "./mcp-progress";
 import type { AppAgentMcpEvent } from "./mcp-progress";
 
-export type { AppAgentMcpActivity, AppAgentMcpEvent } from "./mcp-progress";
+export type { AppAgentMcpEvent } from "./mcp-progress";
 
 const serverInfo = { name: "tailorkit-app-agent", version: "1.0.0" };
 const capabilities = { tools: { listChanged: true } };
@@ -40,13 +40,6 @@ const createSchema = z.strictObject({
     .min(1)
     .describe("Name of one scope authorized by the host."),
 });
-
-const agentStreamMetadata = {
-  "dev.tailorkit/agent-stream": {
-    eventKey: "dev.tailorkit/agent-stream",
-    notification: "notifications/progress",
-  },
-};
 
 export interface AppAgentMcpExecution {
   signal: AbortSignal;
@@ -97,11 +90,10 @@ const runAgentTool = async (
   const reporter =
     progressToken === undefined
       ? undefined
-      : createProgressReporter(async ({ activity, message }) => {
+      : createProgressReporter(async (message) => {
           await context.mcpReq.notify({
             method: "notifications/progress",
             params: {
-              _meta: { "dev.tailorkit/agent-stream": activity },
               message,
               progress: (progress += 1),
               progressToken,
@@ -169,7 +161,6 @@ export const createAppAgentMcp = (
       server.registerTool(
         "create_app",
         {
-          _meta: agentStreamMetadata,
           annotations: {
             destructiveHint: false,
             idempotentHint: false,
@@ -190,7 +181,6 @@ export const createAppAgentMcp = (
       server.registerTool(
         "edit_app",
         {
-          _meta: agentStreamMetadata,
           annotations: {
             destructiveHint: true,
             idempotentHint: false,

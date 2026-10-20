@@ -13,21 +13,9 @@ interface AppAgentMcpRun {
 export type AppAgentMcpEvent = AppAgentMcpRun &
   ({ status: "started" } | { chunk: UIMessageChunk; status: "streaming" });
 
-/** Activity snapshots carried in progress notification metadata. */
-export type AppAgentMcpActivity = AppAgentMcpRun &
-  (
-    | { status: "started" | "error" | "aborted" | "finishing" }
-    | { status: "text"; text: string }
-    | (ToolAction & {
-        outcome: "running" | "completed" | "failed" | "denied";
-        status: "tool";
-        toolCallId: string;
-      })
-  );
-
 interface ProgressSnapshot {
-  activity: AppAgentMcpActivity;
   message: string;
+  status: "started" | "error" | "aborted" | "finishing" | "text" | "tool";
 }
 
 const maximumPreviewLength = 320;
@@ -116,19 +104,17 @@ const toolOutputSchema = z.object({
   isError: z.boolean().optional(),
 });
 
-type ToolOutcome = Extract<AppAgentMcpActivity, { status: "tool" }>["outcome"];
+type ToolOutcome = "running" | "completed" | "failed" | "denied";
 
 const toolSnapshot = (
-  run: AppAgentMcpRun,
   action: ToolAction,
-  toolCallId: string,
   outcome: ToolOutcome
 ): ProgressSnapshot => ({
-  activity: { ...run, ...action, outcome, status: "tool", toolCallId },
   message:
     outcome === "running"
       ? describeTool(action)
       : preview(`${outcome}: ${describeTool(action)}`),
+  status: "tool",
 });
 
 const toolOutcome = (
@@ -162,12 +148,10 @@ export const createProgressSnapshot = () => {
   const tools = new Map<string, ToolAction>();
 
   return (event: AppAgentMcpEvent): ProgressSnapshot | undefined => {
-    const { appId, runId, threadId } = event;
-    const run = { appId, runId, threadId };
     if (event.status === "started") {
       return {
-        activity: { ...run, status: "started" },
-        message: preview(`App agent started for app ${appId}.`),
+        message: preview(`App agent started for app ${event.appId}.`),
+        status: "started",
       };
     }
     const { chunk } = event;
@@ -179,9 +163,7 @@ export const createProgressSnapshot = () => {
           : combined;
       text.set(chunk.id, current);
       const message = preview(current);
-      return message === ""
-        ? undefined
-        : { activity: { ...run, status: "text", text: message }, message };
+      return message === "" ? undefined : { message, status: "text" };
     }
     if (chunk.type === "text-end") {
       text.delete(chunk.id);
@@ -194,7 +176,7 @@ export const createProgressSnapshot = () => {
       const action = toolAction(chunk);
       tools.set(chunk.toolCallId, action);
       const outcome = chunk.type === "tool-input-error" ? "failed" : "running";
-      return toolSnapshot(run, action, chunk.toolCallId, outcome);
+      return toolSnapshot(action, outcome);
     }
     if (
       chunk.type === "tool-output-available" ||
@@ -209,25 +191,25 @@ export const createProgressSnapshot = () => {
       }
       const action = tools.get(chunk.toolCallId) ?? { label: "Tool" };
       tools.delete(chunk.toolCallId);
-      return toolSnapshot(run, action, chunk.toolCallId, toolOutcome(chunk));
+      return toolSnapshot(action, toolOutcome(chunk));
     }
     if (chunk.type === "error") {
       return {
-        activity: { ...run, status: "error" },
         message:
           "App agent encountered an error. Check the app before retrying.",
+        status: "error",
       };
     }
     if (chunk.type === "abort") {
       return {
-        activity: { ...run, status: "aborted" },
         message: "App agent stopped. Check the app before repeating a change.",
+        status: "aborted",
       };
     }
     if (chunk.type === "finish") {
       return {
-        activity: { ...run, status: "finishing" },
         message: "App agent finished generating; waiting for workflow cleanup.",
+        status: "finishing",
       };
     }
     return undefined;
@@ -239,7 +221,7 @@ const heartbeatIntervalMs = 15_000;
 
 /** Serialize notifications, coalesce text, and release timers when a call ends. */
 export const createProgressReporter = (
-  notify: (snapshot: ProgressSnapshot) => Promise<void>,
+  notify: (message: string) => Promise<void>,
   signal: AbortSignal
 ) => {
   const snapshot = createProgressSnapshot();
@@ -273,7 +255,7 @@ export const createProgressReporter = (
       }
       try {
         signal.throwIfAborted();
-        await notify(update);
+        await notify(update.message);
       } catch (error) {
         failure =
           error instanceof Error
@@ -336,10 +318,13 @@ export const createProgressReporter = (
         return;
       }
       const previous = pendingText ?? latest;
-      if (JSON.stringify(update) === JSON.stringify(previous)) {
+      if (
+        update.message === previous?.message &&
+        update.status === previous?.status
+      ) {
         return;
       }
-      if (update.activity.status !== "text") {
+      if (update.status !== "text") {
         await flush();
         await send(update);
         return;

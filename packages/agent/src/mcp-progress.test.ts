@@ -3,9 +3,6 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { createProgressReporter, createProgressSnapshot } from "./mcp-progress";
 import type { AppAgentMcpEvent } from "./mcp-progress";
 
-type ProgressSnapshot = Parameters<
-  Parameters<typeof createProgressReporter>[0]
->[0];
 type Chunk = Extract<AppAgentMcpEvent, { status: "streaming" }>["chunk"];
 
 const identity = { appId: "app", runId: "run", threadId: "thread" };
@@ -25,7 +22,7 @@ afterEach(() => {
 const reporter = () => {
   vi.useFakeTimers();
   vi.setSystemTime(1000);
-  const updates: ProgressSnapshot[] = [];
+  const updates: string[] = [];
   const controller = new AbortController();
   const progress = createProgressReporter(async (update) => {
     await Promise.resolve(updates.push(update));
@@ -46,14 +43,11 @@ describe("compact MCP progress", () => {
     await progress.onProgress(
       event({ delta: " app", id: "text", type: "text-delta" })
     );
-    expect(updates.map(({ message }) => message)).toEqual(["Building"]);
+    expect(updates).toEqual(["Building"]);
     await vi.advanceTimersByTimeAsync(749);
     expect(updates).toHaveLength(1);
     await vi.advanceTimersByTimeAsync(1);
-    expect(updates.map(({ message }) => message)).toEqual([
-      "Building",
-      "Building the app",
-    ]);
+    expect(updates).toEqual(["Building", "Building the app"]);
     await progress.onProgress(
       event({ delta: "", id: "text", type: "text-delta" })
     );
@@ -84,17 +78,12 @@ describe("compact MCP progress", () => {
         type: "tool-output-available",
       })
     );
-    expect(updates.map(({ message }) => message)).toEqual([
+    expect(updates).toEqual([
       "Checking",
       "Checking your app",
       "Bash: pnpm check",
       "failed: Bash: pnpm check",
     ]);
-    expect(updates.at(-1)?.activity).toMatchObject({
-      outcome: "failed",
-      status: "tool",
-      toolCallId: "check",
-    });
     expect(JSON.stringify(updates)).not.toContain("Private diagnostics");
   });
 
@@ -117,7 +106,7 @@ describe("compact MCP progress", () => {
       } else {
         await progress.onProgress(event({ type }));
       }
-      expect(updates[1]?.message).toBe("Done building");
+      expect(updates[1]).toBe("Done building");
       expect(JSON.stringify(updates)).not.toContain("Internal failure");
     }
   );
@@ -132,7 +121,7 @@ describe("compact MCP progress", () => {
     );
     await progress.flush();
     progress.close();
-    expect(updates.at(-1)?.message).toBe("Done.");
+    expect(updates.at(-1)).toBe("Done.");
     expect(vi.getTimerCount()).toBe(0);
   });
 
@@ -245,7 +234,7 @@ describe("compact MCP progress", () => {
         type: "tool-output-available",
       })
     );
-    expect(failed?.activity).toMatchObject({ outcome: "failed" });
+    expect(failed?.message).toMatch(/^failed: Bash:/u);
   });
 
   it("reports invalid tool input as failed without exposing input or diagnostics", () => {
@@ -259,10 +248,9 @@ describe("compact MCP progress", () => {
         type: "tool-input-error",
       })
     );
-    expect(failed?.activity).toMatchObject({
-      outcome: "failed",
-      status: "tool",
-    });
+    expect(failed?.message).toBe(
+      "failed: Bash: [command with credential markers hidden]"
+    );
     expect(JSON.stringify(failed)).not.toContain("private-value");
     expect(JSON.stringify(failed)).not.toContain("Private error");
   });

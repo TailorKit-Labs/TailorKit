@@ -51,7 +51,7 @@ CLI and new app installs enforce a three-day package release age. Only `tailorki
 
 Every `tailorkit agent --host your_host_url` invocation starts a new conversation by default. Follow-up messages in that invocation reuse the thread ID announced by the platform in a transient `data-thread` UI chunk. The CLI prints the ID when the chat closes; use `tailorkit agent --host your_host_url --app your_app_id --thread your_thread_id` to continue it. The resumed terminal UI shows new messages while Pi retains the conversation’s prior context.
 
-MCP `create_app` and `edit_app` create a new thread by default and return its ID in progress events and the terminal result. Pass `threadId` to `edit_app` for a related follow-up. After `create_app`, continue through `edit_app` with the returned app and thread IDs. The backend validates that the requested thread belongs to the authorized app before starting a run or issuing an MCP agent grant.
+MCP `create_app` and `edit_app` create a new thread by default and return its ID in the terminal result. Pass `threadId` to `edit_app` for a related follow-up. After `create_app`, continue through `edit_app` with the returned app and thread IDs. The backend validates that the requested thread belongs to the authorized app before starting a run or issuing an MCP agent grant.
 
 Direct workflow callers must first authorize the app and call `resolveAppAgentThread(appId, optionalThreadId)` from `@tailorkit/agent/threads`, then pass its result as `AppAgentInput.threadId`. Workflow slices continue the same unfinished turn; separate user-turn runs resume only their explicit thread.
 
@@ -93,22 +93,15 @@ The endpoint implements MCP 2026-07-28 using the official SDK v2. It rejects leg
 
 The web host gives `/api/platform/app-agent/mcp` its own Vercel Function with a 1,800-second maximum duration so the request can stream a full agent turn. This requires Vercel’s extended function durations on Pro or Enterprise. Other web routes retain their default duration.
 
-`create_app` and `edit_app` advertise `dev.tailorkit/agent-stream` metadata with event key `dev.tailorkit/agent-stream` and notification `notifications/progress`. Request progress to receive compact activity snapshots. The exported `AppAgentMcpActivity` type describes the structured object carried by `notifications/progress.params._meta["dev.tailorkit/agent-stream"]`:
+`create_app` and `edit_app` send standard `notifications/progress` when the request supplies `_meta.progressToken`. Each notification contains `progressToken`, `progress`, and a human-readable `message`, following the [MCP progress specification](https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/progress). `progress` is a monotonically increasing notification count. A message that generation has finished does not establish success: wait for the final result. Failed MCP tool calls have `isError: true`; a failed nested tool action may be repaired by the agent before the call completes. Clients that do not request progress still receive the final result. The `create_app` schema advertises the authorized scope names as an enum.
 
-- `{ status: "started", appId, runId, threadId }` identifies the running agent.
-- `{ status: "text", appId, runId, threadId, text }` carries a bounded snapshot of the assistant's current text.
-- `{ status: "tool", appId, runId, threadId, toolCallId, label, detail?, outcome }` describes a tool action. `outcome` is `running`, `completed`, `failed`, or `denied`. A nonzero tool exit code or an `isError: true` result is reported as failed. Preliminary tool results are omitted.
-- `{ status: "error" | "aborted" | "finishing", appId, runId, threadId }` reports generation lifecycle changes without internal diagnostics.
+Standard progress messages include cumulative assistant text, command previews such as `Bash: pnpm check`, file paths such as `Read: src/app.tsx`, and tool outcomes such as `failed: Bash: pnpm check`. Nonzero tool exit codes and `isError: true` tool results are reported as failed; preliminary results are omitted. Previews collapse whitespace, remove terminal control sequences, and stay within 320 characters; truncated previews use an ellipsis. Commands containing credential markers are hidden. Reasoning, raw tool arguments, file contents, tool outputs, and bookkeeping chunks are excluded from progress messages. Preview text remains agent-generated data, not a guarantee that arbitrary text is free of sensitive information.
 
-`message` contains human-readable status text, as recommended by the [MCP progress specification](https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/progress). Activity snapshots use namespaced `_meta` so ordinary MCP clients can display progress without understanding TailorKit's payload. This metadata uses the core protocol's metadata facility; it adds no RPC methods, result types, or negotiated extension requirements. `progress` is a monotonically increasing notification count. A `finishing` snapshot does not establish success: wait for the final result. Failed MCP tool calls have `isError: true`; a failed nested tool action may be repaired by the agent before the call completes. Clients that do not request progress still receive the final result. The `create_app` schema advertises the authorized scope names as an enum.
-
-Standard progress messages include cumulative assistant text, command previews such as `Bash: pnpm check`, file paths such as `Read: src/app.tsx`, and tool outcomes such as `failed: Bash: pnpm check`. Previews collapse whitespace, remove terminal control sequences, and stay within 320 characters; truncated previews use an ellipsis. Commands containing credential markers are hidden. Reasoning, raw tool arguments, file contents, tool outputs, and bookkeeping chunks are excluded from both the message and activity metadata. Preview text remains agent-generated data, not a guarantee that arbitrary text is free of sensitive information.
-
-Unrecognized tools use their sanitized name, for example `Tool: browser_snapshot`. Their arbitrary arguments are not previewed. A blank name falls back to `Tool.`. Identical consecutive snapshots are omitted. Text updates are coalesced over 750 ms, with the latest pending text flushed at text-block boundaries, before significant activity changes, and before the final result. Tool and lifecycle changes are delivered immediately. During quiet work, the last snapshot is repeated every 15 seconds to keep progress-aware client timeouts alive. Timers stop when the call completes, fails, or is cancelled.
+Unrecognized tools use their sanitized name, for example `Tool: browser_snapshot`. Their arbitrary arguments are not previewed. A blank name falls back to `Tool.`. Identical consecutive updates are omitted. Text updates are coalesced over 750 ms, with the latest pending text flushed at text-block boundaries, before significant activity changes, and before the final result. Tool and lifecycle changes are delivered immediately. During quiet work, the last message is repeated every 15 seconds to keep progress-aware client timeouts alive. Timers stop when the call completes, fails, or is cancelled.
 
 The backend returns an `AppAgentMcpResult` containing `{ appId, answer, threadId, runId, finishReason }`. All fields are required and advertised in the tools' output schema. The platform collects only assistant text from the workflow stream; it does not assemble a full UI message or return internal messages, reasoning, tool transcripts, session state, or usage. Text blocks are separated by blank lines. `answer` defaults to `App agent run ended.` when there is no text. `finishReason` reports why generation stopped; it does not guarantee deployment success. A streamed error or abort fails the call and triggers workflow cleanup.
 
-The final response contains one readable `content` text block with the answer. `structuredContent` contains the compact result, including the app/run/thread IDs for continuing with `edit_app`. The response has no additional serialized JSON text block. Render `AppAgentMcpActivity` snapshots for live progress and read `structuredContent.answer` for the final answer. The backend's `onProgress` callback accepts internal `AppAgentMcpEvent` events, which the MCP adapter reduces before transmission.
+The final response contains one readable `content` text block with the answer. `structuredContent` contains the compact result, including the app/run/thread IDs for continuing with `edit_app`. The response has no additional serialized JSON text block. Render `progress.message` for live progress and read `structuredContent.answer` for the final answer. The backend's `onProgress` callback accepts internal `AppAgentMcpEvent` events, which the MCP adapter reduces before transmission.
 
 For example, connect an MCP client and render progress events while the agent edits an app:
 
@@ -139,9 +132,9 @@ const result = await client.callTool(
     timeout: 35 * 60_000,
     resetTimeoutOnProgress: true,
     onprogress: (progress) => {
-      // Validate the remote progress notification and read the namespaced event
-      // from params._meta["dev.tailorkit/agent-stream"] in this callback.
-      renderAgentProgress(progress);
+      if (progress.message !== undefined) {
+        renderAgentProgress(progress.message);
+      }
     },
   }
 );
