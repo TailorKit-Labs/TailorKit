@@ -1,0 +1,53 @@
+.changeset/new-github-repository.md
+  s_53e0c0355dfa2c::t_6980035f501440 1-15
+.github/workflows/release.yml
+  s_53e0c0355dfa2c::t_8adf56c96e2d6f 24
+RELEASING.md
+  s_53e0c0355dfa2c::t_fba55d983a77f5 21
+SECURITY.md
+  s_53e0c0355dfa2c::t_e62dec485bc3b1 3
+docs/docs.json
+  s_53e0c0355dfa2c::t_9291ec7be07e0e 84
+packages/ai-sdk/package.json
+  s_53e0c0355dfa2c::t_1908834ef6027d 7
+packages/app-db/package.json
+  s_53e0c0355dfa2c::t_05ec480208c595 7
+packages/app/package.json
+  s_53e0c0355dfa2c::t_e90d0bbbf4bf78 7
+packages/cli/package.json
+  s_53e0c0355dfa2c::t_5e792049385ee5 7
+packages/client-core/package.json
+  s_53e0c0355dfa2c::t_8876bd8eb55a94 7
+packages/client-platform/package.json
+  s_53e0c0355dfa2c::t_4026e1e2b88e49 7
+packages/core/package.json
+  s_53e0c0355dfa2c::t_16f7b190c7d7cc 7
+packages/patchsmith/package.json
+  s_53e0c0355dfa2c::t_8b951779804abe 7
+packages/react/package.json
+  s_53e0c0355dfa2c::t_4d39c587f3b0f0 7
+packages/sandbox/package.json
+  s_53e0c0355dfa2c::t_6766ab6c67698e 7
+packages/vite/package.json
+  s_53e0c0355dfa2c::t_bd8b11805282ed 7
+scripts/check-prerelease.mjs
+  s_53e0c0355dfa2c::t_2571d10303fe2a 29
+scripts/check-prerelease.test.mjs
+  s_53e0c0355dfa2c::t_17d0c24de68c9f 33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d79974344ba9410aa4a18e17eba8929e757792c6",
+  "prompts": {},
+  "sessions": {
+    "s_53e0c0355dfa2c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15725-18a8-70d3-8c6f-1057e23f224e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
