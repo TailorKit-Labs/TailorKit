@@ -1,0 +1,75 @@
+playground/apps/todo/vite.config.ts
+  s_a0bf9224ecab6e::t_8141c95507708a 14,17,22-24
+  s_a0bf9224ecab6e::t_e4ab697fa50db1 1-2,7-9,13,18-21,25-27
+  s_a0bf9224ecab6e::t_751636b51aa97f 10-12,15-16
+playground/apps/todo/doomgeneric/doomgeneric_tailorkit.c
+  s_a0bf9224ecab6e::t_1bba19680c72b0 1-45
+playground/apps/todo/src/slots/doom/doom-game.ts
+  s_a0bf9224ecab6e::t_751636b51aa97f 1-64,70-118
+  s_a0bf9224ecab6e::t_461ac64feec3e2 65-69
+playground/tanstack-start/canvas-demo/checks.ts
+  s_a0bf9224ecab6e::t_928e4009128e60 276-417
+playground/apps/todo/src/slots/doom/doom.tsx
+  s_a0bf9224ecab6e::t_751636b51aa97f 6,17-19,21
+  s_a0bf9224ecab6e::t_e4ab697fa50db1 1-5,9-14,16,20,22-29,41-46
+  s_a0bf9224ecab6e::t_b37a2d151d7b57 7-8,15
+  s_a0bf9224ecab6e::t_8141c95507708a 30-40
+playground/apps/todo/.agents/skills/tailorkit-capabilities/references/index.md
+  s_a0bf9224ecab6e::t_c626bf397bcabd 14
+playground/README.md
+  s_a0bf9224ecab6e::t_54267adb11f7fe 102-105
+playground/apps/todo/src/tailorkit.gen.ts
+  s_a0bf9224ecab6e::t_46edb0b410ee52 132-142
+playground/schema.json
+  s_a0bf9224ecab6e::t_dea365e7dc0d34 30-56
+playground/apps/todo/src/doomgeneric.d.ts
+  s_a0bf9224ecab6e::t_8141c95507708a 3-6
+  s_a0bf9224ecab6e::t_e4ab697fa50db1 1-2,7-22
+playground/apps/todo/package.json
+  s_a0bf9224ecab6e::t_e4ab697fa50db1 23-24
+playground/apps/todo/.agents/skills/tailorkit-capabilities/references/components/experimental_DoomCanvas.md
+  s_a0bf9224ecab6e::t_767b246af78e9b 1-37
+playground/shared/src/contracts/valibot.ts
+  s_a0bf9224ecab6e::t_e4ab697fa50db1 40,57-58
+  s_a0bf9224ecab6e::t_6ceaa5c1e9ca5f 59
+  s_a0bf9224ecab6e::t_8141c95507708a 41-56
+playground/apps/todo/doomgeneric/LICENSE
+  s_a0bf9224ecab6e::t_e3d00fe1edaafa 1-339
+playground/apps/todo/src/slots/panel/canvas-prototype.tsx
+  s_a0bf9224ecab6e::t_8141c95507708a 160-166,173-179
+  s_a0bf9224ecab6e::t_e4ab697fa50db1 13,151,157-159,167-170
+playground/apps/todo/doomgeneric/FREEDOOM-LICENSE.txt
+  s_a0bf9224ecab6e::t_9a41d65a5dd35c 1-30
+playground/apps/todo/doomgeneric/README.md
+  s_a0bf9224ecab6e::t_a8aaa31735123a 1-25
+playground/shared/src/contracts/arktype.ts
+  s_a0bf9224ecab6e::t_e4ab697fa50db1 16,33-34
+  s_a0bf9224ecab6e::t_98cfc628795253 35
+  s_a0bf9224ecab6e::t_8141c95507708a 17-32
+playground/apps/todo/doomgeneric/build.mjs
+  s_a0bf9224ecab6e::t_8141c95507708a 2,10-11,17-19,21-23,32-33,35-38,40-41,43-54,56,59-60,64,66-76,78,80-85,87-121,123-129
+  s_a0bf9224ecab6e::t_751636b51aa97f 13,57-58,77,79,86
+  s_a0bf9224ecab6e::t_1bba19680c72b0 1,3-9,12,14-16,20,24-31,34,39,42,55,61-63,65,122
+playground/tanstack-start/src/lib/tailorkit-client.tsx
+  s_a0bf9224ecab6e::t_e4ab697fa50db1 51
+playground/shared/src/contracts/zod.ts
+  s_a0bf9224ecab6e::t_7ecae11a9dc922 39
+  s_a0bf9224ecab6e::t_e4ab697fa50db1 20,37-38
+  s_a0bf9224ecab6e::t_8141c95507708a 21-36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3843887fee747b593132bb4221107582e11afccf",
+  "prompts": {},
+  "sessions": {
+    "s_a0bf9224ecab6e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a156f7-f6c7-7d12-81e0-7055869efe72",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": null
+    }
+  }
+}
