@@ -1,0 +1,25 @@
+apps/apps-worker/README.md
+  s_046aa145071a90::t_6fbf89ad925456 144,150-168
+apps/apps-worker/scripts/build-bootstrap.mjs
+  s_046aa145071a90::t_2fa18485997309 1-20
+apps/apps-worker/turbo.json
+  s_046aa145071a90::t_f3748a6cf2eef4 4-6
+apps/apps-worker/wrangler.jsonc
+  s_046aa145071a90::t_0361e84f623c0b 6-14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "40e87468c1a419f990a66a48ea287cd1b4b6be3b",
+  "prompts": {},
+  "sessions": {
+    "s_046aa145071a90": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15760-73a8-7a83-aca4-73479e59f8d4",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
