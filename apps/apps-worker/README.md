@@ -183,6 +183,16 @@ The public routes and `ASSET_DOMAIN` remain `tailorkit.app`. Production resource
 
 The rebrand deliberately starts with an empty asset bucket and installation databases. Old bundles and app data are not migrated. Republish apps after deploying the worker and platform. Stage the new public key on the running worker before the platform begins issuing tokens with it; keep the old public key accepted until existing tokens have expired. The committed configuration completes that rotation on the next worker deployment. Platform environment changes apply to its next deployment, so deploy both sides together and verify a fresh upload, publication, and app call.
 
+### One-time Durable Object reset
+
+Before the first deployment of `PatchsmithAppInstallation`, detach any live bindings to the previous `AppInstallation` namespace. Cloudflare checks existing references before applying the deletion tombstone; changing `STORES` in the same deployment can still fail with code `10086` while the running worker references the old namespace.
+
+1. Inspect the old namespace's referencing workers. In each worker, remove the binding that points to that namespace and deploy the binding change. For the production gateway, this is `STORES` on `patchsmith-apps-worker`. Preserve its other bindings and secrets.
+2. Retry the Cloudflare build of `main`. The committed configuration deletes the old namespace, creates `PatchsmithAppInstallation`, and restores `STORES` against the new namespace.
+3. Verify the deployment succeeded and `STORES` points to the new class, then republish apps and verify an app call.
+
+The gateway cannot serve app calls between detaching `STORES` and completing the replacement deployment. Perform these steps together during the reset window. This is a one-time reset, not a step for routine deployments. See Cloudflare's [Durable Object deletion preconditions](https://developers.cloudflare.com/durable-objects/reference/durable-objects-migrations/#delete-a-durable-object-class).
+
 ## Current limits
 
 Account for these limits when publishing apps or operating the runtime:
