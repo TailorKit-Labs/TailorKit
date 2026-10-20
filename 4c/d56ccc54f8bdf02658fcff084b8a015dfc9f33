@@ -1,0 +1,81 @@
+packages/react/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 78-80
+packages/observability/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 46-48
+packages/core/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 123-125
+packages/vite/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 80-82
+packages/storage/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 59-61
+packages/api-utils/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 73-75
+apps/web/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 85-87
+packages/app-db/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 63-65
+packages/client-platform/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 80-82
+packages/kv/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 59-61
+packages/sandbox/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 56-58
+playground/apps/todo/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 34-36
+packages/cli/src/generator/templates/package.json.liquid
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 5-7
+packages/flags/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 37-39
+playground/shared/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 38-40
+packages/app/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 91-93
+packages/ui/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 99-101
+packages/asset-delivery/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 43-45
+packages/tailorkit/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 128-130
+packages/auth/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 61-63
+packages/api/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 57-59
+packages/client-core/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 81-83
+package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 59-61
+packages/env/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 37-39
+packages/config/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 26-28
+apps/apps-worker/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 39-41
+playground/tanstack-start/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 43-45
+packages/db/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 54-56
+packages/email/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 54-56
+packages/cli/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 66-68
+packages/api-platform/package.json
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 73-75
+.changeset/quick-cups-pack.md
+  s_4c2d66e3c10e7f::t_c7eb93be07e8ae 16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4cd56ccc54f8bdf02658fcff084b8a015dfc9f33",
+  "prompts": {},
+  "sessions": {
+    "s_4c2d66e3c10e7f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a156da-1ce7-7e33-aaa1-f449d752e71b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
