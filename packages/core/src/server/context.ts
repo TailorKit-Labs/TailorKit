@@ -1,46 +1,47 @@
 import type { Client as PlatformClient } from "@patchsmith/client-platform/client/client/index";
 
-import type { PatchSmithSchema } from "#schema/index";
+import type { PatchsmithSchema } from "#schema/index";
 
-import type { PatchSmithScopeSchemas } from "./scope";
-import type { PatchSmithPlatformOptions, PatchSmithScopes } from "./types";
+import type { PatchsmithScopeSchemas } from "./scope";
+import type { PatchsmithPlatformOptions, PatchsmithScopes } from "./types";
 
 const isFunctionValue = <TValue>(
   value: TValue
 ): value is Extract<TValue, CallableFunction> => typeof value === "function";
 
-export interface PatchSmithRuntimeContext {
-  subjectId?: string;
-  scopes: PatchSmithScopes;
+export interface PatchsmithRuntimeContext {
+  subjectId: string;
+  scopes: PatchsmithScopes;
 }
 
 export interface Context {
   platform: PlatformClient;
   platformHeaders: Record<string, string>;
   request: Request;
-  schema: PatchSmithSchema;
-  scopeSchemas: PatchSmithScopeSchemas;
-  patchsmith?: PatchSmithRuntimeContext;
+  schema: PatchsmithSchema;
+  scopeSchemas: PatchsmithScopeSchemas;
+  /** Scope authorization shared by host sessions and CLI deployment grants. */
+  patchsmith?: Pick<PatchsmithRuntimeContext, "scopes">;
   authenticate: (ctx: {
     request: Request;
   }) =>
-    | PatchSmithRuntimeContext
+    | PatchsmithRuntimeContext
     | null
-    | Promise<PatchSmithRuntimeContext | null>;
+    | Promise<PatchsmithRuntimeContext | null>;
 }
 
 export interface CreateContextOptions {
   platform: PlatformClient;
-  platformHeaders?: PatchSmithPlatformOptions["headers"];
+  platformHeaders?: PatchsmithPlatformOptions["headers"];
   request: Request;
-  schema: PatchSmithSchema;
-  scopeSchemas: PatchSmithScopeSchemas;
+  schema: PatchsmithSchema;
+  scopeSchemas: PatchsmithScopeSchemas;
   authenticate: (ctx: {
     request: Request;
   }) =>
-    | PatchSmithRuntimeContext
+    | PatchsmithRuntimeContext
     | null
-    | Promise<PatchSmithRuntimeContext | null>;
+    | Promise<PatchsmithRuntimeContext | null>;
 }
 
 export const createContext = async (

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { defineContract } from "#schema/contract";
 
 import { createServer } from "./contract";
-import { createPatchSmithServer } from "./handler";
+import { createPatchsmithServer } from "./handler";
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -22,7 +22,7 @@ const setup = (
   } = defaultSetupOptions
 ) => {
   const fetch = vi.fn();
-  const server = createPatchSmithServer({
+  const server = createPatchsmithServer({
     $internal: {
       platformBaseUrl: "https://platform.test/api/platform/",
       platformFetch: fetch,
@@ -38,7 +38,7 @@ const setup = (
 const contextSchema = z.object({
   hostUrl: z.string(),
   scopes: z.record(z.string(), z.json()),
-  subjectId: z.string().optional(),
+  subjectId: z.string(),
 });
 const context = (headers: Record<string, string>) =>
   contextSchema.parse(
@@ -51,7 +51,7 @@ const context = (headers: Record<string, string>) =>
   );
 
 describe("MCP transport configuration", () => {
-  it("returns a direct platform URL and headers from scopes and optional subjectId", async () => {
+  it("returns a direct platform URL and headers from scopes and the authenticated subject", async () => {
     const { server, fetch } = setup();
     const transport = await server.mcp.transport({
       scopes: { org: { tenant: "one" } },
@@ -77,15 +77,19 @@ describe("MCP transport configuration", () => {
     });
     const result = await server.mcp.transport({
       scopes: { org: { tenant: "one" } },
+      subjectId: "user-one",
     });
     expect(result.url).toBe("https://patchsmith.io/api/platform/app-agent/mcp");
-    expect(context(result.headers)).not.toHaveProperty("subjectId");
+    expect(context(result.headers).subjectId).toBe("user-one");
   });
 
   it("does not expose a proxy handler or mount a host MCP route", async () => {
     const { server, fetch } = setup();
     expect(server.mcp).not.toHaveProperty("handler");
-    const authenticate = vi.fn(() => ({ scopes: { org: { tenant: "one" } } }));
+    const authenticate = vi.fn(() => ({
+      scopes: { org: { tenant: "one" } },
+      subjectId: "user-one",
+    }));
     const response = await server.handler(
       new Request("https://host.test/api/patchsmith/mcp", { method: "POST" }),
       { authenticate }
@@ -99,17 +103,18 @@ describe("MCP transport configuration", () => {
     const { server } = setup();
     await Promise.all(
       [
-        { scopes: {} },
-        { scopes: { other: { tenant: "one" } } },
-        { scopes: { org: { tenant: "" } } },
+        { scopes: {}, subjectId: "user-one" },
+        { scopes: { other: { tenant: "one" } }, subjectId: "user-one" },
+        { scopes: { org: { tenant: "" } }, subjectId: "user-one" },
+        { scopes: { org: { tenant: "one" } } },
+        { scopes: { org: { tenant: "one" } }, subjectId: null },
+        { scopes: { org: { tenant: "one" } }, subjectId: 123 },
         { scopes: { org: { tenant: "one" } }, subjectId: "" },
         { scopes: { org: { tenant: "one" } }, subjectId: "x".repeat(257) },
       ].map(async (value) => {
-        // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
-
         await expect(
-          // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
-          server.mcp.transport(value as { scopes: { org: { tenant: string } } })
+          // @ts-expect-error Exercise malformed contexts supplied by untyped host integrations.
+          server.mcp.transport(value)
         ).rejects.toThrow();
       })
     );
@@ -123,6 +128,7 @@ describe("MCP transport configuration", () => {
     });
     const second = await server.mcp.transport({
       scopes: { org: { tenant: "two" } },
+      subjectId: "user-two",
     });
     expect(first.headers["x-patchsmith-context"]).toMatch(/^[A-Za-z0-9_-]+$/u);
     expect(context(first.headers)).toMatchObject({
@@ -131,6 +137,7 @@ describe("MCP transport configuration", () => {
     });
     expect(context(second.headers)).toMatchObject({
       scopes: { org: { tenant: "two" } },
+      subjectId: "user-two",
     });
   });
 
@@ -141,17 +148,21 @@ describe("MCP transport configuration", () => {
     const { server } = setup({ platformHeaders: headers });
     const awaitedResult1 = await server.mcp.transport({
       scopes: { org: { tenant: "one" } },
+      subjectId: "user-one",
     });
     expect(awaitedResult1.headers.authorization).toBe("Bearer custom-key");
     expect(headers).toHaveBeenCalledOnce();
     const missing = setup({}).server;
     await expect(
-      missing.mcp.transport({ scopes: { org: { tenant: "one" } } })
+      missing.mcp.transport({
+        scopes: { org: { tenant: "one" } },
+        subjectId: "user-one",
+      })
     ).rejects.toThrow("projectKey");
   });
 
   it("bounds the context header before exposing it to a client", async () => {
-    const large = createPatchSmithServer({
+    const large = createPatchsmithServer({
       baseUrl: "https://host.test/api/patchsmith",
       components: {},
       projectKey: "host-key",
@@ -161,7 +172,7 @@ describe("MCP transport configuration", () => {
       Array.from({ length: 30 }, (_, i) => [String(i), "x".repeat(255)])
     );
     await expect(
-      large.mcp.transport({ scopes: { org: tenant } })
+      large.mcp.transport({ scopes: { org: tenant }, subjectId: "user-one" })
     ).rejects.toThrow("header limit");
   });
 });

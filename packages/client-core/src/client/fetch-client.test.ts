@@ -2,10 +2,21 @@ import { asyncFixture } from "@patchsmith/config/testing";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
 import { createSlotStore } from "#store/fetch/slot";
-import { createPatchSmithStore } from "#store/store";
+import { createPatchsmithStore } from "#store/store";
 import { testContract } from "#test-contract";
 
-import { createPatchSmithFetchClient } from "./fetch-client";
+import { createPatchsmithFetchClient } from "./fetch-client";
+
+const identity = {
+  appId: "app",
+  deploymentId: "deployment",
+  expiresAt: Date.now() + 300_000,
+  installationId: "app",
+  projectId: "project",
+  scope: { name: "workspace", value: { id: "workspace" } },
+  subjectId: "principal",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
+};
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -16,17 +27,17 @@ it("shares endpoint responses across roots without sharing local view registrati
   const fetchMock = vi
     .fn<typeof fetch>()
     .mockResolvedValueOnce(Response.json([{ id: "app" }]));
-  const client = createPatchSmithFetchClient({
+  const client = createPatchsmithFetchClient({
     baseUrl: "https://host.test/api",
     fetch: fetchMock,
   });
-  const first = createPatchSmithStore({
+  const first = createPatchsmithStore({
     apps: undefined,
     baseUrl: client.baseUrl,
     client,
     contract: testContract(),
   });
-  const second = createPatchSmithStore({
+  const second = createPatchsmithStore({
     apps: undefined,
     baseUrl: client.baseUrl,
     client,
@@ -48,17 +59,17 @@ it("keeps supplied discovery data local while another root fetches", async () =>
   const fetchMock = vi
     .fn()
     .mockResolvedValue(Response.json([{ id: "remote" }]));
-  const client = createPatchSmithFetchClient({
+  const client = createPatchsmithFetchClient({
     baseUrl: "https://host.test/",
     fetch: fetchMock,
   });
-  const supplied = createPatchSmithStore({
+  const supplied = createPatchsmithStore({
     apps: [{ id: "provided" }],
     baseUrl: client.baseUrl,
     client,
     contract: testContract(),
   });
-  const remote = createPatchSmithStore({
+  const remote = createPatchsmithStore({
     apps: undefined,
     baseUrl: client.baseUrl,
     client,
@@ -77,7 +88,7 @@ it("honors app freshness defaults", async () => {
     .fn<typeof fetch>()
     .mockResolvedValueOnce(Response.json([{ id: "app" }]))
     .mockResolvedValueOnce(Response.json([{ id: "app" }]));
-  const client = createPatchSmithFetchClient({
+  const client = createPatchsmithFetchClient({
     baseUrl: "https://host.test/",
     cache: { apps: { staleTime: 10 }, gcTime: Infinity },
     fetch: fetchMock,
@@ -97,11 +108,11 @@ it("isolates authenticated clients at the same endpoint and clears credentials w
   const secondFetch = vi
     .fn()
     .mockResolvedValue(Response.json([{ id: "second" }]));
-  const first = createPatchSmithFetchClient({
+  const first = createPatchsmithFetchClient({
     baseUrl: "https://host.test/",
     fetch: firstFetch,
   });
-  const second = createPatchSmithFetchClient({
+  const second = createPatchsmithFetchClient({
     baseUrl: "https://host.test/",
     fetch: secondFetch,
   });
@@ -131,6 +142,7 @@ it("deduplicates instance requests and sessions across framework-neutral consume
       if (path.endsWith("/backend/session")) {
         return Response.json({
           expiresAt: Date.now() + 300_000,
+          identity,
           token: "token",
           url: "https://runtime.test/rpc",
         });
@@ -140,7 +152,7 @@ it("deduplicates instance requests and sessions across framework-neutral consume
       });
     })
   );
-  const client = createPatchSmithFetchClient({
+  const client = createPatchsmithFetchClient({
     baseUrl: "https://host.test/",
     fetch: fetchMock,
   });

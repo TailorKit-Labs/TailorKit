@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import {
-  authenticatePatchSmithRequest,
+  authenticatePatchsmithRequest,
   patchSmith,
 } from "#lib/patchsmith-server";
 
 const handle = async ({ request }: { request: Request }) =>
   await patchSmith.handler(request, {
-    authenticate: authenticatePatchSmithRequest,
+    authenticate: authenticatePatchsmithRequest,
   });
 
 export const Route = createFileRoute("/api/patchsmith/$")({

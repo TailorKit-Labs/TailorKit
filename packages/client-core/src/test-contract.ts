@@ -1,12 +1,12 @@
 import { defineContract } from "@patchsmith/core/schema";
 import type {
   EmptyDefinitionMap,
-  PatchSmithContract,
+  PatchsmithContract,
 } from "@patchsmith/core/schema";
 import { z } from "zod";
 
 const viewSchema = z.looseObject({}).optional();
-type TestContract = PatchSmithContract<
+type TestContract = PatchsmithContract<
   EmptyDefinitionMap,
   { readonly "/": typeof viewSchema },
   {

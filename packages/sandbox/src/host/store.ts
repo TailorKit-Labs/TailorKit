@@ -137,6 +137,7 @@ export const createRemoteUiStore = (): RemoteUiStore => {
         case "error": {
           throw new Error(message.data.message);
         }
+        case "callbackResult":
         case "toolRequest":
         case "backendSessionRequest":
         case "ready":

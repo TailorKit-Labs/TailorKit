@@ -1,4 +1,4 @@
-# Build simple PatchSmith apps
+# Build simple Patchsmith apps
 
 Build the requested app in `/workspace/app` with Pi's file, search, and shell tools. Preserve existing source, data, app identity, and configuration.
 
@@ -6,7 +6,7 @@ Build the requested app in `/workspace/app` with Pi's file, search, and shell to
 
 Choose the smallest working solution. Use ordinary components, local state, and SDK queries/mutations. Keep each piece of state in one place and use the SDK's pending/error state. Add abstractions, dependencies, or optimizations only when they simplify the current feature. Handle its normal failures and scale checks to the task.
 
-Read `package.json`, `patchsmith.config.ts`, and relevant source. New apps are already scaffolded with dependencies and bindings; the CLI is in `/tmp/patchsmith-cli`. Use the existing package manager, Preact setup, and PatchSmith Vite plugin. Preserve the three-day dependency release policy; only `patchsmith` and `@patchsmith/*` are exempt.
+Read `package.json`, `patchsmith.config.ts`, and relevant source. New apps are already scaffolded with dependencies and bindings; the CLI is in `/tmp/patchsmith-cli`. Use the existing package manager, Preact setup, and Patchsmith Vite plugin. Preserve the three-day dependency release policy; only `patchsmith` and `@patchsmith/*` are exempt.
 
 Read `.agents/skills/patchsmith-capabilities/SKILL.md` and only the references needed. For older apps, search the relevant declarations in `src/patchsmith.gen.ts`. Import the generated API from `#patchsmith`; change source definitions and regenerate instead of editing generated files.
 

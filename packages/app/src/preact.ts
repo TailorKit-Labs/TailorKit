@@ -57,7 +57,7 @@ const useQueryStore = () => {
   const store = useContext(Context);
   if (!store) {
     throw new Error(
-      "PatchSmith backend hooks require a ClientProvider at the app root."
+      "Patchsmith backend hooks require a ClientProvider at the app root."
     );
   }
   return store;

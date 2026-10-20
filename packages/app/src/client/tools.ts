@@ -18,7 +18,7 @@ declare global {
 }
 
 // oxlint-disable-next-line typescript/no-empty-interface, typescript/no-empty-object-type -- Generated bindings augment this public interface through declaration merging.
-export interface PatchSmithServerTools {}
+export interface PatchsmithServerTools {}
 
 export const executeServerTool = async (
   session: Session,

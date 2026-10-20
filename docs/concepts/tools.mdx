@@ -85,7 +85,7 @@ export interface ToolContext {
 }
 ```
 
-`identity` includes installation, app, project, and deployment IDs, plus an optional `subjectId` and an expiry. `scope` has a name and its scoped values. Apply your permission checks in the handler.
+`identity` includes installation, app, project, and deployment IDs, plus the required authenticated `subjectId` and an expiry. `scope` has a name and its scoped values. Apply your permission checks in the handler.
 
 Tools can be nested in objects, such as `tools.members.read`.
 

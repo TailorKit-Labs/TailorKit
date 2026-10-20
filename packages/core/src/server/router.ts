@@ -12,5 +12,5 @@ export const patchsmithRouter = {
   deployments: deploymentRouter,
 };
 
-export type PatchSmithRouter = typeof patchsmithRouter;
-export type PatchSmithRouterClient = RouterClient<PatchSmithRouter>;
+export type PatchsmithRouter = typeof patchsmithRouter;
+export type PatchsmithRouterClient = RouterClient<PatchsmithRouter>;

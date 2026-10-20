@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "PatchSmith",
+  "name": "Patchsmith",
   "colors": {
     "primary": "#18181B",
     "light": "#FAFAFA",
@@ -84,7 +84,7 @@
       "github": "https://github.com/TailorKit-Labs/tailorkit"
     }
   },
-  "description": "PatchSmith lets users, AI, and partners build extensions inside your SaaS. Those extensions run in a sandbox and use the components, data, and tools you choose to expose.",
+  "description": "Patchsmith lets users, AI, and partners build extensions inside your SaaS. Those extensions run in a sandbox and use the components, data, and tools you choose to expose.",
   "icons": {
     "library": "fontawesome"
   },

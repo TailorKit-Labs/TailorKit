@@ -12,4 +12,4 @@ export const run = async (input: Parameters<typeof tools.todos.toggle>[0]) =>
   await tools.todos.toggle(input);
 ```
 
-Exact contracts: [generated bindings](../../../../../src/patchsmith.gen.ts); search for the tool name in PatchSmithTools or PatchSmithBackendTools.
+Exact contracts: [generated bindings](../../../../../src/patchsmith.gen.ts); search for the tool name in PatchsmithTools or PatchsmithBackendTools.

@@ -1,4 +1,4 @@
-import type { PatchSmithContract } from "@patchsmith/core/schema";
+import type { PatchsmithContract } from "@patchsmith/core/schema";
 import { getViewDepth, isViewAncestor } from "@patchsmith/core/views";
 import type { ActiveView, ViewStatus } from "@patchsmith/core/views";
 import { atom } from "nanostores";
@@ -17,7 +17,7 @@ export interface ViewEntry {
 
 /** Own view state and diagnostics independently of any framework adapter. */
 export const createViewContextStore = (
-  contract: Pick<PatchSmithContract, "views">
+  contract: Pick<PatchsmithContract, "views">
 ) => {
   const entries = new Map<symbol, ViewEntry>();
 
@@ -58,12 +58,12 @@ export const createViewContextStore = (
         );
         if (peers.length > 1) {
           console.warn(
-            `PatchSmith found multiple active views at the same hierarchy depth: ${peers
+            `Patchsmith found multiple active views at the same hierarchy depth: ${peers
               .toReversed()
               .map((entry) => `"${entry.view}"`)
               .join(
                 ", "
-              )}. PatchSmith selected "${selected.view}" by mount order. Only one route at a hierarchy depth should register a view.`
+              )}. Patchsmith selected "${selected.view}" by mount order. Only one route at a hierarchy depth should register a view.`
           );
         }
         state.set({
@@ -109,7 +109,7 @@ export const createViewContextStore = (
     const failed = (cause: unknown) => {
       apply(entry, {
         details: cause,
-        message: `PatchSmith could not validate context for view "${entry.view}".`,
+        message: `Patchsmith could not validate context for view "${entry.view}".`,
       });
     };
     try {

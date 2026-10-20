@@ -1,4 +1,4 @@
-import type { PatchSmithConfig } from "patchsmith/app/config";
+import type { PatchsmithConfig } from "patchsmith/app/config";
 
 const config = {
   host: "{{ hostUrl }}",
@@ -9,6 +9,6 @@ const config = {
 {% endunless %}
   name: {{ appName }},
   slug: {{ appSlug }},
-} satisfies PatchSmithConfig;
+} satisfies PatchsmithConfig;
 
 export default config;

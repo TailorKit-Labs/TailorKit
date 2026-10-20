@@ -1,12 +1,12 @@
 import { createValueMemo, createAppsQuery } from "@patchsmith/client-core";
 import type {
   AppsQueryOptions,
-  PatchSmithApp,
-  PatchSmithStore,
+  PatchsmithApp,
+  PatchsmithStore,
 } from "@patchsmith/client-core";
 import { useMemo } from "react";
 
-import { usePatchSmithContext } from "#components/context";
+import { usePatchsmithContext } from "#components/context";
 
 import { useQueryResult } from "./use-query-result";
 import type { UseQueryResult } from "./use-query-result";
@@ -14,10 +14,10 @@ import type { UseQueryResult } from "./use-query-result";
 export type UseAppsOptions<TScopeNames extends string = string> =
   AppsQueryOptions<TScopeNames>;
 
-export type UseAppsResult = UseQueryResult<PatchSmithApp[]>;
+export type UseAppsResult = UseQueryResult<PatchsmithApp[]>;
 
 export const useAppsStore = (
-  store: PatchSmithStore,
+  store: PatchsmithStore,
   options: UseAppsOptions = {}
 ): UseAppsResult => {
   const memoOptions = useMemo(() => createValueMemo<AppsQueryOptions>(), []);
@@ -39,4 +39,4 @@ export const useAppsStore = (
 };
 
 export const useApps = (options: UseAppsOptions = {}): UseAppsResult =>
-  useAppsStore(usePatchSmithContext("useApps").store, options);
+  useAppsStore(usePatchsmithContext("useApps").store, options);

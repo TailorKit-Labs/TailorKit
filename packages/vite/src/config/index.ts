@@ -1,5 +1,5 @@
 export {
   defineConfig,
-  definePatchSmithConfig,
-  type PatchSmithConfig,
+  definePatchsmithConfig,
+  type PatchsmithConfig,
 } from "./config";

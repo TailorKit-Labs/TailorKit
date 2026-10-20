@@ -7,9 +7,9 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { gzip } from "node:zlib";
 
-import type { PatchSmithUploadManifest } from "@patchsmith/vite/builder";
-import type { LoadedPatchSmithConfig } from "@patchsmith/vite/config/loader";
-import { loadPatchSmithConfig } from "@patchsmith/vite/config/loader";
+import type { PatchsmithUploadManifest } from "@patchsmith/vite/builder";
+import type { LoadedPatchsmithConfig } from "@patchsmith/vite/config/loader";
+import { loadPatchsmithConfig } from "@patchsmith/vite/config/loader";
 import * as v from "valibot";
 import { z } from "zod";
 
@@ -167,8 +167,8 @@ const isNotFoundError = (cause: unknown): boolean =>
 
 const readUploadManifest = async (
   outDir: string,
-  schema: v.GenericSchema<unknown, PatchSmithUploadManifest>
-): Promise<PatchSmithUploadManifest> => {
+  schema: v.GenericSchema<unknown, PatchsmithUploadManifest>
+): Promise<PatchsmithUploadManifest> => {
   const manifestPath = path.join(outDir, "patchsmith-upload.json");
   return v.parse(schema, JSON.parse(await readFile(manifestPath, "utf-8")));
 };
@@ -229,7 +229,7 @@ const resolveTsconfig = (root: string): string | undefined => {
 };
 
 const typecheckAppEntries = async (
-  loaded: LoadedPatchSmithConfig
+  loaded: LoadedPatchsmithConfig
 ): Promise<TypecheckFailure | undefined> => {
   const baseTsconfig = resolveTsconfig(loaded.root);
   if (
@@ -315,7 +315,7 @@ const typecheckAppEntries = async (
 export const runDeploy = async (
   options: DeployOptions
 ): Promise<DeployResult> => {
-  const loaded = await loadPatchSmithConfig(options.configPath, options.cwd);
+  const loaded = await loadPatchsmithConfig(options.configPath, options.cwd);
   const agent = getAgentAuth();
   let appId = options.appId ?? loaded.config.appId ?? agent?.appId;
   let createdApp = false;

@@ -30,7 +30,7 @@
     "changeset": "vp exec changeset",
     "release:status": "vp exec changeset status --verbose",
     "release:version": "vp run release:check && vp exec changeset version && vp run release:check",
-    "release:build": "turbo run build --filter=patchsmith --filter=@patchsmith/app --filter=@patchsmith/app-db --filter=@patchsmith/vite --filter=@patchsmith/cli --filter=@patchsmith/client-core --filter=@patchsmith/client-platform --filter=@patchsmith/core --filter=@patchsmith/react --filter=@patchsmith/sandbox",
+    "release:build": "turbo run build --filter=patchsmith --filter=@patchsmith/ai-sdk --filter=@patchsmith/app --filter=@patchsmith/app-db --filter=@patchsmith/vite --filter=@patchsmith/cli --filter=@patchsmith/client-core --filter=@patchsmith/client-platform --filter=@patchsmith/core --filter=@patchsmith/react --filter=@patchsmith/sandbox",
     "release:publish": "vp run release:check && vp run release:build && vp run release:check && vp exec changeset publish",
     "patchsmith": "vp -C packages/cli build && node ./packages/cli/dist/index.js",
     "playground:dev": "vp run playground:generate && vp -C playground/apps/todo run build && vp -C playground/tanstack-start run dev",
@@ -55,6 +55,9 @@
     "turbo": "2.11.7",
     "ultracite": "8.0.0",
     "vite-plus": "catalog:"
+  },
+  "engines": {
+    "node": ">=24"
   },
   "packageManager": "pnpm@12.11.2",
   "sherif": {

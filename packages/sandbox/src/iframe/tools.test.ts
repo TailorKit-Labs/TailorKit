@@ -2,6 +2,17 @@ import { expect, it, vi } from "vite-plus/test";
 
 import { createIframeTools } from "./tools";
 
+const identity = {
+  appId: "app",
+  deploymentId: "deployment",
+  expiresAt: Date.now() + 300_000,
+  installationId: "app",
+  projectId: "project",
+  scope: { name: "workspace", value: { id: "workspace" } },
+  subjectId: "principal",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
+};
+
 const require = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
@@ -26,6 +37,7 @@ it("correlates client calls and server credentials and rejects pending calls on 
     id: second.id,
     output: {
       expiresAt: 1000,
+      identity,
       token: "tool-token",
       url: "https://product.test/tools",
     },

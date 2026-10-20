@@ -5,7 +5,7 @@ import { assertSupportedPreactVersion } from "./preact-version";
 describe("supported Preact versions", () => {
   it.each(["10.0.0", "10.29.8", "9.5.0"])("rejects Preact %s", (version) => {
     expect(() => assertSupportedPreactVersion(version)).toThrow(
-      `PatchSmith requires Preact 11.0.0 or newer, but found ${version}.`
+      `Patchsmith requires Preact 11.0.0 or newer, but found ${version}.`
     );
   });
 

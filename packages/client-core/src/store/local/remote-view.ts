@@ -86,8 +86,13 @@ export const createRemoteViewStore = (
       }
       reset();
     },
-    dispatch: (payload: HostToIframePayload) => {
-      current?.host?.dispatch(payload);
+    dispatch: async (
+      payload: HostToIframePayload
+    ): ReturnType<IframeUiHost["dispatch"]> => {
+      if (!current?.host) {
+        throw new Error("Patchsmith remote view is not mounted.");
+      }
+      return await current.host.dispatch(payload);
     },
     mount: ({
       appUrl,
@@ -111,7 +116,7 @@ export const createRemoteViewStore = (
         if (current !== run || run.stopped) {
           return;
         }
-        console.error("PatchSmith remote app failed", error);
+        console.error("Patchsmith remote app failed", error);
         state.set({ error, generation, status: "error" });
       };
       try {
@@ -172,16 +177,16 @@ export const createRemoteElementProps = (
 ): RemoteProps => {
   const props: RemoteProps = { ...node.props };
   for (const binding of node.callbacks ?? []) {
-    props[binding.callback] = (...args: unknown[]) => {
-      dispatch({
+    props[binding.callback] = async (...args: unknown[]) =>
+      await dispatch({
         data: {
           args: args.slice(0, binding.inputCount),
           event: binding.event,
+          id: crypto.randomUUID(),
           nodeId: node.id,
         },
         type: "dispatchCallback",
       });
-    };
   }
   return props;
 };

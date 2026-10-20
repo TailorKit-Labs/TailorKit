@@ -7,9 +7,9 @@ import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { ReactNode } from "react";
 import { z } from "zod";
 
-import type { PatchSmithInstance, UseAppsResult, UseViewsResult } from "#index";
+import type { PatchsmithInstance, UseAppsResult, UseViewsResult } from "#index";
 import { components, createClient } from "#patchsmith";
-import type { PatchSmithApp } from "#patchsmith";
+import type { PatchsmithApp } from "#patchsmith";
 
 const requireValue = <T,>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -83,7 +83,7 @@ const contract = defineContract({
 const patchsmith = createClient({ baseUrl: "http://runtime.test", contract });
 patchsmith.clearCache();
 const {
-  Provider: PatchSmithProvider,
+  Provider: PatchsmithProvider,
   RenderSlot,
   useApps,
   useViews,
@@ -91,20 +91,20 @@ const {
 } = patchsmith;
 const app = { clientPath: "/apps/todo.js", id: "todo" };
 
-<PatchSmithProvider>
+<PatchsmithProvider>
   <span>Content</span>
-</PatchSmithProvider>;
-<PatchSmithProvider apps={[app]} />;
+</PatchsmithProvider>;
+<PatchsmithProvider apps={[app]} />;
 // @ts-expect-error the provider does not accept a subject cache key
-<PatchSmithProvider subjectId="user" />;
+<PatchsmithProvider subjectId="user" />;
 // @ts-expect-error the provider captures its client internally
-<PatchSmithProvider client={patchsmith} />;
+<PatchsmithProvider client={patchsmith} />;
 // @ts-expect-error the provider only accepts children and apps
-<PatchSmithProvider className="wrapper" />;
+<PatchsmithProvider className="wrapper" />;
 // @ts-expect-error the provider does not support a render prop
-<PatchSmithProvider render={<div />} />;
+<PatchsmithProvider render={<div />} />;
 // @ts-expect-error provided apps must have a string id
-<PatchSmithProvider apps={[{ id: 123 }]} />;
+<PatchsmithProvider apps={[{ id: 123 }]} />;
 
 const childrenContract = defineContract({
   components: {
@@ -162,6 +162,7 @@ const callbackContract = defineContract({
     Button: {
       callbacks: {
         onClick: {},
+        onValidate: { output: typedSchema<boolean>() },
       },
       children: true,
       fields: typedSchema<{ variant?: "default" | "secondary" }>(),
@@ -173,9 +174,11 @@ const callbackContract = defineContract({
 components(callbackContract, {
   Button: ({ props }) => {
     const variant: "default" | "secondary" | undefined = props.variant;
-    const onClick: (() => void) | undefined = props.onClick;
+    const onClick: (() => Promise<void>) | undefined = props.onClick;
+    const onValidate: () => Promise<boolean> = props.onValidate;
     void variant;
     void onClick;
+    void onValidate;
     return null;
   },
 });
@@ -309,7 +312,7 @@ if ("key" in selectedItem) {
 createClient({ baseUrl: "http://runtime.test" });
 void requiredKey;
 void requiredMetadata;
-declare const optionalClient: PatchSmithInstance<
+declare const optionalClient: PatchsmithInstance<
   Record<string, never>,
   { optional: { views: readonly ["/"]; multiple?: true } }
 >;
@@ -328,7 +331,7 @@ void instanceKey;
 void instanceData;
 // @ts-expect-error slots must be declared by this contract
 useViews({ slot: "missing" });
-const instanceApp: PatchSmithApp | undefined = instances.data?.[0]?.app;
+const instanceApp: PatchsmithApp | undefined = instances.data?.[0]?.app;
 void instanceApp;
 // @ts-expect-error app selection is no longer accepted
 useViews({ app, slot: "panel" });

@@ -19,6 +19,7 @@ export default defineConfig({
     rolldownOptions: {
       external: [],
     },
+    target: "node22",
   },
   plugins: [iframeRuntimePlugin()],
 });

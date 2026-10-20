@@ -88,7 +88,7 @@ it("builds the app's Vite config with custom plugins, aliases, constants and out
   }
 });
 
-it("requires the PatchSmith plugin when deploying", async () => {
+it("requires the Patchsmith plugin when deploying", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "patchsmith-missing-plugin-"));
   try {
     await linkTestDependencies(root);

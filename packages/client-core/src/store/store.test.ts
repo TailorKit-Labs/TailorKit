@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { createPatchSmithFetchClient } from "#client/fetch-client";
+import { createPatchsmithFetchClient } from "#client/fetch-client";
 import { toBaseUrl } from "#client/url";
 import { testContract } from "#test-contract";
-import type { PatchSmithApp } from "#types";
+import type { PatchsmithApp } from "#types";
 
-import { createPatchSmithStore } from "./store";
+import { createPatchsmithStore } from "./store";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -43,19 +43,19 @@ describe("client stores", () => {
   ])(
     "rejects the mismatched endpoint %s before creating fetch stores",
     (baseUrl) => {
-      const client = createPatchSmithFetchClient({
+      const client = createPatchsmithFetchClient({
         baseUrl: "https://host.test/api",
       });
       const apps = vi.spyOn(client, "apps");
       expect(() =>
-        createPatchSmithStore({
+        createPatchsmithStore({
           apps: undefined,
           baseUrl,
           client,
           contract: testContract(),
         })
       ).toThrow(
-        "createPatchSmithStore: baseUrl does not match the supplied fetch client."
+        "createPatchsmithStore: baseUrl does not match the supplied fetch client."
       );
       expect(apps).not.toHaveBeenCalled();
     }
@@ -64,10 +64,10 @@ describe("client stores", () => {
   it.each(["https://HOST.test:443/api", new URL("https://host.test/api/")])(
     "accepts the equivalent normalized endpoint %s",
     (baseUrl) => {
-      const client = createPatchSmithFetchClient({
+      const client = createPatchsmithFetchClient({
         baseUrl: "https://host.test/api/",
       });
-      const store = createPatchSmithStore({
+      const store = createPatchsmithStore({
         apps: undefined,
         baseUrl,
         client,
@@ -82,7 +82,7 @@ describe("client stores", () => {
     const response = deferredResponse();
     const fetchMock = vi.fn<typeof fetch>(async () => await response.promise);
     vi.stubGlobal("fetch", fetchMock);
-    const store = createPatchSmithStore({
+    const store = createPatchsmithStore({
       baseUrl: "https://host.test/api/patchsmith",
       contract: testContract(),
     });
@@ -125,7 +125,7 @@ describe("client stores", () => {
         .mockReturnValueOnce(old.promise)
         .mockReturnValueOnce(current.promise)
     );
-    const store = createPatchSmithStore({
+    const store = createPatchsmithStore({
       baseUrl: "https://host.test/",
       contract: testContract(),
     });
@@ -147,12 +147,12 @@ describe("client stores", () => {
       "fetch",
       vi.fn(async () => await response.promise)
     );
-    const store = createPatchSmithStore({
+    const store = createPatchsmithStore({
       baseUrl: "https://host.test/",
       contract: testContract(),
     });
     const pending = store.fetchApps();
-    const apps: PatchSmithApp[] = [{ id: "provided" }];
+    const apps: PatchsmithApp[] = [{ id: "provided" }];
     store.setProvidedApps(apps);
     response.resolve(Response.json([{ id: "remote" }]));
     await pending;
@@ -166,7 +166,7 @@ describe("client stores", () => {
       .fn()
       .mockResolvedValue(Response.json([{ id: "remote" }]));
     vi.stubGlobal("fetch", fetchMock);
-    const store = createPatchSmithStore({
+    const store = createPatchsmithStore({
       apps: [{ id: "provided" }],
       baseUrl: "https://host.test/",
       contract: testContract(),
@@ -194,11 +194,11 @@ describe("client stores", () => {
       .mockRejectedValueOnce("offline")
       .mockResolvedValueOnce(Response.json([{ id: "remote" }]));
     vi.stubGlobal("fetch", fetchMock);
-    const first = createPatchSmithStore({
+    const first = createPatchsmithStore({
       baseUrl: "https://host.test/",
       contract: testContract(),
     });
-    const second = createPatchSmithStore({
+    const second = createPatchsmithStore({
       baseUrl: "https://other.test/",
       contract: testContract(),
     });

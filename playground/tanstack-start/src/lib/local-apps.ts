@@ -1,6 +1,6 @@
-import type { PatchSmithApp } from "patchsmith/react";
+import type { PatchsmithApp } from "patchsmith/react";
 
-export const localPlaygroundApps: PatchSmithApp[] = [
+export const localPlaygroundApps: PatchsmithApp[] = [
   {
     clientPath: "/api/playground/todo-client",
     description: "A small team checklist for the current workspace.",

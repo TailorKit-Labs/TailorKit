@@ -11,8 +11,8 @@ import { tmpdir } from "node:os";
 import type * as nodeOs from "node:os";
 import path from "node:path";
 
-import { createPatchSmithClient } from "@patchsmith/core/server";
-import { loadPatchSmithConfig } from "@patchsmith/vite/config/loader";
+import { createPatchsmithClient } from "@patchsmith/core/server";
+import { loadPatchsmithConfig } from "@patchsmith/vite/config/loader";
 import { SignJWT } from "jose";
 import {
   afterEach,
@@ -25,11 +25,11 @@ import {
 import { z } from "zod";
 
 vi.mock("@patchsmith/vite/config/loader", () => ({
-  loadPatchSmithConfig: vi.fn(),
+  loadPatchsmithConfig: vi.fn(),
 }));
 
 vi.mock("@patchsmith/core/server", () => ({
-  createPatchSmithClient: vi.fn(),
+  createPatchsmithClient: vi.fn(),
 }));
 
 const temporaryDirectories: string[] = [];
@@ -107,24 +107,6 @@ describe("auth store", () => {
     await expect(getDeployToken("https://example.com")).rejects.toThrow();
   });
 
-  it("keeps legacy tokens readable while discarding their unnamed scope", async () => {
-    const homeDirectory = await createTemporaryHome();
-    await writeAuthStoreFixture(homeDirectory, {
-      hosts: {
-        "https://example.com": {
-          deployToken: "deploy-token",
-          scope: { userId: "user-1" },
-        },
-      },
-    });
-    const { getDeployToken } = await loadAuthModule(homeDirectory);
-
-    await expect(getDeployToken("https://example.com")).resolves.toEqual({
-      deployToken: "deploy-token",
-      scope: undefined,
-    });
-  });
-
   it("preserves unknown top-level auth.json keys when saving a host token", async () => {
     const homeDirectory = await createTemporaryHome();
     const filePath = await writeAuthStoreFixture(homeDirectory, {
@@ -132,6 +114,7 @@ describe("auth store", () => {
       hosts: {
         "https://existing.example.com": {
           deployToken: "existing-token",
+          scope: { name: "user", value: { userId: "user-1" } },
         },
       },
     });
@@ -148,6 +131,7 @@ describe("auth store", () => {
         hosts: {
           "https://existing.example.com": {
             deployToken: "existing-token",
+            scope: { name: "user", value: { userId: "user-1" } },
           },
           "https://new.example.com": {
             deployToken: "new-token",
@@ -188,7 +172,7 @@ describe("auth store", () => {
 
   it("resolves the host URL from patchsmith.config.ts", async () => {
     const homeDirectory = await createTemporaryHome();
-    vi.mocked(loadPatchSmithConfig).mockResolvedValue({
+    vi.mocked(loadPatchsmithConfig).mockResolvedValue({
       config: {
         host: "https://example.com///",
         name: "Test App",
@@ -202,7 +186,7 @@ describe("auth store", () => {
     await expect(resolveHostUrl({ cwd: homeDirectory })).resolves.toBe(
       "https://example.com"
     );
-    expect(loadPatchSmithConfig).toHaveBeenCalledWith(undefined, homeDirectory);
+    expect(loadPatchsmithConfig).toHaveBeenCalledWith(undefined, homeDirectory);
   });
 
   it("creates a browser approval URL from the host API URL", async () => {
@@ -230,7 +214,7 @@ describe("auth store", () => {
         host: "https://example.com/api/patchsmith///?unused=true#fragment",
       })
     ).resolves.toBe("https://example.com/api/patchsmith");
-    expect(loadPatchSmithConfig).not.toHaveBeenCalled();
+    expect(loadPatchsmithConfig).not.toHaveBeenCalled();
   });
 
   it.each(["", "localhost:3000", "ftp://example.com"])(
@@ -242,7 +226,7 @@ describe("auth store", () => {
       await expect(
         resolveHostUrl({ cwd: homeDirectory, host })
       ).rejects.toThrow("host URL");
-      expect(loadPatchSmithConfig).not.toHaveBeenCalled();
+      expect(loadPatchsmithConfig).not.toHaveBeenCalled();
     }
   );
 
@@ -264,11 +248,11 @@ describe("auth store", () => {
     const verifyToken = vi.fn().mockResolvedValue({ scope });
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
-    vi.mocked(createPatchSmithClient).mockReturnValue(
+    vi.mocked(createPatchsmithClient).mockReturnValue(
       /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
       {
         cliAuth: { poll, start, verifyToken },
-      } as unknown as ReturnType<typeof createPatchSmithClient>
+      } as unknown as ReturnType<typeof createPatchsmithClient>
       /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
     );
     const { runLogin, runWhoami, runLogout, getDeployToken } =
@@ -284,7 +268,7 @@ describe("auth store", () => {
     );
     expect(poll).toHaveBeenCalledWith({ deviceCode: "device-code" });
     await expect(runWhoami(options)).resolves.toEqual({ hostUrl, scope });
-    expect(createPatchSmithClient).toHaveBeenLastCalledWith({
+    expect(createPatchsmithClient).toHaveBeenLastCalledWith({
       headers: { authorization: "Bearer deploy-token" },
       url: hostUrl,
     });
@@ -293,12 +277,12 @@ describe("auth store", () => {
       removed: true,
     });
     await expect(getDeployToken(hostUrl)).resolves.toBeUndefined();
-    expect(loadPatchSmithConfig).not.toHaveBeenCalled();
+    expect(loadPatchsmithConfig).not.toHaveBeenCalled();
   });
 
   it("identifies missing host credentials as not logged in", async () => {
     const homeDirectory = await createTemporaryHome();
-    vi.mocked(loadPatchSmithConfig).mockResolvedValue({
+    vi.mocked(loadPatchsmithConfig).mockResolvedValue({
       config: {
         host: "https://example.com",
         name: "Test App",
@@ -316,7 +300,7 @@ describe("auth store", () => {
 
   it("treats unauthorized token verification as not logged in", async () => {
     const homeDirectory = await createTemporaryHome();
-    vi.mocked(loadPatchSmithConfig).mockResolvedValue({
+    vi.mocked(loadPatchsmithConfig).mockResolvedValue({
       config: {
         host: "https://example.com",
         name: "Test App",
@@ -327,7 +311,7 @@ describe("auth store", () => {
     });
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
-    vi.mocked(createPatchSmithClient).mockReturnValue(
+    vi.mocked(createPatchsmithClient).mockReturnValue(
       /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
       {
         cliAuth: {
@@ -336,13 +320,14 @@ describe("auth store", () => {
             error: { code: "UNAUTHORIZED", message: "token expired" },
           }),
         },
-      } as unknown as ReturnType<typeof createPatchSmithClient>
+      } as unknown as ReturnType<typeof createPatchsmithClient>
       /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
     );
     await writeAuthStoreFixture(homeDirectory, {
       hosts: {
         "https://example.com": {
           deployToken: "expired-token",
+          scope: { name: "user", value: { userId: "user-1" } },
         },
       },
     });
@@ -381,7 +366,7 @@ describe("auth store", () => {
     { error: null, label: "null rejection", rejected: true },
   ])("preserves $label unchanged", async ({ error, rejected }) => {
     const homeDirectory = await createTemporaryHome();
-    vi.mocked(loadPatchSmithConfig).mockResolvedValue({
+    vi.mocked(loadPatchsmithConfig).mockResolvedValue({
       config: {
         host: "https://example.com",
         name: "Test App",
@@ -398,15 +383,20 @@ describe("auth store", () => {
     }
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
-    vi.mocked(createPatchSmithClient).mockReturnValue(
+    vi.mocked(createPatchsmithClient).mockReturnValue(
       /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
       {
         cliAuth: { verifyToken },
-      } as unknown as ReturnType<typeof createPatchSmithClient>
+      } as unknown as ReturnType<typeof createPatchsmithClient>
       /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
     );
     const fixture = {
-      hosts: { "https://example.com": { deployToken: "deploy-token" } },
+      hosts: {
+        "https://example.com": {
+          deployToken: "deploy-token",
+          scope: { name: "user", value: { userId: "user-1" } },
+        },
+      },
     };
     const filePath = await writeAuthStoreFixture(homeDirectory, fixture);
     const { runWhoami } = await loadAuthModule(homeDirectory);
@@ -419,7 +409,7 @@ describe("auth store", () => {
 
   it("returns the verified named scope", async () => {
     const homeDirectory = await createTemporaryHome();
-    vi.mocked(loadPatchSmithConfig).mockResolvedValue({
+    vi.mocked(loadPatchsmithConfig).mockResolvedValue({
       config: {
         host: "https://example.com",
         name: "Test App",
@@ -430,7 +420,7 @@ describe("auth store", () => {
     });
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
-    vi.mocked(createPatchSmithClient).mockReturnValue(
+    vi.mocked(createPatchsmithClient).mockReturnValue(
       /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
       {
         cliAuth: {
@@ -443,11 +433,16 @@ describe("auth store", () => {
             },
           }),
         },
-      } as unknown as ReturnType<typeof createPatchSmithClient>
+      } as unknown as ReturnType<typeof createPatchsmithClient>
       /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
     );
     await writeAuthStoreFixture(homeDirectory, {
-      hosts: { "https://example.com": { deployToken: "deploy-token" } },
+      hosts: {
+        "https://example.com": {
+          deployToken: "deploy-token",
+          scope: { name: "user", value: { userId: "user-1" } },
+        },
+      },
     });
     const { runWhoami } = await loadAuthModule(homeDirectory);
 
@@ -462,7 +457,7 @@ describe("auth store", () => {
 
   it("rejects a legacy verification response before changing stored auth", async () => {
     const homeDirectory = await createTemporaryHome();
-    vi.mocked(loadPatchSmithConfig).mockResolvedValue({
+    vi.mocked(loadPatchsmithConfig).mockResolvedValue({
       config: {
         host: "https://example.com",
         name: "Test App",
@@ -473,7 +468,7 @@ describe("auth store", () => {
     });
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
-    vi.mocked(createPatchSmithClient).mockReturnValue(
+    vi.mocked(createPatchsmithClient).mockReturnValue(
       /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. */
       {
         cliAuth: {
@@ -481,11 +476,16 @@ describe("auth store", () => {
             .fn()
             .mockResolvedValue({ data: { scopeId: "legacy-scope" } }),
         },
-      } as unknown as ReturnType<typeof createPatchSmithClient>
+      } as unknown as ReturnType<typeof createPatchsmithClient>
       /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
     );
     const filePath = await writeAuthStoreFixture(homeDirectory, {
-      hosts: { "https://example.com": { deployToken: "deploy-token" } },
+      hosts: {
+        "https://example.com": {
+          deployToken: "deploy-token",
+          scope: { name: "user", value: { userId: "user-1" } },
+        },
+      },
     });
     const { runWhoami } = await loadAuthModule(homeDirectory);
 
@@ -494,7 +494,12 @@ describe("auth store", () => {
     );
     await expect(readFile(filePath, "utf-8").then(JSON.parse)).resolves.toEqual(
       {
-        hosts: { "https://example.com": { deployToken: "deploy-token" } },
+        hosts: {
+          "https://example.com": {
+            deployToken: "deploy-token",
+            scope: { name: "user", value: { userId: "user-1" } },
+          },
+        },
       }
     );
   });
@@ -517,7 +522,12 @@ describe("auth store", () => {
       .sign(new TextEncoder().encode("test-only-signing-secret"));
     vi.stubEnv("PATCHSMITH_AGENT_TOKEN", jwt);
     const stored = await writeAuthStoreFixture(home, {
-      hosts: { "http://localhost:1": { deployToken: "existing-token" } },
+      hosts: {
+        "http://localhost:1": {
+          deployToken: "existing-token",
+          scope: { name: "user", value: { userId: "user-1" } },
+        },
+      },
     });
     const original = await readFile(stored, "utf-8");
     const { runLogin, runWhoami, runLogout } = await loadAuthModule(home);

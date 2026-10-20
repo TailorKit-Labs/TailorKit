@@ -2,7 +2,7 @@ import type { Sandbox } from "@vercel/sandbox";
 
 type NativeSession = ReturnType<Sandbox["currentSession"]>;
 
-/** The sandbox operations used by setup and verification, injectable in tests. */
+/** The sandbox operations used by setup and deployment, injectable in tests. */
 export interface AppSandboxSession {
   readFileToBuffer: NativeSession["readFileToBuffer"];
   writeFiles: NativeSession["writeFiles"];

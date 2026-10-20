@@ -1,11 +1,11 @@
 import type { ViewInstance } from "@patchsmith/app/client";
-import type { PatchSmithContract } from "@patchsmith/core/schema";
+import type { PatchsmithContract } from "@patchsmith/core/schema";
 import type { ActiveView } from "@patchsmith/core/views";
 
-import type { PatchSmithFetchClient } from "#client/fetch-client";
+import type { PatchsmithFetchClient } from "#client/fetch-client";
 import { resolveSlotView } from "#client/slot-view";
 import { createSnapshotStore } from "#store/snapshot-store";
-import type { PatchSmithApp } from "#types";
+import type { PatchsmithApp } from "#types";
 
 import type { FetchCacheOptions, FetchOptions, FetchSnapshot } from "./cache";
 
@@ -16,20 +16,20 @@ const require = <T>(value: T | null | undefined): T => {
   return value;
 };
 
-const contractIds = new WeakMap<PatchSmithContract, number>();
+const contractIds = new WeakMap<PatchsmithContract, number>();
 let nextContractId = 0;
 
 interface SingleSlotItem {
-  app: PatchSmithApp;
+  app: PatchsmithApp;
 }
 
 export type SlotItem<TMultiple extends boolean = boolean> =
   TMultiple extends true
-    ? ViewInstance & { app: PatchSmithApp }
+    ? ViewInstance & { app: PatchsmithApp }
     : SingleSlotItem;
 
 export interface SlotStoreOptions extends FetchCacheOptions {
-  apps: PatchSmithApp[];
+  apps: PatchsmithApp[];
   slot: string;
   activeView: ActiveView | null;
   appsStatus?: FetchSnapshot<unknown>["status"];
@@ -50,8 +50,8 @@ interface Result {
 
 /** Match all app contexts before authorizing any app or sending instance requests. */
 export const createSlotStore = (
-  client: PatchSmithFetchClient,
-  contract: PatchSmithContract,
+  client: PatchsmithFetchClient,
+  contract: PatchsmithContract,
   options: SlotStoreOptions
 ) => {
   const {

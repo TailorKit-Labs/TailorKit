@@ -45,10 +45,10 @@ export {
   jsonSchemaSerializer,
 } from "./shared";
 export {
-  createPatchSmithSchema,
-  type PatchSmith,
-  type PatchSmithSchema,
+  createPatchsmithSchema,
+  type Patchsmith,
+  type PatchsmithSchema,
 } from "./schema";
-export type { PatchSmithTheme } from "#primitives/theme";
+export type { PatchsmithTheme } from "#primitives/theme";
 export { defineContract } from "./contract";
-export type { PatchSmithContract } from "./contract";
+export type { PatchsmithContract } from "./contract";

@@ -12,28 +12,28 @@ import type {
   ContextDefinitions,
   SlotDefinitions,
   SchemaSerializer,
-  PatchSmithSchema,
+  PatchsmithSchema,
 } from "#schema/index";
 import type { EmptyDefinitionMap } from "#schema/shared";
 
-import type { PatchSmithRouter } from "./router";
+import type { PatchsmithRouter } from "./router";
 
 type HeaderInput = ConstructorParameters<typeof Headers>[0];
 
-export interface PatchSmithPlatformOptions {
+export interface PatchsmithPlatformOptions {
   baseUrl?: PlatformClientOptions["baseUrl"];
   fetch?: typeof fetch;
   headers?: HeaderInput | (() => HeaderInput | Promise<HeaderInput>);
 }
 
-export interface PatchSmithServerBaseOptions<
+export interface PatchsmithServerBaseOptions<
   TScopes extends Record<string, StandardSchemaV1> = Record<
     string,
     StandardSchemaV1
   >,
 > {
   /**
-   * PatchSmith project key. The host application must read its
+   * Patchsmith project key. The host application must read its
    * `PATCHSMITH_PROJECT_KEY` environment variable and pass the value here.
    */
   projectKey?: string;
@@ -47,7 +47,7 @@ export interface PatchSmithServerBaseOptions<
    */
   baseUrl: string | URL;
   /**
-   * Configuration for browser-based PatchSmith CLI authentication.
+   * Configuration for browser-based Patchsmith CLI authentication.
    */
   cliAuth?: {
     /**
@@ -60,7 +60,7 @@ export interface PatchSmithServerBaseOptions<
     signInPath: `/${string}`;
   };
   /**
-   * Internal PatchSmith implementation options.
+   * Internal Patchsmith implementation options.
    *
    * These options are not covered by semantic versioning and may change or
    * break at any time. Avoid using them in application code. If you need one of
@@ -70,13 +70,13 @@ export interface PatchSmithServerBaseOptions<
    * @internal
    */
   $internal?: {
-    platformBaseUrl?: PatchSmithPlatformOptions["baseUrl"];
+    platformBaseUrl?: PatchsmithPlatformOptions["baseUrl"];
     platformFetch?: typeof fetch;
-    platformHeaders?: PatchSmithPlatformOptions["headers"];
+    platformHeaders?: PatchsmithPlatformOptions["headers"];
   };
 }
 
-export interface PatchSmithServerSchemaOptions<
+export interface PatchsmithServerSchemaOptions<
   TComponents extends ComponentDefinitions,
   TViews extends ContextDefinitions,
   TTools extends ContractTools = EmptyDefinitionMap,
@@ -87,50 +87,50 @@ export interface PatchSmithServerSchemaOptions<
   slots?: SlotDefinitions<keyof TViews & string>;
 }
 
-export interface PatchSmithServerInputOptions extends PatchSmithServerBaseOptions {
+export interface PatchsmithServerInputOptions extends PatchsmithServerBaseOptions {
   slots?: SlotDefinitions;
   tools?: ContractTools;
   components: ComponentDefinitions;
   views?: ContextDefinitions;
 }
 
-export type InferPatchSmithServerComponents<
-  TOptions extends PatchSmithServerInputOptions,
+export type InferPatchsmithServerComponents<
+  TOptions extends PatchsmithServerInputOptions,
 > = TOptions["components"];
 
-export type InferPatchSmithServerViews<
-  TOptions extends PatchSmithServerInputOptions,
+export type InferPatchsmithServerViews<
+  TOptions extends PatchsmithServerInputOptions,
 > = TOptions extends { views: infer TViews } ? TViews : EmptyDefinitionMap;
 
-/** @deprecated Use InferPatchSmithServerViews instead. */
-export type InferPatchSmithServerContexts<
-  TOptions extends PatchSmithServerInputOptions,
-> = InferPatchSmithServerViews<TOptions>;
+/** @deprecated Use InferPatchsmithServerViews instead. */
+export type InferPatchsmithServerContexts<
+  TOptions extends PatchsmithServerInputOptions,
+> = InferPatchsmithServerViews<TOptions>;
 
-export type InferPatchSmithServerTools<
-  TOptions extends PatchSmithServerInputOptions,
+export type InferPatchsmithServerTools<
+  TOptions extends PatchsmithServerInputOptions,
 > = TOptions extends { tools: infer TTools } ? TTools : EmptyDefinitionMap;
 
-export type PatchSmithJsonValue =
+export type PatchsmithJsonValue =
   | string
   | number
   | boolean
   | null
-  | PatchSmithJsonValue[]
-  | { [key: string]: PatchSmithJsonValue };
+  | PatchsmithJsonValue[]
+  | { [key: string]: PatchsmithJsonValue };
 
 /** A JSON object that identifies one named app scope. */
-export type PatchSmithScope = Record<string, PatchSmithJsonValue>;
+export type PatchsmithScope = Record<string, PatchsmithJsonValue>;
 
-export interface PatchSmithNamedScope {
+export interface PatchsmithNamedScope {
   name: string;
-  value: PatchSmithScope;
+  value: PatchsmithScope;
 }
 
-export type PatchSmithScopes = Record<string, PatchSmithScope>;
+export type PatchsmithScopes = Record<string, PatchsmithScope>;
 
 /** Install a deployed app into exactly one scope declared by the host. */
-export interface PatchSmithInstallAppOptions<TScopes = PatchSmithScopes> {
+export interface PatchsmithInstallAppOptions<TScopes = PatchsmithScopes> {
   /** Public app ID or UUID of a deployed app in this project. */
   appId: string;
   scope: {
@@ -141,10 +141,10 @@ export interface PatchSmithInstallAppOptions<TScopes = PatchSmithScopes> {
   }[keyof TScopes & string];
 }
 
-export type PatchSmithInstalledApp = AppsInstallResponses[200];
+export type PatchsmithInstalledApp = AppsInstallResponses[200];
 
-export type InferPatchSmithServerScopes<
-  TOptions extends PatchSmithServerInputOptions,
+export type InferPatchsmithServerScopes<
+  TOptions extends PatchsmithServerInputOptions,
 > = TOptions extends {
   scopes: infer TSchemas extends Record<string, StandardSchemaV1>;
 }
@@ -163,7 +163,7 @@ export type InferPatchSmithServerScopes<
     }[keyof TSchemas]
   : EmptyDefinitionMap;
 
-export interface PatchSmithServerOptions<
+export interface PatchsmithServerOptions<
   TComponents extends ComponentDefinitions,
   TViews extends ContextDefinitions,
   TTools extends ContractTools = EmptyDefinitionMap,
@@ -173,50 +173,51 @@ export interface PatchSmithServerOptions<
   >,
 >
   extends
-    PatchSmithServerBaseOptions<TScopes>,
-    PatchSmithServerSchemaOptions<TComponents, TViews, TTools> {}
+    PatchsmithServerBaseOptions<TScopes>,
+    PatchsmithServerSchemaOptions<TComponents, TViews, TTools> {}
 
-export interface PatchSmithHostContext<TScopes = PatchSmithScopes> {
+export interface PatchsmithHostContext<TScopes = PatchsmithScopes> {
   scopes: TScopes;
-  subjectId?: string;
+  /** Stable identifier of the authenticated product user or service principal. */
+  subjectId: string;
 }
-export interface PatchSmithHandlerOptions<TScopes = PatchSmithScopes> {
+export interface PatchsmithHandlerOptions<TScopes = PatchsmithScopes> {
   authenticate: (ctx: {
     request: Request;
   }) =>
-    | PatchSmithHostContext<TScopes>
+    | PatchsmithHostContext<TScopes>
     | null
-    | Promise<PatchSmithHostContext<TScopes> | null>;
+    | Promise<PatchsmithHostContext<TScopes> | null>;
 }
-export type PatchSmithHandlerContext<TScopes = PatchSmithScopes> =
-  PatchSmithHostContext<TScopes>;
+export type PatchsmithHandlerContext<TScopes = PatchsmithScopes> =
+  PatchsmithHostContext<TScopes>;
 
-export interface PatchSmithServer<
+export interface PatchsmithServer<
   TComponents extends ComponentDefinitions,
   TViews extends ContextDefinitions,
   TTools extends ContractTools = EmptyDefinitionMap,
-  TScopes = PatchSmithScopes,
+  TScopes = PatchsmithScopes,
 > {
   /** Experimental server APIs may change outside semantic versioning. */
   experimental: {
     /** Create an independent installation pinned to the app's published deployment. */
     installApp: (
-      options: PatchSmithInstallAppOptions<TScopes>
-    ) => Promise<PatchSmithInstalledApp>;
+      options: PatchsmithInstallAppOptions<TScopes>
+    ) => Promise<PatchsmithInstalledApp>;
   };
   /** Prepare direct platform MCP HTTP configuration for a server-side client. */
   mcp: {
-    transport: (options: PatchSmithHostContext<TScopes>) => Promise<{
+    transport: (options: PatchsmithHostContext<TScopes>) => Promise<{
       url: string;
       headers: Record<string, string>;
     }>;
   };
   handler: (
     request: Request,
-    options: PatchSmithHandlerOptions<TScopes>
+    options: PatchsmithHandlerOptions<TScopes>
   ) => Response | Promise<Response>;
   /**
-   * Internal PatchSmith implementation details.
+   * Internal Patchsmith implementation details.
    *
    * This API is not covered by semantic versioning and may change or break at
    * any time. Avoid depending on it in application code. If you need something
@@ -227,7 +228,7 @@ export interface PatchSmithServer<
    */
   $internal: {
     platformBaseUrl: string;
-    router: PatchSmithRouter;
-    schema: PatchSmithSchema<TComponents, TViews, TTools>;
+    router: PatchsmithRouter;
+    schema: PatchsmithSchema<TComponents, TViews, TTools>;
   };
 }

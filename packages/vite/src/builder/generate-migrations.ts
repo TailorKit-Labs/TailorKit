@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { access } from "node:fs/promises";
 import path from "node:path";
 
-import { loadPatchSmithConfig } from "#config/loader";
+import { loadPatchsmithConfig } from "#config/loader";
 
 import { appDatabasePaths } from "./database-paths";
 import { drizzleGenerateArguments } from "./drizzle";
@@ -17,7 +17,7 @@ export interface GenerateAppMigrationsOptions {
 export const generateAppMigrations = async (
   options: GenerateAppMigrationsOptions = {}
 ) => {
-  const loaded = await loadPatchSmithConfig(options.configPath, options.cwd);
+  const loaded = await loadPatchsmithConfig(options.configPath, options.cwd);
   if (!loaded.config.server) {
     throw new Error(
       "Enable server: {} in patchsmith.config.ts before generating database migrations."

@@ -1,6 +1,6 @@
 {
   "name": "@patchsmith/client-platform",
-  "version": "0.1.0-beta.49",
+  "version": "0.1.0-beta.52",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -57,7 +57,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsup 'src/**/*.ts' --format esm --target node20 --clean && tsc -p tsconfig.build.json",
+    "build": "vp pack && tsc -p tsconfig.build.json",
     "generate": "openapi-ts && node ./scripts/restore-openapi-params.mjs && node ./scripts/normalize-sse-cancellation.mjs",
     "check-types": "tsc --noEmit",
     "test": "vp test run",
@@ -74,8 +74,11 @@
     "@patchsmith/api-platform": "workspace:*",
     "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
-    "tsup": "^8.5.1",
     "typescript": "catalog:",
+    "vite-plus": "catalog:",
     "zod": "catalog:"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

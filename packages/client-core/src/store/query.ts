@@ -5,14 +5,14 @@ import { matchesApp } from "#client/apps";
 import { normalizeScopeSelection } from "#client/scope-query";
 import { refetchViews } from "#client/views";
 import type { ViewsQueryOptions } from "#client/views";
-import type { PatchSmithApp } from "#types";
+import type { PatchsmithApp } from "#types";
 
 import type { FetchSnapshot } from "./fetch/cache";
 import { serializeCacheKey } from "./fetch/cache";
 import { createSlotStore } from "./fetch/slot";
 import type { SlotItem } from "./fetch/slot";
 import { createSnapshotStore, switchStore } from "./snapshot-store";
-import type { PatchSmithStore } from "./store";
+import type { PatchsmithStore } from "./store";
 
 export interface AppsQueryOptions<TScopeNames extends string = string> {
   scopes?: readonly TScopeNames[];
@@ -58,14 +58,14 @@ const result = <T>(
 
 /** Discover and filter apps, with the same result shape in every framework. */
 export const createAppsQuery = (
-  store: PatchSmithStore,
+  store: PatchsmithStore,
   options: AppsQueryOptions = {}
 ) => {
   const refetch = async () => {
     await store.fetchApps({ force: true });
   };
   let previous: ReturnType<typeof store.getAppsSnapshot> | undefined;
-  let snapshot: QueryResult<PatchSmithApp[]>;
+  let snapshot: QueryResult<PatchsmithApp[]>;
   const state = createSnapshotStore(
     () => {
       const current = store.fetch.apps.state.get();
@@ -96,9 +96,9 @@ export const createAppsQuery = (
 };
 
 const viewsQuery = (
-  store: PatchSmithStore,
+  store: PatchsmithStore,
   options: ViewsQueryOptions,
-  app?: PatchSmithApp
+  app?: PatchsmithApp
 ) => {
   let previousKey: string | undefined;
   let previousError: Error | null | undefined;
@@ -193,13 +193,13 @@ const viewsQuery = (
 
 /** Resolve a slot reactively as discovery and registered context change. */
 export const createViewsQuery = (
-  store: PatchSmithStore,
+  store: PatchsmithStore,
   options: ViewsQueryOptions
 ) => viewsQuery(store, options);
 
 /** Resolve an explicitly supplied app without initiating discovery. */
 export const createAppViewsQuery = (
-  store: PatchSmithStore,
-  app: PatchSmithApp,
+  store: PatchsmithStore,
+  app: PatchsmithApp,
   slot: string
 ) => viewsQuery(store, { slot }, app);

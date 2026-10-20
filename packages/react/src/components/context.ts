@@ -1,30 +1,30 @@
-import type { PatchSmithStore } from "@patchsmith/client-core";
+import type { PatchsmithStore } from "@patchsmith/client-core";
 import { createContext, useContext } from "react";
 
-import type { PatchSmithClientConfig } from "#patchsmith";
+import type { PatchsmithClientConfig } from "#patchsmith";
 
-export interface PatchSmithContextValue {
-  store: PatchSmithStore;
-  client: PatchSmithClientConfig;
+export interface PatchsmithContextValue {
+  store: PatchsmithStore;
+  client: PatchsmithClientConfig;
 }
 
-export const PatchSmithContext = createContext<PatchSmithContextValue | null>(
+export const PatchsmithContext = createContext<PatchsmithContextValue | null>(
   null
 );
 
-export const usePatchSmithContext = (
+export const usePatchsmithContext = (
   component: string,
-  expectedClient?: PatchSmithClientConfig
-): PatchSmithContextValue => {
-  const context = useContext(PatchSmithContext);
+  expectedClient?: PatchsmithClientConfig
+): PatchsmithContextValue => {
+  const context = useContext(PatchsmithContext);
   if (!context) {
     throw new Error(
-      `${component} must be rendered inside a PatchSmith Provider.`
+      `${component} must be rendered inside a Patchsmith Provider.`
     );
   }
   if (expectedClient && context.client !== expectedClient) {
     throw new Error(
-      `${component} was created for a different PatchSmith client than the surrounding Provider.`
+      `${component} was created for a different Patchsmith client than the surrounding Provider.`
     );
   }
   return context;

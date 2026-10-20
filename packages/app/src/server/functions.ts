@@ -7,14 +7,14 @@ import type {
 } from "@patchsmith/app-db";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
-import type { PatchSmithServerTools } from "#client/tools";
+import type { PatchsmithServerTools } from "#client/tools";
 import type { JsonValue } from "#validation";
 
 // oxlint-disable-next-line typescript/no-generated-empty-object-type -- Omitted function tables must have no keys so actions expose no undeclared capabilities.
 export type EmptyFunctions = Record<never, never>;
 
 export interface Identity {
-  readonly subjectId?: string;
+  readonly subjectId: string;
   readonly scope: {
     name: string;
     value: Record<string, JsonValue>;
@@ -70,7 +70,7 @@ export type FunctionCalls<F, K extends "query" | "mutation"> = {
 
 export interface ActionContext<F extends Functions = EmptyFunctions> {
   readonly identity: Identity;
-  readonly tools: PatchSmithServerTools;
+  readonly tools: PatchsmithServerTools;
   readonly requestId: string;
   readonly scope: Identity["scope"];
   readonly signal: AbortSignal;

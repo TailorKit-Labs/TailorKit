@@ -4,11 +4,11 @@ import * as v from "valibot";
 
 import { platformAppSelector } from "#server/platform-app-selector";
 
-import { selectPatchSmithScopes, validatePatchSmithScopes } from "./scope";
-import type { PatchSmithScopeSchemas } from "./scope";
+import { selectPatchsmithScopes, validatePatchsmithScopes } from "./scope";
+import type { PatchsmithScopeSchemas } from "./scope";
 import type {
-  PatchSmithInstallAppOptions,
-  PatchSmithPlatformOptions,
+  PatchsmithInstallAppOptions,
+  PatchsmithPlatformOptions,
 } from "./types";
 
 const isFunctionValue = <TValue>(
@@ -17,10 +17,10 @@ const isFunctionValue = <TValue>(
 
 export const createExperimental = (options: {
   platform: Client;
-  platformHeaders?: PatchSmithPlatformOptions["headers"];
-  scopeSchemas: PatchSmithScopeSchemas;
+  platformHeaders?: PatchsmithPlatformOptions["headers"];
+  scopeSchemas: PatchsmithScopeSchemas;
 }) => ({
-  installApp: async <TScopes>(input: PatchSmithInstallAppOptions<TScopes>) => {
+  installApp: async <TScopes>(input: PatchsmithInstallAppOptions<TScopes>) => {
     if (!input.appId || input.appId.length > 256) {
       throw new TypeError("A deployed app ID is required.");
     }
@@ -28,10 +28,10 @@ export const createExperimental = (options: {
       v.strictObject({ name: v.string(), value: v.unknown() }),
       input.scope
     );
-    const scopes = await validatePatchSmithScopes(options.scopeSchemas, {
+    const scopes = await validatePatchsmithScopes(options.scopeSchemas, {
       [scope.name]: scope.value,
     });
-    const [validatedScope] = selectPatchSmithScopes(scopes, [scope.name]);
+    const [validatedScope] = selectPatchsmithScopes(scopes, [scope.name]);
     if (!validatedScope) {
       throw new TypeError("An installation scope is required.");
     }
@@ -44,7 +44,7 @@ export const createExperimental = (options: {
         true
       )
     ) {
-      throw new Error("A PatchSmith projectKey is required to install apps.");
+      throw new Error("A Patchsmith projectKey is required to install apps.");
     }
     const { data } = await appsInstall({
       body: { app: platformAppSelector(input.appId), scope: validatedScope },

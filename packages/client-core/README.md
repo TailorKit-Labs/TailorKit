@@ -1,3 +1,3 @@
-# PatchSmith client core
+# Patchsmith client core
 
-`@patchsmith/client-core` contains shared client functionality for PatchSmith integrations.
+`@patchsmith/client-core` contains shared client functionality for Patchsmith integrations.

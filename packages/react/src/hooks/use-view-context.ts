@@ -2,7 +2,7 @@ import type { ViewName, ViewState } from "@patchsmith/client-core";
 import type { ViewDefinition } from "@patchsmith/core/schema";
 import { useEffect, useMemo } from "react";
 
-import { usePatchSmithContext } from "#components/context";
+import { usePatchsmithContext } from "#components/context";
 
 export type {
   ViewName,
@@ -28,7 +28,7 @@ export const useViewContext = <
   view: TView,
   options: ViewState<TViews, NoInfer<TView>>
 ): void => {
-  const { store } = usePatchSmithContext("useViewContext");
+  const { store } = usePatchsmithContext("useViewContext");
   const id = useMemo(() => Symbol("patchsmith-current-view"), []);
   const { context, loading, error } = options;
 

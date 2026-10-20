@@ -5,6 +5,7 @@
   "fixed": [
     [
       "patchsmith",
+      "@patchsmith/ai-sdk",
       "@patchsmith/app",
       "@patchsmith/app-db",
       "@patchsmith/cli",

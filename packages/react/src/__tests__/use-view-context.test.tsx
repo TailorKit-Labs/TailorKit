@@ -1,4 +1,4 @@
-import { createPatchSmithStore } from "@patchsmith/client-core";
+import { createPatchsmithStore } from "@patchsmith/client-core";
 import { defineContract } from "@patchsmith/core/schema";
 import type { ViewContextValues } from "@patchsmith/core/views";
 import type {
@@ -10,7 +10,7 @@ import type { ReactNode } from "react";
 import { StrictMode } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 
-import { PatchSmithContext } from "#components/context";
+import { PatchsmithContext } from "#components/context";
 import type { ViewState } from "#hooks/use-view-context";
 import { createClient } from "#patchsmith";
 
@@ -50,7 +50,7 @@ afterEach(() => {
 
 const setup = () => {
   const client = createClient({ baseUrl: "https://host.test", contract });
-  const store = createPatchSmithStore({
+  const store = createPatchsmithStore({
     apps: [],
     baseUrl: client.baseUrl,
     client: client.fetchClient,
@@ -59,9 +59,9 @@ const setup = () => {
   const contextValue1 = Object.freeze({ client, store });
   const wrapper = ({ children }: { children: ReactNode }) => (
     <StrictMode>
-      <PatchSmithContext.Provider value={contextValue1}>
+      <PatchsmithContext.Provider value={contextValue1}>
         {children}
-      </PatchSmithContext.Provider>
+      </PatchsmithContext.Provider>
     </StrictMode>
   );
   return { client, store, wrapper };

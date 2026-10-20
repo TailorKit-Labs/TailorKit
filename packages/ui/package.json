@@ -65,7 +65,7 @@
     }
   },
   "scripts": {
-    "build": "vp pack 'src/**/*.ts' 'src/**/*.tsx' --format esm --clean --unbundle --no-dts --deps.never-bundle @patchsmith/ui && tsc -p tsconfig.build.json",
+    "build": "vp pack 'src/**/*.ts' 'src/**/*.tsx' --target node24 --format esm --clean --unbundle --no-dts --deps.never-bundle @patchsmith/ui && tsc -p tsconfig.build.json",
     "check-types": "tsc --noEmit",
     "lint": "vp lint .",
     "lint:fix": "vp lint --fix ."
@@ -96,5 +96,8 @@
     "oxc-transform-react": "^0.153.0",
     "tailwindcss": "catalog:",
     "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

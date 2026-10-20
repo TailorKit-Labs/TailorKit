@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 292 56" role="img" aria-label="PatchSmith">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 292 56" role="img" aria-label="Patchsmith">
   <g transform="translate(4 4) scale(2)">
   <path d="M3 6h6v6H3z" style="fill:#262626" transform="matrix(1.5 0 0 1.5 10.5 -9)"/>
   <path d="M2 6v12h12v-6H8V6z" style="fill:#262626" transform="matrix(1.5 0 0 1.5 -3 -3)"/>
   </g>
-  <text x="66" y="40" fill="#262626" font-family="Inter, Arial, sans-serif" font-size="36" font-weight="600" letter-spacing="-1">PatchSmith</text>
+  <text x="66" y="40" fill="#262626" font-family="Inter, Arial, sans-serif" font-size="36" font-weight="600" letter-spacing="-1">Patchsmith</text>
 </svg>

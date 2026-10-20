@@ -9,7 +9,7 @@ import {
 } from "./definition";
 import type { PrimitiveName, PrimitivePropDefinition } from "./definition";
 import { resolveTheme } from "./theme";
-import type { PatchSmithTheme } from "./theme";
+import type { PatchsmithTheme } from "./theme";
 
 type Schema = v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>;
 type FieldValidators = Record<string, Schema>;
@@ -28,7 +28,7 @@ const tokenPicklist = (tokens: Record<string, string> | undefined): Schema => {
 
 const responsive = (
   schema: Schema,
-  theme: PatchSmithTheme,
+  theme: PatchsmithTheme,
   interactive = true
 ): Schema => {
   const fields: FieldValidators = {};
@@ -47,7 +47,7 @@ const responsive = (
 
 const propSchema = (
   definition: PrimitivePropDefinition,
-  theme: PatchSmithTheme
+  theme: PatchsmithTheme
 ): Schema => {
   if (definition.kind === "boolean") {
     return v.optional(v.boolean());
@@ -66,7 +66,7 @@ const propSchema = (
 
 const primitiveFields = (
   name: PrimitiveName,
-  theme: PatchSmithTheme
+  theme: PatchsmithTheme
 ): FieldValidators =>
   Object.fromEntries(
     Object.entries<PrimitivePropDefinition>(primitiveDefinitions[name]).map(
@@ -75,7 +75,7 @@ const primitiveFields = (
   );
 
 export const primitives = (
-  theme: PatchSmithTheme = {}
+  theme: PatchsmithTheme = {}
 ): PrimitiveComponents => {
   const resolvedTheme = resolveTheme(theme);
   const components = mapPrimitiveDefinitions((name) => ({

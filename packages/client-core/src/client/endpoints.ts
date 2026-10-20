@@ -5,7 +5,7 @@ import {
   reference,
 } from "@patchsmith/app/client/connection";
 import type {
-  PatchSmithContract,
+  PatchsmithContract,
   ToolImplementations,
   ContractTools,
 } from "@patchsmith/core/schema";
@@ -13,7 +13,7 @@ import { flattenTools, validateToolValue } from "@patchsmith/core/schema";
 import type { ViewContextValues } from "@patchsmith/core/views";
 import * as v from "valibot";
 
-import type { PatchSmithApp } from "#types";
+import type { PatchsmithApp } from "#types";
 
 import { toBaseUrl } from "./url";
 
@@ -50,9 +50,6 @@ const appListSchema = v.array(
   })
 );
 
-const isStringValue = <TValue>(value: TValue): value is TValue & string =>
-  typeof value === "string";
-
 const isFunctionValue = <TValue>(
   value: TValue
 ): value is Extract<TValue, CallableFunction> => typeof value === "function";
@@ -80,8 +77,8 @@ const resolveInstances = reference<
 export const createEndpointClient = (options: {
   baseUrl: string | URL;
   fetch?: typeof fetch;
-  contract?: PatchSmithContract;
-  tools?: ToolImplementations<PatchSmithContract["tools"], "client">;
+  contract?: PatchsmithContract;
+  tools?: ToolImplementations<PatchsmithContract["tools"], "client">;
 }) => {
   const baseUrl = toBaseUrl(options.baseUrl);
   const request: typeof fetch = async (input, init) =>
@@ -95,7 +92,7 @@ export const createEndpointClient = (options: {
   let generation = 0;
   const toolBridges = new Map<
     string,
-    { bridge: ToolBridge; app: PatchSmithApp }
+    { bridge: ToolBridge; app: PatchsmithApp }
   >();
   const declarations = flattenTools(options.contract?.tools ?? {});
   const sessions = new Map<string, SessionEntry>();
@@ -126,7 +123,7 @@ export const createEndpointClient = (options: {
 
     session: createSessionProvider({ appId, baseUrl, fetch: request }),
   });
-  const getSessionProvider = (app: PatchSmithApp) => {
+  const getSessionProvider = (app: PatchsmithApp) => {
     const key = JSON.stringify([app.currentDeployment?.id]);
     let entry = sessions.get(app.id);
     if (entry && entry.key === undefined) {
@@ -141,7 +138,7 @@ export const createEndpointClient = (options: {
     }
     return entry.provider;
   };
-  const getToolBridge = (app: PatchSmithApp): ToolBridge => {
+  const getToolBridge = (app: PatchsmithApp): ToolBridge => {
     const existing = toolBridges.get(app.id);
     if (existing) {
       existing.app = app;
@@ -161,15 +158,12 @@ export const createEndpointClient = (options: {
         throw new Error("Tool identity changed");
       }
       if (
-        !isStringValue(result.token) ||
-        !isStringValue(result.toolUrl) ||
-        !Number.isFinite(result.expiresAt) ||
         result.expiresAt <= Date.now() ||
-        result.identity?.installationId !== app.id
+        result.identity.installationId !== app.id
       ) {
         throw new Error("Invalid tool session");
       }
-      return { ...result, identity: result.identity, url: result.toolUrl };
+      return { ...result, url: result.identity.toolUrl };
     };
     const bridge: ToolBridge = {
       client: async (path, input) => {
@@ -224,14 +218,14 @@ export const createEndpointClient = (options: {
     return bridge;
   };
   return {
-    apps: async (signal: AbortSignal): Promise<PatchSmithApp[]> => {
+    apps: async (signal: AbortSignal): Promise<PatchsmithApp[]> => {
       const response = await request(new URL("apps", baseUrl), {
         credentials: "same-origin",
         signal,
       });
       if (!response.ok) {
         throw new Error(
-          `Unable to fetch PatchSmith apps from ${baseUrl.toString()}.`
+          `Unable to fetch Patchsmith apps from ${baseUrl.toString()}.`
         );
       }
       return v.parse(appListSchema, await response.json());
@@ -241,7 +235,7 @@ export const createEndpointClient = (options: {
     getSessionProvider,
     getToolBridge,
     slotInstances: async (
-      app: PatchSmithApp,
+      app: PatchsmithApp,
       input: SlotInstancesInput,
       signal: AbortSignal
     ) => {

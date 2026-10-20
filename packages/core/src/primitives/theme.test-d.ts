@@ -2,12 +2,12 @@ import { expectTypeOf } from "vite-plus/test";
 
 import { primitives as arktypePrimitives } from "./arktype";
 import { resolveTheme } from "./theme";
-import type { PatchSmithTheme } from "./theme";
+import type { PatchsmithTheme } from "./theme";
 import { primitives as valibotPrimitives } from "./valibot";
 import { primitives as zodPrimitives } from "./zod";
 
 const theme = { breakpoints: { desktop: "1024px", hover: "640px" } };
-expectTypeOf(theme).toExtend<PatchSmithTheme>();
+expectTypeOf(theme).toExtend<PatchsmithTheme>();
 zodPrimitives(theme);
 valibotPrimitives(theme);
 arktypePrimitives(theme);
@@ -31,7 +31,7 @@ arktypePrimitives(reservedDefault);
 // @ts-expect-error -- ArkType rejects colon-prefixed names.
 arktypePrimitives(reservedPrefix);
 // @ts-expect-error -- Explicit theme annotations enforce the constraint too.
-const invalidTheme: PatchSmithTheme = reservedState;
+const invalidTheme: PatchsmithTheme = reservedState;
 void invalidTheme;
 // @ts-expect-error -- Host theme resolution accepts the same constrained configuration.
 resolveTheme(reservedDefault);

@@ -18,7 +18,7 @@ const RequestOrganizationPage = () => (
     <PageLayout
       description={
         isOrgCreationManaged
-          ? "Organisation creation is currently managed by the PatchSmith team."
+          ? "Organisation creation is currently managed by the Patchsmith team."
           : "Create a workspace for your projects and collaborators."
       }
       title="Create an organisation"
@@ -35,7 +35,7 @@ const RequestOrganizationPage = () => (
               <p className="text-sm text-muted-foreground">
                 {isOrgCreationManaged
                   ? "We're currently onboarding users manually. Contact us to create an organisation for your account."
-                  : "Create an organisation to start building and managing PatchSmith projects."}
+                  : "Create an organisation to start building and managing Patchsmith projects."}
               </p>
               <div className="flex flex-wrap gap-2">
                 {isOrgCreationManaged ? (

@@ -32,17 +32,17 @@ export const patchsmithUploadManifestSchema = v.object({
   ),
 });
 
-export type PatchSmithUploadManifest = v.InferOutput<
+export type PatchsmithUploadManifest = v.InferOutput<
   typeof patchsmithUploadManifestSchema
 >;
 
-export const createPatchSmithUploadManifest = (
-  logos?: PatchSmithUploadManifest["assets"]["logos"],
+export const createPatchsmithUploadManifest = (
+  logos?: PatchsmithUploadManifest["assets"]["logos"],
   server = false,
-  views?: PatchSmithUploadManifest["views"],
+  views?: PatchsmithUploadManifest["views"],
   appId?: string
-): PatchSmithUploadManifest => {
-  const assets: PatchSmithUploadManifest["assets"] = {
+): PatchsmithUploadManifest => {
+  const assets: PatchsmithUploadManifest["assets"] = {
     client: "client/client.js",
   };
   if (server) {

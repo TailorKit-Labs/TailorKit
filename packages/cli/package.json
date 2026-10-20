@@ -1,6 +1,6 @@
 {
   "name": "@patchsmith/cli",
-  "version": "0.1.0-beta.49",
+  "version": "0.1.0-beta.52",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -62,5 +62,8 @@
     "preact": "^11.0.1",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

@@ -7,10 +7,10 @@ export type {
 } from "./components/render-slot";
 export { components, createClient } from "./patchsmith";
 export type {
-  PatchSmithApp,
-  PatchSmithClientConfig,
-  PatchSmithInstance,
-  PatchSmithProviderProps,
+  PatchsmithApp,
+  PatchsmithClientConfig,
+  PatchsmithInstance,
+  PatchsmithProviderProps,
 } from "./patchsmith";
 export type { UseAppsOptions, UseAppsResult } from "./hooks/use-apps";
 export type {

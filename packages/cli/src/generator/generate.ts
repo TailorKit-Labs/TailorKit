@@ -27,7 +27,7 @@ import {
   logoLightTemplate,
 } from "./templates/index";
 import { generateTypes } from "./types";
-import type { PatchSmithSchemaFile } from "./types";
+import type { PatchsmithSchemaFile } from "./types";
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -41,7 +41,7 @@ export interface GenerateAppOptions {
   targetDirectory: string;
   force: boolean;
   hostUrl: string;
-  schema: PatchSmithSchemaFile;
+  schema: PatchsmithSchemaFile;
   tooling: "vite-plus" | "vite";
   packageName: string;
   packageVersions: {
@@ -101,7 +101,7 @@ const getViewModulePath = (slotName: string, viewPath: string) => {
 };
 
 const supportsBox = (
-  box: NonNullable<PatchSmithSchemaFile["components"]>[string] | undefined
+  box: NonNullable<PatchsmithSchemaFile["components"]>[string] | undefined
 ): boolean => {
   const required = box?.fields?.required;
   return (
@@ -109,7 +109,7 @@ const supportsBox = (
   );
 };
 
-const getStarterView = (schema: PatchSmithSchemaFile) => {
+const getStarterView = (schema: PatchsmithSchemaFile) => {
   const slots = Object.keys(schema.slots ?? {}).toSorted();
   const viewPath = Object.keys(schema.views ?? {})
     .toSorted()

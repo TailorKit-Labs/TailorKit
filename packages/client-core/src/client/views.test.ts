@@ -1,10 +1,10 @@
 import { expect, it, vi } from "vite-plus/test";
 
 import { createSlotStore } from "#store/fetch/slot";
-import { createPatchSmithStore } from "#store/store";
+import { createPatchsmithStore } from "#store/store";
 import { testContract } from "#test-contract";
 
-import { createPatchSmithFetchClient } from "./fetch-client";
+import { createPatchsmithFetchClient } from "./fetch-client";
 import { refetchViews } from "./views";
 
 const deferredResponse = () => {
@@ -30,12 +30,12 @@ it("joins discovery and resolves single slots from the imported contract without
   const fetch = vi.fn<typeof globalThis.fetch>(
     async () => await discovery.promise
   );
-  const client = createPatchSmithFetchClient({
+  const client = createPatchsmithFetchClient({
     baseUrl: "https://host.test",
     fetch,
   });
   const contract = testContract();
-  const store = createPatchSmithStore({
+  const store = createPatchsmithStore({
     baseUrl: client.baseUrl,
     client,
     contract,
@@ -63,11 +63,11 @@ it("refreshes instances using the current registered context without refreshing 
   const instanceFetch = vi
     .fn<
       ReturnType<
-        typeof createPatchSmithFetchClient
+        typeof createPatchsmithFetchClient
       >["endpoints"]["slotInstances"]
     >()
     .mockResolvedValue([{ data: {}, key: "overview", metadata: {} }]);
-  const client = createPatchSmithFetchClient({
+  const client = createPatchsmithFetchClient({
     baseUrl: "https://host.test",
     fetch: vi.fn(),
   });
@@ -75,7 +75,7 @@ it("refreshes instances using the current registered context without refreshing 
     id: "app",
     views: [{ instances: true as const, path: "/", slot: "page" }],
   };
-  const store = createPatchSmithStore({
+  const store = createPatchsmithStore({
     apps: [app],
     baseUrl: client.baseUrl,
     client,

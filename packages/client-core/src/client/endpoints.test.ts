@@ -1,20 +1,31 @@
 import { asyncFixture } from "@patchsmith/config/testing";
 import { expect, it, vi } from "vite-plus/test";
 
-import type { PatchSmithApp } from "#types";
+import type { PatchsmithApp } from "#types";
 
 import { createEndpointClient } from "./endpoints";
-import { createPatchSmithFetchClient } from "./fetch-client";
+import { createPatchsmithFetchClient } from "./fetch-client";
+
+const identity = {
+  appId: "app",
+  deploymentId: "deployment",
+  expiresAt: Date.now() + 300_000,
+  installationId: "app",
+  projectId: "project",
+  scope: { name: "workspace", value: { id: "workspace" } },
+  subjectId: "principal",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
+};
 
 const session = (token: string) =>
   Response.json({
     expiresAt: Date.now() + 300_000,
-    subjectId: "principal",
+    identity,
     token,
     url: "https://runtime.test/rpc",
   });
 
-const deployedApp: PatchSmithApp = {
+const deployedApp: PatchsmithApp = {
   currentDeployment: { id: "first" },
   id: "app",
 };
@@ -89,7 +100,7 @@ it("clears sessions for held consumers through the public client and shares repl
         })()
     )
     .mockResolvedValueOnce(session("after-again"));
-  const fetchClient = createPatchSmithFetchClient({
+  const fetchClient = createPatchsmithFetchClient({
     baseUrl: "https://host.test/",
     fetch: request,
   });
@@ -122,14 +133,14 @@ it("reauthorizes held consumers after host sign-out and account changes", async 
       user !== undefined && user !== null && user !== ""
         ? Response.json({
             expiresAt: Date.now() + 300_000,
-            subjectId: user,
+            identity: { ...identity, subjectId: user },
             token: `${user}-token`,
             url: "https://runtime.test/rpc",
           })
         : new Response(null, { status: 401 })
     )
   );
-  const fetchClient = createPatchSmithFetchClient({
+  const fetchClient = createPatchsmithFetchClient({
     baseUrl: "https://host.test/",
     fetch: request,
   });
@@ -186,7 +197,7 @@ it.each(["clear", "deployment"])(
           })()
       )
       .mockResolvedValueOnce(session("current"));
-    const fetchClient = createPatchSmithFetchClient({
+    const fetchClient = createPatchsmithFetchClient({
       baseUrl: "https://host.test/",
       fetch: request,
     });

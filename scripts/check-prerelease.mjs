@@ -9,6 +9,7 @@ import {
 
 const publishablePackages = [
   "packages/patchsmith/package.json",
+  "packages/ai-sdk/package.json",
   "packages/app/package.json",
   "packages/app-db/package.json",
   "packages/cli/package.json",
@@ -94,7 +95,7 @@ for (const changeset of await readChangesets(process.cwd())) {
   for (const release of changeset.releases) {
     if (release.type === "major") {
       errors.push(
-        `.changeset/${changeset.id}.md requests a major bump for ${release.name}; use minor for breaking changes while PatchSmith remains on 0.x`
+        `.changeset/${changeset.id}.md requests a major bump for ${release.name}; use minor for breaking changes while Patchsmith remains on 0.x`
       );
     }
   }

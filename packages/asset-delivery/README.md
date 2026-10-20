@@ -1,3 +1,3 @@
-# PatchSmith asset delivery
+# Patchsmith asset delivery
 
-`@patchsmith/asset-delivery` serves assets for PatchSmith extensions.
+`@patchsmith/asset-delivery` serves assets for Patchsmith extensions.

@@ -628,7 +628,7 @@ export type AppsRuntimeSessionData = {
         [key: string]: Schema0;
       };
     }>;
-    subjectId?: string;
+    subjectId: string;
     toolUrl: string;
   };
   path?: never;
@@ -656,11 +656,10 @@ export type AppsRuntimeSessionResponses = {
           [key: string]: Schema0;
         };
       };
-      subjectId?: string;
+      subjectId: string;
       toolUrl: string;
     };
     token: string;
-    toolUrl: string;
     url: string;
   };
 };

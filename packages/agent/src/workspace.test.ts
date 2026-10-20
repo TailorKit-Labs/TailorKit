@@ -25,7 +25,7 @@ beforeEach(() => {
   session.runCommand.mockResolvedValue({ exitCode: 0 });
 });
 
-it("prepares a matching beta CLI and app with only PatchSmith exempt from release age", async () => {
+it("prepares a matching beta CLI and app with only Patchsmith exempt from release age", async () => {
   await prepareWorkspace(session, input);
   expect(session.runCommand).toHaveBeenCalledWith(
     expect.objectContaining({
@@ -103,7 +103,7 @@ it("fails preparation when a completed app's missing CLI cannot be installed", a
     stderr: vi.fn().mockResolvedValue("Registry unavailable"),
   });
   await expect(prepareWorkspace(session, input)).rejects.toThrow(
-    "PatchSmith CLI installation failed: Registry unavailable"
+    "Patchsmith CLI installation failed: Registry unavailable"
   );
   expect(session.runCommand).toHaveBeenCalledExactlyOnceWith({
     args: ["add", "--save-exact", "patchsmith@beta"],

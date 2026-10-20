@@ -408,7 +408,7 @@ it("reserves the internal namespace and rejects duplicate or invalid slot/path a
   };
   const app = withInstanceResolvers(defineServer({}), [resolver]);
   expect(() => withInstanceResolvers(app, [])).toThrow(
-    "The _patchsmith function namespace is reserved by PatchSmith."
+    "The _patchsmith function namespace is reserved by Patchsmith."
   );
   expect(() =>
     withInstanceResolvers(defineServer({}), [resolver, resolver])

@@ -1,6 +1,6 @@
-# PatchSmith Vite integration
+# Patchsmith Vite integration
 
-`@patchsmith/vite` builds PatchSmith apps. It loads app configuration, discovers routes, extracts instance resolvers, bundles backend code, validates migrations, and writes deployment manifests. The app runtime lives in `@patchsmith/app`.
+`@patchsmith/vite` builds Patchsmith apps. It loads app configuration, discovers routes, extracts instance resolvers, bundles backend code, validates migrations, and writes deployment manifests. The app runtime lives in `@patchsmith/app`.
 
 ## Configure the plugin
 

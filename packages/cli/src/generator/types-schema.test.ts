@@ -449,7 +449,7 @@ describe("JSON Schema type generation", () => {
         renderGeneratedTypes({
           components: {
             Custom: {
-              callbacks: { onValue: { input: value } },
+              callbacks: { onValue: { input: value, output: value } },
               children: false,
               fields: { properties: { value }, type: "object" },
             },
@@ -458,7 +458,9 @@ describe("JSON Schema type generation", () => {
         })
       );
       expect(output).toContain(`value?: ${expected};`);
-      expect(output).toContain(`onValue?: (input: ${expected}) => void;`);
+      expect(output).toContain(
+        `onValue?: (input: ${expected}) => ${expected} | Promise<${expected}>;`
+      );
       expect(output).toContain(
         `echo: (input: ${expected}) => Promise<${expected}>;`
       );

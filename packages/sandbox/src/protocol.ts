@@ -1,3 +1,4 @@
+import { sessionSchema } from "@patchsmith/app/protocol";
 import * as v from "valibot";
 
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
@@ -123,9 +124,7 @@ const HostToIframePayloadSchema = v.pipe(
         id: SessionId,
         session: v.optional(
           strictObject({
-            expiresAt: FiniteNumber,
-            subjectId: v.optional(v.string()),
-            token: v.pipe(v.string(), v.maxLength(8192)),
+            ...sessionSchema.entries,
             url: SessionUrl,
           })
         ),
@@ -144,6 +143,7 @@ const HostToIframePayloadSchema = v.pipe(
       data: strictObject({
         args: v.optional(v.array(v.unknown())),
         event: v.string(),
+        id: SessionId,
         nodeId: v.string(),
       }),
       type: v.literal("dispatchCallback"),
@@ -233,6 +233,14 @@ const IframeToHostPayloadSchema = v.pipe(
   v.variant("type", [
     v.strictObject({
       data: strictObject({
+        error: v.optional(v.string()),
+        id: SessionId,
+        output: v.optional(v.unknown()),
+      }),
+      type: v.literal("callbackResult"),
+    }),
+    v.strictObject({
+      data: strictObject({
         id: SessionId,
         input: v.optional(v.unknown()),
         kind: v.picklist(["client", "server"]),
@@ -274,6 +282,11 @@ const IframeToHostPayloadSchema = v.pipe(
 export type IframeToHostPayload = v.InferOutput<
   typeof IframeToHostPayloadSchema
 >;
+
+export type CallbackResult = Extract<
+  IframeToHostPayload,
+  { type: "callbackResult" }
+>["data"];
 
 export { HostToIframePayloadSchema as HostToIframePayload };
 

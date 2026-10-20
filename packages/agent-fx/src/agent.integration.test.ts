@@ -346,7 +346,6 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
         expect(request.body).not.toContain(token);
       }
       for (const name of [
-        "patchsmith-setup",
         "patchsmith-frontend",
         "patchsmith-views",
         "patchsmith-functions",

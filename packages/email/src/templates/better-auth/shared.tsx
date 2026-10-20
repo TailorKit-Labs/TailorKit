@@ -16,9 +16,9 @@ import {
 } from "react-email";
 
 import { emailColorSchemeCss, emailTailwindConfig } from "#templates/theme";
-import { PatchSmithFonts } from "#templates/theme-fonts";
+import { PatchsmithFonts } from "#templates/theme-fonts";
 
-export const COMPANY_NAME = "PatchSmith";
+export const COMPANY_NAME = "Patchsmith";
 
 const DEFAULT_LOGO_BASE_URL = "http://localhost:3000";
 
@@ -110,7 +110,7 @@ export const AuthEmailLayout = ({
   <Tailwind config={emailTailwindConfig}>
     <Html lang="en">
       <Head>
-        <PatchSmithFonts />
+        <PatchsmithFonts />
         <style>{emailColorSchemeCss}</style>
       </Head>
       <Preview>{preview}</Preview>

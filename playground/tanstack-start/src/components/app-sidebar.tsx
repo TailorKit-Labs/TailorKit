@@ -19,7 +19,7 @@ import {
   LayoutDashboard,
   LogOut,
 } from "lucide-react";
-import type { PatchSmithApp } from "patchsmith/react";
+import type { PatchsmithApp } from "patchsmith/react";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Overview", to: "/" },
@@ -35,11 +35,11 @@ export const AppSidebar = ({
   session,
   signOut,
 }: {
-  apps: PatchSmithApp[] | undefined;
+  apps: PatchsmithApp[] | undefined;
   appsError: Error | null;
   appsPending: boolean;
-  onSelectApp: (app: PatchSmithApp) => void;
-  selectedApp: PatchSmithApp | null;
+  onSelectApp: (app: PatchsmithApp) => void;
+  selectedApp: PatchsmithApp | null;
   session: DemoSession;
   signOut: () => void;
 }) => (
@@ -82,7 +82,7 @@ export const AppSidebar = ({
       <SidebarGroup>
         <SidebarGroupLabel>Apps</SidebarGroupLabel>
         <SidebarMenu>
-          {apps?.map((app: PatchSmithApp) => (
+          {apps?.map((app: PatchsmithApp) => (
             <SidebarMenuItem key={app.id}>
               <SidebarMenuButton
                 isActive={selectedApp?.id === app.id}

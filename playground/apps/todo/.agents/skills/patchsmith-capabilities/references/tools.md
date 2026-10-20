@@ -8,4 +8,4 @@ Call tools directly from a callback or effect and display their result/error. Th
 - [tools.todos.list](tools/todos-list-f2d7a276699d7c36.md): client operation.
 - [tools.todos.remove](tools/todos-remove-971a790b36fc8cc5.md): client operation.
 - [tools.todos.toggle](tools/todos-toggle-1fa8d43e2df154c1.md): client operation.
-Exact contracts: [generated bindings](../../../../src/patchsmith.gen.ts); search for `PatchSmithTools` and `PatchSmithBackendTools`.
+Exact contracts: [generated bindings](../../../../src/patchsmith.gen.ts); search for `PatchsmithTools` and `PatchsmithBackendTools`.

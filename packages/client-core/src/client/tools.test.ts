@@ -3,11 +3,11 @@ import { defineContract, tool } from "@patchsmith/core/schema";
 import { expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
-import type { PatchSmithApp } from "#types";
+import type { PatchsmithApp } from "#types";
 
 import { createEndpointClient } from "./endpoints";
 
-const app: PatchSmithApp = { id: "installed-app" };
+const app: PatchsmithApp = { id: "installed-app" };
 const contract = defineContract({
   scopes: { workspace: z.object({ id: z.string() }) },
   tools: {
@@ -44,9 +44,7 @@ it("binds client tool calls to the installation and validates transformed inputs
       return Response.json({
         expiresAt: identity.expiresAt,
         identity,
-        subjectId: identity.subjectId,
         token: "verified-token",
-        toolUrl: identity.toolUrl,
         url: "https://runtime.test/rpc",
       });
     },
@@ -111,9 +109,7 @@ it("discards a pending credential when the session cache is cleared", async () =
     Response.json({
       expiresAt: identity.expiresAt,
       identity,
-      subjectId: identity.subjectId,
       token: "old-subject",
-      toolUrl: identity.toolUrl,
       url: "https://runtime.test/rpc",
     })
   );

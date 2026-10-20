@@ -23,5 +23,8 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "vite-plus": "catalog:"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

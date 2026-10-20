@@ -1,6 +1,6 @@
-# PatchSmith app SDK
+# Patchsmith app SDK
 
-Use `@patchsmith/app` to build PatchSmith extensions. Apps require Preact 11; install `preact@^11` alongside the SDK.
+Use `@patchsmith/app` to build Patchsmith extensions. Apps require Preact 11; install `preact@^11` alongside the SDK.
 
 Define app tables, relations, and database capabilities with `patchsmith/db`, backed by [`@patchsmith/app-db`](../app-db/README.md). Define queries, mutations, and actions with `patchsmith/server`.
 
@@ -99,7 +99,7 @@ Each mounted slot instance has its own shell, provider, and layout state. Two se
 
 Run `patchsmith init` to create an app. Choose **Vite+ (recommended)** for building, linting, formatting, and testing, or **Vite (build only)** for a minimal setup. For non-interactive setup, pass `--tooling vite-plus` or `--tooling vite`.
 
-Build tooling lives in the separate [`@patchsmith/vite`](../vite/README.md) package. Both options generate `vite.config.ts` with the PatchSmith plugin. Vite+ apps use:
+Build tooling lives in the separate [`@patchsmith/vite`](../vite/README.md) package. Both options generate `vite.config.ts` with the Patchsmith plugin. Vite+ apps use:
 
 ```ts
 import { patchsmith } from "patchsmith/vite";
@@ -120,7 +120,7 @@ Add aliases, compile-time constants, and custom Vite plugins to `vite.config.ts`
 
 The plugin discovers file routes, extracts private instance resolvers, bundles the backend and migrations, copies logos, and writes `patchsmith-upload.json`. `patchsmith deploy` builds using the same Vite configuration before uploading. Keep host, app ID, logos, and backend settings in `patchsmith.config.ts`.
 
-For builds outside the app's directory, pass `patchsmith({ cwd: appDirectory })`. To use a different PatchSmith configuration file, pass `configPath` to the plugin.
+For builds outside the app's directory, pass `patchsmith({ cwd: appDirectory })`. To use a different Patchsmith configuration file, pass `configPath` to the plugin.
 
 File routing is the app client entry point. Generated entries live in the build output and are cleaned up after builds or when a build watcher closes.
 

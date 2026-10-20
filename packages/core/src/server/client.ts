@@ -1,7 +1,7 @@
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 
-import type { PatchSmithRouterClient } from "./router";
+import type { PatchsmithRouterClient } from "./router";
 
 const isFunctionValue = <TValue>(
   value: TValue
@@ -9,15 +9,15 @@ const isFunctionValue = <TValue>(
 
 type HeaderInput = ConstructorParameters<typeof Headers>[0];
 
-export interface PatchSmithClientOptions {
+export interface PatchsmithClientOptions {
   fetch?: typeof fetch;
   headers?: HeaderInput | (() => HeaderInput | Promise<HeaderInput>);
   url: string;
 }
 
-export const createPatchSmithClient = (
-  options: PatchSmithClientOptions
-): PatchSmithRouterClient => {
+export const createPatchsmithClient = (
+  options: PatchsmithClientOptions
+): PatchsmithRouterClient => {
   const url = URL.canParse(options.url) ? new URL(options.url) : undefined;
   // SAFETY: The configured URL is normalized into a pathname before the client uses it as an absolute route path.
   const link = new RPCLink({
@@ -44,5 +44,5 @@ export const createPatchSmithClient = (
     /* oxlint-enable typescript/no-unsafe-type-assertion */
   });
 
-  return createORPCClient<PatchSmithRouterClient>(link);
+  return createORPCClient<PatchsmithRouterClient>(link);
 };

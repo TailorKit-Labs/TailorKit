@@ -282,7 +282,7 @@ const gzipObject = (body = bundle) => {
 
 const cachedGzipHeaders = (size: number, etag?: string) => {
   const headers = assetHeaders({ contentLength: size, etag });
-  headers.set("X-PatchSmith-Content-Encoding", "gzip");
+  headers.set("X-Patchsmith-Content-Encoding", "gzip");
   headers.set("Vary", "Accept-Encoding");
   return headers;
 };
@@ -309,7 +309,7 @@ it.each(["R2", "cache"])(
     expect(response.headers.get("Content-Encoding")).toBe("gzip");
     expect(response.headers.get("Cache-Control")).toBe("private, max-age=3600");
     expect(response.headers.get("Vary")).toBe("Accept-Encoding");
-    expect(response.headers.get("X-PatchSmith-Content-Encoding")).toBeNull();
+    expect(response.headers.get("X-Patchsmith-Content-Encoding")).toBeNull();
     expect(Buffer.from(await response.arrayBuffer())).toEqual(gzipSync(bundle));
   }
 );
@@ -328,7 +328,7 @@ it("serves stored gzip bytes and caches them without double compression", async 
   );
   const [, cached] = requireValue(put.mock.calls[0]);
   expect(cached.headers.get("Content-Encoding")).toBeNull();
-  expect(cached.headers.get("X-PatchSmith-Content-Encoding")).toBe("gzip");
+  expect(cached.headers.get("X-Patchsmith-Content-Encoding")).toBe("gzip");
   expect(gunzipSync(Buffer.from(await cached.arrayBuffer())).toString()).toBe(
     bundle
   );
@@ -352,7 +352,7 @@ it.each(["GET", "HEAD"])(
     );
     expect(response.headers.get("Content-Encoding")).toBe("gzip");
     expect(response.headers.get("Content-Length")).toBe(String(stored.size));
-    expect(response.headers.get("X-PatchSmith-Content-Encoding")).toBeNull();
+    expect(response.headers.get("X-Patchsmith-Content-Encoding")).toBeNull();
     const bytes = Buffer.from(await response.arrayBuffer());
     if (method === "HEAD") {
       expect(bytes.byteLength).toBe(0);
@@ -423,7 +423,7 @@ it.each([undefined, "identity", "gzip;q=0, *;q=1"])(
     );
     expect(await response.text()).toBe(bundle);
     expect(response.headers.get("Content-Encoding")).toBeNull();
-    expect(response.headers.get("X-PatchSmith-Content-Encoding")).toBeNull();
+    expect(response.headers.get("X-Patchsmith-Content-Encoding")).toBeNull();
     expect(response.headers.get("Content-Length")).toBeNull();
     expect(response.headers.get("ETag")).toBe('W/"etag"');
     expect(response.headers.get("Vary")).toBe("Accept-Encoding");

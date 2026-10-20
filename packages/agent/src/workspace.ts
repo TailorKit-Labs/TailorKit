@@ -82,7 +82,7 @@ export const prepareWorkspace = async (
     "pnpm",
     ["add", "--save-exact", "patchsmith@beta"],
     cliDirectory,
-    "PatchSmith CLI installation"
+    "Patchsmith CLI installation"
   );
 
   if (appReady) {

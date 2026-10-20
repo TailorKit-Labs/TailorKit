@@ -31,8 +31,13 @@ const annotatedComponent: Component = {
       input: z.object({ value: z.string() }),
     },
   },
+  description: "Controlled value with an onValueChange callback.",
 };
 void annotatedComponent;
+
+expectTypeOf<ComponentProps<Button & { description: string }>>().toEqualTypeOf<
+  ComponentProps<Button>
+>();
 
 expectTypeOf<
   NoComponentFieldCallbackConflicts<{

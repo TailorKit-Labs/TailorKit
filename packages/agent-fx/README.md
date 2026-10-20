@@ -1,6 +1,6 @@
 # @patchsmith/agent-fx
 
-The default app builder for chat and MCP. Uses the stock `@ai-sdk/harness-fx` adapter, native tools and session persistence, with PatchSmith instructions, five app-building skills, and one host-side deployment tool.
+The default app builder for chat and MCP. Uses the stock `@ai-sdk/harness-fx` adapter, native tools and session persistence, with Patchsmith instructions, five app-building skills, and one host-side deployment tool.
 
 fx runs on the host. File and shell tools run in a persistent Vercel Sandbox; source is stored on the app's shared Drive. Before the first model step, workspace preparation initializes new apps with `patchsmith init --bare` and installs dependencies. The bare app contains configuration, tooling, bindings and the client root, with no example views or backend. Existing apps are preserved; interrupted installations resume using a setup marker. Deployment credentials stay on the host.
 

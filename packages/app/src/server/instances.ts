@@ -62,7 +62,7 @@ export const withInstanceResolvers = (
 ): AppDefinition => {
   if (Object.hasOwn(app.functions, "_patchsmith")) {
     throw new Error(
-      "The _patchsmith function namespace is reserved by PatchSmith."
+      "The _patchsmith function namespace is reserved by Patchsmith."
     );
   }
   const queries = registeredQueries(app.functions);

@@ -9,12 +9,12 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { loadPatchSmithConfig } from "@patchsmith/vite/config/loader";
+import { loadPatchsmithConfig } from "@patchsmith/vite/config/loader";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import { z } from "zod";
 
 import { generateApp } from "./generate";
-import type { PatchSmithSchemaFile } from "./types";
+import type { PatchsmithSchemaFile } from "./types";
 
 const testDirectories: string[] = [];
 
@@ -78,7 +78,7 @@ describe("generateApp", () => {
       });
       const sourceFiles = await readdir(path.join(targetDirectory, "src"));
       expect(sourceFiles.toSorted()).toEqual(["patchsmith.gen.ts", "root.tsx"]);
-      const config = await loadPatchSmithConfig(undefined, targetDirectory);
+      const config = await loadPatchsmithConfig(undefined, targetDirectory);
       expect(config.config).not.toHaveProperty("logos");
       expect(config.config).not.toHaveProperty("server");
       expect(await readdir(targetDirectory)).not.toContain("logo-light.svg");
@@ -96,7 +96,7 @@ describe("generateApp", () => {
           ),
           "utf-8"
         )
-      ).toContain("PatchSmith capabilities");
+      ).toContain("Patchsmith capabilities");
     }
   );
 
@@ -133,7 +133,7 @@ describe("generateApp", () => {
     expect(greeting).toContain(".input(v.object({ name: v.string() }))");
   });
 
-  it("limits fresh package exclusions to PatchSmith and permits esbuild's required build", async () => {
+  it("limits fresh package exclusions to Patchsmith and permits esbuild's required build", async () => {
     const targetDirectory = await createTempDir();
     await generateApp({
       ...defaultOptions,
@@ -218,14 +218,14 @@ describe("generateApp", () => {
       path.join(targetDirectory, "src/functions/greeting.ts"),
       "utf-8"
     );
-    expect(functions).toContain('import { fn } from "../db"');
+    expect(functions).toContain('import { fn } from "#db"');
     expect(functions).toContain("export default defineRouter({ getGreeting })");
     expect(functions).not.toContain(".database(");
     const server = await readFile(
       path.join(targetDirectory, "src/server.ts"),
       "utf-8"
     );
-    expect(server).toContain('import greeting from "./functions/greeting"');
+    expect(server).toContain('import greeting from "#functions/greeting"');
     expect(server).toContain("defineServer({ greeting })");
     expect(
       await readFile(
@@ -388,9 +388,9 @@ describe("generateApp", () => {
       "utf-8"
     );
     expect(content).toContain(
-      'import type { PatchSmithConfig } from "patchsmith/app/config"'
+      'import type { PatchsmithConfig } from "patchsmith/app/config"'
     );
-    expect(content).toContain("satisfies PatchSmithConfig");
+    expect(content).toContain("satisfies PatchsmithConfig");
     expect(content).toContain(
       'host: "https://host.example.com/api/patchsmith"'
     );
@@ -398,8 +398,8 @@ describe("generateApp", () => {
     expect(content).toContain('slug: "test-app"');
     expect(content).toContain('dark: "logo-dark.svg"');
     expect(content).toContain('light: "logo-light.svg"');
-    expect(content).not.toContain("definePatchSmithConfig");
-    const { config } = await loadPatchSmithConfig(undefined, targetDirectory);
+    expect(content).not.toContain("definePatchsmithConfig");
+    const { config } = await loadPatchsmithConfig(undefined, targetDirectory);
     expect(config).toMatchObject({
       name: "test-app",
       slug: "test-app",
@@ -425,7 +425,7 @@ describe("generateApp", () => {
       );
       expect(content).toContain(`name: ${JSON.stringify(packageName)}`);
       expect(content).toContain(`slug: ${JSON.stringify(slug)}`);
-      const { config } = await loadPatchSmithConfig(undefined, targetDirectory);
+      const { config } = await loadPatchsmithConfig(undefined, targetDirectory);
       expect(config).toMatchObject({
         name: packageName,
         slug,
@@ -434,7 +434,7 @@ describe("generateApp", () => {
   );
 
   it.each(["dark", "light"])(
-    "generates the %s PatchSmith logo",
+    "generates the %s Patchsmith logo",
     async (variant) => {
       const targetDirectory = await createTempDir();
       await generateApp({ ...defaultOptions, targetDirectory });
@@ -734,7 +734,7 @@ describe("generateApp", () => {
     {},
     { slots: {}, views: { "/accounts": {} } },
     { slots: { panel: { views: ["/missing"] } }, views: { "/accounts": {} } },
-  ] as PatchSmithSchemaFile[])(
+  ] as PatchsmithSchemaFile[])(
     "rejects hosts without a renderable view before writing files: %j",
     async (schema) => {
       const targetDirectory = await createTempDir();

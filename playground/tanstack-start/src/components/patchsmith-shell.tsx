@@ -12,7 +12,7 @@ import {
   SidebarTrigger,
 } from "@patchsmith/ui/sidebar";
 import type { DemoSession } from "@playground/shared/auth";
-import type { PatchSmithApp } from "patchsmith/react";
+import type { PatchsmithApp } from "patchsmith/react";
 import { useState } from "react";
 import type { ReactNode } from "react";
 
@@ -21,7 +21,7 @@ import { signOutDemoUser } from "#lib/auth-client";
 import { localPlaygroundApps } from "#lib/local-apps";
 import {
   RenderSlot,
-  PatchSmithProvider,
+  PatchsmithProvider,
   useApps,
   useViewContext,
   patchsmith,
@@ -49,7 +49,7 @@ const ShellContent = ({
       (app) => !localPlaygroundApps.some((localApp) => localApp.id === app.id)
     ) ?? []),
   ];
-  const [selectedApp, setSelectedApp] = useState<PatchSmithApp | null>(null);
+  const [selectedApp, setSelectedApp] = useState<PatchsmithApp | null>(null);
   useViewContext("/", {
     context: {
       team: { id: session.team.id, name: session.team.name },
@@ -100,7 +100,7 @@ const ShellContent = ({
               <SheetDescription>App panel</SheetDescription>
             </SheetHeader>
             <SheetPanel>
-              <PatchSmithProvider apps={installedApps}>
+              <PatchsmithProvider apps={installedApps}>
                 <RenderSlot.Controlled
                   app={selectedApp}
                   context={{
@@ -111,7 +111,7 @@ const ShellContent = ({
                   status="ready"
                   view="/"
                 />
-              </PatchSmithProvider>
+              </PatchsmithProvider>
             </SheetPanel>
           </SheetPopup>
         ) : null}
@@ -120,14 +120,14 @@ const ShellContent = ({
   );
 };
 
-export const PatchSmithShell = ({
+export const PatchsmithShell = ({
   children,
   session,
 }: {
   children: ReactNode;
   session: DemoSession;
 }) => (
-  <PatchSmithProvider>
+  <PatchsmithProvider>
     <ShellContent session={session}>{children}</ShellContent>
-  </PatchSmithProvider>
+  </PatchsmithProvider>
 );

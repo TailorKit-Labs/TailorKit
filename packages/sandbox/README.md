@@ -1,3 +1,3 @@
-# PatchSmith sandbox
+# Patchsmith sandbox
 
-`@patchsmith/sandbox` runs PatchSmith extensions in an isolated sandbox.
+`@patchsmith/sandbox` runs Patchsmith extensions in an isolated sandbox.

@@ -1,3 +1,3 @@
-# PatchSmith database
+# Patchsmith database
 
-`@patchsmith/db` defines the PatchSmith platform database schema and database access.
+`@patchsmith/db` defines the Patchsmith platform database schema and database access.

@@ -18,11 +18,11 @@ const ExplicitLeaf = createRemoteComponent<object>("Leaf", {
 ExplicitLeaf({ children: ["not allowed"] });
 
 declare module "./index" {
-  interface PatchSmithViews {
+  interface PatchsmithViews {
     "/": { context: { workspaceId: string } };
     "/users": { context: { workspaceId: string; userId: string } };
   }
-  interface PatchSmithSlots {
+  interface PatchsmithSlots {
     panel: { views: "/" | "/users"; multiple: false };
     navbar: { views: "/" };
     page: { views: "/" | "/users"; multiple: true };

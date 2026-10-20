@@ -1,30 +1,30 @@
 import { allTasks } from "nanostores";
 import { expect, it, vi } from "vite-plus/test";
 
-import { createPatchSmithFetchClient } from "#client/fetch-client";
+import { createPatchsmithFetchClient } from "#client/fetch-client";
 import { testContract } from "#test-contract";
-import type { PatchSmithApp } from "#types";
+import type { PatchsmithApp } from "#types";
 
 import {
   createAppsQuery,
   createAppViewsQuery,
   createViewsQuery,
 } from "./query";
-import { createPatchSmithStore } from "./store";
+import { createPatchsmithStore } from "./store";
 
-const setup = (multiple = true, apps?: PatchSmithApp[]) => {
+const setup = (multiple = true, apps?: PatchsmithApp[]) => {
   const fetch = vi.fn<typeof globalThis.fetch>();
-  const client = createPatchSmithFetchClient({
+  const client = createPatchsmithFetchClient({
     baseUrl: "https://host.test/api/",
     fetch,
   });
-  const store = createPatchSmithStore({
+  const store = createPatchsmithStore({
     apps,
     baseUrl: client.baseUrl,
     client,
     contract: testContract(multiple),
   });
-  const app: PatchSmithApp = {
+  const app: PatchsmithApp = {
     id: "app",
     views: [
       multiple
@@ -239,7 +239,7 @@ it("sends parsed native contract context to instance requests without calling me
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockRejectedValue(new Error("Unexpected HTTP request"));
-  const client = createPatchSmithFetchClient({
+  const client = createPatchsmithFetchClient({
     baseUrl: "https://host.test",
     fetch,
   });
@@ -247,11 +247,11 @@ it("sends parsed native contract context to instance requests without calling me
     slots: { page: { multiple: true, views: ["/"] } },
     views: { "/": z.object({ user: z.object({ id: z.string() }) }) },
   });
-  const app: PatchSmithApp = {
+  const app: PatchsmithApp = {
     id: "app",
     views: [{ instances: true, path: "/", slot: "page" }],
   };
-  const store = createPatchSmithStore({
+  const store = createPatchsmithStore({
     apps: [app],
     baseUrl: client.baseUrl,
     client,

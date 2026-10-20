@@ -1,4 +1,4 @@
-// Include email OTP because PatchSmith uses it for verification and recovery.
+// Include email OTP because Patchsmith uses it for verification and recovery.
 export const captchaEndpoints = [
   "/sign-up/email",
   "/sign-in/email",

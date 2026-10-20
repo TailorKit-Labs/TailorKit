@@ -3,8 +3,8 @@ import { ORPCError, os } from "@orpc/server";
 import { cliAuthVerifyToken } from "@patchsmith/client-platform/client";
 
 import type { Context } from "./context";
-import { normalizePatchSmithNamedScope, selectPatchSmithScopes } from "./scope";
-import type { PatchSmithNamedScope, PatchSmithScopes } from "./types";
+import { normalizePatchsmithNamedScope, selectPatchsmithScopes } from "./scope";
+import type { PatchsmithNamedScope, PatchsmithScopes } from "./types";
 
 const require = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -15,7 +15,7 @@ const require = <T>(value: T | null | undefined): T => {
 
 export const o = os.$context<Context>();
 
-export const getPatchSmithContext = (context: Context) => {
+export const getPatchsmithContext = (context: Context) => {
   if (!context.patchsmith) {
     throw new ORPCError("UNAUTHORIZED", { message: "Unauthorized." });
   }
@@ -23,41 +23,41 @@ export const getPatchSmithContext = (context: Context) => {
   return context.patchsmith;
 };
 
-export const getPatchSmithScope = (
+export const getPatchsmithScope = (
   context: Context,
   name?: string
-): PatchSmithNamedScope => {
-  const { scopes } = getPatchSmithContext(context);
+): PatchsmithNamedScope => {
+  const { scopes } = getPatchsmithContext(context);
   const names = name === undefined ? Object.keys(scopes) : [name];
   if (names.length !== 1) {
     throw new ORPCError("BAD_REQUEST", {
-      message: "Choose one PatchSmith scope for this operation.",
+      message: "Choose one Patchsmith scope for this operation.",
     });
   }
   try {
-    return require(selectPatchSmithScopes(scopes, names)[0]);
+    return require(selectPatchsmithScopes(scopes, names)[0]);
   } catch (error) {
     throw new ORPCError("BAD_REQUEST", {
       message:
         error instanceof Error
           ? error.message
-          : "Invalid PatchSmith scope selection.",
+          : "Invalid Patchsmith scope selection.",
     });
   }
 };
 
-export const getPatchSmithScopes = (
+export const getPatchsmithScopes = (
   context: Context,
   names?: string[]
-): PatchSmithNamedScope[] => {
+): PatchsmithNamedScope[] => {
   try {
-    return selectPatchSmithScopes(getPatchSmithContext(context).scopes, names);
+    return selectPatchsmithScopes(getPatchsmithContext(context).scopes, names);
   } catch (error) {
     throw new ORPCError("BAD_REQUEST", {
       message:
         error instanceof Error
           ? error.message
-          : "Invalid PatchSmith scope selection.",
+          : "Invalid Patchsmith scope selection.",
     });
   }
 };
@@ -106,9 +106,9 @@ export const requireCliDeployToken = o.middleware(async ({ context, next }) => {
     });
   }
 
-  let scopes: PatchSmithScopes;
+  let scopes: PatchsmithScopes;
   try {
-    const scope = normalizePatchSmithNamedScope(token.scope);
+    const scope = normalizePatchsmithNamedScope(token.scope);
     if (!Object.hasOwn(context.scopeSchemas, scope.name)) {
       throw new TypeError("CLI token uses an undeclared scope.");
     }

@@ -13,7 +13,7 @@ const posts = table("posts", {
 });
 const schema = { posts, users };
 
-describe("PatchSmith relations", () => {
+describe("Patchsmith relations", () => {
   it("includes every table when navigation is omitted", () => {
     const relations = defineRelations(schema);
     expect(Object.keys(relations).toSorted()).toEqual(["posts", "users"]);

@@ -3,8 +3,8 @@ import type { Mock } from "vite-plus/test";
 import { describe, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
-import { createPatchSmithClient } from "./client";
-import { createPatchSmithServer } from "./handler";
+import { createPatchsmithClient } from "./client";
+import { createPatchsmithServer } from "./handler";
 
 const platformRequests = (request: Mock<typeof fetch>): Request[] =>
   request.mock.calls.map(([input, init]) =>
@@ -12,15 +12,16 @@ const platformRequests = (request: Mock<typeof fetch>): Request[] =>
   );
 
 const testScopeSchema = z.record(z.string(), z.string().min(1));
-const patchsmith = createPatchSmithServer({
+const tailor = createPatchsmithServer({
   baseUrl: "https://example.com/api/patchsmith",
   components: {},
   scopes: { org: testScopeSchema },
 });
-const optionalSchemaTailor = patchsmith;
+const optionalSchemaTailor = tailor;
 
 const authenticateImplementation2Implementation = () => ({
   scopes: { org: { tenant: "workspace" } },
+  subjectId: "user",
 });
 
 const authenticateImplementationImplementation = () => ({
@@ -28,6 +29,7 @@ const authenticateImplementationImplementation = () => ({
     org: { tenant: "org" },
     userOrg: { tenant: "user_org" },
   },
+  subjectId: "user",
 });
 
 const requestImplementationImplementation = (origin: string) =>
@@ -42,14 +44,45 @@ const requestImplementationImplementation = (origin: string) =>
     method: "POST",
   });
 
-describe("createPatchSmithServer", () => {
+describe("createPatchsmithServer", () => {
+  it.each([undefined, null, "", 123, "x".repeat(257)])(
+    "rejects authenticated host contexts without a valid subject: %j",
+    async (subjectId) => {
+      const platformFetch = vi.fn<typeof fetch>();
+      const server = createPatchsmithServer({
+        $internal: { platformFetch },
+        baseUrl: "https://host.test/api/patchsmith",
+        components: {},
+        projectKey: "project-key",
+        scopes: { org: testScopeSchema },
+      });
+      await expect(
+        server.handler(
+          new Request("https://host.test/api/patchsmith/backend/session", {
+            body: JSON.stringify({ appId: "app" }),
+            headers: { "content-type": "application/json" },
+            method: "POST",
+          }),
+          {
+            authenticate: () => ({
+              scopes: { org: { tenant: "verified" } },
+              // @ts-expect-error Exercise host integrations supplying invalid runtime authentication data.
+              subjectId,
+            }),
+          }
+        )
+      ).rejects.toThrow("Invalid authenticated subject");
+      expect(platformFetch).not.toHaveBeenCalled();
+    }
+  );
+
   it.each([
     ["GET", "preview/metadata?sessionId=removed"],
     ["GET", `preview/${"a".repeat(43)}`],
     ["POST", `preview/${"a".repeat(43)}`],
     ["POST", "preview/start"],
   ])("returns 404 for removed %s %s routes", async (method, path) => {
-    const response = await patchsmith.handler(
+    const response = await tailor.handler(
       new Request(`https://example.com/api/patchsmith/${path}`, { method }),
       { authenticate: authenticateImplementation2Implementation }
     );
@@ -57,14 +90,25 @@ describe("createPatchSmithServer", () => {
   });
 
   it("requests app backend tokens from the platform with host credentials and verified scopes", async () => {
-    const platformFetch = vi.fn<typeof fetch>().mockResolvedValueOnce(
-      Response.json({
+    const session = {
+      expiresAt: 123,
+      identity: {
+        appId: "app",
+        deploymentId: "deployment",
         expiresAt: 123,
-        token: "platform-token",
-        url: "https://runtime.test/rpc",
-      })
-    );
-    const server = createPatchSmithServer({
+        installationId: "app",
+        projectId: "project",
+        scope: { name: "org", value: { tenant: "verified" } },
+        subjectId: "user",
+        toolUrl: "https://host.test/api/patchsmith/tools/execute",
+      },
+      token: "platform-token",
+      url: "https://runtime.test/rpc",
+    };
+    const platformFetch = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json(session));
+    const server = createPatchsmithServer({
       $internal: {
         platformFetch,
       },
@@ -82,13 +126,14 @@ describe("createPatchSmithServer", () => {
         },
         method: "POST",
       }),
-      { authenticate: () => ({ scopes: { org: { tenant: "verified" } } }) }
+      {
+        authenticate: () => ({
+          scopes: { org: { tenant: "verified" } },
+          subjectId: "user",
+        }),
+      }
     );
-    expect(await response.json()).toEqual({
-      expiresAt: 123,
-      token: "platform-token",
-      url: "https://runtime.test/rpc",
-    });
+    expect(await response.json()).toEqual(session);
     const [issuedRequest] = platformRequests(platformFetch);
     if (!issuedRequest) {
       throw new Error("Expected a platform token request");
@@ -102,6 +147,7 @@ describe("createPatchSmithServer", () => {
     expect(await issuedRequest.json()).toEqual({
       app: { shortId: "app" },
       scopes: [{ name: "org", value: { tenant: "verified" } }],
+      subjectId: "user",
       toolUrl: "https://host.test/api/patchsmith/tools/execute",
     });
   });
@@ -116,7 +162,7 @@ describe("createPatchSmithServer", () => {
         url: "https://runtime.test/rpc",
       })
     );
-    const server = createPatchSmithServer({
+    const server = createPatchsmithServer({
       $internal: {
         platformFetch,
       },
@@ -127,7 +173,10 @@ describe("createPatchSmithServer", () => {
     });
     const request = requestImplementation;
     const authentication = {
-      authenticate: () => ({ scopes: { org: { tenant: "verified" } } }),
+      authenticate: () => ({
+        scopes: { org: { tenant: "verified" } },
+        subjectId: "user",
+      }),
     };
     const awaitedResult1 = await server.handler(
       request("https://host.test"),
@@ -175,7 +224,7 @@ describe("createPatchSmithServer", () => {
     "routes and issues sessions from baseUrl=$baseUrl",
     async ({ baseUrl, prefix, origin }) => {
       const bodies: unknown[] = [];
-      const server = createPatchSmithServer({
+      const server = createPatchsmithServer({
         $internal: {
           platformFetch: async (input, init) => {
             bodies.push(
@@ -195,7 +244,10 @@ describe("createPatchSmithServer", () => {
         scopes: { org: testScopeSchema },
       });
       const authentication = {
-        authenticate: () => ({ scopes: { org: { tenant: "verified" } } }),
+        authenticate: () => ({
+          scopes: { org: { tenant: "verified" } },
+          subjectId: "user",
+        }),
       };
       await Promise.all(
         ["schema", "meta"].map(async (route) => {
@@ -219,6 +271,7 @@ describe("createPatchSmithServer", () => {
         {
           app: { shortId: "app" },
           scopes: [{ name: "org", value: { tenant: "verified" } }],
+          subjectId: "user",
           toolUrl: `${origin + prefix}/tools/execute`,
         },
       ]);
@@ -245,7 +298,7 @@ describe("createPatchSmithServer", () => {
   ])("rejects an ambiguous or invalid baseUrl=%s", (baseUrl) => {
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     expect(() =>
-      createPatchSmithServer({
+      createPatchsmithServer({
         // oxlint-disable-next-line typescript/no-non-null-assertion -- Parameterized negative cases deliberately pass invalid inputs through the public API.
         baseUrl: baseUrl!,
         components: {},
@@ -263,7 +316,7 @@ describe("createPatchSmithServer", () => {
           { status: 404 }
         )
       );
-    const server = createPatchSmithServer({
+    const server = createPatchsmithServer({
       $internal: {
         platformFetch,
       },
@@ -278,7 +331,12 @@ describe("createPatchSmithServer", () => {
         headers: { "content-type": "application/json" },
         method: "POST",
       }),
-      { authenticate: () => ({ scopes: { org: { tenant: "verified" } } }) }
+      {
+        authenticate: () => ({
+          scopes: { org: { tenant: "verified" } },
+          subjectId: "user",
+        }),
+      }
     );
     expect(response.status).toBe(404);
     expect(response.headers.get("cache-control")).toBe("no-store");
@@ -290,7 +348,7 @@ describe("createPatchSmithServer", () => {
 
   it("selects only requested authenticated scope names for host app reads", async () => {
     const platformBodies: unknown[] = [];
-    const server = createPatchSmithServer({
+    const server = createPatchsmithServer({
       $internal: {
         platformFetch: async (input, init) => {
           const request =
@@ -337,7 +395,7 @@ describe("createPatchSmithServer", () => {
     const platformFetch = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(Response.json({ items: [] }));
-    const server = createPatchSmithServer({
+    const server = createPatchsmithServer({
       $internal: {
         platformFetch,
       },
@@ -362,7 +420,7 @@ describe("createPatchSmithServer", () => {
         "https://abc123def4.tailorkit.app/p/22222222-2222-4222-8222-222222222222/a/33333333-3333-4333-8333-333333333333/d/44444444-4444-4444-8444-444444444444/client.js",
       id: "app",
     };
-    const server = createPatchSmithServer({
+    const server = createPatchsmithServer({
       $internal: {
         platformFetch: vi.fn<typeof fetch>().mockResolvedValueOnce(
           Response.json({
@@ -379,7 +437,10 @@ describe("createPatchSmithServer", () => {
     const response = await server.handler(
       new Request("https://host.test/api/patchsmith/apps"),
       {
-        authenticate: () => ({ scopes: { org: { tenant: "workspace" } } }),
+        authenticate: () => ({
+          scopes: { org: { tenant: "workspace" } },
+          subjectId: "user",
+        }),
       }
     );
     expect(response.status).toBe(200);
@@ -388,7 +449,12 @@ describe("createPatchSmithServer", () => {
   it("serves the serialized schema from the handler", async () => {
     const response = await optionalSchemaTailor.handler(
       new Request("https://example.com/api/patchsmith/schema"),
-      { authenticate: () => ({ scopes: { org: { tenant: "test" } } }) }
+      {
+        authenticate: () => ({
+          scopes: { org: { tenant: "test" } },
+          subjectId: "user",
+        }),
+      }
     );
 
     await expect(response.json()).resolves.toMatchObject({
@@ -403,7 +469,12 @@ describe("createPatchSmithServer", () => {
       new Request(
         "https://example.com/api/patchsmith/cli-auth/approve?code=ABC-123-XYZ"
       ),
-      { authenticate: () => ({ scopes: { org: { tenant: "test" } } }) }
+      {
+        authenticate: () => ({
+          scopes: { org: { tenant: "test" } },
+          subjectId: "user",
+        }),
+      }
     );
 
     const html = await response.text();
@@ -414,7 +485,7 @@ describe("createPatchSmithServer", () => {
   });
 
   it("redirects unauthenticated CLI approvals to the host sign-in page", async () => {
-    const server = createPatchSmithServer({
+    const server = createPatchsmithServer({
       baseUrl: "https://example.com/api/patchsmith",
       cliAuth: { signInPath: "/admin/sign-in?source=patchsmith" },
       components: {},
@@ -436,7 +507,7 @@ describe("createPatchSmithServer", () => {
   });
 
   it("renders configured CLI approvals for authenticated users", async () => {
-    const server = createPatchSmithServer({
+    const server = createPatchsmithServer({
       baseUrl: "https://example.com/api/patchsmith",
       cliAuth: { signInPath: "/admin/sign-in" },
       components: {},
@@ -449,6 +520,7 @@ describe("createPatchSmithServer", () => {
       {
         authenticate: () => ({
           scopes: { org: { tenant: "test" }, userOrg: { tenant: "user" } },
+          subjectId: "user",
         }),
       }
     );
@@ -462,7 +534,7 @@ describe("createPatchSmithServer", () => {
   });
 
   it("preserves the scope selection when a CLI approval code is missing", async () => {
-    const server = createPatchSmithServer({
+    const server = createPatchsmithServer({
       baseUrl: "https://example.com/api/patchsmith",
       components: {},
       scopes: { org: testScopeSchema, userOrg: testScopeSchema },
@@ -480,6 +552,7 @@ describe("createPatchSmithServer", () => {
       {
         authenticate: () => ({
           scopes: { org: { tenant: "test" }, userOrg: { tenant: "user" } },
+          subjectId: "user",
         }),
       }
     );
@@ -491,7 +564,7 @@ describe("createPatchSmithServer", () => {
   });
 
   it("rejects cross-origin CLI sign-in redirects", async () => {
-    const server = createPatchSmithServer({
+    const server = createPatchsmithServer({
       baseUrl: "https://example.com/api/patchsmith",
       cliAuth: { signInPath: "//evil.example/sign-in" },
       components: {},
@@ -506,12 +579,12 @@ describe("createPatchSmithServer", () => {
         { authenticate: () => null }
       )
     ).rejects.toThrow(
-      "PatchSmith cliAuth.signInPath must be a same-origin path."
+      "Patchsmith cliAuth.signInPath must be a same-origin path."
     );
   });
 
   it("rejects host scopes that fail Standard Schema validation before platform access", async () => {
-    const server = createPatchSmithServer({
+    const server = createPatchsmithServer({
       baseUrl: "https://example.com/api/patchsmith",
       cliAuth: { signInPath: "/sign-in" },
       components: {},
@@ -523,7 +596,12 @@ describe("createPatchSmithServer", () => {
         new Request(
           "https://example.com/api/patchsmith/cli-auth/approve?code=ABC-123-XYZ"
         ),
-        { authenticate: () => ({ scopes: { org: { orgId: "" } } }) }
+        {
+          authenticate: () => ({
+            scopes: { org: { orgId: "" } },
+            subjectId: "user",
+          }),
+        }
       )
     ).rejects.toThrow(/failed its Standard Schema validation/u);
   });
@@ -532,7 +610,7 @@ describe("createPatchSmithServer", () => {
     const platformFetch = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(Response.json({ id: "cli_auth_session_1" }));
-    const server = createPatchSmithServer({
+    const server = createPatchsmithServer({
       $internal: {
         platformBaseUrl: "http://localhost:3000/api/platform",
         platformFetch,
@@ -551,7 +629,12 @@ describe("createPatchSmithServer", () => {
         body,
         method: "POST",
       }),
-      { authenticate: () => ({ scopes: { org: { orgId: "org_1" } } }) }
+      {
+        authenticate: () => ({
+          scopes: { org: { orgId: "org_1" } },
+          subjectId: "user",
+        }),
+      }
     );
 
     const html = await response.text();
@@ -572,7 +655,7 @@ describe("createPatchSmithServer", () => {
     const platformFetch = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(Response.json({ id: "cli_auth_session_1" }));
-    const server = createPatchSmithServer({
+    const server = createPatchsmithServer({
       $internal: {
         platformBaseUrl: "http://localhost:3000/api/platform",
         platformFetch,
@@ -592,7 +675,12 @@ describe("createPatchSmithServer", () => {
         body,
         method: "POST",
       }),
-      { authenticate: () => ({ scopes: { org: { orgId: "org_1" } } }) }
+      {
+        authenticate: () => ({
+          scopes: { org: { orgId: "org_1" } },
+          subjectId: "user",
+        }),
+      }
     );
 
     expect(
@@ -601,7 +689,7 @@ describe("createPatchSmithServer", () => {
   });
 
   it("surfaces rejected project keys during CLI auth start", async () => {
-    const server = createPatchSmithServer({
+    const server = createPatchsmithServer({
       $internal: {
         platformBaseUrl: "http://localhost:3000/api/platform",
         platformFetch: vi
@@ -613,20 +701,23 @@ describe("createPatchSmithServer", () => {
       projectKey: "invalid-project-key",
       scopes: { org: testScopeSchema },
     });
-    const client = createPatchSmithClient({
+    const client = createPatchsmithClient({
       fetch: async (request, init) => {
         const hostRequest =
           request instanceof Request ? request : new Request(request, init);
 
         return await server.handler(hostRequest, {
-          authenticate: () => ({ scopes: { org: { orgId: "org_1" } } }),
+          authenticate: () => ({
+            scopes: { org: { orgId: "org_1" } },
+            subjectId: "user",
+          }),
         });
       },
       url: "https://example.com/api/patchsmith",
     });
 
     await expect(client.cliAuth.start({})).rejects.toThrow(
-      "PatchSmith platform rejected the host project key. Check PATCHSMITH_PROJECT_KEY."
+      "Patchsmith platform rejected the host project key. Check PATCHSMITH_PROJECT_KEY."
     );
   });
 
@@ -641,7 +732,7 @@ describe("createPatchSmithServer", () => {
   ])(
     "preserves platform $code during CLI token verification",
     async ({ code, message, status }) => {
-      const server = createPatchSmithServer({
+      const server = createPatchsmithServer({
         $internal: {
           platformFetch: vi
             .fn<typeof fetch>()
@@ -654,7 +745,7 @@ describe("createPatchSmithServer", () => {
         projectKey: "host-project-key",
         scopes: { org: testScopeSchema },
       });
-      const client = createPatchSmithClient({
+      const client = createPatchsmithClient({
         fetch: async (request, init) => {
           const response = await server.handler(
             request instanceof Request ? request : new Request(request, init),
@@ -681,7 +772,7 @@ describe("createPatchSmithServer", () => {
   it("calls the platform client with authorization headers", async () => {
     const requests: Request[] = [];
     const hostRequests: Request[] = [];
-    const server = createPatchSmithServer({
+    const server = createPatchsmithServer({
       $internal: {
         platformBaseUrl: "http://localhost:3000/api/platform",
         platformFetch: asyncFixture((request, init) => {
@@ -706,7 +797,7 @@ describe("createPatchSmithServer", () => {
       components: {},
       scopes: { org: testScopeSchema },
     });
-    const client = createPatchSmithClient({
+    const client = createPatchsmithClient({
       fetch: async (request, init) => {
         const hostRequest =
           request instanceof Request
@@ -757,7 +848,7 @@ describe("createPatchSmithServer", () => {
   it("validates host app mutations and attaches the CLI deploy token scope", async () => {
     const requests: Request[] = [];
     const hostRequests: Request[] = [];
-    const server = createPatchSmithServer({
+    const server = createPatchsmithServer({
       $internal: {
         platformBaseUrl: "http://localhost:3000/api/platform",
         platformFetch: asyncFixture((request, init) => {
@@ -779,7 +870,7 @@ describe("createPatchSmithServer", () => {
       components: {},
       scopes: { org: testScopeSchema },
     });
-    const client = createPatchSmithClient({
+    const client = createPatchsmithClient({
       fetch: async (request, init) => {
         const hostRequest =
           request instanceof Request
@@ -854,7 +945,7 @@ describe("createPatchSmithServer", () => {
   it.each([true, false])(
     "returns AI provenance from app lookups: %s",
     async (createdByAgent) => {
-      const server = createPatchSmithServer({
+      const server = createPatchsmithServer({
         $internal: {
           platformFetch: async (input, init) => {
             const request =
@@ -878,7 +969,7 @@ describe("createPatchSmithServer", () => {
         components: {},
         scopes: { org: testScopeSchema },
       });
-      const client = createPatchSmithClient({
+      const client = createPatchsmithClient({
         fetch: async (input, init) =>
           await server.handler(
             input instanceof Request ? input : new Request(input, init),
@@ -902,7 +993,7 @@ describe("createPatchSmithServer", () => {
 
   it("preserves instance discovery when the CLI deploys through the host", async () => {
     const requests: Request[] = [];
-    const server = createPatchSmithServer({
+    const server = createPatchsmithServer({
       $internal: {
         platformFetch: asyncFixture((input, init) => {
           const request =
@@ -923,7 +1014,7 @@ describe("createPatchSmithServer", () => {
       components: {},
       scopes: { org: testScopeSchema },
     });
-    const client = createPatchSmithClient({
+    const client = createPatchsmithClient({
       fetch: async (input, init) =>
         await server.handler(
           input instanceof Request ? input : new Request(input, init),
@@ -959,7 +1050,7 @@ describe("createPatchSmithServer", () => {
 
   it("accepts a CLI token containing a transformed scope output", async () => {
     const platformBodies: unknown[] = [];
-    const server = createPatchSmithServer({
+    const server = createPatchsmithServer({
       $internal: {
         platformFetch: async (input, init) => {
           const request =
@@ -981,7 +1072,7 @@ describe("createPatchSmithServer", () => {
           .transform(({ raw }) => ({ canonical: raw.trim() })),
       },
     });
-    const client = createPatchSmithClient({
+    const client = createPatchsmithClient({
       fetch: async (input, init) => {
         const request =
           input instanceof Request ? input : new Request(input, init);

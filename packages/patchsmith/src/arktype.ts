@@ -1,2 +1,2 @@
 export { primitives } from "@patchsmith/core/primitives/arktype";
-export type { PatchSmithTheme } from "@patchsmith/core/schema";
+export type { PatchsmithTheme } from "@patchsmith/core/schema";

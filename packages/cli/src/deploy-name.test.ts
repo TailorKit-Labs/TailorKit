@@ -1,16 +1,35 @@
+import { execFile } from "node:child_process";
 import { once } from "node:events";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { promisify } from "node:util";
 
 import { SignJWT } from "jose";
-import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  expect,
+  it,
+  vi,
+} from "vite-plus/test";
 import { z } from "zod";
 
 import { runDeploy } from "./deploy";
 import { linkTestDependencies } from "./test-utils";
+
+// oxlint-disable-next-line typescript/strict-void-return -- promisify consumes execFile's completion callback, not its ChildProcess return value.
+const execute = promisify(execFile);
+
+beforeAll(async () => {
+  await execute("pnpm", ["run", "build"], {
+    cwd: path.resolve(import.meta.dirname, ".."),
+    timeout: 60_000,
+  });
+}, 60_000);
 
 const scope = { name: "user", value: { userId: "one" } };
 const requests: { body: string; method?: string; path?: string }[] = [];

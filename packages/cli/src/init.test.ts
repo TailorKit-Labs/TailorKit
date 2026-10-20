@@ -134,7 +134,7 @@ it("reports schema fetch failures without creating a project", async () => {
   );
   const options = await initOptions();
   await expect(runInit(options)).rejects.toThrow(
-    "Unable to fetch PatchSmith schema"
+    "Unable to fetch Patchsmith schema"
   );
   await expect(stat(path.join(options.cwd, options.name))).rejects.toThrow();
 });
@@ -187,7 +187,7 @@ it.each(["{", "null", "{}", '{"version":2,"components":{}}'])(
     const fetch = vi.fn();
     vi.stubGlobal("fetch", fetch);
     await expect(runInit(options)).rejects.toThrow(
-      "Unable to read PatchSmith schema"
+      "Unable to read Patchsmith schema"
     );
     expect(fetch).not.toHaveBeenCalled();
     await expect(stat(path.join(options.cwd, options.name))).rejects.toThrow();

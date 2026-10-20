@@ -17,7 +17,7 @@ const toolRecord: v.GenericSchema<unknown, ToolRecord> = v.lazy(() =>
   v.record(v.string(), v.union([toolLeaf, toolRecord]))
 );
 
-const PatchSmithSchemaSpecSchema = v.pipe(
+const PatchsmithSchemaSpecSchema = v.pipe(
   v.strictObject({
     components: componentRecord,
     scopes: v.optional(v.record(v.string(), v.record(v.string(), v.unknown()))),
@@ -83,8 +83,8 @@ const PatchSmithSchemaSpecSchema = v.pipe(
   })
 );
 
-export type PatchSmithSchemaSpec = v.InferOutput<
-  typeof PatchSmithSchemaSpecSchema
+export type PatchsmithSchemaSpec = v.InferOutput<
+  typeof PatchsmithSchemaSpecSchema
 >;
 
-export { PatchSmithSchemaSpecSchema as PatchSmithSchemaSpec };
+export { PatchsmithSchemaSpecSchema as PatchsmithSchemaSpec };

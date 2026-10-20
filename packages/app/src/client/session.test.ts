@@ -1,14 +1,47 @@
 import { asyncFixture } from "@patchsmith/config/testing";
 import { expect, it, vi } from "vite-plus/test";
 
-import { createSessionProvider } from "./session";
+import { createSessionProvider, parseSession } from "./session";
+
+const identity = {
+  appId: "app",
+  deploymentId: "deployment",
+  expiresAt: Date.now() + 300_000,
+  installationId: "app",
+  projectId: "project",
+  scope: { name: "workspace", value: {} },
+  subjectId: "principal",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
+};
+
+it.each([undefined, null, "", 123, "x".repeat(257)])(
+  "rejects session identities without a valid subject: %j",
+  async (subjectId) => {
+    const response = {
+      expiresAt: Date.now() + 300_000,
+      identity: { ...identity, subjectId },
+      token: "scoped",
+      url: "https://runtime.test/rpc",
+    };
+    expect(() => parseSession(response)).toThrow();
+    const provider = createSessionProvider({
+      appId: "app",
+      baseUrl: "https://host.test/api/patchsmith",
+      fetch: asyncFixture(() => Response.json(response)),
+    });
+    await expect(provider({ refresh: false })).rejects.toMatchObject({
+      code: "UNAVAILABLE",
+      message: "Invalid app session",
+    });
+  }
+);
 
 it("deduplicates token requests, caches until renewal and sends only the host-bound app ID", async () => {
   const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(
     asyncFixture(() =>
       Response.json({
         expiresAt: Date.now() + 300_000,
-        subjectId: "principal",
+        identity,
         token: "scoped",
         url: "https://runtime.test/rpc",
       })
@@ -49,7 +82,7 @@ it("renews cached sessions when one minute remains", async () => {
       asyncFixture(() =>
         Response.json({
           expiresAt: Date.now() + 300_000,
-          subjectId: "principal",
+          identity,
           token: "scoped",
           url: "https://runtime.test/rpc",
         })
@@ -79,7 +112,7 @@ it("does not cache failed authorization or malformed sessions", async () => {
     .mockResolvedValueOnce(
       Response.json({
         expiresAt: Date.now() + 300_000,
-        subjectId: "principal",
+        identity,
         token: "scoped",
         url: "https://runtime.test/rpc",
       })
@@ -107,7 +140,7 @@ it("reports session network failures as retryable and allows the next request to
     .mockResolvedValueOnce(
       Response.json({
         expiresAt: Date.now() + 300_000,
-        subjectId: "principal",
+        identity,
         token: "scoped",
         url: "https://runtime.test/rpc",
       })
@@ -130,7 +163,7 @@ it("caches server-authenticated sessions without a subject cache key and refresh
     .mockResolvedValueOnce(
       Response.json({
         expiresAt: Date.now() + 300_000,
-        subjectId: "first-user",
+        identity: { ...identity, subjectId: "first-user" },
         token: "first",
         url: "https://runtime.test/rpc",
       })
@@ -138,7 +171,7 @@ it("caches server-authenticated sessions without a subject cache key and refresh
     .mockResolvedValueOnce(
       Response.json({
         expiresAt: Date.now() + 300_000,
-        subjectId: "next-user",
+        identity: { ...identity, subjectId: "next-user" },
         token: "refreshed",
         url: "https://runtime.test/rpc",
       })
@@ -149,16 +182,16 @@ it("caches server-authenticated sessions without a subject cache key and refresh
     fetch,
   });
   await expect(session({ refresh: false })).resolves.toMatchObject({
-    subjectId: "first-user",
+    identity: { ...identity, subjectId: "first-user" },
     token: "first",
   });
   await expect(session({ refresh: false })).resolves.toMatchObject({
-    subjectId: "first-user",
+    identity: { ...identity, subjectId: "first-user" },
     token: "first",
   });
   expect(fetch).toHaveBeenCalledTimes(1);
   await expect(session({ refresh: true })).resolves.toMatchObject({
-    subjectId: "next-user",
+    identity: { ...identity, subjectId: "next-user" },
     token: "refreshed",
   });
   expect(fetch).toHaveBeenCalledTimes(2);

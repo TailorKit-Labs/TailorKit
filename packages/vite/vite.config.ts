@@ -14,7 +14,7 @@ export default defineConfig({
       "upload-manifest": "src/builder/upload-manifest.ts",
     },
     format: "esm",
-    target: "node20",
+    target: "node22",
   },
   test: {
     // Build fixtures also launch Vite and Drizzle; avoid saturating CI CPUs.

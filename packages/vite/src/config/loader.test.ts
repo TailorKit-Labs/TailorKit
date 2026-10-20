@@ -5,15 +5,15 @@ import path from "node:path";
 import * as v from "valibot";
 import { expect, expectTypeOf, it } from "vite-plus/test";
 
-import type { PatchSmithConfig, ResolvedPatchSmithConfig } from "./config";
+import type { PatchsmithConfig, ResolvedPatchsmithConfig } from "./config";
 import { patchsmithConfigSchema } from "./config";
-import { loadPatchSmithConfig } from "./loader";
+import { loadPatchsmithConfig } from "./loader";
 
 const config = { host: "https://host.test", name: "My App", slug: "my-app" };
 
 it("requires name and slug in the public and resolved config types", () => {
-  expectTypeOf<PatchSmithConfig>().toExtend<{ name: string; slug: string }>();
-  expectTypeOf<ResolvedPatchSmithConfig>().toExtend<{
+  expectTypeOf<PatchsmithConfig>().toExtend<{ name: string; slug: string }>();
+  expectTypeOf<ResolvedPatchsmithConfig>().toExtend<{
     name: string;
     slug: string;
   }>();
@@ -35,7 +35,7 @@ it("loads and trims the configured app name and description", async () => {
       path.join(root, "patchsmith.config.mjs"),
       'export default { host: "https://host.test", name: "  My App  ", slug: "my-app", description: "  My app description  " };'
     );
-    const loaded = await loadPatchSmithConfig(undefined, root);
+    const loaded = await loadPatchsmithConfig(undefined, root);
     expect(loaded.config.name).toBe("My App");
     expect(loaded.config.description).toBe("My app description");
   } finally {
@@ -96,7 +96,7 @@ it("rejects unsupported storage configuration", async () => {
       path.join(root, "patchsmith.config.mjs"),
       'export default { host: "https://host.test", name: "My App", slug: "my-app", storage: { entry: "./server.ts" } };'
     );
-    await expect(loadPatchSmithConfig(undefined, root)).rejects.toThrow(
+    await expect(loadPatchsmithConfig(undefined, root)).rejects.toThrow(
       "Invalid key"
     );
   } finally {

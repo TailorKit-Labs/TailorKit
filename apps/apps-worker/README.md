@@ -2,7 +2,7 @@
 
 `tailorkit-apps-worker` runs app queries, mutations, actions, and subscriptions on Cloudflare. It also delivers public client assets and logos. This private runtime is licensed under BUSL-1.1.
 
-The PatchSmith command-line interface (CLI) uploads server bundles to the private blob bucket under `server/server.js`. Client code uses `client/client.js`. The worker’s asset allowlist excludes server bundles.
+The Patchsmith command-line interface (CLI) uploads server bundles to the private blob bucket under `server/server.js`. Client code uses `client/client.js`. The worker’s asset allowlist excludes server bundles.
 
 ## Store gzip and negotiate browser delivery
 
@@ -18,9 +18,9 @@ Local Miniflare tests verify stored bytes, cache behavior, and public headers. V
 
 ## Authenticate app requests
 
-The host SDK uses its existing `authenticate` callback and calls `POST /apps/{appId}/runtime/session` with its project key, verified scopes, optional product-defined `subjectId`, and product tool URL. The platform checks the app belongs to that project and one of those scopes, resolves its published deployment, and issues a short-lived ES256 JSON Web Token (JWT).
+The host SDK uses its existing `authenticate` callback and calls `POST /apps/{appId}/runtime/session` with its project key, verified scopes, required product-defined `subjectId`, and product tool URL. The platform checks the app belongs to that project and one of those scopes, resolves its published deployment, and issues a short-lived ES256 JSON Web Token (JWT).
 
-The canonical app ID is the stable installation ID and JWT `sub`. Optional `subjectId` identifies any product-defined principal; calls without it are attributed to the installation. Apps cannot supply a verified subject.
+The canonical app ID is the stable installation ID and JWT `sub`. `subjectId` identifies the authenticated product user or service principal and is required on every session and signed token. Apps cannot supply a verified subject.
 
 The platform returns `https://<projectShortId>.tailorkit.app/a/<appShortId>/rpc`, deriving the hostname from `ASSET_DOMAIN` (default `tailorkit.app`). `APP_RUNTIME_URL` is an optional origin override for local development.
 
@@ -131,7 +131,7 @@ Upload and publish app bundles with `patchsmith deploy`. The CLI gzips client an
 
 Before publication, the platform downloads gzip client bundles and rejects decoded code above 3 MiB. Worker and Node delivery also cap decoded streams at 3 MiB. The Node asset adapter serves the decoded stream supplied by Node fetch. When the platform blob provider uses R2, both files go into that R2 bucket. The runtime's `BUNDLES` binding must point to the same bucket.
 
-`wrangler dev --local` uses a separate local R2 store; ordinary PatchSmith deployments do not populate it. Use `test` for the complete local runtime demonstration: its test fixtures populate disposable R2 directly, without a seed command.
+`wrangler dev --local` uses a separate local R2 store; ordinary Patchsmith deployments do not populate it. Use `test` for the complete local runtime demonstration: its test fixtures populate disposable R2 directly, without a seed command.
 
 Start the local worker from the repository root:
 

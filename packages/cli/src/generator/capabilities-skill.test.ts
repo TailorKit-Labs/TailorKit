@@ -7,21 +7,24 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 import { primitives } from "@patchsmith/core/primitives/zod";
-import { createPatchSmithSchema } from "@patchsmith/core/schema";
+import { createPatchsmithSchema } from "@patchsmith/core/schema";
 import { expect, it } from "vite-plus/test";
+import { z } from "zod";
 
 import {
   generateTypes,
   renderGeneratedReferences,
   renderGeneratedTypes,
 } from "./types";
-import type { PatchSmithSchemaFile } from "./types";
+import type { PatchsmithSchemaFile } from "./types";
 
-const schema: PatchSmithSchemaFile = {
+const schema: PatchsmithSchemaFile = {
   components: {
     Button: {
-      callbacks: { onPress: {} },
+      callbacks: { onPress: {}, onValidate: { output: { type: "boolean" } } },
       children: true,
+      description:
+        "Activates on pointer or keyboard input. Disabled buttons do not emit onPress.",
       fields: {
         properties: { variant: { enum: ["primary", "secondary"] } },
         type: "object",
@@ -115,6 +118,7 @@ it("generates a discoverable skill with working reference links, including custo
         path.join(path.dirname(skillPath), "references/components/Button.md"),
         "utf-8"
       );
+      expect(component).toContain(schema.components?.Button?.description);
       if (outFile !== undefined) {
         expect(component).toContain("custom%20contracts/host.ts");
       }
@@ -177,11 +181,18 @@ it("typechecks components, callbacks, tools and context from one bindings file",
       path.join(root, "consumer.ts"),
       `
 import { Button, Input, tools } from "./host";
-import type { ButtonProps, InputProps, ViewProps, PatchSmithBackendTools } from "./host";
+import type { ButtonProps, InputProps, ViewProps, PatchsmithBackendTools } from "./host";
 const button: ButtonProps = { variant: "primary", onPress: () => {} };
-const input: InputProps = { onChange: ({ value }) => value.toUpperCase() };
+const input: InputProps = { onChange: ({ value }) => { value.toUpperCase(); } };
+const syncResult: ButtonProps = { onValidate: () => true };
+const asyncResult: ButtonProps = { onValidate: async () => true };
+const asyncVoid: ButtonProps = { onPress: async () => {} };
+// @ts-expect-error Callback output schemas reject incompatible synchronous results.
+const invalidResult: ButtonProps = { onValidate: () => "yes" };
+// @ts-expect-error Callback output schemas reject incompatible promised results.
+const invalidAsyncResult: ButtonProps = { onValidate: async () => "yes" };
 const context: ViewProps<"/">["context"] = { teamId: "team-1" };
-const backend: PatchSmithBackendTools = tools;
+const backend: PatchsmithBackendTools = tools;
 const added: Promise<boolean> = backend.todos.add("title");
 // @ts-expect-error Unsupported component variants remain rejected.
 const invalidButton: ButtonProps = { variant: "danger" };
@@ -235,6 +246,9 @@ it("generates targeted human-readable references from the same component and slo
     hasApi: false,
   });
   expect(files["components/Button.md"]).toContain('"primary", "secondary"');
+  expect(files["components/Button.md"]).toContain(
+    schema.components?.Button?.description
+  );
   expect(files["components/Button.md"]).toContain("onPress | no payload");
   expect(files["components/Button.md"]).not.toContain("onChange");
   expect(files["components/Input.md"]).toContain("value (required): string");
@@ -244,8 +258,32 @@ it("generates targeted human-readable references from the same component and slo
   expect(files["index.md"]?.length).toBeLessThan(1500);
 });
 
+it("carries component and slot descriptions from a host contract into skill references", () => {
+  const contract = createPatchsmithSchema({
+    components: {
+      Form: {
+        children: true,
+        description:
+          "disabled blocks submission only.\nInputs remain editable.",
+      },
+      Input: {},
+    },
+    slots: { panel: { description: "Compact workspace panel.", views: ["/"] } },
+    views: { "/": z.object({}) },
+  }).serialize();
+  const files = renderGeneratedReferences(contract, {
+    bindingsPath: "../../../src/patchsmith.gen.ts",
+    hasApi: false,
+  });
+  expect(files["components/Form.md"]).toContain(
+    "disabled blocks submission only.\nInputs remain editable."
+  );
+  expect(files["views.md"]).toContain("Compact workspace panel.");
+  expect(files["components/Input.md"]).not.toContain("undefined");
+});
+
 it("keeps responsive primitive references small without dropping the host's keys or tokens", () => {
-  const contract = createPatchSmithSchema({
+  const contract = createPatchsmithSchema({
     components: primitives({
       breakpoints: { lg: "1024px", md: "768px" },
       tokens: { background: { accent: "blue", surface: "white" } },

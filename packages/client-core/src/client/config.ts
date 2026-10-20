@@ -1,20 +1,20 @@
 import { flattenTools } from "@patchsmith/core/schema";
 import type {
-  PatchSmithTheme,
+  PatchsmithTheme,
   CallbackMap,
   ComponentDefinition,
   ComponentProps,
   Schema,
-  PatchSmithContract,
+  PatchsmithContract,
   ToolImplementations,
 } from "@patchsmith/core/schema";
 
 import type { RemoteComponentRegistry } from "#store/local/remote-view";
 
-import { createPatchSmithFetchClient } from "./fetch-client";
+import { createPatchsmithFetchClient } from "./fetch-client";
 import type {
-  PatchSmithFetchClient,
-  PatchSmithCacheOptions,
+  PatchsmithFetchClient,
+  PatchsmithCacheOptions,
 } from "./fetch-client";
 
 const isFunctionValue = <TValue>(
@@ -22,7 +22,7 @@ const isFunctionValue = <TValue>(
 ): value is Extract<TValue, CallableFunction> => typeof value === "function";
 
 type ClientToolTree = ToolImplementations<
-  PatchSmithContract["tools"],
+  PatchsmithContract["tools"],
   "client"
 >;
 const isToolHandler = (
@@ -73,16 +73,16 @@ export const toComponentTagName = (name: string): string =>
     .replaceAll(/[\s_]+/gu, "-")
     .toLowerCase()}`;
 
-export interface PatchSmithClientConfig {
-  readonly tools?: ToolImplementations<PatchSmithContract["tools"], "client">;
+export interface PatchsmithClientConfig {
+  readonly tools?: ToolImplementations<PatchsmithContract["tools"], "client">;
   readonly baseUrl: string | URL;
-  readonly contract: PatchSmithContract;
+  readonly contract: PatchsmithContract;
   readonly assetsBaseUrl?: string | URL;
-  readonly fetchClient?: PatchSmithFetchClient;
+  readonly fetchClient?: PatchsmithFetchClient;
   /** Clear cached app data and sessions after changing the host auth session. */
   readonly clearCache: () => void;
   readonly components: RemoteComponentRegistry;
-  readonly theme: PatchSmithTheme;
+  readonly theme: PatchsmithTheme;
 }
 
 export type SlotMultiple<TSlot> = TSlot extends {
@@ -94,16 +94,16 @@ export type SlotMultiple<TSlot> = TSlot extends {
     : false;
 
 /** Build framework-independent client configuration after an adapter wraps its renderers. */
-export const createPatchSmithClientConfig = (options: {
-  contract: PatchSmithContract;
-  tools?: ToolImplementations<PatchSmithContract["tools"], "client">;
+export const createPatchsmithClientConfig = (options: {
+  contract: PatchsmithContract;
+  tools?: ToolImplementations<PatchsmithContract["tools"], "client">;
   assetsBaseUrl?: string | URL;
   baseUrl: string | URL;
   components?: RemoteComponentRegistry;
-  theme?: PatchSmithTheme;
-  cache?: PatchSmithCacheOptions;
+  theme?: PatchsmithTheme;
+  cache?: PatchsmithCacheOptions;
   fetch?: typeof fetch;
-}): PatchSmithClientConfig => {
+}): PatchsmithClientConfig => {
   const declarations = flattenTools(options.contract.tools);
   const visit = (tree: ClientToolTree | undefined, prefix = "") => {
     if (!tree) {
@@ -136,7 +136,7 @@ export const createPatchSmithClientConfig = (options: {
       throw new TypeError(`Missing client tool "${path}"`);
     }
   }
-  const fetchClient = createPatchSmithFetchClient(options);
+  const fetchClient = createPatchsmithFetchClient(options);
   return {
     assetsBaseUrl: options.assetsBaseUrl,
     baseUrl: options.baseUrl,

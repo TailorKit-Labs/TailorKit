@@ -13,7 +13,7 @@ import type {
   SerializedComponent,
   SerializedTool,
   SerializedTools,
-  PatchSmithSchemaFile,
+  PatchsmithSchemaFile,
 } from "./types";
 
 const tableCell = (value: string): string =>
@@ -162,17 +162,19 @@ const renderComponentReference = (
   responsive: ResponsiveLookup,
   bindingsPath: string
 ): string => {
-  const lines = [
-    `# ${name}`,
-    referenceHeader,
+  const lines = [`# ${name}`, referenceHeader];
+  if (component.description !== undefined) {
+    lines.push(component.description, "");
+  }
+  lines.push(
     `Import from \`#patchsmith\`. ${component.children === true ? "Accepts children between JSX tags." : "Does not accept children."}`,
     `Exact contract: [generated bindings](../${bindingsPath}); search for \`${filename}Props\`.`,
     "",
     "## Props",
     "",
     "| Prop | Required | Accepted values |",
-    "| --- | --- | --- |",
-  ];
+    "| --- | --- | --- |"
+  );
   for (const [prop, field] of Object.entries(
     component.fields?.properties ?? {}
   )) {
@@ -258,7 +260,7 @@ const renderToolReferences = (
       "",
       toolExample(parts, tool.input !== undefined),
       "",
-      `Exact contracts: [generated bindings](../${bindingsPath}); search for the tool name in PatchSmithTools or PatchSmithBackendTools.`,
+      `Exact contracts: [generated bindings](../${bindingsPath}); search for the tool name in PatchsmithTools or PatchsmithBackendTools.`,
       "",
     ].join("\n");
   }
@@ -266,7 +268,7 @@ const renderToolReferences = (
 };
 
 const renderViewsReference = (
-  schema: PatchSmithSchemaFile,
+  schema: PatchsmithSchemaFile,
   bindingsPath: string
 ): string => {
   const views = [
@@ -301,7 +303,7 @@ const renderViewsReference = (
     }
   }
   views.push(
-    `Exact contracts: [generated bindings](${bindingsPath}); search for \`ViewPropsByPath\` or \`PatchSmithSlots\`.`,
+    `Exact contracts: [generated bindings](${bindingsPath}); search for \`ViewPropsByPath\` or \`PatchsmithSlots\`.`,
     "",
     "## Context declarations",
     "",
@@ -320,7 +322,7 @@ const renderViewsReference = (
 };
 
 export const renderReferences = (
-  schema: PatchSmithSchemaFile,
+  schema: PatchsmithSchemaFile,
   components: ReferenceComponent[],
   responsive: ResponsiveLookup,
   { bindingsPath, hasApi }: { bindingsPath: string; hasApi: boolean }
@@ -360,7 +362,7 @@ export const renderReferences = (
     "Call tools directly from a callback or effect and display their result/error. They return promises, not subscriptions. For backend calls, use an action's tools capability; product credentials stay in the product.",
     "",
     ...renderToolReferences(schema.tools ?? {}, files, bindingsPath),
-    `Exact contracts: [generated bindings](${bindingsPath}); search for \`PatchSmithTools\` and \`PatchSmithBackendTools\`.`,
+    `Exact contracts: [generated bindings](${bindingsPath}); search for \`PatchsmithTools\` and \`PatchsmithBackendTools\`.`,
     "",
   ].join("\n");
   const responsiveKeys = new Set<string>();

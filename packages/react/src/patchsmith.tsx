@@ -1,31 +1,31 @@
 import {
-  createPatchSmithClientConfig,
+  createPatchsmithClientConfig,
   createComponentRegistry,
-  createPatchSmithStore,
+  createPatchsmithStore,
 } from "@patchsmith/client-core";
 import type {
   AnyComponentDefinition,
   ComponentRenderer,
   ComponentRenderers,
   CompleteComponentRenderers,
-  PatchSmithClientConfig,
-  PatchSmithApp,
+  PatchsmithClientConfig,
+  PatchsmithApp,
   SlotMultiple,
-  PatchSmithCacheOptions,
+  PatchsmithCacheOptions,
 } from "@patchsmith/client-core";
 import type {
-  PatchSmithTheme,
+  PatchsmithTheme,
   ComponentDefinition,
   ComponentProps,
   ViewDefinition,
   SlotDefinitions,
-  PatchSmithContract,
+  PatchsmithContract,
   ToolImplementations,
 } from "@patchsmith/core/schema";
 import { createElement, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
-import { PatchSmithContext, usePatchSmithContext } from "./components/context";
+import { PatchsmithContext, usePatchsmithContext } from "./components/context";
 import { RenderSlot as ReactRenderSlot } from "./components/render-slot";
 import type {
   ControlledRenderSlotProps,
@@ -44,26 +44,26 @@ import { useViews as useRootViews } from "./hooks/use-views";
 import type { UseViewsOptions, UseViewsResult } from "./hooks/use-views";
 import type { primitives } from "./primitives";
 
-export type { PatchSmithClientConfig } from "@patchsmith/client-core";
+export type { PatchsmithClientConfig } from "@patchsmith/client-core";
 
-export type { PatchSmithApp } from "@patchsmith/client-core";
+export type { PatchsmithApp } from "@patchsmith/client-core";
 
-export interface PatchSmithProviderProps {
-  apps?: PatchSmithApp[];
+export interface PatchsmithProviderProps {
+  apps?: PatchsmithApp[];
   children?: ReactNode;
 }
 
-export interface PatchSmithInstance<
+export interface PatchsmithInstance<
   TViews extends Record<string, ViewDefinition> = Record<
     string,
     ViewDefinition
   >,
   TSlots extends SlotDefinitions = SlotDefinitions,
   TScopeNames extends string = string,
-> extends PatchSmithClientConfig {
+> extends PatchsmithClientConfig {
   readonly $slots?: TSlots;
   readonly $views?: TViews;
-  readonly Provider: (props: PatchSmithProviderProps) => ReactNode;
+  readonly Provider: (props: PatchsmithProviderProps) => ReactNode;
   readonly RenderSlot: RenderSlotComponent<TViews, TSlots>;
   readonly useApps: (options?: UseAppsOptions<TScopeNames>) => UseAppsResult;
   readonly useViews: <TSlot extends keyof TSlots & string>(
@@ -99,26 +99,26 @@ interface ReactComponentRenderArgs {
   children?: ReactNode;
 }
 
-const createReactPatchSmithClient = <
+const createReactPatchsmithClient = <
   TComponents extends Record<string, AnyComponentDefinition>,
   TViews extends Record<string, ViewDefinition> = Record<string, never>,
   TSlots extends SlotDefinitions = SlotDefinitions,
   TScopeNames extends string = string,
 >(options: {
-  contract: PatchSmithContract;
-  tools?: ToolImplementations<PatchSmithContract["tools"], "client">;
+  contract: PatchsmithContract;
+  tools?: ToolImplementations<PatchsmithContract["tools"], "client">;
   assetsBaseUrl?: string | URL;
   baseUrl: string | URL;
   components?: ComponentRenderers<TComponents, ReactNode>;
-  theme?: PatchSmithTheme;
-  cache?: PatchSmithCacheOptions;
+  theme?: PatchsmithTheme;
+  cache?: PatchsmithCacheOptions;
   fetch?: typeof fetch;
-}): PatchSmithInstance<TViews, TSlots, TScopeNames> => {
+}): PatchsmithInstance<TViews, TSlots, TScopeNames> => {
   const wrappedComponents = createComponentRegistry(
     options.components ?? {},
     (renderer) =>
       // oxlint-disable-next-line typescript/promise-function-async -- Client components must render synchronously; ReactNode also permits Promise results for server components.
-      function PatchSmithComponent({
+      function PatchsmithComponent({
         children,
         ...props
       }: ReactComponentRenderArgs["props"] & { children?: ReactNode }) {
@@ -133,24 +133,24 @@ const createReactPatchSmithClient = <
       }
   );
 
-  const clientConfig = createPatchSmithClientConfig({
+  const clientConfig = createPatchsmithClientConfig({
     ...options,
     components: wrappedComponents,
   });
 
   const ClientRenderSlot = (props: RenderSlotProps<TSlots>) => {
     // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
-    usePatchSmithContext("RenderSlot", client);
+    usePatchsmithContext("RenderSlot", client);
     // SAFETY: The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary.
     return createElement(ReactRenderSlot, props as RenderSlotProps);
   };
 
-  const client: PatchSmithInstance<TViews, TSlots, TScopeNames> = {
+  const client: PatchsmithInstance<TViews, TSlots, TScopeNames> = {
     ...clientConfig,
-    Provider: function Provider({ children, apps }: PatchSmithProviderProps) {
+    Provider: function Provider({ children, apps }: PatchsmithProviderProps) {
       // oxlint-disable-next-line react/hook-use-state -- The provider owns one immutable store; prop updates are applied through the store API.
       const [store] = useState(() =>
-        createPatchSmithStore({
+        createPatchsmithStore({
           apps,
           assetsBaseUrl: client.assetsBaseUrl,
           baseUrl: client.baseUrl,
@@ -164,7 +164,7 @@ const createReactPatchSmithClient = <
       }, [store, apps]);
       const context = useMemo(() => ({ client, store }), [store]);
       return createElement(
-        PatchSmithContext.Provider,
+        PatchsmithContext.Provider,
         { value: context },
         children
       );
@@ -173,7 +173,7 @@ const createReactPatchSmithClient = <
       Controlled: function Controlled(
         props: ControlledRenderSlotProps<TViews, TSlots>
       ) {
-        usePatchSmithContext("RenderSlot.Controlled", client);
+        usePatchsmithContext("RenderSlot.Controlled", client);
         // SAFETY: The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary.
         return createElement(
           ReactRenderSlot.Controlled,
@@ -184,20 +184,20 @@ const createReactPatchSmithClient = <
       },
     }),
     useApps: function useApps(optionsValue) {
-      usePatchSmithContext("useApps", client);
+      usePatchsmithContext("useApps", client);
       return useRootApps(optionsValue);
     },
     useViewContext: function useViewContext<TView extends ViewName<TViews>>(
       view: TView,
       optionsValue2: ViewState<TViews, NoInfer<TView>>
     ) {
-      usePatchSmithContext("useViewContext", client);
+      usePatchsmithContext("useViewContext", client);
       useRootViewContext<TViews, TView>(view, optionsValue2);
     },
     useViews: function useViews<TSlot extends keyof TSlots & string>(
       optionsValue3: UseViewsOptions<TScopeNames, TSlot>
     ) {
-      usePatchSmithContext("useViews", client);
+      usePatchsmithContext("useViews", client);
       // SAFETY: The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary.
       return (
         /* oxlint-disable typescript/no-unsafe-type-assertion -- The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary. */
@@ -212,7 +212,7 @@ const createReactPatchSmithClient = <
   return client;
 };
 
-export const createClient = <const TContract extends PatchSmithContract>(
+export const createClient = <const TContract extends PatchsmithContract>(
   options: {
     contract: TContract;
     tools?: ToolImplementations<NoInfer<TContract["tools"]>, "client">;
@@ -222,18 +222,18 @@ export const createClient = <const TContract extends PatchSmithContract>(
       NoInfer<TContract["components"]>,
       ReactNode
     >;
-    theme?: PatchSmithTheme;
-    cache?: PatchSmithCacheOptions;
+    theme?: PatchsmithTheme;
+    cache?: PatchsmithCacheOptions;
     fetch?: typeof fetch;
   } & (keyof ToolImplementations<TContract["tools"], "client"> extends never
     ? { tools?: ToolImplementations<TContract["tools"], "client"> }
     : { tools: ToolImplementations<TContract["tools"], "client"> })
-): PatchSmithInstance<
+): PatchsmithInstance<
   TContract["views"],
   TContract["slots"],
   keyof TContract["scopes"] & string
 > =>
-  createReactPatchSmithClient<
+  createReactPatchsmithClient<
     TContract["components"],
     TContract["views"],
     TContract["slots"],

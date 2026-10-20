@@ -1,10 +1,10 @@
 import { expectTypeOf, vi } from "vite-plus/test";
 import { z } from "zod";
 
-import { createPatchSmithSchema } from "./schema";
+import { createPatchsmithSchema } from "./schema";
 import type { ComponentProps } from "./schema";
 
-createPatchSmithSchema({
+createPatchsmithSchema({
   components: {
     Button: {
       children: true,
@@ -15,7 +15,7 @@ createPatchSmithSchema({
   },
 });
 
-createPatchSmithSchema({
+createPatchsmithSchema({
   components: {},
   views: {
     "/pages": z.object({ userId: z.string() }),
@@ -23,7 +23,7 @@ createPatchSmithSchema({
   },
 });
 
-const patchsmith = createPatchSmithSchema({
+const patchsmith = createPatchsmithSchema({
   components: {
     Button: {
       children: true,
@@ -57,13 +57,12 @@ expectTypeOf<
 expectTypeOf<typeof context>().toEqualTypeOf<
   z.ZodObject<{ customerId: z.ZodString }>
 >();
-const callbacks = createPatchSmithSchema({
+const callbacks = createPatchsmithSchema({
   components: {
     Dialog: {
       callbacks: {
         onClose: {},
         onLoad: {
-          async: true,
           output: z.object({ ready: z.literal(true) }),
         },
         onSave: {
@@ -76,23 +75,28 @@ const callbacks = createPatchSmithSchema({
 });
 
 const dialogProps: ComponentProps<typeof callbacks.components.Dialog> = {
-  onClose: () => {},
+  onClose: async () => {
+    await Promise.resolve();
+  },
   onLoad: vi
     .fn<() => Promise<{ ready: true }>>()
     .mockResolvedValue({ ready: true }),
-  onSave: (input) => {
+  onSave: async (input) => {
     expectTypeOf(input).toEqualTypeOf<{ title: string; version: number }>();
-    return { saved: true };
+    return await Promise.resolve({ saved: true });
   },
 };
 void dialogProps;
 expectTypeOf<ComponentProps<typeof callbacks.components.Dialog>>().toExtend<{
-  onSave: (input: { title: string; version: number }) => { saved: boolean };
-  onClose: () => void;
+  onSave: (input: {
+    title: string;
+    version: number;
+  }) => Promise<{ saved: boolean }>;
+  onClose: () => Promise<void>;
   onLoad: () => Promise<{ ready: true }>;
 }>();
 
-createPatchSmithSchema({
+createPatchsmithSchema({
   components: {
     Button: {
       callbacks: {
@@ -106,7 +110,7 @@ createPatchSmithSchema({
   },
 });
 
-createPatchSmithSchema({
+createPatchsmithSchema({
   components: {
     // @ts-expect-error field and callback keys must still conflict when explicitly duplicated
     Button: {
@@ -120,7 +124,7 @@ createPatchSmithSchema({
   },
 });
 
-createPatchSmithSchema({
+createPatchsmithSchema({
   components: {},
   views: {
     "/": z.object({ workspaceId: z.string() }),
@@ -129,12 +133,12 @@ createPatchSmithSchema({
   },
 });
 
-createPatchSmithSchema({
+createPatchsmithSchema({
   components: {},
   slots: { navbar: { views: ["/"] }, panel: { views: ["/users"] } },
   views: { "/": z.object({}), "/users": z.object({}) },
 });
-createPatchSmithSchema({
+createPatchsmithSchema({
   components: {},
 
   // @ts-expect-error Slot lists can only reference declared views.
@@ -143,7 +147,7 @@ createPatchSmithSchema({
   views: { "/": z.object({}) },
 });
 
-createPatchSmithSchema({
+createPatchsmithSchema({
   components: {},
   views: {
     // @ts-expect-error Arrays must be wrapped in an object field.

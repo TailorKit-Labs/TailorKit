@@ -1,34 +1,34 @@
 import type {
   ToolImplementations,
-  PatchSmithContract,
+  PatchsmithContract,
 } from "@patchsmith/core/schema";
 
-import { createPatchSmithFetchClient } from "#client/fetch-client";
-import type { PatchSmithFetchClient } from "#client/fetch-client";
+import { createPatchsmithFetchClient } from "#client/fetch-client";
+import type { PatchsmithFetchClient } from "#client/fetch-client";
 import { toBaseUrl } from "#client/url";
-import type { PatchSmithApp } from "#types";
+import type { PatchsmithApp } from "#types";
 
 import { createAppsStore } from "./fetch/apps";
 import { createViewContextStore } from "./local/view-context";
 
-export type PatchSmithStore = ReturnType<typeof createPatchSmithStore>;
+export type PatchsmithStore = ReturnType<typeof createPatchsmithStore>;
 
 /** Compose independent fetch stores and local view state for one root. */
-export const createPatchSmithStore = (options: {
+export const createPatchsmithStore = (options: {
   baseUrl: string | URL;
-  contract: PatchSmithContract;
-  tools?: ToolImplementations<PatchSmithContract["tools"], "client">;
-  apps?: PatchSmithApp[];
-  client?: PatchSmithFetchClient;
+  contract: PatchsmithContract;
+  tools?: ToolImplementations<PatchsmithContract["tools"], "client">;
+  apps?: PatchsmithApp[];
+  client?: PatchsmithFetchClient;
   assetsBaseUrl?: string | URL;
 }) => {
   const { baseUrl, contract, assetsBaseUrl, apps: initialApps } = options;
   const client =
     options.client ??
-    createPatchSmithFetchClient({ baseUrl, contract, tools: options.tools });
+    createPatchsmithFetchClient({ baseUrl, contract, tools: options.tools });
   if (toBaseUrl(baseUrl).href !== toBaseUrl(client.baseUrl).href) {
     throw new Error(
-      "createPatchSmithStore: baseUrl does not match the supplied fetch client."
+      "createPatchsmithStore: baseUrl does not match the supplied fetch client."
     );
   }
   const apps = createAppsStore(client, initialApps);

@@ -20,6 +20,17 @@ import { z } from "zod";
 import { RenderSlot } from "#index";
 import { createClient } from "#patchsmith";
 
+const identity = {
+  appId: "app",
+  deploymentId: "deployment",
+  expiresAt: Date.now() + 300_000,
+  installationId: "app",
+  projectId: "project",
+  scope: { name: "workspace", value: { id: "workspace" } },
+  subjectId: "principal",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
+};
+
 const requests: { appUrl: string; props: RemoteProps }[] = [];
 
 vi.mock("../remote-view", () => ({
@@ -311,7 +322,7 @@ it.each(["managed", "controlled"] as const)(
         </other.Provider>
       )
     ).toThrow(
-      `${mode === "managed" ? "RenderSlot" : "RenderSlot.Controlled"} was created for a different PatchSmith client`
+      `${mode === "managed" ? "RenderSlot" : "RenderSlot.Controlled"} was created for a different Patchsmith client`
     );
   }
 );
@@ -350,6 +361,7 @@ it("resolves the key and sends a complete controlled instance through the render
       if (url.endsWith("/backend/session")) {
         return Response.json({
           expiresAt: Date.now() + 300_000,
+          identity,
           token: "token",
           url: "https://runtime.test/rpc",
         });
@@ -425,6 +437,7 @@ it("reports resolver failures and missing keys without mounting stale instances"
       if (url.endsWith("/backend/session")) {
         return Response.json({
           expiresAt: Date.now() + 300_000,
+          identity,
           token: "token",
           url: "https://runtime.test/rpc",
         });

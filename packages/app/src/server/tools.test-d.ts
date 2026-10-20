@@ -4,7 +4,7 @@ import { z } from "zod";
 import { action } from "./functions";
 
 declare module "../client" {
-  interface PatchSmithServerTools {
+  interface PatchsmithServerTools {
     billing: { read: (input: { accountId: string }) => Promise<number> };
   }
 }
@@ -15,7 +15,7 @@ action({
     expectTypeOf(ctx.tools.billing.read(ctx.args)).toEqualTypeOf<
       Promise<number>
     >();
-    expectTypeOf(ctx.identity.subjectId).toEqualTypeOf<string | undefined>();
+    expectTypeOf(ctx.identity.subjectId).toEqualTypeOf<string>();
     return await ctx.tools.billing.read(ctx.args);
   },
 });

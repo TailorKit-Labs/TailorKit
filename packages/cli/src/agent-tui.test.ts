@@ -1,5 +1,5 @@
 import type { runAgentTUI } from "@ai-sdk/tui";
-import type { PatchSmithRouterClient } from "@patchsmith/core/server";
+import type { PatchsmithRouterClient } from "@patchsmith/core/server";
 import type { ChatTransport, UIMessage, UIMessageChunk } from "ai";
 import { readUIMessageStream } from "ai";
 import {
@@ -51,7 +51,7 @@ type TuiOptions = Extract<
   { transport: ChatTransport<UIMessage> }
 >;
 type Chat = (
-  ...args: Parameters<PatchSmithRouterClient["appAgent"]["chat"]>
+  ...args: Parameters<PatchsmithRouterClient["appAgent"]["chat"]>
 ) => Promise<AsyncIterable<UIMessageChunk>>;
 
 const turnRequest = (
@@ -326,7 +326,7 @@ describe("AI SDK terminal transport", () => {
     const [options] = requireValue(mocks.tui.mock.lastCall);
     expect(options).toMatchObject({
       reasoning: "hidden",
-      title: `PatchSmith Agent · ${hostUrl}`,
+      title: `Patchsmith Agent · ${hostUrl}`,
       tools: "collapsed",
     });
     const controller = new AbortController();

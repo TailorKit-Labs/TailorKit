@@ -1,6 +1,6 @@
 {
   "name": "patchsmith",
-  "version": "0.1.0-beta.49",
+  "version": "0.1.0-beta.52",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -84,18 +84,23 @@
     "./db": {
       "types": "./dist/db.d.ts",
       "import": "./dist/db.js"
+    },
+    "./ai-sdk": {
+      "types": "./dist/ai-sdk.d.ts",
+      "import": "./dist/ai-sdk.js"
     }
   },
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "tsup ./src/index.ts ./src/server.ts ./src/db.ts ./src/react.ts ./src/client.ts ./src/app.ts ./src/app-config.ts ./src/vite.ts ./src/zod.ts ./src/valibot.ts ./src/arktype.ts --out-dir ./dist --format esm --target node20 --minify --clean && tsc -p tsconfig.build.json",
+    "build": "vp pack && tsc -p tsconfig.build.json",
     "check-types": "tsc --noEmit",
     "lint": "vp lint .",
     "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
+    "@patchsmith/ai-sdk": "workspace:*",
     "@patchsmith/app": "workspace:*",
     "@patchsmith/app-db": "workspace:*",
     "@patchsmith/cli": "workspace:*",
@@ -106,15 +111,19 @@
   "devDependencies": {
     "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
-    "tsup": "^8.5.1",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite-plus": "catalog:"
   },
   "peerDependencies": {
+    "ai": "^7.0.137",
     "arktype": ">=2.1.0",
     "valibot": ">=1.0.0",
     "zod": ">=4.0.0"
   },
   "peerDependenciesMeta": {
+    "ai": {
+      "optional": true
+    },
     "arktype": {
       "optional": true
     },
@@ -124,5 +133,8 @@
     "zod": {
       "optional": true
     }
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

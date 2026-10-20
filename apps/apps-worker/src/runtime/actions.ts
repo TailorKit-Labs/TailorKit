@@ -1,4 +1,4 @@
-import type { ToolBridge, PatchSmithServerTools } from "@patchsmith/app/client";
+import type { ToolBridge, PatchsmithServerTools } from "@patchsmith/app/client";
 import type { AppDefinition, Identity } from "@patchsmith/app/server";
 
 import { inExecutionContext } from "./context";
@@ -137,7 +137,7 @@ export const createActionExecution = (app: AppDefinition) => {
         throw new AppError("UNAUTHORIZED", "App token expired");
       }
     };
-    const createTools = (parts: string[] = []): PatchSmithServerTools =>
+    const createTools = (parts: string[] = []): PatchsmithServerTools =>
       // SAFETY: The proxy handles calls through apply and every string property through get, recursively returning the same callable proxy contract.
       new Proxy(
         () => {

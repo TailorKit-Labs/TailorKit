@@ -1,5 +1,5 @@
 import type {
-  PatchSmithContract,
+  PatchsmithContract,
   ToolImplementations,
 } from "@patchsmith/core/schema";
 
@@ -8,22 +8,22 @@ import type { FetchCacheOptions } from "#store/fetch/cache";
 
 import { createEndpointClient } from "./endpoints";
 
-export interface PatchSmithCacheOptions extends FetchCacheOptions {
+export interface PatchsmithCacheOptions extends FetchCacheOptions {
   apps?: FetchCacheOptions;
   slot?: FetchCacheOptions;
 }
 
-export interface PatchSmithFetchClientOptions {
-  contract?: PatchSmithContract;
-  tools?: ToolImplementations<PatchSmithContract["tools"], "client">;
+export interface PatchsmithFetchClientOptions {
+  contract?: PatchsmithContract;
+  tools?: ToolImplementations<PatchsmithContract["tools"], "client">;
   baseUrl: string | URL;
   fetch?: typeof fetch;
-  cache?: PatchSmithCacheOptions;
+  cache?: PatchsmithCacheOptions;
 }
 
 /** Share this client between roots to share endpoint requests and cached responses. */
-export const createPatchSmithFetchClient = (
-  options: PatchSmithFetchClientOptions
+export const createPatchsmithFetchClient = (
+  options: PatchsmithFetchClientOptions
 ) => {
   const endpoints = createEndpointClient(options);
   const cache = createFetchCache(options.cache);
@@ -46,6 +46,6 @@ export const createPatchSmithFetchClient = (
   };
 };
 
-export type PatchSmithFetchClient = ReturnType<
-  typeof createPatchSmithFetchClient
+export type PatchsmithFetchClient = ReturnType<
+  typeof createPatchsmithFetchClient
 >;

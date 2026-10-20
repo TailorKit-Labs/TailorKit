@@ -47,7 +47,7 @@ export const patchsmith = createClient({
     Input: ({ props: { onValueChange, ...rest } }) => (
       <Input
         onChange={(event) => {
-          onValueChange({ value: event.target.value });
+          void onValueChange({ value: event.target.value });
         }}
         {...rest}
       />
@@ -67,7 +67,7 @@ export const patchsmith = createClient({
 });
 
 export const {
-  Provider: PatchSmithProvider,
+  Provider: PatchsmithProvider,
   RenderSlot,
   useApps,
   useViewContext,

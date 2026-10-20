@@ -13,7 +13,7 @@ import type { ReactNode } from "react";
 import { PrimitiveThemeContext } from "#primitives";
 import { RemoteViewHost } from "#remote-view";
 
-import { usePatchSmithContext } from "./context";
+import { usePatchsmithContext } from "./context";
 
 export type {
   ControlledRenderSlotProps,
@@ -31,7 +31,7 @@ export type RenderSlotComponent<
 };
 
 const SlotRenderer = (options: SlotRuntimeOptions): ReactNode => {
-  const { store, client } = usePatchSmithContext(
+  const { store, client } = usePatchsmithContext(
     options.mode === "managed" ? "RenderSlot" : "RenderSlot.Controlled"
   );
   const reactId = useId();

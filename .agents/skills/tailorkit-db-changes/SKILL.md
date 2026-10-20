@@ -1,9 +1,9 @@
 ---
 name: tailorkit-db-changes
-description: Plan, implement, or review PatchSmith platform schema changes, Drizzle migrations, backfills, and auth-schema changes. Use for separate database PRs and compatibility across backend rollouts. Playground-only SQLite changes follow playground/README.md instead.
+description: Plan, implement, or review Patchsmith platform schema changes, Drizzle migrations, backfills, and auth-schema changes. Use for separate database PRs and compatibility across backend rollouts. Playground-only SQLite changes follow playground/README.md instead.
 ---
 
-# PatchSmith database changes
+# Patchsmith database changes
 
 ## Deployment and PRs
 

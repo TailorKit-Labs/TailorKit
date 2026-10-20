@@ -32,7 +32,7 @@ const AuthErrorPage = () => {
           href="https://patchsmith.io/home"
         >
           <Logo className="size-6" />
-          <span className="text-lg font-semibold">PatchSmith</span>
+          <span className="text-lg font-semibold">Patchsmith</span>
         </a>
 
         <CardFrame className="w-full">

@@ -2,8 +2,8 @@ import { chmod, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 
-import { createPatchSmithClient } from "@patchsmith/core/server";
-import { loadPatchSmithConfig } from "@patchsmith/vite/config/loader";
+import { createPatchsmithClient } from "@patchsmith/core/server";
+import { loadPatchsmithConfig } from "@patchsmith/vite/config/loader";
 import { z } from "zod";
 
 import { getAgentAuth } from "./agent-auth";
@@ -27,7 +27,7 @@ type NamedScope = z.output<typeof namedScopeSchema>;
 
 interface StoredHostAuth {
   deployToken: string;
-  scope?: NamedScope;
+  scope: NamedScope;
 }
 
 interface AuthStore {
@@ -59,20 +59,6 @@ const cliAuthPollSchema = z.discriminatedUnion("status", [
   }),
 ]);
 
-const legacyFlatScopeSchema = z.record(z.string(), z.string());
-
-const storedScopeSchema = z.preprocess(
-  (value) =>
-    value !== null &&
-    isObjectValue(value) &&
-    !Array.isArray(value) &&
-    !Object.hasOwn(value, "value") &&
-    legacyFlatScopeSchema.safeParse(value).success
-      ? undefined
-      : value,
-  namedScopeSchema.optional()
-);
-
 const authStorePath = path.join(homedir(), ".patchsmith", "auth.json");
 
 const defaultLoginTimeoutMs = 30 * 60 * 1000;
@@ -81,7 +67,7 @@ const pollIntervalMs = 2000;
 
 const storedHostAuthSchema = z.object({
   deployToken: z.string().min(1),
-  scope: storedScopeSchema,
+  scope: namedScopeSchema,
 });
 
 const approvedCliAuthResultSchema = z.object({
@@ -160,23 +146,23 @@ export const resolveHostUrl = async (options: AuthOptions): Promise<string> => {
       url = new URL(options.host);
     } catch {
       throw new Error(
-        "Invalid PatchSmith host URL. Use an absolute http:// or https:// URL."
+        "Invalid Patchsmith host URL. Use an absolute http:// or https:// URL."
       );
     }
     if (url.protocol !== "http:" && url.protocol !== "https:") {
       throw new Error(
-        "Invalid PatchSmith host URL. Use an absolute http:// or https:// URL."
+        "Invalid Patchsmith host URL. Use an absolute http:// or https:// URL."
       );
     }
     return normalizeHostUrl(options.host);
   }
-  const loaded = await loadPatchSmithConfig(options.configPath, options.cwd);
+  const loaded = await loadPatchsmithConfig(options.configPath, options.cwd);
   if (loaded.config.host) {
     return normalizeHostUrl(loaded.config.host);
   }
 
   throw new Error(
-    "Missing PatchSmith host URL. Set host in patchsmith.config.ts."
+    "Missing Patchsmith host URL. Set host in patchsmith.config.ts."
   );
 };
 
@@ -206,7 +192,7 @@ export class NotLoggedInError extends Error {
 
 export const saveDeployToken = async (
   hostUrl: string,
-  auth: Required<StoredHostAuth>
+  auth: StoredHostAuth
 ): Promise<void> => {
   const store = await readAuthStore();
   await writeAuthStore({
@@ -318,7 +304,7 @@ export const runLogin = async (
     return await runWhoami(options);
   }
   const hostUrl = await resolveHostUrl(options);
-  const client = createPatchSmithClient({ url: hostUrl });
+  const client = createPatchsmithClient({ url: hostUrl });
   const startResult = await client.cliAuth.start({});
   throwRpcError(startResult);
 

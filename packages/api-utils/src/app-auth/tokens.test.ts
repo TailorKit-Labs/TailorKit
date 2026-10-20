@@ -220,28 +220,31 @@ it("rejects a token that expires while its signature is being verified", async (
   await expect(Effect.runPromise(program)).resolves.toBe("UNAUTHORIZED");
 });
 
-it.each(["projectId", "deploymentId", "projectShortId", "appShortId"])(
-  "requires the signed %s claim",
-  async (field) => {
-    const now = Math.floor(Date.now() / 1000);
-    const claims = {
-      ...identity,
+it.each([
+  "projectId",
+  "deploymentId",
+  "projectShortId",
+  "appShortId",
+  "subjectId",
+])("requires the signed %s claim", async (field) => {
+  const now = Math.floor(Date.now() / 1000);
+  const claims = {
+    ...identity,
 
-      [field]: undefined,
+    [field]: undefined,
 
-      exp: now + 120,
+    exp: now + 120,
 
-      iat: now,
-    };
-    const token = await new SignJWT(claims)
-      .setProtectedHeader({ alg: "ES256", kid: "host-key", typ: "JWT" })
-      .setSubject(identity.installationId)
-      .setIssuer(signing.issuer)
-      .setAudience(signing.audience)
-      .sign(privateKey);
-    await expect(verify(token)).rejects.toMatchObject({ code: "UNAUTHORIZED" });
-  }
-);
+    iat: now,
+  };
+  const token = await new SignJWT(claims)
+    .setProtectedHeader({ alg: "ES256", kid: "host-key", typ: "JWT" })
+    .setSubject(identity.installationId)
+    .setIssuer(signing.issuer)
+    .setAudience(signing.audience)
+    .sign(privateKey);
+  await expect(verify(token)).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+});
 
 it("preserves arbitrary product principals in the shared app session", async () => {
   const session = await issueAppToken(signing, {
@@ -257,12 +260,24 @@ it("preserves arbitrary product principals in the shared app session", async () 
   expect(claims.sub).toBe(identity.installationId);
   expect(claims.aud).toBe(signing.audience);
   expect(requireValue(claims.exp) - requireValue(claims.iat)).toBe(300);
-  const installation = await issueAppToken(signing, {
-    ...identity,
-    subjectId: undefined,
-  });
-  expect(await verify(installation.token)).toMatchObject({
-    installationId: identity.installationId,
-    subjectId: undefined,
-  });
 });
+
+it.each([undefined, null, "", 123, "x".repeat(257)])(
+  "rejects invalid subjects when issuing and verifying tokens: %j",
+  async (subjectId) => {
+    await expect(
+      // @ts-expect-error Exercise runtime issuance with an invalid host-supplied subject.
+      issueAppToken(signing, { ...identity, subjectId })
+    ).rejects.toThrow();
+    const now = Math.floor(Date.now() / 1000);
+    const token = await new SignJWT({ ...identity, subjectId })
+      .setProtectedHeader({ alg: "ES256", kid: "host-key", typ: "JWT" })
+      .setSubject(identity.installationId)
+      .setIssuer(signing.issuer)
+      .setAudience(signing.audience)
+      .setIssuedAt(now)
+      .setExpirationTime(now + 120)
+      .sign(privateKey);
+    await expect(verify(token)).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+  }
+);

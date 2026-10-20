@@ -6,7 +6,7 @@ describe("buildClientParams", () => {
   it("rejects mapped body fields after a raw body", () => {
     expect(() =>
       buildClientParams(
-        [null, { $body_name: "PatchSmith" }],
+        [null, { $body_name: "Patchsmith" }],
         [{ in: "body" }, { allowExtra: { body: true } }]
       )
     ).toThrow("Cannot mix raw and mapped body parameters.");
@@ -15,7 +15,7 @@ describe("buildClientParams", () => {
   it("rejects a raw body after mapped body fields", () => {
     expect(() =>
       buildClientParams(
-        [{ $body_name: "PatchSmith" }, null],
+        [{ $body_name: "Patchsmith" }, null],
         [{ allowExtra: { body: true } }, { in: "body" }]
       )
     ).toThrow("Cannot mix raw and mapped body parameters.");
@@ -25,9 +25,9 @@ describe("buildClientParams", () => {
     expect(buildClientParams([null], [{ in: "body" }]).body).toBeNull();
     expect(
       buildClientParams(
-        [{ $body_name: "PatchSmith" }],
+        [{ $body_name: "Patchsmith" }],
         [{ allowExtra: { body: true } }]
       ).body
-    ).toEqual({ name: "PatchSmith" });
+    ).toEqual({ name: "Patchsmith" });
   });
 });

@@ -1,6 +1,6 @@
-# PatchSmith platform client
+# Patchsmith platform client
 
-`@patchsmith/client-platform` is the API client for the PatchSmith platform.
+`@patchsmith/client-platform` is the API client for the Patchsmith platform.
 
 Apps have an immutable `slug`, unique within their project across all scopes. Slugs contain 1–32 lowercase letters or digits, separated by single hyphens. Set `slug` when creating an app or installation; omitting it generates a stable slug consisting of `app-` followed by 28 random hexadecimal characters. Renaming an app does not change its slug. Duplicate slugs return `CONFLICT`.
 

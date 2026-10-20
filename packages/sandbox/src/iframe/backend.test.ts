@@ -2,6 +2,17 @@ import { expect, it, vi } from "vite-plus/test";
 
 import { createIframeBackend } from "./backend";
 
+const identity = {
+  appId: "app",
+  deploymentId: "deployment",
+  expiresAt: Date.now() + 300_000,
+  installationId: "app",
+  projectId: "project",
+  scope: { name: "workspace", value: { id: "workspace" } },
+  subjectId: "principal",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
+};
+
 const require = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
@@ -20,6 +31,7 @@ it("correlates scoped JWT requests, forwards renewal and ignores unsolicited res
   ]);
   const session = {
     expiresAt: Date.now() + 120_000,
+    identity,
     token: "token",
     url: "https://runtime.test/rpc",
   };

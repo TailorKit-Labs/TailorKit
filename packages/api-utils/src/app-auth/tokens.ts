@@ -59,7 +59,7 @@ const access = z.object({
     value: z.record(z.string(), z.json()),
   }),
   sub: z.string().min(1).max(256),
-  subjectId: z.string().min(1).max(256).optional(),
+  subjectId: z.string().min(1).max(256),
   toolUrl: z.url(),
 });
 const publicKeysSchema = z.object({
@@ -207,6 +207,7 @@ export const appTokenVerifierEffect = (trust: AppTokenTrust) => {
               "projectShortId",
               "appShortId",
               "scope",
+              "subjectId",
               "toolUrl",
             ],
             typ: "JWT",

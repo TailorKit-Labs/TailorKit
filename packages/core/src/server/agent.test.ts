@@ -8,8 +8,8 @@ import { readUIMessageStream } from "ai";
 import { describe, expect, it } from "vite-plus/test";
 import { z } from "zod";
 
-import { createPatchSmithClient } from "./client";
-import { createPatchSmithServer } from "./handler";
+import { createPatchsmithClient } from "./client";
+import { createPatchsmithServer } from "./handler";
 
 const require = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -74,7 +74,7 @@ const setup = (
       .meta(openapi({ method: "POST", path: "/app-agent/apps" }))
       .handler(() => ({ createdByAgent: true, id: appId })),
   });
-  const server = createPatchSmithServer({
+  const server = createPatchsmithServer({
     $internal: {
       platformBaseUrl: "https://platform.test/api/platform",
       platformFetch: async (input, init) => {
@@ -110,7 +110,7 @@ const setup = (
     projectKey: "host-project-key",
     scopes: { org: z.object({ tenant: z.string() }) },
   });
-  const client = createPatchSmithClient({
+  const client = createPatchsmithClient({
     fetch: async (input, init) =>
       await server.handler(new Request(input, init), {
         authenticate: () => null,
@@ -281,7 +281,7 @@ describe("host agent relay", () => {
 
   it("requires a CLI credential before contacting the platform", async () => {
     const { server, requests } = setup();
-    const client = createPatchSmithClient({
+    const client = createPatchsmithClient({
       fetch: async (input, init) =>
         await server.handler(new Request(input, init), {
           authenticate: () => null,

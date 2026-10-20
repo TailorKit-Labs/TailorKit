@@ -1,7 +1,7 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 
-import type { PatchSmithScope } from "#server/types";
-import type { PatchSmithSchemaSpec } from "#spec/index";
+import type { PatchsmithScope } from "#server/types";
+import type { PatchsmithSchemaSpec } from "#spec/index";
 
 import type { Schema, SchemaSerializer } from "./shared";
 import { serializeSchema } from "./shared";
@@ -53,12 +53,12 @@ export type InferToolOutput<T> =
       : ReturnType<() => void>
     : never;
 export interface ToolIdentity {
-  readonly subjectId?: string;
+  readonly subjectId: string;
   readonly installationId: string;
   readonly appId: string;
   readonly projectId: string;
   readonly deploymentId: string;
-  readonly scope: { name: string; value: PatchSmithScope };
+  readonly scope: { name: string; value: PatchsmithScope };
   readonly expiresAt: number;
 }
 export interface ToolContext {
@@ -176,8 +176,8 @@ export const flattenTools = (
 export const serializeTools = (
   tools: ContractTools,
   serializer?: SchemaSerializer
-): PatchSmithSchemaSpec["tools"] => {
-  const result: PatchSmithSchemaSpec["tools"] = {};
+): PatchsmithSchemaSpec["tools"] => {
+  const result: PatchsmithSchemaSpec["tools"] = {};
   for (const [name, value] of Object.entries(tools)) {
     if (!(value !== undefined && value !== null)) {
       continue;

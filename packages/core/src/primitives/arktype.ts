@@ -9,7 +9,7 @@ import {
 } from "./definition";
 import type { PrimitiveName, PrimitivePropDefinition } from "./definition";
 import { resolveTheme } from "./theme";
-import type { PatchSmithTheme } from "./theme";
+import type { PatchsmithTheme } from "./theme";
 
 const isNumberValue = <TValue>(value: TValue): value is TValue & number =>
   typeof value === "number";
@@ -30,7 +30,7 @@ const tokenExpr = (tokens: Record<string, string> | undefined): string => {
 
 const responsive = (
   expr: string,
-  theme: PatchSmithTheme,
+  theme: PatchsmithTheme,
   interactive = true
 ): ReturnType<typeof type.raw> => {
   const fields: FieldValidators = {};
@@ -54,7 +54,7 @@ const valueExpr = (values: readonly (number | string)[]): string =>
 
 const propExpr = (
   definition: PrimitivePropDefinition,
-  theme: PatchSmithTheme
+  theme: PatchsmithTheme
 ): Parameters<typeof type>[0] => {
   if (definition.kind === "boolean" || definition.kind === "string") {
     return definition.kind;
@@ -68,7 +68,7 @@ const propExpr = (
 
 const primitiveFields = (
   name: PrimitiveName,
-  theme: PatchSmithTheme
+  theme: PatchsmithTheme
 ): FieldValidators =>
   Object.fromEntries(
     Object.entries<PrimitivePropDefinition>(primitiveDefinitions[name]).map(
@@ -77,7 +77,7 @@ const primitiveFields = (
   );
 
 export const primitives = (
-  theme: PatchSmithTheme = {}
+  theme: PatchsmithTheme = {}
 ): PrimitiveComponents => {
   const resolvedTheme = resolveTheme(theme);
   const components = mapPrimitiveDefinitions((name) => ({

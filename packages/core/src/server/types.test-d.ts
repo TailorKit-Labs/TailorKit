@@ -6,24 +6,24 @@ import { defineContract } from "#schema/contract";
 import type { EmptyDefinitionMap } from "#schema/shared";
 
 import { createServer } from "./contract";
-import { createPatchSmithServer } from "./handler";
-import type { PatchSmithServerOptions, PatchSmithHostContext } from "./types";
+import { createPatchsmithServer } from "./handler";
+import type { PatchsmithServerOptions, PatchsmithHostContext } from "./types";
 
 expectTypeOf<
-  PatchSmithHostContext<{ org: { orgId: string } }>
+  PatchsmithHostContext<{ org: { orgId: string } }>
 >().toEqualTypeOf<{
   scopes: { org: { orgId: string } };
-  subjectId?: string;
+  subjectId: string;
 }>();
 
-createPatchSmithServer({
+createPatchsmithServer({
   baseUrl: "https://example.com/api/patchsmith",
   components: {},
   scopes: { account: z.object({ accountId: z.string() }) },
   slots: { navbar: { views: ["/"] }, panel: { views: ["/users"] } },
   views: { "/": z.object({}), "/users": z.object({}) },
 });
-createPatchSmithServer({
+createPatchsmithServer({
   baseUrl: "https://example.com/api/patchsmith",
 
   components: {},
@@ -40,12 +40,12 @@ const namedScopes = {
   org: z.object({ orgId: z.string() }),
   userOrg: z.object({ orgId: z.string(), userId: z.string() }),
 };
-const scopedServer = createPatchSmithServer({
+const scopedServer = createPatchsmithServer({
   baseUrl: "https://example.com/api/patchsmith",
   components: {},
   scopes: namedScopes,
 });
-const explicitlyTypedOptions: PatchSmithServerOptions<
+const explicitlyTypedOptions: PatchsmithServerOptions<
   EmptyDefinitionMap,
   EmptyDefinitionMap,
   EmptyDefinitionMap,
@@ -55,7 +55,18 @@ const explicitlyTypedOptions: PatchSmithServerOptions<
   components: {},
   scopes: namedScopes,
 };
-const explicitlyTypedServer = createPatchSmithServer(explicitlyTypedOptions);
+const explicitlyTypedServer = createPatchsmithServer(explicitlyTypedOptions);
+void explicitlyTypedServer.handler(
+  new Request("https://example.com/api/patchsmith/apps"),
+  {
+    // @ts-expect-error Authenticated hosts must supply the verified subject, even for workspace-scoped apps.
+    authenticate: () => ({ scopes: { org: { orgId: "org_1" } } }),
+  }
+);
+// @ts-expect-error MCP transports require the same authenticated subject as the host handler.
+void explicitlyTypedServer.mcp.transport({
+  scopes: { org: { orgId: "org_1" } },
+});
 void explicitlyTypedServer.handler(
   new Request("https://example.com/api/patchsmith/apps"),
   {
@@ -64,6 +75,7 @@ void explicitlyTypedServer.handler(
         // @ts-expect-error explicit options retain the org schema's required orgId
         org: {},
       },
+      subjectId: "user",
     }),
   }
 );
@@ -75,20 +87,24 @@ void scopedServer.handler(
         org: { orgId: "org_1" },
         userOrg: { orgId: "org_1", userId: "user_1" },
       },
+      subjectId: "user",
     }),
   }
 );
 void scopedServer.handler(
   new Request("https://example.com/api/patchsmith/apps"),
   {
-    authenticate: () => ({ scopes: { org: { orgId: "org_1" } } }),
+    authenticate: () => ({
+      scopes: { org: { orgId: "org_1" } },
+      subjectId: "user",
+    }),
   }
 );
 void scopedServer.handler(
   new Request("https://example.com/api/patchsmith/apps"),
   {
     // @ts-expect-error authenticate must provide at least one declared scope
-    authenticate: () => ({ scopes: {} }),
+    authenticate: () => ({ scopes: {}, subjectId: "user" }),
   }
 );
 void scopedServer.handler(
@@ -99,6 +115,7 @@ void scopedServer.handler(
         // @ts-expect-error org is inferred from its schema and requires orgId
         org: {},
       },
+      subjectId: "user",
     }),
   }
 );
@@ -123,7 +140,7 @@ const nonJsonSchemaScope = {
   },
 } satisfies StandardSchemaV1<{ accountId: string }, { accountId: string }>;
 
-const standardOnlyServer = createPatchSmithServer({
+const standardOnlyServer = createPatchsmithServer({
   baseUrl: "https://example.com/api/patchsmith",
   components: {},
   scopes: { account: nonJsonSchemaScope },
@@ -131,7 +148,10 @@ const standardOnlyServer = createPatchSmithServer({
 void standardOnlyServer.handler(
   new Request("https://example.com/api/patchsmith/apps"),
   {
-    authenticate: () => ({ scopes: { account: { accountId: "acct_1" } } }),
+    authenticate: () => ({
+      scopes: { account: { accountId: "acct_1" } },
+      subjectId: "user",
+    }),
   }
 );
 

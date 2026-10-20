@@ -106,7 +106,7 @@ export const resolveView = (client: AppClient, request: ViewRequest) => {
   const definition = views[selected];
   if (!definition || !isFunctionValue(definition.component)) {
     throw new TypeError(
-      `PatchSmith app client view "${selected}" is missing a component.`
+      `Patchsmith app client view "${selected}" is missing a component.`
     );
   }
 
@@ -158,7 +158,7 @@ export const assertAppClient: (value: unknown) => asserts value is AppClient = (
     !isFunctionValue(value.$runtime.render)
   ) {
     throw new TypeError(
-      "PatchSmith app must be built with the app builder and include slots and its bundled runtime."
+      "Patchsmith app must be built with the app builder and include slots and its bundled runtime."
     );
   }
 };

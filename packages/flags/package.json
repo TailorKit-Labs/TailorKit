@@ -22,7 +22,7 @@
     }
   },
   "scripts": {
-    "build": "vp pack src/index.ts --format esm --dts --clean",
+    "build": "vp pack src/index.ts --target node24 --format esm --dts --clean",
     "check-types": "tsc --noEmit",
     "lint": "vp lint .",
     "lint:fix": "vp lint --fix ."
@@ -34,5 +34,8 @@
     "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

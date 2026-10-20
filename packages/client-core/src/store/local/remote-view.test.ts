@@ -27,7 +27,8 @@ const tree: RemoteElementNode = {
 
 const isCallback = <TValue>(
   value: TValue
-): value is TValue & ((...args: unknown[]) => void) =>
+): value is TValue &
+  ((...args: unknown[]) => ReturnType<IframeUiHost["dispatch"]>) =>
   typeof value === "function";
 
 const setup = () => {
@@ -127,7 +128,7 @@ it("updates only changed component selectors without recreating the host", () =>
   stop();
 });
 
-it("retains the latest props and shares callback payload construction", () => {
+it("retains the latest props and shares callback payload construction", async () => {
   const { createHost, records } = setup();
   const store = createRemoteViewStore({ props: { value: "old" } }, createHost);
   const latest = { value: "latest" };
@@ -147,22 +148,32 @@ it("retains the latest props and shares callback payload construction", () => {
   if (!isCallback(onSelect)) {
     throw new Error("Expected an onSelect callback.");
   }
-  onSelect("selected value", {
+  await onSelect("selected value", {
     synthetic: "event",
   });
+  const [callback] = vi.mocked(requireValue(records[0]).host.dispatch).mock
+    .calls;
+  const callbackId =
+    callback?.[0].type === "dispatchCallback" ? callback[0].data.id : undefined;
+  expect(callbackId).toEqual(expect.any(String));
   expect(
     requireValue(records[0]).host.dispatch
   ).toHaveBeenCalledExactlyOnceWith({
-    data: { args: ["selected value"], event: "selected", nodeId: "root" },
+    data: {
+      args: ["selected value"],
+      event: "selected",
+      id: callbackId,
+      nodeId: "root",
+    },
     type: "dispatchCallback",
   });
   expect(tree.props).toEqual({ label: "Button" });
   stop();
-  onSelect("after stop");
+  await expect(onSelect("after stop")).rejects.toThrow("not mounted");
   expect(requireValue(records[0]).host.dispatch).toHaveBeenCalledOnce();
 });
 
-it("isolates dispatch, component registries, and trees between remote views", () => {
+it("isolates dispatch, component registries, and trees between remote views", async () => {
   const { createHost, records } = setup();
   const first = createRemoteViewStore(
     { components: { Button: "first" } },
@@ -180,7 +191,7 @@ it("isolates dispatch, component registries, and trees between remote views", ()
   if (!isCallback(operation)) {
     throw new Error("Expected an onSelect callback.");
   }
-  operation("second");
+  await operation("second");
   expect(requireValue(records[0]).host.dispatch).not.toHaveBeenCalled();
   expect(requireValue(records[1]).host.dispatch).toHaveBeenCalledOnce();
   expect(first.components.get()).toEqual({ Button: "first" });
@@ -239,7 +250,7 @@ it("reports startup failures, releases partial hosts, and recovers on the next m
   store.mount({ appUrl: "https://host.test/first.js" });
   expect(store.state.get()).toMatchObject({ error: failure, status: "error" });
   expect(err2).toHaveBeenCalledExactlyOnceWith(
-    "PatchSmith remote app failed",
+    "Patchsmith remote app failed",
     failure
   );
   expect(requireValue(records[0]).host.destroy).toHaveBeenCalledOnce();
@@ -247,4 +258,41 @@ it("reports startup failures, releases partial hosts, and recovers on the next m
   requireValue(records[1]).host.setSnapshot(tree, 1);
   expect(store.state.get()).toMatchObject({ error: null, status: "ready" });
   stop();
+});
+
+it("returns callback results through the remote view and rejects calls after unmount", async () => {
+  const { createHost, records } = setup();
+  const store = createRemoteViewStore({}, createHost);
+  const stop = store.mount({ appUrl: "https://host.test/app.js" });
+  const { host } = requireValue(records[0]);
+  vi.mocked(host.dispatch).mockReturnValue(Promise.resolve({ saved: true }));
+  const props = createRemoteElementProps(
+    {
+      ...tree,
+      callbacks: [{ callback: "onSave", event: "save", inputCount: 1 }],
+    },
+    store.dispatch
+  );
+  const { onSave: operation } = props;
+  if (!isCallback(operation)) {
+    throw new Error("Expected onSave callback");
+  }
+  await expect(operation("value", "not forwarded")).resolves.toEqual({
+    saved: true,
+  });
+  const [callback] = vi.mocked(host.dispatch).mock.calls;
+  const callbackId =
+    callback?.[0].type === "dispatchCallback" ? callback[0].data.id : undefined;
+  expect(callbackId).toEqual(expect.any(String));
+  expect(host.dispatch).toHaveBeenCalledWith({
+    data: {
+      args: ["value"],
+      event: "save",
+      id: callbackId,
+      nodeId: tree.id,
+    },
+    type: "dispatchCallback",
+  });
+  stop();
+  await expect(operation("value")).rejects.toThrow("not mounted");
 });

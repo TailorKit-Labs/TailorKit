@@ -6,7 +6,7 @@ import {
   spinner,
   text,
 } from "@clack/prompts";
-import type { PatchSmithRouterClient } from "@patchsmith/core/server";
+import type { PatchsmithRouterClient } from "@patchsmith/core/server";
 
 import {
   getDeployToken,
@@ -26,11 +26,11 @@ interface AgentOptions {
 }
 
 const chooseApp = async (
-  client: Pick<PatchSmithRouterClient, "apps" | "appAgent">
+  client: Pick<PatchsmithRouterClient, "apps" | "appAgent">
 ): Promise<string | undefined> => {
   const loading = spinner();
   const apps: Awaited<
-    ReturnType<PatchSmithRouterClient["apps"]["list"]>
+    ReturnType<PatchsmithRouterClient["apps"]["list"]>
   >["items"] = [];
   loading.start("Finding apps");
   try {
@@ -110,7 +110,7 @@ export const runAgentCommand = async (options: AgentOptions) => {
   const host = options.host?.trim();
   if (host === undefined || host === "") {
     throw new Error(
-      "Missing PatchSmith host URL. Use patchsmith agent --host <url>."
+      "Missing Patchsmith host URL. Use patchsmith agent --host <url>."
     );
   }
   let { appId } = options;

@@ -12,7 +12,18 @@ import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
 import { createClient } from "#index";
-import type { PatchSmithApp } from "#index";
+import type { PatchsmithApp } from "#index";
+
+const identity = {
+  appId: "app",
+  deploymentId: "deployment",
+  expiresAt: Date.now() + 300_000,
+  installationId: "app",
+  projectId: "project",
+  scope: { name: "workspace", value: { id: "workspace" } },
+  subjectId: "principal",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
+};
 
 const actionRequestSchema = z.object({
   json: z.object({
@@ -64,7 +75,7 @@ const client = createClient({
   baseUrl: "https://host.test/api/patchsmith/",
   contract,
 });
-const app: PatchSmithApp = {
+const app: PatchsmithApp = {
   currentDeployment: { id: "deployment_1" },
   id: "app_1",
   views: [
@@ -79,7 +90,7 @@ const instances = [
     metadata: { title: "Overview" },
   },
 ];
-let apps: PatchSmithApp[] | undefined;
+let apps: PatchsmithApp[] | undefined;
 const wrapper = ({ children }: { children: ReactNode }) => (
   <client.Provider apps={apps}>{children}</client.Provider>
 );
@@ -101,6 +112,7 @@ const mockFetch = () =>
       if (path.endsWith("/backend/session")) {
         return Response.json({
           expiresAt: Date.now() + 300_000,
+          identity,
           token: "app-token",
           url: "https://runtime.test/rpc",
         });
@@ -144,7 +156,7 @@ it.each(["apps", "single", "page"] as const)(
   "exposes only the simplified %s result and distinguishes pending from refetching",
   async (kind) => {
     apps = undefined;
-    const discovered: PatchSmithApp = {
+    const discovered: PatchsmithApp = {
       ...app,
       views: kind === "single" ? [{ path: "/", slot: "single" }] : app.views,
     };
@@ -304,7 +316,7 @@ it("uses the closest supported ancestor and excludes deeper loading context", as
 });
 
 it("falls back to an enabled ancestor when the supported child is disabled", async () => {
-  const disabledChildApp: PatchSmithApp = {
+  const disabledChildApp: PatchsmithApp = {
     ...app,
     views: app.views?.map((view) =>
       view.path === "/customers/detail" ? { ...view, disabled: true } : view
@@ -682,7 +694,7 @@ it("works in Strict Mode and isolates different roots", async () => {
 it("rejects a hook used outside a Provider or under another client", () => {
   vi.spyOn(console, "error").mockImplementation(() => {});
   expect(() => renderHook(() => client.useViews({ slot: "page" }))).toThrow(
-    "useViews must be rendered inside a PatchSmith Provider"
+    "useViews must be rendered inside a Patchsmith Provider"
   );
   const other = createClient({ baseUrl: "https://other.test/api/", contract });
 
@@ -690,7 +702,7 @@ it("rejects a hook used outside a Provider or under another client", () => {
     renderHook(() => client.useViews({ slot: "page" }), {
       wrapper: other.Provider,
     })
-  ).toThrow("useViews was created for a different PatchSmith client");
+  ).toThrow("useViews was created for a different Patchsmith client");
 });
 
 it("shares one resolver across two hooks and retains data across remounts", async () => {
@@ -818,6 +830,7 @@ it("aggregates apps in discovery order, resolves in parallel, and preserves dupl
         .parse(await new Response(options?.body).json());
       return Response.json({
         expiresAt: Date.now() + 300_000,
+        identity,
         token: appId,
         url: "https://runtime.test/rpc",
       });
@@ -935,7 +948,7 @@ it("exposes app discovery failures and retries them through fetch", async () => 
     expect(result.current.error).toBeInstanceOf(Error);
   });
   expect(result.current.error?.message).toContain(
-    "Unable to fetch PatchSmith apps"
+    "Unable to fetch Patchsmith apps"
   );
   expect(calls("/actions")).toHaveLength(0);
   fail = false;
@@ -1076,14 +1089,14 @@ it("clears the aggregate and cancels remaining resolvers when any app fails", as
 it.each(["single", "default"] as const)(
   "lists one app per %s slot without registered context or instance requests",
   async (slot) => {
-    const first: PatchSmithApp = {
+    const first: PatchsmithApp = {
       ...app,
       views: [
         { path: "/", slot },
         { path: "/customers/detail", slot },
       ],
     };
-    const second: PatchSmithApp = { id: "app_2", views: [{ path: "/", slot }] };
+    const second: PatchsmithApp = { id: "app_2", views: [{ path: "/", slot }] };
     apps = [
       first,
       { id: "disabled", views: [{ disabled: true, path: "/", slot }] },
@@ -1111,7 +1124,7 @@ it.each(["single", "default"] as const)(
 it.each(["loading", "error"] as const)(
   "discovers single-slot apps despite %s context on another page",
   async (status) => {
-    const singleApp: PatchSmithApp = {
+    const singleApp: PatchsmithApp = {
       ...app,
       views: [{ path: "/", slot: "single" }],
     };
@@ -1137,13 +1150,13 @@ it.each(["loading", "error"] as const)(
 );
 
 it("intersects scope and app filters and updates supplied single-slot apps", async () => {
-  const first: PatchSmithApp = {
+  const first: PatchsmithApp = {
     id: "app_1",
     scope: { name: "user" },
     views: [{ path: "/", slot: "single" }],
   };
-  const second: PatchSmithApp = { ...first, id: "app_2" };
-  const unscoped: PatchSmithApp = { id: "app_3", views: first.views };
+  const second: PatchsmithApp = { ...first, id: "app_2" };
+  const unscoped: PatchsmithApp = { id: "app_3", views: first.views };
   apps = [first, second, unscoped];
   const { result, rerender } = renderHook(
     ({
@@ -1182,7 +1195,7 @@ it("intersects scope and app filters and updates supplied single-slot apps", asy
 
 it("shares app discovery with useApps and fetch refreshes single-slot entries", async () => {
   apps = undefined;
-  let discovered: PatchSmithApp[] = [
+  let discovered: PatchsmithApp[] = [
     { ...app, views: [{ path: "/", slot: "single" }] },
   ];
   const original = requireValue(
@@ -1217,7 +1230,7 @@ it("shares app discovery with useApps and fetch refreshes single-slot entries", 
 });
 
 it("filters multiple-slot apps before authorizing and resolving them", async () => {
-  const selected: PatchSmithApp = { ...app, scope: { name: "user" } };
+  const selected: PatchsmithApp = { ...app, scope: { name: "user" } };
   apps = [selected, { ...app, id: "other" }];
   const { result } = renderHook(
     () => {
@@ -1270,12 +1283,12 @@ it.each(["page", "single"] as const)(
     apps = undefined;
     let fail = true;
     let finishInstances!: (response: Response) => void;
-    const discovered: PatchSmithApp = {
+    const discovered: PatchsmithApp = {
       ...app,
       scope: { name: "user" },
       views: slot === "page" ? app.views : [{ path: "/", slot }],
     };
-    const excluded: PatchSmithApp = { ...discovered, id: "excluded" };
+    const excluded: PatchsmithApp = { ...discovered, id: "excluded" };
     const original = requireValue(
       vi.mocked(globalThis.fetch).getMockImplementation()
     );

@@ -31,11 +31,11 @@ const patchsmithConfigSchema = v.strictObject({
  * App configuration exported from `patchsmith.config.ts`.
  * Relative paths resolve from the app root: the Vite config directory when building.
  */
-export interface PatchSmithConfig extends v.InferInput<
+export interface PatchsmithConfig extends v.InferInput<
   typeof patchsmithConfigSchema
 > {
   /**
-   * ID of the app on the PatchSmith host, used for deployment.
+   * ID of the app on the Patchsmith host, used for deployment.
    * When omitted, the first deployment creates an app and saves its ID here.
    * @default undefined
    */
@@ -49,7 +49,7 @@ export interface PatchSmithConfig extends v.InferInput<
    */
   description?: string | null;
   /**
-   * URL of the PatchSmith host used for authentication, deployment,
+   * URL of the Patchsmith host used for authentication, deployment,
    * and fetching the host schema for generated types. Required; has no default.
    */
   host: string;
@@ -102,12 +102,12 @@ export interface PatchSmithConfig extends v.InferInput<
    */
   slug: string;
 }
-export type ResolvedPatchSmithConfig = v.InferOutput<
+export type ResolvedPatchsmithConfig = v.InferOutput<
   typeof patchsmithConfigSchema
 >;
 
 export { patchsmithConfigSchema };
 
-export const defineConfig = (config: PatchSmithConfig): PatchSmithConfig =>
+export const defineConfig = (config: PatchsmithConfig): PatchsmithConfig =>
   config;
-export const definePatchSmithConfig = defineConfig;
+export const definePatchsmithConfig = defineConfig;

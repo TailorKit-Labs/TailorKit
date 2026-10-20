@@ -9,7 +9,7 @@ import {
 } from "./definition";
 import type { PrimitiveName, PrimitivePropDefinition } from "./definition";
 import { resolveTheme } from "./theme";
-import type { PatchSmithTheme } from "./theme";
+import type { PatchsmithTheme } from "./theme";
 
 type FieldValidators = Record<string, z.ZodType>;
 type PrimitiveComponents = Record<
@@ -35,7 +35,7 @@ const valueEnum = (values: readonly (number | string)[]): z.ZodType => {
 
 const responsive = (
   schema: z.ZodType,
-  theme: PatchSmithTheme,
+  theme: PatchsmithTheme,
   interactive = true
 ): z.ZodType => {
   const fields: FieldValidators = {};
@@ -54,7 +54,7 @@ const responsive = (
 
 const propSchema = (
   definition: PrimitivePropDefinition,
-  theme: PatchSmithTheme
+  theme: PatchsmithTheme
 ): z.ZodType => {
   if (definition.kind === "boolean") {
     return z.boolean().optional();
@@ -72,7 +72,7 @@ const propSchema = (
 };
 
 export const primitives = (
-  theme: PatchSmithTheme = {}
+  theme: PatchsmithTheme = {}
 ): PrimitiveComponents => {
   const resolvedTheme = resolveTheme(theme);
   const components = mapPrimitiveDefinitions((name) => {

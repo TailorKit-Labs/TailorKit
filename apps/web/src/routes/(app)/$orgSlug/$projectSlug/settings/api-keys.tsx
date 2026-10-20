@@ -365,7 +365,7 @@ const ProjectApiKeysPage = () => {
         <CardHeader>
           <CardTitle>Project key</CardTitle>
           <CardDescription>
-            Used to by your platform to integrate with PatchSmith.
+            Used to by your platform to integrate with Patchsmith.
           </CardDescription>
           <CardAction>
             <Button

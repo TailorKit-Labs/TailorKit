@@ -16,7 +16,7 @@ export const iframeRuntimePlugin = (): Plugin => ({
         lib: {
           entry: fileURLToPath(new URL("src/iframe/entry.ts", import.meta.url)),
           formats: ["iife"],
-          name: "PatchSmithIframe",
+          name: "PatchsmithIframe",
         },
         minify: true,
         write: false,
@@ -26,11 +26,11 @@ export const iframeRuntimePlugin = (): Plugin => ({
     });
     const output = Array.isArray(result) ? result[0] : result;
     if (!output || !("output" in output)) {
-      throw new Error("Unable to bundle PatchSmith iframe.");
+      throw new Error("Unable to bundle Patchsmith iframe.");
     }
     const chunk = output.output.find((item) => item.type === "chunk");
     if (!chunk) {
-      throw new Error("PatchSmith iframe bundle is empty.");
+      throw new Error("Patchsmith iframe bundle is empty.");
     }
     return `export default ${JSON.stringify(chunk.code)};`;
   },

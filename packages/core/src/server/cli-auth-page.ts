@@ -4,8 +4,9 @@ import {
 } from "@patchsmith/client-platform/client";
 import type { Client as PlatformClient } from "@patchsmith/client-platform/client/client/index";
 
-import { selectPatchSmithScopes } from "./scope";
-import type { PatchSmithNamedScope, PatchSmithScopes } from "./types";
+import type { PatchsmithRuntimeContext } from "./context";
+import { selectPatchsmithScopes } from "./scope";
+import type { PatchsmithNamedScope, PatchsmithScopes } from "./types";
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
@@ -19,17 +20,13 @@ const requireValue = <T>(value: T | null | undefined): T => {
 
 type HeaderInput = ConstructorParameters<typeof Headers>[0];
 
-interface PatchSmithRuntimeContext {
-  scopes: PatchSmithScopes;
-}
-
 export interface CliAuthApprovalPageOptions {
   authenticate: (ctx: {
     request: Request;
   }) =>
-    | PatchSmithRuntimeContext
+    | PatchsmithRuntimeContext
     | null
-    | Promise<PatchSmithRuntimeContext | null>;
+    | Promise<PatchsmithRuntimeContext | null>;
   platform: PlatformClient;
   platformHeaders: HeaderInput;
   request: Request;
@@ -40,7 +37,7 @@ type ApprovalPageState =
   | {
       code: string;
       error?: string;
-      scopes?: PatchSmithScopes;
+      scopes?: PatchsmithScopes;
       selectedScopeName?: string;
       status: "idle";
     }
@@ -58,7 +55,7 @@ const redirectToSignIn = ({
 
   if (signInUrl.origin !== approvalUrl.origin) {
     throw new Error(
-      "PatchSmith cliAuth.signInPath must be a same-origin path."
+      "Patchsmith cliAuth.signInPath must be a same-origin path."
     );
   }
 
@@ -107,7 +104,7 @@ const formatCode = (code: string): string =>
   normalizeCode(code).replaceAll(/(?<section>.{3})(?=.)/gu, "$<section>-");
 
 export const renderScopeControl = (
-  scopes: PatchSmithScopes | undefined,
+  scopes: PatchsmithScopes | undefined,
   selectedName: string | undefined,
   controlId: string,
   label: string
@@ -607,13 +604,13 @@ const renderHtml = (state: ApprovalPageState): string =>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Approve PatchSmith CLI</title>
+  <title>Approve Patchsmith CLI</title>
   <style>${approvalStyles}</style>
 </head>
 <body>
   <main class="page">
     ${renderCard(state)}
-    <p class="footer-link">Powered by <a href="https://patchsmith.io/home">PatchSmith</a></p>
+    <p class="footer-link">Powered by <a href="https://patchsmith.io/home">Patchsmith</a></p>
   </main>
   ${state.status === "idle" ? `<script>${script}</script>` : ""}
 </body>
@@ -627,10 +624,10 @@ const renderCliAuthApprovalPage = (state: ApprovalPageState): Response =>
   });
 
 export const selectOneScope = (
-  scopes: PatchSmithScopes,
+  scopes: PatchsmithScopes,
   selectedName: string | undefined,
   errorMessage: string
-): PatchSmithNamedScope => {
+): PatchsmithNamedScope => {
   const availableNames = Object.keys(scopes);
   const name =
     selectedName ??
@@ -638,7 +635,7 @@ export const selectOneScope = (
   if (name === undefined) {
     throw new TypeError(errorMessage);
   }
-  return requireValue(selectPatchSmithScopes(scopes, [name])[0]);
+  return requireValue(selectPatchsmithScopes(scopes, [name])[0]);
 };
 
 export const handleCliAuthApprovalPage = async ({

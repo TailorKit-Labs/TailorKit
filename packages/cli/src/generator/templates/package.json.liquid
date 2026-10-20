@@ -1,9 +1,19 @@
 {
   "name": "{{ packageName }}",
-  "description": "A PatchSmith app that embeds in a host app to extend what it can do.",
+  "description": "A Patchsmith app that embeds in a host app to extend what it can do.",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "imports": {
-    "#patchsmith": "./src/patchsmith.gen.ts"
+    "#patchsmith": "./src/patchsmith.gen.ts",
+    "#*": [
+      "./src/*",
+      "./src/*.ts",
+      "./src/*.tsx",
+      "./src/*/index.ts",
+      "./src/*/index.tsx"
+    ]
   },
   "scripts": {
     "build": "{% if vitePlus %}vp{% else %}vite{% endif %} build",

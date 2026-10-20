@@ -32,9 +32,9 @@ it("validates upload manifests without loading build tooling in a server runtime
           },
         });
 
-        const { createPatchSmithUploadManifest, patchsmithUploadManifestSchema } =
+        const { createPatchsmithUploadManifest, patchsmithUploadManifestSchema } =
           await import("@patchsmith/vite/upload-manifest");
-        const manifest = createPatchSmithUploadManifest(undefined, true);
+        const manifest = createPatchsmithUploadManifest(undefined, true);
         assert.equal(manifest.assets.server, "server/server.js");
         assert.deepEqual(v.parse(patchsmithUploadManifestSchema, manifest), manifest);
         assert.equal(v.safeParse(patchsmithUploadManifestSchema, {

@@ -1,7 +1,7 @@
 export {
-  createPatchSmithUploadManifest,
+  createPatchsmithUploadManifest,
   patchsmithUploadManifestSchema,
-  type PatchSmithUploadManifest,
+  type PatchsmithUploadManifest,
 } from "./upload-manifest";
 export {
   generateAppMigrations,

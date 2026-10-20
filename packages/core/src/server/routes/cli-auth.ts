@@ -8,7 +8,7 @@ import {
 import * as v from "valibot";
 
 import {
-  getPatchSmithScope,
+  getPatchsmithScope,
   o,
   requireCliDeployToken,
   requireHostAuth,
@@ -26,7 +26,7 @@ const runPlatformCliAuthRequest = async <T>(
     if (isStringValue(error) && error.toLowerCase() === "unauthorized") {
       throw new ORPCError("UNAUTHORIZED", {
         message:
-          "PatchSmith platform rejected the host project key. Check PATCHSMITH_PROJECT_KEY.",
+          "Patchsmith platform rejected the host project key. Check PATCHSMITH_PROJECT_KEY.",
       });
     }
 
@@ -48,7 +48,7 @@ export const cliAuthRouter = {
         await runPlatformCliAuthRequest(
           cliAuthApprove({
             body: {
-              scope: getPatchSmithScope(context, input.scope),
+              scope: getPatchsmithScope(context, input.scope),
               userCode: input.userCode,
             },
             client: context.platform,
@@ -98,5 +98,5 @@ export const cliAuthRouter = {
   verifyToken: o
     .input(v.object({}))
     .use(requireCliDeployToken)
-    .handler(({ context }) => ({ scope: getPatchSmithScope(context) })),
+    .handler(({ context }) => ({ scope: getPatchsmithScope(context) })),
 };

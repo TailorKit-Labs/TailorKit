@@ -14,7 +14,7 @@ export const patchSmith = createServer({
   projectKey: env.PATCHSMITH_PROJECT_KEY,
 });
 
-export const authenticatePatchSmithRequest = ({
+export const authenticatePatchsmithRequest = ({
   request,
 }: {
   request: Request;

@@ -187,7 +187,7 @@ const buildAuth = () => {
       },
     },
 
-    appName: "PatchSmith",
+    appName: "Patchsmith",
 
     baseURL: getBaseUrl(env),
 
@@ -227,13 +227,13 @@ const buildAuth = () => {
       haveIBeenPwned(),
       passkey({
         rpID: passkeyRpID,
-        rpName: "PatchSmith",
+        rpName: "Patchsmith",
       }),
       twoFactor({
         // OAuth-only accounts must create a password through the verified-email
         // recovery flow before they can enroll a second factor.
         allowPasswordless: false,
-        issuer: "PatchSmith",
+        issuer: "Patchsmith",
       }),
       emailOTP({
         expiresIn: 600,

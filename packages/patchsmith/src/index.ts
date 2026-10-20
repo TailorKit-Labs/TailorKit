@@ -6,7 +6,7 @@ export type {
   ToolImplementations,
   ToolContext,
   ToolIdentity,
-  PatchSmithContract,
+  PatchsmithContract,
 } from "@patchsmith/core/schema";
 export type {
   Component,
@@ -14,6 +14,6 @@ export type {
   ContextDefinitions,
   View,
   Views,
-  PatchSmith,
-  PatchSmithTheme,
+  Patchsmith,
+  PatchsmithTheme,
 } from "@patchsmith/core/schema";

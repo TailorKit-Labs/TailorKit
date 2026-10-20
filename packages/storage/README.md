@@ -1,3 +1,3 @@
-# PatchSmith storage
+# Patchsmith storage
 
-`@patchsmith/storage` implements shared file storage for the PatchSmith platform.
+`@patchsmith/storage` implements shared file storage for the Patchsmith platform.

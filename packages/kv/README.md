@@ -1,3 +1,3 @@
-# PatchSmith KV
+# Patchsmith KV
 
-`@patchsmith/kv` implements shared key-value storage for the PatchSmith platform.
+`@patchsmith/kv` implements shared key-value storage for the Patchsmith platform.

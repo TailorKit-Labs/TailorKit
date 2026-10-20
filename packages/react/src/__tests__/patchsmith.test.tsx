@@ -1,4 +1,4 @@
-import { createPatchSmithStore } from "@patchsmith/client-core";
+import { createPatchsmithStore } from "@patchsmith/client-core";
 import { asyncFixture } from "@patchsmith/config/testing";
 import type { EmptyDefinitionMap } from "@patchsmith/core/schema";
 import { defineContract } from "@patchsmith/core/schema";
@@ -33,7 +33,7 @@ import {
 import { useApps } from "#hooks/use-apps";
 import { RenderSlot } from "#index";
 import { createClient } from "#patchsmith";
-import type { PatchSmithApp } from "#patchsmith";
+import type { PatchsmithApp } from "#patchsmith";
 import { RemoteViewHost } from "#remote-view";
 
 const hostRecords: {
@@ -75,7 +75,9 @@ vi.mock("@patchsmith/sandbox/host", () => ({
       /* oxlint-disable typescript/no-unsafe-type-assertion -- The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below. */
       {
         destroy: () => {},
-        dispatch: (_payload: HostToIframePayload) => {},
+        dispatch: async (_payload: HostToIframePayload) => {
+          await Promise.resolve();
+        },
         getSnapshot: () => tree,
         iframe: document.createElement("iframe"),
         mount: () => {
@@ -181,7 +183,7 @@ const HomeSlot = ({
   app,
   patchsmith,
 }: {
-  app: PatchSmithApp;
+  app: PatchsmithApp;
   patchsmith: ReturnType<typeof createClient<typeof contract>>;
 }) => {
   // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
@@ -296,7 +298,7 @@ describe("patchSmithClient React adapter", () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(Response.json([]));
-    const store = createPatchSmithStore({
+    const store = createPatchsmithStore({
       baseUrl: "http://runtime.test/api/patchsmith",
       contract,
     });
@@ -557,7 +559,7 @@ describe("patchSmithClient React adapter", () => {
         </otherTailor.Provider>
       )
     ).toThrow(
-      "RenderSlot was created for a different PatchSmith client than the surrounding Provider."
+      "RenderSlot was created for a different Patchsmith client than the surrounding Provider."
     );
   });
 
@@ -655,7 +657,7 @@ describe("patchSmithClient React adapter", () => {
     await waitFor(() => {
       expect(
         testingView.getByText(
-          'PatchSmith component "Button" is not registered.'
+          'Patchsmith component "Button" is not registered.'
         )
       ).toBeTruthy();
     });
@@ -685,7 +687,7 @@ describe("patchSmithClient React adapter", () => {
     await waitFor(() => {
       expect(
         testingView.getByText(
-          'PatchSmith component "MissingComponent" is not registered.'
+          'Patchsmith component "MissingComponent" is not registered.'
         )
       ).toBeTruthy();
     });
@@ -706,7 +708,7 @@ describe("patchSmithClient React adapter", () => {
     await waitFor(() => {
       expect(
         testingView.queryByText(
-          'PatchSmith component "MissingComponent" is not registered.'
+          'Patchsmith component "MissingComponent" is not registered.'
         )
       ).toBeNull();
       expect(testingView.getByRole("button").textContent).toContain(

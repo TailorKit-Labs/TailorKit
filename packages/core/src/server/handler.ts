@@ -11,7 +11,7 @@ import type {
   ViewContextHierarchy,
   SlotDefinitions,
 } from "#schema/index";
-import { createPatchSmithSchema } from "#schema/schema";
+import { createPatchsmithSchema } from "#schema/schema";
 import type { EmptyDefinitionMap } from "#schema/shared";
 import { platformAppSelector } from "#server/platform-app-selector";
 
@@ -23,19 +23,19 @@ import { createExperimental } from "./experimental";
 import { createMcpTransport } from "./mcp";
 import { patchsmithRouter } from "./router";
 import {
-  selectPatchSmithScopes,
-  validatePatchSmithScopeSchemas,
-  validatePatchSmithScopes,
+  selectPatchsmithScopes,
+  validatePatchsmithScopeSchemas,
+  validatePatchsmithScopes,
 } from "./scope";
 import type {
-  InferPatchSmithServerTools,
-  InferPatchSmithServerComponents,
-  InferPatchSmithServerViews,
-  InferPatchSmithServerScopes,
-  PatchSmithHandlerOptions,
-  PatchSmithScopes,
-  PatchSmithServer,
-  PatchSmithServerInputOptions,
+  InferPatchsmithServerTools,
+  InferPatchsmithServerComponents,
+  InferPatchsmithServerViews,
+  InferPatchsmithServerScopes,
+  PatchsmithHandlerOptions,
+  PatchsmithScopes,
+  PatchsmithServer,
+  PatchsmithServerInputOptions,
 } from "./types";
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
@@ -49,13 +49,13 @@ const defaultPlatformBaseUrl = "https://patchsmith.io/api/platform";
 
 type AbsolutePath = `/${string}`;
 
-const resolveReadScopes = (url: URL, availableScopes: PatchSmithScopes) => {
+const resolveReadScopes = (url: URL, availableScopes: PatchsmithScopes) => {
   try {
     const names = url.searchParams.getAll("scopes");
     if (names.length === 1 && names[0] === "") {
       return [];
     }
-    return selectPatchSmithScopes(
+    return selectPatchsmithScopes(
       availableScopes,
       names.length ? names : undefined
     );
@@ -66,38 +66,38 @@ const resolveReadScopes = (url: URL, availableScopes: PatchSmithScopes) => {
   }
 };
 
-export const createPatchSmithServer = <
-  const TOptions extends PatchSmithServerInputOptions,
+export const createPatchsmithServer = <
+  const TOptions extends PatchsmithServerInputOptions,
 >(
   options: TOptions & {
     slots?: SlotDefinitions<
-      keyof InferPatchSmithServerViews<NoInfer<TOptions>> & string
+      keyof InferPatchsmithServerViews<NoInfer<TOptions>> & string
     >;
-    tools?: InferPatchSmithServerTools<TOptions>;
-    components: InferPatchSmithServerComponents<TOptions> &
+    tools?: InferPatchsmithServerTools<TOptions>;
+    components: InferPatchsmithServerComponents<TOptions> &
       NoComponentFieldCallbackConflicts<
-        InferPatchSmithServerComponents<TOptions>
+        InferPatchsmithServerComponents<TOptions>
       >;
-    views?: InferPatchSmithServerViews<TOptions> &
-      ViewContextHierarchy<InferPatchSmithServerViews<TOptions>>;
+    views?: InferPatchsmithServerViews<TOptions> &
+      ViewContextHierarchy<InferPatchsmithServerViews<TOptions>>;
   }
-): PatchSmithServer<
-  InferPatchSmithServerComponents<TOptions>,
-  InferPatchSmithServerViews<TOptions>,
-  InferPatchSmithServerTools<TOptions>,
-  InferPatchSmithServerScopes<TOptions>
+): PatchsmithServer<
+  InferPatchsmithServerComponents<TOptions>,
+  InferPatchsmithServerViews<TOptions>,
+  InferPatchsmithServerTools<TOptions>,
+  InferPatchsmithServerScopes<TOptions>
 > & {
   readonly $slots?: TOptions extends { slots: infer V }
     ? V
     : EmptyDefinitionMap;
 } => {
   const { basePath, publicOrigin } = normalizeBaseUrl(options.baseUrl);
-  const scopeSchemas = validatePatchSmithScopeSchemas(options.scopes);
+  const scopeSchemas = validatePatchsmithScopeSchemas(options.scopes);
   // SAFETY: The server preserves the supplied typed tool table and normalizes the route base path before constructing its handler.
-  const schema = createPatchSmithSchema<
-    InferPatchSmithServerComponents<TOptions>,
-    InferPatchSmithServerViews<TOptions>,
-    InferPatchSmithServerTools<TOptions>
+  const schema = createPatchsmithSchema<
+    InferPatchsmithServerComponents<TOptions>,
+    InferPatchsmithServerViews<TOptions>,
+    InferPatchsmithServerTools<TOptions>
   >({
     components: options.components,
     scopes: options.scopes,
@@ -130,8 +130,8 @@ export const createPatchSmithServer = <
 
   const handler = async (
     request: Request,
-    handlerOptions: PatchSmithHandlerOptions<
-      InferPatchSmithServerScopes<TOptions>
+    handlerOptions: PatchsmithHandlerOptions<
+      InferPatchsmithServerScopes<TOptions>
     >
   ) => {
     const authenticate = async ({
@@ -147,16 +147,15 @@ export const createPatchSmithServer = <
       }
 
       if (
-        hostContext.subjectId !== undefined &&
-        (!isStringValue(hostContext.subjectId) ||
-          !hostContext.subjectId ||
-          hostContext.subjectId.length > 256)
+        !isStringValue(hostContext.subjectId) ||
+        !hostContext.subjectId ||
+        hostContext.subjectId.length > 256
       ) {
         throw new Error("Invalid authenticated subject");
       }
       return {
         ...hostContext,
-        scopes: await validatePatchSmithScopes(
+        scopes: await validatePatchsmithScopes(
           scopeSchemas,
           hostContext.scopes
         ),
@@ -291,7 +290,7 @@ export const createPatchSmithServer = <
       return rpcResult.response;
     }
 
-    return new Response("PatchSmith route not found", { status: 404 });
+    return new Response("Patchsmith route not found", { status: 404 });
   };
 
   return {

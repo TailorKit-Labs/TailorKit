@@ -9,8 +9,8 @@ import * as v from "valibot";
 
 import { platformAppSelector } from "#server/platform-app-selector";
 import {
-  getPatchSmithScope,
-  getPatchSmithScopes,
+  getPatchsmithScope,
+  getPatchsmithScopes,
   o,
   requireCliDeployToken,
 } from "#server/procedures";
@@ -117,7 +117,7 @@ export const deploymentRouter = {
             app: platformAppSelector(input.appId),
             assets: input.assets,
             logos: input.logos,
-            scope: getPatchSmithScope(context),
+            scope: getPatchsmithScope(context),
             server: input.server,
             views: input.views,
           },
@@ -139,7 +139,7 @@ export const deploymentRouter = {
     .handler(
       async ({ context, input }) =>
         await deploymentsGet({
-          body: { scopes: getPatchSmithScopes(context, input.scopes) },
+          body: { scopes: getPatchsmithScopes(context, input.scopes) },
           client: context.platform,
           headers: context.platformHeaders,
           path: { deploymentId: input.deploymentId },
@@ -161,7 +161,7 @@ export const deploymentRouter = {
             app: platformAppSelector(input.appId),
             page: input.page,
             pageSize: input.pageSize,
-            scopes: getPatchSmithScopes(context, input.scopes),
+            scopes: getPatchsmithScopes(context, input.scopes),
           },
           client: context.platform,
           headers: context.platformHeaders,
@@ -178,7 +178,7 @@ export const deploymentRouter = {
     .handler(
       async ({ context, input }) =>
         await deploymentsPublish({
-          body: { rollout: input.rollout, scope: getPatchSmithScope(context) },
+          body: { rollout: input.rollout, scope: getPatchsmithScope(context) },
           client: context.platform,
           headers: context.platformHeaders,
           path: { deploymentId: input.deploymentId },

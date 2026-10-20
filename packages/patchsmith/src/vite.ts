@@ -1,1 +1,1 @@
-export { patchsmith, type PatchSmithPluginOptions } from "@patchsmith/vite";
+export { patchsmith, type PatchsmithPluginOptions } from "@patchsmith/vite";

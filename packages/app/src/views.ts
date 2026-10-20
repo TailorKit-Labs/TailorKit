@@ -12,16 +12,16 @@ import type { FunctionCalls, Identity } from "./server/functions";
 
 const isFunctionValue = <TValue>(
   value: TValue
-): value is Extract<TValue, CallableFunction> => typeof value === "function";
+): value is TValue & RemoteCallbackOperation => typeof value === "function";
 
 // oxlint-disable-next-line typescript/no-empty-interface, typescript/no-empty-object-type -- Generated bindings augment this interface.
-export interface PatchSmithViews {}
+export interface PatchsmithViews {}
 
 // oxlint-disable-next-line typescript/no-empty-interface, typescript/no-empty-object-type -- Generated bindings augment this interface.
-export interface PatchSmithSlots {}
+export interface PatchsmithSlots {}
 // Filled by the generated host bindings using a type-only link to the app server.
 // oxlint-disable-next-line typescript/no-empty-interface, typescript/no-empty-object-type -- Generated bindings augment this interface.
-export interface PatchSmithServerFunctions {}
+export interface PatchsmithServerFunctions {}
 
 // Registered view schemas own these heterogeneous field types; shared adapters only forward or encode them.
 // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- Context and instance metadata remain opaque until their owning schema consumes them.
@@ -46,7 +46,7 @@ export interface InstanceResolverContext<TPath extends AppViewPath> {
   context: ViewContext<TPath>;
   identity: Identity;
   signal: AbortSignal;
-  queries: FunctionCalls<PatchSmithServerFunctions, "query">;
+  queries: FunctionCalls<PatchsmithServerFunctions, "query">;
 }
 
 export interface ViewInstances<
@@ -62,15 +62,15 @@ export interface ViewInstances<
     | Promise<ViewInstance<StandardSchemaV1.InferInput<TSchema>>[]>;
 }
 // oxlint-disable-next-line typescript/no-redundant-type-constituents -- Declaration merging may add symbol or numeric keys; the public view and slot names remain string keys.
-export type SlotName = keyof PatchSmithSlots & string;
+export type SlotName = keyof PatchsmithSlots & string;
 
 // oxlint-disable-next-line typescript/no-redundant-type-constituents -- Declaration merging may add symbol or numeric keys; the public view and slot names remain string keys.
-export type ViewPath = Extract<keyof PatchSmithViews & string, `/${string}`>;
+export type ViewPath = Extract<keyof PatchsmithViews & string, `/${string}`>;
 export type AppViewPath = ViewPath;
 
 export type ViewProps<TPath extends ViewPath> =
-  PatchSmithViews[TPath] extends object
-    ? PatchSmithViews[TPath]
+  PatchsmithViews[TPath] extends object
+    ? PatchsmithViews[TPath]
     : Record<string, never>;
 
 export type ViewPropsForPath<TPath extends AppViewPath> = TPath extends ViewPath
@@ -121,13 +121,13 @@ export interface ViewDefinition<
   instances?: { resolver: string };
 }
 
-export type SlotView<TSlot extends SlotName> = PatchSmithSlots[TSlot] extends {
+export type SlotView<TSlot extends SlotName> = PatchsmithSlots[TSlot] extends {
   views: infer TViews;
 }
   ? Extract<TViews, AppViewPath>
   : never;
 type SlotInstanceDefinition<TSlot extends SlotName> =
-  PatchSmithSlots[TSlot] extends {
+  PatchsmithSlots[TSlot] extends {
     multiple: true;
   }
     ? { instances: { resolver: string } }
@@ -140,17 +140,17 @@ type SlotDefinitions = {
       | false;
   }>;
 };
-export interface PatchSmithClient<
+export interface PatchsmithClient<
   TSlots extends SlotDefinitions = SlotDefinitions,
 > {
   slots: TSlots;
 }
 
-export interface PatchSmithClientMeta {
+export interface PatchsmithClientMeta {
   preactVersion: string;
 }
 
-export interface PatchSmithClientRuntime {
+export interface PatchsmithClientRuntime {
   h: typeof h;
   render: (
     vnode: VNode | null,
@@ -158,11 +158,11 @@ export interface PatchSmithClientRuntime {
   ) => void;
 }
 
-export type PatchSmithClientWithMeta<
+export type PatchsmithClientWithMeta<
   TViews extends SlotDefinitions = SlotDefinitions,
-> = PatchSmithClient<TViews> & {
-  $meta: PatchSmithClientMeta;
-  $runtime: PatchSmithClientRuntime;
+> = PatchsmithClient<TViews> & {
+  $meta: PatchsmithClientMeta;
+  $runtime: PatchsmithClientRuntime;
 };
 
 type ViewOptions<
@@ -177,7 +177,7 @@ type ViewOptions<
   } & (TPath extends SlotView<S>
     ? unknown
     : { readonly __patchsmith_error__: "View is not supported by this slot" }) &
-    (PatchSmithSlots[S] extends { multiple: true }
+    (PatchsmithSlots[S] extends { multiple: true }
       ? { instances: ViewInstances<TPath, TSchema> }
       : { instances?: never });
 }[TSlot];
@@ -213,7 +213,7 @@ export function defineView<
 }): ViewDefinition<TPath, StandardSchemaV1.InferOutput<TSchema>> {
   if (!options.slot || !options.view) {
     throw new Error(
-      "Views without a slot or path must be compiled from a .view.tsx file by the PatchSmith app build."
+      "Views without a slot or path must be compiled from a .view.tsx file by the Patchsmith app build."
     );
   }
   const path = options.view;
@@ -235,7 +235,7 @@ export function defineView<
     )
   ) {
     throw new Error(
-      "View instance resolvers must be compiled with the PatchSmith app build."
+      "View instance resolvers must be compiled with the Patchsmith app build."
     );
   }
 
@@ -307,6 +307,14 @@ export function defineView<
   };
 }
 
+// oxlint-disable-next-line anti-slop/no-unknown-returns -- Callback values are owned by the host contract; the sandbox bridge forwards them without interpreting their heterogeneous schemas.
+export type RemoteCallbackOperation = (...inputs: unknown[]) => unknown;
+
+export interface RemoteCallbackEvent {
+  detail: unknown[];
+  respondWith: (operation: RemoteCallbackOperation) => void;
+}
+
 const componentTagPrefix = "patchsmith-";
 
 const toComponentTagName = (name: string): string =>
@@ -352,13 +360,10 @@ export const createRemoteComponent = <
 
       const eventName = toCallbackEventName(key);
       callbackMap[eventName] = { callback: key, inputCount };
-      nextProps[toEventProp(eventName)] = (event: { detail?: unknown[] }) => {
-        // SAFETY: The callback binding declares its input count, and CustomEvent detail carries those positional inputs.
-        (
-          operation as (
-            ...inputs: CustomEvent["detail"][]
-          ) => ReturnType<() => void>
-        )(...(event.detail ?? []).slice(0, inputCount));
+      nextProps[toEventProp(eventName)] = (event: RemoteCallbackEvent) => {
+        event.respondWith(() =>
+          operation(...event.detail.slice(0, inputCount))
+        );
       };
     }
 

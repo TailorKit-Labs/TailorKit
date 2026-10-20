@@ -1,10 +1,10 @@
 import { defineView } from "./app";
 
 declare module "@patchsmith/app" {
-  interface PatchSmithSlots {
+  interface PatchsmithSlots {
     packageTest: { views: "/package-test"; multiple: false };
   }
-  interface PatchSmithViews {
+  interface PatchsmithViews {
     "/package-test": { context: { customerId: string } };
   }
 }

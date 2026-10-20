@@ -1,12 +1,12 @@
 import { buildPrimitiveCss } from "@patchsmith/client-core";
 import type { PrimitiveProps } from "@patchsmith/client-core";
-import type { PatchSmithTheme } from "@patchsmith/core/schema";
+import type { PatchsmithTheme } from "@patchsmith/core/schema";
 import { createContext, useContext, useId, useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
 interface PrimitiveThemeContextValue {
   viewId: string;
-  theme: PatchSmithTheme;
+  theme: PatchsmithTheme;
 }
 
 export const PrimitiveThemeContext =

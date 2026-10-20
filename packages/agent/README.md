@@ -1,6 +1,6 @@
-# PatchSmith agent
+# Patchsmith agent
 
-`@patchsmith/agent` runs a Pi-backed `HarnessAgent` to build and edit PatchSmith extensions. The web host, platform chat routes, Model Context Protocol (MCP) routes, and app source export use this package.
+`@patchsmith/agent` runs a Pi-backed `HarnessAgent` to build and edit Patchsmith extensions. The web host, platform chat routes, Model Context Protocol (MCP) routes, and app source export use this package.
 
 ## Instructions and skills
 
@@ -51,7 +51,7 @@ CLI and new app installs enforce a three-day package release age. Only `patchsmi
 
 Every `patchsmith agent --host your_host_url` invocation starts a new conversation by default. Follow-up messages in that invocation reuse the thread ID announced by the platform in a transient `data-thread` UI chunk. The CLI prints the ID when the chat closes; use `patchsmith agent --host your_host_url --app your_app_id --thread your_thread_id` to continue it. The resumed terminal UI shows new messages while Pi retains the conversation’s prior context.
 
-MCP `create_app` and `edit_app` create a new thread by default and return its ID in progress events and the terminal result. Pass `threadId` to `edit_app` for a related follow-up. After `create_app`, continue through `edit_app` with the returned app and thread IDs. The backend validates that the requested thread belongs to the authorized app before starting a run or issuing an MCP agent grant.
+MCP `create_app` and `edit_app` create a new thread by default and return its ID in the terminal result. Pass `threadId` to `edit_app` for a related follow-up. After `create_app`, continue through `edit_app` with the returned app and thread IDs. The backend validates that the requested thread belongs to the authorized app before starting a run or issuing an MCP agent grant.
 
 Direct workflow callers must first authorize the app and call `resolveAppAgentThread(appId, optionalThreadId)` from `@patchsmith/agent/threads`, then pass its result as `AppAgentInput.threadId`. Workflow slices continue the same unfinished turn; separate user-turn runs resume only their explicit thread.
 
@@ -93,18 +93,15 @@ The endpoint implements MCP 2026-07-28 using the official SDK v2. It rejects leg
 
 The web host gives `/api/platform/app-agent/mcp` its own Vercel Function with a 1,800-second maximum duration so the request can stream a full agent turn. This requires Vercel’s extended function durations on Pro or Enterprise. Other web routes retain their default duration.
 
-`create_app` and `edit_app` advertise `dev.patchsmith/agent-stream` metadata with version `1`, event key `dev.patchsmith/agent-stream`, and notification `notifications/progress`. Request progress to receive the nested agent stream. The exported `AppAgentMcpProgress` type describes the structured object carried by `notifications/progress.params._meta["dev.patchsmith/agent-stream"]`:
+`create_app` and `edit_app` send standard `notifications/progress` when the request supplies `_meta.progressToken`. Each notification contains `progressToken`, `progress`, and a human-readable `message`, following the [MCP progress specification](https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/progress). `progress` is a monotonically increasing notification count. A message that generation has finished does not establish success: wait for the final result. Failed MCP tool calls have `isError: true`; a failed nested tool action may be repaired by the agent before the call completes. Clients that do not request progress still receive the final result. The `create_app` schema advertises the authorized scope names as an enum.
 
-- `{ status: "started", appId, runId, threadId }` identifies the running agent.
-- `{ status: "streaming", appId, runId, threadId, chunk }` carries an AI SDK `UIMessageChunk`, including text, reasoning, tool activity, and errors. Feed these chunks into `readUIMessageStream` to assemble the nested agent's message.
+Standard progress messages include cumulative assistant text, command previews such as `Bash: pnpm check`, file paths such as `Read: src/app.tsx`, and tool outcomes such as `failed: Bash: pnpm check`. Nonzero tool exit codes and `isError: true` tool results are reported as failed; preliminary results are omitted. Previews collapse whitespace, remove terminal control sequences, and stay within 320 characters; truncated previews use an ellipsis. Commands containing credential markers are hidden. Reasoning, raw tool arguments, file contents, tool outputs, and bookkeeping chunks are excluded from progress messages. Preview text remains agent-generated data, not a guarantee that arbitrary text is free of sensitive information.
 
-`message` contains human-readable status text, as recommended by the [MCP progress specification](https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/progress). Agent chunks use namespaced `_meta` so ordinary MCP clients can display progress without understanding PatchSmith's payload. This metadata uses the core protocol's metadata facility; it adds no RPC methods, result types, or negotiated extension requirements. `progress` is a monotonically increasing event count. The final tool result contains `{ appId, threadId, runId, message, messages, sessionId, finishReason, usage? }`. A streamed `finish` chunk does not establish success: wait for the final result. Failed tool results have `isError: true`. Clients that do not request progress still receive the final result. The `create_app` schema advertises the authorized scope names as an enum.
+Unrecognized tools use their sanitized name, for example `Tool: browser_snapshot`. Their arbitrary arguments are not previewed. A blank name falls back to `Tool.`. Identical consecutive updates are omitted. Text updates are coalesced over 750 ms, with the latest pending text flushed at text-block boundaries, before significant activity changes, and before the final result. Tool and lifecycle changes are delivered immediately. During quiet work, the last message is repeated every 15 seconds to keep progress-aware client timeouts alive. Timers stop when the call completes, fails, or is cancelled.
 
-Standard progress messages include cumulative assistant text, command previews such as `Bash: pnpm check`, file paths such as `Read: src/app.tsx`, and tool call previews. Previews collapse whitespace, remove terminal control sequences, and stay within 320 characters. Commands containing credential markers are hidden in these previews; file contents and tool output are excluded. Structured events retain the original chunks, so clients must treat `_meta` as agent data rather than a sanitized display string. Reasoning chunks do not become human-readable progress messages.
+The backend returns an `AppAgentMcpResult` containing `{ appId, answer, threadId, runId, finishReason }`. All fields are required and advertised in the tools' output schema. The platform collects only assistant text from the workflow stream; it does not assemble a full UI message or return internal messages, reasoning, tool transcripts, session state, or usage. Text blocks are separated by blank lines. `answer` defaults to `App agent run ended.` when there is no text. `finishReason` reports why generation stopped; it does not guarantee deployment success. A streamed error or abort fails the call and triggers workflow cleanup.
 
-Unrecognized tools use their sanitized name, for example `Tool: browser_snapshot`. Their arbitrary arguments are not previewed. A blank name falls back to `Tool.`. Tool result events retain the last visible message; completion, failure, denial, and preliminary output remain available in the structured stream.
-
-The first final `content` text block contains the assistant's answer, app/run/thread IDs, and instructions for continuing with `edit_app`. The full result remains in `structuredContent` and a second, assistant-audience JSON text block, following MCP's backwards-compatibility recommendation. Clients that ignore PatchSmith metadata, or do not request progress, can display the first block as a readable result without the internal transcript. Audience annotations are hints; clients control which blocks they display.
+The final response contains one readable `content` text block with the answer. `structuredContent` contains the compact result, including the app/run/thread IDs for continuing with `edit_app`. The response has no additional serialized JSON text block. Render `progress.message` for live progress and read `structuredContent.answer` for the final answer. The backend's `onProgress` callback accepts internal `AppAgentMcpEvent` events, which the MCP adapter reduces before transmission.
 
 For example, connect an MCP client and render progress events while the agent edits an app:
 
@@ -135,9 +132,9 @@ const result = await client.callTool(
     timeout: 35 * 60_000,
     resetTimeoutOnProgress: true,
     onprogress: (progress) => {
-      // Validate the remote progress notification and read the namespaced event
-      // from params._meta["dev.patchsmith/agent-stream"] in this callback.
-      renderAgentProgress(progress);
+      if (progress.message !== undefined) {
+        renderAgentProgress(progress.message);
+      }
     },
   }
 );

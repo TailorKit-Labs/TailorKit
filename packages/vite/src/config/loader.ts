@@ -3,11 +3,11 @@ import path from "node:path";
 import { cosmiconfig } from "cosmiconfig";
 import * as v from "valibot";
 
-import type { ResolvedPatchSmithConfig } from "./config";
+import type { ResolvedPatchsmithConfig } from "./config";
 import { patchsmithConfigSchema } from "./config";
 
-export interface LoadedPatchSmithConfig {
-  config: ResolvedPatchSmithConfig;
+export interface LoadedPatchsmithConfig {
+  config: ResolvedPatchsmithConfig;
   filepath: string;
   root: string;
 }
@@ -20,10 +20,10 @@ const explorer = cosmiconfig("patchsmith", {
   ],
 });
 
-export const loadPatchSmithConfig = async (
+export const loadPatchsmithConfig = async (
   configPath: string | undefined,
   cwd = process.cwd()
-): Promise<LoadedPatchSmithConfig> => {
+): Promise<LoadedPatchsmithConfig> => {
   const searchFrom = path.resolve(cwd);
   const result =
     configPath === undefined

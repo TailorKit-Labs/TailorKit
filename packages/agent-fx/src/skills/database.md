@@ -1,47 +1,50 @@
-# App SQLite
+# App database
 
-Each installation has persistent SQLite shared by its users. Use it only for app-owned data and enforce the feature's access rules in functions. Queries/mutations receive a restricted database capability; there is no driver or database service to configure.
+Each installation, an installed copy of the app, has persistent SQLite shared by its users. Use it for data the app owns. Backend functions enforce who can read or change that data; Patchsmith manages the connection and transactions.
 
-Use `patchsmith/db` for table/column builders, `defineRelations`, `defineDatabase`, and query helpers. Keep database imports in backend modules. When adding storage to a bare app, create `src/db/schema.ts`, `relations.ts` and `index.ts` using the [function example](references/functions.md).
+Import database APIs from `patchsmith/db` in backend files. For storage choices, see the optional [data flow reference](references/workflows.md).
 
-## Columns and inserts
+## Tables
 
-Use `table`, `text`, `integer`, `real`, and `boolean`. Choose required fields and defaults to match the feature; generate text IDs with `crypto.randomUUID()`. Table names start with a letter, contain letters/digits/underscores, are at most 63 characters, and avoid `sqlite_`/`patchsmith_` prefixes.
+Define tables in `src/db/schema.ts` with `table`, `text`, `integer`, `real`, and `boolean`. Use `crypto.randomUUID()` for text IDs. Table names start with a letter, contain letters/digits/underscores, have at most 63 characters, and avoid `sqlite_` and `patchsmith_` prefixes.
 
-For a finite text type, `.$type<T>()` narrows TypeScript; validate inputs at runtime too. `$inferInsert` describes complete insert rows. For example:
+For example, define installation-shared notes in `src/db/schema.ts`:
 
-<!-- example: typed-insert -->
+<!-- example: src/db/schema.ts -->
 
 ```ts
-import { integer, table, text } from "patchsmith/db";
+import { table, text } from "patchsmith/db";
 
-export type Priority = "low" | "medium" | "high";
-export const tasks = table("tasks", {
+export const notes = table("notes", {
   id: text().primaryKey(),
   title: text().notNull(),
-  priority: text().$type<Priority>().notNull().default("medium"),
-  createdAt: integer().notNull(),
 });
-
-export type TaskInsert = typeof tasks.$inferInsert;
-export const row: TaskInsert = {
-  id: crypto.randomUUID(),
-  title: "Review design",
-  priority: "high",
-  createdAt: Date.now(),
-};
 ```
 
-Insert the row inside a mutation. The table only needs the columns required by the feature.
+`.$type<T>()` narrows a column's TypeScript type; function input still needs runtime validation. `typeof notes.$inferInsert` gives the insert row type.
 
-## Relations and execution
+## Database and function builder
 
-Pass all tables to `defineRelations(schema)`, then `defineDatabase({ relations })`. Add a relation callback only when querying related records. `r.one.users({ from: r.notes.authorId, to: r.users.id })` defines navigation; a column reference defines a foreign-key constraint.
+In `src/db/index.ts`, include the tables and bind the function builder:
 
-Export `fn = createFunctions({ database: db })` from `src/db/index.ts`, importing `createFunctions` from `patchsmith/server`. Function modules import that shared `fn` from `#db`; their handlers receive typed `db` automatically. Relational reads end in `.sync()`, select builders in `.all()`/`.get()`, and writes in `.run()` or `.returning(...).all()`/`.get()`. Apply appropriate ownership conditions to reads/updates/deletes. Filter and limit in the query when needed. Mutations already provide a transaction; raw SQL/connection access and runtime schema changes are unavailable.
+<!-- example: src/db/index.ts -->
+
+```ts
+import { defineDatabase, defineRelations } from "patchsmith/db";
+import { createFunctions } from "patchsmith/server";
+
+import * as schema from "./schema";
+
+export const db = defineDatabase({ relations: defineRelations(schema) });
+export const fn = createFunctions({ database: db });
+```
+
+Function modules import `fn` from `#db`; see `patchsmith-functions` for handler examples. Run relational reads with `.sync()`, select builders with `.all()`/`.get()`, and writes with `.run()` or `.returning(...).all()`/`.get()`. Filter by access rules, select needed fields, and limit growing lists.
+
+Relations describe connected records. Add a `defineRelations` callback when needed: `r.one.users({ from: r.notes.authorId, to: r.users.id })`. A column reference defines a foreign-key constraint.
 
 ## Migrations
 
-After schema changes, run `db:generate` (`patchsmith db generate`). Inspect the generated SQL and keep it with its snapshots under the configured migrations directory, normally `src/db/migrations`. Append migrations and preserve applied history. For existing data, ensure new required fields have suitable defaults or a backfill.
+Run `pnpm run db:generate` after table changes. Keep SQL and snapshots under `src/db/migrations`, or the configured migration directory. Preserve applied migrations and existing data; new required columns need defaults or a backfill.
 
-The build checks drift and bundles migrations; deployment applies pending migrations before database functions run. Correct source and generate a forward migration for upgrade failures. Preserve existing data; do not bypass this path with schema push or database resets.
+Deployment applies pending migrations before database functions run. Use migrations for schema changes, preserving existing data instead of resetting it.

@@ -48,7 +48,7 @@ class RemoteErrorBoundary extends Component<
   }
 
   static componentDidCatch(error: Error): void {
-    console.error("PatchSmith remote app failed", error);
+    console.error("Patchsmith remote app failed", error);
   }
 
   render(): ReactNode {
@@ -87,7 +87,7 @@ const RemoteElementViewComponent = ({
   const component = useStore(componentStore);
 
   if (component === undefined) {
-    throw new Error(`PatchSmith component "${node.type}" is not registered.`);
+    throw new Error(`Patchsmith component "${node.type}" is not registered.`);
   }
   const props = createRemoteElementProps(node, ctx.dispatch.bind(ctx));
 

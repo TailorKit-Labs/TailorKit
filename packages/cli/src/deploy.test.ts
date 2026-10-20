@@ -13,8 +13,8 @@ import path from "node:path";
 import { gunzipSync } from "node:zlib";
 
 import { asyncFixture } from "@patchsmith/config/testing";
-import type { createPatchSmithClient } from "@patchsmith/core/server";
-import type { loadPatchSmithConfig } from "@patchsmith/vite/config/loader";
+import type { createPatchsmithClient } from "@patchsmith/core/server";
+import type { loadPatchsmithConfig } from "@patchsmith/vite/config/loader";
 import { SignJWT } from "jose";
 import { Liquid } from "liquidjs";
 import { afterEach, beforeEach, assert, expect, it, vi } from "vite-plus/test";
@@ -42,7 +42,7 @@ const mocks = vi.hoisted(() => ({
   create: vi.fn<
     (
       input: Parameters<
-        ReturnType<typeof createPatchSmithClient>["deployments"]["create"]
+        ReturnType<typeof createPatchsmithClient>["deployments"]["create"]
       >[0]
     ) => Promise<{
       deployment: { id: string };
@@ -56,19 +56,19 @@ const mocks = vi.hoisted(() => ({
   >(),
   load: vi.fn<
     (
-      ...args: Parameters<typeof loadPatchSmithConfig>
-    ) => Promise<Partial<Awaited<ReturnType<typeof loadPatchSmithConfig>>>>
+      ...args: Parameters<typeof loadPatchsmithConfig>
+    ) => Promise<Partial<Awaited<ReturnType<typeof loadPatchsmithConfig>>>>
   >(),
   publish: vi.fn(),
   token: vi.fn(),
   whoami: vi.fn(),
 }));
 vi.mock("@patchsmith/vite/config/loader", () => ({
-  loadPatchSmithConfig: mocks.load,
+  loadPatchsmithConfig: mocks.load,
 }));
 vi.mock("./build", () => ({ buildProject: mocks.build }));
 vi.mock("@patchsmith/core/server", () => ({
-  createPatchSmithClient: mocks.client,
+  createPatchsmithClient: mocks.client,
 }));
 vi.mock("./auth", async (importOriginal) => ({
   ...(await importOriginal<typeof authModule>()),
@@ -188,9 +188,9 @@ it("uploads gzip server and client code with metadata matching the stored bytes"
 it.each([
   { annotation: "", name: "config", prelude: "" },
   { annotation: "", name: "$config", prelude: "" },
-  { annotation: ": PatchSmithConfig", name: "config", prelude: "" },
+  { annotation: ": PatchsmithConfig", name: "config", prelude: "" },
   {
-    annotation: ": PatchSmithConfig & { callback?: () => void }",
+    annotation: ": PatchsmithConfig & { callback?: () => void }",
     name: "config",
     prelude: "",
   },
@@ -201,10 +201,10 @@ it.each([
       'function nested() {\nconst config = {\n  host: "https://nested.example",\n};\n}\n',
   },
   {
-    annotation: ": PatchSmithConfig",
+    annotation: ": PatchsmithConfig",
     name: "config",
     prelude:
-      'function nested() {\nconst config: PatchSmithConfig = {\n  host: "https://nested.example",\n};\n}\n',
+      'function nested() {\nconst config: PatchsmithConfig = {\n  host: "https://nested.example",\n};\n}\n',
   },
 ])(
   "links the init config exported as $name with annotation '$annotation' and prelude '$prelude'",

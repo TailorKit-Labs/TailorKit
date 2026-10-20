@@ -2,7 +2,7 @@ import { createValueMemo, createViewsQuery } from "@patchsmith/client-core";
 import type { SlotItem, ViewsQueryOptions } from "@patchsmith/client-core";
 import { useMemo } from "react";
 
-import { usePatchSmithContext } from "#components/context";
+import { usePatchsmithContext } from "#components/context";
 
 import { useQueryResult } from "./use-query-result";
 import type { UseQueryResult } from "./use-query-result";
@@ -17,7 +17,7 @@ export type UseViewsResult<TMultiple extends boolean = boolean> =
 
 /** Subscribe to the shared views query using React's lifecycle. */
 export const useViews = (options: UseViewsOptions): UseViewsResult => {
-  const { store } = usePatchSmithContext("useViews");
+  const { store } = usePatchsmithContext("useViews");
   const memoOptions = useMemo(() => createValueMemo<UseViewsOptions>(), []);
   const stableOptions = memoOptions({
     appIds:

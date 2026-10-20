@@ -1,17 +1,17 @@
 ---
-title: "Integrate PatchSmith"
+title: "Integrate Patchsmith"
 sidebarTitle: "Installation"
-description: "Install PatchSmith, expose your host API, and render installed apps in React."
+description: "Install Patchsmith, expose your host API, and render installed apps in React."
 ---
 
-Connect your host product to PatchSmith, define the capabilities apps can use, and render installed apps in React. You need an existing React frontend, a backend that handles standard `Request` and `Response` objects, and a [PatchSmith account](https://patchsmith.io/signup).
+Connect your host product to Patchsmith, define the capabilities apps can use, and render installed apps in React. You need an existing React frontend, a backend that handles standard `Request` and `Response` objects, and a [Patchsmith account](https://patchsmith.io/signup).
 
-Get your project key from PatchSmith and make it available to your server as `PATCHSMITH_PROJECT_KEY`. Keep it out of client bundles. The examples use `@/` for your source directory; adjust imports to match your project.
+Get your project key from Patchsmith and make it available to your server as `PATCHSMITH_PROJECT_KEY`. Keep it out of client bundles. The examples use `@/` for your source directory; adjust imports to match your project.
 
 <Steps titleSize="h2">
-<Step title="Install PatchSmith">
+<Step title="Install Patchsmith">
 
-Choose a validation library to use with PatchSmith. If you’re unsure, use Zod. Then add PatchSmith and your chosen library to your project:
+Choose a validation library to use with Patchsmith. If you’re unsure, use Zod. Then add Patchsmith and your chosen library to your project:
 
 <Tabs>
 
@@ -155,7 +155,7 @@ export const contract = defineContract({
   },
 
   // Views share page data with apps, which can provide UI for each view.
-  // PatchSmith shows the closest match, falling back to "/" if the app provides it.
+  // Patchsmith shows the closest match, falling back to "/" if the app provides it.
   views: {
     "/": z.object({
       user: z.object({ id: z.string(), name: z.string() }),
@@ -231,7 +231,7 @@ export const contract = defineContract({
   },
 
   // Views share page data with apps, which can provide UI for each view.
-  // PatchSmith shows the closest match, falling back to "/" if the app provides it.
+  // Patchsmith shows the closest match, falling back to "/" if the app provides it.
   views: {
     "/": type({
       user: { id: "string", name: "string" },
@@ -305,7 +305,7 @@ export const contract = defineContract({
   },
 
   // Views are URL-like paths for your product's context; apps can provide UI for each.
-  // PatchSmith shows the closest match, checking parent paths up to "/".
+  // Patchsmith shows the closest match, checking parent paths up to "/".
   views: {
     "/": v.object({
       user: v.object({ id: v.string(), name: v.string() }),
@@ -332,7 +332,7 @@ A slot's optional `description` gives app authors and agents layout and sizing g
 </Step>
 <Step title="Implement the server">
 
-Create `src/lib/patchsmith-server.ts` to connect your contract to PatchSmith using your project key. Set `baseUrl` to your host’s PatchSmith handler URL in each environment, including production.
+Create `src/lib/patchsmith-server.ts` to connect your contract to Patchsmith using your project key. Set `baseUrl` to your host’s Patchsmith handler URL in each environment, including production.
 
 <Tabs>
 
@@ -397,7 +397,7 @@ export const patchSmith = createServer({
 </Step>
 <Step title="Create the client">
 
-Create `src/lib/patchsmith-client.tsx` to connect your frontend to the PatchSmith API. Map each contract component to its React implementation. The example assumes your `Button` and `Input` components accept the props shown below.
+Create `src/lib/patchsmith-client.tsx` to connect your frontend to the Patchsmith API. Map each contract component to its React implementation. The example assumes your `Button` and `Input` components accept the props shown below.
 
 ```tsx src/lib/patchsmith-client.tsx
 "use client";
@@ -433,7 +433,7 @@ export const patchSmithClient = createClient({
 });
 
 export const {
-  Provider: PatchSmithProvider,
+  Provider: PatchsmithProvider,
   RenderSlot,
   useApps,
   useViewContext,
@@ -446,9 +446,9 @@ export default patchSmithClient;
 </Step>
 <Step title="Add the API handler">
 
-Mount the handler at your PatchSmith base path. If you use a path other than `/api/patchsmith`, update `baseUrl` in both `patchsmith-server.ts` and `patchsmith-client.tsx` to match.
+Mount the handler at your Patchsmith base path. If you use a path other than `/api/patchsmith`, update `baseUrl` in both `patchsmith-server.ts` and `patchsmith-client.tsx` to match.
 
-Choose your framework below. Replace `auth` with your authentication implementation and return verified scope values from the session.
+Choose your framework below. Replace `auth` with your authentication implementation and return a stable `subjectId` and verified scope values from the session.
 
 <Tabs>
 
@@ -468,6 +468,7 @@ async function handleRequest(request: Request) {
       }
 
       return {
+        subjectId: session.user.id,
         scopes: { user: { userId: session.user.id } },
       };
     },
@@ -506,6 +507,7 @@ async function handleRequest({ request }: { request: Request }) {
       }
 
       return {
+        subjectId: session.user.id,
         scopes: { user: { userId: session.user.id } },
       };
     },
@@ -532,6 +534,7 @@ async function handleRequest(request: Request) {
       }
 
       return {
+        subjectId: session.user.id,
         scopes: { user: { userId: session.user.id } },
       };
     },
@@ -567,6 +570,7 @@ export default defineEventHandler(async (event) => {
       }
 
       return {
+        subjectId: session.user.id,
         scopes: { user: { userId: session.user.id } },
       };
     },
@@ -595,6 +599,7 @@ app.on(["GET", "POST"], "/api/patchsmith/*", async (c) => {
       }
 
       return {
+        subjectId: session.user.id,
         scopes: { user: { userId: session.user.id } },
       };
     },
@@ -624,6 +629,7 @@ export async function handleRequest(request: Request): Promise<Response> {
       }
 
       return {
+        subjectId: session.user.id,
         scopes: { user: { userId: session.user.id } },
       };
     },
@@ -638,7 +644,7 @@ export async function handleRequest(request: Request): Promise<Response> {
 </Step>
 <Step title="Add the provider">
 
-Wrap pages that use PatchSmith hooks or render apps in `PatchSmithProvider`. Choose the root layout for your framework:
+Wrap pages that use Patchsmith hooks or render apps in `PatchsmithProvider`. Choose the root layout for your framework:
 
 <Tabs>
 
@@ -646,13 +652,13 @@ Wrap pages that use PatchSmith hooks or render apps in `PatchSmithProvider`. Cho
 
 ```tsx app/layout.tsx
 import type { ReactNode } from "react";
-import { PatchSmithProvider } from "@/lib/patchsmith-client";
+import { PatchsmithProvider } from "@/lib/patchsmith-client";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <PatchSmithProvider>{children}</PatchSmithProvider>
+        <PatchsmithProvider>{children}</PatchsmithProvider>
       </body>
     </html>
   );
@@ -671,7 +677,7 @@ import {
   Outlet,
   Scripts,
 } from "@tanstack/react-router";
-import { PatchSmithProvider } from "@/lib/patchsmith-client";
+import { PatchsmithProvider } from "@/lib/patchsmith-client";
 
 export const Route = createRootRoute({
   shellComponent: RootDocument,
@@ -685,7 +691,7 @@ function RootDocument({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <PatchSmithProvider>{children}</PatchSmithProvider>
+        <PatchsmithProvider>{children}</PatchsmithProvider>
         <Scripts />
       </body>
     </html>
@@ -700,7 +706,7 @@ function RootDocument({ children }: { children: ReactNode }) {
 ```tsx app/root.tsx
 import type { ReactNode } from "react";
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
-import { PatchSmithProvider } from "@/lib/patchsmith-client";
+import { PatchsmithProvider } from "@/lib/patchsmith-client";
 
 export function Layout({ children }: { children: ReactNode }) {
   return (
@@ -722,9 +728,9 @@ export function Layout({ children }: { children: ReactNode }) {
 
 export default function App() {
   return (
-    <PatchSmithProvider>
+    <PatchsmithProvider>
       <Outlet />
-    </PatchSmithProvider>
+    </PatchsmithProvider>
   );
 }
 ```

@@ -1,4 +1,6 @@
-import type { PatchSmithScopes } from "./types";
+import type { AppsRuntimeSessionResponses } from "@patchsmith/client-platform/client/types.gen";
+
+import type { PatchsmithScopes } from "./types";
 
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
   typeof value === "object" && value !== null;
@@ -12,12 +14,12 @@ export const handleBackendSession = async (
   request: Request,
   authenticate: (input: {
     request: Request;
-  }) => Promise<{ scopes: PatchSmithScopes; subjectId?: string } | null>,
+  }) => Promise<{ scopes: PatchsmithScopes; subjectId: string } | null>,
   issueSession: (
     appId: string,
-    scopes: PatchSmithScopes,
-    subjectId?: string
-  ) => Promise<{ token: string; expiresAt: number; url: string } | Response>,
+    scopes: PatchsmithScopes,
+    subjectId: string
+  ) => Promise<AppsRuntimeSessionResponses[200] | Response>,
   publicOrigin = new URL(request.url).origin
 ) => {
   const headers = { "cache-control": "no-store" };
@@ -85,8 +87,5 @@ export const handleBackendSession = async (
       status: session.status,
     });
   }
-  return Response.json(
-    { ...session, subjectId: viewer.subjectId },
-    { headers }
-  );
+  return Response.json(session, { headers });
 };

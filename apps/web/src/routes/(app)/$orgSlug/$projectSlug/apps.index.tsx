@@ -395,8 +395,8 @@ const AppsIndexPage = () => {
       actions={isEmptyProject ? undefined : searchControl}
       description={
         isEmptyProject
-          ? "No apps yet. Set up PatchSmith to deploy your first app."
-          : "Apps uploaded to this project through PatchSmith."
+          ? "No apps yet. Set up Patchsmith to deploy your first app."
+          : "Apps uploaded to this project through Patchsmith."
       }
       title="Apps"
     >

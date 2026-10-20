@@ -25,7 +25,7 @@ export const assertSupportedPreactVersion = (
 
   if (check.major < MINIMUM_PREACT_MAJOR_VERSION) {
     throw new Error(
-      `PatchSmith requires Preact ${MINIMUM_PREACT_MAJOR_VERSION}.0.0 or newer, but found ${version}.`
+      `Patchsmith requires Preact ${MINIMUM_PREACT_MAJOR_VERSION}.0.0 or newer, but found ${version}.`
     );
   }
 

@@ -1,3 +1,3 @@
-# PatchSmith authentication
+# Patchsmith authentication
 
-`@patchsmith/auth` manages authentication and access for the PatchSmith platform.
+`@patchsmith/auth` manages authentication and access for the Patchsmith platform.

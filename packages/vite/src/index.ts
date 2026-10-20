@@ -15,9 +15,9 @@ import { createFileRouteEntry, fileRoutesPlugin } from "./builder/file-routes";
 import { instanceExtractionPlugin } from "./builder/instances";
 import type { InstanceModule } from "./builder/instances";
 import { buildServer, validateServerBuildOutput } from "./builder/server";
-import { createPatchSmithUploadManifest } from "./builder/upload-manifest";
-import { loadPatchSmithConfig } from "./config/loader";
-import type { LoadedPatchSmithConfig } from "./config/loader";
+import { createPatchsmithUploadManifest } from "./builder/upload-manifest";
+import { loadPatchsmithConfig } from "./config/loader";
+import type { LoadedPatchsmithConfig } from "./config/loader";
 import { assertSupportedPreactVersion } from "./preact-version";
 
 const requireValue = <T>(value: T | null | undefined): T => {
@@ -31,7 +31,7 @@ const preactPackageJson = "preact/package.json";
 
 const preactPackageJsonModuleId = "\0patchsmith-preact-package-json";
 
-export interface PatchSmithPluginOptions {
+export interface PatchsmithPluginOptions {
   /** Config file path relative to vite.config.ts. Defaults to ./patchsmith.config.ts. */
   configPath?: string;
 }
@@ -63,7 +63,7 @@ const getInstalledPreactVersion = (root: string): string => {
     }
   } catch (error) {
     throw new Error(
-      `PatchSmith requires Preact to build an app. Install preact@^11 and try again.`,
+      `Patchsmith requires Preact to build an app. Install preact@^11 and try again.`,
       { cause: error }
     );
   }
@@ -72,8 +72,8 @@ const getInstalledPreactVersion = (root: string): string => {
 };
 
 /** Build the app client, private backend, migrations and deployment manifest. */
-export const patchsmith = (options: PatchSmithPluginOptions = {}): Plugin[] => {
-  let loaded: LoadedPatchSmithConfig;
+export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
+  let loaded: LoadedPatchsmithConfig;
   let serverEntry: string;
   let preactVersion: string;
   let outputDirectory: string;
@@ -173,7 +173,7 @@ export const patchsmith = (options: PatchSmithPluginOptions = {}): Plugin[] => {
     );
     await writeFile(
       path.join(resolvedOutDir, "patchsmith-upload.json"),
-      `${JSON.stringify(createPatchSmithUploadManifest(logoManifest, Boolean(loaded.config.server), views, loaded.config.appId), null, 2)}\n`,
+      `${JSON.stringify(createPatchsmithUploadManifest(logoManifest, Boolean(loaded.config.server), views, loaded.config.appId), null, 2)}\n`,
       "utf-8"
     );
   };
@@ -232,7 +232,7 @@ export const patchsmith = (options: PatchSmithPluginOptions = {}): Plugin[] => {
           config.configFile !== ""
             ? path.dirname(config.configFile)
             : config.root;
-        loaded = await loadPatchSmithConfig(
+        loaded = await loadPatchsmithConfig(
           path.resolve(root, options.configPath ?? "patchsmith.config.ts")
         );
         loaded.root = await realpath(root);

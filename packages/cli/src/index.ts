@@ -72,9 +72,9 @@ const loginWithApproval = async (
 };
 
 cli
-  .command("login", "Authenticate the PatchSmith CLI with a host app")
+  .command("login", "Authenticate the Patchsmith CLI with a host app")
   .option("--cwd <path>", "Working directory", { default: "." })
-  .option("--host <url>", "PatchSmith host API URL (overrides config host)")
+  .option("--host <url>", "Patchsmith host API URL (overrides config host)")
   .option("--config <path>", "Path to patchsmith config")
   .option("--open", "Open the approval URL in the default browser", {
     default: true,
@@ -83,7 +83,7 @@ cli
     default: 1800,
   })
   .action(async (options: CliOptions) => {
-    intro(pc.bold("PatchSmith"));
+    intro(pc.bold("Patchsmith"));
     try {
       const timeoutSeconds = Math.trunc(
         Number(String(options.timeout ?? "1800"))
@@ -109,12 +109,12 @@ cli
   });
 
 cli
-  .command("logout", "Remove stored PatchSmith CLI credentials for a host app")
+  .command("logout", "Remove stored Patchsmith CLI credentials for a host app")
   .option("--cwd <path>", "Working directory", { default: "." })
-  .option("--host <url>", "PatchSmith host API URL (overrides config host)")
+  .option("--host <url>", "Patchsmith host API URL (overrides config host)")
   .option("--config <path>", "Path to patchsmith config")
   .action(async (options: CliOptions) => {
-    intro(pc.bold("PatchSmith"));
+    intro(pc.bold("Patchsmith"));
     try {
       const result = await runLogout({
         configPath: options.config,
@@ -134,12 +134,12 @@ cli
   });
 
 cli
-  .command("whoami", "Show the current PatchSmith CLI authentication scope")
+  .command("whoami", "Show the current Patchsmith CLI authentication scope")
   .option("--cwd <path>", "Working directory", { default: "." })
-  .option("--host <url>", "PatchSmith host API URL (overrides config host)")
+  .option("--host <url>", "Patchsmith host API URL (overrides config host)")
   .option("--config <path>", "Path to patchsmith config")
   .action(async (options: CliOptions) => {
-    intro(pc.bold("PatchSmith"));
+    intro(pc.bold("Patchsmith"));
     try {
       const result = await runWhoami({
         configPath: options.config,
@@ -157,7 +157,7 @@ cli
   });
 
 cli
-  .command("deploy", "Build and deploy the PatchSmith app")
+  .command("deploy", "Build and deploy the Patchsmith app")
   .option("--app-id <id>", "Deploy to this existing app")
   .option(
     "--no-interactive",
@@ -168,7 +168,7 @@ cli
   .option("--out-dir <path>", "Build output directory")
   .option("--mode <mode>", "Vite mode")
   .action(async (options: CliOptions) => {
-    intro(pc.bold("PatchSmith"));
+    intro(pc.bold("Patchsmith"));
     const deploySpinner = spinner();
     try {
       deploySpinner.start("Building and deploying app");
@@ -198,8 +198,8 @@ cli
             initialValue: true,
             message:
               reason === "missing"
-                ? `Create a PatchSmith app named ${appName}?`
-                : `Create a new PatchSmith app named ${appName} and update the config?`,
+                ? `Create a Patchsmith app named ${appName}?`
+                : `Create a new Patchsmith app named ${appName} and update the config?`,
           });
 
           if (isCancel(shouldCreate)) {
@@ -279,7 +279,7 @@ cli
   .option("--config <path>", "Path to patchsmith config")
   .option("--name <name>", "Migration name")
   .action(async (command: string, options: CliOptions) => {
-    intro(pc.bold("PatchSmith"));
+    intro(pc.bold("Patchsmith"));
     try {
       if (command !== "generate") {
         throw new Error(
@@ -301,7 +301,7 @@ cli
   });
 
 cli
-  .command("generate", "Generate PatchSmith app bindings")
+  .command("generate", "Generate Patchsmith app bindings")
   .option(
     "--schema <path>",
     "Read the host schema from a JSON file instead of the host"
@@ -310,7 +310,7 @@ cli
   .option("--config <path>", "Path to patchsmith config")
   .option("--out <path>", "Generated TypeScript output file")
   .action(async (options: CliOptions) => {
-    intro(pc.bold("PatchSmith"));
+    intro(pc.bold("Patchsmith"));
     try {
       const outPath = await generateTypes({
         configPath: options.config,
@@ -326,14 +326,14 @@ cli
   });
 
 cli
-  .command("init [directory]", "Create a new PatchSmith app")
+  .command("init [directory]", "Create a new Patchsmith app")
   .option(
     "--schema <path>",
     "Read the host schema from a JSON file instead of the host"
   )
   .option("--cwd <path>", "Working directory", { default: "." })
   .option("--name <name>", "Package name")
-  .option("--host <url>", "PatchSmith host URL")
+  .option("--host <url>", "Patchsmith host URL")
   .option("--package-manager <pm>", "Package manager: bun, yarn, pnpm, or npm")
   .option("--tooling <tooling>", "Tooling: vite-plus (recommended) or vite")
   .option(
@@ -346,7 +346,7 @@ cli
   )
   .option("--force", "Overwrite existing files")
   .action(async (directory: string | undefined, options: CliOptions) => {
-    intro(pc.bold("PatchSmith"));
+    intro(pc.bold("Patchsmith"));
     try {
       const cwd = options.cwd ?? ".";
       const targetDirectory = await runInit({
@@ -369,7 +369,7 @@ cli
   });
 
 cli
-  .command("agent", "Chat with the PatchSmith app agent")
+  .command("agent", "Chat with the Patchsmith app agent")
   .option(
     "--thread <id>",
     "Resume an existing agent conversation (otherwise starts a new thread)"
@@ -378,7 +378,7 @@ cli
     "--schema <path>",
     "Host schema snapshot for generation without host access"
   )
-  .option("--host <url>", "PatchSmith host API URL (required)")
+  .option("--host <url>", "Patchsmith host API URL (required)")
   .option("--app <id>", "App ID (otherwise prompts to select or create an app)")
   .action(async (options: CliOptions) => {
     try {

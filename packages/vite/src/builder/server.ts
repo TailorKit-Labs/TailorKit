@@ -5,7 +5,7 @@ import type { RuntimeManifest } from "@patchsmith/app/server";
 import { build } from "vite";
 import type { UserConfig } from "vite";
 
-import type { LoadedPatchSmithConfig } from "#config/loader";
+import type { LoadedPatchsmithConfig } from "#config/loader";
 
 import { appDatabasePaths } from "./database-paths";
 import { isMissingFile } from "./fs-errors";
@@ -35,7 +35,7 @@ const overlaps = (source: string, destination: string) => {
 
 /** Check before either build can empty an output directory. */
 export const validateServerBuildOutput = (
-  loaded: LoadedPatchSmithConfig,
+  loaded: LoadedPatchsmithConfig,
   output: string
 ) => {
   if (!loaded.config.server) {
@@ -60,7 +60,7 @@ export const runtimeManifest = {
 
 /** Bundle the private app backend and migrations. */
 export const buildServer = async (
-  loaded: LoadedPatchSmithConfig,
+  loaded: LoadedPatchsmithConfig,
   watch = false,
   buildOutDir?: string,
   instances: InstanceModule[] = [],

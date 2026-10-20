@@ -3,7 +3,7 @@ import { createClient } from "@patchsmith/client-platform/client/client/index";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import * as v from "valibot";
 
-import type { PatchSmithContract } from "#schema/contract";
+import type { PatchsmithContract } from "#schema/contract";
 import type {
   ToolImplementations,
   ToolContext,
@@ -12,15 +12,15 @@ import type {
 import { flattenTools, validateToolValue } from "#schema/tools";
 
 import { normalizeBaseUrl } from "./base-url";
-import { createPatchSmithServer } from "./handler";
-import { normalizePatchSmithNamedScope } from "./scope";
+import { createPatchsmithServer } from "./handler";
+import { normalizePatchsmithNamedScope } from "./scope";
 import { createToolVerifier } from "./tool-auth";
 import type {
-  PatchSmithServerBaseOptions,
-  PatchSmithHandlerOptions,
-  PatchSmithHostContext,
-  PatchSmithInstallAppOptions,
-  PatchSmithServerInputOptions,
+  PatchsmithServerBaseOptions,
+  PatchsmithHandlerOptions,
+  PatchsmithHostContext,
+  PatchsmithInstallAppOptions,
+  PatchsmithServerInputOptions,
 } from "./types";
 
 const isFunctionValue = <TValue>(
@@ -28,7 +28,7 @@ const isFunctionValue = <TValue>(
 ): value is Extract<TValue, CallableFunction> => typeof value === "function";
 
 export type { ToolImplementations } from "#schema/tools";
-export type ContractScopes<T extends PatchSmithContract> = {
+export type ContractScopes<T extends PatchsmithContract> = {
   [N in keyof T["scopes"]]: StandardSchemaV1.InferInput<T["scopes"][N]>;
 };
 const isToolHandler = (
@@ -63,8 +63,8 @@ const implementationPaths = (
   );
 };
 /** Bind server tools without placing their implementations in the shared contract. */
-export const createServer = <const T extends PatchSmithContract>(
-  options: Omit<PatchSmithServerBaseOptions<T["scopes"]>, "scopes"> & {
+export const createServer = <const T extends PatchsmithContract>(
+  options: Omit<PatchsmithServerBaseOptions<T["scopes"]>, "scopes"> & {
     contract: T;
   } & (keyof ToolImplementations<T["tools"], "server"> extends never
       ? { tools?: ToolImplementations<T["tools"], "server"> }
@@ -85,18 +85,18 @@ export const createServer = <const T extends PatchSmithContract>(
       throw new Error(`Undeclared server tool "${path}"`);
     }
   }
-  type InternalOptions = PatchSmithServerInputOptions & {
+  type InternalOptions = PatchsmithServerInputOptions & {
     views: T["views"];
     slots: T["slots"];
     tools: T["tools"];
   };
   // SAFETY: The generic contract supplies the matching views, slots and tools; configuration supplies the remaining server options.
-  const server = createPatchSmithServer<InternalOptions>(
+  const server = createPatchsmithServer<InternalOptions>(
     /* oxlint-disable typescript/no-unsafe-type-assertion -- The generic contract supplies the matching views, slots and tools; configuration supplies the remaining server options. */
     {
       ...configuration,
       ...contract,
-    } as Parameters<typeof createPatchSmithServer<InternalOptions>>[0]
+    } as Parameters<typeof createPatchsmithServer<InternalOptions>>[0]
     /* oxlint-enable typescript/no-unsafe-type-assertion */
   );
   const platformUrl = server.$internal.platformBaseUrl;
@@ -140,7 +140,7 @@ export const createServer = <const T extends PatchSmithContract>(
     const installation = await appsGet({
       body: {
         app: { id: identity.installationId },
-        scopes: [normalizePatchSmithNamedScope(identity.scope)],
+        scopes: [normalizePatchsmithNamedScope(identity.scope)],
       },
       client: platform,
       headers: headersValue,
@@ -165,7 +165,7 @@ export const createServer = <const T extends PatchSmithContract>(
     contract,
     experimental: {
       installApp: async (
-        input: PatchSmithInstallAppOptions<ContractScopes<T>>
+        input: PatchsmithInstallAppOptions<ContractScopes<T>>
       ) =>
         await server.experimental.installApp({
           appId: input.appId,
@@ -174,7 +174,7 @@ export const createServer = <const T extends PatchSmithContract>(
     },
     handler: async (
       request: Request,
-      handlerOptions: PatchSmithHandlerOptions<Partial<ContractScopes<T>>>
+      handlerOptions: PatchsmithHandlerOptions<Partial<ContractScopes<T>>>
     ) => {
       if (
         !(
@@ -261,12 +261,12 @@ export const createServer = <const T extends PatchSmithContract>(
           });
         }
       }
-      // SAFETY: ContractScopes derives each scope input from the same contract passed to createPatchSmithServer.
+      // SAFETY: ContractScopes derives each scope input from the same contract passed to createPatchsmithServer.
       return await server.handler(request, handlerOptions);
     },
     mcp: {
       transport: async (
-        optionsValue: PatchSmithHostContext<Partial<ContractScopes<T>>>
+        optionsValue: PatchsmithHostContext<Partial<ContractScopes<T>>>
       ) => await server.mcp.transport(optionsValue),
     },
   };

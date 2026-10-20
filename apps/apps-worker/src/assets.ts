@@ -12,7 +12,7 @@ import type { AssetIdentity } from "@patchsmith/asset-delivery";
 import { Effect } from "effect";
 import { catch as catchEffect } from "effect/Effect";
 
-const cachedEncodingHeader = "X-PatchSmith-Content-Encoding";
+const cachedEncodingHeader = "X-Patchsmith-Content-Encoding";
 
 const downstreamResponse = (response: Response, request: Request) => {
   const headers = new Headers(response.headers);

@@ -1,102 +1,140 @@
-# @tailorkit/client-core
+# @patchsmith/client-core
+
+## 0.1.0-beta.52
+
+### Minor Changes
+
+- 1fa87fe: Remove legacy session and CLI credential shapes. App sessions now require complete identity metadata, including `identity.subjectId` and `identity.toolUrl`; remove the duplicate top-level subject from host responses and the duplicate top-level tool URL from platform responses. The host forwards the platform session without synthesizing a subject. Share the session validator with the iframe protocol so complete authenticated sessions reach sandboxed apps.
+
+  Custom session providers must return `{ expiresAt, identity, token, url }` with a complete identity. Stored CLI credentials must contain a named scope; delete obsolete entries from `~/.patchsmith/auth.json` and log in again to replace flat-scope or scopeless credentials.
+
+### Patch Changes
+
+- Updated dependencies [1fa87fe]
+  - @patchsmith/app@0.1.0-beta.52
+  - @patchsmith/core@0.1.0-beta.52
+  - @patchsmith/sandbox@0.1.0-beta.52
+
+## 0.1.0-beta.51
+
+### Patch Changes
+
+- Updated dependencies [8cbc3d5]
+- Updated dependencies [38e1ced]
+  - @patchsmith/core@0.1.0-beta.51
+  - @patchsmith/app@0.1.0-beta.51
+  - @patchsmith/sandbox@0.1.0-beta.51
+
+## 0.1.0-beta.50
+
+### Minor Changes
+
+- 71fc3a7: Return component callback results across the sandbox bridge instead of dropping them. Callback definitions use only input and output schemas. App callbacks accept direct or promised results, and every host callback returns a promise, including callbacks without an output schema. Callback failures, sandbox destruction, and a 30-second timeout reject pending results.
+
+### Patch Changes
+
+- Updated dependencies [71fc3a7]
+  - @patchsmith/core@0.1.0-beta.50
+  - @patchsmith/app@0.1.0-beta.50
+  - @patchsmith/sandbox@0.1.0-beta.50
 
 ## 0.1.0-beta.49
 
 ### Patch Changes
 
-- @tailorkit/app@0.1.0-beta.49
-  - @tailorkit/core@0.1.0-beta.49
-  - @tailorkit/sandbox@0.1.0-beta.49
+- @patchsmith/app@0.1.0-beta.49
+  - @patchsmith/core@0.1.0-beta.49
+  - @patchsmith/sandbox@0.1.0-beta.49
 
 ## 0.1.0-beta.48
 
 ### Patch Changes
 
 - Updated dependencies [6a5c17a]
-  - @tailorkit/app@0.1.0-beta.48
-  - @tailorkit/sandbox@0.1.0-beta.48
-  - @tailorkit/core@0.1.0-beta.48
+  - @patchsmith/app@0.1.0-beta.48
+  - @patchsmith/sandbox@0.1.0-beta.48
+  - @patchsmith/core@0.1.0-beta.48
 
 ## 0.1.0-beta.47
 
 ### Patch Changes
 
-- @tailorkit/app@0.1.0-beta.47
-  - @tailorkit/core@0.1.0-beta.47
-  - @tailorkit/sandbox@0.1.0-beta.47
+- @patchsmith/app@0.1.0-beta.47
+  - @patchsmith/core@0.1.0-beta.47
+  - @patchsmith/sandbox@0.1.0-beta.47
 
 ## 0.1.0-beta.46
 
 ### Patch Changes
 
 - Updated dependencies [20947c7]
-  - @tailorkit/app@0.1.0-beta.46
-  - @tailorkit/sandbox@0.1.0-beta.46
-  - @tailorkit/core@0.1.0-beta.46
+  - @patchsmith/app@0.1.0-beta.46
+  - @patchsmith/sandbox@0.1.0-beta.46
+  - @patchsmith/core@0.1.0-beta.46
 
 ## 0.1.0-beta.45
 
 ### Patch Changes
 
-- @tailorkit/app@0.1.0-beta.45
-  - @tailorkit/core@0.1.0-beta.45
-  - @tailorkit/sandbox@0.1.0-beta.45
+- @patchsmith/app@0.1.0-beta.45
+  - @patchsmith/core@0.1.0-beta.45
+  - @patchsmith/sandbox@0.1.0-beta.45
 
 ## 0.1.0-beta.44
 
 ### Patch Changes
 
 - Restore the 0.x beta release line after the accidental 1.0.0-beta.44 release. This release includes the app slug and validation changes from that release; use 0.1.0-beta.44 instead of 1.0.0-beta.44.
-- 1fb0155: Use Valibot for internal validation to reduce TailorKit bundle sizes. Accept user-provided Standard Schema validators for app functions and view instance data, preserving input/output inference and Zod primitive exports.
+- 1fb0155: Use Valibot for internal validation to reduce Patchsmith bundle sizes. Accept user-provided Standard Schema validators for app functions and view instance data, preserving input/output inference and Zod primitive exports.
 - Updated dependencies [89d328f]
 - Updated dependencies
 - Updated dependencies [1fb0155]
-  - @tailorkit/core@0.1.0-beta.44
-  - @tailorkit/app@0.1.0-beta.44
-  - @tailorkit/sandbox@0.1.0-beta.44
+  - @patchsmith/core@0.1.0-beta.44
+  - @patchsmith/app@0.1.0-beta.44
+  - @patchsmith/sandbox@0.1.0-beta.44
 
 ## 1.0.0-beta.44
 
 ### Patch Changes
 
-- 1fb0155: Use Valibot for internal validation to reduce TailorKit bundle sizes. Accept user-provided Standard Schema validators for app functions and view instance data, preserving input/output inference and Zod primitive exports.
+- 1fb0155: Use Valibot for internal validation to reduce Patchsmith bundle sizes. Accept user-provided Standard Schema validators for app functions and view instance data, preserving input/output inference and Zod primitive exports.
 - Updated dependencies [89d328f]
 - Updated dependencies [1fb0155]
-  - @tailorkit/core@1.0.0-beta.44
-  - @tailorkit/app@1.0.0-beta.44
-  - @tailorkit/sandbox@1.0.0-beta.44
+  - @patchsmith/core@1.0.0-beta.44
+  - @patchsmith/app@1.0.0-beta.44
+  - @patchsmith/sandbox@1.0.0-beta.44
 
 ## 0.1.0-beta.43
 
 ### Patch Changes
 
 - Updated dependencies [6a68ba5]
-  - @tailorkit/core@0.1.0-beta.43
-  - @tailorkit/sandbox@0.1.0-beta.43
-  - @tailorkit/app@0.1.0-beta.43
+  - @patchsmith/core@0.1.0-beta.43
+  - @patchsmith/sandbox@0.1.0-beta.43
+  - @patchsmith/app@0.1.0-beta.43
 
 ## 0.1.0-beta.42
 
 ### Minor Changes
 
-- c54e0b1: Remove TailorKit app previews, including the `tailorkit preview` command, host preview consent and configuration, platform preview APIs and schemas, client preview metadata and stores, live revision subscriptions, and sandbox inline-source loading. Use deployed app builds for host integrations.
+- c54e0b1: Remove Patchsmith app previews, including the `patchsmith preview` command, host preview consent and configuration, platform preview APIs and schemas, client preview metadata and stores, live revision subscriptions, and sandbox inline-source loading. Use deployed app builds for host integrations.
 
 ### Patch Changes
 
 - Updated dependencies [c54e0b1]
-  - @tailorkit/core@0.1.0-beta.42
-  - @tailorkit/sandbox@0.1.0-beta.42
-  - @tailorkit/app@0.1.0-beta.42
+  - @patchsmith/core@0.1.0-beta.42
+  - @patchsmith/sandbox@0.1.0-beta.42
+  - @patchsmith/app@0.1.0-beta.42
 
 ## 0.1.0-beta.41
 
 ### Patch Changes
 
 - d4798f0: Render Pressable as an accessible div button that supports nested layout primitives, keyboard activation, focus indication, and disabled interaction styles. Keep interaction events in the host and send only the zero-argument onPress callback to the sandbox.
-- @tailorkit/app@0.1.0-beta.41
-  - @tailorkit/client-platform@0.1.0-beta.41
-  - @tailorkit/core@0.1.0-beta.41
-  - @tailorkit/sandbox@0.1.0-beta.41
+- @patchsmith/app@0.1.0-beta.41
+  - @patchsmith/client-platform@0.1.0-beta.41
+  - @patchsmith/core@0.1.0-beta.41
+  - @patchsmith/sandbox@0.1.0-beta.41
 
 ## 0.1.0-beta.40
 
@@ -113,89 +151,89 @@
 ### Patch Changes
 
 - Updated dependencies [b636758]
-  - @tailorkit/core@0.1.0-beta.40
-  - @tailorkit/sandbox@0.1.0-beta.40
-  - @tailorkit/app@0.1.0-beta.40
-  - @tailorkit/client-platform@0.1.0-beta.40
+  - @patchsmith/core@0.1.0-beta.40
+  - @patchsmith/sandbox@0.1.0-beta.40
+  - @patchsmith/app@0.1.0-beta.40
+  - @patchsmith/client-platform@0.1.0-beta.40
 
 ## 0.1.0-beta.39
 
 ### Patch Changes
 
 - Updated dependencies [ad770d2]
-  - @tailorkit/core@0.1.0-beta.39
-  - @tailorkit/client-platform@0.1.0-beta.39
-  - @tailorkit/sandbox@0.1.0-beta.39
-  - @tailorkit/app@0.1.0-beta.39
+  - @patchsmith/core@0.1.0-beta.39
+  - @patchsmith/client-platform@0.1.0-beta.39
+  - @patchsmith/sandbox@0.1.0-beta.39
+  - @patchsmith/app@0.1.0-beta.39
 
 ## 0.1.0-beta.38
 
 ### Patch Changes
 
 - Updated dependencies [469d8c2]
-  - @tailorkit/core@0.1.0-beta.38
-  - @tailorkit/sandbox@0.1.0-beta.38
-  - @tailorkit/app@0.1.0-beta.38
-  - @tailorkit/client-platform@0.1.0-beta.38
+  - @patchsmith/core@0.1.0-beta.38
+  - @patchsmith/sandbox@0.1.0-beta.38
+  - @patchsmith/app@0.1.0-beta.38
+  - @patchsmith/client-platform@0.1.0-beta.38
 
 ## 0.1.0-beta.37
 
 ### Patch Changes
 
 - Updated dependencies [0d72562]
-  - @tailorkit/core@0.1.0-beta.37
-  - @tailorkit/app@0.1.0-beta.37
-  - @tailorkit/sandbox@0.1.0-beta.37
-  - @tailorkit/client-platform@0.1.0-beta.37
+  - @patchsmith/core@0.1.0-beta.37
+  - @patchsmith/app@0.1.0-beta.37
+  - @patchsmith/sandbox@0.1.0-beta.37
+  - @patchsmith/client-platform@0.1.0-beta.37
 
 ## 0.1.0-beta.36
 
 ### Patch Changes
 
 - Updated dependencies [c0ce502]
-  - @tailorkit/core@0.1.0-beta.36
-  - @tailorkit/client-platform@0.1.0-beta.36
-  - @tailorkit/sandbox@0.1.0-beta.36
-  - @tailorkit/app@0.1.0-beta.36
+  - @patchsmith/core@0.1.0-beta.36
+  - @patchsmith/client-platform@0.1.0-beta.36
+  - @patchsmith/sandbox@0.1.0-beta.36
+  - @patchsmith/app@0.1.0-beta.36
 
 ## 0.1.0-beta.35
 
 ### Patch Changes
 
-- @tailorkit/app@0.1.0-beta.35
-  - @tailorkit/client-platform@0.1.0-beta.35
-  - @tailorkit/core@0.1.0-beta.35
-  - @tailorkit/sandbox@0.1.0-beta.35
+- @patchsmith/app@0.1.0-beta.35
+  - @patchsmith/client-platform@0.1.0-beta.35
+  - @patchsmith/core@0.1.0-beta.35
+  - @patchsmith/sandbox@0.1.0-beta.35
 
 ## 0.1.0-beta.34
 
 ### Patch Changes
 
 - Updated dependencies [82aa45f]
-  - @tailorkit/core@0.1.0-beta.34
-  - @tailorkit/client-platform@0.1.0-beta.34
-  - @tailorkit/sandbox@0.1.0-beta.34
-  - @tailorkit/app@0.1.0-beta.34
+  - @patchsmith/core@0.1.0-beta.34
+  - @patchsmith/client-platform@0.1.0-beta.34
+  - @patchsmith/sandbox@0.1.0-beta.34
+  - @patchsmith/app@0.1.0-beta.34
 
 ## 0.1.0-beta.33
 
 ### Patch Changes
 
 - Updated dependencies [a215860]
-  - @tailorkit/core@0.1.0-beta.33
-  - @tailorkit/sandbox@0.1.0-beta.33
-  - @tailorkit/app@0.1.0-beta.33
-  - @tailorkit/client-platform@0.1.0-beta.33
+  - @patchsmith/core@0.1.0-beta.33
+  - @patchsmith/sandbox@0.1.0-beta.33
+  - @patchsmith/app@0.1.0-beta.33
+  - @patchsmith/client-platform@0.1.0-beta.33
 
 ## 0.1.0-beta.32
 
 ### Patch Changes
 
 - Updated dependencies [1929607]
-  - @tailorkit/client-platform@0.1.0-beta.32
-  - @tailorkit/core@0.1.0-beta.32
-  - @tailorkit/sandbox@0.1.0-beta.32
-  - @tailorkit/app@0.1.0-beta.32
+  - @patchsmith/client-platform@0.1.0-beta.32
+  - @patchsmith/core@0.1.0-beta.32
+  - @patchsmith/sandbox@0.1.0-beta.32
+  - @patchsmith/app@0.1.0-beta.32
 
 ## 0.1.0-beta.31
 
@@ -203,10 +241,10 @@
 
 - 4d2f904: Align source code with Ultracite’s default Oxlint and Oxfmt presets while preserving public APIs and runtime lifecycle behavior.
 - Updated dependencies [4d2f904]
-  - @tailorkit/app@0.1.0-beta.31
-  - @tailorkit/client-platform@0.1.0-beta.31
-  - @tailorkit/core@0.1.0-beta.31
-  - @tailorkit/sandbox@0.1.0-beta.31
+  - @patchsmith/app@0.1.0-beta.31
+  - @patchsmith/client-platform@0.1.0-beta.31
+  - @patchsmith/core@0.1.0-beta.31
+  - @patchsmith/sandbox@0.1.0-beta.31
 
 ## 0.1.0-beta.30
 
@@ -215,30 +253,30 @@
 - a79bf54: Omit the `children` renderer argument for components that do not support children and when no children are rendered.
 - Updated dependencies [f8dce5d]
 - Updated dependencies [29f3e30]
-  - @tailorkit/app@0.1.0-beta.30
-  - @tailorkit/sandbox@0.1.0-beta.30
-  - @tailorkit/client-platform@0.1.0-beta.30
-  - @tailorkit/core@0.1.0-beta.30
+  - @patchsmith/app@0.1.0-beta.30
+  - @patchsmith/sandbox@0.1.0-beta.30
+  - @patchsmith/client-platform@0.1.0-beta.30
+  - @patchsmith/core@0.1.0-beta.30
 
 ## 0.1.0-beta.29
 
 ### Patch Changes
 
 - Updated dependencies [3567f94]
-  - @tailorkit/core@0.1.0-beta.29
-  - @tailorkit/sandbox@0.1.0-beta.29
-  - @tailorkit/app@0.1.0-beta.29
-  - @tailorkit/client-platform@0.1.0-beta.29
+  - @patchsmith/core@0.1.0-beta.29
+  - @patchsmith/sandbox@0.1.0-beta.29
+  - @patchsmith/app@0.1.0-beta.29
+  - @patchsmith/client-platform@0.1.0-beta.29
 
 ## 0.1.0-beta.28
 
 ### Patch Changes
 
 - Updated dependencies [a0ffa4f]
-  - @tailorkit/client-platform@0.1.0-beta.28
-  - @tailorkit/core@0.1.0-beta.28
-  - @tailorkit/sandbox@0.1.0-beta.28
-  - @tailorkit/app@0.1.0-beta.28
+  - @patchsmith/client-platform@0.1.0-beta.28
+  - @patchsmith/core@0.1.0-beta.28
+  - @patchsmith/sandbox@0.1.0-beta.28
+  - @patchsmith/app@0.1.0-beta.28
 
 ## 0.1.0-beta.27
 
@@ -253,16 +291,16 @@
 
 - Updated dependencies [21761f2]
 - Updated dependencies [4685874]
-  - @tailorkit/core@0.1.0-beta.27
-  - @tailorkit/app@0.1.0-beta.27
-  - @tailorkit/sandbox@0.1.0-beta.27
-  - @tailorkit/client-platform@0.1.0-beta.27
+  - @patchsmith/core@0.1.0-beta.27
+  - @patchsmith/app@0.1.0-beta.27
+  - @patchsmith/sandbox@0.1.0-beta.27
+  - @patchsmith/client-platform@0.1.0-beta.27
 
 ## 0.1.0-beta.26
 
 ### Minor Changes
 
-- 3fa95bc: Define shared browser-safe contracts with `defineContract` and `action().input().output()`. Use `createServer` from `tailorkit/server` to implement actions and `createClient` from `tailorkit/react` to infer component, view, slot, and scope types from the same contract.
+- 3fa95bc: Define shared browser-safe contracts with `defineContract` and `action().input().output()`. Use `createServer` from `patchsmith/server` to implement actions and `createClient` from `patchsmith/react` to infer component, view, slot, and scope types from the same contract.
 
   Host clients validate view context through the contract's original Standard Schema validators and publish the parsed output. Remove JSON Schema reconstruction and host `/meta` requests; resolve slots locally from the contract and accept an explicit client `assetsBaseUrl` for deployment URL fallbacks. Keep server metadata for app type generation, including scope schemas.
 
@@ -276,10 +314,10 @@
 
 - Updated dependencies [274ead8]
 - Updated dependencies [3fa95bc]
-  - @tailorkit/sandbox@0.1.0-beta.26
-  - @tailorkit/core@0.1.0-beta.26
-  - @tailorkit/app@0.1.0-beta.26
-  - @tailorkit/client-platform@0.1.0-beta.26
+  - @patchsmith/sandbox@0.1.0-beta.26
+  - @patchsmith/core@0.1.0-beta.26
+  - @patchsmith/app@0.1.0-beta.26
+  - @patchsmith/client-platform@0.1.0-beta.26
 
 ## 0.1.0-beta.25
 
@@ -287,15 +325,15 @@
 
 - 441a5a9: Rename `Slot` to `RenderSlot` (including client-bound `RenderSlot.Controlled`) and replace its `name` prop with `slot`. Rename the public types to `RenderSlotProps`, `ControlledRenderSlotProps`, `RuntimeRenderSlotProps`, `RenderSlotContext`, and `RenderSlotComponent`.
 
-  Remove the standalone `Root` provider and its DOM/render props. Return a client-bound `Provider` from `createTailorKitClient`, accepting only `children` and `apps`, with the client supplied internally. Export it as `Provider: TailorKitProvider` alongside the hooks and `RenderSlot`, and wrap host components in `<TailorKitProvider>`. Export `TailorKitProviderProps` for the bound provider.
+  Remove the standalone `Root` provider and its DOM/render props. Return a client-bound `Provider` from `createPatchsmithClient`, accepting only `children` and `apps`, with the client supplied internally. Export it as `Provider: PatchsmithProvider` alongside the hooks and `RenderSlot`, and wrap host components in `<PatchsmithProvider>`. Export `PatchsmithProviderProps` for the bound provider.
 
 ### Patch Changes
 
 - Updated dependencies [441a5a9]
-  - @tailorkit/app@0.1.0-beta.25
-  - @tailorkit/sandbox@0.1.0-beta.25
-  - @tailorkit/client-platform@0.1.0-beta.25
-  - @tailorkit/core@0.1.0-beta.25
+  - @patchsmith/app@0.1.0-beta.25
+  - @patchsmith/sandbox@0.1.0-beta.25
+  - @patchsmith/client-platform@0.1.0-beta.25
+  - @patchsmith/core@0.1.0-beta.25
 
 ## 0.1.0-beta.24
 
@@ -317,19 +355,19 @@
 
 - Updated dependencies [057cfde]
 - Updated dependencies [4985d4e]
-  - @tailorkit/app@0.1.0-beta.24
-  - @tailorkit/sandbox@0.1.0-beta.24
-  - @tailorkit/core@0.1.0-beta.24
-  - @tailorkit/client-platform@0.1.0-beta.24
+  - @patchsmith/app@0.1.0-beta.24
+  - @patchsmith/sandbox@0.1.0-beta.24
+  - @patchsmith/core@0.1.0-beta.24
+  - @patchsmith/client-platform@0.1.0-beta.24
 
 ## 0.1.0-beta.23
 
 ### Patch Changes
 
-- @tailorkit/app@0.1.0-beta.23
-  - @tailorkit/client-platform@0.1.0-beta.23
-  - @tailorkit/core@0.1.0-beta.23
-  - @tailorkit/sandbox@0.1.0-beta.23
+- @patchsmith/app@0.1.0-beta.23
+  - @patchsmith/client-platform@0.1.0-beta.23
+  - @patchsmith/core@0.1.0-beta.23
+  - @patchsmith/sandbox@0.1.0-beta.23
 
 ## 0.1.0-beta.22
 
@@ -345,10 +383,10 @@
 
 - Updated dependencies [c29880d]
 - Updated dependencies [268df1e]
-  - @tailorkit/app@0.1.0-beta.22
-  - @tailorkit/sandbox@0.1.0-beta.22
-  - @tailorkit/client-platform@0.1.0-beta.22
-  - @tailorkit/core@0.1.0-beta.22
+  - @patchsmith/app@0.1.0-beta.22
+  - @patchsmith/sandbox@0.1.0-beta.22
+  - @patchsmith/client-platform@0.1.0-beta.22
+  - @patchsmith/core@0.1.0-beta.22
 
 ## 0.1.0-beta.21
 
@@ -356,10 +394,10 @@
 
 - 1c52fe8: Add minimal package READMEs with readable names and short descriptions.
 - Updated dependencies [1c52fe8]
-  - @tailorkit/app@0.1.0-beta.21
-  - @tailorkit/client-platform@0.1.0-beta.21
-  - @tailorkit/core@0.1.0-beta.21
-  - @tailorkit/sandbox@0.1.0-beta.21
+  - @patchsmith/app@0.1.0-beta.21
+  - @patchsmith/client-platform@0.1.0-beta.21
+  - @patchsmith/core@0.1.0-beta.21
+  - @patchsmith/sandbox@0.1.0-beta.21
 
 ## 0.1.0-beta.20
 
@@ -371,7 +409,7 @@
 
 - Updated dependencies [a2ed82b]
 - Updated dependencies [fc09d5b]
-  - @tailorkit/core@0.1.0-beta.20
-  - @tailorkit/app@0.1.0-beta.20
-  - @tailorkit/client-platform@0.1.0-beta.20
-  - @tailorkit/sandbox@0.1.0-beta.20
+  - @patchsmith/core@0.1.0-beta.20
+  - @patchsmith/app@0.1.0-beta.20
+  - @patchsmith/client-platform@0.1.0-beta.20
+  - @patchsmith/sandbox@0.1.0-beta.20

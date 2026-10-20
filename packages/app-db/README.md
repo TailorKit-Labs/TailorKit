@@ -1,4 +1,4 @@
-# PatchSmith app database
+# Patchsmith app database
 
 Use `patchsmith/db` for app database definitions, schema builders, relation helpers, query operators, and database types. This entry point is backed by the public `@patchsmith/app-db` package. The private `@patchsmith/db` workspace manages the platform's Postgres database separately.
 
@@ -19,7 +19,7 @@ const relations = defineRelations({ posts, users }, (r) => ({
 export const database = defineDatabase({ relations });
 ```
 
-`defineRelations(schema)` includes all tables without navigation. Its optional callback adds typed one/many navigation; foreign-key constraints belong on schema columns. PatchSmith adapts the relation definitions to Drizzle internally.
+`defineRelations(schema)` includes all tables without navigation. Its optional callback adds typed one/many navigation; foreign-key constraints belong on schema columns. Patchsmith adapts the relation definitions to Drizzle internally.
 
 Bind the definition once in your shared database module:
 

@@ -52,7 +52,7 @@ export const runtimeSession = protectedRouter
       body: z.strictObject({
         app: appSelectorSchema,
         scopes: scopesSchema,
-        subjectId: z.string().min(1).max(256).optional(),
+        subjectId: z.string().min(1).max(256),
         toolUrl: z.url().refine((value) => {
           const url = new URL(value);
           return (
@@ -81,11 +81,10 @@ export const runtimeSession = protectedRouter
           projectId: z.string(),
           projectShortId: z.string(),
           scope: scopeSchema,
-          subjectId: z.string().optional(),
+          subjectId: z.string().min(1).max(256),
           toolUrl: z.url(),
         }),
         token: z.string(),
-        toolUrl: z.url(),
         url: z.url(),
       }),
     })
@@ -136,7 +135,6 @@ export const runtimeSession = protectedRouter
       body: {
         ...session,
         identity: { ...identity, expiresAt: session.expiresAt },
-        toolUrl: identity.toolUrl,
         url: url.href,
       },
     };

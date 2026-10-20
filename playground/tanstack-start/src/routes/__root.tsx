@@ -7,7 +7,7 @@ import {
   redirect,
 } from "@tanstack/react-router";
 
-import { PatchSmithShell } from "#components/patchsmith-shell";
+import { PatchsmithShell } from "#components/patchsmith-shell";
 import { loadSession } from "#lib/auth.functions";
 
 import css from "#styles.css?url";
@@ -18,9 +18,9 @@ const AppShell = () => {
     return <Outlet />;
   }
   return (
-    <PatchSmithShell session={session}>
+    <PatchsmithShell session={session}>
       <Outlet />
-    </PatchSmithShell>
+    </PatchsmithShell>
   );
 };
 
@@ -53,7 +53,7 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { content: "width=device-width, initial-scale=1", name: "viewport" },
-      { title: "PatchSmith Playground" },
+      { title: "Patchsmith Playground" },
     ],
   }),
   shellComponent: RootDocument,

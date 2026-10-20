@@ -5,8 +5,19 @@ import { testContract } from "#test-contract";
 
 import {
   createComponentRegistry,
-  createPatchSmithClientConfig,
+  createPatchsmithClientConfig,
 } from "./config";
+
+const identity = {
+  appId: "app",
+  deploymentId: "deployment",
+  expiresAt: Date.now() + 300_000,
+  installationId: "app",
+  projectId: "project",
+  scope: { name: "workspace", value: { id: "workspace" } },
+  subjectId: "principal",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
+};
 
 const require = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -29,7 +40,7 @@ it("wraps each renderer once and shares it with remote component aliases", () =>
 
 it("builds reusable client configuration without initiating network requests", () => {
   const fetch = vi.fn<typeof globalThis.fetch>();
-  const config = createPatchSmithClientConfig({
+  const config = createPatchsmithClientConfig({
     baseUrl: "https://host.test/api/",
     contract: testContract(),
     fetch,
@@ -49,13 +60,14 @@ it("clears shared app data and sessions through clearCache", async () => {
           ? [{ id: user }]
           : {
               expiresAt: Date.now() + 300_000,
+              identity,
               token: user,
               url: "https://runtime.test/rpc",
             }
       )
     )
   );
-  const config = createPatchSmithClientConfig({
+  const config = createPatchsmithClientConfig({
     baseUrl: "https://host.test/api/",
     contract: testContract(),
     fetch,

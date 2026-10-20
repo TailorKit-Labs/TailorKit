@@ -11,7 +11,7 @@ import { serializeCacheKey } from "#store/fetch/cache";
 import type { SlotItem } from "#store/fetch/slot";
 import { createAppViewsQuery } from "#store/query";
 import { createSnapshotStore } from "#store/snapshot-store";
-import type { PatchSmithStore } from "#store/store";
+import type { PatchsmithStore } from "#store/store";
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -57,7 +57,7 @@ const failure = (message: string): SlotRuntimeSnapshot => ({
 
 /** Resolve a managed or controlled slot; adapters only render its snapshot. */
 export const createSlotRuntime = (
-  store: PatchSmithStore,
+  store: PatchsmithStore,
   initial: SlotRuntimeOptions
 ) => {
   const memoInput = createValueMemo<SlotRuntimeOptions>();

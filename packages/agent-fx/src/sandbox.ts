@@ -26,7 +26,7 @@ export const sandboxSession = (sandbox: Sandbox) => {
 };
 
 const prepareWorkspace = async (sandbox: Sandbox) => {
-  // Refresh PatchSmith releases immediately while keeping the three-day delay for
+  // Refresh Patchsmith releases immediately while keeping the three-day delay for
   // third-party packages, including in sandboxes resumed from older snapshots.
   const result = await sandbox.currentSession().runCommand({
     args: [

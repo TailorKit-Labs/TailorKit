@@ -1,21 +1,21 @@
 import { atom } from "nanostores";
 
-import type { PatchSmithFetchClient } from "#client/fetch-client";
+import type { PatchsmithFetchClient } from "#client/fetch-client";
 import { createSnapshotStore } from "#store/snapshot-store";
-import type { PatchSmithApp } from "#types";
+import type { PatchsmithApp } from "#types";
 
 import type { FetchOptions, FetchSnapshot } from "./cache";
 
-export interface PatchSmithAppsSnapshot {
-  apps: PatchSmithApp[];
+export interface PatchsmithAppsSnapshot {
+  apps: PatchsmithApp[];
   error: Error | null;
   status: FetchSnapshot<unknown>["status"];
   isFetching: boolean;
 }
 
 const suppliedSnapshotImplementation = (
-  apps: PatchSmithApp[]
-): PatchSmithAppsSnapshot => ({
+  apps: PatchsmithApp[]
+): PatchsmithAppsSnapshot => ({
   apps,
   error: null,
   isFetching: false,
@@ -23,19 +23,19 @@ const suppliedSnapshotImplementation = (
 });
 
 export const createAppsStore = (
-  client: PatchSmithFetchClient,
-  initialApps?: PatchSmithApp[]
+  client: PatchsmithFetchClient,
+  initialApps?: PatchsmithApp[]
 ) => {
   const query = client.apps();
   const provided = atom(initialApps);
   const suppliedSnapshot = suppliedSnapshotImplementation;
   let supplied =
     initialApps === undefined ? null : suppliedSnapshot(initialApps);
-  let last: FetchSnapshot<PatchSmithApp[]> | undefined;
-  let snapshot: PatchSmithAppsSnapshot;
+  let last: FetchSnapshot<PatchsmithApp[]> | undefined;
+  let snapshot: PatchsmithAppsSnapshot;
   let requested = false;
   let subscribers = 0;
-  const empty: PatchSmithApp[] = [];
+  const empty: PatchsmithApp[] = [];
   const store = {
     // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
     fetch: (options: FetchOptions = {}) => {
@@ -45,7 +45,7 @@ export const createAppsStore = (
       }
       return query.fetch(options);
     },
-    getSnapshot: (): PatchSmithAppsSnapshot => {
+    getSnapshot: (): PatchsmithAppsSnapshot => {
       if (supplied) {
         return supplied;
       }
@@ -69,7 +69,7 @@ export const createAppsStore = (
       }
       return query.invalidate();
     },
-    setProvidedApps: (apps: PatchSmithApp[] | undefined) => {
+    setProvidedApps: (apps: PatchsmithApp[] | undefined) => {
       if (provided.get() === apps) {
         return;
       }

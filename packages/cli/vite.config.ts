@@ -40,7 +40,7 @@ export default defineConfig({
       },
     },
     ssr: "src/index.ts",
-    target: "node24",
+    target: "node22",
   },
   define: {
     __PATCHSMITH_VERSION__: JSON.stringify(packageJson.version),

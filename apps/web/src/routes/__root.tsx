@@ -143,7 +143,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
         name: "viewport",
       },
       {
-        title: "PatchSmith",
+        title: "Patchsmith",
       },
     ],
   }),

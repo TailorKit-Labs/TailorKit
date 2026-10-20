@@ -54,7 +54,7 @@ const ProfilePage = () => {
 
   return (
     <PageLayout
-      description="Manage the name shown across your PatchSmith account."
+      description="Manage the name shown across your Patchsmith account."
       title="Profile"
     >
       <CardFrame className="w-full">

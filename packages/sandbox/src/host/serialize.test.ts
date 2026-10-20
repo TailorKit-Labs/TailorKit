@@ -20,7 +20,7 @@ describe("readElementProps", () => {
     element.dataset.patchsmithProps = JSON.stringify({
       count: 3,
       enabled: false,
-      metadata: { owner: "PatchSmith" },
+      metadata: { owner: "Patchsmith" },
       textColor: "default",
     });
     element.dataset.patchsmithCallbacks = "{}";
@@ -28,7 +28,7 @@ describe("readElementProps", () => {
     expect(readElementProps(element)).toEqual({
       count: 3,
       enabled: false,
-      metadata: { owner: "PatchSmith" },
+      metadata: { owner: "Patchsmith" },
       textColor: "default",
     });
   });

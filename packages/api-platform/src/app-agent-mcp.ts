@@ -2,7 +2,10 @@ import { randomBytes } from "node:crypto";
 
 import { call, ORPCError } from "@orpc/server";
 import { createAppAgentMcp } from "@patchsmith/agent/mcp";
-import type { AppAgentMcpExecution } from "@patchsmith/agent/mcp";
+import type {
+  AppAgentMcpExecution,
+  AppAgentMcpResult,
+} from "@patchsmith/agent/mcp";
 import {
   AppAgentThreadError,
   resolveAppAgentThread,
@@ -12,7 +15,7 @@ import { hashSecret } from "@patchsmith/api-utils/hashing";
 import { db } from "@patchsmith/db";
 import { cliToken } from "@patchsmith/db/schema/cli-auth";
 import { sanitizeErrorForLog } from "@patchsmith/observability";
-import type { UIMessage, UIMessageChunk } from "ai";
+import type { UIMessageChunk } from "ai";
 import { eq } from "drizzle-orm";
 import type { Run } from "workflow/api";
 import { z } from "zod";
@@ -34,7 +37,7 @@ interface AgentRunAttributes {
 const contextSchema = z.strictObject({
   hostUrl: z.url({ protocol: /^https?$/u }),
   scopes: z.record(z.string(), scopeValueSchema),
-  subjectId: z.string().min(1).max(256).optional(),
+  subjectId: z.string().min(1).max(256),
 });
 
 /** Standard MCP endpoint. Host project keys authenticate caller context carried in headers. */
@@ -95,16 +98,14 @@ export const handleAppAgentMcpRequest = async (
     prompt: string,
     execution: AppAgentMcpExecution,
     requestedThreadId?: string
-  ) => {
+  ): Promise<AppAgentMcpResult> => {
     execution.signal.throwIfAborted();
     // Discovery and tool definitions do not execute an agent. Keep workflow
     // startup and stream processing out of those requests' import graph.
-    const [{ appAgent, cancelAppAgent }, { readUIMessageStream }, { start }] =
-      await Promise.all([
-        import("@patchsmith/agent-fx/workflows"),
-        import("ai"),
-        import("workflow/api"),
-      ]);
+    const [{ appAgent, cancelAppAgent }, { start }] = await Promise.all([
+      import("@patchsmith/agent-fx/workflows"),
+      import("workflow/api"),
+    ]);
     execution.signal.throwIfAborted();
     const app = await findAppInScopes(
       context.project.id,
@@ -167,14 +168,8 @@ export const handleAppAgentMcpRequest = async (
       execution.signal.throwIfAborted();
       const attributes: AgentRunAttributes = {
         "patchsmith.projectId": context.project.id,
+        "patchsmith.subjectId": input.subjectId,
       };
-      if (
-        input.subjectId !== undefined &&
-        input.subjectId !== null &&
-        input.subjectId !== ""
-      ) {
-        attributes["patchsmith.subjectId"] = input.subjectId;
-      }
       run = await start(
         appAgent,
         [
@@ -206,35 +201,36 @@ export const handleAppAgentMcpRequest = async (
         status: "started",
         threadId,
       });
-      let message: UIMessage | undefined;
+      let answer = "";
       const { runId } = run;
-      const stream = run.getReadable<UIMessageChunk>().pipeThrough(
-        new TransformStream<UIMessageChunk, UIMessageChunk>({
-          async transform(chunk, writer) {
-            await execution.onProgress({
-              appId: app.shortId,
-              chunk,
-              runId,
-              status: "streaming",
-              threadId,
-            });
-            writer.enqueue(chunk);
-          },
-        }),
-        { signal }
-      );
-      for await (const update of readUIMessageStream({
-        stream,
-        terminateOnError: true,
-      })) {
-        message = update;
+      const stream = run
+        .getReadable<UIMessageChunk>()
+        .pipeThrough(new TransformStream<UIMessageChunk, UIMessageChunk>(), {
+          signal,
+        });
+      for await (const chunk of stream) {
+        // oxlint-disable-next-line no-await-in-loop -- Preserve the order of progress updates from the agent.
+        await execution.onProgress({
+          appId: app.shortId,
+          chunk,
+          runId,
+          status: "streaming",
+          threadId,
+        });
+        if (chunk.type === "text-delta") {
+          answer += chunk.delta;
+        } else if (chunk.type === "text-end") {
+          answer += "\n\n";
+        } else if (chunk.type === "error" || chunk.type === "abort") {
+          throw new Error("App agent stopped before completing its response.");
+        }
       }
       const output = await completed;
       finished = true;
       return {
-        ...output,
+        answer: answer.trim() || "App agent run ended.",
         appId: app.shortId,
-        message,
+        finishReason: output.finishReason,
         runId: run.runId,
         threadId,
       };

@@ -1,6 +1,6 @@
-import { validatePatchSmithScopes } from "./scope";
-import type { PatchSmithScopeSchemas } from "./scope";
-import type { PatchSmithHostContext, PatchSmithPlatformOptions } from "./types";
+import { validatePatchsmithScopes } from "./scope";
+import type { PatchsmithScopeSchemas } from "./scope";
+import type { PatchsmithHostContext, PatchsmithPlatformOptions } from "./types";
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
@@ -15,24 +15,23 @@ const maximumContextHeaderLength = 8192;
 export const createMcpTransport = (options: {
   hostUrl: string;
   platformUrl: string;
-  platformHeaders?: PatchSmithPlatformOptions["headers"];
-  scopeSchemas: PatchSmithScopeSchemas;
+  platformHeaders?: PatchsmithPlatformOptions["headers"];
+  scopeSchemas: PatchsmithScopeSchemas;
 }) => ({
   transport: async (
-    context: PatchSmithHostContext<unknown>
+    context: PatchsmithHostContext<unknown>
   ): Promise<{
     url: string;
     headers: Record<string, string>;
   }> => {
     if (
-      context.subjectId !== undefined &&
-      (!isStringValue(context.subjectId) ||
-        !context.subjectId ||
-        context.subjectId.length > 256)
+      !isStringValue(context.subjectId) ||
+      !context.subjectId ||
+      context.subjectId.length > 256
     ) {
       throw new TypeError("Invalid MCP subjectId.");
     }
-    const scopes = await validatePatchSmithScopes(
+    const scopes = await validatePatchsmithScopes(
       options.scopeSchemas,
       context.scopes
     );
@@ -57,7 +56,7 @@ export const createMcpTransport = (options: {
       : options.platformHeaders);
     const headers = new Headers(configured);
     if (!(headers.get("authorization")?.startsWith("Bearer ") === true)) {
-      throw new Error("A PatchSmith projectKey is required for MCP transport.");
+      throw new Error("A Patchsmith projectKey is required for MCP transport.");
     }
     headers.set("x-patchsmith-context", encoded);
     return {

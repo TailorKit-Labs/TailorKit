@@ -47,7 +47,7 @@ vi.mock("@clack/prompts", async (importOriginal) => ({
   text: mocks.text,
 }));
 vi.mock("@patchsmith/vite/config/loader", () => ({
-  loadPatchSmithConfig: mocks.load,
+  loadPatchsmithConfig: mocks.load,
 }));
 vi.mock("./auth", async (importOriginal) => ({
   ...(await importOriginal<typeof authModule>()),
@@ -55,7 +55,7 @@ vi.mock("./auth", async (importOriginal) => ({
   runWhoami: mocks.whoami,
 }));
 vi.mock("@patchsmith/core/server", () => ({
-  createPatchSmithClient: mocks.client,
+  createPatchsmithClient: mocks.client,
 }));
 vi.mock("./agent-tui", () => ({ openAgentTui: mocks.tui }));
 const { runAgentCommand } = await import("./agent");

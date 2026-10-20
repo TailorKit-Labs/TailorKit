@@ -1,5 +1,5 @@
 import { resolveTheme } from "@patchsmith/core/primitives/theme";
-import type { PatchSmithTheme } from "@patchsmith/core/schema";
+import type { PatchsmithTheme } from "@patchsmith/core/schema";
 import type { RemoteProps } from "@patchsmith/sandbox/protocol";
 
 const isFunctionValue = <TValue>(
@@ -160,7 +160,7 @@ const declarationsForProp = (prop: string, value: PrimitiveValue): string[] => {
 const buildStyleRules = (
   selector: string,
   props: PrimitiveProps,
-  theme: PatchSmithTheme,
+  theme: PatchsmithTheme,
   base: string[] = []
 ): string[] => {
   const responsiveRules: string[] = [];
@@ -208,7 +208,7 @@ export const buildPrimitiveCss = ({
   nodeId: string;
   props: PrimitiveProps;
   viewId: string;
-  theme: PatchSmithTheme;
+  theme: PatchsmithTheme;
   pressable?: boolean;
 }): string => {
   const selector = `[data-patchsmith-view="${cssEscape(viewId)}"] [data-patchsmith-node="${cssEscape(
@@ -281,7 +281,7 @@ export const buildPrimitiveCss = ({
 
 export const buildThemeCss = (
   viewId: string,
-  theme: PatchSmithTheme
+  theme: PatchsmithTheme
 ): string => {
   const selector = `[data-patchsmith-view="${cssEscape(viewId)}"]`;
   const declarations: string[] = [];

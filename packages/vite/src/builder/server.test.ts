@@ -13,7 +13,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 import type {
-  PatchSmithClientWithMeta,
+  PatchsmithClientWithMeta,
   ViewDefinition,
   ViewInstance,
 } from "@patchsmith/app/client";
@@ -78,7 +78,7 @@ const buildFixture = async (options: {
 };
 
 declare module "@patchsmith/app/client" {
-  interface PatchSmithViews {
+  interface PatchsmithViews {
     "/": { context: { workspaceId: string } };
   }
 }
@@ -516,7 +516,7 @@ it("builds colocated instance resolvers as query-only server actions", async () 
       // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
       const client =
         /* oxlint-disable typescript/no-unsafe-type-assertion -- The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below. */
-        module.default as PatchSmithClientWithMeta;
+        module.default as PatchsmithClientWithMeta;
       /* oxlint-enable typescript/no-unsafe-type-assertion */
       // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
       const component = (

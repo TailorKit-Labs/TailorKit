@@ -4,6 +4,18 @@ import { handleBackendSession } from "./backend";
 
 const session = {
   expiresAt: 123,
+  identity: {
+    appId: "app",
+    appShortId: "short-app",
+    deploymentId: "deployment",
+    expiresAt: 123,
+    installationId: "app",
+    projectId: "project",
+    projectShortId: "short-project",
+    scope: { name: "workspace", value: { id: "authorized-workspace" } },
+    subjectId: "principal",
+    toolUrl: "https://host.test/api/patchsmith/tools/execute",
+  },
   token: "platform-issued-token",
   url: "https://runtime.test/rpc",
 };
@@ -14,6 +26,7 @@ const authenticate = vi
   .fn<Parameters<typeof handleBackendSession>[1]>()
   .mockResolvedValue({
     scopes: { workspace: { id: "authorized-workspace" } },
+    subjectId: "principal",
   });
 
 interface BackendSessionFixture {
@@ -36,7 +49,7 @@ const request = (
 
 beforeEach(() => vi.clearAllMocks());
 
-it("uses existing host authentication and passes only verified scopes to the platform", async () => {
+it("uses existing host authentication and passes the verified subject and scopes to the platform", async () => {
   const input = request({ appId: "installed-app" });
   const response = await handleBackendSession(
     input,
@@ -47,15 +60,13 @@ it("uses existing host authentication and passes only verified scopes to the pla
   expect(response.headers.get("cache-control")).toBe("no-store");
   expect(await response.json()).toEqual(session);
   expect(authenticate).toHaveBeenCalledWith({ request: input });
-  // oxlint-disable unicorn/no-useless-undefined -- The exact mock call includes its optional subject argument.
   expect(issueSession).toHaveBeenCalledExactlyOnceWith(
     "installed-app",
     {
       workspace: { id: "authorized-workspace" },
     },
-    undefined
+    "principal"
   );
-  // oxlint-enable unicorn/no-useless-undefined
 });
 
 it("rejects unauthenticated requests before issuing tokens", async () => {

@@ -34,7 +34,7 @@ export const contract = defineContract({
 
 ## Register the current context
 
-Call `useViewContext` inside your PatchSmith provider. Register general contexts in layouts and specific contexts in pages:
+Call `useViewContext` inside your Patchsmith provider. Register general contexts in layouts and specific contexts in pages:
 
 <CodeGroup>
 
@@ -77,7 +77,7 @@ The hook registers the context when mounted, validates its data, and updates it 
 
 ## Select the closest matching view
 
-PatchSmith uses the deepest mounted context. For each slot, it checks that path, then its parents, selecting the first supported view supplied by the app:
+Patchsmith uses the deepest mounted context. For each slot, it checks that path, then its parents, selecting the first supported view supplied by the app:
 
 ```text
 /members/detail → /members → /
@@ -122,7 +122,7 @@ patchsmith.useViewContext("/members/detail", {
 Register context from your pages and layouts. Slots and apps can each support a subset of contexts.
 
 <AccordionGroup>
-  <Accordion title="Does PatchSmith watch my router automatically?">
+  <Accordion title="Does Patchsmith watch my router automatically?">
     Call `useViewContext` in each relevant page or layout. Its mount and unmount
     lifecycle supplies the active context, so it works with different routers.
   </Accordion>

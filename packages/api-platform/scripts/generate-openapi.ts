@@ -21,7 +21,7 @@ const { platformRouter } = await import("../src/index");
 const spec = await generator.generate(platformRouter, {
   base: {
     info: {
-      title: "PatchSmith Platform API",
+      title: "Patchsmith Platform API",
       version: "0.0.0",
     },
     servers: [{ url: serverUrl }],

@@ -1,5 +1,5 @@
-export { createPatchSmithStore } from "./store";
-export type { PatchSmithStore } from "./store";
+export { createPatchsmithStore } from "./store";
+export type { PatchsmithStore } from "./store";
 // oxlint-disable-next-line oxc/no-barrel-file -- This file is a supported package or framework entry point; preserve its public exports.
 export * from "./fetch/index";
 export * from "./local/index";

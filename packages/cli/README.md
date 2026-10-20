@@ -1,6 +1,6 @@
-# PatchSmith CLI
+# Patchsmith CLI
 
-Use the PatchSmith command-line interface (CLI) to create, develop, and publish extensions. You can also ask the app agent to build against a running host.
+Use the Patchsmith command-line interface (CLI) to create, develop, and publish extensions. You can also ask the app agent to build against a running host.
 
 New apps use Valibot for validation. Function inputs/outputs and instance data accept Standard Schema v1-compatible validators; existing apps can keep their current compatible library. Function input/output validation must be synchronous.
 
@@ -22,7 +22,7 @@ Start a conversation with the agent using your local host URL:
 patchsmith agent --host http://localhost:3000/api/patchsmith
 ```
 
-Each turn reads the host schema locally and sends it to the remote agent workspace for scaffolding and type generation. Configure the host with a PatchSmith project before starting. The host does not need a public deployment.
+Each turn reads the host schema locally and sends it to the remote agent workspace for scaffolding and type generation. Configure the host with a Patchsmith project before starting. The host does not need a public deployment.
 
 ## Generate from a schema file
 
@@ -56,14 +56,14 @@ Platform URLs require HTTPS. HTTP is allowed only for the development hosts `loc
 Set the required display name and slug, and an optional description in `patchsmith.config.ts`:
 
 ```ts
-import type { PatchSmithConfig } from "patchsmith/app/config";
+import type { PatchsmithConfig } from "patchsmith/app/config";
 
 export default {
   description: "Track tasks for your team.",
   host: "https://your-product.com/api/patchsmith",
   name: "My App",
   slug: "my-app",
-} satisfies PatchSmithConfig;
+} satisfies PatchsmithConfig;
 ```
 
 `patchsmith deploy` uses this name when creating an app and updates an existing linked app's name before publishing. Names are trimmed and must contain at least one non-whitespace character. Both `name` and `slug` are required.
