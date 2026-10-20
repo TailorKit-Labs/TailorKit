@@ -15,6 +15,7 @@ export interface PatchsmithRuntimeContext {
 }
 
 export interface Context {
+  agentInstructions?: string;
   platform: PlatformClient;
   platformHeaders: Record<string, string>;
   request: Request;
@@ -31,6 +32,7 @@ export interface Context {
 }
 
 export interface CreateContextOptions {
+  agentInstructions?: string;
   platform: PlatformClient;
   platformHeaders?: PatchsmithPlatformOptions["headers"];
   request: Request;
@@ -54,6 +56,7 @@ export const createContext = async (
   const platformHeaders = Object.fromEntries(new Headers(configuredHeaders));
 
   return {
+    agentInstructions: options.agentInstructions,
     authenticate: options.authenticate,
     platform: options.platform,
     platformHeaders,

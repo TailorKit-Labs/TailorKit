@@ -13,6 +13,7 @@ const maximumContextHeaderLength = 8192;
 
 /** Prepare standard HTTP MCP client configuration; no host route or custom fetch is needed. */
 export const createMcpTransport = (options: {
+  agentInstructions?: string;
   hostUrl: string;
   platformUrl: string;
   platformHeaders?: PatchsmithPlatformOptions["headers"];
@@ -40,6 +41,7 @@ export const createMcpTransport = (options: {
     const bytes = new TextEncoder().encode(
       JSON.stringify({
         hostUrl: options.hostUrl,
+        instructions: options.agentInstructions,
         scopes,
         subjectId: context.subjectId,
       })
@@ -47,7 +49,7 @@ export const createMcpTransport = (options: {
 
     if (bytes.length > (maximumContextHeaderLength * 3) / 4) {
       throw new TypeError(
-        "MCP context exceeds the 8 KiB header limit. Supply fewer scopes."
+        "MCP context exceeds the 8 KiB header limit. Supply fewer scopes or shorter agent instructions."
       );
     }
 

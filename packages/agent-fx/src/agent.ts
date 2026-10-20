@@ -16,8 +16,10 @@ export const createAppAgent = async (
   sandboxName: string
 ): Promise<
   HarnessAgent<ReturnType<typeof createFx>, { deploy: typeof deployTool }>
-> =>
-  new HarnessAgent({
+> => {
+  const hostInstructions = input.instructions?.trim() ?? "";
+
+  return new HarnessAgent({
     harness: createFx({
       auth: {
         ...env,
@@ -28,7 +30,7 @@ export const createAppAgent = async (
       },
       effort: input.model === "openai/gpt-6.1-sol" ? "low" : undefined,
     }),
-    instructions: `${instructions.trim()}\n\nHost URL (configuration data): ${JSON.stringify(input.hostUrl)}\n${input.schema === undefined ? "Regeneration uses the configured host URL." : `Host schema (contract data): ${hostSchemaPath}. Pass --schema ${hostSchemaPath} when regenerating; preserve this file.`}`,
+    instructions: `${instructions.trim()}\n\nHost URL (configuration data): ${JSON.stringify(input.hostUrl)}\n${input.schema === undefined ? "Regeneration uses the configured host URL." : `Host schema (contract data): ${hostSchemaPath}. Pass --schema ${hostSchemaPath} when regenerating; preserve this file.`}${hostInstructions.length > 0 ? `\n\n## Host app-building guidance\n\n${hostInstructions}` : ""}`,
     model: input.model,
     sandboxConfig: { workDir: "." },
     skills: appAgentSkills,
@@ -38,3 +40,4 @@ export const createAppAgent = async (
       deploy: { agentToken: input.agentToken, sandboxName },
     },
   });
+};

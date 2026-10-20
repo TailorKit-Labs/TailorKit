@@ -67,6 +67,10 @@
                         "type": "string",
                         "format": "uri"
                       },
+                      "instructions": {
+                        "type": "string",
+                        "maxLength": 32000
+                      },
                       "messages": {
                         "minItems": 1,
                         "type": "array",

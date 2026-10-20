@@ -19,6 +19,7 @@ const defaultSetupOptions = { projectKey: "host-key" };
 
 const setup = (
   options: {
+    instructions?: string;
     projectKey?: string;
     platformHeaders?: () => Promise<Record<string, string>>;
   } = defaultSetupOptions
@@ -31,6 +32,7 @@ const setup = (
       platformFetch: fetch,
       platformHeaders: options.platformHeaders,
     },
+    agent: { instructions: options.instructions },
     baseUrl: "https://host.test/api/patchsmith",
     components: {},
     projectKey: options.projectKey,
@@ -42,6 +44,7 @@ const setup = (
 
 const contextSchema = z.object({
   hostUrl: z.string(),
+  instructions: z.string().optional(),
   scopes: z.record(z.string(), z.json()),
   subjectId: z.string(),
 });
@@ -91,6 +94,45 @@ describe("MCP transport configuration", () => {
 
     expect(result.url).toBe("https://patchsmith.io/api/platform/app-agent/mcp");
     expect(context(result.headers).subjectId).toBe("user-one");
+  });
+
+  it("includes configured host guidance through createServer without changing caller context", async () => {
+    const server = createServer({
+      agent: {
+        instructions: "  Use our purple palette and compact layouts.  ",
+      },
+      baseUrl: "https://host.test/api/patchsmith",
+      contract: defineContract({ components: {}, scopes }),
+      projectKey: "host-key",
+    });
+
+    const result = await server.mcp.transport({
+      scopes: { org: { tenant: "one" } },
+      subjectId: "user-one",
+    });
+
+    expect(context(result.headers)).toEqual({
+      hostUrl: "https://host.test/api/patchsmith",
+      instructions: "Use our purple palette and compact layouts.",
+      scopes: { org: { tenant: "one" } },
+      subjectId: "user-one",
+    });
+  });
+
+  it("rejects oversized guidance and bounds its encoded MCP context", async () => {
+    expect(() => setup({ instructions: "x".repeat(32_001) })).toThrow();
+
+    const { server } = setup({
+      instructions: "界".repeat(3000),
+      projectKey: "host-key",
+    });
+
+    await expect(
+      server.mcp.transport({
+        scopes: { org: { tenant: "one" } },
+        subjectId: "user-one",
+      })
+    ).rejects.toThrow("shorter agent instructions");
   });
 
   it("does not expose a proxy handler or mount a host MCP route", async () => {

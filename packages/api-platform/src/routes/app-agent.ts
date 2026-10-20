@@ -70,6 +70,7 @@ const agentMessagesSchema = z
 const agentTurnSchema = z.object({
   app: appSelectorSchema,
   hostUrl: z.url({ protocol: /^https?$/u }),
+  instructions: z.string().max(32_000).optional(),
   messages: agentMessagesSchema,
   schema: z.record(z.string(), z.unknown()).optional(),
   threadId: z.uuid().optional(),
@@ -196,6 +197,7 @@ const chat = cliRouter
             )),
           appId: app.id,
           hostUrl: body.hostUrl,
+          instructions: body.instructions,
           messages,
           model: APP_AGENT_MODEL,
           schema: body.schema,

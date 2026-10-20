@@ -227,6 +227,7 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
       agentToken: "private-deployment-token",
       appId: randomUUID(),
       hostUrl: "https://host.test/api/patchsmith",
+      instructions: "Use the host purple palette and compact layouts.",
       messages: [],
       model: "openai/gpt-6.1-sol",
       threadId: randomUUID(),
@@ -360,7 +361,11 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
       expect(savedState).not.toContain(input.agentToken);
 
       const nextAgent = await createAppAgent(
-        { ...input, agentToken: "fresh-deployment-token" },
+        {
+          ...input,
+          agentToken: "fresh-deployment-token",
+          instructions: "Use the updated host blue palette.",
+        },
         "fixture"
       );
 
@@ -378,6 +383,9 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
       expect(next.text).toBe("Updated");
       expect(requests.at(-1)?.body).toContain("Build a file");
       expect(requests.at(-1)?.body).toContain("Now update it");
+      expect(requests.at(-1)?.body).toContain(
+        "Use the updated host blue palette."
+      );
 
       for (const request of requests) {
         expect(JSON.parse(request.body)).toMatchObject({
@@ -398,6 +406,10 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
         expect(requests[0]?.body).toContain(name);
       }
 
+      expect(requests[0]?.body).toContain(input.instructions);
+      expect(requests[0]?.body).toContain(
+        "Regeneration uses the configured host URL."
+      );
       expect(requests[0]?.body).toContain("deploy");
       expect(requests[0]?.body).not.toContain("src/functions/notes.ts");
     } finally {

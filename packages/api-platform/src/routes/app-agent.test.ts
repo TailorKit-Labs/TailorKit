@@ -770,3 +770,23 @@ it("accepts another app in the JWT scope without extending the original deadline
   });
   expect(mocks.token).not.toHaveBeenCalled();
 });
+
+it("forwards host guidance separately from user messages", async () => {
+  const chunks = await call(
+    appAgentRouter.chat,
+    {
+      body: { ...input.body, instructions: "Use the host design system." },
+    },
+    { context }
+  );
+
+  for await (const _event of chunks) {
+    /* consume */
+  }
+
+  const [, [workflowInput]] = requireValue(mocks.start.mock.lastCall);
+  expect(workflowInput.instructions).toBe("Use the host design system.");
+  expect(workflowInput.messages).toEqual([
+    { content: [{ text: "Build", type: "text" }], role: "user" },
+  ]);
+});
