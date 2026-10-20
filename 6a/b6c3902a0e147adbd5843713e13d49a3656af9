@@ -1,0 +1,19 @@
+packages/ai-sdk/package.json
+  s_bf2407f2747f3e::t_5457fea936afe9 26-27,40-41,48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6ab6c3902a0e147adbd5843713e13d49a3656af9",
+  "prompts": {},
+  "sessions": {
+    "s_bf2407f2747f3e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a156ba-665c-75c3-9e65-8bb94000a003",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
