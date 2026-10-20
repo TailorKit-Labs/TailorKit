@@ -26,7 +26,7 @@ const allowedPrerelease =
 
 const releaseRepository =
   // oxlint-disable-next-line no-restricted-properties -- The standalone release script reads GitHub Actions metadata.
-  process.env.GITHUB_REPOSITORY ?? "tailorkit-labs/TailorKit";
+  process.env.GITHUB_REPOSITORY ?? "patchsmith-io/patchsmith";
 const expectedRepositoryUrl = `git+https://github.com/${releaseRepository}.git`;
 const errors = [];
 const manifests = await Promise.all(

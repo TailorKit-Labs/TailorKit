@@ -21,7 +21,7 @@ env:
 jobs:
   select-mode:
     name: Select release mode
-    if: github.repository == 'tailorkit-labs/tailorkit' && github.ref == 'refs/heads/main'
+    if: github.repository == 'patchsmith-io/patchsmith' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
