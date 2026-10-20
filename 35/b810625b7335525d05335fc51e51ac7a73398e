@@ -1,0 +1,14 @@
+.gitignore
+  h_18044dd1b61a81 15-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "35b810625b7335525d05335fc51e51ac7a73398e",
+  "prompts": {},
+  "humans": {
+    "h_18044dd1b61a81": {
+      "author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
