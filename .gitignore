@@ -12,6 +12,9 @@ build
 *.sqlite
 *.sqlite-*
 
+# Place to dump files locally to help agents
+.local
+
 # Environment variables
 .dev.vars
 .dev.vars.*
