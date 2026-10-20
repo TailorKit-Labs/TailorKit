@@ -473,7 +473,6 @@ const reservedOrgSlugs = new Set([
   "solutions",
   "startups",
   "students",
-  "patchsmith",
   "tour",
   "use-case",
   "use-cases",
