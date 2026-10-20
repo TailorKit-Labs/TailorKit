@@ -12,7 +12,7 @@ import type {
 export type {
   experimental_CanvasDraw,
   experimental_CanvasLifecycle,
-  experimental_CanvasSetupContext,
+  experimental_CanvasCreateContext,
   experimental_CanvasHookOptions,
   experimental_CanvasHookState,
 } from "./canvas-controller";
@@ -25,7 +25,7 @@ export interface experimental_CanvasHookResult extends experimental_CanvasHookSt
 interface UseCanvasSurface {
   <T>(
     definition: experimental_CanvasLifecycle<T>,
-    dependencies: readonly unknown[],
+    updateDependencies: readonly unknown[],
     options?: experimental_CanvasHookOptions
   ): experimental_CanvasHookResult;
   (
@@ -35,7 +35,10 @@ interface UseCanvasSurface {
   ): experimental_CanvasHookResult;
 }
 
-/** Connect drawing or a library lifecycle to the host surface, presentation, and local input. */
+/**
+ * Connect drawing or a library lifecycle to a host-owned surface.
+ * Lifecycle dependencies trigger update; options.createDependencies recreate the resource.
+ */
 const useCanvasSurface: UseCanvasSurface = <T>(
   definition: experimental_CanvasDraw | experimental_CanvasLifecycle<T>,
   dependencies: readonly unknown[],

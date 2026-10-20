@@ -37,19 +37,7 @@ const Chart = ({
   const [heldKeys, setHeldKeys] = useState("none");
   const surface = useCanvasSurface<ChartJS<"bar", number[], string>>(
     {
-      dispose: (chart) => {
-        chart.destroy();
-        onInstanceCountChange(Object.keys(ChartJS.instances).length);
-      },
-      draw: (chart) => {
-        const animation = continuous ? Math.floor(performance.now() / 25) : 0;
-        const [dataset] = chart.data.datasets;
-        dataset.data = [45, 90, 65, 120, 80].map(
-          (value) => ((value + revision * 19 + animation) % 150) + 20
-        );
-        chart.update("none");
-      },
-      setup: (canvas, { signal }) => {
+      create: (canvas, { signal }) => {
         const keys = new Set<string>();
         const key = (event: Event) => {
           if (!(event instanceof KeyboardEvent)) {
@@ -114,6 +102,30 @@ const Chart = ({
         });
         onInstanceCountChange(Object.keys(ChartJS.instances).length);
         return chart;
+      },
+      dispose: (chart) => {
+        chart.destroy();
+        onInstanceCountChange(Object.keys(ChartJS.instances).length);
+      },
+      draw: (chart) => {
+        if (continuous) {
+          const animation = Math.floor(performance.now() / 25);
+          const [dataset] = chart.data.datasets;
+          dataset.data = [45, 90, 65, 120, 80].map(
+            (value) => ((value + revision * 19 + animation) % 150) + 20
+          );
+          chart.update("none");
+        }
+      },
+      resize: (chart, { width, height }) => {
+        chart.resize(width, height);
+      },
+      update: (chart) => {
+        const [dataset] = chart.data.datasets;
+        dataset.data = [45, 90, 65, 120, 80].map(
+          (value) => ((value + revision * 19) % 150) + 20
+        );
+        chart.update("none");
       },
     },
     [revision, continuous],

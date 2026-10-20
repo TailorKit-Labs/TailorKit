@@ -72,9 +72,39 @@ For a host-paced animation, pass `{ continuous: true }` as the third argument. E
 
 ### Library lifecycle and native local input
 
-The hook also accepts a lifecycle object with `setup(canvas, { signal, invalidate })`, `draw(resource, canvas)`, and optional `dispose(resource)` callbacks. `setup` returns the library resource (or a promise for it); `draw` receives that same resource and the latest dependency values through its closure. Use an explicit resource type parameter when TypeScript cannot infer it from the object. Setup runs once per granted surface. Resize, revocation, restart, and unmount abort the setup signal and dispose the resource. An async setup result arriving after teardown is disposed without drawing. Async work must honor the signal; it cannot be forcibly stopped.
+For libraries, use an explicit lifecycle. The second argument contains **update dependencies**; `options.createDependencies` contains **creation dependencies** and defaults to `[]`.
 
-Register local canvas listeners inside setup with `{ signal }` so they are removed at teardown. Call `invalidate()` when a library draws outside the normal callback; repeated invalidations coalesce while a presentation is pending. Dependency changes and forwarded input also schedule presentation. A closed connection gets one automatic retry per host registration, followed by an explicit `retry()` or recovery when the tab becomes visible. Repeated errors do not create an automatic reconnect loop.
+```tsx
+const surface = experimental_useCanvasSurface<ChartJS<"bar">>(
+  {
+    create: (canvas, { signal, invalidate }) => {
+      // Create the library instance using the sandbox canvas.
+      // Use { signal } for local listeners and invalidate() after external drawing.
+      return createChart(canvas, { signal, invalidate });
+    },
+    resize: (chart, { width, height }) => {
+      chart.resize(width, height);
+    },
+    update: (chart) => {
+      chart.data = data;
+      chart.update("none");
+    },
+    dispose: (chart) => {
+      chart.destroy();
+    },
+  },
+  [data],
+  { createDependencies: [chartType] }
+);
+```
+
+`create(canvas, { signal, invalidate })` returns the resource or a promise for it. For each grant, callbacks run in order: **create → resize → update → draw → present**. Only `create` is required. `resize(resource, { width, height })` receives the granted backing-pixel dimensions before the first update. `update(resource, canvas)` runs initially and when update dependencies change. Optional `draw(resource, canvas)` runs for each presentation, including input, explicit invalidation, and continuous animation; use it for per-frame rendering rather than ordinary data updates. With no draw callback, TailorKit presents the pixels already drawn by the library. Repeated invalidations coalesce while a presentation is pending. Updates and drawing are serialized; an update arriving during an async update is applied before drawing. Callbacks use current update/draw closures without recreating the instance.
+
+Changing `createDependencies` aborts and disposes the old resource before requesting a replacement. Function identity changes alone do not recreate it. Resize still revokes the host registration and grants a new surface: the old resource is disposed, then the replacement runs create, resize, and update with the current data. The resize callback initializes each replacement's library dimensions; it does not preserve the old instance. Revocation, sandbox restart, and unmount also abort the creation signal and dispose the resource. Disposal uses the callback paired with that resource's create call. Async creation or resize results arriving after teardown are disposed without drawing. Async work must honor the signal; it cannot be forcibly stopped. Use an explicit resource type parameter when TypeScript cannot infer it from the object.
+
+Register local canvas listeners inside create with `{ signal }` so they are removed at teardown. The context's `invalidate()` is bound to that resource's lifetime; calls from retired resources are ignored. The hook result's `invalidate()` targets the current surface. Call either when a library draws outside the normal callback. Dependency changes and forwarded input also schedule presentation, but input and invalidation do not rerun `update`. A closed connection gets one automatic retry per host registration, followed by an explicit `retry()` or recovery when the tab becomes visible. Repeated errors do not create an automatic reconnect loop.
+
+Migration from the earlier experimental API: rename `setup` to `create` and `experimental_CanvasSetupContext` to `experimental_CanvasCreateContext`. Move data changes from `draw` to `update`; keep per-frame animation in `draw`. The positional dependencies now trigger `update` for lifecycle objects; the simple drawing-function form retains its existing behavior. Use `createDependencies` for values such as chart type that require a new instance.
 
 Input is disabled by default and negotiated per connection, so SDKs that do not request native input continue receiving output-only surfaces. A host can grant `input.pointer` and an allowlist of `input.keyboard` physical key codes through the contract or low-level registration. Pointer coordinates are scaled from the visible canvas rectangle into its backing pixels. The sandbox's OffscreenCanvas receives synthetic `pointermove`, `pointerdown`, `pointerup`, `pointerleave`, and `click` events plus mouse compatibility events (`mousemove`, `mousedown`, `mouseup`, `mouseout`). These are local, untrusted events. Their `clientX`/`clientY` describe backing coordinates; they carry no host DOM target or reference. They do not grant browser user activation. DOM-dependent libraries still need their documented non-DOM platform integration; the Chart.js playground uses a small BasicPlatform extension to register local listeners and enables its ordinary on-canvas tooltip.
 

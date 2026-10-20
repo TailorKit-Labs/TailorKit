@@ -2,12 +2,14 @@ import { expect, it, vi } from "vite-plus/test";
 
 import type { experimental_CanvasSurface } from "./canvas";
 import { createCanvasController } from "./canvas-controller";
+import type { experimental_CanvasHookState } from "./canvas-controller";
 
 const createSurface = () => {
   const lifetime = new AbortController();
-  // SAFETY: This injected controller fixture uses only EventTarget; real OffscreenCanvas drawing is covered by the browser harness.
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- No graphics operations are performed on this lifecycle test fixture.
-  const canvas = new EventTarget() as OffscreenCanvas;
+  const target = Object.assign(new EventTarget(), { height: 200, width: 320 });
+  // SAFETY: The controller fixture needs only events and dimensions; real drawing is covered by the browser harness.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- No graphics operations are performed on this lifecycle fixture.
+  const canvas = target as OffscreenCanvas;
   const present = vi
     .fn<experimental_CanvasSurface["present"]>()
     .mockResolvedValue();
@@ -23,10 +25,10 @@ const createSurface = () => {
   return { lifetime, surface };
 };
 const settle = async () => {
-  await Promise.resolve();
-  await Promise.resolve();
-  await Promise.resolve();
-  await Promise.resolve();
+  for (let index = 0; index < 16; index += 1) {
+    // oxlint-disable-next-line no-await-in-loop -- Drain the controller's serialized async lifecycle and presentation steps.
+    await Promise.resolve();
+  }
 };
 const createBridge = () => {
   let listener: ((generation: string | null) => void) | null = null;
@@ -63,12 +65,12 @@ it("sets up once, uses fresh update closures, and disposes on replacement and un
   );
   controller.update(
     {
+      create: setup,
       dispose,
-      draw: (resource) => {
+      update: (resource) => {
         resource.value = 1;
         values.push(resource.value);
       },
-      setup,
     },
     [],
     {}
@@ -80,12 +82,12 @@ it("sets up once, uses fresh update closures, and disposes on replacement and un
   expect(values).toEqual([1]);
   controller.update(
     {
+      create: setup,
       dispose,
-      draw: (resource) => {
+      update: (resource) => {
         resource.value = 2;
         values.push(resource.value);
       },
-      setup,
     },
     [2],
     {}
@@ -114,12 +116,12 @@ it("aborts an async setup and disposes its late result without drawing", async (
   );
   controller.update(
     {
-      dispose,
-      draw,
-      setup: async (_canvas, context) => {
+      create: async (_canvas, context) => {
         signals.push(context.signal);
         return await promise;
       },
+      dispose,
+      draw,
     },
     [],
     {}
@@ -213,12 +215,12 @@ it("aborts setup on connection loss and disposes the late resource", async () =>
   );
   controller.update(
     {
-      dispose,
-      draw: () => {},
-      setup: async (_canvas, { signal }) => {
+      create: async (_canvas, { signal }) => {
         signals.push(signal);
         return await pending.promise;
       },
+      dispose,
+      draw: () => {},
     },
     [],
     {}
@@ -261,4 +263,220 @@ it("reconnects when effects remount the same controller and ignores retries afte
   controller.retry();
   await settle();
   expect(bridge.dependencies.request).toHaveBeenCalledTimes(2);
+});
+
+it("orders create, resize, update, draw and only updates data when dependencies change", async () => {
+  const bridge = createBridge();
+  const calls: string[] = [];
+  const controller = createCanvasController<number>(
+    "chart",
+    () => {},
+    bridge.dependencies
+  );
+  const definition = {
+    create: () => {
+      calls.push("create");
+      return 1;
+    },
+    dispose: () => {
+      calls.push("dispose");
+    },
+    draw: () => {
+      calls.push("draw");
+    },
+    resize: (_resource: number, size: { width: number; height: number }) => {
+      calls.push(`resize:${size.width}x${size.height}`);
+    },
+    update: () => {
+      calls.push("update");
+    },
+  };
+  controller.update(definition, [1], {});
+  const unmount = controller.mount();
+  bridge.availability("first");
+  await settle();
+  expect(calls).toEqual(["create", "resize:320x200", "update", "draw"]);
+  controller.invalidate();
+  controller.invalidate();
+  await settle();
+  expect(calls).toEqual(["create", "resize:320x200", "update", "draw", "draw"]);
+  bridge.surfaces[0]?.surface.canvas.dispatchEvent(new Event("pointermove"));
+  await settle();
+  expect(calls.filter((call) => call === "update")).toHaveLength(1);
+  controller.update(definition, [1], {});
+  await settle();
+  expect(calls.filter((call) => call === "draw")).toHaveLength(3);
+  controller.update(definition, [2], {});
+  await settle();
+  expect(calls.slice(-2)).toEqual(["update", "draw"]);
+  bridge.availability("resized");
+  await settle();
+  expect(calls.slice(-5)).toEqual([
+    "dispose",
+    "create",
+    "resize:320x200",
+    "update",
+    "draw",
+  ]);
+  unmount();
+  expect(calls.at(-1)).toBe("dispose");
+});
+
+it("recreates only on creation dependencies and ignores invalidation from retired resources", async () => {
+  const bridge = createBridge();
+  const invalidations: (() => void)[] = [];
+  const controller = createCanvasController<number>(
+    "chart",
+    () => {},
+    bridge.dependencies
+  );
+  const create = vi.fn(
+    (_canvas: OffscreenCanvas, context: { invalidate: () => void }) => {
+      invalidations.push(context.invalidate);
+      return invalidations.length;
+    }
+  );
+  const dispose = vi.fn<(value: number) => void>();
+  const update = vi.fn<(value: number) => void>();
+  const definition = { create, dispose, update };
+  controller.update(definition, [1], { createDependencies: ["bar"] });
+  const unmount = controller.mount();
+  bridge.availability("first");
+  await settle();
+  controller.update(definition, [2], { createDependencies: ["bar"] });
+  await settle();
+  expect(create).toHaveBeenCalledTimes(1);
+  expect(update).toHaveBeenCalledTimes(2);
+  controller.update(definition, [2], { createDependencies: ["line"] });
+  await settle();
+  expect(create).toHaveBeenCalledTimes(2);
+  expect(dispose).toHaveBeenCalledExactlyOnceWith(1);
+  expect(update).toHaveBeenLastCalledWith(
+    2,
+    bridge.surfaces[1]?.surface.canvas
+  );
+  invalidations[0]?.();
+  await settle();
+  expect(bridge.surfaces[1]?.surface.present).toHaveBeenCalledTimes(1);
+  invalidations[1]?.();
+  await settle();
+  expect(bridge.surfaces[1]?.surface.present).toHaveBeenCalledTimes(2);
+  expect(update).toHaveBeenCalledTimes(3);
+  unmount();
+});
+
+it("serializes async updates and applies the latest dependencies before the next draw", async () => {
+  const bridge = createBridge();
+  const pending = Promise.withResolvers<boolean>();
+  const calls: string[] = [];
+  const controller = createCanvasController<number>(
+    "chart",
+    () => {},
+    bridge.dependencies
+  );
+  controller.update(
+    {
+      create: () => 1,
+      draw: () => {
+        calls.push("draw");
+      },
+      update: async () => {
+        calls.push("old");
+        await pending.promise;
+      },
+    },
+    [1],
+    {}
+  );
+  const unmount = controller.mount();
+  bridge.availability("first");
+  await settle();
+  controller.update(
+    {
+      create: () => 1,
+      draw: () => {
+        calls.push("draw");
+      },
+      update: () => {
+        calls.push("new");
+      },
+    },
+    [2],
+    {}
+  );
+  await settle();
+  expect(calls).toEqual(["old"]);
+  pending.resolve(true);
+  await settle();
+  expect(calls).toEqual(["old", "new", "draw"]);
+  unmount();
+});
+
+it("disposes a created resource if resize fails", async () => {
+  const bridge = createBridge();
+  const failure = new Error("Resize failed");
+  const notify = vi.fn<(state: experimental_CanvasHookState) => void>();
+  const dispose = vi.fn<(value: number) => void>();
+  const controller = createCanvasController<number>(
+    "chart",
+    notify,
+    bridge.dependencies
+  );
+  controller.update(
+    {
+      create: () => 42,
+      dispose,
+      resize: () => {
+        throw failure;
+      },
+    },
+    [],
+    {}
+  );
+  const unmount = controller.mount();
+  bridge.availability("first");
+  await settle();
+  expect(dispose).toHaveBeenCalledExactlyOnceWith(42);
+  expect(notify).toHaveBeenLastCalledWith({ error: failure, status: "error" });
+  expect(bridge.surfaces[0]?.surface.present).not.toHaveBeenCalled();
+  unmount();
+  expect(dispose).toHaveBeenCalledTimes(1);
+});
+
+it("cancels pending resize and disposes its resource without presenting after teardown", async () => {
+  const bridge = createBridge();
+  const pending = Promise.withResolvers<boolean>();
+  const dispose = vi.fn<(value: number) => void>();
+  const update = vi.fn<(value: number) => void>();
+  const signals: AbortSignal[] = [];
+  const controller = createCanvasController<number>(
+    "chart",
+    () => {},
+    bridge.dependencies
+  );
+  controller.update(
+    {
+      create: (_canvas, { signal }) => {
+        signals.push(signal);
+        return 7;
+      },
+      dispose,
+      resize: async () => {
+        await pending.promise;
+      },
+      update,
+    },
+    [],
+    {}
+  );
+  const unmount = controller.mount();
+  bridge.availability("first");
+  await settle();
+  unmount();
+  expect(signals[0]?.aborted).toBe(true);
+  pending.resolve(true);
+  await settle();
+  expect(dispose).toHaveBeenCalledExactlyOnceWith(7);
+  expect(update).not.toHaveBeenCalled();
+  expect(bridge.surfaces[0]?.surface.present).not.toHaveBeenCalled();
 });

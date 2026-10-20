@@ -22,7 +22,7 @@ export { experimental_requestCanvas } from "./client/canvas";
 export { experimental_useCanvasSurface } from "./client/canvas-hook";
 export type {
   experimental_CanvasLifecycle,
-  experimental_CanvasSetupContext,
+  experimental_CanvasCreateContext,
   experimental_CanvasDraw,
   experimental_CanvasHookOptions,
   experimental_CanvasHookState,

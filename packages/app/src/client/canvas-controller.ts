@@ -6,20 +6,37 @@ import type {
 export type experimental_CanvasDraw = (
   canvas: OffscreenCanvas
 ) => void | Promise<void>;
-export interface experimental_CanvasSetupContext {
+export interface experimental_CanvasCreateContext {
   signal: AbortSignal;
   /** Schedule presentation after an external library draws or changes its state. */
   invalidate: () => void;
 }
 export interface experimental_CanvasLifecycle<T> {
-  setup: (
+  /** Runs once per granted surface or change to createDependencies. */
+  create: (
     canvas: OffscreenCanvas,
-    context: experimental_CanvasSetupContext
+    context: experimental_CanvasCreateContext
   ) => T | Promise<T>;
-  draw: (resource: NoInfer<T>, canvas: OffscreenCanvas) => void | Promise<void>;
+  /** Runs initially and when the hook's update dependencies change. */
+  update?: (
+    resource: NoInfer<T>,
+    canvas: OffscreenCanvas
+  ) => void | Promise<void>;
+  /** Runs before the first update of each newly granted surface. */
+  resize?: (
+    resource: NoInfer<T>,
+    size: { width: number; height: number }
+  ) => void | Promise<void>;
+  /** Runs on each presentation, including input, invalidate(), and continuous frames. */
+  draw?: (
+    resource: NoInfer<T>,
+    canvas: OffscreenCanvas
+  ) => void | Promise<void>;
   dispose?: (resource: NoInfer<T>) => void;
 }
 export interface experimental_CanvasHookOptions {
+  /** Recreate the resource when these values change; defaults to []. */
+  createDependencies?: readonly unknown[];
   continuous?: boolean;
   /** Defaults to true so libraries can retain their drawing buffer. */
   preserveDrawingBuffer?: boolean;
@@ -32,15 +49,25 @@ interface Connection {
   surface: experimental_CanvasSurface;
   lifetime: AbortController;
   draw: experimental_CanvasDraw;
+  update?: experimental_CanvasDraw;
   dispose?: () => void;
   running: boolean;
   dirty: boolean;
+  updateDirty: boolean;
   failed: boolean;
 }
 type Watch = (
   binding: string,
   listener: (generation: string | null) => void
 ) => () => void;
+
+const dependenciesChanged = (
+  previous: readonly unknown[] | null,
+  next: readonly unknown[]
+) =>
+  previous === null ||
+  previous.length !== next.length ||
+  next.some((value, index) => !Object.is(value, previous[index]));
 
 /** Dependencies are injectable so lifecycle races can be tested without module mocks. */
 export const createCanvasController = <T>(
@@ -62,6 +89,7 @@ export const createCanvasController = <T>(
   let recovered = false;
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
   let previousDependencies: readonly unknown[] | null = null;
+  let previousCreateDependencies: readonly unknown[] | null = null;
   // oxlint-disable-next-line anti-slop/no-unknown-parameters -- Caught JavaScript values and AbortSignal.reason are untyped error boundaries.
   const report = (error: unknown) => {
     notify({
@@ -93,47 +121,48 @@ export const createCanvasController = <T>(
       retryTimer = null;
     }
   };
+  const isCurrent = (connection: Connection) =>
+    mounted && current === connection;
+  const isActive = (revision: number, lifetime: AbortController) =>
+    mounted && epoch === revision && !lifetime.signal.aborted;
   const pump = async (connection: Connection) => {
-    if (
-      !mounted ||
-      current !== connection ||
-      connection.running ||
-      connection.failed
-    ) {
+    if (!isCurrent(connection) || connection.running || connection.failed) {
       return;
     }
     connection.running = true;
     try {
       while (true) {
-        if (
-          !mounted ||
-          current !== connection ||
-          (!connection.dirty && !continuous)
-        ) {
+        if (!isCurrent(connection) || (!connection.dirty && !continuous)) {
           break;
         }
         connection.dirty = false;
+        if (connection.updateDirty) {
+          connection.updateDirty = false;
+          // oxlint-disable-next-line no-await-in-loop -- Serialize library updates before drawing and presentation.
+          await connection.update?.(connection.surface.canvas);
+          if (!isCurrent(connection)) {
+            break;
+          }
+          if (connection.updateDirty) {
+            continue;
+          }
+        }
         // oxlint-disable-next-line no-await-in-loop -- Drawing must complete before a frame is snapshotted.
         await connection.draw(connection.surface.canvas);
-        if (!mounted || current !== connection) {
+        if (!isCurrent(connection)) {
           break;
         }
         // oxlint-disable-next-line no-await-in-loop -- Host acknowledgements bound the queue and pace continuous drawing.
         await connection.surface.present({ preserveDrawingBuffer });
       }
     } catch (error) {
-      if (mounted && current === connection) {
+      if (isCurrent(connection)) {
         connection.failed = true;
         report(error);
       }
     } finally {
       connection.running = false;
-      if (
-        mounted &&
-        current === connection &&
-        connection.dirty &&
-        !connection.failed
-      ) {
+      if (isCurrent(connection) && connection.dirty && !connection.failed) {
         void pump(connection);
       }
     }
@@ -162,9 +191,10 @@ export const createCanvasController = <T>(
     const lifetime = new AbortController();
     pendingLifetime = lifetime;
     let surface: experimental_CanvasSurface | null = null;
+    let cleanup: (() => void) | undefined;
     try {
       surface = await dependencies.request(binding, generation);
-      if (!mounted || epoch !== revision || lifetime.signal.aborted) {
+      if (!isActive(revision, lifetime)) {
         surface.close();
         return;
       }
@@ -190,31 +220,41 @@ export const createCanvasController = <T>(
       });
       const initialDefinition = definition;
       let draw: experimental_CanvasDraw;
-      let cleanup: (() => void) | undefined;
-      if ("setup" in initialDefinition) {
-        const resource = await initialDefinition.setup(granted.canvas, {
-          invalidate,
+      let update: experimental_CanvasDraw | undefined;
+      if ("create" in initialDefinition) {
+        const resource = await initialDefinition.create(granted.canvas, {
+          invalidate: () => {
+            if (isActive(revision, lifetime)) {
+              invalidate();
+            }
+          },
           signal: lifetime.signal,
         });
         cleanup = () => initialDefinition.dispose?.(resource);
+        if (isActive(revision, lifetime)) {
+          await initialDefinition.resize?.(resource, {
+            height: granted.canvas.height,
+            width: granted.canvas.width,
+          });
+        }
+        update = async (canvas) => {
+          if (definition !== null && "create" in definition) {
+            await definition.update?.(resource, canvas);
+          }
+        };
         draw = async (canvas) => {
-          if (definition !== null && "setup" in definition) {
-            await definition.draw(resource, canvas);
+          if (definition !== null && "create" in definition) {
+            await definition.draw?.(resource, canvas);
           }
         };
       } else {
         draw = async (canvas) => {
-          if (definition !== null && !("setup" in definition)) {
+          if (definition !== null && !("create" in definition)) {
             await definition(canvas);
           }
         };
       }
-      if (
-        !mounted ||
-        epoch !== revision ||
-        lifetime.signal.aborted ||
-        granted.signal.aborted
-      ) {
+      if (!isActive(revision, lifetime) || granted.signal.aborted) {
         dispose(cleanup);
         granted.close();
         return;
@@ -227,6 +267,8 @@ export const createCanvasController = <T>(
         lifetime,
         running: false,
         surface: granted,
+        update,
+        updateDirty: true,
       };
       current = connection;
       pendingLifetime = null;
@@ -249,6 +291,7 @@ export const createCanvasController = <T>(
       void pump(connection);
     } catch (error) {
       lifetime.abort();
+      dispose(cleanup);
       surface?.close();
       if (pendingLifetime === lifetime) {
         pendingLifetime = null;
@@ -292,14 +335,14 @@ export const createCanvasController = <T>(
       values: readonly unknown[],
       options: experimental_CanvasHookOptions
     ) => {
-      const changed =
-        previousDependencies === null ||
-        previousDependencies.length !== values.length ||
-        values.some(
-          (value, index) => !Object.is(value, previousDependencies?.[index])
-        );
-      const wasLifecycle = definition !== null && "setup" in definition;
-      const isLifecycle = "setup" in next;
+      const changed = dependenciesChanged(previousDependencies, values);
+      const createValues = options.createDependencies ?? [];
+      const createChanged = dependenciesChanged(
+        previousCreateDependencies,
+        createValues
+      );
+      const wasLifecycle = definition !== null && "create" in definition;
+      const isLifecycle = "create" in next;
       const modeChanged = definition !== null && wasLifecycle !== isLifecycle;
       const optionsChanged =
         continuous !== (options.continuous === true) ||
@@ -308,8 +351,10 @@ export const createCanvasController = <T>(
       continuous = options.continuous === true;
       preserveDrawingBuffer = options.preserveDrawingBuffer !== false;
       previousDependencies = [...values];
+      previousCreateDependencies = [...createValues];
       if (
         modeChanged ||
+        (isLifecycle && createChanged) ||
         (changed &&
           current === null &&
           generation !== null &&
@@ -319,6 +364,7 @@ export const createCanvasController = <T>(
         void connect();
       } else if (changed || optionsChanged) {
         if (current) {
+          current.updateDirty ||= changed;
           current.failed = false;
           notify({ error: null, status: "ready" });
         }

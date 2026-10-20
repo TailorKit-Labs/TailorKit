@@ -184,10 +184,14 @@ export const runCanvasChecks = async () => {
   );
   const staticFrame = await pixels("First app");
   click(first, "Animate chart");
-  await waitFor(
-    async () => (await hash("First app")) !== staticFrame.hash,
-    "Animation did not start."
-  );
+  const animatedFrames = new Set<string>();
+  await waitFor(async () => {
+    const frame = await hash("First app");
+    if (frame !== staticFrame.hash) {
+      animatedFrames.add(frame);
+    }
+    return animatedFrames.size >= 2;
+  }, "Animation did not produce two distinct frames.");
   click(first, "Stop animation");
   await waitFor(
     () =>
