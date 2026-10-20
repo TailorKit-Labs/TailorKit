@@ -541,7 +541,7 @@ describe("patchSmithClient React adapter", () => {
       components,
       contract,
     });
-    const otherTailor = createClient({
+    const otherClient = createClient({
       baseUrl: "http://other-runtime.test",
       components,
       contract,
@@ -551,12 +551,12 @@ describe("patchSmithClient React adapter", () => {
 
     expect(() =>
       render(
-        <otherTailor.Provider>
+        <otherClient.Provider>
           <ClientRenderSlot
             slot="panel"
             app={{ clientPath: "/apps/todo.js", id: "todo" }}
           />
-        </otherTailor.Provider>
+        </otherClient.Provider>
       )
     ).toThrow(
       "RenderSlot was created for a different Patchsmith client than the surrounding Provider."

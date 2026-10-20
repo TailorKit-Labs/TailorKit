@@ -72,6 +72,7 @@ temp
 .sandbox-test
 
 # App server artifacts, local signing keys and persistent Durable Object state.
+# Keep legacy directories ignored until existing local credentials/state are migrated.
 .tailorkit
 .tailorkit-storage
 .tailorkit-server

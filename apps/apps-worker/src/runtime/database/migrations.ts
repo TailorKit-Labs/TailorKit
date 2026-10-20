@@ -34,12 +34,31 @@ export const migrateDatabase = (
 
   // Keep the entire upgrade and journal atomic: a failed deployment leaves the previous schema.
   persistence.transaction(() => {
+    const legacyTable = persistence.execute(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'tailorkit_migrations'",
+      []
+    );
+    if (legacyTable.rows.length) {
+      persistence.execute(
+        "ALTER TABLE tailorkit_migrations RENAME TO patchsmith_migrations",
+        []
+      );
+    }
     persistence.execute(
-      "CREATE TABLE IF NOT EXISTS tailorkit_migrations (position INTEGER PRIMARY KEY, id TEXT NOT NULL UNIQUE, hash TEXT NOT NULL)",
+      "CREATE TABLE IF NOT EXISTS patchsmith_migrations (position INTEGER PRIMARY KEY, id TEXT NOT NULL UNIQUE, hash TEXT NOT NULL)",
+      []
+    );
+    // Older workers read and append through this alias when rolling back.
+    persistence.execute(
+      "CREATE VIEW IF NOT EXISTS tailorkit_migrations AS SELECT position, id, hash FROM patchsmith_migrations",
+      []
+    );
+    persistence.execute(
+      "CREATE TRIGGER IF NOT EXISTS patchsmith_legacy_migration_insert INSTEAD OF INSERT ON tailorkit_migrations BEGIN INSERT INTO patchsmith_migrations (position, id, hash) VALUES (NEW.position, NEW.id, NEW.hash); END",
       []
     );
     const applied = persistence.execute(
-      "SELECT position, id, hash FROM tailorkit_migrations ORDER BY position",
+      "SELECT position, id, hash FROM patchsmith_migrations ORDER BY position",
       []
     ).rows;
     for (const [index, row] of applied.entries()) {
@@ -62,7 +81,7 @@ export const migrateDatabase = (
         persistence.execute(statement, []);
       }
       persistence.execute(
-        "INSERT INTO tailorkit_migrations (position, id, hash) VALUES (?, ?, ?)",
+        "INSERT INTO patchsmith_migrations (position, id, hash) VALUES (?, ?, ?)",
         [index, migration.id, migration.hash]
       );
     }

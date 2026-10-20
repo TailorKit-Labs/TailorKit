@@ -52,4 +52,4 @@ jobs:
       - name: "notify vercel"
         uses: "vercel/repository-dispatch/actions/status@v1"
         with:
-          name: "Vercel - tailorkit-web: Database Migrations"
+          name: "Vercel - patchsmith-web: Database Migrations"

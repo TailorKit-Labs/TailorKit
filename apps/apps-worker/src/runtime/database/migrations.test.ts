@@ -90,7 +90,7 @@ it("initializes a fresh database and applies pending migrations without replayin
     text: "Persisted",
   });
   expect(
-    sqlite.prepare("SELECT COUNT(*) AS n FROM tailorkit_migrations").get()
+    sqlite.prepare("SELECT COUNT(*) AS n FROM patchsmith_migrations").get()
   ).toMatchObject({
     n: 2,
   });
@@ -99,6 +99,107 @@ it("initializes a fresh database and applies pending migrations without replayin
   expect(
     other.sqlite.prepare("SELECT COUNT(*) AS n FROM todos").get()
   ).toMatchObject({ n: 0 });
+});
+
+it("moves an existing journal without replaying applied migrations or losing app data", () => {
+  const { sqlite, persistence } = fixture();
+  sqlite.exec(
+    "CREATE TABLE tailorkit_migrations (position INTEGER PRIMARY KEY, id TEXT NOT NULL UNIQUE, hash TEXT NOT NULL)"
+  );
+  for (const statement of initial.statements) {
+    sqlite.exec(statement);
+  }
+  sqlite
+    .prepare("INSERT INTO tailorkit_migrations VALUES (?, ?, ?)")
+    .run(0, initial.id, initial.hash);
+  sqlite.exec("INSERT INTO todos (id, text) VALUES ('one', 'Persisted')");
+
+  migrateDatabase(persistence, [initial, priority]);
+
+  expect(
+    sqlite.prepare("SELECT text, priority FROM todos").get()
+  ).toMatchObject({ priority: 0, text: "Persisted" });
+  expect(
+    sqlite
+      .prepare("SELECT id, hash FROM patchsmith_migrations ORDER BY position")
+      .all()
+  ).toEqual([
+    { hash: initial.hash, id: initial.id },
+    { hash: priority.hash, id: priority.id },
+  ]);
+  expect(
+    sqlite
+      .prepare(
+        "SELECT type FROM sqlite_master WHERE name = 'tailorkit_migrations'"
+      )
+      .get()
+  ).toMatchObject({ type: "view" });
+});
+
+it("shares journal reads and appends with older workers during rollback", () => {
+  const { sqlite, persistence } = fixture();
+  migrateDatabase(persistence, [initial]);
+
+  // Execute the same journal operations as the previous worker against its alias.
+  sqlite.exec(
+    "CREATE TABLE IF NOT EXISTS tailorkit_migrations (position INTEGER PRIMARY KEY, id TEXT NOT NULL UNIQUE, hash TEXT NOT NULL)"
+  );
+  expect(
+    sqlite
+      .prepare("SELECT id, hash FROM tailorkit_migrations ORDER BY position")
+      .all()
+  ).toEqual([{ hash: initial.hash, id: initial.id }]);
+  for (const statement of priority.statements) {
+    sqlite.exec(statement);
+  }
+  sqlite
+    .prepare(
+      "INSERT INTO tailorkit_migrations (position, id, hash) VALUES (?, ?, ?)"
+    )
+    .run(1, priority.id, priority.hash);
+
+  // The new worker must see the old worker's append rather than replay its DDL.
+  migrateDatabase(persistence, [initial, priority]);
+  expect(
+    sqlite.prepare("SELECT COUNT(*) AS n FROM patchsmith_migrations").get()
+  ).toMatchObject({ n: 2 });
+});
+
+it("restores the original journal when an upgrade fails during the rename", () => {
+  const { sqlite, persistence } = fixture();
+  sqlite.exec(
+    "CREATE TABLE tailorkit_migrations (position INTEGER PRIMARY KEY, id TEXT NOT NULL UNIQUE, hash TEXT NOT NULL)"
+  );
+  for (const statement of initial.statements) {
+    sqlite.exec(statement);
+  }
+  sqlite
+    .prepare("INSERT INTO tailorkit_migrations VALUES (?, ?, ?)")
+    .run(0, initial.id, initial.hash);
+  sqlite.exec("INSERT INTO todos (id, text) VALUES ('one', 'Persisted')");
+
+  expect(() => {
+    migrateDatabase(persistence, [initial, priority, required]);
+  }).toThrow();
+  expect(
+    sqlite
+      .prepare(
+        "SELECT type FROM sqlite_master WHERE name = 'tailorkit_migrations'"
+      )
+      .get()
+  ).toMatchObject({ type: "table" });
+  expect(
+    sqlite
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE name = 'patchsmith_migrations'"
+      )
+      .get()
+  ).toBeUndefined();
+
+  migrateDatabase(persistence, [initial, priority]);
+  expect(
+    sqlite.prepare("SELECT text, priority FROM todos").get()
+  ).toMatchObject({ priority: 0, text: "Persisted" });
 });
 
 it("rolls back the entire pending upgrade and journal if a migration fails, and can retry", () => {
@@ -115,7 +216,7 @@ it("rolls back the entire pending upgrade and journal if a migration fails, and 
       .map((row) => row.name)
   ).toEqual(["id", "text", "done"]);
   expect(
-    sqlite.prepare("SELECT COUNT(*) AS n FROM tailorkit_migrations").get()
+    sqlite.prepare("SELECT COUNT(*) AS n FROM patchsmith_migrations").get()
   ).toMatchObject({
     n: 1,
   });
@@ -159,7 +260,7 @@ it("allows older migration prefixes but rejects changed, inserted or reordered h
     migrateDatabase(persistence, [initial, initial]);
   }).toThrow("Invalid app migration history");
   expect(
-    sqlite.prepare("SELECT COUNT(*) AS n FROM tailorkit_migrations").get()
+    sqlite.prepare("SELECT COUNT(*) AS n FROM patchsmith_migrations").get()
   ).toMatchObject({
     n: 2,
   });

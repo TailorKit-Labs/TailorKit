@@ -123,7 +123,7 @@ The test command dry-builds with Wrangler and runs its bundled Miniflare/workerd
 - HTTP queries, mutations, actions, and nested function dispatch
 - Query subscriptions, accepted-write deduplication, and realtime updates between two clients
 
-Server artifacts include Drizzle-generated migration SQL and checksums. Facet initialization applies pending migrations and records their history in `tailorkit_migrations`, in the same isolated SQLite database as the app tables. The integration test uses this production bootstrap and verifies upgrades, failed-migration rollback, cold recovery and fresh installations after an upgrade.
+Server artifacts include Drizzle-generated migration SQL and checksums. Facet initialization applies pending migrations and records their history in `patchsmith_migrations`, in the same isolated SQLite database as the app tables. Existing journals are renamed atomically, retaining a writable legacy view for older workers during rollback. The integration test uses this production bootstrap and verifies upgrades, failed-migration rollback, cold recovery and fresh installations after an upgrade.
 
 To run the gateway against a development platform, copy `.dev.vars.example` to `.dev.vars`, fill in the platform URL and private runtime service token, and set the R2 bucket in `wrangler.jsonc` to the same private bucket used by the platform blob provider.
 
@@ -141,7 +141,7 @@ pnpm --filter @patchsmith/apps-worker dev
 
 Wrangler watches runtime/server changes. App code is rebuilt and uploaded through the existing app builder/CLI, then published through the existing deployment flow. Changing local runtime code does not publish an app deployment.
 
-Durable Object and R2 state lives in `apps/apps-worker/.tailorkit/state`, outside app builder output.
+Durable Object and R2 state lives in `apps/apps-worker/.patchsmith/state`, outside app builder output.
 
 Local compatibility uses the date supported by the repository's pinned workerd. No production deployment is performed by these commands.
 
@@ -184,6 +184,8 @@ Sandbox iframes allow HTTP(S) and WebSocket connections. They retain an opaque `
 ## Shared app delivery
 
 One `patchsmith-apps-worker` deployment handles the wildcard `*.tailorkit.app/*` route and the `internal.tailorkit.app` custom domain. Keep this worker name and the `STORES` binding stable to preserve installation databases. Configure wildcard proxied DNS for `*.tailorkit.app`; Wrangler provisions the internal custom domain. The platform's `ASSET_DOMAIN` must match this worker's value.
+
+Follow [the Patchsmith migration steps](../../PATCHSMITH_MIGRATION.md) before deploying the renamed bucket and signing-key configuration.
 
 Project routes:
 

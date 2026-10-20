@@ -27,7 +27,7 @@
     },
     {
       "source": "/",
-      "destination": "https://tailorkit-landing.vercel.app",
+      "destination": "https://patchsmith-landing.vercel.app",
       "missing": [
         {
           "type": "cookie",
@@ -41,31 +41,31 @@
     },
     {
       "source": "/home",
-      "destination": "https://tailorkit-landing.vercel.app/home"
+      "destination": "https://patchsmith-landing.vercel.app/home"
     },
     {
       "source": "/pricing",
-      "destination": "https://tailorkit-landing.vercel.app/pricing"
+      "destination": "https://patchsmith-landing.vercel.app/pricing"
     },
     {
       "source": "/_landing/:path*",
-      "destination": "https://tailorkit-landing.vercel.app/_landing/:path*"
+      "destination": "https://patchsmith-landing.vercel.app/_landing/:path*"
     },
     {
       "source": "/_mintlify/:path*",
-      "destination": "https://tailorkit.mintlify.site/_mintlify/:path*"
+      "destination": "https://patchsmith.mintlify.site/_mintlify/:path*"
     },
     {
       "source": "/api/request",
-      "destination": "https://tailorkit.mintlify.site/_mintlify/api/request"
+      "destination": "https://patchsmith.mintlify.site/_mintlify/api/request"
     },
     {
       "source": "/docs/:match*",
-      "destination": "https://tailorkit.mintlify.site/docs/:match*"
+      "destination": "https://patchsmith.mintlify.site/docs/:match*"
     },
     {
       "source": "/mintlify-assets/:path+",
-      "destination": "https://tailorkit.mintlify.site/mintlify-assets/:path+"
+      "destination": "https://patchsmith.mintlify.site/mintlify-assets/:path+"
     }
   ],
   "headers": [
