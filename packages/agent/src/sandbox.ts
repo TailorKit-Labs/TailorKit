@@ -16,12 +16,15 @@ export const getSandbox = async (name: string) => {
   const { Sandbox } = await import("@vercel/sandbox");
   const sandbox = await Sandbox.get({ name, resume: true });
   const expiresAt = sandbox.expiresAt?.getTime();
+
   if (expiresAt !== undefined) {
     const extension = Date.now() + sandboxIdleTimeoutMs - expiresAt;
+
     if (extension >= 1000) {
       await sandbox.currentSession().extendTimeout(extension);
     }
   }
+
   return sandbox;
 };
 
@@ -29,10 +32,12 @@ export const getSandbox = async (name: string) => {
 export const networkSession = async (sandbox: Sandbox) => {
   const { createVercelNetworkSandboxSessionFromNativeSandbox } =
     await import("@ai-sdk/sandbox-vercel");
+
   const session = createVercelNetworkSandboxSessionFromNativeSandbox(sandbox);
   Object.defineProperty(session, "defaultWorkingDirectory", {
     value: "/workspace/app",
   });
+
   return session;
 };
 
@@ -51,6 +56,7 @@ export const writeAgentSchema = async (
 /** Used after failed turns or explicit cancellation; the app's Drive survives. */
 export const deleteSandbox = async (name: string) => {
   const { APIError, Sandbox } = await import("@vercel/sandbox");
+
   try {
     const sandbox = await Sandbox.get({ name });
     await sandbox.delete({ deleteOrphanSnapshots: true });
@@ -58,6 +64,7 @@ export const deleteSandbox = async (name: string) => {
     if (error instanceof APIError && error.response.status === 404) {
       return;
     }
+
     throw error;
   }
 };
@@ -69,6 +76,7 @@ export const removeLegacyAgentToken = async (sandbox: Sandbox) => {
     cmd: "rm",
     timeoutMs: 30_000,
   });
+
   if (result.exitCode !== 0) {
     throw new FatalError("Could not remove legacy agent authorization.");
   }
@@ -82,9 +90,11 @@ export const prepareSandboxStep = async (
   const { Drive, Sandbox } = await import("@vercel/sandbox");
   const sandboxName = threadSandboxName(input.threadId);
   let sandbox: Sandbox;
+
   if (saved.cleanupSandboxName !== undefined) {
     await deleteSandbox(saved.cleanupSandboxName);
   }
+
   if (saved.resumeFrom) {
     // Never replace a missing snapshot with a blank VM and stale resume state.
     if (saved.sandboxName !== sandboxName) {
@@ -92,15 +102,18 @@ export const prepareSandboxStep = async (
         "The saved app agent sandbox does not match its session."
       );
     }
+
     sandbox = await getSandbox(sandboxName);
   } else {
     // With the database lease already held, discard an abandoned VM. Repeating
     // this setup step after a crash is safe because no agent turn has started.
     await deleteSandbox(sandboxName);
+
     const drive = await Drive.getOrCreate({
       maxSize: 5 * 1024 * 1024 * 1024,
       name: `app-${input.appId}`,
     });
+
     if (
       drive.currentSandboxName !== undefined &&
       drive.currentSandboxName !== "" &&
@@ -110,6 +123,7 @@ export const prepareSandboxStep = async (
         "This app is already being edited. Retry after the active run finishes."
       );
     }
+
     sandbox = await Sandbox.getOrCreate({
       image: "vercel/sandbox/universal",
       keepLastSnapshots: { count: 1 },
@@ -120,10 +134,13 @@ export const prepareSandboxStep = async (
       timeout: sandboxIdleTimeoutMs,
     });
   }
+
   await removeLegacyAgentToken(sandbox);
+
   if (input.schema !== undefined) {
     await writeAgentSchema(sandbox, input.schema);
   }
+
   const { prepareWorkspace } = await import("./workspace");
   await prepareWorkspace(
     sandbox.currentSession(),

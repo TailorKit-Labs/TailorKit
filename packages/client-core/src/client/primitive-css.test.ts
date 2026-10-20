@@ -54,6 +54,7 @@ it("builds responsive primitive CSS without rendering a component", () => {
     theme,
     viewId: "view",
   });
+
   expect(css).toContain(
     '[data-patchsmith-view="view"] [data-patchsmith-node="node"]'
   );
@@ -84,6 +85,7 @@ it("builds responsive Pressable states in interaction precedence order", () => {
     theme,
     viewId: "view",
   });
+
   expect(css).toContain("appearance: none;");
   expect(css).toContain("display: inline-flex;");
   expect(css).toContain("width: var(--patchsmith-size-full);");
@@ -123,6 +125,7 @@ it("keeps per-prop state breakpoints scoped to their state", () => {
     theme,
     viewId: "view",
   };
+
   const css = buildPrimitiveCss({ ...options, pressable: true });
   expect(css).toContain("padding: var(--patchsmith-space-md);");
   expect(css).toContain(
@@ -150,6 +153,7 @@ it("keeps breakpoint aliases separate from pseudo-classes", () => {
     theme: { breakpoints: { hover: "900px" } },
     viewId: "view",
   });
+
   expect(css).toContain(
     '[data-patchsmith-node="node"] { display: block; padding: var(--patchsmith-space-md); }'
   );
@@ -176,6 +180,7 @@ it("preserves each property's breakpoint order when multiple queries match", () 
     theme,
     viewId: "view",
   });
+
   const rules = css.split("\n").filter((rule) => rule.startsWith("@media"));
   expect(rules).toHaveLength(4);
   expect(rules[0]).toContain("640px");

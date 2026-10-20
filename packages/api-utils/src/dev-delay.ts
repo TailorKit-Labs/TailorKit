@@ -16,11 +16,13 @@ export const devDelayMiddleware = os.middleware(
           resolve,
           reject: rejectPending,
         } = Promise.withResolvers();
+
         try {
           setTimeout(resolve, waitMs);
         } catch (error) {
           rejectPending(error);
         }
+
         return await pendingPromise;
       })();
     }

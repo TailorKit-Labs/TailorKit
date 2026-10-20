@@ -14,6 +14,7 @@
   /** @param {HTMLElement} list @param {HTMLElement[]} items */
   const drawRail = (list, items) => {
     const bounds = list.getBoundingClientRect();
+
     if (!bounds.width || !bounds.height) {
       return;
     }
@@ -22,10 +23,13 @@
       // A parent li contains its nested list. Measure only the heading link,
       // otherwise its bottom extends past the children and the path doubles back.
       const link = item.querySelector(":scope > a");
+
       if (link === null) {
         throw new Error("TOC item lost its heading link during drawing");
       }
+
       const rect = link.getBoundingClientRect();
+
       return {
         active: Object.hasOwn(item.dataset, "activeDeepest"),
         bottom: rect.bottom - bounds.top,
@@ -33,6 +37,7 @@
         x: 1 + Math.max(0, Number(item.dataset.depth) || 0) * indent,
       };
     });
+
     const existing = list.querySelector(".patchsmith-toc-rail");
     const svg = existing ?? document.createElementNS(namespace, "svg");
     svg.setAttribute("class", "patchsmith-toc-rail");
@@ -46,26 +51,34 @@
     let activeTop = 0;
     let activeBottom = bounds.height;
     const [firstRow] = rows;
+
     if (firstRow === undefined) {
       return;
     }
+
     let track = `M ${firstRow.x} ${firstRow.top}`;
+
     for (const [index, row] of rows.entries()) {
       const previous = rows[index - 1];
+
       // Fit a 45-degree join between heading rows, including wrapped titles.
       const join = previous
         ? Math.min(Math.abs(row.x - previous.x), (row.bottom - row.top) / 2)
         : 0;
+
       if (previous) {
         track += ` L ${previous.x} ${row.top}`;
         track += ` L ${row.x} ${row.top + join}`;
       }
+
       track += ` L ${row.x} ${row.bottom}`;
+
       if (row.active) {
         activeTop = row.top + join;
         activeBottom = bounds.height - row.bottom;
       }
     }
+
     // Keep both paths mounted. CSS moves a clipping window along a bright
     // copy of the full rail, including its angled joins.
     for (const className of [
@@ -73,12 +86,15 @@
       "patchsmith-toc-rail-active",
     ]) {
       let path = svg.querySelector(`.${className}`);
+
       if (!(path instanceof SVGPathElement)) {
         path = document.createElementNS(namespace, "path");
         path.setAttribute("class", className);
         svg.append(path);
       }
+
       path.setAttribute("d", track);
+
       if (className === "patchsmith-toc-rail-active") {
         path.setAttribute(
           "style",
@@ -86,6 +102,7 @@
         );
       }
     }
+
     if (!existing) {
       list.append(svg);
     }
@@ -96,13 +113,16 @@
       frame = undefined;
       const candidate = document.querySelector("#table-of-contents .toc");
       const list = candidate instanceof HTMLElement ? candidate : null;
+
       if (list !== currentList) {
         renderer.resizeObserver.disconnect();
         currentList = list;
+
         if (list) {
           renderer.resizeObserver.observe(list);
         }
       }
+
       if (!list) {
         return;
       }
@@ -110,9 +130,11 @@
       const items = [...list.querySelectorAll(".toc-item")]
         .filter((item) => item instanceof HTMLElement)
         .filter((item) => item.querySelector(":scope > a") !== null);
+
       if (!items.length) {
         list.querySelector(".patchsmith-toc-rail")?.remove();
         delete list.dataset.patchsmithRail;
+
         return;
       }
 
@@ -123,6 +145,7 @@
           `${depth * indent}px`
         );
       }
+
       list.dataset.patchsmithRail = "";
       drawRail(list, items);
     },
@@ -133,6 +156,7 @@
       if (frame !== undefined) {
         return;
       }
+
       frame = requestAnimationFrame(renderer.draw);
     },
   };
@@ -147,6 +171,7 @@
             record.target.matches("#table-of-contents .toc-item")
           );
         }
+
         return [...record.addedNodes, ...record.removedNodes].some(
           (node) =>
             node instanceof Element && !node.matches(".patchsmith-toc-rail")

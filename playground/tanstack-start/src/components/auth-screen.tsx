@@ -20,6 +20,7 @@ export const AuthScreen = ({ choices }: { choices: SignInChoice[] }) => {
     const key = `${choice.userId}-${choice.teamId}`;
     setPending(key);
     setOperationError(undefined);
+
     try {
       await signInDemoUser(choice.userId, choice.teamId);
       patchsmith.clearCache();
@@ -44,6 +45,7 @@ export const AuthScreen = ({ choices }: { choices: SignInChoice[] }) => {
         <CardContent className="flex flex-col gap-2">
           {choices.map((choice) => {
             const key = `${choice.userId}-${choice.teamId}`;
+
             return (
               <Button
                 key={key}

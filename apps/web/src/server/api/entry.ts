@@ -13,8 +13,10 @@ export const createApiEntry = (
 ) => ({
   fetch: async (request: Request): Promise<Response> => {
     await initializeObservability("patchsmith-web");
+
     return await withRequestSpan(request, "web.request", async (span) => {
       let response: Response;
+
       if (methods.includes(request.method)) {
         try {
           response = await handle({ request });
@@ -23,6 +25,7 @@ export const createApiEntry = (
           if (!(error instanceof Response)) {
             throw error;
           }
+
           response = error;
         }
       } else {
@@ -31,7 +34,9 @@ export const createApiEntry = (
           status: 405,
         });
       }
+
       span.setAttribute("http.response.status_code", response.status);
+
       return response;
     });
   },

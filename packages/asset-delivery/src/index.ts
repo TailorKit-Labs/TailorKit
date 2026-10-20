@@ -7,15 +7,18 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
 const shortId = "[0-9a-z]{12}";
 const shortIdPattern = /^[0-9a-z]{12}$/u;
+
 const deploymentAssetPath = new RegExp(
   `^/a/(${shortId})/d/(${shortId})/(?:client/(client\\.js)|logos/([a-f0-9]{64}\\.(?:svg|png|webp)))$`,
   "u"
 );
+
 const nodeAssetPath = new RegExp(`^/api/assets/p/(${shortId})(/a/.*)$`, "u");
 const methods = new Set(["GET", "HEAD", "OPTIONS"]);
 
@@ -36,12 +39,15 @@ const getAssetContentType = (
   if (filename.endsWith(".svg")) {
     return "image/svg+xml";
   }
+
   if (filename.endsWith(".png")) {
     return "image/png";
   }
+
   if (filename.endsWith(".webp")) {
     return "image/webp";
   }
+
   return "application/javascript";
 };
 
@@ -52,15 +58,19 @@ const createIdentity = (
   if (!shortIdPattern.test(projectShortId)) {
     return undefined;
   }
+
   const match = deploymentAssetPath.exec(pathname);
+
   if (!match) {
     return undefined;
   }
+
   const [, appMatch, deploymentMatch, clientFilename, logoFilename] = match;
   const appShortId = requireValue(appMatch);
   const deploymentShortId = requireValue(deploymentMatch);
   const filename = requireValue(clientFilename ?? logoFilename);
   const appKey = `projects/${projectShortId}/apps/${appShortId}`;
+
   return {
     appShortId,
     contentType: getAssetContentType(filename),
@@ -75,10 +85,13 @@ const createIdentity = (
 
 const hostedProjectId = (url: URL, assetDomain: string): string | undefined => {
   const suffix = `.${assetDomain}`;
+
   if (url.protocol !== "https:" || url.port || !url.hostname.endsWith(suffix)) {
     return undefined;
   }
+
   const projectShortId = url.hostname.slice(0, -suffix.length);
+
   return shortIdPattern.test(projectShortId) ? projectShortId : undefined;
 };
 
@@ -88,9 +101,11 @@ export const parseHostedAssetRequest = (
 ): AssetIdentity | undefined => {
   const url = new URL(request.url);
   const projectShortId = hostedProjectId(url, assetDomain);
+
   if (projectShortId === undefined || url.search) {
     return undefined;
   }
+
   return createIdentity(projectShortId, url.pathname);
 };
 
@@ -99,9 +114,11 @@ export const parseNodeAssetRequest = (
 ): AssetIdentity | undefined => {
   const url = new URL(request.url);
   const match = nodeAssetPath.exec(url.pathname);
+
   if (!match || url.search) {
     return undefined;
   }
+
   return createIdentity(requireValue(match[1]), requireValue(match[2]));
 };
 
@@ -149,13 +166,16 @@ export const assetHeaders = (input: {
     "Referrer-Policy": "no-referrer",
     "X-Content-Type-Options": "nosniff",
   });
+
   if (input.contentEncoding === "gzip") {
     headers.set("Content-Encoding", "gzip");
     headers.set("Vary", "Accept-Encoding");
   }
+
   if (input.etag !== undefined && input.etag !== null && input.etag !== "") {
     headers.set("ETag", input.etag);
   }
+
   return headers;
 };
 
@@ -163,6 +183,7 @@ export const assetHeaders = (input: {
 const hostedAppPath = new RegExp(`^/a/(${shortId})(/rpc(?:/.*)?)$`, "u");
 const localAppPath = new RegExp(`^/p/(${shortId})(/a/.*)$`, "u");
 const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+
 const publicationPath = new RegExp(
   `^/p/(${uuid})/a/(${shortId})/new-deployment$`,
   "u"
@@ -175,21 +196,29 @@ export const parseHostedAppRoute = (
   | { appShortId: string; projectShortId: string; rpcPath: string }
   | undefined => {
   const url = new URL(request.url);
+
   const local =
     url.protocol === "http:" &&
     ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+
   const localMatch = local ? localAppPath.exec(url.pathname) : null;
+
   const projectShortId = local
     ? localMatch?.[1]
     : hostedProjectId(url, assetDomain);
+
   const pathname = local ? localMatch?.[2] : url.pathname;
+
   if (projectShortId === undefined || pathname === undefined) {
     return undefined;
   }
+
   const match = hostedAppPath.exec(pathname);
+
   if (!match) {
     return undefined;
   }
+
   return {
     appShortId: requireValue(match[1]),
     projectShortId,
@@ -203,6 +232,7 @@ export const parseDeploymentPublicationRoute = (
   assetDomain: string
 ): { appShortId: string; projectId: string } | undefined => {
   const url = new URL(request.url);
+
   if (
     url.protocol !== "https:" ||
     url.port ||
@@ -211,10 +241,13 @@ export const parseDeploymentPublicationRoute = (
   ) {
     return undefined;
   }
+
   const match = publicationPath.exec(url.pathname);
+
   if (!match) {
     return undefined;
   }
+
   return {
     appShortId: requireValue(match[2]),
     projectId: requireValue(match[1]),
@@ -236,14 +269,18 @@ export const limitAssetBody = (
   body: ReadableStream<Uint8Array>
 ): ReadableStream<Uint8Array> => {
   let contentLength = 0;
+
   return body.pipeThrough(
     new TransformStream<Uint8Array, Uint8Array>({
       transform: (chunk, controller) => {
         contentLength += chunk.byteLength;
+
         if (contentLength > maxAssetBytes) {
           controller.error(new AssetDeliveryError(404));
+
           return;
         }
+
         controller.enqueue(chunk);
       },
     })
@@ -255,19 +292,24 @@ export const hostedAssetRequest = (request: Request, assetDomain: string) =>
     if (new URL(request.url).protocol !== "https:") {
       return yield* Effect.fail(new AssetDeliveryError(400));
     }
+
     const identity = parseHostedAssetRequest(request, assetDomain);
+
     if (!identity) {
       return yield* Effect.fail(new AssetDeliveryError(404));
     }
+
     return identity;
   });
 
 export const nodeAssetRequest = (request: Request) =>
   Effect.gen(function* nodeAssetRequestValue() {
     const identity = parseNodeAssetRequest(request);
+
     if (!identity) {
       return yield* Effect.fail(new AssetDeliveryError(404));
     }
+
     return identity;
   });
 
@@ -276,6 +318,7 @@ export const assetSize = (size: number | undefined) =>
     if (!isValidAssetSize(size)) {
       return yield* Effect.fail(new AssetDeliveryError(404));
     }
+
     return size;
   });
 
@@ -291,12 +334,15 @@ export const serveAssetRequest = (
 ): Effect.Effect<Response, AssetDeliveryError> =>
   Effect.gen(function* serveAssetRequestValue() {
     const identity = yield* options.identity;
+
     if (!isAssetMethod(request.method)) {
       return yield* Effect.fail(new AssetDeliveryError(405));
     }
+
     if (request.method === "OPTIONS") {
       return assetPreflight();
     }
+
     return yield* options.load(identity);
   });
 
@@ -311,6 +357,7 @@ export const assetResponse = (
         if (failure.status === 503) {
           onUnavailable?.();
         }
+
         return assetFailure(failure.status);
       })
     )
@@ -323,9 +370,11 @@ export const acceptsGzip = (request: Request): boolean => {
     .split(",")
     .map((entry) => {
       const [name, ...parameters] = entry.split(";").map((part) => part.trim());
+
       const quality = parameters.find((parameter) =>
         parameter.startsWith("q=")
       );
+
       return {
         name,
         quality:
@@ -334,9 +383,11 @@ export const acceptsGzip = (request: Request): boolean => {
             : 1,
       };
     });
+
   const encoding =
     encodings.find(({ name }) => name === "gzip") ??
     encodings.find(({ name }) => name === "*");
+
   return (
     encoding !== undefined && encoding.quality > 0 && encoding.quality <= 1
   );

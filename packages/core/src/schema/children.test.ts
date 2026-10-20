@@ -14,6 +14,7 @@ describe("component children contract", () => {
         Input: {},
       },
     }).serialize();
+
     expect(schema.components.Card).toEqual({
       callbacks: {},
       children: true,
@@ -29,6 +30,7 @@ describe("component children contract", () => {
       children: false,
       fields: undefined,
     });
+
     for (const component of Object.values(schema.components)) {
       expect(v.parse(SerializedComponent, component)).toEqual(component);
     }

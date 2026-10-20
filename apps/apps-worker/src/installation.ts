@@ -50,6 +50,7 @@ export class AppInstallation extends DurableObject<Env> {
           catch: appError,
           try: () => bearerToken(request),
         });
+
         const identity = yield* this.#verify(token);
         yield* Effect.try({
           catch: appError,
@@ -60,27 +61,32 @@ export class AppInstallation extends DurableObject<Env> {
                 appRuntimeIssuer(this.env.PLATFORM_URL)
               )
             );
+
             if (!this.ctx.id.equals(expected)) {
               throw new AppError("FORBIDDEN", "Installation mismatch");
             }
           },
         });
         const route = requestRoute(request);
+
         if (!route) {
           return yield* Effect.fail(
             new AppError("NOT_FOUND", "Unknown RPC route")
           );
         }
+
         if (route === "subscriptions") {
           yield* this.#source.current(
             identity,
             this.ctx.storage.kv.get<string>("version")?.split(":")[0]
           );
+
           return yield* Effect.tryPromise({
             catch: appError,
             try: async () => await this.#subscriptions.open(identity),
           });
         }
+
         const { matched, response } = yield* Effect.tryPromise({
           catch: appError,
           try: async () =>
@@ -91,9 +97,11 @@ export class AppInstallation extends DurableObject<Env> {
               prefix: "/rpc",
             }),
         });
+
         if (matched) {
           return response;
         }
+
         return yield* Effect.fail(
           new AppError("NOT_FOUND", "Unknown RPC route")
         );
@@ -132,6 +140,7 @@ export class AppInstallation extends DurableObject<Env> {
         identity,
         this.ctx.storage.kv.get<string>("version")?.split(":")[0]
       );
+
       return (yield* this.#prepareFacet(deployment, identity)).facet;
     });
   }
@@ -155,13 +164,16 @@ export class AppInstallation extends DurableObject<Env> {
     return this.#queue.withPermits(1)(
       Effect.gen({ self: this }, function* mutation() {
         const facet = yield* this.#facet(identity);
+
         const result = yield* Effect.tryPromise({
           catch: appError,
           try: async () => await facet.mutate(input, identity),
         });
+
         if (result.committed && result.tables.length) {
           yield* this.#refresh(result.tables, facet);
         }
+
         return result;
       })
     );
@@ -205,6 +217,7 @@ export class AppInstallation extends DurableObject<Env> {
       const version = `${deployment.deploymentId}:${deployment.checksum}`;
       // Verify code before stopping the running version. Cache belongs to this installation.
       const code = yield* this.#source.code(deployment);
+
       return yield* Effect.try({
         catch: appError,
         try: () => {
@@ -223,6 +236,7 @@ export class AppInstallation extends DurableObject<Env> {
             for (const socket of this.ctx.getWebSockets()) {
               socket.close(1012, "App deployment changed");
             }
+
             this.#actions.closeAll();
             this.ctx.facets.abort("app", "App deployment changed");
           }
@@ -248,6 +262,7 @@ export class AppInstallation extends DurableObject<Env> {
               class: worker.getDurableObjectClass<AppFacet>("AppFacet"),
             };
           }) as Pick<AppFacet, "query" | "mutate" | "action">;
+
           // Runtime results have already passed JSON validation; CF's RPC types cannot describe unknown values.
           return { facet };
         },
@@ -264,9 +279,11 @@ export class AppInstallation extends DurableObject<Env> {
     const admission = this.#queue.withPermits(1)(
       Effect.gen({ self: this }, function* admission() {
         const facet = yield* this.#facet(identity);
+
         return { facet, lease: this.#actions.open(identity, signal) };
       })
     );
+
     return Effect.acquireUseRelease(
       admission,
       ({ facet, lease }) =>
@@ -274,6 +291,7 @@ export class AppInstallation extends DurableObject<Env> {
           catch: appError,
           try: async () => {
             lease.signal.throwIfAborted();
+
             const capability = new ActionCapability(
               lease,
               async (tables) => {
@@ -283,6 +301,7 @@ export class AppInstallation extends DurableObject<Env> {
               },
               { token, url: identity.toolUrl }
             );
+
             return await abortable(
               facet.action(
                 input,

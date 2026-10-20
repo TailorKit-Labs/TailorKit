@@ -41,6 +41,7 @@ const ShellContent = ({
   session: DemoSession;
 }) => {
   const { data: apps, error: appsError, isPending: appsPending } = useApps();
+
   const installedApps = [
     ...localPlaygroundApps.map(
       (localApp) => apps?.find((app) => app.id === localApp.id) ?? localApp
@@ -49,6 +50,7 @@ const ShellContent = ({
       (app) => !localPlaygroundApps.some((localApp) => localApp.id === app.id)
     ) ?? []),
   ];
+
   const [selectedApp, setSelectedApp] = useState<PatchsmithApp | null>(null);
   useViewContext("/", {
     context: {

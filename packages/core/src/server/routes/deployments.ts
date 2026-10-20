@@ -53,6 +53,7 @@ const logoAssetInput = v.object({
 });
 
 const deploymentAssetsInput = v.tuple([clientAssetInput]);
+
 const deploymentLogosInput = v.optional(
   v.object({
     dark: v.optional(logoAssetInput),
@@ -64,11 +65,14 @@ const getErrorMessage = (cause: unknown): string | undefined => {
   if (cause instanceof Error) {
     return cause.message;
   }
+
   if (isStringValue(cause)) {
     return cause;
   }
+
   if (isObjectValue(cause) && "message" in cause) {
     const { message } = cause;
+
     return isStringValue(message) ? message : undefined;
   }
 

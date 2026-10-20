@@ -32,8 +32,10 @@ export const ProjectSidebar = ({
 }: ProjectSidebarProps) => {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const base = `/${orgSlug}/${projectSlug}`;
+
   const isActive = (path: string) =>
     pathname === path || pathname.startsWith(`${path}/`);
+
   const { data: project } = useSuspenseQuery(
     orpc.project.get.queryOptions({ input: { orgSlug, projectSlug } })
   );

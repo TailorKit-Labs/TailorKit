@@ -15,6 +15,7 @@ export const Route = createFileRoute("/(auth)")({
       const returnTo = authRedirectSearchSchema.parse(
         location.search
       ).return_to;
+
       redirect({ throw: true, to: returnTo ?? "/" });
     }
   },

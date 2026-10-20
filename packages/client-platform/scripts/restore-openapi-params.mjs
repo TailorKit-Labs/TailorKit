@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 const path = fileURLToPath(
   new URL("../src/client/core/params.gen.ts", import.meta.url)
 );
+
 const source = await readFile(path, "utf-8");
 
 const replacements = [
@@ -28,12 +29,14 @@ const replacements = [
 ];
 
 let output = source;
+
 for (const [from, to] of replacements) {
   if (!output.includes(from)) {
     throw new Error(
       "openapi-ts output changed; update restore-openapi-params.mjs before generating."
     );
   }
+
   output = output.replace(from, to);
 }
 

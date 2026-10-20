@@ -19,6 +19,7 @@ const messages = new Map<string, string>([
 
 const AuthErrorPage = () => {
   const { error } = useSearch({ from: "/auth/error" });
+
   const message =
     error !== undefined && error !== null && error !== ""
       ? messages.get(error)

@@ -14,6 +14,7 @@ import { loadOverview } from "#lib/issues.functions";
 
 const OverviewPage = () => {
   const overview = useLoaderData({ from: "/" });
+
   const stats = [
     {
       icon: CircleDot,

@@ -70,15 +70,20 @@ const handleRequest = async (
     method: request.method,
     path: request.url,
   });
+
   switch (request.url ?? "") {
     case "/cli-auth/verify-token": {
       respond(response, { scope });
+
       return;
     }
+
     case "/apps/lookup": {
       respond(response, { description, name: currentName });
+
       return;
     }
+
     case "/apps/update": {
       respond(
         response,
@@ -87,32 +92,44 @@ const handleRequest = async (
           : { id: "app-one" },
         updateFails ? 403 : 200
       );
+
       return;
     }
+
     case "/apps": {
       missingApp = false;
       respond(response, { id: "new-app" });
+
       return;
     }
+
     case "/deployments": {
       if (missingApp) {
         respond(response, { message: "App not found" }, 404);
+
         return;
       }
+
       respond(response, {
         assets: [{ uploadUrl: `${host}/upload` }],
         deployment: { id: "deployment" },
       });
+
       return;
     }
+
     case "/upload": {
       response.end();
+
       return;
     }
+
     case "/deployments/deployment": {
       respond(response, { id: "deployment", status: "published" });
+
       return;
     }
+
     default: {
       respond(response, { message: "Unexpected request" }, 500);
     }
@@ -191,9 +208,11 @@ it.each(["  My app description  ", undefined, null])(
   async (appDescription) => {
     missingApp = true;
     await writeConfig("  My App  ", appDescription);
+
     const onMissingAppId = vi
       .fn<NonNullable<Parameters<typeof runDeploy>[0]["onMissingAppId"]>>()
       .mockResolvedValue(true);
+
     expect(await runDeploy({ cwd: root, onMissingAppId })).toMatchObject({
       appId: "new-app",
       createdApp: true,

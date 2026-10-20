@@ -28,6 +28,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -45,12 +46,14 @@ vi.mock("@patchsmith/db", () => ({
 
 const { deploymentRouter, mapReturnedFilesByAssetPath } =
   await import("./deployments");
+
 const { canonicalizeScope } = await import("#scope");
 
 const organizationId = "11111111-1111-4111-8111-111111111111";
 const projectId = "22222222-2222-4222-8222-222222222222";
 const logoChecksum = "b".repeat(64);
 const logoChecksumBase64 = Buffer.from(logoChecksum, "hex").toString("base64");
+
 const productionScope = {
   name: "environment",
   value: { environment: "production" },
@@ -130,9 +133,11 @@ describe("platform deployment uploads", () => {
 
   const createLogoDeployment = async () => {
     const currentApp = await db.query.app.findFirst();
+
     if (!currentApp) {
       throw new Error("Test app was not created.");
     }
+
     const [deployment] = await db
       .insert(appDeployment)
       .values({
@@ -141,9 +146,11 @@ describe("platform deployment uploads", () => {
         status: "uploading",
       })
       .returning();
+
     if (!deployment) {
       throw new Error("Test deployment was not created.");
     }
+
     await db.insert(appDeploymentFile).values({
       appDeploymentId: deployment.id,
       checksum: logoChecksum,
@@ -152,6 +159,7 @@ describe("platform deployment uploads", () => {
       encoding: null,
       objectKey: "projects/proj00000001/apps/app000000001/logos/legacy.svg",
     });
+
     return deployment;
   };
 
@@ -214,23 +222,28 @@ describe("platform deployment uploads", () => {
     "uploads and verifies %s client and private server code",
     async (encoding) => {
       const context = publishContext("https://private.example/server");
+
       const uploads = vi.fn(
         asyncFixture(({ key }: { key: string }) => ({
           key,
           uploadUrl: `https://uploads.example/${key}`,
         }))
       );
+
       context.storage.createUploadUrl = uploads;
       const currentApp = await db.query.app.findFirst();
+
       if (!currentApp) {
         throw new Error("Missing app");
       }
+
       const metadata = {
         checksum: logoChecksum,
         contentLength: 11,
         contentType: "application/javascript" as const,
         encoding,
       };
+
       const created = await call(
         deploymentRouter.create,
         {
@@ -247,6 +260,7 @@ describe("platform deployment uploads", () => {
         },
         { context }
       );
+
       expect(created.body.assets[0]?.file.objectKey).toMatch(
         /\/client\/client\.js$/u
       );
@@ -284,6 +298,7 @@ describe("platform deployment uploads", () => {
         contentLength: 11,
         contentType: "application/javascript",
       });
+
       if (encoding === "gzip") {
         vi.mocked(context.storage.head).mockResolvedValueOnce({
           checksumSha256: logoChecksumBase64,
@@ -304,9 +319,11 @@ describe("platform deployment uploads", () => {
           "Uploaded file content encoding does not match deployment record."
         );
       }
+
       const fetchMock = vi
         .spyOn(globalThis, "fetch")
         .mockResolvedValue(new Response("client-code"));
+
       await call(
         deploymentRouter.publish,
         {
@@ -322,11 +339,13 @@ describe("platform deployment uploads", () => {
           { context }
         )
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
+
       const runtime = await call(
         deploymentRouter.runtime,
         { body: {}, params: { appId: currentApp.id } },
         { context: { ...context, runtimeService: true } }
       );
+
       await expect(
         call(
           deploymentRouter.runtime,
@@ -363,6 +382,7 @@ describe("platform deployment uploads", () => {
               projectId: context.project.id,
             }
       );
+
       if (encoding === "gzip") {
         expect(
           context.storage.createDownloadUrl
@@ -375,9 +395,11 @@ describe("platform deployment uploads", () => {
         expect(context.storage.createDownloadUrl).not.toHaveBeenCalled();
         expect(fetchMock).not.toHaveBeenCalled();
       }
+
       const files = await db.query.appDeploymentFile.findMany({
         where: { appDeploymentId: created.body.deployment.id },
       });
+
       expect(files).toHaveLength(2);
       expect(files.every((file) => file.status === "verified")).toBe(true);
     }
@@ -405,9 +427,11 @@ describe("platform deployment uploads", () => {
       }))
     );
     const currentApp = await db.query.app.findFirst();
+
     if (!currentApp) {
       throw new Error("Missing app");
     }
+
     const created = await call(
       deploymentRouter.create,
       {
@@ -427,6 +451,7 @@ describe("platform deployment uploads", () => {
       },
       { context }
     );
+
     return { context, created };
   };
 
@@ -435,11 +460,13 @@ describe("platform deployment uploads", () => {
     const { context, created } = await createGzipClientDeployment(decoded);
     const cancel = vi.fn();
     let position = 0;
+
     const chunks = [
       decoded.subarray(0, maxDeploymentBytes),
       decoded.subarray(maxDeploymentBytes),
       new Uint8Array(1),
     ];
+
     const body = new ReadableStream<Uint8Array>(
       {
         cancel,
@@ -449,6 +476,7 @@ describe("platform deployment uploads", () => {
       },
       { highWaterMark: 0 }
     );
+
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(
@@ -477,12 +505,15 @@ describe("platform deployment uploads", () => {
         signal: expectedSignalMatcher1,
       })
     );
+
     const deployment = await db.query.appDeployment.findFirst({
       where: { id: created.body.deployment.id },
     });
+
     const file = await db.query.appDeploymentFile.findFirst({
       where: { appDeploymentId: created.body.deployment.id },
     });
+
     const currentApp = await db.query.app.findFirst();
     expect(deployment?.status).toBe("uploading");
     expect(file?.status).toBe("failed");
@@ -495,6 +526,7 @@ describe("platform deployment uploads", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(decoded, { headers: { "Content-Encoding": "gzip" } })
     );
+
     const published = await call(
       deploymentRouter.publish,
       {
@@ -503,10 +535,13 @@ describe("platform deployment uploads", () => {
       },
       { context }
     );
+
     expect(published.body.status).toBe("published");
+
     const file = await db.query.appDeploymentFile.findFirst({
       where: { appDeploymentId: created.body.deployment.id },
     });
+
     expect(file?.status).toBe("verified");
     const currentApp = await db.query.app.findFirst();
     expect(currentApp?.currentDeploymentId).toBe(published.body.id);
@@ -518,17 +553,20 @@ describe("platform deployment uploads", () => {
       const { context, created } = await createGzipClientDeployment(
         new TextEncoder().encode("client-code")
       );
+
       const body = new ReadableStream<Uint8Array>({
         start(controller) {
           controller.error(new Error("Invalid gzip"));
         },
       });
+
       const response =
         failure === "stream-error"
           ? new Response(body)
           : new Response(null, {
               status: failure === "upstream-failure" ? 503 : 200,
             });
+
       vi.spyOn(globalThis, "fetch").mockResolvedValue(response);
       await expect(
         call(
@@ -540,9 +578,11 @@ describe("platform deployment uploads", () => {
           { context }
         )
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+
       const file = await db.query.appDeploymentFile.findFirst({
         where: { appDeploymentId: created.body.deployment.id },
       });
+
       expect(file?.status).toBe("failed");
     }
   );
@@ -555,6 +595,7 @@ describe("platform deployment uploads", () => {
         fileId: "logo-file-id",
       },
     ];
+
     const returnedFiles = [
       { id: "logo-file-id", objectKey: "stored-logo" },
       { id: "client-file-id", objectKey: "stored-client" },
@@ -575,6 +616,7 @@ describe("platform deployment uploads", () => {
         uploadUrl: `https://uploads.example/${key}`,
       }))
     );
+
     const context = {
       organization: {
         createdAt: new Date(),
@@ -604,6 +646,7 @@ describe("platform deployment uploads", () => {
     } satisfies Context;
 
     const app = await db.query.app.findFirst();
+
     if (!app) {
       throw new Error("Test app was not created.");
     }
@@ -665,6 +708,7 @@ describe("platform deployment uploads", () => {
         uploadUrl: `https://uploads.example/${key}`,
       }))
     );
+
     const context = {
       organization: {
         createdAt: new Date(),
@@ -696,7 +740,9 @@ describe("platform deployment uploads", () => {
         type: "s3",
       },
     } satisfies Context;
+
     const currentApp = await db.query.app.findFirst();
+
     if (!currentApp) {
       throw new Error("Test app was not created.");
     }
@@ -737,6 +783,7 @@ describe("platform deployment uploads", () => {
 
   it("rejects the client assets array when it exceeds 3 MiB", async () => {
     const createUploadUrl = vi.fn();
+
     const context = {
       organization: {
         createdAt: new Date(),
@@ -766,6 +813,7 @@ describe("platform deployment uploads", () => {
     } satisfies Context;
 
     const app = await db.query.app.findFirst();
+
     if (!app) {
       throw new Error("Test app was not created.");
     }
@@ -826,6 +874,7 @@ describe("platform deployment uploads", () => {
                 resolve: _resolve,
                 reject,
               } = Promise.withResolvers<ArrayBuffer>();
+
               try {
                 init?.signal?.addEventListener("abort", () => {
                   reject(new DOMException("Aborted", "AbortError"));
@@ -833,6 +882,7 @@ describe("platform deployment uploads", () => {
               } catch (error) {
                 reject(error);
               }
+
               return await pendingPromise;
             })(),
           ok: true,
@@ -848,6 +898,7 @@ describe("platform deployment uploads", () => {
       },
       { context: publishContext("https://uploads.example/logo-dark.svg") }
     );
+
     const advanceTimers = vi.advanceTimersByTimeAsync(10_000);
     await expect(publish).rejects.toThrow("Aborted");
     await advanceTimers;

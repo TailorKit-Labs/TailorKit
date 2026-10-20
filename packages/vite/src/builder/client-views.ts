@@ -32,9 +32,11 @@ export const readClientManifest = async (filename: string) => {
       ["--input-type=module", "--eval", inspectClient, filename],
       { maxBuffer: 2 * 1024 * 1024, timeout: 10_000 }
     );
+
     const result = stdout.slice(
       stdout.lastIndexOf("\nPATCHSMITH_VIEWS=") + "\nPATCHSMITH_VIEWS=".length
     );
+
     const manifest = v.parse(
       v.object({
         instanceResolvers: v.array(
@@ -48,6 +50,7 @@ export const readClientManifest = async (filename: string) => {
       }),
       JSON.parse(result)
     );
+
     return manifest;
   } catch (error) {
     throw new Error(
@@ -59,5 +62,6 @@ export const readClientManifest = async (filename: string) => {
 
 export const readClientViews = async (filename: string) => {
   const awaitedResult1 = await readClientManifest(filename);
+
   return awaitedResult1.views.filter((view) => !view.disabled);
 };

@@ -77,12 +77,15 @@ const getDeploymentStatusVariant = (
   if (status === "published") {
     return "success";
   }
+
   if (status === "deploying" || status === "verifying") {
     return "warning";
   }
+
   if (status === "uploading") {
     return "info";
   }
+
   return "outline";
 };
 
@@ -102,6 +105,7 @@ const AppsTable = ({
   projectSlug: string;
 }) => {
   const navigate = useNavigate();
+
   const [sorting, setSorting] = useState<SortingState>([
     { desc: true, id: "createdAt" },
   ]);
@@ -267,10 +271,12 @@ const AppsIndexPage = () => {
   const { orgSlug, projectSlug } = useParams({
     from: "/(app)/$orgSlug/$projectSlug/apps/",
   });
+
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState("");
   const normalizedSearch = search.trim();
   const projectApiKey = getProjectApiKey(orgSlug, projectSlug);
+
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
     useInfiniteQuery(
       appsListQueryOptions({
@@ -283,6 +289,7 @@ const AppsIndexPage = () => {
 
   useEffect((): (() => void) | undefined => {
     const loadMoreElement = loadMoreRef.current;
+
     if (!loadMoreElement || !hasNextPage) {
       return undefined;
     }
@@ -305,6 +312,7 @@ const AppsIndexPage = () => {
 
   const apps = data?.pages.flatMap((page) => page.items) ?? [];
   const isEmptyProject = !isPending && !normalizedSearch && apps.length === 0;
+
   const searchControl = (
     <div className="relative w-full sm:w-72">
       <InputGroup>
@@ -322,6 +330,7 @@ const AppsIndexPage = () => {
       </InputGroup>
     </div>
   );
+
   let content;
 
   if (isPending) {

@@ -16,6 +16,7 @@ const identitySchema = z.object({
     value: z.record(z.string(), z.json()),
   }),
 });
+
 const claimsSchema = identitySchema.extend({
   exp: z.number().int(),
   iat: z.number().int(),
@@ -28,6 +29,7 @@ const signingKey = (secret: string) => {
   if (secret.length < 32) {
     throw new Error("AUTH_SECRET is required for agent tokens.");
   }
+
   return createHmac("sha256", secret)
     .update("patchsmith-agent-deploy-v1")
     .digest();
@@ -36,6 +38,7 @@ const signingKey = (secret: string) => {
 const normalizePlatformUrl = (value: string) => {
   const url = new URL(value);
   const loopback = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+
   if (
     (url.protocol !== "https:" && !(url.protocol === "http:" && loopback)) ||
     url.username ||
@@ -45,6 +48,7 @@ const normalizePlatformUrl = (value: string) => {
   ) {
     throw new Error("Invalid agent platform URL.");
   }
+
   return url.href.replace(/\/$/u, "");
 };
 
@@ -56,6 +60,7 @@ export const issueAgentToken = async (
 ) => {
   const authorized = identitySchema.parse(identity);
   const now = Math.floor(Date.now() / 1000);
+
   return await new SignJWT({
     ...authorized,
     platformUrl: normalizePlatformUrl(platformUrl),
@@ -84,7 +89,9 @@ export const verifyAgentToken = async (
     requiredClaims: ["exp", "iat", "sub", "jti"],
     typ: "patchsmith-agent+jwt",
   });
+
   const claims = claimsSchema.parse(payload);
+
   if (
     claims.exp <= claims.iat ||
     claims.exp - claims.iat > lifetimeSeconds ||
@@ -93,6 +100,7 @@ export const verifyAgentToken = async (
   ) {
     throw new Error("Invalid agent token claims.");
   }
+
   return claims;
 };
 

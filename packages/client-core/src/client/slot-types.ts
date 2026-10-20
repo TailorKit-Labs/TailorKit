@@ -6,6 +6,7 @@ import type { ViewContext, ViewName } from "#store/local/view-context-types";
 import type { PatchsmithApp } from "#types";
 
 type DefaultViews = Record<`/${string}`, ViewDefinition>;
+
 type ContextPaths<
   TViews extends Record<string, ViewDefinition>,
   TView extends ViewName<TViews>,
@@ -16,6 +17,7 @@ type ContextPaths<
       ? P
       : never;
 }[ViewName<TViews>];
+
 type ContextFields<TView> =
   undefined extends ViewContext<TView>
     ? Partial<Exclude<ViewContext<TView>, undefined>>

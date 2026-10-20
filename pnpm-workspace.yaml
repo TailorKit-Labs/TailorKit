@@ -19,6 +19,7 @@ overrides:
   # Keep auth plugin registries and Drizzle types on identical peer instances.
   nanostores@*: 1.5.4
   arktype@*: 2.2.7
+  "drizzle-orm>zod": "catalog:"
   effect@*: "catalog:"
   "@tanstack/react-start": "catalog:"
   vite@*: "catalog:"

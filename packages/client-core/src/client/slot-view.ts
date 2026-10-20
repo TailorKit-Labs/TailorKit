@@ -12,6 +12,7 @@ export const selectSlotView = (
   schema: Pick<PatchsmithContract, "slots" | "views">
 ) => {
   const supported = schema.slots[slot]?.views ?? [];
+
   const path = getViewHierarchy(activePath).find(
     (pathValue) =>
       supported.includes(pathValue) &&
@@ -20,6 +21,7 @@ export const selectSlotView = (
           view.slot === slot && view.path === pathValue && !view.disabled
       )
   );
+
   return (
     views.find(
       (view) => view.slot === slot && view.path === path && !view.disabled
@@ -35,9 +37,11 @@ export const resolveSlotView = (
   schema: Pick<PatchsmithContract, "slots" | "views">
 ) => {
   const view = selectSlotView(views, slot, activeView.view, schema);
+
   if (!view) {
     return null;
   }
+
   return {
     ...composeViewContext(view.path, {
       declaredViews: Object.keys(schema.views),

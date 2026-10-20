@@ -11,6 +11,7 @@ const authorization = { agentToken: token, appId: "authorized-app" };
 const clientCode = Buffer.from("export const client = true;");
 const serverCode = Buffer.from("export const server = true;");
 const logo = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>');
+
 const manifest = {
   assets: {
     client: "client/client.js",
@@ -20,6 +21,7 @@ const manifest = {
   version: 1,
   views: [{ path: "/", slot: "panel" }],
 };
+
 const reader = (overrides: Record<string, Buffer> = {}) => {
   const files = new Map<string, Buffer>(
     Object.entries({
@@ -30,6 +32,7 @@ const reader = (overrides: Record<string, Buffer> = {}) => {
       ...overrides,
     })
   );
+
   return {
     readFileToBuffer: async ({ path }: { path: string }) =>
       await Promise.resolve(
@@ -41,10 +44,12 @@ const reader = (overrides: Record<string, Buffer> = {}) => {
 it("uploads data on the host and keeps authorization out of signed asset requests", async () => {
   const requests: Request[] = [];
   const { signal } = new AbortController();
+
   const send: typeof fetch = async (input, init) => {
     expect(init?.signal).toBe(signal);
     const request = new Request(input, init);
     requests.push(request);
+
     if (request.url === "https://platform.test/api/platform/deployments") {
       return await Promise.resolve(
         Response.json({
@@ -65,6 +70,7 @@ it("uploads data on the host and keeps authorization out of signed asset request
         })
       );
     }
+
     if (
       request.url ===
       "https://platform.test/api/platform/deployments/created-deployment"
@@ -73,8 +79,10 @@ it("uploads data on the host and keeps authorization out of signed asset request
         Response.json({ id: "published-deployment" })
       );
     }
+
     return await Promise.resolve(new Response(null, { status: 200 }));
   };
+
   expect(
     await publishDeployment(
       reader({
@@ -100,16 +108,20 @@ it("uploads data on the host and keeps authorization out of signed asset request
     "https://platform.test/api/platform/deployments/created-deployment",
   ]);
   const [create, clientUpload, serverUpload, logoUpload, publish] = requests;
+
   if (!create || !clientUpload || !serverUpload || !logoUpload || !publish) {
     throw new Error("Expected create, uploads, and publication.");
   }
+
   for (const request of [create, publish]) {
     expect(request.headers.get("authorization")).toBe(`Bearer ${token}`);
     expect(request.redirect).toBe("error");
   }
+
   for (const request of [clientUpload, serverUpload, logoUpload]) {
     expect(request.headers.has("authorization")).toBe(false);
   }
+
   const clientBytes = Buffer.from(await clientUpload.arrayBuffer());
   expect(gunzipSync(clientBytes)).toEqual(clientCode);
   expect(gunzipSync(Buffer.from(await serverUpload.arrayBuffer()))).toEqual(
@@ -141,10 +153,13 @@ it.each([
   "rejects manifest paths outside the build output",
   async (untrustedManifest) => {
     let requests = 0;
+
     const send: typeof fetch = async () => {
       requests += 1;
+
       return await Promise.resolve(Response.json({}));
     };
+
     await expect(
       publishDeployment(
         reader({
@@ -163,10 +178,13 @@ it.each([
 
 it("rejects oversized output before an authenticated deployment request", async () => {
   let requests = 0;
+
   const send: typeof fetch = async () => {
     requests += 1;
+
     return await Promise.resolve(Response.json({}));
   };
+
   await expect(
     publishDeployment(
       reader({ "client/client.js": Buffer.alloc(3 * 1024 * 1024 + 1) }),
@@ -180,10 +198,13 @@ it("rejects oversized output before an authenticated deployment request", async 
 
 it("honors platform authorization failures without uploading or publishing", async () => {
   const requests: string[] = [];
+
   const send: typeof fetch = async (input) => {
     requests.push(new Request(input).url);
+
     return await Promise.resolve(new Response(null, { status: 401 }));
   };
+
   await expect(
     publishDeployment(reader(), authorization, undefined, send)
   ).rejects.toThrow("401");

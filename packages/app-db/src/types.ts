@@ -2,6 +2,7 @@ import type { AnyRelations, EmptyRelations } from "drizzle-orm/relations";
 import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core";
 
 export type DatabaseRelations = AnyRelations;
+
 export type EmptyDatabaseRelations = EmptyRelations;
 
 type Database<R extends AnyRelations> = BaseSQLiteDatabase<
@@ -10,9 +11,11 @@ type Database<R extends AnyRelations> = BaseSQLiteDatabase<
   Record<string, never>,
   R
 >;
+
 export type QueryDatabase<R extends AnyRelations = EmptyRelations> = Pick<
   Database<R>,
   "select" | "selectDistinct" | "query"
 >;
+
 export type MutationDatabase<R extends AnyRelations = EmptyRelations> =
   QueryDatabase<R> & Pick<Database<R>, "insert" | "update" | "delete">;

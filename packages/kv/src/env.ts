@@ -17,6 +17,7 @@ if (env.KV_PROVIDER === "upstash") {
     KV_REST_API_URL: env.KV_REST_API_URL,
   });
 }
+
 if (env.KV_PROVIDER === "redis") {
   warnIfMissing("kv", { KV_REDIS_URL: env.KV_REDIS_URL });
 }

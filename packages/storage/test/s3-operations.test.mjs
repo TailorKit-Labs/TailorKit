@@ -9,8 +9,10 @@ void test("lazy storage forwards head, delete, and service errors", async (conte
   /** @type {{ method: string | undefined; url: string | undefined }[]} */
   const requests = [];
   const checksum = Buffer.alloc(32).toString("base64");
+
   const server = createServer((request, response) => {
     requests.push({ method: request.method, url: request.url });
+
     if (request.url?.includes("missing") === true) {
       response.writeHead(404);
     } else if (request.method === "HEAD") {
@@ -25,8 +27,10 @@ void test("lazy storage forwards head, delete, and service errors", async (conte
     } else {
       response.writeHead(204);
     }
+
     response.end();
   });
+
   context.after(() => {
     server.closeAllConnections();
     server.close();
@@ -44,6 +48,7 @@ void test("lazy storage forwards head, delete, and service errors", async (conte
     endpoint: `http://127.0.0.1:${address.port}`,
     secretAccessKey: "test",
   });
+
   assert.deepEqual(await storage.head({ key: "assets/client.js" }), {
     checksumSha256: checksum,
     contentEncoding: "gzip",

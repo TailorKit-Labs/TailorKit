@@ -64,6 +64,7 @@ const createMemberColumns = ({
         .slice(0, 2)
         .join("")
         .toUpperCase();
+
       return (
         <div className="flex items-center gap-3">
           <Avatar className="size-7">
@@ -194,6 +195,7 @@ export const MembersTable = ({
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
                 const columnSize = header.column.getSize();
+
                 return (
                   <TableHead
                     key={header.id}

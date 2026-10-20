@@ -29,6 +29,7 @@ const deployedApp: PatchsmithApp = {
   currentDeployment: { id: "first" },
   id: "app",
 };
+
 it.each([
   ["deployment", { ...deployedApp, currentDeployment: { id: "second" } }],
 ])(
@@ -40,10 +41,12 @@ it.each([
       .mockResolvedValueOnce(session("other"))
       .mockResolvedValueOnce(session("second"))
       .mockResolvedValueOnce(session("third"));
+
     const client = createEndpointClient({
       baseUrl: "https://host.test/",
       fetch: request,
     });
+
     const held = client.getSessionProvider(deployedApp);
     const other = client.getSessionProvider({ id: "other" });
     await expect(held({ refresh: false })).resolves.toMatchObject({
@@ -80,6 +83,7 @@ const respondImplementation = () => {};
 
 it("clears sessions for held consumers through the public client and shares replacement requests", async () => {
   let respond: (response: Response) => void = respondImplementation;
+
   const request = vi
     .fn<typeof fetch>()
     .mockResolvedValueOnce(session("before"))
@@ -91,19 +95,23 @@ it("clears sessions for held consumers through the public client and shares repl
             resolve,
             reject: rejectPending,
           } = Promise.withResolvers<Response>();
+
           try {
             respond = resolve;
           } catch (error) {
             rejectPending(error);
           }
+
           return await pendingPromise;
         })()
     )
     .mockResolvedValueOnce(session("after-again"));
+
   const fetchClient = createPatchsmithFetchClient({
     baseUrl: "https://host.test/",
     fetch: request,
   });
+
   const client = fetchClient.endpoints;
   const held = client.getSessionProvider(deployedApp);
   await held({ refresh: false });
@@ -128,6 +136,7 @@ it("clears sessions for held consumers through the public client and shares repl
 
 it("reauthorizes held consumers after host sign-out and account changes", async () => {
   let user: string | null = "first-user";
+
   const request = vi.fn<typeof fetch>().mockImplementation(
     asyncFixture(() =>
       user !== undefined && user !== null && user !== ""
@@ -140,10 +149,12 @@ it("reauthorizes held consumers after host sign-out and account changes", async 
         : new Response(null, { status: 401 })
     )
   );
+
   const fetchClient = createPatchsmithFetchClient({
     baseUrl: "https://host.test/",
     fetch: request,
   });
+
   const held = fetchClient.endpoints.getSessionProvider(deployedApp);
   await expect(held({ refresh: false })).resolves.toMatchObject({
     token: "first-user-token",
@@ -178,6 +189,7 @@ it.each(["clear", "deployment"])(
   "rejects a late session response after %s invalidates its credentials",
   async (change) => {
     let respond: (response: Response) => void = respondImplementation2;
+
     const request = vi
       .fn<typeof fetch>()
       .mockImplementationOnce(
@@ -188,25 +200,31 @@ it.each(["clear", "deployment"])(
               resolve,
               reject: rejectPending,
             } = Promise.withResolvers<Response>();
+
             try {
               respond = resolve;
             } catch (error) {
               rejectPending(error);
             }
+
             return await pendingPromise;
           })()
       )
       .mockResolvedValueOnce(session("current"));
+
     const fetchClient = createPatchsmithFetchClient({
       baseUrl: "https://host.test/",
       fetch: request,
     });
+
     const client = fetchClient.endpoints;
     const held = client.getSessionProvider(deployedApp);
     const pending = held({ refresh: false });
+
     const rejected = expect(pending).rejects.toMatchObject({
       name: "AbortError",
     });
+
     if (change === "clear") {
       fetchClient.clear();
     } else {
@@ -215,6 +233,7 @@ it.each(["clear", "deployment"])(
         currentDeployment: { id: "second" },
       });
     }
+
     await expect(held({ refresh: false })).resolves.toMatchObject({
       token: "current",
     });

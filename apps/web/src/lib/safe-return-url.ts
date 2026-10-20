@@ -8,6 +8,7 @@ export const getSameOriginPath = (
 
   try {
     const url = new URL(value, currentOrigin);
+
     if (url.origin !== currentOrigin) {
       return undefined;
     }
@@ -16,6 +17,7 @@ export const getSameOriginPath = (
   } catch {
     // Invalid URLs are not safe redirect targets.
   }
+
   return undefined;
 };
 

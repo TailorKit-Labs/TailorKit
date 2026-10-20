@@ -13,6 +13,7 @@ const isStringValue = <TValue>(value: TValue): value is TValue & string =>
 
 const schemaMaps = ["properties", "$defs"] as const;
 const schemaArrays = ["allOf", "anyOf", "oneOf", "prefixItems"] as const;
+
 const schemaValues = [
   "additionalProperties",
   "items",
@@ -26,8 +27,10 @@ const mapSchemaChildren = (
   visit: (child: SchemaDocument) => SchemaDocument
 ): SchemaDocument => {
   const result = { ...schema };
+
   for (const keyword of schemaMaps) {
     const value = schema[keyword];
+
     if (isSchemaDocument(value)) {
       result[keyword] = Object.fromEntries(
         Object.entries(value).map(([key, child]) => [
@@ -37,8 +40,10 @@ const mapSchemaChildren = (
       );
     }
   }
+
   for (const keyword of schemaArrays) {
     const value = schema[keyword];
+
     if (Array.isArray(value)) {
       const children: unknown[] = value;
       result[keyword] = children.map((child) =>
@@ -46,12 +51,15 @@ const mapSchemaChildren = (
       );
     }
   }
+
   for (const keyword of schemaValues) {
     const value = schema[keyword];
+
     if (isSchemaDocument(value)) {
       result[keyword] = visit(value);
     }
   }
+
   return result;
 };
 
@@ -59,6 +67,7 @@ const mapSchemaChildren = (
 export const compactJsonSchema = (schema: SchemaDocument): SchemaDocument => {
   const counts = new Map<string, number>();
   let hasReferences = false;
+
   const collect = (node: SchemaDocument): SchemaDocument => {
     // Existing references/resource identifiers must retain their original scope.
     if (
@@ -68,36 +77,48 @@ export const compactJsonSchema = (schema: SchemaDocument): SchemaDocument => {
     ) {
       hasReferences = true;
     }
+
     const key = JSON.stringify(node);
     counts.set(key, (counts.get(key) ?? 0) + 1);
     mapSchemaChildren(node, collect);
+
     return node;
   };
+
   collect(schema);
+
   if (hasReferences) {
     return schema;
   }
 
   const definitions: Record<string, SchemaDocument> = {};
   const names = new Map<string, string>();
+
   const rewrite = (node: SchemaDocument): SchemaDocument => {
     const key = JSON.stringify(node);
+
     // Small scalar schemas are cheaper inline than a definition plus references.
     if (key.length < 128 || (counts.get(key) ?? 0) < 2) {
       return mapSchemaChildren(node, rewrite);
     }
+
     let name = names.get(key);
+
     if (name === undefined) {
       name = `schema${names.size + 1}`;
       names.set(key, name);
       definitions[name] = mapSchemaChildren(node, rewrite);
     }
+
     return { $ref: `#/$defs/${name}` };
   };
+
   const result = mapSchemaChildren(schema, rewrite);
+
   if (names.size === 0) {
     return schema;
   }
+
   return { ...result, $defs: definitions };
 };
 
@@ -110,11 +131,14 @@ const referenceTarget = (
       `Only local JSON Schema references are supported: "${reference}".`
     );
   }
+
   const pointer = decodeURIComponent(reference.slice(1));
   const segments = pointer === "" ? [] : pointer.slice(1).split("/");
   let target: unknown = root;
+
   for (const segment of segments) {
     const key = segment.replaceAll("~1", "/").replaceAll("~0", "~");
+
     if (Array.isArray(target)) {
       const index = Number(key);
       const values: unknown[] = target;
@@ -128,9 +152,11 @@ const referenceTarget = (
       target = undefined;
     }
   }
+
   if (!isSchemaDocument(target)) {
     throw new Error(`Unresolved JSON Schema reference: "${reference}".`);
   }
+
   return target;
 };
 
@@ -138,38 +164,49 @@ const referenceTarget = (
 export const resolveJsonSchema = (schema: SchemaDocument): SchemaDocument => {
   const active = new Set<SchemaDocument>();
   const resolved = new Map<SchemaDocument, SchemaDocument>();
+
   const visit = (node: SchemaDocument): SchemaDocument => {
     if (active.has(node)) {
       throw new Error(
         "Circular JSON Schema references are not supported by type generation."
       );
     }
+
     const cached = resolved.get(node);
+
     if (cached !== undefined) {
       return cached;
     }
+
     active.add(node);
     const { $defs: definitions, $ref: reference, ...rest } = node;
     void definitions;
     let result = mapSchemaChildren(rest, visit);
+
     if (reference !== undefined) {
       if (!isStringValue(reference)) {
         throw new Error("JSON Schema $ref must be a string.");
       }
+
       const target = visit(referenceTarget(schema, reference));
       const { $schema: dialect, ...constraints } = result;
+
       if (Object.keys(constraints).length === 0) {
         result = { ...target, ...result };
       } else {
         result = { allOf: [target, constraints] };
+
         if (dialect !== undefined) {
           result.$schema = dialect;
         }
       }
     }
+
     active.delete(node);
     resolved.set(node, result);
+
     return result;
   };
+
   return visit(schema);
 };

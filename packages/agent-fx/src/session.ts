@@ -14,10 +14,13 @@ import { hostSchemaPath, prepareWorkspace } from "./workspace";
 
 const store = async () => {
   const { db } = await import("@patchsmith/db");
+
   const { appAgentLease, appAgentThread } =
     await import("@patchsmith/db/schema/apps");
+
   return { appAgentLease, appAgentThread, db };
 };
+
 const resumeSchema = z.custom<HarnessV1ResumeSessionState>(
   (value) =>
     z
@@ -32,21 +35,25 @@ const resumeSchema = z.custom<HarnessV1ResumeSessionState>(
 
 export const startTurn = async (input: AppAgentInput, runId: string) => {
   const { db, appAgentLease, appAgentThread } = await store();
+
   const resumeFrom = await db.transaction(async (tx) => {
     await tx
       .insert(appAgentLease)
       .values({ appId: input.appId })
       .onConflictDoNothing();
+
     const [lease] = await tx
       .select()
       .from(appAgentLease)
       .where(eq(appAgentLease.appId, input.appId))
       .for("update");
+
     if (!lease || (lease.activeRunId !== null && lease.activeRunId !== runId)) {
       throw new FatalError(
         "This app is already being edited. Retry after the active turn finishes."
       );
     }
+
     const [thread] = await tx
       .select()
       .from(appAgentThread)
@@ -56,25 +63,32 @@ export const startTurn = async (input: AppAgentInput, runId: string) => {
           eq(appAgentThread.id, input.threadId)
         )
       );
+
     if (!thread || thread.invalidatedAt !== null) {
       throw new FatalError(
         "This conversation cannot be resumed. Start a new thread."
       );
     }
+
     const saved =
       thread.resumeState === null
         ? undefined
         : resumeSchema.safeParse(JSON.parse(thread.resumeState));
+
     if (saved && !saved.success) {
       throw new FatalError("Start a new conversation to use fx for this app.");
     }
+
     await tx
       .update(appAgentLease)
       .set({ activeRunId: runId, activeThreadId: input.threadId })
       .where(eq(appAgentLease.appId, input.appId));
+
     return saved?.data;
   });
+
   const sandbox = await prepareSandbox(input, resumeFrom !== undefined);
+
   if (input.schema !== undefined) {
     await sandbox.currentSession().writeFiles([
       {
@@ -83,18 +97,22 @@ export const startTurn = async (input: AppAgentInput, runId: string) => {
       },
     ]);
   }
+
   await prepareWorkspace(sandbox.currentSession(), input);
+
   return resumeFrom;
 };
 
 export const assertOwnership = async (appId: string, runId: string) => {
   const { db, appAgentLease } = await store();
+
   const [lease] = await db
     .select()
     .from(appAgentLease)
     .where(
       and(eq(appAgentLease.appId, appId), eq(appAgentLease.activeRunId, runId))
     );
+
   if (!lease) {
     throw new FatalError("This run no longer owns the app workspace.");
   }
@@ -114,6 +132,7 @@ export const finishTurn = async (
       .from(appAgentLease)
       .where(eq(appAgentLease.appId, input.appId))
       .for("update");
+
     if (lease?.activeRunId !== runId) {
       const [thread] = await tx
         .select()
@@ -124,12 +143,15 @@ export const finishTurn = async (
             eq(appAgentThread.id, input.threadId)
           )
         );
+
       // A durable step may retry after its previous database commit succeeded.
       if (thread?.resumeState === serialized) {
         return;
       }
+
       throw new FatalError("This run no longer owns the app workspace.");
     }
+
     // Keep cancellation and the next writer out until the snapshot is stopped.
     const sandbox = await getSandbox(name);
     await sandbox.stop();
@@ -151,19 +173,23 @@ export const finishTurn = async (
 
 export const cancelTurn = async (appId: string, runId: string) => {
   const { db, appAgentLease, appAgentThread } = await store();
+
   const owned = and(
     eq(appAgentLease.appId, appId),
     eq(appAgentLease.activeRunId, runId)
   );
+
   await db.transaction(async (tx) => {
     const [lease] = await tx
       .select()
       .from(appAgentLease)
       .where(owned)
       .for("update");
+
     if (!lease) {
       return;
     }
+
     // Hold ownership until the VM is gone, including when cancellation is retried.
     if (lease.activeThreadId !== null) {
       await deleteSandbox(lease.activeThreadId);
@@ -181,6 +207,7 @@ export const cancelTurn = async (appId: string, runId: string) => {
           )
         );
     }
+
     await tx
       .update(appAgentLease)
       .set({ activeRunId: null, activeThreadId: null, leaseExpiresAt: null })

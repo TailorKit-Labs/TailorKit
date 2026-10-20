@@ -16,6 +16,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -28,14 +29,18 @@ const key = `projects/${projectId}/apps/${appId}/deployments/${deploymentId}/cli
 const bundle = "export default 'tenant bundle';";
 const get = vi.fn();
 const head = vi.fn();
+
 // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const cacheMiss: Response | undefined = undefined;
+
 const match = vi
   .fn<(request: Request) => Promise<Response | undefined>>()
   .mockResolvedValue(cacheMiss);
+
 const put = vi
   .fn<(_request: Request, _response: Response) => Promise<void>>()
   .mockReturnValue(Promise.resolve());
+
 const waitUntil = vi.fn();
 // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
@@ -45,6 +50,7 @@ const env =
     ASSET_DOMAIN: "tailorkit.app",
     BUNDLES: { get, head },
   } as unknown as Env;
+
 /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
 // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
@@ -66,6 +72,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.stubGlobal("caches", { default: { match, put } });
 });
+
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
@@ -87,6 +94,7 @@ describe("project asset gateway", () => {
             const response = await fetchAsset(
               new Request(url.replace("client.js", suffix), { method })
             );
+
             expect(response.status).toBe(404);
           })
         );
@@ -145,11 +153,13 @@ describe("project asset gateway", () => {
 
   it("serves logos with their image content type", async () => {
     get.mockResolvedValueOnce(object("<svg/>"));
+
     const response = await fetchAsset(
       new Request(
         url.replace("client/client.js", `logos/${"a".repeat(64)}.svg`)
       )
     );
+
     expect(response.headers.get("Content-Type")).toBe("image/svg+xml");
     expect(get).toHaveBeenCalledWith(
       `projects/${projectId}/apps/${appId}/logos/${"a".repeat(64)}.svg`
@@ -167,9 +177,11 @@ describe("project asset gateway", () => {
     "serves bundles for DNS-safe project short ID %s",
     async (shortId) => {
       get.mockResolvedValueOnce(object());
+
       const response = await fetchAsset(
         new Request(url.replace(projectId, shortId))
       );
+
       expect(response.status).toBe(200);
       expect(get).toHaveBeenCalledWith(key.replace(projectId, shortId));
       expect(await response.text()).toBe(bundle);
@@ -272,6 +284,7 @@ it("keeps the response usable when a background cache write fails", async () => 
 
 const gzipObject = (body = bundle) => {
   const bytes = gzipSync(body);
+
   return {
     ...object(),
     body: new Response(bytes).body,
@@ -284,6 +297,7 @@ const cachedGzipHeaders = (size: number, etag?: string) => {
   const headers = assetHeaders({ contentLength: size, etag });
   headers.set("X-Patchsmith-Content-Encoding", "gzip");
   headers.set("Vary", "Accept-Encoding");
+
   return headers;
 };
 
@@ -291,6 +305,7 @@ it.each(["R2", "cache"])(
   "allows CDN negotiation while retaining stored gzip from %s",
   async (source) => {
     const stored = gzipObject();
+
     if (source === "R2") {
       get.mockResolvedValueOnce(stored);
     } else {
@@ -298,9 +313,11 @@ it.each(["R2", "cache"])(
       headers.set("Cache-Control", "public, max-age=86400, no-transform");
       match.mockResolvedValueOnce(new Response(stored.body, { headers }));
     }
+
     const request = new Request(url, {
       headers: { "Accept-Encoding": "br, gzip" },
     });
+
     // Cloudflare normalizes the Worker-facing header even for identity clients.
     Object.defineProperty(request, "cf", {
       value: { clientAcceptEncoding: "identity" },
@@ -317,9 +334,11 @@ it.each(["R2", "cache"])(
 it("serves stored gzip bytes and caches them without double compression", async () => {
   const stored = gzipObject();
   get.mockResolvedValueOnce(stored);
+
   const response = await fetchAsset(
     new Request(url, { headers: { "Accept-Encoding": "br, gzip" } })
   );
+
   expect(response.headers.get("Content-Encoding")).toBe("gzip");
   expect(response.headers.get("Content-Length")).toBe(String(stored.size));
   expect(response.headers.get("Vary")).toBe("Accept-Encoding");
@@ -339,9 +358,11 @@ it.each(["GET", "HEAD"])(
   async (method) => {
     const stored = gzipObject();
     get.mockResolvedValueOnce(stored);
+
     const initial = await fetchAsset(
       new Request(url, { headers: { "Accept-Encoding": "gzip" } })
     );
+
     await initial.arrayBuffer();
     await requireValue(waitUntil.mock.calls[0])[0];
     const [, cached] = requireValue(put.mock.calls[0]);
@@ -350,16 +371,19 @@ it.each(["GET", "HEAD"])(
     const response = await fetchAsset(
       new Request(url, { headers: { "Accept-Encoding": "gzip" }, method })
     );
+
     expect(response.headers.get("Content-Encoding")).toBe("gzip");
     expect(response.headers.get("Content-Length")).toBe(String(stored.size));
     expect(response.headers.get("X-Patchsmith-Content-Encoding")).toBeNull();
     const bytes = Buffer.from(await response.arrayBuffer());
+
     if (method === "HEAD") {
       expect(bytes.byteLength).toBe(0);
     } else {
       expect(bytes).toEqual(gzipSync(bundle));
       expect(gunzipSync(bytes).toString()).toBe(bundle);
     }
+
     expect(get).toHaveBeenCalledOnce();
     expect(head).not.toHaveBeenCalled();
     expect(put).toHaveBeenCalledOnce();
@@ -371,6 +395,7 @@ it.each(["R2", "cache"])(
   async (source) => {
     const stored = gzipObject("a".repeat(maxDeploymentBytes + 1));
     expect(stored.size).toBeLessThan(maxDeploymentBytes);
+
     if (source === "R2") {
       get.mockResolvedValueOnce(stored);
     } else {
@@ -380,6 +405,7 @@ it.each(["R2", "cache"])(
         })
       );
     }
+
     const response = await fetchAsset(new Request(url));
     const body = requireValue(response.body);
     let deliveredBytes = 0;
@@ -389,6 +415,7 @@ it.each(["R2", "cache"])(
           if (!(value instanceof Uint8Array)) {
             throw new Error("Expected asset bytes");
           }
+
           deliveredBytes += value.byteLength;
         }
       })()
@@ -413,6 +440,7 @@ it.each([undefined, "identity", "gzip;q=0, *;q=1"])(
         headers: cachedGzipHeaders(stored.size, stored.httpEtag),
       })
     );
+
     const response = await fetchAsset(
       new Request(url, {
         headers:
@@ -421,6 +449,7 @@ it.each([undefined, "identity", "gzip;q=0, *;q=1"])(
             : undefined,
       })
     );
+
     expect(await response.text()).toBe(bundle);
     expect(response.headers.get("Content-Encoding")).toBeNull();
     expect(response.headers.get("X-Patchsmith-Content-Encoding")).toBeNull();
@@ -436,12 +465,14 @@ it.each(["gzip", "identity"])(
   async (encoding) => {
     const stored = gzipObject();
     head.mockResolvedValueOnce(stored);
+
     const response = await fetchAsset(
       new Request(url, {
         headers: { "Accept-Encoding": encoding },
         method: "HEAD",
       })
     );
+
     expect(response.headers.get("Content-Encoding")).toBe(
       encoding === "gzip" ? "gzip" : null
     );

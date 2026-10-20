@@ -12,6 +12,7 @@ import { resolveFunction } from "./functions";
 
 const actionRunner = (app: AppDefinition, calls: ActionCalls) => {
   const run = createActionExecution(app);
+
   return async (input: Invocation, identity: Identity, signal?: AbortSignal) =>
     await run(input, identity, calls, signal);
 };
@@ -21,6 +22,7 @@ it("dispatches nested functions and preserves their names, identity, execution a
     read: fn.query.handler(() => "rows"),
     save: fn.mutation.handler(() => "saved"),
   });
+
   const app = defineServer({
     tasks: defineRouter({
       run: fn.action
@@ -32,6 +34,7 @@ it("dispatches nested functions and preserves their names, identity, execution a
     }),
     todos,
   });
+
   expect(resolveFunction(app.functions, "todos.read")).toBe(todos.read);
   expect(resolveFunction(app.functions, "tasks.run")).toBe(
     app.functions.tasks.run
@@ -40,6 +43,7 @@ it("dispatches nested functions and preserves their names, identity, execution a
   const api = createApi<typeof app.functions>();
   expect(api.todos.read.name).toBe("todos.read");
   expect(api.tasks.run.name).toBe("tasks.run");
+
   const identity = {
     appId: "a",
     deploymentId: "d",
@@ -50,10 +54,12 @@ it("dispatches nested functions and preserves their names, identity, execution a
     subjectId: "u",
     toolUrl: "https://host.test/api/patchsmith/tools/execute",
   };
+
   const execution = createExecution(app, {
     execute: () => ({ changes: 0, columns: [], rows: [] }),
     transaction: (run) => run(),
   });
+
   expect(
     execution.query(
       v.parse(invocationSchema, { name: api.todos.read.name }),
@@ -82,6 +88,7 @@ it("validates names inside nested groups", () => {
   expect(() =>
     defineServer({ todos: { "invalid.name": fn.query.handler(() => null) } })
   ).toThrow("Invalid function name");
+
   for (const name of [
     "todos..read",
     ".read",
@@ -104,6 +111,7 @@ it("allows the reserved internal invocation namespace without allowing apps to r
   ]) {
     expect(v.parse(invocationSchema, { name })).toEqual({ name });
   }
+
   expect(() => defineServer({ _patchsmith: {} })).toThrow(
     "Invalid function name"
   );

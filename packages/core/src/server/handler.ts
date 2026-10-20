@@ -52,9 +52,11 @@ type AbsolutePath = `/${string}`;
 const resolveReadScopes = (url: URL, availableScopes: PatchsmithScopes) => {
   try {
     const names = url.searchParams.getAll("scopes");
+
     if (names.length === 1 && names[0] === "") {
       return [];
     }
+
     return selectPatchsmithScopes(
       availableScopes,
       names.length ? names : undefined
@@ -62,6 +64,7 @@ const resolveReadScopes = (url: URL, availableScopes: PatchsmithScopes) => {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Invalid scope selection.";
+
     return new Response(message, { status: 400 });
   }
 };
@@ -93,6 +96,7 @@ export const createPatchsmithServer = <
 } => {
   const { basePath, publicOrigin } = normalizeBaseUrl(options.baseUrl);
   const scopeSchemas = validatePatchsmithScopeSchemas(options.scopes);
+
   // SAFETY: The server preserves the supplied typed tool table and normalizes the route base path before constructing its handler.
   const schema = createPatchsmithSchema<
     InferPatchsmithServerComponents<TOptions>,
@@ -105,14 +109,17 @@ export const createPatchsmithServer = <
     tools: options.tools,
     views: options.views,
   });
+
   const platformBaseUrl =
     options.$internal?.platformBaseUrl ?? defaultPlatformBaseUrl;
+
   const platform = createClient({
     baseUrl: platformBaseUrl,
     fetch: options.$internal?.platformFetch,
     responseStyle: "data",
     throwOnError: true,
   });
+
   const platformHeaders =
     options.$internal?.platformHeaders ??
     (options.projectKey !== undefined &&
@@ -120,7 +127,9 @@ export const createPatchsmithServer = <
     options.projectKey !== ""
       ? { authorization: `Bearer ${options.projectKey}` }
       : undefined);
+
   const rpcHandler = new RPCHandler(patchsmithRouter);
+
   const mcp = createMcpTransport({
     hostUrl: publicOrigin + basePath,
     platformHeaders,
@@ -142,6 +151,7 @@ export const createPatchsmithServer = <
       const hostContext = await handlerOptions.authenticate({
         request: requestValue,
       });
+
       if (!hostContext) {
         return null;
       }
@@ -153,6 +163,7 @@ export const createPatchsmithServer = <
       ) {
         throw new Error("Invalid authenticated subject");
       }
+
       return {
         ...hostContext,
         scopes: await validatePatchsmithScopes(
@@ -161,7 +172,9 @@ export const createPatchsmithServer = <
         ),
       };
     };
+
     const url = new URL(request.url);
+
     if (url.pathname === `${basePath}/backend/session`) {
       return await handleBackendSession(
         request,
@@ -170,6 +183,7 @@ export const createPatchsmithServer = <
           const headers = await (isFunctionValue(platformHeaders)
             ? platformHeaders()
             : platformHeaders);
+
           const session = await appsRuntimeSession({
             body: {
               app: platformAppSelector(appId),
@@ -185,9 +199,11 @@ export const createPatchsmithServer = <
             responseStyle: "fields",
             throwOnError: false,
           });
+
           if (session.data) {
             return session.data;
           }
+
           return Response.json(
             session.error ?? { error: "Unable to authorize the app backend" },
             {
@@ -198,6 +214,7 @@ export const createPatchsmithServer = <
         publicOrigin
       );
     }
+
     if (url.pathname === `${basePath}/schema`) {
       return Response.json(schema.serialize(options.schemaSerializer));
     }
@@ -217,6 +234,7 @@ export const createPatchsmithServer = <
         schema,
         scopeSchemas,
       });
+
       const patchsmith = await context.authenticate({ request });
 
       if (!patchsmith) {
@@ -224,15 +242,18 @@ export const createPatchsmithServer = <
       }
 
       const scopes = resolveReadScopes(url, patchsmith.scopes);
+
       if (scopes instanceof Response) {
         return scopes;
       }
+
       if (scopes.length === 0) {
         return Response.json([], { headers: { "cache-control": "no-store" } });
       }
 
       const items: AppsListResponses[200]["items"] = [];
       let page = 1;
+
       for (;;) {
         // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
         const result = await appsList({
@@ -241,13 +262,17 @@ export const createPatchsmithServer = <
           headers: context.platformHeaders,
           throwOnError: true,
         });
+
         const data = "data" in result ? result.data : result;
         items.push(...data.items);
+
         if (!data.pagination.hasMore) {
           break;
         }
+
         page += 1;
       }
+
       return Response.json(items, { headers: { "cache-control": "no-store" } });
     }
 

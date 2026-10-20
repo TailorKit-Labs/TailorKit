@@ -24,6 +24,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -38,13 +39,17 @@ export interface PatchsmithPluginOptions {
 
 const flattenPlugins = async (option: PluginOption): Promise<Plugin[]> => {
   const plugin = await option;
+
   if (!(plugin !== undefined && plugin !== null && plugin !== false)) {
     return [];
   }
+
   if (Array.isArray(plugin)) {
     const awaitedResult1 = await Promise.all(plugin.map(flattenPlugins));
+
     return awaitedResult1.flat();
   }
+
   return [plugin];
 };
 
@@ -53,6 +58,7 @@ const getInstalledPreactVersion = (root: string): string => {
 
   try {
     const packageJsonPath = require.resolve("preact/package.json");
+
     const packageJson = v.parse(
       v.object({ version: v.optional(v.string()) }),
       require(packageJsonPath)
@@ -86,26 +92,32 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
   let resolved: ResolvedConfig;
   let customPlugins: Plugin[] = [];
   const instanceModules = new Map<string, InstanceModule>();
+
   const cleanup = async () => {
     if (serverWatcher && "close" in serverWatcher) {
       await serverWatcher.close();
     }
+
     await fileEntry?.close();
   };
+
   const writeBuildExtras = async (): Promise<void> => {
     const { views, instanceResolvers } = await readClientManifest(
       path.join(clientOutDir, "client.js")
     );
+
     const resolverNames = new Set(
       instanceResolvers.map((registration) => registration.resolver)
     );
+
     const activeModules = [...instanceModules.values()]
-      .map((module) => ({
-        ...module,
-        names: module.names.filter((name) => resolverNames.has(name)),
-      }))
-      .filter((module) => module.names.length)
+      .flatMap((module) => {
+        const names = module.names.filter((name) => resolverNames.has(name));
+
+        return names.length ? [{ ...module, names }] : [];
+      })
       .toSorted((a, b) => a.filename.localeCompare(b.filename));
+
     if (
       activeModules.reduce(
         (count, module) => count + module.names.length,
@@ -116,9 +128,11 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
         "Client references an instance resolver that was not extracted by the app build."
       );
     }
+
     if (serverWatcher && "close" in serverWatcher) {
       await serverWatcher.close();
     }
+
     serverWatcher = await buildServer(
       loaded,
       watching,
@@ -132,13 +146,16 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
         resolve: resolved.resolve,
       }
     );
+
     interface LogoManifest {
       dark?: string;
       light?: string;
     }
+
     const logoManifest: LogoManifest = {};
     await forEachSequential(["light", "dark"] as const, async (variant) => {
       const configuredPath = loaded.config.logos?.[variant];
+
       if (
         !(
           configuredPath !== undefined &&
@@ -148,12 +165,15 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
       ) {
         return;
       }
+
       const extension = path.extname(configuredPath).toLowerCase().slice(1);
+
       const contentType = new Map<string, LogoContentType>([
         ["png", "image/png"],
         ["svg", "image/svg+xml"],
         ["webp", "image/webp"],
       ]).get(extension);
+
       if (!contentType) {
         throw new Error(
           `The ${variant} logo must be an SVG, PNG, or WebP file.`
@@ -177,6 +197,7 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
       "utf-8"
     );
   };
+
   const plugins: Plugin[] = [
     {
       buildEnd: async (error) => {
@@ -197,6 +218,7 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
         );
         watching = Boolean(config.build?.watch);
         outputDirectory = config.build?.outDir ?? ".patchsmith";
+
         return {
           build: {
             emptyOutDir: true,
@@ -232,6 +254,7 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
           config.configFile !== ""
             ? path.dirname(config.configFile)
             : config.root;
+
         loaded = await loadPatchsmithConfig(
           path.resolve(root, options.configPath ?? "patchsmith.config.ts")
         );
@@ -250,15 +273,18 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
           resolvedOutDir,
           watching
         );
+
         for (const build of [
           config.build,
           requireValue(config.environments.client).build,
         ]) {
           build.outDir = clientOutDir;
+
           if (build.lib !== false) {
             build.lib.entry = fileEntry.entry;
           }
         }
+
         resolved = config;
       },
       enforce: "pre",
@@ -290,14 +316,17 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
             "App server implementations cannot be imported into a browser bundle. Import api from #patchsmith and server types with import type."
           );
         }
+
         if (importer !== undefined && importer !== null && importer !== "") {
           const result = await this.resolve(id, importer, { skipSelf: true });
+
           if (result?.id.split("?")[0] === serverEntry) {
             throw new Error(
               "App server implementations cannot be imported into a browser bundle. Import api from #patchsmith and server types with import type."
             );
           }
         }
+
         return null;
       },
     },
@@ -306,8 +335,10 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
       load: (id) => {
         if (id === preactPackageJsonModuleId) {
           const version = JSON.stringify(preactVersion);
+
           return `export const version = ${version}; export default { version: ${version} };`;
         }
+
         return null;
       },
       name: "patchsmith-preact-package-json",
@@ -315,8 +346,10 @@ export const patchsmith = (options: PatchsmithPluginOptions = {}): Plugin[] => {
         id === preactPackageJson ? preactPackageJsonModuleId : null,
     },
   ];
+
   for (const plugin of plugins) {
     plugin.apply = "build";
   }
+
   return plugins;
 };

@@ -45,12 +45,15 @@ export const createPatchsmithUploadManifest = (
   const assets: PatchsmithUploadManifest["assets"] = {
     client: "client/client.js",
   };
+
   if (server) {
     assets.server = "server/server.js";
   }
+
   if (logos && Object.keys(logos).length > 0) {
     assets.logos = logos;
   }
+
   return v.parse(patchsmithUploadManifestSchema, {
     appId,
     assets,

@@ -24,20 +24,26 @@ export const createExperimental = (options: {
     if (!input.appId || input.appId.length > 256) {
       throw new TypeError("A deployed app ID is required.");
     }
+
     const scope = v.parse(
       v.strictObject({ name: v.string(), value: v.unknown() }),
       input.scope
     );
+
     const scopes = await validatePatchsmithScopes(options.scopeSchemas, {
       [scope.name]: scope.value,
     });
+
     const [validatedScope] = selectPatchsmithScopes(scopes, [scope.name]);
+
     if (!validatedScope) {
       throw new TypeError("An installation scope is required.");
     }
+
     const headers = await (isFunctionValue(options.platformHeaders)
       ? options.platformHeaders()
       : options.platformHeaders);
+
     if (
       !(
         new Headers(headers).get("authorization")?.startsWith("Bearer ") ===
@@ -46,6 +52,7 @@ export const createExperimental = (options: {
     ) {
       throw new Error("A Patchsmith projectKey is required to install apps.");
     }
+
     const { data } = await appsInstall({
       body: { app: platformAppSelector(input.appId), scope: validatedScope },
       client: options.platform,
@@ -53,6 +60,7 @@ export const createExperimental = (options: {
       responseStyle: "fields",
       throwOnError: true,
     });
+
     return data;
   },
 });

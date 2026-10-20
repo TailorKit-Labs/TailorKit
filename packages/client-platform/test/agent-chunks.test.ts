@@ -101,23 +101,29 @@ it.each(Object.values(chunks))(
   "matches the SDK validator for $type chunks and malformed fields",
   async (chunk) => {
     const validateSdk = sdk.validate;
+
     if (!validateSdk) {
       throw new Error("The SDK must supply a chunk validator");
     }
+
     const candidates: object[] = [chunk, { ...chunk, futureField: true }];
+
     for (const key of Object.keys(chunk)) {
       const omitted = { ...chunk };
       Reflect.deleteProperty(omitted, key);
       candidates.push(omitted);
+
       for (const value of [null, undefined, 1, true, {}, [], "unexpected"]) {
         candidates.push({ ...chunk, [key]: value });
       }
     }
+
     for (const candidate of candidates) {
       // oxlint-disable-next-line eslint/no-await-in-loop -- Compare each candidate to the asynchronous upstream validator with a failure tied to that input.
       const expected = await validateSdk(candidate);
       const actual = v.safeParse(agentChunkSchema, candidate);
       expect(actual.success, JSON.stringify(candidate)).toBe(expected.success);
+
       if (actual.success && expected.success) {
         expect(actual.output).toEqual(expected.value);
       }

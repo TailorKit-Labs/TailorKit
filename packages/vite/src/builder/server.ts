@@ -20,6 +20,7 @@ import { checkAppSchema } from "./schema-check";
 
 const containsImplementation = (parent: string, child: string) => {
   const relative = path.relative(parent, child);
+
   return (
     relative === "" ||
     (!path.isAbsolute(relative) &&
@@ -30,6 +31,7 @@ const containsImplementation = (parent: string, child: string) => {
 
 const overlaps = (source: string, destination: string) => {
   const contains = containsImplementation;
+
   return contains(source, destination) || contains(destination, source);
 };
 
@@ -41,10 +43,12 @@ export const validateServerBuildOutput = (
   if (!loaded.config.server) {
     return;
   }
+
   const migrationsDirectory = appDatabasePaths(
     loaded.root,
     loaded.config.server.migrations
   ).migrations;
+
   for (const name of ["server", "client", "migrations", "tmp"]) {
     if (overlaps(migrationsDirectory, path.join(output, name))) {
       throw new Error("App build output must not overlap migration source");
@@ -68,16 +72,20 @@ export const buildServer = async (
   viteConfig: UserConfig = {}
 ) => {
   const config = loaded.config.server;
+
   if (!config) {
     /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
     return undefined;
   }
+
   const output = buildOutDir ?? path.resolve(loaded.root, ".patchsmith");
   const directory = path.join(output, "server");
+
   const migrationsDirectory = appDatabasePaths(
     loaded.root,
     config.migrations
   ).migrations;
+
   const migrationsOutput = path.join(output, "migrations");
   const temporaryRoot = path.join(output, "tmp");
   validateServerBuildOutput(loaded, output);
@@ -88,6 +96,7 @@ export const buildServer = async (
   const entry = path.join(temporary, "entry.mjs");
   let watching = false;
   let ready: (() => void) | undefined;
+
   const initialBuild = watch
     ? (async () => {
         const {
@@ -95,14 +104,17 @@ export const buildServer = async (
           resolve,
           reject: rejectPending,
         } = Promise.withResolvers<ReturnType<() => void>>();
+
         try {
           ready = resolve;
         } catch (error) {
           rejectPending(error);
         }
+
         await pendingPromise;
       })()
     : undefined;
+
   try {
     await writeFile(
       entry,
@@ -115,6 +127,7 @@ export { default as migrations } from "patchsmith:migrations";
 export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
 `
     );
+
     const result = await build({
       build: {
         emptyOutDir: false,
@@ -147,15 +160,19 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
             if (id !== "\0patchsmith:migrations") {
               return undefined;
             }
+
             const { migrations, files } = await readAppMigrations(
               migrationsDirectory,
               config.migrations === undefined
             );
+
             await checkAppSchema(loaded.root, migrationsDirectory);
             this.addWatchFile(appDatabasePaths(loaded.root).schema);
+
             for (const file of files) {
               this.addWatchFile(file);
             }
+
             await rm(migrationsOutput, { force: true, recursive: true });
             await mkdir(migrationsOutput, { recursive: true });
             await cp(migrationsDirectory, migrationsOutput, {
@@ -164,8 +181,10 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
               if (config.migrations === undefined && isMissingFile(error)) {
                 return;
               }
+
               throw error;
             });
+
             return `export default ${JSON.stringify(migrations)};`;
           },
           name: "patchsmith-app-migrations",
@@ -179,7 +198,9 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
       root: loaded.root,
       ssr: { noExternal: true },
     });
+
     watching = watch;
+
     if (watch && "on" in result && initialBuild) {
       try {
         await Promise.race([
@@ -190,11 +211,13 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
               resolve: _,
               reject,
             } = Promise.withResolvers<never>();
+
             try {
               result.on("event", (event) => {
                 if (event.code === "ERROR") {
                   reject(event.error);
                 }
+
                 if (event.code === "END") {
                   ready?.();
                 }
@@ -202,6 +225,7 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
             } catch (error) {
               reject(error);
             }
+
             return await pendingPromise;
           })(),
         ]);
@@ -210,6 +234,7 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
         throw error;
       }
     }
+
     return result;
   } finally {
     if (!watching) {

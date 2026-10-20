@@ -17,6 +17,7 @@ export const OrgSlugAvailabilityIndicator = ({
     submitError !== undefined && submitError !== null && submitError !== ""
       ? "unavailable"
       : availability.status;
+
   const message = submitError ?? availability.message;
 
   if (status === "idle") {

@@ -181,6 +181,7 @@ export interface PatchsmithHostContext<TScopes = PatchsmithScopes> {
   /** Stable identifier of the authenticated product user or service principal. */
   subjectId: string;
 }
+
 export interface PatchsmithHandlerOptions<TScopes = PatchsmithScopes> {
   authenticate: (ctx: {
     request: Request;
@@ -189,6 +190,7 @@ export interface PatchsmithHandlerOptions<TScopes = PatchsmithScopes> {
     | null
     | Promise<PatchsmithHostContext<TScopes> | null>;
 }
+
 export type PatchsmithHandlerContext<TScopes = PatchsmithScopes> =
   PatchsmithHostContext<TScopes>;
 

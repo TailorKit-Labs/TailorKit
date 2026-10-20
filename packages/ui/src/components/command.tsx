@@ -17,6 +17,7 @@ import {
 } from "#ui/autocomplete";
 
 export { AutocompleteCollection as CommandCollection } from "#ui/autocomplete";
+
 export { Dialog as CommandDialogPrimitive } from "@base-ui/react/dialog";
 
 export const CommandDialog: typeof CommandDialogPrimitive.Root =

@@ -102,6 +102,7 @@ export interface PatchsmithConfig extends v.InferInput<
    */
   slug: string;
 }
+
 export type ResolvedPatchsmithConfig = v.InferOutput<
   typeof patchsmithConfigSchema
 >;
@@ -110,4 +111,5 @@ export { patchsmithConfigSchema };
 
 export const defineConfig = (config: PatchsmithConfig): PatchsmithConfig =>
   config;
+
 export const definePatchsmithConfig = defineConfig;

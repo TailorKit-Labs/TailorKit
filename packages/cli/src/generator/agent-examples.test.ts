@@ -106,6 +106,7 @@ const schema: PatchsmithSchemaFile = {
 
 const fileExample =
   /<!-- (?<mode>example|continue): (?<filename>[^ ]+) -->\s*```tsx?\n(?<source>[\s\S]*?)```/gu;
+
 const codeBlock = /```(?<language>tsx?)\n(?<source>[\s\S]*?)```/gu;
 const externalPackage = /^(?:patchsmith|preact|valibot)(?:\/|$)/u;
 
@@ -117,6 +118,7 @@ const declaration = (specifier: string) =>
 
 it("typechecks and bundles examples with scaffold imports and the public SDK", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "patchsmith-agent-examples-"));
+
   try {
     await generateApp({
       bare: true,
@@ -133,6 +135,7 @@ it("typechecks and bundles examples with scaffold imports and the public SDK", a
       targetDirectory: root,
       tooling: "vite",
     });
+
     const documents = await Promise.all(
       [
         "../../../agent-fx/src/skills/database.md",
@@ -146,26 +149,34 @@ it("typechecks and bundles examples with scaffold imports and the public SDK", a
           await readFile(new URL(filename, import.meta.url), "utf-8")
       )
     );
+
     const sources: Record<string, string> = {};
+
     for (const document of documents) {
       for (const match of document.matchAll(fileExample)) {
         const { filename, mode, source } = match.groups ?? {};
+
         if (filename === undefined || source === undefined) {
           throw new Error("Invalid example marker.");
         }
+
         if (mode === "continue") {
           if (sources[filename] === undefined) {
             throw new Error(`Missing initial snippet: ${filename}`);
           }
+
           sources[filename] += `\n${source}`;
           continue;
         }
+
         if (sources[filename] !== undefined) {
           throw new Error(`Duplicate example: ${filename}`);
         }
+
         sources[filename] = source;
       }
     }
+
     expect(Object.keys(sources).length).toBeGreaterThanOrEqual(10);
     sources["src/examples/source-aliases.ts"] =
       'export { NoteEditor } from "#components/note-editor";\nexport { Empty } from "#components/empty";\nexport { default as notes } from "#functions/notes";';
@@ -173,42 +184,52 @@ it("typechecks and bundles examples with scaffold imports and the public SDK", a
       "export const Empty = () => null;";
     // Compile the independent action and legacy form snippets with their API namespaces.
     const server = sources["src/server.ts"];
+
     if (server === undefined) {
       throw new Error("Missing registration example.");
     }
+
     sources["src/server.ts"] =
       `import preview from "#functions/preview";\n${server.replace("defineServer({ notes })", "defineServer({ notes, todos: notes, preview })")}`;
     sources["src/patchsmith.gen.ts"] = renderGeneratedTypes(schema, {
       serverModule: "./server",
     });
+
     const references = renderGeneratedReferences(schema, {
       bindingsPath: "../src/patchsmith.gen.ts",
       hasApi: true,
     });
+
     expect(references["components/RequiredText.md"]).toContain(
       "| label | yes |"
     );
     expect(references["components/RequiredText.md"]).toContain("maximum: 200");
     let count = 0;
+
     for (const reference of Object.values(references)) {
       for (const match of reference.matchAll(codeBlock)) {
         const { language, source } = match.groups ?? {};
+
         if (language === undefined || source === undefined) {
           throw new Error("Invalid generated code block.");
         }
+
         sources[`src/examples/generated-${count}.${language}`] = source;
         count += 1;
       }
     }
+
     expect(count).toBeGreaterThanOrEqual(8);
     await Promise.all(
       Object.entries(sources).map(async ([filename, content]) => {
         const destination = path.resolve(root, filename);
+
         if (!destination.startsWith(`${root}${path.sep}`)) {
           throw new Error(
             `Example path leaves the temporary workspace: ${filename}`
           );
         }
+
         await mkdir(path.dirname(destination), { recursive: true });
         await writeFile(destination, content);
       })
@@ -217,9 +238,11 @@ it("typechecks and bundles examples with scaffold imports and the public SDK", a
     const preact = path.dirname(require.resolve("preact/package.json"));
     const appServer = import.meta.resolve("@patchsmith/app/server");
     const database = findPackageJSON("@patchsmith/app-db", appServer);
+
     if (database === undefined) {
       throw new Error("Missing public database package.");
     }
+
     await writeFile(
       path.join(root, "tsconfig.json"),
       JSON.stringify({
@@ -250,16 +273,19 @@ it("typechecks and bundles examples with scaffold imports and the public SDK", a
         include: ["src"],
       })
     );
+
     const compiler = path.join(
       path.dirname(require.resolve("typescript/package.json")),
       "bin/tsc"
     );
+
     // oxlint-disable-next-line typescript/strict-void-return -- promisify uses execFile's completion callback, not its ChildProcess return value.
     const result = await promisify(execFile)(process.execPath, [
       compiler,
       "-p",
       path.join(root, "tsconfig.json"),
     ]);
+
     expect(result.stdout).toBe("");
     await build({
       build: {

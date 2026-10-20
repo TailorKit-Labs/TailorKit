@@ -13,4 +13,5 @@ export const patchsmithRouter = {
 };
 
 export type PatchsmithRouter = typeof patchsmithRouter;
+
 export type PatchsmithRouterClient = RouterClient<PatchsmithRouter>;

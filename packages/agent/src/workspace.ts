@@ -29,6 +29,7 @@ export const prepareWorkspace = async (
   const appExists = Boolean(
     await session.readFileToBuffer({ path: "/workspace/app/package.json" })
   );
+
   const setupPending =
     appExists &&
     Boolean(
@@ -36,7 +37,9 @@ export const prepareWorkspace = async (
         path: `/workspace/app/${setupMarker}`,
       })
     );
+
   const appReady = appExists && !setupPending;
+
   if (
     appReady &&
     (await session.readFileToBuffer({
@@ -59,6 +62,7 @@ export const prepareWorkspace = async (
       env: { CI: "true" },
       timeoutMs: 5 * 60_000,
     });
+
     if (result.exitCode !== 0) {
       const stderr = await result.stderr();
       throw new Error(

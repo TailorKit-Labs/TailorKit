@@ -7,6 +7,7 @@ import type { Schema, SchemaSerializer } from "./shared";
 import { serializeSchema } from "./shared";
 
 export type ToolKind = "client" | "server";
+
 export interface ContractTool<
   K extends ToolKind = ToolKind,
   I extends Schema | undefined = Schema | undefined,
@@ -18,9 +19,11 @@ export interface ContractTool<
   input: <N extends Schema>(schema: N) => ContractTool<K, N, O>;
   output: <N extends Schema>(schema: N) => ContractTool<K, I, N>;
 }
+
 export interface ContractTools {
   [name: string]: ContractTool | ContractTools;
 }
+
 const build = <
   K extends ToolKind,
   I extends Schema | undefined,
@@ -36,22 +39,26 @@ const build = <
   kind,
   output: (schema) => build(kind, input, schema),
 });
+
 export const tool = {
   client: () => build<"client", undefined, undefined>("client"),
   server: () => build<"server", undefined, undefined>("server"),
 };
+
 export type InferToolInput<T> =
   T extends ContractTool<ToolKind, infer I>
     ? I extends Schema
       ? StandardSchemaV1.InferInput<I>
       : undefined
     : never;
+
 export type InferToolOutput<T> =
   T extends ContractTool<ToolKind, Schema | undefined, infer O>
     ? O extends Schema
       ? StandardSchemaV1.InferOutput<O>
       : ReturnType<() => void>
     : never;
+
 export interface ToolIdentity {
   readonly subjectId: string;
   readonly installationId: string;
@@ -61,11 +68,13 @@ export interface ToolIdentity {
   readonly scope: { name: string; value: PatchsmithScope };
   readonly expiresAt: number;
 }
+
 export interface ToolContext {
   readonly identity: ToolIdentity;
   readonly scope: ToolIdentity["scope"];
   readonly requestId: string;
 }
+
 export interface ToolImplementationTree<TOutput = unknown> {
   [name: string]:
     | {
@@ -76,6 +85,7 @@ export interface ToolImplementationTree<TOutput = unknown> {
       }["bivarianceHack"]
     | ToolImplementationTree<TOutput>;
 }
+
 export type ToolImplementations<
   T extends ContractTools,
   K extends ToolKind,
@@ -110,6 +120,7 @@ export type ToolImplementations<
               >
         : ToolImplementations<Extract<T[N], ContractTools>, K>;
     };
+
 export interface ToolCallerTree {
   [name: string]:
     | ((
@@ -117,6 +128,7 @@ export interface ToolCallerTree {
       ) => Promise<StandardSchemaV1.InferOutput<Schema>>)
     | ToolCallerTree;
 }
+
 export type ToolCallers<
   T extends ContractTools,
   K extends ToolKind = ToolKind,
@@ -139,6 +151,7 @@ export type ToolCallers<
           ) => Promise<InferToolOutput<T[N]>>
         : ToolCallers<Extract<T[N], ContractTools>, K>;
     };
+
 const isContractTool = (
   value: ContractTool | ContractTools
 ): value is ContractTool => value.$patchsmithToolDefinition === true;
@@ -148,6 +161,7 @@ export const flattenTools = (
   prefix = ""
 ): Map<string, ContractTool> => {
   const result = new Map<string, ContractTool>();
+
   for (const [name, value] of Object.entries(tools)) {
     if (
       !/^[a-zA-Z][a-zA-Z0-9_]{0,63}$/u.test(name) ||
@@ -155,15 +169,19 @@ export const flattenTools = (
     ) {
       throw new Error(`Invalid tool name "${name}"`);
     }
+
     const path = prefix + name;
+
     if (isContractTool(value)) {
       const leaf = value;
+
       if (
         !["client", "server"].includes(leaf.kind) ||
         !(leaf.definition !== undefined && leaf.definition !== null)
       ) {
         throw new Error(`Invalid tool declaration "${path}"`);
       }
+
       result.set(path, leaf);
     } else {
       for (const [key, leaf] of flattenTools(value, `${path}.`)) {
@@ -171,17 +189,21 @@ export const flattenTools = (
       }
     }
   }
+
   return result;
 };
+
 export const serializeTools = (
   tools: ContractTools,
   serializer?: SchemaSerializer
 ): PatchsmithSchemaSpec["tools"] => {
   const result: PatchsmithSchemaSpec["tools"] = {};
+
   for (const [name, value] of Object.entries(tools)) {
     if (!(value !== undefined && value !== null)) {
       continue;
     }
+
     if (isContractTool(value)) {
       const leaf = value;
       result[name] = {
@@ -193,8 +215,10 @@ export const serializeTools = (
       result[name] = serializeTools(value, serializer);
     }
   }
+
   return result;
 };
+
 type ParsedToolValue<TSchema extends Schema | undefined> =
   TSchema extends Schema ? StandardSchemaV1.InferOutput<TSchema> : undefined;
 
@@ -211,11 +235,15 @@ export async function validateToolValue(
     if (value !== undefined) {
       throw new Error("Tool expects no value");
     }
+
     return value;
   }
+
   const result = await schema["~standard"].validate(value);
+
   if (result.issues) {
     throw new Error("Invalid tool payload");
   }
+
   return result.value;
 }

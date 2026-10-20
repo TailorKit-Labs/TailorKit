@@ -70,9 +70,11 @@ const enforceTwoFactorAfterSocialSignIn = createAuthMiddleware(async (ctx) => {
   ctx.context.setNewSession(null);
 
   const maxAge = 600;
+
   const twoFactorCookie = ctx.context.createAuthCookie("two_factor", {
     maxAge,
   });
+
   const identifier = `2fa-${crypto.randomUUID()}`;
   const expiresAt = new Date(Date.now() + maxAge * 1000);
 
@@ -117,6 +119,7 @@ const createSecondaryStorage = (): SecondaryStorage | undefined => {
 };
 
 const socialProviders: NonNullable<BetterAuthOptions["socialProviders"]> = {};
+
 if (
   env.GITHUB_CLIENT_ID !== undefined &&
   env.GITHUB_CLIENT_ID !== null &&
@@ -131,6 +134,7 @@ if (
     scope: ["user:email"],
   };
 }
+
 if (
   env.GOOGLE_CLIENT_ID !== undefined &&
   env.GOOGLE_CLIENT_ID !== null &&
@@ -155,8 +159,10 @@ const buildAuth = () => {
 
   const backgroundTaskHandler =
     env.VERCEL === true ? vercelWaitUntil : noopWaitUntil;
+
   const secondaryStorage = createSecondaryStorage();
   const productionUrl = getProductionUrl(env);
+
   const passkeyRpID =
     env.VERCEL_ENV === "production"
       ? new URL(productionUrl ?? getBaseUrl(env)).hostname
@@ -354,4 +360,5 @@ export const createAuth = (): ReturnType<typeof buildAuth> => buildAuth();
 export const auth: ReturnType<typeof buildAuth> = createAuth();
 
 export type Session = typeof auth.$Infer.Session.session;
+
 export type User = typeof auth.$Infer.Session.user;

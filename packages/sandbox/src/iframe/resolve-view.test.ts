@@ -8,6 +8,7 @@ import type { AppClient, ViewRequest } from "./resolve-view";
 
 const viewResolver = () => {
   const root = document.createElement("div");
+
   return (client: AppClient, props: ViewRequest) => {
     renderClient(client, props, root);
   };
@@ -18,6 +19,7 @@ const viewClient = () => {
   const navigation = { component: vi.fn() };
   const general = { component: vi.fn() };
   const detail = { component: vi.fn() };
+
   return {
     client: {
       $runtime: {
@@ -85,9 +87,11 @@ describe("slot view resolution", () => {
     (status) => {
       const resolve = viewResolver();
       const { client, render } = viewClient();
+
       const layers = viewLayers.map((layer) =>
         layer.path === "/users/detail" ? { ...layer, status } : layer
       );
+
       resolve(client, resolveProps("navbar", layers));
       expect(render.mock.calls[0]?.[0].props.status).toBe("ready");
       resolve(client, resolveProps("panel", layers));
@@ -102,10 +106,12 @@ describe("slot view resolution", () => {
   it("falls back within a slot using the parent's own readiness", () => {
     const resolve = viewResolver();
     const { client, general, render } = viewClient();
+
     const fallbackClient = {
       ...client,
       slots: { panel: { "/users": general } },
     };
+
     resolve(
       fallbackClient,
       resolveProps(
@@ -308,6 +314,7 @@ describe("controlled slot rendering", () => {
 
 const clientImplementation = () => {
   const { client: clientValue, detail } = viewClient();
+
   return {
     ...clientValue,
     slots: {
@@ -324,6 +331,7 @@ describe("instance rendering", () => {
     key: "overview",
     metadata: { title: "Overview" },
   };
+
   const request = { ...resolveProps("panel"), instance };
   const client = clientImplementation;
 
@@ -348,6 +356,7 @@ describe("instance rendering", () => {
       const layers = viewLayers.map((layer) =>
         layer.path === "/users/detail" ? { ...layer, status } : layer
       );
+
       expect(resolveView(client(), { ...request, layers })?.props).toEqual({
         context: undefined,
         status,

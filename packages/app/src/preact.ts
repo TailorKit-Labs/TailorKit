@@ -37,6 +37,7 @@ export const ClientProvider = ({
 }: ClientProviderProps) => {
   const errorHandler = useRef(onError);
   errorHandler.current = onError;
+
   const store = useMemo(
     () =>
       new QueryStore(client ?? createClient(), !client, (error) =>
@@ -44,22 +45,26 @@ export const ClientProvider = ({
       ),
     [client]
   );
+
   useLayoutEffect(
     () => () => {
       store.dispose();
     },
     [store]
   );
+
   return h(Context.Provider, { value: store }, children);
 };
 
 const useQueryStore = () => {
   const store = useContext(Context);
+
   if (!store) {
     throw new Error(
       "Patchsmith backend hooks require a ClientProvider at the app root."
     );
   }
+
   return store;
 };
 
@@ -68,6 +73,7 @@ export interface QueryOptions {
 }
 
 type InputArguments<I> = undefined extends I ? [input?: I] : [input: I];
+
 type QueryArguments<I> = undefined extends I
   ? [input?: I, options?: QueryOptions]
   : [input: I, options?: QueryOptions];
@@ -88,6 +94,7 @@ export const useQuery = <I, O>(
   const { name } = ref;
   const serialized = serializeInput(input);
   const key = `${name}\0${serialized}`;
+
   // SAFETY: serializeInput produced serialized from this reference's own input; this parses local transport-normalized input rather than external JSON.
   const stableInput = useMemo(
     () =>
@@ -97,10 +104,12 @@ export const useQuery = <I, O>(
         .input,
     [serialized]
   );
+
   const stableReference = useMemo(
     () => reference<"query", I, O>(name, "query"),
     [name]
   );
+
   // SAFETY: This cache key identifies the same reference and serialized input, so its state is populated only by that reference's O-typed subscription.
   const query = useMemo(
     () =>
@@ -115,12 +124,14 @@ export const useQuery = <I, O>(
       ),
     [store, key, enabled]
   );
+
   const state = useStore(query);
   useEffect(
     () =>
       enabled ? store.watch(key, stableReference, stableInput) : undefined,
     [store, key, enabled, stableInput, stableReference]
   );
+
   return {
     ...state,
     isError: state.status === "error",
@@ -154,6 +165,7 @@ const useCall = <K extends "mutation" | "action", I, O>(
 ) => {
   const store = useQueryStore();
   const { name } = ref;
+
   const identity = useMemo(
     () => ({
       kind,
@@ -163,8 +175,10 @@ const useCall = <K extends "mutation" | "action", I, O>(
     }),
     [store, name, kind]
   );
+
   const state = useStore(identity.state);
   const current = useRef({ identity, mounted: true, sequence: 0 });
+
   if (current.current.identity !== identity) {
     current.current = {
       identity,
@@ -172,32 +186,39 @@ const useCall = <K extends "mutation" | "action", I, O>(
       sequence: current.current.sequence + 1,
     };
   }
+
   const callbacks = useRef(options);
   callbacks.current = options;
   // Preact 11 defers passive cleanup; invalidate pending calls during unmount itself.
   useLayoutEffect(() => {
     current.current.mounted = true;
+
     return () => {
       current.current.mounted = false;
       current.current.sequence += 1;
     };
   }, []);
+
   const runAsync = useCallback(
     async (...[input]: InputArguments<I>): Promise<O> => {
       current.current.sequence += 1;
       const { sequence } = current.current;
       const settings = callbacks.current;
+
       // SAFETY: InputArguments requires an I value unless I includes undefined; destructuring its conditional tuple loses that relationship.
       const args =
         /* oxlint-disable typescript/no-unsafe-type-assertion -- InputArguments requires an I value unless I includes undefined; destructuring its conditional tuple loses that relationship. */
         input as I;
+
       /* oxlint-enable typescript/no-unsafe-type-assertion */
       const isCurrent = () =>
         current.current.mounted &&
         current.current.identity === identity &&
         current.current.sequence === sequence;
+
       identity.state.set({ ...idleCall, status: "pending" });
       let data: O;
+
       try {
         data =
           kind === "mutation"
@@ -211,6 +232,7 @@ const useCall = <K extends "mutation" | "action", I, O>(
               );
       } catch (error) {
         const failure = appError(error);
+
         if (isCurrent()) {
           identity.state.set({
             data: undefined,
@@ -219,17 +241,21 @@ const useCall = <K extends "mutation" | "action", I, O>(
           });
           settings.onError?.(failure, args);
         }
+
         store.onError(failure);
         throw failure;
       }
+
       if (isCurrent()) {
         identity.state.set({ data, error: null, status: "success" });
         settings.onSuccess?.(data, args);
       }
+
       return data;
     },
     [identity, kind, store, name]
   );
+
   const run = useCallback(
     (...args: InputArguments<I>) => {
       void (async () => {
@@ -242,10 +268,12 @@ const useCall = <K extends "mutation" | "action", I, O>(
     },
     [runAsync]
   );
+
   const reset = useCallback(() => {
     current.current.sequence += 1;
     identity.state.set(idleCall);
   }, [identity]);
+
   return {
     ...state,
     isError: state.status === "error",
@@ -267,6 +295,7 @@ export const useMutation = <I, O>(
   options: CallOptions<I, O> = {}
 ): MutationResult<I, O> => {
   const { run, runAsync, ...state } = useCall("mutation", ref, options);
+
   return { ...state, mutate: run, mutateAsync: runAsync };
 };
 
@@ -280,5 +309,6 @@ export const useAction = <I, O>(
   options: CallOptions<I, O> = {}
 ): ActionResult<I, O> => {
   const { run, runAsync, ...state } = useCall("action", ref, options);
+
   return { ...state, execute: run, executeAsync: runAsync };
 };

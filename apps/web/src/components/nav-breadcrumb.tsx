@@ -89,11 +89,14 @@ const addStaticSegments = (
   if (id.includes("/projects") && !id.includes("$projectSlug")) {
     segments.push({ label: "Projects" });
   }
+
   if (id.endsWith("/apps")) {
     segments.push({ label: "Apps" });
   }
+
   if (id.endsWith("/apps/$appId")) {
     const appsSegment = segments.find((segment) => segment.label === "Apps");
+
     if (appsSegment) {
       appsSegment.href = `/${params.orgSlug}/${params.projectSlug}/apps`;
     } else {
@@ -102,19 +105,23 @@ const addStaticSegments = (
         label: "Apps",
       });
     }
+
     const appName = loaderData?.name ?? params.appId;
 
     segments.push({ label: appName });
   }
+
   if (id.includes("/support")) {
     segments.push({ label: "Support" });
   }
+
   if (
     id.includes("/settings") &&
     !id.includes("/account") &&
     !segments.some((s) => s.label === "Settings")
   ) {
     let href = "/account/profile";
+
     if ("projectSlug" in params) {
       href = `/${params.orgSlug}/${params.projectSlug}/settings`;
     } else if ("orgSlug" in params) {
@@ -125,11 +132,13 @@ const addStaticSegments = (
   }
 
   const accountLabel = accountRouteLabels.get(id);
+
   if (hasText(accountLabel)) {
     segments.push({ label: accountLabel });
   }
 
   const settingsLabel = settingsRouteLabels.get(id);
+
   if (hasText(settingsLabel)) {
     segments.push({ label: settingsLabel });
   }

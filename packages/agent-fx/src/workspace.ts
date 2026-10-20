@@ -13,6 +13,7 @@ export const prepareWorkspace = async (
   const appExists = Boolean(
     await session.readFileToBuffer({ path: "/workspace/app/package.json" })
   );
+
   if (appExists && !(await session.readFileToBuffer({ path: setupMarker }))) {
     return;
   }
@@ -30,6 +31,7 @@ export const prepareWorkspace = async (
       env: { CI: "true", NO_COLOR: "1" },
       timeoutMs: 5 * 60_000,
     });
+
     if (result.exitCode !== 0) {
       const diagnostics = `${await result.stdout()}\n${await result.stderr()}`;
       throw new Error(

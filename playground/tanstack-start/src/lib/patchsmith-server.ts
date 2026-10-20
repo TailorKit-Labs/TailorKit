@@ -20,9 +20,11 @@ export const authenticatePatchsmithRequest = ({
   request: Request;
 }) => {
   const session = getDemoSessionFromRequest(request);
+
   if (!session) {
     return null;
   }
+
   return {
     scopes: {
       team: { teamId: session.team.id },

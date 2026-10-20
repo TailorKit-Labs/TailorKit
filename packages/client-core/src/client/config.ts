@@ -25,6 +25,7 @@ type ClientToolTree = ToolImplementations<
   PatchsmithContract["tools"],
   "client"
 >;
+
 const isToolHandler = (
   value: ClientToolTree[string]
 ): value is Exclude<ClientToolTree[string], ClientToolTree> =>
@@ -105,12 +106,15 @@ export const createPatchsmithClientConfig = (options: {
   fetch?: typeof fetch;
 }): PatchsmithClientConfig => {
   const declarations = flattenTools(options.contract.tools);
+
   const visit = (tree: ClientToolTree | undefined, prefix = "") => {
     if (!tree) {
       return;
     }
+
     for (const [name, value] of Object.entries(tree)) {
       const path = prefix + name;
+
       if (isFunctionValue(value)) {
         if (declarations.get(path)?.kind !== "client") {
           throw new Error(`Undeclared client tool "${path}"`);
@@ -120,23 +124,30 @@ export const createPatchsmithClientConfig = (options: {
       }
     }
   };
+
   visit(options.tools);
+
   for (const [path, leaf] of declarations) {
     if (leaf.kind !== "client") {
       continue;
     }
+
     let value: ClientToolTree[string] | undefined = options.tools;
+
     for (const name of path.split(".")) {
       value =
         value && !isToolHandler(value) && Object.hasOwn(value, name)
           ? value[name]
           : undefined;
     }
+
     if (!isFunctionValue(value)) {
       throw new TypeError(`Missing client tool "${path}"`);
     }
   }
+
   const fetchClient = createPatchsmithFetchClient(options);
+
   return {
     assetsBaseUrl: options.assetsBaseUrl,
     baseUrl: options.baseUrl,
@@ -164,11 +175,14 @@ export const createComponentRegistry = <
   wrap: (renderer: NonNullable<T[keyof T]>) => TRenderer
 ): WrappedComponentRegistry<TRenderer> => {
   const components: WrappedComponentRegistry<TRenderer> = {};
+
   for (const name in renderers) {
     if (!Object.hasOwn(renderers, name)) {
       continue;
     }
+
     const renderer = renderers[name];
+
     if (
       renderer !== undefined &&
       renderer !== null &&
@@ -183,5 +197,6 @@ export const createComponentRegistry = <
       components[toComponentTagName(name)] = component;
     }
   }
+
   return components;
 };

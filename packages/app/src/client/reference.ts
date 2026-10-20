@@ -9,10 +9,12 @@ export interface Reference<K extends "query" | "mutation" | "action", I, O> {
   readonly name: string;
   readonly $types?: { kind: K; input: I; output: O };
 }
+
 export const reference = <K extends "query" | "mutation" | "action", I, O>(
   name: string,
   _kind: K
 ): Reference<K, I, O> => Object.freeze({ name });
+
 export type References<F> = {
   readonly [N in keyof F]: F[N] extends {
     kind: infer K extends "query" | "mutation" | "action";
@@ -39,12 +41,15 @@ export const createApi = <F extends Functions>(): References<F> => {
             /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
             return undefined;
           }
+
           if (name === "name" && path) {
             return path;
           }
+
           return group(path ? `${path}.${name}` : name);
         },
       }
     );
+
   return group("");
 };

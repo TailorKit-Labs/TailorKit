@@ -11,6 +11,7 @@ if value == 1 then
 end
 return value
 `;
+
 export const createRedisKV = (url: string): KV<"redis"> => {
   const redis = new IORedis(url);
 

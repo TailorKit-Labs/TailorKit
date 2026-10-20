@@ -16,27 +16,33 @@ const cachedEncodingHeader = "X-Patchsmith-Content-Encoding";
 
 const downstreamResponse = (response: Response, request: Request) => {
   const headers = new Headers(response.headers);
+
   if (headers.get(cachedEncodingHeader) === "gzip") {
     headers.set("Content-Encoding", "gzip");
   }
+
   headers.delete(cachedEncodingHeader);
   // Keep browser reuse bounded and allow the CDN to negotiate delivery encoding.
   // no-transform belongs only on the opaque internal cache entry below.
   headers.set("Cache-Control", "private, max-age=3600");
   let { body } = response;
+
   // At the edge this is Cloudflare's normalized Accept-Encoding, not the original
   // browser header in request.cf.clientAcceptEncoding. The CDN negotiates with
   // the browser; direct/local requests still need the identity fallback here.
   if (headers.get("Content-Encoding") === "gzip" && !acceptsGzip(request)) {
     headers.delete("Content-Encoding");
     headers.delete("Content-Length");
+
     if (headers.has("ETag")) {
       headers.set("ETag", `W/${headers.get("ETag")}`);
     }
+
     if (request.method !== "HEAD" && body) {
       body = limitAssetBody(body.pipeThrough(new DecompressionStream("gzip")));
     }
   }
+
   return new Response(request.method === "HEAD" ? null : body, {
     // The body is already encoded. This prevents workerd compression, while the
     // CDN can still transcode it according to the zone's Compression Rules.
@@ -60,6 +66,7 @@ const loadAsset = (
     const edgeCache =
       /* oxlint-disable typescript/no-unsafe-type-assertion -- Cloudflare Workers provides caches.default; the standard DOM CacheStorage declaration omits this Workers-only cache. */
       caches as CacheStorage & { readonly default: Cache };
+
     /* oxlint-enable typescript/no-unsafe-type-assertion */
     // Cache opaque bytes: Cache API responses decode HTTP Content-Encoding when
     // consumed. Keep the stored encoding in private metadata instead, so manual
@@ -68,12 +75,14 @@ const loadAsset = (
     const cacheUrl = new URL(request.url);
     cacheUrl.searchParams.set("__patchsmith_asset_cache", "opaque-v1");
     const cacheKey = new Request(cacheUrl);
+
     const cached = yield* Effect.tryPromise(
       async () => await edgeCache.default.match(cacheKey)
     ).pipe(
       // oxlint-disable-next-line unicorn/no-useless-undefined -- Effect.succeed requires a value argument.
       Effect.orElseSucceed(() => undefined)
     );
+
     if (cached) {
       return downstreamResponse(cached, request);
     }
@@ -83,7 +92,9 @@ const loadAsset = (
         catch: () => new AssetDeliveryError(503),
         try: async () => await env.BUNDLES.head(identity.key),
       });
+
       const contentLength = yield* assetSize(object?.size);
+
       return downstreamResponse(
         new Response(null, {
           headers: assetHeaders({
@@ -101,10 +112,13 @@ const loadAsset = (
       catch: () => new AssetDeliveryError(503),
       try: async () => await env.BUNDLES.get(identity.key),
     });
+
     const contentLength = yield* assetSize(object?.size);
+
     if (!object) {
       return yield* Effect.fail(new AssetDeliveryError(404));
     }
+
     const response = new Response(object.body, {
       encodeBody: "manual",
       headers: assetHeaders({
@@ -114,12 +128,16 @@ const loadAsset = (
         etag: object.httpEtag,
       }),
     });
+
     const cacheHeaders = new Headers(response.headers);
+
     if (cacheHeaders.get("Content-Encoding") === "gzip") {
       cacheHeaders.set(cachedEncodingHeader, "gzip");
       cacheHeaders.delete("Content-Encoding");
     }
+
     cacheHeaders.set("Cache-Control", "public, max-age=86400, no-transform");
+
     const cacheWrite = Effect.tryPromise(async () => {
       await edgeCache.default.put(
         cacheKey,
@@ -137,9 +155,11 @@ const loadAsset = (
         })
       )
     );
+
     yield* Effect.sync(() => {
       ctx.waitUntil(Effect.runPromiseWith(effectContext)(cacheWrite));
     });
+
     return downstreamResponse(response, request);
   });
 
@@ -149,6 +169,7 @@ export default {
       identity: hostedAssetRequest(request, env.ASSET_DOMAIN),
       load: (identity) => loadAsset(request, identity, env, ctx),
     });
+
     return await Effect.runPromise(
       assetResponse(program, () => {
         console.error(

@@ -17,6 +17,7 @@ export const agentCreateAppSchema = v.strictObject({
 export { agentChunkSchema } from "#agent-chunks";
 
 export type AgentChunk = UIMessageChunk;
+
 /** Parts stay extensible; the platform validates their SDK shapes before running. */
 export const agentMessagesSchema = v.pipe(
   v.array(

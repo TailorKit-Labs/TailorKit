@@ -128,7 +128,9 @@ const isNotFound = (cause: unknown) => {
       name: z.string().optional(),
     })
     .safeParse(cause);
+
   const value = parsed.success ? parsed.data : undefined;
+
   return (
     value?.name === "NoSuchKey" ||
     value?.name === "NotFound" ||
@@ -153,6 +155,7 @@ const hasMatchingLogo = async (
 ) => {
   try {
     const object = await storage.head({ key: objectKey });
+
     return (
       object.contentLength === logo.contentLength &&
       object.contentType === logo.contentType &&
@@ -162,6 +165,7 @@ const hasMatchingLogo = async (
     if (isNotFound(error)) {
       return false;
     }
+
     throw error;
   }
 };
@@ -174,33 +178,43 @@ const inspectCompressedClient = async (
     expiresInSeconds: 60,
     key: objectKey,
   });
+
   const downloadUrl = new URL(download.url);
+
   if (downloadUrl.protocol !== "https:") {
     throw new Error("Client bundle download URL must use HTTPS.");
   }
+
   const controller = new AbortController();
+
   const timeout = setTimeout(() => {
     controller.abort();
   }, clientInspectionTimeoutMs);
+
   try {
     const response = await fetch(downloadUrl, {
       redirect: "error",
       signal: controller.signal,
     });
+
     if (!response.ok || !response.body) {
       throw new Error("Failed to inspect uploaded client bundle.");
     }
+
     // Node fetch decodes R2's Content-Encoding before exposing the response body.
     // Count chunks instead of buffering an arbitrarily large inflated bundle.
     let contentLength = 0;
+
     for await (const value of response.body) {
       contentLength += value.byteLength;
+
       if (contentLength > maxDeploymentBytes) {
         throw new Error(
           `Decompressed client assets cannot exceed ${maxDeploymentBytes} bytes.`
         );
       }
     }
+
     if (contentLength === 0) {
       throw new Error("Failed to inspect uploaded client bundle.");
     }
@@ -219,11 +233,13 @@ export const mapReturnedFilesByAssetPath = <TFile extends { id: string }>(
   return new Map(
     assets.map(({ asset, fileId }) => {
       const file = fileById.get(fileId);
+
       if (!file) {
         throw new ORPCError("BAD_REQUEST", {
           message: "Failed to resolve deployment asset.",
         });
       }
+
       return [asset.objectKey, file] as const;
     })
   );
@@ -248,9 +264,11 @@ const requireDeployment = o.middleware(
         app: true,
       },
     });
+
     const deploymentApp = deploymentWithApp?.app;
 
     let requestedScopes: Scope[];
+
     try {
       requestedScopes = input.scope
         ? [canonicalizeScope(input.scope).scope]
@@ -262,14 +280,17 @@ const requireDeployment = o.middleware(
     }
 
     let storedScope: ReturnType<typeof canonicalizeScope> | null = null;
+
     if (deploymentApp) {
       try {
         const canonicalScope = canonicalizeScope(deploymentApp.scope);
+
         if (canonicalScope.scopeKey !== deploymentApp.scopeKey) {
           throw new TypeError(
             "Deployment app scope key does not match its stored scope."
           );
         }
+
         storedScope = canonicalScope;
       } catch (error) {
         console.warn("Deployment app has an invalid stored scope.", {
@@ -279,6 +300,7 @@ const requireDeployment = o.middleware(
         });
       }
     }
+
     const scopeMatchesApp =
       storedScope !== null &&
       requestedScopes.some((scope) => scopeMatches(storedScope.scope, scope));
@@ -320,6 +342,7 @@ const listAppDeployments = cliRouter
   .use(requireAppInScopes.adaptInput(({ body }) => body))
   .handler(async ({ context, input }) => {
     const { page, pageSize } = input.body;
+
     const deployments = await db.query.appDeployment.findMany({
       limit: pageSize + 1,
       offset: (page - 1) * pageSize,
@@ -393,6 +416,7 @@ const createAppDeployment = cliRouter
   .handler(async ({ context, input }) => {
     const deploymentId = crypto.randomUUID();
     const deploymentShortId = createShortId();
+
     const requestedLogos = Object.entries(input.body.logos ?? {}).map(
       ([variant, logo]) => ({
         asset: {
@@ -403,11 +427,13 @@ const createAppDeployment = cliRouter
         variant,
       })
     );
+
     const uniqueLogoAssets = [
       ...new Map(
         requestedLogos.map(({ asset }) => [asset.objectKey, asset])
       ).values(),
     ];
+
     const requestedAssets = [
       ...input.body.assets.map((asset) => ({ asset, kind: "client" as const })),
       ...(input.body.server
@@ -415,17 +441,21 @@ const createAppDeployment = cliRouter
         : []),
       ...uniqueLogoAssets.map((asset) => ({ asset, kind: "logo" as const })),
     ];
+
     const assets = await Promise.all(
       requestedAssets.map(async ({ asset, kind }) => {
         const fileId = crypto.randomUUID();
         const appBaseKey = `projects/${context.project.shortId}/apps/${context.app.shortId}`;
+
         const objectKey =
           kind === "logo"
             ? `${appBaseKey}/${asset.objectKey}`
             : `${appBaseKey}/deployments/${deploymentShortId}/${kind}/${asset.objectKey}`;
+
         const shouldReuse =
           kind === "logo" &&
           (await hasMatchingLogo(context.storage, asset, objectKey));
+
         const uploadUrl = shouldReuse
           ? undefined
           : await context.storage.createUploadUrl({
@@ -443,6 +473,7 @@ const createAppDeployment = cliRouter
                       fileId,
                     },
             });
+
         return { asset, fileId, objectKey, uploadUrl };
       })
     );
@@ -487,9 +518,11 @@ const createAppDeployment = cliRouter
       }
 
       const fileByAssetPath = mapReturnedFilesByAssetPath(assets, files);
+
       const logoDarkPath = requestedLogos.find(
         ({ variant }) => variant === "dark"
       )?.asset.objectKey;
+
       const logoLightPath = requestedLogos.find(
         ({ variant }) => variant === "light"
       )?.asset.objectKey;
@@ -524,18 +557,23 @@ const createAppDeployment = cliRouter
 
       return { createdDeployment: updatedDeployment, createdFiles: files };
     });
+
     const { createdDeployment, createdFiles } = created;
+
     const createdFileById = new Map(
       createdFiles.map((file) => [file.id, file])
     );
+
     const uploadedAssetByName = new Map(
       assets.map(({ asset, fileId, uploadUrl }) => {
         const file = createdFileById.get(fileId);
+
         if (!file) {
           throw new ORPCError("BAD_REQUEST", {
             message: "Failed to resolve deployment asset.",
           });
         }
+
         return [
           asset.objectKey,
           {
@@ -546,8 +584,10 @@ const createAppDeployment = cliRouter
         ] as const;
       })
     );
+
     const uploadedAssets = input.body.assets.map((asset) => {
       const upload = uploadedAssetByName.get(asset.objectKey);
+
       if (
         !(
           upload?.uploadUrl !== undefined &&
@@ -559,11 +599,14 @@ const createAppDeployment = cliRouter
           message: "Failed to resolve deployment asset.",
         });
       }
+
       return { ...upload, uploadUrl: upload.uploadUrl };
     });
+
     const serverUpload = input.body.server
       ? uploadedAssetByName.get("server.js")
       : undefined;
+
     if (
       input.body.server &&
       !(
@@ -576,14 +619,17 @@ const createAppDeployment = cliRouter
         message: "Failed to create server upload URL.",
       });
     }
+
     const uploadedLogos = Object.fromEntries(
       requestedLogos.map(({ asset, variant }) => {
         const upload = uploadedAssetByName.get(asset.objectKey);
+
         if (!upload) {
           throw new ORPCError("BAD_REQUEST", {
             message: "Failed to resolve deployment asset.",
           });
         }
+
         return [variant, upload];
       })
     );
@@ -592,7 +638,9 @@ const createAppDeployment = cliRouter
       server?: typeof serverUpload & { uploadUrl: string };
       logos?: typeof uploadedLogos;
     }
+
     const optionalUploads: DeploymentUploads = {};
+
     if (
       serverUpload?.uploadUrl !== undefined &&
       serverUpload?.uploadUrl !== null &&
@@ -603,9 +651,11 @@ const createAppDeployment = cliRouter
         uploadUrl: serverUpload.uploadUrl,
       };
     }
+
     if (Object.keys(uploadedLogos).length > 0) {
       optionalUploads.logos = uploadedLogos;
     }
+
     return {
       body: {
         ...optionalUploads,
@@ -642,6 +692,7 @@ const publishAppDeployment = cliRouter
   )
   .handler(async ({ context, input }) => {
     const { deployment } = context;
+
     const files = await db.query.appDeploymentFile.findMany({
       where: {
         appDeploymentId: deployment.id,
@@ -715,22 +766,29 @@ const publishAppDeployment = cliRouter
             expiresInSeconds: 60,
             key: file.objectKey,
           });
+
           const downloadUrl = new URL(download.url);
+
           if (downloadUrl.protocol !== "https:") {
             throw new Error("Logo download URL must use HTTPS.");
           }
+
           const controller = new AbortController();
+
           const timeout = setTimeout(() => {
             controller.abort();
           }, logoInspectionTimeoutMs);
+
           try {
             const response = await fetch(downloadUrl, {
               redirect: "error",
               signal: controller.signal,
             });
+
             if (!response.ok) {
               throw new Error("Failed to inspect uploaded logo.");
             }
+
             validateLogoAsset(
               new Uint8Array(await response.arrayBuffer()),
               z
@@ -785,9 +843,11 @@ const publishAppDeployment = cliRouter
         .where(
           and(eq(app.id, context.app.id), eq(app.projectId, context.project.id))
         );
+
       const server = files.find((file) =>
         file.objectKey.endsWith("/server/server.js")
       );
+
       if (
         server?.checksum !== undefined &&
         server?.checksum !== null &&

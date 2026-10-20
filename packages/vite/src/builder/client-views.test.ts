@@ -9,6 +9,7 @@ import { readClientManifest, readClientViews } from "./client-views";
 it("reads actual slot declarations, including computed paths, and excludes disabled views", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "patchsmith-client-views-"));
   const filename = path.join(root, "client.js");
+
   try {
     await writeFile(
       filename,
@@ -34,8 +35,10 @@ it("preserves instance availability and registrations when one view is used in m
   const root = await mkdtemp(
     path.join(tmpdir(), "patchsmith-instance-manifest-")
   );
+
   const filename = path.join(root, "client.js");
   const resolver = "i0123456789abcdef01234567";
+
   try {
     await writeFile(
       filename,

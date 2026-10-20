@@ -15,6 +15,7 @@ export type OrgSlugAvailability =
 
 export const checkOrgSlugAvailability = async (slug: string) => {
   const result = validateOrgSlug(slug);
+
   if (!result.valid) {
     return {
       available: false,
@@ -37,10 +38,12 @@ export const useOrgSlugAvailability = (slug: string) => {
   });
 
   const [checkedSlug, setCheckedSlug] = useState(slug);
+
   if (checkedSlug !== slug) {
     setCheckedSlug(slug);
     setAvailability({ message: null, status: slug ? "checking" : "idle" });
   }
+
   useEffect((): (() => void) | undefined => {
     if (!slug) {
       return undefined;
@@ -52,6 +55,7 @@ export const useOrgSlugAvailability = (slug: string) => {
       void (async () => {
         try {
           const localResult = validateOrgSlug(slug);
+
           if (!localResult.valid) {
             if (cancelled) {
               return;
@@ -66,10 +70,12 @@ export const useOrgSlugAvailability = (slug: string) => {
                     status: "unavailable",
                   }
             );
+
             return;
           }
 
           const result = await checkOrgSlugAvailability(slug);
+
           if (cancelled) {
             return;
           }

@@ -13,16 +13,19 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
 const requireRequest = (input: Parameters<typeof fetch>[0]): Request => {
   assert(input instanceof Request);
+
   return input;
 };
 
 const now = Math.floor(Date.now() / 1000);
 const scope = { name: "user", value: { userId: "one" } };
+
 const token = async (overrides = {}) =>
   await new SignJWT({
     appId: "app-one",
@@ -37,6 +40,7 @@ const token = async (overrides = {}) =>
   })
     .setProtectedHeader({ alg: "HS256", typ: "patchsmith-agent+jwt" })
     .sign(new TextEncoder().encode("test-only-signing-key"));
+
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllEnvs();
@@ -45,11 +49,13 @@ afterEach(() => {
 it("uses existing platform deployment endpoints and scope from the agent JWT", async () => {
   const jwt = await token();
   vi.stubEnv("PATCHSMITH_AGENT_TOKEN", jwt);
+
   const fetch = vi
     .spyOn(globalThis, "fetch")
     .mockResolvedValueOnce(Response.json({}))
     .mockResolvedValueOnce(Response.json({}))
     .mockResolvedValueOnce(Response.json({}));
+
   const client = createCliClient({ token: jwt, url: "http://localhost:1" });
   await client.deployments.create({
     appId: "app-one",
@@ -165,28 +171,34 @@ it("rejects insecure routing before creating a client or sending requests", asyn
 it("routes every authenticated CLI surface through existing platform endpoints for JWTs", async () => {
   const jwt = await token();
   vi.stubEnv("PATCHSMITH_AGENT_TOKEN", jwt);
+
   const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(
     asyncFixture((input) => {
       const request = requireRequest(input);
       expect(request.headers.get("authorization")).toBe(`Bearer ${jwt}`);
       expect(request.redirect).toBe("error");
+
       if (request.url.endsWith("/app-agent/chat")) {
         return new Response(
           'data: {"type":"start","messageId":"one"}\n\ndata: {"type":"finish"}\n\ndata: {"type":"data-run-complete","data":{"runId":"wrun_test"},"transient":true}\n\n',
           { headers: { "content-type": "text/event-stream" } }
         );
       }
+
       return Response.json({ scope });
     })
   );
+
   const client = createCliClient({
     token: "stored-session",
     url: "http://localhost:1",
   });
+
   await client.cliAuth.verifyToken({});
   await client.apps.list({ page: 1, pageSize: 100 });
   await client.apps.create({ description: null, name: "App" });
   const chunks = [];
+
   for await (const chunk of await client.appAgent.chat({
     appId: "app-one",
     hostUrl: "http://localhost:1",
@@ -198,6 +210,7 @@ it("routes every authenticated CLI surface through existing platform endpoints f
   })) {
     chunks.push(chunk);
   }
+
   expect(chunks).toEqual([
     { messageId: "one", type: "start" },
     { type: "finish" },
@@ -223,15 +236,18 @@ it("routes every authenticated CLI surface through existing platform endpoints f
 
 it("discovers file authorization for all commands, with environment-token precedence", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "patchsmith-agent-auth-"));
+
   try {
     const jwt = await token();
     const file = path.join(root, "token");
     await writeFile(file, jwt, { mode: 0o600 });
     vi.stubEnv("PATCHSMITH_AGENT_TOKEN_FILE", file);
     expect(requireValue(getAgentAuth()).token).toBe(jwt);
+
     const fetch = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(Response.json({ scope }));
+
     await createCliClient({
       token: "stored-session",
       url: "http://localhost:1",

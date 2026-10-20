@@ -44,9 +44,11 @@ const formatDate = (value: Date | string) =>
 const OrganizationsPage = () => {
   const navigate = useNavigate();
   const { data: orgs } = useSuspenseQuery(orpc.user.getOrgs.queryOptions());
+
   const { data: invitations } = useSuspenseQuery(
     orpc.user.getPendingInvitations.queryOptions()
   );
+
   const pendingInviteCount = invitations.length;
 
   return (

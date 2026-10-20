@@ -5,6 +5,7 @@ import type {
 } from "./types";
 
 export type { BetterAuthEmailType } from "#templates/better-auth";
+
 export type {
   SendBetterAuthOtpInput,
   SendEmailInput,

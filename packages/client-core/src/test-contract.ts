@@ -6,6 +6,7 @@ import type {
 import { z } from "zod";
 
 const viewSchema = z.looseObject({}).optional();
+
 type TestContract = PatchsmithContract<
   EmptyDefinitionMap,
   { readonly "/": typeof viewSchema },

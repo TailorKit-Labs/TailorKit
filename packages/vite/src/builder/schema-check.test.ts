@@ -35,10 +35,12 @@ let contents: string[] = [];
 
 const migrationFiles = async () => {
   const entries = await readdir(migrations, { recursive: true });
+
   return entries.filter(
     (name) => name.endsWith(".sql") || name.endsWith(".json")
   );
 };
+
 const migrationContents = async () =>
   await Promise.all(
     files.map(
@@ -55,13 +57,16 @@ beforeAll(async () => {
   files = await migrationFiles();
   contents = await migrationContents();
 });
+
 beforeEach(async () => {
   await writeFile(schemaFile, testSchema);
 });
+
 afterEach(async () => {
   expect(await migrationFiles()).toEqual(files);
   expect(await migrationContents()).toEqual(contents);
 });
+
 afterAll(async () => {
   await rm(root, { force: true, recursive: true });
 });

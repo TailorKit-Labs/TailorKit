@@ -81,10 +81,12 @@ const orgId = "11111111-1111-4111-8111-111111111111";
 const projectId = "22222222-2222-4222-8222-222222222222";
 const otherProjectId = "33333333-3333-4333-8333-333333333333";
 const userId = "44444444-4444-4444-8444-444444444444";
+
 const productionScope = {
   name: "environment",
   value: { environment: "production" },
 };
+
 const stagingScope = { name: "environment", value: { environment: "staging" } };
 
 const createContext = (overrides: Partial<Context> = {}): Context => ({
@@ -199,8 +201,10 @@ describe("platform appRouter", () => {
       name: "Compiler",
       scope: productionScope,
     });
+
     expect(created.response?.status).toBe(200);
     expect(created.response?.headers.get("ratelimit-limit")).toBe("100");
+
     const app = z
       .object({ id: z.string() })
       .parse(await created.response?.json());
@@ -209,6 +213,7 @@ describe("platform appRouter", () => {
       app: { id: app.id },
       scopes: [productionScope],
     });
+
     expect(found.response?.status).toBe(200);
     await expect(found.response?.json()).resolves.toMatchObject({
       id: app.id,
@@ -219,6 +224,7 @@ describe("platform appRouter", () => {
       app: { slug: "missing" },
       scopes: [productionScope],
     });
+
     expect(missing.response?.status).toBe(404);
     const error: unknown = await missing.response?.json();
     expect(error).toMatchObject({ code: "NOT_FOUND" });
@@ -227,6 +233,7 @@ describe("platform appRouter", () => {
 
   it("installs a published app with separate scope and runtime identity while retaining its artifacts", async () => {
     const context = createContext();
+
     const { body: source } = await call(
       appRouter.create,
       {
@@ -238,6 +245,7 @@ describe("platform appRouter", () => {
       },
       { context }
     );
+
     const [deployment] = await db
       .insert(appDeployment)
       .values({
@@ -248,10 +256,13 @@ describe("platform appRouter", () => {
         views: [{ path: "/", slot: "page" }],
       })
       .returning();
+
     if (!deployment) {
       throw new Error("Expected published deployment");
     }
+
     const keyBase = `projects/${context.project.shortId}/apps/${source.shortId}`;
+
     const [clientFile] = await db
       .insert(appDeploymentFile)
       .values({
@@ -262,9 +273,11 @@ describe("platform appRouter", () => {
         status: "verified",
       })
       .returning();
+
     if (!clientFile) {
       throw new Error("Expected client file");
     }
+
     await db
       .update(appDeployment)
       .set({ clientEntryFileId: clientFile.id })
@@ -284,6 +297,7 @@ describe("platform appRouter", () => {
       .where(eq(appTable.id, source.id));
 
     const handler = new OpenAPIHandler({ apps: appRouter });
+
     const response = await handler.handle(
       new Request("https://platform.test/api/platform/apps/install", {
         body: JSON.stringify({
@@ -296,10 +310,13 @@ describe("platform appRouter", () => {
       }),
       { context, prefix: "/api/platform" }
     );
+
     expect(response.response?.status).toBe(200);
+
     const installed = z
       .object({ id: z.string(), shortId: z.string(), slug: z.string() })
       .parse(await response.response?.json());
+
     expect(installed.id).not.toBe(source.id);
     expect(installed.shortId).not.toBe(source.shortId);
     expect(installed.slug).toBe("installed-inbox");
@@ -322,6 +339,7 @@ describe("platform appRouter", () => {
       { body: { scopes: [stagingScope] } },
       { context }
     );
+
     expect(listed.items).toHaveLength(1);
     expect(listed.items[0]).toMatchObject({
       ...installed,
@@ -338,11 +356,13 @@ describe("platform appRouter", () => {
     expect(listed.items[0]?.logoPaths?.light).toContain(
       `/a/${source.shortId}/d/${deployment.shortId}/logos/`
     );
+
     const lookup = await call(
       appRouter.get,
       { body: { app: { id: installed.id }, scopes: [stagingScope] } },
       { context }
     );
+
     expect(lookup.body.clientPath).toBe(listed.items[0]?.clientPath);
     await expect(
       call(
@@ -366,6 +386,7 @@ describe("platform appRouter", () => {
       },
       { context }
     );
+
     expect(session.body.identity).toMatchObject({
       appId: installed.id,
       deploymentId: deployment.id,
@@ -373,11 +394,13 @@ describe("platform appRouter", () => {
       scope: stagingScope,
     });
     const { getRuntimeBundle } = await import("./runtime");
+
     const bundle = await call(
       getRuntimeBundle,
       { body: {}, params: { appId: installed.id } },
       { context: { ...context, runtimeService: true } }
     );
+
     expect(bundle.body).toMatchObject({
       appId: installed.id,
       contentEncoding: "gzip",
@@ -400,11 +423,13 @@ describe("platform appRouter", () => {
       .update(appTable)
       .set({ currentDeploymentId: null })
       .where(eq(appTable.id, source.id));
+
     const pinned = await call(
       appRouter.get,
       { body: { app: { id: installed.id }, scopes: [stagingScope] } },
       { context }
     );
+
     expect(pinned.body.currentDeployment?.id).toBe(deployment.id);
     await call(
       appRouter.delete,
@@ -418,6 +443,7 @@ describe("platform appRouter", () => {
 
   it("returns a conflict when an installation appears after the deletion dependency check", async () => {
     const context = createContext();
+
     const { body: source } = await call(
       appRouter.create,
       {
@@ -425,6 +451,7 @@ describe("platform appRouter", () => {
       },
       { context }
     );
+
     await db.insert(appDeployment).values({
       appId: source.id,
       shortId: "published001",
@@ -468,11 +495,13 @@ describe("platform appRouter", () => {
     "handles deletion error %s without masking unrelated failures",
     async (code) => {
       const context = createContext();
+
       const { body: source } = await call(
         appRouter.create,
         { body: { description: null, name: "App", scope: productionScope } },
         { context }
       );
+
       await client.exec(`
       CREATE FUNCTION fail_delete() RETURNS trigger AS $$
       BEGIN
@@ -489,6 +518,7 @@ describe("platform appRouter", () => {
         { body: { app: { id: source.id }, scope: productionScope } },
         { context }
       );
+
       await expect(deletion).rejects.toMatchObject({
         cause: { code, message: "Deletion failed" },
         name: "DrizzleQueryError",
@@ -498,6 +528,7 @@ describe("platform appRouter", () => {
 
   it("limits installation to published apps in the host project and rejects agent credentials", async () => {
     const context = createContext();
+
     const { body: source } = await call(
       appRouter.create,
       {
@@ -505,12 +536,15 @@ describe("platform appRouter", () => {
       },
       { context }
     );
+
     const input = {
       body: { app: { id: source.id }, scope: stagingScope },
     };
+
     await expect(
       call(appRouter.install, input, { context })
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
+
     const [deployment] = await db
       .insert(appDeployment)
       .values({
@@ -519,9 +553,11 @@ describe("platform appRouter", () => {
         status: "uploading",
       })
       .returning();
+
     if (!deployment) {
       throw new Error("Expected deployment");
     }
+
     await db
       .update(appTable)
       .set({ currentDeploymentId: deployment.id })
@@ -540,6 +576,7 @@ describe("platform appRouter", () => {
         }),
       })
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
+
     const token = await issueAgentToken(
       {
         appId: source.id,
@@ -550,11 +587,13 @@ describe("platform appRouter", () => {
       testState.env.AUTH_SECRET,
       "https://platform.test/api/platform"
     );
+
     const claims = await verifyAgentToken(
       token,
       testState.env.AUTH_SECRET,
       "https://platform.test/api/platform"
     );
+
     await expect(
       call(appRouter.install, input, {
         context: createContext({ agentToken: { ...claims, token } }),
@@ -567,6 +606,7 @@ describe("platform appRouter", () => {
 
   it("rejects caller-supplied provenance on general app creation", async () => {
     const handler = new OpenAPIHandler({ apps: appRouter });
+
     const result = await handler.handle(
       new Request("https://platform.test/api/platform/apps", {
         body: JSON.stringify({
@@ -580,6 +620,7 @@ describe("platform appRouter", () => {
       }),
       { context: createContext(), prefix: "/api/platform" }
     );
+
     expect(result.response?.status).toBe(400);
     expect(await db.select().from(appTable)).toEqual([]);
   });
@@ -588,6 +629,7 @@ describe("platform appRouter", () => {
     "rejects caller-supplied agent creation fields %j",
     async (untrustedFields) => {
       const handler = new OpenAPIHandler({ appAgent: appAgentRouter });
+
       const result = await handler.handle(
         new Request("https://platform.test/api/platform/app-agent/apps", {
           body: JSON.stringify({
@@ -601,6 +643,7 @@ describe("platform appRouter", () => {
         }),
         { context: createContext(), prefix: "/api/platform" }
       );
+
       expect(result.response?.status).toBe(400);
       expect(await db.select().from(appTable)).toEqual([]);
     }
@@ -610,6 +653,7 @@ describe("platform appRouter", () => {
     "derives AI provenance and scope from an authenticated %s creation flow",
     async (credential) => {
       const secret = testState.env.AUTH_SECRET;
+
       const [source] = await db
         .insert(cliToken)
         .values({
@@ -619,11 +663,14 @@ describe("platform appRouter", () => {
           tokenHash: hashSecret("cli-token", secret),
         })
         .returning();
+
       if (!source) {
         throw new Error("Expected CLI credential.");
       }
+
       const context = createContext();
       let deployToken = "cli-token";
+
       if (credential === "agent") {
         deployToken = await issueAgentToken(
           {
@@ -643,6 +690,7 @@ describe("platform appRouter", () => {
           )),
           token: deployToken,
         };
+
         const manual = await call(
           appRouter.create,
           {
@@ -654,8 +702,10 @@ describe("platform appRouter", () => {
           },
           { context }
         );
+
         expect(manual.body.createdByAgent).toBe(false);
       }
+
       const created = await call(
         appAgentRouter.create,
         {
@@ -663,8 +713,10 @@ describe("platform appRouter", () => {
         },
         { context }
       );
+
       expect(created.body.createdByAgent).toBe(true);
       expect(created.body.scope).toEqual(productionScope);
+
       const found = await call(
         appRouter.get,
         {
@@ -672,7 +724,9 @@ describe("platform appRouter", () => {
         },
         { context }
       );
+
       expect(found.body.createdByAgent).toBe(true);
+
       const listed = await call(
         appRouter.list,
         {
@@ -680,6 +734,7 @@ describe("platform appRouter", () => {
         },
         { context }
       );
+
       expect(listed.body.items).toContainEqual(
         expect.objectContaining({ createdByAgent: true, id: created.body.id })
       );
@@ -734,6 +789,7 @@ describe("platform appRouter", () => {
 
     const expectedShortIdMatcher1: unknown =
       expect.stringMatching(/^[0-9a-z]{12}$/u);
+
     expect(created.body).toEqual(
       expect.objectContaining({
         createdByAgent: false,
@@ -766,6 +822,7 @@ describe("platform appRouter", () => {
 
   it("returns the current published deployment", async () => {
     const context = createContext();
+
     const [createdApp] = await db
       .insert(appTable)
       .values({
@@ -870,6 +927,7 @@ describe("platform appRouter", () => {
       { body: { page: 1, pageSize: 1, scopes: [teamScope, userScope] } },
       { context }
     );
+
     const secondPage = await call(
       appRouter.list,
       { body: { page: 2, pageSize: 1, scopes: [teamScope, userScope] } },
@@ -918,9 +976,11 @@ describe("platform appRouter", () => {
         ...canonicalizeScope(stagingScope),
       })
       .returning();
+
     if (!otherScopeApp) {
       throw new Error("Expected staging app to be created.");
     }
+
     await expect(
       call(
         appRouter.get,
@@ -936,6 +996,7 @@ describe("platform appRouter", () => {
     "publishes verified runtime metadata only for a published deployment (%s)",
     async (status) => {
       const context = createContext();
+
       const [created] = await db
         .insert(appTable)
         .values({
@@ -945,16 +1006,20 @@ describe("platform appRouter", () => {
           ...canonicalizeScope(productionScope),
         })
         .returning();
+
       if (!created) {
         throw new Error("Expected test app");
       }
+
       const [deployment] = await db
         .insert(appDeployment)
         .values({ appId: created.id, shortId: "runtime00002", status })
         .returning();
+
       if (!deployment) {
         throw new Error("Expected test deployment");
       }
+
       const objectKey = `projects/${context.project.shortId}/apps/${created.shortId}/deployments/${deployment.shortId}/server/server.js`;
       await db.insert(appDeploymentFile).values({
         appDeploymentId: deployment.id,
@@ -976,6 +1041,7 @@ describe("platform appRouter", () => {
         },
         { context }
       );
+
       if (status === "published") {
         expect(testState.publishMetadata).toHaveBeenCalledWith(
           expect.objectContaining({ deploymentId: deployment.id, objectKey }),
@@ -989,6 +1055,7 @@ describe("platform appRouter", () => {
 
   it("uses the JSON body scope for app mutations", async () => {
     const context = createContext();
+
     const [created] = await db
       .insert(appTable)
       .values({
@@ -999,6 +1066,7 @@ describe("platform appRouter", () => {
         ...canonicalizeScope(productionScope),
       })
       .returning();
+
     if (!created) {
       throw new Error("Expected test app to be created.");
     }
@@ -1030,6 +1098,7 @@ describe("platform appRouter", () => {
       },
       { context }
     );
+
     expect(updated.body.name).toBe("Updated inbox");
 
     const [deployment] = await db
@@ -1044,6 +1113,7 @@ describe("platform appRouter", () => {
         ],
       })
       .returning();
+
     if (!deployment) {
       throw new Error("Expected test deployment to be created.");
     }
@@ -1059,16 +1129,19 @@ describe("platform appRouter", () => {
       },
       { context }
     );
+
     expect(deployed.body.currentDeployment?.id).toBe(deployment.id);
     expect(deployed.body.views).toEqual([
       { instances: true, path: "/", slot: "page" },
       { disabled: true, path: "/disabled", slot: "page" },
     ]);
+
     const listed = await call(
       appRouter.list,
       { body: { scopes: [productionScope] } },
       { context }
     );
+
     expect(listed.body.items[0]?.views).toEqual([
       { instances: true, path: "/", slot: "page" },
       { disabled: true, path: "/disabled", slot: "page" },
@@ -1079,10 +1152,12 @@ describe("platform appRouter", () => {
       { body: { app: { shortId: created.shortId }, scope: productionScope } },
       { context }
     );
+
     expect(deleted.body.id).toBe(created.id);
   });
   it("authorizes backend sessions with existing scopes and resolves canonical installation identities", async () => {
     const context = createContext();
+
     const [created] = await db
       .insert(appTable)
       .values({
@@ -1093,9 +1168,11 @@ describe("platform appRouter", () => {
         ...canonicalizeScope(productionScope),
       })
       .returning();
+
     if (!created) {
       throw new Error("Expected test app");
     }
+
     const [deployment] = await db
       .insert(appDeployment)
       .values({
@@ -1104,13 +1181,16 @@ describe("platform appRouter", () => {
         status: "published",
       })
       .returning();
+
     if (!deployment) {
       throw new Error("Expected test deployment");
     }
+
     await db
       .update(appTable)
       .set({ currentDeploymentId: deployment.id })
       .where(eq(appTable.id, created.id));
+
     const input = {
       body: {
         app: { shortId: created.shortId },
@@ -1119,6 +1199,7 @@ describe("platform appRouter", () => {
         toolUrl: "https://host.test/api/patchsmith/tools/execute",
       },
     };
+
     const session = await call(appRouter.runtimeSession, input, { context });
     expect(session.body.token).toBe("platform-token");
     expect(session.body.identity).toMatchObject({
@@ -1159,6 +1240,7 @@ describe("platform appRouter", () => {
 
     expect(testState.issueToken).toHaveBeenCalledTimes(1);
     const handler = new OpenAPIHandler({ apps: appRouter });
+
     const http = await handler.handle(
       new Request("https://platform.test/api/platform/apps/runtime/session", {
         body: JSON.stringify({
@@ -1172,6 +1254,7 @@ describe("platform appRouter", () => {
       }),
       { context, prefix: "/api/platform" }
     );
+
     expect(http.response?.status).toBe(200);
     await expect(http.response?.json()).resolves.toMatchObject({
       identity: {
@@ -1196,6 +1279,7 @@ describe("platform appRouter", () => {
           ),
           { context, prefix: "/api/platform" }
         );
+
         expect(invalid.response?.status).toBe(400);
       })
     );
@@ -1274,6 +1358,7 @@ describe("platform appRouter", () => {
   });
   it("creates immutable usernames with project-wide uniqueness, including concurrent writes", async () => {
     const context = createContext();
+
     const input = {
       body: {
         description: null,
@@ -1282,10 +1367,12 @@ describe("platform appRouter", () => {
         slug: "shared-inbox",
       },
     };
+
     const outcomes = await Promise.allSettled([
       call(appRouter.create, input, { context }),
       call(appRouter.create, input, { context }),
     ]);
+
     expect(
       outcomes.filter((outcome) => outcome.status === "fulfilled")
     ).toHaveLength(1);
@@ -1299,13 +1386,16 @@ describe("platform appRouter", () => {
         { context }
       )
     ).rejects.toMatchObject({ code: "CONFLICT" });
+
     const otherContext = createContext({
       project: { ...context.project, id: otherProjectId },
     });
+
     await expect(
       call(appRouter.create, input, { context: otherContext })
     ).resolves.toMatchObject({ body: { slug: "shared-inbox" } });
     const selector = { slug: "shared-inbox" };
+
     const renamed = await call(
       appRouter.update,
       {
@@ -1318,8 +1408,10 @@ describe("platform appRouter", () => {
       },
       { context }
     );
+
     expect(renamed.body.slug).toBe("shared-inbox");
     const handler = new OpenAPIHandler({ apps: appRouter });
+
     const update = await handler.handle(
       new Request("https://platform.test/apps/update", {
         body: JSON.stringify({
@@ -1334,6 +1426,7 @@ describe("platform appRouter", () => {
       }),
       { context }
     );
+
     expect(update.response?.status).toBe(400);
   });
 
@@ -1377,6 +1470,7 @@ describe("platform appRouter", () => {
           { body: { app, scopes: [productionScope, stagingScope] } },
           { context }
         );
+
         expect(found.body.name).toBe(name);
       }
     );
@@ -1422,6 +1516,7 @@ describe("platform appRouter", () => {
           }),
           { context }
         );
+
         expect(result.response?.status).toBe(400);
       }
     );
@@ -1449,11 +1544,13 @@ describe("platform appRouter", () => {
           }),
           { context }
         );
+
         expect(result.response?.status).toBe(400);
       }
     );
     expect(await db.select().from(appTable)).toHaveLength(0);
     const maxLengthSlug = "a".repeat(32);
+
     const created = await call(
       appRouter.create,
       {
@@ -1466,7 +1563,9 @@ describe("platform appRouter", () => {
       },
       { context }
     );
+
     expect(created.body.slug).toBe(maxLengthSlug);
+
     const found = await call(
       appRouter.get,
       {
@@ -1474,6 +1573,7 @@ describe("platform appRouter", () => {
       },
       { context }
     );
+
     expect(found.body.id).toBe(created.body.id);
   });
 });

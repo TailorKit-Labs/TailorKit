@@ -84,6 +84,7 @@ const getObjectKeys = (value: Schema | undefined): string[] => {
 
   if ("shape" in value) {
     const fields = value.shape;
+
     if (isObjectValue(fields)) {
       return Object.keys(fields);
     }
@@ -91,6 +92,7 @@ const getObjectKeys = (value: Schema | undefined): string[] => {
 
   if ("entries" in value) {
     const { entries } = value;
+
     if (isObjectValue(entries)) {
       return Object.keys(entries);
     }
@@ -105,6 +107,7 @@ const assertNoLocalFieldCallbackConflicts = (
   callbackKeys: readonly string[]
 ): void => {
   const callbackKeySet = new Set(callbackKeys);
+
   for (const fieldKey of fieldKeys) {
     if (callbackKeySet.has(fieldKey)) {
       throw new Error(
@@ -141,11 +144,14 @@ export const resolveComponentMetadata = (
     children: definition.children ?? false,
     fields,
   };
+
   if (definition.description !== undefined) {
     metadata.description = definition.description;
   }
+
   return metadata;
 };
 
 export type Component = AnyComponentDefinition;
+
 export type Components = ComponentDefinitions;

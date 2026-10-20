@@ -3,6 +3,7 @@ import { expect, it } from "vite-plus/test";
 import { runtimeProjectAccess } from "./access";
 
 const secret = "trusted-runtime-secret-at-least-32-characters";
+
 const request = (
   path = "/api/platform/apps/app/runtime",
   method = "POST",
@@ -10,6 +11,7 @@ const request = (
   projectId: string | null = "project"
 ) => {
   const headers = new Headers({ authorization: `Bearer ${token}` });
+
   if (projectId !== null) {
     headers.set("x-patchsmith-project-id", projectId);
   }

@@ -27,8 +27,10 @@ const allowedPrerelease =
 const releaseRepository =
   // oxlint-disable-next-line no-restricted-properties -- The standalone release script reads GitHub Actions metadata.
   process.env.GITHUB_REPOSITORY ?? "patchsmith-io/patchsmith";
+
 const expectedRepositoryUrl = `git+https://github.com/${releaseRepository}.git`;
 const errors = [];
+
 const manifests = await Promise.all(
   publishablePackages.map(async (manifestPath) =>
     parsePackageManifest(await readFile(manifestPath, "utf-8"))
@@ -103,9 +105,11 @@ for (const changeset of await readChangesets(process.cwd())) {
 
 if (errors.length > 0) {
   console.error("Prerelease safety check failed:");
+
   for (const error of errors) {
     console.error(`- ${error}`);
   }
+
   process.exitCode = 1;
 } else {
   console.log(`Prerelease safety check passed (${preState.tag} channel).`);

@@ -27,6 +27,7 @@ import { linkTestDependencies } from "./test-utils";
 
 const requireBytes = (body: RequestInit["body"]): Uint8Array => {
   assert(body instanceof Uint8Array);
+
   return body;
 };
 
@@ -63,20 +64,26 @@ const mocks = vi.hoisted(() => ({
   token: vi.fn(),
   whoami: vi.fn(),
 }));
+
 vi.mock("@patchsmith/vite/config/loader", () => ({
   loadPatchsmithConfig: mocks.load,
 }));
+
 vi.mock("./build", () => ({ buildProject: mocks.build }));
+
 vi.mock("@patchsmith/core/server", () => ({
   createPatchsmithClient: mocks.client,
 }));
+
 vi.mock("./auth", async (importOriginal) => ({
   ...(await importOriginal<typeof authModule>()),
   getDeployToken: mocks.token,
   runWhoami: mocks.whoami,
 }));
+
 const { runDeploy } = await import("./deploy");
 let root: string;
+
 beforeEach(async () => {
   vi.resetAllMocks();
   root = await mkdtemp(path.join(tmpdir(), "patchsmith-private-deploy-"));
@@ -133,6 +140,7 @@ beforeEach(async () => {
   });
   mocks.publish.mockResolvedValue({ id: "deployment", status: "published" });
 });
+
 afterEach(async () => {
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
@@ -143,6 +151,7 @@ it("uploads gzip server and client code with metadata matching the stored bytes"
   const fetch = vi
     .spyOn(globalThis, "fetch")
     .mockResolvedValue(new Response(null, { status: 200 }));
+
   await runDeploy({ cwd: root });
   expect(mocks.create.mock.calls[0]?.[0]).toMatchObject({
     assets: [{ objectKey: "client.js" }],
@@ -153,11 +162,13 @@ it("uploads gzip server and client code with metadata matching the stored bytes"
     ],
   });
   expect(fetch).toHaveBeenCalledTimes(2);
+
   const uploaded = fetch.mock.calls.map(([url, options]) => ({
     code: gunzipSync(requireBytes(options?.body)).toString("utf-8"),
 
     url: url instanceof Request ? url.url : String(url),
   }));
+
   expect(uploaded).toContainEqual({
     code: "server-code",
     url: "https://uploads.example/server",
@@ -166,6 +177,7 @@ it("uploads gzip server and client code with metadata matching the stored bytes"
     code: "client-code",
     url: "https://uploads.example/client",
   });
+
   for (const [uploadUrl, options] of fetch.mock.calls) {
     const bytes = requireBytes(options?.body);
 
@@ -175,6 +187,7 @@ it("uploads gzip server and client code with metadata matching the stored bytes"
     ).endsWith("server")
       ? mocks.create.mock.calls[0]?.[0].server
       : mocks.create.mock.calls[0]?.[0].assets[0];
+
     expect(metadata).toMatchObject({
       checksum: createHash("sha256").update(bytes).digest("hex"),
       contentLength: bytes.byteLength,
@@ -182,6 +195,7 @@ it("uploads gzip server and client code with metadata matching the stored bytes"
     });
     expect(new Headers(options?.headers).get("Content-Encoding")).toBe("gzip");
   }
+
   expect(mocks.publish).toHaveBeenCalledOnce();
 });
 
@@ -216,6 +230,7 @@ it.each([
       ),
       "utf-8"
     );
+
     const rendered = z.string().parse(
       await new Liquid({ strictVariables: true }).parseAndRender(template, {
         appName: JSON.stringify("Test App"),
@@ -224,11 +239,13 @@ it.each([
         hostUrl: "https://host.example",
       })
     );
+
     const source =
       prelude +
       rendered
         .replace("const config =", `const ${name}${annotation} =`)
         .replace("export default config;", `export default ${name};`);
+
     const configPath = path.join(root, "patchsmith.config.ts");
     await writeFile(configPath, source);
     mocks.load.mockResolvedValue({
@@ -275,9 +292,11 @@ it("preserves client-only deployment uploads", async () => {
     path.join(root, ".patchsmith/patchsmith-upload.json"),
     JSON.stringify({ assets: { client: "client/client.js" }, version: 1 })
   );
+
   const fetch = vi
     .spyOn(globalThis, "fetch")
     .mockResolvedValue(new Response(null, { status: 200 }));
+
   await runDeploy({ cwd: root });
   expect(mocks.create.mock.calls[0]?.[0].server).toBeUndefined();
   expect(fetch).toHaveBeenCalledOnce();
@@ -297,6 +316,7 @@ it.each([false, true])(
       path.join(root, "tsconfig.json"),
       JSON.stringify({ compilerOptions: { skipLibCheck: true, types: [] } })
     );
+
     const onTypecheckFailed = vi
       .fn<
         NonNullable<
@@ -304,10 +324,12 @@ it.each([false, true])(
         >
       >()
       .mockResolvedValue(false);
+
     const deployment = runDeploy({
       cwd: root,
       onTypecheckFailed: interactive ? onTypecheckFailed : undefined,
     });
+
     await expect(deployment).rejects.toThrow("type check failed");
     await expect(deployment).rejects.toThrow(
       'Command: tsc --noEmit --project "tsconfig.json" --pretty false (app entries: "src/root.tsx", "src/server.ts")'
@@ -315,6 +337,7 @@ it.each([false, true])(
     await expect(deployment).rejects.not.toThrow(".patchsmith-typecheck-");
     await expect(deployment).rejects.toThrow("src/server.ts");
     await expect(deployment).rejects.toThrow("error TS2322");
+
     if (interactive) {
       expect(onTypecheckFailed.mock.calls[0]?.[0].output).toContain(
         "src/server.ts"
@@ -322,6 +345,7 @@ it.each([false, true])(
     } else {
       expect(onTypecheckFailed).not.toHaveBeenCalled();
     }
+
     expect(mocks.create).not.toHaveBeenCalled();
     expect(mocks.publish).not.toHaveBeenCalled();
   }
@@ -331,12 +355,14 @@ it("typechecks file route roots, layouts and views without a manual client entry
   await linkTestDependencies(root);
   await mkdir(path.join(root, "src/slots/panel"), { recursive: true });
   await writeFile(path.join(root, "src/server.ts"), "export default {};\n");
+
   const sources = [
     "src/root.tsx",
     "src/slots/panel/root.tsx",
     "src/slots/panel/layout.tsx",
     "src/slots/panel/index.view.tsx",
   ];
+
   await Promise.all(
     sources.map(async (file) => {
       await writeFile(path.join(root, file), "export default null;\n");
@@ -371,6 +397,7 @@ it("typechecks file route roots, layouts and views without a manual client entry
       );
     })
   );
+
   const onTypecheckFailed = vi
     .fn<
       NonNullable<
@@ -378,6 +405,7 @@ it("typechecks file route roots, layouts and views without a manual client entry
       >
     >()
     .mockResolvedValue(false);
+
   await expect(runDeploy({ cwd: root, onTypecheckFailed })).rejects.toThrow(
     "type check failed"
   );
@@ -388,12 +416,14 @@ it("typechecks file route roots, layouts and views without a manual client entry
   expect(onTypecheckFailed.mock.calls[0]?.[0].command).toContain(
     '"src/server.ts"'
   );
+
   for (const file of sources) {
     expect(onTypecheckFailed.mock.calls[0]?.[0].output).toContain(file);
     expect(onTypecheckFailed.mock.calls[0]?.[0].command).toContain(
       JSON.stringify(file)
     );
   }
+
   expect(mocks.publish).not.toHaveBeenCalled();
   const files = await readdir(root);
   expect(
@@ -438,12 +468,15 @@ it.each(["vite config", "option"])(
       filepath: path.join(root, "patchsmith.config.ts"),
       root,
     });
+
     const fetch = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(new Response(null, { status: 200 }));
+
     await runDeploy(
       mode === "option" ? { cwd: root, outDir: "output" } : { cwd: root }
     );
+
     const server = fetch.mock.calls.find(([url]) =>
       (url instanceof Request ? url.url : String(url)).endsWith("server")
     );
@@ -465,14 +498,17 @@ it.each(["missing", "expired"])(
     mocks.token.mockResolvedValue(
       credentials === "missing" ? undefined : { deployToken: "expired-token" }
     );
+
     const onLoginRequired = vi.fn().mockImplementation(
       asyncFixture(() => {
         expect(mocks.build).not.toHaveBeenCalled();
         expect(mocks.create).not.toHaveBeenCalled();
         mocks.token.mockResolvedValue({ deployToken: "new-token" });
+
         return { hostUrl: "https://host.example" };
       })
     );
+
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(null, { status: 200 })
     );
@@ -549,6 +585,7 @@ it("preserves signed upload headers and uploads logos without gzip encoding", as
   const logo = '<svg xmlns="http://www.w3.org/2000/svg"/>';
   await writeFile(path.join(root, ".patchsmith/client/logo-light.svg"), logo);
   const manifestPath = path.join(root, ".patchsmith/patchsmith-upload.json");
+
   const manifest = z
     .looseObject({
       assets: z.looseObject({
@@ -558,6 +595,7 @@ it("preserves signed upload headers and uploads logos without gzip encoding", as
       }),
     })
     .parse(JSON.parse(await readFile(manifestPath, "utf-8")));
+
   manifest.assets.logos = { light: "client/logo-light.svg" };
   await writeFile(manifestPath, JSON.stringify(manifest));
   mocks.create.mockResolvedValue({
@@ -579,16 +617,21 @@ it("preserves signed upload headers and uploads logos without gzip encoding", as
     },
     server: { uploadUrl: "https://uploads.example/server" },
   });
+
   const fetch = vi
     .spyOn(globalThis, "fetch")
     .mockResolvedValue(new Response(null, { status: 200 }));
+
   await runDeploy({ cwd: root });
+
   const clientUpload = fetch.mock.calls.find(([url]) =>
     (url instanceof Request ? url.url : String(url)).endsWith("client")
   );
+
   expect(
     new Headers(clientUpload?.[1]?.headers).get("x-amz-checksum-sha256")
   ).toBe("signed-client");
+
   const logoUpload = fetch.mock.calls.find(([url]) =>
     (url instanceof Request ? url.url : String(url)).endsWith("logo")
   );
@@ -639,6 +682,7 @@ it("agent JWT deployment uses shared authentication and the configured app witho
   vi.stubEnv("PATCHSMITH_AGENT_TOKEN", jwt);
   vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
     const request = input instanceof Request ? input : undefined;
+
     if (request?.url === "https://platform.example/api/platform/deployments") {
       expect(await request.json()).toMatchObject({
         app: { shortId: "app-one" },
@@ -648,24 +692,29 @@ it("agent JWT deployment uses shared authentication and the configured app witho
         },
       });
       expect(request.headers.get("authorization")).toBe(`Bearer ${jwt}`);
+
       return Response.json({
         assets: [{ uploadUrl: "https://uploads.example/client" }],
         deployment: { id: "deployment" },
         server: { uploadUrl: "https://uploads.example/server" },
       });
     }
+
     if (
       request?.url ===
       "https://platform.example/api/platform/deployments/deployment"
     ) {
       return Response.json({ id: "deployment", status: "published" });
     }
+
     if (request?.url === "https://platform.example/api/platform/apps/lookup") {
       return Response.json({ description: null, name: "Test App" });
     }
+
     if (isStringValue(input) && input.startsWith("https://uploads.example/")) {
       return new Response(null, { status: 200 });
     }
+
     throw new Error("Unexpected host or platform request");
   });
   const onLoginRequired = vi.fn();

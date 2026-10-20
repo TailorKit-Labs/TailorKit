@@ -28,6 +28,7 @@ const getGitHubUsername = async (
   try {
     kv = getKV();
     const cachedUsername = kv ? await kv.get(key, { timeout: 1000 }) : null;
+
     if (
       cachedUsername !== undefined &&
       cachedUsername !== null &&
@@ -40,6 +41,7 @@ const getGitHubUsername = async (
   }
 
   const accessToken = await getAccessToken();
+
   if (
     !(accessToken !== undefined && accessToken !== null && accessToken !== "")
   ) {
@@ -55,16 +57,19 @@ const getGitHubUsername = async (
       },
       signal: AbortSignal.timeout(5000),
     });
+
     if (!response.ok) {
       return null;
     }
 
     const profile: unknown = await response.json();
+
     if (!isObjectValue(profile) || profile === null || !("login" in profile)) {
       return null;
     }
 
     const username = profile.login;
+
     if (!isStringValue(username)) {
       return null;
     }
@@ -76,6 +81,7 @@ const getGitHubUsername = async (
         /* The cache write is best effort. */
       }
     })();
+
     return username;
   } catch {
     // Account management should remain available if GitHub is temporarily unavailable.
@@ -111,6 +117,7 @@ export const userRouter = {
     .input(z.object({ slug: z.string().min(2).max(48) }))
     .handler(async ({ input, errors }) => {
       const result = validateOrgSlug(input.slug);
+
       if (!result.valid) {
         throw errors.BAD_REQUEST({ message: result.reason });
       }
@@ -133,6 +140,7 @@ export const userRouter = {
       }
 
       const result = validateOrgSlug(input.slug);
+
       if (!result.valid) {
         throw errors.BAD_REQUEST({ message: result.reason });
       }
@@ -214,6 +222,7 @@ export const userRouter = {
       },
       with: { organization: true },
     });
+
     return invitations;
   }),
 
@@ -246,9 +255,11 @@ export const userRouter = {
     const accounts = await auth.api.listUserAccounts({
       headers: context.headers,
     });
+
     const githubAccount = accounts.find(
       (linkedAccount) => linkedAccount.providerId === "github"
     );
+
     const githubUsername = githubAccount
       ? await getGitHubUsername(githubAccount.id, async () => {
           try {
@@ -256,6 +267,7 @@ export const userRouter = {
               body: { accountId: githubAccount.id },
               headers: context.headers,
             });
+
             return tokens.accessToken;
           } catch {
             return null;
@@ -303,6 +315,7 @@ export const userRouter = {
       const accounts = await auth.api.listUserAccounts({
         headers: context.headers,
       });
+
       const passkeys = await db.query.passkey.findMany({
         columns: { id: true },
         where: { userId: context.user.id },

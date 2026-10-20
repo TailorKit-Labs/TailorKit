@@ -15,6 +15,7 @@ import type { ToolExecutionOptions } from "ai";
 import * as v from "valibot";
 
 export type PatchsmithToolInput = Record<string, JSONValue>;
+
 export type PatchsmithToolOutput =
   | { status: "running"; progress: Progress }
   | { status: "completed"; result: CallToolResult };
@@ -42,6 +43,7 @@ const streamTool = async function* streamTool(
   let failure: Error | undefined;
   let settled = false;
   let changed = Promise.withResolvers<boolean>();
+
   // Progress is a snapshot: retain only the latest when the consumer is slow.
   const pending = (async () => {
     try {
@@ -74,6 +76,7 @@ const streamTool = async function* streamTool(
     // oxlint-disable-next-line no-unmodified-loop-condition -- The concurrent MCP request updates settled and latest.
     while (!settled || latest !== undefined) {
       changed = Promise.withResolvers<boolean>();
+
       if (latest !== undefined) {
         const progress = latest;
         latest = undefined;
@@ -83,19 +86,24 @@ const streamTool = async function* streamTool(
         await changed.promise;
       }
     }
+
     if (failure !== undefined) {
       throw failure;
     }
+
     if (result === undefined) {
       throw new Error("Patchsmith MCP tool completed without a result.");
     }
+
     if (result.isError === true) {
       const message = result.content
         .filter((content) => content.type === "text")
         .map((content) => content.text)
         .join("\n");
+
       throw new Error(message || "Patchsmith MCP tool failed.");
     }
+
     yield { result, status: "completed" };
   } finally {
     controller.abort();
@@ -111,9 +119,11 @@ const executeTool = async function* executeTool(
 ): AsyncGenerator<PatchsmithToolOutput> {
   const controller = new AbortController();
   const signals = [controller.signal];
+
   if (execution.abortSignal !== undefined) {
     signals.push(execution.abortSignal);
   }
+
   const signal = AbortSignal.any(signals);
   signal.throwIfAborted();
 
@@ -121,6 +131,7 @@ const executeTool = async function* executeTool(
     { name: "patchsmith-ai-sdk", version: "1.0.0" },
     { versionNegotiation: { mode: { pin: "2026-07-28" } } }
   );
+
   try {
     const configuration = await transport();
     signal.throwIfAborted();
@@ -139,6 +150,7 @@ const executeTool = async function* executeTool(
 
 // The converter supplies the schema fields; narrow its object discriminator for MCP.
 const objectJsonSchema = v.looseObject({ type: v.literal("object") });
+
 // JSON Schema cannot express trimming; Valibot still applies it during validation.
 const toObjectJsonSchema = (schema: v.GenericSchema) =>
   v.parse(objectJsonSchema, toJsonSchema(schema, { ignoreActions: ["trim"] }));
@@ -147,9 +159,11 @@ const withJsonSchema = <TSchema extends v.GenericSchema>(schema: TSchema) =>
   jsonSchema<v.InferOutput<TSchema>>(toObjectJsonSchema(schema), {
     validate: (value) => {
       const result = v.safeParse(schema, value);
+
       if (!result.success) {
         return { error: new Error(v.summarize(result.issues)), success: false };
       }
+
       return { success: true, value: result.output };
     },
   });
@@ -160,6 +174,7 @@ const promptSchema = v.pipe(
   v.minLength(1),
   v.maxLength(32_000)
 );
+
 const agentResultSchema = v.object({
   answer: v.string(),
   appId: v.string(),
@@ -174,10 +189,13 @@ export const createTools = <TScopes extends Record<string, JSONValue>>(
   context: NoInfer<PatchsmithHostContext<TScopes>>
 ) => {
   const scopes = Object.keys(context.scopes);
+
   if (scopes.length === 0) {
     throw new Error("At least one host scope is required.");
   }
+
   const transport = async () => await patchsmith.mcp.transport(context);
+
   const createSchema = v.strictObject({
     description: v.optional(v.pipe(v.string(), v.trim(), v.maxLength(255))),
     name: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(127)),
@@ -189,6 +207,7 @@ export const createTools = <TScopes extends Record<string, JSONValue>>(
       )
     ),
   });
+
   const editSchema = v.strictObject({
     appId: v.pipe(v.string(), v.minLength(1)),
     prompt: promptSchema,
@@ -202,6 +221,7 @@ export const createTools = <TScopes extends Record<string, JSONValue>>(
       )
     ),
   });
+
   const listSchema = v.strictObject({
     page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)), 1),
     pageSize: v.optional(
@@ -209,20 +229,24 @@ export const createTools = <TScopes extends Record<string, JSONValue>>(
       100
     ),
   });
+
   const createDefinition = {
     inputSchema: toObjectJsonSchema(createSchema),
     name: "create_app",
     outputSchema: toObjectJsonSchema(agentResultSchema),
   };
+
   const editDefinition = {
     inputSchema: toObjectJsonSchema(editSchema),
     name: "edit_app",
     outputSchema: toObjectJsonSchema(agentResultSchema),
   };
+
   const listDefinition = {
     inputSchema: toObjectJsonSchema(listSchema),
     name: "list_apps",
   };
+
   return {
     createApp: tool({
       description:

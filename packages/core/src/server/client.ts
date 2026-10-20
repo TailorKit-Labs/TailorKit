@@ -19,13 +19,16 @@ export const createPatchsmithClient = (
   options: PatchsmithClientOptions
 ): PatchsmithRouterClient => {
   const url = URL.canParse(options.url) ? new URL(options.url) : undefined;
+
   // SAFETY: The configured URL is normalized into a pathname before the client uses it as an absolute route path.
   const link = new RPCLink({
     fetch: async (urlValue, init) => {
       const configuredHeaders = await (isFunctionValue(options.headers)
         ? options.headers()
         : options.headers);
+
       const headers = new Headers(configuredHeaders);
+
       for (const [key, value] of new Headers(init.headers)) {
         headers.set(key, value);
       }

@@ -17,15 +17,18 @@ export const usePatchsmithContext = (
   expectedClient?: PatchsmithClientConfig
 ): PatchsmithContextValue => {
   const context = useContext(PatchsmithContext);
+
   if (!context) {
     throw new Error(
       `${component} must be rendered inside a Patchsmith Provider.`
     );
   }
+
   if (expectedClient && context.client !== expectedClient) {
     throw new Error(
       `${component} was created for a different Patchsmith client than the surrounding Provider.`
     );
   }
+
   return context;
 };

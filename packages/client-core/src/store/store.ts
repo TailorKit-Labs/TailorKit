@@ -23,15 +23,19 @@ export const createPatchsmithStore = (options: {
   assetsBaseUrl?: string | URL;
 }) => {
   const { baseUrl, contract, assetsBaseUrl, apps: initialApps } = options;
+
   const client =
     options.client ??
     createPatchsmithFetchClient({ baseUrl, contract, tools: options.tools });
+
   if (toBaseUrl(baseUrl).href !== toBaseUrl(client.baseUrl).href) {
     throw new Error(
       "createPatchsmithStore: baseUrl does not match the supplied fetch client."
     );
   }
+
   const apps = createAppsStore(client, initialApps);
+
   return {
     assetsBaseUrl,
     baseUrl: client.baseUrl,

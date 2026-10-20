@@ -12,7 +12,9 @@ const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
   typeof value === "object" && value !== null;
 
 export type Functions = AppDefinition["functions"];
+
 type RegisteredFunction = Exclude<Functions[string], Functions>;
+
 export const isFunction = (
   value: Functions[string]
 ): value is RegisteredFunction =>
@@ -23,16 +25,21 @@ export const resolveFunction = (
   name: string
 ): RegisteredFunction | undefined => {
   let current: RegisteredFunction | Functions = functions;
+
   for (const part of name.split(".")) {
     if (isFunction(current) || !Object.hasOwn(current, part)) {
       return undefined;
     }
+
     const next: RegisteredFunction | Functions | undefined = current[part];
+
     if (!(next !== undefined && next !== null)) {
       return undefined;
     }
+
     current = next;
   }
+
   return isFunction(current) ? current : undefined;
 };
 
@@ -41,9 +48,11 @@ const freezeIdentity = (value: unknown): void => {
   if (!isObjectValue(value) || Object.isFrozen(value)) {
     return;
   }
+
   for (const child of Object.values(value)) {
     freezeIdentity(child);
   }
+
   Object.freeze(value);
 };
 
@@ -56,12 +65,16 @@ export const prepareFunction = (
   if (identity.expiresAt <= Date.now()) {
     throw new AppError("UNAUTHORIZED", "App token expired");
   }
+
   freezeIdentity(identity);
   const fn = resolveFunction(app.functions, input.name);
+
   if (!fn || fn.kind !== kind) {
     throw new AppError("NOT_FOUND", "App function not found");
   }
+
   const args = fn.args["~standard"].validate(input.args);
+
   if (args instanceof Promise) {
     // oxlint-disable-next-line promise/prefer-await-to-then -- Database dispatch must remain synchronous; drain an unsupported async validator before rejecting it.
     void args.catch(() => {
@@ -72,15 +85,19 @@ export const prepareFunction = (
       "Function arguments require synchronous validation"
     );
   }
+
   if (args.issues) {
     throw new AppError("BAD_REQUEST", "Invalid function arguments");
   }
+
   return { args: args.value, fn };
 };
 
 /** Validate serialization before a mutation can commit or an action can return. */
 const jsonResultSchema = z.json();
+
 export type FunctionValue = z.output<typeof jsonResultSchema>;
+
 export const functionValue = (
   fn: RegisteredFunction,
   // oxlint-disable-next-line anti-slop/no-unknown-parameters -- This parser, serializer, or runtime adapter handles arbitrary values before validating or encoding their domain representation.
@@ -90,6 +107,7 @@ export const functionValue = (
 
   if (fn.result) {
     const result = fn.result["~standard"].validate(value);
+
     if (result instanceof Promise) {
       // oxlint-disable-next-line promise/prefer-await-to-then -- Result validation runs before a synchronous database transaction commits.
       void result.catch(() => {
@@ -100,11 +118,15 @@ export const functionValue = (
         "Function results require synchronous validation"
       );
     }
+
     if (result.issues) {
       throw new AppError("INTERNAL_SERVER_ERROR", "Invalid function result");
     }
+
     ({ value } = result);
   }
+
   const serialized = JSON.stringify(value ?? null);
+
   return jsonResultSchema.parse(JSON.parse(serialized));
 };

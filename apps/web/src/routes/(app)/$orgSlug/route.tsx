@@ -10,6 +10,7 @@ export const Route = createFileRoute("/(app)/$orgSlug")({
     const orgs = await context.queryClient.query(
       context.orpc.user.getOrgs.queryOptions()
     );
+
     if (!orgs.some((org) => org.slug === params.orgSlug)) {
       await clearActiveOrg();
       redirect({
@@ -38,6 +39,7 @@ export const Route = createFileRoute("/(app)/$orgSlug")({
         await clearActiveOrg();
         redirect({ throw: true, reloadDocument: true, replace: true, to: "/" });
       });
+
     if (!(org !== undefined && org !== null)) {
       notFound({ throw: true });
     }

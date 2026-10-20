@@ -23,6 +23,7 @@ createPatchsmithServer({
   slots: { navbar: { views: ["/"] }, panel: { views: ["/users"] } },
   views: { "/": z.object({}), "/users": z.object({}) },
 });
+
 createPatchsmithServer({
   baseUrl: "https://example.com/api/patchsmith",
 
@@ -40,11 +41,13 @@ const namedScopes = {
   org: z.object({ orgId: z.string() }),
   userOrg: z.object({ orgId: z.string(), userId: z.string() }),
 };
+
 const scopedServer = createPatchsmithServer({
   baseUrl: "https://example.com/api/patchsmith",
   components: {},
   scopes: namedScopes,
 });
+
 const explicitlyTypedOptions: PatchsmithServerOptions<
   EmptyDefinitionMap,
   EmptyDefinitionMap,
@@ -55,7 +58,9 @@ const explicitlyTypedOptions: PatchsmithServerOptions<
   components: {},
   scopes: namedScopes,
 };
+
 const explicitlyTypedServer = createPatchsmithServer(explicitlyTypedOptions);
+
 void explicitlyTypedServer.handler(
   new Request("https://example.com/api/patchsmith/apps"),
   {
@@ -63,10 +68,12 @@ void explicitlyTypedServer.handler(
     authenticate: () => ({ scopes: { org: { orgId: "org_1" } } }),
   }
 );
+
 // @ts-expect-error MCP transports require the same authenticated subject as the host handler.
 void explicitlyTypedServer.mcp.transport({
   scopes: { org: { orgId: "org_1" } },
 });
+
 void explicitlyTypedServer.handler(
   new Request("https://example.com/api/patchsmith/apps"),
   {
@@ -79,6 +86,7 @@ void explicitlyTypedServer.handler(
     }),
   }
 );
+
 void scopedServer.handler(
   new Request("https://example.com/api/patchsmith/apps"),
   {
@@ -91,6 +99,7 @@ void scopedServer.handler(
     }),
   }
 );
+
 void scopedServer.handler(
   new Request("https://example.com/api/patchsmith/apps"),
   {
@@ -100,6 +109,7 @@ void scopedServer.handler(
     }),
   }
 );
+
 void scopedServer.handler(
   new Request("https://example.com/api/patchsmith/apps"),
   {
@@ -107,6 +117,7 @@ void scopedServer.handler(
     authenticate: () => ({ scopes: {}, subjectId: "user" }),
   }
 );
+
 void scopedServer.handler(
   new Request("https://example.com/api/patchsmith/apps"),
   {
@@ -130,9 +141,11 @@ const nonJsonSchemaScope = {
       value: Parameters<StandardSchemaV1["~standard"]["validate"]>[0]
     ) => {
       const parsed = z.object({ accountId: z.string() }).safeParse(value);
+
       if (!parsed.success) {
         return { issues: [{ message: "Expected an account ID." }] };
       }
+
       return { value: parsed.data };
     },
     vendor: "core-type-test",
@@ -145,6 +158,7 @@ const standardOnlyServer = createPatchsmithServer({
   components: {},
   scopes: { account: nonJsonSchemaScope },
 });
+
 void standardOnlyServer.handler(
   new Request("https://example.com/api/patchsmith/apps"),
   {
@@ -159,6 +173,7 @@ const contractServer = createServer({
   baseUrl: "https://example.com/api/patchsmith",
   contract: defineContract({ scopes: namedScopes }),
 });
+
 for (const installApp of [
   scopedServer.experimental.installApp,
   contractServer.experimental.installApp,

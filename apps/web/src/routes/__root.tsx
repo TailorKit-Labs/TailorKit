@@ -34,10 +34,13 @@ export interface RouterAppContext {
 
 const UserThemeSync = () => {
   const { setTheme, theme } = useTheme();
+
   const { data: session, isPending } = useQuery(
     orpc.user.getSession.queryOptions()
   );
+
   const lastSyncedTheme = useRef<string | null>(null);
+
   const userTheme = session
     ? (getUserTheme(session.user) ?? fallbackTheme)
     : fallbackTheme;

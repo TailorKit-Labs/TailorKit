@@ -37,6 +37,7 @@ export const SidebarUserMenu = () => {
   const email = session?.user?.email ?? "";
   const image = session?.user?.image ?? undefined;
   const selectedTheme = theme ?? getUserTheme(session?.user) ?? fallbackTheme;
+
   const initials = name
     .split(" ")
     .map((w) => w[0])
@@ -142,6 +143,7 @@ export const SidebarUserMenu = () => {
                         } as Parameters<typeof authClient.updateUser>[0]
                         /* oxlint-enable typescript/no-unsafe-type-assertion */
                       );
+
                       if (result.error) {
                         toastManager.add({
                           description:

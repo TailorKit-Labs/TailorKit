@@ -25,6 +25,7 @@ for (const entry of ["index", "s3"]) {
           timeout: 30_000,
         }
       );
+
       assert.ifError(result.error);
       assert.equal(result.status, 0, result.stderr);
     });

@@ -25,6 +25,7 @@ describe("JSON Schema spec", () => {
     const serialized = schema["~standard"].jsonSchema.output({
       target: "draft-2020-12",
     });
+
     expect(v.parse(JsonSchema, serialized)).toEqual(serialized);
   });
 
@@ -34,6 +35,7 @@ describe("JSON Schema spec", () => {
       properties: { value: { $ref: "#/$defs/value" } },
       type: "object",
     };
+
     expect(v.parse(JsonSchema, schema)).toEqual(schema);
     expect(
       v.safeParse(JsonSchema, { $defs: { value: { "x-unsupported": true } } })

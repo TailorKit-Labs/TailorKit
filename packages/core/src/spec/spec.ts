@@ -40,7 +40,9 @@ const PatchsmithSchemaSpecSchema = v.pipe(
     if (!dataset.typed) {
       return;
     }
+
     const schema = dataset.value;
+
     for (const [name, slot] of Object.entries(schema.slots)) {
       for (const [index, view] of slot.views.entries()) {
         if (!Object.hasOwn(schema.views, view)) {

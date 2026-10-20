@@ -29,13 +29,16 @@ export const AccountSidebar = () => {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
+
   const isActive = (path: string) => pathname === path;
 
   const { data: orgs } = useQuery(orpc.user.getOrgs.queryOptions());
+
   const activeOrgSlug =
     typeof window === "undefined"
       ? ""
       : (sessionStorage.getItem("active-org-id") ?? "");
+
   const backOrg = orgs?.find((org) => org.slug === activeOrgSlug) ?? orgs?.[0];
 
   return (

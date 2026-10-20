@@ -3,7 +3,9 @@ import { RPCHandler } from "@orpc/server/fetch";
 import { beforeEach, expect, it, vi } from "vite-plus/test";
 
 const mocks = vi.hoisted(() => ({ getKV: vi.fn() }));
+
 vi.mock("@patchsmith/kv", () => ({ getKV: mocks.getKV }));
+
 vi.mock("#env", () => ({ env: { NODE_ENV: "test" } }));
 
 const { createRateLimiter, ratelimitMiddleware, RateLimitHandlerPlugin } =
@@ -49,6 +51,7 @@ it("deduplicates the limiter per request and returns HTTP 429 with retry headers
   const limiter = createRateLimiter({ maxRequests: 1, window: 60_000 });
   const limit = vi.spyOn(limiter, "limit");
   const middleware = ratelimitMiddleware(limiter, () => "user:1");
+
   const handler = new RPCHandler(
     {
       ping: os
@@ -58,12 +61,14 @@ it("deduplicates the limiter per request and returns HTTP 429 with retry headers
     },
     { plugins: [new RateLimitHandlerPlugin()] }
   );
+
   const request = requestImplementation;
 
   const first = await handler.handle(request(), {
     context: {},
     prefix: "/rpc",
   });
+
   expect(first.response?.status).toBe(200);
   expect(first.response?.headers.get("ratelimit-limit")).toBe("1");
   expect(limit).toHaveBeenCalledTimes(1);
@@ -72,6 +77,7 @@ it("deduplicates the limiter per request and returns HTTP 429 with retry headers
     context: {},
     prefix: "/rpc",
   });
+
   expect(second.response?.status).toBe(429);
   expect(second.response?.headers.get("ratelimit-remaining")).toBe("0");
   expect(Number(second.response?.headers.get("retry-after"))).toBeGreaterThan(

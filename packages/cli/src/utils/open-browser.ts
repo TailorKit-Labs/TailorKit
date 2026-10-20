@@ -22,8 +22,10 @@ export const openUrlInBrowser = async (url: string): Promise<boolean> =>
       resolve,
       reject: rejectPending,
     } = Promise.withResolvers<boolean>();
+
     try {
       const { args, command } = getBrowserCommand(url);
+
       const child = spawn(command, args, {
         detached: true,
         stdio: "ignore",
@@ -41,5 +43,6 @@ export const openUrlInBrowser = async (url: string): Promise<boolean> =>
     } catch (error) {
       rejectPending(error);
     }
+
     return await pendingPromise;
   })();

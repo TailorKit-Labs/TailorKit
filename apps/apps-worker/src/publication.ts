@@ -7,6 +7,7 @@ export const validateDeploymentPublication = (
   publication: { projectId: string; appShortId: string }
 ): void => {
   const segments = metadata.objectKey.split("/");
+
   if (
     metadata.projectId !== publication.projectId ||
     segments.length !== 8 ||

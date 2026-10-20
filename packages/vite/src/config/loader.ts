@@ -25,6 +25,7 @@ export const loadPatchsmithConfig = async (
   cwd = process.cwd()
 ): Promise<LoadedPatchsmithConfig> => {
   const searchFrom = path.resolve(cwd);
+
   const result =
     configPath === undefined
       ? await explorer.search(searchFrom)
@@ -33,6 +34,7 @@ export const loadPatchsmithConfig = async (
   if (result === null) {
     throw new Error(`Could not find patchsmith config from ${searchFrom}.`);
   }
+
   return {
     config: v.parse(patchsmithConfigSchema, result.config),
     filepath: result.filepath,

@@ -33,6 +33,7 @@ const annotatedComponent: Component = {
   },
   description: "Controlled value with an onValueChange callback.",
 };
+
 void annotatedComponent;
 
 expectTypeOf<ComponentProps<Button & { description: string }>>().toEqualTypeOf<

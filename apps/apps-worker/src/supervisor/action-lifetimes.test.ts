@@ -29,6 +29,7 @@ it("admits actions without an application concurrency limit and revokes them on 
   const leases = createActionLeases();
   const active = Array.from({ length: 32 }, () => leases.open(identity));
   expect(active.every((lease) => !lease.signal.aborted)).toBe(true);
+
   for (const lease of active) {
     lease.close();
     expect(lease.signal.aborted).toBe(true);
@@ -103,11 +104,14 @@ it("sends the verified app session directly to the product and rejects redirects
       status: 302,
     })
   );
+
   const lease = createActionLeases().open(identity);
+
   const capability = new ActionCapability(lease, async () => {}, {
     token: "verified-app-credential",
     url: identity.toolUrl,
   });
+
   try {
     await expect(
       capability.tool("customers.read", { id: "customer" })

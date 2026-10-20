@@ -26,9 +26,11 @@ const getChannel = (iframe: HTMLIFrameElement): string => {
   const match = /data-patchsmith-channel="(?<channel>[a-f0-9]+)"/u.exec(
     iframe.srcdoc
   );
+
   if (!(match?.[1] !== undefined && match?.[1] !== null && match?.[1] !== "")) {
     throw new Error("Unable to find iframe channel.");
   }
+
   return match[1];
 };
 
@@ -45,6 +47,7 @@ const getContentWindow = (iframe: HTMLIFrameElement): Window => {
   if (!iframe.contentWindow) {
     throw new Error("Expected iframe content window.");
   }
+
   return iframe.contentWindow;
 };
 
@@ -101,9 +104,11 @@ describe("createIframeUiHost", () => {
     const host = createIframeUiHost("https://assets.test/app.js", {
       fetch: createFetch(),
     });
+
     host.mount();
     const postMessage = vi.spyOn(getContentWindow(host.iframe), "postMessage");
     const channel = getChannel(host.iframe);
+
     const callback = {
       data: { event: "patchsmithcallbackonclick", id: "queued", nodeId: "n:2" },
       type: "dispatchCallback" as const,
@@ -135,10 +140,12 @@ describe("createIframeUiHost", () => {
           NonNullable<Parameters<typeof createIframeUiHost>[1]>["onError"]
         >
       >();
+
     const host = createIframeUiHost("https://assets.test/app.js", {
       fetch: createFetch(),
       onError,
     });
+
     const channel = getChannel(host.iframe);
 
     emitFromIframe(host.iframe, {
@@ -171,8 +178,10 @@ describe("createIframeUiHost", () => {
     const host = createIframeUiHost("https://assets.test/app.js", {
       fetch: createFetch(),
     });
+
     host.mount();
     const postMessage = vi.spyOn(getContentWindow(host.iframe), "postMessage");
+
     const invalid = {
       data: { timestamp: Infinity },
       type: "animationFrame" as const,
@@ -198,10 +207,12 @@ describe("createIframeUiHost", () => {
           NonNullable<Parameters<typeof createIframeUiHost>[1]>["onError"]
         >
       >();
+
     const host = createIframeUiHost("https://assets.test/app.js", {
       fetch: createFetch(),
       onError,
     });
+
     const channel = getChannel(host.iframe);
 
     window.dispatchEvent(
@@ -217,6 +228,7 @@ describe("createIframeUiHost", () => {
     const host = createIframeUiHost("https://assets.test/app.js", {
       fetch: createFetch(),
     });
+
     host.mount();
     expect(document.body.contains(host.iframe)).toBe(true);
     host.destroy();
@@ -226,10 +238,12 @@ describe("createIframeUiHost", () => {
 
 it("updates a mounted slot without fetching its app bundle again", async () => {
   const fetch = createFetch();
+
   const host = createIframeUiHost("https://assets.test/app.js", {
     fetch,
     props: { slot: "navbar", view: "/users" },
   });
+
   host.mount();
   const postMessage = vi.spyOn(getContentWindow(host.iframe), "postMessage");
   const channel = getChannel(host.iframe);
@@ -265,6 +279,7 @@ describe("backend JWT bridge", () => {
       token: "platform-token",
       url: "https://runtime.test/rpc",
     };
+
     const getBackendSession = createSessionProvider({
       appId: identity.appId,
       baseUrl: "https://host.test/api/patchsmith",
@@ -279,12 +294,15 @@ describe("backend JWT bridge", () => {
         })
       ),
     });
+
     const host = createIframeUiHost("https://assets.test/app.js", {
       fetch: createFetch(),
       getBackendSession,
     });
+
     host.mount();
     const channel = getChannel(host.iframe);
+
     const bridge = createIframeBackend((data) => {
       emitFromIframe(host.iframe, {
         channel,
@@ -292,17 +310,20 @@ describe("backend JWT bridge", () => {
         type: sandboxMessageType,
       });
     });
+
     vi.spyOn(getContentWindow(host.iframe), "postMessage").mockImplementation(
       (message) => {
         const { payload: parsed } = v.parse(
           v.object({ payload: HostToIframePayload }),
           message
         );
+
         if (parsed.type === "backendSessionResult") {
           bridge.receive(parsed.data);
         }
       }
     );
+
     try {
       await expect(bridge.getSession({ refresh: false })).resolves.toEqual(
         session
@@ -319,18 +340,22 @@ describe("backend JWT bridge", () => {
       token: "scoped-token",
       url: "https://runtime.test/rpc",
     };
+
     const getBackendSession = vi.fn().mockResolvedValue(session);
+
     const onError =
       vi.fn<
         NonNullable<
           NonNullable<Parameters<typeof createIframeUiHost>[1]>["onError"]
         >
       >();
+
     const host = createIframeUiHost("https://assets.test/app.js", {
       fetch: createFetch(),
       getBackendSession,
       onError,
     });
+
     host.mount();
     await vi.waitFor(() => {
       expect(host.iframe.isConnected).toBe(true);
@@ -379,6 +404,7 @@ describe("backend JWT bridge", () => {
       fetch: createFetch(),
       getBackendSession: vi.fn().mockRejectedValue(new Error("No backend")),
     });
+
     host.mount();
     await vi.waitFor(() => {
       expect(host.iframe.isConnected).toBe(true);
@@ -397,36 +423,47 @@ it.each(["backend-first", "tools-first"])(
       token: "token",
       url: "https://runtime.test/rpc",
     };
+
     let complete!: () => void;
+
     const pending = (async () => {
       const {
         promise: pendingPromise,
         resolve,
         reject: rejectPending,
       } = Promise.withResolvers<ReturnType<() => void>>();
+
       try {
         complete = resolve;
       } catch (error) {
         rejectPending(error);
       }
+
       await pendingPromise;
     })();
+
     const client = vi.fn(async () => {
       await pending;
+
       return "output";
     });
+
     const getBackendSession = vi.fn(async () => {
       await pending;
+
       return session;
     });
+
     const host = createIframeUiHost("https://assets.test/app.js", {
       fetch: createFetch(),
       getBackendSession,
       toolBridge: { client, session: vi.fn().mockResolvedValue(session) },
     });
+
     host.mount();
     const postMessage = vi.spyOn(getContentWindow(host.iframe), "postMessage");
     const channel = getChannel(host.iframe);
+
     const send = (
       type: "toolRequest" | "backendSessionRequest",
       id: string
@@ -443,11 +480,13 @@ it.each(["backend-first", "tools-first"])(
         type: sandboxMessageType,
       });
     };
+
     try {
       const types =
         order === "backend-first"
           ? (["backendSessionRequest", "toolRequest"] as const)
           : (["toolRequest", "backendSessionRequest"] as const);
+
       for (const type of types) {
         for (
           let index = 0;
@@ -457,6 +496,7 @@ it.each(["backend-first", "tools-first"])(
           send(type, String(index));
         }
       }
+
       expect(client).toHaveBeenCalledTimes(32);
       expect(getBackendSession).toHaveBeenCalledTimes(4);
       // Each kind rejects duplicates and over-capacity requests independently.
@@ -489,21 +529,27 @@ it("correlates concurrent callback results and rejects failures", async () => {
   const host = createIframeUiHost("https://assets.test/app.js", {
     fetch: createFetch(),
   });
+
   host.mount();
   const channel = getChannel(host.iframe);
+
   const first = host.dispatch({
     data: { event: "save", id: "first", nodeId: "n:1" },
     type: "dispatchCallback",
   });
+
   const second = host.dispatch({
     data: { event: "save", id: "second", nodeId: "n:1" },
     type: "dispatchCallback",
   });
+
   const failure = host.dispatch({
     data: { event: "save", id: "failure", nodeId: "n:1" },
     type: "dispatchCallback",
   });
+
   const failed = expect(failure).rejects.toThrow("Save failed");
+
   const reply = (data: { id: string; output?: unknown; error?: string }) => {
     emitFromIframe(host.iframe, {
       channel,
@@ -511,6 +557,7 @@ it("correlates concurrent callback results and rejects failures", async () => {
       type: sandboxMessageType,
     });
   };
+
   reply({ id: "unknown", output: "ignored" });
   reply({ id: "second", output: false });
   reply({ id: "first", output: { saved: true } });
@@ -523,21 +570,26 @@ it("correlates concurrent callback results and rejects failures", async () => {
 
 it("rejects pending callbacks on destruction and timeout", async () => {
   vi.useFakeTimers();
+
   try {
     const host = createIframeUiHost("https://assets.test/app.js", {
       fetch: createFetch(),
     });
+
     const timed = host.dispatch({
       data: { event: "save", id: "timed", nodeId: "n:1" },
       type: "dispatchCallback",
     });
+
     const timeout = expect(timed).rejects.toThrow("timed out");
     await vi.advanceTimersByTimeAsync(30_000);
     await timeout;
+
     const pending = host.dispatch({
       data: { event: "save", id: "pending", nodeId: "n:1" },
       type: "dispatchCallback",
     });
+
     const destroyed = expect(pending).rejects.toThrow("destroyed");
     host.destroy();
     await destroyed;
@@ -554,6 +606,7 @@ it("rejects pending callbacks on destruction and timeout", async () => {
 
 it("rejects queued callbacks when the app fails to load", async () => {
   const onError = vi.fn<(error: Error) => void>();
+
   const host = createIframeUiHost("https://assets.test/app.js", {
     fetch: async () => {
       await Promise.resolve();
@@ -561,11 +614,14 @@ it("rejects queued callbacks when the app fails to load", async () => {
     },
     onError,
   });
+
   host.mount();
+
   const pending = host.dispatch({
     data: { event: "save", id: "queued", nodeId: "n:1" },
     type: "dispatchCallback",
   });
+
   const rejected = expect(pending).rejects.toThrow("App unavailable");
   emitFromIframe(host.iframe, {
     channel: getChannel(host.iframe),

@@ -10,11 +10,13 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
 const scopes = { org: z.object({ tenant: z.string().min(1) }) };
 const defaultSetupOptions = { projectKey: "host-key" };
+
 const setup = (
   options: {
     projectKey?: string;
@@ -22,6 +24,7 @@ const setup = (
   } = defaultSetupOptions
 ) => {
   const fetch = vi.fn();
+
   const server = createPatchsmithServer({
     $internal: {
       platformBaseUrl: "https://platform.test/api/platform/",
@@ -33,13 +36,16 @@ const setup = (
     projectKey: options.projectKey,
     scopes,
   });
+
   return { fetch, server };
 };
+
 const contextSchema = z.object({
   hostUrl: z.string(),
   scopes: z.record(z.string(), z.json()),
   subjectId: z.string(),
 });
+
 const context = (headers: Record<string, string>) =>
   contextSchema.parse(
     JSON.parse(
@@ -53,10 +59,12 @@ const context = (headers: Record<string, string>) =>
 describe("MCP transport configuration", () => {
   it("returns a direct platform URL and headers from scopes and the authenticated subject", async () => {
     const { server, fetch } = setup();
+
     const transport = await server.mcp.transport({
       scopes: { org: { tenant: "one" } },
       subjectId: "user-one",
     });
+
     expect(transport.url).toBe(
       "https://platform.test/api/platform/app-agent/mcp"
     );
@@ -75,10 +83,12 @@ describe("MCP transport configuration", () => {
       contract: defineContract({ components: {}, scopes }),
       projectKey: "host-key",
     });
+
     const result = await server.mcp.transport({
       scopes: { org: { tenant: "one" } },
       subjectId: "user-one",
     });
+
     expect(result.url).toBe("https://patchsmith.io/api/platform/app-agent/mcp");
     expect(context(result.headers).subjectId).toBe("user-one");
   });
@@ -86,14 +96,17 @@ describe("MCP transport configuration", () => {
   it("does not expose a proxy handler or mount a host MCP route", async () => {
     const { server, fetch } = setup();
     expect(server.mcp).not.toHaveProperty("handler");
+
     const authenticate = vi.fn(() => ({
       scopes: { org: { tenant: "one" } },
       subjectId: "user-one",
     }));
+
     const response = await server.handler(
       new Request("https://host.test/api/patchsmith/mcp", { method: "POST" }),
       { authenticate }
     );
+
     expect(response.status).toBe(404);
     expect(fetch).not.toHaveBeenCalled();
     expect(authenticate).not.toHaveBeenCalled();
@@ -122,14 +135,17 @@ describe("MCP transport configuration", () => {
 
   it("encodes Unicode identities safely and isolates callers", async () => {
     const { server } = setup();
+
     const first = await server.mcp.transport({
       scopes: { org: { tenant: "墨尔本" } },
       subjectId: "用户",
     });
+
     const second = await server.mcp.transport({
       scopes: { org: { tenant: "two" } },
       subjectId: "user-two",
     });
+
     expect(first.headers["x-patchsmith-context"]).toMatch(/^[A-Za-z0-9_-]+$/u);
     expect(context(first.headers)).toMatchObject({
       scopes: { org: { tenant: "墨尔本" } },
@@ -145,11 +161,14 @@ describe("MCP transport configuration", () => {
     const headers = vi
       .fn<() => Promise<{ authorization: string }>>()
       .mockResolvedValue({ authorization: "Bearer custom-key" });
+
     const { server } = setup({ platformHeaders: headers });
+
     const awaitedResult1 = await server.mcp.transport({
       scopes: { org: { tenant: "one" } },
       subjectId: "user-one",
     });
+
     expect(awaitedResult1.headers.authorization).toBe("Bearer custom-key");
     expect(headers).toHaveBeenCalledOnce();
     const missing = setup({}).server;
@@ -168,9 +187,11 @@ describe("MCP transport configuration", () => {
       projectKey: "host-key",
       scopes: { org: z.record(z.string(), z.string()) },
     });
+
     const tenant = Object.fromEntries(
       Array.from({ length: 30 }, (_, i) => [String(i), "x".repeat(255)])
     );
+
     await expect(
       large.mcp.transport({ scopes: { org: tenant }, subjectId: "user-one" })
     ).rejects.toThrow("header limit");

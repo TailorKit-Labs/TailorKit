@@ -12,6 +12,7 @@ export const handleAuthRequest = async ({ request }: { request: Request }) => {
     "patchsmith.adapter": "better-auth",
     "patchsmith.package": "apps-web",
   });
+
   return await auth.handler(request);
 };
 

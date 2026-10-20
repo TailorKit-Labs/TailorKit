@@ -16,7 +16,9 @@ const reactWorkspaces = [
   "playground/apps/todo/**",
   "playground/tanstack-start/**",
 ];
+
 const tanstackWorkspaces = ["apps/web", "playground/tanstack-start"];
+
 const aliasWorkspaces = [
   "apps/web",
   "packages/agent",
@@ -49,6 +51,7 @@ const aliasWorkspaces = [
   "playground/apps/todo",
   "playground/tanstack-start",
 ];
+
 const ignorePatterns = [
   ".agents/skills",
   "**/.agents/skills/patchsmith-capabilities/**",

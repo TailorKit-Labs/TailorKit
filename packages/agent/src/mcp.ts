@@ -31,6 +31,7 @@ const editSchema = z.strictObject({
       "Continue this app’s existing conversation. Omit to start a new thread for an independent change."
     ),
 });
+
 const createSchema = z.strictObject({
   description: z.string().trim().max(255).optional(),
   name: z.string().trim().min(1).max(127),
@@ -87,6 +88,7 @@ const runAgentTool = async (
   let progress = 0;
   const { signal } = context.mcpReq;
   const progressToken = context.mcpReq._meta?.progressToken;
+
   const reporter =
     progressToken === undefined
       ? undefined
@@ -100,6 +102,7 @@ const runAgentTool = async (
             },
           });
         }, signal);
+
   try {
     const value = await operation({
       onProgress: async (event) => {
@@ -108,7 +111,9 @@ const runAgentTool = async (
       },
       signal,
     });
+
     await reporter?.flush();
+
     return {
       content: [
         {
@@ -131,6 +136,7 @@ export const createAppAgentMcp = (
   if (!scopeNames.length) {
     throw new Error("At least one host scope is required.");
   }
+
   const authorizedCreateSchema = createSchema.extend({
     scope: z
       .enum(scopeNames)
@@ -138,6 +144,7 @@ export const createAppAgentMcp = (
         "Name of the host-authorized scope in which to create the app."
       ),
   });
+
   return createMcpHandler(
     () => {
       const server = new McpServer(serverInfo, { capabilities });
@@ -198,6 +205,7 @@ export const createAppAgentMcp = (
             async (progress) => await backend.editApp(input, progress)
           )
       );
+
       return server;
     },
     { legacy: "reject", responseMode: "sse" }

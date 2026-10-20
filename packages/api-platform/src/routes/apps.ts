@@ -34,12 +34,14 @@ export const AppWithCurrentDeployment = App.omit({ scopeKey: true }).extend({
     .optional(),
   views: AppDeployment.shape.views,
 });
+
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
 const createUniqueAppShortId = async (projectId: string) => {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const shortId = createShortId();
+
     // oxlint-disable-next-line no-await-in-loop -- Each retry depends on the result of the previous attempt.
     const existing = await db.query.app.findFirst({
       where: { projectId, shortId },
@@ -65,6 +67,7 @@ const listApps = cliRouter
   .handler(async ({ context, input }) => {
     const { page, pageSize } = input.body;
     const scopes = canonicalizeScopes(input.body.scopes);
+
     const apps = await db.query.app.findMany({
       limit: pageSize + 1,
       offset: (page - 1) * pageSize,
@@ -140,6 +143,7 @@ export const createAppRecord = async (
   createdByAgent = false
 ) => {
   const scope = canonicalizeScope(input.scope);
+
   const [createdApp] = await db
     .insert(app)
     .values({
@@ -207,7 +211,9 @@ const installApp = protectedRouter
         },
       },
     });
+
     const deployment = source?.currentDeployment;
+
     if (!source || !deployment) {
       throw new ORPCError("NOT_FOUND", {
         message: "App has no published deployment.",
@@ -215,6 +221,7 @@ const installApp = protectedRouter
     }
 
     const scope = canonicalizeScope(input.body.scope);
+
     const [installed] = await db
       .insert(app)
       .values({
@@ -229,6 +236,7 @@ const installApp = protectedRouter
       })
       .onConflictDoNothing({ target: [app.projectId, app.slug] })
       .returning();
+
     if (!installed) {
       throw new ORPCError("CONFLICT", {
         message: "App slug is already in use in this project.",
@@ -265,11 +273,13 @@ const deleteApp = cliRouter
         id: { ne: context.app.id },
       },
     });
+
     if (dependent) {
       throw new ORPCError("CONFLICT", {
         message: "Remove installations using this app before deleting it.",
       });
     }
+
     try {
       await db.delete(app).where(eq(app.id, context.app.id));
     } catch (error) {
@@ -277,6 +287,7 @@ const deleteApp = cliRouter
         error instanceof Error && error.cause !== undefined
           ? error.cause
           : error;
+
       const dependencyViolation = z
         .object({
           code: z.enum(["23503", "23001"]),
@@ -285,11 +296,13 @@ const deleteApp = cliRouter
           ),
         })
         .safeParse(candidate);
+
       if (dependencyViolation.success) {
         throw new ORPCError("CONFLICT", {
           message: "Remove installations using this app before deleting it.",
         });
       }
+
       throw error;
     }
 
@@ -366,6 +379,7 @@ const deploy = cliRouter
         shortId: input.body.deploymentId,
       },
     });
+
     const deployment =
       deploymentByShortId ??
       (uuidPattern.test(input.body.deploymentId)
@@ -399,6 +413,7 @@ const deploy = cliRouter
           status: "verified",
         },
       });
+
       if (
         server?.checksum !== undefined &&
         server?.checksum !== null &&

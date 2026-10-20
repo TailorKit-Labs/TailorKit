@@ -23,6 +23,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -42,21 +43,27 @@ const state = vi.hoisted(() => ({
     }>
   >(),
 }));
+
 vi.mock("@patchsmith/db", () => ({
   get db() {
     return state.db;
   },
 }));
+
 vi.mock("@patchsmith/kv", () => ({ getKV: () => {} }));
+
 vi.mock("@patchsmith/agent-fx/workflows", () => ({
   appAgent: vi.fn(),
   cancelAppAgent: vi.fn(),
 }));
+
 vi.mock("workflow/api", () => ({ start: state.start }));
+
 vi.mock("@patchsmith/api-utils/dev-delay", () => ({
   devDelayMiddleware: async <TResult>({ next }: { next: () => TResult }) =>
     await next(),
 }));
+
 vi.mock("@patchsmith/api-utils/rate-limiting", () => ({
   createRateLimiter: vi.fn(),
   ratelimitMiddleware:
@@ -64,6 +71,7 @@ vi.mock("@patchsmith/api-utils/rate-limiting", () => ({
     async <TResult>({ next }: { next: () => TResult }) =>
       await next(),
 }));
+
 const { handleAppAgentMcpRequest } = await import("./app-agent-mcp");
 
 const orgId = "11111111-1111-4111-8111-111111111111";
@@ -121,6 +129,7 @@ describe("MCP database authorization", () => {
     vi.clearAllMocks();
     database = await createTestDb();
     state.db = database.db;
+
     const [org] = await database.db
       .insert(organization)
       .values({
@@ -131,6 +140,7 @@ describe("MCP database authorization", () => {
         slug: "test-team",
       })
       .returning();
+
     const [ownProject, otherProject] = await database.db
       .insert(project)
       .values([
@@ -143,6 +153,7 @@ describe("MCP database authorization", () => {
         },
       ])
       .returning();
+
     context = {
       organization: requireValue(org),
       project: requireValue(ownProject),
@@ -155,6 +166,7 @@ describe("MCP database authorization", () => {
       },
     };
     otherContext = { ...context, project: requireValue(otherProject) };
+
     const apps = await database.db
       .insert(app)
       .values([
@@ -173,6 +185,7 @@ describe("MCP database authorization", () => {
         },
       ])
       .returning();
+
     [ownApp, foreignApp, outOfScopeApp] = [
       requireValue(apps[0]),
       requireValue(apps[1]),
@@ -223,14 +236,17 @@ describe("MCP database authorization", () => {
       request("list_apps"),
       context
     );
+
     const events = await response.text();
     expect(events).toContain(ownApp.shortId);
     expect(events).not.toContain(foreignApp.shortId);
     expect(events).not.toContain(outOfScopeApp.shortId);
+
     const otherResponse = await handleAppAgentMcpRequest(
       request("list_apps"),
       otherContext
     );
+
     const otherEvents = await otherResponse.text();
     expect(otherEvents).toContain(foreignApp.shortId);
     expect(otherEvents).not.toContain(ownApp.shortId);
@@ -265,12 +281,15 @@ describe("MCP database authorization", () => {
       request("edit_app", { appId: ownApp.shortId, prompt: "Change it" }),
       context
     );
+
     expect(await response.text()).not.toContain('"isError":true');
     expect(state.start).toHaveBeenCalledOnce();
     const grants = await database.db.select().from(cliToken);
+
     const grant = grants.find(
       ({ id }) => !existingGrants.some((existing) => existing.id === id)
     );
+
     expect(grants).toHaveLength(3);
     expect(grant).toMatchObject({
       projectId,
@@ -306,6 +325,7 @@ describe("MCP database authorization", () => {
       }),
       context
     );
+
     expect(await response.text()).not.toContain('"isError":true');
     const apps = await database.db.select().from(app);
     const created = apps.find(({ name }) => name === "New app");
@@ -324,9 +344,11 @@ describe("MCP database authorization", () => {
         existingGrants.some((existing) => existing.id === id)
       )
     ).toEqual(existingGrants);
+
     const createdGrant = grants.find(
       ({ id }) => !existingGrants.some((existing) => existing.id === id)
     );
+
     expect(createdGrant).toMatchObject({
       projectId,
 

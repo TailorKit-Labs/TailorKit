@@ -109,6 +109,7 @@ const CreateProjectDialog = ({
     onError: (cause: unknown) => {
       const message =
         cause instanceof Error ? cause.message : "Failed to create project";
+
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: (project) => {
@@ -133,6 +134,7 @@ const CreateProjectDialog = ({
         value.slug,
         existingProjectSlugs
       );
+
       if (submitAvailability.status !== "available") {
         setSlugSubmitError(
           submitAvailability.message ?? "This project slug is not available."
@@ -143,6 +145,7 @@ const CreateProjectDialog = ({
           title: "Error",
           type: "error",
         });
+
         return;
       }
 
@@ -156,6 +159,7 @@ const CreateProjectDialog = ({
   });
 
   const slug = useSelector(form.store, (state) => state.values.slug);
+
   const slugAvailability = getProjectSlugAvailability(
     slug,
     existingProjectSlugs
@@ -257,9 +261,11 @@ const CreateProjectDialog = ({
 
 const ProjectsPage = () => {
   const { orgSlug } = useParams({ from: "/(app)/$orgSlug/~/(org)/projects" });
+
   const { data: projects } = useSuspenseQuery(
     orpc.project.list.queryOptions({ input: { orgSlug } })
   );
+
   const existingProjectSlugs = new Set(projects.map((project) => project.slug));
 
   return (

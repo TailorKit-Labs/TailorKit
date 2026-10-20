@@ -8,6 +8,7 @@ import { forEachSequential } from "#for-each-sequential";
 
 it("backfills app slugs and preserves old inserts while enforcing project uniqueness and immutability", async () => {
   const client = new PGlite();
+
   try {
     // A populated pre-migration table, including the fields old servers write.
     await client.exec(`
@@ -27,12 +28,15 @@ it("backfills app slugs and preserves old inserts while enforcing project unique
           ),
           "utf-8"
         );
+
         await client.exec(sql);
       }
     );
+
     const { rows } = await client.query<{ slug: string }>(
       "SELECT slug FROM app"
     );
+
     expect(rows).toHaveLength(1);
     expect(rows[0]?.slug).toMatch(/^app-[a-f0-9]{28}$/u);
     await client.exec(`

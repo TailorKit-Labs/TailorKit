@@ -12,6 +12,7 @@ const migrationsDir = resolve(platformDir, "../../../db/src/migrations");
 
 export const createTestDb = async () => {
   const client = new PGlite();
+
   const db = drizzle({
     client,
     relations,

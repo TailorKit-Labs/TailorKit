@@ -45,5 +45,6 @@ it("validates upload manifests without loading build tooling in a server runtime
     ],
     { cwd: packageRoot, encoding: "utf-8" }
   );
+
   expect(output).toContain("manifest runtime ready");
 });

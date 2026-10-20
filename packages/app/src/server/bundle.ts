@@ -7,6 +7,7 @@ export interface RuntimeManifest {
   apiVersion: number;
   requires: readonly string[];
 }
+
 export interface ApplicationModule {
   default: AppDefinition;
   migrations: readonly AppMigration[];

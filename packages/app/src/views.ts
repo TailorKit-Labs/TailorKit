@@ -19,6 +19,7 @@ export interface PatchsmithViews {}
 
 // oxlint-disable-next-line typescript/no-empty-interface, typescript/no-empty-object-type -- Generated bindings augment this interface.
 export interface PatchsmithSlots {}
+
 // Filled by the generated host bindings using a type-only link to the app server.
 // oxlint-disable-next-line typescript/no-empty-interface, typescript/no-empty-object-type -- Generated bindings augment this interface.
 export interface PatchsmithServerFunctions {}
@@ -61,11 +62,13 @@ export interface ViewInstances<
     | ViewInstance<StandardSchemaV1.InferInput<TSchema>>[]
     | Promise<ViewInstance<StandardSchemaV1.InferInput<TSchema>>[]>;
 }
+
 // oxlint-disable-next-line typescript/no-redundant-type-constituents -- Declaration merging may add symbol or numeric keys; the public view and slot names remain string keys.
 export type SlotName = keyof PatchsmithSlots & string;
 
 // oxlint-disable-next-line typescript/no-redundant-type-constituents -- Declaration merging may add symbol or numeric keys; the public view and slot names remain string keys.
 export type ViewPath = Extract<keyof PatchsmithViews & string, `/${string}`>;
+
 export type AppViewPath = ViewPath;
 
 export type ViewProps<TPath extends ViewPath> =
@@ -126,6 +129,7 @@ export type SlotView<TSlot extends SlotName> = PatchsmithSlots[TSlot] extends {
 }
   ? Extract<TViews, AppViewPath>
   : never;
+
 type SlotInstanceDefinition<TSlot extends SlotName> =
   PatchsmithSlots[TSlot] extends {
     multiple: true;
@@ -140,6 +144,7 @@ type SlotDefinitions = {
       | false;
   }>;
 };
+
 export interface PatchsmithClient<
   TSlots extends SlotDefinitions = SlotDefinitions,
 > {
@@ -216,15 +221,19 @@ export function defineView<
       "Views without a slot or path must be compiled from a .view.tsx file by the Patchsmith app build."
     );
   }
+
   const path = options.view;
+
   const Context = createContext<{
     context: ViewContext<TPath>;
     instance?: ViewInstance;
   } | null>(null);
+
   // SAFETY: Generated bindings associate this view path with its context and instance schema; the adapter retains that relationship while erasing renderer generics.
   const instances =
     /* oxlint-disable typescript/no-unsafe-type-assertion -- Generated bindings associate this view path with its context and instance schema; the adapter retains that relationship while erasing renderer generics. */
     options.instances as { resolver?: string } | undefined;
+
   /* oxlint-enable typescript/no-unsafe-type-assertion */
   if (
     instances &&
@@ -249,6 +258,7 @@ export function defineView<
         `View "${path}" requires a selected instance. Pass instanceKey to RenderSlot or instance to RenderSlot.Controlled.`
       );
     }
+
     // SAFETY: Generated bindings associate this view path with its context and instance schema; the adapter retains that relationship while erasing renderer generics.
     return h(
       Context.Provider,
@@ -270,6 +280,7 @@ export function defineView<
   };
 
   const instanceMetadata: CompiledViewMetadata = {};
+
   if (
     instances?.resolver !== undefined &&
     instances?.resolver !== null &&
@@ -277,6 +288,7 @@ export function defineView<
   ) {
     instanceMetadata.instances = { resolver: instances.resolver };
   }
+
   // SAFETY: Generated bindings associate this view path with its context and instance schema; the adapter retains that relationship while erasing renderer generics.
   return {
     ...instanceMetadata,
@@ -297,11 +309,13 @@ export function defineView<
     },
     useInstance: () => {
       const value = useContext(Context);
+
       if (!value?.instance) {
         throw new Error(
           `View instance is only available while rendering an instance of "${path}".`
         );
       }
+
       return value.instance;
     },
   };
@@ -346,6 +360,7 @@ export const createRemoteComponent = <
   return function RemoteComponent({ children, ...props }) {
     // SAFETY: Generated bindings associate this view path with its context and instance schema; the adapter retains that relationship while erasing renderer generics.
     const nextProps: SerializedDomViewProps = { ...props };
+
     const callbackMap: Record<
       string,
       { callback: string; inputCount: number }
@@ -354,6 +369,7 @@ export const createRemoteComponent = <
     for (const [key, inputCount] of Object.entries(callbacks)) {
       const operation = nextProps[key];
       Reflect.deleteProperty(nextProps, key);
+
       if (!isFunctionValue(operation)) {
         continue;
       }
@@ -370,6 +386,7 @@ export const createRemoteComponent = <
     const serializedProps = Object.fromEntries(
       Object.entries(nextProps).filter(([, value]) => !isFunctionValue(value))
     );
+
     nextProps["data-patchsmith-props"] = JSON.stringify(serializedProps);
 
     if (Object.keys(callbackMap).length > 0) {

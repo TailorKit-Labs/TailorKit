@@ -8,6 +8,7 @@ interface RecordValue {
   value: string;
   until: number | null;
 }
+
 const state = vi.hoisted(() => ({
   redis: {
     clock: 0,
@@ -24,15 +25,18 @@ const read = (
   key: string
 ): string | null => {
   const record = store.data.get(key);
+
   if (!record || (record.until !== null && record.until <= store.clock)) {
     return null;
   }
+
   return record.value;
 };
 
 vi.mock("#env", () => ({
   env: { KV_REST_API_TOKEN: "token", KV_REST_API_URL: "https://kv.test" },
 }));
+
 vi.mock("ioredis", () => ({
   default: class FakeRedis {
     constructor(_url: string) {}
@@ -42,10 +46,12 @@ vi.mock("ioredis", () => ({
     async getdel(key: string) {
       const value = read(state.redis, key);
       state.redis.data.delete(key);
+
       return value;
     }
     async set(key: string, value: string) {
       state.redis.data.set(key, { until: null, value });
+
       return "OK";
     }
     async setex(key: string, ttl: number, value: string) {
@@ -53,10 +59,12 @@ vi.mock("ioredis", () => ({
         until: state.redis.clock + ttl * 1000,
         value,
       });
+
       return "OK";
     }
     async del(key: string) {
       state.redis.data.delete(key);
+
       return 1;
     }
     async eval(_script: string, _count: number, ...args: (string | number)[]) {
@@ -66,10 +74,12 @@ vi.mock("ioredis", () => ({
         until: state.redis.clock + Number(args[1]) * 1000,
         value: String(value),
       });
+
       return value;
     }
   },
 }));
+
 vi.mock("@upstash/redis", () => ({
   Redis: class FakeUpstash {
     constructor(_options: ConstructorParameters<typeof UpstashRedis>[0]) {}
@@ -79,6 +89,7 @@ vi.mock("@upstash/redis", () => ({
     async getdel(key: string) {
       const value = read(state.upstash, key);
       state.upstash.data.delete(key);
+
       return value;
     }
     async set(key: string, value: string, options?: { ex?: number }) {
@@ -92,10 +103,12 @@ vi.mock("@upstash/redis", () => ({
             : null,
         value,
       });
+
       return "OK";
     }
     async del(key: string) {
       state.upstash.data.delete(key);
+
       return 1;
     }
     async eval(_script: string, keys: string[], args: (number | string)[]) {
@@ -104,6 +117,7 @@ vi.mock("@upstash/redis", () => ({
         until: state.upstash.clock + Number(args[0]) * 1000,
         value: String(value),
       });
+
       return value;
     }
   },

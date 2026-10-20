@@ -24,6 +24,7 @@ export const handleBackendSession = async (
 ) => {
   const headers = { "cache-control": "no-store" };
   const origin = request.headers.get("origin");
+
   if (
     request.method !== "POST" ||
     !(
@@ -37,33 +38,45 @@ export const handleBackendSession = async (
   ) {
     return new Response("Invalid request", { headers, status: 400 });
   }
+
   const viewer = await authenticate({ request });
+
   if (!viewer) {
     return new Response("Unauthorized", { headers, status: 401 });
   }
+
   if (Number(request.headers.get("content-length") ?? 0) > 4096) {
     return new Response("Too large", { headers, status: 413 });
   }
+
   // Bound chunked bodies too; a sandbox cannot allocate an unbounded host request.
   let body = "";
+
   if (request.body) {
     const decoder = new TextDecoder();
     let bytes = 0;
+
     for await (const chunk of request.body) {
       bytes += chunk.byteLength;
+
       if (bytes > 4096) {
         return new Response("Too large", { headers, status: 413 });
       }
+
       body += decoder.decode(chunk, { stream: true });
     }
+
     body += decoder.decode();
   }
+
   let input: unknown;
+
   try {
     input = JSON.parse(body);
   } catch {
     return new Response("Invalid JSON", { headers, status: 400 });
   }
+
   if (
     !isObjectValue(input) ||
     !("appId" in input) ||
@@ -74,18 +87,22 @@ export const handleBackendSession = async (
   ) {
     return new Response("Invalid app", { headers, status: 400 });
   }
+
   const session = await issueSession(
     input.appId,
     viewer.scopes,
     viewer.subjectId
   );
+
   if (session instanceof Response) {
     const responseHeaders = new Headers(session.headers);
     responseHeaders.set("cache-control", "no-store");
+
     return new Response(session.body, {
       headers: responseHeaders,
       status: session.status,
     });
   }
+
   return Response.json(session, { headers });
 };

@@ -11,6 +11,7 @@ export type DatabaseSchema = Record<string, SQLiteTable | SQLiteView>;
 
 /** Patchsmith's typed navigation helpers for the configured tables. */
 export type RelationHelpers<S extends DatabaseSchema> = RelationsBuilder<S>;
+
 export type RelationConfig<S extends DatabaseSchema> =
   RelationsBuilderConfig<S>;
 
@@ -35,5 +36,6 @@ export function defineRelations<
   if (relations) {
     return drizzleDefineRelations<S, C, S>(schema, relations);
   }
+
   return drizzleDefineRelations<S, S>(schema);
 }

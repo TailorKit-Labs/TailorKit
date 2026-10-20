@@ -12,7 +12,9 @@ import { resolveTheme } from "./theme";
 import type { PatchsmithTheme } from "./theme";
 
 type Schema = v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>;
+
 type FieldValidators = Record<string, Schema>;
+
 type PrimitiveComponents = Record<
   PrimitiveName,
   ComponentDefinition & { children: true }
@@ -20,9 +22,11 @@ type PrimitiveComponents = Record<
 
 const tokenPicklist = (tokens: Record<string, string> | undefined): Schema => {
   const keys = Object.keys(tokens ?? {});
+
   if (keys.length === 0) {
     return v.never();
   }
+
   return v.picklist(keys);
 };
 
@@ -33,15 +37,19 @@ const responsive = (
 ): Schema => {
   const fields: FieldValidators = {};
   fields.default = v.optional(schema);
+
   for (const key of Object.keys(theme.breakpoints ?? {})) {
     fields[key] = v.optional(schema);
   }
+
   if (interactive) {
     const stateValue = v.optional(responsive(schema, theme, false));
+
     for (const state of primitiveInteractionStates) {
       fields[state] = stateValue;
     }
   }
+
   return v.union([schema, v.strictObject(fields)]);
 };
 
@@ -52,13 +60,16 @@ const propSchema = (
   if (definition.kind === "boolean") {
     return v.optional(v.boolean());
   }
+
   if (definition.kind === "string") {
     return v.optional(v.string());
   }
+
   const schema =
     definition.kind === "token"
       ? tokenPicklist(theme.tokens?.[definition.token])
       : v.picklist(definition.values);
+
   return definition.responsive === false
     ? v.optional(schema)
     : v.optional(responsive(schema, theme));
@@ -78,10 +89,12 @@ export const primitives = (
   theme: PatchsmithTheme = {}
 ): PrimitiveComponents => {
   const resolvedTheme = resolveTheme(theme);
+
   const components = mapPrimitiveDefinitions((name) => ({
     callbacks: name === "Pressable" ? { onPress: {} } : {},
     children: true as const,
     fields: v.strictObject(primitiveFields(name, resolvedTheme)),
   }));
+
   return components;
 };

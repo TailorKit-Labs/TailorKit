@@ -30,8 +30,10 @@ const IssuesPage = () => {
     if (!title.trim()) {
       return;
     }
+
     setPending(true);
     setOperationError(undefined);
+
     try {
       const issue = await addIssue({ data: { title } });
       setTitle("");

@@ -9,6 +9,7 @@ const env = vi.hoisted(() => ({
   NODE_ENV: "production" as "development" | "production",
   PORT: undefined as number | undefined,
 }));
+
 vi.mock("../../api-utils/src/env.ts", () => ({ env }));
 
 const projectShortId = "proj00000001";
@@ -41,6 +42,7 @@ describe("hosted asset URLs", () => {
       id: appId,
       shortId: appShortId,
     };
+
     expect(withAppAssetUrl(app, projectShortId).clientPath).toBe(
       `https://${projectShortId}.tailorkit.app/a/${appShortId}/d/${deploymentShortId}/client/client.js`
     );
@@ -52,6 +54,7 @@ describe("hosted asset URLs", () => {
 
   it("uses deployment URLs for content-addressed logos without duplicating stored files", () => {
     const logoHash = "b".repeat(64);
+
     const app = {
       currentDeployment: {
         clientEntryFileId: "55555555-5555-4555-8555-555555555555",
@@ -70,6 +73,7 @@ describe("hosted asset URLs", () => {
 
   it("uses the same-origin Node route in local development", () => {
     env.NODE_ENV = "development";
+
     const app = {
       currentDeployment: {
         appId,
@@ -84,6 +88,7 @@ describe("hosted asset URLs", () => {
       },
       shortId: appShortId,
     };
+
     expect(withAppAssetUrl(app, projectShortId).clientPath).toBe(
       `http://localhost:3000/api/assets/p/${projectShortId}/a/${appShortId}/d/${deploymentShortId}/client/client.js`
     );
@@ -91,6 +96,7 @@ describe("hosted asset URLs", () => {
 
   it("supports the Node asset route in self-hosted production", () => {
     env.ASSET_BASE_URL = "https://patchsmith.example.com/api/assets/";
+
     const app = {
       currentDeployment: {
         appId,
@@ -105,6 +111,7 @@ describe("hosted asset URLs", () => {
       },
       shortId: appShortId,
     };
+
     expect(withAppAssetUrl(app, projectShortId).clientPath).toBe(
       `https://patchsmith.example.com/api/assets/p/${projectShortId}/a/${appShortId}/d/${deploymentShortId}/client/client.js`
     );
@@ -122,6 +129,7 @@ describe("hosted asset URLs", () => {
       status: "uploading" as const,
       updatedAt: new Date(),
     };
+
     expect(
       withAppAssetUrl(
         { currentDeployment: deployment, shortId: appShortId },

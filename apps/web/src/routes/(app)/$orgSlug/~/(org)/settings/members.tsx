@@ -28,19 +28,24 @@ const OrgSettingsMembers = () => {
   const { orgSlug } = useParams({
     from: "/(app)/$orgSlug/~/(org)/settings/members",
   });
+
   const queryClient = useQueryClient();
   const { data: session } = useQuery(orpc.user.getSession.queryOptions());
+
   const { data: members } = useSuspenseQuery(
     orpc.org.getMembers.queryOptions({ input: { orgSlug } })
   );
+
   const { data: invitations } = useSuspenseQuery(
     orpc.org.getOrgInvitations.queryOptions({ input: { orgSlug } })
   );
+
   const [search, setSearch] = useState("");
 
   const currentMember = members.find(
     (member) => member.user.id === session?.user?.id
   );
+
   const canManage =
     currentMember?.role === "owner" || currentMember?.role === "admin";
 
@@ -50,6 +55,7 @@ const OrgSettingsMembers = () => {
     onError: (cause: unknown) => {
       const message =
         cause instanceof Error ? cause.message : "Failed to remove member";
+
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: () => {
@@ -70,6 +76,7 @@ const OrgSettingsMembers = () => {
     onError: (cause: unknown) => {
       const message =
         cause instanceof Error ? cause.message : "Failed to resend invitation";
+
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: () => {
@@ -83,6 +90,7 @@ const OrgSettingsMembers = () => {
     onError: (cause: unknown) => {
       const message =
         cause instanceof Error ? cause.message : "Failed to revoke invitation";
+
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: () => {

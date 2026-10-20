@@ -25,14 +25,17 @@ export const withAppAssetUrl = <
   projectShortId: string
 ) => {
   const deployment = app.currentDeployment;
+
   const nodeBaseUrl =
     env.ASSET_BASE_URL ??
     (env.NODE_ENV === "development"
       ? `${getBaseUrl(env)}/api/assets`
       : undefined);
+
   const assetBaseUrl = hasText(nodeBaseUrl)
     ? `${nodeBaseUrl.replace(/\/$/u, "")}/p/${projectShortId}`
     : `https://${projectShortId}.${env.ASSET_DOMAIN}`;
+
   let clientPath: string | undefined;
   let logoPaths: { dark?: string; light?: string } | undefined;
 
@@ -46,9 +49,11 @@ export const withAppAssetUrl = <
     clientPath = `${deploymentBase}/client/client.js`;
     const getLogoUrl = (path: string) => `${deploymentBase}/${path}`;
     const logos: NonNullable<typeof logoPaths> = {};
+
     if (hasText(deployment.logoDarkPath)) {
       logos.dark = getLogoUrl(deployment.logoDarkPath);
     }
+
     if (hasText(deployment.logoLightPath)) {
       logos.light = getLogoUrl(deployment.logoLightPath);
     }

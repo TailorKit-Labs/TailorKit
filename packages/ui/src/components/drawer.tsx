@@ -46,6 +46,7 @@ export const Drawer = ({
   position?: DrawerPosition;
 }): React.ReactElement => {
   const contextValue1 = useMemo(() => ({ position }), [position]);
+
   return (
     <DrawerContext.Provider value={contextValue1}>
       <DrawerPrimitive.Root
@@ -152,6 +153,7 @@ export const DrawerBar = ({
   const { position: contextPosition } = useContext(DrawerContext);
   const position = positionProp ?? contextPosition;
   const horizontal = position === "left" || position === "right";
+
   const defaultProps = {
     "aria-hidden": true as const,
     className: cn(

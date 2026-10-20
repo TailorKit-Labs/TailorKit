@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import rootManifest from "../package.json" with { type: "json" };
 
 const script = fileURLToPath(new URL("check-prerelease.mjs", import.meta.url));
+
 const packageDirectories = [
   "patchsmith",
   "ai-sdk",
@@ -59,6 +60,7 @@ const fixture = async (context, version = "0.1.0-beta.44", tag = "beta") => {
       );
     })
   );
+
   return root;
 };
 
@@ -179,10 +181,12 @@ void test("the configured publish command works in prerelease mode", async (cont
 
   const [, publishCommand] =
     rootManifest.scripts["release:publish"].split("vp exec changeset ");
+
   assert.ok(
     publishCommand !== undefined && publishCommand.length > 0,
     "The release script must invoke Changesets"
   );
+
   const result = spawnSync(
     process.execPath,
     [
@@ -191,6 +195,7 @@ void test("the configured publish command works in prerelease mode", async (cont
     ],
     { cwd: root, encoding: "utf-8", timeout: 30_000 }
   );
+
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.match(result.stdout, /No unpublished projects to publish/u);
 });

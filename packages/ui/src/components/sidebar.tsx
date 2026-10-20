@@ -45,9 +45,11 @@ export const SidebarContext = React.createContext<SidebarContextProps | null>(
 
 export const useSidebar = (): SidebarContextProps => {
   const context = React.useContext(SidebarContext);
+
   if (!context) {
     throw new Error("useSidebar must be used within a SidebarProvider.");
   }
+
   return context;
 };
 
@@ -95,7 +97,9 @@ export const SidebarProvider = ({
         toggleSidebar();
       }
     };
+
     window.addEventListener("keydown", handleKeyDown);
+
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
@@ -216,6 +220,7 @@ export const SidebarTrigger = ({
   ...props
 }: React.ComponentProps<typeof Button>): React.ReactElement => {
   const { toggleSidebar } = useSidebar();
+
   return (
     <Button
       className={cn(className)}
@@ -387,9 +392,11 @@ const SidebarPanelsContext =
 
 const useSidebarPanels = (): SidebarPanelsContextProps => {
   const context = React.useContext(SidebarPanelsContext);
+
   if (!context) {
     throw new Error("useSidebarPanels must be used within SidebarPanels.");
   }
+
   return context;
 };
 
@@ -408,6 +415,7 @@ const getPanelNames = (children: React.ReactNode): string[] => {
 
     if (child.type === React.Fragment) {
       names.push(...getPanelNames(child.props.children));
+
       return;
     }
 
@@ -472,6 +480,7 @@ export const SidebarPanel = ({
   const isActive = activePanel === name;
 
   let translate = "translate-x-0";
+
   if (!isActive) {
     translate =
       myIndex < activeIndex ? "-translate-x-full" : "translate-x-full";
@@ -509,6 +518,7 @@ export const SidebarPanelTrigger = ({
   className?: string;
 }): React.ReactElement => {
   const { setActivePanel } = useSidebarPanels();
+
   return (
     <Button
       className={cn(

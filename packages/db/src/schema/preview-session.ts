@@ -84,6 +84,7 @@ const PreviewSessionSchema = createSelectSchema(previewSession, {
   scope: scopeSchema,
   scopeKey: scopeKeySchema,
 });
+
 export type PreviewSession = z.output<typeof PreviewSessionSchema>;
 
 export { PreviewSessionSchema as PreviewSession };

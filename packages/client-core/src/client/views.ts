@@ -19,6 +19,7 @@ export const refetchViews = async (
 ): Promise<void> => {
   const queryOptions = () => {
     const schema = store.contract;
+
     return {
       activeView:
         schema.slots[slot]?.multiple === true
@@ -30,6 +31,7 @@ export const refetchViews = async (
       slot,
     };
   };
+
   if (
     store.getAppsSnapshot().status === "ready" &&
     store.contract.slots[slot]?.multiple === true
@@ -37,11 +39,15 @@ export const refetchViews = async (
     await createSlotStore(store.client, store.contract, queryOptions()).fetch({
       force: true,
     });
+
     return;
   }
+
   await store.fetchApps({ force: true });
+
   if (store.getAppsSnapshot().status !== "ready") {
     return;
   }
+
   await createSlotStore(store.client, store.contract, queryOptions()).fetch();
 };

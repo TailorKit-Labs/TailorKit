@@ -9,6 +9,7 @@ import { env } from "#env";
 const { dirname, resolve } = nodePath;
 
 const outputPath = resolve(process.cwd(), process.argv[2] ?? "openapi.json");
+
 const serverUrl =
   env.OPENAPI_SERVER_URL ?? "https://patchsmith.io/api/platform";
 
@@ -29,6 +30,7 @@ const spec = await generator.generate(platformRouter, {
 });
 
 await mkdir(dirname(outputPath), { recursive: true });
+
 await writeFile(outputPath, `${JSON.stringify(spec, null, 2)}\n`);
 
 console.log(`OpenAPI specification written to ${outputPath}`);

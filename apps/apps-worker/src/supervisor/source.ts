@@ -14,6 +14,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -36,19 +37,25 @@ const readBundleBytes = async (
 ): Promise<Uint8Array<ArrayBuffer>> => {
   const chunks: Uint8Array[] = [];
   let length = 0;
+
   for await (const value of stream) {
     length += value.byteLength;
+
     if (length > maxDeploymentBytes) {
       throw new Error("Server bundle exceeds deployment size limit");
     }
+
     chunks.push(value);
   }
+
   const bytes = new Uint8Array(length);
   let offset = 0;
+
   for (const chunk of chunks) {
     bytes.set(chunk, offset);
     offset += chunk.byteLength;
   }
+
   return bytes;
 };
 
@@ -71,21 +78,26 @@ export const deploymentSource = (
   }
 ) => {
   let cached: { version: string; code: string } | undefined;
+
   return {
     code: (deployment: ServerDeployment) =>
       Effect.tryPromise({
         catch: appError,
         try: async () => {
           const version = `${deployment.deploymentId}:${deployment.checksum}:${deployment.contentEncoding ?? "utf-8"}`;
+
           if (cached?.version === version) {
             return cached.code;
           }
+
           const object = await env.BUNDLES.get(deployment.objectKey);
+
           if (!object) {
             throw new AppError("NOT_FOUND", "Server bundle missing");
           }
 
           const bytes = await readBundleBytes(object.body);
+
           if (bytes.byteLength !== deployment.contentLength) {
             throw new Error("Server bundle size mismatch");
           }
@@ -93,9 +105,11 @@ export const deploymentSource = (
           const hash = new Uint8Array(
             await crypto.subtle.digest("SHA-256", bytes)
           );
+
           const checksum = [...hash]
             .map((byte) => byte.toString(16).padStart(2, "0"))
             .join("");
+
           if (checksum !== deployment.checksum) {
             throw new Error("Server bundle checksum mismatch");
           }
@@ -108,10 +122,13 @@ export const deploymentSource = (
                   )
                 )
               : bytes;
+
           const code = new TextDecoder("utf-8", { fatal: true }).decode(
             decoded
           );
+
           cached = { code, version };
+
           return code;
         },
       }),
@@ -121,12 +138,15 @@ export const deploymentSource = (
         catch: appError,
         try: async () => {
           const key = deploymentMetadataKey(identity);
+
           const cachedMetadata = appDeploymentMetadata.safeParse(
             await env.DEPLOYMENTS.get(key, "json").catch(() => null)
           );
+
           let deployment = cachedMetadata.success
             ? cachedMetadata.data
             : undefined;
+
           // Confirm a changed pointer with the authority before switching schemas.
           // This prevents a stale KV replica from switching an installation backwards.
           if (
@@ -141,6 +161,7 @@ export const deploymentSource = (
                 ? env.PLATFORM_URL
                 : `${env.PLATFORM_URL}/`
             );
+
             if (base.protocol !== "https:") {
               throw new Error("Platform URL requires HTTPS");
             }
@@ -171,12 +192,14 @@ export const deploymentSource = (
             }
 
             deployment = appDeploymentMetadata.parse(await response.json());
+
             if (
               deployment.projectId !== identity.projectId ||
               deployment.appId !== identity.appId
             ) {
               throw new AppError("FORBIDDEN", "App or project mismatch");
             }
+
             await env.DEPLOYMENTS.put(key, JSON.stringify(deployment), {
               expirationTtl: metadataLifetimeSeconds,
               // oxlint-disable-next-line anti-slop/no-unknown-parameters -- JavaScript may reject with arbitrary values; this boundary records or preserves the original failure.
@@ -184,15 +207,18 @@ export const deploymentSource = (
               console.error("Could not cache app deployment metadata", error);
             });
           }
+
           if (
             deployment.projectId !== identity.projectId ||
             deployment.appId !== identity.appId
           ) {
             throw new AppError("FORBIDDEN", "App or project mismatch");
           }
+
           if (identity.expiresAt <= Date.now()) {
             throw new AppError("UNAUTHORIZED", "App token expired");
           }
+
           return deployment;
         },
       }),

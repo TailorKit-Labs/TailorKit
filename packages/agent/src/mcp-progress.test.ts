@@ -6,16 +6,20 @@ import type { AppAgentMcpEvent } from "./mcp-progress";
 type Chunk = Extract<AppAgentMcpEvent, { status: "streaming" }>["chunk"];
 
 const identity = { appId: "app", runId: "run", threadId: "thread" };
+
 const event = (chunk: Chunk): AppAgentMcpEvent => ({
   ...identity,
   chunk,
   status: "streaming",
 });
+
 const cleanups: (() => void)[] = [];
+
 afterEach(() => {
   for (const close of cleanups.splice(0)) {
     close();
   }
+
   vi.useRealTimers();
 });
 
@@ -24,10 +28,13 @@ const reporter = () => {
   vi.setSystemTime(1000);
   const updates: string[] = [];
   const controller = new AbortController();
+
   const progress = createProgressReporter(async (update) => {
     await Promise.resolve(updates.push(update));
   }, controller.signal);
+
   cleanups.push(progress.close);
+
   return { controller, progress, updates };
 };
 
@@ -63,12 +70,14 @@ describe("compact MCP progress", () => {
     await progress.onProgress(
       event({ delta: " your app", id: "text", type: "text-delta" })
     );
+
     const tool: Chunk = {
       input: { command: "pnpm check" },
       toolCallId: "check",
       toolName: "bash",
       type: "tool-input-available",
     };
+
     await progress.onProgress(event(tool));
     await progress.onProgress(event(tool));
     await progress.onProgress(
@@ -97,6 +106,7 @@ describe("compact MCP progress", () => {
       await progress.onProgress(
         event({ delta: " building", id: "text", type: "text-delta" })
       );
+
       if (type === "text-end") {
         await progress.onProgress(event({ id: "text", type }));
       } else if (type === "error") {
@@ -106,6 +116,7 @@ describe("compact MCP progress", () => {
       } else {
         await progress.onProgress(event({ type }));
       }
+
       expect(updates[1]).toBe("Done building");
       expect(JSON.stringify(updates)).not.toContain("Internal failure");
     }
@@ -160,13 +171,16 @@ describe("compact MCP progress", () => {
     vi.useFakeTimers();
     vi.setSystemTime(1000);
     let calls = 0;
+
     const progress = createProgressReporter(async () => {
       await Promise.resolve();
       calls += 1;
+
       if (calls > 1) {
         throw new Error("Disconnected");
       }
     }, new AbortController().signal);
+
     cleanups.push(progress.close);
     await progress.onProgress(
       event({ delta: "Building", id: "text", type: "text-delta" })
@@ -180,6 +194,7 @@ describe("compact MCP progress", () => {
 
   it("omits reasoning, partial arguments, preliminary results, and bookkeeping", () => {
     const snapshot = createProgressSnapshot();
+
     const chunks: Chunk[] = [
       { id: "reason", type: "reasoning-start" },
       { delta: "Private reasoning", id: "reason", type: "reasoning-delta" },
@@ -198,6 +213,7 @@ describe("compact MCP progress", () => {
       { type: "start-step" },
       { type: "finish-step" },
     ];
+
     for (const chunk of chunks) {
       expect(snapshot(event(chunk))).toBeUndefined();
     }
@@ -205,6 +221,7 @@ describe("compact MCP progress", () => {
 
   it("bounds text and tool details while preserving tool outcomes", () => {
     const snapshot = createProgressSnapshot();
+
     const text = snapshot(
       event({
         delta: "Large text ".repeat(10_000),
@@ -212,8 +229,10 @@ describe("compact MCP progress", () => {
         type: "text-delta",
       })
     );
+
     expect(text?.message.length).toBeLessThanOrEqual(320);
     expect(text?.message).toMatch(/^…/u);
+
     const tool = snapshot(
       event({
         input: {
@@ -225,8 +244,10 @@ describe("compact MCP progress", () => {
         type: "tool-input-available",
       })
     );
+
     expect(tool?.message.length).toBeLessThanOrEqual(320);
     expect(JSON.stringify(tool).length).toBeLessThan(1000);
+
     const failed = snapshot(
       event({
         output: { isError: true },
@@ -234,11 +255,13 @@ describe("compact MCP progress", () => {
         type: "tool-output-available",
       })
     );
+
     expect(failed?.message).toMatch(/^failed: Bash:/u);
   });
 
   it("reports invalid tool input as failed without exposing input or diagnostics", () => {
     const snapshot = createProgressSnapshot();
+
     const failed = snapshot(
       event({
         errorText: "Private error",
@@ -248,6 +271,7 @@ describe("compact MCP progress", () => {
         type: "tool-input-error",
       })
     );
+
     expect(failed?.message).toBe(
       "failed: Bash: [command with credential markers hidden]"
     );

@@ -25,6 +25,7 @@ describe("slot view contracts", () => {
       },
       views: { "/": z.object({}) },
     });
+
     const schema = createPatchsmithSchema(contract).serialize();
     expect(v.parse(PatchsmithSchemaSpec, schema).slots).toEqual({
       empty: { description: "", views: ["/"] },
@@ -80,6 +81,7 @@ describe("slot view contracts", () => {
       },
       views: { "/": z.object({}) },
     });
+
     expect(v.parse(PatchsmithSchemaSpec, host.serialize()).slots).toEqual({
       navbar: { views: ["/"] },
       page: { multiple: true, views: ["/"] },
@@ -94,11 +96,13 @@ describe("slot view contracts", () => {
   });
   it("serializes supported view lists", () => {
     const userView = z.object({ userId: z.string() });
+
     const host = createPatchsmithSchema({
       components: {},
       slots: { navbar: { views: ["/"] }, panel: { views: ["/users"] } },
       views: { "/": z.object({}), "/users": userView },
     });
+
     expect(host.views["/users"]).toBe(userView);
     const schema = host.serialize();
     expect(schema.views["/users"]?.context).toMatchObject({
