@@ -1,0 +1,19 @@
+apps/web/vercel.json
+  s_abc2721194e001::t_8788680f0da253 56,60,64,68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b7f0c3d89b174d207d049065c2feef8b2be4bec1",
+  "prompts": {},
+  "sessions": {
+    "s_abc2721194e001": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15869-3c0b-76a3-b7bc-de86a1bde93b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
