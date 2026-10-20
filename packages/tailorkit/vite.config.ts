@@ -20,6 +20,6 @@ export default defineConfig({
     fixedExtension: false,
     format: "esm",
     minify: true,
-    target: "node20",
+    target: "node22",
   },
 });

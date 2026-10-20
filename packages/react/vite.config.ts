@@ -7,6 +7,6 @@ export default defineConfig({
     entry: ["src/index.ts"],
     fixedExtension: false,
     format: "esm",
-    target: "node20",
+    target: "node22",
   },
 });
