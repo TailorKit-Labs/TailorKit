@@ -25,12 +25,22 @@ describe("experimental_canvas", () => {
         { ...props, ariaLabel: " " },
         { ...props, surface: "" },
         { ...props, width: Infinity },
-        { ...props, maxFramesPerSecond: 1000 },
       ].map(async (invalid) => {
         const result = await fields["~standard"].validate(invalid);
         expect(result.issues).toBeDefined();
       })
     );
+  });
+
+  it("rejects unknown props, including host-only policy fields", async () => {
+    const { fields } = experimental_canvas();
+
+    const result = await fields["~standard"].validate({
+      ...props,
+      maxFramesPerSecond: 1000,
+    });
+
+    expect(result.issues).toBeDefined();
   });
 
   it.each([

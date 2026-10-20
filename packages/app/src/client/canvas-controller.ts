@@ -70,6 +70,7 @@ interface Connection {
   draw: experimental_CanvasDraw;
   update?: (canvas: OffscreenCanvas) => void | Promise<void>;
   lastDraw: number | null;
+  pacing: AbortController | null;
   dispose?: () => void;
   running: boolean;
   dirty: boolean;
@@ -120,6 +121,7 @@ export const createCanvasController = <T>(
 
   let current: Connection | null = null;
   let pendingLifetime: AbortController | null = null;
+  let pendingSurface: experimental_CanvasSurface | null = null;
   let mounted = false;
   let continuous = false;
   let preserveDrawingBuffer = true;
@@ -153,6 +155,8 @@ export const createCanvasController = <T>(
   const retire = () => {
     pendingLifetime?.abort();
     pendingLifetime = null;
+    pendingSurface?.close();
+    pendingSurface = null;
     const previous = current;
     current = null;
 
@@ -174,6 +178,16 @@ export const createCanvasController = <T>(
   const isActive = (revision: number, lifetime: AbortController) =>
     mounted && epoch === revision && !lifetime.signal.aborted;
 
+  const wait = async (connection: Connection, delay: number) => {
+    const pacing = new AbortController();
+    connection.pacing = pacing;
+    await waitForCanvasFrame(
+      delay,
+      AbortSignal.any([connection.lifetime.signal, pacing.signal])
+    );
+    connection.pacing = null;
+  };
+
   const drawFrame = async (connection: Connection) => {
     const timestamp = now();
 
@@ -192,9 +206,9 @@ export const createCanvasController = <T>(
 
     if (result === false) {
       if (continuous || connection.dirty) {
-        await waitForCanvasFrame(
-          1000 / (framesPerSecond ?? 60) - (now() - timestamp),
-          connection.lifetime.signal
+        await wait(
+          connection,
+          1000 / (framesPerSecond ?? 60) - (now() - timestamp)
         );
       }
 
@@ -213,7 +227,7 @@ export const createCanvasController = <T>(
 
     while (delay > 0 && isCurrent(connection)) {
       // oxlint-disable-next-line no-await-in-loop -- Recheck the deadline after each bounded timer, including very low requested rates.
-      await waitForCanvasFrame(delay, connection.lifetime.signal);
+      await wait(connection, delay);
 
       if (framesPerSecond === undefined) {
         return;
@@ -316,6 +330,7 @@ export const createCanvasController = <T>(
       }
 
       const granted = surface;
+      pendingSurface = granted;
 
       const onClosed = () => {
         if (!mounted || epoch !== revision) {
@@ -395,6 +410,7 @@ export const createCanvasController = <T>(
         failed: false,
         lastDraw: null,
         lifetime,
+        pacing: null,
         running: false,
         surface: granted,
         update,
@@ -403,6 +419,7 @@ export const createCanvasController = <T>(
 
       current = connection;
       pendingLifetime = null;
+      pendingSurface = null;
 
       for (const type of [
         "pointermove",
@@ -429,6 +446,7 @@ export const createCanvasController = <T>(
 
       if (pendingLifetime === lifetime) {
         pendingLifetime = null;
+        pendingSurface = null;
       }
 
       if (mounted && epoch === revision) {
@@ -440,6 +458,24 @@ export const createCanvasController = <T>(
   const retry = () => {
     recovered = false;
     void connect();
+  };
+
+  const resume = (
+    connection: Connection,
+    changed: boolean,
+    rateChanged: boolean
+  ) => {
+    const recovering = connection.failed;
+    connection.updateDirty ||= changed;
+    connection.failed = false;
+
+    if (rateChanged) {
+      connection.pacing?.abort();
+    }
+
+    if (recovering) {
+      notify({ error: null, status: "ready" });
+    }
   };
 
   return {
@@ -490,8 +526,10 @@ export const createCanvasController = <T>(
       const isLifecycle = "create" in next;
       const modeChanged = definition !== null && wasLifecycle !== isLifecycle;
 
+      const rateChanged = framesPerSecond !== nextFramesPerSecond;
+
       const optionsChanged =
-        framesPerSecond !== options.framesPerSecond ||
+        rateChanged ||
         continuous !== (options.continuous === true) ||
         preserveDrawingBuffer !== (options.preserveDrawingBuffer !== false);
 
@@ -514,9 +552,7 @@ export const createCanvasController = <T>(
         void connect();
       } else if (changed || optionsChanged) {
         if (current) {
-          current.updateDirty ||= changed;
-          current.failed = false;
-          notify({ error: null, status: "ready" });
+          resume(current, changed, rateChanged);
         }
 
         invalidate();

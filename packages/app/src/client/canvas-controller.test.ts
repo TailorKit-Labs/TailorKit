@@ -41,6 +41,10 @@ const createBridge = () => {
   const surfaces: ReturnType<typeof createSurface>[] = [];
 
   const request = vi.fn(async () => {
+    if (surfaces.some(({ surface }) => !surface.signal.aborted)) {
+      throw new Error("Canvas surface is already connected.");
+    }
+
     const next = createSurface();
     surfaces.push(next);
 
@@ -146,6 +150,7 @@ it("aborts an async setup and disposes its late result without drawing", async (
   await settle();
   unmount();
   expect(signals[0]?.aborted).toBe(true);
+  expect(bridge.surfaces[0]?.surface.close).toHaveBeenCalled();
   resolve(42);
   await settle();
   expect(dispose).toHaveBeenCalledExactlyOnceWith(42);
@@ -516,6 +521,7 @@ it("cancels pending resize and disposes its resource without presenting after te
   await settle();
   unmount();
   expect(signals[0]?.aborted).toBe(true);
+  expect(bridge.surfaces[0]?.surface.close).toHaveBeenCalled();
   pending.resolve(true);
   await settle();
   expect(dispose).toHaveBeenCalledExactlyOnceWith(7);
@@ -737,3 +743,168 @@ it("does not overflow timers for very low requested rates", async () => {
     vi.useRealTimers();
   }
 });
+
+it("notifies ready only on connection or recovery, even with fresh dependency identities", async () => {
+  const bridge = createBridge();
+  const notify = vi.fn<(state: experimental_CanvasHookState) => void>();
+
+  const controller = createCanvasController(
+    "chart",
+    notify,
+    bridge.dependencies
+  );
+
+  const draw = vi.fn(() => {});
+  controller.update(draw, [{}], {});
+  const unmount = controller.mount();
+
+  try {
+    bridge.availability("first");
+    await settle();
+    controller.update(draw, [{}], {});
+    await settle();
+    controller.update(draw, [{}], {});
+    await settle();
+    expect(draw).toHaveBeenCalledTimes(3);
+    expect(notify.mock.calls.map(([state]) => state.status)).toEqual([
+      "pending",
+      "ready",
+    ]);
+    draw.mockImplementationOnce(() => {
+      throw new Error("Draw failed");
+    });
+    controller.invalidate();
+    await settle();
+    expect(notify.mock.calls.at(-1)?.[0].error).toBeInstanceOf(Error);
+    expect(notify.mock.calls.at(-1)?.[0].status).toBe("error");
+    controller.update(draw, [{}], {});
+    await settle();
+    expect(notify).toHaveBeenLastCalledWith({ error: null, status: "ready" });
+    expect(notify).toHaveBeenCalledTimes(4);
+  } finally {
+    unmount();
+  }
+});
+
+it.each([false, true])(
+  "wakes a very slow pacing wait when the cap increases (continuous: %s)",
+  async (continuous) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1000);
+    const bridge = createBridge();
+    const draw = vi.fn(() => !continuous);
+
+    const controller = createCanvasController("chart", () => {}, {
+      ...bridge.dependencies,
+      now: Date.now,
+    });
+
+    controller.update(draw, [], { continuous, framesPerSecond: 0.0000001 });
+    const unmount = controller.mount();
+
+    try {
+      bridge.availability("first");
+      await settle();
+      controller.invalidate();
+      await settle();
+      expect(draw).toHaveBeenCalledTimes(1);
+      expect(vi.getTimerCount()).toBe(1);
+      controller.update(draw, [], { continuous, framesPerSecond: 60 });
+      await settle();
+      await vi.advanceTimersByTimeAsync(17);
+      expect(draw).toHaveBeenCalledTimes(2);
+      expect(bridge.dependencies.request).toHaveBeenCalledTimes(1);
+      unmount();
+      await settle();
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      unmount();
+      vi.useRealTimers();
+    }
+  }
+);
+
+it("wakes a pending redraw when the app removes its FPS cap", async () => {
+  vi.useFakeTimers();
+  const bridge = createBridge();
+  const draw = vi.fn(() => {});
+
+  const controller = createCanvasController(
+    "chart",
+    () => {},
+    bridge.dependencies
+  );
+
+  controller.update(draw, [], { framesPerSecond: 0.0000001 });
+  const unmount = controller.mount();
+
+  try {
+    bridge.availability("first");
+    await settle();
+    controller.invalidate();
+    await settle();
+    controller.update(draw, [], {});
+    await settle();
+    expect(draw).toHaveBeenCalledTimes(2);
+    expect(vi.getTimerCount()).toBe(0);
+  } finally {
+    unmount();
+    vi.useRealTimers();
+  }
+});
+
+it.each(["create", "resize"] as const)(
+  "releases the granted surface before a pending %s settles so replacement can connect",
+  async (stage) => {
+    const bridge = createBridge();
+    const pending = Promise.withResolvers<number>();
+    const dispose = vi.fn<(resource: number) => void>();
+    const notify = vi.fn<(state: experimental_CanvasHookState) => void>();
+
+    const controller = createCanvasController<number>(
+      "chart",
+      notify,
+      bridge.dependencies
+    );
+
+    controller.update(
+      {
+        create: async () => {
+          if (stage === "create") {
+            return await pending.promise;
+          }
+
+          return 1;
+        },
+        dispose,
+        resize: async () => {
+          if (stage === "resize") {
+            await pending.promise;
+          }
+        },
+      },
+      [],
+      { createDependencies: ["old"] }
+    );
+    const unmount = controller.mount();
+
+    try {
+      bridge.availability("first");
+      await settle();
+      controller.update({ create: () => 2, dispose }, [], {
+        createDependencies: ["new"],
+      });
+      await settle();
+      expect(bridge.surfaces[0]?.surface.signal.aborted).toBe(true);
+      expect(bridge.surfaces[1]?.surface.present).toHaveBeenCalledTimes(1);
+      expect(notify).toHaveBeenLastCalledWith({ error: null, status: "ready" });
+      pending.resolve(1);
+      await settle();
+      expect(dispose).toHaveBeenCalledExactlyOnceWith(1);
+      expect(bridge.surfaces[0]?.surface.present).not.toHaveBeenCalled();
+      expect(bridge.surfaces[1]?.surface.signal.aborted).toBe(false);
+    } finally {
+      unmount();
+    }
+  }
+);

@@ -210,7 +210,7 @@ A local Chromium 154 run on 2026-10-19, with 120 measured frames per case after 
 
 Each case produced one initial component snapshot. The measured browser ran at approximately 60 Hz; the 240 FPS test cap avoids an additional host throttle and does not claim 240 FPS support. These are local observations, not portable performance thresholds or a game benchmark. The reported equivalent MB/s is `width × height × 4 × FPS`; it is a pixel-volume calculation, not measured IPC bandwidth or proof of zero-copy transfer. Other browsers/devices still need verification.
 
-A follow-up local run on 2026-10-20 with approximately 120 Hz browser scheduling also passed all nine cases: 120.85 FPS at 320×200, 120.83 FPS at 1280×720, and 119.93 FPS at 1920×1080 (p95 frame times 9.0–9.2 ms). The 30 FPS cap case averaged 29.23 FPS. These differing runs demonstrate the effect of scheduling and refresh rate; neither establishes a guaranteed throughput floor.
+A follow-up local run on 2026-10-20 with approximately 120 Hz browser scheduling also passed all 13 cases (nine checks and four throughput measurements): 120.85 FPS at 320×200, 120.83 FPS at 1280×720, and 119.93 FPS at 1920×1080 (p95 frame times 9.0–9.2 ms). The 30 FPS cap case averaged 29.23 FPS. These differing runs demonstrate the effect of scheduling and refresh rate; neither establishes a guaranteed throughput floor.
 
 ## Try the complete experimental API
 

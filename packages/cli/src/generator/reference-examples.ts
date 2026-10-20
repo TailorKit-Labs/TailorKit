@@ -13,7 +13,9 @@ export const componentExample = (
   return [
     "## Usage",
     "",
-    "Supply the required props listed above. Use supported children between tags.",
+    children
+      ? "Supply the required props listed above. Use supported children between tags."
+      : "Supply the required props listed above. This component does not accept children.",
     "",
     "```tsx",
     `import { ${imported} } from "#patchsmith";`,

@@ -92,9 +92,23 @@ export const createCanvasTarget = (
       const { port1, port2 } = new MessageChannel();
       let pending: v.InferOutput<typeof Frame> | null = null;
       let animationFrame: number | null = null;
+      let presentationTimer: ReturnType<typeof setTimeout> | null = null;
       let sequence = 0;
       let closed = false;
       let input: ReturnType<typeof createCanvasInput> | null = null;
+      const visibilityLifetime = new AbortController();
+
+      const cancelPresentation = () => {
+        if (animationFrame !== null) {
+          cancelAnimationFrame(animationFrame);
+          animationFrame = null;
+        }
+
+        if (presentationTimer !== null) {
+          clearTimeout(presentationTimer);
+          presentationTimer = null;
+        }
+      };
 
       const close = (message: string) => {
         if (closed) {
@@ -104,9 +118,8 @@ export const createCanvasTarget = (
         closed = true;
         input?.close();
 
-        if (animationFrame !== null) {
-          cancelAnimationFrame(animationFrame);
-        }
+        cancelPresentation();
+        visibilityLifetime.abort();
 
         pending?.bitmap.close();
         pending = null;
@@ -125,18 +138,35 @@ export const createCanvasTarget = (
         }
       );
 
+      const schedulePresentation = (present: (timestamp: number) => void) => {
+        if (document.hidden) {
+          const delay = Math.max(
+            0,
+            1000 / maxFramesPerSecond - (performance.now() - lastPresentation)
+          );
+
+          presentationTimer = setTimeout(() => {
+            present(performance.now());
+          }, Math.ceil(delay));
+        } else {
+          animationFrame = requestAnimationFrame(present);
+        }
+      };
+
       const present = (timestamp: number) => {
+        animationFrame = null;
+        presentationTimer = null;
+
         if (closed || !pending) {
           return;
         }
 
         if (timestamp - lastPresentation + 0.5 < 1000 / maxFramesPerSecond) {
-          animationFrame = requestAnimationFrame(present);
+          schedulePresentation(present);
 
           return;
         }
 
-        animationFrame = null;
         const frame = pending;
         pending = null;
 
@@ -153,6 +183,18 @@ export const createCanvasTarget = (
           close("Canvas presentation failed.");
         }
       };
+
+      document.addEventListener(
+        "visibilitychange",
+        () => {
+          cancelPresentation();
+
+          if (!closed && pending) {
+            schedulePresentation(present);
+          }
+        },
+        { signal: visibilityLifetime.signal }
+      );
 
       port1.addEventListener("message", (event: MessageEvent<unknown>) => {
         const ack = v.safeParse(InputAck, event.data);
@@ -204,7 +246,7 @@ export const createCanvasTarget = (
 
         ({ sequence } = frame);
         pending = frame;
-        animationFrame = requestAnimationFrame(present);
+        schedulePresentation(present);
       });
       port1.addEventListener("messageerror", () => {
         close("Canvas message could not be decoded.");

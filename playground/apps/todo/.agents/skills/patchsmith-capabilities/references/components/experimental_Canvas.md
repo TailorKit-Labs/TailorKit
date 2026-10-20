@@ -25,7 +25,7 @@ Use the listed props, callbacks, and styling values.
 
 ## Usage
 
-Supply the required props listed above. Use supported children between tags.
+Supply the required props listed above. This component does not accept children.
 
 ```tsx
 import { experimental_Canvas as Component } from "#patchsmith";
