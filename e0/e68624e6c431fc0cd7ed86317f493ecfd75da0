@@ -1,0 +1,35 @@
+.changeset/quick-cups-pack.md
+  s_4c2d66e3c10e7f::t_b303a5ee6585fe 2-9,13-14
+packages/app-db/vite.config.ts
+  s_4c2d66e3c10e7f::t_3e8837398b79e5 10
+packages/app/vite.config.ts
+  s_4c2d66e3c10e7f::t_24904c542bb3a7 20
+packages/client-core/vite.config.ts
+  s_4c2d66e3c10e7f::t_b6742ae9dce218 15
+packages/client-platform/vite.config.ts
+  s_4c2d66e3c10e7f::t_e3ad9d2dfe7228 10
+packages/core/vite.config.ts
+  s_4c2d66e3c10e7f::t_0fa6377bd80d01 20
+packages/react/vite.config.ts
+  s_4c2d66e3c10e7f::t_9d1304f84ad653 10
+packages/tailorkit/vite.config.ts
+  s_4c2d66e3c10e7f::t_b1f6b7b1888a55 23
+packages/vite/vite.config.ts
+  s_4c2d66e3c10e7f::t_7c37bbd5379625 17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e0e68624e6c431fc0cd7ed86317f493ecfd75da0",
+  "prompts": {},
+  "sessions": {
+    "s_4c2d66e3c10e7f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a156da-1ce7-7e33-aaa1-f449d752e71b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
