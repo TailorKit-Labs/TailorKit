@@ -1,19 +1,19 @@
-import { Button } from "@tailorkit/ui/button";
+import { Button } from "@patchsmith/ui/button";
 import {
   Card,
   CardDescription,
   CardHeader,
   CardPanel,
   CardTitle,
-} from "@tailorkit/ui/card";
+} from "@patchsmith/ui/card";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
   InputGroupText,
-} from "@tailorkit/ui/input-group";
-import { toastManager } from "@tailorkit/ui/toast";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "@tailorkit/ui/tooltip";
+} from "@patchsmith/ui/input-group";
+import { toastManager } from "@patchsmith/ui/toast";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "@patchsmith/ui/tooltip";
 import { CopyIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import { useState } from "react";
 
@@ -23,7 +23,7 @@ export const ProjectKeyEnv = ({ apiKey }: { apiKey: string }) => {
 
   const copyEnv = async () => {
     try {
-      await navigator.clipboard.writeText(`TAILORKIT_PROJECT_KEY=${apiKey}`);
+      await navigator.clipboard.writeText(`PATCHSMITH_PROJECT_KEY=${apiKey}`);
       toastManager.add({ title: ".env copied", type: "success" });
     } catch {
       toastManager.add({
@@ -42,7 +42,7 @@ export const ProjectKeyEnv = ({ apiKey }: { apiKey: string }) => {
           Follow the{" "}
           <a
             className="text-foreground underline underline-offset-4 hover:text-primary"
-            href="https://tailorkit.dev/docs/installation"
+            href="https://patchsmith.io/docs/installation"
             rel="noopener noreferrer"
             target="_blank"
           >
@@ -61,7 +61,7 @@ export const ProjectKeyEnv = ({ apiKey }: { apiKey: string }) => {
             value={apiKey}
           />
           <InputGroupAddon align="inline-start" className="shrink-0">
-            <InputGroupText>TAILORKIT_PROJECT_KEY=</InputGroupText>
+            <InputGroupText>PATCHSMITH_PROJECT_KEY=</InputGroupText>
           </InputGroupAddon>
           <InputGroupAddon align="inline-end">
             <Tooltip>

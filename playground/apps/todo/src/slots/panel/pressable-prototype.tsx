@@ -1,6 +1,6 @@
 import { useState } from "preact/hooks";
 
-import { Box, Flex, Inline, Pressable } from "#tailorkit";
+import { Box, Flex, Inline, Pressable } from "#patchsmith";
 
 export const PressablePrototype = () => {
   const [presses, setPresses] = useState(0);

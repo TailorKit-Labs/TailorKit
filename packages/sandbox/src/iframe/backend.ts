@@ -1,5 +1,5 @@
-import { AppError } from "@tailorkit/app/client";
-import type { ErrorCode, Session } from "@tailorkit/app/client";
+import { AppError } from "@patchsmith/app/client";
+import type { ErrorCode, Session } from "@patchsmith/app/client";
 
 /** The bridge only supplies scoped JWTs. Backend RPC traffic goes directly over HTTP and WebSocket. */
 export const createIframeBackend = (

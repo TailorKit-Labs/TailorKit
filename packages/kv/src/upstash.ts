@@ -1,4 +1,4 @@
-import { withSpan } from "@tailorkit/observability";
+import { withSpan } from "@patchsmith/observability";
 import { Redis } from "@upstash/redis";
 
 import { env } from "#env";
@@ -37,7 +37,7 @@ export const createUpstashKV = (): KV<"upstash"> => {
     delete: async (key) => {
       await withSpan(
         "kv.delete",
-        { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
+        { attributes: { "kv.type": "upstash", "patchsmith.package": "kv" } },
         async () => await redis.del(key)
       );
     },
@@ -45,7 +45,7 @@ export const createUpstashKV = (): KV<"upstash"> => {
     get: async (key, options?: GetOptions) =>
       await withSpan(
         "kv.get",
-        { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
+        { attributes: { "kv.type": "upstash", "patchsmith.package": "kv" } },
         async () =>
           await withTimeout(
             (async () => {
@@ -58,7 +58,7 @@ export const createUpstashKV = (): KV<"upstash"> => {
     getAndDelete: async (key) =>
       await withSpan(
         "kv.get_and_delete",
-        { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
+        { attributes: { "kv.type": "upstash", "patchsmith.package": "kv" } },
         async () => {
           const value = await redis.getdel<string>(key);
           return value ?? null;
@@ -71,7 +71,7 @@ export const createUpstashKV = (): KV<"upstash"> => {
           attributes: {
             "kv.ttl_seconds": ttl,
             "kv.type": "upstash",
-            "tailorkit.package": "kv",
+            "patchsmith.package": "kv",
           },
         },
         async () => {
@@ -100,7 +100,7 @@ export const createUpstashKV = (): KV<"upstash"> => {
             attributes: {
               "kv.ttl_seconds": ttl,
               "kv.type": "upstash",
-              "tailorkit.package": "kv",
+              "patchsmith.package": "kv",
             },
           },
           async () => await redis.set(key, value, { ex: ttl })
@@ -108,7 +108,7 @@ export const createUpstashKV = (): KV<"upstash"> => {
       } else {
         await withSpan(
           "kv.set",
-          { attributes: { "kv.type": "upstash", "tailorkit.package": "kv" } },
+          { attributes: { "kv.type": "upstash", "patchsmith.package": "kv" } },
           async () => await redis.set(key, value)
         );
       }

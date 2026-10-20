@@ -50,9 +50,9 @@ it.each([
 ])("rejects invalid signed claims %j", async (overrides) => {
   const claims = decodeJwt(await issueAgentToken(identity, secret, url));
   const jwt = await new SignJWT({ ...claims, ...overrides })
-    .setProtectedHeader({ alg: "HS256", typ: "tailorkit-agent+jwt" })
+    .setProtectedHeader({ alg: "HS256", typ: "patchsmith-agent+jwt" })
     .sign(
-      createHmac("sha256", secret).update("tailorkit-agent-deploy-v1").digest()
+      createHmac("sha256", secret).update("patchsmith-agent-deploy-v1").digest()
     );
   await expect(verifyAgentToken(jwt, secret, url)).rejects.toThrow();
 });

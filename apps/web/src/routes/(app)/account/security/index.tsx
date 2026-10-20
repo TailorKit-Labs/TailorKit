@@ -1,7 +1,7 @@
 "use client";
 
-import { Badge } from "@tailorkit/ui/badge";
-import { Button } from "@tailorkit/ui/button";
+import { Badge } from "@patchsmith/ui/badge";
+import { Button } from "@patchsmith/ui/button";
 import {
   Card,
   CardDescription,
@@ -10,12 +10,12 @@ import {
   CardHeader,
   CardPanel,
   CardTitle,
-} from "@tailorkit/ui/card";
+} from "@patchsmith/ui/card";
 import {
   Collapsible,
   CollapsiblePanel,
   CollapsibleTrigger,
-} from "@tailorkit/ui/collapsible";
+} from "@patchsmith/ui/collapsible";
 import {
   Dialog,
   DialogClose,
@@ -25,12 +25,12 @@ import {
   DialogPanel,
   DialogPopup,
   DialogTitle,
-} from "@tailorkit/ui/dialog";
-import { Field, FieldLabel } from "@tailorkit/ui/field";
-import { useAppForm } from "@tailorkit/ui/form";
-import { Input } from "@tailorkit/ui/input";
-import { Skeleton } from "@tailorkit/ui/skeleton";
-import { toastManager } from "@tailorkit/ui/toast";
+} from "@patchsmith/ui/dialog";
+import { Field, FieldLabel } from "@patchsmith/ui/field";
+import { useAppForm } from "@patchsmith/ui/form";
+import { Input } from "@patchsmith/ui/input";
+import { Skeleton } from "@patchsmith/ui/skeleton";
+import { toastManager } from "@patchsmith/ui/toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   useLoaderData,

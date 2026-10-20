@@ -3,7 +3,7 @@ import { RPCHandler } from "@orpc/server/fetch";
 import { beforeEach, expect, it, vi } from "vite-plus/test";
 
 const mocks = vi.hoisted(() => ({ getKV: vi.fn() }));
-vi.mock("@tailorkit/kv", () => ({ getKV: mocks.getKV }));
+vi.mock("@patchsmith/kv", () => ({ getKV: mocks.getKV }));
 vi.mock("#env", () => ({ env: { NODE_ENV: "test" } }));
 
 const { createRateLimiter, ratelimitMiddleware, RateLimitHandlerPlugin } =
@@ -26,7 +26,7 @@ it("uses the existing ioredis connection with prefixed keys and a millisecond wi
   expect(evalScript).toHaveBeenCalledWith(
     expect.any(String),
     1,
-    "tailorkit:ratelimit:user:1",
+    "patchsmith:ratelimit:user:1",
     "2",
     "1000"
   );

@@ -112,7 +112,7 @@ export const createClient = (
   const getSession =
     options.getSession ??
     (async (request: { refresh: boolean }) => {
-      const bridge = globalThis.__tailorkitBackendSession;
+      const bridge = globalThis.__patchsmithBackendSession;
       if (!bridge) {
         throw new AppError("UNAVAILABLE", "The host JWT bridge is unavailable");
       }
@@ -133,7 +133,7 @@ export const createClient = (
         socket = await (
           options.connect ??
           ((urlValue: string, protocols) => new WebSocket(urlValue, protocols))
-        )(url.href, ["tailorkit", `jwt.${session.token}`]);
+        )(url.href, ["patchsmith", `jwt.${session.token}`]);
         // Reconnect one minute before expiry. Active subscriptions obtain fresh snapshots automatically.
         clearTimeout(timer);
         timer = setTimeout(

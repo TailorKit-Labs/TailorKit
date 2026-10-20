@@ -6,19 +6,19 @@ import { asyncIteratorToUnproxiedDataStream } from "@orpc/client";
 import {
   agentRunChunkSchema,
   agentRunCompleteChunkSchema,
-} from "@tailorkit/client-platform/agent";
-import type { AgentRunCursor } from "@tailorkit/client-platform/agent";
-import type { TailorKitRouterClient } from "@tailorkit/core/server";
+} from "@patchsmith/client-platform/agent";
+import type { AgentRunCursor } from "@patchsmith/client-platform/agent";
+import type { PatchsmithRouterClient } from "@patchsmith/core/server";
 import type { ChatTransport, UIMessage, UIMessageChunk } from "ai";
 import * as v from "valibot";
 
 import { fetchSchemaFromHost, readSchemaFile } from "./generator/types";
-import type { TailorKitSchemaFile } from "./generator/types";
+import type { PatchsmithSchemaFile } from "./generator/types";
 
 const schemaFetchTimeoutMs = 10_000;
 
 interface AgentTuiOptions {
-  client: { appAgent: Pick<TailorKitRouterClient["appAgent"], "chat"> };
+  client: { appAgent: Pick<PatchsmithRouterClient["appAgent"], "chat"> };
   hostUrl: string;
   appId: string;
   schemaPath?: string;
@@ -38,7 +38,7 @@ export const openAgentTui = async (
   }
 ) => {
   let threadId = requestedThreadId;
-  type ChatInput = Parameters<TailorKitRouterClient["appAgent"]["chat"]>[0];
+  type ChatInput = Parameters<PatchsmithRouterClient["appAgent"]["chat"]>[0];
   let resume: AgentRunCursor | undefined;
   const connect = async (
     input: ChatInput,
@@ -131,7 +131,7 @@ export const openAgentTui = async (
       const schemaSignal = abortSignal
         ? AbortSignal.any([abortSignal, timeoutSignal])
         : timeoutSignal;
-      let schema: TailorKitSchemaFile;
+      let schema: PatchsmithSchemaFile;
       try {
         schemaSignal.throwIfAborted();
         schema =
@@ -176,7 +176,7 @@ export const openAgentTui = async (
   };
   await runAgentTUI({
     reasoning: "hidden",
-    title: `TailorKit Agent · ${hostUrl}`,
+    title: `Patchsmith Agent · ${hostUrl}`,
     tools: "collapsed",
     transport,
   });

@@ -1,3 +1,3 @@
-# TailorKit API utilities
+# Patchsmith API utilities
 
-`@tailorkit/api-utils` contains shared utilities for TailorKit APIs.
+`@patchsmith/api-utils` contains shared utilities for Patchsmith APIs.

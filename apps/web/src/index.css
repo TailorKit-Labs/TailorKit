@@ -1,4 +1,4 @@
-@import "@tailorkit/ui/globals.css";
+@import "@patchsmith/ui/globals.css";
 @source "../node_modules/streamdown/dist/*.js";
 
 /* Google sign-in branding uses Google's four brand colors in both themes. */

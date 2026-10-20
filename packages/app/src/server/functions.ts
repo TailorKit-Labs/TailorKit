@@ -1,13 +1,13 @@
-import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type {
   DatabaseRelations,
   EmptyDatabaseRelations,
   DatabaseDefinition,
   QueryDatabase,
   MutationDatabase,
-} from "@tailorkit/app-db";
+} from "@patchsmith/app-db";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 
-import type { TailorKitServerTools } from "#client/tools";
+import type { PatchsmithServerTools } from "#client/tools";
 import type { JsonValue } from "#validation";
 
 // oxlint-disable-next-line typescript/no-generated-empty-object-type -- Omitted function tables must have no keys so actions expose no undeclared capabilities.
@@ -70,7 +70,7 @@ export type FunctionCalls<F, K extends "query" | "mutation"> = {
 
 export interface ActionContext<F extends Functions = EmptyFunctions> {
   readonly identity: Identity;
-  readonly tools: TailorKitServerTools;
+  readonly tools: PatchsmithServerTools;
   readonly requestId: string;
   readonly scope: Identity["scope"];
   readonly signal: AbortSignal;

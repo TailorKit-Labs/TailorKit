@@ -1,10 +1,10 @@
-import { asyncFixture } from "@tailorkit/config/testing";
+import { asyncFixture } from "@patchsmith/config/testing";
 import { expect, it, vi } from "vite-plus/test";
 
-import type { TailorKitApp } from "#types";
+import type { PatchsmithApp } from "#types";
 
 import { createEndpointClient } from "./endpoints";
-import { createTailorKitFetchClient } from "./fetch-client";
+import { createPatchsmithFetchClient } from "./fetch-client";
 
 const identity = {
   appId: "app",
@@ -14,7 +14,7 @@ const identity = {
   projectId: "project",
   scope: { name: "workspace", value: { id: "workspace" } },
   subjectId: "principal",
-  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
 };
 
 const session = (token: string) =>
@@ -25,7 +25,7 @@ const session = (token: string) =>
     url: "https://runtime.test/rpc",
   });
 
-const deployedApp: TailorKitApp = {
+const deployedApp: PatchsmithApp = {
   currentDeployment: { id: "first" },
   id: "app",
 };
@@ -100,7 +100,7 @@ it("clears sessions for held consumers through the public client and shares repl
         })()
     )
     .mockResolvedValueOnce(session("after-again"));
-  const fetchClient = createTailorKitFetchClient({
+  const fetchClient = createPatchsmithFetchClient({
     baseUrl: "https://host.test/",
     fetch: request,
   });
@@ -140,7 +140,7 @@ it("reauthorizes held consumers after host sign-out and account changes", async 
         : new Response(null, { status: 401 })
     )
   );
-  const fetchClient = createTailorKitFetchClient({
+  const fetchClient = createPatchsmithFetchClient({
     baseUrl: "https://host.test/",
     fetch: request,
   });
@@ -197,7 +197,7 @@ it.each(["clear", "deployment"])(
           })()
       )
       .mockResolvedValueOnce(session("current"));
-    const fetchClient = createTailorKitFetchClient({
+    const fetchClient = createPatchsmithFetchClient({
       baseUrl: "https://host.test/",
       fetch: request,
     });

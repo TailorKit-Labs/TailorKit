@@ -1,7 +1,7 @@
-import { Avatar, AvatarFallback } from "@tailorkit/ui/avatar";
-import { Badge } from "@tailorkit/ui/badge";
-import { Button } from "@tailorkit/ui/button";
-import { Card, CardFrame } from "@tailorkit/ui/card";
+import { Avatar, AvatarFallback } from "@patchsmith/ui/avatar";
+import { Badge } from "@patchsmith/ui/badge";
+import { Button } from "@patchsmith/ui/button";
+import { Card, CardFrame } from "@patchsmith/ui/card";
 import {
   Empty,
   EmptyContent,
@@ -9,7 +9,7 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@tailorkit/ui/empty";
+} from "@patchsmith/ui/empty";
 import {
   Table,
   TableBody,
@@ -17,7 +17,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@tailorkit/ui/table";
+} from "@patchsmith/ui/table";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Building2Icon, MailIcon, PlusIcon } from "lucide-react";

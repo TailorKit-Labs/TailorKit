@@ -1,5 +1,5 @@
 {
-  "name": "@tailorkit/ai-sdk",
+  "name": "@patchsmith/ai-sdk",
   "version": "0.1.0-beta.52",
   "license": "Apache-2.0",
   "repository": {
@@ -53,13 +53,13 @@
   },
   "dependencies": {
     "@modelcontextprotocol/client": "2.3.1",
-    "@tailorkit/core": "workspace:*",
+    "@patchsmith/core": "workspace:*",
     "@valibot/to-json-schema": "^1.8.0",
     "valibot": "catalog:"
   },
   "devDependencies": {
     "@modelcontextprotocol/server": "2.3.1",
-    "@tailorkit/config": "workspace:*",
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "ai": "catalog:",
     "typescript": "catalog:"

@@ -1,7 +1,7 @@
-import type { Invocation } from "@tailorkit/app/protocol";
-import { fn, defineServer } from "@tailorkit/app/server";
-import type { AppDefinition, Identity } from "@tailorkit/app/server";
-import { asyncFixture } from "@tailorkit/config/testing";
+import type { Invocation } from "@patchsmith/app/protocol";
+import { fn, defineServer } from "@patchsmith/app/server";
+import type { AppDefinition, Identity } from "@patchsmith/app/server";
+import { asyncFixture } from "@patchsmith/config/testing";
 import * as v from "valibot";
 import { expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
@@ -25,7 +25,7 @@ const identity = {
   projectId: "p",
   scope: { name: "org", value: { id: "tenant" } },
   subjectId: "u",
-  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
 };
 
 const persistence: Persistence = {

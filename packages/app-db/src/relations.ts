@@ -9,7 +9,7 @@ import type { SQLiteTable, SQLiteView } from "drizzle-orm/sqlite-core";
 /** Tables available to an app's installation database. */
 export type DatabaseSchema = Record<string, SQLiteTable | SQLiteView>;
 
-/** TailorKit's typed navigation helpers for the configured tables. */
+/** Patchsmith's typed navigation helpers for the configured tables. */
 export type RelationHelpers<S extends DatabaseSchema> = RelationsBuilder<S>;
 export type RelationConfig<S extends DatabaseSchema> =
   RelationsBuilderConfig<S>;

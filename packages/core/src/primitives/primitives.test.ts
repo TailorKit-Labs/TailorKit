@@ -1,7 +1,7 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { describe, expect, it } from "vite-plus/test";
 
-import { createTailorKitSchema } from "#schema/schema";
+import { createPatchsmithSchema } from "#schema/schema";
 import { resolveJsonSchema } from "#spec/schema-references";
 
 import { primitives as arktypePrimitives } from "./arktype";
@@ -54,7 +54,7 @@ describe("primitive schema components", () => {
     },
   };
 
-  const schema = createTailorKitSchema({
+  const schema = createPatchsmithSchema({
     components: {
       ...zodPrimitives(theme),
     },
@@ -99,7 +99,7 @@ describe("primitive schema components", () => {
   });
 
   it("validates default primitive tokens", () => {
-    const defaultSchema = createTailorKitSchema({
+    const defaultSchema = createPatchsmithSchema({
       components: {
         ...zodPrimitives(),
       },

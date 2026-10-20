@@ -4,12 +4,12 @@ import {
   ORPCError,
   streamToAsyncIteratorObject,
 } from "@orpc/server";
-import { appAgent } from "@tailorkit/agent-fx/workflows";
+import { appAgent } from "@patchsmith/agent-fx/workflows";
 import {
   AppAgentThreadError,
   resolveAppAgentThread,
-} from "@tailorkit/agent/threads";
-import { issueAgentToken } from "@tailorkit/api-utils/agent-token";
+} from "@patchsmith/agent/threads";
+import { issueAgentToken } from "@patchsmith/api-utils/agent-token";
 import {
   asSchema,
   convertToModelMessages,
@@ -180,7 +180,7 @@ const chat = cliRouter
                 scope: token.scope,
               },
               require(env.AUTH_SECRET),
-              env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform"
+              env.OPENAPI_SERVER_URL ?? "https://patchsmith.io/api/platform"
             )),
           appId: app.id,
           hostUrl: body.hostUrl,

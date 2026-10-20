@@ -90,7 +90,7 @@ describe("hosted asset URLs", () => {
   });
 
   it("supports the Node asset route in self-hosted production", () => {
-    env.ASSET_BASE_URL = "https://tailorkit.example.com/api/assets/";
+    env.ASSET_BASE_URL = "https://patchsmith.example.com/api/assets/";
     const app = {
       currentDeployment: {
         appId,
@@ -106,7 +106,7 @@ describe("hosted asset URLs", () => {
       shortId: appShortId,
     };
     expect(withAppAssetUrl(app, projectShortId).clientPath).toBe(
-      `https://tailorkit.example.com/api/assets/p/${projectShortId}/a/${appShortId}/d/${deploymentShortId}/client/client.js`
+      `https://patchsmith.example.com/api/assets/p/${projectShortId}/a/${appShortId}/d/${deploymentShortId}/client/client.js`
     );
   });
 

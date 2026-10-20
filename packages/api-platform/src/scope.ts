@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
-import { scopesSchema } from "@tailorkit/db/schema/scope";
-import type { JsonObject, JsonValue, Scope } from "@tailorkit/db/schema/scope";
+import { scopesSchema } from "@patchsmith/db/schema/scope";
+import type { JsonObject, JsonValue, Scope } from "@patchsmith/db/schema/scope";
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
@@ -19,12 +19,12 @@ export {
   type JsonObject,
   type JsonValue,
   type Scope,
-} from "@tailorkit/db/schema/scope";
+} from "@patchsmith/db/schema/scope";
 export {
   scopeSchema,
   scopeValueSchema,
   scopesSchema,
-} from "@tailorkit/db/schema/scope";
+} from "@patchsmith/db/schema/scope";
 
 const maxObjectEntries = 32;
 

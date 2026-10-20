@@ -10,7 +10,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
 };
 
 const source = `
-import { defineView as cv } from "tailorkit/client";
+import { defineView as cv } from "patchsmith/client";
 import { z } from "zod";
 import { serverHelper } from "./server-helper";
 import { Widget } from "./widget";
@@ -37,7 +37,7 @@ it("extracts resolver dependencies without executing or retaining the component"
   expect(requireValue(result).server).toContain("./server-helper");
   expect(requireValue(result).server).toContain("queries.reports.list");
   expect(requireValue(result).server).not.toContain("./widget");
-  expect(requireValue(result).server).not.toContain("tailorkit/client");
+  expect(requireValue(result).server).not.toContain("patchsmith/client");
   expect(requireValue(result).server).not.toContain("preact");
   expect(requireValue(result).browser).not.toContain("SERVER_ONLY_SECRET");
   expect(requireValue(result).browser).not.toContain("serverHelper");
@@ -60,7 +60,7 @@ it("extracts namespace defineView instances with inferred file routes", async ()
   const result = await extractInstances(filename, namespace, "/app");
   expect(result).toBeDefined();
   expect(result?.server).toContain("SERVER_ONLY_SECRET");
-  expect(result?.server).not.toContain("tailorkit/client");
+  expect(result?.server).not.toContain("patchsmith/client");
   expect(result?.browser).toContain("client.defineView");
   expect(result?.browser).toContain('slot: "page"');
   expect(result?.browser).toContain('view: "/customers/details"');
@@ -144,7 +144,7 @@ it("rejects dynamic definitions rather than leaving a resolver in the browser", 
   await expect(
     extractInstances(
       "/app/page.tsx",
-      `function factory() { ${source.replaceAll(/^import .*$/gmu, "").replace("export default view;", "return view;")} }\nimport { defineView as cv } from "tailorkit/client";`,
+      `function factory() { ${source.replaceAll(/^import .*$/gmu, "").replace("export default view;", "return view;")} }\nimport { defineView as cv } from "patchsmith/client";`,
       "/app"
     )
   ).rejects.toThrow("module scope");

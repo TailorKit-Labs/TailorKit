@@ -1,19 +1,19 @@
-# TailorKit platform API
+# Patchsmith platform API
 
-`@tailorkit/api-platform` implements the platform API for managing and running TailorKit extensions.
+`@patchsmith/api-platform` implements the platform API for managing and running Patchsmith extensions.
 
 ## Connect to the app-agent MCP endpoint
 
-Connect Model Context Protocol (MCP) clients to `POST /api/platform/app-agent/mcp`. The web app mounts this streaming HTTP endpoint using `handleAppAgentMcpRequest` from `@tailorkit/api-platform/app-agent-mcp`. Send an MCP JSON-RPC request body and the required MCP metadata headers. Responses use MCP Server-Sent Events (SSE).
+Connect Model Context Protocol (MCP) clients to `POST /api/platform/app-agent/mcp`. The web app mounts this streaming HTTP endpoint using `handleAppAgentMcpRequest` from `@patchsmith/api-platform/app-agent-mcp`. Send an MCP JSON-RPC request body and the required MCP metadata headers. Responses use MCP Server-Sent Events (SSE).
 
 The host's server-side client supplies two headers:
 
 - `Authorization: Bearer your_project_key` authenticates the host. CLI agent JSON Web Tokens (JWTs) and runtime service credentials cannot use this endpoint.
-- `X-TailorKit-Context` contains unpadded base64url-encoded UTF-8 JSON with `{ scopes, subjectId, hostUrl }`. The endpoint enforces an 8 KiB limit and rejects invalid encodings, empty scopes, and unexpected fields.
+- `X-Patchsmith-Context` contains unpadded base64url-encoded UTF-8 JSON with `{ scopes, subjectId, hostUrl }`. The endpoint enforces an 8 KiB limit and rejects invalid encodings, empty scopes, and unexpected fields.
 
 `scopes` and required `subjectId` have the same shape as the object returned by `authenticate()`. The authenticated host asserts those values.
 
-`hostUrl` is the configured public TailorKit host API URL; the builder agent reads its `/schema` endpoint during generation. If an `Origin` header is present, it must match that host origin. A host proxy is not involved in MCP requests.
+`hostUrl` is the configured public Patchsmith host API URL; the builder agent reads its `/schema` endpoint during generation. If an `Origin` header is present, it must match that host origin. A host proxy is not involved in MCP requests.
 
 The typed `server.mcp.transport({ scopes, subjectId })` helper prepares the URL and headers, validates the scopes against the host contract, and handles encoding. Clients may also construct these headers directly, using their own MCP library.
 

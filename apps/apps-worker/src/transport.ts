@@ -13,9 +13,9 @@ import {
 import { RPCHandler as FetchHandler } from "@orpc/server/fetch";
 import { CORSHandlerPlugin } from "@orpc/server/plugins";
 import { RPCHandler as WebSocketHandler } from "@orpc/server/websocket";
+import { appContract } from "@patchsmith/app/protocol";
+import type { Invocation, MutationInvocation } from "@patchsmith/app/protocol";
 import { decodePeerMessage, isPeerCancelMessage } from "@standard-server/peer";
-import { appContract } from "@tailorkit/app/protocol";
-import type { Invocation, MutationInvocation } from "@tailorkit/app/protocol";
 import { Effect } from "effect";
 import { z } from "zod";
 
@@ -159,7 +159,7 @@ export const routeInstallation = <Identity, Error>(
           .get("sec-websocket-protocol")
           ?.split(",")
           .map((value) => value.trim()) ?? [];
-      if (protocols.includes("tailorkit")) {
+      if (protocols.includes("patchsmith")) {
         token = protocols.find((value) => value.startsWith("jwt."))?.slice(4);
       }
     } else {

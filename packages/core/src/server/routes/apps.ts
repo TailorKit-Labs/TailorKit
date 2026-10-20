@@ -5,13 +5,13 @@ import {
   appsGet,
   appsList,
   appsUpdate,
-} from "@tailorkit/client-platform/client";
+} from "@patchsmith/client-platform/client";
 import * as v from "valibot";
 
 import { platformAppSelector } from "#server/platform-app-selector";
 import {
-  getTailorKitScope,
-  getTailorKitScopes,
+  getPatchsmithScope,
+  getPatchsmithScopes,
   o,
   requireCliDeployToken,
 } from "#server/procedures";
@@ -35,7 +35,7 @@ export const appRouter = {
     .input(v.strictObject(appInput.entries))
     .handler(async ({ context, input }) => {
       const { data } = await appsCreate({
-        body: { ...input, scope: getTailorKitScope(context) },
+        body: { ...input, scope: getPatchsmithScope(context) },
         client: context.platform,
         headers: context.platformHeaders,
         responseStyle: "fields",
@@ -51,7 +51,7 @@ export const appRouter = {
         await appsDelete({
           body: {
             app: platformAppSelector(input.appId),
-            scope: getTailorKitScope(context),
+            scope: getPatchsmithScope(context),
           },
           client: context.platform,
           headers: context.platformHeaders,
@@ -66,7 +66,7 @@ export const appRouter = {
           body: {
             app: platformAppSelector(input.appId),
             deploymentId: input.deploymentId,
-            scope: getTailorKitScope(context),
+            scope: getPatchsmithScope(context),
           },
           client: context.platform,
           headers: context.platformHeaders,
@@ -81,7 +81,7 @@ export const appRouter = {
       const { data } = await appsGet({
         body: {
           app: platformAppSelector(input.appId),
-          scopes: getTailorKitScopes(context, input.scopes),
+          scopes: getPatchsmithScopes(context, input.scopes),
         },
         client: context.platform,
         headers: context.platformHeaders,
@@ -105,7 +105,7 @@ export const appRouter = {
         body: {
           page: input?.page,
           pageSize: input?.pageSize,
-          scopes: getTailorKitScopes(context, input?.scopes),
+          scopes: getPatchsmithScopes(context, input?.scopes),
         },
         client: context.platform,
         headers: context.platformHeaders,
@@ -129,7 +129,7 @@ export const appRouter = {
             app: platformAppSelector(input.appId),
             description: input.description,
             name: input.name,
-            scope: getTailorKitScope(context),
+            scope: getPatchsmithScope(context),
           },
           client: context.platform,
           headers: context.platformHeaders,

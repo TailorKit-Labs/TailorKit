@@ -2,9 +2,9 @@ import { randomBytes, randomInt } from "node:crypto";
 
 import { openapi } from "@orpc/openapi";
 import { ORPCError } from "@orpc/server";
-import { hashSecret } from "@tailorkit/api-utils/hashing";
-import { db } from "@tailorkit/db";
-import { cliAuthSession, cliToken } from "@tailorkit/db/schema/cli-auth";
+import { hashSecret } from "@patchsmith/api-utils/hashing";
+import { db } from "@patchsmith/db";
+import { cliAuthSession, cliToken } from "@patchsmith/db/schema/cli-auth";
 import { and, eq, gt } from "drizzle-orm";
 import { z } from "zod";
 

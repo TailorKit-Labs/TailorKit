@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { AppMigration } from "@tailorkit/app/protocol";
+import type { AppMigration } from "@patchsmith/app/protocol";
 
 import { forEachSequential } from "#for-each-sequential";
 
@@ -20,7 +20,7 @@ export const readAppMigrations = async (
           return [];
         }
         throw new Error(
-          `App migrations directory is missing: ${directory}. Run tailorkit db generate and commit migrations before building.`,
+          `App migrations directory is missing: ${directory}. Run patchsmith db generate and commit migrations before building.`,
           { cause: error }
         );
       }

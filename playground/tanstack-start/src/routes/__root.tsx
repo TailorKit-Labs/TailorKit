@@ -7,7 +7,7 @@ import {
   redirect,
 } from "@tanstack/react-router";
 
-import { TailorKitShell } from "#components/tailorkit-shell";
+import { PatchsmithShell } from "#components/patchsmith-shell";
 import { loadSession } from "#lib/auth.functions";
 
 import css from "#styles.css?url";
@@ -18,9 +18,9 @@ const AppShell = () => {
     return <Outlet />;
   }
   return (
-    <TailorKitShell session={session}>
+    <PatchsmithShell session={session}>
       <Outlet />
-    </TailorKitShell>
+    </PatchsmithShell>
   );
 };
 
@@ -53,7 +53,7 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { content: "width=device-width, initial-scale=1", name: "viewport" },
-      { title: "TailorKit Playground" },
+      { title: "Patchsmith Playground" },
     ],
   }),
   shellComponent: RootDocument,

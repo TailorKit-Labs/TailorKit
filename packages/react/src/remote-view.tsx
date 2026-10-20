@@ -1,14 +1,14 @@
 import { useStore } from "@nanostores/react";
-import type { ToolBridge, Session } from "@tailorkit/app/client";
+import type { ToolBridge, Session } from "@patchsmith/app/client";
 import {
   createRemoteViewStore,
   createRemoteElementProps,
-} from "@tailorkit/client-core";
-import type { RemoteViewStore } from "@tailorkit/client-core";
+} from "@patchsmith/client-core";
+import type { RemoteViewStore } from "@patchsmith/client-core";
 import type {
   RemoteProps,
   RemoteElementNode,
-} from "@tailorkit/sandbox/protocol";
+} from "@patchsmith/sandbox/protocol";
 import {
   Component,
   Fragment,
@@ -48,7 +48,7 @@ class RemoteErrorBoundary extends Component<
   }
 
   static componentDidCatch(error: Error): void {
-    console.error("TailorKit remote app failed", error);
+    console.error("Patchsmith remote app failed", error);
   }
 
   render(): ReactNode {
@@ -87,7 +87,7 @@ const RemoteElementViewComponent = ({
   const component = useStore(componentStore);
 
   if (component === undefined) {
-    throw new Error(`TailorKit component "${node.type}" is not registered.`);
+    throw new Error(`Patchsmith component "${node.type}" is not registered.`);
   }
   const props = createRemoteElementProps(node, ctx.dispatch.bind(ctx));
 

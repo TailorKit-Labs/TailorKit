@@ -1,4 +1,4 @@
-import { asyncFixture } from "@tailorkit/config/testing";
+import { asyncFixture } from "@patchsmith/config/testing";
 import { beforeEach, expect, it, vi } from "vite-plus/test";
 
 import type { AppAgentInput } from "./input";
@@ -7,7 +7,7 @@ import { prepareWorkspace } from "./workspace";
 const input: AppAgentInput = {
   agentToken: "private-token",
   appId: "app-1",
-  hostUrl: "https://host.test/api/tailorkit",
+  hostUrl: "https://host.test/api/patchsmith",
   messages: [{ content: "Build", role: "user" }],
   model: "xiaomi/mimo-v2.6-pro",
   threadId: "thread-1",
@@ -25,23 +25,23 @@ beforeEach(() => {
   session.runCommand.mockResolvedValue({ exitCode: 0 });
 });
 
-it("prepares a matching beta CLI and app with only TailorKit exempt from release age", async () => {
+it("prepares a matching beta CLI and app with only Patchsmith exempt from release age", async () => {
   await prepareWorkspace(session, input);
   expect(session.runCommand).toHaveBeenCalledWith(
     expect.objectContaining({
-      args: ["add", "--save-exact", "tailorkit@beta"],
-      cwd: "/tmp/tailorkit-cli",
+      args: ["add", "--save-exact", "patchsmith@beta"],
+      cwd: "/tmp/patchsmith-cli",
     })
   );
   for (const path of [
-    "/tmp/tailorkit-cli/pnpm-workspace.yaml",
-    "/workspace/.tailorkit-scaffold/new-app/pnpm-workspace.yaml",
+    "/tmp/patchsmith-cli/pnpm-workspace.yaml",
+    "/workspace/.patchsmith-scaffold/new-app/pnpm-workspace.yaml",
   ]) {
     expect(session.writeFiles).toHaveBeenCalledWith(
       expect.arrayContaining([
         {
           content: Buffer.from(
-            'minimumReleaseAge: 4320\nminimumReleaseAgeStrict: true\nminimumReleaseAgeExclude:\n  - tailorkit\n  - "@tailorkit/*"\n# The platform-specific esbuild binary is installed as an optional dependency.\nallowBuilds:\n  esbuild: false\n'
+            'minimumReleaseAge: 4320\nminimumReleaseAgeStrict: true\nminimumReleaseAgeExclude:\n  - patchsmith\n  - "@patchsmith/*"\n# The platform-specific esbuild binary is installed as an optional dependency.\nallowBuilds:\n  esbuild: false\n'
           ),
           path,
         },
@@ -50,7 +50,7 @@ it("prepares a matching beta CLI and app with only TailorKit exempt from release
   }
   expect(session.runCommand).toHaveBeenCalledWith(
     expect.objectContaining({
-      args: ["-T", "/workspace/.tailorkit-scaffold/new-app", "/workspace/app"],
+      args: ["-T", "/workspace/.patchsmith-scaffold/new-app", "/workspace/app"],
       cmd: "mv",
     })
   );
@@ -59,7 +59,7 @@ it("prepares a matching beta CLI and app with only TailorKit exempt from release
 it("preserves existing app files, dependencies and host identity", async () => {
   session.readFileToBuffer.mockResolvedValueOnce(
     Buffer.from(
-      '{"name":"existing","dependencies":{"tailorkit":"0.1.0-beta.28"}}'
+      '{"name":"existing","dependencies":{"patchsmith":"0.1.0-beta.28"}}'
     )
   );
   await prepareWorkspace(session, input);
@@ -67,13 +67,13 @@ it("preserves existing app files, dependencies and host identity", async () => {
   expect(session.writeFiles).toHaveBeenCalledExactlyOnceWith([
     {
       content: Buffer.from('{"private":true}'),
-      path: "/tmp/tailorkit-cli/package.json",
+      path: "/tmp/patchsmith-cli/package.json",
     },
     {
       content: Buffer.from(
-        'minimumReleaseAge: 4320\nminimumReleaseAgeStrict: true\nminimumReleaseAgeExclude:\n  - tailorkit\n  - "@tailorkit/*"\n# The platform-specific esbuild binary is installed as an optional dependency.\nallowBuilds:\n  esbuild: false\n'
+        'minimumReleaseAge: 4320\nminimumReleaseAgeStrict: true\nminimumReleaseAgeExclude:\n  - patchsmith\n  - "@patchsmith/*"\n# The platform-specific esbuild binary is installed as an optional dependency.\nallowBuilds:\n  esbuild: false\n'
       ),
-      path: "/tmp/tailorkit-cli/pnpm-workspace.yaml",
+      path: "/tmp/patchsmith-cli/pnpm-workspace.yaml",
     },
   ]);
 });
@@ -85,10 +85,10 @@ it("reuses the installed CLI for a completed app without package installation", 
     .mockResolvedValueOnce(Buffer.from("#!/bin/sh\n"));
   await prepareWorkspace(session, input);
   expect(session.readFileToBuffer).toHaveBeenNthCalledWith(2, {
-    path: "/workspace/app/.tailorkit-setup-pending",
+    path: "/workspace/app/.patchsmith-setup-pending",
   });
   expect(session.readFileToBuffer).toHaveBeenNthCalledWith(3, {
-    path: "/tmp/tailorkit-cli/node_modules/.bin/tailorkit",
+    path: "/tmp/patchsmith-cli/node_modules/.bin/patchsmith",
   });
   expect(session.runCommand).not.toHaveBeenCalled();
   expect(session.writeFiles).not.toHaveBeenCalled();
@@ -103,12 +103,12 @@ it("fails preparation when a completed app's missing CLI cannot be installed", a
     stderr: vi.fn().mockResolvedValue("Registry unavailable"),
   });
   await expect(prepareWorkspace(session, input)).rejects.toThrow(
-    "TailorKit CLI installation failed: Registry unavailable"
+    "Patchsmith CLI installation failed: Registry unavailable"
   );
   expect(session.runCommand).toHaveBeenCalledExactlyOnceWith({
-    args: ["add", "--save-exact", "tailorkit@beta"],
+    args: ["add", "--save-exact", "patchsmith@beta"],
     cmd: "pnpm",
-    cwd: "/tmp/tailorkit-cli",
+    cwd: "/tmp/patchsmith-cli",
     env: { CI: "true" },
     timeoutMs: 5 * 60_000,
   });
@@ -116,16 +116,16 @@ it("fails preparation when a completed app's missing CLI cannot be installed", a
 
 it("passes the supplied schema to both scaffolding and generation without shell interpolation", async () => {
   const hostUrl =
-    "https://host.test/api/tailorkit?value=$(touch /tmp/injected)";
-  const schemaPath = "/workspace/tailorkit.schema.json";
+    "https://host.test/api/patchsmith?value=$(touch /tmp/injected)";
+  const schemaPath = "/workspace/patchsmith.schema.json";
   await prepareWorkspace(session, { ...input, hostUrl }, schemaPath);
   expect(session.runCommand).toHaveBeenCalledWith(
     expect.objectContaining({
       args: [
         "exec",
-        "tailorkit",
+        "patchsmith",
         "init",
-        "/workspace/.tailorkit-scaffold",
+        "/workspace/.patchsmith-scaffold",
         "--name",
         "new-app",
         "--host",
@@ -163,7 +163,7 @@ it.each(["init", "install", "generate"])(
     );
     expect(session.runCommand).not.toHaveBeenCalledWith(
       expect.objectContaining({
-        args: ["-f", "/workspace/app/.tailorkit-setup-pending"],
+        args: ["-f", "/workspace/app/.patchsmith-setup-pending"],
         cmd: "rm",
       })
     );
@@ -183,7 +183,7 @@ it("finishes an interrupted install without overwriting the scaffold", async () 
   );
   expect(session.runCommand).toHaveBeenLastCalledWith(
     expect.objectContaining({
-      args: ["-f", "/workspace/app/.tailorkit-setup-pending"],
+      args: ["-f", "/workspace/app/.patchsmith-setup-pending"],
       cmd: "rm",
     })
   );

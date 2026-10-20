@@ -1,11 +1,11 @@
 {
   "info": {
-    "title": "Tailorkit Platform API",
+    "title": "Patchsmith Platform API",
     "version": "0.0.0"
   },
   "servers": [
     {
-      "url": "https://tailorkit.dev/api/platform"
+      "url": "https://patchsmith.io/api/platform"
     }
   ],
   "openapi": "3.2.0",

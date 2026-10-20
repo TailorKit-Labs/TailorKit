@@ -1,5 +1,5 @@
 import { createSlotStore } from "#store/fetch/slot";
-import type { TailorKitStore } from "#store/store";
+import type { PatchsmithStore } from "#store/store";
 
 import { matchesApp } from "./apps";
 
@@ -14,7 +14,7 @@ export interface ViewsQueryOptions<
 
 /** Refresh discovery or instances and join queries created by the resulting state. */
 export const refetchViews = async (
-  store: TailorKitStore,
+  store: PatchsmithStore,
   { slot, scopes, appIds }: ViewsQueryOptions
 ): Promise<void> => {
   const queryOptions = () => {

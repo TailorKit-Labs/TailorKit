@@ -1,11 +1,11 @@
 import { mkdir, mkdtemp, writeFile, cp, rm } from "node:fs/promises";
 import path from "node:path";
 
-import type { RuntimeManifest } from "@tailorkit/app/server";
+import type { RuntimeManifest } from "@patchsmith/app/server";
 import { build } from "vite";
 import type { UserConfig } from "vite";
 
-import type { LoadedTailorKitConfig } from "#config/loader";
+import type { LoadedPatchsmithConfig } from "#config/loader";
 
 import { appDatabasePaths } from "./database-paths";
 import { isMissingFile } from "./fs-errors";
@@ -35,7 +35,7 @@ const overlaps = (source: string, destination: string) => {
 
 /** Check before either build can empty an output directory. */
 export const validateServerBuildOutput = (
-  loaded: LoadedTailorKitConfig,
+  loaded: LoadedPatchsmithConfig,
   output: string
 ) => {
   if (!loaded.config.server) {
@@ -60,7 +60,7 @@ export const runtimeManifest = {
 
 /** Bundle the private app backend and migrations. */
 export const buildServer = async (
-  loaded: LoadedTailorKitConfig,
+  loaded: LoadedPatchsmithConfig,
   watch = false,
   buildOutDir?: string,
   instances: InstanceModule[] = [],
@@ -72,7 +72,7 @@ export const buildServer = async (
     /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
     return undefined;
   }
-  const output = buildOutDir ?? path.resolve(loaded.root, ".tailorkit");
+  const output = buildOutDir ?? path.resolve(loaded.root, ".patchsmith");
   const directory = path.join(output, "server");
   const migrationsDirectory = appDatabasePaths(
     loaded.root,
@@ -108,10 +108,10 @@ export const buildServer = async (
       entry,
       `${
         instances.length
-          ? `import app from ${JSON.stringify(path.resolve(loaded.root, config.entry ?? "src/server.ts"))};\nimport { withInstanceResolvers } from "tailorkit/server";\n${instanceServerImports(instances)}\nexport default withInstanceResolvers(app, ${instanceServerBindings(instances, registrations)});`
+          ? `import app from ${JSON.stringify(path.resolve(loaded.root, config.entry ?? "src/server.ts"))};\nimport { withInstanceResolvers } from "patchsmith/server";\n${instanceServerImports(instances)}\nexport default withInstanceResolvers(app, ${instanceServerBindings(instances, registrations)});`
           : `export { default } from ${JSON.stringify(path.resolve(loaded.root, config.entry ?? "src/server.ts"))};`
       }
-export { default as migrations } from "tailorkit:migrations";
+export { default as migrations } from "patchsmith:migrations";
 export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
 `
     );
@@ -144,7 +144,7 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
             await rm(temporary, { force: true, recursive: true });
           },
           async load(id): Promise<string | undefined> {
-            if (id !== "\0tailorkit:migrations") {
+            if (id !== "\0patchsmith:migrations") {
               return undefined;
             }
             const { migrations, files } = await readAppMigrations(
@@ -168,10 +168,10 @@ export const runtimeManifest = ${JSON.stringify(runtimeManifest)};
             });
             return `export default ${JSON.stringify(migrations)};`;
           },
-          name: "tailorkit-app-migrations",
+          name: "patchsmith-app-migrations",
           resolveId: (id) =>
-            id === "tailorkit:migrations"
-              ? "\0tailorkit:migrations"
+            id === "patchsmith:migrations"
+              ? "\0patchsmith:migrations"
               : undefined,
         },
       ],

@@ -1,5 +1,5 @@
 ---
-"@tailorkit/cli": patch
+"@patchsmith/cli": patch
 ---
 
-Add a generic `#*` source import alias to new app scaffolds alongside `#tailorkit`, so frontend and backend modules share one import convention.
+Add a generic `#*` source import alias to new app scaffolds alongside `#patchsmith`, so frontend and backend modules share one import convention.

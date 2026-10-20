@@ -1,4 +1,4 @@
-import { APP_AUDIENCE, issueAppToken } from "@tailorkit/api-utils/app-auth";
+import { APP_AUDIENCE, issueAppToken } from "@patchsmith/api-utils/app-auth";
 import { Effect } from "effect";
 import { expect, it, vi, afterEach } from "vite-plus/test";
 
@@ -33,7 +33,7 @@ const identity = {
   projectShortId: "abc123def456",
   scope: { name: "org", value: { id: "tenant" } },
   subjectId: "user",
-  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
 };
 afterEach(() => {
   vi.unstubAllGlobals();

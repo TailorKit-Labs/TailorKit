@@ -1,5 +1,5 @@
 export {
   defineConfig,
-  defineTailorKitConfig,
-  type TailorKitConfig,
+  definePatchsmithConfig,
+  type PatchsmithConfig,
 } from "./config";

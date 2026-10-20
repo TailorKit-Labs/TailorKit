@@ -7,7 +7,7 @@ import { expect, it } from "vite-plus/test";
 import { readClientManifest, readClientViews } from "./client-views";
 
 it("reads actual slot declarations, including computed paths, and excludes disabled views", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-client-views-"));
+  const root = await mkdtemp(path.join(tmpdir(), "patchsmith-client-views-"));
   const filename = path.join(root, "client.js");
   try {
     await writeFile(
@@ -32,7 +32,7 @@ it("reads actual slot declarations, including computed paths, and excludes disab
 
 it("preserves instance availability and registrations when one view is used in multiple slots", async () => {
   const root = await mkdtemp(
-    path.join(tmpdir(), "tailorkit-instance-manifest-")
+    path.join(tmpdir(), "patchsmith-instance-manifest-")
   );
   const filename = path.join(root, "client.js");
   const resolver = "i0123456789abcdef01234567";

@@ -1,7 +1,7 @@
 import {
   agentChunkSchema,
   agentRunCompleteChunkSchema,
-} from "@tailorkit/client-platform/agent";
+} from "@patchsmith/client-platform/agent";
 import {
   appsCreate,
   appsList,
@@ -16,10 +16,10 @@ import {
   cliAuthVerifyToken,
   appAgentChat,
   appAgentCreate,
-} from "@tailorkit/client-platform/client";
-import { createClient } from "@tailorkit/client-platform/client/client/index";
-import { createTailorKitClient } from "@tailorkit/core/server";
-import type { TailorKitRouterClient } from "@tailorkit/core/server";
+} from "@patchsmith/client-platform/client";
+import { createClient } from "@patchsmith/client-platform/client/client/index";
+import { createPatchsmithClient } from "@patchsmith/core/server";
+import type { PatchsmithRouterClient } from "@patchsmith/core/server";
 import * as v from "valibot";
 
 import { getAgentAuth, validatePlatformUrl } from "./agent-auth";
@@ -32,9 +32,9 @@ const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
 
 type Input<
-  Group extends keyof TailorKitRouterClient,
-  Method extends keyof TailorKitRouterClient[Group],
-> = TailorKitRouterClient[Group][Method] extends (
+  Group extends keyof PatchsmithRouterClient,
+  Method extends keyof PatchsmithRouterClient[Group],
+> = PatchsmithRouterClient[Group][Method] extends (
   ...args: infer Args
 ) => infer _Output
   ? Args[0]
@@ -62,10 +62,10 @@ const request = async <T>(operation: Promise<T>): Promise<T> => {
 };
 
 export type CliClient = Pick<
-  TailorKitRouterClient,
+  PatchsmithRouterClient,
   "apps" | "deployments" | "appAgent"
 > & {
-  cliAuth: Pick<TailorKitRouterClient["cliAuth"], "verifyToken">;
+  cliAuth: Pick<PatchsmithRouterClient["cliAuth"], "verifyToken">;
 };
 
 /** All authenticated CLI commands share one credential selection and routing boundary. */
@@ -76,14 +76,14 @@ export const createCliClient = (options: {
 }): CliClient => {
   const agent = getAgentAuth();
   if (!agent) {
-    const clientOptions: Parameters<typeof createTailorKitClient>[0] = {
+    const clientOptions: Parameters<typeof createPatchsmithClient>[0] = {
       headers: { authorization: `Bearer ${options.token}` },
       url: options.url,
     };
     if (options.fetch) {
       clientOptions.fetch = options.fetch;
     }
-    return createTailorKitClient(clientOptions);
+    return createPatchsmithClient(clientOptions);
   }
   const client = createClient({
     baseUrl: validatePlatformUrl(agent.platformUrl),

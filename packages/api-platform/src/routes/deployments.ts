@@ -1,22 +1,22 @@
 import { openapi } from "@orpc/openapi";
 import { ORPCError } from "@orpc/server";
-import { maxDeploymentBytes } from "@tailorkit/asset-delivery";
+import { maxDeploymentBytes } from "@patchsmith/asset-delivery";
 import {
   logoContentTypes,
   maxLogoBytes,
   validateLogoAsset,
-} from "@tailorkit/asset-delivery/logo-validation";
-import { db } from "@tailorkit/db";
+} from "@patchsmith/asset-delivery/logo-validation";
+import { db } from "@patchsmith/db";
 import {
   app,
   AppDeployment,
   appDeployment,
   AppDeploymentFile,
   appDeploymentFile,
-} from "@tailorkit/db/schema/apps";
-import type { Scope } from "@tailorkit/db/schema/scope";
-import { createShortId } from "@tailorkit/db/short-id";
-import { setSpanAttributes } from "@tailorkit/observability";
+} from "@patchsmith/db/schema/apps";
+import type { Scope } from "@patchsmith/db/schema/scope";
+import { createShortId } from "@patchsmith/db/short-id";
+import { setSpanAttributes } from "@patchsmith/observability";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -235,9 +235,9 @@ const requireDeployment = o.middleware(
     input: { deploymentId: string; scope?: Scope; scopes?: Scope[] }
   ) => {
     setSpanAttributes({
-      "tailorkit.middleware": "require_deployment",
-      "tailorkit.package": "api-platform",
-      "tailorkit.resource_type": "deployment",
+      "patchsmith.middleware": "require_deployment",
+      "patchsmith.package": "api-platform",
+      "patchsmith.resource_type": "deployment",
     });
 
     const deploymentWithApp = await db.query.appDeployment.findFirst({

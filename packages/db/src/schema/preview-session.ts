@@ -34,7 +34,7 @@ export const previewSession = pgTable(
      * The host-authorized CLI credential that opened this session.
      *
      * `cli_token.scope_json` is issued by the host integration, so this is
-     * intentionally not a foreign key to a TailorKit dashboard user.
+     * intentionally not a foreign key to a Patchsmith dashboard user.
      */
     cliTokenId: uuid("cli_token_id")
       .notNull()

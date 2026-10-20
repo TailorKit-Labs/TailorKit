@@ -1,4 +1,4 @@
-import { asyncFixture } from "@tailorkit/config/testing";
+import { asyncFixture } from "@patchsmith/config/testing";
 import { expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
@@ -20,7 +20,7 @@ const pair = await crypto.subtle.generateKey(
 );
 const jwk = await crypto.subtle.exportKey("jwk", pair.publicKey);
 const issuer = "https://platform.test/api/platform";
-const toolUrl = "https://product.test/api/tailorkit/tools/execute";
+const toolUrl = "https://product.test/api/patchsmith/tools/execute";
 const identity = {
   appId: "app",
   deploymentId: "deployment",
@@ -80,7 +80,7 @@ const server = createServer({
     },
     platformHeaders: { authorization: "Bearer product-project-key" },
   },
-  baseUrl: "https://product.test/api/tailorkit",
+  baseUrl: "https://product.test/api/patchsmith",
   contract,
   tools: {
     math: {
@@ -94,9 +94,9 @@ const server = createServer({
 it.each([
   undefined,
   "",
-  "/api/tailorkit",
-  "//product.test/api/tailorkit",
-  "ftp://product.test/api/tailorkit",
+  "/api/patchsmith",
+  "//product.test/api/patchsmith",
+  "ftp://product.test/api/patchsmith",
 ])(
   "requires an absolute HTTP(S) base URL when creating a server: %s",
   (baseUrl) => {
@@ -117,10 +117,10 @@ it("uses the authentication supplied for each handler call", async () => {
   );
   const host = createServer({
     $internal: { platformFetch: fetchApps },
-    baseUrl: "https://product.test/api/tailorkit",
+    baseUrl: "https://product.test/api/patchsmith",
     contract: defineContract({ scopes: { org: z.object({ id: z.string() }) } }),
   });
-  const request = new Request("https://product.test/api/tailorkit/apps");
+  const request = new Request("https://product.test/api/patchsmith/apps");
   const denied = await host.handler(request, { authenticate: () => null });
   expect(denied.status).toBe(401);
   expect(fetchApps).not.toHaveBeenCalled();
@@ -154,7 +154,7 @@ const token = async (
       JSON.stringify({
         ...identity,
         appShortId: "public-app",
-        aud: "tailorkit-app",
+        aud: "patchsmith-app",
         exp: now + 300,
         iat: now,
         iss: issuer,
@@ -345,13 +345,13 @@ it("uses the trusted public origin to verify tool destinations behind a proxy", 
             })
       ),
     },
-    baseUrl: new URL("https://product.test/custom/tailorkit/"),
+    baseUrl: new URL("https://product.test/custom/patchsmith/"),
     contract,
     tools: {
       math: { broken: () => 0, increment: handler, transformed: () => "42" },
     },
   });
-  const internalUrl = "http://internal:3000/custom/tailorkit/tools/execute";
+  const internalUrl = "http://internal:3000/custom/patchsmith/tools/execute";
   const request = (credential: string) =>
     new Request(internalUrl, {
       body: JSON.stringify({
@@ -368,7 +368,7 @@ it("uses the trusted public origin to verify tool destinations behind a proxy", 
   const awaitedResult8 = await proxied.handler(
     request(
       await token({
-        toolUrl: "https://product.test/custom/tailorkit/tools/execute",
+        toolUrl: "https://product.test/custom/patchsmith/tools/execute",
       })
     ),
     { authenticate: () => null }

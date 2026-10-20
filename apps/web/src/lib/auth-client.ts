@@ -1,7 +1,7 @@
 import { dashClient } from "@better-auth/infra/client";
 import { passkeyClient } from "@better-auth/passkey/client";
-import { captchaEndpoints } from "@tailorkit/auth/lib/captcha-endpoints";
-import { ac, roles } from "@tailorkit/auth/lib/permissions";
+import { captchaEndpoints } from "@patchsmith/auth/lib/captcha-endpoints";
+import { ac, roles } from "@patchsmith/auth/lib/permissions";
 import {
   emailOTPClient,
   organizationClient,

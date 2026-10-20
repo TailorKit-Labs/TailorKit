@@ -1,6 +1,6 @@
-import type { ToolBridge, Session, ViewInstance } from "@tailorkit/app/client";
-import type { ViewStatus } from "@tailorkit/core/views";
-import type { RemoteProps } from "@tailorkit/sandbox/protocol";
+import type { ToolBridge, Session, ViewInstance } from "@patchsmith/app/client";
+import type { ViewStatus } from "@patchsmith/core/views";
+import type { RemoteProps } from "@patchsmith/sandbox/protocol";
 import { atom } from "nanostores";
 
 import type { RuntimeRenderSlotProps, SlotState } from "#client/slot-types";
@@ -11,7 +11,7 @@ import { serializeCacheKey } from "#store/fetch/cache";
 import type { SlotItem } from "#store/fetch/slot";
 import { createAppViewsQuery } from "#store/query";
 import { createSnapshotStore } from "#store/snapshot-store";
-import type { TailorKitStore } from "#store/store";
+import type { PatchsmithStore } from "#store/store";
 
 const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -57,7 +57,7 @@ const failure = (message: string): SlotRuntimeSnapshot => ({
 
 /** Resolve a managed or controlled slot; adapters only render its snapshot. */
 export const createSlotRuntime = (
-  store: TailorKitStore,
+  store: PatchsmithStore,
   initial: SlotRuntimeOptions
 ) => {
   const memoInput = createValueMemo<SlotRuntimeOptions>();

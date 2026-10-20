@@ -52,12 +52,12 @@ it.each([
     expect(commands).toEqual(
       [
         ...checkArguments,
-        ["exec", "tailorkit", "deploy", "--no-interactive"],
+        ["exec", "patchsmith", "deploy", "--no-interactive"],
       ].map((args) => ({
         args,
         cmd: "pnpm",
         cwd: "/workspace/app",
-        env: { CI: "true", NO_COLOR: "1", TAILORKIT_AGENT_TOKEN: agentToken },
+        env: { CI: "true", NO_COLOR: "1", PATCHSMITH_AGENT_TOKEN: agentToken },
         signal: controller.signal,
         timeoutMs: 5 * 60_000,
       }))

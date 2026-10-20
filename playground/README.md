@@ -1,10 +1,10 @@
-# TailorKit playground
+# Patchsmith playground
 
-Use the playground to try TailorKit contracts and apps against a local host. The TanStack Start host in `playground/tanstack-start` includes a SQLite-backed issue tracker and a passwordless profile picker. The Todo app uses the host’s client tools to scope todos to the selected team.
+Use the playground to try Patchsmith contracts and apps against a local host. The TanStack Start host in `playground/tanstack-start` includes a SQLite-backed issue tracker and a passwordless profile picker. The Todo app uses the host’s client tools to scope todos to the selected team.
 
 ## Start the playground
 
-From the repository root, install dependencies and start the local TailorKit platform in one terminal:
+From the repository root, install dependencies and start the local Patchsmith platform in one terminal:
 
 ```sh
 pnpm install
@@ -23,7 +23,7 @@ Open the [playground at localhost:5010](http://localhost:5010). Choose one of th
 
 ## Apps and contracts
 
-The Todo app builds with Vite+ and the TailorKit plugin in `vite.config.ts`. Run `pnpm playground:todo:build` from the repository root, or `pnpm build` from `playground/apps/todo`. Build aliases and custom plugins belong in that Vite configuration. Host and backend settings remain in `tailorkit.config.ts`. Lint and format settings are inherited from the repository's root configuration; the app also provides `check`, `fix`, `lint`, and `format` scripts.
+The Todo app builds with Vite+ and the Patchsmith plugin in `vite.config.ts`. Run `pnpm playground:todo:build` from the repository root, or `pnpm build` from `playground/apps/todo`. Build aliases and custom plugins belong in that Vite configuration. Host and backend settings remain in `patchsmith.config.ts`. Lint and format settings are inherited from the repository's root configuration; the app also provides `check`, `fix`, `lint`, and `format` scripts.
 
 The app in `playground/apps/todo` uses the host's `todos` client tools, whose API is defined in the active contract. To try a different validation library, change the export in `playground/shared/src/contracts/active.ts` to `./valibot` or `./arktype`, then run:
 
@@ -32,9 +32,9 @@ pnpm playground:generate
 pnpm playground:todo:build
 ```
 
-`playground:generate` serializes the selected contract to `playground/schema.json`, then runs `tailorkit generate --schema` for the todo app. It does not need the host to be running. Repeated JSON Schema definitions use local `$defs`/`$ref` references in both the generated file and the host response; the app type generator resolves them before producing TypeScript. The file contains the raw schema object accepted by `tailorkit generate --schema`, matching the `schema` value inside the host's `/meta` response.
+`playground:generate` serializes the selected contract to `playground/schema.json`, then runs `patchsmith generate --schema` for the todo app. It does not need the host to be running. Repeated JSON Schema definitions use local `$defs`/`$ref` references in both the generated file and the host response; the app type generator resolves them before producing TypeScript. The file contains the raw schema object accepted by `patchsmith generate --schema`, matching the `schema` value inside the host's `/meta` response.
 
-The host contract exposes these components: the standard `Box`, `Flex`, `Grid`, `Inline`, and `Pressable` primitives, plus `Button` and `Input`. The host maps `Button` and `Input` to `@tailorkit/ui` and uses the standard React renderers for primitives.
+The host contract exposes these components: the standard `Box`, `Flex`, `Grid`, `Inline`, and `Pressable` primitives, plus `Button` and `Input`. The host maps `Button` and `Input` to `@patchsmith/ui` and uses the standard React renderers for primitives.
 
 The Todo panel includes Pressable examples with inline, box, flex, and grid layouts, an email row with nested layout children, an icon-only action with an explicit name, and a disable toggle. Try hover, hold, Tab / Shift+Tab, Enter, and Space.
 

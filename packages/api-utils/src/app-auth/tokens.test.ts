@@ -26,7 +26,7 @@ const publicKeys = {
   keys: [{ ...(await exportJWK(publicKey)), kid: "host-key" }],
 };
 const signing = {
-  audience: "tailorkit-app",
+  audience: "patchsmith-app",
   issuer: "https://host.test",
   keyId: "host-key",
   privateKey,
@@ -40,7 +40,7 @@ const identity = {
   projectShortId: "abc123def456",
   scope: { name: "org", value: { id: "tenant" } },
   subjectId: "principal",
-  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
 };
 const verify = appTokenVerifier({
   ...signing,

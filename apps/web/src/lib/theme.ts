@@ -1,4 +1,4 @@
-import type { User } from "@tailorkit/auth";
+import type { User } from "@patchsmith/auth";
 import type { ReactNode } from "react";
 import {
   createContext,

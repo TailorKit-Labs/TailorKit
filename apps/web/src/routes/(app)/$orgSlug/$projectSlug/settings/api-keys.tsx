@@ -1,4 +1,4 @@
-import { Button } from "@tailorkit/ui/button";
+import { Button } from "@patchsmith/ui/button";
 import {
   Card,
   CardAction,
@@ -6,8 +6,8 @@ import {
   CardHeader,
   CardPanel,
   CardTitle,
-} from "@tailorkit/ui/card";
-import { DateAgo } from "@tailorkit/ui/date";
+} from "@patchsmith/ui/card";
+import { DateAgo } from "@patchsmith/ui/date";
 import {
   Dialog,
   DialogClose,
@@ -17,22 +17,22 @@ import {
   DialogPanel,
   DialogPopup,
   DialogTitle,
-} from "@tailorkit/ui/dialog";
-import { Field, FieldLabel } from "@tailorkit/ui/field";
+} from "@patchsmith/ui/dialog";
+import { Field, FieldLabel } from "@patchsmith/ui/field";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
-} from "@tailorkit/ui/input-group";
+} from "@patchsmith/ui/input-group";
 import {
   Select,
   SelectItem,
   SelectPopup,
   SelectTrigger,
   SelectValue,
-} from "@tailorkit/ui/select";
-import { toastManager } from "@tailorkit/ui/toast";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "@tailorkit/ui/tooltip";
+} from "@patchsmith/ui/select";
+import { toastManager } from "@patchsmith/ui/toast";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "@patchsmith/ui/tooltip";
 import {
   useMutation,
   useQueryClient,
@@ -365,7 +365,7 @@ const ProjectApiKeysPage = () => {
         <CardHeader>
           <CardTitle>Project key</CardTitle>
           <CardDescription>
-            Used to by your platform to integrate with Tailorkit.
+            Used to by your platform to integrate with Patchsmith.
           </CardDescription>
           <CardAction>
             <Button

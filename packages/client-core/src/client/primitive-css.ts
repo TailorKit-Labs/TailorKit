@@ -1,6 +1,6 @@
-import { resolveTheme } from "@tailorkit/core/primitives/theme";
-import type { TailorKitTheme } from "@tailorkit/core/schema";
-import type { RemoteProps } from "@tailorkit/sandbox/protocol";
+import { resolveTheme } from "@patchsmith/core/primitives/theme";
+import type { PatchsmithTheme } from "@patchsmith/core/schema";
+import type { RemoteProps } from "@patchsmith/sandbox/protocol";
 
 const isFunctionValue = <TValue>(
   value: TValue
@@ -44,7 +44,7 @@ const toCssValue = (
   if (group === "raw") {
     return value;
   }
-  return `var(--tailorkit-${group}-${cssEscape(value)})`;
+  return `var(--patchsmith-${group}-${cssEscape(value)})`;
 };
 
 const isPrimitiveValue = <TValue>(
@@ -160,7 +160,7 @@ const declarationsForProp = (prop: string, value: PrimitiveValue): string[] => {
 const buildStyleRules = (
   selector: string,
   props: PrimitiveProps,
-  theme: TailorKitTheme,
+  theme: PatchsmithTheme,
   base: string[] = []
 ): string[] => {
   const responsiveRules: string[] = [];
@@ -208,10 +208,10 @@ export const buildPrimitiveCss = ({
   nodeId: string;
   props: PrimitiveProps;
   viewId: string;
-  theme: TailorKitTheme;
+  theme: PatchsmithTheme;
   pressable?: boolean;
 }): string => {
-  const selector = `[data-tailorkit-view="${cssEscape(viewId)}"] [data-tailorkit-node="${cssEscape(
+  const selector = `[data-patchsmith-view="${cssEscape(viewId)}"] [data-patchsmith-node="${cssEscape(
     nodeId
   )}"]`;
   const base = pressable
@@ -281,9 +281,9 @@ export const buildPrimitiveCss = ({
 
 export const buildThemeCss = (
   viewId: string,
-  theme: TailorKitTheme
+  theme: PatchsmithTheme
 ): string => {
-  const selector = `[data-tailorkit-view="${cssEscape(viewId)}"]`;
+  const selector = `[data-patchsmith-view="${cssEscape(viewId)}"]`;
   const declarations: string[] = [];
   const resolvedTheme = resolveTheme(theme);
 
@@ -291,7 +291,7 @@ export const buildThemeCss = (
     for (const [name, value] of Object.entries(
       resolvedTheme.tokens?.[group] ?? {}
     )) {
-      declarations.push(`--tailorkit-${group}-${cssEscape(name)}: ${value};`);
+      declarations.push(`--patchsmith-${group}-${cssEscape(name)}: ${value};`);
     }
   }
 

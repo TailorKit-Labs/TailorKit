@@ -1,11 +1,11 @@
-import { defineContract } from "@tailorkit/core/schema";
-import { createServer } from "@tailorkit/core/server";
+import { defineContract } from "@patchsmith/core/schema";
+import { createServer } from "@patchsmith/core/server";
 import * as v from "valibot";
 
 import { createTools } from "./index";
 
 const server = createServer({
-  baseUrl: "https://host.test/api/tailorkit",
+  baseUrl: "https://host.test/api/patchsmith",
   contract: defineContract({
     scopes: { org: v.object({ tenant: v.string() }) },
   }),

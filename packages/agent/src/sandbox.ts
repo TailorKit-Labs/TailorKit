@@ -7,8 +7,8 @@ import type { HostSchemaDocument } from "./schema";
 import type { SavedAgentSession } from "./session-store";
 
 // Legacy snapshots may retain this path; remove it before exposing a resumed VM.
-const agentTokenPath = "/tmp/tailorkit-agent.token";
-export const agentSchemaPath = "/workspace/tailorkit.schema.json";
+const agentTokenPath = "/tmp/patchsmith-agent.token";
+export const agentSchemaPath = "/workspace/patchsmith.schema.json";
 export const sandboxIdleTimeoutMs = 15 * 60_000;
 
 /** Retrieve and restore this app's persistent VM, then top up its lifetime. */

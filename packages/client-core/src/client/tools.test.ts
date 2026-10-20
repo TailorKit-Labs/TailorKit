@@ -1,13 +1,13 @@
-import type { ToolImplementations } from "@tailorkit/core/schema";
-import { defineContract, tool } from "@tailorkit/core/schema";
+import type { ToolImplementations } from "@patchsmith/core/schema";
+import { defineContract, tool } from "@patchsmith/core/schema";
 import { expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
-import type { TailorKitApp } from "#types";
+import type { PatchsmithApp } from "#types";
 
 import { createEndpointClient } from "./endpoints";
 
-const app: TailorKitApp = { id: "installed-app" };
+const app: PatchsmithApp = { id: "installed-app" };
 const contract = defineContract({
   scopes: { workspace: z.object({ id: z.string() }) },
   tools: {
@@ -36,7 +36,7 @@ it("binds client tool calls to the installation and validates transformed inputs
   >(({ input }) => input + 1);
   const bodies: unknown[] = [];
   const client = createEndpointClient({
-    baseUrl: "https://product.test/api/tailorkit/",
+    baseUrl: "https://product.test/api/patchsmith/",
     contract,
 
     fetch: async (_url, options) => {
@@ -86,7 +86,7 @@ it("binds client tool calls to the installation and validates transformed inputs
 it("discards a pending credential when the session cache is cleared", async () => {
   let complete!: (response: Response) => void;
   const client = createEndpointClient({
-    baseUrl: "https://product.test/api/tailorkit/",
+    baseUrl: "https://product.test/api/patchsmith/",
     contract,
     fetch: async () =>
       await (async () => {

@@ -33,9 +33,9 @@
         x: 1 + Math.max(0, Number(item.dataset.depth) || 0) * indent,
       };
     });
-    const existing = list.querySelector(".tailorkit-toc-rail");
+    const existing = list.querySelector(".patchsmith-toc-rail");
     const svg = existing ?? document.createElementNS(namespace, "svg");
-    svg.setAttribute("class", "tailorkit-toc-rail");
+    svg.setAttribute("class", "patchsmith-toc-rail");
     svg.setAttribute("aria-hidden", "true");
     svg.setAttribute(
       "width",
@@ -69,8 +69,8 @@
     // Keep both paths mounted. CSS moves a clipping window along a bright
     // copy of the full rail, including its angled joins.
     for (const className of [
-      "tailorkit-toc-rail-track",
-      "tailorkit-toc-rail-active",
+      "patchsmith-toc-rail-track",
+      "patchsmith-toc-rail-active",
     ]) {
       let path = svg.querySelector(`.${className}`);
       if (!(path instanceof SVGPathElement)) {
@@ -79,7 +79,7 @@
         svg.append(path);
       }
       path.setAttribute("d", track);
-      if (className === "tailorkit-toc-rail-active") {
+      if (className === "patchsmith-toc-rail-active") {
         path.setAttribute(
           "style",
           `clip-path: inset(${activeTop}px 0px ${activeBottom}px 0px) view-box`
@@ -111,16 +111,19 @@
         .filter((item) => item instanceof HTMLElement)
         .filter((item) => item.querySelector(":scope > a") !== null);
       if (!items.length) {
-        list.querySelector(".tailorkit-toc-rail")?.remove();
-        delete list.dataset.tailorkitRail;
+        list.querySelector(".patchsmith-toc-rail")?.remove();
+        delete list.dataset.patchsmithRail;
         return;
       }
 
       for (const item of items) {
         const depth = Math.max(0, Number(item.dataset.depth) || 0);
-        item.style.setProperty("--tailorkit-toc-indent", `${depth * indent}px`);
+        item.style.setProperty(
+          "--patchsmith-toc-indent",
+          `${depth * indent}px`
+        );
       }
-      list.dataset.tailorkitRail = "";
+      list.dataset.patchsmithRail = "";
       drawRail(list, items);
     },
     resizeObserver: new ResizeObserver(() => {
@@ -146,7 +149,7 @@
         }
         return [...record.addedNodes, ...record.removedNodes].some(
           (node) =>
-            node instanceof Element && !node.matches(".tailorkit-toc-rail")
+            node instanceof Element && !node.matches(".patchsmith-toc-rail")
         );
       })
     ) {

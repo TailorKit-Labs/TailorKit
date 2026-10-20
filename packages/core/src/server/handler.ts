@@ -2,16 +2,16 @@ import { RPCHandler } from "@orpc/server/fetch";
 import {
   appsList,
   appsRuntimeSession,
-} from "@tailorkit/client-platform/client";
-import { createClient } from "@tailorkit/client-platform/client/client/index";
-import type { AppsListResponses } from "@tailorkit/client-platform/client/types.gen";
+} from "@patchsmith/client-platform/client";
+import { createClient } from "@patchsmith/client-platform/client/client/index";
+import type { AppsListResponses } from "@patchsmith/client-platform/client/types.gen";
 
 import type {
   NoComponentFieldCallbackConflicts,
   ViewContextHierarchy,
   SlotDefinitions,
 } from "#schema/index";
-import { createTailorKitSchema } from "#schema/schema";
+import { createPatchsmithSchema } from "#schema/schema";
 import type { EmptyDefinitionMap } from "#schema/shared";
 import { platformAppSelector } from "#server/platform-app-selector";
 
@@ -21,21 +21,21 @@ import { handleCliAuthApprovalPage } from "./cli-auth-page";
 import { createContext } from "./context";
 import { createExperimental } from "./experimental";
 import { createMcpTransport } from "./mcp";
-import { tailorkitRouter } from "./router";
+import { patchsmithRouter } from "./router";
 import {
-  selectTailorKitScopes,
-  validateTailorKitScopeSchemas,
-  validateTailorKitScopes,
+  selectPatchsmithScopes,
+  validatePatchsmithScopeSchemas,
+  validatePatchsmithScopes,
 } from "./scope";
 import type {
-  InferTailorKitServerTools,
-  InferTailorKitServerComponents,
-  InferTailorKitServerViews,
-  InferTailorKitServerScopes,
-  TailorKitHandlerOptions,
-  TailorKitScopes,
-  TailorKitServer,
-  TailorKitServerInputOptions,
+  InferPatchsmithServerTools,
+  InferPatchsmithServerComponents,
+  InferPatchsmithServerViews,
+  InferPatchsmithServerScopes,
+  PatchsmithHandlerOptions,
+  PatchsmithScopes,
+  PatchsmithServer,
+  PatchsmithServerInputOptions,
 } from "./types";
 
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
@@ -45,17 +45,17 @@ const isFunctionValue = <TValue>(
   value: TValue
 ): value is Extract<TValue, CallableFunction> => typeof value === "function";
 
-const defaultPlatformBaseUrl = "https://tailorkit.dev/api/platform";
+const defaultPlatformBaseUrl = "https://patchsmith.io/api/platform";
 
 type AbsolutePath = `/${string}`;
 
-const resolveReadScopes = (url: URL, availableScopes: TailorKitScopes) => {
+const resolveReadScopes = (url: URL, availableScopes: PatchsmithScopes) => {
   try {
     const names = url.searchParams.getAll("scopes");
     if (names.length === 1 && names[0] === "") {
       return [];
     }
-    return selectTailorKitScopes(
+    return selectPatchsmithScopes(
       availableScopes,
       names.length ? names : undefined
     );
@@ -66,38 +66,38 @@ const resolveReadScopes = (url: URL, availableScopes: TailorKitScopes) => {
   }
 };
 
-export const createTailorKitServer = <
-  const TOptions extends TailorKitServerInputOptions,
+export const createPatchsmithServer = <
+  const TOptions extends PatchsmithServerInputOptions,
 >(
   options: TOptions & {
     slots?: SlotDefinitions<
-      keyof InferTailorKitServerViews<NoInfer<TOptions>> & string
+      keyof InferPatchsmithServerViews<NoInfer<TOptions>> & string
     >;
-    tools?: InferTailorKitServerTools<TOptions>;
-    components: InferTailorKitServerComponents<TOptions> &
+    tools?: InferPatchsmithServerTools<TOptions>;
+    components: InferPatchsmithServerComponents<TOptions> &
       NoComponentFieldCallbackConflicts<
-        InferTailorKitServerComponents<TOptions>
+        InferPatchsmithServerComponents<TOptions>
       >;
-    views?: InferTailorKitServerViews<TOptions> &
-      ViewContextHierarchy<InferTailorKitServerViews<TOptions>>;
+    views?: InferPatchsmithServerViews<TOptions> &
+      ViewContextHierarchy<InferPatchsmithServerViews<TOptions>>;
   }
-): TailorKitServer<
-  InferTailorKitServerComponents<TOptions>,
-  InferTailorKitServerViews<TOptions>,
-  InferTailorKitServerTools<TOptions>,
-  InferTailorKitServerScopes<TOptions>
+): PatchsmithServer<
+  InferPatchsmithServerComponents<TOptions>,
+  InferPatchsmithServerViews<TOptions>,
+  InferPatchsmithServerTools<TOptions>,
+  InferPatchsmithServerScopes<TOptions>
 > & {
   readonly $slots?: TOptions extends { slots: infer V }
     ? V
     : EmptyDefinitionMap;
 } => {
   const { basePath, publicOrigin } = normalizeBaseUrl(options.baseUrl);
-  const scopeSchemas = validateTailorKitScopeSchemas(options.scopes);
+  const scopeSchemas = validatePatchsmithScopeSchemas(options.scopes);
   // SAFETY: The server preserves the supplied typed tool table and normalizes the route base path before constructing its handler.
-  const schema = createTailorKitSchema<
-    InferTailorKitServerComponents<TOptions>,
-    InferTailorKitServerViews<TOptions>,
-    InferTailorKitServerTools<TOptions>
+  const schema = createPatchsmithSchema<
+    InferPatchsmithServerComponents<TOptions>,
+    InferPatchsmithServerViews<TOptions>,
+    InferPatchsmithServerTools<TOptions>
   >({
     components: options.components,
     scopes: options.scopes,
@@ -120,7 +120,7 @@ export const createTailorKitServer = <
     options.projectKey !== ""
       ? { authorization: `Bearer ${options.projectKey}` }
       : undefined);
-  const rpcHandler = new RPCHandler(tailorkitRouter);
+  const rpcHandler = new RPCHandler(patchsmithRouter);
   const mcp = createMcpTransport({
     hostUrl: publicOrigin + basePath,
     platformHeaders,
@@ -130,8 +130,8 @@ export const createTailorKitServer = <
 
   const handler = async (
     request: Request,
-    handlerOptions: TailorKitHandlerOptions<
-      InferTailorKitServerScopes<TOptions>
+    handlerOptions: PatchsmithHandlerOptions<
+      InferPatchsmithServerScopes<TOptions>
     >
   ) => {
     const authenticate = async ({
@@ -155,7 +155,10 @@ export const createTailorKitServer = <
       }
       return {
         ...hostContext,
-        scopes: await validateTailorKitScopes(scopeSchemas, hostContext.scopes),
+        scopes: await validatePatchsmithScopes(
+          scopeSchemas,
+          hostContext.scopes
+        ),
       };
     };
     const url = new URL(request.url);
@@ -214,13 +217,13 @@ export const createTailorKitServer = <
         schema,
         scopeSchemas,
       });
-      const tailorkit = await context.authenticate({ request });
+      const patchsmith = await context.authenticate({ request });
 
-      if (!tailorkit) {
+      if (!patchsmith) {
         return new Response("Unauthorized", { status: 401 });
       }
 
-      const scopes = resolveReadScopes(url, tailorkit.scopes);
+      const scopes = resolveReadScopes(url, patchsmith.scopes);
       if (scopes instanceof Response) {
         return scopes;
       }
@@ -287,11 +290,11 @@ export const createTailorKitServer = <
       return rpcResult.response;
     }
 
-    return new Response("TailorKit route not found", { status: 404 });
+    return new Response("Patchsmith route not found", { status: 404 });
   };
 
   return {
-    $internal: { platformBaseUrl, router: tailorkitRouter, schema },
+    $internal: { platformBaseUrl, router: patchsmithRouter, schema },
     experimental: createExperimental({
       platform,
       platformHeaders,

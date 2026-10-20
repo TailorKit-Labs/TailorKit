@@ -1,7 +1,7 @@
 import { call } from "@orpc/server";
-import { organization } from "@tailorkit/db/schema/auth";
-import { cliAuthSession, cliToken } from "@tailorkit/db/schema/cli-auth";
-import { project as projectTable } from "@tailorkit/db/schema/project";
+import { organization } from "@patchsmith/db/schema/auth";
+import { cliAuthSession, cliToken } from "@patchsmith/db/schema/cli-auth";
+import { project as projectTable } from "@patchsmith/db/schema/project";
 import { eq } from "drizzle-orm";
 import {
   afterEach,
@@ -19,7 +19,7 @@ import { createTestDb } from "#test/pglite";
 // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const testState = vi.hoisted(() => ({ db: undefined as unknown }));
 
-vi.mock("@tailorkit/db", () => ({
+vi.mock("@patchsmith/db", () => ({
   createDb: () => testState.db,
   get db() {
     return testState.db;

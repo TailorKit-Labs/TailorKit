@@ -39,7 +39,7 @@ describe("public MCP discovery", () => {
       result: {
         _meta: {
           "io.modelcontextprotocol/serverInfo": {
-            name: "tailorkit-app-agent",
+            name: "patchsmith-app-agent",
             version: "1.0.0",
           },
         },

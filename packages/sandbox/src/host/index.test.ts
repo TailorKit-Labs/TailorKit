@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
-import { createSessionProvider } from "@tailorkit/app/client";
-import { asyncFixture } from "@tailorkit/config/testing";
+import { createSessionProvider } from "@patchsmith/app/client";
+import { asyncFixture } from "@patchsmith/config/testing";
 import * as v from "valibot";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
@@ -19,11 +19,11 @@ const identity = {
   projectId: "project",
   scope: { name: "workspace", value: { id: "workspace" } },
   subjectId: "principal",
-  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
 };
 
 const getChannel = (iframe: HTMLIFrameElement): string => {
-  const match = /data-tailorkit-channel="(?<channel>[a-f0-9]+)"/u.exec(
+  const match = /data-patchsmith-channel="(?<channel>[a-f0-9]+)"/u.exec(
     iframe.srcdoc
   );
   if (!(match?.[1] !== undefined && match?.[1] !== null && match?.[1] !== "")) {
@@ -105,7 +105,7 @@ describe("createIframeUiHost", () => {
     const postMessage = vi.spyOn(getContentWindow(host.iframe), "postMessage");
     const channel = getChannel(host.iframe);
     const callback = {
-      data: { event: "tailorkitcallbackonclick", id: "queued", nodeId: "n:2" },
+      data: { event: "patchsmithcallbackonclick", id: "queued", nodeId: "n:2" },
       type: "dispatchCallback" as const,
     };
 
@@ -267,7 +267,7 @@ describe("backend JWT bridge", () => {
     };
     const getBackendSession = createSessionProvider({
       appId: identity.appId,
-      baseUrl: "https://host.test/api/tailorkit",
+      baseUrl: "https://host.test/api/patchsmith",
       fetch: asyncFixture(() =>
         Response.json({
           ...session,

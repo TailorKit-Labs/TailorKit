@@ -1,5 +1,5 @@
-import { AppError } from "@tailorkit/app/client";
-import type { Identity } from "@tailorkit/app/server";
+import { AppError } from "@patchsmith/app/client";
+import type { Identity } from "@patchsmith/app/server";
 import { Clock, Effect } from "effect";
 import { createLocalJWKSet, importJWK, jwtVerify, SignJWT } from "jose";
 import { z } from "zod";

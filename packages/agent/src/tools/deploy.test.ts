@@ -48,7 +48,7 @@ it("builds without credentials and publishes through the authorized host capabil
             "node",
             "--input-type=module",
             "--eval",
-            'import { build } from "vite"; await build({ build: { outDir: "/tmp/tailorkit-deployment" } });',
+            'import { build } from "vite"; await build({ build: { outDir: "/tmp/patchsmith-deployment" } });',
           ],
         ]);
         published = true;
@@ -61,7 +61,7 @@ it("builds without credentials and publishes through the authorized host capabil
   for (const command of commands) {
     expect(command.env).toEqual({ CI: "true", NO_COLOR: "1" });
     expect(JSON.stringify(command)).not.toContain(context.agentToken);
-    expect(JSON.stringify(command)).not.toContain("TAILORKIT_AGENT_TOKEN");
+    expect(JSON.stringify(command)).not.toContain("PATCHSMITH_AGENT_TOKEN");
   }
 });
 

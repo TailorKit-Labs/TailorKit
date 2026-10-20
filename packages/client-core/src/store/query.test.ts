@@ -1,30 +1,30 @@
 import { allTasks } from "nanostores";
 import { expect, it, vi } from "vite-plus/test";
 
-import { createTailorKitFetchClient } from "#client/fetch-client";
+import { createPatchsmithFetchClient } from "#client/fetch-client";
 import { testContract } from "#test-contract";
-import type { TailorKitApp } from "#types";
+import type { PatchsmithApp } from "#types";
 
 import {
   createAppsQuery,
   createAppViewsQuery,
   createViewsQuery,
 } from "./query";
-import { createTailorKitStore } from "./store";
+import { createPatchsmithStore } from "./store";
 
-const setup = (multiple = true, apps?: TailorKitApp[]) => {
+const setup = (multiple = true, apps?: PatchsmithApp[]) => {
   const fetch = vi.fn<typeof globalThis.fetch>();
-  const client = createTailorKitFetchClient({
+  const client = createPatchsmithFetchClient({
     baseUrl: "https://host.test/api/",
     fetch,
   });
-  const store = createTailorKitStore({
+  const store = createPatchsmithStore({
     apps,
     baseUrl: client.baseUrl,
     client,
     contract: testContract(multiple),
   });
-  const app: TailorKitApp = {
+  const app: PatchsmithApp = {
     id: "app",
     views: [
       multiple
@@ -234,12 +234,12 @@ it("refetches an unobserved explicit app with the latest registered context with
 });
 
 it("sends parsed native contract context to instance requests without calling metadata", async () => {
-  const { defineContract } = await import("@tailorkit/core/schema");
+  const { defineContract } = await import("@patchsmith/core/schema");
   const { z } = await import("zod");
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockRejectedValue(new Error("Unexpected HTTP request"));
-  const client = createTailorKitFetchClient({
+  const client = createPatchsmithFetchClient({
     baseUrl: "https://host.test",
     fetch,
   });
@@ -247,11 +247,11 @@ it("sends parsed native contract context to instance requests without calling me
     slots: { page: { multiple: true, views: ["/"] } },
     views: { "/": z.object({ user: z.object({ id: z.string() }) }) },
   });
-  const app: TailorKitApp = {
+  const app: PatchsmithApp = {
     id: "app",
     views: [{ instances: true, path: "/", slot: "page" }],
   };
-  const store = createTailorKitStore({
+  const store = createPatchsmithStore({
     apps: [app],
     baseUrl: client.baseUrl,
     client,

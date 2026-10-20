@@ -37,10 +37,10 @@ export type ViewContextHierarchy<T> = {
       ? Extract<ContextKeys<OwnContext<T[P]>>, AncestorKeys<T, P>> extends never
         ? unknown
         : {
-            readonly __tailorkit_error__: `View "${P}" redeclares an ancestor context field.`;
+            readonly __patchsmith_error__: `View "${P}" redeclares an ancestor context field.`;
           }
       : {
-          readonly __tailorkit_error__: `Context for "${P}" must be an object with named fields.`;
+          readonly __patchsmith_error__: `Context for "${P}" must be an object with named fields.`;
         }
     : unknown;
 };

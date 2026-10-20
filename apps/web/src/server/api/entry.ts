@@ -1,7 +1,7 @@
 import {
   initializeObservability,
   withRequestSpan,
-} from "@tailorkit/observability";
+} from "@patchsmith/observability";
 
 export type ApiHandler = (input: {
   request: Request;
@@ -12,7 +12,7 @@ export const createApiEntry = (
   methods: readonly string[]
 ) => ({
   fetch: async (request: Request): Promise<Response> => {
-    await initializeObservability("tailorkit-web");
+    await initializeObservability("patchsmith-web");
     return await withRequestSpan(request, "web.request", async (span) => {
       let response: Response;
       if (methods.includes(request.method)) {

@@ -1,5 +1,5 @@
-import type { AppDeploymentMetadata } from "@tailorkit/api-utils/app-auth";
-import { AppError } from "@tailorkit/app/server";
+import type { AppDeploymentMetadata } from "@patchsmith/api-utils/app-auth";
+import { AppError } from "@patchsmith/app/server";
 
 /** Public URL identifiers must describe the same private bundle as the payload. */
 export const validateDeploymentPublication = (

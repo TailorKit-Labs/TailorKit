@@ -1,8 +1,8 @@
 import { openapi } from "@orpc/openapi";
 import { ORPCError } from "@orpc/server";
-import { db } from "@tailorkit/db";
-import { App, app, AppDeployment } from "@tailorkit/db/schema/apps";
-import { createShortId } from "@tailorkit/db/short-id";
+import { db } from "@patchsmith/db";
+import { App, app, AppDeployment } from "@patchsmith/db/schema/apps";
+import { createShortId } from "@patchsmith/db/short-id";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 

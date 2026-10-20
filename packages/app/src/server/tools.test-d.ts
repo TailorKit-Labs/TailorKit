@@ -4,7 +4,7 @@ import { z } from "zod";
 import { action } from "./functions";
 
 declare module "../client" {
-  interface TailorKitServerTools {
+  interface PatchsmithServerTools {
     billing: { read: (input: { accountId: string }) => Promise<number> };
   }
 }

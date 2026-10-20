@@ -1,5 +1,5 @@
-import type { ToolBridge, TailorKitServerTools } from "@tailorkit/app/client";
-import type { AppDefinition, Identity } from "@tailorkit/app/server";
+import type { ToolBridge, PatchsmithServerTools } from "@patchsmith/app/client";
+import type { AppDefinition, Identity } from "@patchsmith/app/server";
 
 import { inExecutionContext } from "./context";
 import { AppError } from "./errors";
@@ -137,7 +137,7 @@ export const createActionExecution = (app: AppDefinition) => {
         throw new AppError("UNAUTHORIZED", "App token expired");
       }
     };
-    const createTools = (parts: string[] = []): TailorKitServerTools =>
+    const createTools = (parts: string[] = []): PatchsmithServerTools =>
       // SAFETY: The proxy handles calls through apply and every string property through get, recursively returning the same callable proxy contract.
       new Proxy(
         () => {

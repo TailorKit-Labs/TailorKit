@@ -2,7 +2,7 @@ import { createContext, h, render } from "preact";
 import type { ComponentChildren, ComponentType } from "preact";
 import { useContext } from "preact/hooks";
 
-import type { TailorKitClientWithMeta, ViewInstance } from "./views";
+import type { PatchsmithClientWithMeta, ViewInstance } from "./views";
 
 const isFunctionValue = <TValue>(
   value: TValue
@@ -108,7 +108,7 @@ export const createFileClient = (options: {
   roots: (RouteModule & { slot: string })[];
   layouts: FileLayoutModule[];
   views: FileViewModule[];
-}): TailorKitClientWithMeta => {
+}): PatchsmithClientWithMeta => {
   const rootShell = options.root
     ? shellComponent(options.root, true)
     : undefined;

@@ -41,7 +41,7 @@ export const NumberField = ({
   );
 };
 
-// Kept as part of Tailorkit's public component API. The COSS registry no
+// Kept as part of Patchsmith's public component API. The COSS registry no
 // longer exports this convenience alias, but the form adapters consume it.
 export type NumberFieldProps = React.ComponentProps<typeof NumberField>;
 

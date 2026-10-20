@@ -1,5 +1,5 @@
 {
-  "name": "@tailorkit/vite",
+  "name": "@patchsmith/vite",
   "version": "0.1.0-beta.52",
   "license": "Apache-2.0",
   "repository": {
@@ -58,13 +58,13 @@
     "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
-    "@tailorkit/app": "workspace:*",
+    "@patchsmith/app": "workspace:*",
     "cosmiconfig": "^10.0.1",
     "valibot": "catalog:"
   },
   "devDependencies": {
-    "@tailorkit/asset-delivery": "workspace:*",
-    "@tailorkit/config": "workspace:*",
+    "@patchsmith/asset-delivery": "workspace:*",
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "drizzle-kit": "catalog:",
     "drizzle-orm": "catalog:",

@@ -1,7 +1,7 @@
 // oxlint-disable-next-line max-classes-per-file -- These related adapter or mock classes implement one runtime boundary.
-import { issueAppToken, APP_AUDIENCE } from "@tailorkit/api-utils/app-auth";
-import { AppError } from "@tailorkit/app/server";
-import { asyncFixture } from "@tailorkit/config/testing";
+import { issueAppToken, APP_AUDIENCE } from "@patchsmith/api-utils/app-auth";
+import { AppError } from "@patchsmith/app/server";
+import { asyncFixture } from "@patchsmith/config/testing";
 import { afterAll, beforeEach, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
@@ -90,7 +90,7 @@ const identity = {
   projectShortId: "abc123def456",
   scope: { name: "org", value: { id: "tenant" } },
   subjectId: "user",
-  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
 };
 
 const checksum = async (code: string) =>
@@ -236,7 +236,7 @@ const request = async (
       authorization: `Bearer ${session.token}`,
       "content-type": "application/json",
       origin: "https://host.test",
-      "x-tailorkit-identity": "forged",
+      "x-patchsmith-identity": "forged",
     },
     method: "POST",
   });

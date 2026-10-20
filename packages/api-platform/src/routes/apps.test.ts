@@ -4,18 +4,18 @@ import { call } from "@orpc/server";
 import {
   issueAgentToken,
   verifyAgentToken,
-} from "@tailorkit/api-utils/agent-token";
-import { hashSecret } from "@tailorkit/api-utils/hashing";
-import { RateLimitHandlerPlugin } from "@tailorkit/api-utils/rate-limiting";
-import { asyncFixture } from "@tailorkit/config/testing";
+} from "@patchsmith/api-utils/agent-token";
+import { hashSecret } from "@patchsmith/api-utils/hashing";
+import { RateLimitHandlerPlugin } from "@patchsmith/api-utils/rate-limiting";
+import { asyncFixture } from "@patchsmith/config/testing";
 import {
   app as appTable,
   appDeployment,
   appDeploymentFile,
-} from "@tailorkit/db/schema/apps";
-import { organization, user } from "@tailorkit/db/schema/auth";
-import { cliToken } from "@tailorkit/db/schema/cli-auth";
-import { project as projectTable } from "@tailorkit/db/schema/project";
+} from "@patchsmith/db/schema/apps";
+import { organization, user } from "@patchsmith/db/schema/auth";
+import { cliToken } from "@patchsmith/db/schema/cli-auth";
+import { project as projectTable } from "@patchsmith/db/schema/project";
 import { eq } from "drizzle-orm";
 import {
   afterEach,
@@ -56,9 +56,9 @@ const testState = vi.hoisted(() => ({
 
 vi.mock("../env", () => ({ env: testState.env }));
 
-vi.mock("@tailorkit/kv", () => ({ getKV: () => {} }));
+vi.mock("@patchsmith/kv", () => ({ getKV: () => {} }));
 
-vi.mock("@tailorkit/db", () => ({
+vi.mock("@patchsmith/db", () => ({
   createDb: () => testState.db,
   get db() {
     return testState.db;
@@ -361,7 +361,7 @@ describe("platform appRouter", () => {
           app: { id: installed.id },
           scopes: [stagingScope],
           subjectId: "principal",
-          toolUrl: "https://host.test/api/tailorkit/tools/execute",
+          toolUrl: "https://host.test/api/patchsmith/tools/execute",
         },
       },
       { context }
@@ -1116,7 +1116,7 @@ describe("platform appRouter", () => {
         app: { shortId: created.shortId },
         scopes: [productionScope],
         subjectId: "principal",
-        toolUrl: "https://host.test/api/tailorkit/tools/execute",
+        toolUrl: "https://host.test/api/patchsmith/tools/execute",
       },
     };
     const session = await call(appRouter.runtimeSession, input, { context });

@@ -8,21 +8,21 @@ import type {
   Progress,
   Tool as McpTool,
 } from "@modelcontextprotocol/client";
-import type { TailorKitHostContext } from "@tailorkit/core/server/types";
+import type { PatchsmithHostContext } from "@patchsmith/core/server/types";
 import { toJsonSchema } from "@valibot/to-json-schema";
 import { jsonSchema, tool } from "ai";
 import type { ToolExecutionOptions } from "ai";
 import * as v from "valibot";
 
-export type TailorKitToolInput = Record<string, JSONValue>;
-export type TailorKitToolOutput =
+export type PatchsmithToolInput = Record<string, JSONValue>;
+export type PatchsmithToolOutput =
   | { status: "running"; progress: Progress }
   | { status: "completed"; result: CallToolResult };
 
-/** The MCP capability of a configured TailorKit server. */
-export interface TailorKitMcpServer<TScopes> {
+/** The MCP capability of a configured Patchsmith server. */
+export interface PatchsmithMcpServer<TScopes> {
   mcp: {
-    transport: (context: TailorKitHostContext<TScopes>) => Promise<{
+    transport: (context: PatchsmithHostContext<TScopes>) => Promise<{
       url: string;
       headers: Record<string, string>;
     }>;
@@ -32,9 +32,9 @@ export interface TailorKitMcpServer<TScopes> {
 const streamTool = async function* streamTool(
   client: Client,
   definition: McpTool,
-  input: TailorKitToolInput,
+  input: PatchsmithToolInput,
   signal: AbortSignal
-): AsyncGenerator<TailorKitToolOutput> {
+): AsyncGenerator<PatchsmithToolOutput> {
   const controller = new AbortController();
   const callSignal = AbortSignal.any([signal, controller.signal]);
   let latest: Progress | undefined;
@@ -63,7 +63,7 @@ const streamTool = async function* streamTool(
       failure =
         error instanceof Error
           ? error
-          : new Error("TailorKit MCP request failed.", { cause: error });
+          : new Error("Patchsmith MCP request failed.", { cause: error });
     } finally {
       settled = true;
       changed.resolve(true);
@@ -87,14 +87,14 @@ const streamTool = async function* streamTool(
       throw failure;
     }
     if (result === undefined) {
-      throw new Error("TailorKit MCP tool completed without a result.");
+      throw new Error("Patchsmith MCP tool completed without a result.");
     }
     if (result.isError === true) {
       const message = result.content
         .filter((content) => content.type === "text")
         .map((content) => content.text)
         .join("\n");
-      throw new Error(message || "TailorKit MCP tool failed.");
+      throw new Error(message || "Patchsmith MCP tool failed.");
     }
     yield { result, status: "completed" };
   } finally {
@@ -106,9 +106,9 @@ const streamTool = async function* streamTool(
 const executeTool = async function* executeTool(
   transport: () => Promise<{ url: string; headers: Record<string, string> }>,
   definition: McpTool,
-  input: TailorKitToolInput,
+  input: PatchsmithToolInput,
   execution: Pick<ToolExecutionOptions<never>, "abortSignal">
-): AsyncGenerator<TailorKitToolOutput> {
+): AsyncGenerator<PatchsmithToolOutput> {
   const controller = new AbortController();
   const signals = [controller.signal];
   if (execution.abortSignal !== undefined) {
@@ -118,7 +118,7 @@ const executeTool = async function* executeTool(
   signal.throwIfAborted();
 
   const client = new Client(
-    { name: "tailorkit-ai-sdk", version: "1.0.0" },
+    { name: "patchsmith-ai-sdk", version: "1.0.0" },
     { versionNegotiation: { mode: { pin: "2026-07-28" } } }
   );
   try {
@@ -170,14 +170,14 @@ const agentResultSchema = v.object({
 
 /** Create fixed MCP-backed tools. Each invocation owns and closes its connection. */
 export const createTools = <TScopes extends Record<string, JSONValue>>(
-  tailorkit: TailorKitMcpServer<TScopes>,
-  context: NoInfer<TailorKitHostContext<TScopes>>
+  patchsmith: PatchsmithMcpServer<TScopes>,
+  context: NoInfer<PatchsmithHostContext<TScopes>>
 ) => {
   const scopes = Object.keys(context.scopes);
   if (scopes.length === 0) {
     throw new Error("At least one host scope is required.");
   }
-  const transport = async () => await tailorkit.mcp.transport(context);
+  const transport = async () => await patchsmith.mcp.transport(context);
   const createSchema = v.strictObject({
     description: v.optional(v.pipe(v.string(), v.trim(), v.maxLength(255))),
     name: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(127)),
@@ -248,4 +248,4 @@ export const createTools = <TScopes extends Record<string, JSONValue>>(
   };
 };
 
-export type TailorKitTools = ReturnType<typeof createTools>;
+export type PatchsmithTools = ReturnType<typeof createTools>;

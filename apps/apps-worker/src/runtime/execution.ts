@@ -1,6 +1,6 @@
-import { invocationSchema } from "@tailorkit/app/protocol";
-import type { Invocation } from "@tailorkit/app/protocol";
-import type { AppDefinition, Identity } from "@tailorkit/app/server";
+import { invocationSchema } from "@patchsmith/app/protocol";
+import type { Invocation } from "@patchsmith/app/protocol";
+import type { AppDefinition, Identity } from "@patchsmith/app/server";
 import { Effect } from "effect";
 import { catch as catchEffect } from "effect/Effect";
 import * as v from "valibot";
@@ -20,8 +20,8 @@ import { prepareFunction, functionValue } from "./functions";
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
   typeof value === "object" && value !== null;
 
-export { invocationSchema } from "@tailorkit/app/protocol";
-export type { Invocation } from "@tailorkit/app/protocol";
+export { invocationSchema } from "@patchsmith/app/protocol";
+export type { Invocation } from "@patchsmith/app/protocol";
 
 export interface ExecutionResult {
   value: unknown;
@@ -38,7 +38,7 @@ export const createExecution = (
 ) => {
   migrateDatabase(persistence, migrations);
   persistence.execute(
-    "CREATE TABLE IF NOT EXISTS tailorkit_receipts (id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, result TEXT NOT NULL)",
+    "CREATE TABLE IF NOT EXISTS patchsmith_receipts (id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, result TEXT NOT NULL)",
     []
   );
   const execute = (
@@ -105,7 +105,7 @@ export const createExecution = (
     ]);
     return persistence.transaction(() => {
       const [prior] = persistence.execute(
-        "SELECT fingerprint, result FROM tailorkit_receipts WHERE id = ?",
+        "SELECT fingerprint, result FROM patchsmith_receipts WHERE id = ?",
         [input.requestId]
       ).rows;
       if (prior !== undefined && prior !== null) {
@@ -125,7 +125,7 @@ export const createExecution = (
       }
       const result = execute(input, identity, "mutation", tables);
       persistence.execute(
-        "INSERT INTO tailorkit_receipts (id, fingerprint, result) VALUES (?, ?, ?)",
+        "INSERT INTO patchsmith_receipts (id, fingerprint, result) VALUES (?, ?, ?)",
         [input.requestId, fingerprint, JSON.stringify(result)]
       );
       return { ...result, committed: true };

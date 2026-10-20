@@ -2,7 +2,7 @@ import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { asyncFixture } from "@tailorkit/config/testing";
+import { asyncFixture } from "@patchsmith/config/testing";
 import { SignJWT } from "jose";
 import { afterEach, assert, expect, it, vi } from "vite-plus/test";
 
@@ -26,16 +26,16 @@ const scope = { name: "user", value: { userId: "one" } };
 const token = async (overrides = {}) =>
   await new SignJWT({
     appId: "app-one",
-    aud: "tailorkit-platform-cli",
+    aud: "patchsmith-platform-cli",
     exp: now + 3600,
     iat: now,
-    iss: "tailorkit-agent",
+    iss: "patchsmith-agent",
     platformUrl: "https://platform.test/api/platform",
     projectId: "project",
     scope,
     ...overrides,
   })
-    .setProtectedHeader({ alg: "HS256", typ: "tailorkit-agent+jwt" })
+    .setProtectedHeader({ alg: "HS256", typ: "patchsmith-agent+jwt" })
     .sign(new TextEncoder().encode("test-only-signing-key"));
 afterEach(() => {
   vi.restoreAllMocks();
@@ -44,7 +44,7 @@ afterEach(() => {
 
 it("uses existing platform deployment endpoints and scope from the agent JWT", async () => {
   const jwt = await token();
-  vi.stubEnv("TAILORKIT_AGENT_TOKEN", jwt);
+  vi.stubEnv("PATCHSMITH_AGENT_TOKEN", jwt);
   const fetch = vi
     .spyOn(globalThis, "fetch")
     .mockResolvedValueOnce(Response.json({}))
@@ -107,19 +107,19 @@ it.each([
   { platformUrl: "http://platform.test/api/platform" },
   { platformUrl: "http://localhost.evil.test/api/platform" },
 ])("rejects malformed or expired agent authorization %j", async (overrides) => {
-  vi.stubEnv("TAILORKIT_AGENT_TOKEN", await token(overrides));
+  vi.stubEnv("PATCHSMITH_AGENT_TOKEN", await token(overrides));
   expect(getAgentAuth).toThrow(/agent authorization/iu);
 });
 
 it("does not fall back when an explicitly supplied JWT is invalid or empty", () => {
-  vi.stubEnv("TAILORKIT_AGENT_TOKEN", "");
+  vi.stubEnv("PATCHSMITH_AGENT_TOKEN", "");
   expect(getAgentAuth).toThrow("Invalid agent authorization");
-  vi.stubEnv("TAILORKIT_AGENT_TOKEN", "bad-token");
+  vi.stubEnv("PATCHSMITH_AGENT_TOKEN", "bad-token");
   expect(getAgentAuth).toThrow("Invalid agent authorization");
 });
 
 it("retains actionable platform authentication errors", async () => {
-  vi.stubEnv("TAILORKIT_AGENT_TOKEN", await token());
+  vi.stubEnv("PATCHSMITH_AGENT_TOKEN", await token());
   vi.spyOn(globalThis, "fetch").mockResolvedValue(
     Response.json(
       { code: "UNAUTHORIZED", message: "Agent authorization revoked." },
@@ -146,13 +146,13 @@ it.each([
   "http://127.0.0.1/api/platform",
   "http://[::1]/api/platform",
 ])("allows secure or loopback destinations: %s", async (platformUrl) => {
-  vi.stubEnv("TAILORKIT_AGENT_TOKEN", await token({ platformUrl }));
+  vi.stubEnv("PATCHSMITH_AGENT_TOKEN", await token({ platformUrl }));
   expect(requireValue(getAgentAuth()).platformUrl).toBe(platformUrl);
 });
 
 it("rejects insecure routing before creating a client or sending requests", async () => {
   vi.stubEnv(
-    "TAILORKIT_AGENT_TOKEN",
+    "PATCHSMITH_AGENT_TOKEN",
     await token({ platformUrl: "http://platform.test/api/platform" })
   );
   const fetch = vi.spyOn(globalThis, "fetch");
@@ -164,7 +164,7 @@ it("rejects insecure routing before creating a client or sending requests", asyn
 
 it("routes every authenticated CLI surface through existing platform endpoints for JWTs", async () => {
   const jwt = await token();
-  vi.stubEnv("TAILORKIT_AGENT_TOKEN", jwt);
+  vi.stubEnv("PATCHSMITH_AGENT_TOKEN", jwt);
   const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(
     asyncFixture((input) => {
       const request = requireRequest(input);
@@ -222,12 +222,12 @@ it("routes every authenticated CLI surface through existing platform endpoints f
 });
 
 it("discovers file authorization for all commands, with environment-token precedence", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-agent-auth-"));
+  const root = await mkdtemp(path.join(tmpdir(), "patchsmith-agent-auth-"));
   try {
     const jwt = await token();
     const file = path.join(root, "token");
     await writeFile(file, jwt, { mode: 0o600 });
-    vi.stubEnv("TAILORKIT_AGENT_TOKEN_FILE", file);
+    vi.stubEnv("PATCHSMITH_AGENT_TOKEN_FILE", file);
     expect(requireValue(getAgentAuth()).token).toBe(jwt);
     const fetch = vi
       .spyOn(globalThis, "fetch")
@@ -241,11 +241,11 @@ it("discovers file authorization for all commands, with environment-token preced
         "authorization"
       )
     ).toBe(`Bearer ${jwt}`);
-    vi.stubEnv("TAILORKIT_AGENT_TOKEN", "");
+    vi.stubEnv("PATCHSMITH_AGENT_TOKEN", "");
     expect(getAgentAuth).toThrow("Invalid agent authorization");
     // oxlint-disable-next-line unicorn/no-useless-undefined -- Vitest requires the environment value argument.
-    vi.stubEnv("TAILORKIT_AGENT_TOKEN", undefined);
-    vi.stubEnv("TAILORKIT_AGENT_TOKEN_FILE", path.join(root, "missing"));
+    vi.stubEnv("PATCHSMITH_AGENT_TOKEN", undefined);
+    vi.stubEnv("PATCHSMITH_AGENT_TOKEN_FILE", path.join(root, "missing"));
     expect(getAgentAuth).toThrow("Unable to read agent authorization file");
   } finally {
     await rm(root, { force: true, recursive: true });

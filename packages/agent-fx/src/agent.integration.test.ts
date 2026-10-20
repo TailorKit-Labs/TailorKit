@@ -157,7 +157,7 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
       }),
     });
     const directory = await realpath(
-      await mkdtemp(join(tmpdir(), "tailorkit-fx-"))
+      await mkdtemp(join(tmpdir(), "patchsmith-fx-"))
     );
     const workspace = join(directory, "app");
     const sessionHome = join(directory, "home");
@@ -203,7 +203,7 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
     const input = {
       agentToken: "private-deployment-token",
       appId: randomUUID(),
-      hostUrl: "https://host.test/api/tailorkit",
+      hostUrl: "https://host.test/api/patchsmith",
       messages: [],
       model: "openai/gpt-6.1-sol",
       threadId: randomUUID(),
@@ -346,10 +346,10 @@ it.each(["api-key", "runtime-oidc", "environment-oidc"])(
         expect(request.body).not.toContain(token);
       }
       for (const name of [
-        "tailorkit-frontend",
-        "tailorkit-views",
-        "tailorkit-functions",
-        "tailorkit-database",
+        "patchsmith-frontend",
+        "patchsmith-views",
+        "patchsmith-functions",
+        "patchsmith-database",
       ]) {
         expect(requests[0]?.body).toContain(name);
       }

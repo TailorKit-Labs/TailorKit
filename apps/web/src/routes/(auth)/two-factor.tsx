@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@tailorkit/ui/button";
+import { Button } from "@patchsmith/ui/button";
 import {
   Card,
   CardDescription,
@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardPanel,
   CardTitle,
-} from "@tailorkit/ui/card";
+} from "@patchsmith/ui/card";
 import {
   Dialog,
   DialogClose,
@@ -19,14 +19,14 @@ import {
   DialogPanel,
   DialogPopup,
   DialogTitle,
-} from "@tailorkit/ui/dialog";
-import { Field, FieldError, FieldLabel } from "@tailorkit/ui/field";
-import { Logo } from "@tailorkit/ui/logo";
+} from "@patchsmith/ui/dialog";
+import { Field, FieldError, FieldLabel } from "@patchsmith/ui/field";
+import { Logo } from "@patchsmith/ui/logo";
 import {
   OTPField,
   OTPFieldInput,
   OTPFieldSeparator,
-} from "@tailorkit/ui/otp-field";
+} from "@patchsmith/ui/otp-field";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { Fragment, useRef, useState } from "react";
@@ -129,11 +129,11 @@ const TwoFactorPage = () => {
       }
 
       const returnPath = getSameOriginPath(
-        window.sessionStorage.getItem("tailorkit.two-factor-return-to") ??
+        window.sessionStorage.getItem("patchsmith.two-factor-return-to") ??
           undefined,
         window.location.origin
       );
-      window.sessionStorage.removeItem("tailorkit.two-factor-return-to");
+      window.sessionStorage.removeItem("patchsmith.two-factor-return-to");
       const destination = returnPath ?? "/";
       await navigateAfterVerification(destination);
       redirecting = true;
@@ -181,10 +181,10 @@ const TwoFactorPage = () => {
       <div className="flex w-full max-w-sm flex-col items-center gap-4">
         <a
           className="flex items-center gap-2"
-          href="https://tailorkit.dev/home"
+          href="https://patchsmith.io/home"
         >
           <Logo className="size-6" />
-          <span className="text-lg font-semibold">TailorKit</span>
+          <span className="text-lg font-semibold">Patchsmith</span>
         </a>
         <CardFrame className="w-full">
           <Card>

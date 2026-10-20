@@ -7,7 +7,7 @@ A parent can own a filter and pass it to a list. This assumes generated `Input.v
 ```tsx
 import { useState } from "preact/hooks";
 
-import { Box, Input } from "#tailorkit";
+import { Box, Input } from "#patchsmith";
 
 type Item = { id: string; title: string };
 

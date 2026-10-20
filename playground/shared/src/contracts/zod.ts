@@ -1,5 +1,5 @@
-import { tool, defineContract } from "tailorkit";
-import { primitives } from "tailorkit/zod";
+import { tool, defineContract } from "patchsmith";
+import { primitives } from "patchsmith/zod";
 import { z } from "zod";
 
 import { theme } from "./theme";

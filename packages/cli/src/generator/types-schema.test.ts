@@ -597,7 +597,7 @@ describe("JSON Schema type generation", () => {
       'const invalidTuple: TupleCase0["/"]["context"]["value"] = ["first", false, 2];',
     ].join("\n");
     const root = await mkdtemp(
-      path.join(tmpdir(), "tailorkit-generated-type-check-")
+      path.join(tmpdir(), "patchsmith-generated-type-check-")
     );
     try {
       await writeFile(path.join(root, "generated.ts"), source);

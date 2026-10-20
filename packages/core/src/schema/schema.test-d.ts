@@ -1,10 +1,10 @@
 import { expectTypeOf, vi } from "vite-plus/test";
 import { z } from "zod";
 
-import { createTailorKitSchema } from "./schema";
+import { createPatchsmithSchema } from "./schema";
 import type { ComponentProps } from "./schema";
 
-createTailorKitSchema({
+createPatchsmithSchema({
   components: {
     Button: {
       children: true,
@@ -15,7 +15,7 @@ createTailorKitSchema({
   },
 });
 
-createTailorKitSchema({
+createPatchsmithSchema({
   components: {},
   views: {
     "/pages": z.object({ userId: z.string() }),
@@ -23,7 +23,7 @@ createTailorKitSchema({
   },
 });
 
-const tailor = createTailorKitSchema({
+const patchsmith = createPatchsmithSchema({
   components: {
     Button: {
       children: true,
@@ -38,24 +38,26 @@ const tailor = createTailorKitSchema({
   },
 });
 
-const component = tailor.components.Button;
-const context = tailor.views["/customers/:customerId"];
+const component = patchsmith.components.Button;
+const context = patchsmith.views["/customers/:customerId"];
 void component;
 void context;
 
-const buttonProps: ComponentProps<typeof tailor.components.Button> = {
+const buttonProps: ComponentProps<typeof patchsmith.components.Button> = {
   variant: "default",
 };
 void buttonProps;
 
-expectTypeOf<ComponentProps<typeof tailor.components.Button>>().toExtend<{
+expectTypeOf<ComponentProps<typeof patchsmith.components.Button>>().toExtend<{
   variant: "default" | "secondary";
 }>();
-expectTypeOf<typeof tailor.components.Button.children>().toEqualTypeOf<true>();
+expectTypeOf<
+  typeof patchsmith.components.Button.children
+>().toEqualTypeOf<true>();
 expectTypeOf<typeof context>().toEqualTypeOf<
   z.ZodObject<{ customerId: z.ZodString }>
 >();
-const callbacks = createTailorKitSchema({
+const callbacks = createPatchsmithSchema({
   components: {
     Dialog: {
       callbacks: {
@@ -94,7 +96,7 @@ expectTypeOf<ComponentProps<typeof callbacks.components.Dialog>>().toExtend<{
   onLoad: () => Promise<{ ready: true }>;
 }>();
 
-createTailorKitSchema({
+createPatchsmithSchema({
   components: {
     Button: {
       callbacks: {
@@ -108,7 +110,7 @@ createTailorKitSchema({
   },
 });
 
-createTailorKitSchema({
+createPatchsmithSchema({
   components: {
     // @ts-expect-error field and callback keys must still conflict when explicitly duplicated
     Button: {
@@ -122,7 +124,7 @@ createTailorKitSchema({
   },
 });
 
-createTailorKitSchema({
+createPatchsmithSchema({
   components: {},
   views: {
     "/": z.object({ workspaceId: z.string() }),
@@ -131,12 +133,12 @@ createTailorKitSchema({
   },
 });
 
-createTailorKitSchema({
+createPatchsmithSchema({
   components: {},
   slots: { navbar: { views: ["/"] }, panel: { views: ["/users"] } },
   views: { "/": z.object({}), "/users": z.object({}) },
 });
-createTailorKitSchema({
+createPatchsmithSchema({
   components: {},
 
   // @ts-expect-error Slot lists can only reference declared views.
@@ -145,7 +147,7 @@ createTailorKitSchema({
   views: { "/": z.object({}) },
 });
 
-createTailorKitSchema({
+createPatchsmithSchema({
   components: {},
   views: {
     // @ts-expect-error Arrays must be wrapped in an object field.

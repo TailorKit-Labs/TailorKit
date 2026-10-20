@@ -1,5 +1,5 @@
 {
-  "name": "@tailorkit/api-utils",
+  "name": "@patchsmith/api-utils",
   "version": "0.0.0",
   "private": true,
   "license": "BUSL-1.1",
@@ -56,10 +56,10 @@
   "dependencies": {
     "@orpc/ratelimit": "catalog:",
     "@orpc/server": "catalog:",
-    "@tailorkit/app": "workspace:*",
-    "@tailorkit/env": "workspace:*",
-    "@tailorkit/kv": "workspace:*",
-    "@tailorkit/observability": "workspace:*",
+    "@patchsmith/app": "workspace:*",
+    "@patchsmith/env": "workspace:*",
+    "@patchsmith/kv": "workspace:*",
+    "@patchsmith/observability": "workspace:*",
     "@upstash/ratelimit": "^2.2.0",
     "@vercel/functions": "^3.9.11",
     "effect": "catalog:",
@@ -67,7 +67,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@tailorkit/config": "workspace:*",
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:"
   },

@@ -1,5 +1,5 @@
 {
-  "name": "@tailorkit/env",
+  "name": "@patchsmith/env",
   "version": "0.0.0",
   "private": true,
   "license": "BUSL-1.1",
@@ -31,7 +31,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@tailorkit/config": "workspace:*",
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:"
   },

@@ -65,7 +65,7 @@ const promptPackageName = async (
   baseDir: string
 ): Promise<string> => {
   const defaultName =
-    normalizePackageName(path.basename(baseDir)) || "tailorkit-app";
+    normalizePackageName(path.basename(baseDir)) || "patchsmith-app";
   if (given !== undefined) {
     return normalizePackageName(given);
   }
@@ -151,7 +151,7 @@ const promptHostUrl = async (given: string | undefined): Promise<string> => {
     return normalizeHostUrl(given);
   }
 
-  const defaultValue = "https://example.com/api/tailorkit";
+  const defaultValue = "https://example.com/api/patchsmith";
   const answer = abortIfCancelled(
     await text({
       defaultValue,

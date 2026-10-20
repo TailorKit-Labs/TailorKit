@@ -60,9 +60,9 @@ export const withInstanceResolvers = (
   app: AppDefinition,
   resolvers: readonly InstanceResolver[]
 ): AppDefinition => {
-  if (Object.hasOwn(app.functions, "_tailorkit")) {
+  if (Object.hasOwn(app.functions, "_patchsmith")) {
     throw new Error(
-      "The _tailorkit function namespace is reserved by TailorKit."
+      "The _patchsmith function namespace is reserved by Patchsmith."
     );
   }
   const queries = registeredQueries(app.functions);
@@ -125,6 +125,6 @@ export const withInstanceResolvers = (
   };
   const internal = defineServer({ instances });
   return Object.freeze({
-    functions: { ...app.functions, _tailorkit: internal.functions },
+    functions: { ...app.functions, _patchsmith: internal.functions },
   });
 };

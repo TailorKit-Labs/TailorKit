@@ -86,7 +86,7 @@ export const checkAppSchema = async (
     throw error;
   }
   const temporary = await mkdtemp(
-    path.join(tmpdir(), "tailorkit-schema-check-")
+    path.join(tmpdir(), "patchsmith-schema-check-")
   );
   try {
     const { stdout } = await run(
@@ -107,7 +107,7 @@ export const checkAppSchema = async (
     const current = await snapshot(temporary);
     if (!current && !stdout.includes("No schema changes")) {
       throw new Error(
-        `Drizzle Kit did not produce a schema snapshot. Check ${path.relative(root, schema)} and run tailorkit db generate.`
+        `Drizzle Kit did not produce a schema snapshot. Check ${path.relative(root, schema)} and run patchsmith db generate.`
       );
     }
     const saved = await snapshot(migrationsDirectory);
@@ -115,7 +115,7 @@ export const checkAppSchema = async (
     const actual = (saved?.ddl ?? []).map(canonical).toSorted();
     if (canonical(expected) !== canonical(actual)) {
       throw new Error(
-        `App database migrations are missing or out of sync with ${path.relative(root, schema)}. Run tailorkit db generate, commit the generated files in ${path.relative(root, migrationsDirectory)}, then build again.`
+        `App database migrations are missing or out of sync with ${path.relative(root, schema)}. Run patchsmith db generate, commit the generated files in ${path.relative(root, migrationsDirectory)}, then build again.`
       );
     }
   } finally {

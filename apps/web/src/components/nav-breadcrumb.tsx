@@ -5,7 +5,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@tailorkit/ui/breadcrumb";
+} from "@patchsmith/ui/breadcrumb";
 import { Link, useMatches } from "@tanstack/react-router";
 import { Fragment } from "react";
 import { z } from "zod";

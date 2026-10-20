@@ -1,4 +1,4 @@
-import type { TailorKitSchemaSpec } from "#spec/index";
+import type { PatchsmithSchemaSpec } from "#spec/index";
 
 import type {
   ComponentDefinitions,
@@ -25,13 +25,13 @@ const isStringValue = <TValue>(value: TValue): value is TValue & string =>
 
 type EmptyToolMap = EmptyDefinitionMap;
 
-export interface TailorKitSchema<
+export interface PatchsmithSchema<
   TComponents extends Record<string, unknown> = ComponentDefinitions,
   TViews extends Record<string, unknown> = ContextDefinitions,
   TTools extends ContractTools = EmptyToolMap,
 > {
   /**
-   * Internal TailorKit implementation details.
+   * Internal Patchsmith implementation details.
    *
    * This API is not covered by semantic versioning and may change or break at
    * any time. Avoid depending on it in application code. If you need something
@@ -53,7 +53,7 @@ export interface TailorKitSchema<
   tools: TTools;
   components: TComponents;
   views: TViews;
-  serialize: (schemaSerializer?: SchemaSerializer) => TailorKitSchemaSpec;
+  serialize: (schemaSerializer?: SchemaSerializer) => PatchsmithSchemaSpec;
 }
 
 // JSON Schema cannot represent undefined at its root. Preserve that information
@@ -75,7 +75,7 @@ const contextMayBeOmitted = (schema: Schema): boolean => {
   return !result.issues;
 };
 
-export function createTailorKitSchema<
+export function createPatchsmithSchema<
   const TComponents extends Record<string, unknown>,
   const TViews extends ContextDefinitions = Record<string, never>,
   const TTools extends ContractTools = EmptyToolMap,
@@ -86,8 +86,8 @@ export function createTailorKitSchema<
   components: TComponents &
     NoComponentFieldCallbackConflicts<NoInfer<TComponents>>;
   views?: TViews & ViewContextHierarchy<NoInfer<TViews>>;
-}): TailorKitSchema<TComponents, TViews, TTools>;
-export function createTailorKitSchema(schema: {
+}): PatchsmithSchema<TComponents, TViews, TTools>;
+export function createPatchsmithSchema(schema: {
   slots?: SlotDefinitions;
   scopes?: Record<string, Schema>;
   tools?: ContractTools;
@@ -125,12 +125,12 @@ export function createTailorKitSchema(schema: {
 
   const serialize = (
     schemaSerializer: SchemaSerializer = jsonSchemaSerializer
-  ): TailorKitSchemaSpec => {
-    const serializedComponents: TailorKitSchemaSpec["components"] = {};
-    const serializedViews: TailorKitSchemaSpec["views"] = {};
+  ): PatchsmithSchemaSpec => {
+    const serializedComponents: PatchsmithSchemaSpec["components"] = {};
+    const serializedViews: PatchsmithSchemaSpec["views"] = {};
 
     for (const [name, metadata] of Object.entries(components)) {
-      const callbacks: TailorKitSchemaSpec["components"][string]["callbacks"] =
+      const callbacks: PatchsmithSchemaSpec["components"][string]["callbacks"] =
         {};
       for (const [callbackName, callback] of Object.entries(
         metadata.callbacks
@@ -163,12 +163,12 @@ export function createTailorKitSchema(schema: {
       }
     }
 
-    const serialized: TailorKitSchemaSpec = {
+    const serialized: PatchsmithSchemaSpec = {
       components: serializedComponents,
 
       slots: Object.fromEntries(
         Object.entries(schema.slots ?? {}).map(([name, slot]) => {
-          const definition: NonNullable<TailorKitSchemaSpec["slots"]>[string] =
+          const definition: NonNullable<PatchsmithSchemaSpec["slots"]>[string] =
             {
               views: [...slot.views],
             };
@@ -213,7 +213,7 @@ export function createTailorKitSchema(schema: {
   };
 }
 
-export type { TailorKitTheme } from "#primitives/theme";
+export type { PatchsmithTheme } from "#primitives/theme";
 
 export { tool } from "./tools";
 
@@ -265,4 +265,4 @@ export {
   type SchemaSerializer,
 } from "./shared";
 
-export type { TailorKitSchema as TailorKit };
+export type { PatchsmithSchema as Patchsmith };

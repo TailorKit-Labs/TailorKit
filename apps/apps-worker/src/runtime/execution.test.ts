@@ -8,7 +8,7 @@ import {
   eq,
   defineDatabase,
   defineRelations,
-} from "@tailorkit/app-db";
+} from "@patchsmith/app-db";
 import {
   createFunctions,
   defineRouter,
@@ -17,8 +17,8 @@ import {
   mutation,
   fn,
   AppError,
-} from "@tailorkit/app/server";
-import { asyncFixture } from "@tailorkit/config/testing";
+} from "@patchsmith/app/server";
+import { asyncFixture } from "@patchsmith/config/testing";
 import { sql } from "drizzle-orm";
 import { sqliteView } from "drizzle-orm/sqlite-core";
 import { Effect } from "effect";
@@ -51,7 +51,7 @@ const identity = {
   projectId: "project",
   scope: { name: "org", value: { id: "tenant" } },
   subjectId: "user",
-  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
 };
 const connections: DatabaseSync[] = [];
 afterEach(() => {
@@ -288,7 +288,7 @@ it("rolls back all writes and receipts when handlers or result validation fail",
     []
   );
   expect(
-    sqlite.prepare("SELECT count(*) AS n FROM tailorkit_receipts").get()
+    sqlite.prepare("SELECT count(*) AS n FROM patchsmith_receipts").get()
   ).toMatchObject({
     n: 0,
   });
@@ -383,7 +383,7 @@ it("allows large results without a custom transport limit", () => {
   );
   expect(result.committed).toBe(true);
   expect(
-    sqlite.prepare("SELECT count(*) AS n FROM tailorkit_receipts").get()
+    sqlite.prepare("SELECT count(*) AS n FROM patchsmith_receipts").get()
   ).toMatchObject({
     n: 1,
   });
@@ -461,7 +461,7 @@ it.each(["bigint", "cycle"])(
       []
     );
     expect(
-      sqlite.prepare("SELECT count(*) AS n FROM tailorkit_receipts").get()
+      sqlite.prepare("SELECT count(*) AS n FROM patchsmith_receipts").get()
     ).toMatchObject({
       n: 0,
     });
@@ -537,7 +537,7 @@ it("runs action database calls locally and notifies only committed writes before
     asyncFixture((tables: string[]) => {
       expect(tables).toEqual(["todos"]);
       expect(
-        sqlite.prepare("SELECT count(*) AS n FROM tailorkit_receipts").get()
+        sqlite.prepare("SELECT count(*) AS n FROM patchsmith_receipts").get()
       ).toMatchObject({
         n: 1,
       });

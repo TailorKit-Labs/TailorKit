@@ -1,19 +1,19 @@
-import { Badge } from "@tailorkit/ui/badge";
-import { Button } from "@tailorkit/ui/button";
+import { Badge } from "@patchsmith/ui/badge";
+import { Button } from "@patchsmith/ui/button";
 import {
   CardFrame,
   CardFrameDescription,
   CardFrameHeader,
   CardFrameTitle,
-} from "@tailorkit/ui/card";
-import { DateAgo } from "@tailorkit/ui/date";
+} from "@patchsmith/ui/card";
+import { DateAgo } from "@patchsmith/ui/date";
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@tailorkit/ui/empty";
+} from "@patchsmith/ui/empty";
 import {
   Table,
   TableBody,
@@ -21,8 +21,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@tailorkit/ui/table";
-import { toastManager } from "@tailorkit/ui/toast";
+} from "@patchsmith/ui/table";
+import { toastManager } from "@patchsmith/ui/toast";
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 /* oxlint-disable react/no-unstable-nested-components */
 import { Link, createFileRoute, useParams } from "@tanstack/react-router";

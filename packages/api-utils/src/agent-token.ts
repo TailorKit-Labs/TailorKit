@@ -3,8 +3,8 @@ import { createHmac, randomUUID } from "node:crypto";
 import { jwtVerify, SignJWT } from "jose";
 import { z } from "zod";
 
-const issuer = "tailorkit-agent";
-const audience = "tailorkit-platform-cli";
+const issuer = "patchsmith-agent";
+const audience = "patchsmith-platform-cli";
 const lifetimeSeconds = 60 * 60;
 
 const identitySchema = z.object({
@@ -29,7 +29,7 @@ const signingKey = (secret: string) => {
     throw new Error("AUTH_SECRET is required for agent tokens.");
   }
   return createHmac("sha256", secret)
-    .update("tailorkit-agent-deploy-v1")
+    .update("patchsmith-agent-deploy-v1")
     .digest();
 };
 
@@ -60,7 +60,7 @@ export const issueAgentToken = async (
     ...authorized,
     platformUrl: normalizePlatformUrl(platformUrl),
   })
-    .setProtectedHeader({ alg: "HS256", typ: "tailorkit-agent+jwt" })
+    .setProtectedHeader({ alg: "HS256", typ: "patchsmith-agent+jwt" })
     .setIssuer(issuer)
     .setAudience(audience)
     // CLI approval currently records no user subject; identify its credential explicitly.
@@ -82,7 +82,7 @@ export const verifyAgentToken = async (
     issuer,
     maxTokenAge: lifetimeSeconds,
     requiredClaims: ["exp", "iat", "sub", "jti"],
-    typ: "tailorkit-agent+jwt",
+    typ: "patchsmith-agent+jwt",
   });
   const claims = claimsSchema.parse(payload);
   if (

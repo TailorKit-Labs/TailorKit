@@ -18,7 +18,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
 
 it("packages generated SQL with stable checksums and tracks the source files", async () => {
   const root = await mkdtemp(
-    path.join(tmpdir(), "tailorkit-generated-migrations-")
+    path.join(tmpdir(), "patchsmith-generated-migrations-")
   );
   try {
     await createDatabaseTestApp(root);
@@ -40,14 +40,14 @@ it("packages generated SQL with stable checksums and tracks the source files", a
 
 it("allows an absent default directory but fails for missing configured migrations or malformed files", async () => {
   const root = await mkdtemp(
-    path.join(tmpdir(), "tailorkit-migration-reader-")
+    path.join(tmpdir(), "patchsmith-migration-reader-")
   );
   try {
     const missing = path.join(root, "missing");
     const awaitedResult1 = await readAppMigrations(missing, true);
     expect(awaitedResult1.migrations).toEqual([]);
     await expect(readAppMigrations(missing)).rejects.toThrow(
-      "Run tailorkit db generate"
+      "Run patchsmith db generate"
     );
     const directory = path.join(root, "20261001000000_init");
     await mkdir(directory);

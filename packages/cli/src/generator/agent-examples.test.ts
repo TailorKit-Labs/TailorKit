@@ -6,23 +6,23 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
-import { primitives } from "@tailorkit/core/primitives/zod";
-import { createTailorKitSchema } from "@tailorkit/core/schema";
+import { primitives } from "@patchsmith/core/primitives/zod";
+import { createPatchsmithSchema } from "@patchsmith/core/schema";
 import { build } from "vite";
 import { expect, it } from "vite-plus/test";
 
 import { generateApp } from "./generate";
 import { renderGeneratedReferences, renderGeneratedTypes } from "./types";
-import type { TailorKitSchemaFile } from "./types";
+import type { PatchsmithSchemaFile } from "./types";
 
-const primitiveSchema = createTailorKitSchema({
+const primitiveSchema = createPatchsmithSchema({
   components: primitives({
     breakpoints: { md: "768px" },
     tokens: { background: { accent: "blue", surface: "white" } },
   }),
 }).serialize();
 
-const schema: TailorKitSchemaFile = {
+const schema: PatchsmithSchemaFile = {
   components: {
     ...primitiveSchema.components,
     Button: {
@@ -107,7 +107,7 @@ const schema: TailorKitSchemaFile = {
 const fileExample =
   /<!-- (?<mode>example|continue): (?<filename>[^ ]+) -->\s*```tsx?\n(?<source>[\s\S]*?)```/gu;
 const codeBlock = /```(?<language>tsx?)\n(?<source>[\s\S]*?)```/gu;
-const externalPackage = /^(?:tailorkit|preact|valibot)(?:\/|$)/u;
+const externalPackage = /^(?:patchsmith|preact|valibot)(?:\/|$)/u;
 
 const declaration = (specifier: string) =>
   fileURLToPath(import.meta.resolve(specifier)).replace(
@@ -116,7 +116,7 @@ const declaration = (specifier: string) =>
   );
 
 it("typechecks and bundles examples with scaffold imports and the public SDK", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-agent-examples-"));
+  const root = await mkdtemp(path.join(tmpdir(), "patchsmith-agent-examples-"));
   try {
     await generateApp({
       bare: true,
@@ -124,8 +124,8 @@ it("typechecks and bundles examples with scaffold imports and the public SDK", a
       hostUrl: "https://host.test",
       packageName: "agent-examples",
       packageVersions: {
+        patchsmith: "0.1.0-beta.49",
         preact: "11.0.1",
-        tailorkit: "0.1.0-beta.49",
         typescript: "7.0.2",
         vite: "8.0.0",
       },
@@ -178,11 +178,11 @@ it("typechecks and bundles examples with scaffold imports and the public SDK", a
     }
     sources["src/server.ts"] =
       `import preview from "#functions/preview";\n${server.replace("defineServer({ notes })", "defineServer({ notes, todos: notes, preview })")}`;
-    sources["src/tailorkit.gen.ts"] = renderGeneratedTypes(schema, {
+    sources["src/patchsmith.gen.ts"] = renderGeneratedTypes(schema, {
       serverModule: "./server",
     });
     const references = renderGeneratedReferences(schema, {
-      bindingsPath: "../src/tailorkit.gen.ts",
+      bindingsPath: "../src/patchsmith.gen.ts",
       hasApi: true,
     });
     expect(references["components/RequiredText.md"]).toContain(
@@ -215,8 +215,8 @@ it("typechecks and bundles examples with scaffold imports and the public SDK", a
     );
     const require = createRequire(import.meta.url);
     const preact = path.dirname(require.resolve("preact/package.json"));
-    const appServer = import.meta.resolve("@tailorkit/app/server");
-    const database = findPackageJSON("@tailorkit/app-db", appServer);
+    const appServer = import.meta.resolve("@patchsmith/app/server");
+    const database = findPackageJSON("@patchsmith/app-db", appServer);
     if (database === undefined) {
       throw new Error("Missing public database package.");
     }
@@ -230,16 +230,16 @@ it("typechecks and bundles examples with scaffold imports and the public SDK", a
           moduleResolution: "Bundler",
           noEmit: true,
           paths: {
+            "patchsmith/client": [declaration("@patchsmith/app/client")],
+            "patchsmith/db": [
+              path.join(path.dirname(database), "dist/index.d.ts"),
+            ],
+            "patchsmith/server": [declaration("@patchsmith/app/server")],
             preact: [path.join(preact, "src/index.d.ts")],
             "preact/hooks": [path.join(preact, "hooks/src/index.d.ts")],
             "preact/jsx-runtime": [
               path.join(preact, "jsx-runtime/src/index.d.ts"),
             ],
-            "tailorkit/client": [declaration("@tailorkit/app/client")],
-            "tailorkit/db": [
-              path.join(path.dirname(database), "dist/index.d.ts"),
-            ],
-            "tailorkit/server": [declaration("@tailorkit/app/server")],
             valibot: [declaration("valibot")],
           },
           skipLibCheck: true,

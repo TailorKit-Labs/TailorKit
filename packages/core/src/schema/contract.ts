@@ -20,7 +20,7 @@ const isBooleanValue = <TValue>(value: TValue): value is TValue & boolean =>
 const isStringValue = <TValue>(value: TValue): value is TValue & string =>
   typeof value === "string";
 
-export interface TailorKitContract<
+export interface PatchsmithContract<
   TComponents extends ComponentDefinitions = ComponentDefinitions,
   TViews extends ContextDefinitions = ContextDefinitions,
   TSlots extends SlotDefinitions = SlotDefinitions,
@@ -51,14 +51,14 @@ export function defineContract<
   slots?: TSlots & SlotDefinitions<keyof NoInfer<TViews> & string>;
   tools?: TTools;
   scopes?: TScopes;
-}): TailorKitContract<TComponents, TViews, TSlots, TTools, TScopes>;
+}): PatchsmithContract<TComponents, TViews, TSlots, TTools, TScopes>;
 export function defineContract(definition: {
   components?: ComponentDefinitions;
   views?: ContextDefinitions;
   slots?: SlotDefinitions;
   tools?: ContractTools;
   scopes?: Record<string, Schema>;
-}): TailorKitContract {
+}): PatchsmithContract {
   for (const name of Object.keys(definition)) {
     if (!["components", "views", "slots", "tools", "scopes"].includes(name)) {
       throw new Error(`Unknown contract field "${name}"`);

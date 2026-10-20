@@ -1,4 +1,4 @@
-import { Button } from "@tailorkit/ui/button";
+import { Button } from "@patchsmith/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogPopup,
   DialogTrigger,
-} from "@tailorkit/ui/dialog";
+} from "@patchsmith/ui/dialog";
 import {
   Empty,
   EmptyContent,
@@ -17,9 +17,9 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@tailorkit/ui/empty";
-import { useAppForm } from "@tailorkit/ui/form";
-import { toastManager } from "@tailorkit/ui/toast";
+} from "@patchsmith/ui/empty";
+import { useAppForm } from "@patchsmith/ui/form";
+import { toastManager } from "@patchsmith/ui/toast";
 import { useSelector } from "@tanstack/react-form";
 import {
   useMutation,
@@ -216,7 +216,7 @@ const CreateProjectDialog = ({
                 {(field) => (
                   <field.TextField
                     autoComplete="off"
-                    description={`tailorkit.com/${orgSlug}/${field.state.value || "project-slug"}`}
+                    description={`patchsmith.com/${orgSlug}/${field.state.value || "project-slug"}`}
                     endAdornment={
                       <OrgSlugAvailabilityIndicator
                         availability={slugAvailability}

@@ -15,7 +15,7 @@ import {
   SidebarPanelTrigger,
   SidebarPanels,
   SidebarSeparator,
-} from "@tailorkit/ui/sidebar";
+} from "@patchsmith/ui/sidebar";
 import {
   useParams,
   Outlet,

@@ -1,13 +1,13 @@
-import { Badge } from "@tailorkit/ui/badge";
-import { Button } from "@tailorkit/ui/button";
+import { Badge } from "@patchsmith/ui/badge";
+import { Button } from "@patchsmith/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@tailorkit/ui/card";
-import { Input } from "@tailorkit/ui/input";
+} from "@patchsmith/ui/card";
+import { Input } from "@patchsmith/ui/input";
 import {
   useLoaderData,
   Link,

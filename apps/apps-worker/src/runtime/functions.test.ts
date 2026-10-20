@@ -1,7 +1,7 @@
-import { createApi } from "@tailorkit/app/client";
-import type { Invocation } from "@tailorkit/app/protocol";
-import { fn, defineRouter, defineServer } from "@tailorkit/app/server";
-import type { AppDefinition, Identity } from "@tailorkit/app/server";
+import { createApi } from "@patchsmith/app/client";
+import type { Invocation } from "@patchsmith/app/protocol";
+import { fn, defineRouter, defineServer } from "@patchsmith/app/server";
+import type { AppDefinition, Identity } from "@patchsmith/app/server";
 import * as v from "valibot";
 import { expect, it, vi } from "vite-plus/test";
 
@@ -48,7 +48,7 @@ it("dispatches nested functions and preserves their names, identity, execution a
     projectId: "p",
     scope: { name: "org", value: { id: "tenant" } },
     subjectId: "u",
-    toolUrl: "https://host.test/api/tailorkit/tools/execute",
+    toolUrl: "https://host.test/api/patchsmith/tools/execute",
   };
   const execution = createExecution(app, {
     execute: () => ({ changes: 0, columns: [], rows: [] }),
@@ -88,10 +88,10 @@ it("validates names inside nested groups", () => {
     "todos.__proto__",
     "todos.read.",
     "_other.instances.page",
-    "_tailorkitExtra.instances.page",
-    "todos._tailorkit.read",
-    "_tailorkit.instances._page",
-    "_tailorkit..page",
+    "_patchsmithExtra.instances.page",
+    "todos._patchsmith.read",
+    "_patchsmith.instances._page",
+    "_patchsmith..page",
   ]) {
     expect(v.safeParse(invocationSchema, { name }).success).toBe(false);
   }
@@ -99,12 +99,12 @@ it("validates names inside nested groups", () => {
 
 it("allows the reserved internal invocation namespace without allowing apps to register it", () => {
   for (const name of [
-    "_tailorkit.instances.resolve",
-    "_tailorkit.future.resolve",
+    "_patchsmith.instances.resolve",
+    "_patchsmith.future.resolve",
   ]) {
     expect(v.parse(invocationSchema, { name })).toEqual({ name });
   }
-  expect(() => defineServer({ _tailorkit: {} })).toThrow(
+  expect(() => defineServer({ _patchsmith: {} })).toThrow(
     "Invalid function name"
   );
 });

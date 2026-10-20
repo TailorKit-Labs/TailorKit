@@ -1,4 +1,4 @@
-import { getBaseUrl } from "@tailorkit/env";
+import { getBaseUrl } from "@patchsmith/env";
 
 import { env } from "#env";
 

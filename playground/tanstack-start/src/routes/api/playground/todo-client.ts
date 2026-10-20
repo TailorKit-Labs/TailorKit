@@ -5,7 +5,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 const clientPath = fileURLToPath(
   new URL(
-    "../../../../../apps/todo/.tailorkit/client/client.js",
+    "../../../../../apps/todo/.patchsmith/client/client.js",
     import.meta.url
   )
 );

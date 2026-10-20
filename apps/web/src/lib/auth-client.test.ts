@@ -1,4 +1,4 @@
-import { captchaEndpoints } from "@tailorkit/auth/lib/captcha-endpoints";
+import { captchaEndpoints } from "@patchsmith/auth/lib/captcha-endpoints";
 import { initBotId } from "botid/client/core";
 import { withBotId } from "botid/next/config";
 import {
@@ -37,7 +37,7 @@ describe("auth client BotID initialization", () => {
         )
       );
     vi.stubGlobal("window", {
-      location: new URL("https://tailorkit.dev/login"),
+      location: new URL("https://patchsmith.io/login"),
     });
     vi.stubGlobal("fetch", originalFetch);
     vi.stubEnv("PROD", true);
@@ -59,7 +59,7 @@ describe("auth client BotID initialization", () => {
     });
     expect(protectedFetch).toHaveBeenCalledOnce();
     expect(String(protectedFetch.mock.calls[0]?.[0])).toBe(
-      "https://tailorkit.dev/api/auth/sign-in/email"
+      "https://patchsmith.io/api/auth/sign-in/email"
     );
     expect(originalFetch).not.toHaveBeenCalled();
   });

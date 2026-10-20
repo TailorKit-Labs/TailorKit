@@ -40,7 +40,7 @@ const implementations: ToolImplementations<typeof contract.tools, "server"> = {
   },
 };
 const server = createServer({
-  baseUrl: "https://example.com/api/tailorkit",
+  baseUrl: "https://example.com/api/patchsmith",
   contract,
   tools: implementations,
 });
@@ -50,23 +50,23 @@ createServer({
   // @ts-expect-error authentication belongs in handler options
   authenticate: () => null,
 
-  baseUrl: "https://example.com/api/tailorkit",
+  baseUrl: "https://example.com/api/patchsmith",
 
   contract,
 
   tools: implementations,
 });
 // @ts-expect-error handler authentication is required
-void server.handler(new Request("https://example.com/api/tailorkit/apps"));
+void server.handler(new Request("https://example.com/api/patchsmith/apps"));
 // @ts-expect-error handler options must include authentication
-void server.handler(new Request("https://example.com/api/tailorkit/apps"), {});
-void server.handler(new Request("https://example.com/api/tailorkit/apps"), {
+void server.handler(new Request("https://example.com/api/patchsmith/apps"), {});
+void server.handler(new Request("https://example.com/api/patchsmith/apps"), {
   authenticate: () => null,
 });
 // @ts-expect-error declared server tools need implementations
-createServer({ baseUrl: "https://example.com/api/tailorkit", contract });
+createServer({ baseUrl: "https://example.com/api/patchsmith", contract });
 createServer({
-  baseUrl: "https://example.com/api/tailorkit",
+  baseUrl: "https://example.com/api/patchsmith",
   contract,
   // @ts-expect-error a server cannot implement client tools
   tools: { ...implementations, ui: { open: () => true } },

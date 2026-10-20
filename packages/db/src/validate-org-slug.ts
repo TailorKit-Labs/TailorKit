@@ -473,7 +473,6 @@ const reservedOrgSlugs = new Set([
   "solutions",
   "startups",
   "students",
-  "tailorkit",
   "tour",
   "use-case",
   "use-cases",
@@ -483,7 +482,7 @@ const reservedOrgSlugs = new Set([
   "webinar-replay",
   "webinar-replays",
   "why",
-  "why-tailorkit",
+  "why-patchsmith",
 
   // Documentation & Learning
   "academy",

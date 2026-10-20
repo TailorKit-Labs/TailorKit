@@ -1,6 +1,6 @@
 import { ORPCError } from "@orpc/server";
-import { hashSecret } from "@tailorkit/api-utils/hashing";
-import { db } from "@tailorkit/db";
+import { hashSecret } from "@patchsmith/api-utils/hashing";
+import { db } from "@patchsmith/db";
 
 import { env } from "#env";
 

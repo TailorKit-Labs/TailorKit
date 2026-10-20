@@ -7,7 +7,7 @@ import { hostSchemaPath, prepareWorkspace } from "./workspace";
 const input: AppAgentInput = {
   agentToken: "private-token",
   appId: "app",
-  hostUrl: "https://host.test/api/tailorkit",
+  hostUrl: "https://host.test/api/patchsmith",
   messages: [{ content: "Build", role: "user" }],
   model: "openai/gpt-6.1-sol",
   threadId: "thread",
@@ -29,12 +29,12 @@ const workspace = () => {
       if (command.cmd === "mv" && !refusedMove) {
         files.set("/workspace/app/package.json", Buffer.from('{"name":"app"}'));
         files.set(
-          "/workspace/app/.tailorkit-setup-pending",
+          "/workspace/app/.patchsmith-setup-pending",
           Buffer.from("pending")
         );
       }
       if (command.cmd === "rm" && args[0] === "-f") {
-        files.delete("/workspace/app/.tailorkit-setup-pending");
+        files.delete("/workspace/app/.patchsmith-setup-pending");
       }
       return await Promise.resolve({
         exitCode: failedInstall || refusedMove ? 1 : 0,
@@ -60,9 +60,9 @@ it("prepares a bare app and preserves a supplied schema without model setup call
   );
   expect(scaffold?.args).toEqual([
     "dlx",
-    "tailorkit@beta",
+    "patchsmith@beta",
     "init",
-    "/workspace/.tailorkit-scaffold",
+    "/workspace/.patchsmith-scaffold",
     "--name",
     "app",
     "--host",
@@ -81,7 +81,7 @@ it("prepares a bare app and preserves a supplied schema without model setup call
       (command) => command.args?.includes("generate") === true
     )
   ).toBe(false);
-  expect(fixture.files.has("/workspace/app/.tailorkit-setup-pending")).toBe(
+  expect(fixture.files.has("/workspace/app/.patchsmith-setup-pending")).toBe(
     false
   );
   for (const command of fixture.commands) {
@@ -105,7 +105,7 @@ it("resumes an interrupted install without replacing source or scaffolding twice
   await expect(prepareWorkspace(fixture.session, input)).rejects.toThrow(
     "Failed [redacted]"
   );
-  expect(fixture.files.has("/workspace/app/.tailorkit-setup-pending")).toBe(
+  expect(fixture.files.has("/workspace/app/.patchsmith-setup-pending")).toBe(
     true
   );
   fixture.commands.length = 0;
@@ -115,7 +115,7 @@ it("resumes an interrupted install without replacing source or scaffolding twice
     "pnpm",
     "rm",
   ]);
-  expect(fixture.files.has("/workspace/app/.tailorkit-setup-pending")).toBe(
+  expect(fixture.files.has("/workspace/app/.patchsmith-setup-pending")).toBe(
     false
   );
 });

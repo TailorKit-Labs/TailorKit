@@ -13,9 +13,9 @@ import {
 import { hostSchemaPath, prepareWorkspace } from "./workspace";
 
 const store = async () => {
-  const { db } = await import("@tailorkit/db");
+  const { db } = await import("@patchsmith/db");
   const { appAgentLease, appAgentThread } =
-    await import("@tailorkit/db/schema/apps");
+    await import("@patchsmith/db/schema/apps");
   return { appAgentLease, appAgentThread, db };
 };
 const resumeSchema = z.custom<HarnessV1ResumeSessionState>(

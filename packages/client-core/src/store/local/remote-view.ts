@@ -1,13 +1,13 @@
-import { createIframeUiHost } from "@tailorkit/sandbox/host";
+import { createIframeUiHost } from "@patchsmith/sandbox/host";
 import type {
   IframeUiHost,
   IframeUiHostOptions,
-} from "@tailorkit/sandbox/host";
+} from "@patchsmith/sandbox/host";
 import type {
   RemoteProps,
   HostToIframePayload,
   RemoteElementNode,
-} from "@tailorkit/sandbox/protocol";
+} from "@patchsmith/sandbox/protocol";
 import { atom, batch, computed } from "nanostores";
 
 import { NodeStore } from "./node-store";
@@ -90,7 +90,7 @@ export const createRemoteViewStore = (
       payload: HostToIframePayload
     ): ReturnType<IframeUiHost["dispatch"]> => {
       if (!current?.host) {
-        throw new Error("TailorKit remote view is not mounted.");
+        throw new Error("Patchsmith remote view is not mounted.");
       }
       return await current.host.dispatch(payload);
     },
@@ -116,7 +116,7 @@ export const createRemoteViewStore = (
         if (current !== run || run.stopped) {
           return;
         }
-        console.error("TailorKit remote app failed", error);
+        console.error("Patchsmith remote app failed", error);
         state.set({ error, generation, status: "error" });
       };
       try {

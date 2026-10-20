@@ -10,7 +10,7 @@ const identity = {
   projectId: "project",
   scope: { name: "workspace", value: { id: "workspace" } },
   subjectId: "principal",
-  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
 };
 
 const require = <T>(value: T | null | undefined): T => {

@@ -1,4 +1,4 @@
-import { createShortId } from "@tailorkit/db/short-id";
+import { createShortId } from "@patchsmith/db/short-id";
 
 export const tenantShortIdField = {
   input: false,

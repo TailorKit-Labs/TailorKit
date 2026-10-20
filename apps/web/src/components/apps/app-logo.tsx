@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@tailorkit/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@patchsmith/ui/avatar";
 import { AppWindowIcon } from "lucide-react";
 
 import { useTheme } from "#lib/theme";

@@ -7,9 +7,9 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { gzip } from "node:zlib";
 
-import type { TailorKitUploadManifest } from "@tailorkit/vite/builder";
-import type { LoadedTailorKitConfig } from "@tailorkit/vite/config/loader";
-import { loadTailorKitConfig } from "@tailorkit/vite/config/loader";
+import type { PatchsmithUploadManifest } from "@patchsmith/vite/builder";
+import type { LoadedPatchsmithConfig } from "@patchsmith/vite/config/loader";
+import { loadPatchsmithConfig } from "@patchsmith/vite/config/loader";
 import * as v from "valibot";
 import { z } from "zod";
 
@@ -167,9 +167,9 @@ const isNotFoundError = (cause: unknown): boolean =>
 
 const readUploadManifest = async (
   outDir: string,
-  schema: v.GenericSchema<unknown, TailorKitUploadManifest>
-): Promise<TailorKitUploadManifest> => {
-  const manifestPath = path.join(outDir, "tailorkit-upload.json");
+  schema: v.GenericSchema<unknown, PatchsmithUploadManifest>
+): Promise<PatchsmithUploadManifest> => {
+  const manifestPath = path.join(outDir, "patchsmith-upload.json");
   return v.parse(schema, JSON.parse(await readFile(manifestPath, "utf-8")));
 };
 
@@ -229,7 +229,7 @@ const resolveTsconfig = (root: string): string | undefined => {
 };
 
 const typecheckAppEntries = async (
-  loaded: LoadedTailorKitConfig
+  loaded: LoadedPatchsmithConfig
 ): Promise<TypecheckFailure | undefined> => {
   const baseTsconfig = resolveTsconfig(loaded.root);
   if (
@@ -251,7 +251,7 @@ const typecheckAppEntries = async (
   } catch {
     return undefined;
   }
-  const { getClientSourceFiles } = await import("@tailorkit/vite/builder");
+  const { getClientSourceFiles } = await import("@patchsmith/vite/builder");
   const clientFiles = await getClientSourceFiles(loaded.root);
   const entryFiles = [
     ...clientFiles,
@@ -266,7 +266,7 @@ const typecheckAppEntries = async (
   ];
   // Check both application entry points with the project compiler options.
   const temporary = await mkdtemp(
-    path.join(loaded.root, ".tailorkit-typecheck-")
+    path.join(loaded.root, ".patchsmith-typecheck-")
   );
   try {
     const config = path.join(temporary, "tsconfig.json");
@@ -315,7 +315,7 @@ const typecheckAppEntries = async (
 export const runDeploy = async (
   options: DeployOptions
 ): Promise<DeployResult> => {
-  const loaded = await loadTailorKitConfig(options.configPath, options.cwd);
+  const loaded = await loadPatchsmithConfig(options.configPath, options.cwd);
   const agent = getAgentAuth();
   let appId = options.appId ?? loaded.config.appId ?? agent?.appId;
   let createdApp = false;
@@ -338,12 +338,12 @@ export const runDeploy = async (
     )
   ) {
     throw new Error(
-      `Not logged in for ${auth.hostUrl}. Run tailorkit login after checking host in tailorkit.config.ts.`
+      `Not logged in for ${auth.hostUrl}. Run patchsmith login after checking host in patchsmith.config.ts.`
     );
   }
 
-  const { tailorkitUploadManifestSchema } =
-    await import("@tailorkit/vite/builder");
+  const { patchsmithUploadManifestSchema } =
+    await import("@patchsmith/vite/builder");
   const [buildResult, typecheckResult] = await Promise.allSettled([
     buildProject({ ...options, cwd: loaded.root }),
     typecheckAppEntries(loaded),
@@ -375,7 +375,7 @@ export const runDeploy = async (
   const { outDir } = buildResult.value;
   const manifest = await readUploadManifest(
     outDir,
-    tailorkitUploadManifestSchema
+    patchsmithUploadManifestSchema
   );
   const clientAssetPath = path.join(outDir, manifest.assets.client);
   const clientAsset = await readFile(clientAssetPath);

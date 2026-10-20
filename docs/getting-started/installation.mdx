@@ -1,17 +1,17 @@
 ---
-title: "Integrate TailorKit"
+title: "Integrate Patchsmith"
 sidebarTitle: "Installation"
-description: "Install TailorKit, expose your host API, and render installed apps in React."
+description: "Install Patchsmith, expose your host API, and render installed apps in React."
 ---
 
-Connect your host product to TailorKit, define the capabilities apps can use, and render installed apps in React. You need an existing React frontend, a backend that handles standard `Request` and `Response` objects, and a [TailorKit account](https://tailorkit.dev/signup).
+Connect your host product to Patchsmith, define the capabilities apps can use, and render installed apps in React. You need an existing React frontend, a backend that handles standard `Request` and `Response` objects, and a [Patchsmith account](https://patchsmith.io/signup).
 
-Get your project key from TailorKit and make it available to your server as `TAILORKIT_PROJECT_KEY`. Keep it out of client bundles. The examples use `@/` for your source directory; adjust imports to match your project.
+Get your project key from Patchsmith and make it available to your server as `PATCHSMITH_PROJECT_KEY`. Keep it out of client bundles. The examples use `@/` for your source directory; adjust imports to match your project.
 
 <Steps titleSize="h2">
-<Step title="Install TailorKit">
+<Step title="Install Patchsmith">
 
-Choose a validation library to use with TailorKit. If you’re unsure, use Zod. Then add TailorKit and your chosen library to your project:
+Choose a validation library to use with Patchsmith. If you’re unsure, use Zod. Then add Patchsmith and your chosen library to your project:
 
 <Tabs>
 
@@ -20,19 +20,19 @@ Choose a validation library to use with TailorKit. If you’re unsure, use Zod. 
 <CodeGroup>
 
 ```sh npm
-npm install tailorkit@beta zod
+npm install patchsmith@beta zod
 ```
 
 ```sh pnpm
-pnpm add tailorkit@beta zod
+pnpm add patchsmith@beta zod
 ```
 
 ```sh yarn
-yarn add tailorkit@beta zod
+yarn add patchsmith@beta zod
 ```
 
 ```sh bun
-bun add tailorkit@beta zod
+bun add patchsmith@beta zod
 ```
 
 </CodeGroup>
@@ -44,19 +44,19 @@ bun add tailorkit@beta zod
 <CodeGroup>
 
 ```sh npm
-npm install tailorkit@beta arktype
+npm install patchsmith@beta arktype
 ```
 
 ```sh pnpm
-pnpm add tailorkit@beta arktype
+pnpm add patchsmith@beta arktype
 ```
 
 ```sh yarn
-yarn add tailorkit@beta arktype
+yarn add patchsmith@beta arktype
 ```
 
 ```sh bun
-bun add tailorkit@beta arktype
+bun add patchsmith@beta arktype
 ```
 
 </CodeGroup>
@@ -68,19 +68,19 @@ bun add tailorkit@beta arktype
 <CodeGroup>
 
 ```sh npm
-npm install tailorkit@beta valibot @valibot/to-json-schema
+npm install patchsmith@beta valibot @valibot/to-json-schema
 ```
 
 ```sh pnpm
-pnpm add tailorkit@beta valibot @valibot/to-json-schema
+pnpm add patchsmith@beta valibot @valibot/to-json-schema
 ```
 
 ```sh yarn
-yarn add tailorkit@beta valibot @valibot/to-json-schema
+yarn add patchsmith@beta valibot @valibot/to-json-schema
 ```
 
 ```sh bun
-bun add tailorkit@beta valibot @valibot/to-json-schema
+bun add patchsmith@beta valibot @valibot/to-json-schema
 ```
 
 </CodeGroup>
@@ -92,7 +92,7 @@ bun add tailorkit@beta valibot @valibot/to-json-schema
 </Step>
 <Step title="Define the shared contract">
 
-Create `src/lib/tailorkit.ts` to define the contract between installed apps and your platform. It declares [components](/concepts/components), [views](/concepts/views), [slots](/concepts/slots), and scopes that identify an installation’s owner. Both your server and frontend import this file, so keep server credentials and logic elsewhere.
+Create `src/lib/patchsmith.ts` to define the contract between installed apps and your platform. It declares [components](/concepts/components), [views](/concepts/views), [slots](/concepts/slots), and scopes that identify an installation’s owner. Both your server and frontend import this file, so keep server credentials and logic elsewhere.
 
 <Tip>
   Breaking contract changes, like removing a component or requiring a field, can
@@ -103,9 +103,9 @@ Create `src/lib/tailorkit.ts` to define the contract between installed apps and 
 
 <Tab title="Zod">
 
-```ts src/lib/tailorkit.ts
-import { defineContract, type Component } from "tailorkit";
-import { primitives } from "tailorkit/zod";
+```ts src/lib/patchsmith.ts
+import { defineContract, type Component } from "patchsmith";
+import { primitives } from "patchsmith/zod";
 import { z } from "zod";
 
 // Define the components you want apps to use
@@ -155,7 +155,7 @@ export const contract = defineContract({
   },
 
   // Views share page data with apps, which can provide UI for each view.
-  // TailorKit shows the closest match, falling back to "/" if the app provides it.
+  // Patchsmith shows the closest match, falling back to "/" if the app provides it.
   views: {
     "/": z.object({
       user: z.object({ id: z.string(), name: z.string() }),
@@ -177,9 +177,9 @@ export const contract = defineContract({
 
 <Tab title="ArkType">
 
-```ts src/lib/tailorkit.ts
-import { defineContract, type Component } from "tailorkit";
-import { primitives } from "tailorkit/arktype";
+```ts src/lib/patchsmith.ts
+import { defineContract, type Component } from "patchsmith";
+import { primitives } from "patchsmith/arktype";
 import { type } from "arktype";
 
 // Define the components you want apps to use
@@ -231,7 +231,7 @@ export const contract = defineContract({
   },
 
   // Views share page data with apps, which can provide UI for each view.
-  // TailorKit shows the closest match, falling back to "/" if the app provides it.
+  // Patchsmith shows the closest match, falling back to "/" if the app provides it.
   views: {
     "/": type({
       user: { id: "string", name: "string" },
@@ -253,9 +253,9 @@ export const contract = defineContract({
 
 <Tab title="Valibot">
 
-```ts src/lib/tailorkit.ts
-import { defineContract, type Component } from "tailorkit";
-import { primitives } from "tailorkit/valibot";
+```ts src/lib/patchsmith.ts
+import { defineContract, type Component } from "patchsmith";
+import { primitives } from "patchsmith/valibot";
 import * as v from "valibot";
 
 // Define the components you want apps to use
@@ -305,7 +305,7 @@ export const contract = defineContract({
   },
 
   // Views are URL-like paths for your product's context; apps can provide UI for each.
-  // TailorKit shows the closest match, checking parent paths up to "/".
+  // Patchsmith shows the closest match, checking parent paths up to "/".
   views: {
     "/": v.object({
       user: v.object({ id: v.string(), name: v.string() }),
@@ -332,23 +332,23 @@ A slot's optional `description` gives app authors and agents layout and sizing g
 </Step>
 <Step title="Implement the server">
 
-Create `src/lib/tailorkit-server.ts` to connect your contract to TailorKit using your project key. Set `baseUrl` to your host’s TailorKit handler URL in each environment, including production.
+Create `src/lib/patchsmith-server.ts` to connect your contract to Patchsmith using your project key. Set `baseUrl` to your host’s Patchsmith handler URL in each environment, including production.
 
 <Tabs>
 
 <Tab title="Zod">
 
-```ts src/lib/tailorkit-server.ts
-import { createServer } from "tailorkit/server";
-import { contract } from "./tailorkit";
+```ts src/lib/patchsmith-server.ts
+import { createServer } from "patchsmith/server";
+import { contract } from "./patchsmith";
 
-export const tailorKit = createServer({
+export const patchSmith = createServer({
   contract,
-  projectKey: process.env.TAILORKIT_PROJECT_KEY,
+  projectKey: process.env.PATCHSMITH_PROJECT_KEY,
   baseUrl:
     process.env.NODE_ENV === "development"
-      ? "http://localhost:3000/api/tailorkit"
-      : "https://your-app.com/api/tailorkit",
+      ? "http://localhost:3000/api/patchsmith"
+      : "https://your-app.com/api/patchsmith",
 });
 ```
 
@@ -356,17 +356,17 @@ export const tailorKit = createServer({
 
 <Tab title="ArkType">
 
-```ts src/lib/tailorkit-server.ts
-import { createServer } from "tailorkit/server";
-import { contract } from "./tailorkit";
+```ts src/lib/patchsmith-server.ts
+import { createServer } from "patchsmith/server";
+import { contract } from "./patchsmith";
 
-export const tailorKit = createServer({
+export const patchSmith = createServer({
   contract,
-  projectKey: process.env.TAILORKIT_PROJECT_KEY,
+  projectKey: process.env.PATCHSMITH_PROJECT_KEY,
   baseUrl:
     process.env.NODE_ENV === "development"
-      ? "http://localhost:3000/api/tailorkit"
-      : "https://your-app.com/api/tailorkit",
+      ? "http://localhost:3000/api/patchsmith"
+      : "https://your-app.com/api/patchsmith",
 });
 ```
 
@@ -374,18 +374,18 @@ export const tailorKit = createServer({
 
 <Tab title="Valibot">
 
-```ts src/lib/tailorkit-server.ts
-import { createServer } from "tailorkit/server";
+```ts src/lib/patchsmith-server.ts
+import { createServer } from "patchsmith/server";
 import { toJsonSchema } from "@valibot/to-json-schema";
-import { contract } from "./tailorkit";
+import { contract } from "./patchsmith";
 
-export const tailorKit = createServer({
+export const patchSmith = createServer({
   contract,
-  projectKey: process.env.TAILORKIT_PROJECT_KEY,
+  projectKey: process.env.PATCHSMITH_PROJECT_KEY,
   baseUrl:
     process.env.NODE_ENV === "development"
-      ? "http://localhost:3000/api/tailorkit"
-      : "https://your-app.com/api/tailorkit",
+      ? "http://localhost:3000/api/patchsmith"
+      : "https://your-app.com/api/patchsmith",
   schemaSerializer: toJsonSchema,
 });
 ```
@@ -397,23 +397,23 @@ export const tailorKit = createServer({
 </Step>
 <Step title="Create the client">
 
-Create `src/lib/tailorkit-client.tsx` to connect your frontend to the TailorKit API. Map each contract component to its React implementation. The example assumes your `Button` and `Input` components accept the props shown below.
+Create `src/lib/patchsmith-client.tsx` to connect your frontend to the Patchsmith API. Map each contract component to its React implementation. The example assumes your `Button` and `Input` components accept the props shown below.
 
-```tsx src/lib/tailorkit-client.tsx
+```tsx src/lib/patchsmith-client.tsx
 "use client";
 
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
-import { contract } from "@/lib/tailorkit";
-import { createClient, primitives } from "tailorkit/react";
+import { contract } from "@/lib/patchsmith";
+import { createClient, primitives } from "patchsmith/react";
 
-export const tailorKitClient = createClient({
+export const patchSmithClient = createClient({
   contract,
   // Replace this with your host origin and handler path.
   baseUrl:
     process.env.NODE_ENV === "development"
-      ? "http://localhost:3000/api/tailorkit"
-      : "https://your-app.com/api/tailorkit",
+      ? "http://localhost:3000/api/patchsmith"
+      : "https://your-app.com/api/patchsmith",
   components: {
     ...primitives,
 
@@ -433,20 +433,20 @@ export const tailorKitClient = createClient({
 });
 
 export const {
-  Provider: TailorKitProvider,
+  Provider: PatchsmithProvider,
   RenderSlot,
   useApps,
   useViewContext,
   useViews,
-} = tailorKitClient;
+} = patchSmithClient;
 
-export default tailorKitClient;
+export default patchSmithClient;
 ```
 
 </Step>
 <Step title="Add the API handler">
 
-Mount the handler at your TailorKit base path. If you use a path other than `/api/tailorkit`, update `baseUrl` in both `tailorkit-server.ts` and `tailorkit-client.tsx` to match.
+Mount the handler at your Patchsmith base path. If you use a path other than `/api/patchsmith`, update `baseUrl` in both `patchsmith-server.ts` and `patchsmith-client.tsx` to match.
 
 Choose your framework below. Replace `auth` with your authentication implementation and return a stable `subjectId` and verified scope values from the session.
 
@@ -454,11 +454,11 @@ Choose your framework below. Replace `auth` with your authentication implementat
 
 <Tab title="Next.js App Router">
 
-```ts app/api/tailorkit/[...tailorkit]/route.ts
-import { tailorKit } from "@/lib/tailorkit-server";
+```ts app/api/patchsmith/[...patchsmith]/route.ts
+import { patchSmith } from "@/lib/patchsmith-server";
 
 async function handleRequest(request: Request) {
-  return tailorKit.handler(request, {
+  return patchSmith.handler(request, {
     authenticate: async () => {
       // Replace this with your own authentication logic.
       const session = await auth(request);
@@ -483,11 +483,11 @@ export const POST = handleRequest;
 
 <Tab title="TanStack Start">
 
-```ts routes/api/tailorkit.$.ts
-import { tailorKit } from "@/lib/tailorkit-server";
+```ts routes/api/patchsmith.$.ts
+import { patchSmith } from "@/lib/patchsmith-server";
 import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/api/tailorkit/$")({
+export const Route = createFileRoute("/api/patchsmith/$")({
   server: {
     handlers: {
       GET: handleRequest,
@@ -497,7 +497,7 @@ export const Route = createFileRoute("/api/tailorkit/$")({
 });
 
 async function handleRequest({ request }: { request: Request }) {
-  return tailorKit.handler(request, {
+  return patchSmith.handler(request, {
     authenticate: async () => {
       // Replace this with your own authentication logic.
       const session = await auth(request);
@@ -519,12 +519,12 @@ async function handleRequest({ request }: { request: Request }) {
 
 <Tab title="React Router">
 
-```ts routes/api.tailorkit.$.ts
-import { tailorKit } from "@/lib/tailorkit-server";
+```ts routes/api.patchsmith.$.ts
+import { patchSmith } from "@/lib/patchsmith-server";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 
 async function handleRequest(request: Request) {
-  return tailorKit.handler(request, {
+  return patchSmith.handler(request, {
     authenticate: async () => {
       // Replace this with your own authentication logic.
       const session = await auth(request);
@@ -554,13 +554,13 @@ export async function action({ request }: ActionFunctionArgs) {
 
 <Tab title="Nitro">
 
-```ts server/api/tailorkit/[...].ts
-import { tailorKit } from "@/lib/tailorkit-server";
+```ts server/api/patchsmith/[...].ts
+import { patchSmith } from "@/lib/patchsmith-server";
 import { toWebRequest } from "h3";
 
 export default defineEventHandler(async (event) => {
   const request = toWebRequest(event);
-  return tailorKit.handler(request, {
+  return patchSmith.handler(request, {
     authenticate: async () => {
       // Replace this with your own authentication logic.
       const session = await auth(request);
@@ -584,12 +584,12 @@ export default defineEventHandler(async (event) => {
 
 ```ts src/index.ts
 import { Hono } from "hono";
-import { tailorKit } from "@/lib/tailorkit-server";
+import { patchSmith } from "@/lib/patchsmith-server";
 
 const app = new Hono();
 
-app.on(["GET", "POST"], "/api/tailorkit/*", async (c) => {
-  return tailorKit.handler(c.req.raw, {
+app.on(["GET", "POST"], "/api/patchsmith/*", async (c) => {
+  return patchSmith.handler(c.req.raw, {
     authenticate: async () => {
       // Replace this with your own authentication logic.
       const session = await auth(c.req.raw);
@@ -615,11 +615,11 @@ export default app;
 
 Pass your framework's `Request` to this handler and return its `Response`.
 
-```ts src/lib/tailorkit-handler.ts
-import { tailorKit } from "@/lib/tailorkit-server";
+```ts src/lib/patchsmith-handler.ts
+import { patchSmith } from "@/lib/patchsmith-server";
 
 export async function handleRequest(request: Request): Promise<Response> {
-  return tailorKit.handler(request, {
+  return patchSmith.handler(request, {
     authenticate: async () => {
       // Replace this with your own authentication logic.
       const session = await auth(request);
@@ -644,7 +644,7 @@ export async function handleRequest(request: Request): Promise<Response> {
 </Step>
 <Step title="Add the provider">
 
-Wrap pages that use TailorKit hooks or render apps in `TailorKitProvider`. Choose the root layout for your framework:
+Wrap pages that use Patchsmith hooks or render apps in `PatchsmithProvider`. Choose the root layout for your framework:
 
 <Tabs>
 
@@ -652,13 +652,13 @@ Wrap pages that use TailorKit hooks or render apps in `TailorKitProvider`. Choos
 
 ```tsx app/layout.tsx
 import type { ReactNode } from "react";
-import { TailorKitProvider } from "@/lib/tailorkit-client";
+import { PatchsmithProvider } from "@/lib/patchsmith-client";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <TailorKitProvider>{children}</TailorKitProvider>
+        <PatchsmithProvider>{children}</PatchsmithProvider>
       </body>
     </html>
   );
@@ -677,7 +677,7 @@ import {
   Outlet,
   Scripts,
 } from "@tanstack/react-router";
-import { TailorKitProvider } from "@/lib/tailorkit-client";
+import { PatchsmithProvider } from "@/lib/patchsmith-client";
 
 export const Route = createRootRoute({
   shellComponent: RootDocument,
@@ -691,7 +691,7 @@ function RootDocument({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <TailorKitProvider>{children}</TailorKitProvider>
+        <PatchsmithProvider>{children}</PatchsmithProvider>
         <Scripts />
       </body>
     </html>
@@ -706,7 +706,7 @@ function RootDocument({ children }: { children: ReactNode }) {
 ```tsx app/root.tsx
 import type { ReactNode } from "react";
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
-import { TailorKitProvider } from "@/lib/tailorkit-client";
+import { PatchsmithProvider } from "@/lib/patchsmith-client";
 
 export function Layout({ children }: { children: ReactNode }) {
   return (
@@ -728,9 +728,9 @@ export function Layout({ children }: { children: ReactNode }) {
 
 export default function App() {
   return (
-    <TailorKitProvider>
+    <PatchsmithProvider>
       <Outlet />
-    </TailorKitProvider>
+    </PatchsmithProvider>
   );
 }
 ```
@@ -752,7 +752,7 @@ Use `useViewContext` to share page data with apps and `useViews` to find apps av
 "use client";
 
 import { useState } from "react";
-import { RenderSlot, useViews, useViewContext } from "@/lib/tailorkit-client";
+import { RenderSlot, useViews, useViewContext } from "@/lib/patchsmith-client";
 
 export default function Page() {
   const [selectedId, setSelectedId] = useState("");
@@ -807,7 +807,7 @@ export default function Page() {
 ```tsx src/routes/app-views.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { RenderSlot, useViews, useViewContext } from "@/lib/tailorkit-client";
+import { RenderSlot, useViews, useViewContext } from "@/lib/patchsmith-client";
 
 export const Route = createFileRoute("/app-views")({ component: Page });
 
@@ -863,7 +863,7 @@ function Page() {
 
 ```tsx app/routes/app-views.tsx
 import { useState } from "react";
-import { RenderSlot, useViews, useViewContext } from "@/lib/tailorkit-client";
+import { RenderSlot, useViews, useViewContext } from "@/lib/patchsmith-client";
 
 export default function Page() {
   const [selectedId, setSelectedId] = useState("");
@@ -921,14 +921,14 @@ export default function Page() {
 Start your host app, then check these endpoints at your configured host origin:
 
 ```txt
-GET /api/tailorkit/schema
-GET /api/tailorkit/meta
-GET /api/tailorkit/apps
+GET /api/patchsmith/schema
+GET /api/patchsmith/meta
+GET /api/patchsmith/apps
 ```
 
 The schema and metadata endpoints describe your public app contract. The apps endpoint requires a valid host session and returns the apps installed for the authenticated scopes. Each scope is named by the schema key, such as `user`.
 
-While signed in to your host, open `/app-views`. You should see either an app view or “No views available yet.” An unauthenticated request to `/api/tailorkit/apps` should be rejected.
+While signed in to your host, open `/app-views`. You should see either an app view or “No views available yet.” An unauthenticated request to `/api/patchsmith/apps` should be rejected.
 
 If the routes return 404, check the catch-all route and handler path. If the schema works but apps fail to load, check that `authenticate` returns a valid session and that the client points to the same origin as your host.
 

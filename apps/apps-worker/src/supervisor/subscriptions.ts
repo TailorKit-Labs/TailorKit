@@ -1,6 +1,6 @@
-import type { Invocation } from "@tailorkit/app/protocol";
-import type { Identity } from "@tailorkit/app/server";
-import { AppError } from "@tailorkit/app/server";
+import type { Invocation } from "@patchsmith/app/protocol";
+import type { Identity } from "@patchsmith/app/server";
+import { AppError } from "@patchsmith/app/server";
 import { Effect } from "effect";
 import type { Semaphore } from "effect";
 import { catch as catchEffect } from "effect/Effect";
@@ -225,7 +225,7 @@ export const createSubscriptions = <QueryError>(
       } satisfies SubscriptionSession);
       await arm();
       return new Response(null, {
-        headers: { "sec-websocket-protocol": "tailorkit" },
+        headers: { "sec-websocket-protocol": "patchsmith" },
         status: 101,
         webSocket: client,
       });

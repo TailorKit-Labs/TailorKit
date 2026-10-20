@@ -1,9 +1,9 @@
-import type { appAgent } from "@tailorkit/agent-fx/workflows";
-import { verifyAgentToken } from "@tailorkit/api-utils/agent-token";
-import { app } from "@tailorkit/db/schema/apps";
-import { organization } from "@tailorkit/db/schema/auth";
-import { cliToken } from "@tailorkit/db/schema/cli-auth";
-import { project } from "@tailorkit/db/schema/project";
+import type { appAgent } from "@patchsmith/agent-fx/workflows";
+import { verifyAgentToken } from "@patchsmith/api-utils/agent-token";
+import { app } from "@patchsmith/db/schema/apps";
+import { organization } from "@patchsmith/db/schema/auth";
+import { cliToken } from "@patchsmith/db/schema/cli-auth";
+import { project } from "@patchsmith/db/schema/project";
 import {
   afterEach,
   beforeEach,
@@ -42,22 +42,22 @@ const state = vi.hoisted(() => ({
     }>
   >(),
 }));
-vi.mock("@tailorkit/db", () => ({
+vi.mock("@patchsmith/db", () => ({
   get db() {
     return state.db;
   },
 }));
-vi.mock("@tailorkit/kv", () => ({ getKV: () => {} }));
-vi.mock("@tailorkit/agent-fx/workflows", () => ({
+vi.mock("@patchsmith/kv", () => ({ getKV: () => {} }));
+vi.mock("@patchsmith/agent-fx/workflows", () => ({
   appAgent: vi.fn(),
   cancelAppAgent: vi.fn(),
 }));
 vi.mock("workflow/api", () => ({ start: state.start }));
-vi.mock("@tailorkit/api-utils/dev-delay", () => ({
+vi.mock("@patchsmith/api-utils/dev-delay", () => ({
   devDelayMiddleware: async <TResult>({ next }: { next: () => TResult }) =>
     await next(),
 }));
-vi.mock("@tailorkit/api-utils/rate-limiting", () => ({
+vi.mock("@patchsmith/api-utils/rate-limiting", () => ({
   createRateLimiter: vi.fn(),
   ratelimitMiddleware:
     () =>
@@ -97,9 +97,9 @@ const request = (name: string, args: z.infer<ReturnType<typeof z.json>> = {}) =>
       "mcp-method": "tools/call",
       "mcp-name": name,
       "mcp-protocol-version": "2026-07-28",
-      "x-tailorkit-context": Buffer.from(
+      "x-patchsmith-context": Buffer.from(
         JSON.stringify({
-          hostUrl: "https://host.test/api/tailorkit",
+          hostUrl: "https://host.test/api/patchsmith",
           scopes: { org: scope.scope.value },
           subjectId: "user",
         })

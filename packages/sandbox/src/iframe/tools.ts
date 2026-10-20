@@ -1,5 +1,5 @@
-import type { ToolBridge } from "@tailorkit/app/client";
-import { parseSession } from "@tailorkit/app/client/connection";
+import type { ToolBridge } from "@patchsmith/app/client";
+import { parseSession } from "@patchsmith/app/client/connection";
 
 import type { HostToIframePayload } from "#protocol";
 

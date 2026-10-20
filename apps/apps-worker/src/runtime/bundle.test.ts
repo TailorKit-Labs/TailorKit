@@ -1,4 +1,4 @@
-import { defineServer, fn } from "@tailorkit/app/server";
+import { defineServer, fn } from "@patchsmith/app/server";
 import { expect, it, vi } from "vite-plus/test";
 
 import { createApplicationExecution } from "./bundle";
@@ -41,7 +41,7 @@ it.each([
         projectId: "p",
         scope: { name: "org", value: { id: "tenant" } },
         subjectId: "u",
-        toolUrl: "https://host.test/api/tailorkit/tools/execute",
+        toolUrl: "https://host.test/api/patchsmith/tools/execute",
       }
     ).value
   ).toBe("ready");

@@ -2,9 +2,9 @@ import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
-} from "@tailorkit/ui/input-group";
-import { Tabs, TabsList, TabsPanel, TabsTab } from "@tailorkit/ui/tabs";
-import { toastManager } from "@tailorkit/ui/toast";
+} from "@patchsmith/ui/input-group";
+import { Tabs, TabsList, TabsPanel, TabsTab } from "@patchsmith/ui/tabs";
+import { toastManager } from "@patchsmith/ui/toast";
 import {
   useMutation,
   useQuery,

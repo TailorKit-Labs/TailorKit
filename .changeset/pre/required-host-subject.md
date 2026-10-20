@@ -1,8 +1,8 @@
 ---
-"@tailorkit/app": minor
-"@tailorkit/core": minor
-"@tailorkit/sandbox": minor
-"@tailorkit/client-platform": minor
+"@patchsmith/app": minor
+"@patchsmith/core": minor
+"@patchsmith/sandbox": minor
+"@patchsmith/client-platform": minor
 ---
 
 Require a nonempty `subjectId` in authenticated host contexts, MCP transports, backend sessions, and signed app/tool credentials. App functions and host tools can now rely on `identity.subjectId` being a string.

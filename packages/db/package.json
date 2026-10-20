@@ -1,5 +1,5 @@
 {
-  "name": "@tailorkit/db",
+  "name": "@patchsmith/db",
   "version": "0.0.0",
   "private": true,
   "license": "BUSL-1.1",
@@ -38,7 +38,7 @@
     "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
-    "@tailorkit/env": "workspace:*",
+    "@patchsmith/env": "workspace:*",
     "dotenv": "catalog:",
     "drizzle-orm": "catalog:",
     "nanoid": "catalog:",
@@ -46,7 +46,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@tailorkit/config": "workspace:*",
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "@types/pg": "catalog:",
     "drizzle-kit": "catalog:",

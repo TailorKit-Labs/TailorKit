@@ -15,9 +15,9 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ApiAuthRouteImport } from './routes/api/auth'
 import { Route as IssuesIndexRouteImport } from './routes/issues.index'
 import { Route as IssuesIssueIdRouteImport } from './routes/issues.$issueId'
+import { Route as ApiPatchsmithSplatRouteImport } from './routes/api/patchsmith.$'
 import { Route as ApiPlaygroundTodoClientRouteImport } from './routes/api/playground/todo-client'
 import { Route as ApiPlaygroundTodosRouteImport } from './routes/api/playground/todos'
-import { Route as ApiTailorkitSplatRouteImport } from './routes/api/tailorkit.$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -49,6 +49,11 @@ const IssuesIssueIdRoute = IssuesIssueIdRouteImport.update({
   path: '/$issueId',
   getParentRoute: () => IssuesRoute,
 } as any)
+const ApiPatchsmithSplatRoute = ApiPatchsmithSplatRouteImport.update({
+  id: '/api/patchsmith/$',
+  path: '/api/patchsmith/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPlaygroundTodoClientRoute = ApiPlaygroundTodoClientRouteImport.update({
   id: '/api/playground/todo-client',
   path: '/api/playground/todo-client',
@@ -59,11 +64,6 @@ const ApiPlaygroundTodosRoute = ApiPlaygroundTodosRouteImport.update({
   path: '/api/playground/todos',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiTailorkitSplatRoute = ApiTailorkitSplatRouteImport.update({
-  id: '/api/tailorkit/$',
-  path: '/api/tailorkit/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -72,9 +72,9 @@ export interface FileRoutesByFullPath {
   '/api/auth': typeof ApiAuthRoute
   '/issues/$issueId': typeof IssuesIssueIdRoute
   '/issues/': typeof IssuesIndexRoute
+  '/api/patchsmith/$': typeof ApiPatchsmithSplatRoute
   '/api/playground/todo-client': typeof ApiPlaygroundTodoClientRoute
   '/api/playground/todos': typeof ApiPlaygroundTodosRoute
-  '/api/tailorkit/$': typeof ApiTailorkitSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -82,9 +82,9 @@ export interface FileRoutesByTo {
   '/api/auth': typeof ApiAuthRoute
   '/issues/$issueId': typeof IssuesIssueIdRoute
   '/issues': typeof IssuesIndexRoute
+  '/api/patchsmith/$': typeof ApiPatchsmithSplatRoute
   '/api/playground/todo-client': typeof ApiPlaygroundTodoClientRoute
   '/api/playground/todos': typeof ApiPlaygroundTodosRoute
-  '/api/tailorkit/$': typeof ApiTailorkitSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -94,9 +94,9 @@ export interface FileRoutesById {
   '/api/auth': typeof ApiAuthRoute
   '/issues/$issueId': typeof IssuesIssueIdRoute
   '/issues/': typeof IssuesIndexRoute
+  '/api/patchsmith/$': typeof ApiPatchsmithSplatRoute
   '/api/playground/todo-client': typeof ApiPlaygroundTodoClientRoute
   '/api/playground/todos': typeof ApiPlaygroundTodosRoute
-  '/api/tailorkit/$': typeof ApiTailorkitSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -107,9 +107,9 @@ export interface FileRouteTypes {
     | '/api/auth'
     | '/issues/$issueId'
     | '/issues/'
+    | '/api/patchsmith/$'
     | '/api/playground/todo-client'
     | '/api/playground/todos'
-    | '/api/tailorkit/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -117,9 +117,9 @@ export interface FileRouteTypes {
     | '/api/auth'
     | '/issues/$issueId'
     | '/issues'
+    | '/api/patchsmith/$'
     | '/api/playground/todo-client'
     | '/api/playground/todos'
-    | '/api/tailorkit/$'
   id:
     | '__root__'
     | '/'
@@ -128,9 +128,9 @@ export interface FileRouteTypes {
     | '/api/auth'
     | '/issues/$issueId'
     | '/issues/'
+    | '/api/patchsmith/$'
     | '/api/playground/todo-client'
     | '/api/playground/todos'
-    | '/api/tailorkit/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -138,9 +138,9 @@ export interface RootRouteChildren {
   IssuesRoute: typeof IssuesRouteWithChildren
   LoginRoute: typeof LoginRoute
   ApiAuthRoute: typeof ApiAuthRoute
+  ApiPatchsmithSplatRoute: typeof ApiPatchsmithSplatRoute
   ApiPlaygroundTodoClientRoute: typeof ApiPlaygroundTodoClientRoute
   ApiPlaygroundTodosRoute: typeof ApiPlaygroundTodosRoute
-  ApiTailorkitSplatRoute: typeof ApiTailorkitSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -187,6 +187,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IssuesIssueIdRouteImport
       parentRoute: typeof IssuesRoute
     }
+    '/api/patchsmith/$': {
+      id: '/api/patchsmith/$'
+      path: '/api/patchsmith/$'
+      fullPath: '/api/patchsmith/$'
+      preLoaderRoute: typeof ApiPatchsmithSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/playground/todo-client': {
       id: '/api/playground/todo-client'
       path: '/api/playground/todo-client'
@@ -199,13 +206,6 @@ declare module '@tanstack/react-router' {
       path: '/api/playground/todos'
       fullPath: '/api/playground/todos'
       preLoaderRoute: typeof ApiPlaygroundTodosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/tailorkit/$': {
-      id: '/api/tailorkit/$'
-      path: '/api/tailorkit/$'
-      fullPath: '/api/tailorkit/$'
-      preLoaderRoute: typeof ApiTailorkitSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -229,9 +229,9 @@ const rootRouteChildren: RootRouteChildren = {
   IssuesRoute: IssuesRouteWithChildren,
   LoginRoute: LoginRoute,
   ApiAuthRoute: ApiAuthRoute,
+  ApiPatchsmithSplatRoute: ApiPatchsmithSplatRoute,
   ApiPlaygroundTodoClientRoute: ApiPlaygroundTodoClientRoute,
   ApiPlaygroundTodosRoute: ApiPlaygroundTodosRoute,
-  ApiTailorkitSplatRoute: ApiTailorkitSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

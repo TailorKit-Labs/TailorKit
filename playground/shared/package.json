@@ -22,11 +22,11 @@
     "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
-    "@tailorkit/core": "workspace:*",
+    "@patchsmith/core": "workspace:*",
     "@valibot/to-json-schema": "^1.8.0",
     "arktype": "^2.2.8",
     "drizzle-orm": "catalog:",
-    "tailorkit": "workspace:*",
+    "patchsmith": "workspace:*",
     "valibot": "catalog:",
     "zod": "catalog:"
   },

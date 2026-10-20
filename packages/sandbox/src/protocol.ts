@@ -1,4 +1,4 @@
-import { sessionSchema } from "@tailorkit/app/protocol";
+import { sessionSchema } from "@patchsmith/app/protocol";
 import * as v from "valibot";
 
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>

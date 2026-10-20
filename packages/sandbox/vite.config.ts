@@ -14,7 +14,7 @@ export default defineConfig({
         protocol: resolve(import.meta.dirname, "src/protocol.ts"),
       },
       formats: ["es"],
-      name: "@tailorkit/sandbox",
+      name: "@patchsmith/sandbox",
     },
     rolldownOptions: {
       external: [],

@@ -1,8 +1,8 @@
-import type { ToolBridge } from "@tailorkit/app/client";
-import { AppError } from "@tailorkit/app/client/connection";
-import type { Session } from "@tailorkit/app/client/connection";
+import type { ToolBridge } from "@patchsmith/app/client";
+import { AppError } from "@patchsmith/app/client/connection";
+import type { Session } from "@patchsmith/app/client/connection";
 import * as v from "valibot";
-import iframeSource from "virtual:tailorkit-iframe";
+import iframeSource from "virtual:patchsmith-iframe";
 
 import { iframeReadyType, sandboxMessageType } from "#bridge";
 import type {
@@ -58,13 +58,13 @@ const toUrl = (value: string | URL): URL =>
 
 const createIframeDocument = (channel: string): string =>
   `<!doctype html>
-<html data-tailorkit-channel="${channel}">
+<html data-patchsmith-channel="${channel}">
   <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' data:; worker-src 'none'; connect-src http: https: ws: wss:; img-src 'none'; style-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'">
   </head>
   <body>
-    <div id="tailorkit-root"></div>
+    <div id="patchsmith-root"></div>
     <script>${iframeSource.replaceAll("</script", "<\\/script")}</script>
   </body>
 </html>`;
@@ -72,7 +72,7 @@ const createIframeDocument = (channel: string): string =>
 const configureIframe = (iframe: HTMLIFrameElement, channel: string): void => {
   iframe.hidden = true;
   iframe.tabIndex = -1;
-  iframe.title = "TailorKit extension sandbox";
+  iframe.title = "Patchsmith extension sandbox";
   iframe.setAttribute("aria-hidden", "true");
   iframe.setAttribute("referrerpolicy", "no-referrer");
   iframe.setAttribute("sandbox", "allow-scripts");
@@ -97,7 +97,7 @@ const fetchSource = async (
   const response = await fetchImplementation(url, { credentials: "omit" });
   if (!response.ok) {
     throw new Error(
-      `Unable to load TailorKit app client from ${url.toString()}.`
+      `Unable to load Patchsmith app client from ${url.toString()}.`
     );
   }
   return await response.text();
@@ -109,7 +109,7 @@ export const createIframeUiHost = (
 ): IframeUiHost => {
   if (typeof document === "undefined" || typeof window === "undefined") {
     throw new TypeError(
-      "TailorKit's iframe sandbox requires a browser environment."
+      "Patchsmith's iframe sandbox requires a browser environment."
     );
   }
 
@@ -321,14 +321,14 @@ export const createIframeUiHost = (
         return;
       }
       destroyed = true;
-      rejectCallbacks(new Error("TailorKit sandbox was destroyed."));
+      rejectCallbacks(new Error("Patchsmith sandbox was destroyed."));
       window.removeEventListener("message", handleMessage);
       iframe.remove();
     },
     dispatch: async (payload): Promise<CallbackResult["output"]> => {
       v.parse(HostToIframePayload, payload);
       if (destroyed) {
-        throw new Error("TailorKit sandbox was destroyed.");
+        throw new Error("Patchsmith sandbox was destroyed.");
       }
       const sendPayload = () => {
         if (iframeReady) {
@@ -353,7 +353,7 @@ export const createIframeUiHost = (
         if (queuedIndex !== -1) {
           queuedPayloads.splice(queuedIndex, 1);
         }
-        reject(new Error("TailorKit callback timed out."));
+        reject(new Error("Patchsmith callback timed out."));
       }, 30_000);
       callbackCalls.set(id, { reject, resolve, timer });
       try {

@@ -1,4 +1,4 @@
-import type { AppMigration } from "@tailorkit/app/protocol";
+import type { AppMigration } from "@patchsmith/app/protocol";
 
 import { AppError } from "../errors";
 import type { Persistence } from "./driver";
@@ -10,7 +10,7 @@ const require = <T>(value: T | null | undefined): T => {
   return value;
 };
 
-export type { AppMigration } from "@tailorkit/app/protocol";
+export type { AppMigration } from "@patchsmith/app/protocol";
 
 /** Runs synchronously during facet initialization, before database handlers are available. */
 export const migrateDatabase = (

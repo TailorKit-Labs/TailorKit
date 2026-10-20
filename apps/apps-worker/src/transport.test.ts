@@ -5,7 +5,7 @@ import {
   catchORPCErrorCode,
 } from "@orpc/experimental-effect";
 import { call, createRouterClient } from "@orpc/server";
-import type { PlatformClient } from "@tailorkit/app/protocol";
+import type { PlatformClient } from "@patchsmith/app/protocol";
 import { Effect } from "effect";
 import { expect, it, vi } from "vite-plus/test";
 
@@ -179,7 +179,7 @@ it("routes HTTP calls with shared client types, CORS and typed error statuses", 
       path: "/reports/annual.summary",
       slot: "page.links",
     },
-    name: "_tailorkit.instances.resolve",
+    name: "_patchsmith.instances.resolve",
   };
   expect(await client.actions(instances)).toBe("action");
   expect(operations.action).toHaveBeenCalledWith(

@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 
-import { hashSecret } from "@tailorkit/api-utils/hashing";
+import { hashSecret } from "@patchsmith/api-utils/hashing";
 
 import { env } from "#env";
 
@@ -14,7 +14,7 @@ export const createAgentStreamToken = (
     throw new Error("AUTH_SECRET is required for agent stream tokens.");
   }
   return hashSecret(
-    JSON.stringify(["tailorkit-agent-stream-v1", appId, threadId, runId]),
+    JSON.stringify(["patchsmith-agent-stream-v1", appId, threadId, runId]),
     env.AUTH_SECRET
   );
 };

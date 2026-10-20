@@ -39,14 +39,14 @@ export const buildProject = async (options: BuildProjectOptions) => {
         config.build?.ssr !== ""
       ),
     configResolved: (config) => {
-      if (!config.plugins.some((plugin) => plugin.name === "tailorkit")) {
+      if (!config.plugins.some((plugin) => plugin.name === "patchsmith")) {
         throw new Error(
-          "Add tailorkit() from tailorkit/vite to your vite.config.ts before deploying."
+          "Add patchsmith() from patchsmith/vite to your vite.config.ts before deploying."
         );
       }
       resolved = config;
     },
-    name: "tailorkit-deployment-output",
+    name: "patchsmith-deployment-output",
   };
   const buildOptions: BuildOptions = {
     watch: options.watch === true ? {} : null,

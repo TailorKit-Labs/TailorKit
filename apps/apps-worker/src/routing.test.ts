@@ -1,5 +1,5 @@
-import { AppError } from "@tailorkit/app/server";
-import { asyncFixture } from "@tailorkit/config/testing";
+import { AppError } from "@patchsmith/app/server";
+import { asyncFixture } from "@patchsmith/config/testing";
 import { Effect } from "effect";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import type { z } from "zod";
@@ -128,7 +128,7 @@ it("authenticates query WebSockets and preserves the protocol while normalizing 
   await call(
     new Request(`${rpc}/queries`, {
       headers: {
-        "sec-websocket-protocol": "tailorkit, jwt.session",
+        "sec-websocket-protocol": "patchsmith, jwt.session",
         upgrade: "websocket",
       },
     })

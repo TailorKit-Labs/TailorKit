@@ -7,6 +7,6 @@ export type {
   FetchStore,
 } from "./cache";
 export { createAppsStore } from "./apps";
-export type { TailorKitAppsSnapshot } from "./apps";
+export type { PatchsmithAppsSnapshot } from "./apps";
 export { createSlotStore } from "./slot";
 export type { SlotItem, SlotSnapshot, SlotStoreOptions } from "./slot";

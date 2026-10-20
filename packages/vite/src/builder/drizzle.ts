@@ -38,6 +38,6 @@ export const drizzleGenerateArguments = async (
     ];
   }
   throw new Error(
-    "Install drizzle-kit and drizzle-orm as dev dependencies, then run tailorkit db generate."
+    "Install drizzle-kit and drizzle-orm as dev dependencies, then run patchsmith db generate."
   );
 };

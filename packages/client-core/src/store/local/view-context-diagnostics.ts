@@ -1,4 +1,4 @@
-import type { Schema } from "@tailorkit/core/schema";
+import type { Schema } from "@patchsmith/core/schema";
 
 import type { ViewEntry } from "./view-context";
 
@@ -22,7 +22,7 @@ export const validateViewContext = (
   const { context, view } = entry;
   if (!schema) {
     return {
-      message: `TailorKit view "${view}" is not declared in the contract.`,
+      message: `Patchsmith view "${view}" is not declared in the contract.`,
     };
   }
   if (
@@ -30,7 +30,7 @@ export const validateViewContext = (
     (context === null || !isObjectValue(context) || Array.isArray(context))
   ) {
     return {
-      message: `TailorKit view "${view}" requires an object context that matches the view's schema.`,
+      message: `Patchsmith view "${view}" requires an object context that matches the view's schema.`,
     };
   }
   const classify = (
@@ -41,11 +41,11 @@ export const validateViewContext = (
     }
     return context === undefined
       ? {
-          message: `TailorKit view "${view}" is ready without its required context. Supply context or set loading: true while it is unavailable.`,
+          message: `Patchsmith view "${view}" is ready without its required context. Supply context or set loading: true while it is unavailable.`,
         }
       : {
           details: result.issues,
-          message: `TailorKit view "${view}" received context that does not match the view's schema.`,
+          message: `Patchsmith view "${view}" received context that does not match the view's schema.`,
         };
   };
   const result = schema["~standard"].validate(context);

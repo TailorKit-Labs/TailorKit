@@ -1,9 +1,9 @@
-import type { ViewInstance } from "@tailorkit/app/client";
-import type { SlotDefinitions, ViewDefinition } from "@tailorkit/core/schema";
-import type { ActiveView, ViewStatus } from "@tailorkit/core/views";
+import type { ViewInstance } from "@patchsmith/app/client";
+import type { SlotDefinitions, ViewDefinition } from "@patchsmith/core/schema";
+import type { ActiveView, ViewStatus } from "@patchsmith/core/views";
 
 import type { ViewContext, ViewName } from "#store/local/view-context-types";
-import type { TailorKitApp } from "#types";
+import type { PatchsmithApp } from "#types";
 
 type DefaultViews = Record<`/${string}`, ViewDefinition>;
 type ContextPaths<
@@ -33,7 +33,7 @@ export type RenderSlotContext<
   : never;
 
 export interface RuntimeRenderSlotProps {
-  app: TailorKitApp;
+  app: PatchsmithApp;
   /** The host slot to render in. */
   slot: string;
   /** Select an instance of the matching view. */
@@ -51,7 +51,7 @@ type InstanceProps<TSlot, TKey extends string, TValue> = boolean extends (
 export type RenderSlotProps<TSlots extends SlotDefinitions = SlotDefinitions> =
   {
     [TSlot in keyof TSlots & string]: {
-      app: TailorKitApp;
+      app: PatchsmithApp;
       slot: TSlot;
     } & InstanceProps<TSlots[TSlot], "instanceKey", string>;
   }[keyof TSlots & string];
@@ -62,7 +62,7 @@ export type ControlledRenderSlotProps<
 > = {
   [TSlot in keyof TSlots & string]: {
     [TView in Extract<ViewName<TViews>, TSlots[TSlot]["views"][number]>]: {
-      app: TailorKitApp;
+      app: PatchsmithApp;
       slot: TSlot;
       view: TView;
     } & (

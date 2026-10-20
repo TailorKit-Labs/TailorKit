@@ -1,4 +1,4 @@
-# @tailorkit/app
+# @patchsmith/app
 
 ## 0.1.0-beta.52
 
@@ -6,11 +6,11 @@
 
 - 1fa87fe: Remove legacy session and CLI credential shapes. App sessions now require complete identity metadata, including `identity.subjectId` and `identity.toolUrl`; remove the duplicate top-level subject from host responses and the duplicate top-level tool URL from platform responses. The host forwards the platform session without synthesizing a subject. Share the session validator with the iframe protocol so complete authenticated sessions reach sandboxed apps.
 
-  Custom session providers must return `{ expiresAt, identity, token, url }` with a complete identity. Stored CLI credentials must contain a named scope; delete obsolete entries from `~/.tailorkit/auth.json` and log in again to replace flat-scope or scopeless credentials.
+  Custom session providers must return `{ expiresAt, identity, token, url }` with a complete identity. Stored CLI credentials must contain a named scope; delete obsolete entries from `~/.patchsmith/auth.json` and log in again to replace flat-scope or scopeless credentials.
 
 ### Patch Changes
 
-- @tailorkit/app-db@0.1.0-beta.52
+- @patchsmith/app-db@0.1.0-beta.52
 
 ## 0.1.0-beta.51
 
@@ -24,7 +24,7 @@
 
 ### Patch Changes
 
-- @tailorkit/app-db@0.1.0-beta.51
+- @patchsmith/app-db@0.1.0-beta.51
 
 ## 0.1.0-beta.50
 
@@ -34,13 +34,13 @@
 
 ### Patch Changes
 
-- @tailorkit/app-db@0.1.0-beta.50
+- @patchsmith/app-db@0.1.0-beta.50
 
 ## 0.1.0-beta.49
 
 ### Patch Changes
 
-- @tailorkit/app-db@0.1.0-beta.49
+- @patchsmith/app-db@0.1.0-beta.49
 
 ## 0.1.0-beta.48
 
@@ -54,26 +54,26 @@
 
 ### Patch Changes
 
-- @tailorkit/app-db@0.1.0-beta.48
+- @patchsmith/app-db@0.1.0-beta.48
 
 ## 0.1.0-beta.47
 
 ### Patch Changes
 
-- @tailorkit/app-db@0.1.0-beta.47
+- @patchsmith/app-db@0.1.0-beta.47
 
 ## 0.1.0-beta.46
 
 ### Minor Changes
 
-- 20947c7: Move the app database API into the new `@tailorkit/app-db` package, exposed through `tailorkit/db`. Import `defineDatabase`, table and column builders, query helpers, and database types from `tailorkit/db` instead of `tailorkit/server`.
+- 20947c7: Move the app database API into the new `@patchsmith/app-db` package, exposed through `patchsmith/db`. Import `defineDatabase`, table and column builders, query helpers, and database types from `patchsmith/db` instead of `patchsmith/server`.
 
-  Use TailorKit's `defineRelations` from `tailorkit/db` instead of importing it directly from `drizzle-orm`. New apps scaffold these imports automatically. Existing relation callbacks keep the same typed one/many navigation syntax.
+  Use Patchsmith's `defineRelations` from `patchsmith/db` instead of importing it directly from `drizzle-orm`. New apps scaffold these imports automatically. Existing relation callbacks keep the same typed one/many navigation syntax.
 
 ### Patch Changes
 
 - Updated dependencies [20947c7]
-  - @tailorkit/app-db@0.1.0-beta.46
+  - @patchsmith/app-db@0.1.0-beta.46
 
 ## 0.1.0-beta.45
 
@@ -84,13 +84,13 @@ No changes in this release.
 ### Patch Changes
 
 - Restore the 0.x beta release line after the accidental 1.0.0-beta.44 release. This release includes the app slug and validation changes from that release; use 0.1.0-beta.44 instead of 1.0.0-beta.44.
-- 1fb0155: Use Valibot for internal validation to reduce TailorKit bundle sizes. Accept user-provided Standard Schema validators for app functions and view instance data, preserving input/output inference and Zod primitive exports.
+- 1fb0155: Use Valibot for internal validation to reduce Patchsmith bundle sizes. Accept user-provided Standard Schema validators for app functions and view instance data, preserving input/output inference and Zod primitive exports.
 
 ## 1.0.0-beta.44
 
 ### Patch Changes
 
-- 1fb0155: Use Valibot for internal validation to reduce TailorKit bundle sizes. Accept user-provided Standard Schema validators for app functions and view instance data, preserving input/output inference and Zod primitive exports.
+- 1fb0155: Use Valibot for internal validation to reduce Patchsmith bundle sizes. Accept user-provided Standard Schema validators for app functions and view instance data, preserving input/output inference and Zod primitive exports.
 
 ## 0.1.0-beta.43
 
@@ -152,13 +152,13 @@ No changes in this release.
 
 ### Minor Changes
 
-- 29f3e30: Move the complete build pipeline and configuration loading into `@tailorkit/vite`. Build TailorKit apps with the public `tailorkit()` plugin from `tailorkit/vite`. Init now offers Vite+ (recommended, with linting, formatting and testing) or Vite (build only), with one `vite.config.ts` for app tooling. Deploy builds using the app's Vite configuration and installation.
+- 29f3e30: Move the complete build pipeline and configuration loading into `@patchsmith/vite`. Build Patchsmith apps with the public `patchsmith()` plugin from `patchsmith/vite`. Init now offers Vite+ (recommended, with linting, formatting and testing) or Vite (build only), with one `vite.config.ts` for app tooling. Deploy builds using the app's Vite configuration and installation.
 
-  Remove `tailorkit build`, `buildApp()`, the init lint/format flags, and build settings in `tailorkit.config.ts`. Set `build.outDir` in `vite.config.ts` instead.
+  Remove `patchsmith build`, `buildApp()`, the init lint/format flags, and build settings in `patchsmith.config.ts`. Set `build.outDir` in `vite.config.ts` instead.
 
 ### Patch Changes
 
-- f8dce5d: Rename the app function builder export from `tk` to `fn` and update generated apps to use it from `tailorkit/server`.
+- f8dce5d: Rename the app function builder export from `tk` to `fn` and update generated apps to use it from `patchsmith/server`.
 
 ## 0.1.0-beta.29
 
@@ -186,7 +186,7 @@ No changes in this release.
 
 - 441a5a9: Rename `Slot` to `RenderSlot` (including client-bound `RenderSlot.Controlled`) and replace its `name` prop with `slot`. Rename the public types to `RenderSlotProps`, `ControlledRenderSlotProps`, `RuntimeRenderSlotProps`, `RenderSlotContext`, and `RenderSlotComponent`.
 
-  Remove the standalone `Root` provider and its DOM/render props. Return a client-bound `Provider` from `createTailorKitClient`, accepting only `children` and `apps`, with the client supplied internally. Export it as `Provider: TailorKitProvider` alongside the hooks and `RenderSlot`, and wrap host components in `<TailorKitProvider>`. Export `TailorKitProviderProps` for the bound provider.
+  Remove the standalone `Root` provider and its DOM/render props. Return a client-bound `Provider` from `createPatchsmithClient`, accepting only `children` and `apps`, with the client supplied internally. Export it as `Provider: PatchsmithProvider` alongside the hooks and `RenderSlot`, and wrap host components in `<PatchsmithProvider>`. Export `PatchsmithProviderProps` for the bound provider.
 
 ## 0.1.0-beta.24
 
@@ -246,7 +246,7 @@ No changes in this release.
 
 ### Minor Changes
 
-- fa05f02: Add colocated `createView` instance resolvers with a validated data schema and automatic, typed access to registered server queries. The app build uses Oxc to extract resolvers and their dependencies into generated server actions through `_tailorkit.instances.resolve`, addressed by slot and view path, keeping their implementations out of browser bundles. Hosts discover instance support through `instances: true` in deployment and preview view manifests.
+- fa05f02: Add colocated `createView` instance resolvers with a validated data schema and automatic, typed access to registered server queries. The app build uses Oxc to extract resolvers and their dependencies into generated server actions through `_patchsmith.instances.resolve`, addressed by slot and view path, keeping their implementations out of browser bundles. Hosts discover instance support through `instances: true` in deployment and preview view manifests.
 - fa05f02: Render dynamic view instances with `Slot instanceKey` or an explicit `Slot.Controlled instance`. Pass the selected instance through the sandbox and expose its validated data through the typed `view.useInstance()` hook. Handle pending requests, resolver errors, and missing keys, and reset view component state when the selected key changes.
 - fa05f02: Add client-bound useViews with scopes, appIds, and slot filters. App builds and deployments include view manifests, including preview builds. useApps and useViews share one authenticated app request and filter locally; useApps also accepts appIds. Apps without a view manifest must be redeployed to appear in useViews.
 
@@ -259,25 +259,25 @@ No changes in this release.
 
 ### Patch Changes
 
-- fc9538d: Allow the agent command to search existing apps or create a new app when appId is omitted, then save the chosen app ID in the TailorKit config for future launches.
+- fc9538d: Allow the agent command to search existing apps or create a new app when appId is omitted, then save the chosen app ID in the Patchsmith config for future launches.
 
 ## 0.1.0-beta.17
 
 ### Patch Changes
 
-- 364d5cd: Document TailorKitConfig options and their defaults in editor tooltips, and generate new app configs with only the host URL so the backend is enabled explicitly.
+- 364d5cd: Document PatchsmithConfig options and their defaults in editor tooltips, and generate new app configs with only the host URL so the backend is enabled explicitly.
 
 ## 0.1.0-beta.16
 
 ### Minor Changes
 
-- b5c6afc: Consolidate the app SDK in @tailorkit/app and expose app client APIs through tailorkit/client and server APIs through tailorkit/server. Provide SQLite schema builders, synchronous Zod-validated queries/mutations, asynchronous external actions, atomic mutation receipts and typed browser references. Use oRPC v2 HTTP for direct sandbox calls and WebSockets for server-driven query snapshots; the bridge supplies scoped platform JWTs and renews authentication. Execute queries, mutations and actions in one private Cloudflare facet, with an ALS-backed fetch guard and local action query/mutation calls and scoped capabilities for HTTPS egress. Keep synchronous database transactions atomic. Actions do not retry automatically or hold database transactions across external work. Track table dependencies and rerun only active affected queries after commit.
+- b5c6afc: Consolidate the app SDK in @patchsmith/app and expose app client APIs through patchsmith/client and server APIs through patchsmith/server. Provide SQLite schema builders, synchronous Zod-validated queries/mutations, asynchronous external actions, atomic mutation receipts and typed browser references. Use oRPC v2 HTTP for direct sandbox calls and WebSockets for server-driven query snapshots; the bridge supplies scoped platform JWTs and renews authentication. Execute queries, mutations and actions in one private Cloudflare facet, with an ALS-backed fetch guard and local action query/mutation calls and scoped capabilities for HTTPS egress. Keep synchronous database transactions atomic. Actions do not retry automatically or hold database transactions across external work. Track table dependencies and rerun only active affected queries after commit.
 
-  Upload client and private server bundles with committed Drizzle migrations to separate blob prefixes and load published code into isolated Dynamic Worker SQLite facets through apps/apps-worker. Keep stable installation databases across deployments, trusted Effect v4 coordination, and client-only app compatibility. Store migration sources in migrations/ and copy them to .tailorkit/migrations/. Generate migrations explicitly through tailorkit db generate using Drizzle Kit and the existing TailorKit config, without a separate Drizzle config; builds check the current schema against the latest saved snapshot without rewriting history. Apply pending migrations atomically to each installation before database calls.
+  Upload client and private server bundles with committed Drizzle migrations to separate blob prefixes and load published code into isolated Dynamic Worker SQLite facets through apps/apps-worker. Keep stable installation databases across deployments, trusted Effect v4 coordination, and client-only app compatibility. Store migration sources in migrations/ and copy them to .patchsmith/migrations/. Generate migrations explicitly through patchsmith db generate using Drizzle Kit and the existing Patchsmith config, without a separate Drizzle config; builds check the current schema against the latest saved snapshot without rewriting history. Apply pending migrations atomically to each installation before database calls.
 
-  Retire the legacy app-storage SDK, app-platform package, storage CLI commands and bridged database calls. Keep the Apache-2.0 oRPC contract in @tailorkit/app/protocol and execution in the private BUSL-1.1 apps-worker worker. Share private app JWT signing/verification through @tailorkit/api-utils/app-auth, and expose host authorization through backend.resolveInstallation and /backend/session. Effect stays in server auth and trusted runtime code, outside browser entry points.
+  Retire the legacy app-storage SDK, app-platform package, storage CLI commands and bridged database calls. Keep the Apache-2.0 oRPC contract in @patchsmith/app/protocol and execution in the private BUSL-1.1 apps-worker worker. Share private app JWT signing/verification through @patchsmith/api-utils/app-auth, and expose host authorization through backend.resolveInstallation and /backend/session. Effect stays in server auth and trusted runtime code, outside browser entry points.
 
-  Support client.entry and server.entry in tailorkit.config.ts, defaulting to src/client.ts and src/server.ts. Build, deployment type checks, browser/server isolation and API type imports follow the configured entries.
+  Support client.entry and server.entry in patchsmith.config.ts, defaulting to src/client.ts and src/server.ts. Build, deployment type checks, browser/server isolation and API type imports follow the configured entries.
 
   Share duplicate reactive queries with TanStack Store and retry transient mutation failures with stable receipt IDs. Inline dynamic server imports into one upload, typecheck both app entries, preserve session error codes through the iframe bridge, and mount opaque-origin sandboxes without waiting for backend authentication. Cache published deployment metadata in Cloudflare KV, update it through an authenticated platform-to-worker endpoint, and populate cache misses through the platform API. Existing clients reconnect to the latest server without remounting; deployments must maintain client compatibility.
 
@@ -287,40 +287,40 @@ No changes in this release.
 
 ### Patch Changes
 
-- @tailorkit/core@0.1.0-beta.15
+- @patchsmith/core@0.1.0-beta.15
 
 ## 0.1.0-beta.14
 
 ### Patch Changes
 
 - Updated dependencies [e06e450]
-  - @tailorkit/core@0.1.0-beta.14
+  - @patchsmith/core@0.1.0-beta.14
 
 ## 0.1.0-beta.13
 
 ### Patch Changes
 
 - Updated dependencies [061adb2]
-  - @tailorkit/core@0.1.0-beta.13
+  - @patchsmith/core@0.1.0-beta.13
 
 ## 0.1.0-beta.12
 
 ### Patch Changes
 
-- @tailorkit/core@0.1.0-beta.12
+- @patchsmith/core@0.1.0-beta.12
 
 ## 0.1.0-beta.11
 
 ### Patch Changes
 
-- @tailorkit/core@0.1.0-beta.11
+- @patchsmith/core@0.1.0-beta.11
 
 ## 0.1.0-beta.10
 
 ### Patch Changes
 
 - Updated dependencies [a0d3233]
-  - @tailorkit/core@0.1.0-beta.10
+  - @patchsmith/core@0.1.0-beta.10
 
 ## 0.1.0-beta.9
 
@@ -339,7 +339,7 @@ No changes in this release.
 ### Patch Changes
 
 - Updated dependencies [ced9f2f]
-  - @tailorkit/core@0.1.0-beta.9
+  - @patchsmith/core@0.1.0-beta.9
 
 ## 0.1.0-beta.8
 
@@ -349,7 +349,7 @@ No changes in this release.
 
 ### Patch Changes
 
-- @tailorkit/core@0.1.0-beta.8
+- @patchsmith/core@0.1.0-beta.8
 
 ## 0.1.0-beta.7
 
@@ -357,20 +357,20 @@ No changes in this release.
 
 - 2e7b3a4: Add optional light and dark app logos to the deployment pipeline, including validated SVG, PNG, and WebP uploads, hosted logo URLs, and a 1 MiB combined client asset limit.
 - Updated dependencies [2e7b3a4]
-  - @tailorkit/core@0.1.0-beta.7
+  - @patchsmith/core@0.1.0-beta.7
 
 ## 0.1.0-beta.6
 
 ### Patch Changes
 
-- @tailorkit/core@0.1.0-beta.6
+- @patchsmith/core@0.1.0-beta.6
 
 ## 0.1.0-beta.5
 
 ### Patch Changes
 
 - Updated dependencies [695cdad]
-  - @tailorkit/core@0.1.0-beta.5
+  - @patchsmith/core@0.1.0-beta.5
 
 ## 0.1.0-beta.4
 
@@ -378,40 +378,40 @@ No changes in this release.
 
 - 324b281: Resolve public packages to compiled distribution files in both development and production, without custom source export conditions.
 
-  Remove stale source aliases and declaration maps that reference unpublished source files. Generate apps with a single tailorkit dependency and its app subpath exports.
+  Remove stale source aliases and declaration maps that reference unpublished source files. Generate apps with a single patchsmith dependency and its app subpath exports.
 
 - Updated dependencies [324b281]
-  - @tailorkit/core@0.1.0-beta.4
+  - @patchsmith/core@0.1.0-beta.4
 
 ## 0.1.0-beta.3
 
 ### Patch Changes
 
-- a02ebee: Include development export targets in published packages so Vite consumers do not need custom resolution conditions. Expose app authoring from `tailorkit/app` and `tailorkit/app/config`.
+- a02ebee: Include development export targets in published packages so Vite consumers do not need custom resolution conditions. Expose app authoring from `patchsmith/app` and `patchsmith/app/config`.
 - Updated dependencies [a02ebee]
-  - @tailorkit/core@0.1.0-beta.3
+  - @patchsmith/core@0.1.0-beta.3
 
 ## 0.1.0-beta.2
 
 ### Patch Changes
 
 - Updated dependencies [586cc14]
-  - @tailorkit/core@0.1.0-beta.2
+  - @patchsmith/core@0.1.0-beta.2
 
 ## 0.1.0-beta.1
 
 ### Patch Changes
 
 - Updated dependencies [c0bdd68]
-  - @tailorkit/core@0.1.0-beta.1
+  - @patchsmith/core@0.1.0-beta.1
 
 ## 0.1.0-beta.0
 
 ### Minor Changes
 
-- 4230689: Publish the initial TailorKit beta packages.
+- 4230689: Publish the initial Patchsmith beta packages.
 
 ### Patch Changes
 
 - Updated dependencies [4230689]
-  - @tailorkit/core@0.1.0-beta.0
+  - @patchsmith/core@0.1.0-beta.0

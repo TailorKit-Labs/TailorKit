@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 
 import { PGlite } from "@electric-sql/pglite";
-import { appSlugSchema } from "@tailorkit/db/schema/apps";
+import { appSlugSchema } from "@patchsmith/db/schema/apps";
 import { expect, it } from "vite-plus/test";
 
 import { forEachSequential } from "#for-each-sequential";

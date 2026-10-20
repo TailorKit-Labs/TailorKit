@@ -358,16 +358,16 @@ importers:
       '@standard-server/peer':
         specifier: 0.10.2
         version: 0.10.2
-      '@tailorkit/api-utils':
+      '@patchsmith/api-utils':
         specifier: workspace:*
         version: link:../../packages/api-utils
-      '@tailorkit/app':
+      '@patchsmith/app':
         specifier: workspace:*
         version: link:../../packages/app
-      '@tailorkit/app-db':
+      '@patchsmith/app-db':
         specifier: workspace:*
         version: link:../../packages/app-db
-      '@tailorkit/asset-delivery':
+      '@patchsmith/asset-delivery':
         specifier: workspace:*
         version: link:../../packages/asset-delivery
       drizzle-orm:
@@ -383,7 +383,7 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@types/node':
@@ -428,46 +428,46 @@ importers:
       '@orpc/tanstack-query':
         specifier: 'catalog:'
         version: 2.0.0-beta.40(@tanstack/query-core@5.104.1)(crossws@0.4.15(srvx@1.0.4))
-      '@tailorkit/agent':
+      '@patchsmith/agent':
         specifier: workspace:*
         version: link:../../packages/agent
-      '@tailorkit/agent-fx':
+      '@patchsmith/agent-fx':
         specifier: workspace:*
         version: link:../../packages/agent-fx
-      '@tailorkit/api':
+      '@patchsmith/api':
         specifier: workspace:*
         version: link:../../packages/api
-      '@tailorkit/api-platform':
+      '@patchsmith/api-platform':
         specifier: workspace:*
         version: link:../../packages/api-platform
-      '@tailorkit/api-utils':
+      '@patchsmith/api-utils':
         specifier: workspace:*
         version: link:../../packages/api-utils
-      '@tailorkit/asset-delivery':
+      '@patchsmith/asset-delivery':
         specifier: workspace:*
         version: link:../../packages/asset-delivery
-      '@tailorkit/auth':
+      '@patchsmith/auth':
         specifier: workspace:*
         version: link:../../packages/auth
-      '@tailorkit/db':
+      '@patchsmith/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@tailorkit/env':
+      '@patchsmith/env':
         specifier: workspace:*
         version: link:../../packages/env
-      '@tailorkit/flags':
+      '@patchsmith/flags':
         specifier: workspace:*
         version: link:../../packages/flags
-      '@tailorkit/kv':
+      '@patchsmith/kv':
         specifier: workspace:*
         version: link:../../packages/kv
-      '@tailorkit/observability':
+      '@patchsmith/observability':
         specifier: workspace:*
         version: link:../../packages/observability
-      '@tailorkit/storage':
+      '@patchsmith/storage':
         specifier: workspace:*
         version: link:../../packages/storage
-      '@tailorkit/ui':
+      '@patchsmith/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       '@tailwindcss/vite':
@@ -546,7 +546,7 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@tanstack/react-query-devtools':
@@ -597,13 +597,13 @@ importers:
       '@modelcontextprotocol/server':
         specifier: 2.3.1
         version: 2.3.1
-      '@tailorkit/db':
+      '@patchsmith/db':
         specifier: workspace:*
         version: link:../db
-      '@tailorkit/env':
+      '@patchsmith/env':
         specifier: workspace:*
         version: link:../env
-      '@tailorkit/vite':
+      '@patchsmith/vite':
         specifier: workspace:*
         version: link:../vite
       '@vercel/oidc':
@@ -634,7 +634,7 @@ importers:
       '@modelcontextprotocol/client':
         specifier: 2.3.1
         version: 2.3.1
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -661,10 +661,10 @@ importers:
       '@ai-sdk/workflow-harness':
         specifier: 1.0.154
         version: 1.0.154(workflow@5.2.0(@aws-sdk/credential-provider-web-identity@3.972.79)(@nestjs/common@12.1.2(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@12.1.2(@nestjs/common@12.1.2(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))(@opentelemetry/api@1.9.1)(@swc/cli@0.8.1(@swc/core@1.15.3(@swc/helpers@0.5.23))(chokidar@5.0.0)(supports-color@10.2.2))(@swc/core@1.15.3(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)(magicast@0.5.5)(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(supports-color@10.2.2)(typescript@7.0.2)(ws@8.22.0))(ws@8.22.0)(zod@4.6.5)
-      '@tailorkit/db':
+      '@patchsmith/db':
         specifier: workspace:*
         version: link:../db
-      '@tailorkit/env':
+      '@patchsmith/env':
         specifier: workspace:*
         version: link:../env
       '@vercel/oidc':
@@ -686,7 +686,7 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -704,7 +704,7 @@ importers:
       '@modelcontextprotocol/client':
         specifier: 2.3.1
         version: 2.3.1
-      '@tailorkit/core':
+      '@patchsmith/core':
         specifier: workspace:*
         version: link:../core
       '@valibot/to-json-schema':
@@ -717,7 +717,7 @@ importers:
       '@modelcontextprotocol/server':
         specifier: 2.3.1
         version: 2.3.1
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -738,28 +738,28 @@ importers:
       '@orpc/server':
         specifier: 'catalog:'
         version: 2.0.0-beta.40(crossws@0.4.15(srvx@0.11.22))
-      '@tailorkit/agent':
+      '@patchsmith/agent':
         specifier: workspace:*
         version: link:../agent
-      '@tailorkit/api-utils':
+      '@patchsmith/api-utils':
         specifier: workspace:*
         version: link:../api-utils
-      '@tailorkit/auth':
+      '@patchsmith/auth':
         specifier: workspace:*
         version: link:../auth
-      '@tailorkit/db':
+      '@patchsmith/db':
         specifier: workspace:*
         version: link:../db
-      '@tailorkit/env':
+      '@patchsmith/env':
         specifier: workspace:*
         version: link:../env
-      '@tailorkit/flags':
+      '@patchsmith/flags':
         specifier: workspace:*
         version: link:../flags
-      '@tailorkit/kv':
+      '@patchsmith/kv':
         specifier: workspace:*
         version: link:../kv
-      '@tailorkit/observability':
+      '@patchsmith/observability':
         specifier: workspace:*
         version: link:../observability
       '@vercel/functions':
@@ -778,7 +778,7 @@ importers:
       '@electric-sql/pglite':
         specifier: 0.5.8
         version: 0.5.8
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -799,37 +799,37 @@ importers:
       '@orpc/zod':
         specifier: 'catalog:'
         version: 2.0.0-beta.40(crossws@0.4.15(srvx@0.11.22))(zod@4.6.5)
-      '@tailorkit/agent':
+      '@patchsmith/agent':
         specifier: workspace:*
         version: link:../agent
-      '@tailorkit/agent-fx':
+      '@patchsmith/agent-fx':
         specifier: workspace:*
         version: link:../agent-fx
-      '@tailorkit/api-utils':
+      '@patchsmith/api-utils':
         specifier: workspace:*
         version: link:../api-utils
-      '@tailorkit/app':
+      '@patchsmith/app':
         specifier: workspace:*
         version: link:../app
-      '@tailorkit/asset-delivery':
+      '@patchsmith/asset-delivery':
         specifier: workspace:*
         version: link:../asset-delivery
-      '@tailorkit/auth':
+      '@patchsmith/auth':
         specifier: workspace:*
         version: link:../auth
-      '@tailorkit/db':
+      '@patchsmith/db':
         specifier: workspace:*
         version: link:../db
-      '@tailorkit/env':
+      '@patchsmith/env':
         specifier: workspace:*
         version: link:../env
-      '@tailorkit/kv':
+      '@patchsmith/kv':
         specifier: workspace:*
         version: link:../kv
-      '@tailorkit/observability':
+      '@patchsmith/observability':
         specifier: workspace:*
         version: link:../observability
-      '@tailorkit/storage':
+      '@patchsmith/storage':
         specifier: workspace:*
         version: link:../storage
       ai:
@@ -854,7 +854,7 @@ importers:
       '@modelcontextprotocol/client':
         specifier: 2.3.1
         version: 2.3.1
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -875,16 +875,16 @@ importers:
       '@orpc/server':
         specifier: 'catalog:'
         version: 2.0.0-beta.40(crossws@0.4.15(srvx@0.11.22))
-      '@tailorkit/app':
+      '@patchsmith/app':
         specifier: workspace:*
         version: link:../app
-      '@tailorkit/env':
+      '@patchsmith/env':
         specifier: workspace:*
         version: link:../env
-      '@tailorkit/kv':
+      '@patchsmith/kv':
         specifier: workspace:*
         version: link:../kv
-      '@tailorkit/observability':
+      '@patchsmith/observability':
         specifier: workspace:*
         version: link:../observability
       '@upstash/ratelimit':
@@ -903,7 +903,7 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -927,7 +927,7 @@ importers:
       '@standard-schema/spec':
         specifier: ^1.1.0
         version: 1.1.0
-      '@tailorkit/app-db':
+      '@patchsmith/app-db':
         specifier: workspace:*
         version: link:../app-db
       nanostores:
@@ -937,7 +937,7 @@ importers:
         specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
     devDependencies:
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -968,7 +968,7 @@ importers:
         specifier: 'catalog:'
         version: 1.0.0-rc.4-5d5b77c(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(@upstash/redis@1.39.0)(arktype@2.2.7)(effect@4.0.2)(pg@8.23.1)(typebox@1.3.36)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5)
     devDependencies:
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -987,7 +987,7 @@ importers:
         specifier: 'catalog:'
         version: 4.0.2
     devDependencies:
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -1017,19 +1017,19 @@ importers:
       '@simplewebauthn/server':
         specifier: ^13.3.1
         version: 13.3.3
-      '@tailorkit/db':
+      '@patchsmith/db':
         specifier: workspace:*
         version: link:../db
-      '@tailorkit/email':
+      '@patchsmith/email':
         specifier: workspace:*
         version: link:../email
-      '@tailorkit/env':
+      '@patchsmith/env':
         specifier: workspace:*
         version: link:../env
-      '@tailorkit/kv':
+      '@patchsmith/kv':
         specifier: workspace:*
         version: link:../kv
-      '@tailorkit/observability':
+      '@patchsmith/observability':
         specifier: workspace:*
         version: link:../observability
       '@vercel/functions':
@@ -1051,7 +1051,7 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -1075,13 +1075,13 @@ importers:
       '@orpc/client':
         specifier: 'catalog:'
         version: 2.0.0-beta.40
-      '@tailorkit/client-platform':
+      '@patchsmith/client-platform':
         specifier: workspace:*
         version: link:../client-platform
-      '@tailorkit/core':
+      '@patchsmith/core':
         specifier: workspace:*
         version: link:../core
-      '@tailorkit/vite':
+      '@patchsmith/vite':
         specifier: workspace:*
         version: link:../vite
       ai:
@@ -1109,10 +1109,10 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@tailorkit/app':
+      '@patchsmith/app':
         specifier: workspace:*
         version: link:../app
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -1133,13 +1133,13 @@ importers:
       '@nanostores/async':
         specifier: 0.1.0
         version: 0.1.0(nanostores@1.5.4)
-      '@tailorkit/app':
+      '@patchsmith/app':
         specifier: workspace:*
         version: link:../app
-      '@tailorkit/core':
+      '@patchsmith/core':
         specifier: workspace:*
         version: link:../core
-      '@tailorkit/sandbox':
+      '@patchsmith/sandbox':
         specifier: workspace:*
         version: link:../sandbox
       nanostores:
@@ -1149,7 +1149,7 @@ importers:
         specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
     devDependencies:
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -1180,10 +1180,10 @@ importers:
       '@hey-api/openapi-ts':
         specifier: next
         version: 0.0.0-next-20260930190945(magicast@0.5.5)
-      '@tailorkit/api-platform':
+      '@patchsmith/api-platform':
         specifier: workspace:*
         version: link:../api-platform
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -1222,7 +1222,7 @@ importers:
       '@standard-schema/spec':
         specifier: ^1.1.0
         version: 1.1.0
-      '@tailorkit/client-platform':
+      '@patchsmith/client-platform':
         specifier: workspace:*
         version: link:../client-platform
       valibot:
@@ -1232,7 +1232,7 @@ importers:
       '@orpc/openapi':
         specifier: 'catalog:'
         version: 2.0.0-beta.40(crossws@0.4.15(srvx@0.11.22))
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -1262,7 +1262,7 @@ importers:
 
   packages/db:
     dependencies:
-      '@tailorkit/env':
+      '@patchsmith/env':
         specifier: workspace:*
         version: link:../env
       dotenv:
@@ -1281,7 +1281,7 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -1305,10 +1305,10 @@ importers:
       '@react-email/render':
         specifier: ^2.1.0
         version: 2.1.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@tailorkit/env':
+      '@patchsmith/env':
         specifier: workspace:*
         version: link:../env
-      '@tailorkit/observability':
+      '@patchsmith/observability':
         specifier: workspace:*
         version: link:../observability
       nodemailer:
@@ -1330,7 +1330,7 @@ importers:
       '@react-email/ui':
         specifier: 6.11.1
         version: 6.11.1(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -1355,7 +1355,7 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -1371,7 +1371,7 @@ importers:
         specifier: 1.10.0
         version: 1.10.0(@aws-sdk/credential-provider-web-identity@3.972.79)(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(ws@8.22.0)
     devDependencies:
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -1383,17 +1383,17 @@ importers:
 
   packages/kv:
     dependencies:
-      '@tailorkit/env':
+      '@patchsmith/env':
         specifier: workspace:*
         version: link:../env
-      '@tailorkit/observability':
+      '@patchsmith/observability':
         specifier: workspace:*
         version: link:../observability
       zod:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -1429,7 +1429,7 @@ importers:
       '@orpc/opentelemetry':
         specifier: 'catalog:'
         version: 2.0.0-beta.40(@opentelemetry/api@1.9.1)(@opentelemetry/instrumentation@0.223.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2))
-      '@tailorkit/env':
+      '@patchsmith/env':
         specifier: workspace:*
         version: link:../env
       '@vercel/otel':
@@ -1439,7 +1439,7 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -1460,26 +1460,26 @@ importers:
       '@standard-schema/spec':
         specifier: ^1.1.0
         version: 1.1.0
-      '@tailorkit/app':
+      '@patchsmith/app':
         specifier: workspace:*
         version: link:../app
-      '@tailorkit/client-core':
+      '@patchsmith/client-core':
         specifier: workspace:*
         version: link:../client-core
-      '@tailorkit/client-platform':
+      '@patchsmith/client-platform':
         specifier: workspace:*
         version: link:../client-platform
-      '@tailorkit/core':
+      '@patchsmith/core':
         specifier: workspace:*
         version: link:../core
-      '@tailorkit/sandbox':
+      '@patchsmith/sandbox':
         specifier: workspace:*
         version: link:../sandbox
       nanostores:
         specifier: 1.5.4
         version: 1.5.4
     devDependencies:
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@testing-library/react':
@@ -1512,17 +1512,17 @@ importers:
 
   packages/sandbox:
     dependencies:
-      '@tailorkit/app':
+      '@patchsmith/app':
         specifier: workspace:*
         version: link:../app
-      '@tailorkit/core':
+      '@patchsmith/core':
         specifier: workspace:*
         version: link:../core
       valibot:
         specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
     devDependencies:
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -1543,10 +1543,10 @@ importers:
 
   packages/storage:
     dependencies:
-      '@tailorkit/env':
+      '@patchsmith/env':
         specifier: workspace:*
         version: link:../env
-      '@tailorkit/observability':
+      '@patchsmith/observability':
         specifier: workspace:*
         version: link:../observability
       zod:
@@ -1559,7 +1559,7 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.1149.0
         version: 3.1149.0
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -1569,27 +1569,27 @@ importers:
         specifier: 'catalog:'
         version: 7.0.2
 
-  packages/tailorkit:
+  packages/patchsmith:
     dependencies:
-      '@tailorkit/ai-sdk':
+      '@patchsmith/ai-sdk':
         specifier: workspace:*
         version: link:../ai-sdk
-      '@tailorkit/app':
+      '@patchsmith/app':
         specifier: workspace:*
         version: link:../app
-      '@tailorkit/app-db':
+      '@patchsmith/app-db':
         specifier: workspace:*
         version: link:../app-db
-      '@tailorkit/cli':
+      '@patchsmith/cli':
         specifier: workspace:*
         version: link:../cli
-      '@tailorkit/core':
+      '@patchsmith/core':
         specifier: workspace:*
         version: link:../core
-      '@tailorkit/react':
+      '@patchsmith/react':
         specifier: workspace:*
         version: link:../react
-      '@tailorkit/vite':
+      '@patchsmith/vite':
         specifier: workspace:*
         version: link:../vite
       ai:
@@ -1605,7 +1605,7 @@ importers:
         specifier: '>=4.0.0'
         version: 4.6.5
     devDependencies:
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -1666,7 +1666,7 @@ importers:
         specifier: ^1.4.0
         version: 1.4.0
     devDependencies:
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -1693,7 +1693,7 @@ importers:
 
   packages/vite:
     dependencies:
-      '@tailorkit/app':
+      '@patchsmith/app':
         specifier: workspace:*
         version: link:../app
       cosmiconfig:
@@ -1706,10 +1706,10 @@ importers:
         specifier: npm:@voidzero-dev/vite-plus-core@1.1.0
         version: '@voidzero-dev/vite-plus-core@1.1.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(typescript@7.0.2)(yaml@2.9.1)'
     devDependencies:
-      '@tailorkit/asset-delivery':
+      '@patchsmith/asset-delivery':
         specifier: workspace:*
         version: link:../asset-delivery
-      '@tailorkit/config':
+      '@patchsmith/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -1742,11 +1742,11 @@ importers:
       preact:
         specifier: ^11.0.1
         version: 11.0.1
-      tailorkit:
+      patchsmith:
         specifier: workspace:*
-        version: link:../../../packages/tailorkit
+        version: link:../../../packages/patchsmith
     devDependencies:
-      '@tailorkit/cli':
+      '@patchsmith/cli':
         specifier: workspace:*
         version: link:../../../packages/cli
       typescript:
@@ -1761,7 +1761,7 @@ importers:
 
   playground/shared:
     dependencies:
-      '@tailorkit/core':
+      '@patchsmith/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@valibot/to-json-schema':
@@ -1773,9 +1773,9 @@ importers:
       drizzle-orm:
         specifier: 'catalog:'
         version: 1.0.0-rc.4-5d5b77c(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(@upstash/redis@1.39.0)(arktype@2.2.7)(effect@4.0.2)(pg@8.23.1)(typebox@1.3.36)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5)
-      tailorkit:
+      patchsmith:
         specifier: workspace:*
-        version: link:../../packages/tailorkit
+        version: link:../../packages/patchsmith
       valibot:
         specifier: 'catalog:'
         version: 1.5.0(typescript@7.0.2)
@@ -1801,7 +1801,7 @@ importers:
       '@playground/shared':
         specifier: workspace:*
         version: link:../shared
-      '@tailorkit/ui':
+      '@patchsmith/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       '@tailwindcss/vite':
@@ -1822,9 +1822,9 @@ importers:
       react-dom:
         specifier: 'catalog:'
         version: 19.3.0(react@19.3.0)
-      tailorkit:
+      patchsmith:
         specifier: workspace:*
-        version: link:../../packages/tailorkit
+        version: link:../../packages/patchsmith
       tailwindcss:
         specifier: 'catalog:'
         version: 4.3.3

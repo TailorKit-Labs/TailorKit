@@ -1,13 +1,13 @@
 import {
   createContext,
   contextErrorResponse,
-} from "@tailorkit/api-platform/context";
+} from "@patchsmith/api-platform/context";
 import {
   initializeObservability,
   recordException,
   sanitizeErrorForLog,
   setSpanAttributes,
-} from "@tailorkit/observability";
+} from "@patchsmith/observability";
 
 import { createApiEntry } from "./entry";
 
@@ -20,13 +20,13 @@ const createOpenAPIHandler = async () => {
   ] = await Promise.all([
     import("@orpc/openapi/fetch"),
     import("@orpc/server"),
-    import("@tailorkit/api-platform"),
-    import("@tailorkit/api-utils/rate-limiting"),
+    import("@patchsmith/api-platform"),
+    import("@patchsmith/api-utils/rate-limiting"),
   ]);
   return new OpenAPIHandler(platformRouter, {
     interceptors: [
       onError((failure) => {
-        recordException(failure, { "tailorkit.adapter": "orpc-openapi" });
+        recordException(failure, { "patchsmith.adapter": "orpc-openapi" });
         console.error("OpenAPI request failed", sanitizeErrorForLog(failure));
       }),
     ],
@@ -41,22 +41,22 @@ export const handlePlatformRequest = async ({
 }: {
   request: Request;
 }) => {
-  await initializeObservability("tailorkit-web");
+  await initializeObservability("patchsmith-web");
   setSpanAttributes({
-    "tailorkit.adapter": "orpc-openapi",
-    "tailorkit.package": "apps-web",
+    "patchsmith.adapter": "orpc-openapi",
+    "patchsmith.package": "apps-web",
   });
 
   const { pathname } = new URL(request.url);
   if (request.method === "GET" && pathname === "/api/platform/runtime/keys") {
     const { appRuntimeKeysResponse } =
-      await import("@tailorkit/api-platform/routes/runtime");
+      await import("@patchsmith/api-platform/routes/runtime");
     return appRuntimeKeysResponse();
   }
 
   // oxlint-disable-next-line anti-slop/no-unknown-parameters -- JavaScript may reject with arbitrary values; this boundary records or preserves the original failure.
   const context = await createContext({ request }).catch((error: unknown) => {
-    recordException(error, { "tailorkit.adapter": "orpc-openapi" });
+    recordException(error, { "patchsmith.adapter": "orpc-openapi" });
     console.error("OpenAPI authorization failed", sanitizeErrorForLog(error));
     // oxlint-disable-next-line typescript/only-throw-error -- Preserve the transport failure object, including its code and metadata, for the existing downstream error mapping.
     throw contextErrorResponse(error);

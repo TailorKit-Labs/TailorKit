@@ -1,11 +1,11 @@
 import type { ESTree } from "vite";
 
 const clientImports = new Set([
-  "tailorkit/client",
-  "tailorkit/app",
-  "tailorkit/app/client",
-  "@tailorkit/app/client",
-  "@tailorkit/app",
+  "patchsmith/client",
+  "patchsmith/app",
+  "patchsmith/app/client",
+  "@patchsmith/app/client",
+  "@patchsmith/app",
 ]);
 
 type Binding = "view" | "namespace" | "local";

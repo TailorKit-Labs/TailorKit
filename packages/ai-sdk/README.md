@@ -1,17 +1,17 @@
-# TailorKit AI SDK tools
+# Patchsmith AI SDK tools
 
-Use `createTools` from `tailorkit/ai-sdk` (or `@tailorkit/ai-sdk`) to let an AI SDK model list, create, and edit TailorKit apps through the app agent's MCP endpoint. Requires AI SDK 7 and Node.js 22 or newer.
+Use `createTools` from `patchsmith/ai-sdk` (or `@patchsmith/ai-sdk`) to let an AI SDK model list, create, and edit Patchsmith apps through the app agent's MCP endpoint. Requires AI SDK 7 and Node.js 22 or newer.
 
-The adapter uses Valibot for its tool schemas and validation. Your own tools and TailorKit contract can use any schema library supported by their respective APIs.
+The adapter uses Valibot for its tool schemas and validation. Your own tools and Patchsmith contract can use any schema library supported by their respective APIs.
 
-Create the tools on your host server for each authenticated request. Pass your configured TailorKit server and the same `scopes` and `subjectId` context used by the host SDK. Scope values are checked against your server's configured schemas before each MCP call. Credentials and authorization stay on the host.
+Create the tools on your host server for each authenticated request. Pass your configured Patchsmith server and the same `scopes` and `subjectId` context used by the host SDK. Scope values are checked against your server's configured schemas before each MCP call. Credentials and authorization stay on the host.
 
 ```ts
 import { streamText } from "ai";
-import { createTools } from "tailorkit/ai-sdk";
+import { createTools } from "patchsmith/ai-sdk";
 
-// tailorkit, user, model, and messages come from your host application.
-const { listApps, createApp, editApp } = createTools(tailorkit, {
+// patchsmith, user, model, and messages come from your host application.
+const { listApps, createApp, editApp } = createTools(patchsmith, {
   scopes: { org: { tenant: user.organizationId } },
   subjectId: user.id,
 });
@@ -24,7 +24,7 @@ return streamText({
 }).toUIMessageStreamResponse();
 ```
 
-`createTools` is synchronous and returns `listApps`, `createApp`, and `editApp` directly so you can destructure and combine them with your own tools. They call the internal MCP tools `list_apps`, `create_app`, and `edit_app`, respectively. The tool names, descriptions, and schemas are fixed; the adapter does not perform MCP tool discovery. `createApp` limits its scope name to the scopes supplied by the host. Each invocation obtains authenticated transport configuration from the TailorKit server, calls `/app-agent/mcp` using MCP 2026-07-28, and closes its own connection when it finishes or fails.
+`createTools` is synchronous and returns `listApps`, `createApp`, and `editApp` directly so you can destructure and combine them with your own tools. They call the internal MCP tools `list_apps`, `create_app`, and `edit_app`, respectively. The tool names, descriptions, and schemas are fixed; the adapter does not perform MCP tool discovery. `createApp` limits its scope name to the scopes supplied by the host. Each invocation obtains authenticated transport configuration from the Patchsmith server, calls `/app-agent/mcp` using MCP 2026-07-28, and closes its own connection when it finishes or fails.
 
 Each MCP activity notification produces an AI SDK preliminary tool result:
 

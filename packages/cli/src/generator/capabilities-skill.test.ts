@@ -6,8 +6,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
-import { primitives } from "@tailorkit/core/primitives/zod";
-import { createTailorKitSchema } from "@tailorkit/core/schema";
+import { primitives } from "@patchsmith/core/primitives/zod";
+import { createPatchsmithSchema } from "@patchsmith/core/schema";
 import { expect, it } from "vite-plus/test";
 import { z } from "zod";
 
@@ -16,9 +16,9 @@ import {
   renderGeneratedReferences,
   renderGeneratedTypes,
 } from "./types";
-import type { TailorKitSchemaFile } from "./types";
+import type { PatchsmithSchemaFile } from "./types";
 
-const schema: TailorKitSchemaFile = {
+const schema: PatchsmithSchemaFile = {
   components: {
     Button: {
       callbacks: { onPress: {}, onValidate: { output: { type: "boolean" } } },
@@ -72,11 +72,11 @@ const fencedCode = /```[\s\S]*?```/gu;
 
 it("generates a discoverable skill with working reference links, including custom output paths", async () => {
   const root = await mkdtemp(
-    path.join(tmpdir(), "tailorkit-capabilities-skill-")
+    path.join(tmpdir(), "patchsmith-capabilities-skill-")
   );
   try {
     await writeFile(
-      path.join(root, "tailorkit.config.mjs"),
+      path.join(root, "patchsmith.config.mjs"),
       'export default { name: "Example", slug: "example", host: "https://host.test" };'
     );
     await mkdir(path.join(root, "src"));
@@ -86,7 +86,7 @@ it("generates a discoverable skill with working reference links, including custo
     );
     const skillPath = path.join(
       root,
-      ".agents/skills/tailorkit-capabilities/SKILL.md"
+      ".agents/skills/patchsmith-capabilities/SKILL.md"
     );
     for (const outFile of [undefined, "src/custom contracts/host.ts"]) {
       // oxlint-disable-next-line no-await-in-loop -- Each generation must replace the preceding skill's links.
@@ -94,7 +94,7 @@ it("generates a discoverable skill with working reference links, including custo
       // oxlint-disable-next-line no-await-in-loop -- Verify the artifact produced by this generation before replacing it.
       const skill = await readFile(skillPath, "utf-8");
       expect(skill).toMatch(
-        /^---\nname: tailorkit-capabilities\ndescription: .+\n---\n/u
+        /^---\nname: patchsmith-capabilities\ndescription: .+\n---\n/u
       );
       expect(skill.length).toBeLessThan(2200);
       const links = [...skill.matchAll(markdownLink)];
@@ -156,7 +156,7 @@ it("generates a discoverable skill with working reference links, including custo
     }
     await writeFile(
       skillPath,
-      "---\nname: tailorkit-capabilities\ndescription: Custom project guidance.\n---\nKeep this guidance.\n"
+      "---\nname: patchsmith-capabilities\ndescription: Custom project guidance.\n---\nKeep this guidance.\n"
     );
     const userReference = path.join(
       path.dirname(skillPath),
@@ -172,14 +172,16 @@ it("generates a discoverable skill with working reference links, including custo
 });
 
 it("typechecks components, callbacks, tools and context from one bindings file", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-single-bindings-"));
+  const root = await mkdtemp(
+    path.join(tmpdir(), "patchsmith-single-bindings-")
+  );
   try {
     await writeFile(path.join(root, "host.ts"), renderGeneratedTypes(schema));
     await writeFile(
       path.join(root, "consumer.ts"),
       `
 import { Button, Input, tools } from "./host";
-import type { ButtonProps, InputProps, ViewProps, TailorKitBackendTools } from "./host";
+import type { ButtonProps, InputProps, ViewProps, PatchsmithBackendTools } from "./host";
 const button: ButtonProps = { variant: "primary", onPress: () => {} };
 const input: InputProps = { onChange: ({ value }) => { value.toUpperCase(); } };
 const syncResult: ButtonProps = { onValidate: () => true };
@@ -190,7 +192,7 @@ const invalidResult: ButtonProps = { onValidate: () => "yes" };
 // @ts-expect-error Callback output schemas reject incompatible promised results.
 const invalidAsyncResult: ButtonProps = { onValidate: async () => "yes" };
 const context: ViewProps<"/">["context"] = { teamId: "team-1" };
-const backend: TailorKitBackendTools = tools;
+const backend: PatchsmithBackendTools = tools;
 const added: Promise<boolean> = backend.todos.add("title");
 // @ts-expect-error Unsupported component variants remain rejected.
 const invalidButton: ButtonProps = { variant: "danger" };
@@ -204,7 +206,7 @@ tools.todos.add(123);
     );
     const require = createRequire(import.meta.url);
     const client = fileURLToPath(
-      import.meta.resolve("@tailorkit/app/client")
+      import.meta.resolve("@patchsmith/app/client")
     ).replace(/\.js$/u, ".d.ts");
     await writeFile(
       path.join(root, "tsconfig.json"),
@@ -213,7 +215,7 @@ tools.todos.add(123);
           module: "ESNext",
           moduleResolution: "Bundler",
           noEmit: true,
-          paths: { "tailorkit/client": [client] },
+          paths: { "patchsmith/client": [client] },
           skipLibCheck: true,
           strict: true,
           target: "ESNext",
@@ -240,7 +242,7 @@ tools.todos.add(123);
 
 it("generates targeted human-readable references from the same component and slot contracts", () => {
   const files = renderGeneratedReferences(schema, {
-    bindingsPath: "../../../src/tailorkit.gen.ts",
+    bindingsPath: "../../../src/patchsmith.gen.ts",
     hasApi: false,
   });
   expect(files["components/Button.md"]).toContain('"primary", "secondary"');
@@ -257,7 +259,7 @@ it("generates targeted human-readable references from the same component and slo
 });
 
 it("carries component and slot descriptions from a host contract into skill references", () => {
-  const contract = createTailorKitSchema({
+  const contract = createPatchsmithSchema({
     components: {
       Form: {
         children: true,
@@ -270,7 +272,7 @@ it("carries component and slot descriptions from a host contract into skill refe
     views: { "/": z.object({}) },
   }).serialize();
   const files = renderGeneratedReferences(contract, {
-    bindingsPath: "../../../src/tailorkit.gen.ts",
+    bindingsPath: "../../../src/patchsmith.gen.ts",
     hasApi: false,
   });
   expect(files["components/Form.md"]).toContain(
@@ -281,14 +283,14 @@ it("carries component and slot descriptions from a host contract into skill refe
 });
 
 it("keeps responsive primitive references small without dropping the host's keys or tokens", () => {
-  const contract = createTailorKitSchema({
+  const contract = createPatchsmithSchema({
     components: primitives({
       breakpoints: { lg: "1024px", md: "768px" },
       tokens: { background: { accent: "blue", surface: "white" } },
     }),
   }).serialize();
   const files = renderGeneratedReferences(contract, {
-    bindingsPath: "../../../src/tailorkit.gen.ts",
+    bindingsPath: "../../../src/patchsmith.gen.ts",
     hasApi: false,
   });
   expect(files["components/Box.md"]?.length).toBeLessThan(6000);
@@ -300,17 +302,17 @@ it("keeps responsive primitive references small without dropping the host's keys
 
 it("removes obsolete references on regeneration and preserves unrelated source and skill files", async () => {
   const root = await mkdtemp(
-    path.join(tmpdir(), "tailorkit-regenerate-references-")
+    path.join(tmpdir(), "patchsmith-regenerate-references-")
   );
   try {
     await writeFile(
-      path.join(root, "tailorkit.config.mjs"),
+      path.join(root, "patchsmith.config.mjs"),
       'export default { name: "Example", slug: "example", host: "https://host.test" };'
     );
     await generateTypes({ cwd: root, schema });
     const skillDirectory = path.join(
       root,
-      ".agents/skills/tailorkit-capabilities"
+      ".agents/skills/patchsmith-capabilities"
     );
     await writeFile(path.join(skillDirectory, "notes.md"), "user content");
     const extensionless = await generateTypes({
@@ -326,7 +328,7 @@ it("removes obsolete references on regeneration and preserves unrelated source a
       readFile(path.join(skillDirectory, "references/components/Button.md"))
     ).rejects.toThrow();
     expect(
-      await readFile(path.join(root, "src/tailorkit.gen.ts"), "utf-8")
+      await readFile(path.join(root, "src/patchsmith.gen.ts"), "utf-8")
     ).not.toContain("export const Button");
     expect(await readFile(path.join(skillDirectory, "notes.md"), "utf-8")).toBe(
       "user content"
@@ -343,15 +345,17 @@ it("removes obsolete references on regeneration and preserves unrelated source a
 });
 
 it("preserves an existing references directory without a generated ownership marker", async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "tailorkit-user-references-"));
+  const root = await mkdtemp(
+    path.join(tmpdir(), "patchsmith-user-references-")
+  );
   try {
     await writeFile(
-      path.join(root, "tailorkit.config.mjs"),
+      path.join(root, "patchsmith.config.mjs"),
       'export default { name: "Example", slug: "example", host: "https://host.test" };'
     );
     const referencesDirectory = path.join(
       root,
-      ".agents/skills/tailorkit-capabilities/references"
+      ".agents/skills/patchsmith-capabilities/references"
     );
     await mkdir(referencesDirectory, { recursive: true });
     await writeFile(path.join(referencesDirectory, "notes.md"), "user content");

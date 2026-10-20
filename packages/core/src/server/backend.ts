@@ -1,6 +1,6 @@
-import type { AppsRuntimeSessionResponses } from "@tailorkit/client-platform/client/types.gen";
+import type { AppsRuntimeSessionResponses } from "@patchsmith/client-platform/client/types.gen";
 
-import type { TailorKitScopes } from "./types";
+import type { PatchsmithScopes } from "./types";
 
 const isObjectValue = <TValue>(value: TValue): value is TValue & object =>
   typeof value === "object" && value !== null;
@@ -14,10 +14,10 @@ export const handleBackendSession = async (
   request: Request,
   authenticate: (input: {
     request: Request;
-  }) => Promise<{ scopes: TailorKitScopes; subjectId: string } | null>,
+  }) => Promise<{ scopes: PatchsmithScopes; subjectId: string } | null>,
   issueSession: (
     appId: string,
-    scopes: TailorKitScopes,
+    scopes: PatchsmithScopes,
     subjectId: string
   ) => Promise<AppsRuntimeSessionResponses[200] | Response>,
   publicOrigin = new URL(request.url).origin

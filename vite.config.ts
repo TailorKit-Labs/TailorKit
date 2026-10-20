@@ -43,7 +43,7 @@ const aliasWorkspaces = [
   "packages/react",
   "packages/sandbox",
   "packages/storage",
-  "packages/tailorkit",
+  "packages/patchsmith",
   "packages/ui",
   "packages/vite",
   "playground/apps/todo",
@@ -51,7 +51,7 @@ const aliasWorkspaces = [
 ];
 const ignorePatterns = [
   ".agents/skills",
-  "**/.agents/skills/tailorkit-capabilities/**",
+  "**/.agents/skills/patchsmith-capabilities/**",
   ".claude/skills",
   "**/wrangler.json",
   "**/wrangler.jsonc",
@@ -138,7 +138,7 @@ export default defineConfig({
     },
     settings: {
       shadcn: {
-        ui: "@tailorkit/ui",
+        ui: "@patchsmith/ui",
       },
     },
   },

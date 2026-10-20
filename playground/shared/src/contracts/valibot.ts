@@ -1,6 +1,6 @@
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
-import { tool, defineContract } from "tailorkit";
-import { primitives } from "tailorkit/valibot";
+import { tool, defineContract } from "patchsmith";
+import { primitives } from "patchsmith/valibot";
 import * as v from "valibot";
 
 import { theme } from "./theme";

@@ -1,5 +1,5 @@
-import { validateOrgSlug } from "@tailorkit/db/validate-org-slug";
-import { Button } from "@tailorkit/ui/button";
+import { validateOrgSlug } from "@patchsmith/db/validate-org-slug";
+import { Button } from "@patchsmith/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -10,9 +10,9 @@ import {
   DialogTitle,
   DialogPopup,
   DialogTrigger,
-} from "@tailorkit/ui/dialog";
-import { useAppForm } from "@tailorkit/ui/form";
-import { toastManager } from "@tailorkit/ui/toast";
+} from "@patchsmith/ui/dialog";
+import { useAppForm } from "@patchsmith/ui/form";
+import { toastManager } from "@patchsmith/ui/toast";
 import { useSelector } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -189,7 +189,7 @@ export const CreateOrgDialog = ({
                 {(field) => (
                   <field.TextField
                     autoComplete="off"
-                    description={`tailorkit.com/${field.state.value || "your-slug"}`}
+                    description={`patchsmith.com/${field.state.value || "your-slug"}`}
                     endAdornment={
                       <OrgSlugAvailabilityIndicator
                         availability={slugAvailability}

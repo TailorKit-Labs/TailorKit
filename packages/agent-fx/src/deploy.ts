@@ -13,7 +13,7 @@ export const createDeployTool = (dependencies: {
       sandboxName: z.string(),
     }),
     description:
-      "Format source and fix lint issues, then test, typecheck, build and publish with the TailorKit CLI. Call this directly when implementation is ready. Failures include diagnostics for repair; retry after fixing them.",
+      "Format source and fix lint issues, then test, typecheck, build and publish with the Patchsmith CLI. Call this directly when implementation is ready. Failures include diagnostics for repair; retry after fixing them.",
     execute: async (_input, { context, abortSignal }) => {
       const redact = (value: string) =>
         value.replaceAll(context.agentToken, "[redacted]");
@@ -24,7 +24,7 @@ export const createDeployTool = (dependencies: {
         for (const args of [
           ["run", "fix"],
           ["run", "test", "--passWithNoTests"],
-          ["exec", "tailorkit", "deploy", "--no-interactive"],
+          ["exec", "patchsmith", "deploy", "--no-interactive"],
         ]) {
           const result = await sandbox.runCommand({
             args,
@@ -33,7 +33,7 @@ export const createDeployTool = (dependencies: {
             env: {
               CI: "true",
               NO_COLOR: "1",
-              TAILORKIT_AGENT_TOKEN: context.agentToken,
+              PATCHSMITH_AGENT_TOKEN: context.agentToken,
             },
             signal: abortSignal,
             timeoutMs: 5 * 60_000,

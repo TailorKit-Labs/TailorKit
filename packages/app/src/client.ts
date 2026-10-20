@@ -18,4 +18,4 @@ export type {
 export { AppError, appError } from "./errors";
 export type { ErrorCode } from "./errors";
 export { callTool } from "./client/tools";
-export type { TailorKitServerTools, ToolBridge } from "./client/tools";
+export type { PatchsmithServerTools, ToolBridge } from "./client/tools";

@@ -1,8 +1,8 @@
-import { appError } from "@tailorkit/app/client";
-import type { AppError } from "@tailorkit/app/client";
+import { appError } from "@patchsmith/app/client";
+import type { AppError } from "@patchsmith/app/client";
 import { Effect } from "effect";
 
-export { AppError, appError } from "@tailorkit/app/client";
+export { AppError, appError } from "@patchsmith/app/client";
 
 // RPC transports erase heterogeneous result types; callers recover them from the registered function schema.
 export type FunctionResult<TValue = unknown> =

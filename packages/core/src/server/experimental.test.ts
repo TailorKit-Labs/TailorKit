@@ -1,4 +1,4 @@
-import { createClient } from "@tailorkit/client-platform/client/client/index";
+import { createClient } from "@patchsmith/client-platform/client/client/index";
 import { expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
@@ -32,17 +32,17 @@ it("installs from the public server API with host credentials and validated scop
     platformFetch.mock.calls.map(([input, init]) =>
       input instanceof Request ? input : new Request(input, init)
     );
-  const tailorkit = createServer({
+  const patchsmith = createServer({
     $internal: {
       platformBaseUrl: "https://platform.test/api/platform",
       platformFetch,
     },
-    baseUrl: "https://host.test/api/tailorkit",
+    baseUrl: "https://host.test/api/patchsmith",
     contract,
     projectKey: "project-secret",
   });
   await expect(
-    tailorkit.experimental.installApp({
+    patchsmith.experimental.installApp({
       appId: "published001",
       scope: { name: "org", value: { tenant: "  workspace  " } },
     })
@@ -60,7 +60,7 @@ it("installs from the public server API with host credentials and validated scop
     scope: installed.scope,
   });
 
-  await tailorkit.experimental.installApp({
+  await patchsmith.experimental.installApp({
     appId: "published001",
     scope: { name: "day", value: { at: new Date("2026-10-16T00:00:00.000Z") } },
   });
@@ -114,7 +114,7 @@ it("requires host credentials and propagates platform installation errors", asyn
           )
         ),
     },
-    baseUrl: "https://host.test/api/tailorkit",
+    baseUrl: "https://host.test/api/patchsmith",
     contract,
   });
   const input = {
@@ -135,7 +135,7 @@ it("requires host credentials and propagates platform installation errors", asyn
           )
         ),
     },
-    baseUrl: "https://host.test/api/tailorkit",
+    baseUrl: "https://host.test/api/patchsmith",
     contract,
     projectKey: "secret",
   });

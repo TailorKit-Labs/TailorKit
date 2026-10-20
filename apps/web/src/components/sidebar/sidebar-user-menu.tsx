@@ -1,5 +1,5 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@tailorkit/ui/avatar";
-import { Button } from "@tailorkit/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@patchsmith/ui/avatar";
+import { Button } from "@patchsmith/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,9 +8,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@tailorkit/ui/dropdown-menu";
-import { toastManager } from "@tailorkit/ui/toast";
-import { ToggleGroup, ToggleGroupItem } from "@tailorkit/ui/toggle-group";
+} from "@patchsmith/ui/dropdown-menu";
+import { toastManager } from "@patchsmith/ui/toast";
+import { ToggleGroup, ToggleGroupItem } from "@patchsmith/ui/toggle-group";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
@@ -90,7 +90,7 @@ export const SidebarUserMenu = () => {
           <DropdownMenuItem
             render={
               <a
-                href="https://tailorkit.dev/home"
+                href="https://patchsmith.io/home"
                 rel="noopener noreferrer"
                 target="_blank"
               >
@@ -103,7 +103,7 @@ export const SidebarUserMenu = () => {
           <DropdownMenuItem
             render={
               <a
-                href="https://tailorkit.dev/docs"
+                href="https://patchsmith.io/docs"
                 rel="noopener noreferrer"
                 target="_blank"
               >

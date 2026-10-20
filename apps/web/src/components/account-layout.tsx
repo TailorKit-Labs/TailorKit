@@ -12,7 +12,7 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarSeparator,
-} from "@tailorkit/ui/sidebar";
+} from "@patchsmith/ui/sidebar";
 import { useQuery } from "@tanstack/react-query";
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { Building2Icon, MailIcon, ShieldIcon, UserIcon } from "lucide-react";

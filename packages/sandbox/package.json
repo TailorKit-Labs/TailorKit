@@ -1,5 +1,5 @@
 {
-  "name": "@tailorkit/sandbox",
+  "name": "@patchsmith/sandbox",
   "version": "0.1.0-beta.52",
   "license": "Apache-2.0",
   "repository": {
@@ -42,12 +42,12 @@
     "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
-    "@tailorkit/app": "workspace:*",
-    "@tailorkit/core": "workspace:*",
+    "@patchsmith/app": "workspace:*",
+    "@patchsmith/core": "workspace:*",
     "valibot": "catalog:"
   },
   "devDependencies": {
-    "@tailorkit/config": "workspace:*",
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "happy-dom": "^20.14.6",
     "typescript": "catalog:",

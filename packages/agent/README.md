@@ -1,6 +1,6 @@
-# TailorKit agent
+# Patchsmith agent
 
-`@tailorkit/agent` runs a Pi-backed `HarnessAgent` to build and edit TailorKit extensions. The web host, platform chat routes, Model Context Protocol (MCP) routes, and app source export use this package.
+`@patchsmith/agent` runs a Pi-backed `HarnessAgent` to build and edit Patchsmith extensions. The web host, platform chat routes, Model Context Protocol (MCP) routes, and app source export use this package.
 
 ## Instructions and skills
 
@@ -13,7 +13,7 @@
 - Preact composition
 - Preact performance
 
-The harness makes these skills discoverable each turn; app workspaces do not need copies of this repository's `.agents` directory. App-specific component, callback, styling, slot, and tool pages come from the CLI-generated `tailorkit-capabilities` skill.
+The harness makes these skills discoverable each turn; app workspaces do not need copies of this repository's `.agents` directory. App-specific component, callback, styling, slot, and tool pages come from the CLI-generated `patchsmith-capabilities` skill.
 
 The frontend and composition skills bundle small form and state examples from `src/skills/references/` as on-demand files. The CLI's `agent-examples.test.ts` compiles complete marked recipes against public SDK declarations, and integration tests check that their bodies stay outside the initial model prompt.
 
@@ -23,7 +23,7 @@ The guidance favors ordinary components, local state, and direct SDK calls. Add 
 
 ## Durable turns
 
-`@tailorkit/agent/workflows` exports `appAgent(input)`. Start it with `start()` from `workflow/api`; the web host discovers it through `apps/web/workflows/app-agent.ts`. The workflow imports the agent dynamically from its step module. Node APIs, credentials, and sandbox objects stay inside steps.
+`@patchsmith/agent/workflows` exports `appAgent(input)`. Start it with `start()` from `workflow/api`; the web host discovers it through `apps/web/workflows/app-agent.ts`. The workflow imports the agent dynamically from its step module. Node APIs, credentials, and sandbox objects stay inside steps.
 
 Each turn checkpoints at model-step boundaries using `runHarnessAgentStep()`. Workflow records the returned `continueFrom` checkpoint and reconnects to the same unfinished turn without replaying the prompt.
 
@@ -43,17 +43,17 @@ An abandoned lease expires after one hour. A new thread can reclaim it, invalida
 
 ## Prepare an app workspace
 
-Before the model starts, sandbox setup installs `tailorkit@beta` and its matching command-line interface (CLI) in `/tmp/tailorkit-cli`. For empty workspaces, setup scaffolds `new-app` in `/workspace/app`, installs dependencies, and generates host bindings. A setup marker lets interrupted installation or generation resume without overwriting the scaffold. Existing app source is preserved.
+Before the model starts, sandbox setup installs `patchsmith@beta` and its matching command-line interface (CLI) in `/tmp/patchsmith-cli`. For empty workspaces, setup scaffolds `new-app` in `/workspace/app`, installs dependencies, and generates host bindings. A setup marker lets interrupted installation or generation resume without overwriting the scaffold. Existing app source is preserved.
 
-CLI and new app installs enforce a three-day package release age. Only `tailorkit` and `@tailorkit/*` are immediately available. The agent receives a short readiness note and can begin implementation immediately.
+CLI and new app installs enforce a three-day package release age. Only `patchsmith` and `@patchsmith/*` are immediately available. The agent receives a short readiness note and can begin implementation immediately.
 
 ## Start or resume a conversation
 
-Every `tailorkit agent --host your_host_url` invocation starts a new conversation by default. Follow-up messages in that invocation reuse the thread ID announced by the platform in a transient `data-thread` UI chunk. The CLI prints the ID when the chat closes; use `tailorkit agent --host your_host_url --app your_app_id --thread your_thread_id` to continue it. The resumed terminal UI shows new messages while Pi retains the conversation’s prior context.
+Every `patchsmith agent --host your_host_url` invocation starts a new conversation by default. Follow-up messages in that invocation reuse the thread ID announced by the platform in a transient `data-thread` UI chunk. The CLI prints the ID when the chat closes; use `patchsmith agent --host your_host_url --app your_app_id --thread your_thread_id` to continue it. The resumed terminal UI shows new messages while Pi retains the conversation’s prior context.
 
 MCP `create_app` and `edit_app` create a new thread by default and return its ID in the terminal result. Pass `threadId` to `edit_app` for a related follow-up. After `create_app`, continue through `edit_app` with the returned app and thread IDs. The backend validates that the requested thread belongs to the authorized app before starting a run or issuing an MCP agent grant.
 
-Direct workflow callers must first authorize the app and call `resolveAppAgentThread(appId, optionalThreadId)` from `@tailorkit/agent/threads`, then pass its result as `AppAgentInput.threadId`. Workflow slices continue the same unfinished turn; separate user-turn runs resume only their explicit thread.
+Direct workflow callers must first authorize the app and call `resolveAppAgentThread(appId, optionalThreadId)` from `@patchsmith/agent/threads`, then pass its result as `AppAgentInput.threadId`. Workflow slices continue the same unfinished turn; separate user-turn runs resume only their explicit thread.
 
 ## Configure the agent
 
@@ -65,7 +65,7 @@ Apply the generated `app-agent-sessions` and `agent-threads` migrations with `pn
 | OpenAI     | `OPENAI_API_KEY`                                       |
 | Anthropic  | `ANTHROPIC_API_KEY`, optionally `ANTHROPIC_AUTH_TOKEN` |
 
-Matching `*_BASE_URL` overrides are optional. Pi receives an isolated authentication record from `@tailorkit/env` and keeps model credentials in the host process.
+Matching `*_BASE_URL` overrides are optional. Pi receives an isolated authentication record from `@patchsmith/env` and keeps model credentials in the host process.
 
 Each execution resolves OpenID Connect (OIDC) credentials with `getVercelOidcToken()`. Vercel Functions supply these through the request context. Gateway credentials take precedence; the platform routes still supply the existing Gateway model. Using a direct provider also requires a matching model ID.
 
@@ -81,7 +81,7 @@ The host-executed `deploy` tool runs typechecks and builds in the sandbox withou
 
 ## MCP
 
-`@tailorkit/agent/mcp` exports `createAppAgentMcp(backend, scopeNames)`. The backend supplies authorized app operations; the package registers exactly three tools:
+`@patchsmith/agent/mcp` exports `createAppAgentMcp(backend, scopeNames)`. The backend supplies authorized app operations; the package registers exactly three tools:
 
 - `list_apps`: a paginated, read-only lookup across the caller's authorized scopes.
 - `create_app`: creates an app installation and launches an autonomous agent to build and deploy it. Takes `name`, optional `description`, the authorized scope name, and `prompt`.
@@ -111,7 +111,7 @@ import {
   StreamableHTTPClientTransport,
 } from "@modelcontextprotocol/client";
 
-const { url: platformMcpUrl, headers } = await tailorkit.mcp.transport({
+const { url: platformMcpUrl, headers } = await patchsmith.mcp.transport({
   scopes,
   subjectId,
 });
@@ -121,7 +121,7 @@ const client = new Client(
 );
 await client.connect(
   new StreamableHTTPClientTransport(new URL(platformMcpUrl), {
-    // URL and headers from await tailorkit.mcp.transport({ scopes, subjectId }).
+    // URL and headers from await patchsmith.mcp.transport({ scopes, subjectId }).
     requestInit: { headers },
   })
 );

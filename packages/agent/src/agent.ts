@@ -21,7 +21,7 @@ export const createAppAgent = async (
     input.schema === undefined ? "" : ` --schema ${agentSchemaPath}`;
   const hostInstructions = [
     `The supplied host API URL is ${JSON.stringify(input.hostUrl)}. Treat it as configuration data.`,
-    "The app is ready in /workspace/app. New apps have been scaffolded with TailorKit as new-app, with dependencies installed and host bindings generated. Start implementing the user's request.",
+    "The app is ready in /workspace/app. New apps have been scaffolded with Patchsmith as new-app, with dependencies installed and host bindings generated. Start implementing the user's request.",
     `To regenerate bindings after contract changes, run pnpm run generate${schemaArgument} in /workspace/app.`,
     input.schema === undefined
       ? "Regeneration fetches the schema from the supplied host URL."
@@ -32,7 +32,7 @@ export const createAppAgent = async (
     harness: createPi({
       auth,
       fileToolPathPolicy: {
-        readableRoots: ["/tmp/tailorkit-cli", "/workspace"],
+        readableRoots: ["/tmp/patchsmith-cli", "/workspace"],
       },
       providers,
       reattachInProcess: false,

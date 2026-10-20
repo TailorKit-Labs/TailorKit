@@ -1,4 +1,4 @@
-import { createRemoteComponent } from "@tailorkit/app";
+import { createRemoteComponent } from "@patchsmith/app";
 import { describe, expect, it, vi } from "vite-plus/test";
 
 import { renderGeneratedTypes } from "./types";
@@ -53,7 +53,10 @@ describe("children-only components", () => {
     const nested = Card({ children: "nested" });
     const children = ["first", 0, nested];
     const node = Card({ children });
-    expect(node).toMatchObject({ props: { children }, type: "tailorkit-card" });
+    expect(node).toMatchObject({
+      props: { children },
+      type: "patchsmith-card",
+    });
   });
 
   it("preserves callback dispatch alongside children", () => {
@@ -68,7 +71,7 @@ describe("children-only components", () => {
     const node = Button({ children: "Save", onClick });
     expect(node).toMatchObject({
       props: { children: "Save" },
-      type: "tailorkit-button",
+      type: "patchsmith-button",
     });
     if (!isObjectValue(node) || !("props" in node)) {
       throw new Error("Expected a remote component node");
@@ -76,12 +79,12 @@ describe("children-only components", () => {
     const props: unknown = node.props;
     if (
       !isObjectValue(props) ||
-      !("ontailorkitcallbackonclick" in props) ||
-      !isCallback(props.ontailorkitcallbackonclick)
+      !("onpatchsmithcallbackonclick" in props) ||
+      !isCallback(props.onpatchsmithcallbackonclick)
     ) {
       throw new Error("Expected an onClick callback.");
     }
-    props.ontailorkitcallbackonclick({
+    props.onpatchsmithcallbackonclick({
       detail: [],
       respondWith: (operation) => {
         operation();
@@ -96,7 +99,7 @@ describe("children-only components", () => {
     const node = Leaf({ children: "not allowed" });
     expect(node).toMatchObject({
       props: { children: undefined },
-      type: "tailorkit-leaf",
+      type: "patchsmith-leaf",
     });
   });
 });

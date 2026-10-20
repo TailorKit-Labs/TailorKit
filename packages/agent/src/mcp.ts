@@ -10,7 +10,7 @@ import type { AppAgentMcpEvent } from "./mcp-progress";
 
 export type { AppAgentMcpEvent } from "./mcp-progress";
 
-const serverInfo = { name: "tailorkit-app-agent", version: "1.0.0" };
+const serverInfo = { name: "patchsmith-app-agent", version: "1.0.0" };
 const capabilities = { tools: { listChanged: true } };
 
 /** Public protocol advertisement only; no tool handlers or backend dependencies. */

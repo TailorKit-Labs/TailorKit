@@ -1,4 +1,4 @@
-import { createEnv } from "@tailorkit/env";
+import { createEnv } from "@patchsmith/env";
 import * as z from "zod";
 
 export const env = createEnv({

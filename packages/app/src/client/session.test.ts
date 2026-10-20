@@ -1,4 +1,4 @@
-import { asyncFixture } from "@tailorkit/config/testing";
+import { asyncFixture } from "@patchsmith/config/testing";
 import { expect, it, vi } from "vite-plus/test";
 
 import { createSessionProvider, parseSession } from "./session";
@@ -11,7 +11,7 @@ const identity = {
   projectId: "project",
   scope: { name: "workspace", value: {} },
   subjectId: "principal",
-  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
 };
 
 it.each([undefined, null, "", 123, "x".repeat(257)])(
@@ -26,7 +26,7 @@ it.each([undefined, null, "", 123, "x".repeat(257)])(
     expect(() => parseSession(response)).toThrow();
     const provider = createSessionProvider({
       appId: "app",
-      baseUrl: "https://host.test/api/tailorkit",
+      baseUrl: "https://host.test/api/patchsmith",
       fetch: asyncFixture(() => Response.json(response)),
     });
     await expect(provider({ refresh: false })).rejects.toMatchObject({
@@ -49,7 +49,7 @@ it("deduplicates token requests, caches until renewal and sends only the host-bo
   );
   const session = createSessionProvider({
     appId: "allowed",
-    baseUrl: "https://host.test/api/tailorkit",
+    baseUrl: "https://host.test/api/patchsmith",
     fetch,
   });
   const [first, second] = await Promise.all([
@@ -64,7 +64,7 @@ it("deduplicates token requests, caches until renewal and sends only the host-bo
     requestedUrl instanceof Request
       ? requestedUrl.url
       : requestedUrl?.toString()
-  ).toBe("https://host.test/api/tailorkit/backend/session");
+  ).toBe("https://host.test/api/patchsmith/backend/session");
   expect(fetch.mock.calls[0]?.[1]).toMatchObject({
     body: JSON.stringify({ appId: "allowed" }),
     credentials: "same-origin",

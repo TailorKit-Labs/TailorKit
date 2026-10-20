@@ -1,11 +1,11 @@
 import { openapi } from "@orpc/openapi";
 import { ORPCError } from "@orpc/server";
-import type { AppDeploymentMetadata } from "@tailorkit/api-utils/app-auth";
+import type { AppDeploymentMetadata } from "@patchsmith/api-utils/app-auth";
 import {
   APP_PUBLIC_KEYS_CACHE_SECONDS,
   appDeploymentMetadata,
-} from "@tailorkit/api-utils/app-auth";
-import { db } from "@tailorkit/db";
+} from "@patchsmith/api-utils/app-auth";
+import { db } from "@patchsmith/db";
 import { Effect } from "effect";
 import { catch as catchEffect } from "effect/Effect";
 import { z } from "zod";

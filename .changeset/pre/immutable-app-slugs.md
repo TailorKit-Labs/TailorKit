@@ -1,7 +1,7 @@
 ---
-"@tailorkit/client-platform": minor
-"@tailorkit/core": patch
-"@tailorkit/cli": patch
+"@patchsmith/client-platform": minor
+"@patchsmith/core": patch
+"@patchsmith/cli": patch
 ---
 
 Add immutable, project-scoped app slugs of 1–32 characters and expose them in app responses. Apps and installations can choose a slug at creation; omitted slugs receive a stable generated username.

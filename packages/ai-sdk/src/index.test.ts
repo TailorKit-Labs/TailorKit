@@ -8,8 +8,8 @@ import type {
   CallToolResult,
   ServerContext,
 } from "@modelcontextprotocol/server";
-import { defineContract } from "@tailorkit/core/schema";
-import { createServer } from "@tailorkit/core/server";
+import { defineContract } from "@patchsmith/core/schema";
+import { createServer } from "@patchsmith/core/server";
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import { asSchema, generateText, simulateReadableStream, streamText } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
@@ -17,7 +17,7 @@ import * as v from "valibot";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { createTools } from "./index";
-import type { TailorKitToolInput, TailorKitTools } from "./index";
+import type { PatchsmithToolInput, PatchsmithTools } from "./index";
 
 const cleanup: (() => Promise<void>)[] = [];
 afterEach(async () => {
@@ -59,7 +59,7 @@ const connect = async (
   const handler = createMcpHandler(
     () => {
       const server = new McpServer({
-        name: "tailorkit-app-agent",
+        name: "patchsmith-app-agent",
         version: "1",
       });
       server.registerTool(
@@ -179,7 +179,7 @@ const connect = async (
   });
   const server = createServer({
     $internal: { platformBaseUrl: url.replace("/app-agent/mcp", "") },
-    baseUrl: "https://host.test/api/tailorkit",
+    baseUrl: "https://host.test/api/patchsmith",
     contract,
     projectKey: "host-key",
   });
@@ -200,7 +200,7 @@ const usage = {
   },
   outputTokens: { reasoning: undefined, text: 0, total: 0 },
 };
-const model = (name: string, input: TailorKitToolInput) =>
+const model = (name: string, input: PatchsmithToolInput) =>
   new MockLanguageModelV4({
     doGenerate: {
       content: [
@@ -241,7 +241,7 @@ const editInput = {
   threadId: finalResult.threadId,
 };
 const generate = async (
-  client: TailorKitTools,
+  client: PatchsmithTools,
   name = "editApp",
   input = editInput
 ) =>
@@ -291,12 +291,12 @@ describe("MCP-backed AI SDK tools", () => {
       expect(
         JSON.parse(
           Buffer.from(
-            request.headers.get("x-tailorkit-context") ?? "",
+            request.headers.get("x-patchsmith-context") ?? "",
             "base64url"
           ).toString()
         )
       ).toEqual({
-        hostUrl: "https://host.test/api/tailorkit",
+        hostUrl: "https://host.test/api/patchsmith",
         scopes: { org: { tenant: "tenant-one" } },
         subjectId: "user-one",
       });

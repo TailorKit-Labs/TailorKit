@@ -1,10 +1,10 @@
 import { createORPCErrorFromJson, isORPCErrorJson } from "@orpc/client";
 import { ORPCError, os } from "@orpc/server";
-import { cliAuthVerifyToken } from "@tailorkit/client-platform/client";
+import { cliAuthVerifyToken } from "@patchsmith/client-platform/client";
 
 import type { Context } from "./context";
-import { normalizeTailorKitNamedScope, selectTailorKitScopes } from "./scope";
-import type { TailorKitNamedScope, TailorKitScopes } from "./types";
+import { normalizePatchsmithNamedScope, selectPatchsmithScopes } from "./scope";
+import type { PatchsmithNamedScope, PatchsmithScopes } from "./types";
 
 const require = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
@@ -15,49 +15,49 @@ const require = <T>(value: T | null | undefined): T => {
 
 export const o = os.$context<Context>();
 
-export const getTailorKitContext = (context: Context) => {
-  if (!context.tailorkit) {
+export const getPatchsmithContext = (context: Context) => {
+  if (!context.patchsmith) {
     throw new ORPCError("UNAUTHORIZED", { message: "Unauthorized." });
   }
 
-  return context.tailorkit;
+  return context.patchsmith;
 };
 
-export const getTailorKitScope = (
+export const getPatchsmithScope = (
   context: Context,
   name?: string
-): TailorKitNamedScope => {
-  const { scopes } = getTailorKitContext(context);
+): PatchsmithNamedScope => {
+  const { scopes } = getPatchsmithContext(context);
   const names = name === undefined ? Object.keys(scopes) : [name];
   if (names.length !== 1) {
     throw new ORPCError("BAD_REQUEST", {
-      message: "Choose one TailorKit scope for this operation.",
+      message: "Choose one Patchsmith scope for this operation.",
     });
   }
   try {
-    return require(selectTailorKitScopes(scopes, names)[0]);
+    return require(selectPatchsmithScopes(scopes, names)[0]);
   } catch (error) {
     throw new ORPCError("BAD_REQUEST", {
       message:
         error instanceof Error
           ? error.message
-          : "Invalid TailorKit scope selection.",
+          : "Invalid Patchsmith scope selection.",
     });
   }
 };
 
-export const getTailorKitScopes = (
+export const getPatchsmithScopes = (
   context: Context,
   names?: string[]
-): TailorKitNamedScope[] => {
+): PatchsmithNamedScope[] => {
   try {
-    return selectTailorKitScopes(getTailorKitContext(context).scopes, names);
+    return selectPatchsmithScopes(getPatchsmithContext(context).scopes, names);
   } catch (error) {
     throw new ORPCError("BAD_REQUEST", {
       message:
         error instanceof Error
           ? error.message
-          : "Invalid TailorKit scope selection.",
+          : "Invalid Patchsmith scope selection.",
     });
   }
 };
@@ -106,9 +106,9 @@ export const requireCliDeployToken = o.middleware(async ({ context, next }) => {
     });
   }
 
-  let scopes: TailorKitScopes;
+  let scopes: PatchsmithScopes;
   try {
-    const scope = normalizeTailorKitNamedScope(token.scope);
+    const scope = normalizePatchsmithNamedScope(token.scope);
     if (!Object.hasOwn(context.scopeSchemas, scope.name)) {
       throw new TypeError("CLI token uses an undeclared scope.");
     }
@@ -118,15 +118,15 @@ export const requireCliDeployToken = o.middleware(async ({ context, next }) => {
       message: "Invalid CLI deploy token.",
     });
   }
-  return await next({ context: { tailorkit: { scopes } } });
+  return await next({ context: { patchsmith: { scopes } } });
 });
 
 export const requireHostAuth = o.middleware(async ({ context, next }) => {
-  const tailorkit = await context.authenticate({ request: context.request });
+  const patchsmith = await context.authenticate({ request: context.request });
 
-  if (!tailorkit) {
+  if (!patchsmith) {
     throw new ORPCError("UNAUTHORIZED", { message: "Unauthorized." });
   }
 
-  return await next({ context: { tailorkit } });
+  return await next({ context: { patchsmith } });
 });

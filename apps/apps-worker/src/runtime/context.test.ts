@@ -1,4 +1,4 @@
-import { defineServer, fn } from "@tailorkit/app/server";
+import { defineServer, fn } from "@patchsmith/app/server";
 import { Effect } from "effect";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
@@ -18,7 +18,7 @@ const identity = {
   projectId: "p",
   scope: { name: "org", value: { id: "tenant" } },
   subjectId: "u",
-  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
 };
 const endpoint = "https://example.com";
 

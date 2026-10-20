@@ -10,6 +10,6 @@ export { default as greetingTemplate } from "./src/functions/greeting.ts.liquid"
 export { default as rootTemplate } from "./src/root.tsx.liquid";
 export { default as serverTemplate } from "./src/server.ts.liquid";
 export { default as defaultViewTemplate } from "./src/slots/view.tsx.liquid";
-export { default as tailorkitConfigTemplate } from "./tailorkit.config.ts.liquid";
+export { default as patchsmithConfigTemplate } from "./patchsmith.config.ts.liquid";
 export { default as tsconfigTemplate } from "./tsconfig.json.liquid";
 export { default as viteConfigTemplate } from "./vite.config.ts.liquid";

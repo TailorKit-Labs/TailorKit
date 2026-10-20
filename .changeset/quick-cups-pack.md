@@ -1,14 +1,14 @@
 ---
-"@tailorkit/app": minor
-"@tailorkit/app-db": minor
-"@tailorkit/client-core": minor
-"@tailorkit/client-platform": minor
-"@tailorkit/core": minor
-"@tailorkit/react": minor
-"tailorkit": minor
-"@tailorkit/vite": minor
-"@tailorkit/cli": minor
-"@tailorkit/sandbox": minor
+"@patchsmith/app": minor
+"@patchsmith/app-db": minor
+"@patchsmith/client-core": minor
+"@patchsmith/client-platform": minor
+"@patchsmith/core": minor
+"@patchsmith/react": minor
+"patchsmith": minor
+"@patchsmith/vite": minor
+"@patchsmith/cli": minor
+"@patchsmith/sandbox": minor
 ---
 
 Build packages with Vite+ instead of tsup while preserving public entry points and declaration paths.

@@ -1,5 +1,5 @@
 {
-  "name": "@tailorkit/client-core",
+  "name": "@patchsmith/client-core",
   "version": "0.1.0-beta.52",
   "license": "Apache-2.0",
   "repository": {
@@ -66,14 +66,14 @@
   },
   "dependencies": {
     "@nanostores/async": "0.1.0",
-    "@tailorkit/app": "workspace:*",
-    "@tailorkit/core": "workspace:*",
-    "@tailorkit/sandbox": "workspace:*",
+    "@patchsmith/app": "workspace:*",
+    "@patchsmith/core": "workspace:*",
+    "@patchsmith/sandbox": "workspace:*",
     "nanostores": "1.5.5",
     "valibot": "catalog:"
   },
   "devDependencies": {
-    "@tailorkit/config": "workspace:*",
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:",

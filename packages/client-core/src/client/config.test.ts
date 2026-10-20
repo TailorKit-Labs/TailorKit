@@ -1,9 +1,12 @@
-import { asyncFixture } from "@tailorkit/config/testing";
+import { asyncFixture } from "@patchsmith/config/testing";
 import { expect, it, vi } from "vite-plus/test";
 
 import { testContract } from "#test-contract";
 
-import { createComponentRegistry, createTailorKitClientConfig } from "./config";
+import {
+  createComponentRegistry,
+  createPatchsmithClientConfig,
+} from "./config";
 
 const identity = {
   appId: "app",
@@ -13,7 +16,7 @@ const identity = {
   projectId: "project",
   scope: { name: "workspace", value: { id: "workspace" } },
   subjectId: "principal",
-  toolUrl: "https://host.test/api/tailorkit/tools/execute",
+  toolUrl: "https://host.test/api/patchsmith/tools/execute",
 };
 
 const require = <T>(value: T | null | undefined): T => {
@@ -30,14 +33,14 @@ it("wraps each renderer once and shares it with remote component aliases", () =>
   Object.setPrototypeOf(renderers, { Inherited: renderer });
   const registry = createComponentRegistry(renderers, wrap);
   expect(wrap).toHaveBeenCalledOnce();
-  expect(registry.CustomerCard).toBe(registry["tailorkit-customer-card"]);
+  expect(registry.CustomerCard).toBe(registry["patchsmith-customer-card"]);
   expect(registry).not.toHaveProperty("Missing");
   expect(registry).not.toHaveProperty("Inherited");
 });
 
 it("builds reusable client configuration without initiating network requests", () => {
   const fetch = vi.fn<typeof globalThis.fetch>();
-  const config = createTailorKitClientConfig({
+  const config = createPatchsmithClientConfig({
     baseUrl: "https://host.test/api/",
     contract: testContract(),
     fetch,
@@ -64,7 +67,7 @@ it("clears shared app data and sessions through clearCache", async () => {
       )
     )
   );
-  const config = createTailorKitClientConfig({
+  const config = createPatchsmithClientConfig({
     baseUrl: "https://host.test/api/",
     contract: testContract(),
     fetch,

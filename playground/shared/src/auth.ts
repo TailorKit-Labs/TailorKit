@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 
 import { db, teamMembers, teams, users } from "./db";
 
-export const demoSessionCookie = "tailorkit_playground";
+export const demoSessionCookie = "patchsmith_playground";
 
 export type DemoUser = typeof users.$inferSelect;
 

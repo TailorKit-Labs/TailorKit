@@ -11,8 +11,8 @@ export const readElementProps = (element: Element): RemoteProps => {
     ["textcolor", "textColor"],
   ]);
 
-  const callbackAttribute = "data-tailorkit-callbacks";
-  const propsAttribute = "data-tailorkit-props";
+  const callbackAttribute = "data-patchsmith-callbacks";
+  const propsAttribute = "data-patchsmith-props";
   const typedProps = element.getAttribute(propsAttribute);
   if (typedProps !== null) {
     try {

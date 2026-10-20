@@ -1,12 +1,12 @@
 import { createPrivateKey, createPublicKey } from "node:crypto";
 
-import type { AppTokenIdentity } from "@tailorkit/api-utils/app-auth";
+import type { AppTokenIdentity } from "@patchsmith/api-utils/app-auth";
 import {
   APP_AUDIENCE,
   appRuntimeIssuer,
   issueAppToken,
   parseAppPublicKeys,
-} from "@tailorkit/api-utils/app-auth";
+} from "@patchsmith/api-utils/app-auth";
 import { z } from "zod";
 
 import { env } from "#env";
@@ -71,7 +71,7 @@ export const issueAppRuntimeToken = async (identity: AppTokenIdentity) => {
     {
       audience: APP_AUDIENCE,
       issuer: appRuntimeIssuer(
-        env.OPENAPI_SERVER_URL ?? "https://tailorkit.dev/api/platform"
+        env.OPENAPI_SERVER_URL ?? "https://patchsmith.io/api/platform"
       ),
       keyId: key.kid,
       privateKey: key,

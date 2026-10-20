@@ -27,7 +27,7 @@ interface ListResult {
 const calls = vi.hoisted(() => ({
   list: vi.fn<(options: ListInput) => Promise<ListResult>>(),
 }));
-vi.mock("@tailorkit/db", () => ({ db: {} }));
+vi.mock("@patchsmith/db", () => ({ db: {} }));
 vi.mock("./routes/apps.ts", () => ({
   appRouter: {
     list: os
@@ -46,16 +46,16 @@ vi.mock("./routes/apps.ts", () => ({
       .handler(calls.list),
   },
 }));
-vi.mock("@tailorkit/agent-fx/workflows", () => ({
+vi.mock("@patchsmith/agent-fx/workflows", () => ({
   appAgent: vi.fn(),
   cancelAppAgent: vi.fn(),
 }));
 vi.mock("workflow/api", () => ({ start: vi.fn() }));
-vi.mock("@tailorkit/api-utils/dev-delay", () => ({
+vi.mock("@patchsmith/api-utils/dev-delay", () => ({
   devDelayMiddleware: async <TResult>({ next }: { next: () => TResult }) =>
     await next(),
 }));
-vi.mock("@tailorkit/api-utils/rate-limiting", () => ({
+vi.mock("@patchsmith/api-utils/rate-limiting", () => ({
   createRateLimiter: vi.fn(),
   ratelimitMiddleware:
     () =>
@@ -71,9 +71,9 @@ it("connects an ordinary MCP client directly to the platform with standard heade
   const url = "https://platform.test/api/platform/app-agent/mcp";
   const headers = {
     authorization: "Bearer host-key",
-    "x-tailorkit-context": Buffer.from(
+    "x-patchsmith-context": Buffer.from(
       JSON.stringify({
-        hostUrl: "https://host.test/api/tailorkit",
+        hostUrl: "https://host.test/api/patchsmith",
         scopes: { org: { tenant: "墨尔本" } },
         subjectId: "user",
       }),

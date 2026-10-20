@@ -5,10 +5,10 @@ This example needs `api.todos.add({ title })` and generated controls with the sh
 <!-- example: src/components/todo-editor.tsx -->
 
 ```tsx
+import { useMutation } from "patchsmith/client";
 import { useState } from "preact/hooks";
-import { useMutation } from "tailorkit/client";
 
-import { api, Box, Button, Input } from "#tailorkit";
+import { api, Box, Button, Input } from "#patchsmith";
 
 export const TodoEditor = () => {
   const [title, setTitle] = useState("");

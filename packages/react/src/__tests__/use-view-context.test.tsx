@@ -1,18 +1,18 @@
+import { createPatchsmithStore } from "@patchsmith/client-core";
+import { defineContract } from "@patchsmith/core/schema";
+import type { ViewContextValues } from "@patchsmith/core/views";
 import type {
   StandardJSONSchemaV1,
   StandardSchemaV1,
 } from "@standard-schema/spec";
-import { createTailorKitStore } from "@tailorkit/client-core";
-import { defineContract } from "@tailorkit/core/schema";
-import type { ViewContextValues } from "@tailorkit/core/views";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { StrictMode } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 
-import { TailorkitContext } from "#components/context";
+import { PatchsmithContext } from "#components/context";
 import type { ViewState } from "#hooks/use-view-context";
-import { createClient } from "#tailorkit";
+import { createClient } from "#patchsmith";
 
 const isViewContext = <TValue,>(
   value: TValue
@@ -50,7 +50,7 @@ afterEach(() => {
 
 const setup = () => {
   const client = createClient({ baseUrl: "https://host.test", contract });
-  const store = createTailorKitStore({
+  const store = createPatchsmithStore({
     apps: [],
     baseUrl: client.baseUrl,
     client: client.fetchClient,
@@ -59,9 +59,9 @@ const setup = () => {
   const contextValue1 = Object.freeze({ client, store });
   const wrapper = ({ children }: { children: ReactNode }) => (
     <StrictMode>
-      <TailorkitContext.Provider value={contextValue1}>
+      <PatchsmithContext.Provider value={contextValue1}>
         {children}
-      </TailorkitContext.Provider>
+      </PatchsmithContext.Provider>
     </StrictMode>
   );
   return { client, store, wrapper };

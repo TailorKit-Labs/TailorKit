@@ -33,7 +33,7 @@ vi.mock("./workspace", () => ({ prepareWorkspace: mocks.workspace }));
 const input: AppAgentInput = {
   agentToken: "private-token",
   appId: "app-1",
-  hostUrl: "https://host.test/api/tailorkit",
+  hostUrl: "https://host.test/api/patchsmith",
   messages: [{ content: "Build", role: "user" }],
   model: "xiaomi/mimo-v2.6-pro",
   threadId: "thread-1",
@@ -82,7 +82,7 @@ describe("Pi sandbox ownership", () => {
     expect(mocks.create.mock.calls[0]?.[0]).not.toHaveProperty("env");
     expect(mocks.write).not.toHaveBeenCalled();
     expect(mocks.run).toHaveBeenCalledWith({
-      args: ["-f", "/tmp/tailorkit-agent.token"],
+      args: ["-f", "/tmp/patchsmith-agent.token"],
       cmd: "rm",
       timeoutMs: 30_000,
     });
@@ -129,13 +129,13 @@ describe("Pi sandbox ownership", () => {
     expect(mocks.write).toHaveBeenLastCalledWith([
       {
         content: Buffer.from(JSON.stringify(schema)),
-        path: "/workspace/tailorkit.schema.json",
+        path: "/workspace/patchsmith.schema.json",
       },
     ]);
     expect(mocks.workspace).toHaveBeenCalledWith(
       expect.any(Object),
       { ...input, schema },
-      "/workspace/tailorkit.schema.json"
+      "/workspace/patchsmith.schema.json"
     );
     expect(mocks.write.mock.invocationCallOrder.at(-1)).toBeLessThan(
       mocks.workspace.mock.invocationCallOrder[0] ?? 0
@@ -172,7 +172,7 @@ describe("Pi sandbox ownership", () => {
   it("removes ephemeral CLI authorization before saving the idle snapshot", async () => {
     await stopSandboxStep(sandboxName);
     expect(mocks.run).toHaveBeenCalledWith({
-      args: ["-f", "/tmp/tailorkit-agent.token"],
+      args: ["-f", "/tmp/patchsmith-agent.token"],
       cmd: "rm",
       timeoutMs: 30_000,
     });

@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 
-import type { FunctionKind } from "@tailorkit/app/server";
+import type { FunctionKind } from "@patchsmith/app/server";
 
 import { AppError } from "./errors";
 

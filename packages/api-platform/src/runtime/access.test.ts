@@ -11,7 +11,7 @@ const request = (
 ) => {
   const headers = new Headers({ authorization: `Bearer ${token}` });
   if (projectId !== null) {
-    headers.set("x-tailorkit-project-id", projectId);
+    headers.set("x-patchsmith-project-id", projectId);
   }
 
   return new Request(`https://platform.test${path}`, { headers, method });

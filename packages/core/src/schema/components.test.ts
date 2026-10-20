@@ -2,10 +2,10 @@ import * as v from "valibot";
 import { describe, expect, it } from "vite-plus/test";
 import { z } from "zod";
 
-import { TailorKitSchemaSpec } from "#spec/spec";
+import { PatchsmithSchemaSpec } from "#spec/spec";
 
 import { defineContract } from "./contract";
-import { createTailorKitSchema } from "./schema";
+import { createPatchsmithSchema } from "./schema";
 
 describe("component descriptions", () => {
   it("preserves behavior guidance without adding metadata to component fields", () => {
@@ -23,9 +23,9 @@ describe("component descriptions", () => {
         Plain: {},
       },
     });
-    const host = createTailorKitSchema(contract);
+    const host = createPatchsmithSchema(contract);
     const serialized = host.serialize();
-    const parsed = v.parse(TailorKitSchemaSpec, serialized);
+    const parsed = v.parse(PatchsmithSchemaSpec, serialized);
     expect(contract.components.Form.description).toBe(description);
     expect(host.$internal.components.Form.description).toBe(description);
     expect(parsed.components.Form).toMatchObject({
@@ -52,11 +52,11 @@ describe("component descriptions", () => {
           components,
         })
       ).toThrow('Component "Form" description must be a string.');
-      expect(() => createTailorKitSchema({ components })).toThrow(
+      expect(() => createPatchsmithSchema({ components })).toThrow(
         'Component "Form" description must be a string.'
       );
       expect(
-        v.safeParse(TailorKitSchemaSpec, {
+        v.safeParse(PatchsmithSchemaSpec, {
           components: { Form: { callbacks: {}, children: false, description } },
           version: 1,
         }).success

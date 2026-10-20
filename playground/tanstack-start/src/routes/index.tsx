@@ -1,12 +1,12 @@
-import { Badge } from "@tailorkit/ui/badge";
-import { Button } from "@tailorkit/ui/button";
+import { Badge } from "@patchsmith/ui/badge";
+import { Button } from "@patchsmith/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@tailorkit/ui/card";
+} from "@patchsmith/ui/card";
 import { useLoaderData, Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowUpRight, CircleCheck, CircleDot, Plus } from "lucide-react";
 

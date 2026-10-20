@@ -31,7 +31,7 @@ vi.mock("workflow", () => ({
 const input: AppAgentInput = {
   agentToken: "private-token",
   appId: "app-1",
-  hostUrl: "https://host.test/api/tailorkit",
+  hostUrl: "https://host.test/api/patchsmith",
   messages: [{ content: "Build the app", role: "user" }],
   model: "xiaomi/mimo-v2.6-pro",
   threadId: "thread-1",

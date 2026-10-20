@@ -1,10 +1,10 @@
 export { createEndpointClient } from "./endpoints";
 export type { EndpointClient, SlotInstancesInput } from "./endpoints";
-export { createTailorKitFetchClient } from "./fetch-client";
+export { createPatchsmithFetchClient } from "./fetch-client";
 export type {
-  TailorKitFetchClient,
-  TailorKitFetchClientOptions,
-  TailorKitCacheOptions,
+  PatchsmithFetchClient,
+  PatchsmithFetchClientOptions,
+  PatchsmithCacheOptions,
 } from "./fetch-client";
 export { toBaseUrl } from "./url";
 export { matchesApp } from "./apps";

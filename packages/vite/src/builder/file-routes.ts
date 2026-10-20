@@ -9,7 +9,7 @@ import { forEachSequential } from "#for-each-sequential";
 
 import { childNodes, createDefineViewMatcher } from "./define-view";
 
-const clientRuntimeImport = "tailorkit:file-client-runtime";
+const clientRuntimeImport = "patchsmith:file-client-runtime";
 
 const routePath = (name: string, filename: string, indexView = false) => {
   const segments = name.split(/[./]/u);
@@ -213,7 +213,7 @@ export const discoverFileRoutes = async (root: string) => {
 /** Root, layout, view and binding sources to check before deployment. */
 export const getClientSourceFiles = async (root: string) => {
   const discovered = await discoverFileRoutes(root);
-  const bindings = path.join(root, "src/tailorkit.gen.ts");
+  const bindings = path.join(root, "src/patchsmith.gen.ts");
   return [
     ...(discovered.root ? [discovered.root.filename] : []),
     ...discovered.roots.map((module) => module.filename),
@@ -316,7 +316,7 @@ export const createFileRouteEntry = async (
 
 export const fileRoutesPlugin = (root: () => string): Plugin => ({
   enforce: "pre",
-  name: "tailorkit-file-routes",
+  name: "patchsmith-file-routes",
   async resolveId(id) {
     if (id !== clientRuntimeImport) {
       /* oxlint-disable-next-line unicorn/no-useless-undefined -- The optional result needs an explicit value on every return path. */
@@ -324,9 +324,10 @@ export const fileRoutesPlugin = (root: () => string): Plugin => ({
     }
     // Resolve from the app even when its build output is outside the project.
     const importer = path.join(root(), "src/root.tsx");
-    return await ((await this.resolve("tailorkit/client", importer, {
+    return await ((await this.resolve("patchsmith/client", importer, {
       skipSelf: true,
-    })) ?? this.resolve("@tailorkit/app/client", importer, { skipSelf: true }));
+    })) ??
+      this.resolve("@patchsmith/app/client", importer, { skipSelf: true }));
   },
   transform: (source, filename): { code: string; map: null } | undefined => {
     if (!filename.endsWith(".view.tsx")) {

@@ -1,5 +1,5 @@
 import { useStore } from "@nanostores/react";
-import type { QueryResult } from "@tailorkit/client-core";
+import type { QueryResult } from "@patchsmith/client-core";
 import type { ReadableAtom } from "nanostores";
 import { useMemo } from "react";
 

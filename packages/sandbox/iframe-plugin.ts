@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { build } from "vite";
 import type { Plugin } from "vite";
 
-const moduleId = "virtual:tailorkit-iframe";
+const moduleId = "virtual:patchsmith-iframe";
 
 /** Bundle the isolated runtime as an inline script, with no runtime network imports. */
 export const iframeRuntimePlugin = (): Plugin => ({
@@ -16,7 +16,7 @@ export const iframeRuntimePlugin = (): Plugin => ({
         lib: {
           entry: fileURLToPath(new URL("src/iframe/entry.ts", import.meta.url)),
           formats: ["iife"],
-          name: "TailorKitIframe",
+          name: "PatchsmithIframe",
         },
         minify: true,
         write: false,
@@ -26,14 +26,14 @@ export const iframeRuntimePlugin = (): Plugin => ({
     });
     const output = Array.isArray(result) ? result[0] : result;
     if (!output || !("output" in output)) {
-      throw new Error("Unable to bundle TailorKit iframe.");
+      throw new Error("Unable to bundle Patchsmith iframe.");
     }
     const chunk = output.output.find((item) => item.type === "chunk");
     if (!chunk) {
-      throw new Error("TailorKit iframe bundle is empty.");
+      throw new Error("Patchsmith iframe bundle is empty.");
     }
     return `export default ${JSON.stringify(chunk.code)};`;
   },
-  name: "tailorkit-iframe",
+  name: "patchsmith-iframe",
   resolveId: (id) => (id === moduleId ? `\0${moduleId}` : undefined),
 });

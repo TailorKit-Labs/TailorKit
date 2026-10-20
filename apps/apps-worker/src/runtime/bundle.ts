@@ -1,4 +1,4 @@
-import type { AppDefinition, ApplicationModule } from "@tailorkit/app/server";
+import type { AppDefinition, ApplicationModule } from "@patchsmith/app/server";
 import { z } from "zod";
 
 import type { Persistence } from "./database/driver";

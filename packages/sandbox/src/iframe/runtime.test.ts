@@ -1,6 +1,9 @@
 // @vitest-environment happy-dom
-import { createFileClient, createRemoteComponent } from "@tailorkit/app/client";
-import type { RemoteCallbackOperation } from "@tailorkit/app/client";
+import {
+  createFileClient,
+  createRemoteComponent,
+} from "@patchsmith/app/client";
+import type { RemoteCallbackOperation } from "@patchsmith/app/client";
 import * as v from "valibot";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 
@@ -87,9 +90,9 @@ it("imports once, publishes updates, clears unsupported slots, and dispatches ca
       panel: {
         "/": {
           component: (props) => {
-            const button = document.createElement("tailorkit-button");
+            const button = document.createElement("patchsmith-button");
             button.textContent = String(props.context?.name);
-            button.dataset.tailorkitCallbacks = JSON.stringify({
+            button.dataset.patchsmithCallbacks = JSON.stringify({
               click: { callback: "onClick", inputCount: 0 },
             });
             button.addEventListener("click", () => {
@@ -305,7 +308,7 @@ const renderCallback = async (operation: RemoteCallbackOperation) => {
   const runtime = setup({ default: app });
   runtime.update(requestImplementation("editor"));
   await vi.waitFor(() => {
-    expect(runtime.root.querySelector("tailorkit-editor")).not.toBeNull();
+    expect(runtime.root.querySelector("patchsmith-editor")).not.toBeNull();
   });
   const snapshot = runtime.messages.findLast(
     (message) => message.type === "snapshot"
@@ -319,7 +322,7 @@ const renderCallback = async (operation: RemoteCallbackOperation) => {
   }
   const invoke = (id: string, args: unknown[] = []) => {
     runtime.send({
-      data: { args, event: "tailorkitcallbackonsave", id, nodeId: editor.id },
+      data: { args, event: "patchsmithcallbackonsave", id, nodeId: editor.id },
       type: "dispatchCallback",
     });
   };

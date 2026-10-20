@@ -1,9 +1,9 @@
+import { appsGet } from "@patchsmith/client-platform/client";
+import { createClient } from "@patchsmith/client-platform/client/client/index";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
-import { appsGet } from "@tailorkit/client-platform/client";
-import { createClient } from "@tailorkit/client-platform/client/client/index";
 import * as v from "valibot";
 
-import type { TailorKitContract } from "#schema/contract";
+import type { PatchsmithContract } from "#schema/contract";
 import type {
   ToolImplementations,
   ToolContext,
@@ -12,15 +12,15 @@ import type {
 import { flattenTools, validateToolValue } from "#schema/tools";
 
 import { normalizeBaseUrl } from "./base-url";
-import { createTailorKitServer } from "./handler";
-import { normalizeTailorKitNamedScope } from "./scope";
+import { createPatchsmithServer } from "./handler";
+import { normalizePatchsmithNamedScope } from "./scope";
 import { createToolVerifier } from "./tool-auth";
 import type {
-  TailorKitServerBaseOptions,
-  TailorKitHandlerOptions,
-  TailorKitHostContext,
-  TailorKitInstallAppOptions,
-  TailorKitServerInputOptions,
+  PatchsmithServerBaseOptions,
+  PatchsmithHandlerOptions,
+  PatchsmithHostContext,
+  PatchsmithInstallAppOptions,
+  PatchsmithServerInputOptions,
 } from "./types";
 
 const isFunctionValue = <TValue>(
@@ -28,7 +28,7 @@ const isFunctionValue = <TValue>(
 ): value is Extract<TValue, CallableFunction> => typeof value === "function";
 
 export type { ToolImplementations } from "#schema/tools";
-export type ContractScopes<T extends TailorKitContract> = {
+export type ContractScopes<T extends PatchsmithContract> = {
   [N in keyof T["scopes"]]: StandardSchemaV1.InferInput<T["scopes"][N]>;
 };
 const isToolHandler = (
@@ -63,8 +63,8 @@ const implementationPaths = (
   );
 };
 /** Bind server tools without placing their implementations in the shared contract. */
-export const createServer = <const T extends TailorKitContract>(
-  options: Omit<TailorKitServerBaseOptions<T["scopes"]>, "scopes"> & {
+export const createServer = <const T extends PatchsmithContract>(
+  options: Omit<PatchsmithServerBaseOptions<T["scopes"]>, "scopes"> & {
     contract: T;
   } & (keyof ToolImplementations<T["tools"], "server"> extends never
       ? { tools?: ToolImplementations<T["tools"], "server"> }
@@ -85,18 +85,18 @@ export const createServer = <const T extends TailorKitContract>(
       throw new Error(`Undeclared server tool "${path}"`);
     }
   }
-  type InternalOptions = TailorKitServerInputOptions & {
+  type InternalOptions = PatchsmithServerInputOptions & {
     views: T["views"];
     slots: T["slots"];
     tools: T["tools"];
   };
   // SAFETY: The generic contract supplies the matching views, slots and tools; configuration supplies the remaining server options.
-  const server = createTailorKitServer<InternalOptions>(
+  const server = createPatchsmithServer<InternalOptions>(
     /* oxlint-disable typescript/no-unsafe-type-assertion -- The generic contract supplies the matching views, slots and tools; configuration supplies the remaining server options. */
     {
       ...configuration,
       ...contract,
-    } as Parameters<typeof createTailorKitServer<InternalOptions>>[0]
+    } as Parameters<typeof createPatchsmithServer<InternalOptions>>[0]
     /* oxlint-enable typescript/no-unsafe-type-assertion */
   );
   const platformUrl = server.$internal.platformBaseUrl;
@@ -140,7 +140,7 @@ export const createServer = <const T extends TailorKitContract>(
     const installation = await appsGet({
       body: {
         app: { id: identity.installationId },
-        scopes: [normalizeTailorKitNamedScope(identity.scope)],
+        scopes: [normalizePatchsmithNamedScope(identity.scope)],
       },
       client: platform,
       headers: headersValue,
@@ -165,7 +165,7 @@ export const createServer = <const T extends TailorKitContract>(
     contract,
     experimental: {
       installApp: async (
-        input: TailorKitInstallAppOptions<ContractScopes<T>>
+        input: PatchsmithInstallAppOptions<ContractScopes<T>>
       ) =>
         await server.experimental.installApp({
           appId: input.appId,
@@ -174,7 +174,7 @@ export const createServer = <const T extends TailorKitContract>(
     },
     handler: async (
       request: Request,
-      handlerOptions: TailorKitHandlerOptions<Partial<ContractScopes<T>>>
+      handlerOptions: PatchsmithHandlerOptions<Partial<ContractScopes<T>>>
     ) => {
       if (
         !(
@@ -261,12 +261,12 @@ export const createServer = <const T extends TailorKitContract>(
           });
         }
       }
-      // SAFETY: ContractScopes derives each scope input from the same contract passed to createTailorKitServer.
+      // SAFETY: ContractScopes derives each scope input from the same contract passed to createPatchsmithServer.
       return await server.handler(request, handlerOptions);
     },
     mcp: {
       transport: async (
-        optionsValue: TailorKitHostContext<Partial<ContractScopes<T>>>
+        optionsValue: PatchsmithHostContext<Partial<ContractScopes<T>>>
       ) => await server.mcp.transport(optionsValue),
     },
   };

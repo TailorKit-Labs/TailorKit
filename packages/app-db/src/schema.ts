@@ -16,7 +16,8 @@ export const table = <
   if (
     !/^[a-zA-Z][a-zA-Z0-9_]{0,62}$/u.test(name) ||
     name.startsWith("sqlite_") ||
-    name.startsWith("tailorkit_")
+    name.startsWith("tailorkit_") ||
+    name.startsWith("patchsmith_")
   ) {
     throw new Error("Invalid or reserved table name");
   }

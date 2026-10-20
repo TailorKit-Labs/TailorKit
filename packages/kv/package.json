@@ -1,5 +1,5 @@
 {
-  "name": "@tailorkit/kv",
+  "name": "@patchsmith/kv",
   "version": "0.0.0",
   "private": true,
   "license": "BUSL-1.1",
@@ -34,12 +34,12 @@
     "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
-    "@tailorkit/env": "workspace:*",
-    "@tailorkit/observability": "workspace:*",
+    "@patchsmith/env": "workspace:*",
+    "@patchsmith/observability": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@tailorkit/config": "workspace:*",
+    "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
     "@upstash/redis": "^1.39.0",
     "ioredis": "^6.0.0",
