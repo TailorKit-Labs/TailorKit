@@ -2,10 +2,20 @@ import type {
   experimental_requestCanvas,
   experimental_CanvasSurface,
 } from "./canvas";
+import { waitForCanvasFrame } from "./canvas-scheduler";
+
+export interface experimental_CanvasFrame {
+  /** Monotonic milliseconds from the sandbox performance clock. */
+  timestamp: number;
+  /** Milliseconds since this connection's previous draw callback; zero initially. */
+  deltaTime: number;
+}
 
 export type experimental_CanvasDraw = (
-  canvas: OffscreenCanvas
-) => void | Promise<void>;
+  canvas: OffscreenCanvas,
+  frame: experimental_CanvasFrame
+  // oxlint-disable-next-line typescript/no-invalid-void-type -- Existing draw callbacks may omit a return; false explicitly skips presentation.
+) => boolean | void | Promise<boolean | void>;
 export interface experimental_CanvasCreateContext {
   signal: AbortSignal;
   /** Schedule presentation after an external library draws or changes its state. */
@@ -30,14 +40,18 @@ export interface experimental_CanvasLifecycle<T> {
   /** Runs on each presentation, including input, invalidate(), and continuous frames. */
   draw?: (
     resource: NoInfer<T>,
-    canvas: OffscreenCanvas
-  ) => void | Promise<void>;
+    canvas: OffscreenCanvas,
+    frame: experimental_CanvasFrame
+    // oxlint-disable-next-line typescript/no-invalid-void-type -- Preserve void-returning library callbacks alongside the explicit skip result.
+  ) => boolean | void | Promise<boolean | void>;
   dispose?: (resource: NoInfer<T>) => void;
 }
 export interface experimental_CanvasHookOptions {
   /** Recreate the resource when these values change; defaults to []. */
   createDependencies?: readonly unknown[];
   continuous?: boolean;
+  /** App-side scheduling cap, 0 < FPS <= 240. The host independently enforces its cap. */
+  framesPerSecond?: number;
   /** Defaults to true so libraries can retain their drawing buffer. */
   preserveDrawingBuffer?: boolean;
 }
@@ -49,7 +63,8 @@ interface Connection {
   surface: experimental_CanvasSurface;
   lifetime: AbortController;
   draw: experimental_CanvasDraw;
-  update?: experimental_CanvasDraw;
+  update?: (canvas: OffscreenCanvas) => void | Promise<void>;
+  lastDraw: number | null;
   dispose?: () => void;
   running: boolean;
   dirty: boolean;
@@ -69,11 +84,27 @@ const dependenciesChanged = (
   previous.length !== next.length ||
   next.some((value, index) => !Object.is(value, previous[index]));
 
+const validateFramesPerSecond = (value: number | undefined) => {
+  if (
+    value !== undefined &&
+    (!Number.isFinite(value) || value <= 0 || value > 240)
+  ) {
+    throw new RangeError(
+      "Canvas framesPerSecond must be finite, greater than zero, and at most 240."
+    );
+  }
+  return value;
+};
+
 /** Dependencies are injectable so lifecycle races can be tested without module mocks. */
 export const createCanvasController = <T>(
   binding: string,
   notify: (state: experimental_CanvasHookState) => void,
-  dependencies: { request: typeof experimental_requestCanvas; watch: Watch }
+  dependencies: {
+    request: typeof experimental_requestCanvas;
+    watch: Watch;
+    now?: () => number;
+  }
 ) => {
   let definition:
     | experimental_CanvasDraw
@@ -84,6 +115,8 @@ export const createCanvasController = <T>(
   let mounted = false;
   let continuous = false;
   let preserveDrawingBuffer = true;
+  let framesPerSecond: number | undefined;
+  const now = dependencies.now ?? (() => performance.now());
   let generation: string | null = null;
   let epoch = 0;
   let recovered = false;
@@ -125,6 +158,38 @@ export const createCanvasController = <T>(
     mounted && current === connection;
   const isActive = (revision: number, lifetime: AbortController) =>
     mounted && epoch === revision && !lifetime.signal.aborted;
+  const drawFrame = async (connection: Connection) => {
+    const timestamp = now();
+    const frame = {
+      deltaTime:
+        connection.lastDraw === null ? 0 : timestamp - connection.lastDraw,
+      timestamp,
+    };
+    connection.lastDraw = timestamp;
+    const result = await connection.draw(connection.surface.canvas, frame);
+    if (!isCurrent(connection)) {
+      return;
+    }
+    if (result === false) {
+      if (continuous || connection.dirty) {
+        await waitForCanvasFrame(
+          1000 / (framesPerSecond ?? 60) - (now() - timestamp),
+          connection.lifetime.signal
+        );
+      }
+      return;
+    }
+    await connection.surface.present({ preserveDrawingBuffer });
+  };
+  const pace = async (connection: Connection) => {
+    if (framesPerSecond === undefined || connection.lastDraw === null) {
+      return;
+    }
+    const delay = 1000 / framesPerSecond - (now() - connection.lastDraw);
+    if (delay > 0) {
+      await waitForCanvasFrame(delay, connection.lifetime.signal);
+    }
+  };
   const pump = async (connection: Connection) => {
     if (!isCurrent(connection) || connection.running || connection.failed) {
       return;
@@ -133,6 +198,11 @@ export const createCanvasController = <T>(
     try {
       while (true) {
         if (!isCurrent(connection) || (!connection.dirty && !continuous)) {
+          break;
+        }
+        // oxlint-disable-next-line no-await-in-loop -- App pacing supplements the host's presentation cap.
+        await pace(connection);
+        if (!isCurrent(connection)) {
           break;
         }
         connection.dirty = false;
@@ -147,13 +217,8 @@ export const createCanvasController = <T>(
             continue;
           }
         }
-        // oxlint-disable-next-line no-await-in-loop -- Drawing must complete before a frame is snapshotted.
-        await connection.draw(connection.surface.canvas);
-        if (!isCurrent(connection)) {
-          break;
-        }
-        // oxlint-disable-next-line no-await-in-loop -- Host acknowledgements bound the queue and pace continuous drawing.
-        await connection.surface.present({ preserveDrawingBuffer });
+        // oxlint-disable-next-line no-await-in-loop -- Drawing and presentation are serialized; skipped frames yield without snapshotting.
+        await drawFrame(connection);
       }
     } catch (error) {
       if (isCurrent(connection)) {
@@ -220,7 +285,7 @@ export const createCanvasController = <T>(
       });
       const initialDefinition = definition;
       let draw: experimental_CanvasDraw;
-      let update: experimental_CanvasDraw | undefined;
+      let update: Connection["update"];
       if ("create" in initialDefinition) {
         const resource = await initialDefinition.create(granted.canvas, {
           invalidate: () => {
@@ -242,15 +307,15 @@ export const createCanvasController = <T>(
             await definition.update?.(resource, canvas);
           }
         };
-        draw = async (canvas) => {
+        draw = async (canvas, frame) => {
           if (definition !== null && "create" in definition) {
-            await definition.draw?.(resource, canvas);
+            return await definition.draw?.(resource, canvas, frame);
           }
         };
       } else {
-        draw = async (canvas) => {
+        draw = async (canvas, frame) => {
           if (definition !== null && !("create" in definition)) {
-            await definition(canvas);
+            return await definition(canvas, frame);
           }
         };
       }
@@ -264,6 +329,7 @@ export const createCanvasController = <T>(
         dispose: cleanup,
         draw,
         failed: false,
+        lastDraw: null,
         lifetime,
         running: false,
         surface: granted,
@@ -335,6 +401,9 @@ export const createCanvasController = <T>(
       values: readonly unknown[],
       options: experimental_CanvasHookOptions
     ) => {
+      const nextFramesPerSecond = validateFramesPerSecond(
+        options.framesPerSecond
+      );
       const changed = dependenciesChanged(previousDependencies, values);
       const createValues = options.createDependencies ?? [];
       const createChanged = dependenciesChanged(
@@ -345,9 +414,11 @@ export const createCanvasController = <T>(
       const isLifecycle = "create" in next;
       const modeChanged = definition !== null && wasLifecycle !== isLifecycle;
       const optionsChanged =
+        framesPerSecond !== options.framesPerSecond ||
         continuous !== (options.continuous === true) ||
         preserveDrawingBuffer !== (options.preserveDrawingBuffer !== false);
       definition = next;
+      framesPerSecond = nextFramesPerSecond;
       continuous = options.continuous === true;
       preserveDrawingBuffer = options.preserveDrawingBuffer !== false;
       previousDependencies = [...values];

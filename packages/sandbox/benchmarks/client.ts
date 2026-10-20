@@ -43,7 +43,30 @@ const checkPreservedBuffer = async (
   return { passed: true };
 };
 
+const checkEvaluation = async () => {
+  // oxlint-disable-next-line no-eval -- Deliberately verify string evaluation inside the production opaque-origin iframe, never in the host.
+  const value: unknown = globalThis.eval("6 * 7");
+  v.parse(v.literal(42), value);
+  const module = await WebAssembly.compile(
+    new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0])
+  );
+  await WebAssembly.instantiate(module);
+  let isolated = false;
+  try {
+    // Reading parent DOM must still fail after string evaluation and Wasm compilation.
+    isolated = window.parent.document === document;
+  } catch {
+    return { passed: true };
+  }
+  throw new Error(
+    `Sandbox parent access was unexpectedly available: ${isolated}`
+  );
+};
+
 const run = async (configuration: v.InferOutput<typeof Configuration>) => {
+  if (configuration.mode === "evaluation") {
+    return await checkEvaluation();
+  }
   if (configuration.mode === "unregistered") {
     try {
       await experimental_requestCanvas("not-granted");
