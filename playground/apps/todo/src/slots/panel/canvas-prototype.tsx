@@ -10,6 +10,7 @@ import type { ChartItem } from "chart.js";
 import { useState } from "preact/hooks";
 import { experimental_useCanvasSurface as useCanvasSurface } from "tailorkit/client";
 
+import { Doom } from "#slots/doom/doom";
 import { Box, Button, experimental_Canvas as Canvas, Flex } from "#tailorkit";
 
 import { CanvasChartPlatform } from "./canvas-chart-platform";
@@ -147,13 +148,35 @@ const Chart = ({
 };
 
 export const CanvasPrototype = () => {
+  const [playingDoom, setPlayingDoom] = useState(false);
   const [continuous, setContinuous] = useState(false);
   const [revision, setRevision] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [visible, setVisible] = useState(true);
   const [instanceCount, setInstanceCount] = useState(0);
+  if (playingDoom) {
+    return (
+      <Flex direction="column" gap="sm">
+        <Button
+          onClick={() => {
+            setPlayingDoom(false);
+          }}
+        >
+          Back to charts
+        </Button>
+        <Doom />
+      </Flex>
+    );
+  }
   return (
     <Flex direction="column" gap="sm">
+      <Button
+        onClick={() => {
+          setPlayingDoom(true);
+        }}
+      >
+        Play Doom
+      </Button>
       <Box>Experimental sandbox canvas · Chart.js {ChartJS.version}</Box>
       <Flex gap="sm" wrap="wrap">
         <Button

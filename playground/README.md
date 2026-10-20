@@ -99,3 +99,7 @@ All three playground contracts grant pointer input and the focused ArrowLeft/Arr
 To try the same app through a standalone `RenderSlot.Controlled` host without database or platform setup, run `pnpm playground:generate`, `pnpm playground:todo:build`, `pnpm --filter @tailorkit/ui build`, and `pnpm --filter @playground/tanstack-start dev:canvas`. Open http://127.0.0.1:5191/canvas-demo.html. The standalone host adds sandbox restart and a second app instance for isolation checks. From a fresh load, `await window.experimental_runCanvasChecks()` runs the repeatable browser checks, including pixel readback for bars and axis labels, data changes, animation start/stop, and Chart.js instance cleanup.
 
 See [the sandbox guide](../packages/sandbox/README.md) for the host/app API, limits, and low-level throughput harness. Canvas input requires host opt-in; audio and WebAssembly remain separate capabilities.
+
+### DoomGeneric
+
+The same standalone canvas demo includes **Play Doom**, using a small sandbox wrapper around the real DoomGeneric engine and Freedoom Phase 1 data. Run `pnpm --filter @playground/todo build:doom` with Docker running, then rebuild the Todo app. Doom uses the existing canvas API and a separate host key allowlist; the Chart.js policy is unchanged. See [the DoomGeneric build and controls](apps/todo/doomgeneric/README.md), including the optional browser checks and source/license information. Generated game assets stay in the ignored cache.

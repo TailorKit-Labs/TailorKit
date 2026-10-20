@@ -273,3 +273,145 @@ declare global {
 }
 
 globalThis.experimental_runCanvasChecks = runCanvasChecks;
+
+const doomStatsPattern =
+  /Frames: (?<frames>\d+) · Inputs: (?<inputs>\d+) · Position: (?<x>-?\d+), (?<y>-?\d+)/u;
+const doomStats = (label: string) => {
+  const stats = doomStatsPattern.exec(region(label).textContent)?.groups;
+  return stats
+    ? {
+        frames: Number(stats.frames),
+        inputs: Number(stats.inputs),
+        position: `${stats.x},${stats.y}`,
+      }
+    : null;
+};
+
+/** Run on a fresh demo after build:doom and the Todo build. Uses real host pixels and engine coordinates. */
+export const runDoomChecks = async () => {
+  const first = region("First app");
+  await waitFor(
+    () => first.textContent.includes("Canvas ready"),
+    "Chart demo did not start."
+  );
+  click(first, "Play Doom");
+  await waitFor(
+    async () =>
+      first.textContent.includes("Doom ready") &&
+      (doomStats("First app")?.frames ?? 0) >= 5 &&
+      (await painted("First app")),
+    "DoomGeneric did not paint."
+  );
+  const game = canvas("First app");
+  const initial = doomStats("First app");
+  if (!initial) {
+    throw new Error("Doom engine diagnostics are missing.");
+  }
+  const pixelsBefore = await hash("First app");
+  game.blur();
+  const unfocused = new KeyboardEvent("keydown", {
+    code: "ArrowUp",
+    key: "ArrowUp",
+    cancelable: true,
+  });
+  game.dispatchEvent(unfocused);
+  if (unfocused.defaultPrevented) {
+    throw new Error("Unfocused game captured keyboard input.");
+  }
+  game.focus();
+  const denied = new KeyboardEvent("keydown", {
+    code: "KeyQ",
+    key: "q",
+    cancelable: true,
+  });
+  game.dispatchEvent(denied);
+  if (denied.defaultPrevented) {
+    throw new Error("Game captured a key outside its host allowlist.");
+  }
+  const move = new KeyboardEvent("keydown", {
+    code: "ArrowUp",
+    key: "ArrowUp",
+    cancelable: true,
+  });
+  game.dispatchEvent(move);
+  if (!move.defaultPrevented) {
+    throw new Error("Focused game did not capture its approved movement key.");
+  }
+  await waitFor(async () => {
+    const next = doomStats("First app");
+    return (
+      next !== null &&
+      next.inputs > initial.inputs &&
+      next.position !== initial.position &&
+      (await hash("First app")) !== pixelsBefore
+    );
+  }, "Forwarded input did not move the Doom player and update the host pixels.");
+  game.blur();
+  await waitFor(
+    () =>
+      first.textContent.includes("Game keys held: none") &&
+      (doomStats("First app")?.inputs ?? 0) >= initial.inputs + 2,
+    "Blur did not release the engine's held movement key."
+  );
+  game.focus();
+  game.dispatchEvent(
+    new KeyboardEvent("keydown", { code: "Space", key: " ", cancelable: true })
+  );
+  game.dispatchEvent(new KeyboardEvent("keyup", { code: "Space", key: " " }));
+  await waitFor(
+    () => (doomStats("First app")?.inputs ?? 0) >= initial.inputs + 4,
+    "Fire input did not reach DoomGeneric."
+  );
+  game.blur();
+  click(document, "Mount second app");
+  await waitFor(
+    () =>
+      document.querySelectorAll("canvas").length === 2 &&
+      region("Second app").textContent.includes("Canvas ready"),
+    "Second app did not mount."
+  );
+  const firstFrames = doomStats("First app")?.frames ?? 0;
+  click(region("Second app"), "Redraw chart");
+  await waitFor(
+    () => (doomStats("First app")?.frames ?? 0) > firstFrames,
+    "Chart app interrupted Doom rendering."
+  );
+  click(first, "Back to charts");
+  await waitFor(
+    () => !game.isConnected && first.textContent.includes("Canvas ready"),
+    "Doom did not tear down and return to Chart.js."
+  );
+  click(first, "Play Doom");
+  await waitFor(
+    () =>
+      first.textContent.includes("Doom ready") &&
+      doomStats("First app") !== null,
+    "Doom did not restart after teardown."
+  );
+  const restarted = canvas("First app");
+  click(document, "Restart sandbox");
+  await waitFor(
+    () =>
+      !restarted.isConnected &&
+      region("First app").textContent.includes("Canvas ready"),
+    "Sandbox restart retained the Doom surface."
+  );
+  return {
+    passed: true,
+    checks: [
+      "DoomGeneric game pixels",
+      "focused keyboard allowlist",
+      "player movement and changed pixels",
+      "blur releases engine keys",
+      "fire key transitions",
+      "chart/game app isolation",
+      "game teardown and remount",
+      "sandbox restart",
+    ],
+  };
+};
+
+declare global {
+  var experimental_runDoomChecks: typeof runDoomChecks | undefined;
+}
+globalThis.experimental_runDoomChecks = runDoomChecks;

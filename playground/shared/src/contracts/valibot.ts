@@ -37,6 +37,26 @@ export const contract = defineContract({
       maxFramesPerSecond: 60,
       maxPixels: 1_048_576,
     }),
+    experimental_DoomCanvas: experimental_canvas({
+      input: {
+        keyboard: [
+          "ArrowUp",
+          "ArrowDown",
+          "ArrowLeft",
+          "ArrowRight",
+          "KeyW",
+          "KeyS",
+          "KeyA",
+          "KeyD",
+          "Space",
+          "KeyE",
+          "KeyM",
+          "Enter",
+        ],
+      },
+      maxFramesPerSecond: 35,
+      maxPixels: 64_000,
+    }),
     ...primitiveComponents,
     Button: {
       callbacks: { onClick: {} },

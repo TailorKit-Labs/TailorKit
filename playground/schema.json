@@ -27,6 +27,33 @@
         "type": "object"
       }
     },
+    "experimental_DoomCanvas": {
+      "callbacks": {},
+      "children": false,
+      "fields": {
+        "additionalProperties": false,
+        "properties": {
+          "ariaLabel": {
+            "type": "string"
+          },
+          "height": {
+            "maximum": 4096,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "surface": {
+            "type": "string"
+          },
+          "width": {
+            "maximum": 4096,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": ["surface", "width", "height", "ariaLabel"],
+        "type": "object"
+      }
+    },
     "Box": {
       "callbacks": {},
       "children": true,

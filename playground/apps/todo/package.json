@@ -20,7 +20,8 @@
     "format": "vp fmt --check",
     "check": "vp check",
     "fix": "vp check --fix",
-    "lint:fix": "vp lint --fix ."
+    "lint:fix": "vp lint --fix .",
+    "build:doom": "node doomgeneric/build.mjs"
   },
   "dependencies": {
     "chart.js": "4.5.1",
