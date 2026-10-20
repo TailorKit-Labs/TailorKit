@@ -157,18 +157,17 @@ export const getProductionUrl = (values: {
 }) => resolveProductionUrl(values);
 
 export const getBaseUrl = (values: {
+  AUTH_PRODUCTION_URL?: string;
   PORT?: number;
   VERCEL_ENV?: string;
   VERCEL_PROJECT_PRODUCTION_URL?: string;
   VERCEL_URL?: string;
 }): string => {
-  if (
-    values.VERCEL_ENV === "production" &&
-    values.VERCEL_PROJECT_PRODUCTION_URL !== undefined &&
-    values.VERCEL_PROJECT_PRODUCTION_URL !== null &&
-    values.VERCEL_PROJECT_PRODUCTION_URL !== ""
-  ) {
-    return `https://${values.VERCEL_PROJECT_PRODUCTION_URL}`;
+  if (values.VERCEL_ENV === "production") {
+    const productionUrl = resolveProductionUrl(values);
+    if (productionUrl !== undefined) {
+      return productionUrl;
+    }
   }
   if (
     values.VERCEL_ENV === "preview" &&
@@ -183,6 +182,7 @@ export const getBaseUrl = (values: {
 };
 
 export const getTrustedOrigins = (values: {
+  AUTH_PRODUCTION_URL?: string;
   AUTH_TRUSTED_ORIGINS?: string;
   PORT?: number;
   VERCEL_ENV?: string;

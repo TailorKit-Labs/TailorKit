@@ -5,6 +5,7 @@ export const env = createEnv({
   schema: {
     ASSET_BASE_URL: z.url().optional(),
     ASSET_DOMAIN: z.string().default("tailorkit.app"),
+    AUTH_PRODUCTION_URL: z.url().optional(),
     NODE_ENV: z.enum(["development", "production", "test"]).optional(),
     PORT: z.coerce.number().optional(),
     VERCEL: z.stringbool().optional(),
