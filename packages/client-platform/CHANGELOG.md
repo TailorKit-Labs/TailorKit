@@ -1,5 +1,11 @@
 # @patchsmith/client-platform
 
+## 0.1.0-beta.54
+
+### Patch Changes
+
+- d26ee48: Add `createServer({ agent: { instructions } })` for host-provided design conventions, product context, and app-building tips. Apply this guidance alongside the app builder's built-in instructions for MCP tools (including `patchsmith/ai-sdk`) and host-relayed CLI chat, including follow-up turns.
+
 ## 0.1.0-beta.53
 
 ### Minor Changes
