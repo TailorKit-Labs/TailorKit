@@ -1,12 +1,27 @@
 import { tool } from "ai";
+import type { Tool, ToolExecuteFunction } from "ai";
 import { z } from "zod";
 
 import { getSandbox } from "./sandbox";
 import type { AppSandboxSession } from "./sandbox-session";
 
+type DeployInput = Record<string, never>;
+interface DeployOutput {
+  exitCode: number;
+  stderr: string;
+  stdout: string;
+}
+interface DeployContext {
+  agentToken: string;
+  sandboxName: string;
+}
+type DeployTool = Tool<DeployInput, DeployOutput, DeployContext> & {
+  execute: ToolExecuteFunction<DeployInput, DeployOutput, DeployContext>;
+};
+
 export const createDeployTool = (dependencies: {
   sandbox: (name: string) => Promise<Pick<AppSandboxSession, "runCommand">>;
-}) =>
+}): DeployTool =>
   tool({
     contextSchema: z.object({
       agentToken: z.string(),
@@ -64,7 +79,7 @@ export const createDeployTool = (dependencies: {
     inputSchema: z.strictObject({}),
   });
 
-export const deployTool = createDeployTool({
+export const deployTool: DeployTool = createDeployTool({
   sandbox: async (name) => {
     const sandbox = await getSandbox(name);
     return sandbox.currentSession();

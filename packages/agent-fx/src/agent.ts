@@ -14,7 +14,9 @@ import { hostSchemaPath } from "./workspace";
 export const createAppAgent = async (
   input: AppAgentInput,
   sandboxName: string
-) =>
+): Promise<
+  HarnessAgent<ReturnType<typeof createFx>, { deploy: typeof deployTool }>
+> =>
   new HarnessAgent({
     harness: createFx({
       auth: {
