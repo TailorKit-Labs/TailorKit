@@ -141,11 +141,30 @@ pnpm --filter @patchsmith/apps-worker dev
 
 Wrangler watches runtime/server changes. App code is rebuilt and uploaded through the existing app builder/CLI, then published through the existing deployment flow. Changing local runtime code does not publish an app deployment.
 
-Durable Object and R2 state lives in `apps/apps-worker/.tailorkit/state`, outside app builder output.
+Durable Object and R2 state lives in `apps/apps-worker/.patchsmith/state`, outside app builder output.
 
 Local compatibility uses the date supported by the repository's pinned workerd. No production deployment is performed by these commands.
 
 The runtime enforces the 3 MiB decoded bundle limit described above. It also verifies bundle content length and checksum for integrity.
+
+## Build and deploy
+
+Run these commands from the repository root:
+
+```sh
+pnpm --filter @patchsmith/apps-worker build
+pnpm --filter @patchsmith/apps-worker deploy
+```
+
+`build` runs `wrangler deploy --dry-run --outdir dist`; `deploy` runs `wrangler deploy`. Both use Wrangler's custom build hook to build workspace dependencies and generate `.generated/bootstrap.txt` from `src/dynamic-workers/facet.ts`. The bootstrap is separate source text for the isolated app loader. Wrangler bundles the trusted worker and includes that text module. Do not remove the bootstrap generation or deploy `dist/index.js` separately.
+
+Direct `pnpm exec wrangler dev`, `pnpm exec wrangler deploy`, and `pnpm exec wrangler versions upload` also work from `apps/apps-worker`. No manual dependency build is required. Wrangler watches the worker, bootstrap build script, and imported workspace sources during development. Turborepo caches both `dist` and `.generated`, so cached builds restore the files needed by tests.
+
+For Cloudflare Workers Builds, use the repository root directory, `pnpm --filter @patchsmith/apps-worker build` as the build command, and `pnpm --filter @patchsmith/apps-worker deploy` as the deploy command. Set the build variables `NODE_VERSION=24` and `PNPM_VERSION=12.11.2` to match this workspace; let Cloudflare install dependencies from the root lockfile. See Cloudflare's [build configuration](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/) and [build image settings](https://developers.cloudflare.com/workers/ci-cd/builds/build-image/).
+
+The connected Cloudflare Worker must be named `patchsmith-apps-worker`, matching `wrangler.jsonc`. Set `RUNTIME_SERVICE_TOKEN` as a runtime secret on that Worker; the platform must use the same value for `APP_RUNTIME_SERVICE_TOKEN`.
+
+The `tailorkit.app` routes, `tailorkit-app-assets-prod` bucket, KV namespace ID, and signing-key ID still identify existing infrastructure. Keep these values until those resources and the platform configuration are migrated together. Renaming the Worker does not migrate Durable Object data or copy its secrets.
 
 ## Current limits
 
