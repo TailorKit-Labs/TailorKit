@@ -111,11 +111,6 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
         rel: "stylesheet",
       },
       {
-        href: "/favicon.svg",
-        rel: "icon",
-        type: "image/svg+xml",
-      },
-      {
         href: "/apple-touch-icon.png",
         rel: "apple-touch-icon",
         sizes: "180x180",
@@ -131,6 +126,12 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
         rel: "icon",
         sizes: "16x16",
         type: "image/png",
+      },
+      {
+        href: "/favicon.svg",
+        rel: "icon",
+        sizes: "any",
+        type: "image/svg+xml",
       },
       {
         href: "/site.webmanifest",
