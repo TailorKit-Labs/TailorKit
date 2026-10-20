@@ -37,5 +37,7 @@ it.each([undefined, "history"])(
     } finally {
       await rm(root, { force: true, recursive: true });
     }
-  }
+  },
+  // Each case runs real Drizzle subprocesses for generation and schema checks.
+  10_000
 );

@@ -23,7 +23,7 @@ import {
 import type { Installation } from "./transport";
 
 /** Trusted supervisor. The fixed facet name preserves SQLite when its code changes. */
-export class AppInstallation extends DurableObject<Env> {
+export class PatchsmithAppInstallation extends DurableObject<Env> {
   readonly #http = createInstallationHandler();
   readonly #queue = Semaphore.makeUnsafe(1);
   readonly #actions = createActionLeases();
