@@ -1,60 +1,41 @@
 import {
   Client,
-  fromJsonSchema,
   StreamableHTTPClientTransport,
 } from "@modelcontextprotocol/client";
 import type {
   CallToolResult,
   JSONValue,
-  JsonSchemaType,
   Progress,
   Tool as McpTool,
 } from "@modelcontextprotocol/client";
+import type { TailorKitHostContext } from "@tailorkit/core/server/types";
 import { tool } from "ai";
-import type { Tool, ToolExecutionOptions } from "ai";
-
-/** Create this configuration on the host with server.mcp.transport(context). */
-export interface TailorKitToolsOptions {
-  url: string;
-  headers: Record<string, string>;
-  fetch?: typeof globalThis.fetch;
-  /** Cancels discovery and all tool calls made by this instance. */
-  abortSignal?: AbortSignal;
-  /** Inactivity timeout; MCP progress resets it. Defaults to 60 seconds. */
-  timeoutMs?: number;
-  /** Absolute limit for each tool call. Defaults to 30 minutes. */
-  maxTotalTimeoutMs?: number;
-}
+import type { ToolExecutionOptions } from "ai";
+import { z } from "zod";
 
 export type TailorKitToolInput = Record<string, JSONValue>;
 export type TailorKitToolOutput =
   | { status: "running"; progress: Progress }
   | { status: "completed"; result: CallToolResult };
 
-export interface TailorKitTools {
-  tools: Record<string, Tool<TailorKitToolInput, TailorKitToolOutput>>;
-  /** Close after generation finishes, including when a stream fails. */
-  close: () => Promise<void>;
+/** The MCP capability of a configured TailorKit server. */
+export interface TailorKitMcpServer<TScopes> {
+  mcp: {
+    transport: (context: TailorKitHostContext<TScopes>) => Promise<{
+      url: string;
+      headers: Record<string, string>;
+    }>;
+  };
 }
 
-const executeTool = async function* executeTool(
+const streamTool = async function* streamTool(
   client: Client,
   definition: McpTool,
   input: TailorKitToolInput,
-  execution: Pick<ToolExecutionOptions<never>, "abortSignal">,
-  options: TailorKitToolsOptions
+  signal: AbortSignal
 ): AsyncGenerator<TailorKitToolOutput> {
   const controller = new AbortController();
-  const signals = [controller.signal];
-  if (execution.abortSignal !== undefined) {
-    signals.push(execution.abortSignal);
-  }
-  if (options.abortSignal !== undefined) {
-    signals.push(options.abortSignal);
-  }
-  const signal = AbortSignal.any(signals);
-  signal.throwIfAborted();
-
+  const callSignal = AbortSignal.any([signal, controller.signal]);
   let latest: Progress | undefined;
   let result: CallToolResult | undefined;
   let failure: Error | undefined;
@@ -66,14 +47,14 @@ const executeTool = async function* executeTool(
       result = await client.callTool(
         { arguments: input, name: definition.name },
         {
-          maxTotalTimeout: options.maxTotalTimeoutMs ?? 30 * 60 * 1000,
+          maxTotalTimeout: 30 * 60 * 1000,
           onprogress: (progress) => {
             latest = progress;
             changed.resolve(true);
           },
           resetTimeoutOnProgress: true,
-          signal,
-          timeout: options.timeoutMs ?? 60_000,
+          signal: callSignal,
+          timeout: 60_000,
           toolDefinition: definition,
         }
       );
@@ -121,64 +102,126 @@ const executeTool = async function* executeTool(
   }
 };
 
-// Adapt the MCP SDK's closed Standard JSON Schema target union to the AI SDK's
-// extensible target union. Both converters return the original wire schema.
-const inputSchema = (definition: McpTool) => {
-  const schema = fromJsonSchema<TailorKitToolInput>(
-    // SAFETY: tools/list parsed this schema; fromJsonSchema compiles it for runtime validation.
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The MCP SDK wire type is broader than its validator's schema type.
-    definition.inputSchema as JsonSchemaType
-  );
-  return {
-    "~standard": {
-      ...schema["~standard"],
-      jsonSchema: {
-        input: () => definition.inputSchema,
-        output: () => definition.inputSchema,
-      },
-    },
-  };
-};
+const executeTool = async function* executeTool(
+  transport: () => Promise<{ url: string; headers: Record<string, string> }>,
+  definition: McpTool,
+  input: TailorKitToolInput,
+  execution: Pick<ToolExecutionOptions<never>, "abortSignal">
+): AsyncGenerator<TailorKitToolOutput> {
+  const controller = new AbortController();
+  const signals = [controller.signal];
+  if (execution.abortSignal !== undefined) {
+    signals.push(execution.abortSignal);
+  }
+  const signal = AbortSignal.any(signals);
+  signal.throwIfAborted();
 
-/** Discover MCP tools and stream their progress as AI SDK preliminary results. */
-export const createTailorKitTools = async (
-  options: TailorKitToolsOptions
-): Promise<TailorKitTools> => {
   const client = new Client(
     { name: "tailorkit-ai-sdk", version: "1.0.0" },
     { versionNegotiation: { mode: { pin: "2026-07-28" } } }
   );
   try {
-    options.abortSignal?.throwIfAborted();
+    const configuration = await transport();
+    signal.throwIfAborted();
     await client.connect(
-      new StreamableHTTPClientTransport(new URL(options.url), {
-        fetch: options.fetch,
-        requestInit: { headers: options.headers },
+      new StreamableHTTPClientTransport(new URL(configuration.url), {
+        requestInit: { headers: configuration.headers },
       }),
-      { signal: options.abortSignal, timeout: options.timeoutMs ?? 60_000 }
+      { signal }
     );
-    const { tools } = await client.listTools(undefined, {
-      signal: options.abortSignal,
-      timeout: options.timeoutMs ?? 60_000,
-    });
-    return {
-      close: async () => {
-        await client.close();
-      },
-      tools: Object.fromEntries(
-        tools.map((definition) => [
-          definition.name,
-          tool({
-            description: definition.description,
-            execute: (input: TailorKitToolInput, execution) =>
-              executeTool(client, definition, input, execution, options),
-            inputSchema: inputSchema(definition),
-          }),
-        ])
-      ),
-    };
-  } catch (error) {
+    yield* streamTool(client, definition, input, signal);
+  } finally {
+    controller.abort();
     await client.close();
-    throw error;
   }
 };
+
+const objectJsonSchema = z.looseObject({
+  properties: z.record(z.string(), z.json()).optional(),
+  required: z.array(z.string()).optional(),
+  type: z.literal("object"),
+});
+
+const promptSchema = z.string().trim().min(1).max(32_000);
+const agentResultSchema = z.object({
+  answer: z.string(),
+  appId: z.string(),
+  finishReason: z.string(),
+  runId: z.string(),
+  threadId: z.string(),
+});
+
+/** Create fixed MCP-backed tools. Each invocation owns and closes its connection. */
+export const createTools = <TScopes extends Record<string, JSONValue>>(
+  tailorkit: TailorKitMcpServer<TScopes>,
+  context: NoInfer<TailorKitHostContext<TScopes>>
+) => {
+  const scopes = Object.keys(context.scopes);
+  if (scopes.length === 0) {
+    throw new Error("At least one host scope is required.");
+  }
+  const transport = async () => await tailorkit.mcp.transport(context);
+  const createSchema = z.strictObject({
+    description: z.string().trim().max(255).optional(),
+    name: z.string().trim().min(1).max(127),
+    prompt: promptSchema,
+    scope: z
+      .enum(scopes)
+      .describe(
+        "Name of the host-authorized scope in which to create the app."
+      ),
+  });
+  const editSchema = z.strictObject({
+    appId: z.string().min(1),
+    prompt: promptSchema,
+    threadId: z
+      .uuid()
+      .optional()
+      .describe(
+        "Continue an existing app conversation; omit for an independent change."
+      ),
+  });
+  const listSchema = z.strictObject({
+    page: z.number().int().min(1).default(1),
+    pageSize: z.number().int().min(1).max(100).default(100),
+  });
+  const createDefinition = {
+    inputSchema: objectJsonSchema.parse(z.toJSONSchema(createSchema)),
+    name: "create_app",
+    outputSchema: objectJsonSchema.parse(z.toJSONSchema(agentResultSchema)),
+  };
+  const editDefinition = {
+    inputSchema: objectJsonSchema.parse(z.toJSONSchema(editSchema)),
+    name: "edit_app",
+    outputSchema: objectJsonSchema.parse(z.toJSONSchema(agentResultSchema)),
+  };
+  const listDefinition = {
+    inputSchema: objectJsonSchema.parse(z.toJSONSchema(listSchema)),
+    name: "list_apps",
+  };
+  return {
+    create_app: tool({
+      description:
+        "Create a new app and run an autonomous agent to build and deploy it from your prompt. Wait for progress and the final result. Use the returned threadId with edit_app for follow-ups. Do not automatically retry a disconnected call.",
+      execute: (input, execution) =>
+        executeTool(transport, createDefinition, input, execution),
+      inputSchema: createSchema,
+    }),
+    edit_app: tool({
+      description:
+        "Run an autonomous agent to edit and deploy an existing app. Omit threadId for a new conversation or supply a returned threadId for a follow-up. Wait for progress and the final result. Do not automatically retry a disconnected call.",
+      execute: (input, execution) =>
+        executeTool(transport, editDefinition, input, execution),
+      inputSchema: editSchema,
+    }),
+    list_apps: tool({
+      description:
+        "List apps in the host-authorized scopes to choose an app to edit. This is a read-only lookup.",
+      execute: (input, execution) =>
+        executeTool(transport, listDefinition, input, execution),
+      inputSchema: listSchema,
+    }),
+  };
+};
+
+export type TailorKitTools = ReturnType<typeof createTools>;

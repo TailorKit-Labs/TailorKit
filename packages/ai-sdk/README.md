@@ -1,39 +1,28 @@
 # TailorKit AI SDK tools
 
-Use `createTailorKitTools` from `tailorkit/ai-sdk` (or `@tailorkit/ai-sdk`) to let an AI SDK model list, create, and edit TailorKit apps through the app agent's MCP endpoint. Requires AI SDK 7 and Node.js 22 or newer.
+Use `createTools` from `tailorkit/ai-sdk` (or `@tailorkit/ai-sdk`) to let an AI SDK model list, create, and edit TailorKit apps through the app agent's MCP endpoint. Requires AI SDK 7 and Node.js 22 or newer.
 
-Create the tools on your host server for each authenticated request. Pass the transport returned by your TailorKit server's `mcp.transport` method. It carries the project credential, authorized scopes, host URL, and user identity. Keep this configuration on the server.
+Create the tools on your host server for each authenticated request. Pass your configured TailorKit server and the same `scopes` and `subjectId` context used by the host SDK. Scope values are checked against your server's configured schemas before each MCP call. Credentials and authorization stay on the host.
 
 ```ts
 import { streamText } from "ai";
-import { createTailorKitTools } from "tailorkit/ai-sdk";
+import { createTools } from "tailorkit/ai-sdk";
 
-// server, user, model, and messages come from your host application.
-const adapter = await createTailorKitTools({
-  ...(await server.mcp.transport({
-    scopes: { org: { tenant: user.organizationId } },
-    subjectId: user.id,
-  })),
-  abortSignal: request.signal,
+// tailorkit, user, model, and messages come from your host application.
+const tools = createTools(tailorkit, {
+  scopes: { org: { tenant: user.organizationId } },
+  subjectId: user.id,
 });
 
-try {
-  const response = streamText({
-    model,
-    messages,
-    tools: adapter.tools,
-    onEnd: adapter.close,
-    onAbort: adapter.close,
-    onError: adapter.close,
-  });
-  return response.toUIMessageStreamResponse();
-} catch (error) {
-  await adapter.close();
-  throw error;
-}
+return streamText({
+  model,
+  messages,
+  tools,
+  abortSignal: request.signal,
+}).toUIMessageStreamResponse();
 ```
 
-The adapter discovers tool descriptions and input schemas from MCP, including the host-authorized scopes for `create_app`. It calls `/app-agent/mcp` directly using MCP 2026-07-28. It does not call the chat or AI SDK agent endpoints. The host retains control over credentials and authorization; these are never model arguments.
+`createTools` is synchronous and returns `list_apps`, `create_app`, and `edit_app` directly. The tool names, descriptions, and schemas are fixed; the adapter does not perform MCP tool discovery. `create_app` limits its scope name to the scopes supplied by the host. Each invocation obtains authenticated transport configuration from the TailorKit server, calls `/app-agent/mcp` using MCP 2026-07-28, and closes its own connection when it finishes or fails.
 
 Each MCP activity notification produces an AI SDK preliminary tool result:
 
@@ -61,8 +50,8 @@ The final tool result contains the original MCP result, including `content` and 
 
 Render preliminary outputs while the tool part has `preliminary: true`. Progress consists of bounded activity snapshots from MCP, rather than raw agent token or internal tool streams. A slow consumer receives the latest snapshot. Use a returned `threadId` with `edit_app` to continue the same app conversation.
 
-`generateText` also works: await generation and close the adapter in `finally`. It consumes progress and returns the final tool output. For streaming, close only after the stream finishes, aborts, or errors; closing immediately after `streamText()` interrupts tool execution. `close()` can be called more than once.
+`generateText` also works with the same tools: it consumes progress and returns the final tool output. No explicit connection setup or cleanup is needed.
 
-The AI SDK tool abort signal and the adapter's optional `abortSignal` cancel in-flight MCP requests. `timeoutMs` controls inactivity (default 60 seconds, reset by progress), and `maxTotalTimeoutMs` limits each tool call (default 30 minutes). You can supply `fetch` for custom HTTP handling.
+Pass `abortSignal` to your AI SDK generation call to cancel in-flight MCP requests. Calls have a 60-second inactivity timeout reset by progress and a 30-minute absolute limit.
 
-MCP tool errors and transport failures become AI SDK tool errors. The adapter does not replay failed app changes. Check the app before retrying a disconnected create or edit operation. Each concurrent call has its own progress and cancellation state.
+Missing tools, invalid results, MCP tool errors, and transport failures become AI SDK tool errors. The adapter does not replay failed app changes. Check the app before retrying a disconnected create or edit operation. Each concurrent call has its own connection, progress, and cancellation state.

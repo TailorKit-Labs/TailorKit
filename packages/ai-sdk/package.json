@@ -52,7 +52,9 @@
     "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
-    "@modelcontextprotocol/client": "2.3.1"
+    "@modelcontextprotocol/client": "2.3.1",
+    "@tailorkit/core": "workspace:*",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@modelcontextprotocol/server": "2.3.1",
@@ -60,8 +62,7 @@
     "@types/node": "catalog:",
     "ai": "catalog:",
     "tsup": "^8.5.1",
-    "typescript": "catalog:",
-    "zod": "catalog:"
+    "typescript": "catalog:"
   },
   "peerDependencies": {
     "ai": "^7.0.137"

@@ -1,14 +1,21 @@
+import { once } from "node:events";
+import { createServer as createHttpServer } from "node:http";
+import type { IncomingMessage, ServerResponse } from "node:http";
+import { text } from "node:stream/consumers";
+
 import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";
 import type {
   CallToolResult,
   ServerContext,
 } from "@modelcontextprotocol/server";
+import { defineContract } from "@tailorkit/core/schema";
+import { createServer } from "@tailorkit/core/server";
 import { asSchema, generateText, simulateReadableStream, streamText } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import { z } from "zod";
 
-import { createTailorKitTools } from "./index";
+import { createTools } from "./index";
 import type { TailorKitToolInput, TailorKitTools } from "./index";
 
 const cleanup: (() => Promise<void>)[] = [];
@@ -43,7 +50,8 @@ type Operation = (
 ) => Promise<CallToolResult>;
 
 const connect = async (
-  operation: Operation = async () => await Promise.resolve(result())
+  operation: Operation = async () => await Promise.resolve(result()),
+  failure?: (request: Request) => Response | null
 ) => {
   const calls: { input: { prompt: string }; name: string }[] = [];
   const requests: Request[] = [];
@@ -57,7 +65,10 @@ const connect = async (
         "list_apps",
         {
           description: "List authorized apps.",
-          inputSchema: z.strictObject({}),
+          inputSchema: z.strictObject({
+            page: z.number().int().min(1).default(1),
+            pageSize: z.number().int().min(1).max(100).default(100),
+          }),
         },
         async () =>
           await Promise.resolve({
@@ -104,21 +115,67 @@ const connect = async (
   cleanup.push(async () => {
     await handler.close();
   });
-  const options = {
-    fetch: async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
-      const request = new Request(input, init);
-      requests.push(request.clone());
-      return await handler.fetch(request);
-    },
-    headers: {
-      authorization: "Bearer host-key",
-      "x-tailorkit-context": "host-context",
-    },
-    url: "https://platform.test/api/platform/app-agent/mcp",
+  const respond = async (
+    incoming: IncomingMessage,
+    outgoing: ServerResponse
+  ) => {
+    const controller = new AbortController();
+    outgoing.on("close", () => {
+      controller.abort();
+    });
+    const headers = new Headers(
+      Object.entries(incoming.headers).map(([name, value]) => [
+        name,
+        [value].flat().join(","),
+      ])
+    );
+    const request = new Request(`http://localhost${incoming.url}`, {
+      body: incoming.method === "POST" ? await text(incoming) : undefined,
+      headers,
+      method: incoming.method,
+      signal: controller.signal,
+    });
+    requests.push(request.clone());
+    const response = await (failure?.(request) ?? handler.fetch(request));
+    outgoing.writeHead(response.status, Object.fromEntries(response.headers));
+    if (response.body) {
+      for await (const chunk of response.body) {
+        outgoing.write(chunk);
+      }
+    }
+    outgoing.end();
   };
-  const client = await createTailorKitTools(options);
-  cleanup.push(client.close);
-  return { calls, client, options, requests };
+  const http = createHttpServer((incoming, outgoing) => {
+    // oxlint-disable-next-line promise/prefer-await-to-callbacks -- The Node HTTP callback is synchronous; handle its async response rejection.
+    void respond(incoming, outgoing).catch(() => {
+      outgoing.destroy();
+    });
+  });
+  http.listen(0, "127.0.0.1");
+  await once(http, "listening");
+  cleanup.push(async () => {
+    http.closeAllConnections();
+    const closed = once(http, "close");
+    http.close();
+    await closed;
+  });
+  const address = z.object({ port: z.number() }).parse(http.address());
+  const url = `http://127.0.0.1:${address.port}/api/platform/app-agent/mcp`;
+  const contract = defineContract({
+    scopes: { org: z.object({ tenant: z.string() }) },
+  });
+  const server = createServer({
+    $internal: { platformBaseUrl: url.replace("/app-agent/mcp", "") },
+    baseUrl: "https://host.test/api/tailorkit",
+    contract,
+    projectKey: "host-key",
+  });
+  const context = {
+    scopes: { org: { tenant: "tenant-one" } },
+    subjectId: "user-one",
+  };
+  const client = createTools(server, context);
+  return { calls, client, context, requests, server, url };
 };
 
 const usage = {
@@ -178,21 +235,19 @@ const generate = async (
   await generateText({
     model: model(name, input),
     prompt: "Update my app.",
-    tools: client.tools,
+    tools: client,
   });
 
 describe("MCP-backed AI SDK tools", () => {
-  it("discovers server schemas and descriptions using only the authenticated MCP endpoint", async () => {
+  it("uses fixed schemas and the authenticated MCP endpoint without discovery", async () => {
     const { client, requests } = await connect();
-    expect(Object.keys(client.tools)).toEqual([
-      "list_apps",
+    expect(Object.keys(client).toSorted()).toEqual([
       "create_app",
       "edit_app",
+      "list_apps",
     ]);
-    expect(client.tools.create_app?.description).toBe(
-      "Build and publish an app."
-    );
-    const create = client.tools.create_app;
+    expect(requests).toHaveLength(0);
+    const create = client.create_app;
     if (create === undefined) {
       throw new Error("Missing create_app tool");
     }
@@ -205,11 +260,21 @@ describe("MCP-backed AI SDK tools", () => {
     ).toMatchObject({ success: false });
     await generate(client);
     for (const request of requests) {
-      expect(request.url).toBe(
-        "https://platform.test/api/platform/app-agent/mcp"
-      );
+      expect(request.url).toBe(`http://localhost/api/platform/app-agent/mcp`);
       expect(request.headers.get("authorization")).toBe("Bearer host-key");
-      expect(request.headers.get("x-tailorkit-context")).toBe("host-context");
+      expect(
+        JSON.parse(
+          Buffer.from(
+            request.headers.get("x-tailorkit-context") ?? "",
+            "base64url"
+          ).toString()
+        )
+      ).toEqual({
+        hostUrl: "https://host.test/api/tailorkit",
+        scopes: { org: { tenant: "tenant-one" } },
+        subjectId: "user-one",
+      });
+      expect(request.headers.get("mcp-method")).not.toBe("tools/list");
       expect(request.headers.get("mcp-protocol-version")).toBe("2026-07-28");
     }
   });
@@ -237,7 +302,7 @@ describe("MCP-backed AI SDK tools", () => {
       const response = streamText({
         model: model(name, input),
         prompt: "Build my app",
-        tools: client.tools,
+        tools: client,
       });
       const outputs = [];
       for await (const chunk of response.stream) {
@@ -260,6 +325,19 @@ describe("MCP-backed AI SDK tools", () => {
       expect(calls).toEqual([{ input, name }]);
     }
   );
+
+  it("lists apps with the fixed pagination schema", async () => {
+    const { client } = await connect();
+    const response = await generateText({
+      model: model("list_apps", { page: 2, pageSize: 10 }),
+      prompt: "Find my apps",
+      tools: client,
+    });
+    expect(response.toolResults[0]?.output).toMatchObject({
+      result: { structuredContent: { items: [] } },
+      status: "completed",
+    });
+  });
 
   it("supports generateText and retains thread IDs and structured output", async () => {
     const { client, calls } = await connect();
@@ -295,7 +373,7 @@ describe("MCP-backed AI SDK tools", () => {
         scope: "other",
       }),
       prompt: "Build",
-      tools: client.tools,
+      tools: client,
     });
     expect(response.content).toContainEqual(
       expect.objectContaining({ type: "tool-error" })
@@ -324,7 +402,7 @@ describe("MCP-backed AI SDK tools", () => {
       abortSignal: controller.signal,
       model: model("edit_app", editInput),
       prompt: "Edit",
-      tools: client.tools,
+      tools: client,
     });
     const consumed = response.consumeStream();
     await started.promise;
@@ -356,7 +434,7 @@ describe("MCP-backed AI SDK tools", () => {
       const response = streamText({
         model: model("edit_app", { ...editInput, prompt }),
         prompt,
-        tools: client.tools,
+        tools: client,
       });
       const outputs = [];
       for await (const chunk of response.stream) {
@@ -385,20 +463,14 @@ describe("MCP-backed AI SDK tools", () => {
   });
 
   it("does not retry an HTTP failure for a mutation", async () => {
-    const { options } = await connect();
     let attempts = 0;
-    const client = await createTailorKitTools({
-      ...options,
-      fetch: async (input, init) => {
-        const request = new Request(input, init);
-        if (request.headers.get("mcp-method") === "tools/call") {
-          attempts += 1;
-          return new Response("Unavailable", { status: 503 });
-        }
-        return await options.fetch(input, init);
-      },
+    const { client } = await connect(undefined, (request) => {
+      if (request.headers.get("mcp-method") === "tools/call") {
+        attempts += 1;
+        return new Response("Unavailable", { status: 503 });
+      }
+      return null;
     });
-    cleanup.push(client.close);
     const response = await generate(client);
     expect(
       response.content.find((chunk) => chunk.type === "tool-error")
@@ -406,22 +478,39 @@ describe("MCP-backed AI SDK tools", () => {
     expect(attempts).toBe(1);
   });
 
-  it("rejects calls after closing the client", async () => {
-    const { client, calls } = await connect();
-    await client.close();
+  it("surfaces unavailable tools without discovery or mutation retries", async () => {
+    const { client, calls } = await connect(undefined, (request) => {
+      if (request.headers.get("mcp-method") === "tools/call") {
+        return Response.json({
+          error: { code: -32_601, message: "Unknown tool" },
+          id: 0,
+          jsonrpc: "2.0",
+        });
+      }
+      return null;
+    });
     const response = await generate(client);
-    expect(
-      response.content.find((chunk) => chunk.type === "tool-error")
-    ).toBeDefined();
+    expect(response.content).toContainEqual(
+      expect.objectContaining({ type: "tool-error" })
+    );
+    const error = z
+      .object({ message: z.string() })
+      .parse(
+        response.content.find((chunk) => chunk.type === "tool-error")?.error
+      );
+    expect(error.message).toContain("Unknown tool");
     expect(calls).toEqual([]);
   });
 
-  it("stops before discovery when its host signal is already aborted", async () => {
-    const { options, requests } = await connect();
-    const count = requests.length;
-    await expect(
-      createTailorKitTools({ ...options, abortSignal: AbortSignal.abort() })
-    ).rejects.toThrow();
-    expect(requests).toHaveLength(count);
+  it("requires an authorized scope", () => {
+    const server = {
+      mcp: {
+        transport: async () =>
+          await Promise.resolve({ headers: {}, url: "https://platform.test" }),
+      },
+    };
+    expect(() =>
+      createTools(server, { scopes: {}, subjectId: "user-one" })
+    ).toThrow("At least one host scope");
   });
 });

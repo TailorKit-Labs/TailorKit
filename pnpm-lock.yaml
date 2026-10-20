@@ -704,6 +704,12 @@ importers:
       '@modelcontextprotocol/client':
         specifier: 2.3.1
         version: 2.3.1
+      '@tailorkit/core':
+        specifier: workspace:*
+        version: link:../core
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
     devDependencies:
       '@modelcontextprotocol/server':
         specifier: 2.3.1
@@ -723,9 +729,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
-      zod:
-        specifier: 'catalog:'
-        version: 4.6.5
 
   packages/api:
     dependencies:

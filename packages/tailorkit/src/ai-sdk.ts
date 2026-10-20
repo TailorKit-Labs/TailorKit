@@ -1,7 +1,7 @@
-export { createTailorKitTools } from "@tailorkit/ai-sdk";
+export { createTools } from "@tailorkit/ai-sdk";
 export type {
   TailorKitToolInput,
   TailorKitToolOutput,
   TailorKitTools,
-  TailorKitToolsOptions,
+  TailorKitMcpServer,
 } from "@tailorkit/ai-sdk";
