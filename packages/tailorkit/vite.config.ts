@@ -6,6 +6,7 @@ export default defineConfig({
     dts: false,
     entry: [
       "src/index.ts",
+      "src/ai-sdk.ts",
       "src/server.ts",
       "src/db.ts",
       "src/react.ts",

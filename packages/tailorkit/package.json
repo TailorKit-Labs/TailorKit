@@ -85,6 +85,10 @@
     "./db": {
       "types": "./dist/db.d.ts",
       "import": "./dist/db.js"
+    },
+    "./ai-sdk": {
+      "types": "./dist/ai-sdk.d.ts",
+      "import": "./dist/ai-sdk.js"
     }
   },
   "publishConfig": {
@@ -97,6 +101,7 @@
     "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
+    "@tailorkit/ai-sdk": "workspace:*",
     "@tailorkit/app": "workspace:*",
     "@tailorkit/app-db": "workspace:*",
     "@tailorkit/cli": "workspace:*",
@@ -111,11 +116,15 @@
     "vite-plus": "catalog:"
   },
   "peerDependencies": {
+    "ai": "^7.0.137",
     "arktype": ">=2.1.0",
     "valibot": ">=1.0.0",
     "zod": ">=4.0.0"
   },
   "peerDependenciesMeta": {
+    "ai": {
+      "optional": true
+    },
     "arktype": {
       "optional": true
     },

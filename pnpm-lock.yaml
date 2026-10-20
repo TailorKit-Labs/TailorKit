@@ -699,6 +699,37 @@ importers:
         specifier: 'catalog:'
         version: 1.1.0(@opentelemetry/api@1.9.1)(@types/node@26.6.4)(@vitest/ui@5.0.1)(esbuild@0.28.2)(happy-dom@20.14.6)(jiti@2.7.0)(tsx@4.23.15)(typescript@7.0.2)(yaml@2.9.1)
 
+  packages/ai-sdk:
+    dependencies:
+      '@modelcontextprotocol/client':
+        specifier: 2.3.1
+        version: 2.3.1
+      '@tailorkit/core':
+        specifier: workspace:*
+        version: link:../core
+      '@valibot/to-json-schema':
+        specifier: ^1.8.0
+        version: 1.8.0(valibot@1.5.0(typescript@7.0.2))
+      valibot:
+        specifier: 'catalog:'
+        version: 1.5.0(typescript@7.0.2)
+    devDependencies:
+      '@modelcontextprotocol/server':
+        specifier: 2.3.1
+        version: 2.3.1
+      '@tailorkit/config':
+        specifier: workspace:*
+        version: link:../config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.6.4
+      ai:
+        specifier: 'catalog:'
+        version: 7.0.143(zod@4.6.5)
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+
   packages/api:
     dependencies:
       '@orpc/client':
@@ -1540,6 +1571,9 @@ importers:
 
   packages/tailorkit:
     dependencies:
+      '@tailorkit/ai-sdk':
+        specifier: workspace:*
+        version: link:../ai-sdk
       '@tailorkit/app':
         specifier: workspace:*
         version: link:../app
@@ -1558,6 +1592,9 @@ importers:
       '@tailorkit/vite':
         specifier: workspace:*
         version: link:../vite
+      ai:
+        specifier: ^7.0.137
+        version: 7.0.143(zod@4.6.5)
       arktype:
         specifier: 2.2.7
         version: 2.2.7

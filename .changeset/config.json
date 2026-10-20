@@ -5,6 +5,7 @@
   "fixed": [
     [
       "tailorkit",
+      "@tailorkit/ai-sdk",
       "@tailorkit/app",
       "@tailorkit/app-db",
       "@tailorkit/cli",

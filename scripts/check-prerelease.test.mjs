@@ -11,6 +11,7 @@ import rootManifest from "../package.json" with { type: "json" };
 const script = fileURLToPath(new URL("check-prerelease.mjs", import.meta.url));
 const packageDirectories = [
   "tailorkit",
+  "ai-sdk",
   "app",
   "app-db",
   "cli",
