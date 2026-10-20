@@ -1,0 +1,36 @@
+packages/ai-sdk/src/index.ts
+  s_bf2407f2747f3e::t_1192c19023cc6c 142,154,232,239,246
+  s_bf2407f2747f3e::t_1c562baf3debed 15,140-141,163-168,181-183,192-193,205-206
+  s_bf2407f2747f3e::t_279f7813df7443 157-162,185-187,189-190,195-203,207-210
+  s_bf2407f2747f3e::t_0948f6832fe7e1 12-13,143-153,155,213,215,218,220,223
+packages/ai-sdk/src/index.test-d.ts
+  s_bf2407f2747f3e::t_1c562baf3debed 3,10
+packages/ai-sdk/src/index.test.ts
+  s_bf2407f2747f3e::t_279f7813df7443 13,69-80,92-98,110-116,525-528
+  s_bf2407f2747f3e::t_1c562baf3debed 16,37-42,99,117,175,178
+  s_bf2407f2747f3e::t_f0e6d159e3de9b 274-286
+packages/ai-sdk/package.json
+  s_bf2407f2747f3e::t_279f7813df7443 57-58
+.changeset/mcp-ai-sdk-tools.md
+  s_bf2407f2747f3e::t_9c301f5a9847a6 6
+packages/ai-sdk/README.md
+  s_bf2407f2747f3e::t_1741c71c2ae9c0 5-6
+pnpm-lock.yaml
+  s_bf2407f2747f3e::t_a40b1e89d5ac16 710-713,715
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b63a0b3b35f6aa0ad3399ced6120634b22e3c1e0",
+  "prompts": {},
+  "sessions": {
+    "s_bf2407f2747f3e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a156ba-665c-75c3-9e65-8bb94000a003",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
