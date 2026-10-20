@@ -7,10 +7,7 @@
     "light": "#FAFAFA",
     "dark": "#00a6f4"
   },
-  "favicon": {
-    "light": "/images/mark-background-light.svg",
-    "dark": "/images/mark-background-dark.svg"
-  },
+  "favicon": "/favicon.svg",
   "navigation": {
     "pages": [
       {
