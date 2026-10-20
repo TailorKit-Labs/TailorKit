@@ -24,7 +24,7 @@ Retain the previous verifier entry while older platform deployments remain rollb
 
 ## Database compatibility
 
-Merge and deploy the separate platform database PR first. Its forward migration renames the two surviving trigger functions to `patchsmith_keep_short_id` and `patchsmith_keep_app_slug`. PostgreSQL preserves their identities and existing trigger bindings, so previous and updated backends keep the same immutability checks. Applied migration files remain unchanged.
+Merge and deploy the separate platform database PR first. Its forward migration drops the five identifier-immutability triggers and the two functions they call. Direct short-ID and app-slug updates are then allowed, while format checks, uniqueness constraints, UUID relationships, and existing row values remain unchanged. The table/column schema remains compatible with previous backends. Applied migration files remain unchanged; rolling back application code does not restore the removed guards.
 
 The app runtime atomically renames each installation's migration journal to `patchsmith_migrations` during initialization. Existing app data and journal positions/checksums remain intact. A writable `tailorkit_migrations` compatibility view lets older workers read and append to that same journal during rollback. Failed upgrades roll the rename back with the pending app migrations. Keep the legacy table-name reservation until that view and older workers are retired.
 
