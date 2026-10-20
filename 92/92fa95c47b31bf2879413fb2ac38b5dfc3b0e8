@@ -1,0 +1,35 @@
+packages/api-utils/src/env.ts
+  s_182f08b5b79179::t_3c3018caa77ce2 8
+packages/auth/README.md
+  s_182f08b5b79179::t_c77b06097f0224 4-7
+packages/auth/src/trusted-origins.test.ts
+  s_182f08b5b79179::t_5f638ef9786650 1,4-99
+packages/email/src/env.ts
+  s_046aa145071a90::t_be580109a0c1e9 6
+packages/env/src/index.ts
+  s_182f08b5b79179::t_92e07a439d73c8 160,166-170,185
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9292fa95c47b31bf2879413fb2ac38b5dfc3b0e8",
+  "prompts": {},
+  "sessions": {
+    "s_046aa145071a90": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15760-73a8-7a83-aca4-73479e59f8d4",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    },
+    "s_182f08b5b79179": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15760-846a-7ed1-8e66-889dfe520b43",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
