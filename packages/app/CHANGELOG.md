@@ -1,5 +1,11 @@
 # @patchsmith/app
 
+## 0.1.0-beta.54
+
+### Patch Changes
+
+- @patchsmith/app-db@0.1.0-beta.54
+
 ## 0.1.0-beta.53
 
 ### Minor Changes
