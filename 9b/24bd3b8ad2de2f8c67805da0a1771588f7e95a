@@ -1,0 +1,48 @@
+apps/apps-worker/LICENSE.md
+  h_18044dd1b61a81 5
+apps/web/LICENSE.md
+  h_18044dd1b61a81 5
+licenses/BUSL-1.1.md
+  h_18044dd1b61a81 5
+packages/agent-fx/LICENSE.md
+  h_18044dd1b61a81 5
+packages/agent/LICENSE.md
+  h_18044dd1b61a81 5
+packages/api-platform/LICENSE.md
+  h_18044dd1b61a81 5
+packages/api-utils/LICENSE.md
+  h_18044dd1b61a81 5
+packages/api/LICENSE.md
+  h_18044dd1b61a81 5
+packages/asset-delivery/LICENSE.md
+  h_18044dd1b61a81 5
+packages/auth/LICENSE.md
+  h_18044dd1b61a81 5
+packages/config/LICENSE.md
+  h_18044dd1b61a81 5
+packages/db/LICENSE.md
+  h_18044dd1b61a81 5
+packages/email/LICENSE.md
+  h_18044dd1b61a81 5
+packages/env/LICENSE.md
+  h_18044dd1b61a81 5
+packages/flags/LICENSE.md
+  h_18044dd1b61a81 5
+packages/kv/LICENSE.md
+  h_18044dd1b61a81 5
+packages/observability/LICENSE.md
+  h_18044dd1b61a81 5
+packages/storage/LICENSE.md
+  h_18044dd1b61a81 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9b24bd3b8ad2de2f8c67805da0a1771588f7e95a",
+  "prompts": {},
+  "humans": {
+    "h_18044dd1b61a81": {
+      "author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
