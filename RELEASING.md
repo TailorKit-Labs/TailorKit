@@ -18,6 +18,6 @@ Run `pnpm release:check` to check the release policy locally. CI and the release
 
 Changesets selects npm dist-tags from `.changeset/pre.json`. Do not pass `--tag` to `changeset publish` while prerelease mode is active: Changesets rejects custom tags in this mode. Packages with only releases in the current prerelease channel can be published under `latest` through Changesets’ built-in tag selection; other packages use the prerelease channel tag. If you intentionally switch to the `alpha` channel, update `.changeset/pre.json`.
 
-Publishing uses npm trusted publishing through GitHub OpenID Connect (OIDC). Each npm package trusts repository `tailorkit-labs/TailorKit`, workflow `release.yml`, and environment `npm-release`. The version PR job does not receive npm permissions; only the protected publish environment can request an identity token.
+Publishing uses npm trusted publishing through GitHub OpenID Connect (OIDC). Each npm package trusts repository `patchsmith-io/patchsmith`, workflow `release.yml`, and environment `npm-release`. The version PR job does not receive npm permissions; only the protected publish environment can request an identity token.
 
 Do not run `changeset pre exit` while stable releases are disabled. The publish guard also rejects stable versions. `.changeset/pre.json` defines the active channel.

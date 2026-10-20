@@ -81,7 +81,7 @@
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/TailorKit-Labs/tailorkit"
+      "github": "https://github.com/patchsmith-io/patchsmith"
     }
   },
   "description": "Patchsmith lets users, AI, and partners build extensions inside your SaaS. Those extensions run in a sandbox and use the components, data, and tools you choose to expose.",

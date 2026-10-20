@@ -30,7 +30,7 @@ const packageDirectories = [
 const manifest = (directory, version) => ({
   name: directory === "patchsmith" ? directory : `@patchsmith/${directory}`,
   publishConfig: { access: "public" },
-  repository: { url: "git+https://github.com/TailorKit-Labs/TailorKit.git" },
+  repository: { url: "git+https://github.com/patchsmith-io/patchsmith.git" },
   version,
 });
 

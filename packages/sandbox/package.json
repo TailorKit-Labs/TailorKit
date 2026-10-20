@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TailorKit-Labs/TailorKit.git",
+    "url": "git+https://github.com/patchsmith-io/patchsmith.git",
     "directory": "packages/sandbox"
   },
   "files": [
