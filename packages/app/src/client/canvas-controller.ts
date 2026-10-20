@@ -185,9 +185,14 @@ export const createCanvasController = <T>(
     if (framesPerSecond === undefined || connection.lastDraw === null) {
       return;
     }
-    const delay = 1000 / framesPerSecond - (now() - connection.lastDraw);
-    if (delay > 0) {
+    let delay = 1000 / framesPerSecond - (now() - connection.lastDraw);
+    while (delay > 0 && isCurrent(connection)) {
+      // oxlint-disable-next-line no-await-in-loop -- Recheck the deadline after each bounded timer, including very low requested rates.
       await waitForCanvasFrame(delay, connection.lifetime.signal);
+      if (framesPerSecond === undefined) {
+        return;
+      }
+      delay = 1000 / framesPerSecond - (now() - connection.lastDraw);
     }
   };
   const pump = async (connection: Connection) => {
