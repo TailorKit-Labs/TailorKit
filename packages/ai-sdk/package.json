@@ -23,8 +23,8 @@
       ],
       "types": [
         "./dist/*",
-        "./dist/*.d.ts",
-        "./dist/*/index.d.ts"
+        "./dist/*.d.mts",
+        "./dist/*/index.d.mts"
       ],
       "default": [
         "./src/*",
@@ -37,15 +37,15 @@
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
     }
   },
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "tsup src/index.ts --format esm --target node22 --clean && tsc -p tsconfig.build.json",
+    "build": "vp pack src/index.ts --format esm --target node22 --dts --clean",
     "check-types": "tsc --noEmit",
     "test": "vp test run",
     "lint": "vp lint .",
@@ -62,7 +62,6 @@
     "@tailorkit/config": "workspace:*",
     "@types/node": "catalog:",
     "ai": "catalog:",
-    "tsup": "^8.5.1",
     "typescript": "catalog:"
   },
   "peerDependencies": {
