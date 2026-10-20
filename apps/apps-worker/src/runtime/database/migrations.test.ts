@@ -90,7 +90,7 @@ it("initializes a fresh database and applies pending migrations without replayin
     text: "Persisted",
   });
   expect(
-    sqlite.prepare("SELECT COUNT(*) AS n FROM tailorkit_migrations").get()
+    sqlite.prepare("SELECT COUNT(*) AS n FROM patchsmith_migrations").get()
   ).toMatchObject({
     n: 2,
   });
@@ -115,7 +115,7 @@ it("rolls back the entire pending upgrade and journal if a migration fails, and 
       .map((row) => row.name)
   ).toEqual(["id", "text", "done"]);
   expect(
-    sqlite.prepare("SELECT COUNT(*) AS n FROM tailorkit_migrations").get()
+    sqlite.prepare("SELECT COUNT(*) AS n FROM patchsmith_migrations").get()
   ).toMatchObject({
     n: 1,
   });
@@ -159,7 +159,7 @@ it("allows older migration prefixes but rejects changed, inserted or reordered h
     migrateDatabase(persistence, [initial, initial]);
   }).toThrow("Invalid app migration history");
   expect(
-    sqlite.prepare("SELECT COUNT(*) AS n FROM tailorkit_migrations").get()
+    sqlite.prepare("SELECT COUNT(*) AS n FROM patchsmith_migrations").get()
   ).toMatchObject({
     n: 2,
   });

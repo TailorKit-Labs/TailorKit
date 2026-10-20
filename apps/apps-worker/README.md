@@ -123,7 +123,7 @@ The test command dry-builds with Wrangler and runs its bundled Miniflare/workerd
 - HTTP queries, mutations, actions, and nested function dispatch
 - Query subscriptions, accepted-write deduplication, and realtime updates between two clients
 
-Server artifacts include Drizzle-generated migration SQL and checksums. Facet initialization applies pending migrations and records their history in `tailorkit_migrations`, in the same isolated SQLite database as the app tables. The integration test uses this production bootstrap and verifies upgrades, failed-migration rollback, cold recovery and fresh installations after an upgrade.
+Server artifacts include Drizzle-generated migration SQL and checksums. Facet initialization applies pending migrations and records their history in `patchsmith_migrations`, in the same isolated SQLite database as the app tables. The integration test uses this production bootstrap and verifies upgrades, failed-migration rollback, cold recovery and fresh installations after an upgrade.
 
 To run the gateway against a development platform, copy `.dev.vars.example` to `.dev.vars`, fill in the platform URL and private runtime service token, and set the R2 bucket in `wrangler.jsonc` to the same private bucket used by the platform blob provider.
 
@@ -174,7 +174,14 @@ Set the build variables `NODE_VERSION=24` and `PNPM_VERSION=12.11.2` to match th
 
 The connected Cloudflare Worker must be named `patchsmith-apps-worker`, matching `wrangler.jsonc`. Set `RUNTIME_SERVICE_TOKEN` as a runtime secret on that Worker; the platform must use the same value for `APP_RUNTIME_SERVICE_TOKEN`.
 
-The `tailorkit.app` routes, `tailorkit-app-assets-prod` bucket, KV namespace ID, and signing-key ID still identify existing infrastructure. Keep these values until those resources and the platform configuration are migrated together. Renaming the Worker does not migrate Durable Object data or copy its secrets.
+The public routes and `ASSET_DOMAIN` remain `tailorkit.app`. Production resources use Patchsmith names:
+
+- `BUNDLES`: private R2 bucket `patchsmith-app-assets-prod`. Set the platform's `BLOB_BUCKET` to this same bucket and grant its S3 credentials access to it.
+- `DEPLOYMENTS`: KV namespace `patchsmith-app-deployments`. Its namespace ID is unchanged by the rename.
+- `STORES`: `PatchsmithAppInstallation`, which creates a fresh Durable Object namespace under `patchsmith-apps-worker`. The `AppInstallation` deletion tombstone retires the previous namespace and its data when this configuration deploys.
+- Signing key: `patchsmith-runtime-2026-10-20`. The platform's `APP_RUNTIME_SIGNING_KEY` must contain the matching private JWK; only its public key belongs in this repository.
+
+The rebrand deliberately starts with an empty asset bucket and installation databases. Old bundles and app data are not migrated. Republish apps after deploying the worker and platform. Stage the new public key on the running worker before the platform begins issuing tokens with it; keep the old public key accepted until existing tokens have expired. The committed configuration completes that rotation on the next worker deployment. Platform environment changes apply to its next deployment, so deploy both sides together and verify a fresh upload, publication, and app call.
 
 ## Current limits
 
