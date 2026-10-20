@@ -3,8 +3,15 @@
   "name": "patchsmith-apps-worker",
   "main": "src/index.ts",
   "build": {
-    "command": "pnpm exec turbo run build --filter=@patchsmith/api-utils... --filter=@patchsmith/app... --filter=@patchsmith/asset-delivery...",
-    "watch_dir": ["src", "../../packages/asset-delivery/src"],
+    "command": "pnpm exec turbo run build --filter=@patchsmith/apps-worker^... && node scripts/build-bootstrap.mjs",
+    "watch_dir": [
+      "src",
+      "scripts",
+      "../../packages/api-utils/src",
+      "../../packages/app/src",
+      "../../packages/app-db/src",
+      "../../packages/asset-delivery/src",
+    ],
   },
   "compatibility_date": "2026-10-01",
   "rules": [
