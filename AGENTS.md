@@ -28,7 +28,7 @@ For JavaScript/TypeScript work, start with these defaults to avoid preventable l
 
 # Task-specific guidance
 
-- For platform schema, migration, backfill, or auth-schema changes, use the `tailorkit-db-changes` skill for PR separation and rollout compatibility; follow `packages/db/AGENTS.md` for auth generation and relations.
+- For platform schema, migration, backfill, or auth-schema changes, use the `patchsmith-db-changes` skill for PR separation and rollout compatibility; follow `packages/db/AGENTS.md` for auth generation and relations.
 - After changing platform API contracts, run `pnpm --filter @patchsmith/api-platform generate:openapi`, then `pnpm --filter @patchsmith/client-platform generate`.
 - For playground setup, contract changes, or database changes, read `playground/README.md` for generation, validator parity, and SQLite schema-push workflows.
 - For user-facing public-package changes or release work, read `RELEASING.md` and follow its Changeset and prerelease workflow.
