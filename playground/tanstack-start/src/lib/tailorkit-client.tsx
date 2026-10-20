@@ -48,6 +48,7 @@ export const tailor = createClient({
   components: {
     ...reactPrimitives,
     experimental_Canvas: experimental_canvasRenderer,
+    experimental_DoomCanvas: experimental_canvasRenderer,
     Button: ({ props, children }) => <Button {...props}>{children}</Button>,
     Input: ({ props: { onValueChange, ...rest } }) => (
       <Input

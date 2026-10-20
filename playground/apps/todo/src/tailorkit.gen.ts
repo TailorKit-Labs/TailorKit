@@ -129,6 +129,17 @@ export const experimental_Canvas = /* @__PURE__ */ createRemoteComponent<experim
   children: false,
 });
 
+export interface experimental_DoomCanvasProps {
+  ariaLabel?: string;
+  height?: number;
+  surface?: string;
+  width?: number;
+}
+
+export const experimental_DoomCanvas = /* @__PURE__ */ createRemoteComponent<experimental_DoomCanvasProps, false>("experimental_DoomCanvas", {
+  children: false,
+});
+
 export interface BoxProps {
   background?: Background;
   basis?: Basis;
