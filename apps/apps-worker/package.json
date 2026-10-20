@@ -36,5 +36,8 @@
     "vite-plus": "catalog:",
     "workerd": "1.20261010.1",
     "wrangler": "4.149.0"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

@@ -27,7 +27,7 @@
     }
   },
   "scripts": {
-    "build": "vp pack src/index.ts src/templates.ts --format esm --dts --clean",
+    "build": "vp pack src/index.ts src/templates.ts --target node24 --format esm --dts --clean",
     "check-types": "tsc --noEmit",
     "dev": "email dev --dir src/templates --port 3003",
     "lint": "vp lint .",
@@ -51,5 +51,8 @@
     "@types/nodemailer": "^8.0.2",
     "@types/react": "catalog:",
     "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

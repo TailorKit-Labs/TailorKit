@@ -58,7 +58,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsup --entry.index src/index.ts --entry.client src/client/index.ts --entry.store-fetch src/store/fetch/index.ts --entry.store-local src/store/local/index.ts --format esm --target node20 --clean && tsc -p tsconfig.build.json",
+    "build": "vp pack && tsc -p tsconfig.build.json",
     "check-types": "tsc --noEmit",
     "test": "vp test run",
     "lint": "vp lint .",
@@ -75,8 +75,11 @@
   "devDependencies": {
     "@tailorkit/config": "workspace:*",
     "@types/node": "catalog:",
-    "tsup": "^8.5.1",
     "typescript": "catalog:",
+    "vite-plus": "catalog:",
     "zod": "catalog:"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

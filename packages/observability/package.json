@@ -22,7 +22,7 @@
     }
   },
   "scripts": {
-    "build": "vp pack src/index.ts --format esm --dts --clean",
+    "build": "vp pack src/index.ts --target node24 --format esm --dts --clean",
     "check-types": "tsc --noEmit",
     "test": "vp test run",
     "lint": "vp lint .",
@@ -43,5 +43,8 @@
     "@tailorkit/config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }
