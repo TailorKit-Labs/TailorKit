@@ -6,7 +6,7 @@ import { afterAll, beforeEach, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 
 import type { AppFacet } from "./dynamic-workers/facet";
-import { AppInstallation } from "./installation";
+import { PatchsmithAppInstallation } from "./installation";
 import type { ServerDeployment } from "./supervisor/source";
 import worker from "./worker";
 
@@ -412,7 +412,12 @@ it("accepts different signed projects and routes them to distinct installations"
 
 it("loads isolated code, passes only the verified identity and caches a warm deployment", async () => {
   const fixtures = setup();
-  const installation = new AppInstallation(fixtures.ctx, fixtures.env);
+
+  const installation = new PatchsmithAppInstallation(
+    fixtures.ctx,
+    fixtures.env
+  );
+
   const response = await installation.fetch(await request());
 
   expect(await response.json()).toEqual({ json: "result" });
@@ -447,7 +452,12 @@ it("loads isolated code, passes only the verified identity and caches a warm dep
 
 it("changes code on the same facet and accepts old client tokens without switching back", async () => {
   const fixtures = setup();
-  const installation = new AppInstallation(fixtures.ctx, fixtures.env);
+
+  const installation = new PatchsmithAppInstallation(
+    fixtures.ctx,
+    fixtures.env
+  );
+
   const awaitedResult5 = await installation.fetch(await request());
   await awaitedResult5.text();
 
@@ -480,7 +490,12 @@ it("changes code on the same facet and accepts old client tokens without switchi
 
 it("keeps the running facet when replacement code fails verification", async () => {
   const fixtures = setup();
-  const installation = new AppInstallation(fixtures.ctx, fixtures.env);
+
+  const installation = new PatchsmithAppInstallation(
+    fixtures.ctx,
+    fixtures.env
+  );
+
   const awaitedResult8 = await installation.fetch(await request());
   await awaitedResult8.text();
 
@@ -498,7 +513,11 @@ it("keeps the running facet when replacement code fails verification", async () 
 
 it("rechecks authentication and rejects the wrong supervisor before looking up app code", async () => {
   const fixtures = setup();
-  const installation = new AppInstallation(fixtures.ctx, fixtures.env);
+
+  const installation = new PatchsmithAppInstallation(
+    fixtures.ctx,
+    fixtures.env
+  );
 
   const awaitedResult10 = await installation.fetch(
     new Request("https://runtime.test/rpc/queries")

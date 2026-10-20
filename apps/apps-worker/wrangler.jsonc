@@ -36,19 +36,23 @@
   "r2_buckets": [
     {
       "binding": "BUNDLES",
-      "bucket_name": "tailorkit-app-assets-prod",
+      "bucket_name": "patchsmith-app-assets-prod",
     },
   ],
   "durable_objects": {
     "bindings": [
       {
         "name": "STORES",
-        "class_name": "AppInstallation",
+        "class_name": "PatchsmithAppInstallation",
       },
     ],
   },
   "exports": {
     "AppInstallation": {
+      "type": "durable-object",
+      "state": "deleted",
+    },
+    "PatchsmithAppInstallation": {
       "type": "durable-object",
       "storage": "sqlite",
     },
@@ -63,10 +67,10 @@
       "keys": [
         {
           "kty": "EC",
-          "x": "qgJufcvDXWvETxxY9GW7a_5Pp2Ywm10wRRkNY69h200",
-          "y": "tqSG2ZTbYUQY5KaaTKxdgfSe_92Q4ai76b6wNfMpsDs",
+          "x": "mNmgu9uJ_4uRcvrwoxwqVRGKE5glJsoTz-GSDDYKqkI",
+          "y": "Snkr5Pv_fXPHV2qROt2heEK-EWWps-tIjtVnJMIZIgQ",
           "crv": "P-256",
-          "kid": "tailorkit-runtime-2026-10-02",
+          "kid": "patchsmith-runtime-2026-10-20",
           "alg": "ES256",
           "use": "sig",
         },
@@ -82,6 +86,7 @@
   "kv_namespaces": [
     {
       "binding": "DEPLOYMENTS",
+      // patchsmith-app-deployments; renaming the namespace preserves its ID.
       "id": "06b12b0c61164472887d9cf967f577b6",
     },
   ],

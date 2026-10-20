@@ -37,12 +37,12 @@ export const migrateDatabase = (
   // Keep the entire upgrade and journal atomic: a failed deployment leaves the previous schema.
   persistence.transaction(() => {
     persistence.execute(
-      "CREATE TABLE IF NOT EXISTS tailorkit_migrations (position INTEGER PRIMARY KEY, id TEXT NOT NULL UNIQUE, hash TEXT NOT NULL)",
+      "CREATE TABLE IF NOT EXISTS patchsmith_migrations (position INTEGER PRIMARY KEY, id TEXT NOT NULL UNIQUE, hash TEXT NOT NULL)",
       []
     );
 
     const applied = persistence.execute(
-      "SELECT position, id, hash FROM tailorkit_migrations ORDER BY position",
+      "SELECT position, id, hash FROM patchsmith_migrations ORDER BY position",
       []
     ).rows;
 
@@ -70,7 +70,7 @@ export const migrateDatabase = (
       }
 
       persistence.execute(
-        "INSERT INTO tailorkit_migrations (position, id, hash) VALUES (?, ?, ?)",
+        "INSERT INTO patchsmith_migrations (position, id, hash) VALUES (?, ?, ?)",
         [index, migration.id, migration.hash]
       );
     }

@@ -254,10 +254,10 @@ describe("database app builds", () => {
       expect(server).not.toContain("cloudflare:workers");
       expect(server).not.toContain("node:async_hooks");
       expect(server).not.toContain(
-        "CREATE TABLE IF NOT EXISTS tailorkit_migrations"
+        "CREATE TABLE IF NOT EXISTS patchsmith_migrations"
       );
       expect(server).toContain("CREATE TABLE `todos`");
-      expect(browser).not.toContain("tailorkit_migrations");
+      expect(browser).not.toContain("patchsmith_migrations");
       expect(browser).not.toContain("CREATE TABLE `todos`");
       expect(browser).not.toContain("patchsmith_receipts");
       expect(browser).not.toContain("PRIVATE_DATABASE_TEST");
@@ -339,7 +339,7 @@ describe("database app builds", () => {
       );
 
       expect(customServer).not.toContain(
-        "CREATE TABLE IF NOT EXISTS tailorkit_migrations"
+        "CREATE TABLE IF NOT EXISTS patchsmith_migrations"
       );
       expect(customServer).toContain("CREATE TABLE `todos`");
       expect(
