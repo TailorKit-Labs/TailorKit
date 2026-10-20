@@ -14,6 +14,7 @@ interface AppLogoProps {
 
 export const AppLogo = ({ className, logoPaths, name }: AppLogoProps) => {
   const { resolvedTheme } = useTheme();
+
   const logoPath =
     resolvedTheme === "dark"
       ? (logoPaths?.dark ?? logoPaths?.light)

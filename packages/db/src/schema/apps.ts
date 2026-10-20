@@ -85,6 +85,7 @@ const AppSchema = createSelectSchema(app, {
   shortId: z.string().regex(/^[a-z0-9]{12}$/u),
   slug: appSlugSchema,
 });
+
 export type App = z.output<typeof AppSchema>;
 
 /** Independent conversations for an app; their snapshots retain Pi journals. */
@@ -194,6 +195,7 @@ const AppDeploymentSchema = createSelectSchema(appDeployment, {
     )
     .max(1000),
 });
+
 export type AppDeployment = z.output<typeof AppDeploymentSchema>;
 
 export const appDeploymentFileContentType = pgEnum(
@@ -251,6 +253,7 @@ const AppDeploymentFileSchema = createSelectSchema(appDeploymentFile, {
       "Must be a valid object key like assets/client.js"
     ),
 });
+
 export type AppDeploymentFile = z.output<typeof AppDeploymentFileSchema>;
 
 export { AppSchema as App };

@@ -61,7 +61,7 @@
     "@patchsmith/kv": "workspace:*",
     "@patchsmith/observability": "workspace:*",
     "@upstash/ratelimit": "^2.2.0",
-    "@vercel/functions": "^3.9.11",
+    "@vercel/functions": "^3.10.1",
     "effect": "catalog:",
     "jose": "6.2.12",
     "zod": "catalog:"
@@ -72,6 +72,6 @@
     "typescript": "catalog:"
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=24.11"
   }
 }

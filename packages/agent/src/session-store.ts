@@ -8,18 +8,22 @@ import { deleteSandbox } from "./sandbox";
 
 const sessionStore = async () => {
   const { db } = await import("@patchsmith/db");
+
   const { appAgentLease, appAgentThread } =
     await import("@patchsmith/db/schema/apps");
+
   return { appAgentLease, appAgentThread, db };
 };
 
 const leaseDurationMs = 60 * 60_000;
+
 const resumeEnvelope = z.object({
   data: z.json(),
   harnessId: z.literal("pi"),
   specificationVersion: z.literal("harness-v1"),
   type: z.literal("resume-session"),
 });
+
 // Validate without stripping the adapter's opaque unfinished-turn settings.
 const resumeSchema = z.custom<HarnessV1ResumeSessionState>(
   (value) => resumeEnvelope.safeParse(value).success
@@ -38,15 +42,19 @@ const assertLeaseAvailable = async (
   if (expiresAt !== null && expiresAt.getTime() < Date.now()) {
     return;
   }
+
   // External cancellation skips workflow cleanup; its durable status can free the lease.
   const { getRun } = await import("workflow/api");
   const { promise: timeout, reject } = Promise.withResolvers<never>();
+
   // Bound the status lookup while the caller holds the workspace row lock.
   const timer = setTimeout(() => {
     reject(new Error("Timed out checking the active app agent workflow."));
   }, 5000);
+
   try {
     const status = await Promise.race([getRun(activeRunId).status, timeout]);
+
     if (status === "pending" || status === "running") {
       throw new FatalError(
         `This app is already being edited by workflow ${activeRunId}. Retry after the active run finishes.`
@@ -65,29 +73,37 @@ export const loadResumeStep = async (
 ): Promise<SavedAgentSession> => {
   "use step";
   const { appAgentLease, appAgentThread, db } = await sessionStore();
+
   return await db.transaction(async (tx) => {
     await tx.insert(appAgentLease).values({ appId }).onConflictDoNothing();
+
     const [lease] = await tx
       .select()
       .from(appAgentLease)
       .where(eq(appAgentLease.appId, appId))
       .for("update");
+
     if (!lease) {
       throw new FatalError("Could not claim the app workspace.");
     }
+
     if (lease.activeRunId === runId && lease.activeThreadId !== threadId) {
       throw new FatalError("This editing run belongs to another thread.");
     }
+
     const otherRun = lease.activeRunId !== null && lease.activeRunId !== runId;
+
     if (otherRun && lease.activeRunId !== null) {
       await assertLeaseAvailable(lease.activeRunId, lease.leaseExpiresAt);
     }
+
     const [thread] = await tx
       .select()
       .from(appAgentThread)
       .where(
         and(eq(appAgentThread.id, threadId), eq(appAgentThread.appId, appId))
       );
+
     if (
       !thread ||
       thread.invalidatedAt !== null ||
@@ -97,10 +113,12 @@ export const loadResumeStep = async (
         "Thread not found for this app or no longer resumable. Start a new thread."
       );
     }
+
     // The previous worker may have mutated its journal beyond its checkpoint.
     const abandonedThreadId = otherRun
       ? (lease.activeThreadId ?? undefined)
       : undefined;
+
     if (abandonedThreadId !== undefined) {
       await tx
         .update(appAgentThread)
@@ -116,10 +134,12 @@ export const loadResumeStep = async (
           )
         );
     }
+
     const cleanupSandboxName =
       abandonedThreadId === undefined
         ? (lease.cleanupSandboxName ?? undefined)
         : threadSandboxName(abandonedThreadId);
+
     await tx
       .update(appAgentLease)
       .set({
@@ -129,6 +149,7 @@ export const loadResumeStep = async (
         leaseExpiresAt: new Date(Date.now() + leaseDurationMs),
       })
       .where(eq(appAgentLease.appId, appId));
+
     return {
       cleanupSandboxName,
       resumeFrom:
@@ -142,6 +163,7 @@ export const loadResumeStep = async (
 
 export const renewSession = async (appId: string, runId: string) => {
   const { appAgentLease, db } = await sessionStore();
+
   const [owned] = await db
     .update(appAgentLease)
     .set({ leaseExpiresAt: new Date(Date.now() + leaseDurationMs) })
@@ -149,6 +171,7 @@ export const renewSession = async (appId: string, runId: string) => {
       and(eq(appAgentLease.appId, appId), eq(appAgentLease.activeRunId, runId))
     )
     .returning({ appId: appAgentLease.appId });
+
   if (!owned) {
     throw new FatalError("The app agent no longer owns this editing turn.");
   }
@@ -176,11 +199,13 @@ export const persistResumeStep = async (
         )
       )
       .for("update");
+
     if (!owned) {
       throw new FatalError(
         "Cannot save a session owned by another editing turn."
       );
     }
+
     const [saved] = await tx
       .update(appAgentThread)
       .set({ resumeState: JSON.stringify(resumeFrom), sandboxName })
@@ -188,6 +213,7 @@ export const persistResumeStep = async (
         and(eq(appAgentThread.id, threadId), eq(appAgentThread.appId, appId))
       )
       .returning({ id: appAgentThread.id });
+
     if (!saved) {
       throw new FatalError("Cannot save an unknown thread.");
     }
@@ -214,6 +240,7 @@ export const releaseSessionStep = async (appId: string, runId: string) => {
 export const cancelAppAgent = async (appId: string, runId: string) => {
   "use step";
   const { appAgentLease, appAgentThread, db } = await sessionStore();
+
   const [owned] = await db
     .update(appAgentLease)
     .set({ leaseExpiresAt: new Date(Date.now() + leaseDurationMs) })
@@ -224,16 +251,20 @@ export const cancelAppAgent = async (appId: string, runId: string) => {
       cleanupSandboxName: appAgentLease.cleanupSandboxName,
       threadId: appAgentLease.activeThreadId,
     });
+
   if (!owned) {
     return;
   }
+
   // Keep ownership when deletion fails so a new writer cannot race cleanup.
   if (owned.cleanupSandboxName !== null) {
     await deleteSandbox(owned.cleanupSandboxName);
   }
+
   if (owned.threadId !== null) {
     await deleteSandbox(threadSandboxName(owned.threadId));
   }
+
   await db.transaction(async (tx) => {
     const [lease] = await tx
       .select()
@@ -245,9 +276,11 @@ export const cancelAppAgent = async (appId: string, runId: string) => {
         )
       )
       .for("update");
+
     if (!lease) {
       return;
     }
+
     if (owned.threadId !== null) {
       await tx
         .update(appAgentThread)
@@ -263,6 +296,7 @@ export const cancelAppAgent = async (appId: string, runId: string) => {
           )
         );
     }
+
     await tx
       .update(appAgentLease)
       .set({

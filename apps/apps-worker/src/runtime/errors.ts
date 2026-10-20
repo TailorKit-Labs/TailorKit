@@ -21,6 +21,7 @@ export interface InvocationResult {
 
 export const failedResult = (cause: unknown): FunctionResult => {
   const failure = appError(cause);
+
   return { error: { code: failure.code, message: failure.message }, ok: false };
 };
 
@@ -28,6 +29,7 @@ export const resultValue = (result: FunctionResult) => {
   if (!result.ok) {
     throw appError(result.error);
   }
+
   return result.value;
 };
 

@@ -21,10 +21,12 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
 const rateLimiter = createRateLimiter({ maxRequests: 100, window: 1000 });
+
 type CanonicalScope = ReturnType<typeof canonicalizeScope>;
 
 export const findAppInScopes = async (
@@ -58,6 +60,7 @@ export const findAppInScopes = async (
   if (!app) {
     throw new ORPCError("NOT_FOUND");
   }
+
   return app;
 };
 
@@ -80,10 +83,13 @@ export const cliRouter = authenticatedRouter.use(
     if (context.agentToken) {
       const body =
         isObjectValue(input) && "body" in input ? input.body : undefined;
+
       const requestedScope =
         isObjectValue(body) && "scope" in body ? body.scope : undefined;
+
       const scopesValue =
         isObjectValue(body) && "scopes" in body ? body.scopes : undefined;
+
       if (requestedScope !== undefined || scopesValue !== undefined) {
         try {
           const scopes = [
@@ -94,6 +100,7 @@ export const cliRouter = authenticatedRouter.use(
               ? []
               : canonicalizeScopes(scopesValue)),
           ];
+
           if (
             !scopes.length ||
             scopes.some(
@@ -110,6 +117,7 @@ export const cliRouter = authenticatedRouter.use(
         }
       }
     }
+
     return await next();
   }
 );
@@ -119,6 +127,7 @@ export const protectedRouter = authenticatedRouter.use(
     if (context.agentToken) {
       throw new ORPCError("FORBIDDEN");
     }
+
     return await next();
   }
 );

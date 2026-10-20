@@ -53,18 +53,23 @@ const RouteComponent = () => {
     error_description,
     return_to,
   } = useSearch({ from: "/(auth)/sign-up" });
+
   const navigate = useNavigate({ from: "/sign-up" });
+
   const socialProvidersQuery = useQuery(
     orpc.user.getSocialProviders.queryOptions()
   );
+
   const [step, setStep] = useState<Step>("email");
   const [visible, setVisible] = useState(true);
   const [email, setEmail] = useState(emailFromSearch ?? "");
   const [detailsError, setDetailsError] = useState<string | null>(null);
   const [socialError, setSocialError] = useState<string | null>(null);
+
   const [socialPending, setSocialPending] = useState<
     "github" | "google" | null
   >(null);
+
   const socialAuthPending = socialPending !== null;
 
   const transition = (nextStep: Step, nextEmail?: string) => {
@@ -74,6 +79,7 @@ const RouteComponent = () => {
       if (nextEmail !== undefined) {
         setEmail(nextEmail);
       }
+
       setStep(nextStep);
       setVisible(true);
     }, 150);
@@ -88,11 +94,13 @@ const RouteComponent = () => {
           resolve,
           reject: rejectPending,
         } = Promise.withResolvers();
+
         try {
           setTimeout(resolve, 300);
         } catch (error) {
           rejectPending(error);
         }
+
         return await pendingPromise;
       })();
       transition("details", value.email);
@@ -142,6 +150,7 @@ const RouteComponent = () => {
       const callbackURL =
         getSameOriginUrl(return_to, window.location.origin) ??
         window.location.origin;
+
       const result = await authClient.signIn.social({
         callbackURL,
         errorCallbackURL: getAuthErrorCallbackUrl(

@@ -14,6 +14,7 @@ const require = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -21,15 +22,21 @@ const require = <T>(value: T | null | undefined): T => {
 interface TestAuthEnv {
   AUTH_SECRET: string | undefined;
 }
+
 const mocks = vi.hoisted(() => {
   const env: TestAuthEnv = { AUTH_SECRET: "test-cli-token-secret" };
+
   return { env, findToken: vi.fn() };
 });
+
 vi.mock("@patchsmith/db", () => ({
   db: { query: { cliToken: { findFirst: mocks.findToken } } },
 }));
+
 vi.mock("#env", () => ({ env: mocks.env }));
+
 const { authenticateCli } = await import("./cli-token");
+
 const canonical = canonicalizeScope({
   name: "org",
   value: { environment: "dev", tenant: "one" },
@@ -43,6 +50,7 @@ const validToken = () => ({
   scope: { name: "org", value: { environment: "dev", tenant: "one" } },
   scopeKey: canonical.scopeKey,
 });
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.useFakeTimers();
@@ -50,6 +58,7 @@ beforeEach(() => {
   mocks.env.AUTH_SECRET = "test-cli-token-secret";
   mocks.findToken.mockResolvedValue(validToken());
 });
+
 afterEach(() => vi.useRealTimers());
 
 describe("shared platform CLI token authentication", () => {

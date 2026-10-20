@@ -8,38 +8,48 @@ import { expect, it, vi } from "vite-plus/test";
 import type { ShellProps } from "./routing";
 
 vi.stubGlobal("__PREACT_VERSION__", "11.0.0");
+
 const { createFileClient, defineRoute, Route } = await import("./routing");
 const { defineView } = await import("./views");
 
 it("keeps app and slot shells and common layouts mounted, and isolates mounted slots", async () => {
   const mounts = vi.fn<(name: string) => void>();
   const cleanup = vi.fn<(name: string) => void>();
+
   const Root = ({ children }: ShellProps) => {
     useLayoutEffect(() => {
       mounts("root");
+
       return () => {
         cleanup("root");
       };
     }, []);
+
     return h("section", {}, children);
   };
+
   const SlotRoot = () => {
     useLayoutEffect(() => {
       mounts("slot");
+
       return () => {
         cleanup("slot");
       };
     }, []);
+
     return h("main", {}, h(Route, {}));
   };
+
   const Layout = () => {
     const [count, setCount] = useState(0);
     useLayoutEffect(() => {
       mounts("layout");
+
       return () => {
         cleanup("layout");
       };
     }, []);
+
     return h(
       "div",
       {},
@@ -55,16 +65,19 @@ it("keeps app and slot shells and common layouts mounted, and isolates mounted s
       h(Route, {})
     );
   };
+
   const first = defineView({
     component: () => "first",
     slot: "panel",
     view: "/",
   });
+
   const users = defineView({
     component: () => "users",
     slot: "panel",
     view: "/users",
   });
+
   const client = createFileClient({
     layouts: [
       { definition: Layout, filename: "layout.tsx", path: "/", slot: "panel" },
@@ -95,14 +108,18 @@ it("keeps app and slot shells and common layouts mounted, and isolates mounted s
       },
     ],
   });
+
   const container = document.createElement("div");
   const other = document.createElement("div");
+
   const show = async (view: "/" | "/users", target = container) => {
     await act(() => {
       const definition = client.slots.panel?.[view];
+
       if (!(definition !== undefined && definition !== false)) {
         throw new Error("Missing view");
       }
+
       // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
       client.$runtime.render(
         /* oxlint-disable typescript/no-unsafe-type-assertion -- The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below. */
@@ -124,6 +141,7 @@ it("keeps app and slot shells and common layouts mounted, and isolates mounted s
       );
     });
   };
+
   try {
     await show("/");
     await act(() => container.querySelector("button")?.click());
@@ -159,6 +177,7 @@ it("matches layout prefixes at route boundaries", async () => {
     slot: "panel",
     view: "/users",
   });
+
   const client = createFileClient({
     layouts: [
       {
@@ -192,12 +211,16 @@ it("matches layout prefixes at route boundaries", async () => {
       },
     ],
   });
+
   const container = document.createElement("div");
+
   try {
     const definition = client.slots.panel?.["/users"];
+
     if (!(definition !== undefined && definition !== false)) {
       throw new Error("Missing view");
     }
+
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
     await act(() => {
       client.$runtime.render(
@@ -222,12 +245,14 @@ it("matches layout prefixes at route boundaries", async () => {
 
 it("rejects duplicate paths, invalid root exports, and mismatched file locations", () => {
   const view = defineView({ component: () => null, slot: "panel", view: "/" });
+
   const module = {
     definition: view,
     filename: "index.view.tsx",
     path: "/",
     slot: "panel",
   };
+
   const options = { layouts: [], roots: [], views: [module] };
   expect(() =>
     createFileClient({

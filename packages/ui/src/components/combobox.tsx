@@ -36,10 +36,12 @@ export const Combobox = <
   props: ComboboxPrimitive.Root.Props<Value, Multiple, Item>
 ): React.ReactElement => {
   const chipsRef = React.useRef<Element | null>(null);
+
   const contextValue1 = useMemo(
     () => ({ chipsRef, multiple: props.multiple === true }),
     [chipsRef, props.multiple]
   );
+
   return (
     <ComboboxContext.Provider value={contextValue1}>
       <ComboboxPrimitive.Root {...props} />

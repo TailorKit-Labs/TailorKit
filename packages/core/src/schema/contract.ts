@@ -64,23 +64,29 @@ export function defineContract(definition: {
       throw new Error(`Unknown contract field "${name}"`);
     }
   }
+
   flattenTools(definition.tools ?? {});
+
   for (const [name, component] of Object.entries(definition.components ?? {})) {
     assertComponentDescription(name, component);
   }
+
   for (const [name, slot] of Object.entries(definition.slots ?? {})) {
     if (slot.description !== undefined && !isStringValue(slot.description)) {
       throw new TypeError(`Slot "${name}" description must be a string.`);
     }
+
     if (slot.multiple !== undefined && !isBooleanValue(slot.multiple)) {
       throw new TypeError(`Slot "${name}" multiple must be a boolean.`);
     }
+
     for (const view of slot.views) {
       if (!Object.hasOwn(definition.views ?? {}, view)) {
         throw new Error(`Slot "${name}" references undeclared view "${view}".`);
       }
     }
   }
+
   return {
     components: definition.components ?? {},
     scopes: definition.scopes ?? {},

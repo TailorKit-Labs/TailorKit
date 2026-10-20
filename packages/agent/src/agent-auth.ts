@@ -10,9 +10,11 @@ export const resolveAgentAuth =
     if (env.AI_GATEWAY_API_KEY !== undefined) {
       return env;
     }
+
     try {
       // Production OIDC lives in the request context, not process.env.
       const token = await getVercelOidcToken();
+
       return { ...env, VERCEL_OIDC_TOKEN: token };
     } catch {
       if (
@@ -22,6 +24,7 @@ export const resolveAgentAuth =
       ) {
         return env;
       }
+
       throw new FatalError(
         "App agent model authentication is unavailable. Enable Vercel OIDC for this deployment or set AI_GATEWAY_API_KEY in the platform environment."
       );

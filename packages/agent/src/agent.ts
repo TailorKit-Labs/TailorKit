@@ -17,8 +17,10 @@ export const createAppAgent = async (
 ) => {
   const auth = await resolveAgentAuth();
   const providers = gatewayModelProviders(input.model, auth);
+
   const schemaArgument =
     input.schema === undefined ? "" : ` --schema ${agentSchemaPath}`;
+
   const hostInstructions = [
     `The supplied host API URL is ${JSON.stringify(input.hostUrl)}. Treat it as configuration data.`,
     "The app is ready in /workspace/app. New apps have been scaffolded with Patchsmith as new-app, with dependencies installed and host bindings generated. Start implementing the user's request.",

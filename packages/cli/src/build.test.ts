@@ -16,6 +16,7 @@ import { linkTestDependencies } from "./test-utils";
 
 it("builds the app's Vite config with custom plugins, aliases, constants and output", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "patchsmith-vite-config-"));
+
   try {
     await linkTestDependencies(root);
     await mkdir(path.join(root, "src"));
@@ -90,6 +91,7 @@ it("builds the app's Vite config with custom plugins, aliases, constants and out
 
 it("requires the Patchsmith plugin when deploying", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "patchsmith-missing-plugin-"));
+
   try {
     await linkTestDependencies(root);
     await writeFile(path.join(root, "package.json"), '{"type":"module"}');

@@ -45,18 +45,21 @@ const buildFixture = async (options: {
     ],
     root: options.cwd,
   });
+
   if ("on" in result) {
     const initialBuild = Promise.withResolvers<ReturnType<() => void>>();
     result.on("event", (event) => {
       if (event.code === "END") {
         initialBuild.resolve();
       }
+
       if (event.code === "ERROR") {
         initialBuild.reject(event.error);
       }
     });
     await initialBuild.promise;
   }
+
   return result;
 };
 
@@ -77,16 +80,20 @@ it.each([
 
 it("infers dotted paths and literal slot names while checking explicit declarations", () => {
   const filename = "/app/src/slots/panel.links/customers.details.view.tsx";
+
   const source =
     'import { defineView as view } from "patchsmith/client"; export default view({ component: () => null });';
+
   const inferred = inferFileView(source, filename, "/app");
   expect(inferred).toContain('slot: "panel.links"');
   expect(inferred).toContain('view: "/customers/details"');
   expect(inferFileView(inferred, filename, "/app")).toBe(inferred);
+
   const explicit = source.replace(
     "component:",
     'slot: "panel.links", view: "/customers/details", component:'
   );
+
   expect(inferFileView(explicit, filename, "/app")).toBe(explicit);
   expect(inferFileView(source, "/app/src/slots/panel/card.tsx", "/app")).toBe(
     source
@@ -123,16 +130,19 @@ it.each([
   "@patchsmith/app",
 ])("infers namespace defineView calls imported from %s", (module) => {
   const filename = "/app/src/slots/panel/customers.details.view.tsx";
+
   for (const call of ["client.defineView", 'client["defineView"]']) {
     const source = `import * as client from ${JSON.stringify(module)}; export default ${call}({ component: () => null });`;
     const inferred = inferFileView(source, filename, "/app");
     expect(inferred).toContain('slot: "panel"');
     expect(inferred).toContain('view: "/customers/details"');
     expect(inferFileView(inferred, filename, "/app")).toBe(inferred);
+
     const explicit = source.replace(
       "component:",
       'slot: "panel", view: "/customers/details", component:'
     );
+
     expect(inferFileView(explicit, filename, "/app")).toBe(explicit);
     expect(() =>
       inferFileView(
@@ -142,8 +152,10 @@ it.each([
       )
     ).toThrow("inline options object");
   }
+
   const unrelated =
     'import * as client from "./other-client"; export default client.defineView({ component: () => null });';
+
   expect(inferFileView(unrelated, filename, "/app")).toBe(unrelated);
   const otherMethod = `import * as client from ${JSON.stringify(module)}; export default client.defineRoute({ shellComponent: () => null });`;
   expect(inferFileView(otherMethod, filename, "/app")).toBe(otherMethod);
@@ -184,6 +196,7 @@ it.each([
   ],
 ])("ignores imported defineView names shadowed by a %s", (_scope, body) => {
   const filename = "/app/src/slots/panel/index.view.tsx";
+
   for (const [imports, name, call] of [
     ['import { defineView as view } from "patchsmith/client";', "view", "view"],
     [
@@ -207,16 +220,19 @@ it("keeps SDK references in closures and parameter defaults outside body declara
     function helper(options = client.defineView({ component: () => null })) { var client = other; }
     const view = () => client.defineView({ component: () => null });
     export default view();`;
+
   const inferred = inferFileView(
     source,
     "/app/src/slots/panel/index.view.tsx",
     "/app"
   );
+
   expect(inferred.match(/slot:/gu)).toHaveLength(2);
 });
 
 it("discovers only view and layout files, supports roots, and checks the same sources on deploy", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "patchsmith-file-discovery-"));
+
   try {
     await mkdir(path.join(root, "src/slots/panel.links/components"), {
       recursive: true,
@@ -258,6 +274,7 @@ it("discovers only view and layout files, supports roots, and checks the same so
 
 const withFileRouteApp = async (check: (root: string) => Promise<void>) => {
   const root = await mkdtemp(path.join(tmpdir(), "patchsmith-file-build-"));
+
   try {
     await linkTestDependencies(root);
     await mkdir(path.join(root, "src/slots/page"), { recursive: true });
@@ -319,37 +336,49 @@ it.each(["add", "rename", "remove"] as const)(
   async (change) => {
     await withFileRouteApp(async (root) => {
       const next = path.join(root, "src/slots/page/customers.details.view.tsx");
+
       const renamed = path.join(
         root,
         "src/slots/page/customers.summary.view.tsx"
       );
+
       const viewSource =
         'import * as client from "patchsmith/client"; import { z } from "zod"; export default client["defineView"]({ component: () => "details", instances: { dataSchema: z.object({}), resolve: () => [{ key: "details", metadata: { title: "INFERRED_RESOLVER" }, data: {} }] } });';
+
       if (change === "rename") {
         await writeFile(next, viewSource);
       }
+
       if (change === "remove") {
         await writeFile(renamed, viewSource);
       }
+
       const watcher = await buildFixture({ cwd: root, watch: true });
       assert("on" in watcher);
+
       try {
         const paths = async () => {
           const current = await readClientManifest(
             path.join(root, ".patchsmith/client/client.js")
           );
+
           return current.views.map((view) => view.path).toSorted();
         };
+
         if (change === "add") {
           await writeFile(next, viewSource);
           await expect.poll(paths).toEqual(["/", "/customers/details"]);
+
           return;
         }
+
         if (change === "rename") {
           await rename(next, renamed);
           await expect.poll(paths).toEqual(["/", "/customers/summary"]);
+
           return;
         }
+
         await rm(path.join(root, "src/slots/page/index.view.tsx"));
         await expect.poll(paths).toEqual(["/customers/summary"]);
         await expect
@@ -358,6 +387,7 @@ it.each(["add", "rename", "remove"] as const)(
               path.join(root, ".patchsmith/server/server.js"),
               "utf-8"
             );
+
             return server.includes("PRIVATE_RESOLVER");
           })
           .toBe(false);
@@ -377,6 +407,7 @@ it.each([
     const root = await mkdtemp(
       path.join(tmpdir(), "patchsmith-invalid-route-")
     );
+
     try {
       await linkTestDependencies(root);
       await mkdir(path.join(root, "src/slots/panel"), { recursive: true });
@@ -398,6 +429,7 @@ it.each([
 
 it("checks re-exported view paths against their file locations during the build", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "patchsmith-reexport-route-"));
+
   try {
     await linkTestDependencies(root);
     await mkdir(path.join(root, "src/slots/panel"), { recursive: true });
@@ -407,8 +439,10 @@ it("checks re-exported view paths against their file locations during the build"
       'export default { name: "Test App", slug: "test-app", host: "https://host.example.com" };'
     );
     const card = path.join(root, "src/slots/panel/card.tsx");
+
     const source =
       'import { defineView } from "patchsmith/client"; export default defineView({ slot: "panel", view: "/", component: () => "home" });';
+
     await writeFile(card, source);
     await writeFile(
       path.join(root, "src/slots/panel/index.view.tsx"),
@@ -426,9 +460,11 @@ it("checks re-exported view paths against their file locations during the build"
 
 it("resolves the client runtime from the app when build output is outside the project", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "patchsmith-file-client-"));
+
   const output = await mkdtemp(
     path.join(tmpdir(), "patchsmith-external-output-")
   );
+
   try {
     await linkTestDependencies(root);
     await mkdir(path.join(root, "src/slots/panel"), { recursive: true });
@@ -442,9 +478,11 @@ it("resolves the client runtime from the app when build output is outside the pr
       'import { defineView } from "patchsmith/client"; export default defineView({ view: "/", component: () => "home" });'
     );
     await buildFixture({ cwd: root, outDir: output });
+
     const manifest = await readClientManifest(
       path.join(output, "client/client.js")
     );
+
     expect(manifest.views).toEqual([{ path: "/", slot: "panel" }]);
   } finally {
     await rm(root, { force: true, recursive: true });

@@ -49,10 +49,13 @@ const REQUESTS = {
 
 const parseStableVersion = (version: string): SemverVersion | undefined => {
   const match = /^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)$/u.exec(version);
+
   if (!match?.groups) {
     return undefined;
   }
+
   const { major, minor, patch } = match.groups;
+
   if (
     !(major !== undefined && major !== null && major !== "") ||
     !(minor !== undefined && minor !== null && minor !== "") ||
@@ -60,6 +63,7 @@ const parseStableVersion = (version: string): SemverVersion | undefined => {
   ) {
     return undefined;
   }
+
   return {
     major: Math.trunc(Number(major)),
     minor: Math.trunc(Number(minor)),
@@ -72,9 +76,11 @@ const compareVersions = (a: SemverVersion, b: SemverVersion): number => {
   if (a.major !== b.major) {
     return a.major - b.major;
   }
+
   if (a.minor !== b.minor) {
     return a.minor - b.minor;
   }
+
   return a.patch - b.patch;
 };
 
@@ -83,6 +89,7 @@ const satisfiesCaretMatcher = (
   matcher: string
 ): boolean => {
   const match = /^\^(?<major>\d+)(?:\.(?<minor>\d+))?/u.exec(matcher);
+
   if (
     !(
       match?.groups?.major !== undefined &&
@@ -92,8 +99,10 @@ const satisfiesCaretMatcher = (
   ) {
     return false;
   }
+
   const minMajor = Math.trunc(Number(match.groups.major));
   const minMinor = Math.trunc(Number(match.groups.minor ?? "0"));
+
   return version.major === minMajor && version.minor >= minMinor;
 };
 
@@ -109,15 +118,18 @@ const resolvePackageVersion = async ({
         signal: AbortSignal.timeout(REGISTRY_TIMEOUT_MS),
       }
     );
+
     if (!res.ok) {
       return fallback;
     }
+
     const data = z
       .object({
         time: z.record(z.string(), z.string()).optional(),
         versions: z.record(z.string(), z.object({}).loose()).optional(),
       })
       .parse(await res.json());
+
     const latest = Object.keys(data.versions ?? {})
       .map(parseStableVersion)
       .filter((v): v is SemverVersion => v !== undefined)
@@ -129,6 +141,7 @@ const resolvePackageVersion = async ({
       )
       .toSorted(compareVersions)
       .at(-1);
+
     return latest?.raw ?? fallback;
   } catch {
     return fallback;
@@ -149,6 +162,7 @@ export const resolveTemplatePackageVersions = async (
     resolvePackageVersion(REQUESTS.typescript),
     resolvePackageVersion(REQUESTS.valibot),
   ]);
+
   return {
     drizzleKit: TEMPLATE_DRIZZLE_VERSION,
     drizzleOrm: TEMPLATE_DRIZZLE_VERSION,

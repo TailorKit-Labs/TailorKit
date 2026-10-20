@@ -14,6 +14,7 @@ const functions = {
   actionWithoutSchemas: fn.action.handler(async ({ input }) => {
     const absent: undefined = input;
     expectTypeOf(absent).toEqualTypeOf<undefined>();
+
     return { completed: true };
   }),
   list: fn.query.handler(({ input }) => {
@@ -21,6 +22,7 @@ const functions = {
     expectTypeOf(absent).toEqualTypeOf<undefined>();
     // @ts-expect-error No input schema means there are no input properties.
     void input.value;
+
     return [1, 2];
   }),
   read: fn.query
@@ -30,17 +32,20 @@ const functions = {
       const value: number = input.raw;
       // @ts-expect-error Queries cannot write to the database.
       void db.insert;
+
       return String(value);
     }),
   saveWithoutSchemas: fn.mutation.handler(({ input }) => {
     const absent: undefined = input;
     expectTypeOf(absent).toEqualTypeOf<undefined>();
+
     return { saved: true };
   }),
   write: fn.mutation
     .input(z.object({ value: z.number() }))
     .handler(({ input }) => input.value),
 };
+
 const save = fn.action
   .functions(functions)
   .input(z.object({ value: z.number() }))
@@ -52,76 +57,117 @@ const save = fn.action
     // @ts-expect-error Action query arguments use schema inputs.
     void context.queries.read({ raw: 4 });
     const rows: number[] | undefined = await context.queries.list();
+
     const saved: { saved: boolean } =
       await context.mutations.saveWithoutSchemas();
+
     void rows;
     void saved;
     // @ts-expect-error No-input queries do not accept objects.
     void context.queries.list({});
+
     return await context.mutations.write({ value: context.input.value + read });
   });
+
 const app = defineServer({ ...functions, save });
+
 type Api = typeof app.functions;
+
 const refs = createApi<Api>();
 declare const client: Client;
 const result: Promise<number> = client.query(refs.read, { raw: "3" });
+
 void result;
+
 const inferredRows: Promise<number[]> = client.query(refs.list);
+
 const savedWithoutInput: Promise<{ saved: boolean }> = client.mutate(
   refs.saveWithoutSchemas
 );
+
 const completedWithoutInput: Promise<{ completed: boolean }> = client.action(
   refs.actionWithoutSchemas
 );
+
 void inferredRows;
+
 void savedWithoutInput;
+
 void completedWithoutInput;
+
 // @ts-expect-error No-input imperative queries do not accept values.
 void client.query(refs.list, {});
+
 // @ts-expect-error Required imperative query inputs cannot be omitted.
 void client.query(refs.read);
+
 // @ts-expect-error Imperative inputs are inferred from the reference, not widened by arguments.
 void client.query(refs.read, { raw: 3 });
+
 // @ts-expect-error Async database handlers cannot escape the synchronous transaction.
 fn.mutation.handler(async () => 1);
+
 // @ts-expect-error Async queries are not allowed.
 fn.query.handler(async () => 1);
+
 // @ts-expect-error Output schemas constrain handler results before output transformations.
 fn.query.output(z.number()).handler(() => "wrong");
+
 // @ts-expect-error Only actions can call other functions.
 fn.query.functions(functions);
+
 const query = useQuery(refs.read, { raw: "3" });
 const data: number | undefined = query.data;
+
 void data;
+
 useQuery(refs.list);
+
 const rows: number[] | undefined = useQuery(refs.list).data;
+
 void rows;
+
 // @ts-expect-error No-input queries do not accept objects.
 useQuery(refs.list, {});
+
 const inferredSave: Promise<{ saved: boolean }> = useMutation(
   refs.saveWithoutSchemas
 ).mutateAsync();
+
 const inferredAction: Promise<{ completed: boolean }> = useAction(
   refs.actionWithoutSchemas
 ).executeAsync();
+
 void inferredSave;
+
 void inferredAction;
+
 // @ts-expect-error No-input mutations do not accept objects.
 useMutation(refs.saveWithoutSchemas).mutate({});
+
 // @ts-expect-error No-input actions do not accept objects.
 useAction(refs.actionWithoutSchemas).execute({});
+
 // @ts-expect-error Output schemas also constrain async action results.
 fn.action.output(z.number()).handler(async () => "wrong");
+
 // @ts-expect-error Required query inputs cannot be omitted.
 useQuery(refs.read);
+
 // @ts-expect-error Mutation functions cannot be subscribed as queries.
 useQuery(refs.write, { value: 1 });
+
 const write = useMutation(refs.write);
+
 write.mutate({ value: 1 });
+
 // @ts-expect-error Mutation arguments retain schema input types.
 write.mutate({ value: "1" });
+
 const action = useAction(refs.save);
 const saved: Promise<number> = action.executeAsync({ value: 1 });
+
 void saved;
+
 // @ts-expect-error Actions cannot be called with the mutation hook.
 useMutation(refs.save);

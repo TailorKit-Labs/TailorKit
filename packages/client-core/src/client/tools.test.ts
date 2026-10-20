@@ -8,6 +8,7 @@ import type { PatchsmithApp } from "#types";
 import { createEndpointClient } from "./endpoints";
 
 const app: PatchsmithApp = { id: "installed-app" };
+
 const contract = defineContract({
   scopes: { workspace: z.object({ id: z.string() }) },
   tools: {
@@ -20,6 +21,7 @@ const contract = defineContract({
     },
   },
 });
+
 const identity = {
   appId: app.id,
   deploymentId: "deployment",
@@ -30,17 +32,21 @@ const identity = {
   subjectId: "job:refresh",
   toolUrl: "https://product.test/tools",
 };
+
 it("binds client tool calls to the installation and validates transformed inputs and outputs", async () => {
   const implementation = vi.fn<
     ToolImplementations<typeof contract.tools, "client">["ui"]["select"]
   >(({ input }) => input + 1);
+
   const bodies: unknown[] = [];
+
   const client = createEndpointClient({
     baseUrl: "https://product.test/api/patchsmith/",
     contract,
 
     fetch: async (_url, options) => {
       bodies.push(await new Response(options?.body).json());
+
       return Response.json({
         expiresAt: identity.expiresAt,
         identity,
@@ -50,12 +56,15 @@ it("binds client tool calls to the installation and validates transformed inputs
     },
     tools: { ui: { select: implementation } },
   });
+
   const bridge = client.getToolBridge(app);
   expect(await bridge.client("ui.select", "test")).toBe(5);
   const credential = await bridge.session("data.read");
+
   const backendSession = await client.getSessionProvider(app)({
     refresh: false,
   });
+
   expect(credential.token).toBe(backendSession.token);
   expect(credential.url).toBe(identity.toolUrl);
   expect(backendSession.url).toBe("https://runtime.test/rpc");
@@ -83,8 +92,10 @@ it("binds client tool calls to the installation and validates transformed inputs
     "Invalid tool payload"
   );
 });
+
 it("discards a pending credential when the session cache is cleared", async () => {
   let complete!: (response: Response) => void;
+
   const client = createEndpointClient({
     baseUrl: "https://product.test/api/patchsmith/",
     contract,
@@ -95,14 +106,17 @@ it("discards a pending credential when the session cache is cleared", async () =
           resolve,
           reject: rejectPending,
         } = Promise.withResolvers<Response>();
+
         try {
           complete = resolve;
         } catch (error) {
           rejectPending(error);
         }
+
         return await pendingPromise;
       })(),
   });
+
   const pending = client.getToolBridge(app).session("data.read");
   client.clearSessions();
   complete(

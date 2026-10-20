@@ -24,14 +24,17 @@ it("installs from the public server API with host credentials and validated scop
     scope: { name: "org", value: { tenant: "workspace" } },
     shortId: "installed001",
   };
+
   const platformFetch = vi
     .fn<typeof fetch>()
     .mockResolvedValueOnce(Response.json(installed))
     .mockResolvedValueOnce(Response.json(installed));
+
   const requests = () =>
     platformFetch.mock.calls.map(([input, init]) =>
       input instanceof Request ? input : new Request(input, init)
     );
+
   const patchsmith = createServer({
     $internal: {
       platformBaseUrl: "https://platform.test/api/platform",
@@ -41,6 +44,7 @@ it("installs from the public server API with host credentials and validated scop
     contract,
     projectKey: "project-secret",
   });
+
   await expect(
     patchsmith.experimental.installApp({
       appId: "published001",
@@ -49,9 +53,11 @@ it("installs from the public server API with host credentials and validated scop
   ).resolves.toEqual(installed);
   expect(platformFetch).toHaveBeenCalledOnce();
   const [request] = requests();
+
   if (!request) {
     throw new Error("Expected installation request");
   }
+
   expect(request.url).toBe("https://platform.test/api/platform/apps/install");
   expect(request.method).toBe("POST");
   expect(request.headers.get("authorization")).toBe("Bearer project-secret");
@@ -74,6 +80,7 @@ it("rejects invalid or undeclared scopes before sending a platform request", asy
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockResolvedValue(Response.json({}));
+
   const experimental = createExperimental({
     platform: createClient({
       fetch,
@@ -81,6 +88,7 @@ it("rejects invalid or undeclared scopes before sending a platform request", asy
     platformHeaders: { authorization: "Bearer secret" },
     scopeSchemas: contract.scopes,
   });
+
   await expect(
     experimental.installApp({
       appId: "app",
@@ -117,13 +125,16 @@ it("requires host credentials and propagates platform installation errors", asyn
     baseUrl: "https://host.test/api/patchsmith",
     contract,
   });
+
   const input = {
     appId: "app",
     scope: { name: "org" as const, value: { tenant: "workspace" } },
   };
+
   await expect(server.experimental.installApp(input)).rejects.toThrow(
     "projectKey"
   );
+
   const authorized = createServer({
     $internal: {
       platformFetch: vi
@@ -139,6 +150,7 @@ it("requires host credentials and propagates platform installation errors", asyn
     contract,
     projectKey: "secret",
   });
+
   await expect(authorized.experimental.installApp(input)).rejects.toMatchObject(
     { code: "NOT_FOUND" }
   );

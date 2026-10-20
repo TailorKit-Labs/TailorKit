@@ -36,6 +36,7 @@ const ProfilePage = () => {
           title: "Error",
           type: "error",
         });
+
         return;
       }
 

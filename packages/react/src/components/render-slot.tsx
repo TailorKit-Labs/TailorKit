@@ -34,33 +34,42 @@ const SlotRenderer = (options: SlotRuntimeOptions): ReactNode => {
   const { store, client } = usePatchsmithContext(
     options.mode === "managed" ? "RenderSlot" : "RenderSlot.Controlled"
   );
+
   const reactId = useId();
+
   const [state, setState] = useState(() => ({
     runtime: createSlotRuntime(store, options),
     store,
   }));
+
   if (state.store !== store) {
     setState({ runtime: createSlotRuntime(store, options), store });
   }
+
   const { runtime } = state;
   useEffect(() => {
     runtime.setInput(options);
   }, [runtime, options]);
   const snapshot = useStore(runtime.state);
   const viewId = `patchsmith-view-${reactId.replaceAll(":", "")}`;
+
   const themeContext = useMemo(
     () => ({ theme: client.theme, viewId }),
     [client.theme, viewId]
   );
+
   if (snapshot.status === "hidden") {
     return null;
   }
+
   if (snapshot.status === "loading") {
     return <output>{snapshot.message}</output>;
   }
+
   if (snapshot.status === "error") {
     return <div role="alert">{snapshot.error.message}</div>;
   }
+
   return (
     <PrimitiveThemeContext.Provider value={themeContext}>
       <div data-patchsmith-view={viewId}>

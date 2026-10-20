@@ -90,6 +90,7 @@ export const createS3CompatibleStorage = (
       });
 
       const headers: CreateUploadUrlOutput["headers"] = {};
+
       if (
         input.contentType !== undefined &&
         input.contentType !== null &&
@@ -97,6 +98,7 @@ export const createS3CompatibleStorage = (
       ) {
         headers["content-type"] = input.contentType;
       }
+
       if (
         input.contentEncoding !== undefined &&
         input.contentEncoding !== null &&
@@ -104,6 +106,7 @@ export const createS3CompatibleStorage = (
       ) {
         headers["content-encoding"] = input.contentEncoding;
       }
+
       if (
         input.checksumSha256 !== undefined &&
         input.checksumSha256 !== null &&
@@ -111,6 +114,7 @@ export const createS3CompatibleStorage = (
       ) {
         headers["x-amz-checksum-sha256"] = input.checksumSha256;
       }
+
       return {
         headers,
         key: input.key,

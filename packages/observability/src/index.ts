@@ -56,6 +56,7 @@ const globalState = globalThis as typeof globalThis & {
 };
 
 globalState[stateKey] ??= { started: false };
+
 const state = globalState[stateKey];
 
 const isTracingDisabled = () =>
@@ -124,6 +125,7 @@ const resolveSampleRate = () => {
   }
 
   const rate = Number(configuredRate);
+
   if (!Number.isFinite(rate)) {
     return 1;
   }
@@ -144,6 +146,7 @@ const createInstrumentations = () => [
     requestHook: (span, queryInfo) => {
       const operation =
         queryInfo.query.text.trim().split(/\s+/u)[0]?.toLowerCase() ?? "query";
+
       span.setAttributes(
         safeAttributes({
           "operation.name": `db.${operation}`,
@@ -175,6 +178,7 @@ export const initializeObservability = async (serviceName?: string) => {
 
   if (state.initializing) {
     await state.initializing;
+
     return;
   }
 
@@ -194,6 +198,7 @@ export const initializeObservability = async (serviceName?: string) => {
     const { registerOTel } =
       /* oxlint-disable typescript/no-unsafe-type-assertion -- This module owns the telemetry symbol state and initializes it with TelemetryState; the optional SDK import is the installed @vercel/otel API. */
       (await import("@vercel/otel")) as VercelOtelModule;
+
     /* oxlint-enable typescript/no-unsafe-type-assertion */
     registerOTel({
       attributes: createResourceAttributes(resolvedServiceName),
@@ -225,6 +230,7 @@ export const getTracer = (name = "patchsmith") => trace.getTracer(name);
 // oxlint-disable-next-line anti-slop/no-object-parameters -- This structural adapter enumerates caller-owned fields; a concrete domain shape would exclude supported schema or attribute objects.
 export const setSpanAttributes = (attributes: object) => {
   const span = trace.getActiveSpan();
+
   if (span) {
     span.setAttributes(safeAttributes(attributes));
   }
@@ -233,6 +239,7 @@ export const setSpanAttributes = (attributes: object) => {
 // oxlint-disable-next-line anti-slop/no-object-parameters -- This structural adapter enumerates caller-owned fields; a concrete domain shape would exclude supported schema or attribute objects.
 export const recordException = (cause: unknown, attributes?: object) => {
   const span = trace.getActiveSpan();
+
   if (!span) {
     return;
   }
@@ -244,6 +251,7 @@ export const recordException = (cause: unknown, attributes?: object) => {
   if (cause instanceof Error) {
     span.recordException(cause);
     span.setStatus({ code: SpanStatusCode.ERROR, message: cause.message });
+
     return;
   }
 
@@ -257,9 +265,11 @@ export const withSpan = async <T>(
   maybeHandler?: (span: Span) => Promise<T> | T
 ): Promise<T> => {
   const tracer = getTracer("patchsmith.runtime");
+
   const options = isSpanHandler(optionsOrHandler)
     ? undefined
     : optionsOrHandler;
+
   const handler = isSpanHandler(optionsOrHandler)
     ? optionsOrHandler
     : maybeHandler;
@@ -283,6 +293,7 @@ export const withSpan = async <T>(
       try {
         const result = await handler(span);
         span.setStatus({ code: SpanStatusCode.OK });
+
         return result;
       } catch (error) {
         recordException(error);
@@ -308,9 +319,11 @@ export const withRequestSpan = async <T>(
 
   return await context.with(parentContext, async () => {
     const url = new URL(request.url);
+
     const options = isSpanHandler(optionsOrHandler)
       ? undefined
       : optionsOrHandler;
+
     const handler = isSpanHandler(optionsOrHandler)
       ? optionsOrHandler
       : maybeHandler;
@@ -338,6 +351,7 @@ export const withRequestSpan = async <T>(
 export const getTraceId = () => {
   const span = trace.getSpan(context.active());
   const spanContext = span?.spanContext();
+
   return spanContext?.traceId;
 };
 

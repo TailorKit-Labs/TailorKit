@@ -20,8 +20,10 @@ export const resolveAppAgentThread = async (
   if (threadId !== undefined && !threadIdSchema.safeParse(threadId).success) {
     throw new AppAgentThreadError();
   }
+
   const { db } = await import("@patchsmith/db");
   const { appAgentThread } = await import("@patchsmith/db/schema/apps");
+
   if (threadId !== undefined) {
     const [thread] = await db
       .select()
@@ -29,17 +31,22 @@ export const resolveAppAgentThread = async (
       .where(
         and(eq(appAgentThread.id, threadId), eq(appAgentThread.appId, appId))
       );
+
     if (!thread || thread.invalidatedAt !== null) {
       throw new AppAgentThreadError();
     }
+
     return thread.id;
   }
+
   const [thread] = await db
     .insert(appAgentThread)
     .values({ appId })
     .returning({ id: appAgentThread.id });
+
   if (!thread) {
     throw new Error("Could not create agent thread.");
   }
+
   return thread.id;
 };

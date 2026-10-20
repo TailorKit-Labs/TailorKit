@@ -123,9 +123,11 @@ const createReactPatchsmithClient = <
         ...props
       }: ReactComponentRenderArgs["props"] & { children?: ReactNode }) {
         const rendererArgs: ReactComponentRenderArgs = { props };
+
         if (children !== undefined) {
           rendererArgs.children = children;
         }
+
         // SAFETY: The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary.
         return (renderer as (args: typeof rendererArgs) => ReactNode)(
           rendererArgs
@@ -141,6 +143,7 @@ const createReactPatchsmithClient = <
   const ClientRenderSlot = (props: RenderSlotProps<TSlots>) => {
     // oxlint-disable-next-line no-use-before-define -- This deferred callback runs after initialization; the definitions are mutually dependent.
     usePatchsmithContext("RenderSlot", client);
+
     // SAFETY: The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary.
     return createElement(ReactRenderSlot, props as RenderSlotProps);
   };
@@ -159,10 +162,12 @@ const createReactPatchsmithClient = <
           tools: client.tools,
         })
       );
+
       useEffect(() => {
         store.setProvidedApps(apps);
       }, [store, apps]);
       const context = useMemo(() => ({ client, store }), [store]);
+
       return createElement(
         PatchsmithContext.Provider,
         { value: context },
@@ -174,6 +179,7 @@ const createReactPatchsmithClient = <
         props: ControlledRenderSlotProps<TViews, TSlots>
       ) {
         usePatchsmithContext("RenderSlot.Controlled", client);
+
         // SAFETY: The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary.
         return createElement(
           ReactRenderSlot.Controlled,
@@ -185,6 +191,7 @@ const createReactPatchsmithClient = <
     }),
     useApps: function useApps(optionsValue) {
       usePatchsmithContext("useApps", client);
+
       return useRootApps(optionsValue);
     },
     useViewContext: function useViewContext<TView extends ViewName<TViews>>(
@@ -198,6 +205,7 @@ const createReactPatchsmithClient = <
       optionsValue3: UseViewsOptions<TScopeNames, TSlot>
     ) {
       usePatchsmithContext("useViews", client);
+
       // SAFETY: The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary.
       return (
         /* oxlint-disable typescript/no-unsafe-type-assertion -- The wrapper preserves the declared component or slot props and changes only the rendering adapter; the generic key-to-props relationship is erased at this boundary. */

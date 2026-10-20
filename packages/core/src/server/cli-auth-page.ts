@@ -15,6 +15,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -92,6 +93,7 @@ const renderOtpInputs = (code: string): string =>
   Array.from({ length: 9 }, (_, index) => {
     const autocomplete = index === 0 ? "one-time-code" : "off";
     const character = code[index] ?? "";
+
     const separator =
       index === 2 || index === 5
         ? `<span class="otp-separator" aria-hidden="true">-</span>`
@@ -110,19 +112,24 @@ export const renderScopeControl = (
   label: string
 ): string => {
   const names = Object.keys(scopes ?? {});
+
   if (names.length === 0) {
     return "";
   }
+
   if (names.length === 1) {
     return `<input type="hidden" name="scope" value="${escapeHtml(requireValue(names[0]))}">`;
   }
+
   const options = names
     .map(
       (name) =>
         `<option value="${escapeHtml(name)}"${name === selectedName ? " selected" : ""}>${escapeHtml(name)}</option>`
     )
     .join("");
+
   const placeholder = `<option value="" disabled${selectedName !== undefined && selectedName !== null && selectedName !== "" ? "" : " selected"}>Choose a scope</option>`;
+
   return `<label for="${controlId}">${label}</label><select id="${controlId}" name="scope" required>${placeholder}${options}</select>`;
 };
 
@@ -629,12 +636,15 @@ export const selectOneScope = (
   errorMessage: string
 ): PatchsmithNamedScope => {
   const availableNames = Object.keys(scopes);
+
   const name =
     selectedName ??
     (availableNames.length === 1 ? requireValue(availableNames[0]) : undefined);
+
   if (name === undefined) {
     throw new TypeError(errorMessage);
   }
+
   return requireValue(selectPatchsmithScopes(scopes, [name])[0]);
 };
 
@@ -681,6 +691,7 @@ export const handleCliAuthApprovalPage = async ({
   const selectedScopeName = isStringValue(scopeValue) ? scopeValue : undefined;
 
   const patchsmith = await authenticate({ request });
+
   if (!userCode) {
     return renderCliAuthApprovalPage({
       code: userCode,
@@ -707,6 +718,7 @@ export const handleCliAuthApprovalPage = async ({
         selectedScopeName,
         "Choose one scope for this CLI login."
       );
+
       await cliAuthApprove({
         body: {
           scope,

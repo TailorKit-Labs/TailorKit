@@ -21,6 +21,7 @@ interface ProgressSnapshot {
 const maximumPreviewLength = 320;
 const whitespace = /\s+/gu;
 const controlCharacters = /[\p{Cc}\p{Cf}]/gu;
+
 const credentialMarkers =
   /password|passwd|secret|token|authorization|credential|cookie|bearer|(?:api|access|private)[_-]?key|https?:\/\/[^/\s]+@|(?:^|\s)(?:-u|--user)(?:[\s=]|$)/iu;
 
@@ -29,6 +30,7 @@ const preview = (value: string): string => {
     .replaceAll(whitespace, " ")
     .replaceAll(controlCharacters, "")
     .trim();
+
   return text.length > maximumPreviewLength
     ? `${text.slice(0, maximumPreviewLength - 1)}…`
     : text;
@@ -40,10 +42,12 @@ const toolInputSchema = z.object({
   path: z.string().optional(),
   pattern: z.string().optional(),
 });
+
 interface ToolAction {
   detail?: string;
   label: string;
 }
+
 const toolLabels = new Map([
   ["bash", "Bash"],
   ["deploy", "Deploy"],
@@ -62,33 +66,45 @@ const toolAction = (
   >
 ): ToolAction => {
   const label = toolLabels.get(chunk.toolName);
+
   if (label === undefined) {
     const name = preview(chunk.toolName);
+
     return name === "" ? { label: "Tool" } : { detail: name, label: "Tool" };
   }
+
   if (chunk.toolName === "deploy") {
     return { detail: "type-checking, building, and publishing app", label };
   }
+
   if (chunk.type === "tool-input-start") {
     return { label };
   }
+
   const parsed = toolInputSchema.safeParse(chunk.input);
+
   if (!parsed.success) {
     return { label };
   }
+
   const { command, file_path: filePath, path, pattern } = parsed.data;
+
   if (chunk.toolName === "bash" && command !== undefined) {
     const detail = credentialMarkers.test(command)
       ? "[command with credential markers hidden]"
       : preview(command);
+
     return { detail, label };
   }
+
   if (["read", "write", "edit", "ls"].includes(chunk.toolName)) {
     return { detail: preview(filePath ?? path ?? "."), label };
   }
+
   if (["grep", "glob"].includes(chunk.toolName) && pattern !== undefined) {
     return { detail: preview(`${pattern} in ${path ?? "."}`), label };
   }
+
   return { label };
 };
 
@@ -131,14 +147,18 @@ const toolOutcome = (
   if (chunk.type === "tool-output-denied") {
     return "denied";
   }
+
   if (chunk.type === "tool-output-error") {
     return "failed";
   }
+
   const output = toolOutputSchema.safeParse(chunk.output);
+
   const failed =
     output.success &&
     (output.data.isError === true ||
       (output.data.exitCode !== undefined && output.data.exitCode !== 0));
+
   return failed ? "failed" : "completed";
 };
 
@@ -154,20 +174,27 @@ export const createProgressSnapshot = () => {
         status: "started",
       };
     }
+
     const { chunk } = event;
+
     if (chunk.type === "text-delta") {
       const combined = `${text.get(chunk.id) ?? ""}${chunk.delta}`;
+
       const current =
         combined.length > maximumPreviewLength
           ? `…${combined.slice(-(maximumPreviewLength - 1))}`
           : combined;
+
       text.set(chunk.id, current);
       const message = preview(current);
+
       return message === "" ? undefined : { message, status: "text" };
     }
+
     if (chunk.type === "text-end") {
       text.delete(chunk.id);
     }
+
     if (
       chunk.type === "tool-input-start" ||
       chunk.type === "tool-input-available" ||
@@ -176,8 +203,10 @@ export const createProgressSnapshot = () => {
       const action = toolAction(chunk);
       tools.set(chunk.toolCallId, action);
       const outcome = chunk.type === "tool-input-error" ? "failed" : "running";
+
       return toolSnapshot(action, outcome);
     }
+
     if (
       chunk.type === "tool-output-available" ||
       chunk.type === "tool-output-error" ||
@@ -189,10 +218,13 @@ export const createProgressSnapshot = () => {
       ) {
         return undefined;
       }
+
       const action = tools.get(chunk.toolCallId) ?? { label: "Tool" };
       tools.delete(chunk.toolCallId);
+
       return toolSnapshot(action, toolOutcome(chunk));
     }
+
     if (chunk.type === "error") {
       return {
         message:
@@ -200,18 +232,21 @@ export const createProgressSnapshot = () => {
         status: "error",
       };
     }
+
     if (chunk.type === "abort") {
       return {
         message: "App agent stopped. Check the app before repeating a change.",
         status: "aborted",
       };
     }
+
     if (chunk.type === "finish") {
       return {
         message: "App agent finished generating; waiting for workflow cleanup.",
         status: "finishing",
       };
     }
+
     return undefined;
   };
 };
@@ -250,9 +285,11 @@ export const createProgressReporter = (
     // The next backend update or final flush still reports the original error.
     queue = (async () => {
       await previous;
+
       if (closed) {
         return;
       }
+
       try {
         signal.throwIfAborted();
         await notify(update.message);
@@ -276,26 +313,34 @@ export const createProgressReporter = (
       }
     }, heartbeatIntervalMs);
     await queue;
+
     if (failure !== undefined) {
       throw failure;
     }
   };
+
   const flush = async (): Promise<void> => {
     await queue;
+
     if (failure !== undefined) {
       throw failure;
     }
+
     clearTimeout(textTimer);
     textTimer = undefined;
     const update = pendingText;
     pendingText = undefined;
+
     if (update === undefined) {
       await queue;
+
       return;
     }
+
     lastTextAt = Date.now();
     await send(update);
   };
+
   signal.addEventListener("abort", close, { once: true });
 
   return {
@@ -304,33 +349,44 @@ export const createProgressReporter = (
     onProgress: async (event: AppAgentMcpEvent): Promise<void> => {
       signal.throwIfAborted();
       await queue;
+
       if (failure !== undefined) {
         throw failure;
       }
+
       if (closed) {
         return;
       }
+
       const update = snapshot(event);
+
       if (update === undefined) {
         if (event.status === "streaming" && event.chunk.type === "text-end") {
           await flush();
         }
+
         return;
       }
+
       const previous = pendingText ?? latest;
+
       if (
         update.message === previous?.message &&
         update.status === previous?.status
       ) {
         return;
       }
+
       if (update.status !== "text") {
         await flush();
         await send(update);
+
         return;
       }
+
       pendingText = update;
       const remaining = textIntervalMs - (Date.now() - lastTextAt);
+
       if (remaining <= 0) {
         await flush();
       } else {

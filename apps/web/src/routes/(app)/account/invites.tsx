@@ -37,6 +37,7 @@ const formatDate = (value: Date | string) =>
 const InvitesPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
   const { data: invitations } = useSuspenseQuery(
     orpc.user.getPendingInvitations.queryOptions()
   );
@@ -47,6 +48,7 @@ const InvitesPage = () => {
     onError: (cause: unknown) => {
       const message =
         cause instanceof Error ? cause.message : "Failed to accept invitation";
+
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: () => {
@@ -64,6 +66,7 @@ const InvitesPage = () => {
     onError: (cause: unknown) => {
       const message =
         cause instanceof Error ? cause.message : "Failed to decline invitation";
+
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: () => {

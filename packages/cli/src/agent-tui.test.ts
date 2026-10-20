@@ -41,6 +41,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -50,6 +51,7 @@ type TuiOptions = Extract<
   Parameters<typeof runAgentTUI>[0],
   { transport: ChatTransport<UIMessage> }
 >;
+
 type Chat = (
   ...args: Parameters<PatchsmithRouterClient["appAgent"]["chat"]>
 ) => Promise<AsyncIterable<UIMessageChunk>>;
@@ -69,12 +71,16 @@ const mocks = vi.hoisted(() => ({
   fetchSchema: vi.fn<typeof fetchSchemaFromHost>(),
   tui: vi.fn<(options: TuiOptions) => Promise<void>>(),
 }));
+
 vi.mock("@ai-sdk/tui", () => ({ runAgentTUI: mocks.tui }));
+
 vi.mock("./generator/types", () => ({
   fetchSchemaFromHost: mocks.fetchSchema,
 }));
+
 const { openAgentTui } = await import("./agent-tui");
 const appId = "a3e7568a-c4f7-4ac0-8c35-71ff0f4cd002";
+
 const messages: UIMessage[] = [
   { id: "user-1", parts: [{ text: "Build", type: "text" }], role: "user" },
   {
@@ -93,18 +99,22 @@ const messages: UIMessage[] = [
   },
   { id: "user-2", parts: [{ text: "Continue", type: "text" }], role: "user" },
 ];
+
 const hostUrl = "http://localhost:3000/api/patchsmith";
 const schema = { components: {}, slots: {}, tools: {}, version: 1, views: {} };
+
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.fetchSchema.mockResolvedValue(schema);
 });
+
 afterEach(() => vi.restoreAllMocks());
 
 const waitForAbort = async (_host: string, signal?: AbortSignal) => {
   if (signal === undefined) {
     throw new Error("Expected schema cancellation signal");
   }
+
   const { promise, reject } = Promise.withResolvers<never>();
   signal.addEventListener(
     "abort",
@@ -113,6 +123,7 @@ const waitForAbort = async (_host: string, signal?: AbortSignal) => {
     },
     { once: true }
   );
+
   return await promise;
 };
 
@@ -120,6 +131,7 @@ describe("AI SDK terminal transport", () => {
   it("reconnects after model finish until workspace cleanup completes", async () => {
     const threadId = "e773a870-df5a-4bea-9ebd-9be4c0b1897a";
     const run = { runId: "wrun_test", threadId, token: "signed-run" };
+
     const chat = vi
       .fn<Chat>()
       .mockResolvedValueOnce(
@@ -139,6 +151,7 @@ describe("AI SDK terminal transport", () => {
           };
         })()
       );
+
     const waitForRetry = vi.fn<RetryDelay>().mockResolvedValue();
     await openAgentTui(
       { appId, client: { appAgent: { chat } }, hostUrl },
@@ -146,9 +159,11 @@ describe("AI SDK terminal transport", () => {
     );
     const [options] = requireValue(mocks.tui.mock.lastCall);
     const stream = await options.transport.sendMessages(turnRequest(messages));
+
     for await (const _chunk of stream) {
       /* consume */
     }
+
     expect(chat).toHaveBeenCalledTimes(2);
     expect(waitForRetry.mock.calls).toEqual([[1000, undefined]]);
     expect(requireValue(chat.mock.lastCall)[0]).toEqual({
@@ -161,6 +176,7 @@ describe("AI SDK terminal transport", () => {
   it("reconnects after a truncated stream without replaying chunks or starting another turn", async () => {
     const threadId = "e773a870-df5a-4bea-9ebd-9be4c0b1897a";
     const run = { runId: "wrun_test", threadId, token: "signed-run" };
+
     const chat = vi
       .fn<Chat>()
       .mockResolvedValueOnce(
@@ -186,6 +202,7 @@ describe("AI SDK terminal transport", () => {
         })()
       )
       .mockResolvedValueOnce(chatEvents());
+
     const waitForRetry = vi.fn<RetryDelay>().mockResolvedValue();
     await openAgentTui(
       { appId, client: { appAgent: { chat } }, hostUrl },
@@ -195,12 +212,14 @@ describe("AI SDK terminal transport", () => {
     const { transport } = options;
     const stream = await transport.sendMessages(turnRequest(messages));
     let answer;
+
     for await (const message of readUIMessageStream({
       stream,
       terminateOnError: true,
     })) {
       answer = message;
     }
+
     expect(requireValue(chat.mock.calls[1])[0]).toEqual({
       appId,
       type: "resume",
@@ -222,6 +241,7 @@ describe("AI SDK terminal transport", () => {
 
   it("stops reconnecting when the caller aborts during backoff", async () => {
     const threadId = "e773a870-df5a-4bea-9ebd-9be4c0b1897a";
+
     const chat = vi.fn<Chat>().mockResolvedValue(
       (async function* disconnected() {
         yield {
@@ -232,13 +252,16 @@ describe("AI SDK terminal transport", () => {
         throw new Error("Disconnected");
       })()
     );
+
     await openAgentTui({ appId, client: { appAgent: { chat } }, hostUrl });
     const [options] = requireValue(mocks.tui.mock.lastCall);
     const { transport } = options;
     const abort = new AbortController();
+
     const stream = await transport.sendMessages(
       turnRequest(messages, abort.signal)
     );
+
     const reader = stream.getReader();
     await reader.read();
     const pending = reader.read();
@@ -250,6 +273,7 @@ describe("AI SDK terminal transport", () => {
   it("settles a disconnected turn before submitting a follow-up after retries are exhausted", async () => {
     const threadId = "e773a870-df5a-4bea-9ebd-9be4c0b1897a";
     const run = { runId: "wrun_test", threadId, token: "signed-run" };
+
     const chat = vi
       .fn<Chat>()
       .mockResolvedValueOnce(
@@ -262,6 +286,7 @@ describe("AI SDK terminal transport", () => {
       .mockRejectedValueOnce(new Error("Offline"))
       .mockRejectedValueOnce(new Error("Offline"))
       .mockRejectedValueOnce(new Error("Offline"));
+
     const waitForRetry = vi.fn<RetryDelay>().mockResolvedValue();
     await openAgentTui(
       { appId, client: { appAgent: { chat } }, hostUrl },
@@ -270,11 +295,13 @@ describe("AI SDK terminal transport", () => {
     const [options] = requireValue(mocks.tui.mock.lastCall);
     const { transport } = options;
     const stream = await transport.sendMessages(turnRequest(messages));
+
     const consuming = (async () => {
       for await (const _chunk of stream) {
         /* consume */
       }
     })();
+
     const failed = expect(consuming).rejects.toThrow("Offline");
     await failed;
     expect(waitForRetry.mock.calls).toEqual([
@@ -293,6 +320,7 @@ describe("AI SDK terminal transport", () => {
         })()
       )
       .mockResolvedValueOnce(chatEvents());
+
     const followup: UIMessage[] = [
       ...messages,
       {
@@ -301,10 +329,13 @@ describe("AI SDK terminal transport", () => {
         role: "user",
       },
     ];
+
     const next = await transport.sendMessages(turnRequest(followup));
+
     for await (const _chunk of next) {
       /* consume */
     }
+
     expect(chat).toHaveBeenCalledTimes(6);
     const [oldRequest] = requireValue(chat.mock.calls[4]);
     const [newRequest] = requireValue(chat.mock.calls[5]);
@@ -330,6 +361,7 @@ describe("AI SDK terminal transport", () => {
       tools: "collapsed",
     });
     const controller = new AbortController();
+
     const stream = await options.transport.sendMessages({
       abortSignal: controller.signal,
       chatId: "sdk-chat-id",
@@ -337,13 +369,16 @@ describe("AI SDK terminal transport", () => {
       messages,
       trigger: "submit-message",
     });
+
     let answer;
+
     for await (const message of readUIMessageStream({
       stream,
       terminateOnError: true,
     })) {
       answer = message;
     }
+
     expect(answer).toMatchObject({
       id: "run-2",
       parts: [{ text: "Continued", type: "text" }],
@@ -390,12 +425,15 @@ describe("AI SDK terminal transport", () => {
       .mockResolvedValueOnce(chatEvents())
       .mockResolvedValueOnce(chatEvents())
       .mockResolvedValueOnce(chatEvents());
+
     await openAgentTui({ appId, client: { appAgent: { chat } }, hostUrl });
     const first = requireValue(mocks.tui.mock.lastCall)[0].transport;
     const stream = await first.sendMessages(turnRequest(messages));
+
     for await (const _ of stream) {
       /* consume */
     }
+
     expect(requireValue(chat.mock.calls[0])[0].threadId).toBeUndefined();
     await openAgentTui({ appId, client: { appAgent: { chat } }, hostUrl });
     await requireValue(mocks.tui.mock.lastCall)[0].transport.sendMessages(
@@ -437,9 +475,11 @@ describe("AI SDK terminal transport", () => {
     "times out a stalled schema fetch, with user signal %s, before starting a remote run",
     async (abortSignal) => {
       const timeout = AbortSignal.timeout.bind(AbortSignal);
+
       const timeoutSpy = vi
         .spyOn(AbortSignal, "timeout")
         .mockImplementation(() => timeout(1));
+
       mocks.fetchSchema.mockImplementationOnce(waitForAbort);
       const chat = vi.fn<Chat>();
       await openAgentTui({ appId, client: { appAgent: { chat } }, hostUrl });
@@ -461,9 +501,11 @@ describe("AI SDK terminal transport", () => {
     const chat = vi.fn<Chat>();
     const controller = new AbortController();
     await openAgentTui({ appId, client: { appAgent: { chat } }, hostUrl });
+
     const sending = requireValue(
       mocks.tui.mock.lastCall
     )[0].transport.sendMessages(turnRequest(messages, controller.signal));
+
     const reason = new DOMException("Cancelled by user", "AbortError");
     const aborted = expect(sending).rejects.toBe(reason);
     controller.abort(reason);

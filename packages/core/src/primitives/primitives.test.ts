@@ -15,12 +15,15 @@ const isValid = (
   if (!schema) {
     return false;
   }
+
   const result = schema["~standard"].validate(value);
+
   if (result instanceof Promise) {
     throw new TypeError(
       "Primitive schema tests require synchronous validators"
     );
   }
+
   return !result.issues;
 };
 
@@ -90,11 +93,13 @@ describe("primitive schema components", () => {
     expect(pressable?.callbacks).toEqual({ onPress: {} });
     expect(pressable?.children).toBe(true);
     expect(pressable?.fields).toBeDefined();
+
     if (pressable?.fields) {
       expect(resolveJsonSchema(pressable.fields)).toHaveProperty(
         "properties.background.anyOf"
       );
     }
+
     expect(pressable?.fields).not.toHaveProperty("properties.states");
   });
 
@@ -104,6 +109,7 @@ describe("primitive schema components", () => {
         ...zodPrimitives(),
       },
     });
+
     const box = defaultSchema.$internal.components.Box.fields;
 
     expect(
@@ -143,11 +149,13 @@ describe("primitive schema components", () => {
       arktypePrimitives(theme),
     ]) {
       const pressable = suite.Pressable;
+
       // Omitted layout uses the host's inline default, never child inference.
       for (const layout of [undefined, "inline", "box", "flex", "grid"]) {
         const fields = layout === undefined ? {} : { layout };
         expect(isValid(pressable.fields, fields)).toBe(true);
       }
+
       expect(
         isValid(pressable.fields, {
           align: "center",
@@ -175,6 +183,7 @@ describe("primitive schema components", () => {
           textColor: { ":disabled": "muted", default: "default" },
         })
       ).toBe(true);
+
       for (const invalid of [
         { layout: "link" },
         { layout: { default: "inline", lg: "flex" } },
@@ -197,6 +206,7 @@ describe("primitive schema components", () => {
       ]) {
         expect(isValid(pressable.fields, invalid)).toBe(false);
       }
+
       expect(
         isValid(pressable.fields, {
           background: "surface",
@@ -234,6 +244,7 @@ describe("primitive schema components", () => {
       valibotPrimitives(themeValue),
       arktypePrimitives(themeValue),
     ];
+
     for (const primitiveSuite of suites) {
       expect(
         isValid(primitiveSuite.Box.fields, { padding: "md", radius: "sm" })
@@ -281,6 +292,7 @@ it("keeps default styles independent of user-defined breakpoint names", () => {
     const suite = create({
       breakpoints: { desktop: "1024px", hover: "640px" },
     });
+
     expect(
       isValid(suite.Box.fields, {
         padding: { ":hover": "xl", default: "sm", desktop: "md", hover: "lg" },

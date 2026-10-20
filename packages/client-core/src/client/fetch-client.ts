@@ -29,6 +29,7 @@ export const createPatchsmithFetchClient = (
   const cache = createFetchCache(options.cache);
   const { baseUrl } = endpoints;
   const prefix = ["patchsmith", baseUrl.toString()] as const;
+
   return {
     apps: (settings: FetchCacheOptions = {}) =>
       cache.getStore([...prefix, "apps"], endpoints.apps, {

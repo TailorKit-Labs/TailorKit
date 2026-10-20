@@ -8,10 +8,13 @@ vi.mock("cloudflare:workers", () => ({ RpcTarget: vi.fn() }));
 
 const setup = () => {
   const controller = new AbortController();
+
   const notify = vi
     .fn<(_tables: string[]) => Promise<void>>()
     .mockReturnValue(Promise.resolve());
+
   const lease = { deadline: Date.now() + 30_000, signal: controller.signal };
+
   return {
     bridge: new ActionCapability(lease, notify),
     controller,
@@ -33,13 +36,16 @@ it.each(["cancelled", "expired"])(
   "rejects %s outbound fetch",
   async (state) => {
     const { bridge, controller, lease } = setup();
+
     if (state === "cancelled") {
       controller.abort();
     } else {
       lease.deadline = Date.now();
     }
+
     const fetch = vi.fn();
     vi.stubGlobal("fetch", fetch);
+
     try {
       await expect(
         bridge.fetch(
@@ -66,16 +72,20 @@ it("keeps response bodies alive and propagates per-request cancellation", async 
         if (!init?.signal) {
           throw new Error("Expected a cancellation signal");
         }
+
         outgoing = init.signal;
+
         return new Response("response body");
       })
     )
   );
+
   try {
     const response = await bridge.fetch(
       new Request("https://example.com"),
       cancellationStream(caller.signal)
     );
+
     expect(outgoing.aborted).toBe(false);
     expect(await response.text()).toBe("response body");
     caller.abort();
@@ -89,13 +99,16 @@ it("keeps response bodies alive and propagates per-request cancellation", async 
 
 it("validates redirect destinations before forwarding", async () => {
   const { bridge, controller } = setup();
+
   const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(
     new Response(null, {
       headers: { location: "https://127.0.0.1/private" },
       status: 302,
     })
   );
+
   vi.stubGlobal("fetch", fetch);
+
   try {
     await expect(
       bridge.fetch(
@@ -114,24 +127,29 @@ it.each(["manual", "error"] as const)(
   "respects redirect: %s",
   async (redirect) => {
     const { bridge, controller } = setup();
+
     const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(
       new Response(null, {
         headers: { location: "https://example.com/final" },
         status: 302,
       })
     );
+
     vi.stubGlobal("fetch", fetch);
+
     try {
       const response = bridge.fetch(
         new Request("https://example.com/start", { redirect }),
         cancellationStream(new AbortController().signal)
       );
+
       if (redirect === "manual") {
         const awaitedResult1 = await response;
         expect(awaitedResult1.status).toBe(302);
       } else {
         await expect(response).rejects.toThrow("redirect");
       }
+
       expect(fetch).toHaveBeenCalledOnce();
     } finally {
       controller.abort();

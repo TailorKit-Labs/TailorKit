@@ -41,6 +41,7 @@ export const appRouter = {
         responseStyle: "fields",
         throwOnError: true,
       });
+
       return data;
     }),
   delete: o
@@ -88,6 +89,7 @@ export const appRouter = {
         responseStyle: "fields",
         throwOnError: true,
       });
+
       return data;
     }),
   list: o
@@ -112,6 +114,7 @@ export const appRouter = {
         responseStyle: "fields",
         throwOnError: true,
       });
+
       return data;
     }),
   update: o

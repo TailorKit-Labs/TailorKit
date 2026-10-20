@@ -43,12 +43,15 @@ const getDeploymentStatusVariant = (
   if (status === "published") {
     return "success";
   }
+
   if (status === "deploying" || status === "verifying") {
     return "warning";
   }
+
   if (status === "uploading") {
     return "info";
   }
+
   return "outline";
 };
 
@@ -160,10 +163,13 @@ const AppPage = () => {
   const { appId, orgSlug, projectSlug } = useParams({
     from: "/(app)/$orgSlug/$projectSlug/apps/$appId",
   });
+
   const sourceExportInput = { appId, orgSlug, projectSlug };
+
   const { data: sourceExportStatus } = useQuery(
     orpc.apps.sourceExportStatus.queryOptions({ input: sourceExportInput })
   );
+
   const sourceExportMutation = useMutation({
     mutationFn: async () => await client.apps.exportSource(sourceExportInput),
     onError: (cause: unknown) => {
@@ -188,6 +194,7 @@ const AppPage = () => {
       toastManager.add({ title: "Source export downloaded", type: "success" });
     },
   });
+
   const { data: app } = useSuspenseQuery(
     orpc.apps.get.queryOptions({ input: { appId, orgSlug, projectSlug } })
   );

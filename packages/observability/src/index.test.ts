@@ -8,6 +8,7 @@ import {
 } from "./index";
 
 const registerOTel = vi.fn();
+
 // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
 const mockEnv = vi.hoisted(() => ({
   NODE_ENV: "development" as "development" | "production" | "test",
@@ -87,14 +88,17 @@ describe("observability helpers", () => {
     ]);
 
     expect(registerOTel).toHaveBeenCalledTimes(1);
+
     const expectedInstrumentationsMatcher2: unknown = expect.arrayContaining([
       "auto",
     ]);
+
     const expectedAttributesMatcher1: unknown = expect.objectContaining({
       "deployment.environment.name": "preview",
       "service.name": "test-service",
       "service.version": "abc123",
     });
+
     expect(registerOTel).toHaveBeenCalledWith(
       expect.objectContaining({
         attributes: expectedAttributesMatcher1,

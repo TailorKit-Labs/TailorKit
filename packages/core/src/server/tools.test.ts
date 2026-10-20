@@ -18,9 +18,11 @@ const pair = await crypto.subtle.generateKey(
   true,
   ["sign", "verify"]
 );
+
 const jwk = await crypto.subtle.exportKey("jwk", pair.publicKey);
 const issuer = "https://platform.test/api/platform";
 const toolUrl = "https://product.test/api/patchsmith/tools/execute";
+
 const identity = {
   appId: "app",
   deploymentId: "deployment",
@@ -29,6 +31,7 @@ const identity = {
   scope: { name: "org", value: { id: "tenant" } },
   subjectId: "automation:billing",
 };
+
 const contract = defineContract({
   scopes: { org: z.object({ id: z.string() }) },
   tools: {
@@ -45,12 +48,14 @@ const contract = defineContract({
     ui: { open: tool.client().input(z.string()).output(z.string()) },
   },
 });
+
 const handler = vi.fn<
   ToolImplementations<typeof contract.tools, "server">["math"]["increment"]
 >(({ input, context }) => ({
   principal: context.identity.subjectId,
   value: input + 1,
 }));
+
 // SAFETY: This test deliberately crosses the static type boundary to verify that runtime validation rejects the invalid input.
 const server = createServer({
   $internal: {
@@ -63,6 +68,7 @@ const server = createServer({
       ) {
         return Response.json({ keys: [{ ...jwk, kid: "platform" }] });
       }
+
       const request = url instanceof Request ? url : new Request(url, init);
       expect(request.headers.get("authorization")).toBe(
         "Bearer product-project-key"
@@ -72,6 +78,7 @@ const server = createServer({
         app: { id: identity.installationId },
         scopes: [identity.scope],
       });
+
       return Response.json({
         currentDeployment: { id: "deployment" },
         id: "app",
@@ -91,6 +98,7 @@ const server = createServer({
     },
   },
 });
+
 it.each([
   undefined,
   "",
@@ -115,19 +123,23 @@ it("uses the authentication supplied for each handler call", async () => {
       pagination: { hasMore: false, page: 1, pageSize: 100 },
     })
   );
+
   const host = createServer({
     $internal: { platformFetch: fetchApps },
     baseUrl: "https://product.test/api/patchsmith",
     contract: defineContract({ scopes: { org: z.object({ id: z.string() }) } }),
   });
+
   const request = new Request("https://product.test/api/patchsmith/apps");
   const denied = await host.handler(request, { authenticate: () => null });
   expect(denied.status).toBe(401);
   expect(fetchApps).not.toHaveBeenCalled();
+
   const authenticate = vi.fn(() => ({
     scopes: { org: { id: "tenant" } },
     subjectId: "user",
   }));
+
   const allowed = await host.handler(request, { authenticate });
   expect(allowed.status).toBe(200);
   expect(authenticate).toHaveBeenCalledWith({ request });
@@ -139,6 +151,7 @@ const encode = (value: Uint8Array) =>
     .replaceAll("+", "-")
     .replaceAll("/", "_")
     .replaceAll("=", "");
+
 const token = async (
   overrides: Parameters<typeof JSON.stringify>[0] = {},
   privateKey = pair.privateKey,
@@ -146,9 +159,11 @@ const token = async (
 ) => {
   const now = Math.floor(Date.now() / 1000);
   const data = new TextEncoder();
+
   const header = encode(
     data.encode(JSON.stringify({ alg: "ES256", kid, typ: "JWT" }))
   );
+
   const body = encode(
     data.encode(
       JSON.stringify({
@@ -165,6 +180,7 @@ const token = async (
       })
     )
   );
+
   return `${header}.${body}.${encode(
     new Uint8Array(
       await crypto.subtle.sign(
@@ -182,6 +198,7 @@ const execute = async (
   ...args: [input?: unknown]
 ) => {
   const input = args.length ? args[0] : "41";
+
   return await server.handler(
     new Request(toolUrl, {
       body: JSON.stringify({
@@ -198,6 +215,7 @@ const execute = async (
     { authenticate: () => null }
   );
 };
+
 it.each([
   { requestId: "invalid" },
   { requestId: "A".repeat(36) },
@@ -209,6 +227,7 @@ it.each([
   "rejects malformed tool request fields before authentication: %j",
   async (fields) => {
     const before = handler.mock.calls.length;
+
     const response = await server.handler(
       new Request(toolUrl, {
         body: JSON.stringify({
@@ -222,11 +241,13 @@ it.each([
       }),
       { authenticate: () => null }
     );
+
     expect(response.status).toBe(400);
     expect(await response.text()).toBe("Invalid tool request");
     expect(handler.mock.calls.length).toBe(before);
   }
 );
+
 it("validates transformed inputs and exposes verified installation, principal, scope and request ID", async () => {
   const response = await execute(await token());
   expect(response.status).toBe(200);
@@ -242,6 +263,7 @@ it("validates transformed inputs and exposes verified installation, principal, s
     input: 41,
   });
 });
+
 it.each([
   { iss: "https://attacker.test" },
   { aud: "another-service" },
@@ -260,21 +282,26 @@ it.each([
   { installationId: "victim" },
 ])("rejects invalid signed claims %j", async (claims) => {
   const before = handler.mock.calls.length;
+
   const awaitedResult1 = await execute(
     await token(isFunctionValue(claims) ? claims() : claims)
   );
+
   expect(awaitedResult1.status).toBe(401);
   expect(handler.mock.calls.length).toBe(before);
 });
+
 it("rejects a signature from an untrusted key", async () => {
   const attacker = await crypto.subtle.generateKey(
     { name: "ECDSA", namedCurve: "P-256" },
     true,
     ["sign", "verify"]
   );
+
   const awaitedResult2 = await execute(await token({}, attacker.privateKey));
   expect(awaitedResult2.status).toBe(401);
 });
+
 it("validates both directions and dispatches only declared server tools", async () => {
   const awaitedResult3 = await execute(await token(), "math.increment", {});
   expect(awaitedResult3.status).toBe(400);
@@ -284,6 +311,7 @@ it("validates both directions and dispatches only declared server tools", async 
   const awaitedResult5 = await execute(await token(), "ui.open");
   expect(awaitedResult5.status).toBe(404);
 });
+
 it("serializes nested kinds and schemas without implementations", () => {
   const metadata = server.$internal.schema.serialize();
   expect(metadata.tools).toMatchObject({
@@ -292,6 +320,7 @@ it("serializes nested kinds and schemas without implementations", () => {
   });
   expect(JSON.stringify(metadata)).not.toContain("handler");
 });
+
 it("permits sandbox HTTP preflights without cookie credentials", async () => {
   const response = await server.handler(
     new Request(toolUrl, {
@@ -304,6 +333,7 @@ it("permits sandbox HTTP preflights without cookie credentials", async () => {
     }),
     { authenticate: () => null }
   );
+
   expect(response.status).toBe(204);
   expect(response.headers.get("access-control-allow-origin")).toBe("*");
   expect(response.headers.get("access-control-allow-headers")).toContain(
@@ -351,7 +381,9 @@ it("uses the trusted public origin to verify tool destinations behind a proxy", 
       math: { broken: () => 0, increment: handler, transformed: () => "42" },
     },
   });
+
   const internalUrl = "http://internal:3000/custom/patchsmith/tools/execute";
+
   const request = (credential: string) =>
     new Request(internalUrl, {
       body: JSON.stringify({
@@ -365,6 +397,7 @@ it("uses the trusted public origin to verify tool destinations behind a proxy", 
       },
       method: "POST",
     });
+
   const awaitedResult8 = await proxied.handler(
     request(
       await token({
@@ -373,25 +406,31 @@ it("uses the trusted public origin to verify tool destinations behind a proxy", 
     ),
     { authenticate: () => null }
   );
+
   expect(awaitedResult8.status).toBe(200);
+
   const awaitedResult9 = await proxied.handler(
     request(await token({ toolUrl: internalUrl })),
     {
       authenticate: () => null,
     }
   );
+
   expect(awaitedResult9.status).toBe(401);
 });
 
 it("refreshes once for a rotated key, coalesces requests and throttles unknown key IDs", async () => {
   vi.useFakeTimers({ toFake: ["Date"] });
+
   try {
     const rotated = await crypto.subtle.generateKey(
       { name: "ECDSA", namedCurve: "P-256" },
       true,
       ["sign", "verify"]
     );
+
     const rotatedJwk = await crypto.subtle.exportKey("jwk", rotated.publicKey);
+
     const fetchKeys = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(
@@ -406,10 +445,12 @@ it("refreshes once for a rotated key, coalesces requests and throttles unknown k
       .mockResolvedValueOnce(
         Response.json({ keys: [{ ...rotatedJwk, kid: "rotated" }] })
       );
+
     const verify = createToolVerifier({
       fetch: fetchKeys,
       platformUrl: issuer,
     });
+
     await verify(await token(), toolUrl);
     const credential = await token({}, rotated.privateKey, "rotated");
     await Promise.all([
@@ -443,6 +484,7 @@ it("refreshes once for a rotated key, coalesces requests and throttles unknown k
 
 it("keeps valid cached keys when a refresh returns invalid keys, and still expires them", async () => {
   vi.useFakeTimers({ toFake: ["Date"] });
+
   try {
     const fetchKeys = vi
       .fn<typeof fetch>()
@@ -455,10 +497,12 @@ it("keeps valid cached keys when a refresh returns invalid keys, and still expir
       .mockResolvedValueOnce(
         Response.json({ keys: [{ ...jwk, d: "private", kid: "rotated" }] })
       );
+
     const verify = createToolVerifier({
       fetch: fetchKeys,
       platformUrl: issuer,
     });
+
     const credential = await token();
     await verify(credential, toolUrl);
     await expect(
@@ -482,6 +526,7 @@ it("rejects an unknown key after one fetch when the key cache is empty", async (
     .mockResolvedValueOnce(
       Response.json({ keys: [{ ...jwk, kid: "platform" }] })
     );
+
   const verify = createToolVerifier({ fetch: fetchKeys, platformUrl: issuer });
   await expect(
     verify(await token({}, pair.privateKey, "forged"), toolUrl)

@@ -13,6 +13,7 @@ const require = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -63,25 +64,32 @@ export const createSlotStore = (
     appsStatus = "ready",
     appsError = null,
   } = options;
+
   let contractId = contractIds.get(contract);
+
   if (contractId === undefined) {
     contractId = (nextContractId += 1) - 1;
     contractIds.set(contract, contractId);
   }
+
   const enabled = appsStatus === "ready";
   const settings: FetchCacheOptions = {};
+
   if (staleTime !== undefined) {
     settings.staleTime = staleTime;
   }
+
   if (gcTime !== undefined) {
     settings.gcTime = gcTime;
   }
+
   const waiting: SlotSnapshot = {
     data: undefined,
     error: appsStatus === "error" ? appsError : null,
     isFetching: false,
     status: appsStatus,
   };
+
   const query = client.cache.getStore<Result>(
     [
       "patchsmith",
@@ -98,14 +106,18 @@ export const createSlotStore = (
           app.views?.some((view) => view.slot === slot && !view.disabled) ===
           true
       );
+
       if (!candidates.length) {
         return { data: [], status: "ready" };
       }
+
       const schema = contract;
       const definition = schema.slots[slot];
+
       if (!definition) {
         return { data: [], status: "ready" };
       }
+
       if (definition.multiple !== true) {
         return {
           data: candidates
@@ -123,9 +135,11 @@ export const createSlotStore = (
           status: "ready",
         };
       }
+
       if (activeView === null) {
         return { status: "idle" };
       }
+
       const matches = candidates.flatMap((app) => {
         const resolved = resolveSlotView(
           app.views ?? [],
@@ -133,8 +147,10 @@ export const createSlotStore = (
           activeView,
           schema
         );
+
         return resolved?.instances === true ? [{ app, resolved }] : [];
       });
+
       for (const { resolved } of matches) {
         if (resolved.status === "error") {
           throw new Error(
@@ -142,28 +158,36 @@ export const createSlotStore = (
           );
         }
       }
+
       if (matches.some(({ resolved }) => resolved.status !== "ready")) {
         return { status: "loading" };
       }
+
       const controller = new AbortController();
+
       const abort = () => {
         controller.abort();
       };
+
       signal.addEventListener("abort", abort, { once: true });
+
       try {
         const results = await Promise.all(
           matches.map(async ({ app, resolved }) => {
             if (resolved.status !== "ready") {
               return [];
             }
+
             const data = await client.endpoints.slotInstances(
               app,
               { context: resolved.context, path: resolved.view, slot },
               controller.signal
             );
+
             return data.map((instance) => ({ ...instance, app }));
           })
         );
+
         return { data: results.flat(), status: "ready" };
       } catch (error) {
         controller.abort();
@@ -174,21 +198,26 @@ export const createSlotStore = (
     },
     { ...client.cacheOptions?.slot, ...settings, abortOnUnsubscribe: true }
   );
+
   let last: FetchSnapshot<Result> | undefined;
   let snapshot: SlotSnapshot;
+
   const store = {
     // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
     fetch: (fetchOptions: FetchOptions = {}) => {
       if (enabled) {
         return query.fetch(fetchOptions);
       }
+
       return Promise.resolve();
     },
     getSnapshot: (): SlotSnapshot => {
       if (!enabled) {
         return waiting;
       }
+
       const current = query.getSnapshot();
+
       if (current !== last) {
         snapshot = {
           data: current.data?.data,
@@ -201,6 +230,7 @@ export const createSlotStore = (
         };
         last = current;
       }
+
       return snapshot;
     },
     // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
@@ -208,6 +238,7 @@ export const createSlotStore = (
       if (enabled) {
         return query.invalidate();
       }
+
       return Promise.resolve();
     },
     subscribe: (listener: () => void) =>
@@ -217,6 +248,7 @@ export const createSlotStore = (
             /* Intentionally no action is needed. */
           },
   };
+
   return {
     ...store,
     state: createSnapshotStore(store.getSnapshot, store.subscribe),

@@ -49,12 +49,14 @@ export const generateTestMigrations = async (root: string): Promise<string> => {
       timeout: 30_000,
     }
   );
+
   return directory;
 };
 
 /** Disposable database inputs for builder tests. */
 export const createDatabaseTestApp = async (root: string): Promise<void> => {
   await linkTestDependencies(root);
+
   const files = {
     "package.json": '{"type":"module"}',
     "patchsmith.config.mjs":
@@ -73,6 +75,7 @@ const router = defineRouter({
 });
 export default defineServer(router);`,
   };
+
   await Promise.all(
     Object.entries(files).map(async ([filename, source]) => {
       const destination = path.join(root, filename);

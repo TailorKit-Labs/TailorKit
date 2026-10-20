@@ -17,15 +17,19 @@ const workspace = () => {
   const files = new Map<string, Buffer>();
   const commands: Parameters<AppSandboxSession["runCommand"]>[0][] = [];
   const state = { failInstall: false, partialSource: false };
+
   const session: AppSandboxSession = {
     readFileToBuffer: async ({ path }) =>
       await Promise.resolve(files.get(path) ?? null),
     runCommand: async (command) => {
       commands.push(command);
       const args = command.args ?? [];
+
       const failedInstall =
         command.cmd === "pnpm" && args[0] === "install" && state.failInstall;
+
       const refusedMove = command.cmd === "mv" && state.partialSource;
+
       if (command.cmd === "mv" && !refusedMove) {
         files.set("/workspace/app/package.json", Buffer.from('{"name":"app"}'));
         files.set(
@@ -33,9 +37,11 @@ const workspace = () => {
           Buffer.from("pending")
         );
       }
+
       if (command.cmd === "rm" && args[0] === "-f") {
         files.delete("/workspace/app/.patchsmith-setup-pending");
       }
+
       return await Promise.resolve({
         exitCode: failedInstall || refusedMove ? 1 : 0,
         stderr: async () => await Promise.resolve(`Failed ${input.agentToken}`),
@@ -46,18 +52,22 @@ const workspace = () => {
       for (const entry of entries) {
         files.set(entry.path, Buffer.from(entry.content));
       }
+
       await Promise.resolve();
     },
   };
+
   return { commands, files, session, state };
 };
 
 it("prepares a bare app and preserves a supplied schema without model setup calls", async () => {
   const fixture = workspace();
   await prepareWorkspace(fixture.session, { ...input, schema: { version: 1 } });
+
   const scaffold = fixture.commands.find(
     (command) => command.args?.[0] === "dlx"
   );
+
   expect(scaffold?.args).toEqual([
     "dlx",
     "patchsmith@beta",
@@ -84,6 +94,7 @@ it("prepares a bare app and preserves a supplied schema without model setup call
   expect(fixture.files.has("/workspace/app/.patchsmith-setup-pending")).toBe(
     false
   );
+
   for (const command of fixture.commands) {
     expect(JSON.stringify(command)).not.toContain(input.agentToken);
   }

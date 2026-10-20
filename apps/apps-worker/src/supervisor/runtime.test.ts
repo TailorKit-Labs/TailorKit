@@ -37,6 +37,7 @@ it.each([
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       Response.json({ ...deployment, [field]: value })
     );
+
     const source = deploymentSource({
       BUNDLES: { get: load },
       // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
@@ -49,11 +50,13 @@ it.each([
       PLATFORM_URL: "https://platform.test",
       RUNTIME_SERVICE_TOKEN: "private",
     });
+
     const result = await Effect.runPromise(
       source
         .current(identity)
         .pipe(Effect.catch((error) => Effect.succeed(error.code)))
     );
+
     expect(result).toBe(code);
     expect(load).not.toHaveBeenCalled();
   }
@@ -61,6 +64,7 @@ it.each([
 
 it("rejects a token that expires while resolving deployment", async () => {
   vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json(deployment));
+
   const source = deploymentSource({
     BUNDLES: { get: vi.fn() },
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
@@ -73,11 +77,13 @@ it("rejects a token that expires while resolving deployment", async () => {
     PLATFORM_URL: "https://platform.test",
     RUNTIME_SERVICE_TOKEN: "private",
   });
+
   const result = await Effect.runPromise(
     source
       .current({ ...identity, expiresAt: 0 })
       .pipe(Effect.catch((error) => Effect.succeed(error.code)))
   );
+
   expect(result).toBe("UNAUTHORIZED");
 });
 

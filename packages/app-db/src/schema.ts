@@ -21,6 +21,7 @@ export const table = <
   ) {
     throw new Error("Invalid or reserved table name");
   }
+
   return sqliteTable(name, columns);
 };
 
@@ -28,6 +29,7 @@ export const text = (name = "") => sqliteText(name);
 export const integer = (name = "") => sqliteInteger(name);
 export const real = (name = "") => sqliteReal(name);
 export const boolean = (name = "") => sqliteInteger(name, { mode: "boolean" });
+
 export {
   eq,
   ne,

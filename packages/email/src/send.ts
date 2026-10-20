@@ -135,6 +135,7 @@ export const sendEmail = async ({
   to,
 }: SendEmailInput) => {
   const transporter = getTransporter();
+
   const message: SMTPTransport.MailOptions = {
     from: from ?? resolveFrom(),
     html,

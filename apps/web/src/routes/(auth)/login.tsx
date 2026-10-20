@@ -51,23 +51,30 @@ const RouteComponent = () => {
     error_description,
     return_to,
   } = useSearch({ from: "/(auth)/login" });
+
   const navigate = useNavigate({ from: "/login" });
+
   const socialProvidersQuery = useQuery(
     orpc.user.getSocialProviders.queryOptions()
   );
+
   const [step, setStep] = useState<Step>("email");
   const [visible, setVisible] = useState(true);
   const [email, setEmail] = useState(emailFromSearch ?? "");
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [socialError, setSocialError] = useState<string | null>(null);
+
   const [socialPending, setSocialPending] = useState<
     "github" | "google" | null
   >(null);
+
   const [passkeyError, setPasskeyError] = useState<string | null>(null);
   const [passkeyPending, setPasskeyPending] = useState(false);
   const authPending = socialPending !== null || passkeyPending;
+
   const primarySignInError =
     passkeyError ?? socialError ?? error_description ?? "";
+
   const signInError =
     primarySignInError === "" ? authenticationError : primarySignInError;
 
@@ -78,6 +85,7 @@ const RouteComponent = () => {
       if (nextEmail !== undefined) {
         setEmail(nextEmail);
       }
+
       setStep(nextStep);
       setVisible(true);
     }, 150);
@@ -92,11 +100,13 @@ const RouteComponent = () => {
           resolve,
           reject: rejectPending,
         } = Promise.withResolvers();
+
         try {
           setTimeout(resolve, 300);
         } catch (error) {
           rejectPending(error);
         }
+
         return await pendingPromise;
       })();
       transition("password", value.email);
@@ -116,6 +126,7 @@ const RouteComponent = () => {
 
     try {
       const returnPath = getSameOriginPath(return_to, window.location.origin);
+
       if (
         returnPath !== undefined &&
         returnPath !== null &&
@@ -128,9 +139,11 @@ const RouteComponent = () => {
       } else {
         window.sessionStorage.removeItem("patchsmith.two-factor-return-to");
       }
+
       const callbackURL =
         getSameOriginUrl(return_to, window.location.origin) ??
         window.location.origin;
+
       const result = await authClient.signIn.social({
         callbackURL,
         errorCallbackURL: getAuthErrorCallbackUrl(
@@ -161,9 +174,11 @@ const RouteComponent = () => {
 
     try {
       const result = await authClient.signIn.passkey();
+
       if (result.error) {
         setPasskeyError(result.error.message ?? "Passkey sign in failed");
         setPasskeyPending(false);
+
         return;
       }
 
@@ -181,6 +196,7 @@ const RouteComponent = () => {
     onSubmit: async ({ value }) => {
       setPasswordError(null);
       const returnPath = getSameOriginPath(return_to, window.location.origin);
+
       if (
         returnPath !== undefined &&
         returnPath !== null &&
@@ -193,6 +209,7 @@ const RouteComponent = () => {
       } else {
         window.sessionStorage.removeItem("patchsmith.two-factor-return-to");
       }
+
       await authClient.signIn.email(
         { email, password: value.password },
         {
@@ -202,8 +219,10 @@ const RouteComponent = () => {
                 search: { email, return_to },
                 to: "/verify-email",
               });
+
               return;
             }
+
             setPasswordError(
               errorValue2.error.message ||
                 errorValue2.error.statusText ||
@@ -221,10 +240,12 @@ const RouteComponent = () => {
 
             window.sessionStorage.removeItem("patchsmith.two-factor-return-to");
             await queryClient.invalidateQueries();
+
             const returnPathValue = getSameOriginPath(
               return_to,
               window.location.origin
             );
+
             if (
               returnPathValue !== undefined &&
               returnPathValue !== null &&

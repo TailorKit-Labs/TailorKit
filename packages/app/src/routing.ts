@@ -29,6 +29,7 @@ export const defineRoute = (options: RouteDefinition): RouteDefinition => {
   if (!isFunctionValue(options.shellComponent)) {
     throw new TypeError("defineRoute requires a shellComponent.");
   }
+
   return Object.freeze({ shellComponent: options.shellComponent });
 };
 
@@ -37,9 +38,11 @@ const Outlet = createContext<ComponentChildren>(undefined);
 /** Render the next layout or selected view inside a root shell or layout. */
 export const Route = () => {
   const children = useContext(Outlet);
+
   if (children === undefined) {
     throw new Error("Route must be rendered inside a root or layout.");
   }
+
   return children;
 };
 
@@ -83,10 +86,12 @@ const shellComponent = (
   root: boolean
 ): ComponentType<ShellProps> => {
   const { definition } = module;
+
   if (!root && isFunctionValue(definition)) {
     // SAFETY: The generated module registry owns these component and view declarations; the runtime adapter preserves their exported implementations.
     return definition as ComponentType<ShellProps>;
   }
+
   if (
     isObjectValue(definition) &&
     "shellComponent" in definition &&
@@ -95,6 +100,7 @@ const shellComponent = (
     // SAFETY: The generated module registry owns these component and view declarations; the runtime adapter preserves their exported implementations.
     return definition.shellComponent as ComponentType<ShellProps>;
   }
+
   throw new TypeError(
     `${module.filename} must default-export ${root ? "defineRoute({ shellComponent })" : "a layout component or defineRoute({ shellComponent })"}.`
   );
@@ -112,20 +118,25 @@ export const createFileClient = (options: {
   const rootShell = options.root
     ? shellComponent(options.root, true)
     : undefined;
+
   const slotShells = new Map(
     options.roots.map((root) => [root.slot, shellComponent(root, true)])
   );
+
   const layouts = options.layouts.map((layout) => ({
     ...layout,
     shell: shellComponent(layout, false),
   }));
+
   const definitions: Record<string, Record<string, FileViewDefinition>> = {};
   Object.setPrototypeOf(definitions, null);
+
   for (const module of options.views) {
     // SAFETY: The generated module registry owns these component and view declarations; the runtime adapter preserves their exported implementations.
     const view =
       /* oxlint-disable typescript/no-unsafe-type-assertion -- The generated module registry owns these component and view declarations; the runtime adapter preserves their exported implementations. */
       module.definition as FileViewDefinition | undefined;
+
     /* oxlint-enable typescript/no-unsafe-type-assertion */
     if (
       !view ||
@@ -137,31 +148,39 @@ export const createFileClient = (options: {
         `${module.filename} must default-export defineView(...).`
       );
     }
+
     if (view.slot !== module.slot) {
       throw new Error(
         `${module.filename} declares slot "${view.slot}" but is in "${module.slot}".`
       );
     }
+
     if (view.path !== module.path) {
       throw new Error(
         `${module.filename} declares view "${view.path}" but its file location requires "${module.path}".`
       );
     }
+
     definitions[module.slot] ??= Object.create(null);
     // SAFETY: The generated module registry owns these component and view declarations; the runtime adapter preserves their exported implementations.
     const slot = definitions[module.slot];
+
     if (slot === undefined) {
       throw new Error("Missing initialized slot registry.");
     }
+
     if (Object.hasOwn(slot, view.path)) {
       throw new Error(
         `Duplicate view "${view.path}" in slot "${module.slot}" (${module.filename}).`
       );
     }
+
     slot[view.path] = view;
   }
+
   const slots: Record<string, Record<string, FileViewDefinition>> = {};
   Object.setPrototypeOf(slots, null);
+
   for (const [slot, views] of Object.entries(definitions)) {
     const slotLayouts = layouts
       .filter((layout) => layout.slot === slot)
@@ -170,31 +189,39 @@ export const createFileClient = (options: {
           a.path.split("/").filter(Boolean).length -
           b.path.split("/").filter(Boolean).length
       );
+
     const paths = new Set<string>();
+
     for (const layout of slotLayouts) {
       if (paths.has(layout.path)) {
         throw new Error(`Duplicate layout "${layout.path}" in slot "${slot}".`);
       }
+
       paths.add(layout.path);
     }
+
     // Every view in this slot uses the same component identity, so shared shells
     // and layouts survive navigation. The leaf view still has its own identity.
     const SlotRoute = (props: FileViewProps) => {
       const view = views[props.view];
+
       if (!view) {
         return null;
       }
+
       let child: ComponentChildren = h(
         Outlet.Provider,
         { value: null },
         h(view.component, props)
       );
+
       const matching = slotLayouts.filter(
         (layout) =>
           layout.path === "/" ||
           props.view === layout.path ||
           props.view.startsWith(`${layout.path}/`)
       );
+
       for (const layout of matching.toReversed()) {
         child = h(Shell, {
           children: child,
@@ -202,9 +229,12 @@ export const createFileClient = (options: {
           shell: layout.shell,
         });
       }
+
       const shell = slotShells.get(slot);
+
       return shell ? h(Shell, { children: child, shell }) : child;
     };
+
     slots[slot] = Object.fromEntries(
       Object.entries(views).map(([path, view]) => [
         path,
@@ -212,9 +242,11 @@ export const createFileClient = (options: {
       ])
     );
   }
+
   const Root = rootShell
     ? ({ children }: ShellProps) => h(Shell, { children, shell: rootShell })
     : undefined;
+
   // Filesystem slots cannot be represented by a source-level generic. The
   // deployment manifest is checked against the host's supported slots/views.
   // SAFETY: The generated module registry owns these component and view declarations; the runtime adapter preserves their exported implementations.

@@ -51,6 +51,7 @@ const projectSettingsSchema = z.object({
   name: z.string().min(1, "Name is required."),
   slug: z.string().superRefine((value, ctx) => {
     const result = validateProjectSlug(value);
+
     if (!result.valid) {
       ctx.addIssue({
         code: "custom",
@@ -64,10 +65,12 @@ const ProjectSettingsPage = () => {
   const { orgSlug, projectSlug } = useParams({
     from: "/(app)/$orgSlug/$projectSlug/settings/",
   });
+
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
+
   const { data: project } = useSuspenseQuery(
     orpc.project.get.queryOptions({ input: { orgSlug, projectSlug } })
   );
@@ -83,6 +86,7 @@ const ProjectSettingsPage = () => {
     onError: (cause: unknown) => {
       const message =
         cause instanceof Error ? cause.message : "Failed to update project";
+
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: async (updatedProject) => {
@@ -114,6 +118,7 @@ const ProjectSettingsPage = () => {
     onError: (cause: unknown) => {
       const message =
         cause instanceof Error ? cause.message : "Failed to delete project";
+
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: async () => {
@@ -228,6 +233,7 @@ const ProjectSettingsPage = () => {
         open={deleteDialogOpen}
         onOpenChange={(open) => {
           setDeleteDialogOpen(open);
+
           if (!open) {
             setDeleteConfirmation("");
           }

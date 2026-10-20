@@ -19,9 +19,11 @@ const session = {
   token: "platform-issued-token",
   url: "https://runtime.test/rpc",
 };
+
 const issueSession = vi
   .fn<() => Promise<typeof session>>()
   .mockResolvedValue(session);
+
 const authenticate = vi
   .fn<Parameters<typeof handleBackendSession>[1]>()
   .mockResolvedValue({
@@ -51,11 +53,13 @@ beforeEach(() => vi.clearAllMocks());
 
 it("uses existing host authentication and passes the verified subject and scopes to the platform", async () => {
   const input = request({ appId: "installed-app" });
+
   const response = await handleBackendSession(
     input,
     authenticate,
     issueSession
   );
+
   expect(response.status).toBe(200);
   expect(response.headers.get("cache-control")).toBe("no-store");
   expect(await response.json()).toEqual(session);
@@ -75,6 +79,7 @@ it("rejects unauthenticated requests before issuing tokens", async () => {
     vi.fn<Parameters<typeof handleBackendSession>[1]>().mockResolvedValue(null),
     issueSession
   );
+
   expect(response.status).toBe(401);
   expect(issueSession).not.toHaveBeenCalled();
 });
@@ -94,6 +99,7 @@ it.each([
     authenticate,
     issueSession
   );
+
   expect(response.status).toBe(400);
   expect(issueSession).not.toHaveBeenCalled();
 });
@@ -104,6 +110,7 @@ it("rejects cross-origin requests before authenticating or issuing tokens", asyn
     authenticate,
     issueSession
   );
+
   expect(response.status).toBe(400);
   expect(authenticate).not.toHaveBeenCalled();
   expect(issueSession).not.toHaveBeenCalled();
@@ -115,6 +122,7 @@ it.each(["GET", "PUT"])("rejects %s session requests", async (method) => {
     authenticate,
     issueSession
   );
+
   expect(response.status).toBe(400);
   expect(issueSession).not.toHaveBeenCalled();
 });
@@ -125,6 +133,7 @@ it("bounds chunked session request bodies", async () => {
     authenticate,
     issueSession
   );
+
   expect(response.status).toBe(413);
   expect(issueSession).not.toHaveBeenCalled();
 });
@@ -139,6 +148,7 @@ it("rejects malformed JSON", async () => {
     authenticate,
     issueSession
   );
+
   expect(response.status).toBe(400);
   expect(issueSession).not.toHaveBeenCalled();
 });

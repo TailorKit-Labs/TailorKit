@@ -242,6 +242,7 @@ export const resolveTheme = (
   theme: PatchsmithTheme | undefined
 ): PatchsmithTheme => {
   const breakpoints = theme?.breakpoints ?? defaultBreakpoints;
+
   for (const name of Object.keys(breakpoints)) {
     if (name === "default" || name.startsWith(":")) {
       throw new Error(
@@ -249,5 +250,6 @@ export const resolveTheme = (
       );
     }
   }
+
   return { breakpoints, tokens: resolveTokens(theme) };
 };

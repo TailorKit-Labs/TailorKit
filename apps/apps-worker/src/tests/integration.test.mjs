@@ -32,14 +32,18 @@ const fetchWireBytes = async (url, headers) => {
   const response = await new Promise((resolve, reject) => {
     get(url, { headers }, resolve).on("error", reject);
   });
+
   /** @type {Buffer[]} */
   const chunks = [];
+
   for await (const chunk of response) {
     if (!Buffer.isBuffer(chunk)) {
       throw new TypeError("Expected HTTP response bytes");
     }
+
     chunks.push(chunk);
   }
+
   return {
     body: Buffer.concat(chunks),
     headers: response.headers,
@@ -70,10 +74,12 @@ export default { functions: { probe: {
 it("runs isolated app backends with persistent SQLite and two-client realtime updates", async () => {
   // Exercise precisely the workerd/Miniflare version bundled with this project's Wrangler.
   const require = createRequire(import.meta.url);
+
   /** @type {WranglerRuntimeModule} */
   const wranglerRuntime = createRequire(require.resolve("wrangler"))(
     "miniflare"
   );
+
   const { Miniflare, convertV4MiniflareOptions } = wranglerRuntime;
 
   const state = await mkdtemp(path.join(tmpdir(), "patchsmith-apps-worker-"));
@@ -83,12 +89,14 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
     true,
     ["sign", "verify"]
   );
+
   const signing = {
     audience: APP_AUDIENCE,
     issuer: "https://platform.test/api/platform",
     keyId: "test",
     privateKey: keys.privateKey,
   };
+
   const publicKeys = {
     keys: [
       {
@@ -115,6 +123,7 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
   let metadataReads = 0;
 
   const dist = path.resolve(import.meta.dirname, "../../dist");
+
   const options = {
     bindings: {
       APP_RUNTIME_PUBLIC_KEYS: publicKeys,
@@ -146,12 +155,15 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
           appTokens.has(token),
           "tool calls reuse an issued app execution JWT"
         );
+
         const verified = await appTokenVerifier({ ...signing, publicKeys })(
           token
         );
+
         if (toolPath === "echo") {
           return Response.json({ output: input });
         }
+
         return Response.json({
           output: {
             installationId: verified.installationId,
@@ -212,6 +224,7 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
         `Bearer ${"x".repeat(32)}`
       );
       metadataReads += 1;
+
       return Response.json(published);
     },
     r2Buckets: { BUNDLES: "private-apps" },
@@ -252,6 +265,7 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
             objectKey,
             projectId,
           };
+
     const response = await mf.dispatchFetch(
       `https://internal.tailorkit.app/p/${projectId}/a/${appShortId}/new-deployment`,
       {
@@ -263,10 +277,12 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
         method: "POST",
       }
     );
+
     assert.equal(response.status, 204, await response.text());
   };
 
   const defaultProbe = { name: "probe" };
+
   const invoke = async (
     installationId,
     deploymentId = published.deploymentId,
@@ -275,6 +291,7 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
     rawInput = defaultProbe
   ) => {
     const input = rawInput ?? { name: "probe" };
+
     const session = await issueAppToken(signing, {
       appId: "app",
       appShortId,
@@ -287,6 +304,7 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
       toolUrl: "https://host.test/api/patchsmith/tools/execute",
       ...overrides,
     });
+
     return await mf.dispatchFetch(
       `${rpcUrl.replace(projectId, overrides.projectId ?? projectId)}/${endpoint}`,
       {
@@ -305,10 +323,12 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
     const repo = path.resolve(import.meta.dirname, "../../../..");
     const backend = path.join(state, "backend");
     await createTestBackend(backend);
+
     const sql = await readFile(
       new URL("fixtures/todos-init.sql", import.meta.url),
       "utf-8"
     );
+
     const migrations = [
       {
         hash: createHash("sha256").update(sql).digest("hex"),
@@ -348,6 +368,7 @@ const actionApp = defineServer({ ...app.functions,
 export default actionApp;
 export const runtimeManifest = { apiVersion: 1, requires: ["database", "actions"] };
 export const migrations = ${JSON.stringify(history)};`;
+
       await writeFile(entry, setup);
       await build({
         build: {
@@ -370,6 +391,7 @@ export const migrations = ${JSON.stringify(history)};`;
         path.join(state, "fixture/server.js"),
         "utf-8"
       );
+
       const bucket = await mf.getR2Bucket("BUNDLES");
 
       const bytes = gzipSync(code);
@@ -397,6 +419,7 @@ export const migrations = ${JSON.stringify(history)};`;
     await publishRpc(migrations, "backend");
 
     let renewals = 0;
+
     const makeClient = (installationId = "backend-todos") =>
       createClient({
         connect: async (url, protocols) => {
@@ -404,6 +427,7 @@ export const migrations = ${JSON.stringify(history)};`;
             new URL(url).pathname,
             `${new URL(rpcUrl).pathname}/queries`
           );
+
           const response = await mf.dispatchFetch(
             url.replace("wss:", "https:"),
             {
@@ -413,19 +437,23 @@ export const migrations = ${JSON.stringify(history)};`;
               },
             }
           );
+
           if (response.status !== 101) {
             throw new Error(
               `WebSocket handshake ${response.status}: ${await response.text()}`
             );
           }
+
           const socket = response.webSocket;
           socket.accept();
+
           return socket;
         },
         // oxlint-disable-next-line typescript/promise-function-async, typescript/no-base-to-string -- This fixture returns the original deferred or runtime Promise and installs its resolver synchronously. The fixture sends string URLs and serialized JSON bodies; this assertion inspects those controlled wire values through the broader fetch signature.
         fetch: (url, init) => mf.dispatchFetch(String(url), init),
         getSession: async () => {
           renewals += 1;
+
           const session = await issueAppToken(
             // Renew after five seconds while keeping the production one-minute renewal window.
             { ...signing, lifetimeSeconds: 65 },
@@ -441,7 +469,9 @@ export const migrations = ${JSON.stringify(history)};`;
               toolUrl: "https://host.test/api/patchsmith/tools/execute",
             }
           );
+
           appTokens.add(session.token);
+
           return { ...session, url: rpcUrl };
         },
         retryDelayMs: 20,
@@ -457,6 +487,7 @@ export const migrations = ${JSON.stringify(history)};`;
     const snapshots = [[], []];
     /** @type {unknown[]} */
     const errors = [];
+
     const stops = [first, second].map((client, index) =>
       client.subscribe(
         list,
@@ -475,6 +506,7 @@ export const migrations = ${JSON.stringify(history)};`;
     /** @param {() => boolean} predicate Completion condition. @param {string} label Failure context. */
     const wait = async (predicate, label) => {
       const until = Date.now() + 15_000;
+
       while (
         !(
           predicate() !== undefined &&
@@ -491,6 +523,7 @@ export const migrations = ${JSON.stringify(history)};`;
             `Timeout: ${label}: ${JSON.stringify(errors.slice(-3))}`
           );
         }
+
         // oxlint-disable-next-line no-await-in-loop -- Test steps share fixtures and must complete in order.
         await (async () => {
           const {
@@ -498,11 +531,13 @@ export const migrations = ${JSON.stringify(history)};`;
             resolve,
             reject: rejectPending,
           } = Promise.withResolvers();
+
           try {
             setTimeout(resolve, 25);
           } catch (error) {
             rejectPending(error);
           }
+
           return await pendingPromise;
         })();
       }
@@ -524,9 +559,11 @@ export const migrations = ${JSON.stringify(history)};`;
       });
 
       const input = { text: "Both clients see this persisted mutation" };
+
       const saved = await first.mutate(add, input, {
         requestId: "00000000-0000-4000-8000-000000000001",
       });
+
       assert.deepEqual(
         await second.mutate(add, input, {
           requestId: "00000000-0000-4000-8000-000000000001",
@@ -556,17 +593,21 @@ export const migrations = ${JSON.stringify(history)};`;
             resolve,
             reject: rejectPending,
           } = Promise.withResolvers();
+
           try {
             releaseExternal = resolve;
           } catch (error) {
             rejectPending(error);
           }
+
           return await pendingPromise;
         })();
         const oldCalls = externalCalls;
+
         const action = first.action(reference("importTodo", "action"), {
           url: "https://third-party.test/slow",
         });
+
         await Promise.race([
           wait(() => externalCalls > oldCalls, "action reaches external API"),
           action,
@@ -683,6 +724,7 @@ export const migrations = ${JSON.stringify(history)};`;
       for (const stop of stops) {
         stop();
       }
+
       first.close?.();
       second.close?.();
     }
@@ -709,6 +751,7 @@ export const migrations = ${JSON.stringify(history)};`;
       path.join(import.meta.dirname, "fixtures/todos-priority.sql"),
       "utf-8"
     );
+
     const upgrade = {
       hash: createHash("sha256").update(upgradeSql).digest("hex"),
       id: "20261002000000_priority",
@@ -717,6 +760,7 @@ export const migrations = ${JSON.stringify(history)};`;
 
     const live = makeClient();
     const liveSnapshots = [];
+
     const stopLive = live.subscribe(
       list,
       undefined,
@@ -729,6 +773,7 @@ export const migrations = ${JSON.stringify(history)};`;
         },
       }
     );
+
     await wait(
       () => liveSnapshots.length === 1,
       "subscription before deployment change"
@@ -739,25 +784,31 @@ export const migrations = ${JSON.stringify(history)};`;
         resolve,
         reject: rejectPending,
       } = Promise.withResolvers();
+
       try {
         releaseExternal = resolve;
       } catch (error) {
         rejectPending(error);
       }
+
       return await pendingPromise;
     })();
     const beforeUpgradeCalls = externalCalls;
+
     const oldAction = live.action(reference("importTodo", "action"), {
       url: "https://third-party.test/slow",
     });
+
     const oldActionResult = (async () => {
       try {
         await oldAction;
+
         return "unexpected";
       } catch (error) {
         return error.code;
       }
     })();
+
     await wait(
       () => externalCalls > beforeUpgradeCalls,
       "action before deployment replacement"
@@ -774,6 +825,7 @@ export const migrations = ${JSON.stringify(history)};`;
         name: "list",
       }
     );
+
     assert.equal(
       upgradeResponse.status,
       200,
@@ -781,6 +833,7 @@ export const migrations = ${JSON.stringify(history)};`;
     );
     assert.equal(await oldActionResult, "UNAVAILABLE");
     releaseExternal();
+
     try {
       await wait(
         () => liveSnapshots.length > 1,
@@ -807,6 +860,7 @@ export const migrations = ${JSON.stringify(history)};`;
       path.join(import.meta.dirname, "fixtures/todos-required.sql"),
       "utf-8"
     );
+
     const failed = {
       hash: createHash("sha256").update(requiredSql).digest("hex"),
       id: "20261003000000_required",
@@ -824,6 +878,7 @@ export const migrations = ${JSON.stringify(history)};`;
         name: "list",
       }
     );
+
     assert.equal(failedResponse.status, 500);
 
     await publishRpc([...migrations, upgrade], "backend-retry");
@@ -840,6 +895,7 @@ export const migrations = ${JSON.stringify(history)};`;
         name: "list",
       }
     );
+
     assert.equal(retryResponse.status, 200, await retryResponse.clone().text());
 
     const retried = makeClient();
@@ -891,6 +947,7 @@ export const migrations = ${JSON.stringify(history)};`;
           Host: publicClientUrl.host,
           "MF-Original-URL": publicClientUrl.href,
         });
+
         assert.equal(compressed.status, 200);
         assert.equal(compressed.headers["content-encoding"], "gzip");
         assert.equal(compressed.headers.vary, "Accept-Encoding");
@@ -920,16 +977,20 @@ export const migrations = ${JSON.stringify(history)};`;
       Buffer.from(await cachedClient.arrayBuffer()),
       clientBytes
     );
+
     const client = await mf.dispatchFetch(`${assetBase}/client/client.js`, {
       headers: { "Accept-Encoding": "identity" },
     });
+
     assert.equal(client.status, 200);
     assert.equal(await client.text(), "export default 'client';");
     assert.equal(client.headers.get("cache-control"), "private, max-age=3600");
+
     const clientHead = await mf.dispatchFetch(`${assetBase}/client/client.js`, {
       headers: { "Accept-Encoding": "gzip" },
       method: "HEAD",
     });
+
     assert.equal(clientHead.headers.get("mf-content-encoding"), "gzip");
     assert.equal(
       clientHead.headers.get("content-length"),
@@ -958,6 +1019,7 @@ export const migrations = ${JSON.stringify(history)};`;
         upgrade: "websocket",
       },
     });
+
     assert.equal(rejected.status, 401);
 
     const response = await invoke("one");
@@ -974,6 +1036,7 @@ export const migrations = ${JSON.stringify(history)};`;
     )
       .json()
       .then((result) => result.json);
+
     assert.equal(two.globals, 1);
     assert.equal(
       (await (await invoke("one")).json().then((result) => result.json))
@@ -989,11 +1052,13 @@ export const migrations = ${JSON.stringify(history)};`;
     assert.equal(metadataReads, before + 1);
 
     published = { ...published, projectId: otherProjectId };
+
     const otherProject = await (
       await invoke("one", "v1", { projectId: otherProjectId })
     )
       .json()
       .then((result) => result.json);
+
     assert.equal(otherProject.globals, 1);
 
     published = { ...published, projectId: otherProjectId };
@@ -1010,6 +1075,7 @@ export const migrations = ${JSON.stringify(history)};`;
     )
       .json()
       .then((result) => result.json);
+
     assert.equal(updated.version, 2);
     assert.equal(updated.globals, 2);
 
@@ -1022,6 +1088,7 @@ export const migrations = ${JSON.stringify(history)};`;
     )
       .json()
       .then((result) => result.json);
+
     assert.equal(recovered.globals, 1);
     assert.equal(recovered.version, 2);
 

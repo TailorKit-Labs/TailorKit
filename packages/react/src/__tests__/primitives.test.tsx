@@ -112,6 +112,7 @@ const ThemedPressable = ({
 
 const renderPressable = (overrides: PrimitiveProps = {}) => {
   const events: HostToIframePayload[] = [];
+
   const props = createRemoteElementProps(
     {
       callbacks: [{ callback: "onPress", event: "press", inputCount: 0 }],
@@ -126,8 +127,10 @@ const renderPressable = (overrides: PrimitiveProps = {}) => {
       await Promise.resolve();
     }
   );
+
   const rendered = render(<ThemedPressable props={props} />);
   const button = screen.getByRole("button");
+
   return { ...rendered, button, events, props };
 };
 
@@ -179,8 +182,10 @@ describe("Pressable", () => {
     fireEvent.pointerDown(button, { button: 0 });
     fireEvent.click(button, { detail: 1 });
     const [callback] = events;
+
     const callbackId =
       callback?.type === "dispatchCallback" ? callback.data.id : undefined;
+
     expect(callbackId).toEqual(expect.any(String));
     expect(events).toEqual([
       {

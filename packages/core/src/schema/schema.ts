@@ -61,6 +61,7 @@ export interface PatchsmithSchema<
 const contextMayBeOmitted = (schema: Schema): boolean => {
   // oxlint-disable-next-line unicorn/no-useless-undefined -- Probe whether the schema accepts an omitted context.
   const result = schema["~standard"].validate(undefined);
+
   if (result instanceof Promise) {
     // Serialization is synchronous; conservatively allow omission for async schemas.
     void (async () => {
@@ -70,8 +71,10 @@ const contextMayBeOmitted = (schema: Schema): boolean => {
         /* Intentionally no action is needed. */
       }
     })();
+
     return true;
   }
+
   return !result.issues;
 };
 
@@ -98,15 +101,18 @@ export function createPatchsmithSchema(schema: {
     if (slot.description !== undefined && !isStringValue(slot.description)) {
       throw new TypeError(`Slot "${name}" description must be a string.`);
     }
+
     if (slot.multiple !== undefined && !isBooleanValue(slot.multiple)) {
       throw new TypeError(`Slot "${name}" multiple must be a boolean.`);
     }
+
     for (const view of slot.views) {
       if (!Object.hasOwn(schema.views ?? {}, view)) {
         throw new Error(`Slot "${name}" references undeclared view "${view}".`);
       }
     }
   }
+
   const components: Record<string, ResolvedComponentMetadata> = {};
   const views: Record<string, ResolvedViewMetadata> = {};
 
@@ -132,12 +138,14 @@ export function createPatchsmithSchema(schema: {
     for (const [name, metadata] of Object.entries(components)) {
       const callbacks: PatchsmithSchemaSpec["components"][string]["callbacks"] =
         {};
+
       for (const [callbackName, callback] of Object.entries(
         metadata.callbacks
       )) {
         if (callback === undefined) {
           continue;
         }
+
         callbacks[callbackName] = {
           input: serializeSchema(callback.input, schemaSerializer),
           output: serializeSchema(callback.output, schemaSerializer),
@@ -149,6 +157,7 @@ export function createPatchsmithSchema(schema: {
         children: metadata.children,
         fields: serializeSchema(metadata.fields, schemaSerializer),
       };
+
       if (metadata.description !== undefined) {
         serializedComponents[name].description = metadata.description;
       }
@@ -158,6 +167,7 @@ export function createPatchsmithSchema(schema: {
       serializedViews[name] = {
         context: serializeSchema(metadata.context, schemaSerializer),
       };
+
       if (metadata.context && contextMayBeOmitted(metadata.context)) {
         serializedViews[name].contextOptional = true;
       }
@@ -172,12 +182,15 @@ export function createPatchsmithSchema(schema: {
             {
               views: [...slot.views],
             };
+
           if (slot.multiple !== undefined) {
             definition.multiple = slot.multiple;
           }
+
           if (slot.description !== undefined) {
             definition.description = slot.description;
           }
+
           return [name, definition];
         })
       ),
@@ -188,14 +201,17 @@ export function createPatchsmithSchema(schema: {
 
       views: serializedViews,
     };
+
     if (schema.scopes) {
       serialized.scopes = Object.fromEntries(
         Object.entries(schema.scopes).flatMap(([name, scope]) => {
           const value = serializeSchema(scope, schemaSerializer);
+
           return value ? [[name, value]] : [];
         })
       );
     }
+
     return serialized;
   };
 

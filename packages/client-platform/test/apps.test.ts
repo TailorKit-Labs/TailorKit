@@ -14,14 +14,17 @@ it.each([
   { slug: "shared-inbox" },
 ])("serializes app namespace %j through the generated client", async (app) => {
   const requests: Request[] = [];
+
   const client = createClient({
     baseUrl: "https://platform.test/api/platform",
     fetch: asyncFixture((input) => {
       const request = input instanceof Request ? input : new Request(input);
       requests.push(request);
+
       return Response.json({});
     }),
   });
+
   await appsGet({ body: { app, scopes: [scope] }, client });
   await appsUpdate({
     body: {
@@ -38,9 +41,11 @@ it.each([
     { method: "POST", url: "https://platform.test/api/platform/apps/update" },
     { method: "POST", url: "https://platform.test/api/platform/apps/delete" },
   ]);
+
   const bodies = await Promise.all(
     requests.map(async (request) => v.parse(v.unknown(), await request.json()))
   );
+
   expect(bodies).toEqual([
     { app, scopes: [scope] },
     {

@@ -8,6 +8,7 @@ declare module "../client" {
     billing: { read: (input: { accountId: string }) => Promise<number> };
   }
 }
+
 action({
   args: z.object({ accountId: z.string() }),
 
@@ -16,6 +17,7 @@ action({
       Promise<number>
     >();
     expectTypeOf(ctx.identity.subjectId).toEqualTypeOf<string>();
+
     return await ctx.tools.billing.read(ctx.args);
   },
 });

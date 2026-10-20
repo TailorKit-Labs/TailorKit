@@ -17,6 +17,7 @@ const identity = {
 
 const text = { id: "text", kind: "text", text: "Hello" } satisfies RemoteNode;
 const callback = { callback: "onClick", event: "click", inputCount: 1 };
+
 const tree = {
   children: [
     {
@@ -31,6 +32,7 @@ const tree = {
   id: "root",
   kind: "fragment",
 } satisfies RemoteNode;
+
 const patches = [
   { beforeId: "text", node: tree, op: "insert", parentId: "root" },
   { nodeId: "text", op: "remove" },
@@ -298,10 +300,12 @@ describe("sandbox protocol", () => {
       token: "t".repeat(8192),
       url: "https://runtime.test",
     };
+
     const payload = {
       data: { id: "s".repeat(128), session },
       type: "backendSessionResult",
     };
+
     expect(v.safeParse(HostToIframePayload, payload).success).toBe(true);
     expect(
       v.safeParse(HostToIframePayload, {
@@ -342,6 +346,7 @@ describe("sandbox protocol", () => {
       },
       type: "backendSessionResult",
     };
+
     expect(v.parse(HostToIframePayload, payload)).toEqual({
       ...payload,
       data: {

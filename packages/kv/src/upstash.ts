@@ -13,9 +13,11 @@ if value == 1 then
 end
 return value
 `;
+
 export const createUpstashKV = (): KV<"upstash"> => {
   const token = env.KV_REST_API_TOKEN;
   const url = env.KV_REST_API_URL;
+
   if (
     !(token !== undefined && token !== null && token !== "") ||
     !(url !== undefined && url !== null && url !== "")
@@ -24,6 +26,7 @@ export const createUpstashKV = (): KV<"upstash"> => {
       "KV_REST_API_TOKEN and KV_REST_API_URL are required for Upstash"
     );
   }
+
   const redis = new Redis({
     // The KV interface stores and returns raw strings; individual consumers parse JSON as needed.
     automaticDeserialization: false,
@@ -50,6 +53,7 @@ export const createUpstashKV = (): KV<"upstash"> => {
           await withTimeout(
             (async () => {
               const value = await redis.get<string>(key);
+
               return value ?? null;
             })(),
             options?.timeout
@@ -61,6 +65,7 @@ export const createUpstashKV = (): KV<"upstash"> => {
         { attributes: { "kv.type": "upstash", "patchsmith.package": "kv" } },
         async () => {
           const value = await redis.getdel<string>(key);
+
           return value ?? null;
         }
       ),

@@ -8,13 +8,17 @@ export const createSnapshotStore = <T>(
 ) => {
   const state = atom(getSnapshot());
   let stop: (() => void) | undefined;
+
   const sync = () => {
     state.set(getSnapshot());
   };
+
   state.get = () => {
     sync();
+
     return state.value;
   };
+
   onStart(state, () => {
     stop = subscribe(sync);
     sync();
@@ -23,6 +27,7 @@ export const createSnapshotStore = <T>(
     stop?.();
     stop = undefined;
   });
+
   return readonlyType(state);
 };
 
@@ -33,16 +38,20 @@ export const switchStore = <T>(selection: ReadableAtom<ReadableAtom<T>>) =>
     (listener) => {
       let current = selection.get();
       let stopCurrent = current.listen(listener);
+
       const stopSelection = selection.listen(() => {
         const next = selection.get();
+
         if (next !== current) {
           const previousStop = stopCurrent;
           current = next;
           stopCurrent = next.listen(listener);
           previousStop();
         }
+
         listener();
       });
+
       return () => {
         stopSelection();
         stopCurrent();

@@ -16,6 +16,7 @@ export const Route = createFileRoute("/api/playground/todo-client")({
       GET: async () => {
         try {
           const client = await readFile(clientPath);
+
           return new Response(client, {
             headers: {
               "Cache-Control": "no-store",

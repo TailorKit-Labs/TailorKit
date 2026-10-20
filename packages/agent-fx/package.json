@@ -35,11 +35,11 @@
     "@ai-sdk/workflow-harness": "1.0.154",
     "@patchsmith/db": "workspace:*",
     "@patchsmith/env": "workspace:*",
-    "@vercel/oidc": "3.5.0",
-    "@vercel/sandbox": "3.6.1",
+    "@vercel/oidc": "4.0.1",
+    "@vercel/sandbox": "3.8.0",
     "ai": "catalog:fx",
     "drizzle-orm": "catalog:",
-    "workflow": "5.2.0",
+    "workflow": "5.2.2",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -49,6 +49,6 @@
     "vite-plus": "catalog:"
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=24.11"
   }
 }

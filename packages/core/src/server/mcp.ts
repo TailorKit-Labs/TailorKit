@@ -31,10 +31,12 @@ export const createMcpTransport = (options: {
     ) {
       throw new TypeError("Invalid MCP subjectId.");
     }
+
     const scopes = await validatePatchsmithScopes(
       options.scopeSchemas,
       context.scopes
     );
+
     const bytes = new TextEncoder().encode(
       JSON.stringify({
         hostUrl: options.hostUrl,
@@ -42,23 +44,30 @@ export const createMcpTransport = (options: {
         subjectId: context.subjectId,
       })
     );
+
     if (bytes.length > (maximumContextHeaderLength * 3) / 4) {
       throw new TypeError(
         "MCP context exceeds the 8 KiB header limit. Supply fewer scopes."
       );
     }
+
     const encoded = btoa(String.fromCodePoint(...bytes))
       .replaceAll("+", "-")
       .replaceAll("/", "_")
       .replace(/=+$/u, "");
+
     const configured = await (isFunctionValue(options.platformHeaders)
       ? options.platformHeaders()
       : options.platformHeaders);
+
     const headers = new Headers(configured);
+
     if (!(headers.get("authorization")?.startsWith("Bearer ") === true)) {
       throw new Error("A Patchsmith projectKey is required for MCP transport.");
     }
+
     headers.set("x-patchsmith-context", encoded);
+
     return {
       headers: Object.fromEntries(headers),
       url: `${options.platformUrl.replace(/\/$/u, "")}/app-agent/mcp`,

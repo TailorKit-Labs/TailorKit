@@ -7,14 +7,17 @@ import { expect, it } from "vite-plus/test";
 
 it("exports the client API and public contract without importing private runtime code", async () => {
   const modules: string[] = [];
+
   const root = await mkdtemp(
     path.join(tmpdir(), "patchsmith-client-boundary-")
   );
+
   const entry = path.join(root, "entry.js");
   await writeFile(
     entry,
     `export * from ${JSON.stringify(path.resolve(import.meta.dirname, "../../patchsmith/dist/client.js"))}; export { defineServer } from ${JSON.stringify(path.resolve(import.meta.dirname, "../dist/index.js"))}; export { appContract } from ${JSON.stringify(path.resolve(import.meta.dirname, "../dist/protocol.js"))};`
   );
+
   try {
     const result = await build({
       build: {
@@ -33,6 +36,7 @@ it("exports the client API and public contract without importing private runtime
         },
       ],
     });
+
     expect(
       modules.some((id) => /\/node_modules\/(?:effect|jose)\//u.test(id))
     ).toBe(false);
@@ -51,11 +55,13 @@ it("exports the client API and public contract without importing private runtime
     ).toBe(false);
     expect(modules.some((id) => id.includes("/nanostores/"))).toBe(true);
     const outputs = Array.isArray(result) ? result : [result];
+
     const browser = outputs
       .flatMap((output) => ("output" in output ? output.output : []))
       .filter((output) => output.type === "chunk")
       .map((output) => output.code)
       .join("\n");
+
     for (const name of [
       "defineServer",
       "ClientProvider",
@@ -66,6 +72,7 @@ it("exports the client API and public contract without importing private runtime
     ]) {
       expect(browser).toContain(name);
     }
+
     expect(browser).not.toContain("node:async_hooks");
     expect(browser).not.toContain("AsyncLocalStorage");
     expect(browser).not.toContain("SignJWT");

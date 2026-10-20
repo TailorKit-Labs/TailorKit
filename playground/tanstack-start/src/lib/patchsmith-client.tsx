@@ -19,14 +19,18 @@ const callTodos = async <TSchema extends z.ZodType>(
     headers: { "Content-Type": "application/json" },
     method: body ? "POST" : "GET",
   });
+
   const result: unknown = await response.json().catch(() => null);
+
   if (!response.ok) {
     const message =
       isObjectValue(result) && result !== null && "error" in result
         ? String(result.error)
         : "Todo request failed";
+
     throw new Error(message);
   }
+
   return schema.parse(result);
 };
 

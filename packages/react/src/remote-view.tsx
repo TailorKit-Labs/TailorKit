@@ -84,11 +84,13 @@ const RemoteElementViewComponent = ({
     () => ctx.selectComponent(node.type),
     [ctx, node.type]
   );
+
   const component = useStore(componentStore);
 
   if (component === undefined) {
     throw new Error(`Patchsmith component "${node.type}" is not registered.`);
   }
+
   const props = createRemoteElementProps(node, ctx.dispatch.bind(ctx));
 
   // SAFETY: The renderer was supplied through the typed component registry; React's createElement overload erases its heterogeneous props.
@@ -100,6 +102,7 @@ const RemoteElementViewComponent = ({
     ...children
   );
 };
+
 const RemoteElementView = memo(RemoteElementViewComponent);
 
 interface RemoteViewProps {
@@ -115,7 +118,9 @@ const RemoteNode = {
       () => ctx.nodes.selectNode(nodeId),
       [ctx, nodeId]
     );
+
     const node = useStore(nodeStore);
+
     if (node === null) {
       return null;
     }
@@ -139,10 +144,12 @@ const RemoteNode = {
     );
   },
 };
+
 RemoteNode.View = memo(RemoteNode.View);
 
 const RemoteViewComponent = ({ nodeId }: RemoteViewProps): ReactNode => {
   const ctx = useContext(RemoteUIContext);
+
   return ctx === null ? null : <RemoteNode.View ctx={ctx} nodeId={nodeId} />;
 };
 
@@ -163,13 +170,16 @@ export const RemoteViewHost = ({
   props,
 }: RemoteViewHostProps): ReactNode => {
   const appKey = appUrl.toString();
+
   const [state, setState] = useState(() => ({
     appKey,
     store: createRemoteViewStore({ components, props }),
   }));
+
   if (state.appKey !== appKey) {
     setState({ appKey, store: createRemoteViewStore({ components, props }) });
   }
+
   const { store } = state;
   const snapshot = useStore(store.state);
 

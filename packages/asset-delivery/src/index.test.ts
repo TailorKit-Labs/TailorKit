@@ -48,6 +48,7 @@ describe("asset delivery contract", () => {
       key: `projects/${projectId}/apps/${appId}/deployments/${deploymentId}/client/client.js`,
       projectShortId: projectId,
     };
+
     expect(parseNodeAssetRequest(new Request(localUrl))).toEqual(expected);
     expect(
       parseHostedAssetRequest(new Request(hostedUrl), "tailorkit.app")

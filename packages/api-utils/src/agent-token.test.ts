@@ -7,6 +7,7 @@ import { issueAgentToken, verifyAgentToken } from "./agent-token";
 
 const secret = "test-agent-secret-that-is-at-least-32-characters";
 const url = "https://platform.test/api/platform";
+
 const identity = {
   appId: "app",
   cliTokenId: "cli",
@@ -16,6 +17,7 @@ const identity = {
     value: { userId: "one" },
   },
 };
+
 afterEach(() => vi.useRealTimers());
 
 it("issues a one-hour credential for the authorized app and initiating CLI identity", async () => {
@@ -49,11 +51,13 @@ it.each([
   { iat: Math.floor(Date.now() / 1000) + 60 },
 ])("rejects invalid signed claims %j", async (overrides) => {
   const claims = decodeJwt(await issueAgentToken(identity, secret, url));
+
   const jwt = await new SignJWT({ ...claims, ...overrides })
     .setProtectedHeader({ alg: "HS256", typ: "patchsmith-agent+jwt" })
     .sign(
       createHmac("sha256", secret).update("patchsmith-agent-deploy-v1").digest()
     );
+
   await expect(verifyAgentToken(jwt, secret, url)).rejects.toThrow();
 });
 

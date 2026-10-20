@@ -27,6 +27,7 @@ export const createRateLimiter = ({
       prefix: "patchsmith:ratelimit:",
       redis: kv.engine,
     });
+
     return new UpstashRateLimiter(upstashRatelimit, {
       waitUntil: env.VERCEL === true ? vercelWaitUntil : undefined,
     });
@@ -34,6 +35,7 @@ export const createRateLimiter = ({
 
   if (kv?.type === "redis") {
     const redis = kv.engine;
+
     // Keep the shared ioredis connection through oRPC's Redis adapter base.
     class IORedisRateLimiter extends BaseRedisRateLimiter {
       private readonly redis = redis;

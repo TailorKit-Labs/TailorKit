@@ -35,18 +35,18 @@
     "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
-    "@better-auth/api-key": "1.7.7",
-    "@better-auth/core": "1.7.7",
-    "@better-auth/drizzle-adapter": "1.7.7",
-    "@better-auth/infra": "^0.4.17",
-    "@better-auth/passkey": "1.7.7",
+    "@better-auth/api-key": "1.7.10",
+    "@better-auth/core": "1.7.10",
+    "@better-auth/drizzle-adapter": "1.7.10",
+    "@better-auth/infra": "^0.4.20",
+    "@better-auth/passkey": "1.7.10",
     "@patchsmith/db": "workspace:*",
     "@patchsmith/email": "workspace:*",
     "@patchsmith/env": "workspace:*",
     "@patchsmith/kv": "workspace:*",
     "@patchsmith/observability": "workspace:*",
     "@simplewebauthn/server": "^13.3.1",
-    "@vercel/functions": "^3.9.11",
+    "@vercel/functions": "^3.10.1",
     "better-auth": "catalog:",
     "botid": "1.5.11",
     "jose": "6.2.12",
@@ -56,10 +56,10 @@
   "devDependencies": {
     "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
-    "auth": "1.7.7",
+    "auth": "1.7.10",
     "typescript": "catalog:"
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=24.11"
   }
 }

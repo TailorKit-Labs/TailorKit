@@ -17,6 +17,7 @@ export const useQueryResult = <T>(
   state: ReadableAtom<QueryResult<T>>
 ): UseQueryResult<T> => {
   const result = useStore(state);
+
   return useMemo(
     () => ({
       data: result.data,

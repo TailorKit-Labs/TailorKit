@@ -14,6 +14,7 @@ interface CyclicScopeFixture {
   ok: boolean;
   self?: CyclicScopeFixture;
 }
+
 interface NestedScopeFixture {
   child: string | NestedScopeFixture;
 }
@@ -24,6 +25,7 @@ describe("Patchsmith named scope validation", () => {
       orgs: [{ a: 2, z: 1 }, { b: { a: 4, z: 3 } }],
       userId: "user_1",
     };
+
     const scope = normalizePatchsmithScope(input);
 
     expect(Object.keys(scope)).toEqual(["orgs", "userId"]);
@@ -63,6 +65,7 @@ describe("Patchsmith named scope validation", () => {
       "~standard": {
         validate: (value) => {
           const parsed = z.object({ workspaceId: z.string() }).safeParse(value);
+
           return parsed.success
             ? { value: parsed.data }
             : { issues: [{ message: "workspaceId is required" }] };
@@ -86,6 +89,7 @@ describe("Patchsmith named scope validation", () => {
       valibot: v.object({ payload: v.unknown() }),
       zod: z.object({ payload: z.unknown() }),
     };
+
     const payload = [3, { a: 2, z: "last" }, 1];
 
     await expect(
@@ -154,14 +158,17 @@ describe("Patchsmith named scope validation", () => {
   it("rejects non-JSON values and non-plain objects", () => {
     const circular: CyclicScopeFixture = { ok: true };
     circular.self = circular;
+
     const withAccessor = Object.defineProperty({ ok: true }, "value", {
       enumerable: true,
       get: () => "not data",
     });
+
     const withSymbol = { ok: true, [Symbol("key")]: "not JSON" };
     const arrayWithHole: unknown[] = [];
     arrayWithHole.length = 1;
     const arrayWithExtra = Object.assign(["ok"], { extra: true });
+
     const withCustomPrototype: unknown = Object.assign(
       Object.create({ inherited: true }),
       { ok: true }
@@ -193,20 +200,26 @@ describe("Patchsmith named scope validation", () => {
     const tooManyKeys = Object.fromEntries(
       Array.from({ length: 33 }, (_, index) => [`field${index}`, index])
     );
+
     const tooManyArrayItems = {
       value: Array.from({ length: 101 }, (_, index) => index),
     };
+
     let deepValue: string | NestedScopeFixture = "leaf";
+
     for (let index = 0; index < 17; index += 1) {
       deepValue = { child: deepValue };
     }
+
     const tooDeep = { value: deepValue };
+
     const tooLarge = Object.fromEntries(
       Array.from({ length: 32 }, (_, index) => [
         `field${index}`,
         "é".repeat(255),
       ])
     );
+
     const withinNodeLimit = {
       extra: Array.from({ length: 4 }, () => 0),
       groups: Array.from({ length: 5 }, () =>
@@ -214,6 +227,7 @@ describe("Patchsmith named scope validation", () => {
       ),
       // root + groups + five arrays + 500 items + extra + four items = 512
     };
+
     const beyondNodeLimit = { ...withinNodeLimit, extra: [0, 0, 0, 0, 0] };
 
     expect(() => normalizePatchsmithScope(tooManyKeys)).toThrow(/at most 32/u);

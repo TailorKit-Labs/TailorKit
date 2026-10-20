@@ -37,25 +37,31 @@ export const createViewContextStore = (
     if (scheduled) {
       return;
     }
+
     scheduled = true;
     // Registrations and cleanups in the same turn settle before publication.
     queueMicrotask(() => {
       scheduled = false;
+
       // Retain diagnostic keys across synchronous cleanup/remount cycles.
       for (const id of diagnostics.keys()) {
         if (!entries.has(id)) {
           diagnostics.delete(id);
         }
       }
+
       const ordered = [...entries.values()].toSorted(
         (a, b) =>
           getViewDepth(b.view) - getViewDepth(a.view) || b.order - a.order
       );
+
       const [selected] = ordered;
+
       if (selected) {
         const peers = ordered.filter(
           (entry) => getViewDepth(entry.view) === getViewDepth(selected.view)
         );
+
         if (peers.length > 1) {
           console.warn(
             `Patchsmith found multiple active views at the same hierarchy depth: ${peers
@@ -66,6 +72,7 @@ export const createViewContextStore = (
               )}. Patchsmith selected "${selected.view}" by mount order. Only one route at a hierarchy depth should register a view.`
           );
         }
+
         state.set({
           layers: ordered
             .filter((entry) => isViewAncestor(entry.view, selected.view))
@@ -87,14 +94,17 @@ export const createViewContextStore = (
     if (entries.get(entry.id) !== entry) {
       return;
     }
+
     if ("value" in result) {
       parsed.set(entry.id, { context: result.value, status: entry.status });
       diagnostics.delete(entry.id);
     } else {
       parsed.set(entry.id, { context: undefined, status: "error" });
       const key = JSON.stringify([entry.view, entry.context, result.message]);
+
       if (key !== diagnostics.get(entry.id)) {
         diagnostics.set(entry.id, key);
+
         if (result.details === undefined) {
           console.error(result.message);
         } else {
@@ -102,6 +112,7 @@ export const createViewContextStore = (
         }
       }
     }
+
     publish();
   };
 
@@ -112,6 +123,7 @@ export const createViewContextStore = (
         message: `Patchsmith could not validate context for view "${entry.view}".`,
       });
     };
+
     try {
       // SAFETY: The requested view name was resolved against this contract; indexing its declared view table preserves the associated validator.
       const result = validateViewContext(
@@ -122,16 +134,20 @@ export const createViewContextStore = (
           /* oxlint-enable typescript/no-unsafe-type-assertion */
         ]
       );
+
       if ("then" in result) {
         parsed.set(entry.id, { context: undefined, status: "loading" });
         void (async () => {
           let value;
+
           try {
             value = await result;
           } catch (error) {
             failed(error);
+
             return;
           }
+
           apply(entry, value);
         })();
       } else {
@@ -153,16 +169,21 @@ export const createViewContextStore = (
         ) {
           return "error" as const;
         }
+
         if (input.loading === true) {
           return "loading" as const;
         }
+
         return "ready" as const;
       })();
+
       const context = status === "ready" ? input.context : undefined;
       const key = JSON.stringify({ context, status, view: input.view });
+
       if (keys.get(input.id) === key) {
         return;
       }
+
       const entry: ViewEntry = {
         context,
         id: input.id,
@@ -170,6 +191,7 @@ export const createViewContextStore = (
         status,
         view: input.view,
       };
+
       entries.set(input.id, entry);
       keys.set(input.id, key);
       check(entry);
@@ -181,6 +203,7 @@ export const createViewContextStore = (
       if (!entries.delete(id)) {
         return;
       }
+
       keys.delete(id);
       parsed.delete(id);
       publish();

@@ -14,6 +14,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -51,11 +52,13 @@ const mocks = vi.hoisted(() => ({
   >(),
   thread: vi.fn<(appId: string, threadId?: string) => Promise<string>>(),
 }));
+
 vi.mock("@patchsmith/db", () => ({
   db: {
     insert: () => ({
       values: (value: Parameters<typeof mocks.grant>[0]) => {
         mocks.grant(value);
+
         return {
           returning: vi
             .fn<() => Promise<{ id: string }[]>>()
@@ -73,6 +76,7 @@ vi.mock("@patchsmith/db", () => ({
     }),
   },
 }));
+
 vi.mock("./routes/apps", () => ({
   appRouter: {
     list: os
@@ -89,19 +93,24 @@ vi.mock("./routes/apps", () => ({
   },
   createAppRecord: mocks.create,
 }));
+
 vi.mock("@patchsmith/agent-fx/workflows", () => ({
   appAgent: vi.fn(),
   cancelAppAgent: mocks.cleanup,
 }));
+
 vi.mock("@patchsmith/agent/threads", async (importOriginal) => ({
   ...(await importOriginal<typeof threadsModule>()),
   resolveAppAgentThread: mocks.thread,
 }));
+
 vi.mock("workflow/api", () => ({ start: mocks.start }));
+
 vi.mock("@patchsmith/api-utils/dev-delay", () => ({
   devDelayMiddleware: async <TResult>({ next }: { next: () => TResult }) =>
     await next(),
 }));
+
 vi.mock("@patchsmith/api-utils/rate-limiting", () => ({
   createRateLimiter: vi.fn(),
   ratelimitMiddleware:
@@ -109,6 +118,7 @@ vi.mock("@patchsmith/api-utils/rate-limiting", () => ({
     async <TResult>({ next }: { next: () => TResult }) =>
       await next(),
 }));
+
 const { handleAppAgentMcpRequest } = await import("./app-agent-mcp");
 
 const scope = canonicalizeScope({ name: "org", value: { tenant: "one" } });
@@ -120,6 +130,7 @@ const context =
     organization: { id: "org" },
     project: { id: "project" },
   } as Context;
+
 /* oxlint-enable typescript/no-unsafe-type-assertion */
 const identity = { scopes: { org: scope.scope.value }, subjectId: "user" };
 const app = { id: "internal-app", scope: scope.scope, shortId: "public-app" };
@@ -135,6 +146,7 @@ const request = (
     hostUrl: "https://host.test/api/patchsmith",
     ...overrides,
   };
+
   return new Request("https://platform.test/api/platform/app-agent/mcp", {
     body: JSON.stringify({
       id: 1,
@@ -192,6 +204,7 @@ beforeEach(() => {
           ]) {
             controller.enqueue(chunk);
           }
+
           controller.close();
         },
       }),
@@ -206,6 +219,7 @@ describe("platform MCP endpoint", () => {
       request("list_apps"),
       context
     );
+
     expect(response.status).toBe(200);
     expect(await response.text()).toContain("public-app");
     expect(requireValue(mocks.list.mock.lastCall)[0].input.body).toEqual({
@@ -218,12 +232,15 @@ describe("platform MCP endpoint", () => {
 
   it("returns a new thread ID by default and accepts it for a follow-up", async () => {
     const threadId = "e773a870-df5a-4bea-9ebd-9be4c0b1897a";
+
     const first = await handleAppAgentMcpRequest(
       request("edit_app", { appId: "public-app", prompt: "Build calendar" }),
       context
     );
+
     expect(await first.text()).toContain(threadId);
     expect(mocks.thread.mock.lastCall).toEqual([app.id, undefined]);
+
     const next = await handleAppAgentMcpRequest(
       request("edit_app", {
         appId: "public-app",
@@ -232,6 +249,7 @@ describe("platform MCP endpoint", () => {
       }),
       context
     );
+
     expect(await next.text()).toContain(threadId);
     expect(mocks.thread).toHaveBeenLastCalledWith(app.id, threadId);
     expect(requireValue(mocks.start.mock.lastCall)[1][0].threadId).toBe(
@@ -241,6 +259,7 @@ describe("platform MCP endpoint", () => {
 
   it("rejects an unavailable conversation without issuing an agent grant", async () => {
     mocks.thread.mockRejectedValueOnce(new AppAgentThreadError());
+
     const response = await handleAppAgentMcpRequest(
       request("edit_app", {
         appId: "public-app",
@@ -249,6 +268,7 @@ describe("platform MCP endpoint", () => {
       }),
       context
     );
+
     expect(await response.text()).toContain("Thread not found");
     expect(mocks.grant).not.toHaveBeenCalled();
     expect(mocks.start).not.toHaveBeenCalled();
@@ -259,6 +279,7 @@ describe("platform MCP endpoint", () => {
       request("edit_app", { appId: "public-app", prompt: "Change it" }),
       context
     );
+
     const events = await response.text();
     expect(events).toContain("notifications/progress");
     expect(events).toContain("Building");
@@ -303,6 +324,7 @@ describe("platform MCP endpoint", () => {
       request("create_app", { name: "Todo", prompt: "Build it", scope: "org" }),
       context
     );
+
     await response.text();
     expect(requireValue(mocks.create.mock.lastCall)[1]).toEqual({
       description: null,
@@ -353,6 +375,7 @@ describe("platform MCP endpoint", () => {
               ]) {
                 controller.enqueue(chunk);
               }
+
               controller.close();
             },
           }),
@@ -364,6 +387,7 @@ describe("platform MCP endpoint", () => {
         }),
         runId: "run",
       });
+
       const response = await handleAppAgentMcpRequest(
         request(
           name,
@@ -373,7 +397,9 @@ describe("platform MCP endpoint", () => {
         ),
         context
       );
+
       const body = await response.text();
+
       const final = body
         .split("\n")
         .filter((line) => line.startsWith("data:"))
@@ -392,6 +418,7 @@ describe("platform MCP endpoint", () => {
             .parse(JSON.parse(line.slice(5)))
         )
         .find(({ result }) => result !== undefined)?.result;
+
       expect(final?.structuredContent).toEqual({
         answer: "Published your app.\n\nReady for review.",
         appId: "public-app",
@@ -401,6 +428,7 @@ describe("platform MCP endpoint", () => {
       });
       expect(final?.content).toHaveLength(1);
       expect(body.length).toBeLessThan(5000);
+
       for (const internal of [
         "Private reasoning",
         "Large source code",
@@ -429,10 +457,12 @@ describe("platform MCP endpoint", () => {
         returnValue: Promise.resolve({ finishReason: "stop" }),
         runId: "run",
       });
+
       const response = await handleAppAgentMcpRequest(
         request("edit_app", { appId: "public-app", prompt: "Change it" }),
         context
       );
+
       const body = await response.text();
       expect(body).toContain('"isError":true');
       expect(body).not.toContain("Private diagnostics");
@@ -444,15 +474,19 @@ describe("platform MCP endpoint", () => {
 
   it("rejects unauthorized app/scope selections without grants or agents", async () => {
     mocks.app.mockResolvedValue(null);
+
     const missing = await handleAppAgentMcpRequest(
       request("edit_app", { appId: "other", prompt: "Change" }),
       context
     );
+
     expect(await missing.text()).toContain('"isError":true');
+
     const invalid = await handleAppAgentMcpRequest(
       request("create_app", { name: "Todo", prompt: "Build", scope: "other" }),
       context
     );
+
     expect(await invalid.text()).toContain('"isError":true');
     expect(mocks.create).not.toHaveBeenCalled();
     expect(mocks.grant).not.toHaveBeenCalled();
@@ -474,6 +508,7 @@ describe("platform MCP endpoint", () => {
           } as Context
           /* oxlint-enable typescript/no-unsafe-type-assertion */
         );
+
         expect(awaitedResult1.status).toBe(403);
       })
     );
@@ -491,6 +526,7 @@ describe("platform MCP endpoint", () => {
           request("list_apps", {}, invalid),
           context
         );
+
         expect(awaitedResult2.status).toBe(400);
       })
     );
@@ -505,19 +541,24 @@ describe("platform MCP endpoint", () => {
             request("list_apps", {}, {}, { "x-patchsmith-context": encoded }),
             context
           );
+
           expect(awaitedResult3.status).toBe(400);
         }
       )
     );
+
     const unexpected = await handleAppAgentMcpRequest(
       request("list_apps", {}, { schema: {} }),
       context
     );
+
     expect(unexpected.status).toBe(400);
+
     const origin = await handleAppAgentMcpRequest(
       request("list_apps", {}, {}, { origin: "https://other.test" }),
       context
     );
+
     expect(origin.status).toBe(403);
     expect(mocks.list).not.toHaveBeenCalled();
   });
@@ -532,25 +573,30 @@ describe("platform MCP endpoint", () => {
       }),
       context
     );
+
     expect(await response.text()).toContain('"isError":true');
     expect(mocks.start).not.toHaveBeenCalled();
   });
 
   it("cancels the workflow and deletes its sandbox when the response closes", async () => {
     let revoked!: () => void;
+
     const revocation = (async () => {
       const {
         promise: pendingPromise,
         resolve,
         reject: rejectPending,
       } = Promise.withResolvers<ReturnType<() => void>>();
+
       try {
         revoked = resolve;
       } catch (error) {
         rejectPending(error);
       }
+
       await pendingPromise;
     })();
+
     mocks.revoke.mockImplementation(revoked);
     mocks.start.mockResolvedValueOnce({
       cancel: mocks.cancel,
@@ -558,10 +604,12 @@ describe("platform MCP endpoint", () => {
       returnValue: Promise.withResolvers().promise,
       runId: "run",
     });
+
     const response = await handleAppAgentMcpRequest(
       request("edit_app", { appId: "public-app", prompt: "Change" }),
       context
     );
+
     const reader = requireValue(response.body).getReader();
     await reader.read();
     await reader.cancel();
@@ -572,12 +620,14 @@ describe("platform MCP endpoint", () => {
 
   it("waits for workflow cleanup before sending the terminal result", async () => {
     let finish!: () => void;
+
     const returnValue = (async () => {
       const {
         promise: pendingPromise,
         resolve,
         reject: rejectPending,
       } = Promise.withResolvers<{ finishReason: "stop" }>();
+
       try {
         finish = () => {
           resolve({ finishReason: "stop" });
@@ -585,8 +635,10 @@ describe("platform MCP endpoint", () => {
       } catch (error) {
         rejectPending(error);
       }
+
       return await pendingPromise;
     })();
+
     mocks.start.mockResolvedValueOnce({
       cancel: mocks.cancel,
       getReadable: () =>
@@ -598,10 +650,12 @@ describe("platform MCP endpoint", () => {
       returnValue,
       runId: "run",
     });
+
     const response = await handleAppAgentMcpRequest(
       request("edit_app", { appId: "public-app", prompt: "Change" }),
       context
     );
+
     const reader = requireValue(response.body).getReader();
     await reader.read();
     const final = reader.read();
@@ -612,11 +666,13 @@ describe("platform MCP endpoint", () => {
     while (true) {
       // oxlint-disable-next-line no-await-in-loop -- Read or renew in sequence; the next operation depends on this result.
       const chunk = await reader.read();
+
       if (chunk.done) {
         break;
       }
       /* drain */
     }
+
     expect(mocks.revoke).toHaveBeenCalledOnce();
   });
 
@@ -625,6 +681,7 @@ describe("platform MCP endpoint", () => {
       appId: "public-app",
       prompt: "Change",
     });
+
     mocks.start.mockResolvedValueOnce({
       cancel: mocks.cancel,
       getReadable: () =>
@@ -658,11 +715,13 @@ describe("platform MCP endpoint", () => {
       returnValue: Promise.withResolvers().promise,
       runId: "run",
     });
+
     try {
       const response = await handleAppAgentMcpRequest(
         request("edit_app", { appId: "public-app", prompt: "Change" }),
         context
       );
+
       const events = await response.text();
       expect(events).toContain("Agent stream failed");
       expect(events).not.toContain("Cancellation unavailable");
@@ -683,10 +742,12 @@ describe("platform MCP endpoint", () => {
       },
       runId: "run",
     });
+
     const response = await handleAppAgentMcpRequest(
       request("edit_app", { appId: "public-app", prompt: "Change" }),
       context
     );
+
     expect(await response.text()).toContain("already being edited");
     expect(mocks.revoke).toHaveBeenCalledOnce();
   });

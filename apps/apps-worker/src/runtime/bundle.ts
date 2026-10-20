@@ -30,6 +30,7 @@ const bundle = z.object({
     requires: z.array(z.string()),
   }),
 });
+
 const supportedFeatures = new Set([
   "database",
   "actions",
@@ -43,27 +44,33 @@ export const createApplicationExecution = (
   persistence: Persistence
 ) => {
   const parsed = bundle.safeParse(application);
+
   if (!parsed.success) {
     throw new AppError(
       "INCOMPATIBLE_VERSION",
       "Invalid application bundle exports"
     );
   }
+
   const module: ApplicationModule = parsed.data;
+
   if (module.runtimeManifest.apiVersion !== 1) {
     throw new AppError(
       "INCOMPATIBLE_VERSION",
       `Unsupported application API version: ${module.runtimeManifest.apiVersion}`
     );
   }
+
   const unsupported = module.runtimeManifest.requires.filter(
     (feature) => !supportedFeatures.has(feature)
   );
+
   if (unsupported.length) {
     throw new AppError(
       "INCOMPATIBLE_VERSION",
       `Unsupported application features: ${unsupported.join(", ")}`
     );
   }
+
   return createExecution(module.default, persistence, module.migrations);
 };

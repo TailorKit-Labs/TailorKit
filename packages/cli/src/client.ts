@@ -48,6 +48,7 @@ const request = async <T>(operation: Promise<T>): Promise<T> => {
     if (error instanceof Error) {
       throw error;
     }
+
     if (
       isObjectValue(error) &&
       "message" in error &&
@@ -57,6 +58,7 @@ const request = async <T>(operation: Promise<T>): Promise<T> => {
         code: "code" in error ? error.code : undefined,
       });
     }
+
     throw new Error(String(error), { cause: error });
   }
 };
@@ -75,16 +77,20 @@ export const createCliClient = (options: {
   fetch?: typeof fetch;
 }): CliClient => {
   const agent = getAgentAuth();
+
   if (!agent) {
     const clientOptions: Parameters<typeof createPatchsmithClient>[0] = {
       headers: { authorization: `Bearer ${options.token}` },
       url: options.url,
     };
+
     if (options.fetch) {
       clientOptions.fetch = options.fetch;
     }
+
     return createPatchsmithClient(clientOptions);
   }
+
   const client = createClient({
     baseUrl: validatePlatformUrl(agent.platformUrl),
     fetch: options.fetch,
@@ -93,11 +99,14 @@ export const createCliClient = (options: {
     responseStyle: "data",
     throwOnError: true,
   });
+
   const { scope } = agent;
+
   const scopes = (names?: string[]) => {
     if (names && (names.length !== 1 || names[0] !== scope.name)) {
       throw new Error("Requested scope is not authorized by the agent token.");
     }
+
     return [scope];
   };
   // These map the host RPC shapes to existing OpenAPI routes. Both return compact bodies.
@@ -115,6 +124,7 @@ export const createCliClient = (options: {
           let streamError: unknown;
           let streamFailed = false;
           let done = false;
+
           const { stream } = await appAgentChat({
             body: {
               ...turn,
@@ -129,20 +139,26 @@ export const createCliClient = (options: {
             signal: optionsValue?.signal,
             sseMaxRetryAttempts: 1,
           });
+
           for await (const chunk of stream) {
             const event = await v.parseAsync(agentChunkSchema, chunk);
+
             if (
               v.safeParse(agentRunCompleteChunkSchema, event).success ||
               event.type === "error"
             ) {
               done = true;
             }
+
             yield event;
           }
+
           optionsValue?.signal?.throwIfAborted();
+
           if (!done && !streamFailed) {
             throw new Error("The agent stream ended unexpectedly. Try again.");
           }
+
           if (streamFailed) {
             throw new Error("The app agent stream failed. Try again.", {
               cause: streamError,
@@ -221,6 +237,7 @@ export const createCliClient = (options: {
       deployments: {
         create: async (input: Input<"deployments", "create">) => {
           const { appId, ...deployment } = input;
+
           return await request(
             deploymentsCreate({
               body: { ...deployment, app: platformAppSelector(appId), scope },

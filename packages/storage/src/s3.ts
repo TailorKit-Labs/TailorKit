@@ -18,6 +18,7 @@ export const createS3CompatibleStorage = (
     try {
       const { createS3CompatibleStorage: createStorage } =
         await import("./s3-client.js");
+
       return createStorage(options);
     } catch (error) {
       instance = undefined;
@@ -27,16 +28,19 @@ export const createS3CompatibleStorage = (
 
   const getStorage = async (): Promise<Storage> => {
     instance ??= loadStorage();
+
     return await instance;
   };
 
   return {
     createDownloadUrl: async (input) => {
       const storage = await getStorage();
+
       return await storage.createDownloadUrl(input);
     },
     createUploadUrl: async (input) => {
       const storage = await getStorage();
+
       return await storage.createUploadUrl(input);
     },
     delete: async (input) => {
@@ -45,6 +49,7 @@ export const createS3CompatibleStorage = (
     },
     head: async (input) => {
       const storage = await getStorage();
+
       return await storage.head(input);
     },
     type: "s3",

@@ -33,6 +33,7 @@ type HandlerContext<
 type OutputInput<R> = R extends StandardSchemaV1
   ? StandardSchemaV1.InferInput<R>
   : unknown;
+
 type HandlerOutput<K, O> = K extends "action"
   ? O | Promise<O>
   : O &
@@ -132,15 +133,19 @@ class FunctionBuilder<
     handler: (context: HandlerContext<K, A, F, D>) => HandlerOutput<K, O>
   ): BuiltFunction<K, A, R, O, F, D> {
     const metadata: FunctionMetadata<R, F, D> = {};
+
     if (this.databaseDefinition) {
       metadata.database = this.databaseDefinition;
     }
+
     if (this.result) {
       metadata.result = this.result;
     }
+
     if (this.kind === "action") {
       metadata.functions = this.calls;
     }
+
     // SAFETY: The builder preserves its kind, schemas, database, and call definitions; optional metadata is added only for the matching generic branches.
     return (
       /* oxlint-disable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions -- This builder or fixture preserves the declared capabilities across an erased generic boundary. */

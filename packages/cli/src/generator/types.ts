@@ -136,6 +136,7 @@ const toLiteralType = (value: unknown): string => {
   if (isStringValue(value)) {
     return quote(value);
   }
+
   if (isNumberValue(value) || isBooleanValue(value) || value === null) {
     return JSON.stringify(value);
   }
@@ -175,6 +176,7 @@ const toObjectType = (
   }
 
   const required = new Set(schema.required);
+
   const catchallType = renderType(
     schema.additionalProperties === true ||
       schema.additionalProperties === false
@@ -182,15 +184,19 @@ const toObjectType = (
       : (schema.additionalProperties ?? undefined),
     depth
   );
+
   const additionalValueTypes = [catchallType];
+
   if (catchallType !== "unknown") {
     for (const [key, propertySchema] of propertyEntries) {
       additionalValueTypes.push(renderType(propertySchema, depth));
+
       if (!required.has(key)) {
         additionalValueTypes.push("undefined");
       }
     }
   }
+
   const additionalType =
     schema.additionalProperties === false ||
     schema.additionalProperties === undefined
@@ -214,6 +220,7 @@ const toObjectType = (
 
   lines.push(`${currentIndent}}`);
   const objectType = lines.join("\n");
+
   return additionalType === undefined
     ? objectType
     : `${objectType} & ${additionalType}`;
@@ -244,12 +251,14 @@ const toTypeScriptType = (
     const options = schema.allOf.map((option) =>
       toTypeScriptType(option, depth)
     );
+
     return [...new Set(options)]
       .map((option) => (option.includes(" | ") ? `(${option})` : option))
       .join(" & ");
   }
 
   const union = schema.anyOf ?? schema.oneOf;
+
   if (union !== undefined && union.length > 0) {
     const options = union
       .filter((option) => !isNeverSchema(option))
@@ -261,6 +270,7 @@ const toTypeScriptType = (
     }
 
     const uniqueOptions = [...new Set(options)];
+
     return uniqueOptions.join(" | ");
   }
 
@@ -268,6 +278,7 @@ const toTypeScriptType = (
     const options = schema.type.map((type) =>
       toTypeScriptType({ ...schema, type }, depth)
     );
+
     return [...new Set(options)].join(" | ") || "never";
   }
 
@@ -276,42 +287,55 @@ const toTypeScriptType = (
   if (schemaType === "null") {
     return "null";
   }
+
   if (schemaType === "string") {
     return "string";
   }
+
   if (schemaType === "number" || schemaType === "integer") {
     return "number";
   }
+
   if (schemaType === "boolean") {
     return "boolean";
   }
+
   if (schemaType === "array") {
     const items =
       schema.items === true || schema.items === false
         ? undefined
         : schema.items;
+
     if (schema.prefixItems !== undefined) {
       const tupleItems = schema.prefixItems.map((item, index) => {
         const type = toTypeScriptType(item, depth);
+
         return index < (schema.minItems ?? 0) ? type : `(${type})?`;
       });
+
       const additionalRequired =
         (schema.minItems ?? 0) - schema.prefixItems.length;
+
       if (additionalRequired > 0 && schema.items === false) {
         return "never";
       }
+
       for (let index = 0; index < additionalRequired; index += 1) {
         tupleItems.push(toTypeScriptType(items, depth));
       }
+
       if (schema.items !== false) {
         tupleItems.push(`...${toArrayType(toTypeScriptType(items, depth))}`);
       }
+
       return `[${tupleItems.join(", ")}]`;
     }
+
     return toArrayType(
       schema.items === false ? "never" : toTypeScriptType(items, depth)
     );
   }
+
   if (schemaType === "object") {
     return toObjectType(schema, depth, toTypeScriptType);
   }
@@ -334,6 +358,7 @@ const toPropsName = (componentName: string): string =>
 
 const toTypeName = (name: string): string => {
   const identifier = toIdentifier(name);
+
   return `${identifier.charAt(0).toUpperCase()}${identifier.slice(1)}`;
 };
 
@@ -352,6 +377,7 @@ const renderResponsiveType = (
   const [firstOption, secondOption] = schema.anyOf.filter(
     (option) => !isNeverSchema(option)
   );
+
   if (firstOption === undefined || secondOption === undefined) {
     return undefined;
   }
@@ -372,20 +398,26 @@ const renderResponsiveType = (
   }
 
   const scalarType = toTypeScriptType(scalarOption, depth);
+
   if (scalarType === "never") {
     return "never";
   }
 
   const properties = Object.entries(responsiveOption.properties ?? {});
+
   if (properties.length === 0) {
     return undefined;
   }
+
   let hasStates = false;
+
   for (const [key, property] of properties) {
     const valueType = toTypeScriptType(property, depth);
     const matchesScalar = valueType === scalarType || valueType === "never";
+
     if (key.startsWith(":")) {
       hasStates = true;
+
       if (
         !matchesScalar &&
         renderResponsiveType(property, depth) !== `Responsive<${scalarType}>`
@@ -396,6 +428,7 @@ const renderResponsiveType = (
       return undefined;
     }
   }
+
   return `${hasStates ? "Conditional" : "Responsive"}<${scalarType}>`;
 };
 
@@ -409,18 +442,23 @@ const getResponsiveReference = (
   schema: JsonSchema
 ): ResponsiveReference | undefined => {
   const rendered = renderResponsiveType(schema, 0);
+
   if (rendered === undefined) {
     return undefined;
   }
+
   const value = schema.anyOf?.find(
     (option) => option.properties === undefined && !isNeverSchema(option)
   );
+
   const object = schema.anyOf?.find(
     (option) => option.properties !== undefined
   );
+
   if (value === undefined || object === undefined) {
     return undefined;
   }
+
   return {
     conditional: rendered.startsWith("Conditional<"),
     keys: Object.keys(object.properties ?? {}),
@@ -468,15 +506,18 @@ const renderTypeAliases = (
 ): string => {
   const breakpoints = new Set<string>();
   const states = new Set<string>();
+
   for (const [name, component] of Object.entries(components)) {
     if (!primitiveComponentNames.has(name)) {
       continue;
     }
+
     for (const schema of Object.values(getComponentFields(component))) {
       for (const option of schema.anyOf ?? schema.oneOf ?? []) {
         if (option.type !== "object") {
           continue;
         }
+
         for (const key of Object.keys(option.properties ?? {})) {
           if (key.startsWith(":")) {
             states.add(key);
@@ -487,12 +528,14 @@ const renderTypeAliases = (
       }
     }
   }
+
   const lines = [
     `export type Breakpoint = ${[...breakpoints].map(quote).join(" | ") || "never"};`,
     `export type InteractionState = ${[...states].map(quote).join(" | ") || "never"};`,
     'export type Responsive<TValue> = TValue | Partial<Record<"default" | Breakpoint, TValue>>;',
     'export type Conditional<TValue> = TValue | (Partial<Record<"default" | Breakpoint, TValue>> & Partial<Record<InteractionState, Responsive<TValue>>>);',
   ];
+
   const emitted = new Set<string>();
 
   for (const [componentName, component] of Object.entries(components)) {
@@ -502,6 +545,7 @@ const renderTypeAliases = (
 
     for (const [key, schema] of Object.entries(getComponentFields(component))) {
       const alias = aliases[key];
+
       if (alias === undefined || emitted.has(alias)) {
         continue;
       }
@@ -523,28 +567,36 @@ const renderViewProps = (views: Record<string, SerializedView>): string => {
       .filter(([, layer]) => layer.context !== undefined)
       .map(([, layer]) => {
         const context = toTypeScriptType(layer.context, 4);
+
         return layer.contextOptional === true ? `Partial<${context}>` : context;
       })
       .filter((context) => context !== "Record<string, never>");
+
     const context =
       contexts.length > 1
         ? contexts.map((contextValue) => `(${contextValue})`).join(" & ")
         : (contexts[0] ?? "Record<string, never>");
+
     const contextLines = context.split("\n");
     lines.push(`  ${quote(viewPath)}: {`, `    context: ${contextLines[0]}`);
+
     for (const line of contextLines.slice(1, -1)) {
       lines.push(line);
     }
+
     const lastContextLine = contextLines.at(-1);
+
     if (lastContextLine !== undefined && contextLines.length > 1) {
       lines.push(`${lastContextLine};`);
     } else {
       lines[lines.length - 1] = `${lines.at(-1)};`;
     }
+
     lines.push("  };");
   }
 
   lines.push("}");
+
   return lines.join("\n");
 };
 
@@ -552,6 +604,7 @@ const renderDescription = (description: string, indent = ""): string => {
   const text = description
     .replaceAll("*/", "* /")
     .replaceAll(/\r\n?|\n|\u2028|\u2029/gu, `\n${indent} * `);
+
   return `${indent}/**\n${indent} * ${text}\n${indent} */`;
 };
 
@@ -569,6 +622,7 @@ const renderComponent = (
     const alias = primitiveComponentNames.has(name)
       ? fieldAliases[key]
       : undefined;
+
     lines.push(
       `  ${toPropertyKey(key)}?: ${alias ?? renderFieldType(schema, 2)};`
     );
@@ -579,10 +633,12 @@ const renderComponent = (
       callback.input === undefined
         ? ""
         : `input: ${toTypeScriptType(callback.input, 2)}`;
+
     const output =
       callback.output === undefined
         ? "void"
         : toTypeScriptType(callback.output, 2);
+
     const result = `${output} | Promise<${output}>`;
     lines.push(`  ${toPropertyKey(key)}?: (${parameters}) => ${result};`);
   }
@@ -593,6 +649,7 @@ const renderComponent = (
     ([key, callback]) =>
       `${quote(key)}: ${callback.input === undefined ? 0 : 1}`
   );
+
   const callbackOptions =
     callbackEntries.length > 0
       ? `,\n  callbacks: { ${callbackEntries.join(", ")} }`
@@ -601,6 +658,7 @@ const renderComponent = (
   if (component.description !== undefined) {
     lines.push(renderDescription(component.description));
   }
+
   lines.push(
     `export const ${toIdentifier(name)} = /* @__PURE__ */ createRemoteComponent<${propsName}, ${component.children === true}>(${quote(name)}, {`,
     `  children: ${component.children === true}${callbackOptions},`,
@@ -633,10 +691,12 @@ const renderTools = (
     if (serverOnly && !hasServerTool(value)) {
       continue;
     }
+
     if (isSerializedTool(value)) {
       if (serverOnly && value.kind !== "server") {
         continue;
       }
+
       const input = toTypeScriptType(value.input, depth + 2);
       const output = toTypeScriptType(value.output, depth + 2);
       lines.push(
@@ -653,6 +713,7 @@ const renderTools = (
   }
 
   lines.push(`${indent}}`);
+
   return lines.join("\n");
 };
 
@@ -664,6 +725,7 @@ const renderToolRuntime = (
 
   for (const [key, value] of Object.entries(tools)) {
     const pathValue = [...pathParts, key];
+
     if (isSerializedTool(value)) {
       lines.push(
         `  ${toPropertyKey(key)}: (input?: unknown) => callTool(${quote(value.kind)}, ${quote(pathValue.join("."))}, input),`
@@ -679,6 +741,7 @@ const renderToolRuntime = (
   }
 
   lines.push("}");
+
   return lines.join("\n");
 };
 
@@ -688,6 +751,7 @@ const resolveSchema = (
   if (schema === undefined) {
     return undefined;
   }
+
   return resolveJsonSchema({ ...schema });
 };
 
@@ -745,6 +809,7 @@ export const renderGeneratedTypes = (
   const toolsType = renderTools(schema.tools ?? {});
   const components = schema.components ?? {};
   const fieldAliases = collectFieldTypeAliases(components);
+
   const chunks = [
     generatedHeader,
     `import { callTool } from "patchsmith/client";`,
@@ -755,9 +820,11 @@ export const renderGeneratedTypes = (
 ${Object.entries(schema.slots ?? {})
   .map(([name, slot]) => {
     const definition = `    ${quote(name)}: { views: ${slot.views.map(quote).join(" | ") || "never"}; multiple: ${slot.multiple === true} };`;
+
     if (slot.description === undefined) {
       return definition;
     }
+
     return `${renderDescription(slot.description, "    ")}\n${definition}`;
   })
   .join("\n")}
@@ -801,24 +868,30 @@ export const renderGeneratedReferences = (
   options: { bindingsPath: string; hasApi: boolean }
 ): GeneratedFiles => {
   const schema = resolveSchemaFile(schemaFile);
+
   const components = Object.entries(schema.components ?? {}).map(
     ([name, component]) => ({ component, filename: toIdentifier(name), name })
   );
+
   const filenames = new Set<string>();
+
   for (const { filename, name } of components) {
     if (filenames.has(filename)) {
       throw new Error(
         `Component names collide in generated references: ${name}`
       );
     }
+
     filenames.add(filename);
   }
+
   return renderReferences(schema, components, getResponsiveReference, options);
 };
 
 const joinUrlPath = (baseUrl: string, pathName: string): string => {
   const url = new URL(baseUrl);
   url.pathname = `${url.pathname.replace(/\/$/u, "")}/${pathName.replace(/^\//u, "")}`;
+
   return url.toString();
 };
 
@@ -861,11 +934,14 @@ export const generateTypes = async (
   options: GenerateTypesOptions = {}
 ): Promise<string> => {
   const root = path.resolve(options.cwd ?? ".");
+
   const outPath = path.resolve(
     root,
     options.outFile ?? path.join("src", "patchsmith.gen.ts")
   );
+
   const loaded = await loadPatchsmithConfig(options.configPath, root);
+
   const schema =
     options.schema ??
     (options.schemaPath === undefined
@@ -876,6 +952,7 @@ export const generateTypes = async (
     loaded.root,
     loaded.config.server?.entry ?? "src/server.ts"
   );
+
   const serverExists = await stat(serverEntry)
     .then((file) => file.isFile())
     .catch((error: ErrorOptions["cause"]) => {
@@ -883,21 +960,28 @@ export const generateTypes = async (
         error !== null && isObjectValue(error) && "code" in error
           ? error.code
           : undefined;
+
       if (isMissingFile(error) || code === "ENOTDIR") {
         return false;
       }
+
       throw error;
     });
+
   let serverModule: string | undefined;
+
   if (serverExists) {
     const relative = path
       .relative(path.dirname(outPath), serverEntry)
       .replaceAll(path.sep, "/")
       .replace(/\.tsx?$/u, "");
+
     serverModule = relative.startsWith(".") ? relative : `./${relative}`;
   }
+
   const output = renderGeneratedTypes(schema, { serverModule });
   const skill = await prepareAppSkill(root, outPath);
+
   const references =
     skill === null
       ? null
@@ -905,8 +989,10 @@ export const generateTypes = async (
           bindingsPath: skill.bindingsPath,
           hasApi: serverExists,
         });
+
   await mkdir(path.dirname(outPath), { recursive: true });
   await writeFile(outPath, output, "utf-8");
+
   if (skill !== null && references !== null) {
     await writeAppSkill(skill, references);
   }

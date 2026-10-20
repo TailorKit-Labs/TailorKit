@@ -28,6 +28,7 @@ export const NumberField = ({
   const fieldId = id ?? generatedId;
 
   const contextValue1 = useMemo(() => ({ fieldId }), [fieldId]);
+
   return (
     <NumberFieldContext.Provider value={contextValue1}>
       <NumberFieldPrimitive.Root

@@ -23,20 +23,26 @@ const readCallbacksImplementation = (
   const value = element.attributes.getNamedItem(
     "data-patchsmith-callbacks"
   )?.value;
+
   if (!(value !== undefined && value !== null && value !== "")) {
     return [];
   }
+
   try {
     const parsed = v.safeParse(RemotePropsSchema, JSON.parse(value));
+
     if (!parsed.success) {
       return [];
     }
+
     const callbackSchema = v.object({
       callback: v.string(),
       inputCount: v.number(),
     });
+
     return Object.entries(parsed.output).flatMap(([event, config]) => {
       const callback = v.safeParse(callbackSchema, config);
+
       return callback.success ? [{ ...callback.output, event }] : [];
     });
   } catch {
@@ -62,6 +68,7 @@ export const startIframeRuntime = (options: {
         await import(/* @vite-ignore */ url)
       ),
   } = options;
+
   const nodeIds = new WeakMap<Node, string>();
   const nodes = new Map<string, WeakRef<Node>>();
   let nextNodeId = 1;
@@ -79,42 +86,54 @@ export const startIframeRuntime = (options: {
       );
     }
   };
+
   const tools = createIframeTools((data) => {
     send({ data, type: "toolRequest" });
   });
+
   const backend = createIframeBackend((data) => {
     send({ data, type: "backendSessionRequest" });
   });
+
   const backendGlobal = globalThis;
   backendGlobal.__patchsmithTools = tools.bridge;
   backendGlobal.__patchsmithBackendSession = backend.getSession;
+
   const sendError = (cause: unknown) => {
     let message = String(cause);
+
     if (cause instanceof Error) {
       message =
         cause.stack !== undefined && cause.stack !== ""
           ? cause.stack
           : cause.message;
     }
+
     send({
       data: { message },
       type: "error",
     });
   };
+
   const getNodeId = (node: Node): string => {
     let id = nodeIds.get(node);
+
     if (!(id !== undefined && id !== null && id !== "")) {
       id = `n:${(nextNodeId += 1) - 1}`;
       nodeIds.set(node, id);
       nodes.set(id, new WeakRef(node));
     }
+
     return id;
   };
+
   const readCallbacks = readCallbacksImplementation;
+
   const serializeNode = (node: Node): RemoteNode => {
     if (node instanceof Text) {
       return { id: getNodeId(node), kind: "text", text: node.data };
     }
+
     if (node instanceof Element) {
       return {
         callbacks: readCallbacks(node),
@@ -125,12 +144,14 @@ export const startIframeRuntime = (options: {
         type: node.localName,
       };
     }
+
     return {
       children: Array.from(node.childNodes, serializeNode),
       id: getNodeId(node),
       kind: "fragment",
     };
   };
+
   const sendSnapshot = () => {
     send({
       data: {
@@ -144,11 +165,13 @@ export const startIframeRuntime = (options: {
       type: "snapshot",
     });
   };
+
   const observer = new MutationObserver(() => {
     if (!rendering) {
       sendSnapshot();
     }
   });
+
   observer.observe(root, {
     attributes: true,
     characterData: true,
@@ -160,21 +183,27 @@ export const startIframeRuntime = (options: {
     if (destroyed) {
       return;
     }
+
     if (loadedAppUrl !== appUrl) {
       const module = await importModule(
         `data:text/javascript;charset=utf-8,${encodeURIComponent(appSource)}`
       );
+
       if (destroyed) {
         return;
       }
+
       assertAppClient(module.default);
       client = module.default;
       loadedAppUrl = appUrl;
     }
+
     if (!client || !props) {
       throw new Error("Patchsmith app requires a view request.");
     }
+
     rendering = true;
+
     try {
       // SAFETY: The adapter reconstructs the same runtime contract, but TypeScript cannot relate the erased generic parameters across this library boundary.
 
@@ -189,13 +218,17 @@ export const startIframeRuntime = (options: {
       observer.takeRecords();
       rendering = false;
     }
+
     sendSnapshot();
   };
+
   let pendingLoad = Promise.resolve();
+
   const handleMessage = (event: MessageEvent<unknown>) => {
     if (event.source !== parentWindow) {
       return;
     }
+
     const parsed = v.safeParse(
       v.object({
         channel: v.literal(channel),
@@ -204,14 +237,19 @@ export const startIframeRuntime = (options: {
       }),
       event.data
     );
+
     if (!parsed.success) {
       return;
     }
+
     const { payload } = parsed.output;
+
     if (payload?.type === "toolResult") {
       tools.receive(payload.data);
+
       return;
     }
+
     if (payload?.type === "backendSessionResult") {
       backend.receive(payload.data);
     } else if (payload?.type === "init") {
@@ -225,6 +263,7 @@ export const startIframeRuntime = (options: {
       })();
     } else if (payload?.type === "dispatchCallback") {
       const { id, nodeId, event: eventName, args } = payload.data;
+
       const respond = async (
         operation: RemoteCallbackOperation
       ): Promise<void> => {
@@ -241,7 +280,9 @@ export const startIframeRuntime = (options: {
           });
         }
       };
+
       const target = nodes.get(nodeId)?.deref();
+
       if (
         !(target instanceof Element) ||
         !root.contains(target) ||
@@ -252,9 +293,12 @@ export const startIframeRuntime = (options: {
             `Cannot dispatch callback "${eventName}" to node "${nodeId}".`
           );
         });
+
         return;
       }
+
       let invoked = false;
+
       const callbackEvent = Object.assign(
         new CustomEvent(eventName, {
           bubbles: false,
@@ -266,12 +310,15 @@ export const startIframeRuntime = (options: {
             if (invoked) {
               return;
             }
+
             invoked = true;
             void respond(operation);
           },
         }
       );
+
       target.dispatchEvent(callbackEvent);
+
       if (!invoked) {
         void respond(() => {
           throw new Error(`Callback "${eventName}" did not return a result.`);
@@ -279,18 +326,24 @@ export const startIframeRuntime = (options: {
       }
     }
   };
+
   window.addEventListener("message", handleMessage);
   parentWindow.postMessage({ channel, type: iframeReadyType }, "*");
   send({ type: "ready" });
+
   return () => {
     tools.close();
+
     if (backendGlobal.__patchsmithTools === tools.bridge) {
       delete backendGlobal.__patchsmithTools;
     }
+
     backend.close();
+
     if (backendGlobal.__patchsmithBackendSession === backend.getSession) {
       delete backendGlobal.__patchsmithBackendSession;
     }
+
     destroyed = true;
     observer.disconnect();
     window.removeEventListener("message", handleMessage);

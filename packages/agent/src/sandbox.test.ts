@@ -20,14 +20,17 @@ const mocks = vi.hoisted(() => ({
   workspace: vi.fn(),
   write: vi.fn(),
 }));
+
 vi.mock("@vercel/sandbox", () => ({
   APIError: class extends Error {},
   Drive: { getOrCreate: mocks.drive },
   Sandbox: { get: mocks.get, getOrCreate: mocks.create },
 }));
+
 vi.mock("@ai-sdk/sandbox-vercel", () => ({
   createVercelNetworkSandboxSessionFromNativeSandbox: mocks.adapter,
 }));
+
 vi.mock("./workspace", () => ({ prepareWorkspace: mocks.workspace }));
 
 const input: AppAgentInput = {
@@ -38,7 +41,9 @@ const input: AppAgentInput = {
   model: "xiaomi/mimo-v2.6-pro",
   threadId: "thread-1",
 };
+
 const sandboxName = "agent-thread-thread-1";
+
 const resumeFrom = {
   data: {},
   harnessId: "pi",
@@ -48,6 +53,7 @@ const resumeFrom = {
 
 beforeEach(() => {
   vi.resetAllMocks();
+
   const sandbox = {
     currentSession: () => ({
       extendTimeout: mocks.extend,
@@ -58,6 +64,7 @@ beforeEach(() => {
     expiresAt: new Date(Date.now() + 900_000),
     stop: mocks.stop,
   };
+
   mocks.get.mockResolvedValue(sandbox);
   mocks.create.mockResolvedValue(sandbox);
   mocks.drive.mockResolvedValue({ region: "iad1" });
@@ -125,6 +132,7 @@ describe("Pi sandbox ownership", () => {
       version: 1 as const,
       views: {},
     };
+
     await prepareSandboxStep({ ...input, schema }, {});
     expect(mocks.write).toHaveBeenLastCalledWith([
       {

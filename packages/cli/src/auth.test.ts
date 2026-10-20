@@ -37,6 +37,7 @@ const temporaryDirectories: string[] = [];
 const createTemporaryHome = async (): Promise<string> => {
   const directory = await mkdtemp(path.join(tmpdir(), "patchsmith-auth-"));
   temporaryDirectories.push(directory);
+
   return directory;
 };
 
@@ -60,6 +61,7 @@ const writeAuthStoreFixture = async (
   const filePath = authStorePath(homeDirectory);
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, JSON.stringify(value));
+
   return filePath;
 };
 
@@ -83,6 +85,7 @@ describe("auth store", () => {
 
   it("stores and reads deploy tokens by host", async () => {
     const homeDirectory = await createTemporaryHome();
+
     const { getDeployToken, saveDeployToken } =
       await loadAuthModule(homeDirectory);
 
@@ -109,6 +112,7 @@ describe("auth store", () => {
 
   it("preserves unknown top-level auth.json keys when saving a host token", async () => {
     const homeDirectory = await createTemporaryHome();
+
     const filePath = await writeAuthStoreFixture(homeDirectory, {
       futureKey: { value: true },
       hosts: {
@@ -118,6 +122,7 @@ describe("auth store", () => {
         },
       },
     });
+
     const { saveDeployToken } = await loadAuthModule(homeDirectory);
 
     await saveDeployToken("https://new.example.com", {
@@ -235,16 +240,19 @@ describe("auth store", () => {
     const homeDirectory = await createTemporaryHome();
     const hostUrl = "https://example.com/api/patchsmith";
     const scope = { name: "user", value: { userId: "user-1" } };
+
     const start = vi.fn().mockResolvedValue({
       deviceCode: "device-code",
       expiresAt: new Date(Date.now() + 60_000),
       userCode: "ABC-123",
     });
+
     const poll = vi.fn().mockResolvedValue({
       deployToken: "deploy-token",
       scope,
       status: "approved",
     });
+
     const verifyToken = vi.fn().mockResolvedValue({ scope });
     // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
 
@@ -255,8 +263,10 @@ describe("auth store", () => {
       } as unknown as ReturnType<typeof createPatchsmithClient>
       /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
     );
+
     const { runLogin, runWhoami, runLogout, getDeployToken } =
       await loadAuthModule(homeDirectory);
+
     const onUserCode = vi.fn<Parameters<typeof runLogin>[1]>();
     const options = { cwd: homeDirectory, host: `${hostUrl}/` };
     const login = runLogin(options, onUserCode);
@@ -376,6 +386,7 @@ describe("auth store", () => {
       root: homeDirectory,
     });
     const verifyToken = vi.fn();
+
     if (rejected) {
       verifyToken.mockRejectedValue(error);
     } else {
@@ -390,6 +401,7 @@ describe("auth store", () => {
       } as unknown as ReturnType<typeof createPatchsmithClient>
       /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
     );
+
     const fixture = {
       hosts: {
         "https://example.com": {
@@ -398,6 +410,7 @@ describe("auth store", () => {
         },
       },
     };
+
     const filePath = await writeAuthStoreFixture(homeDirectory, fixture);
     const { runWhoami } = await loadAuthModule(homeDirectory);
 
@@ -479,6 +492,7 @@ describe("auth store", () => {
       } as unknown as ReturnType<typeof createPatchsmithClient>
       /* oxlint-enable typescript/no-unsafe-type-assertion, anti-slop/no-chained-type-assertions */
     );
+
     const filePath = await writeAuthStoreFixture(homeDirectory, {
       hosts: {
         "https://example.com": {
@@ -487,6 +501,7 @@ describe("auth store", () => {
         },
       },
     });
+
     const { runWhoami } = await loadAuthModule(homeDirectory);
 
     await expect(runWhoami({ cwd: homeDirectory })).rejects.toBeInstanceOf(
@@ -508,6 +523,7 @@ describe("auth store", () => {
     const home = await createTemporaryHome();
     const now = Math.floor(Date.now() / 1000);
     const scope = { name: "user", value: { userId: "one" } };
+
     const jwt = await new SignJWT({
       appId: "app",
       aud: "patchsmith-platform-cli",
@@ -520,7 +536,9 @@ describe("auth store", () => {
     })
       .setProtectedHeader({ alg: "HS256", typ: "patchsmith-agent+jwt" })
       .sign(new TextEncoder().encode("test-only-signing-secret"));
+
     vi.stubEnv("PATCHSMITH_AGENT_TOKEN", jwt);
+
     const stored = await writeAuthStoreFixture(home, {
       hosts: {
         "http://localhost:1": {
@@ -529,22 +547,27 @@ describe("auth store", () => {
         },
       },
     });
+
     const original = await readFile(stored, "utf-8");
     const { runLogin, runWhoami, runLogout } = await loadAuthModule(home);
+
     const fetch = vi
       .spyOn(globalThis, "fetch")
       .mockImplementation(async (input) => {
         if (!(input instanceof Request)) {
           throw new Error("Expected a Request.");
         }
+
         const request = input;
         expect(request.url).toBe(
           "https://platform.test/api/platform/cli-auth/verify-token"
         );
         expect(request.headers.get("authorization")).toBe(`Bearer ${jwt}`);
         expect(await request.json()).toEqual({ deployToken: jwt });
+
         return Response.json({ scope });
       });
+
     const onCode = vi.fn<Parameters<typeof runLogin>[1]>();
     expect(await runLogin({ host: "http://localhost:1" }, onCode)).toEqual({
       hostUrl: "https://platform.test/api/platform",

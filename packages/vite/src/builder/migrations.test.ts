@@ -13,6 +13,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -20,11 +21,14 @@ it("packages generated SQL with stable checksums and tracks the source files", a
   const root = await mkdtemp(
     path.join(tmpdir(), "patchsmith-generated-migrations-")
   );
+
   try {
     await createDatabaseTestApp(root);
+
     const { migrations, files } = await readAppMigrations(
       path.join(root, "src/db/migrations")
     );
+
     expect(migrations).toHaveLength(1);
     const sql = await readFile(requireValue(files[1]), "utf-8");
     expect(sql).toContain("CREATE TABLE `todos`");
@@ -42,6 +46,7 @@ it("allows an absent default directory but fails for missing configured migratio
   const root = await mkdtemp(
     path.join(tmpdir(), "patchsmith-migration-reader-")
   );
+
   try {
     const missing = path.join(root, "missing");
     const awaitedResult1 = await readAppMigrations(missing, true);

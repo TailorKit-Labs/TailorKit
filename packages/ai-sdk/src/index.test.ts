@@ -20,6 +20,7 @@ import { createTools } from "./index";
 import type { PatchsmithToolInput, PatchsmithTools } from "./index";
 
 const cleanup: (() => Promise<void>)[] = [];
+
 afterEach(async () => {
   for (const close of cleanup.splice(0).toReversed()) {
     // oxlint-disable-next-line no-await-in-loop -- Close clients before their servers.
@@ -34,6 +35,7 @@ const finalResult = {
   runId: "run-one",
   threadId: "a6a61bac-770d-4538-a2df-2119281f7db8",
 };
+
 const resultSchema = v.object({
   answer: v.string(),
   appId: v.string(),
@@ -41,10 +43,12 @@ const resultSchema = v.object({
   runId: v.string(),
   threadId: v.string(),
 });
+
 const result = (): CallToolResult => ({
   content: [{ text: finalResult.answer, type: "text" }],
   structuredContent: finalResult,
 });
+
 type Operation = (
   input: { prompt: string },
   context: ServerContext
@@ -56,12 +60,14 @@ const connect = async (
 ) => {
   const calls: { input: { prompt: string }; name: string }[] = [];
   const requests: Request[] = [];
+
   const handler = createMcpHandler(
     () => {
       const server = new McpServer({
         name: "patchsmith-app-agent",
         version: "1",
       });
+
       server.registerTool(
         "list_apps",
         {
@@ -100,6 +106,7 @@ const connect = async (
         },
         async (input, context) => {
           calls.push({ input, name: "create_app" });
+
           return await operation(input, context);
         }
       );
@@ -118,16 +125,20 @@ const connect = async (
         },
         async (input, context) => {
           calls.push({ input, name: "edit_app" });
+
           return await operation(input, context);
         }
       );
+
       return server;
     },
     { legacy: "reject", responseMode: "sse" }
   );
+
   cleanup.push(async () => {
     await handler.close();
   });
+
   const respond = async (
     incoming: IncomingMessage,
     outgoing: ServerResponse
@@ -136,34 +147,41 @@ const connect = async (
     outgoing.on("close", () => {
       controller.abort();
     });
+
     const headers = new Headers(
       Object.entries(incoming.headers).map(([name, value]) => [
         name,
         [value].flat().join(","),
       ])
     );
+
     const request = new Request(`http://localhost${incoming.url}`, {
       body: incoming.method === "POST" ? await text(incoming) : undefined,
       headers,
       method: incoming.method,
       signal: controller.signal,
     });
+
     requests.push(request.clone());
     const response = await (failure?.(request) ?? handler.fetch(request));
     outgoing.writeHead(response.status, Object.fromEntries(response.headers));
+
     if (response.body) {
       for await (const chunk of response.body) {
         outgoing.write(chunk);
       }
     }
+
     outgoing.end();
   };
+
   const http = createHttpServer((incoming, outgoing) => {
     // oxlint-disable-next-line promise/prefer-await-to-callbacks -- The Node HTTP callback is synchronous; handle its async response rejection.
     void respond(incoming, outgoing).catch(() => {
       outgoing.destroy();
     });
   });
+
   http.listen(0, "127.0.0.1");
   await once(http, "listening");
   cleanup.push(async () => {
@@ -174,20 +192,25 @@ const connect = async (
   });
   const address = v.parse(v.object({ port: v.number() }), http.address());
   const url = `http://127.0.0.1:${address.port}/api/platform/app-agent/mcp`;
+
   const contract = defineContract({
     scopes: { org: v.object({ tenant: v.string() }) },
   });
+
   const server = createServer({
     $internal: { platformBaseUrl: url.replace("/app-agent/mcp", "") },
     baseUrl: "https://host.test/api/patchsmith",
     contract,
     projectKey: "host-key",
   });
+
   const context = {
     scopes: { org: { tenant: "tenant-one" } },
     subjectId: "user-one",
   };
+
   const client = createTools(server, context);
+
   return { calls, client, context, requests, server, url };
 };
 
@@ -200,6 +223,7 @@ const usage = {
   },
   outputTokens: { reasoning: undefined, text: 0, total: 0 },
 };
+
 const model = (name: string, input: PatchsmithToolInput) =>
   new MockLanguageModelV4({
     doGenerate: {
@@ -235,11 +259,13 @@ const model = (name: string, input: PatchsmithToolInput) =>
       }),
     },
   });
+
 const editInput = {
   appId: "app-one",
   prompt: "Add a chart",
   threadId: finalResult.threadId,
 };
+
 const generate = async (
   client: PatchsmithTools,
   name = "editApp",
@@ -261,9 +287,11 @@ describe("MCP-backed AI SDK tools", () => {
     ]);
     expect(requests).toHaveLength(0);
     const create = client.createApp;
+
     if (create === undefined) {
       throw new Error("Missing createApp tool");
     }
+
     const schema = asSchema(create.inputSchema);
     expect(await schema.jsonSchema).toMatchObject({
       properties: { scope: { enum: ["org"] } },
@@ -285,6 +313,7 @@ describe("MCP-backed AI SDK tools", () => {
       await schema.validate?.({ name: "App", prompt: "   ", scope: "org" })
     ).toMatchObject({ success: false });
     await generate(client);
+
     for (const request of requests) {
       expect(request.url).toBe(`http://localhost/api/platform/app-agent/mcp`);
       expect(request.headers.get("authorization")).toBe("Bearer host-key");
@@ -309,6 +338,7 @@ describe("MCP-backed AI SDK tools", () => {
     "streams %s progress through the AI SDK before completion",
     async (name) => {
       const received = Promise.withResolvers<boolean>();
+
       const { client, calls } = await connect(async (_input, context) => {
         await context.mcpReq.notify({
           method: "notifications/progress",
@@ -319,26 +349,33 @@ describe("MCP-backed AI SDK tools", () => {
           },
         });
         await received.promise;
+
         return result();
       });
+
       const input =
         name === "editApp"
           ? editInput
           : { name: "App", prompt: "Build", scope: "org" };
+
       const response = streamText({
         model: model(name, input),
         prompt: "Build my app",
         tools: client,
       });
+
       const outputs = [];
+
       for await (const chunk of response.stream) {
         if (chunk.type === "tool-result") {
           outputs.push(chunk);
+
           if (chunk.preliminary === true) {
             received.resolve(true);
           }
         }
       }
+
       expect(
         outputs.find((chunk) => chunk.preliminary === true)?.output
       ).toMatchObject({ status: "running" });
@@ -357,11 +394,13 @@ describe("MCP-backed AI SDK tools", () => {
   it("supports destructured tools with the internal MCP names", async () => {
     const { client } = await connect();
     const { listApps } = client;
+
     const response = await generateText({
       model: model("listApps", { page: 2, pageSize: 10 }),
       prompt: "Find my apps",
       tools: { listApps },
     });
+
     expect(response.toolResults[0]?.output).toMatchObject({
       result: { structuredContent: { items: [] } },
       status: "completed",
@@ -386,6 +425,7 @@ describe("MCP-backed AI SDK tools", () => {
           isError: true,
         })
     );
+
     const response = await generate(client);
     expect(
       response.content.find((chunk) => chunk.type === "tool-error")?.error
@@ -395,6 +435,7 @@ describe("MCP-backed AI SDK tools", () => {
 
   it("rejects invalid model input before executing an MCP tool", async () => {
     const { client, calls } = await connect();
+
     const response = await generateText({
       model: model("createApp", {
         name: "App",
@@ -404,6 +445,7 @@ describe("MCP-backed AI SDK tools", () => {
       prompt: "Build",
       tools: client,
     });
+
     expect(response.content).toContainEqual(
       expect.objectContaining({ type: "tool-error" })
     );
@@ -413,6 +455,7 @@ describe("MCP-backed AI SDK tools", () => {
   it("cancels a running tool when the AI SDK aborts", async () => {
     const started = Promise.withResolvers<boolean>();
     const cancelled = Promise.withResolvers<boolean>();
+
     const { client, calls } = await connect(async (_input, context) => {
       context.mcpReq.signal.addEventListener(
         "abort",
@@ -424,15 +467,19 @@ describe("MCP-backed AI SDK tools", () => {
       started.resolve(true);
       await cancelled.promise;
       context.mcpReq.signal.throwIfAborted();
+
       return result();
     });
+
     const controller = new AbortController();
+
     const response = streamText({
       abortSignal: controller.signal,
       model: model("editApp", editInput),
       prompt: "Edit",
       tools: client,
     });
+
     const consumed = response.consumeStream();
     await started.promise;
     controller.abort();
@@ -443,6 +490,7 @@ describe("MCP-backed AI SDK tools", () => {
 
   it("keeps concurrent calls and their progress isolated", async () => {
     const release = Promise.withResolvers<boolean>();
+
     const { client, calls } = await connect(async (input, context) => {
       await context.mcpReq.notify({
         method: "notifications/progress",
@@ -453,31 +501,40 @@ describe("MCP-backed AI SDK tools", () => {
         },
       });
       await release.promise;
+
       return {
         content: [],
         structuredContent: { ...finalResult, answer: input.prompt },
       };
     });
+
     let received = 0;
+
     const run = async (prompt: string) => {
       const response = streamText({
         model: model("editApp", { ...editInput, prompt }),
         prompt,
         tools: client,
       });
+
       const outputs = [];
+
       for await (const chunk of response.stream) {
         if (chunk.type !== "tool-result") {
           continue;
         }
+
         outputs.push(chunk.output);
+
         if (chunk.preliminary === true) {
           received += 1;
+
           if (received === 2) {
             release.resolve(true);
           }
         }
       }
+
       expect(outputs[0]).toMatchObject({
         progress: { message: prompt },
         status: "running",
@@ -487,19 +544,24 @@ describe("MCP-backed AI SDK tools", () => {
         status: "completed",
       });
     };
+
     await Promise.all([run("First change"), run("Second change")]);
     expect(calls).toHaveLength(2);
   });
 
   it("does not retry an HTTP failure for a mutation", async () => {
     let attempts = 0;
+
     const { client } = await connect(undefined, (request) => {
       if (request.headers.get("mcp-method") === "tools/call") {
         attempts += 1;
+
         return new Response("Unavailable", { status: 503 });
       }
+
       return null;
     });
+
     const response = await generate(client);
     expect(
       response.content.find((chunk) => chunk.type === "tool-error")
@@ -516,16 +578,20 @@ describe("MCP-backed AI SDK tools", () => {
           jsonrpc: "2.0",
         });
       }
+
       return null;
     });
+
     const response = await generate(client);
     expect(response.content).toContainEqual(
       expect.objectContaining({ type: "tool-error" })
     );
+
     const error = v.parse(
       v.object({ message: v.string() }),
       response.content.find((chunk) => chunk.type === "tool-error")?.error
     );
+
     expect(error.message).toContain("Unknown tool");
     expect(calls).toEqual([]);
   });
@@ -537,6 +603,7 @@ describe("MCP-backed AI SDK tools", () => {
           await Promise.resolve({ headers: {}, url: "https://platform.test" }),
       },
     };
+
     expect(() =>
       createTools(server, { scopes: {}, subjectId: "user-one" })
     ).toThrow("At least one host scope");

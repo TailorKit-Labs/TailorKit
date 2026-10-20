@@ -50,6 +50,7 @@ vi.mock("@patchsmith/sandbox/host", () => ({
       appUrl: appUrl.toString(),
       props: options.props,
     };
+
     hostRecords.push(record);
 
     const tree: RemoteNode = {
@@ -67,6 +68,7 @@ vi.mock("@patchsmith/sandbox/host", () => ({
         ? "MissingComponent"
         : "Button",
     };
+
     let listener: (() => void) | null = null;
 
     // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
@@ -88,6 +90,7 @@ vi.mock("@patchsmith/sandbox/host", () => ({
         },
         subscribe: (nextListener: () => void) => {
           listener = nextListener;
+
           return () => {
             listener = null;
           };
@@ -188,6 +191,7 @@ const HomeSlot = ({
 }) => {
   // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
   patchsmith.useViewContext("/home", { context: { page: { title: "home" } } });
+
   return <RenderSlot slot="panel" app={app} />;
 };
 
@@ -212,6 +216,7 @@ describe("patchSmithClient React adapter", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       Response.json([{ id: "todo", name: "Todo", scope: { name: "user" } }])
     );
+
     const patchsmith = createClient({
       baseUrl: "http://runtime.test/api/patchsmith",
       components,
@@ -222,6 +227,7 @@ describe("patchSmithClient React adapter", () => {
       const { data, isPending } = patchsmith.useApps({
         scopes: ["organization", "user"],
       });
+
       return createElement(
         "p",
         null,
@@ -257,11 +263,13 @@ describe("patchSmithClient React adapter", () => {
         { id: "user", scope: { name: "user" } },
       ])
     );
+
     const patchsmith = createClient({
       baseUrl: "http://runtime.test/api/patchsmith",
       components,
       contract,
     });
+
     const AppList = ({
       label,
       scopes,
@@ -270,6 +278,7 @@ describe("patchSmithClient React adapter", () => {
       scopes?: readonly ("organization" | "user")[];
     }) => {
       const { data, isPending } = patchsmith.useApps({ scopes });
+
       return (
         <p>
           {label}:{isPending ? "pending" : "ready"}:
@@ -277,6 +286,7 @@ describe("patchSmithClient React adapter", () => {
         </p>
       );
     };
+
     render(
       <patchsmith.Provider>
         <AppList label="org" scopes={["organization"]} />
@@ -298,10 +308,12 @@ describe("patchSmithClient React adapter", () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(Response.json([]));
+
     const store = createPatchsmithStore({
       baseUrl: "http://runtime.test/api/patchsmith",
       contract,
     });
+
     const idle = store.getAppsSnapshot();
     expect(store.getAppsSnapshot()).toBe(idle);
     const unsubscribe = store.subscribeApps(() => {});
@@ -317,6 +329,7 @@ describe("patchSmithClient React adapter", () => {
 
   it("defaults to all scopes when useApps omits a selection", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json([]));
+
     const patchsmith = createClient({
       baseUrl: "http://runtime.test/api/patchsmith",
       contract,
@@ -324,6 +337,7 @@ describe("patchSmithClient React adapter", () => {
 
     const AppList = () => {
       const { isPending } = patchsmith.useApps();
+
       return createElement("p", null, isPending ? "pending" : "ready");
     };
 
@@ -399,6 +413,7 @@ describe("patchSmithClient React adapter", () => {
         error: status === "error" ? new Error("Failed to load context") : null,
         loading: status === "loading",
       });
+
       return (
         <RenderSlot
           slot="panel"
@@ -436,6 +451,7 @@ describe("patchSmithClient React adapter", () => {
 
   it("renders the current match for multiple direct app props", async () => {
     hostRecords.length = 0;
+
     const patchsmith = createClient({
       assetsBaseUrl: "http://assets.test/",
       baseUrl: "http://runtime.test",
@@ -447,6 +463,7 @@ describe("patchSmithClient React adapter", () => {
       patchsmith.useViewContext("/home", {
         context: { page: { title: "home" } },
       });
+
       return (
         <>
           <RenderSlot
@@ -491,10 +508,13 @@ describe("patchSmithClient React adapter", () => {
     expect(
       hostRecords.map((record) => {
         const layers = record.props?.layers;
+
         if (!Array.isArray(layers)) {
           throw new TypeError("Expected view layers.");
         }
+
         const layer: unknown = layers[0];
+
         return layer;
       })
     ).toEqual([
@@ -510,6 +530,7 @@ describe("patchSmithClient React adapter", () => {
       components,
       contract,
     });
+
     const { RenderSlot: ClientRenderSlot } = patchsmith;
 
     render(
@@ -541,11 +562,13 @@ describe("patchSmithClient React adapter", () => {
       components,
       contract,
     });
+
     const otherTailor = createClient({
       baseUrl: "http://other-runtime.test",
       components,
       contract,
     });
+
     const { RenderSlot: ClientRenderSlot } = patchsmith;
     vi.spyOn(console, "error").mockImplementation(() => {});
 
@@ -565,6 +588,7 @@ describe("patchSmithClient React adapter", () => {
 
   it("warns when multiple hooks register views at the same hierarchy depth", async () => {
     const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
     const patchsmith = createClient({
       assetsBaseUrl: "http://assets.test/",
       baseUrl: "http://runtime.test",
@@ -576,11 +600,13 @@ describe("patchSmithClient React adapter", () => {
       patchsmith.useViewContext("/home", {
         context: { page: { title: "home" } },
       });
+
       return null;
     };
 
     const UserRoute = () => {
       patchsmith.useViewContext("/user", { context: { userId: "user_1" } });
+
       return (
         <RenderSlot
           slot="panel"
@@ -639,6 +665,7 @@ describe("patchSmithClient React adapter", () => {
     const consoleError = vi
       .spyOn(console, "error")
       .mockImplementation(() => {});
+
     const patchsmith = createClient({
       assetsBaseUrl: "http://assets.test/",
       baseUrl: "http://runtime.test",
@@ -666,6 +693,7 @@ describe("patchSmithClient React adapter", () => {
 
   it("clears a missing component error when switching apps", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
+
     const patchsmith = createClient({
       assetsBaseUrl: "http://assets.test/",
       baseUrl: "http://runtime.test",
@@ -724,6 +752,7 @@ const DetailImplementation = ({
   client: ReturnType<typeof createClient<typeof contract>>;
 }) => {
   client.useViewContext("/home/detail", { context: undefined, loading: true });
+
   return null;
 };
 
@@ -738,6 +767,7 @@ const Layers = ({
   client.useViewContext("/", { context: { user: { id: "u1" } } });
   // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
   client.useViewContext("/home", { context: { page: { title: "Home" } } });
+
   return (
     <>
       {detail ? <DetailImplementation client={client} /> : null}
@@ -764,11 +794,13 @@ describe("view registries", () => {
       components,
       contract,
     });
+
     const view = render(
       <client.Provider>
         <Layers client={client} />
       </client.Provider>
     );
+
     await waitFor(() => {
       expect(hostRecords).toHaveLength(2);
     });
@@ -808,8 +840,10 @@ describe("view registries", () => {
       components,
       contract,
     });
+
     const OtherRoute = () => {
       client.useViewContext("/user", { context: { userId: "other" } });
+
       return (
         <RenderSlot
           slot="panel"
@@ -817,6 +851,7 @@ describe("view registries", () => {
         />
       );
     };
+
     render(
       <StrictMode>
         <client.Provider>
@@ -832,9 +867,11 @@ describe("view registries", () => {
         hostRecords.some((record) => record.appUrl.endsWith("other.js"))
       ).toBe(true);
     });
+
     const other = hostRecords.find((record) =>
       record.appUrl.endsWith("other.js")
     );
+
     expect(other?.props).toMatchObject({
       layers: [{ context: { userId: "other" }, path: "/user" }],
       view: "/user",
@@ -860,6 +897,7 @@ const ContentsImplementation = ({
   const { data } = useAppsValue();
   // oxlint-disable-next-line react/hooks -- This test uses hooks from a client created once outside render; the compiler cannot infer that lifetime.
   client.useViewContext("/user", { context: { userId: "u1" } });
+
   return (
     <>
       <span>{data?.[0]?.id}</span>
@@ -874,19 +912,23 @@ it("isolates a new client cache even when its endpoint is equivalent", async () 
       const url = new URL(
         input instanceof Request ? input.url : input.toString()
       );
+
       return Response.json(
         url.pathname.endsWith("/apps") ? [{ id: url.hostname }] : { schema: {} }
       );
     })
   );
+
   const Contents = ContentsImplementation;
   const createRootClient = createRootClientImplementation;
   const firstClient = createRootClient("http://first.test/api");
+
   const view = render(
     <firstClient.Provider>
       <Contents client={firstClient} />
     </firstClient.Provider>
   );
+
   await waitFor(() => {
     expect(testingView.getByText("first.test")).toBeTruthy();
   });
@@ -918,6 +960,7 @@ it("isolates a new client cache even when its endpoint is equivalent", async () 
 
 const ContentsImplementation2 = () => {
   const { data } = useApps();
+
   return <span>{data?.[0]?.id}</span>;
 };
 
@@ -925,26 +968,32 @@ it("keeps each provider bound to its client's fetch transport", async () => {
   const explicitFetch = vi
     .fn()
     .mockResolvedValue(Response.json([{ id: "explicit-user" }]));
+
   const fallbackFetch = vi
     .spyOn(globalThis, "fetch")
     .mockResolvedValue(Response.json([{ id: "fallback-user" }]));
+
   const client = createClient({
     baseUrl: "http://runtime.test/api",
     components,
     contract,
     fetch: explicitFetch,
   });
+
   const fallback = createClient({
     baseUrl: client.baseUrl,
     components,
     contract,
   });
+
   const Contents = ContentsImplementation2;
+
   const view = render(
     <client.Provider>
       <Contents />
     </client.Provider>
   );
+
   await waitFor(() => {
     expect(testingView.getByText("explicit-user")).toBeTruthy();
   });
@@ -995,6 +1044,7 @@ it("retains equivalent explicit context identity and publishes changed values", 
   vi.spyOn(globalThis, "fetch").mockResolvedValue(
     Response.json({ schema: {} })
   );
+
   const client = createClient({
     assetsBaseUrl: "http://assets.test/",
     baseUrl: "http://runtime.test",
@@ -1023,8 +1073,10 @@ describe("supplied app discovery", () => {
     vi.restoreAllMocks();
   });
   const client = createClient({ baseUrl: "https://apps.test/api/", contract });
+
   const Apps = () => {
     const { data, isPending, fetch } = client.useApps();
+
     return (
       <button
         type="button"
@@ -1041,11 +1093,13 @@ describe("supplied app discovery", () => {
 
   it("uses supplied apps for discovery, including updates and empty lists, without fetching", async () => {
     const fetch = vi.spyOn(globalThis, "fetch");
+
     const view = render(
       <client.Provider apps={[{ id: "first" }]}>
         <Apps />
       </client.Provider>
     );
+
     expect(testingView.getByText("ready:first")).toBeTruthy();
     expect(view.container.childElementCount).toBe(1);
     expect(view.container.firstElementChild).toBe(
@@ -1075,6 +1129,7 @@ describe("supplied app discovery", () => {
 
   it("ignores an in-flight fetch when apps are supplied and resumes fetching when removed", async () => {
     let resolveRequest!: (response: Response) => void;
+
     const fetch = vi
       .spyOn(globalThis, "fetch")
       .mockImplementationOnce(
@@ -1085,20 +1140,24 @@ describe("supplied app discovery", () => {
               resolve,
               reject: rejectPending,
             } = Promise.withResolvers<Response>();
+
             try {
               resolveRequest = resolve;
             } catch (error) {
               rejectPending(error);
             }
+
             return await pendingPromise;
           })()
       )
       .mockResolvedValue(Response.json([{ id: "fresh" }]));
+
     const view = render(
       <client.Provider>
         <Apps />
       </client.Provider>
     );
+
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledTimes(1);
     });
@@ -1129,17 +1188,21 @@ describe("supplied app discovery", () => {
 it("updates component renderers without recreating the remote sandbox", async () => {
   const appUrl = "https://apps.example/client.js";
   const props = { example: true };
+
   const { rerender } = render(
     <RemoteViewHost appUrl={appUrl} components={components} props={props} />
   );
+
   await waitFor(() => {
     expect(testingView.getByRole("button").textContent).toBe(appUrl);
   });
   const mounted = hostRecords.length;
+
   const replacement = {
     Button: ({ children }: { children?: ReactNode }) =>
       createElement("a", { href: "/" }, children),
   };
+
   rerender(
     <RemoteViewHost appUrl={appUrl} components={replacement} props={props} />
   );

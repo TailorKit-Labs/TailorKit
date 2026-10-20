@@ -34,12 +34,15 @@ const mocks = vi.hoisted(() => ({
       >
     >(),
 }));
+
 vi.mock("@patchsmith/db", () => ({
   get db() {
     return mocks.db();
   },
 }));
+
 vi.mock("./sandbox", () => ({ deleteSandbox: mocks.deleteSandbox }));
+
 vi.mock("workflow/api", () => ({
   getRun: () => ({
     get status() {
@@ -50,12 +53,14 @@ vi.mock("workflow/api", () => ({
 
 const appId = "a3e7568a-c4f7-4ac0-8c35-71ff0f4cd002";
 const otherAppId = "dc0b71e8-8524-479f-b944-4590647e2af4";
+
 const resumeFrom = {
   data: { sessionFileName: "native-1.jsonl" },
   harnessId: "pi",
   specificationVersion: "harness-v1" as const,
   type: "resume-session" as const,
 };
+
 const client = new PGlite();
 const database = drizzle({ client });
 
@@ -64,6 +69,7 @@ beforeAll(async () => {
   await client.exec("CREATE TABLE app (id uuid PRIMARY KEY)");
   const root = new URL("../../db/src/migrations/", import.meta.url);
   const migrations = await readdir(root);
+
   const names = migrations
     .filter(
       (entry) =>
@@ -71,12 +77,14 @@ beforeAll(async () => {
         entry.endsWith("_agent-threads")
     )
     .toSorted();
+
   const changes = await Promise.all(
     names.map(
       async (name) =>
         await readFile(new URL(`${name}/migration.sql`, root), "utf-8")
     )
   );
+
   await Array.fromAsync(changes, async (migration) => {
     await client.exec(migration);
   });
@@ -85,6 +93,7 @@ beforeAll(async () => {
     otherAppId,
   ]);
 });
+
 beforeEach(async () => {
   vi.resetAllMocks();
   mocks.runStatus.mockResolvedValue("running");
@@ -92,6 +101,7 @@ beforeEach(async () => {
   // Keep the migrated schema, but isolate every test's leases and journals.
   await client.exec("TRUNCATE app_agent_lease, app_agent_thread");
 });
+
 afterAll(async () => {
   await client.close();
 });
@@ -101,15 +111,19 @@ const lease = async () => {
     .select()
     .from(appAgentLease)
     .where(eq(appAgentLease.appId, appId));
+
   return row;
 };
+
 const thread = async (id: string) => {
   const [row] = await database
     .select()
     .from(appAgentThread)
     .where(eq(appAgentThread.id, id));
+
   return row;
 };
+
 const complete = async (id: string, runId: string) => {
   await loadResumeStep(appId, id, runId);
   await persistResumeStep(appId, id, runId, resumeFrom, threadSandboxName(id));
@@ -171,11 +185,14 @@ describe("agent threads and app workspace leases (Postgres)", () => {
     const status = Promise.withResolvers<"completed">();
     mocks.runStatus.mockReturnValueOnce(status.promise);
     vi.useFakeTimers();
+
     try {
       const pending = loadResumeStep(appId, second, "run-b");
+
       const rejected = expect(pending).rejects.toThrow(
         "Timed out checking the active app agent workflow."
       );
+
       await vi.waitFor(() => {
         expect(mocks.runStatus).toHaveBeenCalledOnce();
       });
@@ -184,6 +201,7 @@ describe("agent threads and app workspace leases (Postgres)", () => {
     } finally {
       vi.useRealTimers();
     }
+
     expect(await lease()).toEqual(savedLease);
     expect(await thread(first)).toEqual(savedThread);
     expect(await thread(second)).toEqual(otherThread);
@@ -217,10 +235,12 @@ describe("agent threads and app workspace leases (Postgres)", () => {
   it("atomically admits one writer even when the requests use different threads", async () => {
     const first = await resolveAppAgentThread(appId);
     const second = await resolveAppAgentThread(appId);
+
     const results = await Promise.allSettled([
       loadResumeStep(appId, first, "run-a"),
       loadResumeStep(appId, second, "run-b"),
     ]);
+
     expect(results.filter((item) => item.status === "fulfilled")).toHaveLength(
       1
     );

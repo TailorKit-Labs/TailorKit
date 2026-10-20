@@ -29,27 +29,34 @@ export const createAppsStore = (
   const query = client.apps();
   const provided = atom(initialApps);
   const suppliedSnapshot = suppliedSnapshotImplementation;
+
   let supplied =
     initialApps === undefined ? null : suppliedSnapshot(initialApps);
+
   let last: FetchSnapshot<PatchsmithApp[]> | undefined;
   let snapshot: PatchsmithAppsSnapshot;
   let requested = false;
   let subscribers = 0;
   const empty: PatchsmithApp[] = [];
+
   const store = {
     // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
     fetch: (options: FetchOptions = {}) => {
       requested = true;
+
       if (supplied) {
         return Promise.resolve();
       }
+
       return query.fetch(options);
     },
     getSnapshot: (): PatchsmithAppsSnapshot => {
       if (supplied) {
         return supplied;
       }
+
       const current = query.getSnapshot();
+
       if (current !== last) {
         const apps = current.data ?? empty;
         snapshot = {
@@ -60,6 +67,7 @@ export const createAppsStore = (
         };
         last = current;
       }
+
       return snapshot;
     },
     // oxlint-disable-next-line typescript/promise-function-async -- Return the shared in-flight Promise itself; async wrappers would break request deduplication and Promise identity.
@@ -67,14 +75,17 @@ export const createAppsStore = (
       if (supplied) {
         return Promise.resolve();
       }
+
       return query.invalidate();
     },
     setProvidedApps: (apps: PatchsmithApp[] | undefined) => {
       if (provided.get() === apps) {
         return;
       }
+
       supplied = apps === undefined ? null : suppliedSnapshot(apps);
       provided.set(apps);
+
       if (!supplied && requested && subscribers) {
         void store.fetch({ force: true });
       }
@@ -82,16 +93,20 @@ export const createAppsStore = (
     subscribe: (listener: () => void) => {
       subscribers += 1;
       const stopProvided = provided.listen(listener);
+
       const stopQuery = query.subscribe(() => {
         if (!supplied) {
           listener();
         }
       });
+
       let active = true;
+
       return () => {
         if (!active) {
           return;
         }
+
         active = false;
         stopProvided();
         stopQuery();
@@ -99,6 +114,7 @@ export const createAppsStore = (
       };
     },
   };
+
   return {
     ...store,
     state: createSnapshotStore(store.getSnapshot, store.subscribe),

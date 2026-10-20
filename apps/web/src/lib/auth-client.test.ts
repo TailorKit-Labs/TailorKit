@@ -28,6 +28,7 @@ describe("auth client BotID initialization", () => {
 
   it("uses BotID's patched fetch for sign-in requests in production", async () => {
     const originalFetch = vi.fn();
+
     const protectedFetch = vi
       .fn()
       .mockResolvedValue(
@@ -36,6 +37,7 @@ describe("auth client BotID initialization", () => {
           { status: 401 }
         )
       );
+
     vi.stubGlobal("window", {
       location: new URL("https://patchsmith.io/login"),
     });

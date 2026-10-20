@@ -17,4 +17,5 @@ await build({
   logLevel: "error",
   ssr: { noExternal: true, target: "webworker" },
 });
+
 await copyFile(".generated/bootstrap.js", ".generated/bootstrap.txt");

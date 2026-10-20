@@ -33,6 +33,7 @@ it("prepares a matching beta CLI and app with only Patchsmith exempt from releas
       cwd: "/tmp/patchsmith-cli",
     })
   );
+
   for (const path of [
     "/tmp/patchsmith-cli/pnpm-workspace.yaml",
     "/workspace/.patchsmith-scaffold/new-app/pnpm-workspace.yaml",
@@ -48,6 +49,7 @@ it("prepares a matching beta CLI and app with only Patchsmith exempt from releas
       ])
     );
   }
+
   expect(session.runCommand).toHaveBeenCalledWith(
     expect.objectContaining({
       args: ["-T", "/workspace/.patchsmith-scaffold/new-app", "/workspace/app"],
@@ -117,6 +119,7 @@ it("fails preparation when a completed app's missing CLI cannot be installed", a
 it("passes the supplied schema to both scaffolding and generation without shell interpolation", async () => {
   const hostUrl =
     "https://host.test/api/patchsmith?value=$(touch /tmp/injected)";
+
   const schemaPath = "/workspace/patchsmith.schema.json";
   await prepareWorkspace(session, { ...input, hostUrl }, schemaPath);
   expect(session.runCommand).toHaveBeenCalledWith(

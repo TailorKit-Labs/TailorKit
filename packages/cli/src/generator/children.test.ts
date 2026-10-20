@@ -24,6 +24,7 @@ describe("children-only components", () => {
       },
       views: {},
     });
+
     expect(output).toContain(
       'createRemoteComponent<CardProps, true>("Card", {\n  children: true,'
     );
@@ -50,6 +51,7 @@ describe("children-only components", () => {
     const Card = createRemoteComponent<object, true>("Card", {
       children: true,
     });
+
     const nested = Card({ children: "nested" });
     const children = ["first", 0, nested];
     const node = Card({ children });
@@ -61,6 +63,7 @@ describe("children-only components", () => {
 
   it("preserves callback dispatch alongside children", () => {
     const onClick = vi.fn<() => void>();
+
     const Button = createRemoteComponent<{ onClick: () => void }, true>(
       "Button",
       {
@@ -68,15 +71,19 @@ describe("children-only components", () => {
         children: true,
       }
     );
+
     const node = Button({ children: "Save", onClick });
     expect(node).toMatchObject({
       props: { children: "Save" },
       type: "patchsmith-button",
     });
+
     if (!isObjectValue(node) || !("props" in node)) {
       throw new Error("Expected a remote component node");
     }
+
     const props: unknown = node.props;
+
     if (
       !isObjectValue(props) ||
       !("onpatchsmithcallbackonclick" in props) ||
@@ -84,6 +91,7 @@ describe("children-only components", () => {
     ) {
       throw new Error("Expected an onClick callback.");
     }
+
     props.onpatchsmithcallbackonclick({
       detail: [],
       respondWith: (operation) => {

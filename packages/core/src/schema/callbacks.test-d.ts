@@ -23,6 +23,7 @@ expectTypeOf<InferCallback<SaveCallback>>().toEqualTypeOf<
 expectTypeOf<InferCallback<LoadCallback>>().toEqualTypeOf<
   () => { ready: true } | Promise<{ ready: true }>
 >();
+
 expectTypeOf<InferCallback<EmptyDefinitionMap>>().toEqualTypeOf<
   () => void | Promise<void>
 >();
@@ -44,6 +45,7 @@ expectTypeOf<InferCallbacks<{ onSave: SaveCallback }, true>>().toEqualTypeOf<{
     version: number;
   }) => Promise<{ saved: boolean }>;
 }>();
+
 expectTypeOf<
   InferCallbacks<{ onClose: EmptyDefinitionMap; onLoad: LoadCallback }, true>
 >().toEqualTypeOf<{

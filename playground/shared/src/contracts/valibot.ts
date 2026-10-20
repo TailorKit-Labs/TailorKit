@@ -10,11 +10,13 @@ const todo = v.object({
   id: v.string(),
   title: v.string(),
 });
+
 const json = <
   TSchema extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>,
 >(
   schema: TSchema
 ) => toStandardJsonSchema(schema);
+
 const primitiveComponents = Object.fromEntries(
   Object.entries(primitives(theme)).map(([name, component]) => [
     name,

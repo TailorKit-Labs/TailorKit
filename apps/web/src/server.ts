@@ -13,6 +13,7 @@ export default createServerEntry({
     await withRequestSpan(request, "web.request", async (span) => {
       const response = await handler.fetch(request);
       span.setAttribute("http.response.status_code", response.status);
+
       return response;
     }),
 });

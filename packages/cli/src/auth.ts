@@ -48,6 +48,7 @@ const cliAuthStartSchema = z.object({
   expiresAt: z.union([z.string(), z.date()]),
   userCode: z.string(),
 });
+
 const cliAuthPollSchema = z.discriminatedUnion("status", [
   z.object({ status: z.literal("pending") }),
   z.object({ status: z.literal("denied") }),
@@ -90,11 +91,13 @@ const sleep = async (milliseconds: number): Promise<void> => {
       resolve,
       reject: rejectPending,
     } = Promise.withResolvers<ReturnType<() => void>>();
+
     try {
       setTimeout(resolve, milliseconds);
     } catch (error) {
       rejectPending(error);
     }
+
     await pendingPromise;
   })();
 };
@@ -137,11 +140,14 @@ const writeAuthStore = async (store: AuthStore): Promise<void> => {
 /** Choose the JWT platform route when supplied, otherwise the configured host. */
 export const resolveHostUrl = async (options: AuthOptions): Promise<string> => {
   const agent = getAgentAuth();
+
   if (agent) {
     return agent.platformUrl;
   }
+
   if (options.host !== undefined) {
     let url: URL;
+
     try {
       url = new URL(options.host);
     } catch {
@@ -149,14 +155,18 @@ export const resolveHostUrl = async (options: AuthOptions): Promise<string> => {
         "Invalid Patchsmith host URL. Use an absolute http:// or https:// URL."
       );
     }
+
     if (url.protocol !== "http:" && url.protocol !== "https:") {
       throw new Error(
         "Invalid Patchsmith host URL. Use an absolute http:// or https:// URL."
       );
     }
+
     return normalizeHostUrl(options.host);
   }
+
   const loaded = await loadPatchsmithConfig(options.configPath, options.cwd);
+
   if (loaded.config.host) {
     return normalizeHostUrl(loaded.config.host);
   }
@@ -206,6 +216,7 @@ export const saveDeployToken = async (
 
 export const removeDeployToken = async (hostUrl: string): Promise<boolean> => {
   const store = await readAuthStore();
+
   if (!store.hosts?.[hostUrl]) {
     return false;
   }
@@ -215,10 +226,12 @@ export const removeDeployToken = async (hostUrl: string): Promise<boolean> => {
 
   if (Object.keys(hosts).length === 0) {
     await rm(authStorePath, { force: true });
+
     return true;
   }
 
   await writeAuthStore(nextStore);
+
   return true;
 };
 
@@ -227,10 +240,13 @@ export const getDeployToken = async (
   hostUrl: string
 ): Promise<StoredHostAuth | undefined> => {
   const agent = getAgentAuth();
+
   if (agent) {
     return { deployToken: agent.token, scope: agent.scope };
   }
+
   const store = await readAuthStore();
+
   return store.hosts?.[hostUrl];
 };
 
@@ -253,6 +269,7 @@ export const runWhoami = async (
 
   const client = createCliClient({ token: auth.deployToken, url: hostUrl });
   let result: CliAuthVerifyResult;
+
   try {
     const verifyResult = await client.cliAuth.verifyToken({});
     throwRpcError(verifyResult);
@@ -273,8 +290,10 @@ export const runWhoami = async (
           { cause: error }
         );
       }
+
       throw new NotLoggedInError(hostUrl);
     }
+
     throw error;
   }
 
@@ -303,6 +322,7 @@ export const runLogin = async (
   if (getAgentAuth()) {
     return await runWhoami(options);
   }
+
   const hostUrl = await resolveHostUrl(options);
   const client = createPatchsmithClient({ url: hostUrl });
   const startResult = await client.cliAuth.start({});
@@ -311,6 +331,7 @@ export const runLogin = async (
   const started = cliAuthStartSchema.parse(
     "data" in startResult ? startResult.data : startResult
   );
+
   const expiresAt = new Date(started.expiresAt);
   const timeoutAt = Date.now() + (options.timeout ?? defaultLoginTimeoutMs);
 
@@ -319,10 +340,12 @@ export const runLogin = async (
   while (Date.now() < timeoutAt && Date.now() < expiresAt.getTime()) {
     // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
     await sleep(pollIntervalMs);
+
     // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
     const pollResult = await client.cliAuth.poll({
       deviceCode: started.deviceCode,
     });
+
     throwRpcError(pollResult);
 
     const result = cliAuthPollSchema.parse(
@@ -333,12 +356,15 @@ export const runLogin = async (
       case "pending": {
         continue;
       }
+
       case "denied": {
         throw new Error("CLI login was denied.");
       }
+
       case "expired": {
         throw new Error("CLI login expired.");
       }
+
       case "approved": {
         const approved = approvedCliAuthResultSchema.parse(result);
         // oxlint-disable-next-line no-await-in-loop -- Process entries in order with bounded IO and fail before advancing on error.
@@ -352,6 +378,7 @@ export const runLogin = async (
           scope: approved.scope,
         };
       }
+
       default: {
         throw new Error("Unexpected CLI login status.");
       }
@@ -366,6 +393,7 @@ export const runLogout = async (
   options: AuthOptions
 ): Promise<{ hostUrl: string; removed: boolean }> => {
   const hostUrl = await resolveHostUrl(options);
+
   return {
     hostUrl,
     removed: getAgentAuth() ? false : await removeDeployToken(hostUrl),

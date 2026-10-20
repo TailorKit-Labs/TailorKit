@@ -33,6 +33,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -61,6 +62,7 @@ export interface GenerateAppOptions {
 const engine = new Liquid({ strictVariables: true });
 
 const invalidFilenameCharacters = /[<>:"/\\|?*#]/u;
+
 const isFilenameSegment = (segment: string): boolean => {
   if (
     segment === "" ||
@@ -70,22 +72,28 @@ const isFilenameSegment = (segment: string): boolean => {
   ) {
     return false;
   }
+
   for (const character of segment) {
     const code = character.codePointAt(0);
+
     if (code !== undefined && code < 32) {
       return false;
     }
   }
+
   return true;
 };
 
 const getViewModulePath = (slotName: string, viewPath: string) => {
   const viewSegments =
     viewPath === "/" ? ["index"] : viewPath.slice(1).split("/");
+
   if (viewPath !== "/" && viewSegments.at(-1) === "index") {
     viewSegments.push("index");
   }
+
   const routeName = viewSegments.join(".");
+
   if (
     !viewPath.startsWith("/") ||
     viewSegments.some((segment) => segment.includes(".")) ||
@@ -97,6 +105,7 @@ const getViewModulePath = (slotName: string, viewPath: string) => {
       "The selected slot and view must have valid file names with no empty dot-separated route segments to generate src/slots."
     );
   }
+
   return ["slots", slotName, routeName].join("/");
 };
 
@@ -104,6 +113,7 @@ const supportsBox = (
   box: NonNullable<PatchsmithSchemaFile["components"]>[string] | undefined
 ): boolean => {
   const required = box?.fields?.required;
+
   return (
     box?.children === true && (required === undefined || required.length === 0)
   );
@@ -111,21 +121,25 @@ const supportsBox = (
 
 const getStarterView = (schema: PatchsmithSchemaFile) => {
   const slots = Object.keys(schema.slots ?? {}).toSorted();
+
   const viewPath = Object.keys(schema.views ?? {})
     .toSorted()
     .find((view) =>
       slots.some((slot) => schema.slots?.[slot]?.views.includes(view) === true)
     );
+
   if (viewPath === undefined) {
     throw new Error(
       "The host schema has no views supported by a slot. Add a view and slot before running patchsmith init."
     );
   }
+
   const slotName = requireValue(
     slots.find(
       (slot) => schema.slots?.[slot]?.views.includes(viewPath) === true
     )
   );
+
   return {
     multiple: schema.slots?.[slotName]?.multiple === true,
     slotName,
@@ -144,6 +158,7 @@ const getAppSlug = (packageName: string) => {
       .replaceAll(/[^a-z0-9]+/gu, "-")
       .slice(0, 32)
       .replaceAll(/^-+|-+$/gu, "") || "patchsmith-app";
+
   return slugBase.length < 3 ? `${slugBase}-app` : slugBase;
 };
 
@@ -152,6 +167,7 @@ const renderTemplate = async (
   data: Record<string, string | boolean>
 ): Promise<string> => {
   const output: unknown = await engine.parseAndRender(template, data);
+
   return z.string().parse(output);
 };
 
@@ -170,6 +186,7 @@ const writeTemplateFile = async (
   if (!force && existsSync(filepath)) {
     throw new Error(`${filepath} already exists. Use --force to overwrite it.`);
   }
+
   await writeFile(filepath, contents, "utf-8");
 };
 
@@ -191,6 +208,7 @@ export const generateApp = async (
   const starter = bare ? undefined : getStarterView(schema);
   const useBox = supportsBox(schema.components?.Box);
   const bindingsPath = path.join(targetDirectory, "src", "patchsmith.gen.ts");
+
   if (!force && existsSync(bindingsPath)) {
     throw new Error(
       `${bindingsPath} already exists. Use --force to overwrite it.`
@@ -279,6 +297,7 @@ export const generateApp = async (
 
   await Promise.all(
     files
+      .values()
       .filter((f) => f.condition !== false)
       .map(async ({ template, dest }) => {
         const rendered = await renderTemplate(template, templateData);
@@ -289,6 +308,7 @@ export const generateApp = async (
           force
         );
       })
+      .toArray()
   );
 
   // Use the same binding generator as `patchsmith generate`, even without installation.

@@ -40,23 +40,29 @@ const patchsmith = createPatchsmithSchema({
 
 const component = patchsmith.components.Button;
 const context = patchsmith.views["/customers/:customerId"];
+
 void component;
+
 void context;
 
 const buttonProps: ComponentProps<typeof patchsmith.components.Button> = {
   variant: "default",
 };
+
 void buttonProps;
 
 expectTypeOf<ComponentProps<typeof patchsmith.components.Button>>().toExtend<{
   variant: "default" | "secondary";
 }>();
+
 expectTypeOf<
   typeof patchsmith.components.Button.children
 >().toEqualTypeOf<true>();
+
 expectTypeOf<typeof context>().toEqualTypeOf<
   z.ZodObject<{ customerId: z.ZodString }>
 >();
+
 const callbacks = createPatchsmithSchema({
   components: {
     Dialog: {
@@ -83,10 +89,13 @@ const dialogProps: ComponentProps<typeof callbacks.components.Dialog> = {
     .mockResolvedValue({ ready: true }),
   onSave: async (input) => {
     expectTypeOf(input).toEqualTypeOf<{ title: string; version: number }>();
+
     return await Promise.resolve({ saved: true });
   },
 };
+
 void dialogProps;
+
 expectTypeOf<ComponentProps<typeof callbacks.components.Dialog>>().toExtend<{
   onSave: (input: {
     title: string;
@@ -138,6 +147,7 @@ createPatchsmithSchema({
   slots: { navbar: { views: ["/"] }, panel: { views: ["/users"] } },
   views: { "/": z.object({}), "/users": z.object({}) },
 });
+
 createPatchsmithSchema({
   components: {},
 

@@ -30,6 +30,7 @@ const TodoPanel = () => {
           try {
             await (async () => {
               const result = await tools.todos.list();
+
               if (active) {
                 setTodos(result);
               }
@@ -54,12 +55,14 @@ const TodoPanel = () => {
 
   const addTodo = async () => {
     const trimmedTitle = title.trim();
+
     if (!trimmedTitle || loading || pending) {
       return;
     }
 
     setPending(true);
     setErr2(null);
+
     try {
       const todo = await tools.todos.add({ title: trimmedTitle });
       setTodos((current) => [...current, todo]);
@@ -79,6 +82,7 @@ const TodoPanel = () => {
 
     setPending(true);
     setErr2(null);
+
     try {
       const updated = await tools.todos.toggle({ id: todo.id });
       setTodos((current) =>
@@ -99,6 +103,7 @@ const TodoPanel = () => {
 
     setPending(true);
     setErr2(null);
+
     try {
       await tools.todos.remove({ id: todo.id });
       setTodos((current) => current.filter((item) => item.id !== todo.id));

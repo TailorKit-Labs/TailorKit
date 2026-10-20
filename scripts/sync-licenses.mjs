@@ -25,6 +25,7 @@ const findPackageManifests = (directory) => {
     }
 
     const entryPath = path.join(directory, entry.name);
+
     if (entry.isDirectory()) {
       manifests.push(...findPackageManifests(entryPath));
     } else if (entry.name === "package.json") {
@@ -40,6 +41,7 @@ const relativeToRoot = (filePath) => path.relative(root, filePath) || ".";
 
 const errors = [];
 let licensedPackageCount = 0;
+
 const packages = findPackageManifests(root)
   .filter((manifestPath) => manifestPath !== path.join(root, "package.json"))
   .toSorted();
@@ -78,6 +80,7 @@ for (const manifestPath of packages) {
 
   licensedPackageCount += 1;
   const source = fs.readFileSync(sourcePath, "utf-8");
+
   const target = fs.existsSync(targetPath)
     ? fs.readFileSync(targetPath, "utf-8")
     : null;

@@ -11,6 +11,7 @@ export const iframeRuntimePlugin = (): Plugin => ({
     if (id !== `\0${moduleId}`) {
       return undefined;
     }
+
     const result = await build({
       build: {
         lib: {
@@ -24,14 +25,19 @@ export const iframeRuntimePlugin = (): Plugin => ({
       configFile: false,
       logLevel: "silent",
     });
+
     const output = Array.isArray(result) ? result[0] : result;
+
     if (!output || !("output" in output)) {
       throw new Error("Unable to bundle Patchsmith iframe.");
     }
+
     const chunk = output.output.find((item) => item.type === "chunk");
+
     if (!chunk) {
       throw new Error("Patchsmith iframe bundle is empty.");
     }
+
     return `export default ${JSON.stringify(chunk.code)};`;
   },
   name: "patchsmith-iframe",

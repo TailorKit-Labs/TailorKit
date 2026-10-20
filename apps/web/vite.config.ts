@@ -72,15 +72,19 @@ const buildServerFunction = async (
     entry.name,
     "output"
   );
+
   const functions = { ...server.options.vercel?.functions };
+
   const destination = resolve(
     server.options.output.dir,
     "functions",
     `${entry.destination}.func`
   );
+
   if (entry.maxDuration !== undefined) {
     functions.maxDuration = entry.maxDuration;
   }
+
   // Compile each Vite service separately; functionRules copy the shared output.
   const isolated = await createNitro({
     builder: "rolldown",
@@ -111,6 +115,7 @@ const buildServerFunction = async (
     },
     workspaceDir: server.options.workspaceDir,
   });
+
   try {
     // Nitro can emit a symlink to the shared bundle for these routes.
     // Remove it before building directly into the function directory.
@@ -126,6 +131,7 @@ const buildServerFunctions = async (server: Nitro) => {
   if (server.options.dev || server.options.preset !== "vercel") {
     return;
   }
+
   for (const entry of apiFunctions) {
     // oxlint-disable-next-line no-await-in-loop -- Each build runs a bundler; keep them sequential to bound build memory and worker usage.
     await buildServerFunction(server, entry, `api_${entry.name}`);
@@ -147,6 +153,7 @@ const isolatedServerFunctions: NitroModule = {
       if (server.options.dev) {
         return;
       }
+
       // Workflow registers its execution handlers eagerly.
       for (const handler of server.options.handlers) {
         if (handler.route?.startsWith("/.well-known/workflow/")) {

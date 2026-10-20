@@ -18,6 +18,7 @@ export const Route = createFileRoute("/")({
     }
 
     const activeOrg = await getActiveOrg();
+
     // This query does not use the saved selection, so a failure is not evidence
     // that the selection is invalid. Only clear it after a successful lookup.
     const orgs = await context.queryClient.query(
@@ -28,6 +29,7 @@ export const Route = createFileRoute("/")({
     const selectedOrg = orgs.find(
       (org) => org.slug === activeOrg || org.id === activeOrg
     );
+
     if (
       activeOrg !== undefined &&
       activeOrg !== null &&
@@ -36,7 +38,9 @@ export const Route = createFileRoute("/")({
     ) {
       await clearActiveOrg();
     }
+
     const org = selectedOrg ?? orgs[0];
+
     if (org?.slug) {
       redirect({
         throw: true,

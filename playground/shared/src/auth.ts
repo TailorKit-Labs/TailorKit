@@ -32,10 +32,12 @@ export const listSignInChoices = () =>
 const getCookie = (cookieHeader: string | null, name: string) => {
   for (const part of cookieHeader?.split(";") ?? []) {
     const [key, ...value] = part.trim().split("=");
+
     if (key === name) {
       return decodeURIComponent(value.join("="));
     }
   }
+
   return null;
 };
 
@@ -43,11 +45,13 @@ export const getDemoSessionFromRequest = (
   request: Request
 ): DemoSession | null => {
   const value = getCookie(request.headers.get("cookie"), demoSessionCookie);
+
   if (!(value !== undefined && value !== null && value !== "")) {
     return null;
   }
 
   const [userId, teamId] = value.split(".");
+
   if (
     userId === undefined ||
     userId === "" ||

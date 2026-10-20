@@ -201,6 +201,7 @@ describe("projectRouter", () => {
       configId: "project-host",
       userId,
     });
+
     expect(auth.api.createApiKey).toHaveBeenCalledWith({
       body: expectedBodyMatcher1,
     });
@@ -219,6 +220,7 @@ describe("projectRouter", () => {
       rateLimitMax: 1000,
       rateLimitTimeWindow: 1000,
     });
+
     expect(auth.api.createApiKey).toHaveBeenCalledWith({
       body: expectedBodyMatcher2,
     });
@@ -238,6 +240,7 @@ describe("projectRouter", () => {
     const expectedBodyMatcher3: unknown = expect.objectContaining({
       name: "Project host key",
     });
+
     expect(auth.api.createApiKey).toHaveBeenCalledWith({
       body: expectedBodyMatcher3,
     });

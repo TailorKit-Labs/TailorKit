@@ -29,6 +29,7 @@ const toFetchBody = (body: StorageBody): FetchBody => {
 
 export const uploadToUrl = async (input: UploadToUrlInput): Promise<void> => {
   const size = getBodySize(input.body);
+
   if (
     input.maxBytes !== undefined &&
     size !== undefined &&
@@ -38,6 +39,7 @@ export const uploadToUrl = async (input: UploadToUrlInput): Promise<void> => {
   }
 
   const headers = new Headers(input.headers);
+
   if (input.contentType !== undefined && !headers.has("content-type")) {
     headers.set("content-type", input.contentType);
   }

@@ -22,16 +22,20 @@ it.each([undefined, "{", '{"version":2,"components":{}}'])(
   async (content) => {
     const root = await mkdtemp(path.join(tmpdir(), "patchsmith-schema-error-"));
     const schemaPath = path.join(root, "schema.json");
+
     try {
       if (content !== undefined) {
         await writeFile(schemaPath, content);
       }
+
       let failure: unknown;
+
       try {
         await readSchemaFile(schemaPath);
       } catch (error) {
         failure = error;
       }
+
       assert(failure instanceof Error);
 
       const error = failure;
@@ -47,11 +51,13 @@ it.each([undefined, "{", '{"version":2,"components":{}}'])(
 
 const mockSchemaFetch = (requests: number) => {
   const fetch = vi.spyOn(globalThis, "fetch");
+
   for (let request = 0; request < requests; request += 1) {
     fetch.mockResolvedValueOnce(
       Response.json({ components: {}, version: 1, views: {} })
     );
   }
+
   return fetch;
 };
 
@@ -59,7 +65,9 @@ it("links the app to the configured server entry and never falls back to an unre
   const root = await mkdtemp(
     path.join(tmpdir(), "patchsmith-configured-server-types-")
   );
+
   const fetch = mockSchemaFetch(3);
+
   try {
     await mkdir(path.join(root, "backend"));
     await mkdir(path.join(root, "src"));
@@ -79,10 +87,12 @@ it("links the app to the configured server entry and never falls back to an unre
     expect(await readFile(generated, "utf-8")).toContain(
       'import type app from "../backend/api"'
     );
+
     const custom = await generateTypes({
       cwd: root,
       outFile: "src/generated/host.ts",
     });
+
     expect(await readFile(custom, "utf-8")).toContain(
       'import type app from "../../backend/api"'
     );
@@ -98,6 +108,7 @@ it("links the app to the configured server entry and never falls back to an unre
 it("preserves the type-only API link when regenerating host types, including custom paths", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "patchsmith-host-types-"));
   const fetch = mockSchemaFetch(3);
+
   try {
     await mkdir(path.join(root, "src"));
     await writeFile(
@@ -114,10 +125,12 @@ it("preserves the type-only API link when regenerating host types, including cus
     expect(output).toContain(
       "export const api = createApi<typeof app.functions>();"
     );
+
     const custom = await generateTypes({
       cwd: root,
       outFile: "src/generated/host.ts",
     });
+
     expect(await readFile(custom, "utf-8")).toContain(
       'import type app from "../server"'
     );
@@ -133,6 +146,7 @@ it("preserves the type-only API link when regenerating host types, including cus
 it("detects the default server file without server configuration and removes stale API imports", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "patchsmith-detect-server-"));
   const fetch = mockSchemaFetch(5);
+
   try {
     await writeFile(
       path.join(root, "patchsmith.config.mjs"),
@@ -149,10 +163,12 @@ it("detects the default server file without server configuration and removes sta
     expect(await readFile(generated, "utf-8")).toContain(
       "export const api = createApi<typeof app.functions>();"
     );
+
     const custom = await generateTypes({
       cwd: root,
       outFile: "src/generated/host.ts",
     });
+
     expect(await readFile(custom, "utf-8")).toContain(
       'import type app from "../server"'
     );
@@ -193,6 +209,7 @@ const responsiveConstUnionImplementationImplementation = (
 describe("renderGeneratedTypes", () => {
   it("preserves component descriptions from the host schema endpoint in binding comments", async () => {
     const description = "Controlled input.\nUpdate value after onChange.";
+
     const server = createServer({
       baseUrl: "https://host.test/api/patchsmith",
       contract: defineContract({
@@ -200,14 +217,18 @@ describe("renderGeneratedTypes", () => {
         scopes: { user: z.object({ userId: z.string() }) },
       }),
     });
+
     const response = await server.handler(
       new Request("https://host.test/api/patchsmith/schema"),
       { authenticate: () => null }
     );
+
     expect(response.ok).toBe(true);
+
     const output = renderGeneratedTypes(
       v.parse(PatchsmithSchemaSpec, await response.json())
     );
+
     expect(output).toContain(
       "/**\n * Controlled input.\n * Update value after onChange.\n */\nexport const Input"
     );
@@ -222,6 +243,7 @@ describe("renderGeneratedTypes", () => {
       const output = renderGeneratedTypes({
         components: { Input: { callbacks: {}, children: false, description } },
       });
+
       expect(output).toContain(" */\nexport const Input");
       const { code } = await transformWithOxc(output, "patchsmith.gen.ts");
       expect(code).not.toMatch(/^\s*export\s+const\s+injected\b/mu);
@@ -244,14 +266,18 @@ describe("renderGeneratedTypes", () => {
         views: { "/": z.object({}) },
       }),
     });
+
     const response = await server.handler(
       new Request("https://host.test/api/patchsmith/schema"),
       { authenticate: () => null }
     );
+
     expect(response.ok).toBe(true);
+
     const output = renderGeneratedTypes(
       v.parse(PatchsmithSchemaSpec, await response.json())
     );
+
     expect(output).toContain(
       '    /**\n     * Right-hand panel, typically 360px wide.\n     * Scrolls independently.\n     */\n    "panel": { views: "/"; multiple: false };'
     );
@@ -264,6 +290,7 @@ describe("renderGeneratedTypes", () => {
     const output = renderGeneratedTypes({
       slots: { panel: { description, views: ["/"] } },
     });
+
     expect(output).toContain(
       '    */\n    "panel": { views: "/"; multiple: false };'
     );
@@ -411,6 +438,7 @@ describe("renderGeneratedTypes", () => {
       },
       views: {},
     });
+
     expect(output).toContain("onValidate?: () => boolean | Promise<boolean>;");
     expect(output).toContain(
       "onSave?: (input: string) => number | Promise<number>;"
@@ -601,16 +629,20 @@ describe("renderGeneratedTypes", () => {
       }),
       tools: { nested: { increment: ({ input }) => input + 1 } },
     });
+
     const response = await server.handler(
       new Request("https://host.test/api/patchsmith/schema"),
       {
         authenticate: () => null,
       }
     );
+
     expect(response.ok).toBe(true);
+
     const output = renderGeneratedTypes(
       v.parse(PatchsmithSchemaSpec, await response.json())
     );
+
     expect(output).toContain("increment: (input: string) => Promise<number>;");
   });
 
@@ -683,13 +715,16 @@ it("composes independent ancestor contexts and generates slot names", () => {
       },
     },
   });
+
   expect(generated).toContain(
     'interface PatchsmithSlots {\n    "navbar": { views: "/"; multiple: false };\n    "panel": { views: "/" | "/users" | "/users/detail"; multiple: true };\n  }'
   );
+
   const detail = generated.slice(
     generated.indexOf('"/users/detail":'),
     generated.indexOf("declare module")
   );
+
   expect(detail).toContain("workspaceId");
   expect(detail).toContain("canManage");
   expect(detail).toContain("userId");
@@ -705,6 +740,7 @@ it("preserves optional ancestor fields through schema serialization and generati
       "/detail": z.object({ id: z.string() }),
     },
   }).serialize();
+
   const parsed = v.parse(PatchsmithSchemaSpec, schema);
   expect(parsed.views["/"]?.contextOptional).toBe(true);
   expect(parsed.views["/detail"]?.contextOptional).toBeUndefined();
@@ -713,6 +749,7 @@ it("preserves optional ancestor fields through schema serialization and generati
     "context: (Partial<{\n      workspaceId: string;\n    }>) & ({\n      id: string;\n    });"
   );
 });
+
 it("generates both frontend kinds and excludes client namespaces from backend callers", () => {
   const generated = renderGeneratedTypes({
     tools: {
@@ -728,16 +765,19 @@ it("generates both frontend kinds and excludes client namespaces from backend ca
       },
     },
   });
+
   expect(generated).toContain('callTool("client", "ui.open", input)');
   expect(generated).toContain(
     'callTool("server", "accounts.nested.balance", input)'
   );
+
   const backend = generated.slice(
     generated.indexOf("export type PatchsmithBackendTools"),
     generated.indexOf(
       'declare module "patchsmith/client" { interface PatchsmithServerTools'
     )
   );
+
   expect(backend).not.toContain("ui:");
   expect(backend).toContain("balance: (input?: undefined) => Promise<number>");
 });
@@ -752,6 +792,7 @@ it("generates conditional primitive types from the contract's breakpoint aliases
       Custom: { fields: z.object({ background: z.number() }) },
     },
   }).serialize();
+
   const output = renderGeneratedTypes(schema);
   expect(output).toContain('export type Breakpoint = "desktop" | "hover";');
   expect(output).toContain(
@@ -781,10 +822,12 @@ it("generates conditional primitive types from the contract's breakpoint aliases
   expect(output).toContain("layout?: Layout;");
   expect(output).toContain("disabled?: Disabled;");
   expect(output).toContain("ariaLabel?: AriaLabel;");
+
   const pressableProps = output.slice(
     output.indexOf("export interface PressableProps"),
     output.indexOf("export const Pressable")
   );
+
   expect(pressableProps).not.toContain("asChild");
   expect(pressableProps).not.toContain("onKeyDown");
   expect(pressableProps).not.toContain("tabIndex");
@@ -794,11 +837,14 @@ it("generates conditional primitive types from the contract's breakpoint aliases
 it("generates identical types from inline and referenced schemas in every contract position", () => {
   const fields = z.strictObject({ first: z.string(), second: z.number() });
   const context = z.object({ first: fields, second: fields });
+
   const original = context["~standard"].jsonSchema.output({
     target: "draft-2020-12",
   });
+
   const compact = compactJsonSchema(original);
   expect(compact).toHaveProperty("$defs");
+
   const schemaWith = (
     value: typeof original
   ): Parameters<typeof renderGeneratedTypes>[0] => ({
@@ -814,6 +860,7 @@ it("generates identical types from inline and referenced schemas in every contra
     },
     views: { "/": { context: value } },
   });
+
   const schema = schemaWith(compact);
   expect(renderGeneratedTypes(schema)).toBe(
     renderGeneratedTypes(schemaWith(original))
@@ -845,6 +892,7 @@ it("resolves each embedded schema against its own definitions", () => {
       },
     },
   });
+
   expect(output).toContain("export interface TextProps {\n  value?: string;");
   expect(output).toContain("export interface CountProps {\n  value?: number;");
 });

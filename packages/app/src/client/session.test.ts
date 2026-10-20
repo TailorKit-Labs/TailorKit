@@ -23,12 +23,15 @@ it.each([undefined, null, "", 123, "x".repeat(257)])(
       token: "scoped",
       url: "https://runtime.test/rpc",
     };
+
     expect(() => parseSession(response)).toThrow();
+
     const provider = createSessionProvider({
       appId: "app",
       baseUrl: "https://host.test/api/patchsmith",
       fetch: asyncFixture(() => Response.json(response)),
     });
+
     await expect(provider({ refresh: false })).rejects.toMatchObject({
       code: "UNAVAILABLE",
       message: "Invalid app session",
@@ -47,15 +50,18 @@ it("deduplicates token requests, caches until renewal and sends only the host-bo
       })
     )
   );
+
   const session = createSessionProvider({
     appId: "allowed",
     baseUrl: "https://host.test/api/patchsmith",
     fetch,
   });
+
   const [first, second] = await Promise.all([
     session({ refresh: false }),
     session({ refresh: false }),
   ]);
+
   expect(first).toEqual(second);
   expect(fetch).toHaveBeenCalledTimes(1);
 
@@ -74,9 +80,11 @@ it("deduplicates token requests, caches until renewal and sends only the host-bo
   await session({ refresh: true });
   expect(fetch).toHaveBeenCalledTimes(2);
 });
+
 it("renews cached sessions when one minute remains", async () => {
   vi.useFakeTimers();
   vi.setSystemTime(0);
+
   try {
     const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(
       asyncFixture(() =>
@@ -88,11 +96,13 @@ it("renews cached sessions when one minute remains", async () => {
         })
       )
     );
+
     const session = createSessionProvider({
       appId: "allowed",
       baseUrl: "https://host.test/api",
       fetch,
     });
+
     await session({ refresh: false });
     vi.setSystemTime(239_999);
     await session({ refresh: false });
@@ -104,6 +114,7 @@ it("renews cached sessions when one minute remains", async () => {
     vi.useRealTimers();
   }
 });
+
 it("does not cache failed authorization or malformed sessions", async () => {
   const fetch = vi
     .fn<typeof globalThis.fetch>()
@@ -117,11 +128,13 @@ it("does not cache failed authorization or malformed sessions", async () => {
         url: "https://runtime.test/rpc",
       })
     );
+
   const session = createSessionProvider({
     appId: "allowed",
     baseUrl: "https://host.test/api",
     fetch,
   });
+
   await expect(session({ refresh: false })).rejects.toMatchObject({
     code: "FORBIDDEN",
   });
@@ -145,11 +158,13 @@ it("reports session network failures as retryable and allows the next request to
         url: "https://runtime.test/rpc",
       })
     );
+
   const session = createSessionProvider({
     appId: "allowed",
     baseUrl: "https://host.test/api",
     fetch,
   });
+
   await expect(session({ refresh: false })).rejects.toMatchObject({
     code: "UNAVAILABLE",
   });
@@ -157,6 +172,7 @@ it("reports session network failures as retryable and allows the next request to
     token: "scoped",
   });
 });
+
 it("caches server-authenticated sessions without a subject cache key and refreshes their identity", async () => {
   const fetch = vi
     .fn<typeof globalThis.fetch>()
@@ -176,11 +192,13 @@ it("caches server-authenticated sessions without a subject cache key and refresh
         url: "https://runtime.test/rpc",
       })
     );
+
   const session = createSessionProvider({
     appId: "app",
     baseUrl: "https://product.test/api/",
     fetch,
   });
+
   await expect(session({ refresh: false })).resolves.toMatchObject({
     identity: { ...identity, subjectId: "first-user" },
     token: "first",

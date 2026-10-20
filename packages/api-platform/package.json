@@ -60,11 +60,11 @@
     "ai": "catalog:",
     "drizzle-orm": "catalog:",
     "effect": "catalog:",
-    "workflow": "5.2.0",
+    "workflow": "5.2.2",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "0.5.8",
+    "@electric-sql/pglite": "0.5.10",
     "@modelcontextprotocol/client": "2.3.1",
     "@patchsmith/config": "workspace:*",
     "@types/node": "catalog:",
@@ -72,6 +72,6 @@
     "typescript": "catalog:"
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=24.11"
   }
 }

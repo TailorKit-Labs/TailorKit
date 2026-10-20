@@ -29,11 +29,14 @@ it("compacts real primitive schemas and preserves their expanded meaning", () =>
     if (!component.fields) {
       throw new Error("Expected primitive fields.");
     }
+
     const original = jsonSchemaSerializer(component.fields);
     const compact = serializeSchema(component.fields, jsonSchemaSerializer);
+
     if (!original || !compact) {
       throw new Error("Expected serialized primitive schemas.");
     }
+
     expect(v.parse(JsonSchema, compact)).toEqual(compact);
     expect(resolveJsonSchema(compact)).toEqual(original);
     expect(JSON.stringify(compact).length).toBeLessThan(
@@ -51,6 +54,7 @@ it("preserves literal object data while deduplicating schema positions", () => {
     },
     type: "object",
   };
+
   const compact = compactJsonSchema(schema);
   expect(compact.enum).toBe(schema.enum);
   expect(resolveJsonSchema(compact)).toEqual(schema);
@@ -61,6 +65,7 @@ it("keeps small schemas inline and does not mutate its input", () => {
     properties: { first: { type: "string" }, second: { type: "string" } },
     type: "object",
   };
+
   expect(compactJsonSchema(schema)).toBe(schema);
   expect(schema).not.toHaveProperty("$defs");
 });
@@ -71,6 +76,7 @@ it("preserves existing reference scopes without recompacting them", () => {
     properties: { value: { $ref: "#/$defs/value" } },
     type: "object",
   };
+
   expect(compactJsonSchema(schema)).toBe(schema);
   expect(resolveJsonSchema(schema)).toEqual({
     properties: { value: repeatedValue },
@@ -150,24 +156,29 @@ it("preserves schemas from native ArkType and Valibot converters", () => {
     second: "number",
     values: "string[]",
   });
+
   const valibotValue = v.strictObject({
     enabled: v.boolean(),
     first: v.string(),
     second: v.number(),
     values: v.array(v.string()),
   });
+
   const schemas = [
     type({ first: arkValue, second: arkValue }),
     toStandardJsonSchema(
       v.strictObject({ first: valibotValue, second: valibotValue })
     ),
   ];
+
   for (const schema of schemas) {
     const original = jsonSchemaSerializer(schema);
     const compact = serializeSchema(schema, jsonSchemaSerializer);
+
     if (!original || !compact) {
       throw new Error("Expected a serialized native schema.");
     }
+
     expect(v.parse(JsonSchema, compact)).toEqual(compact);
     expect(resolveJsonSchema(compact)).toEqual(resolveJsonSchema(original));
     expect(JSON.stringify(compact).length).toBeLessThan(

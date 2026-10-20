@@ -5,18 +5,22 @@ import { Box, Flex, Inline, Pressable } from "#patchsmith";
 export const PressablePrototype = () => {
   const [presses, setPresses] = useState(0);
   const [disabled, setDisabled] = useState(false);
+
   const countPress = () => {
     setPresses((count) => count + 1);
   };
+
   const background = {
     ":active": { default: "pressed", lg: "hover" },
     ":hover": "hover",
     default: "surface",
   } as const;
+
   const borderColor = {
     ":focus-visible": "focus",
     default: "default",
   } as const;
+
   const textColor = { ":disabled": "muted" } as const;
 
   return (

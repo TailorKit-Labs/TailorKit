@@ -38,6 +38,7 @@ const orgSchema = z.object({
   name: z.string().min(1, "Name is required."),
   slug: z.string().superRefine((value, ctx) => {
     const result = validateOrgSlug(value);
+
     if (!result.valid) {
       ctx.addIssue({
         code: "custom",
@@ -94,6 +95,7 @@ export const CreateOrgDialog = ({
         cause instanceof Error
           ? cause.message
           : "Failed to create organisation";
+
       toastManager.add({ description: message, title: "Error", type: "error" });
     },
     onSuccess: (data, input) => {
@@ -109,6 +111,7 @@ export const CreateOrgDialog = ({
     defaultValues: { name: "", slug: "" },
     onSubmit: async ({ value }) => {
       const slugAvailability = await checkOrgSlugAvailability(value.slug);
+
       if (!slugAvailability.available) {
         setSlugSubmitError(
           slugAvailability.message ?? "This organisation slug is already taken."
@@ -120,6 +123,7 @@ export const CreateOrgDialog = ({
           title: "Error",
           type: "error",
         });
+
         return;
       }
 
@@ -138,6 +142,7 @@ export const CreateOrgDialog = ({
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
+
     if (!nextOpen) {
       resetForm();
     }

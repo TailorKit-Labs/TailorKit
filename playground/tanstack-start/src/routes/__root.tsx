@@ -14,9 +14,11 @@ import css from "#styles.css?url";
 
 const AppShell = () => {
   const { session } = useRouteContext({ from: "__root__" });
+
   if (!session) {
     return <Outlet />;
   }
+
   return (
     <PatchsmithShell session={session}>
       <Outlet />
@@ -39,12 +41,15 @@ const RootDocument = ({ children }: { children: React.ReactNode }) => (
 export const Route = createRootRoute({
   beforeLoad: async ({ location }) => {
     const session = await loadSession();
+
     if (!session && location.pathname !== "/login") {
       redirect({ throw: true, to: "/login" });
     }
+
     if (session && location.pathname === "/login") {
       redirect({ throw: true, to: "/" });
     }
+
     return { session };
   },
   component: AppShell,

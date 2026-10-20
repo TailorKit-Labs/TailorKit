@@ -10,11 +10,13 @@ export type AppTokenIdentity = Omit<Identity, "expiresAt"> & {
   projectShortId: string;
   appShortId: string;
 };
+
 export type VerifiedAppTokenIdentity = Identity &
   Pick<AppTokenIdentity, "projectShortId" | "appShortId">;
 
 export const appRuntimeIssuer = (platformUrl: string) => {
   const url = new URL(platformUrl);
+
   if (
     url.protocol !== "https:" ||
     url.username ||
@@ -26,6 +28,7 @@ export const appRuntimeIssuer = (platformUrl: string) => {
       "Platform URL requires HTTPS and no credentials, query or fragment"
     );
   }
+
   return url.href.replace(/\/$/u, "");
 };
 
@@ -37,6 +40,7 @@ export interface AppSigningOptions {
   privateKey: CryptoKey | JsonWebKey;
   lifetimeSeconds?: number;
 }
+
 export interface AppTokenTrust {
   issuer: string;
   audience: string;
@@ -45,6 +49,7 @@ export interface AppTokenTrust {
   /** Trusted issuer public keys, provisioned by the operator; never read from JWT headers. */
   publicKeys: { keys: (JsonWebKey & { kid: string })[] };
 }
+
 const access = z.object({
   appId: z.string().min(1).max(256),
   appShortId: z.string().min(1).max(256),
@@ -62,6 +67,7 @@ const access = z.object({
   subjectId: z.string().min(1).max(256),
   toolUrl: z.url(),
 });
+
 const publicKeysSchema = z.object({
   keys: z
     .array(
@@ -103,11 +109,13 @@ export const issueAppTokenEffect = (
   Effect.gen(function* issueToken() {
     const maximum = APP_TOKEN_LIFETIME_SECONDS;
     const lifetime = options.lifetimeSeconds ?? maximum;
+
     if (!Number.isInteger(lifetime) || lifetime < 1 || lifetime > maximum) {
       return yield* Effect.fail(
         new AppTokenSigningError(`App tokens must last 1–${maximum} seconds`)
       );
     }
+
     const now = Math.floor((yield* Clock.currentTimeMillis) / 1000);
     yield* Effect.try({
       catch: signingError,
@@ -127,6 +135,7 @@ export const issueAppTokenEffect = (
           toolUrl: identity.toolUrl,
         }),
     });
+
     const key = yield* Effect.tryPromise({
       catch: signingError,
       try: async () =>
@@ -134,6 +143,7 @@ export const issueAppTokenEffect = (
           ? await importJWK({ ...options.privateKey, alg: "ES256" }, "ES256")
           : options.privateKey,
     });
+
     const token = yield* Effect.tryPromise({
       catch: signingError,
       try: async () =>
@@ -156,6 +166,7 @@ export const issueAppTokenEffect = (
           .setExpirationTime(now + lifetime)
           .sign(key),
     });
+
     return { expiresAt: (now + lifetime) * 1000, token };
   });
 
@@ -170,23 +181,28 @@ const invalidTokenImplementationImplementation = () =>
 
 export const appTokenVerifierEffect = (trust: AppTokenTrust) => {
   let publicKeys;
+
   try {
     publicKeys = parseAppPublicKeys(trust.publicKeys);
+
     if (!publicKeys.keys.length) {
       throw new Error("Missing signing keys");
     }
   } catch {
     throw new Error("Configure trusted ES256 public signing keys");
   }
+
   const keys = createLocalJWKSet({
     keys: publicKeys.keys.map((key) => ({ ...key, alg: "ES256", use: "sig" })),
   });
+
   const invalidTokenImplementation = invalidTokenImplementationImplementation;
 
   return (token: string): Effect.Effect<VerifiedAppTokenIdentity, AppError> =>
     Effect.gen(function* verifyToken() {
       const now = yield* Clock.currentTimeMillis;
       const invalidToken = invalidTokenImplementation;
+
       const { payload } = yield* Effect.tryPromise({
         catch: invalidToken,
         try: async () =>
@@ -213,11 +229,14 @@ export const appTokenVerifierEffect = (trust: AppTokenTrust) => {
             typ: "JWT",
           }),
       });
+
       const claims = yield* Effect.try({
         catch: invalidToken,
         try: () => access.parse(payload),
       });
+
       const verifiedAt = yield* Clock.currentTimeMillis;
+
       if (
         claims.sub !== claims.installationId ||
         (trust.appId !== undefined && claims.appId !== trust.appId) ||
@@ -230,6 +249,7 @@ export const appTokenVerifierEffect = (trust: AppTokenTrust) => {
       ) {
         return yield* Effect.fail(invalidToken());
       }
+
       return Object.freeze({
         appId: claims.appId,
         appShortId: claims.appShortId,
@@ -247,15 +267,19 @@ export const appTokenVerifierEffect = (trust: AppTokenTrust) => {
 
 export const appTokenVerifier = (trust: AppTokenTrust) => {
   const verify = appTokenVerifierEffect(trust);
+
   return async (token: string) => await Effect.runPromise(verify(token));
 };
+
 export const bearerToken = (request: Request) => {
   const authorization = request.headers.get("authorization");
+
   if (
     !(authorization?.startsWith("Bearer ") === true) ||
     authorization.length > 8192
   ) {
     throw new AppError("UNAUTHORIZED", "App token required");
   }
+
   return authorization.slice(7);
 };

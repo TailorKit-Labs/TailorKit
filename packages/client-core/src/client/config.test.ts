@@ -23,6 +23,7 @@ const require = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -40,11 +41,13 @@ it("wraps each renderer once and shares it with remote component aliases", () =>
 
 it("builds reusable client configuration without initiating network requests", () => {
   const fetch = vi.fn<typeof globalThis.fetch>();
+
   const config = createPatchsmithClientConfig({
     baseUrl: "https://host.test/api/",
     contract: testContract(),
     fetch,
   });
+
   expect(config.theme).toEqual({});
   expect(config.components).toEqual({});
   expect(config.fetchClient?.baseUrl.href).toBe("https://host.test/api/");
@@ -53,6 +56,7 @@ it("builds reusable client configuration without initiating network requests", (
 
 it("clears shared app data and sessions through clearCache", async () => {
   let user = "first";
+
   const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(
     asyncFixture((input) =>
       Response.json(
@@ -67,11 +71,13 @@ it("clears shared app data and sessions through clearCache", async () => {
       )
     )
   );
+
   const config = createPatchsmithClientConfig({
     baseUrl: "https://host.test/api/",
     contract: testContract(),
     fetch,
   });
+
   const client = require(config.fetchClient);
   const apps = client.apps();
   const session = client.endpoints.getSessionProvider({ id: "app" });

@@ -27,12 +27,15 @@ export const appAgentRouter = {
     .handler(async function* chat({ context, input, signal: clientSignal }) {
       const { appId, ...turn } = input;
       const controller = new AbortController();
+
       const signal = clientSignal
         ? AbortSignal.any([clientSignal, controller.signal])
         : controller.signal;
+
       try {
         let streamFailed = false;
         let done = false;
+
         const { stream } = await appAgentChat({
           body: {
             ...turn,
@@ -53,22 +56,28 @@ export const appAgentRouter = {
           // Only the CLI can reconnect with the signed identity and exact cursor.
           sseMaxRetryAttempts: 1,
         });
+
         for await (const value of stream) {
           const event = await v.parseAsync(agentChunkSchema, value);
+
           if (
             event.type === "error" ||
             v.safeParse(agentRunCompleteChunkSchema, event).success
           ) {
             done = true;
           }
+
           yield event;
         }
+
         signal?.throwIfAborted();
+
         if (streamFailed) {
           throw new ORPCError("BAD_GATEWAY", {
             message: "The app agent stream failed. Try again.",
           });
         }
+
         if (!done) {
           throw new ORPCError("BAD_GATEWAY", {
             message: "The agent stream ended unexpectedly. Try again.",
@@ -90,6 +99,7 @@ export const appAgentRouter = {
         responseStyle: "fields",
         throwOnError: true,
       });
+
       return data;
     }),
 };

@@ -11,6 +11,7 @@ import {
 } from "./utils";
 
 type NativeSession = Awaited<ReturnType<typeof toolNativeSandbox>>;
+
 export interface DeploymentSandbox {
   readFileToBuffer: NativeSession["readFileToBuffer"];
   runCommand: (
@@ -38,10 +39,13 @@ export const createDeployTool = (dependencies: {
       "Build, type-check, and publish the finished app to its authorized Patchsmith app. Run lint and relevant tests first; this tool owns the build and type check, so do not run a separate build before calling it. Failures include compiler diagnostics for repair. No login or host access is needed.",
     execute: async (_input, options) => {
       const { agentToken } = options.context;
+
       const redact = (value: string) =>
         value.replaceAll(agentToken, "[redacted]");
+
       try {
         const sandbox = await dependencies.sandbox(options);
+
         // oxlint-disable eslint/no-await-in-loop -- Typechecking must succeed before building; failures return diagnostics immediately.
         for (const args of [
           ["exec", "tsc", "--noEmit"],
@@ -61,6 +65,7 @@ export const createDeployTool = (dependencies: {
             signal: options.abortSignal,
             timeoutMs: sandboxIdleTimeoutMs,
           });
+
           if (result.exitCode !== 0) {
             return {
               exitCode: result.exitCode,
@@ -69,15 +74,18 @@ export const createDeployTool = (dependencies: {
             };
           }
         }
+
         // oxlint-enable eslint/no-await-in-loop
         const stdout = await dependencies.publish(
           sandbox,
           options.context,
           options.abortSignal
         );
+
         return { exitCode: 0, stderr: "", stdout: redact(stdout) };
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
+
         return { exitCode: 1, stderr: redact(message), stdout: "" };
       }
     },

@@ -8,6 +8,7 @@ type JsonValue =
   | null
   | JsonValue[]
   | { [key: string]: JsonValue | undefined };
+
 const jsonValue: v.GenericSchema<JsonValue> = v.lazy(() =>
   v.union([
     v.null(),
@@ -18,9 +19,11 @@ const jsonValue: v.GenericSchema<JsonValue> = v.lazy(() =>
     v.array(jsonValue),
   ])
 );
+
 const metadata = v.record(v.string(), v.optional(jsonValue));
 const providerMetadata = v.optional(v.record(v.string(), metadata));
 const text = { id: v.string(), providerMetadata };
+
 const tool = {
   dynamic: v.optional(v.boolean()),
   providerExecuted: v.optional(v.boolean()),
@@ -28,6 +31,7 @@ const tool = {
   toolCallId: v.string(),
   toolMetadata: v.optional(metadata),
 };
+
 const toolInput = {
   ...tool,
   title: v.optional(v.string()),

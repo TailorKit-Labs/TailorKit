@@ -10,6 +10,7 @@ const require = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -29,11 +30,13 @@ export const getPatchsmithScope = (
 ): PatchsmithNamedScope => {
   const { scopes } = getPatchsmithContext(context);
   const names = name === undefined ? Object.keys(scopes) : [name];
+
   if (names.length !== 1) {
     throw new ORPCError("BAD_REQUEST", {
       message: "Choose one Patchsmith scope for this operation.",
     });
   }
+
   try {
     return require(selectPatchsmithScopes(scopes, names)[0]);
   } catch (error) {
@@ -91,6 +94,7 @@ const verifyCliDeployToken = async (context: Context) => {
     if (isORPCErrorJson(error)) {
       throw createORPCErrorFromJson(error);
     }
+
     throw error;
   }
 };
@@ -107,17 +111,21 @@ export const requireCliDeployToken = o.middleware(async ({ context, next }) => {
   }
 
   let scopes: PatchsmithScopes;
+
   try {
     const scope = normalizePatchsmithNamedScope(token.scope);
+
     if (!Object.hasOwn(context.scopeSchemas, scope.name)) {
       throw new TypeError("CLI token uses an undeclared scope.");
     }
+
     scopes = Object.freeze({ [scope.name]: scope.value });
   } catch {
     throw new ORPCError("UNAUTHORIZED", {
       message: "Invalid CLI deploy token.",
     });
   }
+
   return await next({ context: { patchsmith: { scopes } } });
 });
 

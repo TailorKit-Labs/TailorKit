@@ -4,13 +4,17 @@ import { resolveAgentAuth } from "./agent-auth";
 
 const mocks = vi.hoisted(() => {
   const env: Record<string, string> = {};
+
   return { env, oidc: vi.fn() };
 });
+
 vi.mock("#env", () => ({ env: mocks.env }));
+
 vi.mock("@vercel/oidc", () => ({ getVercelOidcToken: mocks.oidc }));
 
 beforeEach(() => {
   vi.resetAllMocks();
+
   for (const key of Object.keys(mocks.env)) {
     Reflect.deleteProperty(mocks.env, key);
   }

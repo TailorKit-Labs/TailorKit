@@ -12,6 +12,7 @@ export interface ToolBridge<TInput = unknown, TOutput = unknown> {
 // These globals are the explicit ABI installed by the host and sandbox runtime.
 declare global {
   var __patchsmithTools: ToolBridge | undefined;
+
   var __patchsmithBackendSession:
     | ((options: { refresh: boolean }) => Promise<Session>)
     | undefined;
@@ -39,20 +40,24 @@ export const executeServerTool = async (
     redirect: "error",
     signal,
   });
+
   if (!response.ok) {
     throw new AppError(
       (() => {
         if (response.status === 401) {
           return "UNAUTHORIZED" as const;
         }
+
         if (response.status === 400) {
           return "BAD_REQUEST" as const;
         }
+
         return "UNAVAILABLE" as const;
       })(),
       "Tool call failed"
     );
   }
+
   return v.parse(
     v.object({ output: v.optional(v.unknown()) }),
     await response.json()
@@ -66,12 +71,15 @@ export const callTool = async (
   input?: Parameters<ToolBridge["client"]>[1]
 ): ReturnType<ToolBridge["client"]> => {
   const bridge = globalThis.__patchsmithTools;
+
   if (!bridge) {
     throw new AppError("UNAVAILABLE", "Tool bridge unavailable");
   }
+
   if (kind === "client") {
     return await bridge.client(path, input);
   }
+
   return await bridge
     .session(path)
     .then(async (session) => await executeServerTool(session, path, input));

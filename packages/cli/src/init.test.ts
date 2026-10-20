@@ -28,6 +28,7 @@ vi.mock("./generator", async (importOriginal) => ({
     vitePlus: "1.0.0",
   }),
 }));
+
 vi.mock("@clack/prompts", async (importOriginal) => ({
   ...(await importOriginal<typeof clackpromptsModule>()),
 
@@ -36,6 +37,7 @@ vi.mock("@clack/prompts", async (importOriginal) => ({
 }));
 
 const directories: string[] = [];
+
 afterEach(async () => {
   vi.unstubAllGlobals();
   await Promise.all(
@@ -48,6 +50,7 @@ afterEach(async () => {
 const initOptions = async () => {
   const cwd = await mkdtemp(path.join(tmpdir(), "patchsmith-init-"));
   directories.push(cwd);
+
   return {
     cwd,
     host: "https://host.test/api/patchsmith",
@@ -74,6 +77,7 @@ it("fetches the host schema and generates real bindings even when installation i
       },
     })
   );
+
   vi.stubGlobal("fetch", fetch);
   const directory = await runInit(await initOptions());
   expect(fetch).toHaveBeenCalledExactlyOnceWith(
@@ -82,10 +86,12 @@ it("fetches the host schema and generates real bindings even when installation i
       signal: undefined,
     }
   );
+
   const bindings = await readFile(
     path.join(directory, "src/patchsmith.gen.ts"),
     "utf-8"
   );
+
   expect(bindings).toContain(
     '"sidebar": { views: "/people"; multiple: false }'
   );
@@ -113,11 +119,13 @@ it("passes bare mode through initialization and still generates host capabilitie
       views: { "/": {} },
     })
   );
+
   const directory = await runInit({
     ...options,
     bare: true,
     schemaPath: "schema.json",
   });
+
   const files = await readdir(path.join(directory, "src"));
   expect(files.toSorted()).toEqual(["patchsmith.gen.ts", "root.tsx"]);
 });
@@ -145,6 +153,7 @@ it("scaffolds and regenerates from a schema file while the local host is unreach
     host: "http://localhost:3000/api/patchsmith",
     schemaPath: "schema.json",
   };
+
   const schema = {
     components: { Box: { callbacks: {}, children: true } },
     slots: { sidebar: { views: ["/local"] } },
@@ -156,13 +165,16 @@ it("scaffolds and regenerates from a schema file while the local host is unreach
       },
     },
   };
+
   await writeFile(
     path.join(options.cwd, "schema.json"),
     JSON.stringify(schema)
   );
+
   const fetch = vi.fn(() => {
     throw new Error("Host is unreachable");
   });
+
   vi.stubGlobal("fetch", fetch);
   const directory = await runInit(options);
   const generated = path.join(directory, "src/patchsmith.gen.ts");
@@ -206,11 +218,13 @@ it("recommends Vite+ and offers build-only Vite in one tooling prompt", async ()
       views: { "/": { context: { type: "object" } } },
     })
   );
+
   const directory = await runInit({
     ...options,
     schemaPath: "schema.json",
     tooling: undefined,
   });
+
   expect(select).toHaveBeenCalledWith(
     expect.objectContaining({
       initialValue: "vite-plus",
@@ -223,6 +237,7 @@ it("recommends Vite+ and offers build-only Vite in one tooling prompt", async ()
       ],
     })
   );
+
   const pkg = z
     .object({
       devDependencies: z.record(z.string(), z.string()),
@@ -231,6 +246,7 @@ it("recommends Vite+ and offers build-only Vite in one tooling prompt", async ()
     .parse(
       JSON.parse(await readFile(path.join(directory, "package.json"), "utf-8"))
     );
+
   expect(pkg.scripts.build).toBe("vp build");
   expect(pkg.scripts.check).toBe("vp check");
 });

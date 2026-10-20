@@ -8,6 +8,7 @@ describe("AUTH_TRUSTED_ORIGINS preview pattern", () => {
       secret: "test-secret-with-at-least-32-characters",
       trustedOrigins: ["https://tailorkit-*.vercel.app"],
     });
+
     const context = await auth.$context;
 
     expect(

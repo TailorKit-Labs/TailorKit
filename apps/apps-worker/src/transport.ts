@@ -28,11 +28,14 @@ export const wireError = (cause: unknown) => {
   if (cause instanceof ORPCError) {
     return cause;
   }
+
   const parsed = z
     .object({ code: z.string().optional(), message: z.string().optional() })
     .safeParse(cause);
+
   const failure = parsed.success ? parsed.data : undefined;
   const code = failure?.code ?? "INTERNAL_SERVER_ERROR";
+
   return new ORPCError(code, {
     message:
       failure?.code !== undefined &&
@@ -54,6 +57,7 @@ const rpcStatusByCode = new Map(Object.entries(errorStatusMap));
 
 export const rpcErrorResponse = (cause: unknown) => {
   const failure = wireError(cause);
+
   return Response.json(
     { json: failure.toJSON() },
     {
@@ -75,16 +79,20 @@ export interface Installation {
 }
 
 const base = implement(appContract);
+
 const errors = middlewareGen(function* errors({ next }) {
   // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
   return yield* next().pipe(Effect.mapError(wireError));
 });
+
 const http = base.$context<{ installation: Installation }>().use(errors);
+
 const subscriptions = base
   .$context<{
     subscribe: (input: Invocation) => HibernationAsyncIteratorClass<unknown>;
   }>()
   .use(errors);
+
 export const router = base.router({
   actions: http.actions.handler(
     handlerGen(function* actions({ input, context, signal }) {
@@ -122,11 +130,13 @@ export const router = base.router({
 /** The gateway and installation accept the same procedure routes. */
 export const requestRoute = (request: Request) => {
   const path = new URL(request.url).pathname.replace(/\/$/u, "");
+
   if (request.headers.get("upgrade")?.toLowerCase() === "websocket") {
     return request.method === "GET" && path === "/rpc/queries"
       ? "subscriptions"
       : undefined;
   }
+
   return request.method === "POST" &&
     !request.headers.has("upgrade") &&
     ["/rpc/queries", "/rpc/mutations", "/rpc/actions"].includes(path)
@@ -148,17 +158,22 @@ export const routeInstallation = <Identity, Error>(
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204 });
     }
+
     const route = requestRoute(request);
+
     if (!route) {
       return new Response("Not found", { status: 404 });
     }
+
     let token: string | undefined;
+
     if (route === "subscriptions") {
       const protocols =
         request.headers
           .get("sec-websocket-protocol")
           ?.split(",")
           .map((value) => value.trim()) ?? [];
+
       if (protocols.includes("patchsmith")) {
         token = protocols.find((value) => value.startsWith("jwt."))?.slice(4);
       }
@@ -167,12 +182,15 @@ export const routeInstallation = <Identity, Error>(
         .get("authorization")
         ?.match(/^Bearer (?<token>\S+)$/u)?.[1];
     }
+
     if (!(token !== undefined && token !== null && token !== "")) {
       return yield* Effect.fail(
         new ORPCError("UNAUTHORIZED", { message: "App token required" })
       );
     }
+
     const identity = yield* options.verify(token);
+
     // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context, effecttsgo/unknown-in-effect-catch -- This bridge preserves the original host or transport failure for existing error-code and cancellation handling; wrapping would change observable failures.
     return yield* Effect.tryPromise({
       catch: (err4) => err4,
@@ -180,12 +198,14 @@ export const routeInstallation = <Identity, Error>(
         if (route === "subscriptions") {
           const headers = new Headers(request.headers);
           headers.set("authorization", `Bearer ${token}`);
+
           return await options
             .installation(identity)
             .fetch(
               new Request(request.url, { headers, signal: request.signal })
             );
         }
+
         return await options.installation(identity).fetch(request);
       },
     });
@@ -223,6 +243,7 @@ export const createSubscriptionHandler = () => {
       plugins: [new HibernationHandlerPlugin()],
     }
   );
+
   return {
     close: async (socket: {
       send: (data: string | Uint8Array<ArrayBuffer>) => void;
@@ -238,17 +259,21 @@ export const createSubscriptionHandler = () => {
       const dispatched = handler.message(socket, message, {
         context: { subscribe },
       });
+
       // Hibernation detaches the iterator from the peer. Cancellation must also
       // remove persisted subscriptions, including after a new handler is created.
       const decoded = decodePeerMessage(
         isStringValue(message) ? message : new Uint8Array(message)
       );
+
       if (decoded.matched && isPeerCancelMessage(decoded.message)) {
         await (async () => {
           await Promise.all([dispatched, cancel(decoded.message.id)]);
         })();
+
         return;
       }
+
       await (async () => {
         await dispatched;
       })();

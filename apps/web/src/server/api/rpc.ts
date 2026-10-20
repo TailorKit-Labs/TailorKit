@@ -34,6 +34,7 @@ export const handleRpcRequest = async ({ request }: { request: Request }) => {
     context: await createContext({ request }),
     prefix: "/api/rpc",
   });
+
   if (rpcResult.response) {
     return rpcResult.response;
   }

@@ -3,7 +3,9 @@ import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { EmptyObject, MaybePromise, Schema } from "./shared";
 
 export type CallbackMap = Record<string, CallbackDefinition | undefined>;
+
 export type Callback = CallbackDefinition;
+
 export type Callbacks = CallbackMap;
 
 type VoidResult = ReturnType<() => void>;

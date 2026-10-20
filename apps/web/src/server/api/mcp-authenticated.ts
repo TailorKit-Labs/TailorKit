@@ -31,6 +31,7 @@ export const handleMcpRequest = async ({ request }: { request: Request }) => {
     "mcp.load_handler",
     async () => await import("@patchsmith/api-platform/app-agent-mcp")
   );
+
   return await withSpan(
     "mcp.dispatch",
     {

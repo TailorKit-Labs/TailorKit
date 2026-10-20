@@ -14,13 +14,16 @@ import { changeIssueStatus, loadIssue } from "#lib/issues.functions";
 const IssueDetailPage = () => {
   const { issue, creatorName } = useLoaderData({ from: "/issues/$issueId" });
   const router = useRouter();
+
   const nextStatus = (() => {
     if (issue.status === "Backlog") {
       return "In Progress" as const;
     }
+
     if (issue.status === "In Progress") {
       return "Done" as const;
     }
+
     return "Backlog" as const;
   })();
 

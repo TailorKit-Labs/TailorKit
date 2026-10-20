@@ -18,11 +18,13 @@ export const generateAppMigrations = async (
   options: GenerateAppMigrationsOptions = {}
 ) => {
   const loaded = await loadPatchsmithConfig(options.configPath, options.cwd);
+
   if (!loaded.config.server) {
     throw new Error(
       "Enable server: {} in patchsmith.config.ts before generating database migrations."
     );
   }
+
   const paths = appDatabasePaths(loaded.root, loaded.config.server.migrations);
   await access(paths.schema).catch((error: ErrorOptions["cause"]) => {
     throw new Error(
@@ -31,23 +33,27 @@ export const generateAppMigrations = async (
     );
   });
   const directory = paths.migrations;
+
   const args = await drizzleGenerateArguments(
     loaded.root,
     directory,
     options.name
   );
+
   await (async () => {
     const {
       promise: pendingPromise,
       resolve,
       reject,
     } = Promise.withResolvers<ReturnType<() => void>>();
+
     try {
       // Keep Drizzle's rename prompts available during explicit generation.
       const child = spawn(process.execPath, args, {
         cwd: loaded.root,
         stdio: "inherit",
       });
+
       child.once("error", reject);
       child.once("close", (code, signal) => {
         if (code === 0) {
@@ -63,8 +69,10 @@ export const generateAppMigrations = async (
     } catch (error) {
       reject(error);
     }
+
     await pendingPromise;
   })();
   await checkAppSchema(loaded.root, directory);
+
   return directory;
 };

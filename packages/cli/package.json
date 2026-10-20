@@ -40,14 +40,14 @@
     "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
-    "@ai-sdk/tui": "1.0.138",
+    "@ai-sdk/tui": "1.0.144",
     "@clack/prompts": "^1.8.1",
     "@orpc/client": "catalog:",
     "@patchsmith/client-platform": "workspace:*",
     "@patchsmith/core": "workspace:*",
     "@patchsmith/vite": "workspace:*",
     "ai": "catalog:",
-    "cac": "^7.0.1",
+    "cac": "^7.1.0",
     "jose": "6.2.12",
     "liquidjs": "^10.30.0",
     "picocolors": "^1.1.1",

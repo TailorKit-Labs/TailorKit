@@ -11,6 +11,7 @@ describe("component descriptions", () => {
   it("preserves behavior guidance without adding metadata to component fields", () => {
     const description =
       "Submits on Enter.\nDisabling submission leaves inputs editable.";
+
     const contract = defineContract({
       components: {
         Empty: { description: "" },
@@ -23,6 +24,7 @@ describe("component descriptions", () => {
         Plain: {},
       },
     });
+
     const host = createPatchsmithSchema(contract);
     const serialized = host.serialize();
     const parsed = v.parse(PatchsmithSchemaSpec, serialized);

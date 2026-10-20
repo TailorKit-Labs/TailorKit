@@ -23,6 +23,7 @@ const createOpenAPIHandler = async () => {
     import("@patchsmith/api-platform"),
     import("@patchsmith/api-utils/rate-limiting"),
   ]);
+
   return new OpenAPIHandler(platformRouter, {
     interceptors: [
       onError((failure) => {
@@ -48,9 +49,11 @@ export const handlePlatformRequest = async ({
   });
 
   const { pathname } = new URL(request.url);
+
   if (request.method === "GET" && pathname === "/api/platform/runtime/keys") {
     const { appRuntimeKeysResponse } =
       await import("@patchsmith/api-platform/routes/runtime");
+
     return appRuntimeKeysResponse();
   }
 
@@ -63,6 +66,7 @@ export const handlePlatformRequest = async ({
   });
 
   const handler = await (openAPIHandler ??= createOpenAPIHandler());
+
   const rpcResult = await handler.handle(request, {
     context,
     prefix: "/api/platform",

@@ -37,7 +37,9 @@ export const invocationSchema = v.strictObject({
     )
   ),
 });
+
 export type Invocation = v.InferOutput<typeof invocationSchema>;
+
 export type MutationInvocation = Invocation & { requestId: string };
 
 const procedure = oc.errors({
@@ -71,7 +73,9 @@ export const appContract = {
     .input(invocationSchema)
     .output(type<AsyncIterableIterator<unknown>>()),
 };
+
 export type PlatformClient = ContractRouterClient<typeof appContract>;
+
 export type SubscriptionClient = Pick<PlatformClient, "subscribe">;
 
 /** Drizzle-generated SQL exported by application bundles. */

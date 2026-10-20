@@ -7,6 +7,7 @@ const require = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -19,6 +20,7 @@ export const migrateDatabase = (
 ) => {
   for (let index = 0; index < migrations.length; index += 1) {
     const migration = require(migrations[index]);
+
     if (
       !/^\d{14}_[\w-]+$/u.test(migration.id) ||
       !/^[a-f0-9]{64}$/u.test(migration.hash) ||
@@ -38,12 +40,15 @@ export const migrateDatabase = (
       "CREATE TABLE IF NOT EXISTS patchsmith_migrations (position INTEGER PRIMARY KEY, id TEXT NOT NULL UNIQUE, hash TEXT NOT NULL)",
       []
     );
+
     const applied = persistence.execute(
       "SELECT position, id, hash FROM patchsmith_migrations ORDER BY position",
       []
     ).rows;
+
     for (const [index, row] of applied.entries()) {
       const migration = migrations[index];
+
       if (
         row[0] !== index ||
         (migration !== undefined &&
@@ -56,11 +61,14 @@ export const migrateDatabase = (
         );
       }
     }
+
     for (let index = applied.length; index < migrations.length; index += 1) {
       const migration = require(migrations[index]);
+
       for (const statement of migration.statements) {
         persistence.execute(statement, []);
       }
+
       persistence.execute(
         "INSERT INTO patchsmith_migrations (position, id, hash) VALUES (?, ?, ?)",
         [index, migration.id, migration.hash]

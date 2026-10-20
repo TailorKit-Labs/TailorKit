@@ -28,6 +28,7 @@ export const env = createEnv({
 if (env.EMAIL_PROVIDER === "smtp") {
   warnIfMissing("email", { EMAIL_SMTP_URL: env.EMAIL_SMTP_URL });
 }
+
 if (env.EMAIL_PROVIDER === "ses") {
   warnIfMissing("email", {
     EMAIL_ACCESS_KEY_ID: env.EMAIL_ACCESS_KEY_ID,

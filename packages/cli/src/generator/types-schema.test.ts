@@ -14,6 +14,7 @@ const requireValue = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) {
     throw new Error("Expected a defined value.");
   }
+
   return value;
 };
 
@@ -408,8 +409,10 @@ const referenceCases: { name: string; schema: JsonSchema; expected: string }[] =
 
 const normalize = (text: string): string =>
   text.replaceAll(/\s+/gu, " ").trim();
+
 const renderDeclaration = (context: JsonSchema): string => {
   const output = renderGeneratedTypes({ views: { "/": { context } } });
+
   return output.slice(
     output.indexOf("export interface ViewPropsByPath"),
     output.indexOf("declare module")
@@ -418,6 +421,7 @@ const renderDeclaration = (context: JsonSchema): string => {
 
 const declarations = cases.map(({ schema }) => {
   const wrapped = z.object({ value: schema });
+
   // SAFETY: The fixture controls this value; this assertion bridges the minimal test double to the API whose behavior is asserted below.
   return renderDeclaration(
     wrapped["~standard"].jsonSchema.output({
@@ -445,6 +449,7 @@ describe("JSON Schema type generation", () => {
       const value = schema["~standard"].jsonSchema.output({
         target: "draft-2020-12",
       }) as JsonSchema;
+
       const output = normalize(
         renderGeneratedTypes({
           components: {
@@ -457,6 +462,7 @@ describe("JSON Schema type generation", () => {
           tools: { echo: { input: value, kind: "server", output: value } },
         })
       );
+
       expect(output).toContain(`value?: ${expected};`);
       expect(output).toContain(
         `onValue?: (input: ${expected}) => ${expected} | Promise<${expected}>;`
@@ -536,6 +542,7 @@ describe("JSON Schema type generation", () => {
         type: "object",
       })
     );
+
     expect(output).toContain(`value: ${expected};`);
   });
 
@@ -596,9 +603,11 @@ describe("JSON Schema type generation", () => {
       "// @ts-expect-error Required rest items must use the items schema type.",
       'const invalidTuple: TupleCase0["/"]["context"]["value"] = ["first", false, 2];',
     ].join("\n");
+
     const root = await mkdtemp(
       path.join(tmpdir(), "patchsmith-generated-type-check-")
     );
+
     try {
       await writeFile(path.join(root, "generated.ts"), source);
       await writeFile(
@@ -615,16 +624,19 @@ describe("JSON Schema type generation", () => {
         })
       );
       const requireValueValue = createRequire(import.meta.url);
+
       const compiler = path.join(
         path.dirname(requireValueValue.resolve("typescript/package.json")),
         "bin/tsc"
       );
+
       // oxlint-disable-next-line typescript/strict-void-return -- Node explicitly supports promisify(execFile); its ChildProcess return is intentionally ignored by the callback-to-Promise adapter.
       const result = await promisify(execFile)(process.execPath, [
         compiler,
         "-p",
         path.join(root, "tsconfig.json"),
       ]);
+
       expect(result.stdout).toBe("");
     } finally {
       await rm(root, { force: true, recursive: true });

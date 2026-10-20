@@ -30,6 +30,7 @@ it.each(["", "   "])("rejects a blank app name: %j", (name) => {
 
 it("loads and trims the configured app name and description", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "patchsmith-named-config-"));
+
   try {
     await writeFile(
       path.join(root, "patchsmith.config.mjs"),
@@ -91,6 +92,7 @@ it("defaults entries while preserving backend enablement and migration configura
 
 it("rejects unsupported storage configuration", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "patchsmith-invalid-config-"));
+
   try {
     await writeFile(
       path.join(root, "patchsmith.config.mjs"),

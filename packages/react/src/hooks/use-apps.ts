@@ -21,6 +21,7 @@ export const useAppsStore = (
   options: UseAppsOptions = {}
 ): UseAppsResult => {
   const memoOptions = useMemo(() => createValueMemo<AppsQueryOptions>(), []);
+
   const stableOptions = memoOptions({
     appIds:
       options.appIds === undefined
@@ -31,10 +32,12 @@ export const useAppsStore = (
         ? undefined
         : [...new Set(options.scopes)].toSorted(),
   });
+
   const query = useMemo(
     () => createAppsQuery(store, stableOptions),
     [store, stableOptions]
   );
+
   return useQueryResult(query.state);
 };
 

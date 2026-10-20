@@ -8,6 +8,7 @@ import views from "./skills/views.md?raw";
 
 export const appAgentReferencesDirectory =
   "/workspace/.patchsmith-agent/references";
+
 const withReferencePaths = (content: string) =>
   content.replaceAll("](references/", `](${appAgentReferencesDirectory}/`);
 

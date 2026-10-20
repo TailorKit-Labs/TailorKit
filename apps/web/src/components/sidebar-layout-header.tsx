@@ -7,6 +7,7 @@ import { NavBreadcrumb } from "#components/nav-breadcrumb";
 export const SidebarLayoutHeader = () => {
   const { open } = useSidebar();
   const { actions } = useHeaderActions();
+
   return (
     <header className="flex h-13 shrink-0 items-center gap-2 border-b px-4">
       {/* Mobile: always show trigger to open sheet */}

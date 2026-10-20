@@ -25,6 +25,7 @@ export const createContext = async ({
     const sessionData = await auth.api.getSession({
       headers: request.headers,
     });
+
     const ip = ipAddress(request) ?? "unknown";
 
     setSpanAttributes({

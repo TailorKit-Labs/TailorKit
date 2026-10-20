@@ -12,19 +12,23 @@ import { z } from "zod";
 
 const requireSession = () => {
   const session = getDemoSessionFromRequest(getRequest());
+
   if (!session) {
     throw new Error("Sign in to continue");
   }
+
   return session;
 };
 
 export const loadOverview = createServerFn({ method: "GET" }).handler(() => {
   const { team } = requireSession();
+
   return getOverview(team.id);
 });
 
 export const loadIssues = createServerFn({ method: "GET" }).handler(() => {
   const { team } = requireSession();
+
   return listIssues(team.id);
 });
 
@@ -33,9 +37,11 @@ export const loadIssue = createServerFn({ method: "GET" })
   .handler(({ data }) => {
     const { team } = requireSession();
     const result = getIssue(team.id, data.issueId);
+
     if (!result) {
       throw new Error("Issue not found");
     }
+
     return result;
   });
 
@@ -43,6 +49,7 @@ export const addIssue = createServerFn({ method: "POST" })
   .validator(z.object({ title: z.string().trim().min(1).max(160) }))
   .handler(({ data }) => {
     const session = requireSession();
+
     return createIssue(session.team.id, session.user.id, data.title);
   });
 
@@ -56,8 +63,10 @@ export const changeIssueStatus = createServerFn({ method: "POST" })
   .handler(({ data }) => {
     const { team } = requireSession();
     const issue = updateIssueStatus(team.id, data.issueId, data.status);
+
     if (!issue) {
       throw new Error("Issue not found");
     }
+
     return issue;
   });

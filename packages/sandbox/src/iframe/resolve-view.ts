@@ -60,6 +60,7 @@ const controlledViewProps = (
   if (request.status !== "ready") {
     return { context: undefined, status: request.status, view: request.view };
   }
+
   if (
     request.context === null ||
     !isObjectValue(request.context) ||
@@ -67,6 +68,7 @@ const controlledViewProps = (
   ) {
     return { context: undefined, status: "error", view: request.view };
   }
+
   return { context: request.context, status: "ready", view: request.view };
 };
 
@@ -89,9 +91,11 @@ const validateViewInstance = (
 
 export const resolveView = (client: AppClient, request: ViewRequest) => {
   const views = client.slots[request.slot];
+
   if (views === undefined) {
     return null;
   }
+
   const selected = (
     request.controlled === true
       ? [request.view]
@@ -100,10 +104,13 @@ export const resolveView = (client: AppClient, request: ViewRequest) => {
     (path) =>
       request.supportedViews.includes(path) && Object.hasOwn(views, path)
   );
+
   if (!hasText(selected) || views[selected] === false) {
     return null;
   }
+
   const definition = views[selected];
+
   if (!definition || !isFunctionValue(definition.component)) {
     throw new TypeError(
       `Patchsmith app client view "${selected}" is missing a component.`
@@ -114,20 +121,26 @@ export const resolveView = (client: AppClient, request: ViewRequest) => {
     request.controlled === true
       ? controlledViewProps(request)
       : composeViewContext(selected, request);
+
   if (props.status !== "ready") {
     return { component: definition.component, props };
   }
+
   if (definition.instances && !request.instance) {
     throw new Error(`View "${selected}" requires a selected instance.`);
   }
+
   if (request.instance !== undefined) {
     if (!definition.instances) {
       throw new Error(`View "${selected}" does not support instances.`);
     }
+
     const { instance } = request;
     validateViewInstance(instance, selected);
+
     return { component: definition.component, props: { ...props, instance } };
   }
+
   return { component: definition.component, props };
 };
 

@@ -17,7 +17,9 @@ const server = defineServer({
     write: fn.mutation.handler(() => null),
   },
 });
+
 type ServerFunctions = typeof server.functions;
+
 declare module "./views" {
   // oxlint-disable-next-line typescript/no-empty-object-type, typescript/no-empty-interface -- Generated bindings augment this public interface through declaration merging.
   interface PatchsmithServerFunctions extends ServerFunctions {}
@@ -30,9 +32,11 @@ defineView({
     resolve: async ({ context, queries, identity, signal, ...other }) => {
       const user: string = context.userId;
       const count: number = await queries.reports.count();
+
       const reports: { id: string }[] = await queries.reports.list({
         userId: user,
       });
+
       const installationId: string = identity.installationId;
       const abort: boolean = signal.aborted;
       void count;
@@ -50,6 +54,7 @@ defineView({
       void other.input;
       // @ts-expect-error Resolver context has no mutation capability.
       void other.mutations;
+
       return reports.map((report) => ({
         data: { reportId: report.id },
         key: report.id,
@@ -60,6 +65,7 @@ defineView({
   slot: "page",
   view: "/users",
 });
+
 defineView({
   component: () => null,
   instances: {
@@ -80,12 +86,17 @@ const instanceView = defineView({
   slot: "page",
   view: "/",
 });
+
 const selected = instanceView.useInstance();
 const selectedKey: string = selected.key;
 const parsedCount: number = selected.data.count;
+
 void selectedKey;
+
 void parsedCount;
+
 // @ts-expect-error instance data is the parsed schema output
 const _rawCount: string = selected.data.count;
+
 // @ts-expect-error instance data fields are inferred from the schema
 void selected.data.missing;

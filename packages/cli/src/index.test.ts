@@ -29,6 +29,7 @@ vi.mock("cac", () => ({
       command: (name: string) => ({
         action: (action: (options: CliOptions) => Promise<void>) => {
           mocks.actions.set(name, action);
+
           return cli;
         },
         option: () => cli.command(name),
@@ -38,9 +39,11 @@ vi.mock("cac", () => ({
       parse: vi.fn(),
       version: vi.fn(),
     };
+
     return cli;
   },
 }));
+
 vi.mock("@clack/prompts", () => ({
   confirm: vi.fn(),
   intro: vi.fn(),
@@ -49,6 +52,7 @@ vi.mock("@clack/prompts", () => ({
   outro: mocks.outro,
   spinner: () => ({ start: mocks.start, stop: mocks.stop }),
 }));
+
 vi.mock("./auth", () => ({
   createCliAuthApprovalUrl: () =>
     "https://host.example/cli-auth/approve?code=ABC-123",
@@ -56,10 +60,15 @@ vi.mock("./auth", () => ({
   runLogout: mocks.logout,
   runWhoami: mocks.whoami,
 }));
+
 vi.mock("./deploy", () => ({ runDeploy: mocks.deploy }));
+
 vi.mock("./agent", () => ({ runAgentCommand: mocks.agent }));
+
 vi.mock("./generator/types", () => ({ generateTypes: mocks.generate }));
+
 vi.mock("./init", () => ({ runInit: mocks.init }));
+
 vi.mock("./utils/open-browser", () => ({ openUrlInBrowser: mocks.open }));
 
 await import("./index");
@@ -73,6 +82,7 @@ beforeEach(() => {
         hostUrl: "https://host.example",
         userCode: "ABC-123",
       });
+
       return {
         hostUrl: "https://host.example",
         scope: { name: "org", value: { id: "org" } },
@@ -99,12 +109,14 @@ it("passes --schema through generate with its working directory and config", asy
 
 it("passes --bare and --schema through init while retaining the required host", async () => {
   mocks.init.mockResolvedValue("/workspace/app");
+
   // SAFETY: This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary.
   // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- This test supplies a deliberately invalid value or a minimal platform double to exercise the runtime boundary. This controlled fixture supplies only the platform members exercised by the test, or deliberately invalid input for runtime validation.
   const init = mocks.actions.get("init [directory]") as unknown as (
     directory: string,
     options: CliOptions
   ) => Promise<void>;
+
   await init("/workspace", {
     bare: true,
     cwd: "/tmp",
@@ -137,6 +149,7 @@ it("opens login approval and resumes deploy with the selected config and working
         scope: { name: "org", value: { id: "org" } },
       });
       expect(mocks.stop).toHaveBeenCalledWith("Approved.");
+
       return {
         appId: "app",
         deploymentId: "deployment",
