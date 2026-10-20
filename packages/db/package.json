@@ -51,5 +51,8 @@
     "@types/pg": "catalog:",
     "drizzle-kit": "catalog:",
     "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

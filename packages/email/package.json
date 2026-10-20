@@ -51,5 +51,8 @@
     "@types/nodemailer": "^8.0.2",
     "@types/react": "catalog:",
     "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

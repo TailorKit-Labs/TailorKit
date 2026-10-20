@@ -96,5 +96,8 @@
     "oxc-transform-react": "^0.153.0",
     "tailwindcss": "catalog:",
     "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }
