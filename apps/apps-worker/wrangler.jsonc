@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "tailorkit-apps-worker",
+  "name": "patchsmith-apps-worker",
   "main": "src/index.ts",
   "build": {
     "command": "pnpm exec turbo run build --filter=@patchsmith/api-utils... --filter=@patchsmith/app... --filter=@patchsmith/asset-delivery... && node scripts/build-bootstrap.mjs",
