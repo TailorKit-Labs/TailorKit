@@ -95,7 +95,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsup ./src/index.ts ./src/ai-sdk.ts ./src/server.ts ./src/db.ts ./src/react.ts ./src/client.ts ./src/app.ts ./src/app-config.ts ./src/vite.ts ./src/zod.ts ./src/valibot.ts ./src/arktype.ts --out-dir ./dist --format esm --target node20 --minify --clean && tsc -p tsconfig.build.json",
+    "build": "vp pack && tsc -p tsconfig.build.json",
     "check-types": "tsc --noEmit",
     "lint": "vp lint .",
     "lint:fix": "vp lint --fix ."
@@ -112,8 +112,8 @@
   "devDependencies": {
     "@tailorkit/config": "workspace:*",
     "@types/node": "catalog:",
-    "tsup": "^8.5.1",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite-plus": "catalog:"
   },
   "peerDependencies": {
     "ai": "^7.0.137",
@@ -134,5 +134,8 @@
     "zod": {
       "optional": true
     }
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
