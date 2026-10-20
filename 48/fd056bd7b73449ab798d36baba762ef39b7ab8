@@ -1,0 +1,19 @@
+PATCHSMITH_MIGRATION.md
+  s_5837c36838c834::t_7b5943e103eff8 27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "48fd056bd7b73449ab798d36baba762ef39b7ab8",
+  "prompts": {},
+  "sessions": {
+    "s_5837c36838c834": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1573b-2bd0-7ba1-9afe-f0ce6731909c",
+        "model": "unknown"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
