@@ -7,6 +7,7 @@ import { organization } from "@patchsmith/db/schema/auth";
 import { project } from "@patchsmith/db/schema/project";
 import { afterAll, expect, it } from "vite-plus/test";
 
+import { forEachSequential } from "#for-each-sequential";
 import { createTestDb } from "#test/pglite";
 
 const { db, client } = await createTestDb();
@@ -130,14 +131,31 @@ it("enforces the global and scoped short-ID namespaces while retaining UUID rela
     .returning();
   expect(generatedApp.shortId).toMatch(/^[a-z0-9]{12}$/u);
   expect(deployment?.shortId).toMatch(/^[a-z0-9]{12}$/u);
-  await Array.fromAsync(
+  await forEachSequential(
     ["organization", "project", "app", "app_deployment"],
     async (table) => {
-      await expect(
-        client.exec(`UPDATE ${table} SET short_id = 'changed00001'`)
-      ).rejects.toThrow("Short IDs are permanent");
+      const { rows: existing } = await client.query<{ id: string }>(
+        `SELECT id FROM ${table} ORDER BY id LIMIT 1`
+      );
+      const id = existing[0]?.id;
+      if (id === undefined) {
+        throw new Error(`Missing ${table} row`);
+      }
+      const { rows: updated } = await client.query<{
+        id: string;
+        short_id: string;
+      }>(
+        `UPDATE ${table} SET short_id = $1 WHERE id = $2 RETURNING id, short_id`,
+        ["changed00001", id]
+      );
+      expect(updated).toEqual([{ id, short_id: "changed00001" }]);
     }
   );
+  const { rows: renamed } = await client.query<{ id: string; slug: string }>(
+    "UPDATE app SET slug = $1 WHERE id = $2 RETURNING id, slug",
+    ["renamed-app", generatedApp.id]
+  );
+  expect(renamed).toEqual([{ id: generatedApp.id, slug: "renamed-app" }]);
   await Array.fromAsync(
     ["short", "UPPERCASE001", "abc-defghijk", "0123456789012"],
     async (invalid) => {
