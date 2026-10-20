@@ -1,5 +1,15 @@
 # @patchsmith/cli
 
+## 0.1.0-beta.55
+
+### Patch Changes
+
+- 2b3e206: Prevent redundant canvas ready notifications, apply frame-rate changes promptly, and release initializing surfaces when cancelled. Keep host presentation progressing while the document is hidden and correct generated usage guidance for components without children.
+- Updated dependencies [7f5d15b]
+  - @patchsmith/core@0.1.0-beta.55
+  - @patchsmith/vite@0.1.0-beta.55
+  - @patchsmith/client-platform@0.1.0-beta.55
+
 ## 0.1.0-beta.54
 
 ### Patch Changes
