@@ -80,7 +80,11 @@ const otherProjectId = "33333333-3333-4333-8333-333333333333";
 const scope = canonicalizeScope({ name: "org", value: { tenant: "one" } });
 const otherScope = canonicalizeScope({ name: "org", value: { tenant: "two" } });
 
-const request = (name: string, args: z.infer<ReturnType<typeof z.json>> = {}) =>
+const request = (
+  name: string,
+  args: z.infer<ReturnType<typeof z.json>> = {},
+  instructions?: string
+) =>
   new Request("https://platform.test/api/platform/app-agent/mcp", {
     body: JSON.stringify({
       id: 1,
@@ -108,6 +112,7 @@ const request = (name: string, args: z.infer<ReturnType<typeof z.json>> = {}) =>
       "x-patchsmith-context": Buffer.from(
         JSON.stringify({
           hostUrl: "https://host.test/api/patchsmith",
+          instructions,
           scopes: { org: scope.scope.value },
           subjectId: "user",
         })
@@ -278,7 +283,11 @@ describe("MCP database authorization", () => {
 
   it("creates and revokes only its own single-scope agent grant", async () => {
     const response = await handleAppAgentMcpRequest(
-      request("edit_app", { appId: ownApp.shortId, prompt: "Change it" }),
+      request(
+        "edit_app",
+        { appId: ownApp.shortId, prompt: "Change it" },
+        "Use compact layouts."
+      ),
       context
     );
 
@@ -302,6 +311,8 @@ describe("MCP database authorization", () => {
       existingGrants
     );
     const [, [input]] = requireValue(state.start.mock.lastCall);
+    expect(input.instructions).toBe("Use compact layouts.");
+    expect(input.messages).toEqual([{ content: "Change it", role: "user" }]);
     expect(
       await verifyAgentToken(
         input.agentToken,
@@ -318,11 +329,15 @@ describe("MCP database authorization", () => {
 
   it("creates the app and agent grant in the authenticated project and selected scope", async () => {
     const response = await handleAppAgentMcpRequest(
-      request("create_app", {
-        name: "New app",
-        prompt: "Build it",
-        scope: "org",
-      }),
+      request(
+        "create_app",
+        {
+          name: "New app",
+          prompt: "Build it",
+          scope: "org",
+        },
+        "Use our purple palette."
+      ),
       context
     );
 
@@ -337,6 +352,9 @@ describe("MCP database authorization", () => {
     });
     expect(requireValue(state.start.mock.lastCall)[1][0].appId).toBe(
       requireValue(created).id
+    );
+    expect(requireValue(state.start.mock.lastCall)[1][0].instructions).toBe(
+      "Use our purple palette."
     );
     const grants = await database.db.select().from(cliToken);
     expect(

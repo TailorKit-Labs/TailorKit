@@ -2,6 +2,26 @@
 
 Use `@patchsmith/core` to define a host contract and connect your server to Patchsmith.
 
+## Guide the app builder
+
+Set `agent.instructions` on `createServer()` to give the app builder design conventions, product context, or implementation tips:
+
+```ts
+const patchsmith = createServer({
+  contract,
+  baseUrl: "https://example.com/api/patchsmith",
+  projectKey,
+  agent: {
+    instructions: `Use our purple accent color and compact layouts.
+Prefer the host's existing components. Keep copy short and task-focused.`,
+  },
+});
+```
+
+The guidance is appended to Patchsmith's built-in builder instructions on each new turn, including follow-ups in existing conversations. It applies to MCP clients, `createTools(patchsmith, context)` from `patchsmith/ai-sdk`, and CLI chat through the host. The outer AI SDK model keeps its own instructions.
+
+Instructions are trimmed, may contain up to 32,000 characters, and stay out of the public contract schema. MCP requests share the existing 8 KiB encoded context-header budget with the host URL, scopes, and subject ID. Shorten the guidance if the transport reports that limit. Use guidance for conventions and tips; authorization and tool permissions still belong in host code.
+
 ## Connect an app agent over MCP
 
 `createServer()` exposes `server.mcp.transport({ scopes, subjectId })` to prepare an HTTP connection for a server-side Model Context Protocol (MCP) client. Pass the same data shape returned by your host’s `authenticate()` callback. The helper validates scope values against the contract’s Standard Schema validators; it does not call `authenticate()` or require a `Request`.

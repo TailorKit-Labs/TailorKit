@@ -5,6 +5,7 @@ import {
 } from "@patchsmith/client-platform/client";
 import { createClient } from "@patchsmith/client-platform/client/client/index";
 import type { AppsListResponses } from "@patchsmith/client-platform/client/types.gen";
+import * as v from "valibot";
 
 import type {
   NoComponentFieldCallbackConflicts,
@@ -94,6 +95,14 @@ export const createPatchsmithServer = <
     ? V
     : EmptyDefinitionMap;
 } => {
+  const configuredInstructions = v.parse(
+    v.optional(v.pipe(v.string(), v.trim(), v.maxLength(32_000))),
+    options.agent?.instructions
+  );
+
+  const agentInstructions =
+    configuredInstructions === "" ? undefined : configuredInstructions;
+
   const { basePath, publicOrigin } = normalizeBaseUrl(options.baseUrl);
   const scopeSchemas = validatePatchsmithScopeSchemas(options.scopes);
 
@@ -131,6 +140,7 @@ export const createPatchsmithServer = <
   const rpcHandler = new RPCHandler(patchsmithRouter);
 
   const mcp = createMcpTransport({
+    agentInstructions,
     hostUrl: publicOrigin + basePath,
     platformHeaders,
     platformUrl: platformBaseUrl,
@@ -227,6 +237,7 @@ export const createPatchsmithServer = <
 
     if (request.method === "GET" && url.pathname === `${basePath}/apps`) {
       const context = await createContext({
+        agentInstructions,
         authenticate,
         platform,
         platformHeaders,
@@ -278,6 +289,7 @@ export const createPatchsmithServer = <
 
     if (url.pathname === `${basePath}/cli-auth/approve`) {
       const context = await createContext({
+        agentInstructions,
         authenticate,
         platform,
         platformHeaders,
@@ -298,6 +310,7 @@ export const createPatchsmithServer = <
     // SAFETY: The server preserves the supplied typed tool table and normalizes the route base path before constructing its handler.
     const rpcResult = await rpcHandler.handle(request, {
       context: await createContext({
+        agentInstructions,
         authenticate,
         platform,
         platformHeaders,

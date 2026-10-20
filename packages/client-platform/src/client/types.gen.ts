@@ -21,6 +21,7 @@ export type AppAgentChatData = {
       slug: string;
     };
     hostUrl: string;
+    instructions?: string;
     messages: Array<{
       id: string;
       metadata?: unknown;

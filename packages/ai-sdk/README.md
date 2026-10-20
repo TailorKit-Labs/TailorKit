@@ -4,6 +4,8 @@ Use `createTools` from `patchsmith/ai-sdk` (or `@patchsmith/ai-sdk`) to let an A
 
 The adapter uses Valibot for its tool schemas and validation. Your own tools and Patchsmith contract can use any schema library supported by their respective APIs.
 
+Configure `agent: { instructions: "Use our design system and compact layouts." }` on your Patchsmith `createServer()` to pass design guidance or app-building tips to the builder on every create and edit, including follow-ups. `createTools` carries this configuration automatically. These instructions supplement the builder's built-in guidance; configure your outer AI SDK model's instructions separately. See [server configuration and size limits](../core/README.md#guide-the-app-builder).
+
 Create the tools on your host server for each authenticated request. Pass your configured Patchsmith server and the same `scopes` and `subjectId` context used by the host SDK. Scope values are checked against your server's configured schemas before each MCP call. Credentials and authorization stay on the host.
 
 ```ts

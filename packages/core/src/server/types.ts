@@ -46,6 +46,11 @@ export interface PatchsmithServerBaseOptions<
    * Supplies the trusted origin for backend sessions and server tool calls.
    */
   baseUrl: string | URL;
+  /** Host guidance appended to the app builder's built-in instructions. */
+  agent?: {
+    /** Design conventions, product context, or app-building tips. Maximum 32,000 characters. */
+    instructions?: string;
+  };
   /**
    * Configuration for browser-based Patchsmith CLI authentication.
    */

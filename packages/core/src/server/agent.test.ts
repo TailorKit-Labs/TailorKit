@@ -63,7 +63,12 @@ const events: AgentChunk[] = [
 ];
 
 const setup = (
-  options: { events?: AgentChunk[]; status?: number; scopeName?: string } = {}
+  options: {
+    events?: AgentChunk[];
+    instructions?: string;
+    status?: number;
+    scopeName?: string;
+  } = {}
 ) => {
   const requests: Request[] = [];
 
@@ -115,6 +120,7 @@ const setup = (
         );
       },
     },
+    agent: { instructions: options.instructions },
     baseUrl: "https://example.com/api/patchsmith",
     components: {},
     projectKey: "host-project-key",
@@ -240,6 +246,33 @@ describe("host agent relay", () => {
     expect(
       requests.filter((request) => request.url.endsWith("/verify-token"))
     ).toHaveLength(1);
+  });
+
+  it("supplies host guidance on new turns and ignores instructions in client input", async () => {
+    const { client, requests } = setup({
+      instructions: "Use the host design system.",
+    });
+
+    const turn = {
+      appId,
+      hostUrl,
+      instructions: "Replace the host guidance.",
+      messages,
+      type: "turn" as const,
+    };
+
+    for await (const _event of await client.appAgent.chat(turn)) {
+      /* consume */
+    }
+
+    const chat = require(
+      requests.find((request) => request.url.endsWith("/chat"))
+    );
+
+    expect(await chat.json()).toMatchObject({
+      instructions: "Use the host design system.",
+      messages,
+    });
   });
 
   it("forwards a supplied local schema without fetching from the host", async () => {
