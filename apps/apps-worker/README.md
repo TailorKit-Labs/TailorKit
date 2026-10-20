@@ -158,16 +158,17 @@ pnpm --filter @patchsmith/apps-worker deploy
 
 `build` runs `wrangler deploy --dry-run --outdir dist`; `deploy` runs `wrangler deploy`. Both use Wrangler's custom build hook to build workspace dependencies and generate `.generated/bootstrap.txt` from `src/dynamic-workers/facet.ts`. The bootstrap is separate source text for the isolated app loader. Wrangler bundles the trusted worker and includes that text module. Do not remove the bootstrap generation or deploy `dist/index.js` separately.
 
-Direct `pnpm exec wrangler dev`, `pnpm exec wrangler deploy`, and `pnpm exec wrangler versions upload` also work from `apps/apps-worker`. No manual dependency build is required. Wrangler watches the worker, bootstrap build script, and imported workspace sources during development. Turborepo caches both `dist` and `.generated`, so cached builds restore the files needed by tests.
+Direct `pnpm exec wrangler dev` and `pnpm exec wrangler deploy` also work from `apps/apps-worker`. No manual dependency build is required. Wrangler watches the worker, bootstrap build script, and imported workspace sources during development. Turborepo caches both `dist` and `.generated`, so cached builds restore the files needed by tests.
 
 In the Cloudflare dashboard, open this Worker's **Settings > Builds > Build configuration** and set:
 
 - Root directory: `apps/apps-worker`
+- Production branch: `main`, with production builds enabled
 - Build command: `pnpm run build`
-- Deploy command: `pnpm run deploy`
-- Preview command (non-production branches): `pnpm exec wrangler versions upload`
+- Deploy command: `npx wrangler deploy` (equivalent to `pnpm run deploy`)
+- Builds for Preview branches: disabled under **Previews Base**
 
-The Preview command is a dashboard setting; `wrangler.jsonc` does not replace it. The default `npx wrangler preview` requires a separate `previews` configuration and fails for this worker. `wrangler versions upload` uploads a version without making it active or changing production routes. With this worker's `preview_urls: false`, PR builds validate and upload code without publishing a callable preview. See Cloudflare's [Preview command configuration](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/#preview-command).
+Preview branch builds are controlled in the dashboard. `preview_urls: false` in `wrangler.jsonc` only disables public version URLs; it does not disable branch builds. This worker deploys from `main`. Pull requests run GitHub CI, including the Wrangler dry build and local runtime tests. Enabling Cloudflare branch previews would require a separate `previews` configuration. See Cloudflare's [build configuration](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/).
 
 Set the build variables `NODE_VERSION=24` and `PNPM_VERSION=12.11.2` to match this workspace; let Cloudflare install dependencies from the root lockfile. See Cloudflare's [build image settings](https://developers.cloudflare.com/workers/ci-cd/builds/build-image/).
 
