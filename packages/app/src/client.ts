@@ -24,6 +24,7 @@ export type {
   experimental_CanvasLifecycle,
   experimental_CanvasCreateContext,
   experimental_CanvasDraw,
+  experimental_CanvasFrame,
   experimental_CanvasHookOptions,
   experimental_CanvasHookState,
   experimental_CanvasHookResult,

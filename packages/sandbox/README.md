@@ -70,6 +70,27 @@ The hook returns `binding`, `status` (`pending`, `ready`, or `error`), `error`, 
 
 For a host-paced animation, pass `{ continuous: true }` as the third argument. Each iteration awaits the draw callback and host presentation before drawing another frame. Switching continuous mode off draws one final static frame. Drawing callbacks may return a promise; they should finish promptly and should not resize the OffscreenCanvas or retain it after teardown. The hook preserves the drawing buffer by default using `createImageBitmap`, so libraries can retain or incrementally update their pixels. This allocates a snapshot bitmap in addition to the source buffer. Pass `{ preserveDrawingBuffer: false }` for the original transfer-and-clear path when drawing complete frames and measuring throughput.
 
+### Frame timing, skipped frames, and requested rate
+
+Drawing callbacks receive an `experimental_CanvasFrame`: the simple form is `draw(canvas, frame)` and the library lifecycle form is `draw(resource, canvas, frame)`. `frame.timestamp` uses the sandbox's monotonic performance clock; `frame.deltaTime` is milliseconds since the previous draw callback, with zero for the first draw on each new connection. Timing includes skipped draw calls and may jump after a background pause. Applications decide how to clamp elapsed time or advance a fixed-step simulation.
+
+Returning `false` (or a promise resolving to `false`) skips the bitmap snapshot and presentation entirely. Returning nothing preserves the existing behavior. This is useful for charts with unchanged data, incremental drawing libraries, and animations with no new pixels. `update` still runs when its dependencies change; only `draw` can skip presentation. An omitted lifecycle draw callback presents the pixels already drawn by update or input handlers.
+
+Pass `framesPerSecond` in the hook options to request a lower scheduling cap, for example `{ continuous: true, framesPerSecond: 30 }`. It must be finite, greater than zero, and at most 240; invalid values throw a RangeError. This app-side limit applies to drawing and presentation attempts, including dependency changes and input. The host independently enforces its own maximum; requesting a higher rate cannot override it. It is a maximum requested rate, not a guaranteed cadence.
+
+```tsx
+const surface = experimental_useCanvasSurface(
+  (canvas, { timestamp, deltaTime }) => {
+    if (!animationNeedsFrame(timestamp)) return false;
+    drawAnimation(canvas, timestamp, deltaTime);
+  },
+  [animation],
+  { continuous: true, framesPerSecond: 30 }
+);
+```
+
+The default path still relies on host acknowledgements for backpressure. A continuously skipped frame yields with a timer, at the requested interval or approximately 60 Hz by default, so skipping cannot create a tight microtask loop. Timers are used because the sandbox iframe is hidden. Pending waits are cancelled when the connection is retired, and repeated invalidations coalesce. Updating the requested rate takes effect after any existing wait finishes. These controls do not impose hard execution quotas on app code.
+
 ### Library lifecycle and native local input
 
 For libraries, use an explicit lifecycle. The second argument contains **update dependencies**; `options.createDependencies` contains **creation dependencies** and defaults to `[]`.
@@ -155,7 +176,7 @@ try {
 
 `transferToImageBitmap()` replaces the source image with a blank image: redraw the complete frame before each `present()`. Await presentation before sending another frame. The acknowledgement means that the host consumed the bitmap during an animation-frame callback, rather than proof that pixels have reached the physical display. Keep a surface open for as long as its output should remain visible; closing it clears the host canvas.
 
-The low-level API is useful for custom adapters; React hosts can use the contract and renderer above. Keyboard/pointer input requires the explicit grants described above. Audio, WebAssembly policy changes, and dedicated workers remain separate capabilities.
+The low-level API is useful for custom adapters; React hosts can use the contract and renderer above. Keyboard/pointer input requires the explicit grants described above. Audio and dedicated workers remain separate capabilities. WebAssembly compilation is permitted by the sandbox script policy described below.
 
 ## Limits and lifecycle
 
@@ -163,7 +184,7 @@ The low-level API is useful for custom adapters; React hosts can use the contrac
 - Each registration accepts one connection at a time and one pending frame. Frame dimensions and increasing sequence numbers are checked on the host. Oversized, malformed, or overlapping frames close the connection and release received bitmaps.
 - Host presentation is gated by `requestAnimationFrame` and `maxFramesPerSecond` (default 60, accepted range 1–240). Background tabs may pause presentation. Registration rate limits persist across reconnections.
 - The SDK rejects overlapping `present()` calls and changed source dimensions. Low-level `present()` transfers and clears the source by default; `present({ preserveDrawingBuffer: true })` snapshots it without clearing. Each surface exposes an AbortSignal for connection closure. Requests and presentations time out after 30 seconds. Hosts can revoke at any time; destroying the host closes every surface and removes the iframe.
-- Apps receive pixel output capability only. They do not receive the host canvas, rendering context, DOM references, credentials, or an arbitrary host API. The existing iframe sandbox flags and CSP remain in place.
+- Apps receive pixel output capability only. They do not receive the host canvas, rendering context, DOM references, credentials, or an arbitrary host API. The iframe keeps `sandbox="allow-scripts"` without `allow-same-origin`. Its CSP permits inline/data scripts and `unsafe-eval` inside the opaque-origin sandbox, including JavaScript string evaluation and WebAssembly compilation. Workers remain blocked with `worker-src 'none'`. Evaluation does not grant access to the host DOM or bypass host bridge validation, but evaluated code receives the app's existing capabilities and can consume resources.
 
 These limits bound accepted output and retained application queues, not all browser resources. An untrusted app can still consume CPU/GPU/memory or enqueue transport messages before disconnection; large bitmaps exist before the host can inspect them. An iframe is not a hard resource quota. Pixel content also needs an accessibility alternative supplied by the app/host, and may imitate UI within its allocated rectangle.
 

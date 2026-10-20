@@ -480,3 +480,166 @@ it("cancels pending resize and disposes its resource without presenting after te
   expect(update).not.toHaveBeenCalled();
   expect(bridge.surfaces[0]?.surface.present).not.toHaveBeenCalled();
 });
+
+it("skips snapshots on false and presents again on explicit invalidation", async () => {
+  const bridge = createBridge();
+  let skip = true;
+  const controller = createCanvasController(
+    "chart",
+    () => {},
+    bridge.dependencies
+  );
+  controller.update(() => !skip, [], {});
+  const unmount = controller.mount();
+  bridge.availability("first");
+  await settle();
+  expect(bridge.surfaces[0]?.surface.present).not.toHaveBeenCalled();
+  skip = false;
+  controller.invalidate();
+  await settle();
+  expect(bridge.surfaces[0]?.surface.present).toHaveBeenCalledTimes(1);
+  unmount();
+});
+
+it("paces skipped library frames, supplies timing, and cancels waits on unmount", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(1000);
+  const bridge = createBridge();
+  const frames: { timestamp: number; deltaTime: number }[] = [];
+  const controller = createCanvasController<number>("chart", () => {}, {
+    ...bridge.dependencies,
+    now: Date.now,
+  });
+  controller.update(
+    {
+      create: () => 1,
+      draw: async (_resource, _canvas, frame) => {
+        frames.push(frame);
+        await Promise.resolve();
+        return false;
+      },
+    },
+    [],
+    { continuous: true, framesPerSecond: 20 }
+  );
+  const unmount = controller.mount();
+  try {
+    bridge.availability("first");
+    await settle();
+    expect(frames).toEqual([{ deltaTime: 0, timestamp: 1000 }]);
+    await vi.advanceTimersByTimeAsync(100);
+    expect(frames).toEqual([
+      { deltaTime: 0, timestamp: 1000 },
+      { deltaTime: 50, timestamp: 1050 },
+      { deltaTime: 50, timestamp: 1100 },
+    ]);
+    expect(bridge.surfaces[0]?.surface.present).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(1);
+    unmount();
+    await settle();
+    expect(vi.getTimerCount()).toBe(0);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(frames).toHaveLength(3);
+  } finally {
+    unmount();
+    vi.useRealTimers();
+  }
+});
+
+it("yields skipped continuous frames even without a requested rate", async () => {
+  vi.useFakeTimers();
+  const bridge = createBridge();
+  let draws = 0;
+  const controller = createCanvasController(
+    "chart",
+    () => {},
+    bridge.dependencies
+  );
+  controller.update(
+    () => {
+      draws += 1;
+      return false;
+    },
+    [],
+    { continuous: true }
+  );
+  const unmount = controller.mount();
+  try {
+    bridge.availability("first");
+    await settle();
+    expect(draws).toBe(1);
+    await vi.advanceTimersByTimeAsync(100);
+    expect(draws).toBeGreaterThan(1);
+    expect(draws).toBeLessThanOrEqual(7);
+    expect(bridge.surfaces[0]?.surface.present).not.toHaveBeenCalled();
+  } finally {
+    unmount();
+    vi.useRealTimers();
+  }
+});
+
+it("coalesces redraws under the requested cap and resets timing on replacement", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(1000);
+  const bridge = createBridge();
+  const frames: { timestamp: number; deltaTime: number }[] = [];
+  const controller = createCanvasController("chart", () => {}, {
+    ...bridge.dependencies,
+    now: Date.now,
+  });
+  controller.update(
+    (_canvas, frame) => {
+      frames.push(frame);
+    },
+    [],
+    { framesPerSecond: 20 }
+  );
+  const unmount = controller.mount();
+  try {
+    bridge.availability("first");
+    await settle();
+    controller.invalidate();
+    controller.invalidate();
+    await settle();
+    await vi.advanceTimersByTimeAsync(49);
+    expect(frames).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(frames).toEqual([
+      { deltaTime: 0, timestamp: 1000 },
+      { deltaTime: 50, timestamp: 1050 },
+    ]);
+    expect(bridge.surfaces[0]?.surface.present).toHaveBeenCalledTimes(2);
+    controller.invalidate();
+    await settle();
+    bridge.availability("replacement");
+    await settle();
+    expect(frames.at(-1)).toEqual({ deltaTime: 0, timestamp: 1050 });
+    await vi.advanceTimersByTimeAsync(100);
+    expect(bridge.surfaces[0]?.surface.present).toHaveBeenCalledTimes(2);
+    expect(bridge.surfaces[1]?.surface.present).toHaveBeenCalledTimes(1);
+  } finally {
+    unmount();
+    vi.useRealTimers();
+  }
+});
+
+it("rejects invalid requested frame rates before starting a connection", () => {
+  const bridge = createBridge();
+  const controller = createCanvasController(
+    "chart",
+    () => {},
+    bridge.dependencies
+  );
+  for (const framesPerSecond of [
+    0,
+    -1,
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    241,
+  ]) {
+    expect(() => {
+      controller.update(() => {}, [], { framesPerSecond });
+    }).toThrow(RangeError);
+  }
+  expect(bridge.dependencies.request).not.toHaveBeenCalled();
+});

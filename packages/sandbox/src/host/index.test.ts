@@ -123,6 +123,9 @@ describe("createIframeUiHost", () => {
       "allow-same-origin"
     );
     expect(host.iframe.srcdoc).toContain("connect-src http: https: ws: wss:");
+    expect(host.iframe.srcdoc).toContain(
+      "script-src 'unsafe-inline' 'unsafe-eval' data:;"
+    );
     expect(host.iframe.srcdoc).toContain("worker-src 'none'");
     expect(host.iframe.srcdoc).not.toContain("new Worker");
     expect(fetch).toHaveBeenCalledWith(new URL("https://assets.test/app.js"), {

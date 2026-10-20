@@ -133,6 +133,7 @@ const runChecks = async () => {
   const results: BenchmarkResult[] = [];
   try {
     const modes: BenchmarkConfiguration["mode"][] = [
+      "evaluation",
       "unregistered",
       "concurrent",
       "preserve-buffer",

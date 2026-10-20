@@ -11,6 +11,7 @@ import type {
 
 export type {
   experimental_CanvasDraw,
+  experimental_CanvasFrame,
   experimental_CanvasLifecycle,
   experimental_CanvasCreateContext,
   experimental_CanvasHookOptions,

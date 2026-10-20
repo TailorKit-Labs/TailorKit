@@ -107,9 +107,9 @@ const Chart = ({
         chart.destroy();
         onInstanceCountChange(Object.keys(ChartJS.instances).length);
       },
-      draw: (chart) => {
+      draw: (chart, _canvas, { timestamp }) => {
         if (continuous) {
-          const animation = Math.floor(performance.now() / 25);
+          const animation = Math.floor(timestamp / 25);
           const [dataset] = chart.data.datasets;
           dataset.data = [45, 90, 65, 120, 80].map(
             (value) => ((value + revision * 19 + animation) % 150) + 20
@@ -129,7 +129,7 @@ const Chart = ({
       },
     },
     [revision, continuous],
-    { continuous }
+    { continuous, framesPerSecond: 30 }
   );
   return (
     <>
