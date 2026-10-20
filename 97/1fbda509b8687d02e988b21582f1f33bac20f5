@@ -1,0 +1,49 @@
+packages/cli/vite.config.ts
+  s_4c2d66e3c10e7f::t_b247e6875cf212 43
+packages/db/package.json
+  s_4c2d66e3c10e7f::t_b247e6875cf212 30
+packages/flags/package.json
+  s_4c2d66e3c10e7f::t_b247e6875cf212 25
+packages/asset-delivery/package.json
+  s_4c2d66e3c10e7f::t_b247e6875cf212 30
+packages/api/package.json
+  s_4c2d66e3c10e7f::t_b247e6875cf212 30
+.changeset/quick-cups-pack.md
+  s_4c2d66e3c10e7f::t_b247e6875cf212 10-11,16
+packages/storage/package.json
+  s_4c2d66e3c10e7f::t_b247e6875cf212 30
+packages/auth/package.json
+  s_4c2d66e3c10e7f::t_b247e6875cf212 30
+packages/api-platform/package.json
+  s_4c2d66e3c10e7f::t_b247e6875cf212 38
+packages/ui/package.json
+  s_4c2d66e3c10e7f::t_b247e6875cf212 68
+packages/kv/package.json
+  s_4c2d66e3c10e7f::t_b247e6875cf212 30
+packages/observability/package.json
+  s_4c2d66e3c10e7f::t_b247e6875cf212 25
+packages/email/package.json
+  s_4c2d66e3c10e7f::t_b247e6875cf212 30
+packages/api-utils/package.json
+  s_4c2d66e3c10e7f::t_b247e6875cf212 50
+packages/env/package.json
+  s_4c2d66e3c10e7f::t_b247e6875cf212 24
+packages/sandbox/vite.config.ts
+  s_4c2d66e3c10e7f::t_b247e6875cf212 22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "971fbda509b8687d02e988b21582f1f33bac20f5",
+  "prompts": {},
+  "sessions": {
+    "s_4c2d66e3c10e7f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a156da-1ce7-7e33-aaa1-f449d752e71b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alfie Jones <alfie.jones@hotmail.co.uk>"
+    }
+  }
+}
