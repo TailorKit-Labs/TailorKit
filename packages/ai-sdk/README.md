@@ -9,7 +9,7 @@ import { streamText } from "ai";
 import { createTools } from "tailorkit/ai-sdk";
 
 // tailorkit, user, model, and messages come from your host application.
-const tools = createTools(tailorkit, {
+const { listApps, createApp, editApp } = createTools(tailorkit, {
   scopes: { org: { tenant: user.organizationId } },
   subjectId: user.id,
 });
@@ -17,12 +17,12 @@ const tools = createTools(tailorkit, {
 return streamText({
   model,
   messages,
-  tools,
+  tools: { listApps, createApp, editApp },
   abortSignal: request.signal,
 }).toUIMessageStreamResponse();
 ```
 
-`createTools` is synchronous and returns `list_apps`, `create_app`, and `edit_app` directly. The tool names, descriptions, and schemas are fixed; the adapter does not perform MCP tool discovery. `create_app` limits its scope name to the scopes supplied by the host. Each invocation obtains authenticated transport configuration from the TailorKit server, calls `/app-agent/mcp` using MCP 2026-07-28, and closes its own connection when it finishes or fails.
+`createTools` is synchronous and returns `listApps`, `createApp`, and `editApp` directly so you can destructure and combine them with your own tools. They call the internal MCP tools `list_apps`, `create_app`, and `edit_app`, respectively. The tool names, descriptions, and schemas are fixed; the adapter does not perform MCP tool discovery. `createApp` limits its scope name to the scopes supplied by the host. Each invocation obtains authenticated transport configuration from the TailorKit server, calls `/app-agent/mcp` using MCP 2026-07-28, and closes its own connection when it finishes or fails.
 
 Each MCP activity notification produces an AI SDK preliminary tool result:
 
@@ -48,7 +48,7 @@ The final tool result contains the original MCP result, including `content` and 
 }
 ```
 
-Render preliminary outputs while the tool part has `preliminary: true`. Progress consists of bounded activity snapshots from MCP, rather than raw agent token or internal tool streams. A slow consumer receives the latest snapshot. Use a returned `threadId` with `edit_app` to continue the same app conversation.
+Render preliminary outputs while the tool part has `preliminary: true`. Progress consists of bounded activity snapshots from MCP, rather than raw agent token or internal tool streams. A slow consumer receives the latest snapshot. Use a returned `threadId` with `editApp` to continue the same app conversation.
 
 `generateText` also works with the same tools: it consumes progress and returns the final tool output. No explicit connection setup or cleanup is needed.
 

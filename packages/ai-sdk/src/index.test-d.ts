@@ -15,9 +15,9 @@ const tools = createTools(server, {
   scopes: { org: { tenant: "one" } },
   subjectId: "user-one",
 });
-void tools.create_app;
-void tools.edit_app;
-void tools.list_apps;
+void tools.createApp;
+void tools.editApp;
+void tools.listApps;
 
 // @ts-expect-error The host context requires an authenticated subject.
 createTools(server, { scopes: { org: { tenant: "one" } } });

@@ -229,7 +229,7 @@ const editInput = {
 };
 const generate = async (
   client: TailorKitTools,
-  name = "edit_app",
+  name = "editApp",
   input = editInput
 ) =>
   await generateText({
@@ -242,14 +242,14 @@ describe("MCP-backed AI SDK tools", () => {
   it("uses fixed schemas and the authenticated MCP endpoint without discovery", async () => {
     const { client, requests } = await connect();
     expect(Object.keys(client).toSorted()).toEqual([
-      "create_app",
-      "edit_app",
-      "list_apps",
+      "createApp",
+      "editApp",
+      "listApps",
     ]);
     expect(requests).toHaveLength(0);
-    const create = client.create_app;
+    const create = client.createApp;
     if (create === undefined) {
-      throw new Error("Missing create_app tool");
+      throw new Error("Missing createApp tool");
     }
     const schema = asSchema(create.inputSchema);
     expect(await schema.jsonSchema).toMatchObject({
@@ -279,7 +279,7 @@ describe("MCP-backed AI SDK tools", () => {
     }
   });
 
-  it.each(["create_app", "edit_app"])(
+  it.each(["createApp", "editApp"])(
     "streams %s progress through the AI SDK before completion",
     async (name) => {
       const received = Promise.withResolvers<boolean>();
@@ -296,7 +296,7 @@ describe("MCP-backed AI SDK tools", () => {
         return result();
       });
       const input =
-        name === "edit_app"
+        name === "editApp"
           ? editInput
           : { name: "App", prompt: "Build", scope: "org" };
       const response = streamText({
@@ -322,16 +322,19 @@ describe("MCP-backed AI SDK tools", () => {
           status: "completed",
         },
       });
-      expect(calls).toEqual([{ input, name }]);
+      expect(calls).toEqual([
+        { input, name: name === "createApp" ? "create_app" : "edit_app" },
+      ]);
     }
   );
 
-  it("lists apps with the fixed pagination schema", async () => {
+  it("supports destructured tools with the internal MCP names", async () => {
     const { client } = await connect();
+    const { listApps } = client;
     const response = await generateText({
-      model: model("list_apps", { page: 2, pageSize: 10 }),
+      model: model("listApps", { page: 2, pageSize: 10 }),
       prompt: "Find my apps",
-      tools: client,
+      tools: { listApps },
     });
     expect(response.toolResults[0]?.output).toMatchObject({
       result: { structuredContent: { items: [] } },
@@ -367,7 +370,7 @@ describe("MCP-backed AI SDK tools", () => {
   it("rejects invalid model input before executing an MCP tool", async () => {
     const { client, calls } = await connect();
     const response = await generateText({
-      model: model("create_app", {
+      model: model("createApp", {
         name: "App",
         prompt: "Build",
         scope: "other",
@@ -400,7 +403,7 @@ describe("MCP-backed AI SDK tools", () => {
     const controller = new AbortController();
     const response = streamText({
       abortSignal: controller.signal,
-      model: model("edit_app", editInput),
+      model: model("editApp", editInput),
       prompt: "Edit",
       tools: client,
     });
@@ -432,7 +435,7 @@ describe("MCP-backed AI SDK tools", () => {
     let received = 0;
     const run = async (prompt: string) => {
       const response = streamText({
-        model: model("edit_app", { ...editInput, prompt }),
+        model: model("editApp", { ...editInput, prompt }),
         prompt,
         tools: client,
       });
