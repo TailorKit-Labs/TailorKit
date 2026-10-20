@@ -643,3 +643,36 @@ it("rejects invalid requested frame rates before starting a connection", () => {
   }
   expect(bridge.dependencies.request).not.toHaveBeenCalled();
 });
+
+it("does not overflow timers for very low requested rates", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(1000);
+  const bridge = createBridge();
+  let draws = 0;
+  const controller = createCanvasController("chart", () => {}, {
+    ...bridge.dependencies,
+    now: Date.now,
+  });
+  controller.update(
+    () => {
+      draws += 1;
+    },
+    [],
+    { framesPerSecond: 0.0000001 }
+  );
+  const unmount = controller.mount();
+  try {
+    bridge.availability("first");
+    await settle();
+    controller.invalidate();
+    await settle();
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(draws).toBe(1);
+    unmount();
+    await settle();
+    expect(vi.getTimerCount()).toBe(0);
+  } finally {
+    unmount();
+    vi.useRealTimers();
+  }
+});
