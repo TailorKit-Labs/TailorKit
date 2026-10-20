@@ -23,6 +23,7 @@
     "lint:fix": "vp lint --fix ."
   },
   "dependencies": {
+    "chart.js": "4.5.1",
     "patchsmith": "workspace:*",
     "preact": "^11.0.1"
   },

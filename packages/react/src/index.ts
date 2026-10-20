@@ -1,5 +1,7 @@
 export { RenderSlot } from "./components/render-slot";
 
+export { experimental_canvasRenderer } from "./canvas";
+
 export type {
   ControlledRenderSlotProps,
   RenderSlotComponent,

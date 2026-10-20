@@ -2,7 +2,11 @@ import { Button } from "@patchsmith/ui/button";
 import { Input } from "@patchsmith/ui/input";
 import { contract } from "@playground/shared/contracts/active";
 import { theme } from "@playground/shared/contracts/theme";
-import { createClient, primitives as reactPrimitives } from "patchsmith/react";
+import {
+  experimental_canvasRenderer,
+  createClient,
+  primitives as reactPrimitives,
+} from "patchsmith/react";
 import { z } from "zod";
 
 const isObjectValue = <TValue,>(value: TValue): value is TValue & object =>
@@ -47,6 +51,7 @@ export const patchsmith = createClient({
       : new URL("/api/patchsmith/", window.location.origin),
   components: {
     ...reactPrimitives,
+    experimental_Canvas: experimental_canvasRenderer,
     Button: ({ props, children }) => <Button {...props}>{children}</Button>,
     Input: ({ props: { onValueChange, ...rest } }) => (
       <Input

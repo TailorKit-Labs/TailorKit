@@ -50,11 +50,16 @@ const setup = () => {
         destroy: vi.fn<IframeUiHost["destroy"]>(),
 
         dispatch: vi.fn<IframeUiHost["dispatch"]>(),
+
+        experimental_registerCanvas:
+          vi.fn<IframeUiHost["experimental_registerCanvas"]>(),
+
         iframe: document.createElement("iframe"),
 
         mount: vi.fn<IframeUiHost["mount"]>(),
 
         setProps: vi.fn<IframeUiHost["setProps"]>(),
+
         subscribe: vi.fn(
           (listener: Parameters<IframeUiHost["subscribe"]>[0]) => {
             listeners.push(listener);
@@ -261,7 +266,12 @@ it("reports startup failures, releases partial hosts, and recovers on the next m
       destroy: vi.fn<IframeUiHost["destroy"]>(),
 
       dispatch: vi.fn<IframeUiHost["dispatch"]>(),
+
+      experimental_registerCanvas:
+        vi.fn<IframeUiHost["experimental_registerCanvas"]>(),
+
       iframe: document.createElement("iframe"),
+
       mount: () => {
         throw failure;
       },

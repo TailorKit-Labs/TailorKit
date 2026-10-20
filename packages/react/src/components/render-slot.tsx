@@ -82,6 +82,7 @@ const SlotRenderer = (options: SlotRuntimeOptions): ReactNode => {
           toolBridge={snapshot.toolBridge}
           getBackendSession={snapshot.getBackendSession}
           components={client.components}
+          contract={client.contract}
           props={snapshot.props}
         />
       </div>

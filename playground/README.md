@@ -34,7 +34,7 @@ pnpm playground:todo:build
 
 `playground:generate` serializes the selected contract to `playground/schema.json`, then runs `patchsmith generate --schema` for the todo app. It does not need the host to be running. Repeated JSON Schema definitions use local `$defs`/`$ref` references in both the generated file and the host response; the app type generator resolves them before producing TypeScript. The file contains the raw schema object accepted by `patchsmith generate --schema`, matching the `schema` value inside the host's `/meta` response.
 
-The host contract exposes these components: the standard `Box`, `Flex`, `Grid`, `Inline`, and `Pressable` primitives, plus `Button` and `Input`. The host maps `Button` and `Input` to `@patchsmith/ui` and uses the standard React renderers for primitives.
+The host contract exposes these components: the standard `Box`, `Flex`, `Grid`, `Inline`, and `Pressable` primitives, plus `Button`, `Input`, and the opt-in `experimental_Canvas`. The host maps `Button` and `Input` to `@patchsmith/ui` and uses the standard React renderers for primitives.
 
 The Todo panel includes Pressable examples with inline, box, flex, and grid layouts, an email row with nested layout children, an icon-only action with an explicit name, and a disable toggle. Try hover, hold, Tab / Shift+Tab, Enter, and Space.
 
@@ -87,3 +87,15 @@ The contracts in `playground/shared/src/contracts/` are deliberately written wit
 ## Update the playground database
 
 The host data model is in `playground/shared/src/db/schema.ts`. It uses Drizzle with Node's built-in SQLite driver. Push schema changes with `pnpm playground:db:push`; this playground does not keep migration files. Profiles, teams, memberships, and starter issues are seeded by `pnpm playground:db:seed`.
+
+## Experimental canvas demo
+
+The Todo panel includes a Chart.js 4.5.1 bar chart drawn inside the sandbox with `experimental_useCanvasSurface`. Its host component is declared with `experimental_canvas` and rendered by `experimental_canvasRenderer`; all three validator contracts expose the same policy. Controls exercise dependency redraw, backing-size changes, animation, and unmount/remount. The instance counter verifies that resizing replaces the chart and hiding it releases the Chart.js instance.
+
+Chart.js uses the lifecycle form of `experimental_useCanvasSurface`: `create` creates the chart and installs local event listeners, `resize` initializes its backing dimensions, `update` applies data changes, `draw` handles continuous animation, and `dispose` destroys it. Update dependencies do not recreate the chart; `createDependencies` can explicitly request replacement for construction settings. Input and invalidation present the library’s existing drawing without rerunning data updates. Patchsmith owns surface replacement, cancellation, and disposal. A small Chart.js `BasicPlatform` extension uses the OffscreenCanvas's local mouse events, so its ordinary hover handling and on-canvas tooltip work. Chart.js uses `responsive: false`, `devicePixelRatio: 1`, and `animation: false`; Patchsmith controls backing dimensions and frame pacing. The chart animation uses the supplied frame timestamp and requests at most 30 FPS, below the host cap. The drawing buffer is preserved by default. Its `ChartItem` TypeScript type still requires a documented local assertion for OffscreenCanvas.
+
+All three playground contracts grant pointer input and the focused ArrowLeft/ArrowRight keys. Hover over a bar to show its tooltip. Click or Tab to the canvas, hold an arrow key, then move focus away to verify the held-key indicator resets. The host excludes other keys and control/meta/alt shortcuts. These permissions are disabled by default in the canvas API.
+
+To try the same app through a standalone `RenderSlot.Controlled` host without database or platform setup, run `pnpm playground:generate`, `pnpm playground:todo:build`, `pnpm --filter @patchsmith/ui build`, and `pnpm --filter @playground/tanstack-start dev:canvas`. Open http://127.0.0.1:5191/canvas-demo.html. The standalone host adds sandbox restart and a second app instance for isolation checks. From a fresh load, `await window.experimental_runCanvasChecks()` runs the repeatable browser checks, including pixel readback for bars and axis labels, data changes, animation start/stop, and Chart.js instance cleanup.
+
+See [the sandbox guide](../packages/sandbox/README.md) for the host/app API, limits, and low-level throughput harness. Canvas input requires host opt-in; audio remains a separate capability. The sandbox script policy now permits WebAssembly compilation and JavaScript string evaluation inside the isolated iframe.

@@ -84,9 +84,15 @@ export const serializeSchema = (
   }
 
   // SAFETY: The serializer contract returns JSON Schema objects; some native converter interfaces omit the string index signature required by Standard JSON Schema.
+  const serializer =
+    schema["~standard"].vendor === "patchsmith" &&
+    hasJsonSchemaConverter(schema)
+      ? jsonSchemaSerializer
+      : schemaSerializer;
+
   const serialized:
     | ReturnType<StandardJSONSchemaV1.Converter["output"]>
-    | undefined = schemaSerializer(schema, {
+    | undefined = serializer(schema, {
     target: "draft-2020-12",
     typeMode,
   });

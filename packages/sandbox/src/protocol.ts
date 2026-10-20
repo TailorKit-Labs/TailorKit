@@ -101,6 +101,32 @@ const HostToIframePayloadSchema = v.pipe(
   v.variant("type", [
     v.strictObject({
       data: strictObject({
+        generation: v.nullable(SessionId),
+        name: SessionId,
+      }),
+      type: v.literal("canvasAvailability"),
+    }),
+    v.strictObject({
+      data: strictObject({
+        error: v.optional(v.string()),
+        height: v.optional(
+          v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(4096))
+        ),
+        id: SessionId,
+        port: v.optional(
+          v.custom<MessagePort>(
+            (value) =>
+              typeof MessagePort !== "undefined" && value instanceof MessagePort
+          )
+        ),
+        width: v.optional(
+          v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(4096))
+        ),
+      }),
+      type: v.literal("canvasResult"),
+    }),
+    v.strictObject({
+      data: strictObject({
         error: v.optional(v.string()),
         id: SessionId,
         output: v.optional(v.unknown()),
@@ -236,6 +262,15 @@ const RemotePatchSchema: v.GenericSchema<unknown, RemotePatch> = v.pipe(
 const IframeToHostPayloadSchema = v.pipe(
   ObjectInput,
   v.variant("type", [
+    v.strictObject({
+      data: strictObject({
+        generation: v.optional(SessionId),
+        id: SessionId,
+        input: v.optional(v.boolean()),
+        name: SessionId,
+      }),
+      type: v.literal("canvasRequest"),
+    }),
     v.strictObject({
       data: strictObject({
         error: v.optional(v.string()),

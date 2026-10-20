@@ -3,6 +3,7 @@ import { useEffect, useState } from "preact/hooks";
 
 import { Box, Button, Flex, Input, tools } from "#patchsmith";
 
+import { CanvasPrototype } from "./canvas-prototype";
 import { PressablePrototype } from "./pressable-prototype";
 
 interface Todo {
@@ -183,6 +184,7 @@ const TodoPanel = () => {
           ))}
         </Flex>
         <PressablePrototype />
+        <CanvasPrototype />
       </Flex>
     </Box>
   );

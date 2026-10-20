@@ -35,6 +35,7 @@
     "access": "public"
   },
   "scripts": {
+    "bench:canvas": "vp dev --config benchmarks/vite.config.ts --host 127.0.0.1 --port 5190",
     "check-types": "tsc --noEmit",
     "test": "vp test run",
     "build": "vp build && tsc -p tsconfig.build.json",

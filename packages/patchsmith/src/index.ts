@@ -1,5 +1,13 @@
 export { tool, defineContract } from "@patchsmith/core/schema";
 
+export { experimental_canvas } from "@patchsmith/core/schema";
+
+export type {
+  experimental_CanvasInputPolicy,
+  experimental_CanvasPolicy,
+  experimental_CanvasProps,
+} from "@patchsmith/core/schema";
+
 export type {
   ContractTool,
   ContractTools,

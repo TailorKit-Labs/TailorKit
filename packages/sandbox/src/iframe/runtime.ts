@@ -11,6 +11,7 @@ import type {
 } from "#protocol";
 
 import { createIframeBackend } from "./backend";
+import { createIframeCanvases } from "./canvas";
 import { assertAppClient, renderClient } from "./resolve-view";
 import type { AppClient, ViewRequest } from "./resolve-view";
 import { createIframeTools } from "./tools";
@@ -96,6 +97,13 @@ export const startIframeRuntime = (options: {
   });
 
   const backendGlobal = globalThis;
+
+  const canvases = createIframeCanvases((data) => {
+    send({ data, type: "canvasRequest" });
+  });
+
+  backendGlobal.__patchsmithRequestCanvas = canvases.request;
+  backendGlobal.__patchsmithWatchCanvas = canvases.watch;
   backendGlobal.__patchsmithTools = tools.bridge;
   backendGlobal.__patchsmithBackendSession = backend.getSession;
 
@@ -244,6 +252,18 @@ export const startIframeRuntime = (options: {
 
     const { payload } = parsed.output;
 
+    if (payload.type === "canvasAvailability") {
+      canvases.availability(payload.data.name, payload.data.generation);
+
+      return;
+    }
+
+    if (payload.type === "canvasResult") {
+      canvases.receive(payload.data);
+
+      return;
+    }
+
     if (payload?.type === "toolResult") {
       tools.receive(payload.data);
 
@@ -332,6 +352,16 @@ export const startIframeRuntime = (options: {
   send({ type: "ready" });
 
   return () => {
+    canvases.close();
+
+    if (backendGlobal.__patchsmithWatchCanvas === canvases.watch) {
+      delete backendGlobal.__patchsmithWatchCanvas;
+    }
+
+    if (backendGlobal.__patchsmithRequestCanvas === canvases.request) {
+      delete backendGlobal.__patchsmithRequestCanvas;
+    }
+
     tools.close();
 
     if (backendGlobal.__patchsmithTools === tools.bridge) {

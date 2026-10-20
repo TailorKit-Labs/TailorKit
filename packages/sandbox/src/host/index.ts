@@ -12,12 +12,16 @@ import type {
 } from "#protocol";
 import { HostToIframePayload, IframeToHostPayload } from "#protocol";
 
+import { createCanvasTarget } from "./canvas";
+import type { experimental_CanvasTargetOptions } from "./canvas";
 import { createRemoteUiStore } from "./store.js";
 import type { RemoteUiStore } from "./store.js";
 
 export { type RemoteUiStore } from "./store.js";
 
 export { createRemoteUiStore } from "./store.js";
+
+export type { experimental_CanvasTargetOptions } from "./canvas";
 
 interface IframeBridgeMessage {
   channel: string;
@@ -26,6 +30,12 @@ interface IframeBridgeMessage {
 }
 
 export interface IframeUiHost extends RemoteUiStore {
+  /** Opt in a named pixel surface for this sandbox; cleanup revokes and clears it. */
+  experimental_registerCanvas: (
+    name: string,
+    canvas: HTMLCanvasElement,
+    options?: experimental_CanvasTargetOptions
+  ) => () => void;
   destroy: () => void;
   dispatch: (
     payload: HostToIframePayloadType
@@ -63,7 +73,7 @@ const createIframeDocument = (channel: string): string =>
 <html data-patchsmith-channel="${channel}">
   <head>
     <meta charset="utf-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' data:; worker-src 'none'; connect-src http: https: ws: wss:; img-src 'none'; style-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' data:; worker-src 'none'; connect-src http: https: ws: wss:; img-src 'none'; style-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'">
   </head>
   <body>
     <div id="patchsmith-root"></div>
@@ -124,6 +134,13 @@ export const createIframeUiHost = (
   const resolvedAppUrl = toUrl(appUrl);
   const sessionCalls = new Set<string>();
   const toolCalls = new Set<string>();
+
+  const canvases = new Map<
+    string,
+    { target: ReturnType<typeof createCanvasTarget>; generation: string }
+  >();
+
+  const canvasElements = new Set<HTMLCanvasElement>();
   const queuedPayloads: HostToIframePayloadType[] = [];
 
   const callbackCalls = new Map<
@@ -161,11 +178,69 @@ export const createIframeUiHost = (
     );
   };
 
-  const postToIframe = (payload: HostToIframePayloadType): void => {
+  const postToIframe = (
+    payload: HostToIframePayloadType,
+    transfer?: Transferable[]
+  ): void => {
+    if (transfer) {
+      iframe.contentWindow?.postMessage(
+        { channel, payload, type: sandboxMessageType },
+        "*",
+        transfer
+      );
+
+      return;
+    }
+
     iframe.contentWindow?.postMessage(
       { channel, payload, type: sandboxMessageType },
       "*"
     );
+  };
+
+  const connectCanvas = ({
+    id,
+    name,
+    generation,
+    input,
+  }: {
+    id: string;
+    name: string;
+    generation?: string;
+    input?: boolean;
+  }) => {
+    const registration = canvases.get(name);
+    const target = registration?.target;
+
+    try {
+      if (
+        !target ||
+        destroyed ||
+        (generation !== undefined && generation !== registration?.generation)
+      ) {
+        throw new Error("Canvas surface is not registered by the host.");
+      }
+
+      const connection = target.connect(input);
+
+      try {
+        postToIframe({ data: { id, ...connection }, type: "canvasResult" }, [
+          connection.port,
+        ]);
+      } catch (error) {
+        connection.port.close();
+        target.close();
+        throw error;
+      }
+    } catch (error) {
+      postToIframe({
+        data: {
+          error: error instanceof Error ? error.message : "Canvas unavailable.",
+          id,
+        },
+        type: "canvasResult",
+      });
+    }
   };
 
   const sendInit = async (): Promise<void> => {
@@ -189,6 +264,13 @@ export const createIframeUiHost = (
       },
       type: "init",
     });
+
+    for (const [name, registration] of canvases) {
+      postToIframe({
+        data: { generation: registration.generation, name },
+        type: "canvasAvailability",
+      });
+    }
 
     for (const payload of queuedPayloads.splice(0)) {
       postToIframe(payload);
@@ -246,6 +328,12 @@ export const createIframeUiHost = (
           call.reject(new Error(error));
         }
       }
+
+      return;
+    }
+
+    if (result.output.type === "canvasRequest") {
+      connectCanvas(result.output.data);
 
       return;
     }
@@ -359,6 +447,13 @@ export const createIframeUiHost = (
       }
 
       destroyed = true;
+
+      for (const { target } of canvases.values()) {
+        target.close();
+      }
+
+      canvases.clear();
+      canvasElements.clear();
       rejectCallbacks(new Error("Patchsmith sandbox was destroyed."));
       window.removeEventListener("message", handleMessage);
       iframe.remove();
@@ -415,6 +510,47 @@ export const createIframeUiHost = (
       }
 
       return await promise;
+    },
+    experimental_registerCanvas: (name, canvas, canvasOptions) => {
+      if (
+        destroyed ||
+        name.length === 0 ||
+        name.length > 128 ||
+        canvases.has(name) ||
+        canvasElements.has(canvas) ||
+        canvases.size >= 8
+      ) {
+        throw new Error("Canvas registration unavailable or duplicated.");
+      }
+
+      const target = createCanvasTarget(canvas, canvasOptions);
+      const registration = { generation: crypto.randomUUID(), target };
+      canvases.set(name, registration);
+
+      if (iframeReady) {
+        postToIframe({
+          data: { generation: registration.generation, name },
+          type: "canvasAvailability",
+        });
+      }
+
+      canvasElements.add(canvas);
+
+      return () => {
+        target.close();
+
+        if (canvases.get(name) === registration) {
+          canvases.delete(name);
+          canvasElements.delete(canvas);
+
+          if (iframeReady && !destroyed) {
+            postToIframe({
+              data: { generation: null, name },
+              type: "canvasAvailability",
+            });
+          }
+        }
+      };
     },
     iframe,
     mount: () => {
