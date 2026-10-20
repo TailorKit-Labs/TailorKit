@@ -160,7 +160,16 @@ pnpm --filter @patchsmith/apps-worker deploy
 
 Direct `pnpm exec wrangler dev`, `pnpm exec wrangler deploy`, and `pnpm exec wrangler versions upload` also work from `apps/apps-worker`. No manual dependency build is required. Wrangler watches the worker, bootstrap build script, and imported workspace sources during development. Turborepo caches both `dist` and `.generated`, so cached builds restore the files needed by tests.
 
-For Cloudflare Workers Builds, use the repository root directory, `pnpm --filter @patchsmith/apps-worker build` as the build command, and `pnpm --filter @patchsmith/apps-worker deploy` as the deploy command. Set the build variables `NODE_VERSION=24` and `PNPM_VERSION=12.11.2` to match this workspace; let Cloudflare install dependencies from the root lockfile. See Cloudflare's [build configuration](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/) and [build image settings](https://developers.cloudflare.com/workers/ci-cd/builds/build-image/).
+In the Cloudflare dashboard, open this Worker's **Settings > Builds > Build configuration** and set:
+
+- Root directory: `apps/apps-worker`
+- Build command: `pnpm run build`
+- Deploy command: `pnpm run deploy`
+- Preview command (non-production branches): `pnpm exec wrangler versions upload`
+
+The Preview command is a dashboard setting; `wrangler.jsonc` does not replace it. The default `npx wrangler preview` requires a separate `previews` configuration and fails for this worker. `wrangler versions upload` uploads a version without making it active or changing production routes. With this worker's `preview_urls: false`, PR builds validate and upload code without publishing a callable preview. See Cloudflare's [Preview command configuration](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/#preview-command).
+
+Set the build variables `NODE_VERSION=24` and `PNPM_VERSION=12.11.2` to match this workspace; let Cloudflare install dependencies from the root lockfile. See Cloudflare's [build image settings](https://developers.cloudflare.com/workers/ci-cd/builds/build-image/).
 
 The connected Cloudflare Worker must be named `patchsmith-apps-worker`, matching `wrangler.jsonc`. Set `RUNTIME_SERVICE_TOKEN` as a runtime secret on that Worker; the platform must use the same value for `APP_RUNTIME_SERVICE_TOKEN`.
 
