@@ -16,6 +16,7 @@ export const table = <
   if (
     !/^[a-zA-Z][a-zA-Z0-9_]{0,62}$/u.test(name) ||
     name.startsWith("sqlite_") ||
+    // Older runtime versions still access the migration journal through this prefix.
     name.startsWith("tailorkit_") ||
     name.startsWith("patchsmith_")
   ) {

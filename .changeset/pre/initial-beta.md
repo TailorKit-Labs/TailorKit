@@ -8,4 +8,4 @@
 "@patchsmith/sandbox": minor
 ---
 
-Publish the initial TailorKit beta packages.
+Publish the initial Patchsmith beta packages.

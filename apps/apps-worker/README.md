@@ -123,7 +123,7 @@ The test command dry-builds with Wrangler and runs its bundled Miniflare/workerd
 - HTTP queries, mutations, actions, and nested function dispatch
 - Query subscriptions, accepted-write deduplication, and realtime updates between two clients
 
-Server artifacts include Drizzle-generated migration SQL and checksums. Facet initialization applies pending migrations and records their history in `tailorkit_migrations`, in the same isolated SQLite database as the app tables. The integration test uses this production bootstrap and verifies upgrades, failed-migration rollback, cold recovery and fresh installations after an upgrade.
+Server artifacts include Drizzle-generated migration SQL and checksums. Facet initialization applies pending migrations and records their history in `patchsmith_migrations`, in the same isolated SQLite database as the app tables. Existing journals are renamed atomically, retaining a writable legacy view for older workers during rollback. The integration test uses this production bootstrap and verifies upgrades, failed-migration rollback, cold recovery and fresh installations after an upgrade.
 
 To run the gateway against a development platform, copy `.dev.vars.example` to `.dev.vars`, fill in the platform URL and private runtime service token, and set the R2 bucket in `wrangler.jsonc` to the same private bucket used by the platform blob provider.
 
@@ -141,11 +141,40 @@ pnpm --filter @patchsmith/apps-worker dev
 
 Wrangler watches runtime/server changes. App code is rebuilt and uploaded through the existing app builder/CLI, then published through the existing deployment flow. Changing local runtime code does not publish an app deployment.
 
-Durable Object and R2 state lives in `apps/apps-worker/.tailorkit/state`, outside app builder output.
+Durable Object and R2 state lives in `apps/apps-worker/.patchsmith/state`, outside app builder output.
 
 Local compatibility uses the date supported by the repository's pinned workerd. No production deployment is performed by these commands.
 
 The runtime enforces the 3 MiB decoded bundle limit described above. It also verifies bundle content length and checksum for integrity.
+
+## Build and deploy
+
+Run these commands from the repository root:
+
+```sh
+pnpm --filter @patchsmith/apps-worker build
+pnpm --filter @patchsmith/apps-worker deploy
+```
+
+`build` runs `wrangler deploy --dry-run --outdir dist`; `deploy` runs `wrangler deploy`. Both use Wrangler's custom build hook to build workspace dependencies and generate `.generated/bootstrap.txt` from `src/dynamic-workers/facet.ts`. The bootstrap is separate source text for the isolated app loader. Wrangler bundles the trusted worker and includes that text module. Do not remove the bootstrap generation or deploy `dist/index.js` separately.
+
+Direct `pnpm exec wrangler dev` and `pnpm exec wrangler deploy` also work from `apps/apps-worker`. No manual dependency build is required. Wrangler watches the worker, bootstrap build script, and imported workspace sources during development. Turborepo caches both `dist` and `.generated`, so cached builds restore the files needed by tests.
+
+In the Cloudflare dashboard, open this Worker's **Settings > Builds > Build configuration** and set:
+
+- Root directory: `apps/apps-worker`
+- Production branch: `main`, with production builds enabled
+- Build command: `pnpm run build`
+- Deploy command: `npx wrangler deploy` (equivalent to `pnpm run deploy`)
+- Builds for Preview branches: disabled under **Previews Base**
+
+Preview branch builds are controlled in the dashboard. `preview_urls: false` in `wrangler.jsonc` only disables public version URLs; it does not disable branch builds. This worker deploys from `main`. Pull requests run GitHub CI, including the Wrangler dry build and local runtime tests. Enabling Cloudflare branch previews would require a separate `previews` configuration. See Cloudflare's [build configuration](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/).
+
+Set the build variables `NODE_VERSION=24` and `PNPM_VERSION=12.11.2` to match this workspace; let Cloudflare install dependencies from the root lockfile. See Cloudflare's [build image settings](https://developers.cloudflare.com/workers/ci-cd/builds/build-image/).
+
+The connected Cloudflare Worker must be named `patchsmith-apps-worker`, matching `wrangler.jsonc`. Set `RUNTIME_SERVICE_TOKEN` as a runtime secret on that Worker; the platform must use the same value for `APP_RUNTIME_SERVICE_TOKEN`.
+
+The `tailorkit.app` routes, `tailorkit-app-assets-prod` bucket, KV namespace ID, and signing-key ID still identify existing infrastructure. Keep these values until those resources and the platform configuration are migrated together. Renaming the Worker does not migrate Durable Object data or copy its secrets.
 
 ## Current limits
 
@@ -184,6 +213,8 @@ Sandbox iframes allow HTTP(S) and WebSocket connections. They retain an opaque `
 ## Shared app delivery
 
 One `patchsmith-apps-worker` deployment handles the wildcard `*.tailorkit.app/*` route and the `internal.tailorkit.app` custom domain. Keep this worker name and the `STORES` binding stable to preserve installation databases. Configure wildcard proxied DNS for `*.tailorkit.app`; Wrangler provisions the internal custom domain. The platform's `ASSET_DOMAIN` must match this worker's value.
+
+Follow [the Patchsmith migration steps](../../PATCHSMITH_MIGRATION.md) before deploying the renamed bucket and signing-key configuration.
 
 Project routes:
 

@@ -76,7 +76,7 @@ it("runs isolated app backends with persistent SQLite and two-client realtime up
   );
   const { Miniflare, convertV4MiniflareOptions } = wranglerRuntime;
 
-  const state = await mkdtemp(path.join(tmpdir(), "tailorkit-apps-worker-"));
+  const state = await mkdtemp(path.join(tmpdir(), "patchsmith-apps-worker-"));
 
   const keys = await crypto.subtle.generateKey(
     { name: "ECDSA", namedCurve: "P-256" },

@@ -5,7 +5,7 @@
 "@patchsmith/react": minor
 ---
 
-Define shared browser-safe contracts with `defineContract` and `action().input().output()`. Use `createServer` from `tailorkit/server` to implement actions and `createClient` from `tailorkit/react` to infer component, view, slot, and scope types from the same contract.
+Define shared browser-safe contracts with `defineContract` and `action().input().output()`. Use `createServer` from `patchsmith/server` to implement actions and `createClient` from `patchsmith/react` to infer component, view, slot, and scope types from the same contract.
 
 Host clients validate view context through the contract's original Standard Schema validators and publish the parsed output. Remove JSON Schema reconstruction and host `/meta` requests; resolve slots locally from the contract and accept an explicit client `assetsBaseUrl` for deployment URL fallbacks. Keep server metadata for app type generation, including scope schemas.
 

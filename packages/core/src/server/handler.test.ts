@@ -12,12 +12,12 @@ const platformRequests = (request: Mock<typeof fetch>): Request[] =>
   );
 
 const testScopeSchema = z.record(z.string(), z.string().min(1));
-const tailor = createPatchsmithServer({
+const patchsmithServer = createPatchsmithServer({
   baseUrl: "https://example.com/api/patchsmith",
   components: {},
   scopes: { org: testScopeSchema },
 });
-const optionalSchemaTailor = tailor;
+const optionalSchemaServer = patchsmithServer;
 
 const authenticateImplementation2Implementation = () => ({
   scopes: { org: { tenant: "workspace" } },
@@ -82,7 +82,7 @@ describe("createPatchsmithServer", () => {
     ["POST", `preview/${"a".repeat(43)}`],
     ["POST", "preview/start"],
   ])("returns 404 for removed %s %s routes", async (method, path) => {
-    const response = await tailor.handler(
+    const response = await patchsmithServer.handler(
       new Request(`https://example.com/api/patchsmith/${path}`, { method }),
       { authenticate: authenticateImplementation2Implementation }
     );
@@ -447,7 +447,7 @@ describe("createPatchsmithServer", () => {
     await expect(response.json()).resolves.toEqual([app]);
   });
   it("serves the serialized schema from the handler", async () => {
-    const response = await optionalSchemaTailor.handler(
+    const response = await optionalSchemaServer.handler(
       new Request("https://example.com/api/patchsmith/schema"),
       {
         authenticate: () => ({
@@ -465,7 +465,7 @@ describe("createPatchsmithServer", () => {
   });
 
   it("serves a built-in CLI auth approval page", async () => {
-    const response = await optionalSchemaTailor.handler(
+    const response = await optionalSchemaServer.handler(
       new Request(
         "https://example.com/api/patchsmith/cli-auth/approve?code=ABC-123-XYZ"
       ),

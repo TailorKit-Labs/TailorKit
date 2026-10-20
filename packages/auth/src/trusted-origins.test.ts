@@ -6,12 +6,12 @@ describe("AUTH_TRUSTED_ORIGINS preview pattern", () => {
     const auth = betterAuth({
       baseURL: "https://patchsmith.io",
       secret: "test-secret-with-at-least-32-characters",
-      trustedOrigins: ["https://tailorkit-*.vercel.app"],
+      trustedOrigins: ["https://patchsmith-*.vercel.app"],
     });
     const context = await auth.$context;
 
     expect(
-      context.isTrustedOrigin("https://tailorkit-feature-auth.vercel.app")
+      context.isTrustedOrigin("https://patchsmith-feature-auth.vercel.app")
     ).toBe(true);
     expect(
       context.isTrustedOrigin("https://another-project-feature-auth.vercel.app")

@@ -1,17 +1,17 @@
-name: tailorkit
+name: patchsmith
 
 services:
   postgres:
     image: postgres
-    container_name: tailorkit-postgres
+    container_name: patchsmith-postgres
     environment:
-      POSTGRES_DB: tailorkit
+      POSTGRES_DB: patchsmith
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     ports:
       - "5432:5432"
     volumes:
-      - tailorkit_postgres_data:/var/lib/postgresql
+      - patchsmith_postgres_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -20,4 +20,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  tailorkit_postgres_data:
+  patchsmith_postgres_data:

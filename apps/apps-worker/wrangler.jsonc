@@ -3,8 +3,15 @@
   "name": "patchsmith-apps-worker",
   "main": "src/index.ts",
   "build": {
-    "command": "pnpm exec turbo run build --filter=@patchsmith/api-utils... --filter=@patchsmith/app... --filter=@patchsmith/asset-delivery...",
-    "watch_dir": ["src", "../../packages/asset-delivery/src"],
+    "command": "pnpm exec turbo run build --filter=@patchsmith/apps-worker^... && node scripts/build-bootstrap.mjs",
+    "watch_dir": [
+      "src",
+      "scripts",
+      "../../packages/api-utils/src",
+      "../../packages/app/src",
+      "../../packages/app-db/src",
+      "../../packages/asset-delivery/src",
+    ],
   },
   "compatibility_date": "2026-10-01",
   "rules": [
@@ -29,7 +36,7 @@
   "r2_buckets": [
     {
       "binding": "BUNDLES",
-      "bucket_name": "tailorkit-app-assets-prod",
+      "bucket_name": "patchsmith-app-assets-prod",
     },
   ],
   "durable_objects": {
@@ -54,6 +61,16 @@
     "PLATFORM_URL": "https://patchsmith.io/api/platform",
     "APP_RUNTIME_PUBLIC_KEYS": {
       "keys": [
+        {
+          "kty": "EC",
+          "x": "qgJufcvDXWvETxxY9GW7a_5Pp2Ywm10wRRkNY69h200",
+          "y": "tqSG2ZTbYUQY5KaaTKxdgfSe_92Q4ai76b6wNfMpsDs",
+          "crv": "P-256",
+          "kid": "patchsmith-runtime-2026-10-02",
+          "alg": "ES256",
+          "use": "sig",
+        },
+        // Retain the old key ID while the platform signer rolls over.
         {
           "kty": "EC",
           "x": "qgJufcvDXWvETxxY9GW7a_5Pp2Ywm10wRRkNY69h200",
